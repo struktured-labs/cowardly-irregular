@@ -167,9 +167,46 @@ func _on_attack_pressed() -> void:
 
 
 func _on_abilities_pressed() -> void:
-	"""Handle Abilities button"""
-	log_message("Abilities menu - TODO")
-	# TODO: Show abilities menu
+	"""Handle Abilities button - Test with Power Strike for now"""
+	if not test_player or not test_player.job:
+		log_message("No job assigned!")
+		return
+
+	var abilities = test_player.job.get("abilities", [])
+	if abilities.size() == 0:
+		log_message("No abilities available!")
+		return
+
+	# For testing, use the first ability (Power Strike for Fighter)
+	var ability_id = abilities[0]
+	var ability = JobSystem.get_ability(ability_id)
+
+	if ability.is_empty():
+		log_message("Ability not found: %s" % ability_id)
+		return
+
+	log_message("Using ability: %s (MP: %d)" % [ability["name"], ability.get("mp_cost", 0)])
+
+	# Determine targets based on ability type
+	var targets = []
+	var target_type = ability.get("target_type", "single_enemy")
+
+	match target_type:
+		"single_enemy":
+			if test_enemy and test_enemy.is_alive:
+				targets = [test_enemy]
+		"all_enemies":
+			if test_enemy and test_enemy.is_alive:
+				targets = [test_enemy]
+		"single_ally":
+			targets = [test_player]
+		"all_allies":
+			targets = [test_player]
+
+	if targets.size() > 0:
+		BattleManager.player_use_ability(ability_id, targets)
+	else:
+		log_message("No valid targets!")
 
 
 func _on_items_pressed() -> void:

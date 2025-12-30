@@ -105,7 +105,8 @@ text = "Attack"
 [node name="AbilitiesButton" type="Button" parent="VBoxContainer/ActionMenu/ButtonRow1"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Abilities"
+tooltip_text = "Use job ability (first ability for testing)"
+text = "Ability: Power Strike"
 
 [node name="ItemsButton" type="Button" parent="VBoxContainer/ActionMenu/ButtonRow1"]
 layout_mode = 2

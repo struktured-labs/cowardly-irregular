@@ -284,9 +284,253 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
-	"""Execute an ability (to be expanded with ability system)"""
-	print("%s uses ability: %s" % [caster.combatant_name, ability_id])
-	# TODO: Implement ability system
+	"""Execute an ability"""
+	var ability = JobSystem.get_ability(ability_id)
+	if ability.is_empty():
+		print("Error: Unknown ability %s" % ability_id)
+		return
+
+	# Check if caster can use this ability
+	if not JobSystem.can_use_ability(caster, ability_id):
+		print("%s cannot use %s" % [caster.combatant_name, ability["name"]])
+		return
+
+	# Spend MP
+	var mp_cost = ability.get("mp_cost", 0)
+	if not caster.spend_mp(mp_cost):
+		print("%s doesn't have enough MP!" % caster.combatant_name)
+		return
+
+	print("%s uses %s!" % [caster.combatant_name, ability["name"]])
+
+	# Execute based on ability type
+	match ability["type"]:
+		"physical":
+			_execute_physical_ability(caster, ability, targets)
+		"magic":
+			_execute_magic_ability(caster, ability, targets)
+		"healing":
+			_execute_healing_ability(caster, ability, targets)
+		"revival":
+			_execute_revival_ability(caster, ability, targets)
+		"support":
+			_execute_support_ability(caster, ability, targets)
+		"meta":
+			_execute_meta_ability(caster, ability, targets)
+		"escape":
+			_execute_escape_ability(caster, ability)
+		_:
+			print("Unknown ability type: %s" % ability["type"])
+
+
+func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	"""Execute a physical ability"""
+	var base_damage = caster.get_buffed_stat("attack", caster.attack)
+	var multiplier = ability.get("damage_multiplier", 1.0)
+	var crit_chance = ability.get("crit_chance", 0.0)
+
+	for target in targets:
+		if not target or not target.is_alive:
+			continue
+
+		var damage = int(base_damage * multiplier)
+
+		# Critical hit check
+		if randf() < crit_chance:
+			damage = int(damage * 2.0)
+			print("Critical hit!")
+
+		# Apply variance
+		damage = int(damage * randf_range(0.9, 1.1))
+
+		var actual_damage = target.take_damage(damage, false)
+		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
+
+
+func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	"""Execute a magic ability"""
+	var base_damage = caster.get_buffed_stat("magic", caster.magic)
+	var multiplier = ability.get("damage_multiplier", 1.0)
+	var element = ability.get("element", "")
+	var drain_pct = ability.get("drain_percentage", 0)
+
+	for target in targets:
+		if not target or not target.is_alive:
+			continue
+
+		var damage = int(base_damage * multiplier)
+		damage = int(damage * randf_range(0.9, 1.1))
+
+		var actual_damage = 0
+		if element:
+			actual_damage = target.take_elemental_damage(damage, element)
+		else:
+			actual_damage = target.take_damage(damage, true)
+
+		print("  → %s takes %d %s damage!" % [target.combatant_name, actual_damage, element if element else "magic"])
+
+		# Drain life
+		if drain_pct > 0:
+			var drained = int(actual_damage * drain_pct / 100.0)
+			caster.heal(drained)
+			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
+
+
+func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	"""Execute a healing ability"""
+	var heal_amount = ability.get("heal_amount", 0)
+	var multiplier = GameState.get_constant("healing_multiplier")
+
+	heal_amount = int(heal_amount * multiplier)
+
+	for target in targets:
+		if not target or not target.is_alive:
+			continue
+
+		var healed = target.heal(heal_amount)
+		print("  → %s recovers %d HP!" % [target.combatant_name, healed])
+
+
+func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	"""Execute a revival ability"""
+	var revive_pct = ability.get("revive_percentage", 50)
+
+	for target in targets:
+		if not target or target.is_alive:
+			continue
+
+		var revive_hp = int(target.max_hp * revive_pct / 100.0)
+		target.revive(revive_hp)
+		print("  → %s is revived with %d HP!" % [target.combatant_name, revive_hp])
+
+
+func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	"""Execute a support ability (buffs, debuffs, status effects)"""
+	var effect = ability.get("effect", "")
+	var duration = ability.get("duration", 3)
+	var stat_modifier = ability.get("stat_modifier", 1.0)
+	var success_rate = ability.get("success_rate", 1.0)
+
+	match effect:
+		"taunt":
+			for target in targets:
+				if target and target.is_alive:
+					target.add_status("taunted_%s" % caster.combatant_name)
+					print("  → %s is now targeting %s!" % [target.combatant_name, caster.combatant_name])
+
+		"defense_up":
+			for target in targets:
+				if target and target.is_alive:
+					target.add_buff("Protect", "defense", stat_modifier, duration)
+
+		"attack_up":
+			for target in targets:
+				if target and target.is_alive:
+					target.add_buff("Berserk", "attack", stat_modifier, duration)
+
+		"defense_down":
+			for target in targets:
+				if target and target.is_alive and randf() < success_rate:
+					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
+
+		"doom":
+			var countdown = ability.get("countdown", 3)
+			for target in targets:
+				if target and target.is_alive:
+					target.doom_counter = countdown
+					print("  → %s is doomed! %d turns remaining..." % [target.combatant_name, countdown])
+
+		_:
+			print("  → Unknown support effect: %s" % effect)
+
+
+func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	"""Execute a meta ability (Scriptweaver, Time Mage, Necromancer)"""
+	var meta_effect = ability.get("meta_effect", "")
+	var corruption_risk = ability.get("corruption_risk", 0.0)
+	var corruption_amount = ability.get("corruption_amount", 0.0)
+
+	match meta_effect:
+		"formula_modification":
+			print("  → %s opens the formula editor..." % caster.combatant_name)
+			print("  → [META] This would open a UI to edit damage formulas")
+			GameState.add_corruption(corruption_risk)
+
+		"constant_modification":
+			print("  → %s accesses game constants..." % caster.combatant_name)
+			print("  → [META] This would open a UI to modify game constants")
+			print("  → Available constants: exp_multiplier, damage_multiplier, etc.")
+			GameState.add_corruption(corruption_risk)
+
+		"code_inspection":
+			print("  → %s analyzes the battle code..." % caster.combatant_name)
+			print("  → [META] Revealing internal battle logic...")
+			print("  → Turn order: %s" % ", ".join(turn_order.map(func(c): return c.combatant_name)))
+
+		"autobattle_editor":
+			print("  → %s opens the autobattle scripting interface..." % caster.combatant_name)
+			print("  → [META] This would open the autobattle script editor")
+
+		"time_rewind":
+			print("  → %s attempts to rewind time..." % caster.combatant_name)
+			if GameState.rewind_to_previous_save():
+				print("  → [META] Time has been rewound!")
+			else:
+				print("  → [META] No previous save state to rewind to")
+
+		"create_save":
+			print("  → %s creates a quicksave..." % caster.combatant_name)
+			GameState.save_game("battle_quicksave_%d" % Time.get_ticks_msec())
+			print("  → [META] Quicksave created!")
+
+		"create_restore_point":
+			print("  → %s creates a restore point..." % caster.combatant_name)
+			GameState.save_game("restore_point_%d" % Time.get_ticks_msec())
+			print("  → [META] Restore point created!")
+
+		"auto_rewind_on_death":
+			print("  → %s casts Temporal Shield!" % caster.combatant_name)
+			for target in targets:
+				if target:
+					target.add_status("temporal_shield")
+			print("  → [META] Party will auto-rewind on wipe!")
+
+		"reverse_permadeath":
+			print("  → %s undoes permadeath..." % caster.combatant_name)
+			_execute_revival_ability(caster, ability, targets)
+			print("  → [META] Permadeath has been reversed!")
+
+		"add_corruption":
+			print("  → %s channels corrupted power!" % caster.combatant_name)
+			GameState.add_corruption(corruption_amount)
+			# Also deal damage
+			_execute_magic_ability(caster, ability, targets)
+
+		"permanent_death":
+			print("  → %s casts PERMAKILL!" % caster.combatant_name)
+			for target in targets:
+				if target and target.is_alive:
+					target.die()
+					target.add_status("permakilled")
+					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)
+			GameState.add_corruption(corruption_risk)
+
+		_:
+			print("  → Unknown meta effect: %s" % meta_effect)
+
+
+func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
+	"""Execute an escape ability"""
+	if not escape_allowed:
+		print("  → Cannot escape from this battle!")
+		return
+
+	var success_rate = ability.get("success_rate", 0.5)
+	if randf() < success_rate:
+		print("  → %s escaped successfully!" % caster.combatant_name)
+		end_battle(false)  # Escape counts as defeat for now
+	else:
+		print("  → %s failed to escape!" % caster.combatant_name)
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:

@@ -26,9 +26,16 @@ var current_bp: int = 0  # Brave Points: -4 to +4 range
 var is_defending: bool = false
 var is_alive: bool = true
 
-## Status effects
+## Status effects and buffs
 var status_effects: Array[String] = []
 var permanent_injuries: Array[Dictionary] = []
+var active_buffs: Array[Dictionary] = []  # {effect: String, stat: String, modifier: float, duration: int}
+var active_debuffs: Array[Dictionary] = []
+
+## Elemental affinities
+var elemental_weaknesses: Array[String] = []  # Takes 1.5x damage from these
+var elemental_resistances: Array[String] = []  # Takes 0.5x damage from these
+var elemental_immunities: Array[String] = []   # Takes 0x damage from these
 
 ## Job reference (will be set by JobSystem)
 var job = null
@@ -36,6 +43,7 @@ var job = null
 ## Turn state
 var queued_actions: Array[Dictionary] = []
 var turn_order_value: float = 0.0
+var doom_counter: int = -1  # Death Sentence countdown (-1 = not doomed)
 
 
 func _ready() -> void:
@@ -183,6 +191,106 @@ func has_status(status: String) -> bool:
 	return status in status_effects
 
 
+## Buffs and Debuffs
+func add_buff(effect: String, stat: String, modifier: float, duration: int) -> void:
+	"""Add a temporary buff"""
+	var buff = {
+		"effect": effect,
+		"stat": stat,
+		"modifier": modifier,
+		"duration": duration,
+		"remaining_turns": duration
+	}
+	active_buffs.append(buff)
+	print("%s gained %s (%.1fx %s for %d turns)" % [combatant_name, effect, modifier, stat, duration])
+
+
+func add_debuff(effect: String, stat: String, modifier: float, duration: int) -> void:
+	"""Add a temporary debuff"""
+	var debuff = {
+		"effect": effect,
+		"stat": stat,
+		"modifier": modifier,
+		"duration": duration,
+		"remaining_turns": duration
+	}
+	active_debuffs.append(debuff)
+	print("%s suffered %s (%.1fx %s for %d turns)" % [combatant_name, effect, modifier, stat, duration])
+
+
+func get_buffed_stat(stat_name: String, base_value: int) -> int:
+	"""Get stat value with buffs/debuffs applied"""
+	var final_value = float(base_value)
+
+	# Apply buffs
+	for buff in active_buffs:
+		if buff["stat"] == stat_name:
+			final_value *= buff["modifier"]
+
+	# Apply debuffs
+	for debuff in active_debuffs:
+		if debuff["stat"] == stat_name:
+			final_value *= debuff["modifier"]
+
+	return int(final_value)
+
+
+func update_buff_durations() -> void:
+	"""Decrease buff/debuff durations, remove expired ones"""
+	# Update buffs
+	for i in range(active_buffs.size() - 1, -1, -1):
+		active_buffs[i]["remaining_turns"] -= 1
+		if active_buffs[i]["remaining_turns"] <= 0:
+			print("%s's %s wore off" % [combatant_name, active_buffs[i]["effect"]])
+			active_buffs.remove_at(i)
+
+	# Update debuffs
+	for i in range(active_debuffs.size() - 1, -1, -1):
+		active_debuffs[i]["remaining_turns"] -= 1
+		if active_debuffs[i]["remaining_turns"] <= 0:
+			print("%s's %s wore off" % [combatant_name, active_debuffs[i]["effect"]])
+			active_debuffs.remove_at(i)
+
+	# Update doom counter
+	if doom_counter > 0:
+		doom_counter -= 1
+		if doom_counter == 0:
+			print("%s succumbs to Death Sentence!" % combatant_name)
+			die()
+
+
+## Elemental damage
+func calculate_elemental_modifier(element: String) -> float:
+	"""Calculate damage multiplier based on elemental affinity"""
+	if element.is_empty():
+		return 1.0
+
+	if element in elemental_immunities:
+		return 0.0
+	elif element in elemental_weaknesses:
+		return 1.5
+	elif element in elemental_resistances:
+		return 0.5
+
+	return 1.0
+
+
+func take_elemental_damage(base_damage: int, element: String) -> int:
+	"""Take damage with elemental modifier"""
+	var elemental_mod = calculate_elemental_modifier(element)
+	var actual_damage = int(base_damage * elemental_mod)
+
+	if elemental_mod == 0.0:
+		print("%s is immune to %s!" % [combatant_name, element])
+		return 0
+	elif elemental_mod > 1.0:
+		print("It's super effective!")
+	elif elemental_mod < 1.0:
+		print("%s resists %s" % [combatant_name, element])
+
+	return take_damage(actual_damage, true)
+
+
 ## Permanent injuries (meta mechanic)
 func apply_permanent_injury(injury: Dictionary) -> void:
 	"""Apply a permanent stat penalty that persists across saves"""
@@ -214,8 +322,7 @@ func start_turn() -> void:
 
 func end_turn() -> void:
 	"""Called at the end of this combatant's turn"""
-	# Process status effects, etc.
-	pass
+	update_buff_durations()
 
 
 func reset_for_new_round() -> void:
