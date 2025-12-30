@@ -1,0 +1,168 @@
+{
+	"potion": {
+		"id": "potion",
+		"name": "Potion",
+		"category": 0,
+		"target_type": 0,
+		"description": "Restores 50 HP",
+		"effects": {
+			"heal_hp": 50
+		},
+		"cost": 50
+	},
+	"hi_potion": {
+		"id": "hi_potion",
+		"name": "Hi-Potion",
+		"category": 0,
+		"target_type": 0,
+		"description": "Restores 200 HP",
+		"effects": {
+			"heal_hp": 200
+		},
+		"cost": 200
+	},
+	"mega_potion": {
+		"id": "mega_potion",
+		"name": "Mega Potion",
+		"category": 0,
+		"target_type": 1,
+		"description": "Restores 100 HP to all allies",
+		"effects": {
+			"heal_hp": 100
+		},
+		"cost": 400
+	},
+	"elixir": {
+		"id": "elixir",
+		"name": "Elixir",
+		"category": 0,
+		"target_type": 0,
+		"description": "Fully restores HP and MP",
+		"effects": {
+			"heal_hp_percent": 100,
+			"heal_mp_percent": 100
+		},
+		"cost": 1000
+	},
+	"ether": {
+		"id": "ether",
+		"name": "Ether",
+		"category": 0,
+		"target_type": 0,
+		"description": "Restores 30 MP",
+		"effects": {
+			"heal_mp": 30
+		},
+		"cost": 150
+	},
+	"hi_ether": {
+		"id": "hi_ether",
+		"name": "Hi-Ether",
+		"category": 0,
+		"target_type": 0,
+		"description": "Restores 100 MP",
+		"effects": {
+			"heal_mp": 100
+		},
+		"cost": 500
+	},
+	"antidote": {
+		"id": "antidote",
+		"name": "Antidote",
+		"category": 2,
+		"target_type": 0,
+		"description": "Cures poison",
+		"effects": {
+			"cure_status": ["poison"]
+		},
+		"cost": 80
+	},
+	"echo_herbs": {
+		"id": "echo_herbs",
+		"name": "Echo Herbs",
+		"category": 2,
+		"target_type": 0,
+		"description": "Cures silence",
+		"effects": {
+			"cure_status": ["silence"]
+		},
+		"cost": 100
+	},
+	"remedy": {
+		"id": "remedy",
+		"name": "Remedy",
+		"category": 2,
+		"target_type": 0,
+		"description": "Cures all status effects",
+		"effects": {
+			"cure_all_status": true
+		},
+		"cost": 300
+	},
+	"phoenix_down": {
+		"id": "phoenix_down",
+		"name": "Phoenix Down",
+		"category": 2,
+		"target_type": 0,
+		"description": "Revives a fallen ally with 25% HP",
+		"effects": {
+			"revive": true,
+			"heal_hp_percent": 25
+		},
+		"cost": 500
+	},
+	"power_drink": {
+		"id": "power_drink",
+		"name": "Power Drink",
+		"category": 1,
+		"target_type": 0,
+		"description": "Increases attack for 3 turns",
+		"effects": {
+			"add_buff": {
+				"type": "attack_up",
+				"power": 1.5,
+				"duration": 3
+			}
+		},
+		"cost": 200
+	},
+	"speed_tonic": {
+		"id": "speed_tonic",
+		"name": "Speed Tonic",
+		"category": 1,
+		"target_type": 0,
+		"description": "Increases speed for 3 turns",
+		"effects": {
+			"add_buff": {
+				"type": "speed_up",
+				"power": 1.5,
+				"duration": 3
+			}
+		},
+		"cost": 200
+	},
+	"bomb_fragment": {
+		"id": "bomb_fragment",
+		"name": "Bomb Fragment",
+		"category": 3,
+		"target_type": 2,
+		"description": "Deals 100 fire damage",
+		"effects": {
+			"damage": 100,
+			"element": "fire"
+		},
+		"cost": 150
+	},
+	"arctic_wind": {
+		"id": "arctic_wind",
+		"name": "Arctic Wind",
+		"category": 3,
+		"target_type": 3,
+		"description": "Deals 80 ice damage to all enemies",
+		"effects": {
+			"damage": 80,
+			"element": "ice"
+		},
+		"cost": 300
+	}
+}

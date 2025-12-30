@@ -52,6 +52,9 @@ var equipped_weapon: String = ""  # Weapon ID
 var equipped_armor: String = ""   # Armor ID
 var equipped_accessory: String = ""  # Accessory ID
 
+## Inventory system
+var inventory: Dictionary = {}  # {item_id: quantity}
+
 ## Base stats (before modifiers)
 var base_max_hp: int = 100
 var base_max_mp: int = 50
@@ -505,3 +508,34 @@ func learn_passive(passive_id: String) -> void:
 	if not passive_id in learned_passives:
 		learned_passives.append(passive_id)
 		print("%s learned passive: %s" % [combatant_name, passive_id])
+
+
+## Inventory management
+func add_item(item_id: String, quantity: int = 1) -> void:
+	"""Add item(s) to inventory"""
+	if inventory.has(item_id):
+		inventory[item_id] += quantity
+	else:
+		inventory[item_id] = quantity
+
+
+func remove_item(item_id: String, quantity: int = 1) -> bool:
+	"""Remove item(s) from inventory. Returns false if insufficient quantity."""
+	if not inventory.has(item_id) or inventory[item_id] < quantity:
+		return false
+
+	inventory[item_id] -= quantity
+	if inventory[item_id] <= 0:
+		inventory.erase(item_id)
+
+	return true
+
+
+func has_item(item_id: String, quantity: int = 1) -> bool:
+	"""Check if inventory contains item(s)"""
+	return inventory.has(item_id) and inventory[item_id] >= quantity
+
+
+func get_item_count(item_id: String) -> int:
+	"""Get quantity of an item in inventory"""
+	return inventory.get(item_id, 0)

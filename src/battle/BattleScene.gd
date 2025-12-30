@@ -98,6 +98,13 @@ func _start_test_battle() -> void:
 	PassiveSystem.equip_passive(test_player, "weapon_mastery")
 	PassiveSystem.equip_passive(test_player, "hp_boost")
 
+	# Give player starting items
+	test_player.add_item("potion", 5)
+	test_player.add_item("hi_potion", 2)
+	test_player.add_item("ether", 3)
+	test_player.add_item("phoenix_down", 1)
+	test_player.add_item("bomb_fragment", 2)
+
 	# Create test enemy
 	test_enemy = Combatant.new()
 	test_enemy.initialize({
@@ -226,7 +233,8 @@ func _update_character_status() -> void:
 		return
 
 	var job_name = test_player.job.get("name", "None") if test_player.job else "None"
-	char1_name.text = "%s (%s)" % [test_player.combatant_name, job_name]
+	var level_text = " Lv.%d" % test_player.job_level if test_player.job_level > 1 else ""
+	char1_name.text = "%s (%s%s)" % [test_player.combatant_name, job_name, level_text]
 
 	char1_hp.max_value = test_player.max_hp
 	char1_hp.value = test_player.current_hp
@@ -242,7 +250,31 @@ func _update_character_status() -> void:
 	elif test_player.current_ap < 0:
 		ap_color = "red"
 
-	char1_ap.text = "[color=%s]AP: %+d[/color]" % [ap_color, test_player.current_ap]
+	# Build status text with AP and status effects
+	var status_text = "[color=%s]AP: %+d[/color]" % [ap_color, test_player.current_ap]
+
+	# Add status effects
+	if test_player.status_effects.size() > 0:
+		status_text += " ["
+		for i in range(test_player.status_effects.size()):
+			if i > 0:
+				status_text += ", "
+			status_text += "[color=yellow]%s[/color]" % test_player.status_effects[i].capitalize()
+		status_text += "]"
+
+	# Add active buffs
+	if test_player.active_buffs.size() > 0:
+		for buff in test_player.active_buffs:
+			var buff_name = buff.get("type", "buff").replace("_", " ").capitalize()
+			status_text += " [color=green]↑%s[/color]" % buff_name
+
+	# Add active debuffs
+	if test_player.active_debuffs.size() > 0:
+		for debuff in test_player.active_debuffs:
+			var debuff_name = debuff.get("type", "debuff").replace("_", " ").capitalize()
+			status_text += " [color=red]↓%s[/color]" % debuff_name
+
+	char1_ap.text = status_text
 
 
 func _update_action_buttons() -> void:
@@ -303,13 +335,41 @@ func _on_ability_pressed() -> void:
 		log_message("No abilities available!")
 		return
 
-	# Use first ability (Power Strike for Fighter)
-	var ability_id = abilities[0]
-	var ability = JobSystem.get_ability(ability_id)
+	# Show ability selection menu
+	_show_ability_menu(abilities)
 
-	if ability.is_empty():
-		log_message("Ability not found: %s" % ability_id)
+
+func _show_ability_menu(ability_ids: Array) -> void:
+	"""Show popup menu for ability selection"""
+	var popup = PopupMenu.new()
+	popup.name = "AbilityMenu"
+	add_child(popup)
+
+	for i in range(ability_ids.size()):
+		var ability_id = ability_ids[i]
+		var ability = JobSystem.get_ability(ability_id)
+		if ability.is_empty():
+			continue
+
+		var mp_cost = ability.get("mp_cost", 0)
+		var can_afford = test_player.current_mp >= mp_cost
+		var label = "%s (MP: %d)" % [ability["name"], mp_cost]
+
+		popup.add_item(label, i)
+		if not can_afford:
+			popup.set_item_disabled(i, true)
+
+	popup.id_pressed.connect(_on_ability_selected.bind(ability_ids))
+	popup.popup_centered()
+
+
+func _on_ability_selected(idx: int, ability_ids: Array) -> void:
+	"""Handle ability selection from menu"""
+	if idx < 0 or idx >= ability_ids.size():
 		return
+
+	var ability_id = ability_ids[idx]
+	var ability = JobSystem.get_ability(ability_id)
 
 	# Determine targets
 	var targets = []
@@ -331,7 +391,71 @@ func _on_ability_pressed() -> void:
 
 func _on_item_pressed() -> void:
 	"""Handle Item button"""
-	log_message("[color=gray]Items menu - TODO[/color]")
+	if not test_player:
+		return
+
+	if test_player.inventory.is_empty():
+		log_message("No items in inventory!")
+		return
+
+	# Show item selection menu
+	_show_item_menu()
+
+
+func _show_item_menu() -> void:
+	"""Show popup menu for item selection"""
+	var popup = PopupMenu.new()
+	popup.name = "ItemMenu"
+	add_child(popup)
+
+	var item_ids = []
+	var idx = 0
+
+	for item_id in test_player.inventory.keys():
+		var item = ItemSystem.get_item(item_id)
+		if item.is_empty():
+			continue
+
+		var quantity = test_player.inventory[item_id]
+		var label = "%s x%d" % [item["name"], quantity]
+
+		popup.add_item(label, idx)
+		item_ids.append(item_id)
+		idx += 1
+
+	if item_ids.size() == 0:
+		popup.queue_free()
+		log_message("No valid items!")
+		return
+
+	popup.id_pressed.connect(_on_item_selected.bind(item_ids))
+	popup.popup_centered()
+
+
+func _on_item_selected(idx: int, item_ids: Array) -> void:
+	"""Handle item selection from menu"""
+	if idx < 0 or idx >= item_ids.size():
+		return
+
+	var item_id = item_ids[idx]
+	var item = ItemSystem.get_item(item_id)
+
+	# Determine targets
+	var targets = []
+	var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
+
+	match target_type:
+		ItemSystem.TargetType.SINGLE_ENEMY, ItemSystem.TargetType.ALL_ENEMIES:
+			if test_enemy and test_enemy.is_alive:
+				targets = [test_enemy]
+		ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.ALL_ALLIES, ItemSystem.TargetType.SELF:
+			targets = [test_player]
+
+	if targets.size() > 0:
+		_flash_sprite(player_sprite, Color.GREEN)
+		BattleManager.player_item(item_id, targets)
+	else:
+		log_message("No valid targets!")
 
 
 func _on_default_pressed() -> void:

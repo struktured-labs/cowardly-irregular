@@ -23,6 +23,7 @@ JobSystem="*res://src/jobs/JobSystem.gd"
 GameState="*res://src/meta/GameState.gd"
 PassiveSystem="*res://src/jobs/PassiveSystem.gd"
 EquipmentSystem="*res://src/jobs/EquipmentSystem.gd"
+ItemSystem="*res://src/items/ItemSystem.gd"
 
 [display]
 
