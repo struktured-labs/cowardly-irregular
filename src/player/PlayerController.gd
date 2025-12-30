@@ -8,9 +8,9 @@ signal interaction_triggered(target: Node2D)
 signal menu_opened()
 
 ## Movement
-@export var move_speed: float = 150.0
-@export var grid_based: bool = false  # True for grid-based movement (like classic JRPGs)
-@export var grid_size: int = 16
+@export var move_speed: float = 100.0  # Slower speed for Game Boy feel
+@export var grid_based: bool = false  # False = free 8-direction (FF Adventure, Link's Awakening style)
+@export var grid_size: int = 16  # For encounter step tracking
 
 ## State
 var can_move: bool = true
@@ -214,30 +214,31 @@ func teleport(new_position: Vector2) -> void:
 
 ## Setup helpers
 func _create_default_sprite() -> void:
-	"""Create a simple player sprite"""
+	"""Create a simple player sprite (16x16 Game Boy style)"""
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite2D"
 	add_child(sprite)
 
-	# Create simple colored circle as placeholder
-	var img = Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	# Create 16x16 sprite (Game Boy size)
+	var img = Image.create(16, 16, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 
-	# Draw blue circle for player
-	for x in range(32):
-		for y in range(32):
-			var dist_from_center = sqrt(pow(x - 16, 2) + pow(y - 16, 2))
-			if dist_from_center < 12:
+	# Draw blue circle for player (smaller)
+	for x in range(16):
+		for y in range(16):
+			var dist_from_center = sqrt(pow(x - 8, 2) + pow(y - 8, 2))
+			if dist_from_center < 6:
 				var c = Color.DODGER_BLUE
 				# Shading
-				if y < 12:
+				if y < 6:
 					c = c.lightened(0.3)
-				elif y > 20:
+				elif y > 10:
 					c = c.darkened(0.3)
 				img.set_pixel(x, y, c)
 
 	var texture = ImageTexture.create_from_image(img)
 	sprite.texture = texture
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # Pixel-perfect
 
 
 func _create_interaction_area() -> void:
