@@ -20,7 +20,7 @@ extends Control
 @onready var char1_hp_label: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/HP/HPLabel
 @onready var char1_mp: ProgressBar = $UI/PartyStatusPanel/VBoxContainer/Character1/MP
 @onready var char1_mp_label: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/MP/MPLabel
-@onready var char1_bp: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/BP
+@onready var char1_ap: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/AP
 
 ## Sprite containers
 @onready var enemy_sprites: Node2D = $BattleField/EnemySprites
@@ -106,7 +106,7 @@ func _start_test_battle() -> void:
 
 	# Connect combatant signals
 	test_player.hp_changed.connect(_on_player_hp_changed)
-	test_player.bp_changed.connect(_on_player_bp_changed)
+	test_player.ap_changed.connect(_on_player_ap_changed)
 	test_enemy.hp_changed.connect(_on_enemy_hp_changed)
 	test_enemy.died.connect(_on_enemy_died)
 
@@ -225,13 +225,13 @@ func _update_character_status() -> void:
 	char1_mp.value = test_player.current_mp
 	char1_mp_label.text = "MP: %d/%d" % [test_player.current_mp, test_player.max_mp]
 
-	var bp_color = "white"
-	if test_player.current_bp > 0:
-		bp_color = "green"
-	elif test_player.current_bp < 0:
-		bp_color = "red"
+	var ap_color = "white"
+	if test_player.current_ap > 0:
+		ap_color = "green"
+	elif test_player.current_ap < 0:
+		ap_color = "red"
 
-	char1_bp.text = "[color=%s]BP: %+d[/color]" % [bp_color, test_player.current_bp]
+	char1_ap.text = "[color=%s]AP: %+d[/color]" % [ap_color, test_player.current_ap]
 
 
 func _update_action_buttons() -> void:
@@ -244,9 +244,9 @@ func _update_action_buttons() -> void:
 	btn_item.disabled = not is_player_turn
 	btn_default.disabled = not is_player_turn
 
-	# Brave requires non-negative BP
+	# Brave requires non-negative AP
 	if current and is_player_turn:
-		btn_brave.disabled = current.current_bp < 0
+		btn_brave.disabled = current.current_ap < 0
 	else:
 		btn_brave.disabled = true
 
@@ -257,10 +257,10 @@ func _update_turn_info() -> void:
 		return
 
 	var current = BattleManager.current_combatant
-	turn_info.text = "Round %d - %s's Turn (BP: %+d)" % [
+	turn_info.text = "Round %d - %s's Turn (AP: %+d)" % [
 		BattleManager.current_round,
 		current.combatant_name,
-		current.current_bp
+		current.current_ap
 	]
 
 
@@ -400,8 +400,8 @@ func _on_player_hp_changed(old_value: int, new_value: int) -> void:
 		_flash_sprite(player_sprite, Color.RED)
 
 
-func _on_player_bp_changed(old_value: int, new_value: int) -> void:
-	"""Handle player BP change"""
+func _on_player_ap_changed(old_value: int, new_value: int) -> void:
+	"""Handle player AP change"""
 	_update_ui()
 
 

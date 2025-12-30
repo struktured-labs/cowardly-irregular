@@ -157,9 +157,9 @@ text = "MP: 50/50"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="BP" type="Label" parent="UI/PartyStatusPanel/VBoxContainer/Character1"]
+[node name="AP" type="Label" parent="UI/PartyStatusPanel/VBoxContainer/Character1"]
 layout_mode = 2
-text = "BP: 0"
+text = "AP: 0"
 horizontal_alignment = 1
 
 [node name="BattleLogPanel" type="PanelContainer" parent="UI"]
@@ -257,13 +257,13 @@ text = "⚗ Item"
 [node name="DefaultButton" type="Button" parent="UI/ActionMenuPanel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-tooltip_text = "Defend: +1 BP, reduce damage 50%"
+tooltip_text = "Defend: +1 AP, reduce damage 50%"
 text = "◆ Default"
 
 [node name="BraveButton" type="Button" parent="UI/ActionMenuPanel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-tooltip_text = "Queue multiple actions (spend BP)"
+tooltip_text = "Queue multiple actions (spend AP)"
 text = "◈ Brave"
 
 [node name="TurnInfoPanel" type="PanelContainer" parent="UI"]

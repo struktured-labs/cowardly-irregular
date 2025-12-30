@@ -2,10 +2,10 @@ extends Node
 class_name Combatant
 
 ## Base class for all battle participants (player characters and enemies)
-## Manages stats, BP, status effects, and turn mechanics
+## Manages stats, AP, status effects, and turn mechanics
 
 signal hp_changed(old_value: int, new_value: int)
-signal bp_changed(old_value: int, new_value: int)
+signal ap_changed(old_value: int, new_value: int)
 signal died()
 signal status_added(status: String)
 signal status_removed(status: String)
@@ -22,7 +22,7 @@ signal status_removed(status: String)
 ## Current state
 var current_hp: int
 var current_mp: int
-var current_bp: int = 0  # Brave Points: -4 to +4 range
+var current_ap: int = 0  # Action Points: -4 to +4 range
 var is_defending: bool = false
 var is_alive: bool = true
 
@@ -72,37 +72,37 @@ func initialize(stats: Dictionary) -> void:
 
 
 ## Brave/Default system
-func can_brave(bp_cost: int) -> bool:
-	# Can go into BP debt up to -4
-	return (current_bp - bp_cost) >= -4
+func can_brave(ap_cost: int) -> bool:
+	# Can go into AP debt up to -4
+	return (current_ap - ap_cost) >= -4
 
 
-func spend_bp(amount: int) -> bool:
+func spend_ap(amount: int) -> bool:
 	if not can_brave(amount):
 		return false
 
-	var old_bp = current_bp
-	current_bp = clampi(current_bp - amount, -4, 4)
-	bp_changed.emit(old_bp, current_bp)
+	var old_ap = current_ap
+	current_ap = clampi(current_ap - amount, -4, 4)
+	ap_changed.emit(old_ap, current_ap)
 	return true
 
 
-func gain_bp(amount: int) -> void:
-	var old_bp = current_bp
-	current_bp = clampi(current_bp + amount, -4, 4)
-	bp_changed.emit(old_bp, current_bp)
+func gain_ap(amount: int) -> void:
+	var old_ap = current_ap
+	current_ap = clampi(current_ap + amount, -4, 4)
+	ap_changed.emit(old_ap, current_ap)
 
 
 func execute_default() -> void:
-	"""Default action: skip turn, gain +1 BP, reduce incoming damage"""
+	"""Default action: skip turn, gain +1 AP, reduce incoming damage"""
 	is_defending = true
-	gain_bp(1)
+	gain_ap(1)
 
 
 func execute_brave(actions: Array[Dictionary]) -> void:
-	"""Brave action: queue multiple actions, spending BP"""
-	var bp_cost = actions.size() - 1  # First action is free
-	if spend_bp(bp_cost):
+	"""Brave action: queue multiple actions, spending AP"""
+	var ap_cost = actions.size() - 1  # First action is free
+	if spend_ap(ap_cost):
 		queued_actions = actions.duplicate()
 
 
@@ -347,7 +347,7 @@ func to_dict() -> Dictionary:
 		"max_mp": max_mp,
 		"current_hp": current_hp,
 		"current_mp": current_mp,
-		"current_bp": current_bp,
+		"current_ap": current_ap,
 		"attack": attack,
 		"defense": defense,
 		"magic": magic,
@@ -370,8 +370,8 @@ func from_dict(data: Dictionary) -> void:
 		current_hp = data["current_hp"]
 	if data.has("current_mp"):
 		current_mp = data["current_mp"]
-	if data.has("current_bp"):
-		current_bp = data["current_bp"]
+	if data.has("current_ap"):
+		current_ap = data["current_ap"]
 	if data.has("attack"):
 		attack = data["attack"]
 	if data.has("defense"):

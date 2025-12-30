@@ -7,7 +7,7 @@ A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 The core game engine is now functional! This includes:
 
 ✅ Brave/Default turn-based combat system
-✅ BP (Brave Points) mechanics (-4 to +4 range)
+✅ AP (Action Points) mechanics (-4 to +4 range)
 ✅ Job system with starter and meta jobs
 ✅ Battle state management
 ✅ Save/load system with corruption mechanics
@@ -46,7 +46,7 @@ cowardly-irregular/
 ├── README.md             # This file
 │
 ├── src/                  # Source code
-│   ├── battle/          # Combat system, BP mechanics
+│   ├── battle/          # Combat system, AP mechanics
 │   │   ├── BattleManager.gd    # Singleton managing battle flow
 │   │   ├── Combatant.gd        # Base class for all fighters
 │   │   ├── BattleScene.gd      # Battle UI controller
@@ -82,15 +82,15 @@ The battle system is inspired by *Bravely Default*:
 - **Attack**: Basic physical attack
 - **Abilities**: Job-specific skills (costs MP)
 - **Items**: Use consumables (TODO)
-- **Default**: Skip turn, gain +1 BP, reduce damage by 50%
-- **Brave**: Spend BP to take multiple actions in one turn
+- **Default**: Skip turn, gain +1 AP, reduce damage by 50%
+- **Brave**: Spend AP to take multiple actions in one turn
 
-**BP (Brave Points)**:
+**AP (Action Points)**:
 - Range: -4 to +4
 - Start each battle at 0
-- Default gives +1 BP
-- Brave spends BP (can go into debt)
-- If BP is negative, you skip turns to pay it back
+- Default gives +1 AP
+- Brave spends AP (can go into debt)
+- If AP is negative, you skip turns to pay it back
 
 ### 2. Job System
 
@@ -112,7 +112,7 @@ Jobs define a character's stats and abilities:
 **Save Corruption**:
 - Using meta abilities increases corruption (0.0 to 1.0)
 - High corruption causes random effects when saving/loading
-- Effects: stat drain, HP corruption, BP instability, etc.
+- Effects: stat drain, HP corruption, AP instability, etc.
 
 **Game Constants** (modifiable by Scriptweaver):
 - `exp_multiplier`: Change experience gain rate
@@ -146,7 +146,7 @@ Calculate Turn Order (by Speed)
 Round Start
   ↓
 For each combatant in turn order:
-  - If BP < 0: skip turn, gain +1 BP
+  - If AP < 0: skip turn, gain +1 AP
   - If Player: show action menu
   - If Enemy/Autobattle: execute AI
   - Execute action
@@ -161,8 +161,8 @@ When you run the game, you'll see a test battle:
 - **Hero** (Fighter) vs **Slime** (Enemy)
 - Try the different action buttons:
   - **Attack**: Basic attack
-  - **Default**: Gain BP and defend
-  - **Brave (x2 Attack)**: Attack twice, spend 1 BP
+  - **Default**: Gain AP and defend
+  - **Brave (x2 Attack)**: Attack twice, spend 1 AP
 
 Watch the battle log and character stats update in real-time!
 
@@ -170,7 +170,7 @@ Watch the battle log and character stats update in real-time!
 
 ### Phase 1 (Current)
 - [x] Core battle system
-- [x] BP mechanics
+- [x] AP mechanics
 - [x] Job system foundation
 - [x] Basic UI
 - [ ] **Ability system** (expand beyond basic attack)

@@ -148,11 +148,11 @@ func _start_combatant_turn(combatant: Combatant) -> void:
 	"""Start a specific combatant's turn"""
 	combatant.start_turn()
 
-	# Check if this combatant has BP debt (from Brave)
-	if combatant.current_bp < 0:
-		# Skip turn to pay BP debt
-		combatant.gain_bp(1)
-		print("%s is paying BP debt (%d -> %d)" % [combatant.combatant_name, combatant.current_bp - 1, combatant.current_bp])
+	# Check if this combatant has AP debt (from Brave)
+	if combatant.current_ap < 0:
+		# Skip turn to pay AP debt
+		combatant.gain_ap(1)
+		print("%s is paying AP debt (%d -> %d)" % [combatant.combatant_name, combatant.current_ap - 1, combatant.current_ap])
 		_end_combatant_turn(combatant)
 		return
 
@@ -209,12 +209,12 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 
 
 func player_default() -> void:
-	"""Execute Default action (skip turn, gain BP, defend)"""
+	"""Execute Default action (skip turn, gain AP, defend)"""
 	if current_state != BattleState.PLAYER_TURN:
 		return
 
 	current_combatant.execute_default()
-	print("%s uses Default (BP: %d)" % [current_combatant.combatant_name, current_combatant.current_bp])
+	print("%s uses Default (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
 	_end_combatant_turn(current_combatant)
 
 
@@ -224,7 +224,7 @@ func player_brave(actions: Array[Dictionary]) -> void:
 		return
 
 	current_combatant.execute_brave(actions)
-	print("%s uses Brave (%d actions, BP: %d)" % [current_combatant.combatant_name, actions.size(), current_combatant.current_bp])
+	print("%s uses Brave (%d actions, AP: %d)" % [current_combatant.combatant_name, actions.size(), current_combatant.current_ap])
 
 	# Execute first action immediately
 	if current_combatant.queued_actions.size() > 0:
