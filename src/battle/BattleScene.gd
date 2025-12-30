@@ -87,6 +87,17 @@ func _start_test_battle() -> void:
 	add_child(test_player)
 	JobSystem.assign_job(test_player, "fighter")
 
+	# Give player starting equipment and passives
+	EquipmentSystem.equip_weapon(test_player, "iron_sword")
+	EquipmentSystem.equip_armor(test_player, "leather_armor")
+	EquipmentSystem.equip_accessory(test_player, "power_ring")
+
+	# Learn and equip some passives
+	test_player.learn_passive("weapon_mastery")
+	test_player.learn_passive("hp_boost")
+	PassiveSystem.equip_passive(test_player, "weapon_mastery")
+	PassiveSystem.equip_passive(test_player, "hp_boost")
+
 	# Create test enemy
 	test_enemy = Combatant.new()
 	test_enemy.initialize({

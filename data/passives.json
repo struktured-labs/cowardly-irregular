@@ -1,0 +1,160 @@
+{
+	"weapon_mastery": {
+		"id": "weapon_mastery",
+		"name": "Weapon Mastery",
+		"category": 0,
+		"description": "+20% physical damage",
+		"stat_mods": {
+			"attack_multiplier": 1.2
+		}
+	},
+	"magic_boost": {
+		"id": "magic_boost",
+		"name": "Magic Boost",
+		"category": 0,
+		"description": "+30% magic damage",
+		"stat_mods": {
+			"magic_multiplier": 1.3
+		}
+	},
+	"critical_strike": {
+		"id": "critical_strike",
+		"name": "Critical Strike",
+		"category": 0,
+		"description": "+25% critical hit chance",
+		"stat_mods": {
+			"crit_chance": 0.25
+		}
+	},
+	"iron_skin": {
+		"id": "iron_skin",
+		"name": "Iron Skin",
+		"category": 1,
+		"description": "+25% defense",
+		"stat_mods": {
+			"defense_multiplier": 1.25
+		}
+	},
+	"hp_boost": {
+		"id": "hp_boost",
+		"name": "HP Boost",
+		"category": 1,
+		"description": "+30% max HP",
+		"stat_mods": {
+			"max_hp_multiplier": 1.3
+		}
+	},
+	"evasion_up": {
+		"id": "evasion_up",
+		"name": "Evasion Up",
+		"category": 1,
+		"description": "+20% dodge chance",
+		"stat_mods": {
+			"evasion": 0.2
+		}
+	},
+	"speed_demon": {
+		"id": "speed_demon",
+		"name": "Speed Demon",
+		"category": 2,
+		"description": "+40% speed",
+		"stat_mods": {
+			"speed_multiplier": 1.4
+		}
+	},
+	"mp_efficiency": {
+		"id": "mp_efficiency",
+		"name": "MP Efficiency",
+		"category": 2,
+		"description": "-25% MP costs",
+		"stat_mods": {
+			"mp_cost_multiplier": 0.75
+		}
+	},
+	"healing_boost": {
+		"id": "healing_boost",
+		"name": "Healing Boost",
+		"category": 2,
+		"description": "+50% healing power",
+		"stat_mods": {
+			"healing_multiplier": 1.5
+		}
+	},
+	"glass_cannon": {
+		"id": "glass_cannon",
+		"name": "Glass Cannon",
+		"category": 3,
+		"description": "+100% damage, -50% defense",
+		"stat_mods": {
+			"attack_multiplier": 2.0,
+			"magic_multiplier": 2.0,
+			"defense_multiplier": 0.5
+		}
+	},
+	"berserker": {
+		"id": "berserker",
+		"name": "Berserker",
+		"category": 3,
+		"description": "+80% attack, cannot defend",
+		"stat_mods": {
+			"attack_multiplier": 1.8
+		},
+		"restrictions": {
+			"cannot_defend": true
+		}
+	},
+	"magic_amplifier": {
+		"id": "magic_amplifier",
+		"name": "Magic Amplifier",
+		"category": 3,
+		"description": "+100% magic damage, +150% MP costs",
+		"stat_mods": {
+			"magic_multiplier": 2.0,
+			"mp_cost_multiplier": 2.5
+		}
+	},
+	"reckless": {
+		"id": "reckless",
+		"name": "Reckless",
+		"category": 3,
+		"description": "+60% damage, -30% max HP",
+		"stat_mods": {
+			"attack_multiplier": 1.6,
+			"magic_multiplier": 1.6,
+			"max_hp_multiplier": 0.7
+		}
+	},
+	"last_stand": {
+		"id": "last_stand",
+		"name": "Last Stand",
+		"category": 3,
+		"description": "+200% damage when HP < 25%, -20% max HP",
+		"stat_mods": {
+			"max_hp_multiplier": 0.8
+		},
+		"conditional_mods": {
+			"hp_below_25": {
+				"attack_multiplier": 3.0,
+				"magic_multiplier": 3.0
+			}
+		}
+	},
+	"autobattle_verbs": {
+		"id": "autobattle_verbs",
+		"name": "Autobattle Verbs",
+		"category": 4,
+		"description": "Unlocks advanced autobattle conditionals",
+		"meta_effects": {
+			"autobattle_advanced": true
+		}
+	},
+	"formula_sight": {
+		"id": "formula_sight",
+		"name": "Formula Sight",
+		"category": 4,
+		"description": "See damage formulas in battle",
+		"meta_effects": {
+			"show_formulas": true
+		}
+	}
+}

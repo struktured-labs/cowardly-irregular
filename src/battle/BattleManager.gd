@@ -68,6 +68,20 @@ func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	if victory:
 		current_state = BattleState.VICTORY
+
+		# Award job EXP to player party
+		var base_exp = 50  # Base EXP per battle
+		for combatant in player_party:
+			if combatant.is_alive:
+				var exp_gained = base_exp
+				combatant.gain_job_exp(exp_gained)
+				print("%s gained %d job EXP (Level: %d, EXP: %d/%d)" % [
+					combatant.combatant_name,
+					exp_gained,
+					combatant.job_level,
+					combatant.job_exp,
+					combatant.job_level * 100
+				])
 	else:
 		current_state = BattleState.DEFEAT
 
