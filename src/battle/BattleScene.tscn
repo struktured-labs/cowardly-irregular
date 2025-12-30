@@ -1,0 +1,128 @@
+[gd_scene load_steps=2 format=3 uid="uid://cpr8dwmxfqwv3"]
+
+[ext_resource type="Script" path="res://src/battle/BattleScene.gd" id="1_j7c8k"]
+
+[node name="BattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_j7c8k")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TurnInfo" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"HeaderLarge"
+text = "Battle Start"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="BattleInfo" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayerInfo" type="VBoxContainer" parent="VBoxContainer/BattleInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="VBoxContainer/BattleInfo/PlayerInfo"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "PLAYER PARTY"
+
+[node name="PlayerStats" type="RichTextLabel" parent="VBoxContainer/BattleInfo/PlayerInfo"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Hero
+HP: 120/120
+MP: 50/50
+BP: 0"
+fit_content = true
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/BattleInfo"]
+layout_mode = 2
+
+[node name="EnemyInfo" type="VBoxContainer" parent="VBoxContainer/BattleInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="VBoxContainer/BattleInfo/EnemyInfo"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "ENEMIES"
+
+[node name="EnemyStats" type="RichTextLabel" parent="VBoxContainer/BattleInfo/EnemyInfo"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Slime
+HP: 80/80"
+fit_content = true
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="BattleLog" type="RichTextLabel" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "=== Battle Log ===
+"
+scroll_following = true
+
+[node name="HSeparator3" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ActionMenu" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/ActionMenu"]
+layout_mode = 2
+text = "ACTIONS"
+horizontal_alignment = 1
+
+[node name="ButtonRow1" type="HBoxContainer" parent="VBoxContainer/ActionMenu"]
+layout_mode = 2
+
+[node name="AttackButton" type="Button" parent="VBoxContainer/ActionMenu/ButtonRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Attack"
+
+[node name="AbilitiesButton" type="Button" parent="VBoxContainer/ActionMenu/ButtonRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Abilities"
+
+[node name="ItemsButton" type="Button" parent="VBoxContainer/ActionMenu/ButtonRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Items"
+
+[node name="ButtonRow2" type="HBoxContainer" parent="VBoxContainer/ActionMenu"]
+layout_mode = 2
+
+[node name="DefaultButton" type="Button" parent="VBoxContainer/ActionMenu/ButtonRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Skip turn, gain +1 BP, reduce damage"
+text = "Default"
+
+[node name="BraveButton" type="Button" parent="VBoxContainer/ActionMenu/ButtonRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Queue multiple actions, spend BP"
+text = "Brave (x2 Attack)"

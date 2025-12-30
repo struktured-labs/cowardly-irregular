@@ -1,0 +1,186 @@
+{
+	"fighter": {
+		"id": "fighter",
+		"name": "Fighter",
+		"type": 0,
+		"description": "A warrior skilled in physical combat. High HP and attack, excels at dealing consistent damage.",
+		"stat_modifiers": {
+			"max_hp": 120,
+			"max_mp": 30,
+			"attack": 15,
+			"defense": 12,
+			"magic": 5,
+			"speed": 8
+		},
+		"abilities": [
+			"power_strike",
+			"provoke",
+			"cleave"
+		],
+		"passive_abilities": [
+			"weapon_mastery"
+		]
+	},
+	"white_mage": {
+		"id": "white_mage",
+		"name": "White Mage",
+		"type": 0,
+		"description": "A healer who uses restorative magic. Low HP but high magic, keeps the party alive.",
+		"stat_modifiers": {
+			"max_hp": 80,
+			"max_mp": 70,
+			"attack": 5,
+			"defense": 8,
+			"magic": 18,
+			"speed": 10
+		},
+		"abilities": [
+			"cure",
+			"cura",
+			"raise",
+			"protect"
+		],
+		"passive_abilities": [
+			"healing_boost"
+		]
+	},
+	"black_mage": {
+		"id": "black_mage",
+		"name": "Black Mage",
+		"type": 0,
+		"description": "A mage who wields destructive magic. Low HP but devastating magical damage.",
+		"stat_modifiers": {
+			"max_hp": 70,
+			"max_mp": 80,
+			"attack": 5,
+			"defense": 6,
+			"magic": 20,
+			"speed": 9
+		},
+		"abilities": [
+			"fire",
+			"blizzard",
+			"thunder",
+			"fira"
+		],
+		"passive_abilities": [
+			"magic_boost"
+		]
+	},
+	"thief": {
+		"id": "thief",
+		"name": "Thief",
+		"type": 0,
+		"description": "A quick rogue who steals and evades. High speed, can steal items and gold from enemies.",
+		"stat_modifiers": {
+			"max_hp": 90,
+			"max_mp": 40,
+			"attack": 12,
+			"defense": 9,
+			"magic": 7,
+			"speed": 16
+		},
+		"abilities": [
+			"steal",
+			"flee",
+			"backstab"
+		],
+		"passive_abilities": [
+			"steal_boost",
+			"evasion_up"
+		]
+	},
+	"scriptweaver": {
+		"id": "scriptweaver",
+		"name": "Scriptweaver",
+		"type": 2,
+		"description": "A meta job that can edit game formulas and constants. Automation master.",
+		"stat_modifiers": {
+			"max_hp": 90,
+			"max_mp": 60,
+			"attack": 10,
+			"defense": 10,
+			"magic": 15,
+			"speed": 12
+		},
+		"abilities": [
+			"edit_formula",
+			"modify_constant",
+			"analyze_code",
+			"create_autobattle_script"
+		],
+		"passive_abilities": [
+			"formula_sight",
+			"autobattle_verbs",
+			"debug_mode"
+		],
+		"meta_powers": {
+			"can_edit_damage_formulas": true,
+			"can_modify_exp_rates": true,
+			"can_view_game_constants": true,
+			"unlocks_advanced_autobattle": true
+		}
+	},
+	"time_mage": {
+		"id": "time_mage",
+		"name": "Time Mage",
+		"type": 2,
+		"description": "A meta job that manipulates time and saves. Can rewind, create restore points, and undo permadeath.",
+		"stat_modifiers": {
+			"max_hp": 85,
+			"max_mp": 75,
+			"attack": 8,
+			"defense": 9,
+			"magic": 17,
+			"speed": 11
+		},
+		"abilities": [
+			"rewind",
+			"quicksave",
+			"restore_point",
+			"temporal_shield",
+			"undo_death"
+		],
+		"passive_abilities": [
+			"autosave",
+			"save_protection",
+			"time_sense"
+		],
+		"meta_powers": {
+			"can_rewind_saves": true,
+			"can_create_restore_points": true,
+			"can_undo_permadeath": true,
+			"unlocks_save_evolution": true
+		}
+	},
+	"necromancer": {
+		"id": "necromancer",
+		"name": "Necromancer",
+		"type": 2,
+		"description": "A meta job with dual-edged death magic. Powerful but dangerous - can wipe your save.",
+		"stat_modifiers": {
+			"max_hp": 75,
+			"max_mp": 90,
+			"attack": 7,
+			"defense": 7,
+			"magic": 22,
+			"speed": 9
+		},
+		"abilities": [
+			"drain_life",
+			"death_sentence",
+			"corrupt_save",
+			"necro_blast",
+			"permakill"
+		],
+		"passive_abilities": [
+			"undead_affinity",
+			"death_resistance"
+		],
+		"meta_powers": {
+			"can_corrupt_saves": true,
+			"can_inflict_permadeath": true,
+			"extremely_high_risk": true
+		}
+	}
+}
