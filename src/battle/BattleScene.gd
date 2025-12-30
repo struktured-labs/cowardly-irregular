@@ -45,11 +45,18 @@ var test_player: Combatant
 var test_enemy: Combatant
 
 ## Sprite nodes
-var player_sprite: Sprite2D
-var enemy_sprite: Sprite2D
+var player_sprite: AnimatedSprite2D
+var enemy_sprite: AnimatedSprite2D
+
+## Animators
+var player_animator: BattleAnimator
+var enemy_animator: BattleAnimator
 
 
 func _ready() -> void:
+	# Apply retro font styling
+	RetroFont.configure_battle_log(battle_log)
+
 	# Connect to BattleManager signals
 	BattleManager.battle_started.connect(_on_battle_started)
 	BattleManager.battle_ended.connect(_on_battle_ended)
@@ -160,18 +167,49 @@ func _start_test_battle() -> void:
 
 
 func _create_battle_sprites() -> void:
-	"""Create placeholder battle sprites (12-bit style)"""
+	"""Create animated battle sprites (12-bit style)"""
 
-	# Create player sprite (Knight/Fighter)
-	player_sprite = _create_character_sprite(Color(0.2, 0.6, 0.9), "FIGHTER")
+	# Create player sprite (Hero/Fighter)
+	player_sprite = AnimatedSprite2D.new()
+	player_sprite.sprite_frames = BattleAnimator.create_hero_sprite_frames()
 	player_sprite.position = party_positions[0].global_position
-	player_sprite.scale = Vector2(-1, 1)  # Flip to face left
+	player_sprite.flip_h = true  # Flip to face left
+	player_sprite.play("idle")
 	party_sprites.add_child(player_sprite)
 
+	# Create player animator
+	player_animator = BattleAnimator.new()
+	player_animator.setup(player_sprite)
+	add_child(player_animator)
+
 	# Create enemy sprite (Slime)
-	enemy_sprite = _create_enemy_sprite(Color(0.3, 0.8, 0.3), "SLIME")
+	enemy_sprite = AnimatedSprite2D.new()
+	enemy_sprite.sprite_frames = BattleAnimator.create_slime_sprite_frames()
 	enemy_sprite.position = enemy_positions[0].global_position
+	enemy_sprite.play("idle")
 	enemy_sprites.add_child(enemy_sprite)
+
+	# Create enemy animator
+	enemy_animator = BattleAnimator.new()
+	enemy_animator.setup(enemy_sprite)
+	add_child(enemy_animator)
+
+	# Add labels
+	_add_sprite_label(player_sprite, "HERO", Vector2(-20, 40))
+	_add_sprite_label(enemy_sprite, "SLIME", Vector2(-20, 40))
+
+
+func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) -> void:
+	"""Add a label below a sprite"""
+	var label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = offset
+	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	sprite.add_child(label)
 
 
 func _create_character_sprite(color: Color, label: String) -> Sprite2D:
@@ -342,7 +380,12 @@ func log_message(message: String) -> void:
 func _on_attack_pressed() -> void:
 	"""Handle Attack button"""
 	if test_enemy and test_enemy.is_alive:
-		_flash_sprite(enemy_sprite, Color.RED)
+		# Play attack animation sequence
+		if player_animator:
+			player_animator.play_attack(func():
+				if enemy_animator:
+					enemy_animator.play_hit()
+			)
 		BattleManager.player_attack(test_enemy)
 
 
@@ -405,7 +448,9 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 			targets = [test_player]
 
 	if targets.size() > 0:
-		_flash_sprite(enemy_sprite, Color.YELLOW)
+		# Play cast animation for abilities
+		if player_animator:
+			player_animator.play_cast()
 		BattleManager.player_use_ability(ability_id, targets)
 	else:
 		log_message("No valid targets!")
@@ -474,7 +519,9 @@ func _on_item_selected(idx: int, item_ids: Array) -> void:
 			targets = [test_player]
 
 	if targets.size() > 0:
-		_flash_sprite(player_sprite, Color.GREEN)
+		# Play item animation
+		if player_animator:
+			player_animator.play_item()
 		BattleManager.player_item(item_id, targets)
 	else:
 		log_message("No valid targets!")
@@ -482,7 +529,9 @@ func _on_item_selected(idx: int, item_ids: Array) -> void:
 
 func _on_default_pressed() -> void:
 	"""Handle Default button"""
-	_flash_sprite(player_sprite, Color.CYAN)
+	# Play defend animation for Default
+	if player_animator:
+		player_animator.play_defend()
 	BattleManager.player_default()
 
 
@@ -495,7 +544,9 @@ func _on_brave_pressed() -> void:
 		{"type": "attack", "target": test_enemy}
 	]
 
-	_flash_sprite(player_sprite, Color.ORANGE)
+	# Play attack animation for Brave (double attack)
+	if player_animator:
+		player_animator.play_attack()
 	BattleManager.player_brave(actions)
 
 
@@ -533,10 +584,14 @@ func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
-		if enemy_sprite:
-			enemy_sprite.modulate = Color(1, 1, 1, 0.3)
+		# Play victory animation for player
+		if player_animator:
+			player_animator.play_victory()
 	else:
 		log_message("\n[color=red]=== DEFEAT ===[/color]")
+		# Play defeat animation for player
+		if player_animator:
+			player_animator.play_defeat()
 
 	_update_ui()
 
@@ -562,8 +617,9 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 func _on_player_hp_changed(old_value: int, new_value: int) -> void:
 	"""Handle player HP change"""
 	_update_ui()
-	if new_value < old_value and player_sprite:
-		_flash_sprite(player_sprite, Color.RED)
+	if new_value < old_value and player_animator:
+		# Play hit animation when taking damage
+		player_animator.play_hit()
 
 
 func _on_player_ap_changed(old_value: int, new_value: int) -> void:
@@ -573,15 +629,19 @@ func _on_player_ap_changed(old_value: int, new_value: int) -> void:
 
 func _on_enemy_hp_changed(old_value: int, new_value: int) -> void:
 	"""Handle enemy HP change"""
-	if new_value < old_value and enemy_sprite:
-		_flash_sprite(enemy_sprite, Color.RED)
+	if new_value < old_value and enemy_animator:
+		# Play hit animation when taking damage
+		enemy_animator.play_hit()
 
 
 func _on_enemy_died() -> void:
 	"""Handle enemy death"""
 	log_message("[color=yellow]%s has been defeated![/color]" % test_enemy.combatant_name)
-	if enemy_sprite:
-		# Fade out animation
-		var tween = create_tween()
-		tween.tween_property(enemy_sprite, "modulate:a", 0.0, 0.5)
-		tween.tween_property(enemy_sprite, "scale", Vector2(0.5, 0.5), 0.5).set_trans(Tween.TRANS_BACK)
+	if enemy_animator:
+		# Play defeat animation
+		enemy_animator.play_defeat(func():
+			# Fade out after defeat animation completes
+			if enemy_sprite:
+				var tween = create_tween()
+				tween.tween_property(enemy_sprite, "modulate:a", 0.0, 0.5)
+		)
