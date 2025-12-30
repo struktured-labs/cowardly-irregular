@@ -29,6 +29,7 @@ AutogrindSystem="*res://src/autogrind/AutogrindSystem.gd"
 MapSystem="*res://src/maps/MapSystem.gd"
 EncounterSystem="*res://src/encounters/EncounterSystem.gd"
 SceneTransition="*res://src/transitions/SceneTransition.gd"
+SaveSystem="*res://src/save/SaveSystem.gd"
 
 [display]
 

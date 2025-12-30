@@ -11,6 +11,8 @@ signal corruption_increased(level: float)
 signal interrupt_triggered(reason: String)
 signal meta_boss_spawned(boss_name: String)
 signal system_collapse()
+signal region_cracked(region_id: String, crack_level: int)
+signal autobattle_interrupted(reason: String)
 
 ## Grind state
 var is_grinding: bool = false
@@ -22,6 +24,16 @@ var total_items_gained: Dictionary = {}
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
 var max_efficiency: float = 10.0
 var efficiency_growth_rate: float = 0.1  # Per battle
+
+## Region crack detection
+var region_crack_levels: Dictionary = {}  # {region_id: crack_level}
+var current_region_id: String = ""
+var consecutive_wins: int = 0
+var wins_to_crack_region: int = 20  # Wins needed to "crack" a region
+var reward_penalty_per_crack: float = 0.15  # -15% rewards per crack level
+
+## Meta-adaptation when cracked
+var adaptation_on_crack: bool = true  # Monsters adapt when region cracked
 
 ## Danger scaling
 var monster_adaptation_level: float = 0.0  # Enemies get stronger
@@ -222,7 +234,15 @@ func _simulate_battle(party: Array, enemies: Array) -> Dictionary:
 func _process_battle_results(result: Dictionary) -> void:
 	"""Process battle results and update grind stats"""
 	if result["victory"]:
-		total_exp_gained += result["exp_gained"]
+		# Track consecutive wins for region crack detection
+		consecutive_wins += 1
+		_check_region_crack()
+
+		# Apply region crack penalty to rewards
+		var crack_penalty = _get_region_crack_penalty()
+		var adjusted_exp = int(result["exp_gained"] * (1.0 - crack_penalty))
+
+		total_exp_gained += adjusted_exp
 
 		# Add items
 		for item_id in result["items_gained"]:
@@ -235,9 +255,16 @@ func _process_battle_results(result: Dictionary) -> void:
 		# Award EXP to party
 		for member in grind_party:
 			if member is Combatant and member.is_alive:
-				member.gain_job_exp(result["exp_gained"])
+				member.gain_job_exp(adjusted_exp)
+
+		# Show penalty if region is cracked
+		if crack_penalty > 0:
+			print("[color=yellow]Region cracked! Rewards reduced by %.0f%%[/color]" % (crack_penalty * 100))
 	else:
-		# Defeat - check permadeath
+		# Defeat - reset consecutive wins
+		consecutive_wins = 0
+
+		# Check permadeath
 		if permadeath_staking_enabled:
 			_trigger_permadeath()
 		stop_autogrind("Party defeated")
@@ -370,3 +397,104 @@ func enable_permadeath_staking(enabled: bool) -> void:
 		"ENABLED" if enabled else "disabled",
 		permadeath_multiplier if enabled else 1.0
 	])
+
+
+## Region crack system
+func set_current_region(region_id: String) -> void:
+	"""Set the current region for crack tracking"""
+	if current_region_id != region_id:
+		current_region_id = region_id
+		consecutive_wins = 0  # Reset on region change
+
+		if not region_crack_levels.has(region_id):
+			region_crack_levels[region_id] = 0
+
+
+func _check_region_crack() -> void:
+	"""Check if region should crack (player has mastered it)"""
+	if current_region_id.is_empty():
+		return
+
+	if consecutive_wins >= wins_to_crack_region:
+		# Region cracked! Increase crack level
+		var old_level = region_crack_levels.get(current_region_id, 0)
+		region_crack_levels[current_region_id] = old_level + 1
+		consecutive_wins = 0  # Reset for next crack level
+
+		var new_level = region_crack_levels[current_region_id]
+		region_cracked.emit(current_region_id, new_level)
+
+		print("[color=red]═══ REGION CRACKED ═══[/color]")
+		print("The game has detected you've mastered this area!")
+		print("Crack Level: %d" % new_level)
+		print("Monsters will adapt - rewards decreased %.0f%%" % (new_level * reward_penalty_per_crack * 100))
+		print("[color=yellow]Move to a new area or devise new strategies![/color]")
+
+		# Apply meta-adaptation
+		if adaptation_on_crack:
+			_apply_meta_adaptation(new_level)
+
+
+func _apply_meta_adaptation(crack_level: int) -> void:
+	"""Apply meta-adaptation when region is cracked"""
+	# Increase monster adaptation significantly
+	monster_adaptation_level += crack_level * 0.3  # +30% stats per crack level
+
+	# Monsters gain new behaviors
+	print("[color=purple]Monsters are adapting...[/color]")
+	if crack_level >= 1:
+		print("  - Enemies now counter your common strategies")
+	if crack_level >= 2:
+		print("  - Enemies prioritize interrupting your autobattle logic")
+	if crack_level >= 3:
+		print("  - Enemies exploit weaknesses in your script")
+		# Could trigger corruption increase
+		meta_corruption_level += 0.5
+
+
+func _get_region_crack_penalty() -> float:
+	"""Get reward penalty based on region crack level"""
+	if current_region_id.is_empty():
+		return 0.0
+
+	var crack_level = region_crack_levels.get(current_region_id, 0)
+	return min(crack_level * reward_penalty_per_crack, 0.75)  # Max 75% penalty
+
+
+func get_region_crack_level(region_id: String) -> int:
+	"""Get crack level for a region"""
+	return region_crack_levels.get(region_id, 0)
+
+
+func is_region_cracked(region_id: String) -> bool:
+	"""Check if a region is cracked"""
+	return region_crack_levels.get(region_id, 0) > 0
+
+
+## Autobattle interrupt system
+func check_autobattle_interrupt(combatant: Combatant) -> String:
+	"""Check if autobattle should interrupt to manual control"""
+	# Check HP danger
+	if combatant.get_hp_percentage() < 30.0:
+		return "Low HP - interrupting to manual control"
+
+	# Check if about to die (enemy can one-shot)
+	# In full implementation, would calculate enemy damage
+
+	# Check if surrounded (multiple enemies targeting)
+	# In full implementation, would check battle state
+
+	return ""  # No interrupt
+
+
+func interrupt_to_manual(reason: String) -> void:
+	"""Interrupt autobattle/autogrind to manual control"""
+	if is_grinding:
+		stop_autogrind(reason)
+
+	autobattle_interrupted.emit(reason)
+	print("[color=orange]⚠ AUTOBATTLE INTERRUPTED ⚠[/color]")
+	print("Reason: %s" % reason)
+	print("Switching to manual control...")
+
+	# In full implementation, would disable autobattle and return control to player
