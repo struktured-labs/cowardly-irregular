@@ -1,0 +1,53 @@
+{
+	"starter_village": {
+		"id": "starter_village",
+		"name": "Harmonia Village",
+		"type": "village",
+		"description": "A peaceful starting village where adventurers begin their journey",
+		"map_id": "village_starter",
+		"has_shop": true,
+		"has_inn": true,
+		"has_save_point": true,
+		"npcs": ["elder", "shopkeeper", "innkeeper"]
+	},
+
+	"cave_dungeon": {
+		"id": "cave_dungeon",
+		"name": "Whispering Cave",
+		"type": "dungeon",
+		"description": "A dark cave filled with slimes and bats. Strange whispers echo through the tunnels.",
+		"map_id": "dungeon_cave",
+		"encounter_rate": 0.05,
+		"enemy_pool_id": "cave_dungeon",
+		"boss": "cave_guardian",
+		"recommended_level": 3,
+		"treasure": ["hi_potion", "ether", "iron_sword"]
+	},
+
+	"forest_dungeon": {
+		"id": "forest_dungeon",
+		"name": "Corrupted Forest",
+		"type": "dungeon",
+		"description": "A once-beautiful forest twisted by meta-corruption. Reality bends here.",
+		"map_id": "dungeon_forest",
+		"encounter_rate": 0.07,
+		"enemy_pool_id": "forest_dungeon",
+		"corruption_level": 1.0,
+		"boss": "corrupted_dryad",
+		"recommended_level": 5,
+		"meta_effects": true
+	},
+
+	"capital_city": {
+		"id": "capital_city",
+		"name": "Scriptura",
+		"type": "village",
+		"description": "The capital city. Home to the Scriptweaver's Guild.",
+		"map_id": "village_capital",
+		"has_shop": true,
+		"has_inn": true,
+		"has_save_point": true,
+		"has_guild": true,
+		"npcs": ["king", "guild_master", "shopkeeper", "innkeeper"]
+	}
+}

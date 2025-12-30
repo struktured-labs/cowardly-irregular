@@ -1,0 +1,7 @@
+{
+	"cave_dungeon": ["slime", "bat", "goblin"],
+	"forest_dungeon": ["wolf", "corrupted_sprite"],
+	"overworld_plains": ["slime", "goblin"],
+	"overworld_forest": ["wolf", "bat"],
+	"corrupted_zone": ["corrupted_sprite", "glitch_entity"]
+}

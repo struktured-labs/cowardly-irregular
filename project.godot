@@ -26,6 +26,9 @@ EquipmentSystem="*res://src/jobs/EquipmentSystem.gd"
 ItemSystem="*res://src/items/ItemSystem.gd"
 AutobattleSystem="*res://src/autobattle/AutobattleSystem.gd"
 AutogrindSystem="*res://src/autogrind/AutogrindSystem.gd"
+MapSystem="*res://src/maps/MapSystem.gd"
+EncounterSystem="*res://src/encounters/EncounterSystem.gd"
+SceneTransition="*res://src/transitions/SceneTransition.gd"
 
 [display]
 
