@@ -64,8 +64,30 @@ func _ready() -> void:
 	btn_default.pressed.connect(_on_default_pressed)
 	btn_brave.pressed.connect(_on_brave_pressed)
 
+	# Add autobattle toggle
+	_create_autobattle_toggle()
+
+	# Load default autobattle script
+	BattleManager.set_autobattle_script("Aggressive")
+
 	# Start a test battle
 	_start_test_battle()
+
+
+func _create_autobattle_toggle() -> void:
+	"""Create autobattle toggle checkbox"""
+	var action_menu = $UI/ActionMenuPanel/MarginContainer/VBoxContainer
+
+	# Add separator
+	var separator = HSeparator.new()
+	action_menu.add_child(separator)
+
+	# Add autobattle checkbox
+	var autobattle_check = CheckBox.new()
+	autobattle_check.name = "AutobattleToggle"
+	autobattle_check.text = "Autobattle (Aggressive)"
+	autobattle_check.toggled.connect(_on_autobattle_toggled)
+	action_menu.add_child(autobattle_check)
 
 
 func _start_test_battle() -> void:
@@ -475,6 +497,15 @@ func _on_brave_pressed() -> void:
 
 	_flash_sprite(player_sprite, Color.ORANGE)
 	BattleManager.player_brave(actions)
+
+
+func _on_autobattle_toggled(enabled: bool) -> void:
+	"""Handle autobattle toggle"""
+	BattleManager.toggle_autobattle(enabled)
+	if enabled:
+		log_message("[color=green]Autobattle enabled - AI will control your turns[/color]")
+	else:
+		log_message("[color=gray]Autobattle disabled - manual control[/color]")
 
 
 func _flash_sprite(sprite: Sprite2D, flash_color: Color) -> void:

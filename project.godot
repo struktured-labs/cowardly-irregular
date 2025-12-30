@@ -24,6 +24,7 @@ GameState="*res://src/meta/GameState.gd"
 PassiveSystem="*res://src/jobs/PassiveSystem.gd"
 EquipmentSystem="*res://src/jobs/EquipmentSystem.gd"
 ItemSystem="*res://src/items/ItemSystem.gd"
+AutobattleSystem="*res://src/autobattle/AutobattleSystem.gd"
 
 [display]
 

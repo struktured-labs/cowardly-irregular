@@ -35,6 +35,7 @@ var current_combatant: Combatant = null
 
 ## Battle configuration
 var is_autobattle_enabled: bool = false
+var autobattle_script: Dictionary = {}  # Current autobattle script
 var escape_allowed: bool = true
 
 
@@ -570,7 +571,21 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 
 ## AI/Autobattle
 func _process_ai_turn(combatant: Combatant) -> void:
-	"""Process AI turn with smarter decision-making"""
+	"""Process AI turn - uses autobattle script if enabled for player, otherwise AI"""
+	var is_player_controlled = combatant in player_party
+
+	# Use autobattle script for player combatants if autobattle is enabled
+	if is_player_controlled and is_autobattle_enabled:
+		var action = AutobattleSystem.execute_autobattle(combatant, autobattle_script)
+		_execute_action(combatant, action)
+		return
+
+	# Otherwise use AI decision-making (for enemies or non-autobattle)
+	_process_ai_decision(combatant)
+
+
+func _process_ai_decision(combatant: Combatant) -> void:
+	"""Smart AI decision-making (used for enemies)"""
 	var is_player_controlled = combatant in player_party
 	var allies = player_party if is_player_controlled else enemy_party
 	var enemies = enemy_party if is_player_controlled else player_party
@@ -695,3 +710,19 @@ func get_alive_combatants(party: Array[Combatant]) -> Array[Combatant]:
 func is_battle_active() -> bool:
 	"""Check if a battle is currently active"""
 	return current_state not in [BattleState.INACTIVE, BattleState.VICTORY, BattleState.DEFEAT]
+
+
+## Autobattle control
+func set_autobattle_script(script_name: String) -> void:
+	"""Load and set an autobattle script"""
+	autobattle_script = AutobattleSystem.load_script(script_name)
+	if autobattle_script.is_empty():
+		# Use default aggressive script if not found
+		autobattle_script = AutobattleSystem.load_script("Aggressive")
+	print("Autobattle script set to: %s" % autobattle_script.get("name", "Unknown"))
+
+
+func toggle_autobattle(enabled: bool) -> void:
+	"""Enable or disable autobattle mode"""
+	is_autobattle_enabled = enabled
+	print("Autobattle %s" % ("enabled" if enabled else "disabled"))
