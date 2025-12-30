@@ -1,0 +1,271 @@
+{
+	"power_strike": {
+		"id": "power_strike",
+		"name": "Power Strike",
+		"type": "physical",
+		"mp_cost": 8,
+		"description": "A powerful physical attack dealing 1.5x damage",
+		"damage_multiplier": 1.5,
+		"target_type": "single_enemy"
+	},
+	"cleave": {
+		"id": "cleave",
+		"name": "Cleave",
+		"type": "physical",
+		"mp_cost": 12,
+		"description": "Attack all enemies for reduced damage",
+		"damage_multiplier": 0.8,
+		"target_type": "all_enemies"
+	},
+	"provoke": {
+		"id": "provoke",
+		"name": "Provoke",
+		"type": "support",
+		"mp_cost": 5,
+		"description": "Force an enemy to target you for 2 turns",
+		"target_type": "single_enemy",
+		"effect": "taunt",
+		"duration": 2
+	},
+	"cure": {
+		"id": "cure",
+		"name": "Cure",
+		"type": "healing",
+		"mp_cost": 6,
+		"description": "Restore 50 HP to one ally",
+		"heal_amount": 50,
+		"target_type": "single_ally"
+	},
+	"cura": {
+		"id": "cura",
+		"name": "Cura",
+		"type": "healing",
+		"mp_cost": 12,
+		"description": "Restore 120 HP to one ally",
+		"heal_amount": 120,
+		"target_type": "single_ally"
+	},
+	"raise": {
+		"id": "raise",
+		"name": "Raise",
+		"type": "revival",
+		"mp_cost": 20,
+		"description": "Revive a fallen ally with 50% HP",
+		"target_type": "dead_ally",
+		"revive_percentage": 50
+	},
+	"protect": {
+		"id": "protect",
+		"name": "Protect",
+		"type": "support",
+		"mp_cost": 8,
+		"description": "Increase ally's defense by 50% for 3 turns",
+		"target_type": "single_ally",
+		"effect": "defense_up",
+		"stat_modifier": 1.5,
+		"duration": 3
+	},
+	"fire": {
+		"id": "fire",
+		"name": "Fire",
+		"type": "magic",
+		"mp_cost": 8,
+		"description": "Fire magic damage to one enemy",
+		"damage_multiplier": 2.0,
+		"element": "fire",
+		"target_type": "single_enemy"
+	},
+	"fira": {
+		"id": "fira",
+		"name": "Fira",
+		"type": "magic",
+		"mp_cost": 16,
+		"description": "Stronger fire magic damage to one enemy",
+		"damage_multiplier": 3.5,
+		"element": "fire",
+		"target_type": "single_enemy"
+	},
+	"blizzard": {
+		"id": "blizzard",
+		"name": "Blizzard",
+		"type": "magic",
+		"mp_cost": 8,
+		"description": "Ice magic damage to one enemy",
+		"damage_multiplier": 2.0,
+		"element": "ice",
+		"target_type": "single_enemy"
+	},
+	"thunder": {
+		"id": "thunder",
+		"name": "Thunder",
+		"type": "magic",
+		"mp_cost": 8,
+		"description": "Lightning magic damage to one enemy",
+		"damage_multiplier": 2.0,
+		"element": "lightning",
+		"target_type": "single_enemy"
+	},
+	"steal": {
+		"id": "steal",
+		"name": "Steal",
+		"type": "support",
+		"mp_cost": 4,
+		"description": "Attempt to steal an item or gold from enemy",
+		"target_type": "single_enemy",
+		"success_rate": 0.5
+	},
+	"flee": {
+		"id": "flee",
+		"name": "Flee",
+		"type": "escape",
+		"mp_cost": 0,
+		"description": "Attempt to escape from battle",
+		"target_type": "self",
+		"success_rate": 0.75
+	},
+	"backstab": {
+		"id": "backstab",
+		"name": "Backstab",
+		"type": "physical",
+		"mp_cost": 10,
+		"description": "High damage attack with critical chance",
+		"damage_multiplier": 2.0,
+		"crit_chance": 0.5,
+		"target_type": "single_enemy"
+	},
+	"edit_formula": {
+		"id": "edit_formula",
+		"name": "Edit Formula",
+		"type": "meta",
+		"mp_cost": 30,
+		"description": "Temporarily modify a damage or healing formula for this battle",
+		"target_type": "self",
+		"meta_effect": "formula_modification",
+		"corruption_risk": 0.15
+	},
+	"modify_constant": {
+		"id": "modify_constant",
+		"name": "Modify Constant",
+		"type": "meta",
+		"mp_cost": 25,
+		"description": "Change a game constant (EXP rate, drop rate, etc.) - causes corruption!",
+		"target_type": "self",
+		"meta_effect": "constant_modification",
+		"corruption_risk": 0.2
+	},
+	"analyze_code": {
+		"id": "analyze_code",
+		"name": "Analyze Code",
+		"type": "meta",
+		"mp_cost": 15,
+		"description": "View the actual game code for current battle logic",
+		"target_type": "self",
+		"meta_effect": "code_inspection"
+	},
+	"create_autobattle_script": {
+		"id": "create_autobattle_script",
+		"name": "Create Autobattle Script",
+		"type": "meta",
+		"mp_cost": 20,
+		"description": "Open the autobattle scripting interface mid-battle",
+		"target_type": "self",
+		"meta_effect": "autobattle_editor"
+	},
+	"rewind": {
+		"id": "rewind",
+		"name": "Rewind",
+		"type": "meta",
+		"mp_cost": 50,
+		"description": "Rewind to previous save state (Time Mage only)",
+		"target_type": "self",
+		"meta_effect": "time_rewind"
+	},
+	"quicksave": {
+		"id": "quicksave",
+		"name": "Quicksave",
+		"type": "meta",
+		"mp_cost": 10,
+		"description": "Create a quicksave during battle",
+		"target_type": "self",
+		"meta_effect": "create_save"
+	},
+	"restore_point": {
+		"id": "restore_point",
+		"name": "Restore Point",
+		"type": "meta",
+		"mp_cost": 35,
+		"description": "Create a restore point you can revert to",
+		"target_type": "self",
+		"meta_effect": "create_restore_point"
+	},
+	"temporal_shield": {
+		"id": "temporal_shield",
+		"name": "Temporal Shield",
+		"type": "meta",
+		"mp_cost": 25,
+		"description": "Protect party from next wipe by auto-rewinding",
+		"target_type": "all_allies",
+		"meta_effect": "auto_rewind_on_death"
+	},
+	"undo_death": {
+		"id": "undo_death",
+		"name": "Undo Death",
+		"type": "meta",
+		"mp_cost": 40,
+		"description": "Undo a permanent death (requires Time Mage)",
+		"target_type": "dead_ally",
+		"meta_effect": "reverse_permadeath"
+	},
+	"drain_life": {
+		"id": "drain_life",
+		"name": "Drain Life",
+		"type": "magic",
+		"mp_cost": 12,
+		"description": "Steal HP from enemy and restore your own",
+		"damage_multiplier": 1.5,
+		"drain_percentage": 100,
+		"element": "dark",
+		"target_type": "single_enemy"
+	},
+	"death_sentence": {
+		"id": "death_sentence",
+		"name": "Death Sentence",
+		"type": "magic",
+		"mp_cost": 30,
+		"description": "Enemy dies in 3 turns unless cleansed",
+		"target_type": "single_enemy",
+		"effect": "doom",
+		"countdown": 3
+	},
+	"corrupt_save": {
+		"id": "corrupt_save",
+		"name": "Corrupt Save",
+		"type": "meta",
+		"mp_cost": 40,
+		"description": "Massively increase corruption for huge damage - DANGEROUS!",
+		"damage_multiplier": 5.0,
+		"target_type": "all_enemies",
+		"meta_effect": "add_corruption",
+		"corruption_amount": 0.3
+	},
+	"necro_blast": {
+		"id": "necro_blast",
+		"name": "Necro Blast",
+		"type": "magic",
+		"mp_cost": 35,
+		"description": "Dark magic explosion hitting all enemies",
+		"damage_multiplier": 2.5,
+		"element": "dark",
+		"target_type": "all_enemies"
+	},
+	"permakill": {
+		"id": "permakill",
+		"name": "Permakill",
+		"type": "meta",
+		"mp_cost": 80,
+		"description": "Kill enemy permanently - cannot be encountered again. HIGH RISK!",
+		"target_type": "single_enemy",
+		"meta_effect": "permanent_death",
+		"corruption_risk": 0.5
+	}
+}

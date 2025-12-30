@@ -1,0 +1,252 @@
+{
+	"slime": {
+		"id": "slime",
+		"name": "Slime",
+		"description": "A gelatinous blob. Weak but numerous.",
+		"level": 1,
+		"stats": {
+			"max_hp": 80,
+			"max_mp": 20,
+			"attack": 10,
+			"defense": 8,
+			"magic": 5,
+			"speed": 8
+		},
+		"abilities": ["tackle"],
+		"exp_reward": 15,
+		"gold_reward": 10,
+		"drop_table": [
+			{"item": "potion", "chance": 0.3}
+		],
+		"weaknesses": ["fire"],
+		"resistances": ["physical"]
+	},
+	"goblin": {
+		"id": "goblin",
+		"name": "Goblin",
+		"description": "A mischievous creature. Faster and craftier than slimes.",
+		"level": 3,
+		"stats": {
+			"max_hp": 120,
+			"max_mp": 30,
+			"attack": 15,
+			"defense": 10,
+			"magic": 8,
+			"speed": 12
+		},
+		"abilities": ["slash", "steal"],
+		"exp_reward": 25,
+		"gold_reward": 20,
+		"drop_table": [
+			{"item": "potion", "chance": 0.25},
+			{"item": "antidote", "chance": 0.2}
+		],
+		"weaknesses": ["lightning"],
+		"resistances": []
+	},
+	"skeleton": {
+		"id": "skeleton",
+		"name": "Skeleton",
+		"description": "Animated bones. Weak to blunt force, resistant to piercing.",
+		"level": 5,
+		"stats": {
+			"max_hp": 150,
+			"max_mp": 25,
+			"attack": 18,
+			"defense": 12,
+			"magic": 6,
+			"speed": 10
+		},
+		"abilities": ["bone_throw", "rattle"],
+		"exp_reward": 40,
+		"gold_reward": 30,
+		"drop_table": [
+			{"item": "bone", "chance": 0.5},
+			{"item": "ether", "chance": 0.15}
+		],
+		"weaknesses": ["fire", "holy"],
+		"resistances": ["dark", "ice"],
+		"undead": true
+	},
+	"ice_wolf": {
+		"id": "ice_wolf",
+		"name": "Ice Wolf",
+		"description": "A wolf imbued with ice magic. Fast and hits hard.",
+		"level": 7,
+		"stats": {
+			"max_hp": 180,
+			"max_mp": 40,
+			"attack": 22,
+			"defense": 14,
+			"magic": 12,
+			"speed": 16
+		},
+		"abilities": ["bite", "ice_breath"],
+		"exp_reward": 60,
+		"gold_reward": 45,
+		"drop_table": [
+			{"item": "ice_shard", "chance": 0.4},
+			{"item": "wolf_fang", "chance": 0.3}
+		],
+		"weaknesses": ["fire"],
+		"resistances": ["ice"],
+		"element": "ice"
+	},
+	"corrupted_guardian": {
+		"id": "corrupted_guardian",
+		"name": "Corrupted Guardian",
+		"description": "A boss enemy born from save corruption. Unpredictable and dangerous.",
+		"level": 10,
+		"boss": true,
+		"stats": {
+			"max_hp": 500,
+			"max_mp": 100,
+			"attack": 30,
+			"defense": 20,
+			"magic": 25,
+			"speed": 14
+		},
+		"abilities": ["corruption_wave", "glitch_strike", "data_drain", "system_crash"],
+		"exp_reward": 250,
+		"gold_reward": 200,
+		"drop_table": [
+			{"item": "corrupted_core", "chance": 1.0},
+			{"item": "meta_fragment", "chance": 0.5}
+		],
+		"weaknesses": [],
+		"resistances": ["physical", "magic"],
+		"meta_enemy": true,
+		"corruption_spawned": true
+	},
+	"time_phantom": {
+		"id": "time_phantom",
+		"name": "Time Phantom",
+		"description": "A meta-boss that exists between save states. Can rewind its own actions.",
+		"level": 12,
+		"boss": true,
+		"stats": {
+			"max_hp": 600,
+			"max_mp": 150,
+			"attack": 28,
+			"defense": 18,
+			"magic": 30,
+			"speed": 18
+		},
+		"abilities": ["temporal_strike", "rewind_turn", "future_sight", "time_stop"],
+		"exp_reward": 350,
+		"gold_reward": 300,
+		"drop_table": [
+			{"item": "time_crystal", "chance": 1.0},
+			{"item": "chrono_gear", "chance": 0.6}
+		],
+		"weaknesses": [],
+		"resistances": ["all"],
+		"meta_enemy": true,
+		"time_manipulation": true
+	},
+	"script_error": {
+		"id": "script_error",
+		"name": "SCRIPT ERROR",
+		"description": "A glitch enemy spawned by excessive formula editing. Extremely dangerous.",
+		"level": 15,
+		"boss": true,
+		"stats": {
+			"max_hp": 999,
+			"max_mp": 999,
+			"attack": 50,
+			"defense": 30,
+			"magic": 40,
+			"speed": 20
+		},
+		"abilities": ["null_reference", "stack_overflow", "infinite_loop", "memory_leak"],
+		"exp_reward": 500,
+		"gold_reward": 0,
+		"drop_table": [
+			{"item": "ERROR", "chance": 1.0}
+		],
+		"weaknesses": [],
+		"resistances": ["all"],
+		"meta_enemy": true,
+		"glitch_enemy": true,
+		"very_dangerous": true
+	},
+	"adaptive_slime": {
+		"id": "adaptive_slime",
+		"name": "Adaptive Slime",
+		"description": "A slime that evolved from autogrind exposure. Learns from your tactics.",
+		"level": 8,
+		"stats": {
+			"max_hp": 250,
+			"max_mp": 50,
+			"attack": 20,
+			"defense": 15,
+			"magic": 15,
+			"speed": 12
+		},
+		"abilities": ["adapt", "counter", "mimic_ability"],
+		"exp_reward": 100,
+		"gold_reward": 80,
+		"drop_table": [
+			{"item": "adaptive_gel", "chance": 0.7},
+			{"item": "evolution_stone", "chance": 0.2}
+		],
+		"weaknesses": [],
+		"resistances": [],
+		"adaptive": true,
+		"autogrind_spawned": true
+	},
+	"meta_knight": {
+		"id": "meta_knight",
+		"name": "Meta Knight",
+		"description": "A knight who knows they're in a game. Uses meta-knowledge against you.",
+		"level": 11,
+		"boss": true,
+		"stats": {
+			"max_hp": 550,
+			"max_mp": 80,
+			"attack": 35,
+			"defense": 25,
+			"magic": 20,
+			"speed": 16
+		},
+		"abilities": ["fourth_wall_break", "player_knowledge", "exploit_weakness", "rules_lawyer"],
+		"exp_reward": 300,
+		"gold_reward": 250,
+		"drop_table": [
+			{"item": "meta_blade", "chance": 0.8},
+			{"item": "awareness_gem", "chance": 0.4}
+		],
+		"weaknesses": [],
+		"resistances": ["physical"],
+		"meta_enemy": true,
+		"self_aware": true
+	},
+	"permadeath_reaper": {
+		"id": "permadeath_reaper",
+		"name": "Permadeath Reaper",
+		"description": "Appears during high-risk autogrind with permadeath staking. One mistake = permanent loss.",
+		"level": 20,
+		"boss": true,
+		"stats": {
+			"max_hp": 800,
+			"max_mp": 200,
+			"attack": 45,
+			"defense": 35,
+			"magic": 50,
+			"speed": 22
+		},
+		"abilities": ["soul_reap", "final_death", "permakill_strike", "save_deletion"],
+		"exp_reward": 1000,
+		"gold_reward": 500,
+		"drop_table": [
+			{"item": "reaper_scythe", "chance": 1.0},
+			{"item": "soul_gem", "chance": 0.8}
+		],
+		"weaknesses": [],
+		"resistances": ["all"],
+		"meta_enemy": true,
+		"extremely_dangerous": true,
+		"can_cause_permadeath": true,
+		"autogrind_spawned": true
+	}
+}

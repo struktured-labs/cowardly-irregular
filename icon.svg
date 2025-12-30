@@ -1,0 +1,6 @@
+<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" fill="#363d52"/>
+  <rect x="16" y="16" width="96" height="96" fill="#4b5563"/>
+  <path d="M 40 40 L 88 40 L 88 88 L 40 88 Z" fill="#6366f1" stroke="#818cf8" stroke-width="2"/>
+  <text x="64" y="70" font-family="monospace" font-size="24" fill="#e0e7ff" text-anchor="middle" font-weight="bold">CIR</text>
+</svg>
