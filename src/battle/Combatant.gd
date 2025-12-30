@@ -2,10 +2,10 @@ extends Node
 class_name Combatant
 
 ## Base class for all battle participants (player characters and enemies)
-## Manages stats, BP, status effects, and turn mechanics
+## Manages stats, AP, status effects, and turn mechanics
 
 signal hp_changed(old_value: int, new_value: int)
-signal bp_changed(old_value: int, new_value: int)
+signal ap_changed(old_value: int, new_value: int)
 signal died()
 signal status_added(status: String)
 signal status_removed(status: String)
@@ -22,7 +22,7 @@ signal status_removed(status: String)
 ## Current state
 var current_hp: int
 var current_mp: int
-var current_bp: int = 0  # Brave Points: -4 to +4 range
+var current_ap: int = 0  # Action Points: -4 to +4 range
 var is_defending: bool = false
 var is_alive: bool = true
 
@@ -37,8 +37,31 @@ var elemental_weaknesses: Array[String] = []  # Takes 1.5x damage from these
 var elemental_resistances: Array[String] = []  # Takes 0.5x damage from these
 var elemental_immunities: Array[String] = []   # Takes 0x damage from these
 
-## Job reference (will be set by JobSystem)
+## Job reference and progression
 var job = null
+var job_level: int = 1
+var job_exp: int = 0
+
+## Passive system
+var equipped_passives: Array[String] = []  # Passive IDs
+var max_passive_slots: int = 5
+var learned_passives: Array[String] = []  # All unlocked passives
+
+## Equipment system
+var equipped_weapon: String = ""  # Weapon ID
+var equipped_armor: String = ""   # Armor ID
+var equipped_accessory: String = ""  # Accessory ID
+
+## Inventory system
+var inventory: Dictionary = {}  # {item_id: quantity}
+
+## Base stats (before modifiers)
+var base_max_hp: int = 100
+var base_max_mp: int = 50
+var base_attack: int = 10
+var base_defense: int = 10
+var base_magic: int = 10
+var base_speed: int = 10
 
 ## Turn state
 var queued_actions: Array[Dictionary] = []
@@ -72,37 +95,37 @@ func initialize(stats: Dictionary) -> void:
 
 
 ## Brave/Default system
-func can_brave(bp_cost: int) -> bool:
-	# Can go into BP debt up to -4
-	return (current_bp - bp_cost) >= -4
+func can_brave(ap_cost: int) -> bool:
+	# Can go into AP debt up to -4
+	return (current_ap - ap_cost) >= -4
 
 
-func spend_bp(amount: int) -> bool:
+func spend_ap(amount: int) -> bool:
 	if not can_brave(amount):
 		return false
 
-	var old_bp = current_bp
-	current_bp = clampi(current_bp - amount, -4, 4)
-	bp_changed.emit(old_bp, current_bp)
+	var old_ap = current_ap
+	current_ap = clampi(current_ap - amount, -4, 4)
+	ap_changed.emit(old_ap, current_ap)
 	return true
 
 
-func gain_bp(amount: int) -> void:
-	var old_bp = current_bp
-	current_bp = clampi(current_bp + amount, -4, 4)
-	bp_changed.emit(old_bp, current_bp)
+func gain_ap(amount: int) -> void:
+	var old_ap = current_ap
+	current_ap = clampi(current_ap + amount, -4, 4)
+	ap_changed.emit(old_ap, current_ap)
 
 
 func execute_default() -> void:
-	"""Default action: skip turn, gain +1 BP, reduce incoming damage"""
+	"""Default action: skip turn, gain +1 AP, reduce incoming damage"""
 	is_defending = true
-	gain_bp(1)
+	gain_ap(1)
 
 
 func execute_brave(actions: Array[Dictionary]) -> void:
-	"""Brave action: queue multiple actions, spending BP"""
-	var bp_cost = actions.size() - 1  # First action is free
-	if spend_bp(bp_cost):
+	"""Brave action: queue multiple actions, spending AP"""
+	var ap_cost = actions.size() - 1  # First action is free
+	if spend_ap(ap_cost):
 		queued_actions = actions.duplicate()
 
 
@@ -347,7 +370,7 @@ func to_dict() -> Dictionary:
 		"max_mp": max_mp,
 		"current_hp": current_hp,
 		"current_mp": current_mp,
-		"current_bp": current_bp,
+		"current_ap": current_ap,
 		"attack": attack,
 		"defense": defense,
 		"magic": magic,
@@ -370,8 +393,8 @@ func from_dict(data: Dictionary) -> void:
 		current_hp = data["current_hp"]
 	if data.has("current_mp"):
 		current_mp = data["current_mp"]
-	if data.has("current_bp"):
-		current_bp = data["current_bp"]
+	if data.has("current_ap"):
+		current_ap = data["current_ap"]
 	if data.has("attack"):
 		attack = data["attack"]
 	if data.has("defense"):
@@ -386,3 +409,133 @@ func from_dict(data: Dictionary) -> void:
 		permanent_injuries = data["permanent_injuries"].duplicate()
 	if data.has("is_alive"):
 		is_alive = data["is_alive"]
+
+
+## Stat recalculation with modifiers
+func recalculate_stats() -> void:
+	"""Recalculate all stats based on base stats + modifiers"""
+	# Start with base stats
+	max_hp = base_max_hp
+	max_mp = base_max_mp
+	attack = base_attack
+	defense = base_defense
+	magic = base_magic
+	speed = base_speed
+
+	# Apply job modifiers (if JobSystem is available)
+	if job and job.has("stat_modifiers"):
+		var job_mods = job["stat_modifiers"]
+		if job_mods.has("max_hp"):
+			max_hp = job_mods["max_hp"]
+		if job_mods.has("max_mp"):
+			max_mp = job_mods["max_mp"]
+		if job_mods.has("attack"):
+			attack = job_mods["attack"]
+		if job_mods.has("defense"):
+			defense = job_mods["defense"]
+		if job_mods.has("magic"):
+			magic = job_mods["magic"]
+		if job_mods.has("speed"):
+			speed = job_mods["speed"]
+
+	# Apply job level bonuses (+2% all stats per level)
+	var level_mult = 1.0 + (job_level - 1) * 0.02
+	max_hp = int(max_hp * level_mult)
+	max_mp = int(max_mp * level_mult)
+	attack = int(attack * level_mult)
+	defense = int(defense * level_mult)
+	magic = int(magic * level_mult)
+	speed = int(speed * level_mult)
+
+	# Apply passive modifiers (if PassiveSystem is available)
+	if has_node("/root/PassiveSystem"):
+		var passive_mods = get_node("/root/PassiveSystem").get_passive_mods(self)
+
+		max_hp = int(max_hp * passive_mods.get("max_hp_multiplier", 1.0))
+		max_mp = int(max_mp * passive_mods.get("max_mp_multiplier", 1.0))
+		attack = int(attack * passive_mods.get("attack_multiplier", 1.0))
+		defense = int(defense * passive_mods.get("defense_multiplier", 1.0))
+		magic = int(magic * passive_mods.get("magic_multiplier", 1.0))
+		speed = int(speed * passive_mods.get("speed_multiplier", 1.0))
+
+	# Apply equipment modifiers (if EquipmentSystem is available)
+	if has_node("/root/EquipmentSystem"):
+		var equip_mods = get_node("/root/EquipmentSystem").get_equipment_mods(self)
+
+		max_hp += equip_mods.get("max_hp", 0)
+		max_mp += equip_mods.get("max_mp", 0)
+		attack += equip_mods.get("attack", 0)
+		defense += equip_mods.get("defense", 0)
+		magic += equip_mods.get("magic", 0)
+		speed += equip_mods.get("speed", 0)
+
+	# Apply permanent injuries (reductions)
+	for injury in permanent_injuries:
+		if injury.has("stat") and injury.has("penalty"):
+			match injury["stat"]:
+				"max_hp":
+					max_hp = max(1, max_hp - injury["penalty"])
+				"attack":
+					attack = max(1, attack - injury["penalty"])
+				"defense":
+					defense = max(1, defense - injury["penalty"])
+				"magic":
+					magic = max(1, magic - injury["penalty"])
+				"speed":
+					speed = max(1, speed - injury["penalty"])
+
+	# Clamp current HP/MP to new maxes
+	current_hp = min(current_hp, max_hp)
+	current_mp = min(current_mp, max_mp)
+
+
+func gain_job_exp(amount: int) -> void:
+	"""Gain job experience and level up if threshold met"""
+	job_exp += amount
+	var exp_for_next_level = job_level * 100  # Simple formula: level * 100
+
+	if job_exp >= exp_for_next_level:
+		job_level += 1
+		job_exp -= exp_for_next_level
+		print("%s reached job level %d!" % [combatant_name, job_level])
+		recalculate_stats()
+
+		# TODO: Unlock new abilities/passives at certain levels
+
+
+func learn_passive(passive_id: String) -> void:
+	"""Learn a new passive ability"""
+	if not passive_id in learned_passives:
+		learned_passives.append(passive_id)
+		print("%s learned passive: %s" % [combatant_name, passive_id])
+
+
+## Inventory management
+func add_item(item_id: String, quantity: int = 1) -> void:
+	"""Add item(s) to inventory"""
+	if inventory.has(item_id):
+		inventory[item_id] += quantity
+	else:
+		inventory[item_id] = quantity
+
+
+func remove_item(item_id: String, quantity: int = 1) -> bool:
+	"""Remove item(s) from inventory. Returns false if insufficient quantity."""
+	if not inventory.has(item_id) or inventory[item_id] < quantity:
+		return false
+
+	inventory[item_id] -= quantity
+	if inventory[item_id] <= 0:
+		inventory.erase(item_id)
+
+	return true
+
+
+func has_item(item_id: String, quantity: int = 1) -> bool:
+	"""Check if inventory contains item(s)"""
+	return inventory.has(item_id) and inventory[item_id] >= quantity
+
+
+func get_item_count(item_id: String) -> int:
+	"""Get quantity of an item in inventory"""
+	return inventory.get(item_id, 0)

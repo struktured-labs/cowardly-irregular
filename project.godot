@@ -21,6 +21,15 @@ config/icon="res://icon.svg"
 BattleManager="*res://src/battle/BattleManager.gd"
 JobSystem="*res://src/jobs/JobSystem.gd"
 GameState="*res://src/meta/GameState.gd"
+PassiveSystem="*res://src/jobs/PassiveSystem.gd"
+EquipmentSystem="*res://src/jobs/EquipmentSystem.gd"
+ItemSystem="*res://src/items/ItemSystem.gd"
+AutobattleSystem="*res://src/autobattle/AutobattleSystem.gd"
+AutogrindSystem="*res://src/autogrind/AutogrindSystem.gd"
+MapSystem="*res://src/maps/MapSystem.gd"
+EncounterSystem="*res://src/encounters/EncounterSystem.gd"
+SceneTransition="*res://src/transitions/SceneTransition.gd"
+SaveSystem="*res://src/save/SaveSystem.gd"
 
 [display]
 

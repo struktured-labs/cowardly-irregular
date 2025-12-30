@@ -35,6 +35,7 @@ var current_combatant: Combatant = null
 
 ## Battle configuration
 var is_autobattle_enabled: bool = false
+var autobattle_script: Dictionary = {}  # Current autobattle script
 var escape_allowed: bool = true
 
 
@@ -68,6 +69,20 @@ func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	if victory:
 		current_state = BattleState.VICTORY
+
+		# Award job EXP to player party
+		var base_exp = 50  # Base EXP per battle
+		for combatant in player_party:
+			if combatant.is_alive:
+				var exp_gained = base_exp
+				combatant.gain_job_exp(exp_gained)
+				print("%s gained %d job EXP (Level: %d, EXP: %d/%d)" % [
+					combatant.combatant_name,
+					exp_gained,
+					combatant.job_level,
+					combatant.job_exp,
+					combatant.job_level * 100
+				])
 	else:
 		current_state = BattleState.DEFEAT
 
@@ -148,11 +163,11 @@ func _start_combatant_turn(combatant: Combatant) -> void:
 	"""Start a specific combatant's turn"""
 	combatant.start_turn()
 
-	# Check if this combatant has BP debt (from Brave)
-	if combatant.current_bp < 0:
-		# Skip turn to pay BP debt
-		combatant.gain_bp(1)
-		print("%s is paying BP debt (%d -> %d)" % [combatant.combatant_name, combatant.current_bp - 1, combatant.current_bp])
+	# Check if this combatant has AP debt (from Brave)
+	if combatant.current_ap < 0:
+		# Skip turn to pay AP debt
+		combatant.gain_ap(1)
+		print("%s is paying AP debt (%d -> %d)" % [combatant.combatant_name, combatant.current_ap - 1, combatant.current_ap])
 		_end_combatant_turn(combatant)
 		return
 
@@ -209,12 +224,12 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 
 
 func player_default() -> void:
-	"""Execute Default action (skip turn, gain BP, defend)"""
+	"""Execute Default action (skip turn, gain AP, defend)"""
 	if current_state != BattleState.PLAYER_TURN:
 		return
 
 	current_combatant.execute_default()
-	print("%s uses Default (BP: %d)" % [current_combatant.combatant_name, current_combatant.current_bp])
+	print("%s uses Default (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
 	_end_combatant_turn(current_combatant)
 
 
@@ -224,7 +239,7 @@ func player_brave(actions: Array[Dictionary]) -> void:
 		return
 
 	current_combatant.execute_brave(actions)
-	print("%s uses Brave (%d actions, BP: %d)" % [current_combatant.combatant_name, actions.size(), current_combatant.current_bp])
+	print("%s uses Brave (%d actions, AP: %d)" % [current_combatant.combatant_name, actions.size(), current_combatant.current_ap])
 
 	# Execute first action immediately
 	if current_combatant.queued_actions.size() > 0:
@@ -534,33 +549,130 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
-	"""Use an item (to be expanded with item system)"""
-	print("%s uses item: %s" % [user.combatant_name, item_id])
-	# TODO: Implement item system
+	"""Use an item from user's inventory"""
+	# Check if user has the item
+	if not user.has_item(item_id):
+		print("%s doesn't have item: %s" % [user.combatant_name, item_id])
+		return
+
+	# Convert targets to Array[Combatant] if needed
+	var combatant_targets: Array[Combatant] = []
+	for t in targets:
+		if t is Combatant:
+			combatant_targets.append(t)
+
+	# Use the item through ItemSystem
+	if ItemSystem.use_item(user, item_id, combatant_targets):
+		# Remove item from inventory after successful use
+		user.remove_item(item_id, 1)
+	else:
+		print("Failed to use item: %s" % item_id)
 
 
 ## AI/Autobattle
 func _process_ai_turn(combatant: Combatant) -> void:
-	"""Process AI turn (basic AI for now)"""
-	# Simple AI: attack a random alive player
-	var alive_targets = []
+	"""Process AI turn - uses autobattle script if enabled for player, otherwise AI"""
+	var is_player_controlled = combatant in player_party
 
-	if combatant in player_party:
-		alive_targets = enemy_party.filter(func(e): return e.is_alive)
-	else:
-		alive_targets = player_party.filter(func(p): return p.is_alive)
+	# Use autobattle script for player combatants if autobattle is enabled
+	if is_player_controlled and is_autobattle_enabled:
+		var action = AutobattleSystem.execute_autobattle(combatant, autobattle_script)
+		_execute_action(combatant, action)
+		return
 
-	if alive_targets.size() == 0:
+	# Otherwise use AI decision-making (for enemies or non-autobattle)
+	_process_ai_decision(combatant)
+
+
+func _process_ai_decision(combatant: Combatant) -> void:
+	"""Smart AI decision-making (used for enemies)"""
+	var is_player_controlled = combatant in player_party
+	var allies = player_party if is_player_controlled else enemy_party
+	var enemies = enemy_party if is_player_controlled else player_party
+
+	var alive_allies = allies.filter(func(a): return a.is_alive)
+	var alive_enemies = enemies.filter(func(e): return e.is_alive)
+
+	if alive_enemies.size() == 0:
 		_end_combatant_turn(combatant)
 		return
 
-	# Pick random target and attack
-	var target = alive_targets[randi() % alive_targets.size()]
-	var action = {
-		"type": "attack",
-		"target": target
-	}
+	# Get available abilities
+	var available_abilities = []
+	if combatant.job and combatant.job.has("abilities"):
+		for ability_id in combatant.job["abilities"]:
+			var ability = JobSystem.get_ability(ability_id)
+			if not ability.is_empty() and combatant.current_mp >= ability.get("mp_cost", 0):
+				available_abilities.append(ability)
+
+	# AI decision tree
+	var action = null
+
+	# 1. Check if should heal ally (30% chance if ally below 40% HP)
+	var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 40.0)
+	if low_hp_allies.size() > 0 and randf() < 0.3:
+		var healing_abilities = available_abilities.filter(func(a): return a["type"] == "healing")
+		if healing_abilities.size() > 0:
+			var heal = healing_abilities[randi() % healing_abilities.size()]
+			action = {
+				"type": "ability",
+				"ability_id": heal["id"],
+				"targets": [low_hp_allies[0]]
+			}
+
+	# 2. Check if should use support ability (20% chance at start of battle)
+	if action == null and current_round <= 2 and randf() < 0.2:
+		var support_abilities = available_abilities.filter(func(a): return a["type"] == "support")
+		if support_abilities.size() > 0:
+			var buff = support_abilities[randi() % support_abilities.size()]
+			var buff_target = alive_allies[randi() % alive_allies.size()]
+			action = {
+				"type": "ability",
+				"ability_id": buff["id"],
+				"targets": [buff_target]
+			}
+
+	# 3. Check if should use offensive ability (40% chance if has MP)
+	if action == null and randf() < 0.4 and combatant.current_mp >= 10:
+		var offensive_abilities = available_abilities.filter(
+			func(a): return a["type"] in ["physical", "magic"]
+		)
+		if offensive_abilities.size() > 0:
+			var spell = offensive_abilities[randi() % offensive_abilities.size()]
+			var spell_target = _choose_target(combatant, alive_enemies, spell)
+			action = {
+				"type": "ability",
+				"ability_id": spell["id"],
+				"targets": [spell_target]
+			}
+
+	# 4. Default to basic attack
+	if action == null:
+		var target = _choose_target(combatant, alive_enemies, null)
+		action = {
+			"type": "attack",
+			"target": target
+		}
+
 	_execute_action(combatant, action)
+
+
+func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {}) -> Combatant:
+	"""Choose best target for attack/ability"""
+	if targets.size() == 0:
+		return null
+
+	# If ability targets all, return first target (system will handle multi-target)
+	if ability.has("targets_all") and ability["targets_all"]:
+		return targets[0]
+
+	# Prefer lowest HP target (60% chance)
+	if randf() < 0.6:
+		targets.sort_custom(func(a, b): return a.current_hp < b.current_hp)
+		return targets[0]
+
+	# Otherwise random target
+	return targets[randi() % targets.size()]
 
 
 ## Victory/defeat conditions
@@ -598,3 +710,19 @@ func get_alive_combatants(party: Array[Combatant]) -> Array[Combatant]:
 func is_battle_active() -> bool:
 	"""Check if a battle is currently active"""
 	return current_state not in [BattleState.INACTIVE, BattleState.VICTORY, BattleState.DEFEAT]
+
+
+## Autobattle control
+func set_autobattle_script(script_name: String) -> void:
+	"""Load and set an autobattle script"""
+	autobattle_script = AutobattleSystem.load_script(script_name)
+	if autobattle_script.is_empty():
+		# Use default aggressive script if not found
+		autobattle_script = AutobattleSystem.load_script("Aggressive")
+	print("Autobattle script set to: %s" % autobattle_script.get("name", "Unknown"))
+
+
+func toggle_autobattle(enabled: bool) -> void:
+	"""Enable or disable autobattle mode"""
+	is_autobattle_enabled = enabled
+	print("Autobattle %s" % ("enabled" if enabled else "disabled"))
