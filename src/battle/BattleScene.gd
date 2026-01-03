@@ -94,12 +94,16 @@ func _ready() -> void:
 	# Apply retro font styling
 	RetroFontClass.configure_battle_log(battle_log)
 
-	# Connect to BattleManager signals
+	# Connect to BattleManager signals (CTB system)
 	BattleManager.battle_started.connect(_on_battle_started)
 	BattleManager.battle_ended.connect(_on_battle_ended)
-	BattleManager.turn_started.connect(_on_turn_started)
-	BattleManager.turn_ended.connect(_on_turn_ended)
+	BattleManager.selection_phase_started.connect(_on_selection_phase_started)
+	BattleManager.selection_turn_started.connect(_on_selection_turn_started)
+	BattleManager.selection_turn_ended.connect(_on_selection_turn_ended)
+	BattleManager.execution_phase_started.connect(_on_execution_phase_started)
+	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
+	BattleManager.round_ended.connect(_on_round_ended)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -737,32 +741,45 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 
 func _update_action_buttons() -> void:
 	"""Enable/disable action buttons based on battle state"""
-	var is_player_turn = BattleManager.current_state == BattleManager.BattleState.PLAYER_TURN
+	var is_player_selecting = BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING
 	var current = BattleManager.current_combatant
 
-	btn_attack.disabled = not is_player_turn
-	btn_ability.disabled = not is_player_turn
-	btn_item.disabled = not is_player_turn
-	btn_default.disabled = not is_player_turn
+	btn_attack.disabled = not is_player_selecting
+	btn_ability.disabled = not is_player_selecting
+	btn_item.disabled = not is_player_selecting
+	btn_default.disabled = not is_player_selecting
 
 	# Bide requires non-negative AP
-	if current and is_player_turn:
+	if current and is_player_selecting:
 		btn_bide.disabled = current.current_ap < 0
 	else:
 		btn_bide.disabled = true
 
 
 func _update_turn_info() -> void:
-	"""Update turn information display"""
-	if not BattleManager.current_combatant:
-		return
-
+	"""Update turn information display for CTB system"""
+	var state = BattleManager.current_state
 	var current = BattleManager.current_combatant
-	turn_info.text = "Round %d - %s's Turn (AP: %+d)" % [
-		BattleManager.current_round,
-		current.combatant_name,
-		current.current_ap
-	]
+
+	if state == BattleManager.BattleState.SELECTION_PHASE or state == BattleManager.BattleState.PLAYER_SELECTING or state == BattleManager.BattleState.ENEMY_SELECTING:
+		if current:
+			turn_info.text = "Round %d - SELECT: %s (AP: %+d)" % [
+				BattleManager.current_round,
+				current.combatant_name,
+				current.current_ap
+			]
+		else:
+			turn_info.text = "Round %d - Selection Phase" % BattleManager.current_round
+	elif state == BattleManager.BattleState.EXECUTION_PHASE or state == BattleManager.BattleState.PROCESSING_ACTION:
+		if current:
+			turn_info.text = "Round %d - EXECUTE: %s" % [
+				BattleManager.current_round,
+				current.combatant_name
+			]
+		else:
+			turn_info.text = "Round %d - Execution Phase" % BattleManager.current_round
+	else:
+		turn_info.text = "Round %d" % BattleManager.current_round
 
 
 func log_message(message: String) -> void:
@@ -849,22 +866,7 @@ func _get_current_combatant_animator() -> BattleAnimatorClass:
 
 
 func _execute_attack(target: Combatant) -> void:
-	"""Execute attack on target with animations"""
-	var target_idx = test_enemies.find(target)
-	var attacker_animator = _get_current_combatant_animator()
-
-	# Play attack animation for current combatant
-	if attacker_animator:
-		attacker_animator.play_attack(func():
-			if target_idx >= 0 and target_idx < enemy_animators.size():
-				enemy_animators[target_idx].play_hit()
-			# Spawn physical hit effect on target
-			if target_idx >= 0 and target_idx < enemy_sprite_nodes.size():
-				var sprite = enemy_sprite_nodes[target_idx]
-				if is_instance_valid(sprite):
-					EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, sprite.global_position)
-		)
-
+	"""Queue attack on target (animation plays during execution phase)"""
 	BattleManager.player_attack(target)
 
 
@@ -943,24 +945,12 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 
 
 func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false) -> void:
-	"""Execute ability with animations based on ability type"""
+	"""Queue ability (animation plays during execution phase)"""
 	var targets = []
 	if target_all:
 		targets = _get_alive_enemies()
 	else:
 		targets = [target]
-
-	# Get ability animation type
-	var ability = JobSystem.get_ability(ability_id)
-	var anim_type = ability.get("animation", "cast")
-
-	# Play appropriate animation for current combatant
-	var animator = _get_current_combatant_animator()
-	if animator:
-		_play_ability_animation(anim_type, animator)
-
-	# Spawn visual effects on targets
-	_spawn_ability_effects(ability_id, targets)
 
 	BattleManager.player_use_ability(ability_id, targets)
 
@@ -1090,48 +1080,36 @@ func _on_item_selected(idx: int, item_ids: Array) -> void:
 			targets = [current if current else party_members[0]]
 
 	if targets.size() > 0:
-		# Play item animation for current combatant
-		var animator = _get_current_combatant_animator()
-		if animator:
-			animator.play_item()
 		BattleManager.player_item(item_id, targets)
 	else:
 		log_message("No valid targets!")
 
 
 func _on_default_pressed() -> void:
-	"""Handle Default button"""
-	# Play defend animation for current combatant
-	var animator = _get_current_combatant_animator()
-	if animator:
-		animator.play_defend()
-	BattleManager.player_default()
-	_update_ui()  # Ensure AP display updates
+	"""Handle Default button (Defer)"""
+	BattleManager.player_defer()
+	_update_ui()
 
 
 func _on_bide_pressed() -> void:
-	"""Handle Bide button - queues multiple attacks"""
+	"""Handle Bide/Advance button - queues multiple attacks"""
 	var alive_enemies = _get_alive_enemies()
 
 	if alive_enemies.size() == 0:
 		log_message("No enemies to attack!")
 		return
 
-	log_message("[color=yellow]Using Bide![/color]")
+	log_message("[color=yellow]Advancing![/color]")
 
 	# Target first alive enemy for now (could add multi-target selection later)
 	var target = alive_enemies[0]
-	var actions = [
+	var actions: Array[Dictionary] = [
 		{"type": "attack", "target": target},
 		{"type": "attack", "target": target}
 	]
 
-	# Play attack animation for current combatant
-	var animator = _get_current_combatant_animator()
-	if animator:
-		animator.play_attack()
-	BattleManager.player_brave(actions)
-	_update_ui()  # Ensure AP display updates
+	BattleManager.player_advance(actions)
+	_update_ui()
 
 
 func _on_autobattle_toggled(enabled: bool) -> void:
@@ -1182,13 +1160,21 @@ func _on_battle_ended(victory: bool) -> void:
 	_update_ui()
 
 
-func _on_turn_started(combatant: Combatant) -> void:
-	"""Handle turn start"""
-	log_message("\n[color=aqua]--- %s's turn ---[/color]" % combatant.combatant_name)
+## CTB Phase Handlers
+func _on_selection_phase_started() -> void:
+	"""Handle selection phase start"""
+	log_message("\n[color=yellow]>>> Selection Phase[/color]")
 	_update_turn_info()
 	_update_ui()
 
-	# Show Win98 menu for player turns (use BattleManager.player_party for correct object identity)
+
+func _on_selection_turn_started(combatant: Combatant) -> void:
+	"""Handle selection turn start - show menu for player"""
+	log_message("[color=aqua]%s selecting...[/color]" % combatant.combatant_name)
+	_update_turn_info()
+	_update_ui()
+
+	# Show Win98 menu for player selection (use BattleManager.player_party for correct object identity)
 	var is_player = combatant in BattleManager.player_party
 	if is_player:
 		# Play da-ding sound for player turn
@@ -1197,9 +1183,71 @@ func _on_turn_started(combatant: Combatant) -> void:
 		_show_win98_command_menu(combatant)
 
 
-func _on_turn_ended(combatant: Combatant) -> void:
-	"""Handle turn end"""
+func _on_selection_turn_ended(combatant: Combatant) -> void:
+	"""Handle selection turn end"""
 	_close_win98_menu()
+	_update_ui()
+
+
+func _on_execution_phase_started() -> void:
+	"""Handle execution phase start - all actions now execute"""
+	log_message("\n[color=yellow]>>> Execution Phase[/color]")
+	_update_turn_info()
+	_update_ui()
+
+
+func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
+	"""Handle action executing - play animations here"""
+	_update_turn_info()
+
+	# Get combatant's animator
+	var animator = _get_combatant_animator(combatant)
+	if not animator:
+		return
+
+	var action_type = action.get("type", "")
+	match action_type:
+		"attack":
+			var target = action.get("target") as Combatant
+			var target_idx = test_enemies.find(target)
+			animator.play_attack(func():
+				if target_idx >= 0 and target_idx < enemy_animators.size():
+					enemy_animators[target_idx].play_hit()
+				# Spawn physical hit effect on target
+				if target_idx >= 0 and target_idx < enemy_sprite_nodes.size():
+					var sprite = enemy_sprite_nodes[target_idx]
+					if is_instance_valid(sprite):
+						EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, sprite.global_position)
+			)
+		"ability":
+			var ability_id = action.get("ability_id", "")
+			var targets = action.get("targets", [])
+			var ability = JobSystem.get_ability(ability_id)
+			var anim_type = ability.get("animation", "cast")
+			_play_ability_animation(anim_type, animator)
+			_spawn_ability_effects(ability_id, targets)
+		"item":
+			animator.play_item()
+		"defer":
+			animator.play_defend()
+
+
+func _get_combatant_animator(combatant: Combatant) -> BattleAnimatorClass:
+	"""Get animator for any combatant (party or enemy)"""
+	# Check party
+	var party_idx = BattleManager.player_party.find(combatant)
+	if party_idx >= 0 and party_idx < party_animators.size():
+		return party_animators[party_idx]
+	# Check enemies
+	var enemy_idx = test_enemies.find(combatant)
+	if enemy_idx >= 0 and enemy_idx < enemy_animators.size():
+		return enemy_animators[enemy_idx]
+	return null
+
+
+func _on_round_ended(round_num: int) -> void:
+	"""Handle round end"""
+	log_message("[color=gray]--- Round %d complete ---[/color]" % round_num)
 	_update_ui()
 
 
@@ -1258,31 +1306,27 @@ func _on_enemy_died(enemy_idx: int) -> void:
 
 ## Win98 Menu Functions
 func _unhandled_input(event: InputEvent) -> void:
-	"""Handle input for menu and Brave/Default controls"""
+	"""Handle input for menu and Advance/Defer controls"""
 	if event is InputEventKey and event.pressed and not event.echo:
 		var current = BattleManager.current_combatant
-		var is_player_turn = current and party_members.has(current)
+		var is_player_selecting = BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING
 
-		# R key = Default (skip turn, gain BP)
-		if event.keycode == KEY_R and is_player_turn:
+		# R key = Defer (skip turn, gain AP) during selection
+		if event.keycode == KEY_R and is_player_selecting and current:
 			_close_win98_menu()
-			log_message("[color=cyan]%s defaults![/color]" % current.combatant_name)
-			var animator = _get_current_combatant_animator()
-			if animator:
-				animator.play_defend()
-			BattleManager.player_default()
+			log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
+			BattleManager.player_defer()
 			get_viewport().set_input_as_handled()
 			return
 
-		# L key = Brave (queue another action after current - TODO: implement action queue)
-		if event.keycode == KEY_L and is_player_turn:
-			log_message("[color=yellow]Brave! Queue another action...[/color]")
-			# TODO: Implement action queuing system
+		# L key = Advance hint (actual advancing handled by menu)
+		if event.keycode == KEY_L and is_player_selecting:
+			log_message("[color=yellow]Use R to queue actions (Advance)![/color]")
 			get_viewport().set_input_as_handled()
 			return
 
 		# Reopen menu on Space/Enter/Z if menu is closed
-		if use_win98_menus and is_player_turn:
+		if use_win98_menus and is_player_selecting and current:
 			if event.keycode in [KEY_SPACE, KEY_ENTER, KEY_Z]:
 				if not active_win98_menu or not is_instance_valid(active_win98_menu):
 					_show_win98_command_menu(current)
@@ -1630,9 +1674,6 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 					targets = [current if current else party_members[0]]
 
 			if targets.size() > 0:
-				var animator = _get_current_combatant_animator()
-				if animator:
-					animator.play_item()
 				BattleManager.player_item(i_id, targets)
 			else:
 				log_message("No valid targets!")
@@ -1641,11 +1682,8 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 	# Defer - skip turn, gain +1 AP
 	if item_id == "defer":
 		log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
-		var animator = _get_current_combatant_animator()
-		if animator:
-			animator.play_defend()
-		BattleManager.player_default()
-		_update_ui()  # Ensure AP display updates
+		BattleManager.player_defer()
+		_update_ui()
 		return
 
 
@@ -1693,11 +1731,8 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 
 	if battle_actions.size() > 0:
 		log_message("[color=yellow]%s advances with %d actions![/color]" % [current.combatant_name, battle_actions.size()])
-		var animator = _get_current_combatant_animator()
-		if animator:
-			animator.play_attack()
-		BattleManager.player_brave(battle_actions)
-		_update_ui()  # Ensure AP display updates
+		BattleManager.player_advance(battle_actions)
+		_update_ui()
 
 
 func _on_win98_defer_requested() -> void:
@@ -1708,11 +1743,8 @@ func _on_win98_defer_requested() -> void:
 		return
 
 	log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
-	var animator = _get_current_combatant_animator()
-	if animator:
-		animator.play_defend()
-	BattleManager.player_default()
-	_update_ui()  # Ensure AP display updates
+	BattleManager.player_defer()
+	_update_ui()
 
 
 func _close_win98_menu() -> void:
