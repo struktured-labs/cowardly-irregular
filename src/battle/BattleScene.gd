@@ -354,8 +354,9 @@ func _spawn_enemies() -> void:
 			enemy.queue_free()
 	test_enemies.clear()
 
-	# Random number of enemies (1-3)
-	var num_enemies = randi_range(1, 3)
+	# Random number of enemies (2-3, limited by available positions)
+	var max_enemies = mini(3, enemy_positions.size())
+	var num_enemies = randi_range(2, max_enemies)
 
 	# Pick a random monster type for this encounter
 	var monster_type = MONSTER_TYPES[randi() % MONSTER_TYPES.size()]
@@ -1383,14 +1384,37 @@ func _build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						if is_instance_valid(sprite):
 							target_pos = canvas_transform * sprite.global_position
 					enemy_targets.append({
-						"id": "ability_" + ability_id + "_" + str(enemy_idx),
+						"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
 						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
-						"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_pos": target_pos}
+						"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 					})
 				ability_items.append({
 					"id": "ability_menu_" + ability_id,
 					"label": "%s (%d)" % [ability["name"], mp_cost],
 					"submenu": enemy_targets,
+					"disabled": not can_afford
+				})
+			# For ally-targeting abilities (heal, buff), add party submenu
+			elif target_type == "single_ally" and can_afford:
+				var ally_targets = []
+				for i in range(party_members.size()):
+					var member = party_members[i]
+					if not is_instance_valid(member) or not member.is_alive:
+						continue
+					var target_pos = Vector2.ZERO
+					if i < party_sprite_nodes.size():
+						var sprite = party_sprite_nodes[i]
+						if is_instance_valid(sprite):
+							target_pos = canvas_transform * sprite.global_position
+					ally_targets.append({
+						"id": "ability_" + ability_id + "_ally_" + str(i),
+						"label": "%s (%d/%d HP)" % [member.combatant_name, member.current_hp, member.max_hp],
+						"data": {"ability_id": ability_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
+					})
+				ability_items.append({
+					"id": "ability_menu_" + ability_id,
+					"label": "%s (%d)" % [ability["name"], mp_cost],
+					"submenu": ally_targets,
 					"disabled": not can_afford
 				})
 			else:
@@ -1510,8 +1534,8 @@ func _build_command_menu_items(combatant: Combatant) -> Array:
 
 func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 	"""Handle Win98 menu item selection"""
-	# Don't close here - menu closes itself via close_all()
-	active_win98_menu = null  # Just clear reference, menu handles its own cleanup
+	# Force close menu first before processing action
+	_close_win98_menu()
 
 	var alive_enemies = _get_alive_enemies()
 	var current = BattleManager.current_combatant
@@ -1527,12 +1551,24 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 				log_message("Target no longer valid!")
 		return
 
-	# Ability with target from menu tree
+	# Ability with target from menu tree (enemy or ally)
 	if item_data is Dictionary and item_data.has("ability_id") and item_data.has("target_idx"):
 		var ability_id = item_data.get("ability_id", "")
 		var target_idx = item_data.get("target_idx", -1)
-		if ability_id != "" and target_idx >= 0 and target_idx < test_enemies.size():
-			var target = test_enemies[target_idx]
+		var target_type = item_data.get("target_type", "enemy")
+
+		if ability_id != "" and target_idx >= 0:
+			var target: Combatant = null
+
+			if target_type == "ally":
+				# Ally target (party member)
+				if target_idx < party_members.size():
+					target = party_members[target_idx]
+			else:
+				# Enemy target
+				if target_idx < test_enemies.size():
+					target = test_enemies[target_idx]
+
 			if is_instance_valid(target) and target.is_alive:
 				_execute_ability(ability_id, target)
 			else:
@@ -1622,13 +1658,21 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 				if is_instance_valid(target):
 					battle_actions.append({"type": "attack", "target": target})
 
-		# Handle ability actions
+		# Handle ability actions (enemy or ally targets)
 		elif action_id.begins_with("ability_") and action_data is Dictionary:
 			var ability_id = action_data.get("ability_id", "")
 			var target_idx = action_data.get("target_idx", -1)
-			if target_idx >= 0 and target_idx < test_enemies.size():
-				var target = test_enemies[target_idx]
-				battle_actions.append({"type": "ability", "ability_id": ability_id, "target": target})
+			var target_type = action_data.get("target_type", "enemy")
+
+			if target_idx >= 0:
+				var target: Combatant = null
+				if target_type == "ally" and target_idx < party_members.size():
+					target = party_members[target_idx]
+				elif target_idx < test_enemies.size():
+					target = test_enemies[target_idx]
+
+				if is_instance_valid(target):
+					battle_actions.append({"type": "ability", "ability_id": ability_id, "target": target})
 
 	if battle_actions.size() > 0:
 		log_message("[color=yellow]%s advances with %d actions![/color]" % [current.combatant_name, battle_actions.size()])

@@ -69,6 +69,7 @@ var _target_highlight: Control = null  # Rectangle highlight around target
 var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
+var _is_closing: bool = false  # Prevent double-close
 
 ## Signals for target selection with position
 signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
@@ -88,6 +89,14 @@ func _ready() -> void:
 	_setup_timers()
 	_setup_audio()
 	_build_menu()
+
+
+func _exit_tree() -> void:
+	"""Cleanup when removed from tree"""
+	_cleanup_target_highlight()
+	if submenu and is_instance_valid(submenu):
+		submenu.queue_free()
+		submenu = null
 
 
 func _setup_timers() -> void:
@@ -167,8 +176,8 @@ func _build_target_highlight_box(target_pos: Vector2) -> void:
 	var box_height = 70
 	var border_width = 3
 
-	# Position centered on target
-	var box_pos = target_pos - Vector2(box_width / 2, box_height / 2 + 10)
+	# Position centered on target (offset down to account for sprite anchor)
+	var box_pos = target_pos - Vector2(box_width / 2, box_height / 2 - 5)
 	_target_highlight.position = box_pos
 	_target_highlight.size = Vector2(box_width, box_height)
 
@@ -729,29 +738,38 @@ func _clamp_to_screen() -> void:
 
 func close_all() -> void:
 	"""Close this menu and all parent menus"""
-	if submenu:
+	# Clean up our own target highlight
+	_cleanup_target_highlight()
+
+	if submenu and is_instance_valid(submenu):
 		submenu.queue_free()
 		submenu = null
 
-	if parent_menu:
+	if parent_menu and is_instance_valid(parent_menu):
 		parent_menu.close_all()
 	else:
 		# Only close if not the root menu, or if forced
 		if not is_root_menu:
-			_cleanup_target_highlight()
 			menu_closed.emit()
 			queue_free()
 
 
 func force_close() -> void:
 	"""Force close the menu tree, even root menus"""
-	if submenu:
+	# Prevent double-close
+	if _is_closing:
+		return
+	_is_closing = true
+
+	# Clean up our own target highlight first
+	_cleanup_target_highlight()
+
+	if submenu and is_instance_valid(submenu):
 		submenu.queue_free()
 		submenu = null
-	if parent_menu:
+	if parent_menu and is_instance_valid(parent_menu):
 		parent_menu.force_close()
 	else:
-		_cleanup_target_highlight()
 		menu_closed.emit()
 		queue_free()
 
@@ -874,18 +892,21 @@ func _submit_actions() -> void:
 
 	root._queued_actions.clear()
 
+	# Emit signals immediately, then close
+	_play_select_sound()
+
+	# Hide target highlight immediately
+	if _target_highlight and is_instance_valid(_target_highlight):
+		_target_highlight.visible = false
+
+	# Emit signal from root
 	if all_actions.size() == 1:
-		# Single action - use normal item_selected signal
-		_fade_target_highlight(func():
-			root.item_selected.emit(all_actions[0].id, all_actions[0].data)
-			_close_entire_tree()
-		)
+		root.item_selected.emit(all_actions[0].id, all_actions[0].data)
 	else:
-		# Multiple actions - use actions_submitted signal for Advance
-		_fade_target_highlight(func():
-			root.actions_submitted.emit(all_actions)
-			_close_entire_tree()
-		)
+		root.actions_submitted.emit(all_actions)
+
+	# Close the entire menu tree immediately
+	root.force_close()
 
 
 func get_queue_count() -> int:
