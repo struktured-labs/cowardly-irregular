@@ -201,6 +201,10 @@ func _process_next_selection() -> void:
 	# Start this combatant's selection
 	current_combatant.start_turn()
 
+	# Natural AP gain: +1 AP at start of each turn
+	current_combatant.gain_ap(1)
+	print("%s gains +1 AP (natural gain, now AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
+
 	if current_combatant in player_party:
 		current_state = BattleState.PLAYER_SELECTING
 	else:
@@ -276,20 +280,20 @@ func player_default() -> void:
 
 
 func player_advance(actions: Array[Dictionary]) -> void:
-	"""Queue Advance action (multiple actions in sequence)"""
+	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		return
 
 	# Mark this as an advance with all actions
+	# Each action will cost 1 AP when executed (first cancels natural gain, rest go to debt)
 	var advance_action = {
 		"type": "advance",
 		"combatant": current_combatant,
 		"actions": actions,
-		"speed": _compute_action_speed(current_combatant, "attack"),  # Use attack speed as base
-		"ap_cost": actions.size() - 1
+		"speed": _compute_action_speed(current_combatant, "attack")  # Use attack speed as base
 	}
 	_queue_action(advance_action)
-	print("%s chooses to advance (%d actions)" % [current_combatant.combatant_name, actions.size()])
+	print("%s chooses to advance (%d actions, will cost %d AP)" % [current_combatant.combatant_name, actions.size(), actions.size()])
 	_end_selection_turn()
 
 
@@ -373,8 +377,10 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		return
 
 	if should_advance and combatant.current_ap >= 1:
-		# Queue multiple attacks as advance
-		var num_actions = mini(randi_range(2, 3), combatant.current_ap + 1)
+		# Queue multiple attacks as advance (each action costs 1 AP)
+		# Can go up to AP+4 actions (into max debt of -4)
+		var max_actions = combatant.current_ap + 4  # With AP=1, can do 5 actions going to -4
+		var num_actions = mini(randi_range(2, 3), max_actions)
 		var advance_actions: Array[Dictionary] = []
 		for i in range(num_actions):
 			var target = _choose_target(combatant, alive_enemies, {})
@@ -384,8 +390,7 @@ func _process_ai_selection(combatant: Combatant) -> void:
 			"type": "advance",
 			"combatant": combatant,
 			"actions": advance_actions,
-			"speed": _compute_action_speed(combatant, "attack"),
-			"ap_cost": num_actions - 1
+			"speed": _compute_action_speed(combatant, "attack")
 		}
 		_queue_action(advance_action)
 		print("%s (AI) chooses to advance (%d actions)" % [combatant.combatant_name, num_actions])
@@ -529,15 +534,15 @@ func _execute_defer(combatant: Combatant) -> void:
 
 
 func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
-	"""Execute advance action - all queued actions in sequence"""
+	"""Execute advance action - all queued actions in sequence (each costs 1 AP)"""
 	var actions = advance_action["actions"] as Array
-	var ap_cost = advance_action.get("ap_cost", actions.size() - 1)
 
-	# Spend AP for advance
-	combatant.spend_ap(ap_cost)
-	print("%s advances! (%d actions, AP: %d)" % [combatant.combatant_name, actions.size(), combatant.current_ap])
+	# Note: Each action costs 1 AP during execution
+	# The first action would normally cost 1 AP anyway (canceling natural gain)
+	# Additional actions go into AP debt
+	print("%s advances with %d actions!" % [combatant.combatant_name, actions.size()])
 
-	# Execute all actions in sequence
+	# Execute all actions in sequence (each will spend 1 AP)
 	for action in actions:
 		if not combatant.is_alive:
 			break
@@ -562,9 +567,12 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 
 
 func _execute_attack(attacker: Combatant, target: Combatant) -> void:
-	"""Execute a basic physical attack"""
+	"""Execute a basic physical attack (costs 1 AP)"""
 	if not target or not target.is_alive:
 		return
+
+	# Actions cost 1 AP (cancels out natural gain for net 0)
+	attacker.spend_ap(1)
 
 	action_executing.emit(attacker, {"type": "attack", "target": target})
 
@@ -577,7 +585,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
-	"""Execute an ability"""
+	"""Execute an ability (costs 1 AP)"""
 	var ability = JobSystem.get_ability(ability_id)
 	if ability.is_empty():
 		print("Error: Unknown ability %s" % ability_id)
@@ -591,6 +599,9 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	if not caster.spend_mp(mp_cost):
 		print("%s doesn't have enough MP!" % caster.combatant_name)
 		return
+
+	# Actions cost 1 AP (cancels out natural gain for net 0)
+	caster.spend_ap(1)
 
 	action_executing.emit(caster, {"type": "ability", "ability_id": ability_id, "targets": targets})
 	print("%s uses %s!" % [caster.combatant_name, ability["name"]])
@@ -771,9 +782,13 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
+	"""Execute item use (costs 1 AP)"""
 	if not user.has_item(item_id):
 		print("%s doesn't have item: %s" % [user.combatant_name, item_id])
 		return
+
+	# Actions cost 1 AP (cancels out natural gain for net 0)
+	user.spend_ap(1)
 
 	action_executing.emit(user, {"type": "item", "item_id": item_id, "targets": targets})
 

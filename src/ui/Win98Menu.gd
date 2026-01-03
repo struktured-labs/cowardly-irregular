@@ -784,7 +784,7 @@ func _cleanup_target_highlight() -> void:
 ## Advance Mode Functions
 
 func _handle_advance_input() -> void:
-	"""Handle R button / Shift+Enter - queue current action"""
+	"""Handle R button / Shift+Enter - queue current action or confirm if at limit"""
 	var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
 
 	if current_item.has("submenu"):
@@ -797,7 +797,15 @@ func _handle_advance_input() -> void:
 	if current_item.get("disabled", false):
 		return
 
-	# Queue the current action
+	# Check if we're at the queue limit - if so, act as confirm
+	var root = _get_root_menu()
+	if root._queued_actions.size() >= root._max_queue_size - 1:
+		# At or near limit - this will be the last action, so submit
+		_play_select_sound()
+		_submit_actions()
+		return
+
+	# Queue the current action (menu stays open for more)
 	_queue_current_action(current_item)
 
 
@@ -814,7 +822,7 @@ func _handle_defer_input() -> void:
 
 
 func _queue_current_action(item: Dictionary) -> void:
-	"""Add action to queue (Advance mode)"""
+	"""Add action to queue (Advance mode) - menu stays open for more actions"""
 	# Always queue to root menu
 	var root = _get_root_menu()
 
@@ -830,9 +838,32 @@ func _queue_current_action(item: Dictionary) -> void:
 	root._queued_actions.append(action)
 	_play_advance_sound()
 
-	# If we're in a submenu, close just the submenu chain back to root
+	# Close submenus but keep root menu open for more actions
 	if parent_menu:
-		_close_submenu_chain()
+		# We're in a submenu - close this submenu and return to root
+		_close_submenu_to_root()
+	# If we're the root menu with a submenu open, close the submenu
+	elif submenu and is_instance_valid(submenu):
+		submenu.queue_free()
+		submenu = null
+
+
+func _close_submenu_to_root() -> void:
+	"""Close this submenu chain but keep root menu open"""
+	# Clean up our target highlight
+	_cleanup_target_highlight()
+
+	if submenu and is_instance_valid(submenu):
+		submenu.queue_free()
+		submenu = null
+
+	if parent_menu:
+		parent_menu.submenu = null
+		# If parent is not root, recurse
+		if parent_menu.parent_menu:
+			parent_menu._close_submenu_to_root()
+
+	queue_free()
 
 
 func _get_root_menu() -> Win98Menu:
@@ -843,14 +874,6 @@ func _get_root_menu() -> Win98Menu:
 	return root
 
 
-func _close_submenu_chain() -> void:
-	"""Close this submenu and return focus to parent (for Advance mode)"""
-	if submenu:
-		submenu.queue_free()
-		submenu = null
-	if parent_menu:
-		parent_menu.submenu = null
-	queue_free()
 
 
 func _undo_last_action() -> void:

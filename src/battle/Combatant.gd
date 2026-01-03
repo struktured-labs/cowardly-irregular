@@ -117,9 +117,10 @@ func gain_ap(amount: int) -> void:
 
 
 func execute_defer() -> void:
-	"""Defer action: skip turn, gain +1 AP, reduce incoming damage"""
+	"""Defer action: skip turn, reduce incoming damage (no AP cost, keeps natural gain)"""
 	is_defending = true
-	gain_ap(1)
+	# Note: Defer doesn't give AP directly - it just doesn't cost the 1 AP that actions cost
+	# The natural +1 AP per turn is what accumulates when deferring
 
 
 func execute_advance(actions: Array[Dictionary]) -> void:
