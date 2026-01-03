@@ -37,6 +37,16 @@
 				"attack": 2
 			}
 		},
+		"oak_staff": {
+			"id": "oak_staff",
+			"name": "Oak Staff",
+			"description": "A staff carved from sturdy oak",
+			"stat_mods": {
+				"magic": 12,
+				"attack": 3,
+				"max_mp": 10
+			}
+		},
 		"crystal_staff": {
 			"id": "crystal_staff",
 			"name": "Crystal Staff",
@@ -44,6 +54,24 @@
 			"stat_mods": {
 				"magic": 20,
 				"max_mp": 15
+			}
+		},
+		"iron_dagger": {
+			"id": "iron_dagger",
+			"name": "Iron Dagger",
+			"description": "A quick stabbing blade",
+			"stat_mods": {
+				"attack": 8,
+				"speed": 5
+			}
+		},
+		"shadow_rod": {
+			"id": "shadow_rod",
+			"name": "Shadow Rod",
+			"description": "A rod infused with dark energy",
+			"stat_mods": {
+				"magic": 15,
+				"attack": 2
 			}
 		}
 	},
@@ -65,6 +93,35 @@
 				"defense": 18,
 				"max_hp": 25,
 				"speed": -3
+			}
+		},
+		"cloth_robe": {
+			"id": "cloth_robe",
+			"name": "Cloth Robe",
+			"description": "Simple robes for a caster",
+			"stat_mods": {
+				"defense": 4,
+				"magic": 5,
+				"max_mp": 10
+			}
+		},
+		"thief_garb": {
+			"id": "thief_garb",
+			"name": "Thief Garb",
+			"description": "Light armor for stealth",
+			"stat_mods": {
+				"defense": 6,
+				"speed": 8
+			}
+		},
+		"dark_robe": {
+			"id": "dark_robe",
+			"name": "Dark Robe",
+			"description": "Robes imbued with dark magic",
+			"stat_mods": {
+				"defense": 5,
+				"magic": 8,
+				"max_mp": 15
 			}
 		},
 		"mage_robe": {

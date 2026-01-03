@@ -21,6 +21,74 @@
 		"weaknesses": ["fire"],
 		"resistances": ["physical"]
 	},
+	"bat": {
+		"id": "bat",
+		"name": "Bat",
+		"description": "A flying menace. Very fast but fragile.",
+		"level": 2,
+		"stats": {
+			"max_hp": 50,
+			"max_mp": 15,
+			"attack": 12,
+			"defense": 5,
+			"magic": 6,
+			"speed": 18
+		},
+		"abilities": ["bite", "screech"],
+		"exp_reward": 18,
+		"gold_reward": 12,
+		"drop_table": [
+			{"item": "bat_wing", "chance": 0.4}
+		],
+		"weaknesses": ["fire", "lightning"],
+		"resistances": []
+	},
+	"mushroom": {
+		"id": "mushroom",
+		"name": "Fungoid",
+		"description": "A toxic mushroom creature. Slow but poisonous.",
+		"level": 2,
+		"stats": {
+			"max_hp": 100,
+			"max_mp": 25,
+			"attack": 8,
+			"defense": 12,
+			"magic": 10,
+			"speed": 5
+		},
+		"abilities": ["spore_cloud", "poison_touch"],
+		"exp_reward": 20,
+		"gold_reward": 15,
+		"drop_table": [
+			{"item": "antidote", "chance": 0.5},
+			{"item": "poison_spore", "chance": 0.3}
+		],
+		"weaknesses": ["fire"],
+		"resistances": ["poison"]
+	},
+	"imp": {
+		"id": "imp",
+		"name": "Imp",
+		"description": "A tiny demon with fire magic. Annoying but dangerous in groups.",
+		"level": 3,
+		"stats": {
+			"max_hp": 70,
+			"max_mp": 50,
+			"attack": 8,
+			"defense": 8,
+			"magic": 18,
+			"speed": 14
+		},
+		"abilities": ["fire", "dark_bolt"],
+		"exp_reward": 28,
+		"gold_reward": 22,
+		"drop_table": [
+			{"item": "ether", "chance": 0.3},
+			{"item": "imp_horn", "chance": 0.25}
+		],
+		"weaknesses": ["ice", "holy"],
+		"resistances": ["fire", "dark"]
+	},
 	"goblin": {
 		"id": "goblin",
 		"name": "Goblin",

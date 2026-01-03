@@ -648,7 +648,7 @@ func _process_ai_decision(combatant: Combatant) -> void:
 
 	# 4. Default to basic attack
 	if action == null:
-		var target = _choose_target(combatant, alive_enemies, null)
+		var target = _choose_target(combatant, alive_enemies, {})
 		action = {
 			"type": "attack",
 			"target": target

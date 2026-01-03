@@ -310,11 +310,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 	# Add buff
 	if effects.has("add_buff"):
 		var buff = effects["add_buff"]
-		target.add_status({
-			"type": buff["type"],
-			"duration": buff.get("duration", 3),
-			"power": buff.get("power", 1.0)
-		})
+		target.add_status(buff["type"])
 		print("  → %s gained %s" % [target.combatant_name, buff["type"]])
 
 	# Damage
