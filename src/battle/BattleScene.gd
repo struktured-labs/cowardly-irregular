@@ -558,23 +558,27 @@ var _party_status_boxes: Array = []
 
 func _update_character_status() -> void:
 	"""Update character status display for all party members"""
-	if party_members.size() == 0:
+	# Use BattleManager's player_party for accurate current state
+	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else party_members
+	if members.size() == 0:
 		return
 
 	# Create status boxes if needed
 	_ensure_party_status_boxes()
 
 	# Update each party member's status
-	for i in range(party_members.size()):
+	for i in range(members.size()):
 		if i >= _party_status_boxes.size():
 			break
-		_update_member_status(i, party_members[i])
+		_update_member_status(i, members[i])
 
 
 func _ensure_party_status_boxes() -> void:
 	"""Ensure we have status boxes for all party members (only creates once)"""
+	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else party_members
+
 	# Skip if already created for this party
-	if _party_status_boxes.size() == party_members.size():
+	if _party_status_boxes.size() == members.size():
 		var all_valid = true
 		for box in _party_status_boxes:
 			if not is_instance_valid(box):
@@ -597,8 +601,8 @@ func _ensure_party_status_boxes() -> void:
 		char1_node.visible = false
 
 	# Create status boxes for each party member
-	for i in range(party_members.size()):
-		var member = party_members[i]
+	for i in range(members.size()):
+		var member = members[i]
 		var box = _create_character_status_box(i, member)
 		container.add_child(box)
 		_party_status_boxes.append(box)
@@ -698,27 +702,37 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		if mp_label:
 			mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
 
-	# Update AP and status
+	# Update AP and status - try both RichTextLabel and regular Label
 	var ap_label = box.get_node_or_null("AP")
 	if ap_label:
 		var ap_color = "white"
 		if member.current_ap > 0:
-			ap_color = "green"
+			ap_color = "lime"
 		elif member.current_ap < 0:
 			ap_color = "red"
 
-		var status_text = "[color=%s]AP: %+d[/color]" % [ap_color, member.current_ap]
+		var ap_value = member.current_ap
 
-		# Add status effects
-		if member.status_effects.size() > 0:
-			status_text += " ["
-			for i in range(member.status_effects.size()):
-				if i > 0:
-					status_text += ", "
-				status_text += "[color=yellow]%s[/color]" % member.status_effects[i].capitalize()
-			status_text += "]"
+		if ap_label is RichTextLabel:
+			# Ensure BBCode is enabled
+			ap_label.bbcode_enabled = true
 
-		ap_label.text = status_text
+			var status_text = "[color=%s]AP: %+d[/color]" % [ap_color, ap_value]
+
+			# Add status effects
+			if member.status_effects.size() > 0:
+				status_text += " ["
+				for si in range(member.status_effects.size()):
+					if si > 0:
+						status_text += ", "
+					status_text += "[color=yellow]%s[/color]" % member.status_effects[si].capitalize()
+				status_text += "]"
+
+			# Set BBCode text directly
+			ap_label.text = status_text
+		else:
+			# Fallback for regular Label
+			ap_label.text = "AP: %+d" % ap_value
 
 
 func _update_action_buttons() -> void:
