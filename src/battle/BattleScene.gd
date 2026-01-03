@@ -1092,6 +1092,7 @@ func _on_default_pressed() -> void:
 	if animator:
 		animator.play_defend()
 	BattleManager.player_default()
+	_update_ui()  # Ensure AP display updates
 
 
 func _on_bide_pressed() -> void:
@@ -1116,6 +1117,7 @@ func _on_bide_pressed() -> void:
 	if animator:
 		animator.play_attack()
 	BattleManager.player_brave(actions)
+	_update_ui()  # Ensure AP display updates
 
 
 func _on_autobattle_toggled(enabled: bool) -> void:
@@ -1629,6 +1631,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		if animator:
 			animator.play_defend()
 		BattleManager.player_default()
+		_update_ui()  # Ensure AP display updates
 		return
 
 
@@ -1680,6 +1683,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 		if animator:
 			animator.play_attack()
 		BattleManager.player_brave(battle_actions)
+		_update_ui()  # Ensure AP display updates
 
 
 func _on_win98_defer_requested() -> void:
@@ -1694,6 +1698,7 @@ func _on_win98_defer_requested() -> void:
 	if animator:
 		animator.play_defend()
 	BattleManager.player_default()
+	_update_ui()  # Ensure AP display updates
 
 
 func _close_win98_menu() -> void:
