@@ -1,0 +1,784 @@
+extends Node
+class_name EffectSystemClass
+
+## EffectSystem - Handles visual spell effects in battle
+## 12-bit style particle effects for abilities
+
+## Effect types
+enum EffectType {
+	FIRE,
+	ICE,
+	LIGHTNING,
+	HOLY,
+	DARK,
+	HEAL,
+	PHYSICAL,
+	BUFF,
+	DEBUFF,
+	POISON
+}
+
+## Active effects container
+var _effects_container: Node2D = null
+
+
+func _ready() -> void:
+	# Create container for effect nodes
+	_effects_container = Node2D.new()
+	_effects_container.name = "EffectsContainer"
+	_effects_container.z_index = 50  # Render on top of sprites
+	add_child(_effects_container)
+
+
+func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable()) -> void:
+	"""Spawn a visual effect at the given position"""
+	var effect = _create_effect(effect_type)
+	effect.position = position
+	_effects_container.add_child(effect)
+
+	# Play sound for the effect
+	_play_effect_sound(effect_type)
+
+	# Start the effect animation
+	_animate_effect(effect, effect_type, on_complete)
+
+
+func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_complete: Callable = Callable()) -> void:
+	"""Spawn effect on a target sprite"""
+	if not is_instance_valid(target_sprite):
+		if on_complete.is_valid():
+			on_complete.call()
+		return
+	spawn_effect(effect_type, target_sprite.global_position, on_complete)
+
+
+func spawn_ability_effect(ability_id: String, target_position: Vector2, on_complete: Callable = Callable()) -> void:
+	"""Spawn effect based on ability ID"""
+	var effect_type = _get_effect_type_for_ability(ability_id)
+	spawn_effect(effect_type, target_position, on_complete)
+
+
+func _get_effect_type_for_ability(ability_id: String) -> EffectType:
+	"""Map ability ID to effect type"""
+	# Fire abilities
+	if ability_id in ["fire", "fira", "firaga", "flame_strike"]:
+		return EffectType.FIRE
+
+	# Ice abilities
+	if ability_id in ["blizzard", "blizzara", "blizzaga", "ice_lance"]:
+		return EffectType.ICE
+
+	# Lightning abilities
+	if ability_id in ["thunder", "thundara", "thundaga", "shock"]:
+		return EffectType.LIGHTNING
+
+	# Holy abilities
+	if ability_id in ["holy", "divine_light", "smite"]:
+		return EffectType.HOLY
+
+	# Dark abilities
+	if ability_id in ["dark", "drain", "darkness", "shadow_bolt", "life_drain"]:
+		return EffectType.DARK
+
+	# Heal abilities
+	if ability_id in ["cure", "cura", "curaga", "heal", "regen"]:
+		return EffectType.HEAL
+
+	# Buff abilities
+	if ability_id in ["protect", "shell", "haste", "brave", "faith"]:
+		return EffectType.BUFF
+
+	# Debuff abilities
+	if ability_id in ["slow", "dispel", "break", "weaken"]:
+		return EffectType.DEBUFF
+
+	# Poison abilities
+	if ability_id in ["poison", "bio", "venom"]:
+		return EffectType.POISON
+
+	# Default to physical
+	return EffectType.PHYSICAL
+
+
+func _play_effect_sound(effect_type: EffectType) -> void:
+	"""Play appropriate sound for effect"""
+	var sound_key = ""
+	match effect_type:
+		EffectType.FIRE:
+			sound_key = "ability_fire"
+		EffectType.ICE:
+			sound_key = "ability_ice"
+		EffectType.LIGHTNING:
+			sound_key = "ability_lightning"
+		EffectType.HOLY:
+			sound_key = "ability_holy"
+		EffectType.DARK:
+			sound_key = "ability_dark"
+		EffectType.HEAL:
+			sound_key = "ability_heal"
+		EffectType.BUFF:
+			sound_key = "buff"
+		EffectType.DEBUFF:
+			sound_key = "debuff"
+		EffectType.POISON:
+			sound_key = "ability_dark"
+		EffectType.PHYSICAL:
+			sound_key = "attack_hit"
+
+	if sound_key != "":
+		SoundManager.play_battle(sound_key)
+
+
+func _create_effect(effect_type: EffectType) -> Node2D:
+	"""Create effect container node"""
+	var effect = Node2D.new()
+	effect.name = "Effect_%s" % EffectType.keys()[effect_type]
+	return effect
+
+
+func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Callable) -> void:
+	"""Animate the effect based on type"""
+	match effect_type:
+		EffectType.FIRE:
+			_animate_fire(effect, on_complete)
+		EffectType.ICE:
+			_animate_ice(effect, on_complete)
+		EffectType.LIGHTNING:
+			_animate_lightning(effect, on_complete)
+		EffectType.HOLY:
+			_animate_holy(effect, on_complete)
+		EffectType.DARK:
+			_animate_dark(effect, on_complete)
+		EffectType.HEAL:
+			_animate_heal(effect, on_complete)
+		EffectType.BUFF:
+			_animate_buff(effect, on_complete)
+		EffectType.DEBUFF:
+			_animate_debuff(effect, on_complete)
+		EffectType.POISON:
+			_animate_poison(effect, on_complete)
+		EffectType.PHYSICAL:
+			_animate_physical(effect, on_complete)
+
+
+## Effect Animations
+
+func _animate_fire(effect: Node2D, on_complete: Callable) -> void:
+	"""Fire spell - rising flames with particles"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 12
+
+	for i in range(particle_count):
+		var particle = _create_fire_particle()
+		particle.position = Vector2(randf_range(-20, 20), randf_range(-10, 10))
+		effect.add_child(particle)
+		particles.append(particle)
+
+	# Animate particles rising and fading
+	var duration = 0.6
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = randf() * 0.2
+		var rise = randf_range(40, 80)
+
+		tween.tween_property(p, "position:y", p.position.y - rise, duration).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.7).set_delay(delay + duration * 0.3)
+		tween.tween_property(p, "scale", Vector2(1.5, 2.0), duration).set_delay(delay)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_fire_particle() -> Sprite2D:
+	"""Create a single fire particle sprite"""
+	var sprite = Sprite2D.new()
+	var size = 16
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Draw flame shape (12-bit style)
+	var colors = [
+		Color(1.0, 0.9, 0.2),  # Yellow core
+		Color(1.0, 0.5, 0.0),  # Orange
+		Color(0.9, 0.2, 0.0),  # Red
+	]
+
+	var center = size / 2
+	for y in range(size):
+		for x in range(size):
+			var dist = sqrt(pow(x - center, 2) + pow(y - center + 2, 2))
+			if dist < 6:
+				var color_idx = int(dist / 2) % colors.size()
+				var color = colors[color_idx]
+				color.a = 1.0 - (dist / 6.0) * 0.5
+				img.set_pixel(x, y, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.modulate.a = 0.9
+	return sprite
+
+
+func _animate_ice(effect: Node2D, on_complete: Callable) -> void:
+	"""Ice spell - crystalline shards forming"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 8
+
+	for i in range(particle_count):
+		var particle = _create_ice_particle()
+		var angle = (float(i) / particle_count) * TAU
+		particle.position = Vector2(cos(angle), sin(angle)) * 30
+		particle.rotation = angle + PI / 2
+		particle.scale = Vector2.ZERO
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = 0.5
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	# Crystals form inward then shatter outward
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = float(i) * 0.05
+
+		# Form
+		tween.tween_property(p, "scale", Vector2(1.0, 1.0), duration * 0.4).set_delay(delay)
+		tween.tween_property(p, "position", p.position * 0.5, duration * 0.4).set_delay(delay)
+
+		# Shatter outward
+		tween.tween_property(p, "position", p.position * 2, duration * 0.4).set_delay(delay + duration * 0.5)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.6)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_ice_particle() -> Sprite2D:
+	"""Create a single ice crystal sprite"""
+	var sprite = Sprite2D.new()
+	var size = 20
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Draw ice crystal shard (12-bit style)
+	var colors = [
+		Color(0.9, 0.95, 1.0),  # White highlight
+		Color(0.5, 0.8, 1.0),   # Light blue
+		Color(0.3, 0.5, 0.9),   # Blue
+	]
+
+	# Diamond shape
+	var center = size / 2
+	for y in range(size):
+		for x in range(size):
+			var dx = abs(x - center)
+			var dy = abs(y - center)
+			if dx + dy < 8:
+				var dist = dx + dy
+				var color_idx = int(dist / 3) % colors.size()
+				var color = colors[color_idx]
+				img.set_pixel(x, y, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_lightning(effect: Node2D, on_complete: Callable) -> void:
+	"""Lightning spell - bolt striking down"""
+	var bolt = _create_lightning_bolt()
+	bolt.modulate.a = 0.0
+	effect.add_child(bolt)
+
+	# Flash effect
+	var flash = ColorRect.new()
+	flash.size = Vector2(200, 200)
+	flash.position = Vector2(-100, -100)
+	flash.color = Color(1.0, 1.0, 0.8, 0.0)
+	effect.add_child(flash)
+
+	var duration = 0.4
+	var tween = create_tween()
+
+	# Quick flash
+	tween.tween_property(flash, "color:a", 0.5, 0.05)
+	tween.tween_property(flash, "color:a", 0.0, 0.1)
+
+	# Bolt appears
+	tween.parallel().tween_property(bolt, "modulate:a", 1.0, 0.05)
+	tween.tween_property(bolt, "modulate:a", 0.3, 0.05)
+	tween.tween_property(bolt, "modulate:a", 1.0, 0.05)
+	tween.tween_property(bolt, "modulate:a", 0.0, 0.2)
+
+	tween.tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_lightning_bolt() -> Sprite2D:
+	"""Create lightning bolt sprite"""
+	var sprite = Sprite2D.new()
+	var width = 40
+	var height = 80
+	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Draw jagged bolt (12-bit style)
+	var bolt_color = Color(1.0, 1.0, 0.5)
+	var glow_color = Color(0.5, 0.5, 1.0, 0.5)
+
+	var x = width / 2
+	for y in range(height):
+		# Jagged path
+		if y % 8 < 4:
+			x += randi_range(-3, 3)
+		x = clamp(x, 5, width - 5)
+
+		# Draw bolt with glow
+		for dx in range(-3, 4):
+			var px = x + dx
+			if px >= 0 and px < width:
+				if abs(dx) <= 1:
+					img.set_pixel(px, y, bolt_color)
+				else:
+					img.set_pixel(px, y, glow_color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.position.y = -40  # Center on target
+	return sprite
+
+
+func _animate_holy(effect: Node2D, on_complete: Callable) -> void:
+	"""Holy spell - radiant light beams"""
+	var particles: Array[Sprite2D] = []
+	var ray_count = 8
+
+	# Create rays
+	for i in range(ray_count):
+		var ray = _create_holy_ray()
+		var angle = (float(i) / ray_count) * TAU
+		ray.rotation = angle
+		ray.scale = Vector2(0.5, 0.0)
+		effect.add_child(ray)
+		particles.append(ray)
+
+	# Create center glow
+	var glow = _create_holy_glow()
+	glow.scale = Vector2.ZERO
+	effect.add_child(glow)
+
+	var duration = 0.7
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	# Center glow expands
+	tween.tween_property(glow, "scale", Vector2(1.5, 1.5), duration * 0.5)
+	tween.tween_property(glow, "modulate:a", 0.0, duration * 0.4).set_delay(duration * 0.4)
+
+	# Rays extend outward
+	for i in range(particles.size()):
+		var ray = particles[i]
+		var delay = float(i) * 0.03
+		tween.tween_property(ray, "scale", Vector2(0.5, 1.0), duration * 0.4).set_delay(delay)
+		tween.tween_property(ray, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_holy_ray() -> Sprite2D:
+	"""Create a holy light ray"""
+	var sprite = Sprite2D.new()
+	var width = 8
+	var height = 60
+	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var center = width / 2
+	for y in range(height):
+		var fade = 1.0 - (float(y) / height)
+		for x in range(width):
+			var dist = abs(x - center)
+			if dist < 3:
+				var alpha = fade * (1.0 - dist / 3.0)
+				var color = Color(1.0, 1.0, 0.8, alpha)
+				img.set_pixel(x, y, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.offset.y = -height / 2
+	return sprite
+
+
+func _create_holy_glow() -> Sprite2D:
+	"""Create holy center glow"""
+	var sprite = Sprite2D.new()
+	var size = 40
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var center = size / 2
+	for y in range(size):
+		for x in range(size):
+			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+			if dist < center:
+				var alpha = 1.0 - (dist / center)
+				var color = Color(1.0, 1.0, 0.9, alpha * 0.8)
+				img.set_pixel(x, y, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_dark(effect: Node2D, on_complete: Callable) -> void:
+	"""Dark spell - swirling shadows"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 10
+
+	for i in range(particle_count):
+		var particle = _create_dark_particle()
+		var angle = randf() * TAU
+		var dist = randf_range(20, 40)
+		particle.position = Vector2(cos(angle), sin(angle)) * dist
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = 0.6
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	# Shadows spiral inward
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = randf() * 0.2
+
+		tween.tween_property(p, "position", Vector2.ZERO, duration * 0.6).set_delay(delay)
+		tween.tween_property(p, "rotation", p.rotation + TAU, duration).set_delay(delay)
+		tween.tween_property(p, "scale", Vector2(0.5, 0.5), duration * 0.6).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.6)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_dark_particle() -> Sprite2D:
+	"""Create a dark wisp particle"""
+	var sprite = Sprite2D.new()
+	var size = 24
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var center = size / 2
+	for y in range(size):
+		for x in range(size):
+			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+			if dist < 10:
+				var alpha = 1.0 - (dist / 10.0)
+				var color = Color(0.2, 0.1, 0.3, alpha * 0.8)
+				img.set_pixel(x, y, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_heal(effect: Node2D, on_complete: Callable) -> void:
+	"""Heal spell - rising sparkles"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 15
+
+	for i in range(particle_count):
+		var particle = _create_heal_particle()
+		particle.position = Vector2(randf_range(-25, 25), randf_range(10, 30))
+		particle.modulate.a = 0.0
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = 0.8
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = randf() * 0.3
+		var rise = randf_range(50, 80)
+
+		tween.tween_property(p, "modulate:a", 1.0, 0.1).set_delay(delay)
+		tween.tween_property(p, "position:y", p.position.y - rise, duration * 0.7).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_heal_particle() -> Sprite2D:
+	"""Create a heal sparkle particle"""
+	var sprite = Sprite2D.new()
+	var size = 12
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Cross/sparkle shape
+	var center = size / 2
+	var colors = [
+		Color(0.5, 1.0, 0.5),  # Light green
+		Color(0.8, 1.0, 0.8),  # White-green
+	]
+
+	# Vertical line
+	for y in range(2, size - 2):
+		for x in range(center - 1, center + 2):
+			var color = colors[0] if abs(y - center) > 2 else colors[1]
+			img.set_pixel(x, y, color)
+
+	# Horizontal line
+	for x in range(2, size - 2):
+		for y in range(center - 1, center + 2):
+			var color = colors[0] if abs(x - center) > 2 else colors[1]
+			img.set_pixel(x, y, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_buff(effect: Node2D, on_complete: Callable) -> void:
+	"""Buff spell - upward arrows/sparkles"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 6
+
+	for i in range(particle_count):
+		var particle = _create_buff_arrow()
+		var x_offset = (float(i) - particle_count / 2.0) * 12
+		particle.position = Vector2(x_offset, 20)
+		particle.modulate.a = 0.0
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = 0.5
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = float(i) * 0.05
+
+		tween.tween_property(p, "modulate:a", 1.0, 0.1).set_delay(delay)
+		tween.tween_property(p, "position:y", p.position.y - 50, duration * 0.7).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_buff_arrow() -> Sprite2D:
+	"""Create an upward arrow for buff effect"""
+	var sprite = Sprite2D.new()
+	var size = 16
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var color = Color(0.3, 0.8, 1.0)  # Cyan
+	var center = size / 2
+
+	# Arrow pointing up
+	for y in range(4, size):
+		for x in range(center - 2, center + 3):
+			img.set_pixel(x, y, color)
+
+	# Arrow head
+	for i in range(4):
+		for x in range(center - i, center + i + 1):
+			if x >= 0 and x < size:
+				img.set_pixel(x, 3 - i + 4, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_debuff(effect: Node2D, on_complete: Callable) -> void:
+	"""Debuff spell - downward arrows"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 6
+
+	for i in range(particle_count):
+		var particle = _create_debuff_arrow()
+		var x_offset = (float(i) - particle_count / 2.0) * 12
+		particle.position = Vector2(x_offset, -30)
+		particle.modulate.a = 0.0
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = 0.5
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = float(i) * 0.05
+
+		tween.tween_property(p, "modulate:a", 1.0, 0.1).set_delay(delay)
+		tween.tween_property(p, "position:y", p.position.y + 40, duration * 0.6).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_debuff_arrow() -> Sprite2D:
+	"""Create a downward arrow for debuff effect"""
+	var sprite = Sprite2D.new()
+	var size = 16
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var color = Color(0.8, 0.3, 0.8)  # Purple
+	var center = size / 2
+
+	# Arrow pointing down
+	for y in range(0, size - 4):
+		for x in range(center - 2, center + 3):
+			img.set_pixel(x, y, color)
+
+	# Arrow head
+	for i in range(4):
+		for x in range(center - i, center + i + 1):
+			if x >= 0 and x < size:
+				img.set_pixel(x, size - 4 + i, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_poison(effect: Node2D, on_complete: Callable) -> void:
+	"""Poison spell - bubbling toxic particles"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 10
+
+	for i in range(particle_count):
+		var particle = _create_poison_bubble()
+		particle.position = Vector2(randf_range(-20, 20), randf_range(0, 20))
+		particle.scale = Vector2(0.3, 0.3)
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = 0.6
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = randf() * 0.3
+		var rise = randf_range(30, 50)
+
+		tween.tween_property(p, "scale", Vector2(1.0, 1.0), duration * 0.3).set_delay(delay)
+		tween.tween_property(p, "position:y", p.position.y - rise, duration * 0.6).set_delay(delay)
+		tween.tween_property(p, "scale", Vector2(0.0, 0.0), duration * 0.2).set_delay(delay + duration * 0.6)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_poison_bubble() -> Sprite2D:
+	"""Create a poison bubble particle"""
+	var sprite = Sprite2D.new()
+	var size = 12
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var center = size / 2
+	var color = Color(0.4, 0.7, 0.2)  # Toxic green
+	var highlight = Color(0.6, 0.9, 0.4)
+
+	for y in range(size):
+		for x in range(size):
+			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+			if dist < 5:
+				if dist < 2:
+					img.set_pixel(x, y, highlight)
+				else:
+					img.set_pixel(x, y, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_physical(effect: Node2D, on_complete: Callable) -> void:
+	"""Physical hit - slash/impact effect"""
+	var slash = _create_slash_effect()
+	slash.scale = Vector2(0.5, 0.5)
+	slash.modulate.a = 0.0
+	effect.add_child(slash)
+
+	var duration = 0.25
+	var tween = create_tween()
+
+	tween.tween_property(slash, "modulate:a", 1.0, 0.05)
+	tween.parallel().tween_property(slash, "scale", Vector2(1.2, 1.2), duration * 0.4)
+	tween.tween_property(slash, "modulate:a", 0.0, duration * 0.5)
+
+	tween.tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_slash_effect() -> Sprite2D:
+	"""Create a slash impact sprite"""
+	var sprite = Sprite2D.new()
+	var size = 48
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var color = Color(1.0, 1.0, 1.0)
+	var center = size / 2
+
+	# Draw diagonal slash lines
+	for i in range(-15, 16):
+		var x1 = center + i
+		var y1 = center - 15 + abs(i) / 2
+		var x2 = center + i
+		var y2 = center + 15 - abs(i) / 2
+
+		if x1 >= 0 and x1 < size and y1 >= 0 and y1 < size:
+			img.set_pixel(x1, y1, color)
+		if x2 >= 0 and x2 < size and y2 >= 0 and y2 < size:
+			img.set_pixel(x2, y2, color)
+
+	# Cross slash
+	for i in range(-12, 13):
+		var px = center + i
+		var py = center
+		if px >= 0 and px < size:
+			img.set_pixel(px, py, color)
+			if py + 1 < size:
+				img.set_pixel(px, py + 1, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite

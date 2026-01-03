@@ -65,7 +65,7 @@ var _submenu_timer: Timer = null  # Delay before expanding submenu
 var _cursor_blink_timer: Timer = null  # Blinking cursor
 var _cursor_visible: bool = true
 var _audio_player: AudioStreamPlayer = null
-var _target_line: Line2D = null  # Line connecting to target
+var _target_highlight: Control = null  # Rectangle highlight around target
 var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
@@ -105,40 +105,35 @@ func _setup_timers() -> void:
 	add_child(_cursor_blink_timer)
 	_cursor_blink_timer.start()
 
-	# Target line (drawn at Control layer, not as child)
-	_setup_target_line()
+	# Target highlight (styled rectangle around selected target)
+	_setup_target_highlight()
 
 
-func _setup_target_line() -> void:
-	"""Create the target line that connects menu to enemy/ally sprites"""
-	_target_line = Line2D.new()
-	_target_line.width = 3.0
-	_target_line.default_color = Color(1.0, 1.0, 0.3, 0.9)  # Bright yellow
-	_target_line.z_index = 99  # Just below menu
-	_target_line.visible = false
-
-	# Make it stand out
-	_target_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	_target_line.end_cap_mode = Line2D.LINE_CAP_ROUND
+func _setup_target_highlight() -> void:
+	"""Create a styled rectangle highlight for target selection"""
+	_target_highlight = Control.new()
+	_target_highlight.z_index = 99
+	_target_highlight.visible = false
+	_target_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Add as sibling so it's not clipped by menu bounds
-	call_deferred("_add_target_line_to_parent")
+	call_deferred("_add_target_highlight_to_parent")
 
 
-func _add_target_line_to_parent() -> void:
-	"""Add target line as sibling for proper rendering"""
-	if _target_line and get_parent():
-		get_parent().add_child(_target_line)
+func _add_target_highlight_to_parent() -> void:
+	"""Add target highlight as sibling for proper rendering"""
+	if _target_highlight and get_parent():
+		get_parent().add_child(_target_highlight)
 
 
-func _update_target_line() -> void:
-	"""Update target line to connect current selection to target"""
-	if not _target_line or not is_instance_valid(_target_line):
+func _update_target_highlight() -> void:
+	"""Update target highlight rectangle around selected target"""
+	if not _target_highlight or not is_instance_valid(_target_highlight):
 		return
 
 	# Get current item data
 	if selected_index >= menu_items.size():
-		_target_line.visible = false
+		_target_highlight.visible = false
 		return
 
 	var item = menu_items[selected_index]
@@ -150,148 +145,151 @@ func _update_target_line() -> void:
 		target_pos = item_data.get("target_pos", Vector2.ZERO)
 
 	if target_pos == Vector2.ZERO:
-		_target_line.visible = false
+		_target_highlight.visible = false
 		_pending_target_pos = Vector2.ZERO
 		return
 
-	# Calculate line start point (from menu item)
-	var item_y = selected_index * ITEM_HEIGHT + TILE_SIZE + MENU_PADDING + ITEM_HEIGHT / 2
-	var start_pos: Vector2
-	if expand_left:
-		# Line starts from left edge of menu
-		start_pos = global_position + Vector2(0, item_y)
-	else:
-		# Line starts from right edge
-		start_pos = global_position + Vector2(size.x, item_y)
-
-	# Store for animation fade
 	_pending_target_pos = target_pos
 
-	# Draw the line - straight with arrow-like indicator at target
-	_target_line.clear_points()
-	_target_line.add_point(start_pos)
-
-	# Add midpoint for slight curve
-	var midpoint = (start_pos + target_pos) / 2
-	midpoint.y -= 20  # Slight upward curve
-	_target_line.add_point(midpoint)
-
-	# Add a few points near target to create arrow effect
-	var dir_to_target = (target_pos - midpoint).normalized()
-	var arrow_base = target_pos - dir_to_target * 12
-	_target_line.add_point(arrow_base)
-	_target_line.add_point(target_pos)
-
-	_target_line.visible = true
+	# Build the highlight box around target
+	_build_target_highlight_box(target_pos)
+	_target_highlight.visible = true
 
 
-func _fade_target_line(on_complete: Callable = Callable()) -> void:
-	"""Fade out the target line with animation"""
-	if not _target_line or not is_instance_valid(_target_line):
+func _build_target_highlight_box(target_pos: Vector2) -> void:
+	"""Build a styled rectangle with pointer around the target"""
+	# Clear existing children
+	for child in _target_highlight.get_children():
+		child.queue_free()
+
+	# Box dimensions (around sprite)
+	var box_width = 90
+	var box_height = 70
+	var border_width = 3
+
+	# Position centered on target
+	var box_pos = target_pos - Vector2(box_width / 2, box_height / 2 + 10)
+	_target_highlight.position = box_pos
+	_target_highlight.size = Vector2(box_width, box_height)
+
+	# Colors matching menu style
+	var border_color = style.get("cursor", Color(1.0, 1.0, 0.3))
+	var corner_color = border_color.lightened(0.3)
+
+	# Top border
+	var top = ColorRect.new()
+	top.color = border_color
+	top.position = Vector2(border_width, 0)
+	top.size = Vector2(box_width - border_width * 2, border_width)
+	_target_highlight.add_child(top)
+
+	# Bottom border
+	var bottom = ColorRect.new()
+	bottom.color = border_color
+	bottom.position = Vector2(border_width, box_height - border_width)
+	bottom.size = Vector2(box_width - border_width * 2, border_width)
+	_target_highlight.add_child(bottom)
+
+	# Left border
+	var left = ColorRect.new()
+	left.color = border_color
+	left.position = Vector2(0, border_width)
+	left.size = Vector2(border_width, box_height - border_width * 2)
+	_target_highlight.add_child(left)
+
+	# Right border
+	var right = ColorRect.new()
+	right.color = border_color
+	right.position = Vector2(box_width - border_width, border_width)
+	right.size = Vector2(border_width, box_height - border_width * 2)
+	_target_highlight.add_child(right)
+
+	# Corner tiles (brighter)
+	var corners = [
+		Vector2(0, 0),  # Top-left
+		Vector2(box_width - border_width, 0),  # Top-right
+		Vector2(0, box_height - border_width),  # Bottom-left
+		Vector2(box_width - border_width, box_height - border_width)  # Bottom-right
+	]
+	for corner_pos in corners:
+		var corner = ColorRect.new()
+		corner.color = corner_color
+		corner.position = corner_pos
+		corner.size = Vector2(border_width, border_width)
+		_target_highlight.add_child(corner)
+
+	# Add pointer arrow at top pointing down
+	var pointer = Label.new()
+	pointer.text = "▼"
+	pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pointer.position = Vector2(box_width / 2 - 8, -18)
+	pointer.add_theme_color_override("font_color", border_color)
+	pointer.add_theme_font_size_override("font_size", 16)
+	_target_highlight.add_child(pointer)
+
+
+func _fade_target_highlight(on_complete: Callable = Callable()) -> void:
+	"""Fade out the target highlight with animation"""
+	if not _target_highlight or not is_instance_valid(_target_highlight):
 		if on_complete.is_valid():
 			on_complete.call()
 		return
 
-	if not _target_line.visible:
+	if not _target_highlight.visible:
 		if on_complete.is_valid():
 			on_complete.call()
 		return
 
 	var tween = create_tween()
-	tween.tween_property(_target_line, "modulate:a", 0.0, 0.15).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_target_highlight, "modulate:a", 0.0, 0.15).set_ease(Tween.EASE_OUT)
 	tween.tween_callback(func():
-		if is_instance_valid(_target_line):
-			_target_line.visible = false
-			_target_line.modulate.a = 1.0  # Reset for next use
+		if is_instance_valid(_target_highlight):
+			_target_highlight.visible = false
+			_target_highlight.modulate.a = 1.0  # Reset for next use
 		if on_complete.is_valid():
 			on_complete.call()
 	)
 
 
 func _setup_audio() -> void:
-	"""Setup audio for menu sounds"""
-	_audio_player = AudioStreamPlayer.new()
-	_audio_player.volume_db = -10.0
-	add_child(_audio_player)
+	"""Setup audio for menu sounds (now uses SoundManager)"""
+	# Legacy audio player no longer needed - SoundManager handles all sounds
+	pass
 
 
 func _play_move_sound() -> void:
 	"""Play sound when moving between menu items"""
-	if not is_instance_valid(_audio_player):
-		return
-
-	# Generate a simple blip sound
-	var sample_rate = 22050
-	var duration = 0.03
-	var frequency = 800.0
-
-	var generator = AudioStreamGenerator.new()
-	generator.mix_rate = sample_rate
-
-	_audio_player.stream = generator
-	_audio_player.play()
-
-	var playback = _audio_player.get_stream_playback()
-	if not playback:
-		return
-	var samples = int(sample_rate * duration)
-	for i in range(samples):
-		var t = float(i) / sample_rate
-		var sample = sin(t * frequency * TAU) * (1.0 - t / duration)
-		playback.push_frame(Vector2(sample, sample) * 0.3)
+	SoundManager.play_ui("menu_move")
 
 
 func _play_select_sound() -> void:
 	"""Play sound when selecting an item"""
-	if not is_instance_valid(_audio_player):
-		return
-
-	var sample_rate = 22050
-	var duration = 0.06
-	var frequency = 1200.0
-
-	var generator = AudioStreamGenerator.new()
-	generator.mix_rate = sample_rate
-
-	_audio_player.stream = generator
-	_audio_player.play()
-
-	var playback = _audio_player.get_stream_playback()
-	if not playback:
-		return
-	var samples = int(sample_rate * duration)
-	for i in range(samples):
-		var t = float(i) / sample_rate
-		# Rising pitch for select
-		var freq = frequency + (t * 400.0)
-		var sample = sin(t * freq * TAU) * (1.0 - t / duration)
-		playback.push_frame(Vector2(sample, sample) * 0.3)
+	SoundManager.play_ui("menu_select")
 
 
 func _play_expand_sound() -> void:
 	"""Play sound when submenu expands"""
-	if not is_instance_valid(_audio_player):
-		return
+	SoundManager.play_ui("menu_expand")
 
-	var sample_rate = 22050
-	var duration = 0.05
-	var frequency = 600.0
 
-	var generator = AudioStreamGenerator.new()
-	generator.mix_rate = sample_rate
+func _play_advance_sound() -> void:
+	"""Play sound when queueing an action (Advance mode)"""
+	SoundManager.play_ui("advance_queue")
 
-	_audio_player.stream = generator
-	_audio_player.play()
 
-	var playback = _audio_player.get_stream_playback()
-	if not playback:
-		return
-	var samples = int(sample_rate * duration)
-	for i in range(samples):
-		var t = float(i) / sample_rate
-		var sample = sin(t * frequency * TAU) * (1.0 - t / duration) * 0.5
-		sample += sin(t * frequency * 1.5 * TAU) * (1.0 - t / duration) * 0.3
-		playback.push_frame(Vector2(sample, sample) * 0.25)
+func _play_undo_sound() -> void:
+	"""Play sound when undoing a queued action"""
+	SoundManager.play_ui("advance_undo")
+
+
+func _play_defer_sound() -> void:
+	"""Play sound when deferring"""
+	SoundManager.play_ui("defer")
+
+
+func _play_cancel_sound() -> void:
+	"""Play sound when canceling"""
+	SoundManager.play_ui("menu_cancel")
 
 
 func _on_cursor_blink() -> void:
@@ -571,8 +569,8 @@ func _update_selection() -> void:
 			else:
 				label.add_theme_color_override("font_color", style.text)
 
-	# Update target line to point at selected enemy/ally
-	_update_target_line()
+	# Update target highlight to show selected enemy/ally
+	_update_target_highlight()
 
 
 func _on_item_pressed(index: int) -> void:
@@ -740,7 +738,7 @@ func close_all() -> void:
 	else:
 		# Only close if not the root menu, or if forced
 		if not is_root_menu:
-			_cleanup_target_line()
+			_cleanup_target_highlight()
 			menu_closed.emit()
 			queue_free()
 
@@ -753,16 +751,16 @@ func force_close() -> void:
 	if parent_menu:
 		parent_menu.force_close()
 	else:
-		_cleanup_target_line()
+		_cleanup_target_highlight()
 		menu_closed.emit()
 		queue_free()
 
 
-func _cleanup_target_line() -> void:
-	"""Remove target line from scene"""
-	if _target_line and is_instance_valid(_target_line):
-		_target_line.queue_free()
-		_target_line = null
+func _cleanup_target_highlight() -> void:
+	"""Remove target highlight from scene"""
+	if _target_highlight and is_instance_valid(_target_highlight):
+		_target_highlight.queue_free()
+		_target_highlight = null
 
 
 ## Advance Mode Functions
@@ -792,14 +790,17 @@ func _handle_defer_input() -> void:
 		_undo_last_action()
 	else:
 		# No actions queued - emit defer signal
-		_play_select_sound()
+		_play_defer_sound()
 		defer_requested.emit()
 		_close_entire_tree()
 
 
 func _queue_current_action(item: Dictionary) -> void:
 	"""Add action to queue (Advance mode)"""
-	if _queued_actions.size() >= _max_queue_size:
+	# Always queue to root menu
+	var root = _get_root_menu()
+
+	if root._queued_actions.size() >= root._max_queue_size:
 		# Queue full - play error sound or ignore
 		return
 
@@ -808,21 +809,45 @@ func _queue_current_action(item: Dictionary) -> void:
 		"data": item.get("data", null),
 		"label": item.get("label", "")
 	}
-	_queued_actions.append(action)
-	_play_expand_sound()  # Distinct sound for queuing
-	# TODO: Visual feedback - show queue count on menu
+	root._queued_actions.append(action)
+	_play_advance_sound()
+
+	# If we're in a submenu, close just the submenu chain back to root
+	if parent_menu:
+		_close_submenu_chain()
+
+
+func _get_root_menu() -> Win98Menu:
+	"""Get the root menu of this menu tree"""
+	var root = self
+	while root.parent_menu:
+		root = root.parent_menu
+	return root
+
+
+func _close_submenu_chain() -> void:
+	"""Close this submenu and return focus to parent (for Advance mode)"""
+	if submenu:
+		submenu.queue_free()
+		submenu = null
+	if parent_menu:
+		parent_menu.submenu = null
+	queue_free()
 
 
 func _undo_last_action() -> void:
-	"""Remove last action from queue"""
-	if _queued_actions.size() > 0:
-		_queued_actions.pop_back()
-		_play_move_sound()
+	"""Remove last action from queue (always from root)"""
+	var root = _get_root_menu()
+	if root._queued_actions.size() > 0:
+		root._queued_actions.pop_back()
+		_play_undo_sound()
 
 
 func _cancel_all_queued() -> void:
-	"""Clear entire action queue"""
-	_queued_actions.clear()
+	"""Clear entire action queue (always from root)"""
+	var root = _get_root_menu()
+	root._queued_actions.clear()
+	_play_cancel_sound()
 
 
 func _submit_actions() -> void:
@@ -836,26 +861,29 @@ func _submit_actions() -> void:
 		# Can't submit a submenu item directly
 		return
 
-	# Build final action list
-	var all_actions = _queued_actions.duplicate()
+	# Get root menu for queued actions
+	var root = _get_root_menu()
+
+	# Build final action list from root's queue
+	var all_actions = root._queued_actions.duplicate()
 	all_actions.append({
 		"id": current_item.get("id", ""),
 		"data": current_item.get("data", null),
 		"label": current_item.get("label", "")
 	})
 
-	_queued_actions.clear()
+	root._queued_actions.clear()
 
 	if all_actions.size() == 1:
 		# Single action - use normal item_selected signal
-		_fade_target_line(func():
-			item_selected.emit(all_actions[0].id, all_actions[0].data)
+		_fade_target_highlight(func():
+			root.item_selected.emit(all_actions[0].id, all_actions[0].data)
 			_close_entire_tree()
 		)
 	else:
-		# Multiple actions - use actions_submitted signal for Brave
-		_fade_target_line(func():
-			actions_submitted.emit(all_actions)
+		# Multiple actions - use actions_submitted signal for Advance
+		_fade_target_highlight(func():
+			root.actions_submitted.emit(all_actions)
 			_close_entire_tree()
 		)
 

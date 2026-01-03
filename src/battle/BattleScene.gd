@@ -843,6 +843,11 @@ func _execute_attack(target: Combatant) -> void:
 		attacker_animator.play_attack(func():
 			if target_idx >= 0 and target_idx < enemy_animators.size():
 				enemy_animators[target_idx].play_hit()
+			# Spawn physical hit effect on target
+			if target_idx >= 0 and target_idx < enemy_sprite_nodes.size():
+				var sprite = enemy_sprite_nodes[target_idx]
+				if is_instance_valid(sprite):
+					EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, sprite.global_position)
 		)
 
 	BattleManager.player_attack(target)
@@ -939,7 +944,39 @@ func _execute_ability(ability_id: String, target: Combatant, target_all: bool = 
 	if animator:
 		_play_ability_animation(anim_type, animator)
 
+	# Spawn visual effects on targets
+	_spawn_ability_effects(ability_id, targets)
+
 	BattleManager.player_use_ability(ability_id, targets)
+
+
+func _spawn_ability_effects(ability_id: String, targets: Array) -> void:
+	"""Spawn visual effects for an ability on all targets"""
+	var canvas_transform = get_viewport().get_canvas_transform()
+
+	for target in targets:
+		if not is_instance_valid(target):
+			continue
+
+		# Find target sprite position
+		var target_pos = Vector2.ZERO
+
+		# Check if target is an enemy
+		var enemy_idx = test_enemies.find(target)
+		if enemy_idx >= 0 and enemy_idx < enemy_sprite_nodes.size():
+			var sprite = enemy_sprite_nodes[enemy_idx]
+			if is_instance_valid(sprite):
+				target_pos = sprite.global_position
+
+		# Check if target is a party member
+		var party_idx = party_members.find(target)
+		if party_idx >= 0 and party_idx < party_sprite_nodes.size():
+			var sprite = party_sprite_nodes[party_idx]
+			if is_instance_valid(sprite):
+				target_pos = sprite.global_position
+
+		if target_pos != Vector2.ZERO:
+			EffectSystem.spawn_ability_effect(ability_id, target_pos)
 
 
 func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = null) -> void:
@@ -1136,6 +1173,9 @@ func _on_turn_started(combatant: Combatant) -> void:
 
 	# Show Win98 menu for player turns (use BattleManager.player_party for correct object identity)
 	var is_player = combatant in BattleManager.player_party
+	if is_player:
+		# Play da-ding sound for player turn
+		SoundManager.play_ui("player_turn")
 	if use_win98_menus and is_player:
 		_show_win98_command_menu(combatant)
 

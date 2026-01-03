@@ -116,14 +116,14 @@ func gain_ap(amount: int) -> void:
 	ap_changed.emit(old_ap, current_ap)
 
 
-func execute_default() -> void:
-	"""Default action: skip turn, gain +1 AP, reduce incoming damage"""
+func execute_defer() -> void:
+	"""Defer action: skip turn, gain +1 AP, reduce incoming damage"""
 	is_defending = true
 	gain_ap(1)
 
 
-func execute_brave(actions: Array[Dictionary]) -> void:
-	"""Brave action: queue multiple actions, spending AP"""
+func execute_advance(actions: Array[Dictionary]) -> void:
+	"""Advance action: queue multiple actions, spending AP"""
 	var ap_cost = actions.size() - 1  # First action is free
 	if spend_ap(ap_cost):
 		queued_actions = actions.duplicate()

@@ -30,6 +30,8 @@ MapSystem="*res://src/maps/MapSystem.gd"
 EncounterSystem="*res://src/encounters/EncounterSystem.gd"
 SceneTransition="*res://src/transitions/SceneTransition.gd"
 SaveSystem="*res://src/save/SaveSystem.gd"
+SoundManager="*res://src/audio/SoundManager.gd"
+EffectSystem="*res://src/battle/EffectSystem.gd"
 
 [display]
 

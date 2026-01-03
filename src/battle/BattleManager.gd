@@ -223,28 +223,38 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 	_execute_action(current_combatant, action)
 
 
-func player_default() -> void:
-	"""Execute Default action (skip turn, gain AP, defend)"""
+func player_defer() -> void:
+	"""Execute Defer action (skip turn, gain AP, defend)"""
 	if current_state != BattleState.PLAYER_TURN:
 		return
 
-	current_combatant.execute_default()
-	print("%s uses Default (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
+	current_combatant.execute_defer()
+	print("%s defers (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
 	_end_combatant_turn(current_combatant)
 
 
-func player_brave(actions: Array[Dictionary]) -> void:
-	"""Execute Brave action (queue multiple actions)"""
+# Alias for backwards compatibility
+func player_default() -> void:
+	player_defer()
+
+
+func player_advance(actions: Array[Dictionary]) -> void:
+	"""Execute Advance action (queue multiple actions)"""
 	if current_state != BattleState.PLAYER_TURN:
 		return
 
-	current_combatant.execute_brave(actions)
-	print("%s uses Brave (%d actions, AP: %d)" % [current_combatant.combatant_name, actions.size(), current_combatant.current_ap])
+	current_combatant.execute_advance(actions)
+	print("%s advances (%d actions, AP: %d)" % [current_combatant.combatant_name, actions.size(), current_combatant.current_ap])
 
 	# Execute first action immediately
 	if current_combatant.queued_actions.size() > 0:
 		var first_action = current_combatant.queued_actions.pop_front()
 		_execute_action(current_combatant, first_action)
+
+
+# Alias for backwards compatibility
+func player_brave(actions: Array[Dictionary]) -> void:
+	player_advance(actions)
 
 
 func player_item(item_id: String, targets: Array) -> void:
@@ -273,7 +283,7 @@ func _execute_action(combatant: Combatant, action: Dictionary) -> void:
 		"item":
 			_execute_item(combatant, action["item_id"], action.get("targets", []))
 		"defend":
-			combatant.execute_default()
+			combatant.execute_defer()
 
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
