@@ -17,16 +17,16 @@ enum AnimState {
 	DEAD
 }
 
-## Animation speeds (frames per animation frame)
+## Animation speeds (frames per animation frame) - slower for visibility
 const ANIM_SPEED: Dictionary = {
-	"idle": 0.3,
-	"attack": 0.1,
-	"defend": 0.2,
-	"hit": 0.08,
-	"cast": 0.15,
-	"item": 0.12,
-	"victory": 0.25,
-	"defeat": 0.2
+	"idle": 0.4,
+	"attack": 0.25,
+	"defend": 0.35,
+	"hit": 0.2,
+	"cast": 0.3,
+	"item": 0.25,
+	"victory": 0.35,
+	"defeat": 0.3
 }
 
 ## Current animation state
@@ -190,14 +190,14 @@ static func create_hero_sprite_frames() -> SpriteFrames:
 
 	# Idle animation (2 frames, slight bob)
 	frames.add_animation("idle")
-	frames.set_animation_speed("idle", 3.0)
+	frames.set_animation_speed("idle", 2.0)  # Slower idle
 	frames.set_animation_loop("idle", true)
 	frames.add_frame("idle", _create_hero_frame(0, 0.0))  # Normal
 	frames.add_frame("idle", _create_hero_frame(0, -1.0))  # Slight up
 
-	# Attack animation (4 frames, swing sword)
+	# Attack animation (4 frames, swing sword) - SLOWER for visibility
 	frames.add_animation("attack")
-	frames.set_animation_speed("attack", 10.0)
+	frames.set_animation_speed("attack", 4.0)  # Much slower
 	frames.set_animation_loop("attack", false)
 	frames.add_frame("attack", _create_hero_frame(1, 0.0))  # Wind up
 	frames.add_frame("attack", _create_hero_frame(2, 0.0))  # Mid swing
@@ -206,14 +206,14 @@ static func create_hero_sprite_frames() -> SpriteFrames:
 
 	# Defend animation (2 frames, shield up)
 	frames.add_animation("defend")
-	frames.set_animation_speed("defend", 5.0)
+	frames.set_animation_speed("defend", 3.0)  # Slower
 	frames.set_animation_loop("defend", false)
 	frames.add_frame("defend", _create_hero_frame(4, 0.0))  # Shield up
 	frames.add_frame("defend", _create_hero_frame(4, 0.0))  # Hold
 
-	# Hit animation (3 frames, recoil)
+	# Hit animation (3 frames, recoil) - SLOWER for visibility
 	frames.add_animation("hit")
-	frames.set_animation_speed("hit", 12.0)
+	frames.set_animation_speed("hit", 5.0)  # Much slower
 	frames.set_animation_loop("hit", false)
 	frames.add_frame("hit", _create_hero_frame(5, 2.0))   # Recoil back
 	frames.add_frame("hit", _create_hero_frame(5, 1.0))   # Mid recoil
@@ -221,14 +221,14 @@ static func create_hero_sprite_frames() -> SpriteFrames:
 
 	# Victory animation (2 frames, pose)
 	frames.add_animation("victory")
-	frames.set_animation_speed("victory", 2.0)
+	frames.set_animation_speed("victory", 1.5)  # Slower
 	frames.set_animation_loop("victory", true)
 	frames.add_frame("victory", _create_hero_frame(6, 0.0))  # Victory pose
 	frames.add_frame("victory", _create_hero_frame(6, -1.0))  # Slight bob
 
-	# Defeat animation (3 frames, collapse)
+	# Defeat animation (3 frames, collapse) - SLOWER for visibility
 	frames.add_animation("defeat")
-	frames.set_animation_speed("defeat", 5.0)
+	frames.set_animation_speed("defeat", 3.0)  # Slower
 	frames.set_animation_loop("defeat", false)
 	frames.add_frame("defeat", _create_hero_frame(7, 0.0))   # Stagger
 	frames.add_frame("defeat", _create_hero_frame(7, 2.0))   # Falling
@@ -376,31 +376,31 @@ static func create_slime_sprite_frames() -> SpriteFrames:
 
 	# Idle animation (4 frames, bouncy blob)
 	frames.add_animation("idle")
-	frames.set_animation_speed("idle", 4.0)
+	frames.set_animation_speed("idle", 2.5)  # Slower
 	frames.set_animation_loop("idle", true)
 	frames.add_frame("idle", _create_slime_frame(0, 0.0, 1.0))    # Normal
 	frames.add_frame("idle", _create_slime_frame(0, -2.0, 1.05))  # Stretch up
 	frames.add_frame("idle", _create_slime_frame(0, 0.0, 1.0))    # Normal
 	frames.add_frame("idle", _create_slime_frame(0, 1.0, 0.95))   # Squish down
 
-	# Attack animation (3 frames, lunge forward)
+	# Attack animation (3 frames, lunge forward) - SLOWER
 	frames.add_animation("attack")
-	frames.set_animation_speed("attack", 8.0)
+	frames.set_animation_speed("attack", 4.0)  # Much slower
 	frames.set_animation_loop("attack", false)
 	frames.add_frame("attack", _create_slime_frame(1, 0.0, 1.0))   # Wind up (squish)
 	frames.add_frame("attack", _create_slime_frame(2, -4.0, 1.2))  # Lunge (stretch)
 	frames.add_frame("attack", _create_slime_frame(0, 0.0, 1.0))   # Return
 
-	# Hit animation (2 frames, wobble)
+	# Hit animation (2 frames, wobble) - SLOWER
 	frames.add_animation("hit")
-	frames.set_animation_speed("hit", 10.0)
+	frames.set_animation_speed("hit", 5.0)  # Much slower
 	frames.set_animation_loop("hit", false)
 	frames.add_frame("hit", _create_slime_frame(3, 0.0, 0.9))   # Squish
 	frames.add_frame("hit", _create_slime_frame(0, 0.0, 1.0))   # Return
 
-	# Defeat animation (4 frames, melt)
+	# Defeat animation (4 frames, melt) - SLOWER
 	frames.add_animation("defeat")
-	frames.set_animation_speed("defeat", 4.0)
+	frames.set_animation_speed("defeat", 2.5)  # Slower
 	frames.set_animation_loop("defeat", false)
 	frames.add_frame("defeat", _create_slime_frame(0, 0.0, 1.0))   # Normal
 	frames.add_frame("defeat", _create_slime_frame(4, 2.0, 0.8))   # Deflate
@@ -484,62 +484,62 @@ static func create_mage_sprite_frames(robe_color: Color = Color(0.9, 0.9, 1.0)) 
 	"""Create animated sprite frames for mage character (12-bit style)"""
 	var frames = SpriteFrames.new()
 
-	# Idle animation (2 frames, slight bob)
+	# Idle animation (2 frames, slight bob) - SLOWER
 	frames.add_animation("idle")
-	frames.set_animation_speed("idle", 3.0)
+	frames.set_animation_speed("idle", 2.0)
 	frames.set_animation_loop("idle", true)
 	frames.add_frame("idle", _create_mage_frame(0, 0.0, robe_color))
 	frames.add_frame("idle", _create_mage_frame(0, -1.0, robe_color))
 
-	# Attack animation (staff thrust - use cast for mages)
+	# Attack animation (staff thrust) - MUCH SLOWER
 	frames.add_animation("attack")
-	frames.set_animation_speed("attack", 8.0)
+	frames.set_animation_speed("attack", 3.0)
 	frames.set_animation_loop("attack", false)
 	frames.add_frame("attack", _create_mage_frame(1, 0.0, robe_color))
 	frames.add_frame("attack", _create_mage_frame(2, 0.0, robe_color))
 	frames.add_frame("attack", _create_mage_frame(0, 0.0, robe_color))
 
-	# Defend animation
+	# Defend animation - SLOWER
 	frames.add_animation("defend")
-	frames.set_animation_speed("defend", 5.0)
+	frames.set_animation_speed("defend", 2.5)
 	frames.set_animation_loop("defend", false)
 	frames.add_frame("defend", _create_mage_frame(3, 0.0, robe_color))
 	frames.add_frame("defend", _create_mage_frame(3, 0.0, robe_color))
 
-	# Hit animation
+	# Hit animation - MUCH SLOWER
 	frames.add_animation("hit")
-	frames.set_animation_speed("hit", 12.0)
+	frames.set_animation_speed("hit", 4.0)
 	frames.set_animation_loop("hit", false)
 	frames.add_frame("hit", _create_mage_frame(4, 2.0, robe_color))
 	frames.add_frame("hit", _create_mage_frame(4, 1.0, robe_color))
 	frames.add_frame("hit", _create_mage_frame(0, 0.0, robe_color))
 
-	# Cast animation (magic)
+	# Cast animation (magic) - SLOWER for dramatic effect
 	frames.add_animation("cast")
-	frames.set_animation_speed("cast", 6.0)
+	frames.set_animation_speed("cast", 2.5)
 	frames.set_animation_loop("cast", false)
 	frames.add_frame("cast", _create_mage_frame(5, 0.0, robe_color))
 	frames.add_frame("cast", _create_mage_frame(6, -2.0, robe_color))
 	frames.add_frame("cast", _create_mage_frame(5, 0.0, robe_color))
 	frames.add_frame("cast", _create_mage_frame(0, 0.0, robe_color))
 
-	# Item animation
+	# Item animation - SLOWER
 	frames.add_animation("item")
-	frames.set_animation_speed("item", 8.0)
+	frames.set_animation_speed("item", 3.0)
 	frames.set_animation_loop("item", false)
 	frames.add_frame("item", _create_mage_frame(1, 0.0, robe_color))
 	frames.add_frame("item", _create_mage_frame(0, 0.0, robe_color))
 
-	# Victory animation
+	# Victory animation - SLOWER
 	frames.add_animation("victory")
-	frames.set_animation_speed("victory", 2.0)
+	frames.set_animation_speed("victory", 1.5)
 	frames.set_animation_loop("victory", true)
 	frames.add_frame("victory", _create_mage_frame(7, 0.0, robe_color))
 	frames.add_frame("victory", _create_mage_frame(7, -1.0, robe_color))
 
-	# Defeat animation
+	# Defeat animation - SLOWER
 	frames.add_animation("defeat")
-	frames.set_animation_speed("defeat", 5.0)
+	frames.set_animation_speed("defeat", 2.5)
 	frames.set_animation_loop("defeat", false)
 	frames.add_frame("defeat", _create_mage_frame(4, 0.0, robe_color))
 	frames.add_frame("defeat", _create_mage_frame(4, 2.0, robe_color))
@@ -699,62 +699,62 @@ static func create_thief_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for thief character (12-bit style)"""
 	var frames = SpriteFrames.new()
 
-	# Idle animation (2 frames, slight bob)
+	# Idle animation (2 frames, slight bob) - SLOWER
 	frames.add_animation("idle")
-	frames.set_animation_speed("idle", 3.0)
+	frames.set_animation_speed("idle", 2.0)
 	frames.set_animation_loop("idle", true)
 	frames.add_frame("idle", _create_thief_frame(0, 0.0))
 	frames.add_frame("idle", _create_thief_frame(0, -1.0))
 
-	# Attack animation (quick slash)
+	# Attack animation (quick slash) - SLOWER but still quick for thief
 	frames.add_animation("attack")
-	frames.set_animation_speed("attack", 12.0)
+	frames.set_animation_speed("attack", 5.0)
 	frames.set_animation_loop("attack", false)
 	frames.add_frame("attack", _create_thief_frame(1, 0.0))
 	frames.add_frame("attack", _create_thief_frame(2, -2.0))
 	frames.add_frame("attack", _create_thief_frame(3, 0.0))
 	frames.add_frame("attack", _create_thief_frame(0, 0.0))
 
-	# Defend animation
+	# Defend animation - SLOWER
 	frames.add_animation("defend")
-	frames.set_animation_speed("defend", 5.0)
+	frames.set_animation_speed("defend", 2.5)
 	frames.set_animation_loop("defend", false)
 	frames.add_frame("defend", _create_thief_frame(4, 0.0))
 	frames.add_frame("defend", _create_thief_frame(4, 0.0))
 
-	# Hit animation
+	# Hit animation - SLOWER
 	frames.add_animation("hit")
-	frames.set_animation_speed("hit", 12.0)
+	frames.set_animation_speed("hit", 5.0)
 	frames.set_animation_loop("hit", false)
 	frames.add_frame("hit", _create_thief_frame(5, 2.0))
 	frames.add_frame("hit", _create_thief_frame(5, 1.0))
 	frames.add_frame("hit", _create_thief_frame(0, 0.0))
 
-	# Cast animation (use item/throw)
+	# Cast animation (use item/throw) - SLOWER
 	frames.add_animation("cast")
-	frames.set_animation_speed("cast", 8.0)
+	frames.set_animation_speed("cast", 3.0)
 	frames.set_animation_loop("cast", false)
 	frames.add_frame("cast", _create_thief_frame(6, 0.0))
 	frames.add_frame("cast", _create_thief_frame(6, -1.0))
 	frames.add_frame("cast", _create_thief_frame(0, 0.0))
 
-	# Item animation
+	# Item animation - SLOWER
 	frames.add_animation("item")
-	frames.set_animation_speed("item", 8.0)
+	frames.set_animation_speed("item", 3.0)
 	frames.set_animation_loop("item", false)
 	frames.add_frame("item", _create_thief_frame(6, 0.0))
 	frames.add_frame("item", _create_thief_frame(0, 0.0))
 
-	# Victory animation
+	# Victory animation - SLOWER
 	frames.add_animation("victory")
-	frames.set_animation_speed("victory", 2.0)
+	frames.set_animation_speed("victory", 1.5)
 	frames.set_animation_loop("victory", true)
 	frames.add_frame("victory", _create_thief_frame(7, 0.0))
 	frames.add_frame("victory", _create_thief_frame(7, -1.0))
 
-	# Defeat animation
+	# Defeat animation - SLOWER
 	frames.add_animation("defeat")
-	frames.set_animation_speed("defeat", 5.0)
+	frames.set_animation_speed("defeat", 2.5)
 	frames.set_animation_loop("defeat", false)
 	frames.add_frame("defeat", _create_thief_frame(5, 0.0))
 	frames.add_frame("defeat", _create_thief_frame(5, 2.0))

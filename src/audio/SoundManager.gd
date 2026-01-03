@@ -16,7 +16,7 @@ const SOUNDS = {
 	"menu_select": {"freq": 1200, "duration": 0.06, "type": "rising"},
 	"menu_cancel": {"freq": 400, "duration": 0.08, "type": "falling"},
 	"menu_expand": {"freq": 600, "duration": 0.05, "type": "chord"},
-	"advance_queue": {"freq": 80, "duration": 0.25, "type": "explosion"},
+	"advance_queue": {"freq": 50, "duration": 0.4, "type": "explosion"},  # Lower, boomier
 	"advance_undo": {"freq": 500, "duration": 0.06, "type": "falling"},
 	"defer": {"freq": 300, "duration": 0.1, "type": "low_pulse"},
 	"player_turn": {"freq": 880, "duration": 0.2, "type": "da_ding"},

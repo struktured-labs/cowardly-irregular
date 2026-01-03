@@ -1381,10 +1381,19 @@ func _show_win98_command_menu(combatant: Combatant) -> void:
 	active_win98_menu.menu_closed.connect(_on_win98_menu_closed)
 	active_win98_menu.actions_submitted.connect(_on_win98_actions_submitted)
 	active_win98_menu.defer_requested.connect(_on_win98_defer_requested)
+	active_win98_menu.go_back_requested.connect(_on_win98_go_back_requested)
 
-	# Set max queue size based on current AP (can queue up to AP+4 actions total)
-	var max_queue = combatant.current_ap + 4  # First action is free, can go to -4 debt
+	# Set max queue size and current AP for display
+	# Max 4 actions per advance (like Bravely Default's Brave system)
+	# But limited by AP: can't go below -4 debt
+	var ap_limit = combatant.current_ap + 4  # How many actions AP allows (can go to -4)
+	var max_queue = mini(4, maxi(1, ap_limit))  # Cap at 4, minimum 1
 	active_win98_menu.set_max_queue_size(max_queue)
+	active_win98_menu.set_current_ap(combatant.current_ap)
+
+	# Allow going back if not the first player in selection order
+	var can_go_back = BattleManager.selection_index > 0
+	active_win98_menu.set_can_go_back(can_go_back)
 
 
 func _build_command_menu_items_with_targets(combatant: Combatant) -> Array:
@@ -1745,6 +1754,15 @@ func _on_win98_defer_requested() -> void:
 	log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
 	BattleManager.player_defer()
 	_update_ui()
+
+
+func _on_win98_go_back_requested() -> void:
+	"""Handle B button request to go back to previous player"""
+	# Force close the current menu immediately
+	if active_win98_menu and is_instance_valid(active_win98_menu):
+		active_win98_menu.force_close()
+		active_win98_menu = null
+	BattleManager.go_back_to_previous_player()
 
 
 func _close_win98_menu() -> void:

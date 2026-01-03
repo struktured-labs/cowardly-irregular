@@ -8,6 +8,7 @@ signal item_selected(item_id: String, item_data: Variant)
 signal menu_closed()
 signal actions_submitted(actions: Array)  # For Advance mode - multiple actions
 signal defer_requested()  # L button with no queue - defer turn
+signal go_back_requested()  # B button at root to go back to previous player
 
 ## Menu styling per character class - retro palette
 const CHARACTER_STYLES = {
@@ -70,6 +71,9 @@ var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
 var _is_closing: bool = false  # Prevent double-close
+var _current_ap: int = 0  # Current AP for display
+var _ap_label: Label = null  # AP display label
+var _can_go_back: bool = false  # Whether B button can go to previous player
 
 ## Signals for target selection with position
 signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
@@ -355,17 +359,27 @@ func _build_menu() -> void:
 	if menu_items.size() == 0:
 		return
 
-	# Calculate menu size
+	# Calculate menu size (add space for AP label if root menu)
 	var menu_width = 140
-	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2
+	var ap_label_height = 18 if is_root_menu and _current_ap != 0 else 0
+	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
 	add_child(menu_panel)
 
-	# Items container
+	# AP label at top for root menu
+	if is_root_menu:
+		_ap_label = Label.new()
+		_ap_label.name = "APLabel"
+		_ap_label.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE)
+		_ap_label.add_theme_font_size_override("font_size", 10)
+		_update_ap_label()
+		menu_panel.add_child(_ap_label)
+
+	# Items container (offset by AP label if present)
 	var items_container = VBoxContainer.new()
-	items_container.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE)
+	items_container.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
 	items_container.add_theme_constant_override("separation", 0)
 	menu_panel.add_child(items_container)
 
@@ -822,7 +836,7 @@ func _handle_defer_input() -> void:
 
 
 func _queue_current_action(item: Dictionary) -> void:
-	"""Add action to queue (Advance mode) - menu stays open for more actions"""
+	"""Add action to queue (Advance mode) - menu stays FULLY open for more actions"""
 	# Always queue to root menu
 	var root = _get_root_menu()
 
@@ -838,14 +852,11 @@ func _queue_current_action(item: Dictionary) -> void:
 	root._queued_actions.append(action)
 	_play_advance_sound()
 
-	# Close submenus but keep root menu open for more actions
-	if parent_menu:
-		# We're in a submenu - close this submenu and return to root
-		_close_submenu_to_root()
-	# If we're the root menu with a submenu open, close the submenu
-	elif submenu and is_instance_valid(submenu):
-		submenu.queue_free()
-		submenu = null
+	# Update AP display to show pending cost
+	root._update_ap_label()
+
+	# DON'T close menus or clear highlights - keep everything visible for more selections
+	# The highlight stays on the current target until player moves to another
 
 
 func _close_submenu_to_root() -> void:
@@ -882,6 +893,7 @@ func _undo_last_action() -> void:
 	if root._queued_actions.size() > 0:
 		root._queued_actions.pop_back()
 		_play_undo_sound()
+		root._update_ap_label()
 
 
 func _cancel_all_queued() -> void:
@@ -889,6 +901,7 @@ func _cancel_all_queued() -> void:
 	var root = _get_root_menu()
 	root._queued_actions.clear()
 	_play_cancel_sound()
+	root._update_ap_label()
 
 
 func _submit_actions() -> void:
@@ -940,6 +953,38 @@ func get_queue_count() -> int:
 func set_max_queue_size(max_size: int) -> void:
 	"""Set max queue size based on available AP"""
 	_max_queue_size = max_size
+
+
+func set_current_ap(ap: int) -> void:
+	"""Set current AP for display"""
+	_current_ap = ap
+	_update_ap_label()
+
+
+func set_can_go_back(can_go: bool) -> void:
+	"""Set whether B button can go back to previous player"""
+	_can_go_back = can_go
+
+
+func _update_ap_label() -> void:
+	"""Update the AP display label showing current and pending cost"""
+	if not _ap_label or not is_instance_valid(_ap_label):
+		return
+
+	var root = _get_root_menu()
+	var queued_count = root._queued_actions.size()
+	var pending_cost = queued_count + 1  # +1 for current action being selected
+
+	if queued_count == 0:
+		# No actions queued, just show current AP
+		_ap_label.text = "AP: %+d" % _current_ap
+		_ap_label.add_theme_color_override("font_color", Color.WHITE)
+	else:
+		# Show AP change preview: "AP: 2 → -1"
+		var new_ap = _current_ap - pending_cost
+		var color = Color.YELLOW if new_ap >= 0 else Color.ORANGE_RED
+		_ap_label.text = "AP: %+d → %+d (%d)" % [_current_ap, new_ap, queued_count]
+		_ap_label.add_theme_color_override("font_color", color)
 
 
 func _input(event: InputEvent) -> void:
@@ -999,13 +1044,26 @@ func _input(event: InputEvent) -> void:
 					_submit_actions()
 				get_viewport().set_input_as_handled()
 			KEY_X, KEY_ESCAPE:
-				# Cancel all queued actions, close submenu if any
-				if _queued_actions.size() > 0:
+				# Priority: close submenu first, then cancel queue, then go back
+				var root = _get_root_menu()
+				if parent_menu:
+					# We're in a submenu - close it and return to parent
+					_play_move_sound()
+					_cleanup_target_highlight()
+					parent_menu.submenu = null
+					queue_free()
+				elif root._queued_actions.size() > 0:
+					# At root with queue - cancel all queued actions
 					_cancel_all_queued()
 					_play_move_sound()
-				elif parent_menu:
-					_play_move_sound()
-					queue_free()
+					# Also close any open submenu
+					if submenu and is_instance_valid(submenu):
+						submenu.queue_free()
+						submenu = null
+				elif is_root_menu and _can_go_back:
+					# At root with no queue - go back to previous player
+					_play_cancel_sound()
+					go_back_requested.emit()
 				get_viewport().set_input_as_handled()
 			KEY_RIGHT:
 				# For left-expanding: RIGHT goes back to parent
@@ -1062,12 +1120,26 @@ func _input(event: InputEvent) -> void:
 			_submit_actions()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		if _queued_actions.size() > 0:
+		# Priority: close submenu first, then cancel queue, then go back
+		var root = _get_root_menu()
+		if parent_menu:
+			# We're in a submenu - close it and return to parent
+			_play_move_sound()
+			_cleanup_target_highlight()
+			parent_menu.submenu = null
+			queue_free()
+		elif root._queued_actions.size() > 0:
+			# At root with queue - cancel all queued actions
 			_cancel_all_queued()
 			_play_move_sound()
-		elif parent_menu:
-			_play_move_sound()
-			queue_free()
+			# Also close any open submenu
+			if submenu and is_instance_valid(submenu):
+				submenu.queue_free()
+				submenu = null
+		elif is_root_menu and _can_go_back:
+			# At root with no queue - go back to previous player
+			_play_cancel_sound()
+			go_back_requested.emit()
 		get_viewport().set_input_as_handled()
 
 	# Root menus don't close on click outside

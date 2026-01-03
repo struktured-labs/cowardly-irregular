@@ -302,6 +302,37 @@ func player_brave(actions: Array[Dictionary]) -> void:
 	player_advance(actions)
 
 
+func go_back_to_previous_player() -> void:
+	"""Go back to the previous player's selection (undo their action)"""
+	if selection_index <= 0:
+		print("Cannot go back - already at first player")
+		return
+
+	if current_state != BattleState.PLAYER_SELECTING:
+		print("Cannot go back - not in player selection state")
+		return
+
+	# Remove the previous player's action from pending_actions
+	var prev_combatant = selection_order[selection_index - 1]
+	for i in range(pending_actions.size() - 1, -1, -1):
+		var action = pending_actions[i]
+		if action.get("combatant") == prev_combatant:
+			pending_actions.remove_at(i)
+			print("Removed %s's pending action" % prev_combatant.combatant_name)
+			break
+
+	# Undo the natural AP gain for current player (they didn't actually take their turn)
+	current_combatant.spend_ap(1)
+	print("%s's natural AP gain reverted (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
+
+	# Go back to the previous player
+	selection_index -= 1
+	current_combatant = prev_combatant
+
+	# Re-emit the selection turn started signal (menu will be shown again)
+	selection_turn_started.emit(current_combatant)
+
+
 func player_item(item_id: String, targets: Array) -> void:
 	"""Queue an item use"""
 	if current_state != BattleState.PLAYER_SELECTING:
@@ -378,8 +409,9 @@ func _process_ai_selection(combatant: Combatant) -> void:
 
 	if should_advance and combatant.current_ap >= 1:
 		# Queue multiple attacks as advance (each action costs 1 AP)
-		# Can go up to AP+4 actions (into max debt of -4)
-		var max_actions = combatant.current_ap + 4  # With AP=1, can do 5 actions going to -4
+		# Max 4 actions per advance, but limited by AP (can't go below -4)
+		var ap_limit = combatant.current_ap + 4  # How many actions AP allows
+		var max_actions = mini(4, ap_limit)  # Cap at 4
 		var num_actions = mini(randi_range(2, 3), max_actions)
 		var advance_actions: Array[Dictionary] = []
 		for i in range(num_actions):
