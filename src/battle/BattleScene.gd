@@ -379,6 +379,9 @@ func _spawn_enemies() -> void:
 		enemy.initialize(stats)
 		add_child(enemy)
 
+		# Store monster type ID for sprite selection
+		enemy.set_meta("monster_type", monster_type["id"])
+
 		# Add weaknesses/resistances from monster type
 		for weakness in monster_type.get("weaknesses", []):
 			enemy.elemental_weaknesses.append(weakness)
@@ -457,7 +460,9 @@ func _create_battle_sprites() -> void:
 		var enemy = test_enemies[i]
 
 		var sprite = AnimatedSprite2D.new()
-		sprite.sprite_frames = BattleAnimatorClass.create_slime_sprite_frames()
+		# Choose sprite based on monster type ID stored in enemy
+		var monster_id = enemy.get_meta("monster_type", "slime")
+		sprite.sprite_frames = _get_monster_sprite_frames(monster_id)
 		sprite.position = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		sprite.play("idle")
 		$BattleField/EnemySprites.add_child(sprite)
@@ -470,6 +475,32 @@ func _create_battle_sprites() -> void:
 
 		# Add label with enemy name
 		_add_sprite_label(sprite, enemy.combatant_name.to_upper(), Vector2(-20, 40))
+
+
+func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
+	"""Get the appropriate sprite frames for a monster type"""
+	match monster_id:
+		"slime":
+			return BattleAnimatorClass.create_slime_sprite_frames()
+		"skeleton":
+			return BattleAnimatorClass.create_skeleton_sprite_frames()
+		"ghost":
+			return BattleAnimatorClass.create_specter_sprite_frames()
+		"imp":
+			return BattleAnimatorClass.create_imp_sprite_frames()
+		"wolf":
+			return BattleAnimatorClass.create_wolf_sprite_frames()
+		"snake":
+			return BattleAnimatorClass.create_viper_sprite_frames()
+		"bat":
+			return BattleAnimatorClass.create_bat_sprite_frames()
+		"mushroom":
+			return BattleAnimatorClass.create_fungoid_sprite_frames()
+		"goblin":
+			return BattleAnimatorClass.create_goblin_sprite_frames()
+		_:
+			# Default to slime for unknown types
+			return BattleAnimatorClass.create_slime_sprite_frames()
 
 
 func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) -> void:
@@ -557,11 +588,18 @@ func _create_enemy_sprite(color: Color, label: String) -> Sprite2D:
 func _update_ui() -> void:
 	"""Update all UI elements"""
 	_update_character_status()
+	_update_enemy_status()
 	_update_action_buttons()
 
 
 ## Dynamic party status UI elements
 var _party_status_boxes: Array = []
+
+## Dynamic enemy status UI elements
+var _enemy_status_boxes: Array = []
+
+## Track which enemies have been "scanned" to reveal HP/MP
+var _revealed_enemies: Dictionary = {}
 
 
 func _update_character_status() -> void:
@@ -786,6 +824,148 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				ap_label.text = "AP: %+d (-%d)" % [ap_value, committed_count]
 			else:
 				ap_label.text = "AP: %+d" % ap_value
+
+
+func _update_enemy_status() -> void:
+	"""Update enemy status display for all enemies"""
+	if test_enemies.size() == 0:
+		return
+
+	# Create status boxes if needed
+	_ensure_enemy_status_boxes()
+
+	# Update each enemy's status
+	for i in range(test_enemies.size()):
+		if i >= _enemy_status_boxes.size():
+			break
+		_update_enemy_member_status(i, test_enemies[i])
+
+
+func _ensure_enemy_status_boxes() -> void:
+	"""Ensure we have status boxes for all enemies"""
+	var container = get_node_or_null("UI/EnemyStatusPanel/VBoxContainer")
+	if not container:
+		return
+
+	# Skip if already created for this enemy count
+	if _enemy_status_boxes.size() == test_enemies.size():
+		var all_valid = true
+		for box in _enemy_status_boxes:
+			if not is_instance_valid(box):
+				all_valid = false
+				break
+		if all_valid:
+			return
+
+	# Clear existing dynamic boxes
+	for box in _enemy_status_boxes:
+		if is_instance_valid(box):
+			box.queue_free()
+	_enemy_status_boxes.clear()
+
+	# Create status boxes for each enemy
+	for i in range(test_enemies.size()):
+		var enemy = test_enemies[i]
+		var box = _create_enemy_status_box(i, enemy)
+		container.add_child(box)
+		_enemy_status_boxes.append(box)
+
+
+func _create_enemy_status_box(idx: int, enemy: Combatant) -> VBoxContainer:
+	"""Create a status box for an enemy"""
+	var box = VBoxContainer.new()
+	box.name = "Enemy%d" % (idx + 1)
+
+	# Name label
+	var name_label = RichTextLabel.new()
+	name_label.name = "Name"
+	name_label.bbcode_enabled = true
+	name_label.fit_content = true
+	name_label.custom_minimum_size = Vector2(0, 18)
+	name_label.text = enemy.combatant_name
+	box.add_child(name_label)
+
+	# AP/Status label (always visible)
+	var ap_label = RichTextLabel.new()
+	ap_label.name = "AP"
+	ap_label.bbcode_enabled = true
+	ap_label.fit_content = true
+	ap_label.custom_minimum_size = Vector2(0, 16)
+	ap_label.text = "AP: 0"
+	box.add_child(ap_label)
+
+	# HP label (hidden until revealed)
+	var hp_label = RichTextLabel.new()
+	hp_label.name = "HP"
+	hp_label.bbcode_enabled = true
+	hp_label.fit_content = true
+	hp_label.custom_minimum_size = Vector2(0, 14)
+	hp_label.text = "[color=gray]HP: ???[/color]"
+	box.add_child(hp_label)
+
+	# Add separator after each enemy except last
+	if idx < test_enemies.size() - 1:
+		var sep = HSeparator.new()
+		sep.custom_minimum_size = Vector2(0, 4)
+		box.add_child(sep)
+
+	return box
+
+
+func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
+	"""Update a single enemy's status display"""
+	if idx >= _enemy_status_boxes.size():
+		return
+
+	var box = _enemy_status_boxes[idx]
+	if not is_instance_valid(box):
+		return
+
+	var is_revealed = _revealed_enemies.get(enemy, false)
+	var is_dead = not enemy.is_alive
+
+	# Update name with status indicator
+	var name_label = box.get_node_or_null("Name")
+	if name_label and name_label is RichTextLabel:
+		var name_color = "red" if is_dead else "white"
+		var status_indicator = " [color=gray]✗[/color]" if is_dead else ""
+		name_label.text = "[color=%s]%s[/color]%s" % [name_color, enemy.combatant_name, status_indicator]
+
+	# Update AP
+	var ap_label = box.get_node_or_null("AP")
+	if ap_label and ap_label is RichTextLabel:
+		var ap_color = "white"
+		if enemy.current_ap > 0:
+			ap_color = "lime"
+		elif enemy.current_ap < 0:
+			ap_color = "red"
+
+		if is_dead:
+			ap_label.text = "[color=gray]---[/color]"
+		else:
+			ap_label.text = "[color=%s]AP: %+d[/color]" % [ap_color, enemy.current_ap]
+
+	# Update HP (hidden unless revealed or dead)
+	var hp_label = box.get_node_or_null("HP")
+	if hp_label and hp_label is RichTextLabel:
+		if is_dead:
+			hp_label.text = "[color=red]DEFEATED[/color]"
+		elif is_revealed:
+			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
+			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			hp_label.text = "[color=%s]HP: %d/%d[/color]" % [hp_color, enemy.current_hp, enemy.max_hp]
+		else:
+			# Show vague HP indicator based on percentage
+			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
+			var hp_hint = "Healthy" if hp_percent > 0.75 else ("Wounded" if hp_percent > 0.5 else ("Hurt" if hp_percent > 0.25 else "Critical"))
+			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			hp_label.text = "[color=%s]%s[/color]" % [hp_color, hp_hint]
+
+
+func reveal_enemy_stats(enemy: Combatant) -> void:
+	"""Reveal an enemy's HP/MP (called by scan abilities)"""
+	_revealed_enemies[enemy] = true
+	_update_enemy_status()
 
 
 func _update_action_buttons() -> void:
@@ -1043,6 +1223,18 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 	match anim_type:
 		"attack":
 			animator.play_attack()
+		"backstab":
+			# Quick diagonal lunge from behind
+			animator.play_backstab()
+		"steal":
+			# Quick in-and-out grab animation
+			animator.play_steal()
+		"mug":
+			# Attack + steal combo
+			animator.play_mug()
+		"skill":
+			# Generic physical skill (power strike, etc.)
+			animator.play_skill()
 		"heal", "buff":
 			# Healing/buff - use cast with green/blue tint effect
 			animator.play_cast()
@@ -1258,6 +1450,13 @@ func _restart_battle() -> void:
 		if is_instance_valid(animator):
 			animator.queue_free()
 	enemy_animators.clear()
+
+	# Clear enemy status UI
+	for box in _enemy_status_boxes:
+		if is_instance_valid(box):
+			box.queue_free()
+	_enemy_status_boxes.clear()
+	_revealed_enemies.clear()
 
 	# Reset party HP/MP
 	for member in party_members:
