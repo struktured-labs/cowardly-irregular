@@ -82,10 +82,10 @@ var _battle_ended: bool = false
 var _battle_victory: bool = false
 
 ## Battle speed settings
-const BATTLE_SPEEDS: Array[float] = [0.5, 1.0, 2.0, 4.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["0.5x", "1x", "2x", "4x"]
-var _battle_speed_index: int = 1  # Default to 1x
-var _speed_indicator: Label = null
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x"]
+var _battle_speed_index: int = 2  # Default to 1x
+var _speed_indicator: RichTextLabel = null
 
 
 func set_player(player: Combatant) -> void:
@@ -164,18 +164,18 @@ func _create_autobattle_toggle() -> void:
 
 func _create_speed_indicator() -> void:
 	"""Create battle speed indicator in top-left corner"""
-	_speed_indicator = Label.new()
+	_speed_indicator = RichTextLabel.new()
 	_speed_indicator.name = "SpeedIndicator"
-	_speed_indicator.text = "[1x]"
-	_speed_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_speed_indicator.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_speed_indicator.bbcode_enabled = true
+	_speed_indicator.fit_content = true
+	_speed_indicator.scroll_active = false
+	_speed_indicator.custom_minimum_size = Vector2(80, 24)
 
 	# Style it
-	_speed_indicator.add_theme_font_size_override("font_size", 14)
-	_speed_indicator.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9, 0.8))
+	_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
 
 	# Position in top-left corner
-	_speed_indicator.position = Vector2(10, 10)
+	_speed_indicator.position = Vector2(8, 8)
 
 	# Add to UI layer
 	$UI.add_child(_speed_indicator)
@@ -183,17 +183,26 @@ func _create_speed_indicator() -> void:
 
 
 func _update_speed_indicator() -> void:
-	"""Update the speed indicator display"""
-	if _speed_indicator:
-		var speed_label = BATTLE_SPEED_LABELS[_battle_speed_index]
-		var color = "white"
-		match _battle_speed_index:
-			0: color = "gray"      # 0.5x - slow
-			1: color = "white"     # 1x - normal
-			2: color = "yellow"    # 2x - fast
-			3: color = "orange"    # 4x - turbo
-		_speed_indicator.text = "[%s]" % speed_label
-		_speed_indicator.add_theme_color_override("font_color", Color(color))
+	"""Update the speed indicator display with stylish BBCode"""
+	if not _speed_indicator:
+		return
+
+	var speed_label = BATTLE_SPEED_LABELS[_battle_speed_index]
+	var text = ""
+
+	match _battle_speed_index:
+		0:  # 0.25x - ultra slow (purple)
+			text = "[color=#8866aa]▸[/color] [color=#aa88cc]%s[/color] [color=#664488]◂[/color]" % speed_label
+		1:  # 0.5x - slow (blue)
+			text = "[color=#6688aa]▸[/color] [color=#88aacc]%s[/color] [color=#446688]◂[/color]" % speed_label
+		2:  # 1x - normal (white/cyan)
+			text = "[color=#88cccc]▸[/color] [color=#ffffff]%s[/color] [color=#66aaaa]◂[/color]" % speed_label
+		3:  # 2x - fast (yellow)
+			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
+		4:  # 4x - turbo (orange/red)
+			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
+
+	_speed_indicator.text = text
 
 
 func _toggle_battle_speed() -> void:
@@ -213,10 +222,12 @@ func _input(event: InputEvent) -> void:
 			_toggle_battle_speed()
 			get_viewport().set_input_as_handled()
 
-	# Gamepad X button (typically mapped to ui_focus_next or a custom action)
+	# Gamepad X button - handle multiple controller types
+	# Xbox: X = button 2, PlayStation: Square = button 2, Nintendo: Y = button 2
 	if event is InputEventJoypadButton and event.pressed:
-		# X button on most controllers is button index 2
-		if event.button_index == JOY_BUTTON_X:
+		# JOY_BUTTON_X (index 2) covers X on Xbox, Square on PS, Y on Nintendo
+		# Also check JOY_BUTTON_Y (index 3) for Nintendo X button
+		if event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y:
 			_toggle_battle_speed()
 			get_viewport().set_input_as_handled()
 
