@@ -771,23 +771,29 @@ func close_all() -> void:
 
 
 func force_close() -> void:
-	"""Force close the menu tree, even root menus"""
+	"""Force close this menu and all submenus immediately"""
 	# Prevent double-close
 	if _is_closing:
 		return
 	_is_closing = true
 
-	# Clean up our own target highlight first
+	# Hide immediately (queue_free happens at end of frame)
+	hide()
+
+	# Clean up target highlight
 	_cleanup_target_highlight()
 
+	# Recursively close submenus first
 	if submenu and is_instance_valid(submenu):
-		submenu.queue_free()
+		submenu.force_close()
 		submenu = null
-	if parent_menu and is_instance_valid(parent_menu):
-		parent_menu.force_close()
-	else:
+
+	# If we're root, emit signal
+	if is_root_menu:
 		menu_closed.emit()
-		queue_free()
+
+	# Free this menu
+	queue_free()
 
 
 func _cleanup_target_highlight() -> void:
@@ -827,14 +833,15 @@ func _handle_advance_input() -> void:
 
 func _handle_defer_input() -> void:
 	"""Handle L button - undo last queued action, or defer if no queue"""
-	if _queued_actions.size() > 0:
-		# Undo last queued action
+	var root = _get_root_menu()
+	if root._queued_actions.size() > 0:
+		# Undo last queued action (from any menu depth)
 		_undo_last_action()
 	else:
-		# No actions queued - emit defer signal
+		# No actions queued - emit defer signal from root (where it's connected)
 		_play_defer_sound()
-		defer_requested.emit()
-		_close_entire_tree()
+		root.defer_requested.emit()
+		root._close_entire_tree()
 
 
 func _queue_current_action(item: Dictionary) -> void:
@@ -1064,6 +1071,8 @@ func _input(event: InputEvent) -> void:
 					# At root with no queue - go back to previous player
 					_play_cancel_sound()
 					go_back_requested.emit()
+					# Close this menu immediately
+					force_close()
 				get_viewport().set_input_as_handled()
 			KEY_RIGHT:
 				# For left-expanding: RIGHT goes back to parent
@@ -1139,6 +1148,8 @@ func _input(event: InputEvent) -> void:
 			# At root with no queue - go back to previous player
 			_play_cancel_sound()
 			go_back_requested.emit()
+			# Close this menu immediately
+			force_close()
 		get_viewport().set_input_as_handled()
 
 	# Root menus don't close on click outside

@@ -336,6 +336,7 @@ func go_back_to_previous_player() -> void:
 				break
 
 		current_combatant = prev_combatant
+		print("Going back to %s (AP: %d)" % [prev_combatant.combatant_name, prev_combatant.current_ap])
 		found_player = true
 		break
 

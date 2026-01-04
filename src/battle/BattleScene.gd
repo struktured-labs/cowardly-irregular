@@ -721,13 +721,29 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 
 		var ap_value = member.current_ap
 
-		# Check if this member is currently selecting and has queued actions
+		# Check if this member is currently selecting and has queued actions in menu
 		var queued_count = 0
+		var committed_count = 0
 		var is_current_selecting = (member == BattleManager.current_combatant and
 			BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING and
 			active_win98_menu and is_instance_valid(active_win98_menu))
 		if is_current_selecting:
 			queued_count = active_win98_menu.get_queue_count()
+
+		# Check for committed actions in BattleManager.pending_actions
+		var is_deferring = false
+		for action in BattleManager.pending_actions:
+			if action.get("combatant") == member:
+				if action.get("type") == "advance":
+					# Advance has multiple sub-actions
+					var sub_actions = action.get("actions", [])
+					committed_count = sub_actions.size()
+				elif action.get("type") in ["attack", "ability", "item"]:
+					committed_count = 1
+				elif action.get("type") == "defer":
+					# Defer keeps the +1 natural gain
+					is_deferring = true
+				break
 
 		if ap_label is RichTextLabel:
 			# Ensure BBCode is enabled
@@ -735,10 +751,16 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 
 			var status_text: String
 			if queued_count > 0:
-				# Show pending AP change: "AP: +1→-2 [3]"
+				# Currently selecting with queue: "AP: +1→-2 [3]"
 				var new_ap = ap_value - queued_count
 				var new_color = "yellow" if new_ap >= 0 else "orange"
 				status_text = "[color=%s]AP: %+d[/color][color=%s]→%+d[/color] [color=aqua][%d][/color]" % [ap_color, ap_value, new_color, new_ap, queued_count]
+			elif is_deferring:
+				# Deferring keeps +1 natural gain: "AP: +1 (+1)"
+				status_text = "[color=%s]AP: %+d[/color] [color=cyan](+1)[/color]" % [ap_color, ap_value]
+			elif committed_count > 0:
+				# Already committed actions: "AP: +1 (-4)"
+				status_text = "[color=%s]AP: %+d[/color] [color=gray](-%d)[/color]" % [ap_color, ap_value, committed_count]
 			else:
 				status_text = "[color=%s]AP: %+d[/color]" % [ap_color, ap_value]
 
@@ -758,6 +780,10 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 			if queued_count > 0:
 				var new_ap = ap_value - queued_count
 				ap_label.text = "AP: %+d→%+d [%d]" % [ap_value, new_ap, queued_count]
+			elif is_deferring:
+				ap_label.text = "AP: %+d (+1)" % ap_value
+			elif committed_count > 0:
+				ap_label.text = "AP: %+d (-%d)" % [ap_value, committed_count]
 			else:
 				ap_label.text = "AP: %+d" % ap_value
 
@@ -1167,6 +1193,11 @@ func _on_battle_started() -> void:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	# Clean up any open menus
+	if active_win98_menu and is_instance_valid(active_win98_menu):
+		active_win98_menu.queue_free()
+		active_win98_menu = null
+
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
 		log_message("[color=gray]Press ENTER to continue...[/color]")
@@ -1206,6 +1237,11 @@ func _process(_delta: float) -> void:
 
 func _restart_battle() -> void:
 	"""Restart the battle"""
+	# Clean up any stray menus
+	if active_win98_menu and is_instance_valid(active_win98_menu):
+		active_win98_menu.queue_free()
+		active_win98_menu = null
+
 	# Clear old enemies
 	for enemy in test_enemies:
 		if is_instance_valid(enemy):
