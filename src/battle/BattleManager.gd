@@ -303,31 +303,47 @@ func player_brave(actions: Array[Dictionary]) -> void:
 
 
 func go_back_to_previous_player() -> void:
-	"""Go back to the previous player's selection (undo their action)"""
-	if selection_index <= 0:
-		print("Cannot go back - already at first player")
-		return
-
+	"""Go back to the previous player's selection (undo their action), skipping those in AP debt"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		print("Cannot go back - not in player selection state")
 		return
-
-	# Remove the previous player's action from pending_actions
-	var prev_combatant = selection_order[selection_index - 1]
-	for i in range(pending_actions.size() - 1, -1, -1):
-		var action = pending_actions[i]
-		if action.get("combatant") == prev_combatant:
-			pending_actions.remove_at(i)
-			print("Removed %s's pending action" % prev_combatant.combatant_name)
-			break
 
 	# Undo the natural AP gain for current player (they didn't actually take their turn)
 	current_combatant.spend_ap(1)
 	print("%s's natural AP gain reverted (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
 
-	# Go back to the previous player
-	selection_index -= 1
-	current_combatant = prev_combatant
+	# Find a previous player who can actually act (not in AP debt)
+	var found_player = false
+	while selection_index > 0:
+		selection_index -= 1
+		var prev_combatant = selection_order[selection_index]
+
+		# Skip if not a player
+		if prev_combatant not in player_party:
+			continue
+
+		# Skip if in AP debt (can't act)
+		if prev_combatant.current_ap < 0:
+			print("Skipping %s (AP debt: %d)" % [prev_combatant.combatant_name, prev_combatant.current_ap])
+			continue
+
+		# Remove their pending action
+		for i in range(pending_actions.size() - 1, -1, -1):
+			var action = pending_actions[i]
+			if action.get("combatant") == prev_combatant:
+				pending_actions.remove_at(i)
+				print("Removed %s's pending action" % prev_combatant.combatant_name)
+				break
+
+		current_combatant = prev_combatant
+		found_player = true
+		break
+
+	if not found_player:
+		print("Cannot go back - no previous player available")
+		# Restore current player's AP since we couldn't go back
+		current_combatant.gain_ap(1)
+		return
 
 	# Re-emit the selection turn started signal (menu will be shown again)
 	selection_turn_started.emit(current_combatant)

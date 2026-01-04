@@ -361,19 +361,21 @@ func _build_menu() -> void:
 
 	# Calculate menu size (add space for AP label if root menu)
 	var menu_width = 140
-	var ap_label_height = 18 if is_root_menu and _current_ap != 0 else 0
+	var ap_label_height = 14 if is_root_menu else 0  # Always show AP for root
 	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
 	add_child(menu_panel)
 
-	# AP label at top for root menu
+	# AP label at top for root menu (compact, right-aligned)
 	if is_root_menu:
 		_ap_label = Label.new()
 		_ap_label.name = "APLabel"
-		_ap_label.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE)
-		_ap_label.add_theme_font_size_override("font_size", 10)
+		_ap_label.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING)
+		_ap_label.size = Vector2(menu_width - MENU_PADDING * 2 - TILE_SIZE * 2, 12)
+		_ap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_ap_label.add_theme_font_size_override("font_size", 9)
 		_update_ap_label()
 		menu_panel.add_child(_ap_label)
 
@@ -973,17 +975,16 @@ func _update_ap_label() -> void:
 
 	var root = _get_root_menu()
 	var queued_count = root._queued_actions.size()
-	var pending_cost = queued_count + 1  # +1 for current action being selected
 
 	if queued_count == 0:
 		# No actions queued, just show current AP
-		_ap_label.text = "AP: %+d" % _current_ap
+		_ap_label.text = "%+d AP" % _current_ap
 		_ap_label.add_theme_color_override("font_color", Color.WHITE)
 	else:
-		# Show AP change preview: "AP: 2 → -1"
-		var new_ap = _current_ap - pending_cost
+		# Show AP change preview: "+1→-2" (compact)
+		var new_ap = _current_ap - queued_count
 		var color = Color.YELLOW if new_ap >= 0 else Color.ORANGE_RED
-		_ap_label.text = "AP: %+d → %+d (%d)" % [_current_ap, new_ap, queued_count]
+		_ap_label.text = "%+d→%+d [%d]" % [_current_ap, new_ap, queued_count]
 		_ap_label.add_theme_color_override("font_color", color)
 
 
@@ -1044,7 +1045,7 @@ func _input(event: InputEvent) -> void:
 					_submit_actions()
 				get_viewport().set_input_as_handled()
 			KEY_X, KEY_ESCAPE:
-				# Priority: close submenu first, then cancel queue, then go back
+				# Priority: close submenu first, then unadvance (undo one), then go back
 				var root = _get_root_menu()
 				if parent_menu:
 					# We're in a submenu - close it and return to parent
@@ -1053,9 +1054,8 @@ func _input(event: InputEvent) -> void:
 					parent_menu.submenu = null
 					queue_free()
 				elif root._queued_actions.size() > 0:
-					# At root with queue - cancel all queued actions
-					_cancel_all_queued()
-					_play_move_sound()
+					# At root with queue - undo ONE queued action (unadvance)
+					_undo_last_action()
 					# Also close any open submenu
 					if submenu and is_instance_valid(submenu):
 						submenu.queue_free()
@@ -1120,7 +1120,7 @@ func _input(event: InputEvent) -> void:
 			_submit_actions()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		# Priority: close submenu first, then cancel queue, then go back
+		# Priority: close submenu first, then unadvance (undo one), then go back
 		var root = _get_root_menu()
 		if parent_menu:
 			# We're in a submenu - close it and return to parent
@@ -1129,9 +1129,8 @@ func _input(event: InputEvent) -> void:
 			parent_menu.submenu = null
 			queue_free()
 		elif root._queued_actions.size() > 0:
-			# At root with queue - cancel all queued actions
-			_cancel_all_queued()
-			_play_move_sound()
+			# At root with queue - undo ONE queued action (unadvance)
+			_undo_last_action()
 			# Also close any open submenu
 			if submenu and is_instance_valid(submenu):
 				submenu.queue_free()

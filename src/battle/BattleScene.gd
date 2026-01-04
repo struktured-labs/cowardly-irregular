@@ -77,6 +77,10 @@ var is_selecting_target: bool = false
 ## External party flag
 var _has_external_party: bool = false
 
+## Battle end state
+var _battle_ended: bool = false
+var _battle_victory: bool = false
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -255,7 +259,7 @@ func _create_default_party() -> void:
 	vex.initialize({
 		"name": "Vex",
 		"max_hp": 80,
-		"max_mp": 150,
+		"max_mp": 300,
 		"attack": 8,
 		"defense": 8,
 		"magic": 35,
@@ -717,11 +721,26 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 
 		var ap_value = member.current_ap
 
+		# Check if this member is currently selecting and has queued actions
+		var queued_count = 0
+		var is_current_selecting = (member == BattleManager.current_combatant and
+			BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING and
+			active_win98_menu and is_instance_valid(active_win98_menu))
+		if is_current_selecting:
+			queued_count = active_win98_menu.get_queue_count()
+
 		if ap_label is RichTextLabel:
 			# Ensure BBCode is enabled
 			ap_label.bbcode_enabled = true
 
-			var status_text = "[color=%s]AP: %+d[/color]" % [ap_color, ap_value]
+			var status_text: String
+			if queued_count > 0:
+				# Show pending AP change: "AP: +1→-2 [3]"
+				var new_ap = ap_value - queued_count
+				var new_color = "yellow" if new_ap >= 0 else "orange"
+				status_text = "[color=%s]AP: %+d[/color][color=%s]→%+d[/color] [color=aqua][%d][/color]" % [ap_color, ap_value, new_color, new_ap, queued_count]
+			else:
+				status_text = "[color=%s]AP: %+d[/color]" % [ap_color, ap_value]
 
 			# Add status effects
 			if member.status_effects.size() > 0:
@@ -736,7 +755,11 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 			ap_label.text = status_text
 		else:
 			# Fallback for regular Label
-			ap_label.text = "AP: %+d" % ap_value
+			if queued_count > 0:
+				var new_ap = ap_value - queued_count
+				ap_label.text = "AP: %+d→%+d [%d]" % [ap_value, new_ap, queued_count]
+			else:
+				ap_label.text = "AP: %+d" % ap_value
 
 
 func _update_action_buttons() -> void:
@@ -1146,18 +1169,78 @@ func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
+		log_message("[color=gray]Press ENTER to continue...[/color]")
 		# Play victory animation for all party members
 		for animator in party_animators:
 			if animator:
 				animator.play_victory()
+		# Play victory sound
+		SoundManager.play_ui("menu_select")
 	else:
 		log_message("\n[color=red]=== DEFEAT ===[/color]")
+		log_message("[color=gray]Press ENTER to restart...[/color]")
 		# Play defeat animation for all party members
 		for animator in party_animators:
 			if animator:
 				animator.play_defeat()
 
 	_update_ui()
+	_battle_ended = true
+	_battle_victory = victory
+
+
+func _process(_delta: float) -> void:
+	"""Handle post-battle input"""
+	if _battle_ended:
+		if Input.is_action_just_pressed("ui_accept"):
+			_battle_ended = false
+			if _battle_victory:
+				# Victory - could transition to next scene, for now restart
+				log_message("[color=cyan]Starting new battle...[/color]")
+				_restart_battle()
+			else:
+				# Defeat - restart
+				log_message("[color=cyan]Retrying battle...[/color]")
+				_restart_battle()
+
+
+func _restart_battle() -> void:
+	"""Restart the battle"""
+	# Clear old enemies
+	for enemy in test_enemies:
+		if is_instance_valid(enemy):
+			enemy.queue_free()
+	test_enemies.clear()
+
+	# Clear enemy sprites
+	for sprite in enemy_sprite_nodes:
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+	enemy_sprite_nodes.clear()
+
+	for animator in enemy_animators:
+		if is_instance_valid(animator):
+			animator.queue_free()
+	enemy_animators.clear()
+
+	# Reset party HP/MP
+	for member in party_members:
+		member.current_hp = member.max_hp
+		member.current_mp = member.max_mp
+		member.current_ap = 0
+		member.is_alive = true
+		member.is_defending = false
+		member.status_effects.clear()
+
+	# Reset party sprite visibility
+	for sprite in party_sprite_nodes:
+		if is_instance_valid(sprite):
+			sprite.modulate.a = 1.0
+
+	# Spawn new enemies and start battle
+	_spawn_enemies()
+	_create_battle_sprites()
+	BattleManager.start_battle(party_members, test_enemies)
 
 
 ## CTB Phase Handlers
@@ -1295,13 +1378,12 @@ func _on_enemy_died(enemy_idx: int) -> void:
 		if enemy_idx < enemy_animators.size() and enemy_idx < enemy_sprite_nodes.size():
 			var animator = enemy_animators[enemy_idx]
 			var sprite = enemy_sprite_nodes[enemy_idx]
-			# Play defeat animation
-			animator.play_defeat(func():
-				# Fade out after defeat animation completes
-				if is_instance_valid(sprite):
-					var tween = create_tween()
-					tween.tween_property(sprite, "modulate:a", 0.0, 0.5)
-			)
+			# Play defeat animation and start fade immediately (don't wait for callback)
+			animator.play_defeat()
+			# Fade out sprite
+			if is_instance_valid(sprite):
+				var tween = create_tween()
+				tween.tween_property(sprite, "modulate:a", 0.0, 0.8)
 
 
 ## Win98 Menu Functions
@@ -1509,11 +1591,58 @@ func _build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			if item.is_empty():
 				continue
 			var quantity = combatant.inventory[item_id]
-			item_items.append({
-				"id": "item_" + item_id,
-				"label": "%s x%d" % [item["name"], quantity],
-				"data": {"item_id": item_id}
-			})
+			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
+
+			# For SINGLE_ALLY items, add party member target submenu
+			if target_type == ItemSystem.TargetType.SINGLE_ALLY:
+				var ally_targets = []
+				for i in range(party_members.size()):
+					var member = party_members[i]
+					if not is_instance_valid(member) or not member.is_alive:
+						continue
+					var target_pos = Vector2.ZERO
+					if i < party_sprite_nodes.size():
+						var sprite = party_sprite_nodes[i]
+						if is_instance_valid(sprite):
+							target_pos = canvas_transform * sprite.global_position
+					ally_targets.append({
+						"id": "item_" + item_id + "_ally_" + str(i),
+						"label": "%s (%d/%d HP)" % [member.combatant_name, member.current_hp, member.max_hp],
+						"data": {"item_id": item_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
+					})
+				if ally_targets.size() > 0:
+					item_items.append({
+						"id": "item_menu_" + item_id,
+						"label": "%s x%d" % [item["name"], quantity],
+						"submenu": ally_targets
+					})
+			# For SINGLE_ENEMY items, add enemy target submenu
+			elif target_type == ItemSystem.TargetType.SINGLE_ENEMY and alive_enemies.size() > 0:
+				var enemy_targets = []
+				for enemy in alive_enemies:
+					var enemy_idx = test_enemies.find(enemy)
+					var target_pos = Vector2.ZERO
+					if enemy_idx >= 0 and enemy_idx < enemy_sprite_nodes.size():
+						var sprite = enemy_sprite_nodes[enemy_idx]
+						if is_instance_valid(sprite):
+							target_pos = canvas_transform * sprite.global_position
+					enemy_targets.append({
+						"id": "item_" + item_id + "_enemy_" + str(enemy_idx),
+						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
+						"data": {"item_id": item_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
+					})
+				item_items.append({
+					"id": "item_menu_" + item_id,
+					"label": "%s x%d" % [item["name"], quantity],
+					"submenu": enemy_targets
+				})
+			else:
+				# Other target types (ALL_ALLIES, ALL_ENEMIES, SELF) don't need submenu
+				item_items.append({
+					"id": "item_" + item_id,
+					"label": "%s x%d" % [item["name"], quantity],
+					"data": {"item_id": item_id}
+				})
 		if item_items.size() > 0:
 			items.append({
 				"id": "item_menu",
@@ -1665,27 +1794,47 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 						_execute_ability(ability_id, alive_enemies[0])
 		return
 
-	# Item usage
+	# Item usage with target from menu tree (ally or enemy)
 	if item_id.begins_with("item_") and item_data is Dictionary:
 		var i_id = item_data.get("item_id", "")
-		if i_id != "":
-			var item = ItemSystem.get_item(i_id)
-			var targets = []
-			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
+		if i_id == "":
+			return
 
-			match target_type:
-				ItemSystem.TargetType.SINGLE_ENEMY:
-					if alive_enemies.size() > 0:
-						targets = [alive_enemies[0]]
-				ItemSystem.TargetType.ALL_ENEMIES:
-					targets = alive_enemies
-				ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.ALL_ALLIES, ItemSystem.TargetType.SELF:
-					targets = [current if current else party_members[0]]
+		# Check if item has pre-selected target from submenu
+		if item_data.has("target_idx"):
+			var target_idx = item_data.get("target_idx", -1)
+			var target_type_str = item_data.get("target_type", "ally")
+			var target: Combatant = null
 
-			if targets.size() > 0:
-				BattleManager.player_item(i_id, targets)
+			if target_type_str == "ally" and target_idx >= 0 and target_idx < party_members.size():
+				target = party_members[target_idx]
+			elif target_type_str == "enemy" and target_idx >= 0 and target_idx < test_enemies.size():
+				target = test_enemies[target_idx]
+
+			if is_instance_valid(target) and target.is_alive:
+				BattleManager.player_item(i_id, [target])
 			else:
-				log_message("No valid targets!")
+				log_message("Target no longer valid!")
+			return
+
+		# Fallback: no pre-selected target, use default behavior
+		var item = ItemSystem.get_item(i_id)
+		var targets = []
+		var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
+
+		match target_type:
+			ItemSystem.TargetType.SINGLE_ENEMY:
+				if alive_enemies.size() > 0:
+					targets = [alive_enemies[0]]
+			ItemSystem.TargetType.ALL_ENEMIES:
+				targets = alive_enemies
+			ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.ALL_ALLIES, ItemSystem.TargetType.SELF:
+				targets = [current if current else party_members[0]]
+
+		if targets.size() > 0:
+			BattleManager.player_item(i_id, targets)
+		else:
+			log_message("No valid targets!")
 		return
 
 	# Defer - skip turn, gain +1 AP
@@ -1736,7 +1885,23 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 					target = test_enemies[target_idx]
 
 				if is_instance_valid(target):
-					battle_actions.append({"type": "ability", "ability_id": ability_id, "target": target})
+					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": [target]})
+
+		# Handle item actions (enemy or ally targets)
+		elif action_id.begins_with("item_") and action_data is Dictionary:
+			var item_id = action_data.get("item_id", "")
+			var target_idx = action_data.get("target_idx", -1)
+			var target_type = action_data.get("target_type", "ally")
+
+			if target_idx >= 0:
+				var target: Combatant = null
+				if target_type == "ally" and target_idx < party_members.size():
+					target = party_members[target_idx]
+				elif target_idx < test_enemies.size():
+					target = test_enemies[target_idx]
+
+				if is_instance_valid(target):
+					battle_actions.append({"type": "item", "item_id": item_id, "targets": [target]})
 
 	if battle_actions.size() > 0:
 		log_message("[color=yellow]%s advances with %d actions![/color]" % [current.combatant_name, battle_actions.size()])
