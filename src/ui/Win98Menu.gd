@@ -87,6 +87,8 @@ const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Make menu input independent of battle speed (Engine.time_scale)
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
 func _ready() -> void:
@@ -1150,6 +1152,60 @@ func _input(event: InputEvent) -> void:
 			go_back_requested.emit()
 			# Close this menu immediately
 			force_close()
+		get_viewport().set_input_as_handled()
+
+	# D-pad LEFT = confirm/accept (for left-expanding menus), back (for right-expanding)
+	elif event.is_action_pressed("ui_left"):
+		if expand_left:
+			var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+			if current_item.has("submenu"):
+				# Item has submenu - expand it
+				_play_expand_sound()
+				if not submenu:
+					_do_open_submenu(selected_index, current_item)
+			else:
+				# No submenu - submit all queued + current
+				_play_select_sound()
+				_submit_actions()
+		else:
+			if parent_menu:
+				_play_move_sound()
+				_cleanup_target_highlight()
+				parent_menu.submenu = null
+				queue_free()
+		get_viewport().set_input_as_handled()
+
+	# D-pad RIGHT = back/cancel (for left-expanding menus), confirm (for right-expanding)
+	elif event.is_action_pressed("ui_right"):
+		if expand_left:
+			# RIGHT = back for left-expanding menus
+			if parent_menu:
+				_play_move_sound()
+				_cleanup_target_highlight()
+				parent_menu.submenu = null
+				queue_free()
+			elif is_root_menu:
+				# At root - same as cancel
+				var root = _get_root_menu()
+				if root._queued_actions.size() > 0:
+					_undo_last_action()
+					if submenu and is_instance_valid(submenu):
+						submenu.queue_free()
+						submenu = null
+				elif _can_go_back:
+					_play_cancel_sound()
+					go_back_requested.emit()
+					force_close()
+		else:
+			# RIGHT = confirm for right-expanding menus
+			var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+			if current_item.has("submenu"):
+				_play_expand_sound()
+				if not submenu:
+					_do_open_submenu(selected_index, current_item)
+			else:
+				_play_select_sound()
+				_submit_actions()
 		get_viewport().set_input_as_handled()
 
 	# Root menus don't close on click outside
