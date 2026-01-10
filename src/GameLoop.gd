@@ -18,13 +18,112 @@ var current_scene: Node = null
 var party: Array[Combatant] = []
 var battles_won: int = 0
 
+## Shared equipment pool (unequipped items available to all party members)
+var equipment_pool: Dictionary = {
+	"weapons": [],
+	"armors": [],
+	"accessories": []
+}
+
+
+## Autobattle editor overlay
+var _autobattle_editor: Control = null
 
 func _ready() -> void:
+	# Initialize equipment pool with extra items
+	_init_equipment_pool()
+
 	# Create persistent party
 	_create_party()
 
 	# Start with first battle
 	_start_battle()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# F5 = Open autobattle editor for current/first player
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
+		_toggle_autobattle_editor()
+		get_viewport().set_input_as_handled()
+
+	# F6 or Select button = Toggle autobattle for ALL players
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F6:
+		_toggle_all_autobattle()
+		get_viewport().set_input_as_handled()
+
+	# Gamepad Select button (button 4 on most controllers)
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
+		_toggle_all_autobattle()
+		get_viewport().set_input_as_handled()
+
+	# Gamepad L+R together = Open autobattle editor
+	if event is InputEventJoypadButton and event.pressed:
+		if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
+			# Check if both L and R are held
+			var joy_id = event.device
+			if Input.is_joy_button_pressed(joy_id, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(joy_id, JOY_BUTTON_RIGHT_SHOULDER):
+				_toggle_autobattle_editor()
+				get_viewport().set_input_as_handled()
+
+
+func _toggle_autobattle_editor() -> void:
+	"""Toggle the autobattle grid editor overlay"""
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		_autobattle_editor.queue_free()
+		_autobattle_editor = null
+		print("Autobattle editor closed")
+		return
+
+	# During battle, open for currently selecting player
+	var char_id = "hero"
+	var char_name = "Hero"
+
+	if BattleManager and BattleManager.is_selecting() and BattleManager.current_combatant:
+		var current = BattleManager.current_combatant
+		if current in BattleManager.player_party:
+			char_id = current.combatant_name.to_lower().replace(" ", "_")
+			char_name = current.combatant_name
+	elif party.size() > 0:
+		char_id = party[0].combatant_name.to_lower().replace(" ", "_")
+		char_name = party[0].combatant_name
+
+	var AutobattleGridEditorClass = load("res://src/ui/autobattle/AutobattleGridEditor.gd")
+	_autobattle_editor = AutobattleGridEditorClass.new()
+	_autobattle_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_autobattle_editor)
+	_autobattle_editor.setup(char_id, char_name)
+	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
+	print("Autobattle editor opened for %s (F5/B to close)" % char_name)
+
+
+func _toggle_all_autobattle() -> void:
+	"""Toggle autobattle for ALL party members at once"""
+	if party.size() == 0:
+		return
+
+	# Check if any are enabled - if so, disable all; otherwise enable all
+	var any_enabled = false
+	for member in party:
+		var char_id = member.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(char_id):
+			any_enabled = true
+			break
+
+	# Toggle all to opposite state
+	var new_state = not any_enabled
+	for member in party:
+		var char_id = member.combatant_name.to_lower().replace(" ", "_")
+		AutobattleSystem.set_autobattle_enabled(char_id, new_state)
+
+	var status = "ON" if new_state else "OFF"
+	print("[AUTOBATTLE] All party members: %s (F6/Select to toggle)" % status)
+
+
+func _on_autobattle_editor_closed() -> void:
+	"""Handle editor close"""
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		_autobattle_editor.queue_free()
+		_autobattle_editor = null
 
 
 func _create_party() -> void:
@@ -133,8 +232,18 @@ func _start_battle() -> void:
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
+	# Check if this is a miniboss battle (every 3rd battle)
+	var is_miniboss_battle = (battles_won + 1) % 3 == 0 and battles_won > 0
+
 	# Create battle scene
 	var battle_scene = BattleSceneRes.instantiate()
+
+	# Set flags BEFORE adding to tree (since _ready() spawns enemies)
+	battle_scene.managed_by_game_loop = true  # Disable BattleScene's internal restart
+	if is_miniboss_battle:
+		battle_scene.force_miniboss = true
+		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
+
 	add_child(battle_scene)
 	current_scene = battle_scene
 
@@ -184,8 +293,8 @@ func _show_menu() -> void:
 	add_child(menu_scene)
 	current_scene = menu_scene
 
-	# Setup menu with party data (show first member for now)
-	menu_scene.setup(party[0] if party.size() > 0 else null, battles_won)
+	# Setup menu with full party data
+	menu_scene.setup(party, battles_won)
 
 	# Connect signals
 	menu_scene.continue_pressed.connect(_on_continue_pressed)
@@ -194,3 +303,87 @@ func _show_menu() -> void:
 func _on_continue_pressed() -> void:
 	"""Handle continue from menu"""
 	_start_battle()
+
+
+## Equipment Pool Management
+
+func _init_equipment_pool() -> void:
+	"""Initialize equipment pool with extra items"""
+	equipment_pool = {
+		"weapons": ["bronze_sword", "wooden_staff"],
+		"armors": ["cloth_robe", "iron_armor"],
+		"accessories": ["hp_amulet", "speed_boots"]
+	}
+
+
+func get_available_equipment(slot: String) -> Array:
+	"""Get list of equipment available in pool for a slot type"""
+	var pool_key = slot + "s"  # weapon -> weapons, armor -> armors
+	if slot == "accessory":
+		pool_key = "accessories"
+	return equipment_pool.get(pool_key, [])
+
+
+func equip_from_pool(combatant: Combatant, slot: String, item_id: String) -> bool:
+	"""Equip item from pool to combatant, return old item to pool"""
+	var pool_key = slot + "s"
+	if slot == "accessory":
+		pool_key = "accessories"
+
+	# Check if item is in pool
+	if item_id not in equipment_pool.get(pool_key, []):
+		return false
+
+	# Get current equipped item
+	var old_item: String = ""
+	match slot:
+		"weapon":
+			old_item = combatant.equipped_weapon
+		"armor":
+			old_item = combatant.equipped_armor
+		"accessory":
+			old_item = combatant.equipped_accessory
+
+	# Remove new item from pool
+	equipment_pool[pool_key].erase(item_id)
+
+	# Add old item to pool if it exists
+	if old_item and old_item != "":
+		equipment_pool[pool_key].append(old_item)
+
+	# Equip new item
+	match slot:
+		"weapon":
+			EquipmentSystem.equip_weapon(combatant, item_id)
+		"armor":
+			EquipmentSystem.equip_armor(combatant, item_id)
+		"accessory":
+			EquipmentSystem.equip_accessory(combatant, item_id)
+
+	return true
+
+
+func unequip_to_pool(combatant: Combatant, slot: String) -> bool:
+	"""Unequip item from combatant and return to pool"""
+	var pool_key = slot + "s"
+	if slot == "accessory":
+		pool_key = "accessories"
+
+	var item_id: String = ""
+	match slot:
+		"weapon":
+			item_id = combatant.equipped_weapon
+			combatant.equipped_weapon = ""
+		"armor":
+			item_id = combatant.equipped_armor
+			combatant.equipped_armor = ""
+		"accessory":
+			item_id = combatant.equipped_accessory
+			combatant.equipped_accessory = ""
+
+	if item_id and item_id != "":
+		equipment_pool[pool_key].append(item_id)
+		combatant.recalculate_stats()
+		return true
+
+	return false

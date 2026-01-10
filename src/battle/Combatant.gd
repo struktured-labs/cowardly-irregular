@@ -68,6 +68,12 @@ var queued_actions: Array[Dictionary] = []
 var turn_order_value: float = 0.0
 var doom_counter: int = -1  # Death Sentence countdown (-1 = not doomed)
 
+## Command memory - remembers last menu selections
+var last_menu_selection: String = ""  # Top-level: "attack_menu", "ability_menu", "item_menu", etc.
+var last_attack_selection: String = ""  # Attack target if Attack was chosen (e.g., "attack_0")
+var last_ability_selection: String = ""  # Ability submenu ID if Abilities was chosen
+var last_item_selection: String = ""  # Item submenu ID if Items was chosen
+
 
 func _ready() -> void:
 	current_hp = max_hp
@@ -133,12 +139,11 @@ func execute_advance(actions: Array[Dictionary]) -> void:
 ## Combat actions
 func take_damage(amount: int, is_magical: bool = false) -> int:
 	"""Apply damage considering defense/magic defense and defending state"""
-	var actual_damage = amount
-
-	if is_magical:
-		actual_damage = max(1, amount - (defense / 2))
-	else:
-		actual_damage = max(1, amount - defense)
+	# Use attack^2 / (attack + defense) formula for smoother scaling
+	# Defense reduces damage but never makes it negligible
+	var def_value = defense if not is_magical else int(defense * 0.5)
+	var actual_damage = int((amount * amount) / float(amount + def_value))
+	actual_damage = max(1, actual_damage)  # Always at least 1 damage
 
 	# Defending reduces damage by 50%
 	if is_defending:

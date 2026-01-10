@@ -112,6 +112,33 @@ cowir/
     └── monsters.json
 ```
 
+## Controls & Input
+
+**This game is designed for SNES-style gamepad. NO MOUSE/CLICKING required.**
+
+All UI must be fully navigable via gamepad or keyboard. Never add click-only interactions.
+
+### Battle Controls (Gamepad / Keyboard)
+| Action | Gamepad | Keyboard |
+|--------|---------|----------|
+| Navigate menu | D-pad | Arrow keys |
+| Confirm/Select | A / D-pad Left | Enter/Space/Z |
+| Cancel/Back | B / D-pad Right | Escape/X |
+| Queue action (Advance) | R shoulder | R key |
+| Undo queue / Defer | L shoulder | L key |
+| Change battle speed | Start/Select | +/- keys |
+| Switch party member | L/R shoulder | L/R keys |
+
+### Menu Navigation
+- All menus expand LEFT (tree-style, like classic JRPGs)
+- D-pad Left = confirm/enter submenu
+- D-pad Right = back/cancel
+- Submenus auto-expand on hover
+
+### Post-Battle Menu
+- Same controls as battle menu
+- L/R to switch party member being viewed
+
 ## Key Design Principles
 
 1. **Automation is core gameplay** - Not a shortcut, but the point

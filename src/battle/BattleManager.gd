@@ -13,6 +13,9 @@ signal action_executing(combatant: Combatant, action: Dictionary)
 signal action_executed(combatant: Combatant, action: Dictionary, targets: Array)
 signal round_started(round_num: int)
 signal round_ended(round_num: int)
+signal damage_dealt(target: Combatant, amount: int, is_crit: bool)
+signal healing_done(target: Combatant, amount: int)
+signal battle_log_message(message: String)
 
 enum BattleState {
 	INACTIVE,
@@ -44,9 +47,12 @@ var pending_actions: Array[Dictionary] = []  # All selected actions before execu
 var execution_order: Array[Dictionary] = []  # Sorted by computed turn order
 
 ## Battle configuration
-var is_autobattle_enabled: bool = false
-var autobattle_script: Dictionary = {}
+var is_autobattle_enabled: bool = false  # Legacy global flag
+var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
+
+## Autobattle toggle signal
+signal autobattle_toggled(character_id: String, enabled: bool)
 
 ## Action speed modifiers (lower = faster)
 const ACTION_SPEEDS = {
@@ -212,8 +218,11 @@ func _process_next_selection() -> void:
 
 	selection_turn_started.emit(current_combatant)
 
-	# AI selects automatically for enemies (and autobattle players)
-	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled:
+	# AI selects automatically for enemies and autobattle players
+	var char_id = _get_character_id(current_combatant)
+	var is_char_autobattle = AutobattleSystem.is_autobattle_enabled(char_id)
+
+	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle:
 		_process_ai_selection(current_combatant)
 
 
@@ -407,6 +416,12 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		}
 		_queue_action(action)
 		_end_selection_turn()
+		return
+
+	# Check for per-character autobattle script (players only)
+	var char_id = _get_character_id(combatant)
+	if is_player_controlled and AutobattleSystem.is_autobattle_enabled(char_id):
+		_process_grid_autobattle(combatant)
 		return
 
 	# AI can advance or defer too!
@@ -630,6 +645,9 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var damage = int(base_damage * variance)
 
 	var actual_damage = target.take_damage(damage, false)
+	damage_dealt.emit(target, actual_damage, false)
+	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!" % [attacker.combatant_name, target.combatant_name, actual_damage]
+	battle_log_message.emit(log_msg)
 	print("%s attacks %s for %d damage!" % [attacker.combatant_name, target.combatant_name, actual_damage])
 
 
@@ -653,6 +671,8 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	caster.spend_ap(1)
 
 	action_executing.emit(caster, {"type": "ability", "ability_id": ability_id, "targets": targets})
+	var ability_log = "[color=white]%s[/color] uses [color=aqua]%s[/color]!" % [caster.combatant_name, ability["name"]]
+	battle_log_message.emit(ability_log)
 	print("%s uses %s!" % [caster.combatant_name, ability["name"]])
 
 	match ability["type"]:
@@ -684,13 +704,19 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			continue
 
 		var damage = int(base_damage * multiplier)
+		var is_crit = false
 
 		if randf() < crit_chance:
 			damage = int(damage * 2.0)
+			is_crit = true
 			print("Critical hit!")
 
 		damage = int(damage * randf_range(0.9, 1.1))
 		var actual_damage = target.take_damage(damage, false)
+		damage_dealt.emit(target, actual_damage, is_crit)
+		var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
+		var log_msg = "  → [color=red]%s[/color] takes [color=yellow]%d[/color] damage!%s" % [target.combatant_name, actual_damage, crit_text]
+		battle_log_message.emit(log_msg)
 		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
 
 
@@ -713,11 +739,18 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		else:
 			actual_damage = target.take_damage(damage, true)
 
-		print("  → %s takes %d %s damage!" % [target.combatant_name, actual_damage, element if element else "magic"])
+		damage_dealt.emit(target, actual_damage, false)
+		var elem_text = element if element else "magic"
+		var log_msg = "  → [color=red]%s[/color] takes [color=cyan]%d[/color] %s damage!" % [target.combatant_name, actual_damage, elem_text]
+		battle_log_message.emit(log_msg)
+		print("  → %s takes %d %s damage!" % [target.combatant_name, actual_damage, elem_text])
 
 		if drain_pct > 0:
 			var drained = int(actual_damage * drain_pct / 100.0)
 			caster.heal(drained)
+			healing_done.emit(caster, drained)
+			var drain_log = "  → [color=white]%s[/color] drains [color=lime]%d[/color] HP!" % [caster.combatant_name, drained]
+			battle_log_message.emit(drain_log)
 			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
 
 
@@ -731,6 +764,9 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 			continue
 
 		var healed = target.heal(heal_amount)
+		healing_done.emit(target, healed)
+		var heal_log = "  → [color=white]%s[/color] recovers [color=lime]%d[/color] HP!" % [target.combatant_name, healed]
+		battle_log_message.emit(heal_log)
 		print("  → %s recovers %d HP!" % [target.combatant_name, healed])
 
 
@@ -904,3 +940,208 @@ func set_autobattle_script(script_name: String) -> void:
 func toggle_autobattle(enabled: bool) -> void:
 	is_autobattle_enabled = enabled
 	print("Autobattle %s" % ("enabled" if enabled else "disabled"))
+
+
+## Per-character autobattle helpers
+func _get_character_id(combatant: Combatant) -> String:
+	"""Get character ID for autobattle system (lowercase, underscore-separated)"""
+	return combatant.combatant_name.to_lower().replace(" ", "_")
+
+
+func _process_grid_autobattle(combatant: Combatant) -> void:
+	"""Process grid-based autobattle for a player character"""
+	var is_player_controlled = combatant in player_party
+	var allies = player_party if is_player_controlled else enemy_party
+	var enemies = enemy_party if is_player_controlled else player_party
+
+	var alive_allies = allies.filter(func(a): return a.is_alive)
+	var alive_enemies = enemies.filter(func(e): return e.is_alive)
+
+	# Get actions from the grid autobattle system
+	# (AutobattleSystem accesses BattleManager directly for context)
+	var actions = AutobattleSystem.execute_grid_autobattle(combatant)
+
+	if actions.size() == 0:
+		# No valid actions found, defer
+		var action = {
+			"type": "defer",
+			"combatant": combatant,
+			"speed": _compute_action_speed(combatant, "defer")
+		}
+		_queue_action(action)
+		print("%s (autobattle) defers - no matching rules" % combatant.combatant_name)
+		_end_selection_turn()
+		return
+
+	if actions.size() == 1:
+		# Single action
+		var action_data = actions[0]
+		var queued_action = _convert_autobattle_action(combatant, action_data, alive_allies, alive_enemies)
+		if queued_action:
+			_queue_action(queued_action)
+			print("%s (autobattle) queues %s" % [combatant.combatant_name, action_data.get("type", "unknown")])
+		else:
+			# Fallback to defer if action conversion fails
+			var defer_action = {
+				"type": "defer",
+				"combatant": combatant,
+				"speed": _compute_action_speed(combatant, "defer")
+			}
+			_queue_action(defer_action)
+		_end_selection_turn()
+		return
+
+	# Multiple actions - use Advance
+	var advance_actions: Array[Dictionary] = []
+	for action_data in actions:
+		var converted = _convert_autobattle_action(combatant, action_data, alive_allies, alive_enemies)
+		if converted:
+			# For advance, we just need type/target/ability_id
+			var sub_action = {"type": converted["type"]}
+			if converted.has("target"):
+				sub_action["target"] = converted["target"]
+			if converted.has("targets"):
+				sub_action["targets"] = converted["targets"]
+			if converted.has("ability_id"):
+				sub_action["ability_id"] = converted["ability_id"]
+			if converted.has("item_id"):
+				sub_action["item_id"] = converted["item_id"]
+			advance_actions.append(sub_action)
+
+	if advance_actions.size() == 0:
+		# All actions failed, defer
+		var defer_action = {
+			"type": "defer",
+			"combatant": combatant,
+			"speed": _compute_action_speed(combatant, "defer")
+		}
+		_queue_action(defer_action)
+		_end_selection_turn()
+		return
+
+	if advance_actions.size() == 1:
+		# Only one valid action, queue it normally
+		var single = advance_actions[0]
+		single["combatant"] = combatant
+		single["speed"] = _compute_action_speed(combatant, single.get("type", "attack"))
+		_queue_action(single)
+	else:
+		# Queue as advance
+		var advance_action = {
+			"type": "advance",
+			"combatant": combatant,
+			"actions": advance_actions,
+			"speed": _compute_action_speed(combatant, "attack")
+		}
+		_queue_action(advance_action)
+		print("%s (autobattle) advances with %d actions" % [combatant.combatant_name, advance_actions.size()])
+
+	_end_selection_turn()
+
+
+func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, allies: Array, enemies: Array) -> Dictionary:
+	"""Convert autobattle action data to BattleManager action format"""
+	var action_type = action_data.get("type", "attack")
+	var target_data = action_data.get("target", "lowest_hp_enemy")
+
+	# Handle case where target is already a Combatant object or a string
+	var resolved_target: Combatant = null
+	if target_data is Combatant:
+		resolved_target = target_data
+	elif target_data is String:
+		resolved_target = _resolve_target(combatant, target_data, allies, enemies)
+	else:
+		resolved_target = _resolve_target(combatant, "lowest_hp_enemy", allies, enemies)
+
+	match action_type:
+		"attack":
+			var target = resolved_target
+			if not target:
+				return {}
+			return {
+				"type": "attack",
+				"combatant": combatant,
+				"target": target,
+				"speed": _compute_action_speed(combatant, "attack")
+			}
+
+		"ability":
+			var ability_id = action_data.get("id", "")
+			if ability_id.is_empty():
+				return {}
+			var ability = JobSystem.get_ability(ability_id)
+			if ability.is_empty():
+				return {}
+			if not JobSystem.can_use_ability(combatant, ability_id):
+				return {}
+			return {
+				"type": "ability",
+				"combatant": combatant,
+				"ability_id": ability_id,
+				"targets": [resolved_target] if resolved_target else [],
+				"speed": _compute_action_speed(combatant, "ability", ability)
+			}
+
+		"item":
+			var item_id = action_data.get("id", "")
+			if item_id.is_empty():
+				return {}
+			if not combatant.has_item(item_id):
+				return {}
+			return {
+				"type": "item",
+				"combatant": combatant,
+				"item_id": item_id,
+				"targets": [resolved_target] if resolved_target else [],
+				"speed": _compute_action_speed(combatant, "item")
+			}
+
+		"defer":
+			return {
+				"type": "defer",
+				"combatant": combatant,
+				"speed": _compute_action_speed(combatant, "defer")
+			}
+
+	return {}
+
+
+func _resolve_target(combatant: Combatant, target_type: String, allies: Array, enemies: Array) -> Combatant:
+	"""Resolve a target based on target type string"""
+	match target_type:
+		"lowest_hp_enemy":
+			if enemies.size() == 0:
+				return null
+			var sorted_enemies = enemies.duplicate()
+			sorted_enemies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+			return sorted_enemies[0]
+
+		"highest_hp_enemy":
+			if enemies.size() == 0:
+				return null
+			var sorted_enemies = enemies.duplicate()
+			sorted_enemies.sort_custom(func(a, b): return a.get_hp_percentage() > b.get_hp_percentage())
+			return sorted_enemies[0]
+
+		"random_enemy":
+			if enemies.size() == 0:
+				return null
+			return enemies[randi() % enemies.size()]
+
+		"lowest_hp_ally":
+			if allies.size() == 0:
+				return null
+			var sorted_allies = allies.duplicate()
+			sorted_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+			return sorted_allies[0]
+
+		"self":
+			return combatant
+
+		_:
+			# Default to lowest HP enemy
+			if enemies.size() == 0:
+				return null
+			var sorted_enemies = enemies.duplicate()
+			sorted_enemies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+			return sorted_enemies[0]

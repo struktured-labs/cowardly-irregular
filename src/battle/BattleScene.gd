@@ -7,6 +7,8 @@ extends Control
 const BattleAnimatorClass = preload("res://src/battle/BattleAnimator.gd")
 const RetroFontClass = preload("res://src/ui/RetroFont.gd")
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
+const DamageNumber = preload("res://src/ui/DamageNumber.gd")
+const AutobattleToggleUIClass = preload("res://src/ui/autobattle/AutobattleToggleUI.gd")
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -80,12 +82,18 @@ var _has_external_party: bool = false
 ## Battle end state
 var _battle_ended: bool = false
 var _battle_victory: bool = false
+var managed_by_game_loop: bool = false  # When true, don't handle restart internally
+var command_memory_enabled: bool = true  # Remember last command per character
+var force_miniboss: bool = false  # When true, spawn a miniboss instead of regular enemies
 
 ## Battle speed settings
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
 const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x"]
 var _battle_speed_index: int = 2  # Default to 1x
 var _speed_indicator: RichTextLabel = null
+
+## Autobattle toggle UI
+var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 
 
 func set_player(player: Combatant) -> void:
@@ -114,6 +122,9 @@ func _ready() -> void:
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
 	BattleManager.round_ended.connect(_on_round_ended)
+	BattleManager.damage_dealt.connect(_on_damage_dealt)
+	BattleManager.healing_done.connect(_on_healing_done)
+	BattleManager.battle_log_message.connect(_on_battle_log_message)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -147,19 +158,24 @@ func _ready() -> void:
 
 
 func _create_autobattle_toggle() -> void:
-	"""Create autobattle toggle checkbox"""
+	"""Create autobattle toggle checkbox and per-character indicator"""
 	var action_menu = $UI/ActionMenuPanel/MarginContainer/VBoxContainer
 
 	# Add separator
 	var separator = HSeparator.new()
 	action_menu.add_child(separator)
 
-	# Add autobattle checkbox
+	# Add autobattle checkbox (legacy global toggle)
 	var autobattle_check = CheckBox.new()
 	autobattle_check.name = "AutobattleToggle"
 	autobattle_check.text = "Autobattle (Aggressive)"
 	autobattle_check.toggled.connect(_on_autobattle_toggled)
 	action_menu.add_child(autobattle_check)
+
+	# Create per-character autobattle indicator UI (top-right corner)
+	_autobattle_toggle_ui = AutobattleToggleUIClass.new()
+	_autobattle_toggle_ui.name = "AutobattleToggleUI"
+	$UI.add_child(_autobattle_toggle_ui)
 
 
 func _create_speed_indicator() -> void:
@@ -434,25 +450,60 @@ const MONSTER_TYPES = [
 
 
 func _spawn_enemies() -> void:
-	"""Spawn 1-3 random enemies for the battle"""
+	"""Spawn 1-3 random enemies for the battle - sometimes mixed groups"""
 	# Clear any existing enemies
 	for enemy in test_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 	test_enemies.clear()
 
+	# Check for miniboss battle
+	if force_miniboss:
+		_spawn_miniboss()
+		return
+
 	# Random number of enemies (2-3, limited by available positions)
 	var max_enemies = mini(3, enemy_positions.size())
 	var num_enemies = randi_range(2, max_enemies)
 
-	# Pick a random monster type for this encounter
-	var monster_type = MONSTER_TYPES[randi() % MONSTER_TYPES.size()]
+	# 40% chance of mixed group, 60% chance of same type
+	var use_mixed_group = randf() < 0.4 and num_enemies > 1
+
+	# Pick monster types for this encounter
+	var monster_types_for_encounter: Array = []
+	if use_mixed_group:
+		# Pick different types for each enemy
+		var available_types = MONSTER_TYPES.duplicate()
+		available_types.shuffle()
+		for i in range(num_enemies):
+			monster_types_for_encounter.append(available_types[i % available_types.size()])
+	else:
+		# All same type
+		var monster_type = MONSTER_TYPES[randi() % MONSTER_TYPES.size()]
+		for i in range(num_enemies):
+			monster_types_for_encounter.append(monster_type)
+
+	# Track names for encounter message
+	var enemy_names: Dictionary = {}
 
 	for i in range(num_enemies):
+		var monster_type = monster_types_for_encounter[i]
 		var enemy = Combatant.new()
-		var suffix = "" if num_enemies == 1 else " " + ["A", "B", "C"][i]
+
+		# Count how many of this type we've spawned for suffix
+		var type_count = 0
+		for j in range(i):
+			if monster_types_for_encounter[j]["id"] == monster_type["id"]:
+				type_count += 1
+
 		var stats = monster_type["stats"].duplicate()
-		stats["name"] = monster_type["name"] + suffix
+		# Only add suffix if there are multiple of the same type
+		var same_type_total = monster_types_for_encounter.count(monster_type)
+		if same_type_total > 1:
+			stats["name"] = monster_type["name"] + " " + ["A", "B", "C"][type_count]
+		else:
+			stats["name"] = monster_type["name"]
+
 		# Slight speed variation for turn order variety
 		stats["speed"] = stats["speed"] + i
 		enemy.initialize(stats)
@@ -473,7 +524,77 @@ func _spawn_enemies() -> void:
 
 		test_enemies.append(enemy)
 
-	log_message("[color=gray]%d %s(s) appeared![/color]" % [num_enemies, monster_type["name"]])
+		# Track for message
+		if monster_type["name"] in enemy_names:
+			enemy_names[monster_type["name"]] += 1
+		else:
+			enemy_names[monster_type["name"]] = 1
+
+	# Build encounter message
+	var msg_parts: Array = []
+	for enemy_name in enemy_names:
+		var count = enemy_names[enemy_name]
+		if count > 1:
+			msg_parts.append("%d %s" % [count, enemy_name + "s"])
+		else:
+			msg_parts.append("1 %s" % enemy_name)
+	log_message("[color=gray]%s appeared![/color]" % " and ".join(msg_parts))
+
+	_update_ui()
+
+
+const MINIBOSS_TYPES = [
+	{
+		"id": "cave_troll",
+		"name": "Cave Troll",
+		"stats": {"max_hp": 400, "max_mp": 30, "attack": 55, "defense": 25, "magic": 10, "speed": 6},
+		"weaknesses": ["fire", "lightning"],
+		"resistances": ["ice"]
+	},
+	{
+		"id": "shadow_knight",
+		"name": "Shadow Knight",
+		"stats": {"max_hp": 350, "max_mp": 80, "attack": 48, "defense": 30, "magic": 25, "speed": 12},
+		"weaknesses": ["holy", "fire"],
+		"resistances": ["dark", "ice"]
+	}
+]
+
+
+func _spawn_miniboss() -> void:
+	"""Spawn a single miniboss enemy"""
+	# Pick a random miniboss
+	var boss_type = MINIBOSS_TYPES[randi() % MINIBOSS_TYPES.size()]
+
+	var enemy = Combatant.new()
+	var stats = boss_type["stats"].duplicate()
+	stats["name"] = boss_type["name"]
+	enemy.initialize(stats)
+	add_child(enemy)
+
+	# Store monster type ID for sprite selection
+	enemy.set_meta("monster_type", boss_type["id"])
+	enemy.set_meta("is_miniboss", true)
+
+	# Add weaknesses/resistances
+	for weakness in boss_type.get("weaknesses", []):
+		enemy.elemental_weaknesses.append(weakness)
+	for resistance in boss_type.get("resistances", []):
+		enemy.elemental_resistances.append(resistance)
+
+	# Connect signals
+	enemy.hp_changed.connect(_on_enemy_hp_changed.bind(0))
+	enemy.died.connect(_on_enemy_died.bind(0))
+
+	test_enemies.append(enemy)
+
+	# Epic announcement!
+	log_message("")
+	log_message("[color=red]═══════════════════════════════[/color]")
+	log_message("[color=orange]   ⚔️  MINIBOSS BATTLE!  ⚔️[/color]")
+	log_message("[color=yellow]   %s appeared![/color]" % boss_type["name"])
+	log_message("[color=red]═══════════════════════════════[/color]")
+	log_message("")
 
 	_update_ui()
 
@@ -577,6 +698,10 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 			return BattleAnimatorClass.create_fungoid_sprite_frames()
 		"goblin":
 			return BattleAnimatorClass.create_goblin_sprite_frames()
+		"shadow_knight":
+			return BattleAnimatorClass.create_shadow_knight_sprite_frames()
+		"cave_troll":
+			return BattleAnimatorClass.create_cave_troll_sprite_frames()
 		_:
 			# Default to slime for unknown types
 			return BattleAnimatorClass.create_slime_sprite_frames()
@@ -1493,7 +1618,7 @@ func _on_battle_ended(victory: bool) -> void:
 
 func _process(_delta: float) -> void:
 	"""Handle post-battle input"""
-	if _battle_ended:
+	if _battle_ended and not managed_by_game_loop:
 		if Input.is_action_just_pressed("ui_accept"):
 			_battle_ended = false
 			if _battle_victory:
@@ -1597,8 +1722,9 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	_update_turn_info()
 
-	# Get combatant's animator
+	# Get combatant's animator and sprite
 	var animator = _get_combatant_animator(combatant)
+	var attacker_sprite = _get_combatant_sprite(combatant)
 	if not animator:
 		return
 
@@ -1606,27 +1732,105 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	match action_type:
 		"attack":
 			var target = action.get("target") as Combatant
-			var target_idx = test_enemies.find(target)
-			animator.play_attack(func():
-				if target_idx >= 0 and target_idx < enemy_animators.size():
-					enemy_animators[target_idx].play_hit()
-				# Spawn physical hit effect on target
-				if target_idx >= 0 and target_idx < enemy_sprite_nodes.size():
-					var sprite = enemy_sprite_nodes[target_idx]
-					if is_instance_valid(sprite):
-						EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, sprite.global_position)
-			)
+			var target_sprite = _get_combatant_sprite(target)
+			var target_animator = _get_combatant_animator(target)
+
+			# Move attacker toward target, attack, then return
+			if attacker_sprite and target_sprite:
+				_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator)
+			else:
+				# Fallback if no sprites
+				animator.play_attack(func():
+					if target_animator:
+						target_animator.play_hit()
+				)
 		"ability":
 			var ability_id = action.get("ability_id", "")
 			var targets = action.get("targets", [])
 			var ability = JobSystem.get_ability(ability_id)
+			var ability_type = ability.get("type", "magic")
 			var anim_type = ability.get("animation", "cast")
-			_play_ability_animation(anim_type, animator)
-			_spawn_ability_effects(ability_id, targets)
+
+			# Physical abilities move to target
+			if ability_type == "physical" and targets.size() > 0:
+				var target_sprite = _get_combatant_sprite(targets[0])
+				var target_animator = _get_combatant_animator(targets[0])
+				if attacker_sprite and target_sprite:
+					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator)
+				else:
+					_play_ability_animation(anim_type, animator)
+					_spawn_ability_effects(ability_id, targets)
+			else:
+				_play_ability_animation(anim_type, animator)
+				_spawn_ability_effects(ability_id, targets)
 		"item":
 			animator.play_item()
 		"defer":
 			animator.play_defend()
+
+
+func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass) -> void:
+	"""Animate attacker moving to target, attacking, then returning"""
+	# Store home position as metadata to ensure we can always return
+	if not attacker_sprite.has_meta("home_position"):
+		attacker_sprite.set_meta("home_position", attacker_sprite.position)
+	var home_pos = attacker_sprite.get_meta("home_position")
+	var target_pos = target_sprite.position
+
+	# Kill any existing tween on this sprite to prevent conflicts
+	if attacker_sprite.has_meta("attack_tween"):
+		var old_tween = attacker_sprite.get_meta("attack_tween")
+		if old_tween and old_tween.is_valid():
+			old_tween.kill()
+
+	# Calculate attack position (close to target but not overlapping)
+	var direction = (target_pos - home_pos).normalized()
+	var attack_pos = target_pos - direction * 40  # Stop 40 pixels from target
+
+	# Create movement tween
+	var tween = create_tween()
+	attacker_sprite.set_meta("attack_tween", tween)
+	tween.set_trans(Tween.TRANS_BACK)
+	tween.set_ease(Tween.EASE_OUT)
+
+	# Move to target (fast)
+	tween.tween_property(attacker_sprite, "position", attack_pos, 0.15)
+
+	# Play attack animation and hit on target
+	tween.tween_callback(func():
+		if attacker_anim:
+			attacker_anim.play_attack()
+		# Brief delay then play hit
+		get_tree().create_timer(0.1).timeout.connect(func():
+			if target_anim and is_instance_valid(target_sprite):
+				target_anim.play_hit()
+				# Spawn physical hit effect
+				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
+		)
+	)
+
+	# Wait for attack animation
+	tween.tween_interval(0.3)
+
+	# Return to home position (use stored home, not where we started this attack)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(attacker_sprite, "position", home_pos, 0.2)
+
+
+func _get_combatant_sprite(combatant: Combatant) -> Node2D:
+	"""Get sprite node for any combatant"""
+	if not combatant:
+		return null
+	# Check party (use BattleManager's array for consistency)
+	var party_idx = BattleManager.player_party.find(combatant)
+	if party_idx >= 0 and party_idx < party_sprite_nodes.size():
+		return party_sprite_nodes[party_idx]
+	# Check enemies
+	var enemy_idx = BattleManager.enemy_party.find(combatant)
+	if enemy_idx >= 0 and enemy_idx < enemy_sprite_nodes.size():
+		return enemy_sprite_nodes[enemy_idx]
+	return null
 
 
 func _get_combatant_animator(combatant: Combatant) -> BattleAnimatorClass:
@@ -1635,8 +1839,8 @@ func _get_combatant_animator(combatant: Combatant) -> BattleAnimatorClass:
 	var party_idx = BattleManager.player_party.find(combatant)
 	if party_idx >= 0 and party_idx < party_animators.size():
 		return party_animators[party_idx]
-	# Check enemies
-	var enemy_idx = test_enemies.find(combatant)
+	# Check enemies (use BattleManager's array for consistency)
+	var enemy_idx = BattleManager.enemy_party.find(combatant)
 	if enemy_idx >= 0 and enemy_idx < enemy_animators.size():
 		return enemy_animators[enemy_idx]
 	return null
@@ -1790,6 +1994,19 @@ func _show_win98_command_menu(combatant: Combatant) -> void:
 	# Allow going back if not the first player in selection order
 	var can_go_back = BattleManager.selection_index > 0
 	active_win98_menu.set_can_go_back(can_go_back)
+
+	# Apply command memory if enabled
+	if command_memory_enabled and combatant.last_menu_selection != "":
+		print("[CMD MEM] Applying %s -> %s" % [combatant.combatant_name, combatant.last_menu_selection])
+		var submenu_memory = {}
+		if combatant.last_attack_selection != "":
+			submenu_memory["attack_menu"] = combatant.last_attack_selection
+		if combatant.last_ability_selection != "":
+			submenu_memory["ability_menu"] = combatant.last_ability_selection
+		if combatant.last_item_selection != "":
+			submenu_memory["item_menu"] = combatant.last_item_selection
+		print("[CMD MEM] Submenu memory: %s" % str(submenu_memory))
+		active_win98_menu.set_command_memory(combatant.last_menu_selection, submenu_memory)
 
 
 func _build_command_menu_items_with_targets(combatant: Combatant) -> Array:
@@ -2052,6 +2269,37 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 	var alive_enemies = _get_alive_enemies()
 	var current = BattleManager.current_combatant
 
+	# Save command memory for next turn
+	if current and command_memory_enabled:
+		if item_id.begins_with("attack_"):
+			current.last_menu_selection = "attack_menu"
+			# Store the specific attack target (e.g., "attack_0")
+			current.last_attack_selection = item_id
+			print("[CMD MEM] %s -> attack_menu / %s (single action)" % [current.combatant_name, item_id])
+		elif item_id.begins_with("ability_") or (item_data is Dictionary and item_data.has("ability_id")):
+			current.last_menu_selection = "ability_menu"
+			if item_data is Dictionary and item_data.has("ability_id"):
+				var ability_id = item_data.get("ability_id", "")
+				# Store the ability submenu item ID (ability_menu_X or ability_X)
+				if item_id.begins_with("ability_menu_"):
+					current.last_ability_selection = item_id.substr(0, item_id.find("_enemy_") if "_enemy_" in item_id else item_id.length())
+				elif "_enemy_" in item_id or "_ally_" in item_id:
+					# This is a target selection - find the parent ability menu item
+					current.last_ability_selection = "ability_menu_" + ability_id
+				else:
+					current.last_ability_selection = item_id
+			print("[CMD MEM] %s -> ability_menu / %s (single action)" % [current.combatant_name, current.last_ability_selection])
+		elif item_id.begins_with("item_"):
+			current.last_menu_selection = "item_menu"
+			if item_data is Dictionary and item_data.has("item_id"):
+				var i_id = item_data.get("item_id", "")
+				# Store the item submenu item ID
+				if "_ally_" in item_id or "_enemy_" in item_id:
+					current.last_item_selection = "item_menu_" + i_id
+				else:
+					current.last_item_selection = item_id
+			print("[CMD MEM] %s -> item_menu / %s (single action)" % [current.combatant_name, current.last_item_selection])
+
 	# Attack with target from menu tree (attack_0, attack_1, etc)
 	if item_id.begins_with("attack_") and item_data is Dictionary:
 		var target_idx = item_data.get("target_idx", -1)
@@ -2171,6 +2419,37 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 	if not current:
 		return
 
+	# Store command memory from first action (for next turn)
+	if actions.size() > 0 and command_memory_enabled:
+		var first_action = actions[0]
+		var mem_action_id: String = first_action.get("id", "")
+		var mem_action_data = first_action.get("data", null)
+
+		if mem_action_id.begins_with("attack_"):
+			current.last_menu_selection = "attack_menu"
+			current.last_attack_selection = mem_action_id
+			print("[CMD MEM] %s -> attack_menu / %s (advance)" % [current.combatant_name, mem_action_id])
+		elif mem_action_id.begins_with("ability_"):
+			current.last_menu_selection = "ability_menu"
+			if mem_action_data is Dictionary:
+				var ability_id = mem_action_data.get("ability_id", "")
+				if mem_action_id.begins_with("ability_menu_"):
+					current.last_ability_selection = mem_action_id.substr(0, mem_action_id.find("_enemy_") if "_enemy_" in mem_action_id else mem_action_id.length())
+				elif "_enemy_" in mem_action_id or "_ally_" in mem_action_id:
+					current.last_ability_selection = "ability_menu_" + ability_id
+				else:
+					current.last_ability_selection = mem_action_id
+			print("[CMD MEM] %s -> ability_menu / %s (advance)" % [current.combatant_name, current.last_ability_selection])
+		elif mem_action_id.begins_with("item_"):
+			current.last_menu_selection = "item_menu"
+			if mem_action_data is Dictionary:
+				var i_id = mem_action_data.get("item_id", "")
+				if "_ally_" in mem_action_id or "_enemy_" in mem_action_id:
+					current.last_item_selection = "item_menu_" + i_id
+				else:
+					current.last_item_selection = mem_action_id
+			print("[CMD MEM] %s -> item_menu / %s (advance)" % [current.combatant_name, current.last_item_selection])
+
 	# Convert menu actions to battle actions
 	var battle_actions: Array[Dictionary] = []
 	for action in actions:
@@ -2249,3 +2528,56 @@ func _close_win98_menu() -> void:
 	if active_win98_menu and is_instance_valid(active_win98_menu):
 		active_win98_menu.force_close()
 		active_win98_menu = null
+
+
+## Damage Numbers
+
+func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
+	"""Show floating damage number near target"""
+	var pos = _get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		_spawn_damage_number(pos, amount, false, is_crit)
+	else:
+		print("[DMG NUM] Could not find sprite position for %s" % target.combatant_name)
+
+
+func _on_healing_done(target: Combatant, amount: int) -> void:
+	"""Show floating heal number near target"""
+	var pos = _get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		_spawn_damage_number(pos, amount, true, false)
+
+
+func _on_battle_log_message(message: String) -> void:
+	"""Display battle log message from BattleManager"""
+	if battle_log:
+		battle_log.append_text(message + "\n")
+		battle_log.scroll_to_line(battle_log.get_line_count())
+
+
+func _get_combatant_sprite_position(combatant: Combatant) -> Vector2:
+	"""Get the screen position of a combatant's sprite"""
+	# Check party members (use BattleManager's array for consistency)
+	var party_idx = BattleManager.player_party.find(combatant)
+	if party_idx >= 0 and party_idx < party_sprite_nodes.size():
+		var sprite = party_sprite_nodes[party_idx]
+		if is_instance_valid(sprite):
+			return sprite.global_position
+
+	# Check enemies (use BattleManager's array for consistency)
+	var enemy_idx = BattleManager.enemy_party.find(combatant)
+	if enemy_idx >= 0 and enemy_idx < enemy_sprite_nodes.size():
+		var sprite = enemy_sprite_nodes[enemy_idx]
+		if is_instance_valid(sprite):
+			return sprite.global_position
+
+	return Vector2.ZERO
+
+
+func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool) -> void:
+	"""Spawn a floating damage/heal number"""
+	var dmg_num = DamageNumber.new()
+	dmg_num.setup(amount, is_heal, is_crit)
+	# Offset slightly upward from sprite center
+	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
+	add_child(dmg_num)

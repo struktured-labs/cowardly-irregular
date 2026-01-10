@@ -7,9 +7,9 @@
 		"stats": {
 			"max_hp": 80,
 			"max_mp": 20,
-			"attack": 10,
+			"attack": 25,
 			"defense": 8,
-			"magic": 5,
+			"magic": 12,
 			"speed": 8
 		},
 		"abilities": ["tackle"],
@@ -29,9 +29,9 @@
 		"stats": {
 			"max_hp": 50,
 			"max_mp": 15,
-			"attack": 12,
+			"attack": 28,
 			"defense": 5,
-			"magic": 6,
+			"magic": 15,
 			"speed": 18
 		},
 		"abilities": ["bite", "screech"],
@@ -51,9 +51,9 @@
 		"stats": {
 			"max_hp": 100,
 			"max_mp": 25,
-			"attack": 8,
+			"attack": 22,
 			"defense": 12,
-			"magic": 10,
+			"magic": 25,
 			"speed": 5
 		},
 		"abilities": ["spore_cloud", "poison_touch"],
@@ -74,9 +74,9 @@
 		"stats": {
 			"max_hp": 70,
 			"max_mp": 50,
-			"attack": 8,
+			"attack": 20,
 			"defense": 8,
-			"magic": 18,
+			"magic": 35,
 			"speed": 14
 		},
 		"abilities": ["fire", "dark_bolt"],
@@ -97,9 +97,9 @@
 		"stats": {
 			"max_hp": 120,
 			"max_mp": 30,
-			"attack": 15,
+			"attack": 32,
 			"defense": 10,
-			"magic": 8,
+			"magic": 18,
 			"speed": 12
 		},
 		"abilities": ["slash", "steal"],
@@ -120,9 +120,9 @@
 		"stats": {
 			"max_hp": 150,
 			"max_mp": 25,
-			"attack": 18,
+			"attack": 38,
 			"defense": 12,
-			"magic": 6,
+			"magic": 15,
 			"speed": 10
 		},
 		"abilities": ["bone_throw", "rattle"],
@@ -144,9 +144,9 @@
 		"stats": {
 			"max_hp": 180,
 			"max_mp": 40,
-			"attack": 22,
+			"attack": 45,
 			"defense": 14,
-			"magic": 12,
+			"magic": 28,
 			"speed": 16
 		},
 		"abilities": ["bite", "ice_breath"],
@@ -159,6 +159,78 @@
 		"weaknesses": ["fire"],
 		"resistances": ["ice"],
 		"element": "ice"
+	},
+	"specter": {
+		"id": "specter",
+		"name": "Specter",
+		"description": "A ghostly apparition. Resistant to physical attacks.",
+		"level": 4,
+		"stats": {
+			"max_hp": 90,
+			"max_mp": 60,
+			"attack": 18,
+			"defense": 5,
+			"magic": 35,
+			"speed": 14
+		},
+		"abilities": ["soul_drain", "chill_touch"],
+		"exp_reward": 35,
+		"gold_reward": 25,
+		"drop_table": [
+			{"item": "ectoplasm", "chance": 0.5},
+			{"item": "ether", "chance": 0.25}
+		],
+		"weaknesses": ["holy", "fire"],
+		"resistances": ["physical", "ice"],
+		"undead": true
+	},
+	"cave_troll": {
+		"id": "cave_troll",
+		"name": "Cave Troll",
+		"description": "A hulking brute that guards the cave depths. Miniboss.",
+		"level": 8,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 400,
+			"max_mp": 30,
+			"attack": 55,
+			"defense": 25,
+			"magic": 10,
+			"speed": 6
+		},
+		"abilities": ["smash", "boulder_throw", "enrage"],
+		"exp_reward": 150,
+		"gold_reward": 100,
+		"drop_table": [
+			{"item": "troll_hide", "chance": 0.8},
+			{"item": "hi_potion", "chance": 0.5}
+		],
+		"weaknesses": ["fire", "lightning"],
+		"resistances": ["ice"]
+	},
+	"shadow_knight": {
+		"id": "shadow_knight",
+		"name": "Shadow Knight",
+		"description": "A fallen warrior consumed by darkness. Miniboss.",
+		"level": 9,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 350,
+			"max_mp": 80,
+			"attack": 48,
+			"defense": 30,
+			"magic": 25,
+			"speed": 12
+		},
+		"abilities": ["dark_slash", "shadow_step", "life_drain"],
+		"exp_reward": 175,
+		"gold_reward": 120,
+		"drop_table": [
+			{"item": "dark_crystal", "chance": 0.7},
+			{"item": "shadow_blade", "chance": 0.3}
+		],
+		"weaknesses": ["holy", "fire"],
+		"resistances": ["dark", "ice"]
 	},
 	"corrupted_guardian": {
 		"id": "corrupted_guardian",

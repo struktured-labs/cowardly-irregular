@@ -2,13 +2,25 @@ extends Node
 
 ## AutobattleSystem - Manages autobattle scripts and execution
 ## Allows players to script combat behavior with conditionals
+##
+## New 2D Grid Format:
+## - Rules are evaluated top-to-bottom (first match wins)
+## - Each rule has AND-chained conditions and up to 4 actions
+## - Multiple actions = Advance mode (costs AP per action)
 
-signal script_executed(combatant: Combatant, rule: Dictionary, action: Dictionary)
+signal script_executed(combatant: Combatant, rule: Dictionary, actions: Array)
 signal script_saved(script_name: String)
 signal script_loaded(script_name: String)
+signal character_script_changed(character_id: String)
 
-## Loaded scripts (saved setups)
-var saved_scripts: Dictionary = {}  # {script_name: AutobattleScript}
+## Loaded preset scripts (saved setups)
+var saved_scripts: Dictionary = {}  # {script_name: Script}
+
+## Per-character scripts
+var character_scripts: Dictionary = {}  # {character_id: Script}
+
+## Autobattle enabled state per character
+var autobattle_enabled: Dictionary = {}  # {character_id: bool}
 
 ## Condition types
 enum ConditionType {
@@ -45,12 +57,55 @@ enum ActionType {
 	SKIP
 }
 
+## String-based condition types for the new 2D grid format
+const CONDITION_TYPES = {
+	"hp_percent": "Self HP %",
+	"mp_percent": "Self MP %",
+	"ap": "Current AP",
+	"has_status": "Has Status",
+	"enemy_hp_percent": "Enemy HP %",
+	"ally_hp_percent": "Ally HP %",
+	"turn": "Turn Number",
+	"enemy_count": "Enemy Count",
+	"ally_count": "Ally Count",
+	"item_count": "Has Item",
+	"always": "Always"
+}
+
+## String-based operators
+const OPERATORS = {
+	"<": "Less Than",
+	"<=": "Less or Equal",
+	"==": "Equal",
+	">=": "Greater or Equal",
+	">": "Greater Than",
+	"!=": "Not Equal"
+}
+
+## String-based action types
+const ACTION_TYPES = {
+	"attack": "Attack",
+	"ability": "Ability",
+	"item": "Item",
+	"defer": "Defer"
+}
+
+## Target types
+const TARGET_TYPES = {
+	"lowest_hp_enemy": "Lowest HP Enemy",
+	"highest_hp_enemy": "Highest HP Enemy",
+	"random_enemy": "Random Enemy",
+	"lowest_hp_ally": "Lowest HP Ally",
+	"self": "Self"
+}
+
 
 func _ready() -> void:
 	_load_saved_scripts()
+	_load_character_scripts()
 
 
-## Autobattle execution
+## Autobattle execution (legacy - single action)
 func execute_autobattle(combatant: Combatant, script: Dictionary) -> Dictionary:
 	"""Execute autobattle script for a combatant, returns action to take"""
 	if not script.has("rules"):
@@ -60,11 +115,304 @@ func execute_autobattle(combatant: Combatant, script: Dictionary) -> Dictionary:
 	for rule in script["rules"]:
 		if _evaluate_rule(combatant, rule):
 			var action = _rule_to_action(combatant, rule)
-			script_executed.emit(combatant, rule, action)
+			script_executed.emit(combatant, rule, [action])
 			return action
 
 	# No rule matched, use default
 	return _get_default_action(combatant)
+
+
+## New 2D Grid-based execution - returns array of actions for Advance
+func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
+	"""Execute autobattle for a combatant using their character script.
+	Returns array of actions (1-4) for Advance mode."""
+	var character_id = _get_character_id(combatant)
+
+	if not character_scripts.has(character_id):
+		return [_get_default_action(combatant)]
+
+	var script = character_scripts[character_id]
+	if not script.has("rules"):
+		return [_get_default_action(combatant)]
+
+	# Evaluate rules in order (first match wins)
+	for rule in script["rules"]:
+		if _evaluate_grid_rule(combatant, rule):
+			var actions = _rule_to_actions(combatant, rule)
+			script_executed.emit(combatant, rule, actions)
+			return actions
+
+	# No rule matched, use default
+	return [_get_default_action(combatant)]
+
+
+func _evaluate_grid_rule(combatant: Combatant, rule: Dictionary) -> bool:
+	"""Evaluate a grid-format rule (AND-chain of conditions)"""
+	if not rule.has("conditions") or rule["conditions"].size() == 0:
+		return true  # No conditions = always match
+
+	# All conditions must be true (AND logic)
+	for condition in rule["conditions"]:
+		if not _evaluate_grid_condition(combatant, condition):
+			return false
+
+	return true
+
+
+func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bool:
+	"""Evaluate a single grid-format condition (string-based types)"""
+	var cond_type = condition.get("type", "always")
+	var op = condition.get("op", "==")
+	var value = condition.get("value", 0)
+
+	match cond_type:
+		"hp_percent":
+			return _compare_str(combatant.get_hp_percentage(), op, value)
+
+		"mp_percent":
+			return _compare_str(combatant.get_mp_percentage(), op, value)
+
+		"ap":
+			return _compare_str(combatant.current_ap, op, value)
+
+		"has_status":
+			var status = condition.get("status", "")
+			return status in combatant.status_effects
+
+		"enemy_hp_percent":
+			var target = _get_lowest_hp_enemy(combatant)
+			if target:
+				return _compare_str(target.get_hp_percentage(), op, value)
+			return false
+
+		"ally_hp_percent":
+			var ally = _get_lowest_hp_ally(combatant)
+			if ally:
+				return _compare_str(ally.get_hp_percentage(), op, value)
+			return false
+
+		"turn":
+			return _compare_str(BattleManager.current_round, op, value)
+
+		"enemy_count":
+			var enemies = _get_enemies_for(combatant)
+			return _compare_str(enemies.size(), op, value)
+
+		"ally_count":
+			var allies = _get_allies_for(combatant)
+			return _compare_str(allies.size(), op, value)
+
+		"item_count":
+			var item_id = condition.get("item_id", "")
+			var count = _get_item_count(combatant, item_id)
+			return _compare_str(count, op, value)
+
+		"always":
+			return true
+
+	return false
+
+
+func _compare_str(a: float, op: String, b: float) -> bool:
+	"""Compare two values with a string operator"""
+	match op:
+		"<":
+			return a < b
+		"<=":
+			return a <= b
+		"==":
+			return a == b
+		">=":
+			return a >= b
+		">":
+			return a > b
+		"!=":
+			return a != b
+	return false
+
+
+func _rule_to_actions(combatant: Combatant, rule: Dictionary) -> Array[Dictionary]:
+	"""Convert a grid-format rule to an array of battle actions"""
+	var actions: Array[Dictionary] = []
+
+	if not rule.has("actions") or rule["actions"].size() == 0:
+		actions.append(_get_default_action(combatant))
+		return actions
+
+	for action_def in rule["actions"]:
+		var action = _action_def_to_action(combatant, action_def)
+		if action.size() > 0:
+			actions.append(action)
+
+	if actions.size() == 0:
+		actions.append(_get_default_action(combatant))
+
+	return actions
+
+
+func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dictionary:
+	"""Convert a grid-format action definition to a battle action"""
+	var action_type = action_def.get("type", "attack")
+	var target_type = action_def.get("target", "lowest_hp_enemy")
+
+	match action_type:
+		"attack":
+			return {
+				"type": "attack",
+				"target": _get_target_by_type(combatant, target_type)
+			}
+
+		"ability":
+			var ability_id = action_def.get("id", "")
+			return {
+				"type": "ability",
+				"ability_id": ability_id,
+				"targets": [_get_target_by_type(combatant, target_type)]
+			}
+
+		"item":
+			var item_id = action_def.get("id", "")
+			return {
+				"type": "item",
+				"item_id": item_id,
+				"targets": [_get_target_by_type(combatant, target_type)]
+			}
+
+		"defer":
+			return {
+				"type": "defer"
+			}
+
+	return {}
+
+
+func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant:
+	"""Get target based on target type string"""
+	match target_type:
+		"lowest_hp_enemy":
+			return _get_lowest_hp_enemy(combatant)
+		"highest_hp_enemy":
+			return _get_highest_hp_enemy(combatant)
+		"random_enemy":
+			var enemies = _get_enemies_for(combatant)
+			return enemies[randi() % enemies.size()] if enemies.size() > 0 else null
+		"lowest_hp_ally":
+			return _get_lowest_hp_ally(combatant)
+		"self":
+			return combatant
+		_:
+			return _get_lowest_hp_enemy(combatant)
+
+
+func _get_character_id(combatant: Combatant) -> String:
+	"""Get unique character ID for a combatant"""
+	# Use combatant name as ID for now
+	return combatant.combatant_name.to_lower().replace(" ", "_")
+
+
+func _get_item_count(combatant: Combatant, item_id: String) -> int:
+	"""Get count of an item in inventory"""
+	# Check if combatant has get_item_count method
+	if combatant.has_method("get_item_count"):
+		return combatant.get_item_count(item_id)
+	# Fallback: check GameState inventory
+	if GameState and GameState.has_method("get_item_count"):
+		return GameState.get_item_count(item_id)
+	return 0
+
+
+## Character script management
+func is_autobattle_enabled(character_id: String) -> bool:
+	"""Check if autobattle is enabled for a character"""
+	return autobattle_enabled.get(character_id, false)
+
+
+func set_autobattle_enabled(character_id: String, enabled: bool) -> void:
+	"""Enable or disable autobattle for a character"""
+	autobattle_enabled[character_id] = enabled
+	character_script_changed.emit(character_id)
+
+
+func toggle_autobattle(character_id: String) -> bool:
+	"""Toggle autobattle for a character, returns new state"""
+	var new_state = not is_autobattle_enabled(character_id)
+	set_autobattle_enabled(character_id, new_state)
+	return new_state
+
+
+func get_character_script(character_id: String) -> Dictionary:
+	"""Get autobattle script for a character"""
+	if character_scripts.has(character_id):
+		return character_scripts[character_id]
+	return create_default_character_script(character_id)
+
+
+func set_character_script(character_id: String, script: Dictionary) -> void:
+	"""Set autobattle script for a character"""
+	character_scripts[character_id] = script
+	_save_character_scripts()
+	character_script_changed.emit(character_id)
+
+
+func create_default_character_script(character_id: String) -> Dictionary:
+	"""Create a default autobattle script for a character"""
+	return {
+		"character_id": character_id,
+		"name": "Default",
+		"rules": [
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _load_character_scripts() -> void:
+	"""Load all character scripts from file"""
+	var save_path = "user://autobattle/characters.json"
+
+	# Create directory if it doesn't exist
+	var dir = DirAccess.open("user://")
+	if dir and not dir.dir_exists("autobattle"):
+		dir.make_dir("autobattle")
+
+	if not FileAccess.file_exists(save_path):
+		return
+
+	var file = FileAccess.open(save_path, FileAccess.READ)
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+
+		var json = JSON.new()
+		if json.parse(json_string) == OK:
+			var data = json.data
+			if data is Dictionary:
+				character_scripts = data.get("scripts", {})
+				autobattle_enabled = data.get("enabled", {})
+				print("Loaded %d character autobattle scripts" % character_scripts.size())
+
+
+func _save_character_scripts() -> void:
+	"""Save all character scripts to file"""
+	var save_path = "user://autobattle/characters.json"
+
+	# Create directory if it doesn't exist
+	var dir = DirAccess.open("user://")
+	if dir and not dir.dir_exists("autobattle"):
+		dir.make_dir("autobattle")
+
+	var data = {
+		"scripts": character_scripts,
+		"enabled": autobattle_enabled
+	}
+
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		var json_string = JSON.stringify(data, "\t")
+		file.store_string(json_string)
+		file.close()
 
 
 func _evaluate_rule(combatant: Combatant, rule: Dictionary) -> bool:

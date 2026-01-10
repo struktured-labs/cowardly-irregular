@@ -74,6 +74,9 @@ var _is_closing: bool = false  # Prevent double-close
 var _current_ap: int = 0  # Current AP for display
 var _ap_label: Label = null  # AP display label
 var _can_go_back: bool = false  # Whether B button can go to previous player
+var battle_mode: bool = true  # Whether to show battle-specific UI (AP, advance/defer)
+var _initial_selection_id: String = ""  # ID to pre-select when menu opens
+var _submenu_memory: Dictionary = {}  # {menu_id: submenu_item_id} for command memory
 
 ## Signals for target selection with position
 signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
@@ -107,15 +110,17 @@ func _exit_tree() -> void:
 
 func _setup_timers() -> void:
 	"""Setup timers for animations"""
-	# Submenu delay timer
+	# Submenu delay timer - independent of battle speed
 	_submenu_timer = Timer.new()
 	_submenu_timer.one_shot = true
+	_submenu_timer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_submenu_timer.timeout.connect(_on_submenu_timer_timeout)
 	add_child(_submenu_timer)
 
-	# Cursor blink timer
+	# Cursor blink timer - independent of battle speed
 	_cursor_blink_timer = Timer.new()
 	_cursor_blink_timer.wait_time = 0.3
+	_cursor_blink_timer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_cursor_blink_timer.timeout.connect(_on_cursor_blink)
 	add_child(_cursor_blink_timer)
 	_cursor_blink_timer.start()
@@ -256,7 +261,8 @@ func _fade_target_highlight(on_complete: Callable = Callable()) -> void:
 		return
 
 	var tween = create_tween()
-	tween.tween_property(_target_highlight, "modulate:a", 0.0, 0.15).set_ease(Tween.EASE_OUT)
+	# Multiply duration by time_scale to keep consistent real-time speed
+	tween.tween_property(_target_highlight, "modulate:a", 0.0, 0.15 * Engine.time_scale).set_ease(Tween.EASE_OUT)
 	tween.tween_callback(func():
 		if is_instance_valid(_target_highlight):
 			_target_highlight.visible = false
@@ -361,17 +367,17 @@ func _build_menu() -> void:
 	if menu_items.size() == 0:
 		return
 
-	# Calculate menu size (add space for AP label if root menu)
+	# Calculate menu size (add space for AP label if root menu in battle mode)
 	var menu_width = 140
-	var ap_label_height = 14 if is_root_menu else 0  # Always show AP for root
+	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
 	add_child(menu_panel)
 
-	# AP label at top for root menu (compact, right-aligned)
-	if is_root_menu:
+	# AP label at top for root menu in battle mode (compact, right-aligned)
+	if is_root_menu and battle_mode:
 		_ap_label = Label.new()
 		_ap_label.name = "APLabel"
 		_ap_label.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING)
@@ -404,12 +410,17 @@ func _build_menu() -> void:
 
 	# Highlight first item and auto-expand if it has submenu
 	_update_selection()
+
+	# Apply command memory to pre-select remembered item
+	_apply_command_memory()
+
 	_auto_expand_submenu()
 
 	# Allow input after a short delay to prevent stray key presses
-	await get_tree().create_timer(0.15).timeout
+	# Use ignore_time_scale=true to keep consistent regardless of battle speed
+	await get_tree().create_timer(0.15, true, false, true).timeout
 	_can_accept_input = true
-	await get_tree().create_timer(0.1).timeout
+	await get_tree().create_timer(0.1, true, false, true).timeout
 	_can_close_on_click = true
 
 
@@ -723,11 +734,18 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 		_get_character_class_from_style()
 	)
 
-	# Animate slide and fade in
+	# Pass submenu memory for nested command memory
+	var item_id = item.get("id", "")
+	var root = _get_root_menu()
+	if root._submenu_memory.has(item_id):
+		var remembered_item = root._submenu_memory[item_id]
+		submenu.set_command_memory(remembered_item, root._submenu_memory)
+
+	# Animate slide and fade in - multiply by time_scale for consistent speed
 	var tween = create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(submenu, "position", submenu_pos, 0.1).set_ease(Tween.EASE_OUT)
-	tween.tween_property(submenu, "modulate:a", 1.0, 0.08)
+	tween.tween_property(submenu, "position", submenu_pos, 0.1 * Engine.time_scale).set_ease(Tween.EASE_OUT)
+	tween.tween_property(submenu, "modulate:a", 1.0, 0.08 * Engine.time_scale)
 
 	# Forward submenu selection to parent
 	submenu.item_selected.connect(func(id, data): item_selected.emit(id, data))
@@ -977,6 +995,32 @@ func set_can_go_back(can_go: bool) -> void:
 	_can_go_back = can_go
 
 
+func set_command_memory(menu_selection: String, submenu_memory: Dictionary = {}) -> void:
+	"""Set command memory to pre-select items when menu opens"""
+	_initial_selection_id = menu_selection
+	_submenu_memory = submenu_memory
+	# Apply the selection immediately if menu is already built
+	if menu_items.size() > 0 and menu_selection != "":
+		_apply_command_memory()
+
+
+func _apply_command_memory() -> void:
+	"""Apply command memory to pre-select remembered item"""
+	if _initial_selection_id == "":
+		return
+
+	# Find the item with matching id
+	for i in range(menu_items.size()):
+		var item = menu_items[i]
+		if item.get("id", "") == _initial_selection_id:
+			selected_index = i
+			_update_selection()
+			break
+
+	# Clear so it only applies once
+	_initial_selection_id = ""
+
+
 func _update_ap_label() -> void:
 	"""Update the AP display label showing current and pending cost"""
 	if not _ap_label or not is_instance_valid(_ap_label):
@@ -1007,23 +1051,24 @@ func _input(event: InputEvent) -> void:
 	if submenu and is_instance_valid(submenu):
 		return
 
-	# Handle input actions (gamepad + keyboard unified)
-	if event.is_action_pressed("battle_advance"):
-		# R button / Shift+Enter: Queue action (Advance mode)
-		_handle_advance_input()
-		get_viewport().set_input_as_handled()
-		return
+	# Handle input actions (gamepad + keyboard unified) - only in battle mode
+	if battle_mode:
+		if event.is_action_pressed("battle_advance"):
+			# R button / Shift+Enter: Queue action (Advance mode)
+			_handle_advance_input()
+			get_viewport().set_input_as_handled()
+			return
 
-	if event.is_action_pressed("battle_defer"):
-		# L button: Undo last queued action, or Defer if no queue
-		_handle_defer_input()
-		get_viewport().set_input_as_handled()
-		return
+		if event.is_action_pressed("battle_defer"):
+			# L button: Undo last queued action, or Defer if no queue
+			_handle_defer_input()
+			get_viewport().set_input_as_handled()
+			return
 
 	# Keyboard navigation
 	if event is InputEventKey and event.pressed and not event.echo:
-		# Check for Shift+Enter/Z (also triggers Advance)
-		if event.keycode in [KEY_Z, KEY_ENTER, KEY_SPACE] and event.shift_pressed:
+		# Check for Shift+Enter/Z (also triggers Advance) - only in battle mode
+		if battle_mode and event.keycode in [KEY_Z, KEY_ENTER, KEY_SPACE] and event.shift_pressed:
 			_handle_advance_input()
 			get_viewport().set_input_as_handled()
 			return
@@ -1054,7 +1099,7 @@ func _input(event: InputEvent) -> void:
 					_submit_actions()
 				get_viewport().set_input_as_handled()
 			KEY_X, KEY_ESCAPE:
-				# Priority: close submenu first, then unadvance (undo one), then go back
+				# Priority: close submenu first, then unadvance (undo one, battle mode only), then go back
 				var root = _get_root_menu()
 				if parent_menu:
 					# We're in a submenu - close it and return to parent
@@ -1062,8 +1107,8 @@ func _input(event: InputEvent) -> void:
 					_cleanup_target_highlight()
 					parent_menu.submenu = null
 					queue_free()
-				elif root._queued_actions.size() > 0:
-					# At root with queue - undo ONE queued action (unadvance)
+				elif battle_mode and root._queued_actions.size() > 0:
+					# At root with queue - undo ONE queued action (unadvance) - battle mode only
 					_undo_last_action()
 					# Also close any open submenu
 					if submenu and is_instance_valid(submenu):
@@ -1131,7 +1176,7 @@ func _input(event: InputEvent) -> void:
 			_submit_actions()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		# Priority: close submenu first, then unadvance (undo one), then go back
+		# Priority: close submenu first, then unadvance (undo one, battle mode only), then go back
 		var root = _get_root_menu()
 		if parent_menu:
 			# We're in a submenu - close it and return to parent
@@ -1139,8 +1184,8 @@ func _input(event: InputEvent) -> void:
 			_cleanup_target_highlight()
 			parent_menu.submenu = null
 			queue_free()
-		elif root._queued_actions.size() > 0:
-			# At root with queue - undo ONE queued action (unadvance)
+		elif battle_mode and root._queued_actions.size() > 0:
+			# At root with queue - undo ONE queued action (unadvance) - battle mode only
 			_undo_last_action()
 			# Also close any open submenu
 			if submenu and is_instance_valid(submenu):
