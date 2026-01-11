@@ -36,25 +36,73 @@ var _cursor: Control
 var _edit_modal: Control
 
 ## Grid layout constants
-const CELL_WIDTH = 100
-const CELL_HEIGHT = 40
-const CELL_PADDING = 4
-const ROW_SPACING = 8
+const CELL_WIDTH = 110
+const CELL_HEIGHT = 44
+const CELL_PADDING = 16  # More spacing between cells
+const ROW_SPACING = 24   # More spacing between OR rows
+const CONNECTOR_WIDTH = 40  # Space for AND/OR text
 const CONDITION_COLOR = Color(0.2, 0.3, 0.5)
 const ACTION_COLOR = Color(0.3, 0.4, 0.2)
-const CONNECTOR_COLOR = Color(0.5, 0.5, 0.5)
+const CONNECTOR_COLOR = Color(0.6, 0.6, 0.7)
 const CURSOR_COLOR = Color(1.0, 1.0, 0.3)
 const MAX_CONDITIONS = 3  # Max AND conditions per rule
 const MAX_ACTIONS = 4  # Max actions per rule
 
-## Win98 style colors (matching Win98Menu)
+## Character class color schemes (matching Win98Menu exactly)
+## Maps character_id -> job class style
+const CHARACTER_STYLES = {
+	"hero": {  # Fighter - blue
+		"bg": Color(0.1, 0.1, 0.2),
+		"border": Color(0.9, 0.9, 1.0),
+		"border_shadow": Color(0.3, 0.3, 0.5),
+		"text": Color(1.0, 1.0, 1.0),
+		"highlight_bg": Color(0.3, 0.3, 0.6),
+		"highlight_text": Color(1.0, 1.0, 0.5),
+		"condition_bg": Color(0.2, 0.25, 0.45),
+		"action_bg": Color(0.25, 0.35, 0.55)
+	},
+	"mira": {  # White Mage - purple/pink
+		"bg": Color(0.15, 0.1, 0.2),
+		"border": Color(1.0, 0.8, 0.9),
+		"border_shadow": Color(0.4, 0.2, 0.3),
+		"text": Color(1.0, 0.95, 1.0),
+		"highlight_bg": Color(0.4, 0.2, 0.4),
+		"highlight_text": Color(1.0, 0.8, 1.0),
+		"condition_bg": Color(0.35, 0.2, 0.35),
+		"action_bg": Color(0.45, 0.25, 0.45)
+	},
+	"zack": {  # Thief - dark/muted purple-green
+		"bg": Color(0.1, 0.1, 0.1),
+		"border": Color(0.6, 0.5, 0.7),
+		"border_shadow": Color(0.2, 0.15, 0.25),
+		"text": Color(0.9, 0.85, 1.0),
+		"highlight_bg": Color(0.25, 0.2, 0.3),
+		"highlight_text": Color(0.8, 1.0, 0.6),
+		"condition_bg": Color(0.2, 0.2, 0.25),
+		"action_bg": Color(0.2, 0.28, 0.2)
+	},
+	"vex": {  # Black Mage - deep purple/red
+		"bg": Color(0.05, 0.0, 0.1),
+		"border": Color(0.5, 0.3, 0.7),
+		"border_shadow": Color(0.15, 0.1, 0.2),
+		"text": Color(0.8, 0.7, 1.0),
+		"highlight_bg": Color(0.2, 0.1, 0.3),
+		"highlight_text": Color(1.0, 0.5, 0.5),
+		"condition_bg": Color(0.25, 0.1, 0.25),
+		"action_bg": Color(0.35, 0.15, 0.2)
+	}
+}
+
+## Win98 style colors (will be set per character)
 var style: Dictionary = {
 	"bg": Color(0.1, 0.1, 0.2),
 	"border": Color(0.9, 0.9, 1.0),
 	"border_shadow": Color(0.3, 0.3, 0.5),
 	"text": Color(1.0, 1.0, 1.0),
 	"highlight_bg": Color(0.3, 0.3, 0.6),
-	"highlight_text": Color(1.0, 1.0, 0.5)
+	"highlight_text": Color(1.0, 1.0, 0.5),
+	"condition_bg": Color(0.2, 0.3, 0.5),
+	"action_bg": Color(0.3, 0.4, 0.2)
 }
 
 
@@ -73,6 +121,13 @@ func setup(char_id: String, char_name: String) -> void:
 	character_id = char_id
 	character_name = char_name
 
+	# Apply character-specific style
+	if CHARACTER_STYLES.has(char_id):
+		style = CHARACTER_STYLES[char_id].duplicate()
+	else:
+		# Default to hero style
+		style = CHARACTER_STYLES["hero"].duplicate()
+
 	# Load or create script
 	char_script = AutobattleSystem.get_character_script(character_id)
 	rules = char_script.get("rules", []).duplicate(true)
@@ -85,6 +140,8 @@ func setup(char_id: String, char_name: String) -> void:
 	cursor_col = 0
 
 	if is_inside_tree():
+		# Rebuild UI with new style colors
+		_build_ui()
 		_refresh_grid()
 
 
@@ -124,7 +181,7 @@ func _build_ui() -> void:
 
 	# Help text at bottom
 	var help_label = Label.new()
-	help_label.text = "[L=Add Condition] [R=Add Action] [Start=Menu] [Select=Toggle Auto]"
+	help_label.text = "[L=Add OR Row] [R=Add Action] [A=Edit/AND] [Y/Start=Delete]"
 	help_label.position = Vector2(16, size.y - 28)
 	help_label.add_theme_font_size_override("font_size", 10)
 	help_label.add_theme_color_override("font_color", style.text.darkened(0.3))
@@ -166,24 +223,35 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 
 	var x_offset = 0
 
-	# Draw conditions (AND chain)
+	# Draw conditions (AND chain) with proper spacing for connectors
 	for i in range(conditions.size()):
 		var cell = _create_condition_cell(row_idx, i, conditions[i])
 		cell.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(cell)
-		x_offset += CELL_WIDTH + CELL_PADDING
+		x_offset += CELL_WIDTH
 
-		# AND connector
+		# AND connector between conditions (with dedicated space)
 		if i < conditions.size() - 1:
 			var connector = _create_and_connector()
-			connector.position = Vector2(x_offset - CELL_PADDING / 2 - 15, y_offset + CELL_HEIGHT / 2 - 6)
+			# Position the AND connector control
+			connector.position = Vector2(x_offset, y_offset)
 			_grid_container.add_child(connector)
+			x_offset += CONNECTOR_WIDTH
+		else:
+			x_offset += CELL_PADDING
 
-	# Arrow connector between conditions and actions
+	# Empty condition slot hint if room for more AND conditions
+	if conditions.size() < MAX_CONDITIONS:
+		var hint = _create_empty_condition_hint(row_idx, conditions.size())
+		hint.position = Vector2(x_offset, y_offset)
+		_grid_container.add_child(hint)
+		x_offset += CELL_WIDTH / 2 + CELL_PADDING
+
+	# Arrow connector between conditions and actions (with dedicated space)
 	var arrow = _create_arrow_connector()
-	arrow.position = Vector2(x_offset, y_offset + CELL_HEIGHT / 2 - 6)
+	arrow.position = Vector2(x_offset + 4, y_offset + CELL_HEIGHT / 2 - 6)
 	_grid_container.add_child(arrow)
-	x_offset += 30
+	x_offset += CONNECTOR_WIDTH + 8
 
 	# Group consecutive identical actions for cycle display
 	var action_groups = _group_actions(actions)
@@ -198,7 +266,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		var cell = _create_action_cell(row_idx, start_idx, action, count)
 		cell.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(cell)
-		x_offset += CELL_WIDTH + CELL_PADDING
+		x_offset += CELL_WIDTH
 
 		# If this is defer, gray out remaining slots
 		if action.get("type") == "defer":
@@ -209,8 +277,11 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		# Chain connector if more groups follow
 		if action_groups.find(group) < action_groups.size() - 1:
 			var chain = _create_chain_connector()
-			chain.position = Vector2(x_offset - CELL_PADDING / 2 - 10, y_offset + CELL_HEIGHT / 2 - 6)
+			chain.position = Vector2(x_offset + 4, y_offset + CELL_HEIGHT / 2 - 6)
 			_grid_container.add_child(chain)
+			x_offset += CELL_PADDING + 16
+		else:
+			x_offset += CELL_PADDING
 
 	# Empty action slot hint if room for more (and not after defer)
 	var last_is_defer = actions.size() > 0 and actions[-1].get("type") == "defer"
@@ -266,21 +337,21 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", cond_idx)
 
-	# Background
+	# Background - use character-specific condition color
 	var bg = ColorRect.new()
-	bg.color = CONDITION_COLOR
+	bg.color = style.get("condition_bg", CONDITION_COLOR)
 	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
 	cell.add_child(bg)
 
-	# Border
+	# Border - use character-specific border color
 	_add_pixel_border(cell, CELL_WIDTH, CELL_HEIGHT)
 
 	# Text
 	var label = Label.new()
 	label.text = _format_condition(condition)
-	label.position = Vector2(4, 4)
-	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 8)
-	label.add_theme_font_size_override("font_size", 10)
+	label.position = Vector2(6, 4)
+	label.size = Vector2(CELL_WIDTH - 12, CELL_HEIGHT - 8)
+	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -299,12 +370,13 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 	cell.set_meta("index", act_idx)
 	cell.set_meta("count", count)
 
-	# Background - slightly different color for cycles
+	# Background - use character-specific action color, brighter for cycles
+	var base_action_color = style.get("action_bg", ACTION_COLOR)
 	var bg = ColorRect.new()
 	if count > 1:
-		bg.color = Color(0.4, 0.5, 0.3)  # Brighter for cycles
+		bg.color = base_action_color.lightened(0.2)  # Brighter for cycles
 	else:
-		bg.color = ACTION_COLOR
+		bg.color = base_action_color
 	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
 	cell.add_child(bg)
 
@@ -319,9 +391,9 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 		label.text = "%s\n×%d" % [action_text.split("\n")[0], count]
 	else:
 		label.text = action_text
-	label.position = Vector2(4, 2)
-	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 4)
-	label.add_theme_font_size_override("font_size", 10)
+	label.position = Vector2(6, 2)
+	label.size = Vector2(CELL_WIDTH - 12, CELL_HEIGHT - 4)
+	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -334,7 +406,7 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 		badge.text = "↻"
 		badge.position = Vector2(CELL_WIDTH - 16, 2)
 		badge.add_theme_font_size_override("font_size", 12)
-		badge.add_theme_color_override("font_color", Color.YELLOW)
+		badge.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 		cell.add_child(badge)
 
 	return cell
@@ -350,7 +422,8 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 
 	# Dashed border effect
 	var bg = ColorRect.new()
-	bg.color = Color(0.2, 0.2, 0.2, 0.3)
+	bg.color = style.get("action_bg", Color(0.2, 0.2, 0.2)).darkened(0.5)
+	bg.modulate.a = 0.4
 	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
 	cell.add_child(bg)
 
@@ -359,8 +432,37 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	label.text = "[+R]"
 	label.position = Vector2(4, 4)
 	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 8)
-	label.add_theme_font_size_override("font_size", 10)
-	label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cell.add_child(label)
+
+	return cell
+
+
+func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
+	"""Create an empty AND condition slot hint"""
+	var cell = Control.new()
+	cell.custom_minimum_size = Vector2(CELL_WIDTH / 2, CELL_HEIGHT)
+	cell.set_meta("cell_type", "empty_condition")
+	cell.set_meta("row", row_idx)
+	cell.set_meta("index", cond_idx)
+
+	# Dashed border effect
+	var bg = ColorRect.new()
+	bg.color = style.get("condition_bg", Color(0.2, 0.2, 0.3)).darkened(0.5)
+	bg.modulate.a = 0.4
+	bg.size = Vector2(CELL_WIDTH / 2, CELL_HEIGHT)
+	cell.add_child(bg)
+
+	# Hint text
+	var label = Label.new()
+	label.text = "+AND"
+	label.position = Vector2(2, 4)
+	label.size = Vector2(CELL_WIDTH / 2 - 4, CELL_HEIGHT - 8)
+	label.add_theme_font_size_override("font_size", 9)
+	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
@@ -401,39 +503,58 @@ func _add_pixel_border(cell: Control, w: float, h: float) -> void:
 	cell.add_child(right)
 
 
-func _create_and_connector() -> Label:
+func _create_and_connector() -> Control:
 	"""Create AND connector between conditions"""
+	var container = Control.new()
+	container.custom_minimum_size = Vector2(CONNECTOR_WIDTH, CELL_HEIGHT)
+
+	# Background pill
+	var bg = ColorRect.new()
+	bg.color = style.get("highlight_bg", Color(0.3, 0.3, 0.4)).darkened(0.2)
+	bg.position = Vector2(4, 8)
+	bg.size = Vector2(32, 20)
+	container.add_child(bg)
+
 	var label = Label.new()
 	label.text = "AND"
-	label.add_theme_font_size_override("font_size", 8)
-	label.add_theme_color_override("font_color", CONNECTOR_COLOR)
-	return label
+	label.position = Vector2(6, 10)
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", style.get("text", CONNECTOR_COLOR))
+	container.add_child(label)
+	return container
 
 
 func _create_arrow_connector() -> Label:
 	"""Create arrow between conditions and actions"""
 	var label = Label.new()
-	label.text = "--->"
-	label.add_theme_font_size_override("font_size", 10)
-	label.add_theme_color_override("font_color", CONNECTOR_COLOR)
+	label.text = "→"
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", style.get("highlight_text", CONNECTOR_COLOR))
 	return label
 
 
 func _create_chain_connector() -> Label:
 	"""Create chain connector between actions"""
 	var label = Label.new()
-	label.text = "-->"
-	label.add_theme_font_size_override("font_size", 10)
-	label.add_theme_color_override("font_color", CONNECTOR_COLOR)
+	label.text = "→"
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", style.get("highlight_text", CONNECTOR_COLOR))
 	return label
 
 
 func _draw_or_connector(y_pos: float) -> void:
 	"""Draw OR connector between rule rows"""
+	# Background pill for OR
+	var bg = ColorRect.new()
+	bg.color = Color(0.5, 0.3, 0.1, 0.6)
+	bg.position = Vector2(4, y_pos - 10)
+	bg.size = Vector2(28, 20)
+	_grid_container.add_child(bg)
+
 	var label = Label.new()
 	label.text = "OR"
-	label.position = Vector2(8, y_pos - 6)
-	label.add_theme_font_size_override("font_size", 10)
+	label.position = Vector2(8, y_pos - 8)
+	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", Color.ORANGE)
 	_grid_container.add_child(label)
 
@@ -522,7 +643,8 @@ func _update_cursor() -> void:
 		child.queue_free()
 
 	var cell_pos = target_cell.global_position - _grid_container.global_position + _grid_container.position
-	var cell_size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	# Get actual cell size from the cell (handles smaller empty_condition cells)
+	var cell_size = target_cell.custom_minimum_size if target_cell.custom_minimum_size.x > 0 else Vector2(CELL_WIDTH, CELL_HEIGHT)
 
 	# Animated highlight border
 	var border_width = 3
@@ -568,12 +690,22 @@ func _get_cell_at_cursor() -> Control:
 			var conditions = rule.get("conditions", [])
 			var actions = rule.get("actions", [])
 
-			# Cursor column: 0..conditions-1 = conditions, conditions..end = actions
+			# Extra slot for empty_condition if room for more AND conditions
+			var condition_slots = conditions.size()
+			if conditions.size() < MAX_CONDITIONS:
+				condition_slots += 1  # Include empty AND slot
+
+			# Cursor column: 0..conditions-1 = conditions, conditions = empty_condition, rest = actions
 			if cursor_col < conditions.size():
 				if cell_type == "condition" and index == cursor_col:
 					return child
+			elif cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
+				# Empty condition slot
+				if cell_type == "empty_condition" and index == cursor_col:
+					return child
 			else:
-				var action_idx = cursor_col - conditions.size()
+				# Actions start after condition slots
+				var action_idx = cursor_col - condition_slots
 				if (cell_type == "action" or cell_type == "empty_action") and index == action_idx:
 					return child
 
@@ -589,12 +721,17 @@ func _get_max_col_for_row(row_idx: int) -> int:
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
+	# Include empty condition slot if room for more AND conditions
+	var condition_slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS:
+		condition_slots += 1
+
 	# Can move to empty action slot if room
 	var action_slots = actions.size()
 	if action_slots < MAX_ACTIONS:
 		action_slots += 1  # Include empty slot
 
-	return conditions.size() + action_slots - 1
+	return condition_slots + action_slots - 1
 
 
 func _create_default_rule() -> Dictionary:
@@ -688,15 +825,25 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# Gamepad Y button - Also delete
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
-		_delete_current_cell()
-		get_viewport().set_input_as_handled()
+	# JOY_BUTTON_X (index 2) = Y on Nintendo controllers
+	# JOY_BUTTON_Y (index 3) = Y on Xbox/PS controllers
+	elif event is InputEventJoypadButton and event.pressed:
+		if event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y:
+			_delete_current_cell()
+			get_viewport().set_input_as_handled()
 
 
 func _edit_current_cell() -> void:
-	"""Open edit modal for current cell"""
+	"""Open edit modal for current cell, or add AND condition if at the end"""
 	var cell = _get_cell_at_cursor()
+
+	# If no cell found, try to add AND condition (cursor is past end of conditions)
 	if not cell:
+		var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+		var conditions = rule.get("conditions", [])
+		if cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
+			_add_and_condition()
+			SoundManager.play_ui("menu_select")
 		return
 
 	var cell_type = cell.get_meta("cell_type")
@@ -707,6 +854,8 @@ func _edit_current_cell() -> void:
 		_open_action_editor()
 	elif cell_type == "empty_action":
 		_add_action()
+	elif cell_type == "empty_condition":
+		_add_and_condition()
 
 	SoundManager.play_ui("menu_select")
 
@@ -766,11 +915,16 @@ func _open_action_editor() -> void:
 
 
 func _add_condition() -> void:
-	"""Add a new condition (OR = new row, L+Right = AND extend)"""
+	"""Add a new OR rule row (L button)"""
+	# L button always adds a new OR row
+	_add_or_row()
+
+
+func _add_and_condition() -> void:
+	"""Add an AND condition to the current row (L+Right or when navigating past last condition)"""
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 
-	# Check if we can add AND condition to current row
 	if conditions.size() < MAX_CONDITIONS:
 		# Add AND condition
 		conditions.append({"type": "hp_percent", "op": "<", "value": 50})
@@ -778,9 +932,6 @@ func _add_condition() -> void:
 		cursor_col = conditions.size() - 1
 		_refresh_grid()
 		SoundManager.play_ui("menu_expand")
-	else:
-		# Add new OR row
-		_add_or_row()
 
 
 func _add_or_row() -> void:

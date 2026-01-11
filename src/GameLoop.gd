@@ -71,8 +71,13 @@ func _toggle_autobattle_editor() -> void:
 	if _autobattle_editor and is_instance_valid(_autobattle_editor):
 		_autobattle_editor.queue_free()
 		_autobattle_editor = null
+		# Show battle menu again if it was hidden
+		_set_battle_menu_visible(true)
 		print("Autobattle editor closed")
 		return
+
+	# Hide the battle menu while editor is open
+	_set_battle_menu_visible(false)
 
 	# During battle, open for currently selecting player
 	var char_id = "hero"
@@ -94,6 +99,14 @@ func _toggle_autobattle_editor() -> void:
 	_autobattle_editor.setup(char_id, char_name)
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
 	print("Autobattle editor opened for %s (F5/B to close)" % char_name)
+
+
+func _set_battle_menu_visible(visible: bool) -> void:
+	"""Show or hide the battle menu in the current scene"""
+	if current_scene and current_scene.has_method("get"):
+		var menu = current_scene.get("active_win98_menu")
+		if menu and is_instance_valid(menu):
+			menu.visible = visible
 
 
 func _toggle_all_autobattle() -> void:
@@ -124,6 +137,8 @@ func _on_autobattle_editor_closed() -> void:
 	if _autobattle_editor and is_instance_valid(_autobattle_editor):
 		_autobattle_editor.queue_free()
 		_autobattle_editor = null
+	# Show battle menu again
+	_set_battle_menu_visible(true)
 
 
 func _create_party() -> void:

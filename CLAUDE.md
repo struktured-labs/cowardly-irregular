@@ -2,53 +2,104 @@
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Project Status: Pre-Prototype
+## Project Status: Early Prototype
 
-Currently in design/planning phase. No code written yet.
+Working battle system with CTB combat, 4-party system, autobattle scripting UI.
 
-## Core Vision (Scoped)
+## Core Vision
 
-A darkly comedic, self-referential RPG inspired by *Bravely Default*, *EarthBound*, and *Undertale*. The player doesn't just play the game — they automate it, exploit it, and occasionally break it.
+A darkly comedic, self-referential RPG inspired by *Bravely Default*, *EarthBound*, and *Undertale*. The player doesn't just play the game — they automate it, exploit it, rewrite it, and occasionally destroy it.
 
 **What makes this unique:**
 - Autobattle and autogrind as first-class design pillars
 - Meta jobs that manipulate game rules, saves, and reality
 - Real stakes: permanent injuries, save corruption, permadeath staking
 - Rewards exploitation and creativity equally
+- Combat system mutation: unlock different battle modes via jobs
 
-## Design Decisions (Locked)
+## Tone & Aesthetic
 
-### Combat System
-- **Brave/Default turn-based combat only** (no combat system evolution)
-- BP (Brave Points) system: -4 to +4 range
-- Default: skip turn, gain +1 BP, reduce damage
-- Brave: spend BP for extra actions, can go into debt
+- **Visual progression** (future): 8-bit medieval → 16-bit suburban → 32-bit steampunk → minimalist existential
+- **Style**: Sarcastic, satirical, occasionally philosophical
+- **Goal**: Reward creativity and chaos equally
 
-### Autobattle System
-- Fully scriptable with conditional logic (`HP < 25%`, `If poisoned`, etc.)
-- Each job adds new scripting verbs and conditionals
-- Save/load/share automation setups
-- Controller-friendly UI
+## Combat System
 
-### Autogrind System
-- Risk/reward automation with escalating stakes
-- Efficiency multiplier increases danger (monster adaptation, meta corruption)
-- Configurable interrupt rules (HP threshold, party death, glitch fights)
+### Current: CTB (Conditional Turn-Based) with AP
+- AP (Action Points) system: -4 to +4 range
+- **Defer**: Skip turn, gain +1 AP, reduce damage taken
+- **Advance**: Queue up to 4 actions, each costs 1 AP (can go into debt)
+- Selection phase → Execution phase (speed-sorted)
+- Natural +1 AP gain per turn
+
+### Future: Combat System Mutation
+Different jobs unlock alternative combat modes (switchable mid-battle with cooldown):
+| Job | Combat Mode |
+|-----|-------------|
+| (Default) | CTB with AP |
+| Time Mage | Active Time Battle |
+| Guardian | Brave/Default BP stacking |
+| Vanguard | Action RPG Mode |
+| Tactician | Auto-Chess Mode |
+
+## Autobattle System
+
+**Philosophy**: Autobattle is a first-class game mechanic, not a convenience feature. Mastering autobattle scripting IS the game.
+
+### Current Implementation
+- 2D Grid Editor: Conditions (AND chain) → Actions (up to 4)
+- Per-character scripts stored in JSON
+- Rule-based evaluation (first match wins, top-to-bottom)
+- Multiple actions = Advance mode
+- Defer as explicit action (blocks remaining slots)
+- Cycle display for repeated actions (Attack ×3)
+
+### Autobattle Editor Controls
+| Action | Gamepad | Keyboard |
+|--------|---------|----------|
+| Open editor | L+R together | F5 |
+| Toggle ALL autobattle | Select | F6 |
+| Navigate grid | D-pad | Arrow keys |
+| Edit cell | A | Z |
+| Delete cell | Start / Y | Escape |
+| Add condition | L trigger | L key |
+| Add action | R trigger | R key |
+| Close editor | B | X |
+
+### Future Vision
+- Jobs add new condition types and action verbs
+- Scriptweaver job unlocks text-based expression mode
+- Share/export scripts between players
+- Hall of Fame for novel strategies
+
+## Autogrind System (Future)
+
+Risk/reward automation with escalating stakes:
+- Longer automation = higher EXP multipliers BUT increased danger
+- Monster adaptation: enemies learn and counter repeated strategies
+- System fatigue spawns unpredictable meta-bosses
+- Configurable interrupt rules (HP threshold, party death, corruption level)
 - Optional permadeath staking for extreme rewards
-- System collapse spawns unpredictable meta-bosses
+- "System collapse" events punish perfect optimization
 
-### Meta Jobs (Core Examples)
+## Meta Jobs
+
 | Job | Function |
 |-----|----------|
-| Scriptweaver | Edit damage formulas, EXP rates, game constants |
+| Scriptweaver | Edit damage formulas, EXP rates, game constants via debug console |
 | Time Mage | Save manipulation, rewind, undo permadeath |
 | Necromancer | Dual-edged spells that can wipe saves |
-| Bossbinder | Swap control with boss mid-battle |
+| Bossbinder | Swap control with boss mid-battle; boss victory corrupts saves |
+| Skiptrotter | Warp to next quest/boss, bypass dungeons |
+| Ninja | Speedrun functions, overworld shortcuts |
+| Summoner | Recursive summoning (summon other summoners) |
 
-### Stakes & Consequences
-- Permanent injuries affect stats forever
-- Save corruption as actual mechanic
-- Time Mage unlocks save evolution (autosave, rewind, restore points)
+## Stakes & Consequences
+
+- **Permanent injuries**: Irreversibly affect stats
+- **Save corruption**: Actual mechanic, not just flavor
+- **Save evolution**: Manual saves → autosave → rewind → immunity (unlocked via Time Mage)
+- **Permadeath staking**: Bet character lives for massive bonuses
 
 ## Tech Stack
 
@@ -62,46 +113,41 @@ A darkly comedic, self-referential RPG inspired by *Bravely Default*, *EarthBoun
 - Only after core design is proven
 - Would be scoped-down "Origins" version
 
-## Art Style
+## Controls & Input
 
-8-16 bit pixel art. Single consistent style for prototype (no era-hopping yet).
+**This game is designed for SNES-style gamepad. NO MOUSE/CLICKING required.**
 
-## Prototype Scope (Phase 1)
+All UI must be fully navigable via gamepad or keyboard.
 
-Target: Minimal vertical slice demonstrating core loop
+### Battle Controls
+| Action | Gamepad | Keyboard |
+|--------|---------|----------|
+| Navigate menu | D-pad | Arrow keys |
+| Confirm/Select | A | Z/Enter |
+| Cancel/Back | B | X/Escape |
+| Queue action (Advance) | R shoulder | R key |
+| Defer | L shoulder | L key |
+| Change battle speed | +/- on D-pad | +/- keys |
 
-```
-Must Have:
-├── Brave/Default combat system
-├── 2-3 starter jobs + 1 meta job (Scriptweaver)
-├── Basic autobattle scripting UI
-├── 1 town → 1 dungeon → 1 adaptive boss
-├── 1 meta-save event (taste of corruption)
-└── Basic autogrind with risk escalation
+### Menu Navigation
+- All menus expand LEFT (tree-style, like classic JRPGs)
+- D-pad Left = confirm/enter submenu
+- D-pad Right = back/cancel
 
-Explicitly Deferred:
-├── Combat system evolution/mutation
-├── Era-hopping visuals
-├── Recursive summons
-├── Multiplayer/co-op
-├── Hall of Fame system
-├── Full job roster
-└── GBA target
-```
-
-## File Structure (Planned)
+## File Structure
 
 ```
-cowir/
+cowardly-irregular/
 ├── project.godot
 ├── CLAUDE.md
 ├── src/
-│   ├── battle/        # Combat system, BP mechanics
+│   ├── battle/        # Combat system, CTB mechanics
 │   ├── jobs/          # Job definitions, abilities
 │   ├── autobattle/    # Scripting engine, conditionals
-│   ├── autogrind/     # Risk system, interrupts
+│   ├── autogrind/     # Risk system, interrupts (future)
 │   ├── meta/          # Save manipulation, corruption
-│   └── ui/            # Menus, battle UI
+│   └── ui/            # Menus, battle UI, Win98 style
+│       └── autobattle/  # Grid editor components
 ├── assets/
 │   ├── sprites/
 │   ├── audio/
@@ -112,33 +158,6 @@ cowir/
     └── monsters.json
 ```
 
-## Controls & Input
-
-**This game is designed for SNES-style gamepad. NO MOUSE/CLICKING required.**
-
-All UI must be fully navigable via gamepad or keyboard. Never add click-only interactions.
-
-### Battle Controls (Gamepad / Keyboard)
-| Action | Gamepad | Keyboard |
-|--------|---------|----------|
-| Navigate menu | D-pad | Arrow keys |
-| Confirm/Select | A / D-pad Left | Enter/Space/Z |
-| Cancel/Back | B / D-pad Right | Escape/X |
-| Queue action (Advance) | R shoulder | R key |
-| Undo queue / Defer | L shoulder | L key |
-| Change battle speed | Start/Select | +/- keys |
-| Switch party member | L/R shoulder | L/R keys |
-
-### Menu Navigation
-- All menus expand LEFT (tree-style, like classic JRPGs)
-- D-pad Left = confirm/enter submenu
-- D-pad Right = back/cancel
-- Submenus auto-expand on hover
-
-### Post-Battle Menu
-- Same controls as battle menu
-- L/R to switch party member being viewed
-
 ## Key Design Principles
 
 1. **Automation is core gameplay** - Not a shortcut, but the point
@@ -146,6 +165,7 @@ All UI must be fully navigable via gamepad or keyboard. Never add click-only int
 3. **Stakes must be real** - Consequences make choices meaningful
 4. **Meta is diegetic** - Fourth-wall breaks are in-universe mechanics
 5. **Prototype fast, validate early** - Prove fun before polish
+6. **Controller-first design** - Everything works on gamepad
 
 ## Author
 
