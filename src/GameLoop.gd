@@ -110,7 +110,11 @@ func _toggle_autobattle_editor() -> void:
 
 func _set_battle_menu_visible(visible: bool) -> void:
 	"""Show or hide the battle menu in the current scene"""
-	if current_scene and current_scene.has_method("get"):
+	# Try the proper method first
+	if current_scene and current_scene.has_method("set_command_menu_visible"):
+		current_scene.set_command_menu_visible(visible)
+	# Fallback to direct property access
+	elif current_scene and current_scene.has_method("get"):
 		var menu = current_scene.get("active_win98_menu")
 		if menu and is_instance_valid(menu):
 			menu.visible = visible

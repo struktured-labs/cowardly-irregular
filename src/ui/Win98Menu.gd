@@ -5,10 +5,24 @@ class_name Win98Menu
 ## Classic pixel-tile borders like FF/DQ style
 
 signal item_selected(item_id: String, item_data: Variant)
+signal item_held(item_id: String, item_data: Variant)  # For long press actions
 signal menu_closed()
 signal actions_submitted(actions: Array)  # For Advance mode - multiple actions
 signal defer_requested()  # L button with no queue - defer turn
 signal go_back_requested()  # B button at root to go back to previous player
+
+
+## Get currently selected item ID (for hold detection)
+func get_selected_item_id() -> String:
+	if selected_index >= 0 and selected_index < menu_items.size():
+		return menu_items[selected_index].get("id", "")
+	return ""
+
+
+func get_selected_item_data() -> Variant:
+	if selected_index >= 0 and selected_index < menu_items.size():
+		return menu_items[selected_index].get("data", null)
+	return null
 
 ## Menu styling per character class - retro palette
 const CHARACTER_STYLES = {

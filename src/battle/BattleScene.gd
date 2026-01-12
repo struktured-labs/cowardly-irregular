@@ -164,6 +164,19 @@ func _create_autobattle_toggle() -> void:
 	pass
 
 
+func set_command_menu_visible(visible: bool) -> void:
+	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
+	if active_win98_menu and is_instance_valid(active_win98_menu):
+		active_win98_menu.visible = visible
+
+
+## Hold-A detection for autobattle editor
+var _hold_timer: float = 0.0
+var _holding_auto: bool = false
+var _auto_combatant: Combatant = null
+const HOLD_DURATION: float = 1.5  # Seconds to hold for editor (1.5s feels responsive)
+
+
 func _create_speed_indicator() -> void:
 	"""Create battle speed indicator in top-left corner"""
 	_speed_indicator = RichTextLabel.new()
@@ -1630,8 +1643,11 @@ func _on_battle_ended(victory: bool) -> void:
 	_battle_victory = victory
 
 
-func _process(_delta: float) -> void:
-	"""Handle post-battle input"""
+func _process(delta: float) -> void:
+	"""Handle post-battle input and hold-A detection"""
+	# Handle hold-A for autobattle editor
+	_process_hold_a(delta)
+
 	if _battle_ended and not managed_by_game_loop:
 		if Input.is_action_just_pressed("ui_accept"):
 			_battle_ended = false
@@ -1643,6 +1659,67 @@ func _process(_delta: float) -> void:
 				# Defeat - restart
 				log_message("[color=cyan]Retrying battle...[/color]")
 				_restart_battle()
+
+
+func _process_hold_a(delta: float) -> void:
+	"""Track hold-A on Auto menu item to open editor"""
+	# Check if menu is active and we're on "autobattle" item
+	if active_win98_menu and is_instance_valid(active_win98_menu) and active_win98_menu.visible:
+		var selected_id = active_win98_menu.get_selected_item_id()
+		var selected_data = active_win98_menu.get_selected_item_data()
+
+		if selected_id == "autobattle" and Input.is_action_pressed("ui_accept"):
+			if not _holding_auto:
+				# Start tracking hold
+				_holding_auto = true
+				_hold_timer = 0.0
+				if selected_data is Dictionary:
+					_auto_combatant = selected_data.get("combatant", null)
+
+			_hold_timer += delta
+
+			# Check if held long enough
+			if _hold_timer >= HOLD_DURATION and _auto_combatant:
+				_open_autobattle_editor_for(_auto_combatant)
+				_holding_auto = false
+				_hold_timer = 0.0
+				_auto_combatant = null
+		else:
+			# Reset hold tracking
+			_holding_auto = false
+			_hold_timer = 0.0
+	else:
+		_holding_auto = false
+		_hold_timer = 0.0
+
+
+func _open_autobattle_editor_for(combatant: Combatant) -> void:
+	"""Open autobattle editor for a specific combatant"""
+	if not combatant:
+		return
+
+	var char_id = combatant.combatant_name.to_lower().replace(" ", "_")
+	var char_name = combatant.combatant_name
+
+	# Hide the battle menu
+	set_command_menu_visible(false)
+
+	# Load and create editor
+	var AutobattleGridEditorClass = load("res://src/ui/autobattle/AutobattleGridEditor.gd")
+	var editor = AutobattleGridEditorClass.new()
+	editor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(editor)
+	editor.setup(char_id, char_name, combatant)
+	editor.closed.connect(_on_inline_autobattle_editor_closed.bind(editor))
+	print("Autobattle editor opened for %s (hold-A)" % char_name)
+
+
+func _on_inline_autobattle_editor_closed(editor: Control) -> void:
+	"""Handle inline autobattle editor closing"""
+	if editor and is_instance_valid(editor):
+		editor.queue_free()
+	# Show menu again
+	set_command_menu_visible(true)
 
 
 func _restart_battle() -> void:

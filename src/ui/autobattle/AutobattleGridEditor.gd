@@ -916,18 +916,22 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# Start button / Escape - Save and exit
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		_save_script()
-		closed.emit()
-		SoundManager.play_ui("menu_select")
-		get_viewport().set_input_as_handled()
+	# Start button / Escape / Enter - Save and exit
+	elif event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE or event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+			_save_script()
+			closed.emit()
+			SoundManager.play_ui("menu_select")
+			get_viewport().set_input_as_handled()
 
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
-		_save_script()
-		closed.emit()
-		SoundManager.play_ui("menu_select")
-		get_viewport().set_input_as_handled()
+	# Gamepad Start button - Save and exit (try multiple button indices for compatibility)
+	elif event is InputEventJoypadButton and event.pressed:
+		# JOY_BUTTON_START = 6 on most controllers, but some map differently
+		if event.button_index == JOY_BUTTON_START or event.button_index == 7 or event.button_index == 9:
+			_save_script()
+			closed.emit()
+			SoundManager.play_ui("menu_select")
+			get_viewport().set_input_as_handled()
 
 
 func _edit_current_cell() -> void:
