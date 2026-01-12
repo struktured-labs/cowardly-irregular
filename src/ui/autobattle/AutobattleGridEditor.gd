@@ -831,6 +831,13 @@ func _save_script() -> void:
 	script_saved.emit(character_id, char_script)
 
 
+func save_and_close() -> void:
+	"""Public method to save and close the editor (called by F5 toggle)"""
+	_save_script()
+	closed.emit()
+	queue_free()
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for grid navigation and editing"""
 	if not visible:

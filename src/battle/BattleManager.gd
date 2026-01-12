@@ -586,8 +586,8 @@ func _execute_next_action() -> void:
 
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
-	# Small delay between actions for readability
-	await get_tree().create_timer(0.3).timeout
+	# Delay between actions - long enough for animations to complete
+	await get_tree().create_timer(0.7).timeout
 	_execute_next_action()
 
 
@@ -623,10 +623,10 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 				_execute_item(combatant, action["item_id"], action.get("targets", []))
 
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
-		await get_tree().create_timer(0.2).timeout
+		await get_tree().create_timer(0.5).timeout  # Time for animation
 
 	# Continue to next action
-	await get_tree().create_timer(0.3).timeout
+	await get_tree().create_timer(0.5).timeout
 	_execute_next_action()
 
 

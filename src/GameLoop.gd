@@ -69,11 +69,15 @@ func _unhandled_input(event: InputEvent) -> void:
 func _toggle_autobattle_editor() -> void:
 	"""Toggle the autobattle grid editor overlay"""
 	if _autobattle_editor and is_instance_valid(_autobattle_editor):
-		_autobattle_editor.queue_free()
+		# Save before closing!
+		if _autobattle_editor.has_method("save_and_close"):
+			_autobattle_editor.save_and_close()
+		else:
+			_autobattle_editor.queue_free()
 		_autobattle_editor = null
 		# Show battle menu again if it was hidden
 		_set_battle_menu_visible(true)
-		print("Autobattle editor closed")
+		print("Autobattle editor closed (saved)")
 		return
 
 	# Hide the battle menu while editor is open

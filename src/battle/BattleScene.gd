@@ -1582,8 +1582,21 @@ func _on_battle_started() -> void:
 	"""Handle battle start"""
 	log_message("[color=yellow]>>> Battle commenced![/color]")
 	_update_ui()
-	# Start battle music
-	SoundManager.play_music("battle")
+	# Start battle music - use boss music if fighting a miniboss
+	var is_boss_fight = _check_for_boss()
+	if is_boss_fight:
+		SoundManager.play_music("boss")
+	else:
+		SoundManager.play_music("battle")
+
+
+func _check_for_boss() -> bool:
+	"""Check if any enemy is a boss/miniboss"""
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy):
+			if enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss"):
+				return true
+	return force_miniboss
 
 
 func _on_battle_ended(victory: bool) -> void:
