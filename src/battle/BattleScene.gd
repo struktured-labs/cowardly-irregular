@@ -1606,9 +1606,40 @@ func _on_battle_started() -> void:
 		_base_music_track = "boss"
 		SoundManager.play_music("boss")
 	else:
-		_base_music_track = "battle"
-		SoundManager.play_music("battle")
+		# Play monster-specific music based on dominant enemy type
+		var dominant_monster = _get_dominant_monster_type()
+		if dominant_monster != "":
+			_base_music_track = "battle_" + dominant_monster
+			SoundManager.play_music("battle_" + dominant_monster)
+			print("[MUSIC] Playing %s battle theme" % dominant_monster)
+		else:
+			_base_music_track = "battle"
+			SoundManager.play_music("battle")
 	_is_danger_music = false
+
+
+func _get_dominant_monster_type() -> String:
+	"""Get the most common monster type in the current battle"""
+	var type_counts: Dictionary = {}
+
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy):
+			var monster_id = enemy.get_meta("monster_type", "")
+			if monster_id != "":
+				type_counts[monster_id] = type_counts.get(monster_id, 0) + 1
+
+	if type_counts.is_empty():
+		return ""
+
+	# Find the type with the highest count
+	var max_count = 0
+	var dominant_type = ""
+	for monster_type in type_counts:
+		if type_counts[monster_type] > max_count:
+			max_count = type_counts[monster_type]
+			dominant_type = monster_type
+
+	return dominant_type
 
 
 func _check_for_boss() -> bool:

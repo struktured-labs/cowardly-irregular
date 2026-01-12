@@ -534,6 +534,25 @@ func play_music(track: String) -> void:
 			_start_victory_music()
 		"game_over":
 			_start_game_over_music()
+		# Monster-specific battle themes
+		"battle_slime":
+			_start_monster_music("slime")
+		"battle_bat":
+			_start_monster_music("bat")
+		"battle_mushroom":
+			_start_monster_music("mushroom")
+		"battle_imp":
+			_start_monster_music("imp")
+		"battle_goblin":
+			_start_monster_music("goblin")
+		"battle_skeleton":
+			_start_monster_music("skeleton")
+		"battle_wolf":
+			_start_monster_music("wolf")
+		"battle_ghost":
+			_start_monster_music("ghost")
+		"battle_snake":
+			_start_monster_music("snake")
 		_:
 			push_warning("Unknown music track: %s" % track)
 
@@ -1183,6 +1202,343 @@ func _triangle_wave(phase: float) -> float:
 	"""Generate triangle wave (softer 8-bit sound)"""
 	var p = fmod(phase, 1.0)
 	return 4.0 * abs(p - 0.5) - 1.0
+
+
+## Monster-Specific Battle Music
+
+# Monster music parameters - each monster has unique feel
+const MONSTER_MUSIC_PARAMS = {
+	"slime": {
+		"bpm": 120, "bars": 8, "key": "C_major",
+		"style": "bouncy", "bass_style": "bounce"
+	},
+	"bat": {
+		"bpm": 165, "bars": 8, "key": "D_minor",
+		"style": "frantic", "bass_style": "fast"
+	},
+	"mushroom": {
+		"bpm": 85, "bars": 8, "key": "E_minor",
+		"style": "creepy", "bass_style": "drone"
+	},
+	"imp": {
+		"bpm": 155, "bars": 8, "key": "F_minor",
+		"style": "chaotic", "bass_style": "chromatic"
+	},
+	"goblin": {
+		"bpm": 135, "bars": 8, "key": "A_minor",
+		"style": "tribal", "bass_style": "drums"
+	},
+	"skeleton": {
+		"bpm": 115, "bars": 8, "key": "B_minor",
+		"style": "spooky", "bass_style": "staccato"
+	},
+	"wolf": {
+		"bpm": 145, "bars": 8, "key": "E_minor",
+		"style": "tense", "bass_style": "prowl"
+	},
+	"ghost": {
+		"bpm": 95, "bars": 8, "key": "G_minor",
+		"style": "ethereal", "bass_style": "floating"
+	},
+	"snake": {
+		"bpm": 130, "bars": 8, "key": "C_minor",
+		"style": "slither", "bass_style": "serpent"
+	}
+}
+
+func _start_monster_music(monster_type: String) -> void:
+	"""Generate and start monster-specific battle music"""
+	_music_playing = true
+
+	var params = MONSTER_MUSIC_PARAMS.get(monster_type, MONSTER_MUSIC_PARAMS["slime"])
+	var sample_rate = 22050
+	var bpm = float(params["bpm"])
+	var bars = params["bars"]
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	var buffer = _generate_monster_music_buffer(sample_rate, total_duration, bpm, monster_type)
+
+	# Create looping audio stream
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = buffer.size()
+
+	var data = PackedByteArray()
+	for frame in buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, monster_type: String) -> PackedVector2Array:
+	"""Generate battle music with monster-specific character"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+	var params = MONSTER_MUSIC_PARAMS.get(monster_type, MONSTER_MUSIC_PARAMS["slime"])
+
+	# Get melody and bass based on monster type
+	var melody = _get_monster_melody(monster_type)
+	var bass_notes = _get_monster_bass(monster_type)
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var beat_pos = fmod(t / beat_duration, 4.0)
+		var bar = int(t / (beat_duration * 4))
+		var sixteenth = int(beat_pos * 4) % 64
+		var sample = 0.0
+
+		# Melody (sixteenth notes, style-dependent)
+		var melody_idx = (bar * 16 + int(beat_pos * 4)) % melody.size()
+		var melody_note = melody[melody_idx]
+		if melody_note > 0:
+			var note_phase = fmod(t * melody_note, 1.0)
+			var wave = _get_monster_wave(note_phase, params["style"])
+			var env = _get_monster_envelope(beat_pos, params["style"])
+			sample += wave * 0.3 * env
+
+		# Bass (quarter notes)
+		var bass_idx = (bar * 4 + int(beat_pos)) % bass_notes.size()
+		var bass_note = bass_notes[bass_idx]
+		if bass_note > 0:
+			var bass_phase = fmod(t * bass_note, 1.0)
+			var bass_wave = _square_wave(bass_phase)
+			var bass_env = _get_bass_envelope(beat_pos, params["bass_style"])
+			sample += bass_wave * 0.2 * bass_env
+
+		# Drums (style-dependent)
+		sample += _get_monster_drums(beat_pos, t, params["style"]) * 0.25
+
+		# Soft clip
+		sample = clamp(sample * 1.2, -0.95, 0.95)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _get_monster_wave(phase: float, style: String) -> float:
+	"""Get waveform based on monster style"""
+	match style:
+		"bouncy":
+			return _triangle_wave(phase)  # Soft, bouncy
+		"frantic", "chaotic":
+			return _square_wave(phase)  # Harsh, aggressive
+		"creepy", "spooky":
+			return _triangle_wave(phase) * 0.7 + _square_wave(phase * 2) * 0.3  # Dissonant
+		"ethereal", "floating":
+			return sin(phase * TAU) * 0.8 + _triangle_wave(phase * 1.5) * 0.2  # Smooth
+		"tribal", "tense":
+			return _square_wave(phase) * 0.6 + _triangle_wave(phase) * 0.4
+		"slither":
+			var bend = sin(phase * TAU * 0.5) * 0.1
+			return _triangle_wave(phase + bend)  # Wavering pitch
+		_:
+			return _square_wave(phase)
+
+
+func _get_monster_envelope(beat_pos: float, style: String) -> float:
+	"""Get amplitude envelope based on monster style"""
+	var sub_beat = fmod(beat_pos * 4, 1.0)
+	match style:
+		"bouncy":
+			return 1.0 - sub_beat * 0.5  # Quick decay, bouncy feel
+		"frantic", "chaotic":
+			return 0.7 + randf() * 0.3  # Erratic
+		"creepy":
+			return 0.5 + sin(beat_pos * TAU) * 0.3  # Wavering
+		"spooky":
+			return 1.0 - sub_beat * 0.7  # Staccato
+		"ethereal":
+			return 0.6 + sin(beat_pos * TAU * 0.5) * 0.3  # Floating
+		"tribal":
+			return 1.0 if sub_beat < 0.3 else 0.4  # Punchy
+		"tense":
+			return 0.8 - sub_beat * 0.3
+		"slither":
+			return 0.7 + sin(beat_pos * TAU * 2) * 0.2  # Undulating
+		_:
+			return 1.0 - sub_beat * 0.5
+
+
+func _get_bass_envelope(beat_pos: float, bass_style: String) -> float:
+	"""Get bass envelope based on style"""
+	var sub_beat = fmod(beat_pos, 1.0)
+	match bass_style:
+		"bounce":
+			return 1.0 if sub_beat < 0.25 else 0.3  # Short punchy
+		"fast":
+			return 0.8 - sub_beat * 0.4
+		"drone":
+			return 0.6 + sin(beat_pos * TAU * 0.25) * 0.2  # Sustained
+		"chromatic":
+			return 0.7 + randf() * 0.2
+		"drums":
+			return 1.0 if sub_beat < 0.15 else 0.2  # Very punchy
+		"staccato":
+			return 1.0 if sub_beat < 0.1 else 0.0  # Bone rattles
+		"prowl":
+			return 0.5 + (1.0 - sub_beat) * 0.4  # Stalking
+		"floating":
+			return 0.4 + sin(beat_pos * TAU) * 0.2  # Ethereal bass
+		"serpent":
+			return 0.6 - sub_beat * 0.2 + sin(sub_beat * TAU * 3) * 0.1
+		_:
+			return 1.0 - sub_beat * 0.5
+
+
+func _get_monster_drums(beat_pos: float, t: float, style: String) -> float:
+	"""Get drum pattern based on monster style"""
+	var sub_beat = fmod(beat_pos, 1.0)
+	var sample = 0.0
+
+	match style:
+		"bouncy":
+			# Light kick on 1 and 3, hi-hat on off-beats
+			if sub_beat < 0.05 and (int(beat_pos) == 0 or int(beat_pos) == 2):
+				sample += 0.6  # Kick
+			if sub_beat > 0.45 and sub_beat < 0.55:
+				sample += randf() * 0.3  # Light hi-hat
+		"frantic":
+			# Fast hi-hats, heavy kicks
+			if sub_beat < 0.03:
+				sample += 0.8
+			if fmod(beat_pos * 2, 1.0) < 0.05:
+				sample += randf() * 0.4
+		"creepy":
+			# Sparse, unsettling
+			if sub_beat < 0.02 and int(beat_pos) == 0:
+				sample += 0.5
+			sample += randf() * 0.05  # Ambient noise
+		"chaotic":
+			# Random hits
+			if randf() < 0.15:
+				sample += randf() * 0.5
+		"tribal":
+			# Heavy drum pattern
+			if sub_beat < 0.05:
+				sample += 0.9  # Heavy kick every beat
+			if fmod(beat_pos * 2, 1.0) < 0.03:
+				sample += 0.5  # Snare on off-beats
+			if fmod(beat_pos * 4, 1.0) < 0.02:
+				sample += randf() * 0.3  # Hi-hat
+		"spooky":
+			# Sparse with rattles
+			if sub_beat < 0.02 and (int(beat_pos) == 0 or int(beat_pos) == 2):
+				sample += 0.4
+			if fmod(beat_pos * 8, 1.0) < 0.03:
+				sample += randf() * 0.2  # Bone rattles
+		"tense":
+			# Driving pattern
+			if sub_beat < 0.04:
+				sample += 0.7
+			if fmod(beat_pos * 2, 1.0) > 0.45 and fmod(beat_pos * 2, 1.0) < 0.55:
+				sample += 0.4
+		"ethereal":
+			# Very sparse, reverb-like
+			if sub_beat < 0.01 and int(beat_pos) == 0:
+				sample += 0.3
+			sample += sin(t * 200) * 0.02  # Shimmer
+		"slither":
+			# Serpentine rhythm
+			if sub_beat < 0.03 and (int(beat_pos) % 2 == 0):
+				sample += 0.5
+			if fmod(beat_pos * 3, 1.0) < 0.02:
+				sample += randf() * 0.25  # Hiss-like
+		_:
+			if sub_beat < 0.05:
+				sample += 0.5
+
+	return sample
+
+
+func _get_monster_melody(monster_type: String) -> Array:
+	"""Get melody pattern for monster type"""
+	# Base frequencies
+	const C4 = 261.63; const D4 = 293.66; const E4 = 329.63; const F4 = 349.23
+	const G4 = 392.0; const A4 = 440.0; const B4 = 493.88; const C5 = 523.25
+	const Eb4 = 311.13; const Bb4 = 466.16; const Db4 = 277.18; const Ab4 = 415.30
+	const Gb4 = 369.99; const Fs4 = 369.99
+
+	match monster_type:
+		"slime":
+			# Bouncy C major melody
+			return [C4, 0, E4, 0, G4, 0, E4, 0, C4, 0, G4, 0, E4, 0, C4, 0,
+					G4, 0, C5, 0, G4, 0, E4, 0, G4, 0, E4, 0, C4, 0, 0, 0]
+		"bat":
+			# Fast D minor - frantic
+			return [D4, Eb4, D4, 0, F4, 0, D4, Eb4, D4, 0, A4, 0, D4, F4, D4, 0,
+					A4, 0, D4, 0, F4, Eb4, D4, 0, A4, F4, D4, 0, Eb4, D4, 0, 0]
+		"mushroom":
+			# Slow E minor - creepy
+			return [E4, 0, 0, 0, G4, 0, 0, 0, B4, 0, 0, E4, 0, 0, G4, 0,
+					0, 0, E4, 0, 0, 0, Fs4, 0, 0, E4, 0, 0, 0, 0, 0, 0]
+		"imp":
+			# Chaotic F minor chromatic
+			return [F4, 0, Gb4, 0, F4, Ab4, 0, F4, Gb4, F4, 0, Ab4, Bb4, 0, Ab4, 0,
+					F4, Gb4, Ab4, 0, Bb4, Ab4, Gb4, F4, 0, Ab4, 0, F4, Gb4, 0, F4, 0]
+		"goblin":
+			# Tribal A minor pentatonic
+			return [A4, 0, C5, 0, A4, 0, G4, 0, A4, 0, E4, 0, G4, 0, A4, 0,
+					C5, 0, A4, 0, G4, 0, E4, 0, G4, A4, 0, 0, A4, 0, 0, 0]
+		"skeleton":
+			# Spooky B minor staccato
+			return [B4, 0, 0, B4, 0, 0, D4, 0, B4, 0, 0, 0, Fs4, 0, 0, B4,
+					0, D4, 0, 0, B4, 0, 0, Fs4, 0, 0, B4, 0, 0, 0, 0, 0]
+		"wolf":
+			# Tense E minor
+			return [E4, 0, E4, G4, 0, E4, 0, 0, B4, 0, E4, 0, G4, 0, E4, 0,
+					E4, G4, B4, 0, G4, E4, 0, 0, B4, G4, E4, 0, 0, E4, 0, 0]
+		"ghost":
+			# Ethereal G minor - high, floating
+			return [G4, 0, 0, 0, Bb4, 0, 0, 0, D4, 0, 0, G4, 0, 0, 0, 0,
+					Bb4, 0, 0, 0, G4, 0, 0, 0, D4, 0, 0, 0, G4, 0, 0, 0]
+		"snake":
+			# Slithering C minor
+			return [C4, 0, Eb4, 0, G4, 0, Eb4, C4, 0, G4, Eb4, 0, C4, 0, Eb4, G4,
+					0, Eb4, C4, 0, G4, 0, Eb4, C4, Eb4, G4, 0, Eb4, C4, 0, 0, 0]
+		_:
+			return [C4, 0, E4, 0, G4, 0, E4, 0, C4, 0, G4, 0, E4, 0, C4, 0]
+
+
+func _get_monster_bass(monster_type: String) -> Array:
+	"""Get bass pattern for monster type"""
+	const C2 = 65.41; const D2 = 73.42; const E2 = 82.41; const F2 = 87.31
+	const G2 = 98.0; const A2 = 110.0; const B2 = 123.47; const C3 = 130.81
+	const Eb2 = 77.78; const Bb2 = 116.54; const Fs2 = 92.50
+
+	match monster_type:
+		"slime":
+			return [C2, G2, C2, G2, C2, E2, G2, C2]
+		"bat":
+			return [D2, D2, A2, D2, D2, F2, A2, D2]
+		"mushroom":
+			return [E2, E2, E2, E2, B2, E2, E2, E2]  # Droning
+		"imp":
+			return [F2, Eb2, F2, G2, F2, Eb2, F2, Bb2]  # Chromatic
+		"goblin":
+			return [A2, A2, E2, A2, A2, G2, E2, A2]  # Tribal
+		"skeleton":
+			return [B2, 0, B2, 0, Fs2, 0, B2, 0]  # Staccato
+		"wolf":
+			return [E2, E2, G2, E2, B2, E2, G2, E2]
+		"ghost":
+			return [G2, 0, G2, 0, D2, 0, G2, 0]  # Sparse
+		"snake":
+			return [C2, Eb2, G2, Eb2, C2, G2, Eb2, C2]  # Serpentine
+		_:
+			return [C2, G2, C2, G2, C2, E2, G2, C2]
 
 
 ## Game Over Music - Short sad ditty (does not loop)
