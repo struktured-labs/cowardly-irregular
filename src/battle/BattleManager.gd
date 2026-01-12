@@ -630,25 +630,67 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	_execute_next_action()
 
 
+func _retarget_enemy(attacker: Combatant, original_target: Combatant) -> Combatant:
+	"""Find a new enemy target if original is dead (auto-retarget like most JRPGs)"""
+	if original_target and original_target.is_alive:
+		return original_target
+
+	# Determine which party to target
+	var target_party = enemy_party if attacker in player_party else player_party
+	var alive_targets = target_party.filter(func(t): return t.is_alive)
+
+	if alive_targets.size() == 0:
+		return null
+
+	# Pick the target with lowest HP (similar to original targeting)
+	alive_targets.sort_custom(func(a, b): return a.current_hp < b.current_hp)
+	var new_target = alive_targets[0]
+
+	if original_target:
+		print("%s's target %s is gone, retargeting to %s" % [attacker.combatant_name, original_target.combatant_name, new_target.combatant_name])
+
+	return new_target
+
+
+func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead: bool = false) -> Combatant:
+	"""Find a new ally target if original is invalid"""
+	if original_target and (original_target.is_alive or include_dead):
+		return original_target
+
+	# Determine which party is allies
+	var ally_party = player_party if caster in player_party else enemy_party
+	var valid_targets = ally_party.filter(func(t): return t.is_alive or include_dead)
+
+	if valid_targets.size() == 0:
+		return null
+
+	# For healing, pick lowest HP ally
+	valid_targets.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+	return valid_targets[0]
+
+
 func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	"""Execute a basic physical attack (costs 1 AP)"""
-	if not target or not target.is_alive:
+	# Auto-retarget if original target is dead
+	var actual_target = _retarget_enemy(attacker, target)
+	if not actual_target:
+		print("%s's attack fizzles - no valid targets!" % attacker.combatant_name)
 		return
 
 	# Actions cost 1 AP (cancels out natural gain for net 0)
 	attacker.spend_ap(1)
 
-	action_executing.emit(attacker, {"type": "attack", "target": target})
+	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
 
 	var base_damage = attacker.attack
 	var variance = randf_range(0.85, 1.15)
 	var damage = int(base_damage * variance)
 
-	var actual_damage = target.take_damage(damage, false)
-	damage_dealt.emit(target, actual_damage, false)
-	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!" % [attacker.combatant_name, target.combatant_name, actual_damage]
+	var actual_damage = actual_target.take_damage(damage, false)
+	damage_dealt.emit(actual_target, actual_damage, false)
+	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!" % [attacker.combatant_name, actual_target.combatant_name, actual_damage]
 	battle_log_message.emit(log_msg)
-	print("%s attacks %s for %d damage!" % [attacker.combatant_name, target.combatant_name, actual_damage])
+	print("%s attacks %s for %d damage!" % [attacker.combatant_name, actual_target.combatant_name, actual_damage])
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
@@ -662,6 +704,31 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		print("%s cannot use %s" % [caster.combatant_name, ability["name"]])
 		return
 
+	# Auto-retarget dead targets based on ability type
+	var retargeted: Array = []
+	var ability_type = ability.get("type", "")
+	var is_offensive = ability_type in ["physical", "magic"]
+	var is_revival = ability_type == "revival"
+
+	for target in targets:
+		if is_offensive:
+			var new_target = _retarget_enemy(caster, target)
+			if new_target:
+				retargeted.append(new_target)
+		elif is_revival:
+			# Revival targets dead allies, don't retarget
+			if target:
+				retargeted.append(target)
+		else:
+			# Healing/support targets allies
+			var new_target = _retarget_ally(caster, target, is_revival)
+			if new_target:
+				retargeted.append(new_target)
+
+	if retargeted.size() == 0 and targets.size() > 0:
+		print("%s's %s fizzles - no valid targets!" % [caster.combatant_name, ability["name"]])
+		return
+
 	var mp_cost = ability.get("mp_cost", 0)
 	if not caster.spend_mp(mp_cost):
 		print("%s doesn't have enough MP!" % caster.combatant_name)
@@ -670,28 +737,28 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	# Actions cost 1 AP (cancels out natural gain for net 0)
 	caster.spend_ap(1)
 
-	action_executing.emit(caster, {"type": "ability", "ability_id": ability_id, "targets": targets})
+	action_executing.emit(caster, {"type": "ability", "ability_id": ability_id, "targets": retargeted})
 	var ability_log = "[color=white]%s[/color] uses [color=aqua]%s[/color]!" % [caster.combatant_name, ability["name"]]
 	battle_log_message.emit(ability_log)
 	print("%s uses %s!" % [caster.combatant_name, ability["name"]])
 
-	match ability["type"]:
+	match ability_type:
 		"physical":
-			_execute_physical_ability(caster, ability, targets)
+			_execute_physical_ability(caster, ability, retargeted)
 		"magic":
-			_execute_magic_ability(caster, ability, targets)
+			_execute_magic_ability(caster, ability, retargeted)
 		"healing":
-			_execute_healing_ability(caster, ability, targets)
+			_execute_healing_ability(caster, ability, retargeted)
 		"revival":
-			_execute_revival_ability(caster, ability, targets)
+			_execute_revival_ability(caster, ability, retargeted)
 		"support":
-			_execute_support_ability(caster, ability, targets)
+			_execute_support_ability(caster, ability, retargeted)
 		"meta":
-			_execute_meta_ability(caster, ability, targets)
+			_execute_meta_ability(caster, ability, retargeted)
 		"escape":
 			_execute_escape_ability(caster, ability)
 		_:
-			print("Unknown ability type: %s" % ability["type"])
+			print("Unknown ability type: %s" % ability_type)
 
 
 func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
@@ -872,17 +939,25 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 		print("%s doesn't have item: %s" % [user.combatant_name, item_id])
 		return
 
+	# Auto-retarget dead targets (most items are healing, target allies)
+	# TODO: Check item type for offensive items that should target enemies
+	var retargeted: Array[Combatant] = []
+	for t in targets:
+		if t is Combatant:
+			var new_target = _retarget_ally(user, t, false)
+			if new_target:
+				retargeted.append(new_target)
+
+	if retargeted.size() == 0 and targets.size() > 0:
+		print("%s's item fizzles - no valid targets!" % user.combatant_name)
+		return
+
 	# Actions cost 1 AP (cancels out natural gain for net 0)
 	user.spend_ap(1)
 
-	action_executing.emit(user, {"type": "item", "item_id": item_id, "targets": targets})
+	action_executing.emit(user, {"type": "item", "item_id": item_id, "targets": retargeted})
 
-	var combatant_targets: Array[Combatant] = []
-	for t in targets:
-		if t is Combatant:
-			combatant_targets.append(t)
-
-	if ItemSystem.use_item(user, item_id, combatant_targets):
+	if ItemSystem.use_item(user, item_id, retargeted):
 		user.remove_item(item_id, 1)
 	else:
 		print("Failed to use item: %s" % item_id)
