@@ -1643,8 +1643,8 @@ func _on_battle_ended(victory: bool) -> void:
 		for animator in party_animators:
 			if animator:
 				animator.play_defeat()
-		# Stop music on defeat
-		SoundManager.stop_music()
+		# Play game over ditty
+		SoundManager.play_music("game_over")
 
 	_update_ui()
 	_battle_ended = true

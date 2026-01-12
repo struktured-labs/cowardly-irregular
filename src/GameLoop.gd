@@ -75,6 +75,7 @@ func _toggle_autobattle_editor() -> void:
 		_autobattle_editor = null
 		# Show battle menu again if it was hidden
 		_set_battle_menu_visible(true)
+		SoundManager.play_ui("autobattle_close")
 		print("Autobattle editor closed (saved)")
 		return
 
@@ -103,6 +104,7 @@ func _toggle_autobattle_editor() -> void:
 	add_child(_autobattle_editor)
 	_autobattle_editor.setup(char_id, char_name, combatant)
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
+	SoundManager.play_ui("autobattle_open")
 	print("Autobattle editor opened for %s (Start to save & exit)" % char_name)
 
 
@@ -138,6 +140,10 @@ func _toggle_all_autobattle() -> void:
 		AutobattleSystem.set_autobattle_enabled(char_id, new_state)
 
 	var status = "ON" if new_state else "OFF"
+	if new_state:
+		SoundManager.play_ui("autobattle_on")
+	else:
+		SoundManager.play_ui("autobattle_off")
 	print("[AUTOBATTLE] All party members: %s (F6/Select to toggle)" % status)
 
 

@@ -25,6 +25,10 @@ const SOUNDS = {
 	"advance_undo": {"freq": 500, "duration": 0.06, "type": "falling"},
 	"defer": {"freq": 300, "duration": 0.1, "type": "low_pulse"},
 	"player_turn": {"freq": 880, "duration": 0.2, "type": "da_ding"},
+	"autobattle_on": {"freq": 600, "duration": 0.15, "type": "ascending"},
+	"autobattle_off": {"freq": 500, "duration": 0.15, "type": "descending"},
+	"autobattle_open": {"freq": 440, "duration": 0.2, "type": "chord"},
+	"autobattle_close": {"freq": 350, "duration": 0.15, "type": "falling"},
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},
@@ -528,6 +532,8 @@ func play_music(track: String) -> void:
 			_start_danger_music()
 		"victory":
 			_start_victory_music()
+		"game_over":
+			_start_game_over_music()
 		_:
 			push_warning("Unknown music track: %s" % track)
 
@@ -1177,3 +1183,126 @@ func _triangle_wave(phase: float) -> float:
 	"""Generate triangle wave (softer 8-bit sound)"""
 	var p = fmod(phase, 1.0)
 	return 4.0 * abs(p - 0.5) - 1.0
+
+
+## Game Over Music - Short sad ditty (does not loop)
+
+func _start_game_over_music() -> void:
+	"""Generate and play a short game over ditty (no loop)"""
+	_music_playing = true
+
+	# Short death ditty - about 3 seconds
+	var sample_rate = 22050
+	var bpm = 60.0  # Slow, mournful
+	var duration = 3.0
+
+	var buffer = _generate_game_over_buffer(sample_rate, duration, bpm)
+
+	# Create non-looping audio stream
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_DISABLED  # No loop - plays once
+
+	var data = PackedByteArray()
+	for frame in buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate a short, sad game over ditty - descending, mournful"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+
+	# Notes for sad descending melody (D minor)
+	const NOTE_D3 = 146.83
+	const NOTE_C3 = 130.81
+	const NOTE_Bb2 = 116.54
+	const NOTE_A2 = 110.0
+	const NOTE_G2 = 98.0
+	const NOTE_F2 = 87.31
+	const NOTE_D2 = 73.42
+
+	const NOTE_D4 = 293.66
+	const NOTE_C4 = 261.63
+	const NOTE_Bb3 = 233.08
+	const NOTE_A3 = 220.0
+	const NOTE_G3 = 196.0
+	const NOTE_F3 = 174.61
+	const NOTE_D3_HIGH = 146.83
+
+	# Melody notes with timing (note, duration in beats)
+	# Classic "dun dun dun duuun" descending pattern
+	var melody_events = [
+		{"note": NOTE_D4, "start": 0.0, "dur": 0.4},
+		{"note": NOTE_C4, "start": 0.5, "dur": 0.4},
+		{"note": NOTE_Bb3, "start": 1.0, "dur": 0.4},
+		{"note": NOTE_A3, "start": 1.5, "dur": 1.2},  # Hold
+		{"note": NOTE_G3, "start": 2.0, "dur": 0.3},
+		{"note": NOTE_F3, "start": 2.4, "dur": 0.5},
+		{"note": NOTE_D3_HIGH, "start": 2.9, "dur": 0.8},  # Final low note, fade
+	]
+
+	# Bass notes
+	var bass_events = [
+		{"note": NOTE_D3, "start": 0.0, "dur": 1.0},
+		{"note": NOTE_Bb2, "start": 1.0, "dur": 1.0},
+		{"note": NOTE_D2, "start": 2.0, "dur": 1.5},
+	]
+
+	var beat_duration = 60.0 / bpm
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var beat_pos = t / beat_duration
+		var sample = 0.0
+
+		# Global fade out envelope
+		var global_env = 1.0 - (t / duration) * 0.5
+
+		# Melody
+		for event in melody_events:
+			var note_start = event["start"] * beat_duration
+			var note_dur = event["dur"] * beat_duration
+			if t >= note_start and t < note_start + note_dur:
+				var note_t = t - note_start
+				var note_env = 1.0 - (note_t / note_dur)  # Linear decay
+				note_env = note_env * note_env  # Squared for faster decay
+				var freq = event["note"]
+				var phase = note_t * freq
+				# Triangle wave for mournful sound
+				var wave = _triangle_wave(phase)
+				sample += wave * 0.35 * note_env
+
+		# Bass
+		for event in bass_events:
+			var note_start = event["start"] * beat_duration
+			var note_dur = event["dur"] * beat_duration
+			if t >= note_start and t < note_start + note_dur:
+				var note_t = t - note_start
+				var note_env = 1.0 - (note_t / note_dur) * 0.7
+				var freq = event["note"]
+				var phase = note_t * freq
+				# Square wave for bass
+				var wave = _square_wave(phase)
+				sample += wave * 0.2 * note_env
+
+		# Apply global envelope
+		sample *= global_env
+
+		# Soft clip
+		sample = clamp(sample, -0.9, 0.9)
+
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
