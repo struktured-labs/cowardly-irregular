@@ -903,11 +903,10 @@ func _input(event: InputEvent) -> void:
 	# Gamepad Y button - Toggle row enabled
 	# JOY_BUTTON_X (index 2) = Y on Nintendo controllers
 	# JOY_BUTTON_Y (index 3) = X on Nintendo / Y on Xbox
-	elif event is InputEventJoypadButton and event.pressed:
-		if event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y:
-			_toggle_row_enabled()
-			SoundManager.play_ui("menu_select")
-			get_viewport().set_input_as_handled()
+	elif event is InputEventJoypadButton and event.pressed and (event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y):
+		_toggle_row_enabled()
+		SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
 
 	# Select button - Toggle autobattle ON/OFF
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
@@ -916,22 +915,32 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# Start button / Escape / Enter - Save and exit
-	elif event is InputEventKey and event.pressed:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+	# Start/Menu button - Save and exit
+	# Uses multiple detection methods for maximum controller compatibility
+	elif event.is_action_pressed("ui_menu"):
+		print("[AUTOBATTLE] Start pressed via ui_menu action - saving and closing")
+		_save_script()
+		closed.emit()
+		SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
+
+	# Additional direct gamepad button check for Start (in case action mapping fails)
+	elif event is InputEventJoypadButton and event.pressed:
+		# Common Start button indices: 6 (SDL standard), 7, 9, 11
+		if event.button_index in [6, 7, 9, 11]:
+			print("[AUTOBATTLE] Start pressed via button %d - saving and closing" % event.button_index)
 			_save_script()
 			closed.emit()
 			SoundManager.play_ui("menu_select")
 			get_viewport().set_input_as_handled()
 
-	# Gamepad Start button - Save and exit (try multiple button indices for compatibility)
-	elif event is InputEventJoypadButton and event.pressed:
-		# JOY_BUTTON_START = 6 on most controllers, but some map differently
-		if event.button_index == JOY_BUTTON_START or event.button_index == 7 or event.button_index == 9:
-			_save_script()
-			closed.emit()
-			SoundManager.play_ui("menu_select")
-			get_viewport().set_input_as_handled()
+	# Escape or Enter key - Save and exit
+	elif event is InputEventKey and event.pressed and (event.keycode == KEY_ESCAPE or event.keycode == KEY_ENTER):
+		print("[AUTOBATTLE] %s key pressed - saving and closing" % ("Escape" if event.keycode == KEY_ESCAPE else "Enter"))
+		_save_script()
+		closed.emit()
+		SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
 
 
 func _edit_current_cell() -> void:
