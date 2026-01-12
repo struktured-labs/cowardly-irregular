@@ -181,13 +181,26 @@ func _build_ui() -> void:
 	_cursor.z_index = 10
 	add_child(_cursor)
 
-	# Help text at bottom
-	var help_label = Label.new()
-	help_label.text = "[L=OR Row] [R=Action] [A=Edit] [Tab/Select=Toggle Row] [Y=Delete]"
-	help_label.position = Vector2(16, size.y - 28)
-	help_label.add_theme_font_size_override("font_size", 10)
-	help_label.add_theme_color_override("font_color", style.text.darkened(0.3))
-	add_child(help_label)
+	# Button legend at bottom (two lines for clarity)
+	var legend_bg = ColorRect.new()
+	legend_bg.color = Color(0.0, 0.0, 0.0, 0.5)
+	legend_bg.position = Vector2(8, size.y - 48)
+	legend_bg.size = Vector2(size.x - 16, 44)
+	add_child(legend_bg)
+
+	var help_label1 = Label.new()
+	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  Start:Save & Exit"
+	help_label1.position = Vector2(16, size.y - 44)
+	help_label1.add_theme_font_size_override("font_size", 10)
+	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
+	add_child(help_label1)
+
+	var help_label2 = Label.new()
+	help_label2.text = "L:Add OR Row  R:Add Action  Y:Toggle Row  Select:Auto ON/OFF"
+	help_label2.position = Vector2(16, size.y - 28)
+	help_label2.add_theme_font_size_override("font_size", 10)
+	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
+	add_child(help_label2)
 
 
 func _update_status_label() -> void:
@@ -859,14 +872,12 @@ func _input(event: InputEvent) -> void:
 		_edit_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# B button - Back/Close
+	# B button - Delete current cell
 	elif event.is_action_pressed("ui_cancel"):
-		_save_script()
-		closed.emit()
-		SoundManager.play_ui("menu_cancel")
+		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# L trigger - Add condition
+	# L trigger - Add OR row
 	elif event.is_action_pressed("battle_defer"):  # L button
 		_add_condition()
 		get_viewport().set_input_as_handled()
@@ -876,35 +887,40 @@ func _input(event: InputEvent) -> void:
 		_add_action()
 		get_viewport().set_input_as_handled()
 
-	# Tab / Select - Toggle current row enabled/disabled
+	# Tab / Y - Toggle current row enabled/disabled
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB:
 		_toggle_row_enabled()
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# Gamepad Select button - Toggle row enabled
+	# Gamepad Y button - Toggle row enabled
+	# JOY_BUTTON_X (index 2) = Y on Nintendo controllers
+	# JOY_BUTTON_Y (index 3) = X on Nintendo / Y on Xbox
+	elif event is InputEventJoypadButton and event.pressed:
+		if event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y:
+			_toggle_row_enabled()
+			SoundManager.play_ui("menu_select")
+			get_viewport().set_input_as_handled()
+
+	# Select button - Toggle autobattle ON/OFF
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
-		_toggle_row_enabled()
+		AutobattleSystem.toggle_autobattle(character_id)
+		_update_status_label()
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# Start/Y - Delete current cell (or rule if on empty)
+	# Start button / Escape - Save and exit
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		_delete_current_cell()
+		_save_script()
+		closed.emit()
+		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# Gamepad Start button - Delete
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
-		_delete_current_cell()
+		_save_script()
+		closed.emit()
+		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
-
-	# Gamepad Y button - Also delete
-	# JOY_BUTTON_X (index 2) = Y on Nintendo controllers
-	# JOY_BUTTON_Y (index 3) = Y on Xbox/PS controllers
-	elif event is InputEventJoypadButton and event.pressed:
-		if event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y:
-			_delete_current_cell()
-			get_viewport().set_input_as_handled()
 
 
 func _edit_current_cell() -> void:
@@ -969,9 +985,16 @@ func _open_action_editor() -> void:
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
-	# Account for empty condition slot
+	# Check if any condition is ALWAYS (affects slot count)
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	# Account for empty condition slot (but not if ALWAYS)
 	var condition_slots = conditions.size()
-	if conditions.size() < MAX_CONDITIONS:
+	if conditions.size() < MAX_CONDITIONS and not has_always:
 		condition_slots += 1
 	var action_idx = cursor_col - condition_slots
 
@@ -983,8 +1006,11 @@ func _open_action_editor() -> void:
 		# Get character-specific abilities
 		var char_abilities = _get_character_abilities()
 
+		# Defer is ONLY allowed as the first action (action_idx == 0)
+		var can_defer = (action_idx == 0)
+
 		if current_type == "ability" and char_abilities.size() > 0:
-			# Cycle through abilities, then to defer
+			# Cycle through abilities
 			var ability_idx = -1
 			for i in range(char_abilities.size()):
 				if char_abilities[i]["id"] == current_ability_id:
@@ -994,11 +1020,15 @@ func _open_action_editor() -> void:
 			if ability_idx >= 0 and ability_idx < char_abilities.size() - 1:
 				# Next ability
 				action["id"] = char_abilities[ability_idx + 1]["id"]
-			else:
-				# Move to defer
+			elif can_defer:
+				# Move to defer (only if first action)
 				action["type"] = "defer"
 				action.erase("id")
 				action.erase("target")
+			else:
+				# Back to attack (can't defer if not first action)
+				action["type"] = "attack"
+				action["target"] = "lowest_hp_enemy"
 		elif current_type == "defer":
 			# Back to attack
 			action["type"] = "attack"
@@ -1009,10 +1039,11 @@ func _open_action_editor() -> void:
 				action["type"] = "ability"
 				action["id"] = char_abilities[0]["id"]
 				action["target"] = "lowest_hp_enemy"
-			else:
-				# No abilities, go to defer
+			elif can_defer:
+				# No abilities, go to defer (only if first action)
 				action["type"] = "defer"
 				action.erase("target")
+			# else: stay on attack (can't cycle to defer if not first)
 		else:
 			# Unknown type, reset to attack
 			action["type"] = "attack"

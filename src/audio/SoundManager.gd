@@ -522,6 +522,8 @@ func play_music(track: String) -> void:
 	match track:
 		"battle":
 			_start_battle_music()
+		"boss":
+			_start_boss_music()
 		"victory":
 			_start_victory_music()
 		_:
@@ -550,11 +552,11 @@ func _start_battle_music() -> void:
 	"""Generate and start looping battle music"""
 	_music_playing = true
 
-	# Generate music buffer (4 bars at 140 BPM)
+	# Generate music buffer (12 bars at 140 BPM - 3 sections of 4 bars each)
 	var sample_rate = 22050
 	var bpm = 140.0
 	var beats_per_bar = 4
-	var bars = 4
+	var bars = 12  # 3x longer with 3 distinct sections
 	var beat_duration = 60.0 / bpm
 	var total_duration = beat_duration * beats_per_bar * bars
 
@@ -585,7 +587,7 @@ func _start_battle_music() -> void:
 
 
 func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
-	"""Generate a catchy 16-bit battle theme - 4 bars looping"""
+	"""Generate a catchy 16-bit battle theme - 12 bars with 3 distinct sections"""
 	var buffer = PackedVector2Array()
 	var samples = int(rate * duration)
 	var beat_duration = 60.0 / bpm
@@ -593,18 +595,20 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 	# Musical notes (frequencies in Hz)
 	# Using A minor scale for dramatic battle feel
 	const NOTE_A3 = 220.0
+	const NOTE_B3 = 246.94
 	const NOTE_C4 = 261.63
 	const NOTE_D4 = 293.66
 	const NOTE_E4 = 329.63
 	const NOTE_F4 = 349.23
 	const NOTE_G4 = 392.0
 	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
 	const NOTE_C5 = 523.25
+	const NOTE_D5 = 587.33
 	const NOTE_E5 = 659.25
 
-	# Melody pattern (16th notes, 64 per 4 bars at 4/4)
-	# Catchy, aggressive battle theme riff
-	var melody_pattern = [
+	# Section A - Main aggressive riff (bars 1-4)
+	var melody_a = [
 		NOTE_A4, 0, NOTE_A4, NOTE_C5, NOTE_A4, 0, NOTE_G4, 0,  # Bar 1
 		NOTE_F4, 0, NOTE_E4, 0, NOTE_F4, NOTE_G4, NOTE_A4, 0,
 		NOTE_A4, 0, NOTE_A4, NOTE_C5, NOTE_E5, 0, NOTE_C5, 0,  # Bar 2
@@ -615,13 +619,53 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 		NOTE_E4, 0, NOTE_D4, 0, NOTE_E4, 0, NOTE_A3, 0,
 	]
 
-	# Bass pattern (quarter notes, 16 per 4 bars)
-	var bass_pattern = [
-		NOTE_A3, NOTE_A3, NOTE_C4, NOTE_C4,  # Bar 1
-		NOTE_D4, NOTE_D4, NOTE_E4, NOTE_E4,  # Bar 2
-		NOTE_F4, NOTE_F4, NOTE_E4, NOTE_E4,  # Bar 3
-		NOTE_D4, NOTE_C4, NOTE_D4, NOTE_E4,  # Bar 4
+	# Section B - Tension build (bars 5-8)
+	var melody_b = [
+		NOTE_E4, 0, NOTE_E4, 0, NOTE_E4, NOTE_F4, NOTE_G4, 0,  # Bar 5
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0,
+		NOTE_D4, 0, NOTE_D4, 0, NOTE_D4, NOTE_E4, NOTE_F4, 0,  # Bar 6
+		NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0,
+		NOTE_C5, 0, NOTE_B4, 0, NOTE_A4, 0, NOTE_G4, 0,  # Bar 7
+		NOTE_F4, NOTE_G4, NOTE_A4, 0, NOTE_B4, NOTE_C5, NOTE_D5, 0,
+		NOTE_E5, 0, NOTE_D5, 0, NOTE_C5, 0, NOTE_B4, NOTE_A4,  # Bar 8
+		NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0,
 	]
+
+	# Section C - Triumphant variation (bars 9-12)
+	var melody_c = [
+		NOTE_A4, NOTE_A4, NOTE_C5, NOTE_C5, NOTE_E5, NOTE_E5, NOTE_C5, 0,  # Bar 9
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_A4, NOTE_C5, NOTE_E5, 0,
+		NOTE_D5, 0, NOTE_C5, 0, NOTE_A4, 0, NOTE_G4, 0,  # Bar 10
+		NOTE_F4, NOTE_G4, NOTE_A4, NOTE_C5, NOTE_A4, 0, NOTE_G4, 0,
+		NOTE_E4, NOTE_E4, NOTE_G4, NOTE_G4, NOTE_A4, NOTE_A4, NOTE_C5, 0,  # Bar 11
+		NOTE_E5, 0, NOTE_D5, 0, NOTE_C5, NOTE_B4, NOTE_A4, 0,
+		NOTE_A4, 0, NOTE_C5, NOTE_E5, NOTE_A4, 0, NOTE_C5, NOTE_E5,  # Bar 12
+		NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4, NOTE_D4, NOTE_C4, NOTE_D4, NOTE_E4,
+	]
+
+	# Full melody (192 16th notes for 12 bars)
+	var melody_pattern = melody_a + melody_b + melody_c
+
+	# Bass patterns for each section (48 quarter notes total)
+	var bass_a = [
+		NOTE_A3, NOTE_A3, NOTE_C4, NOTE_C4,  # Bar 1-2
+		NOTE_D4, NOTE_D4, NOTE_E4, NOTE_E4,
+		NOTE_F4, NOTE_F4, NOTE_E4, NOTE_E4,  # Bar 3-4
+		NOTE_D4, NOTE_C4, NOTE_D4, NOTE_E4,
+	]
+	var bass_b = [
+		NOTE_E4, NOTE_E4, NOTE_D4, NOTE_D4,  # Bar 5-6
+		NOTE_C4, NOTE_C4, NOTE_D4, NOTE_D4,
+		NOTE_A3, NOTE_A3, NOTE_B3, NOTE_B3,  # Bar 7-8
+		NOTE_C4, NOTE_D4, NOTE_E4, NOTE_D4,
+	]
+	var bass_c = [
+		NOTE_A3, NOTE_C4, NOTE_E4, NOTE_C4,  # Bar 9-10
+		NOTE_D4, NOTE_D4, NOTE_C4, NOTE_C4,
+		NOTE_E4, NOTE_E4, NOTE_A3, NOTE_A3,  # Bar 11-12
+		NOTE_C4, NOTE_D4, NOTE_E4, NOTE_A3,
+	]
+	var bass_pattern = bass_a + bass_b + bass_c
 
 	var sixteenth_duration = beat_duration / 4.0
 	var quarter_duration = beat_duration
@@ -629,9 +673,9 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 	for i in range(samples):
 		var t = float(i) / rate  # Time in seconds
 
-		# Which note are we on?
-		var sixteenth_idx = int(t / sixteenth_duration) % 64
-		var quarter_idx = int(t / quarter_duration) % 16
+		# Which note are we on? (wrap around full 12-bar pattern)
+		var sixteenth_idx = int(t / sixteenth_duration) % 192  # 12 bars * 16 sixteenths
+		var quarter_idx = int(t / quarter_duration) % 48  # 12 bars * 4 quarters
 
 		# Time within current note (for envelope)
 		var t_in_sixteenth = fmod(t, sixteenth_duration) / sixteenth_duration
@@ -654,7 +698,6 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 
 		# Drums (noise-based kick and hi-hat)
 		var beat_pos = fmod(t, beat_duration)
-		var half_beat = beat_duration / 2.0
 
 		# Kick on 1 and 3
 		if beat_pos < 0.05:
@@ -750,6 +793,209 @@ func _generate_victory_fanfare(rate: int, duration: float) -> PackedVector2Array
 				sample += _square_wave(chord_t * note) * env * 0.1
 
 		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## Boss Battle Music - Intense, menacing theme
+
+func _start_boss_music() -> void:
+	"""Generate and start looping boss battle music"""
+	_music_playing = true
+
+	# Generate music buffer (16 bars at 150 BPM - faster, more intense)
+	var sample_rate = 22050
+	var bpm = 150.0
+	var beats_per_bar = 4
+	var bars = 16  # Longer boss theme
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * beats_per_bar * bars
+
+	_music_buffer = _generate_boss_music_buffer(sample_rate, total_duration, bpm)
+
+	# Create looping audio stream
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = _music_buffer.size()
+
+	# Convert to 16-bit PCM
+	var data = PackedByteArray()
+	for frame in _music_buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_boss_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate intense boss battle theme - D minor, aggressive"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# Notes in D minor (darker, more menacing)
+	const NOTE_D3 = 146.83
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_Bb4 = 466.16
+	const NOTE_C5 = 523.25
+	const NOTE_D5 = 587.33
+
+	# Section A - Ominous intro (bars 1-4)
+	var melody_a = [
+		NOTE_D4, 0, 0, 0, NOTE_D4, 0, NOTE_E4, NOTE_F4,  # Bar 1
+		NOTE_E4, 0, NOTE_D4, 0, 0, 0, 0, 0,
+		NOTE_A4, 0, 0, 0, NOTE_A4, 0, NOTE_Bb4, NOTE_A4,  # Bar 2
+		NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0,
+		NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_C4, 0,  # Bar 3
+		NOTE_D4, 0, NOTE_E4, NOTE_F4, NOTE_G4, 0, NOTE_A4, 0,
+		NOTE_Bb4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, NOTE_E4,  # Bar 4
+		NOTE_D4, 0, 0, 0, NOTE_D4, NOTE_E4, NOTE_F4, NOTE_G4,
+	]
+
+	# Section B - Aggressive attack (bars 5-8)
+	var melody_b = [
+		NOTE_A4, NOTE_A4, NOTE_A4, 0, NOTE_Bb4, NOTE_A4, NOTE_G4, 0,  # Bar 5
+		NOTE_F4, NOTE_F4, NOTE_E4, NOTE_D4, NOTE_E4, NOTE_F4, NOTE_G4, NOTE_A4,
+		NOTE_D5, 0, NOTE_C5, 0, NOTE_Bb4, 0, NOTE_A4, 0,  # Bar 6
+		NOTE_G4, NOTE_F4, NOTE_E4, NOTE_D4, NOTE_E4, 0, NOTE_F4, 0,
+		NOTE_G4, NOTE_G4, NOTE_A4, NOTE_Bb4, NOTE_A4, 0, NOTE_G4, 0,  # Bar 7
+		NOTE_F4, NOTE_E4, NOTE_D4, 0, NOTE_E4, NOTE_F4, NOTE_G4, 0,
+		NOTE_A4, 0, NOTE_D5, 0, NOTE_A4, 0, NOTE_G4, NOTE_F4,  # Bar 8
+		NOTE_E4, NOTE_D4, NOTE_C4, NOTE_D4, NOTE_E4, NOTE_F4, NOTE_G4, NOTE_A4,
+	]
+
+	# Section C - Dark descent (bars 9-12)
+	var melody_c = [
+		NOTE_D5, 0, NOTE_D5, 0, NOTE_C5, 0, NOTE_Bb4, 0,  # Bar 9
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0,
+		NOTE_D4, 0, NOTE_E4, 0, NOTE_F4, 0, NOTE_G4, 0,  # Bar 10
+		NOTE_A4, 0, NOTE_Bb4, 0, NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4,
+		NOTE_D4, NOTE_D4, NOTE_F4, NOTE_F4, NOTE_A4, NOTE_A4, NOTE_D5, 0,  # Bar 11
+		NOTE_C5, NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4, NOTE_D4, 0,
+		NOTE_A4, 0, NOTE_A4, 0, NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4,  # Bar 12
+		NOTE_E4, NOTE_F4, NOTE_G4, NOTE_A4, NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4,
+	]
+
+	# Section D - Climax (bars 13-16)
+	var melody_d = [
+		NOTE_D5, NOTE_D5, NOTE_D5, 0, NOTE_C5, NOTE_C5, NOTE_C5, 0,  # Bar 13
+		NOTE_Bb4, NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4, NOTE_D4, 0,
+		NOTE_A4, NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4, NOTE_F4, NOTE_G4,  # Bar 14
+		NOTE_A4, 0, NOTE_D5, 0, NOTE_A4, 0, NOTE_F4, 0,
+		NOTE_D4, NOTE_F4, NOTE_A4, NOTE_D5, NOTE_A4, NOTE_F4, NOTE_D4, 0,  # Bar 15
+		NOTE_E4, NOTE_G4, NOTE_Bb4, NOTE_D5, NOTE_Bb4, NOTE_G4, NOTE_E4, 0,
+		NOTE_D5, 0, NOTE_C5, 0, NOTE_Bb4, 0, NOTE_A4, 0,  # Bar 16
+		NOTE_G4, NOTE_F4, NOTE_E4, NOTE_D4, NOTE_D4, 0, 0, 0,
+	]
+
+	var melody_pattern = melody_a + melody_b + melody_c + melody_d
+
+	# Bass - heavy, pounding (64 quarter notes)
+	var bass_pattern = [
+		# Section A
+		NOTE_D3, NOTE_D3, NOTE_D3, NOTE_D3,
+		NOTE_A3, NOTE_A3, NOTE_G3, NOTE_F3,
+		NOTE_D3, NOTE_D3, NOTE_F3, NOTE_G3,
+		NOTE_Bb3, NOTE_A3, NOTE_G3, NOTE_D3,
+		# Section B
+		NOTE_D3, NOTE_D3, NOTE_F3, NOTE_F3,
+		NOTE_G3, NOTE_G3, NOTE_A3, NOTE_A3,
+		NOTE_Bb3, NOTE_Bb3, NOTE_A3, NOTE_G3,
+		NOTE_F3, NOTE_E3, NOTE_D3, NOTE_D3,
+		# Section C
+		NOTE_D3, NOTE_D3, NOTE_C4, NOTE_Bb3,
+		NOTE_A3, NOTE_G3, NOTE_F3, NOTE_E3,
+		NOTE_D3, NOTE_F3, NOTE_A3, NOTE_D3,
+		NOTE_G3, NOTE_A3, NOTE_Bb3, NOTE_A3,
+		# Section D
+		NOTE_D3, NOTE_D3, NOTE_D3, NOTE_D3,
+		NOTE_F3, NOTE_F3, NOTE_A3, NOTE_A3,
+		NOTE_D3, NOTE_E3, NOTE_F3, NOTE_G3,
+		NOTE_A3, NOTE_Bb3, NOTE_A3, NOTE_D3,
+	]
+
+	var sixteenth_duration = beat_duration / 4.0
+	var quarter_duration = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+
+		# 256 sixteenths for 16 bars, 64 quarters
+		var sixteenth_idx = int(t / sixteenth_duration) % 256
+		var quarter_idx = int(t / quarter_duration) % 64
+
+		var t_in_sixteenth = fmod(t, sixteenth_duration) / sixteenth_duration
+		var t_in_quarter = fmod(t, quarter_duration) / quarter_duration
+
+		var sample = 0.0
+
+		# Melody - more aggressive square wave
+		var melody_freq = melody_pattern[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.4)
+			var melody_wave = _square_wave(t * melody_freq) * 0.28
+			# Add slight detune for thickness
+			melody_wave += _square_wave(t * melody_freq * 1.003) * 0.12
+			sample += melody_wave * melody_env
+
+		# Bass - heavy triangle + sub
+		var bass_freq = bass_pattern[quarter_idx] * 0.5
+		var bass_env = 0.9 + 0.1 * sin(t_in_quarter * PI)
+		var bass_wave = _triangle_wave(t * bass_freq) * 0.35
+		bass_wave += sin(t * bass_freq * 0.5 * TAU) * 0.15  # Sub bass
+		sample += bass_wave * bass_env
+
+		# Drums - heavier, more aggressive
+		var beat_pos = fmod(t, beat_duration)
+
+		# Double kick pattern
+		var kick_pattern = beat_pos < 0.05 or (beat_pos > beat_duration * 0.5 and beat_pos < beat_duration * 0.5 + 0.04)
+		if kick_pattern:
+			var kick_t = beat_pos if beat_pos < 0.05 else beat_pos - beat_duration * 0.5
+			var kick_env = pow(1.0 - kick_t / 0.05, 2)
+			var kick = sin(kick_t * 60 * TAU) * kick_env * 0.5
+			kick += sin(kick_t * 30 * TAU) * kick_env * 0.3  # Sub kick
+			sample += kick
+
+		# Snare on 2 and 4 with extra punch
+		var beat_in_bar = int(t / beat_duration) % 4
+		if beat_in_bar in [1, 3] and beat_pos < 0.1:
+			var snare_env = pow(1.0 - beat_pos / 0.1, 1.2)
+			var snare = randf_range(-0.4, 0.4) * snare_env
+			snare += sin(beat_pos * 200 * TAU) * snare_env * 0.2
+			sample += snare
+
+		# Faster hi-hats (16th notes)
+		var sixteenth_pos = fmod(t, beat_duration / 4.0)
+		if sixteenth_pos < 0.015:
+			var hat_env = pow(1.0 - sixteenth_pos / 0.015, 3)
+			var hat = randf_range(-0.12, 0.12) * hat_env
+			sample += hat
+
+		# Heavier soft clip
+		sample = clamp(sample * 1.4, -0.95, 0.95)
+
 		buffer.append(Vector2(sample, sample))
 
 	return buffer
