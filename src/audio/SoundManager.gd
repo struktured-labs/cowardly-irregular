@@ -524,6 +524,8 @@ func play_music(track: String) -> void:
 			_start_battle_music()
 		"boss":
 			_start_boss_music()
+		"danger":
+			_start_danger_music()
 		"victory":
 			_start_victory_music()
 		_:
@@ -995,6 +997,169 @@ func _generate_boss_music_buffer(rate: int, duration: float, bpm: float) -> Pack
 
 		# Heavier soft clip
 		sample = clamp(sample * 1.4, -0.95, 0.95)
+
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## Danger Music - Dark, urgent theme when player is about to die
+
+func _start_danger_music() -> void:
+	"""Generate and start looping danger/critical HP music"""
+	_music_playing = true
+
+	# Generate music buffer (8 bars at 160 BPM - urgent, dark)
+	var sample_rate = 22050
+	var bpm = 160.0
+	var beats_per_bar = 4
+	var bars = 8
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * beats_per_bar * bars
+
+	_music_buffer = _generate_danger_music_buffer(sample_rate, total_duration, bpm)
+
+	# Create looping audio stream
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = _music_buffer.size()
+
+	var data = PackedByteArray()
+	for frame in _music_buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_danger_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate dark, urgent danger theme - chromatic, dissonant, pulsing"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# Dark chromatic notes (E minor with chromatic tension)
+	const NOTE_E2 = 82.41
+	const NOTE_F2 = 87.31
+	const NOTE_G2 = 98.0
+	const NOTE_A2 = 110.0
+	const NOTE_Bb2 = 116.54
+	const NOTE_B2 = 123.47
+	const NOTE_C3 = 130.81
+	const NOTE_D3 = 146.83
+	const NOTE_Eb3 = 155.56
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_Eb4 = 311.13
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+
+	# Melody - urgent, chromatic, anxious (128 sixteenths for 8 bars)
+	var melody = [
+		# Bar 1-2: Pulsing urgency
+		NOTE_E4, 0, NOTE_E4, 0, NOTE_Eb4, 0, NOTE_E4, 0,
+		NOTE_F4, 0, NOTE_E4, 0, NOTE_Eb4, 0, NOTE_D4, 0,
+		NOTE_E4, 0, NOTE_E4, 0, NOTE_F4, 0, NOTE_E4, 0,
+		NOTE_Eb4, NOTE_D4, NOTE_Eb4, NOTE_E4, NOTE_F4, NOTE_E4, NOTE_Eb4, NOTE_D4,
+		# Bar 3-4: Rising tension
+		NOTE_B3, 0, NOTE_C4, 0, NOTE_D4, 0, NOTE_Eb4, 0,
+		NOTE_E4, 0, NOTE_F4, 0, NOTE_E4, NOTE_Eb4, NOTE_D4, 0,
+		NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_Eb4, 0,
+		NOTE_D4, NOTE_Eb4, NOTE_E4, NOTE_F4, NOTE_E4, NOTE_Eb4, NOTE_D4, NOTE_C4,
+		# Bar 5-6: Dark descent
+		NOTE_E4, NOTE_E4, NOTE_Eb4, NOTE_Eb4, NOTE_D4, NOTE_D4, NOTE_C4, 0,
+		NOTE_B3, 0, NOTE_C4, 0, NOTE_D4, 0, NOTE_Eb4, 0,
+		NOTE_E4, 0, NOTE_E4, 0, NOTE_E4, NOTE_F4, NOTE_E4, NOTE_Eb4,
+		NOTE_D4, 0, NOTE_C4, 0, NOTE_B3, 0, NOTE_C4, NOTE_D4,
+		# Bar 7-8: Climax pulse
+		NOTE_E4, NOTE_E4, NOTE_E4, 0, NOTE_F4, NOTE_E4, NOTE_Eb4, 0,
+		NOTE_E4, NOTE_E4, NOTE_E4, 0, NOTE_G4, NOTE_F4, NOTE_E4, 0,
+		NOTE_E4, NOTE_Eb4, NOTE_D4, NOTE_Eb4, NOTE_E4, NOTE_F4, NOTE_E4, NOTE_Eb4,
+		NOTE_D4, NOTE_C4, NOTE_B3, NOTE_C4, NOTE_D4, NOTE_Eb4, NOTE_E4, 0,
+	]
+
+	# Bass - ominous pedal tone with chromatic movement (32 quarters)
+	var bass = [
+		NOTE_E2, NOTE_E2, NOTE_E2, NOTE_F2,
+		NOTE_E2, NOTE_E2, NOTE_Eb3, NOTE_D3,
+		NOTE_E2, NOTE_E2, NOTE_G2, NOTE_A2,
+		NOTE_Bb2, NOTE_A2, NOTE_G2, NOTE_E2,
+		NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2,
+		NOTE_F2, NOTE_E2, NOTE_D3, NOTE_C3,
+		NOTE_E2, NOTE_E2, NOTE_E2, NOTE_F2,
+		NOTE_G2, NOTE_A2, NOTE_B2, NOTE_E2,
+	]
+
+	var sixteenth_duration = beat_duration / 4.0
+	var quarter_duration = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+
+		var sixteenth_idx = int(t / sixteenth_duration) % 128
+		var quarter_idx = int(t / quarter_duration) % 32
+
+		var t_in_sixteenth = fmod(t, sixteenth_duration) / sixteenth_duration
+		var t_in_quarter = fmod(t, quarter_duration) / quarter_duration
+
+		var sample = 0.0
+
+		# Melody - harsh square wave with tremolo
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.5)
+			# Add tremolo for urgency
+			var tremolo = 0.7 + 0.3 * sin(t * 20 * TAU)
+			var melody_wave = _square_wave(t * melody_freq) * 0.22 * tremolo
+			# Detune for unsettling feel
+			melody_wave += _square_wave(t * melody_freq * 1.01) * 0.08
+			sample += melody_wave * melody_env
+
+		# Bass - deep, rumbling
+		var bass_freq = bass[quarter_idx]
+		var bass_env = 0.85 + 0.15 * sin(t_in_quarter * PI)
+		var bass_wave = _triangle_wave(t * bass_freq) * 0.4
+		bass_wave += sin(t * bass_freq * 0.5 * TAU) * 0.25  # Sub bass
+		sample += bass_wave * bass_env
+
+		# Heartbeat-like kick - on every beat, heavy
+		var beat_pos = fmod(t, beat_duration)
+		if beat_pos < 0.06:
+			var kick_env = pow(1.0 - beat_pos / 0.06, 1.5)
+			var kick = sin(beat_pos * 50 * TAU) * kick_env * 0.6
+			kick += sin(beat_pos * 25 * TAU) * kick_env * 0.4
+			sample += kick
+
+		# Anxious hi-hat on every 8th
+		var eighth_pos = fmod(t, beat_duration / 2.0)
+		if eighth_pos < 0.012:
+			var hat_env = pow(1.0 - eighth_pos / 0.012, 3)
+			var hat = randf_range(-0.18, 0.18) * hat_env
+			sample += hat
+
+		# Noise layer for tension
+		var noise_level = 0.03 + 0.02 * sin(t * 2 * TAU)
+		sample += randf_range(-noise_level, noise_level)
+
+		# Hard clip for intensity
+		sample = clamp(sample * 1.5, -0.98, 0.98)
 
 		buffer.append(Vector2(sample, sample))
 

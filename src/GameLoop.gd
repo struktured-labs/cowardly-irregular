@@ -56,14 +56,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle_all_autobattle()
 		get_viewport().set_input_as_handled()
 
-	# Gamepad L+R together = Open autobattle editor
-	if event is InputEventJoypadButton and event.pressed:
-		if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
-			# Check if both L and R are held
-			var joy_id = event.device
-			if Input.is_joy_button_pressed(joy_id, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(joy_id, JOY_BUTTON_RIGHT_SHOULDER):
-				_toggle_autobattle_editor()
-				get_viewport().set_input_as_handled()
+	# Start button = Open autobattle editor for current deciding player
+	# Only when editor is not already open (editor handles its own Start to close)
+	if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
+		if event.is_action_pressed("ui_menu"):
+			_toggle_autobattle_editor()
+			get_viewport().set_input_as_handled()
 
 
 func _toggle_autobattle_editor() -> void:
@@ -105,7 +103,7 @@ func _toggle_autobattle_editor() -> void:
 	add_child(_autobattle_editor)
 	_autobattle_editor.setup(char_id, char_name, combatant)
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
-	print("Autobattle editor opened for %s (F5/B to close)" % char_name)
+	print("Autobattle editor opened for %s (Start to save & exit)" % char_name)
 
 
 func _set_battle_menu_visible(visible: bool) -> void:

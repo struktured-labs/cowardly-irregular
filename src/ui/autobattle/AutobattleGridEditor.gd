@@ -196,7 +196,7 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "L:Add OR Row  R:Add Action  Y:Toggle Row  Select:Auto ON/OFF"
+	help_label2.text = "L:Add Row  R:Add Action  Y:Toggle Row  Select:Auto ON/OFF"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))

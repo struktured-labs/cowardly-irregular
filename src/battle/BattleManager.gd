@@ -1061,9 +1061,13 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 	else:
 		resolved_target = _resolve_target(combatant, "lowest_hp_enemy", allies, enemies)
 
+	# Check if targets are already provided as Combatant objects
+	var action_targets = action_data.get("targets", [])
+	var has_direct_targets = action_targets.size() > 0 and action_targets[0] is Combatant
+
 	match action_type:
 		"attack":
-			var target = resolved_target
+			var target = action_targets[0] if has_direct_targets else resolved_target
 			if not target:
 				return {}
 			return {
@@ -1074,33 +1078,40 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			}
 
 		"ability":
-			var ability_id = action_data.get("id", "")
+			# AutobattleSystem uses "ability_id", also check "id" for backwards compat
+			var ability_id = action_data.get("ability_id", action_data.get("id", ""))
 			if ability_id.is_empty():
+				print("[AUTOBATTLE] No ability_id found in action: %s" % action_data)
 				return {}
 			var ability = JobSystem.get_ability(ability_id)
 			if ability.is_empty():
+				print("[AUTOBATTLE] Unknown ability: %s" % ability_id)
 				return {}
 			if not JobSystem.can_use_ability(combatant, ability_id):
+				print("[AUTOBATTLE] Cannot use ability: %s (MP: %d)" % [ability_id, combatant.current_mp])
 				return {}
+			var targets_to_use = action_targets if has_direct_targets else ([resolved_target] if resolved_target else [])
 			return {
 				"type": "ability",
 				"combatant": combatant,
 				"ability_id": ability_id,
-				"targets": [resolved_target] if resolved_target else [],
+				"targets": targets_to_use,
 				"speed": _compute_action_speed(combatant, "ability", ability)
 			}
 
 		"item":
-			var item_id = action_data.get("id", "")
+			# Check both "item_id" and "id" for backwards compat
+			var item_id = action_data.get("item_id", action_data.get("id", ""))
 			if item_id.is_empty():
 				return {}
 			if not combatant.has_item(item_id):
 				return {}
+			var targets_to_use = action_targets if has_direct_targets else ([resolved_target] if resolved_target else [])
 			return {
 				"type": "item",
 				"combatant": combatant,
 				"item_id": item_id,
-				"targets": [resolved_target] if resolved_target else [],
+				"targets": targets_to_use,
 				"speed": _compute_action_speed(combatant, "item")
 			}
 

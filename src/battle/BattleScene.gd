@@ -95,6 +95,11 @@ var _speed_indicator: RichTextLabel = null
 ## Autobattle toggle UI
 var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 
+## Danger music state
+var _is_danger_music: bool = false
+var _base_music_track: String = "battle"  # "battle" or "boss"
+const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -1598,9 +1603,12 @@ func _on_battle_started() -> void:
 	# Start battle music - use boss music if fighting a miniboss
 	var is_boss_fight = _check_for_boss()
 	if is_boss_fight:
+		_base_music_track = "boss"
 		SoundManager.play_music("boss")
 	else:
+		_base_music_track = "battle"
 		SoundManager.play_music("battle")
+	_is_danger_music = false
 
 
 func _check_for_boss() -> bool:
@@ -1644,9 +1652,12 @@ func _on_battle_ended(victory: bool) -> void:
 
 
 func _process(delta: float) -> void:
-	"""Handle post-battle input and hold-A detection"""
+	"""Handle post-battle input, hold-A detection, and danger music"""
 	# Handle hold-A for autobattle editor
 	_process_hold_a(delta)
+
+	# Check for danger music (player about to die)
+	_check_danger_music()
 
 	if _battle_ended and not managed_by_game_loop:
 		if Input.is_action_just_pressed("ui_accept"):
@@ -2694,3 +2705,28 @@ func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: boo
 	# Offset slightly upward from sprite center
 	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
 	add_child(dmg_num)
+
+
+func _check_danger_music() -> void:
+	"""Switch to danger music if any player is critically low HP"""
+	if _battle_ended:
+		return
+
+	# Check if any alive party member is below danger threshold
+	var any_in_danger = false
+	for member in party_members:
+		if member and is_instance_valid(member) and member.is_alive:
+			var hp_percent = float(member.current_hp) / float(member.max_hp)
+			if hp_percent < DANGER_HP_THRESHOLD:
+				any_in_danger = true
+				break
+
+	# Switch music if danger state changed
+	if any_in_danger and not _is_danger_music:
+		_is_danger_music = true
+		SoundManager.play_music("danger")
+		print("[MUSIC] Switched to DANGER music - player critically low!")
+	elif not any_in_danger and _is_danger_music:
+		_is_danger_music = false
+		SoundManager.play_music(_base_music_track)
+		print("[MUSIC] Switched back to %s music - danger passed" % _base_music_track)

@@ -136,18 +136,28 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 		return [_get_default_action(combatant)]
 
 	# Evaluate rules in order (first match wins)
+	var rule_idx = 0
 	for rule in script["rules"]:
+		var enabled = rule.get("enabled", true)
+		print("[AUTOBATTLE DEBUG] %s rule %d: enabled=%s" % [character_id, rule_idx, enabled])
 		if _evaluate_grid_rule(combatant, rule):
 			var actions = _rule_to_actions(combatant, rule)
+			print("[AUTOBATTLE DEBUG] %s matched rule %d, actions: %s" % [character_id, rule_idx, actions])
 			script_executed.emit(combatant, rule, actions)
 			return actions
+		rule_idx += 1
 
 	# No rule matched, use default
+	print("[AUTOBATTLE DEBUG] %s no rule matched, using default" % character_id)
 	return [_get_default_action(combatant)]
 
 
 func _evaluate_grid_rule(combatant: Combatant, rule: Dictionary) -> bool:
 	"""Evaluate a grid-format rule (AND-chain of conditions)"""
+	# Skip disabled rules
+	if not rule.get("enabled", true):
+		return false
+
 	if not rule.has("conditions") or rule["conditions"].size() == 0:
 		return true  # No conditions = always match
 
