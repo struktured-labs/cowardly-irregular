@@ -8,6 +8,11 @@ class_name SoundManagerClass
 var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
 var _ability_player: AudioStreamPlayer
+var _music_player: AudioStreamPlayer
+
+# Music state
+var _music_playing: bool = false
+var _current_music: String = ""
 
 # Sound definitions - procedural parameters
 const SOUNDS = {
@@ -70,6 +75,12 @@ func _setup_audio_players() -> void:
 	_ability_player.volume_db = -4.0
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
+
+	_music_player = AudioStreamPlayer.new()
+	_music_player.name = "MusicPlayer"
+	_music_player.volume_db = -12.0  # Music quieter than SFX
+	_music_player.bus = "Master"
+	add_child(_music_player)
 
 
 func _setup_default_ability_sounds() -> void:
@@ -491,3 +502,267 @@ func _generate_heal(playback: AudioStreamGeneratorPlayback, samples: int, freq: 
 		var sparkle = sin(t * f * 2 * TAU) * 0.2 + sin(t * f * 3 * TAU) * 0.1
 		var sample = (tone + sparkle) * envelope
 		playback.push_frame(Vector2(sample, sample) * 0.3)
+
+
+## ============================================================================
+## MUSIC SYSTEM
+## ============================================================================
+## Stub implementation - generates procedural 16-bit style battle music
+## Replace _generate_battle_music() internals with file loading when real
+## music assets are available (e.g., load("res://assets/audio/battle.ogg"))
+
+func play_music(track: String) -> void:
+	"""Play a music track (currently only 'battle' is implemented)"""
+	if _current_music == track and _music_playing:
+		return  # Already playing
+
+	stop_music()
+	_current_music = track
+
+	match track:
+		"battle":
+			_start_battle_music()
+		"victory":
+			_start_victory_music()
+		_:
+			push_warning("Unknown music track: %s" % track)
+
+
+func stop_music() -> void:
+	"""Stop currently playing music"""
+	_music_playing = false
+	_current_music = ""
+	if _music_player:
+		_music_player.stop()
+
+
+func is_music_playing() -> bool:
+	return _music_playing
+
+
+## Battle Music - Procedural 16-bit Style Loop
+## This is a STUB - replace with actual music file when available
+
+var _music_timer: float = 0.0
+var _music_buffer: PackedVector2Array = PackedVector2Array()
+
+func _start_battle_music() -> void:
+	"""Generate and start looping battle music"""
+	_music_playing = true
+
+	# Generate music buffer (4 bars at 140 BPM)
+	var sample_rate = 22050
+	var bpm = 140.0
+	var beats_per_bar = 4
+	var bars = 4
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * beats_per_bar * bars
+
+	_music_buffer = _generate_battle_music_buffer(sample_rate, total_duration, bpm)
+
+	# Create looping audio stream
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = _music_buffer.size()
+
+	# Convert to 16-bit PCM
+	var data = PackedByteArray()
+	for frame in _music_buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate a catchy 16-bit battle theme - 4 bars looping"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# Musical notes (frequencies in Hz)
+	# Using A minor scale for dramatic battle feel
+	const NOTE_A3 = 220.0
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_C5 = 523.25
+	const NOTE_E5 = 659.25
+
+	# Melody pattern (16th notes, 64 per 4 bars at 4/4)
+	# Catchy, aggressive battle theme riff
+	var melody_pattern = [
+		NOTE_A4, 0, NOTE_A4, NOTE_C5, NOTE_A4, 0, NOTE_G4, 0,  # Bar 1
+		NOTE_F4, 0, NOTE_E4, 0, NOTE_F4, NOTE_G4, NOTE_A4, 0,
+		NOTE_A4, 0, NOTE_A4, NOTE_C5, NOTE_E5, 0, NOTE_C5, 0,  # Bar 2
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, NOTE_E4, NOTE_D4, 0,
+		NOTE_E4, 0, NOTE_E4, NOTE_G4, NOTE_A4, 0, NOTE_G4, 0,  # Bar 3
+		NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, NOTE_E4, NOTE_F4, 0,
+		NOTE_A4, 0, NOTE_C5, 0, NOTE_A4, 0, NOTE_G4, NOTE_F4,  # Bar 4
+		NOTE_E4, 0, NOTE_D4, 0, NOTE_E4, 0, NOTE_A3, 0,
+	]
+
+	# Bass pattern (quarter notes, 16 per 4 bars)
+	var bass_pattern = [
+		NOTE_A3, NOTE_A3, NOTE_C4, NOTE_C4,  # Bar 1
+		NOTE_D4, NOTE_D4, NOTE_E4, NOTE_E4,  # Bar 2
+		NOTE_F4, NOTE_F4, NOTE_E4, NOTE_E4,  # Bar 3
+		NOTE_D4, NOTE_C4, NOTE_D4, NOTE_E4,  # Bar 4
+	]
+
+	var sixteenth_duration = beat_duration / 4.0
+	var quarter_duration = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate  # Time in seconds
+
+		# Which note are we on?
+		var sixteenth_idx = int(t / sixteenth_duration) % 64
+		var quarter_idx = int(t / quarter_duration) % 16
+
+		# Time within current note (for envelope)
+		var t_in_sixteenth = fmod(t, sixteenth_duration) / sixteenth_duration
+		var t_in_quarter = fmod(t, quarter_duration) / quarter_duration
+
+		var sample = 0.0
+
+		# Melody voice (square wave with envelope)
+		var melody_freq = melody_pattern[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.3)  # Quick decay
+			var melody_wave = _square_wave(t * melody_freq) * 0.25
+			sample += melody_wave * melody_env
+
+		# Bass voice (triangle wave, sustained)
+		var bass_freq = bass_pattern[quarter_idx] * 0.5  # Octave down
+		var bass_env = 0.8 + 0.2 * sin(t_in_quarter * PI)  # Slight pulse
+		var bass_wave = _triangle_wave(t * bass_freq) * 0.3
+		sample += bass_wave * bass_env
+
+		# Drums (noise-based kick and hi-hat)
+		var beat_pos = fmod(t, beat_duration)
+		var half_beat = beat_duration / 2.0
+
+		# Kick on 1 and 3
+		if beat_pos < 0.05:
+			var kick_env = pow(1.0 - beat_pos / 0.05, 2)
+			var kick = sin(beat_pos * 80 * TAU) * kick_env * 0.4
+			sample += kick
+
+		# Snare on 2 and 4
+		var beat_in_bar = int(t / beat_duration) % 4
+		if beat_in_bar in [1, 3] and beat_pos < 0.08:
+			var snare_env = pow(1.0 - beat_pos / 0.08, 1.5)
+			var snare = randf_range(-0.3, 0.3) * snare_env
+			sample += snare
+
+		# Hi-hat on off-beats (8th notes)
+		var eighth_pos = fmod(t, beat_duration / 2.0)
+		if eighth_pos < 0.02:
+			var hat_env = pow(1.0 - eighth_pos / 0.02, 3)
+			var hat = randf_range(-0.15, 0.15) * hat_env
+			sample += hat
+
+		# Soft clip for warmth
+		sample = clamp(sample * 1.2, -0.9, 0.9)
+
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _start_victory_music() -> void:
+	"""Play a short victory fanfare (non-looping)"""
+	_music_playing = true
+
+	var sample_rate = 22050
+	var duration = 2.0  # 2 second fanfare
+
+	var buffer = _generate_victory_fanfare(sample_rate, duration)
+
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_DISABLED
+
+	var data = PackedByteArray()
+	for frame in buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_victory_fanfare(rate: int, duration: float) -> PackedVector2Array:
+	"""Generate classic JRPG victory fanfare"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+
+	# Classic victory: C-E-G-C (rising arpeggio) then chord
+	const NOTE_C4 = 261.63
+	const NOTE_E4 = 329.63
+	const NOTE_G4 = 392.0
+	const NOTE_C5 = 523.25
+
+	var note_times = [0.0, 0.15, 0.30, 0.45]  # Arpeggio timing
+	var chord_start = 0.6
+	var notes = [NOTE_C4, NOTE_E4, NOTE_G4, NOTE_C5]
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sample = 0.0
+
+		# Arpeggio phase
+		if t < chord_start:
+			for j in range(4):
+				if t >= note_times[j]:
+					var note_t = t - note_times[j]
+					var env = pow(max(0, 1.0 - note_t / 0.5), 0.5)
+					sample += _square_wave(note_t * notes[j]) * env * 0.2
+					sample += _triangle_wave(note_t * notes[j] * 0.5) * env * 0.15
+
+		# Sustained chord phase
+		else:
+			var chord_t = t - chord_start
+			var env = pow(max(0, 1.0 - chord_t / (duration - chord_start)), 0.3)
+			for note in notes:
+				sample += _triangle_wave(chord_t * note) * env * 0.15
+				sample += _square_wave(chord_t * note) * env * 0.1
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## Wave generators for music
+
+func _square_wave(phase: float) -> float:
+	"""Generate square wave (classic 8-bit sound)"""
+	return 1.0 if fmod(phase, 1.0) < 0.5 else -1.0
+
+
+func _triangle_wave(phase: float) -> float:
+	"""Generate triangle wave (softer 8-bit sound)"""
+	var p = fmod(phase, 1.0)
+	return 4.0 * abs(p - 0.5) - 1.0

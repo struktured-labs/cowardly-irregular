@@ -942,6 +942,14 @@ func toggle_autobattle(enabled: bool) -> void:
 	print("Autobattle %s" % ("enabled" if enabled else "disabled"))
 
 
+func execute_autobattle_for_current() -> void:
+	"""Execute autobattle for the current selecting combatant (called from UI)"""
+	if current_state != BattleState.PLAYER_SELECTING or not current_combatant:
+		return
+	# Process using AI selection which handles autobattle
+	_process_ai_selection(current_combatant)
+
+
 ## Per-character autobattle helpers
 func _get_character_id(combatant: Combatant) -> String:
 	"""Get character ID for autobattle system (lowercase, underscore-separated)"""

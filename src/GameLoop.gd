@@ -80,15 +80,18 @@ func _toggle_autobattle_editor() -> void:
 	_set_battle_menu_visible(false)
 
 	# During battle, open for currently selecting player
+	var combatant: Combatant = null
 	var char_id = "hero"
 	var char_name = "Hero"
 
 	if BattleManager and BattleManager.is_selecting() and BattleManager.current_combatant:
 		var current = BattleManager.current_combatant
 		if current in BattleManager.player_party:
+			combatant = current
 			char_id = current.combatant_name.to_lower().replace(" ", "_")
 			char_name = current.combatant_name
 	elif party.size() > 0:
+		combatant = party[0]
 		char_id = party[0].combatant_name.to_lower().replace(" ", "_")
 		char_name = party[0].combatant_name
 
@@ -96,7 +99,7 @@ func _toggle_autobattle_editor() -> void:
 	_autobattle_editor = AutobattleGridEditorClass.new()
 	_autobattle_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_autobattle_editor)
-	_autobattle_editor.setup(char_id, char_name)
+	_autobattle_editor.setup(char_id, char_name, combatant)
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
 	print("Autobattle editor opened for %s (F5/B to close)" % char_name)
 

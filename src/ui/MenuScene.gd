@@ -1143,10 +1143,12 @@ func _show_autobattle_view() -> void:
 		var script = AutobattleSystem.get_character_script(char_id)
 		var script_name = script.get("name", "Default")
 		var enabled = AutobattleSystem.is_autobattle_enabled(char_id)
-		var status = "[ON]" if enabled else "[OFF]"
-		var status_color = "lime" if enabled else "gray"
+		var status = "● ON" if enabled else "○ OFF"
 
-		btn.text = "%s - %s [color=%s]%s[/color]" % [member.combatant_name, script_name, status_color, status]
+		btn.text = "%s - %s %s" % [member.combatant_name, script_name, status]
+		# Color the button based on autobattle status
+		if enabled:
+			btn.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 		btn.pressed.connect(_on_autobattle_member_pressed.bind(i))
 		row.add_child(btn)
 		buttons.append(btn)

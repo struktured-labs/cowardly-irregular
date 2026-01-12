@@ -158,24 +158,10 @@ func _ready() -> void:
 
 
 func _create_autobattle_toggle() -> void:
-	"""Create autobattle toggle checkbox and per-character indicator"""
-	var action_menu = $UI/ActionMenuPanel/MarginContainer/VBoxContainer
-
-	# Add separator
-	var separator = HSeparator.new()
-	action_menu.add_child(separator)
-
-	# Add autobattle checkbox (legacy global toggle)
-	var autobattle_check = CheckBox.new()
-	autobattle_check.name = "AutobattleToggle"
-	autobattle_check.text = "Autobattle (Aggressive)"
-	autobattle_check.toggled.connect(_on_autobattle_toggled)
-	action_menu.add_child(autobattle_check)
-
-	# Create per-character autobattle indicator UI (top-right corner)
-	_autobattle_toggle_ui = AutobattleToggleUIClass.new()
-	_autobattle_toggle_ui.name = "AutobattleToggleUI"
-	$UI.add_child(_autobattle_toggle_ui)
+	"""Setup autobattle indicators - shown inline in party status panel"""
+	# Removed overlapping UI - autobattle indicators now shown next to character names
+	# The "Auto" command in battle menu enables autobattle for individual characters
+	pass
 
 
 func _create_speed_indicator() -> void:
@@ -863,11 +849,15 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
-	# Name label
+	# Name label with autobattle indicator
 	var name_label = Label.new()
 	name_label.name = "Name"
 	var job_name = member.job.get("name", "None") if member.job else "None"
-	name_label.text = "%s (%s)" % [member.combatant_name, job_name]
+	var char_id = member.combatant_name.to_lower().replace(" ", "_")
+	var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
+	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
+	if auto_indicator != "":
+		name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 	box.add_child(name_label)
 
 	# HP bar
@@ -927,12 +917,19 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 	if not is_instance_valid(box):
 		return
 
-	# Update name
+	# Update name with autobattle indicator
 	var name_label = box.get_node_or_null("Name")
 	if name_label:
 		var job_name = member.job.get("name", "None") if member.job else "None"
 		var level_text = " Lv.%d" % member.job_level if member.job_level > 1 else ""
-		name_label.text = "%s (%s%s)" % [member.combatant_name, job_name, level_text]
+		var char_id = member.combatant_name.to_lower().replace(" ", "_")
+		var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
+		name_label.text = "%s (%s%s)%s" % [member.combatant_name, job_name, level_text, auto_indicator]
+		# Color the indicator
+		if auto_indicator != "":
+			name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))  # Green for auto
+		else:
+			name_label.remove_theme_color_override("font_color")
 
 	# Update HP
 	var hp_bar = box.get_node_or_null("HP")
@@ -1585,6 +1582,8 @@ func _on_battle_started() -> void:
 	"""Handle battle start"""
 	log_message("[color=yellow]>>> Battle commenced![/color]")
 	_update_ui()
+	# Start battle music
+	SoundManager.play_music("battle")
 
 
 func _on_battle_ended(victory: bool) -> void:
@@ -1601,8 +1600,8 @@ func _on_battle_ended(victory: bool) -> void:
 		for animator in party_animators:
 			if animator:
 				animator.play_victory()
-		# Play victory sound
-		SoundManager.play_ui("menu_select")
+		# Switch to victory music
+		SoundManager.play_music("victory")
 	else:
 		log_message("\n[color=red]=== DEFEAT ===[/color]")
 		log_message("[color=gray]Press ENTER to restart...[/color]")
@@ -1610,6 +1609,8 @@ func _on_battle_ended(victory: bool) -> void:
 		for animator in party_animators:
 			if animator:
 				animator.play_defeat()
+		# Stop music on defeat
+		SoundManager.stop_music()
 
 	_update_ui()
 	_battle_ended = true
@@ -1633,6 +1634,9 @@ func _process(_delta: float) -> void:
 
 func _restart_battle() -> void:
 	"""Restart the battle"""
+	# Stop any playing music (will restart when battle starts)
+	SoundManager.stop_music()
+
 	# Clean up any stray menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
 		active_win98_menu.queue_free()
@@ -2015,6 +2019,13 @@ func _build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	var alive_enemies = _get_alive_enemies()
 	var canvas_transform = get_viewport().get_canvas_transform()
 
+	# Autobattle option at the top
+	items.append({
+		"id": "autobattle",
+		"label": "Auto",
+		"data": {"action": "autobattle", "combatant": combatant}
+	})
+
 	# Attack -> submenu of enemy targets
 	if alive_enemies.size() > 0:
 		var enemy_targets = []
@@ -2299,6 +2310,18 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 				else:
 					current.last_item_selection = item_id
 			print("[CMD MEM] %s -> item_menu / %s (single action)" % [current.combatant_name, current.last_item_selection])
+
+	# Autobattle - toggle autobattle ON for this player and execute their turn
+	if item_id == "autobattle" and item_data is Dictionary:
+		var combatant_for_auto = item_data.get("combatant", null)
+		if combatant_for_auto:
+			var char_id = combatant_for_auto.combatant_name.to_lower().replace(" ", "_")
+			# Enable autobattle for this character
+			AutobattleSystem.set_autobattle_enabled(char_id, true)
+			print("[AUTOBATTLE] %s enabled - executing auto turn" % combatant_for_auto.combatant_name)
+			# Let BattleManager handle the autobattle action
+			BattleManager.execute_autobattle_for_current()
+		return
 
 	# Attack with target from menu tree (attack_0, attack_1, etc)
 	if item_id.begins_with("attack_") and item_data is Dictionary:

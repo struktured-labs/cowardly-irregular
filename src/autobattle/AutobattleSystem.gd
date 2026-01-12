@@ -355,11 +355,153 @@ func set_character_script(character_id: String, script: Dictionary) -> void:
 
 
 func create_default_character_script(character_id: String) -> Dictionary:
-	"""Create a default autobattle script for a character"""
+	"""Create a default autobattle script for a character based on job class"""
+	# Map character IDs to job-specific conservative scripts
+	match character_id:
+		"hero":
+			return _create_fighter_default_script(character_id)
+		"mira":
+			return _create_white_mage_default_script(character_id)
+		"zack":
+			return _create_thief_default_script(character_id)
+		"vex":
+			return _create_black_mage_default_script(character_id)
+		_:
+			# Generic fallback - just attack
+			return {
+				"character_id": character_id,
+				"name": "Default",
+				"rules": [
+					{
+						"conditions": [{"type": "always"}],
+						"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+					}
+				]
+			}
+
+
+func _create_fighter_default_script(character_id: String) -> Dictionary:
+	"""Conservative Fighter script - basic attacks, power strike on weakened enemies"""
 	return {
 		"character_id": character_id,
-		"name": "Default",
+		"name": "Fighter Default",
 		"rules": [
+			# Low HP - defer to recover
+			{
+				"conditions": [{"type": "hp_percent", "op": "<", "value": 20}],
+				"actions": [{"type": "defer"}]
+			},
+			# Finish off weak enemy with Power Strike
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": "<", "value": 30},
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "power_strike", "target": "lowest_hp_enemy"}]
+			},
+			# Default - basic attack
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_white_mage_default_script(character_id: String) -> Dictionary:
+	"""Conservative White Mage script - heal allies, conserve MP"""
+	return {
+		"character_id": character_id,
+		"name": "Healer Default",
+		"rules": [
+			# Emergency self-heal
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "cure", "target": "self"}]
+			},
+			# Heal critically low ally
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<", "value": 40},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
+			},
+			# Low MP - conserve with basic attack
+			{
+				"conditions": [{"type": "mp_percent", "op": "<", "value": 20}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			},
+			# Default - attack if everyone healthy
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_thief_default_script(character_id: String) -> Dictionary:
+	"""Conservative Thief script - fast attacks, steal when safe"""
+	return {
+		"character_id": character_id,
+		"name": "Thief Default",
+		"rules": [
+			# Low HP - defer
+			{
+				"conditions": [{"type": "hp_percent", "op": "<", "value": 25}],
+				"actions": [{"type": "defer"}]
+			},
+			# Steal from high HP enemy (safe to try)
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 70},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
+			},
+			# Default - attack weakest
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_black_mage_default_script(character_id: String) -> Dictionary:
+	"""Conservative Black Mage script - magic damage, conserve MP"""
+	return {
+		"character_id": character_id,
+		"name": "Nuker Default",
+		"rules": [
+			# Low HP - defer
+			{
+				"conditions": [{"type": "hp_percent", "op": "<", "value": 25}],
+				"actions": [{"type": "defer"}]
+			},
+			# Low MP - conserve with basic attack
+			{
+				"conditions": [{"type": "mp_percent", "op": "<", "value": 25}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			},
+			# Multiple enemies - use Fire for damage
+			{
+				"conditions": [
+					{"type": "enemy_count", "op": ">=", "value": 2},
+					{"type": "mp_percent", "op": ">=", "value": 30}
+				],
+				"actions": [{"type": "ability", "id": "fire", "target": "lowest_hp_enemy"}]
+			},
+			# Single enemy - Thunder for efficiency
+			{
+				"conditions": [{"type": "mp_percent", "op": ">=", "value": 25}],
+				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_hp_enemy"}]
+			},
+			# Default fallback
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]

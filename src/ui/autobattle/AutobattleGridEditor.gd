@@ -21,6 +21,7 @@ signal script_saved(character_id: String, script: Dictionary)
 var character_id: String = ""
 var character_name: String = ""
 var char_script: Dictionary = {}
+var combatant: Combatant = null  # Reference to the actual combatant for ability lookup
 
 ## Grid state
 var rules: Array = []  # Array of rule rows
@@ -116,10 +117,11 @@ func _ready() -> void:
 	_refresh_grid()
 
 
-func setup(char_id: String, char_name: String) -> void:
+func setup(char_id: String, char_name: String, char_combatant: Combatant = null) -> void:
 	"""Setup editor for a specific character"""
 	character_id = char_id
 	character_name = char_name
+	combatant = char_combatant
 
 	# Apply character-specific style
 	if CHARACTER_STYLES.has(char_id):
@@ -181,7 +183,7 @@ func _build_ui() -> void:
 
 	# Help text at bottom
 	var help_label = Label.new()
-	help_label.text = "[L=Add OR Row] [R=Add Action] [A=Edit/AND] [Y/Start=Delete]"
+	help_label.text = "[L=OR Row] [R=Action] [A=Edit] [Tab/Select=Toggle Row] [Y=Delete]"
 	help_label.position = Vector2(16, size.y - 28)
 	help_label.add_theme_font_size_override("font_size", 10)
 	help_label.add_theme_color_override("font_color", style.text.darkened(0.3))
@@ -220,13 +222,22 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 	"""Draw a single rule row with conditions and actions"""
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
+	var is_enabled = rule.get("enabled", true)
 
 	var x_offset = 0
+
+	# Draw enable/disable toggle at start of row
+	var toggle = _create_row_toggle(row_idx, is_enabled)
+	toggle.position = Vector2(x_offset, y_offset)
+	_grid_container.add_child(toggle)
+	x_offset += 24  # Small toggle width
 
 	# Draw conditions (AND chain) with proper spacing for connectors
 	for i in range(conditions.size()):
 		var cell = _create_condition_cell(row_idx, i, conditions[i])
 		cell.position = Vector2(x_offset, y_offset)
+		if not is_enabled:
+			cell.modulate.a = 0.4  # Gray out disabled rows
 		_grid_container.add_child(cell)
 		x_offset += CELL_WIDTH
 
@@ -241,7 +252,14 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 			x_offset += CELL_PADDING
 
 	# Empty condition slot hint if room for more AND conditions
-	if conditions.size() < MAX_CONDITIONS:
+	# But NOT if any condition is "always" (always doesn't need AND)
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	if conditions.size() < MAX_CONDITIONS and not has_always:
 		var hint = _create_empty_condition_hint(row_idx, conditions.size())
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
@@ -265,6 +283,8 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 
 		var cell = _create_action_cell(row_idx, start_idx, action, count)
 		cell.position = Vector2(x_offset, y_offset)
+		if not is_enabled:
+			cell.modulate.a = 0.4  # Gray out disabled rows
 		_grid_container.add_child(cell)
 		x_offset += CELL_WIDTH
 
@@ -439,6 +459,41 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	cell.add_child(label)
 
 	return cell
+
+
+func _create_row_toggle(row_idx: int, is_enabled: bool) -> Control:
+	"""Create a small toggle checkbox for enabling/disabling the row"""
+	var toggle = Control.new()
+	toggle.custom_minimum_size = Vector2(20, CELL_HEIGHT)
+	toggle.set_meta("cell_type", "toggle")
+	toggle.set_meta("row", row_idx)
+	toggle.set_meta("index", -1)  # Special index for toggle
+
+	# Checkbox visual
+	var check_bg = ColorRect.new()
+	check_bg.color = Color(0.15, 0.15, 0.2)
+	check_bg.position = Vector2(2, CELL_HEIGHT / 2 - 8)
+	check_bg.size = Vector2(16, 16)
+	toggle.add_child(check_bg)
+
+	# Checkmark if enabled
+	if is_enabled:
+		var checkmark = Label.new()
+		checkmark.text = "✓"
+		checkmark.position = Vector2(3, CELL_HEIGHT / 2 - 10)
+		checkmark.add_theme_font_size_override("font_size", 14)
+		checkmark.add_theme_color_override("font_color", Color.GREEN)
+		toggle.add_child(checkmark)
+	else:
+		# X mark if disabled
+		var xmark = Label.new()
+		xmark.text = "✗"
+		xmark.position = Vector2(4, CELL_HEIGHT / 2 - 10)
+		xmark.add_theme_font_size_override("font_size", 14)
+		xmark.add_theme_color_override("font_color", Color.RED)
+		toggle.add_child(xmark)
+
+	return toggle
 
 
 func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
@@ -690,16 +745,23 @@ func _get_cell_at_cursor() -> Control:
 			var conditions = rule.get("conditions", [])
 			var actions = rule.get("actions", [])
 
-			# Extra slot for empty_condition if room for more AND conditions
+			# Check if any condition is ALWAYS (no empty AND slot in that case)
+			var has_always = false
+			for cond in conditions:
+				if cond.get("type", "") == "always":
+					has_always = true
+					break
+
+			# Extra slot for empty_condition if room for more AND conditions (but not for ALWAYS)
 			var condition_slots = conditions.size()
-			if conditions.size() < MAX_CONDITIONS:
+			if conditions.size() < MAX_CONDITIONS and not has_always:
 				condition_slots += 1  # Include empty AND slot
 
 			# Cursor column: 0..conditions-1 = conditions, conditions = empty_condition, rest = actions
 			if cursor_col < conditions.size():
 				if cell_type == "condition" and index == cursor_col:
 					return child
-			elif cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
+			elif cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS and not has_always:
 				# Empty condition slot
 				if cell_type == "empty_condition" and index == cursor_col:
 					return child
@@ -721,9 +783,16 @@ func _get_max_col_for_row(row_idx: int) -> int:
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
-	# Include empty condition slot if room for more AND conditions
+	# Check if any condition is ALWAYS (no AND slot in that case)
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	# Include empty condition slot if room for more AND conditions (but not for ALWAYS)
 	var condition_slots = conditions.size()
-	if conditions.size() < MAX_CONDITIONS:
+	if conditions.size() < MAX_CONDITIONS and not has_always:
 		condition_slots += 1
 
 	# Can move to empty action slot if room
@@ -807,10 +876,15 @@ func _input(event: InputEvent) -> void:
 		_add_action()
 		get_viewport().set_input_as_handled()
 
-	# Select - Toggle autobattle
+	# Tab / Select - Toggle current row enabled/disabled
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB:
-		AutobattleSystem.toggle_autobattle(character_id)
-		_update_status_label()
+		_toggle_row_enabled()
+		SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
+
+	# Gamepad Select button - Toggle row enabled
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
+		_toggle_row_enabled()
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
@@ -887,31 +961,79 @@ func _open_condition_editor() -> void:
 
 
 func _open_action_editor() -> void:
-	"""Open action editor modal"""
-	# TODO: Implement action editor modal
+	"""Open action editor modal - cycles through action types and abilities"""
 	is_editing = true
 	_update_cursor()
-	print("[AUTOBATTLE] Opening action editor (TODO)")
 
-	# For now, just cycle through action types as placeholder
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
-	var action_idx = cursor_col - conditions.size()
+
+	# Account for empty condition slot
+	var condition_slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS:
+		condition_slots += 1
+	var action_idx = cursor_col - condition_slots
 
 	if action_idx < actions.size():
 		var action = actions[action_idx]
-		var types = ["attack", "ability", "defer"]
 		var current_type = action.get("type", "attack")
-		var idx = types.find(current_type)
-		idx = (idx + 1) % types.size()
-		action["type"] = types[idx]
-		if types[idx] == "ability":
-			action["id"] = "power_strike"
+		var current_ability_id = action.get("id", "")
+
+		# Get character-specific abilities
+		var char_abilities = _get_character_abilities()
+
+		if current_type == "ability" and char_abilities.size() > 0:
+			# Cycle through abilities, then to defer
+			var ability_idx = -1
+			for i in range(char_abilities.size()):
+				if char_abilities[i]["id"] == current_ability_id:
+					ability_idx = i
+					break
+
+			if ability_idx >= 0 and ability_idx < char_abilities.size() - 1:
+				# Next ability
+				action["id"] = char_abilities[ability_idx + 1]["id"]
+			else:
+				# Move to defer
+				action["type"] = "defer"
+				action.erase("id")
+				action.erase("target")
+		elif current_type == "defer":
+			# Back to attack
+			action["type"] = "attack"
+			action["target"] = "lowest_hp_enemy"
+		elif current_type == "attack":
+			if char_abilities.size() > 0:
+				# Move to first ability
+				action["type"] = "ability"
+				action["id"] = char_abilities[0]["id"]
+				action["target"] = "lowest_hp_enemy"
+			else:
+				# No abilities, go to defer
+				action["type"] = "defer"
+				action.erase("target")
+		else:
+			# Unknown type, reset to attack
+			action["type"] = "attack"
+			action["target"] = "lowest_hp_enemy"
+
 		_refresh_grid()
 
 	is_editing = false
 	_update_cursor()
+
+
+func _get_character_abilities() -> Array:
+	"""Get the abilities available to the current character"""
+	if combatant and combatant.job and combatant.job.has("abilities"):
+		var abilities = []
+		for ability_id in combatant.job["abilities"]:
+			var ability = JobSystem.get_ability(ability_id)
+			if not ability.is_empty():
+				abilities.append({"id": ability_id, "name": ability.get("name", ability_id)})
+		return abilities
+	return []
 
 
 func _add_condition() -> void:
@@ -924,6 +1046,11 @@ func _add_and_condition() -> void:
 	"""Add an AND condition to the current row (L+Right or when navigating past last condition)"""
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
+
+	# Can't add AND to a row with ALWAYS (ALWAYS is already unconditional)
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			return
 
 	if conditions.size() < MAX_CONDITIONS:
 		# Add AND condition
@@ -942,6 +1069,17 @@ func _add_or_row() -> void:
 	cursor_col = 0
 	_refresh_grid()
 	SoundManager.play_ui("menu_expand")
+
+
+func _toggle_row_enabled() -> void:
+	"""Toggle the enabled state of the current row"""
+	if cursor_row >= rules.size():
+		return
+
+	var rule = rules[cursor_row]
+	var currently_enabled = rule.get("enabled", true)
+	rule["enabled"] = not currently_enabled
+	_refresh_grid()
 
 
 func _add_action() -> void:
