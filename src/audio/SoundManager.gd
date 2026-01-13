@@ -569,6 +569,56 @@ func is_music_playing() -> bool:
 	return _music_playing
 
 
+## Danger intensity system - modulates music when party is hurt
+var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
+var _danger_tween: Tween = null
+
+func set_danger_intensity(intensity: float) -> void:
+	"""Set danger intensity (0.0 = safe, 1.0 = critical)
+	   This affects music pitch, tempo feel, and adds urgency"""
+	var new_intensity = clamp(intensity, 0.0, 1.0)
+
+	# Skip if no change
+	if abs(new_intensity - _danger_intensity) < 0.05:
+		return
+
+	# Smooth transition
+	if _danger_tween and _danger_tween.is_valid():
+		_danger_tween.kill()
+
+	_danger_tween = create_tween()
+	_danger_tween.tween_method(_apply_danger_intensity, _danger_intensity, new_intensity, 0.5)
+
+
+func _apply_danger_intensity(intensity: float) -> void:
+	"""Apply danger intensity to music playback"""
+	_danger_intensity = intensity
+
+	if not _music_player:
+		return
+
+	# Pitch shift: normal (1.0) to slightly higher (1.15) as danger increases
+	# Higher pitch = more urgent feeling
+	var pitch_scale = 1.0 + intensity * 0.15
+	_music_player.pitch_scale = pitch_scale
+
+	# Volume boost at high danger (slightly louder, more in-your-face)
+	var volume_boost = intensity * 3.0  # Up to +3dB at max danger
+	_music_player.volume_db = -12.0 + volume_boost
+
+
+func get_danger_intensity() -> float:
+	return _danger_intensity
+
+
+func reset_danger() -> void:
+	"""Reset danger to safe level"""
+	set_danger_intensity(0.0)
+	if _music_player:
+		_music_player.pitch_scale = 1.0
+		_music_player.volume_db = -12.0
+
+
 ## Battle Music - Procedural 16-bit Style Loop
 ## This is a STUB - replace with actual music file when available
 
@@ -1204,6 +1254,29 @@ func _triangle_wave(phase: float) -> float:
 	return 4.0 * abs(p - 0.5) - 1.0
 
 
+func _pulse_wave(phase: float, duty: float = 0.25) -> float:
+	"""Generate pulse wave with variable duty cycle (softer than square)"""
+	return 1.0 if fmod(phase, 1.0) < duty else -1.0
+
+
+func _soft_square(phase: float) -> float:
+	"""Square wave with rounded edges (less harsh)"""
+	var p = fmod(phase, 1.0)
+	# Use tanh to round the edges
+	return tanh(sin(p * TAU) * 3.0)
+
+
+func _sine_wave(phase: float) -> float:
+	"""Pure sine wave (smoothest, least harsh)"""
+	return sin(fmod(phase, 1.0) * TAU)
+
+
+func _warm_wave(phase: float) -> float:
+	"""Warm analog-style wave (sine + slight harmonics)"""
+	var p = fmod(phase, 1.0)
+	return sin(p * TAU) * 0.7 + sin(p * TAU * 2) * 0.2 + sin(p * TAU * 3) * 0.1
+
+
 ## Monster-Specific Battle Music
 
 # Monster music parameters - each monster has unique feel
@@ -1330,23 +1403,38 @@ func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, mons
 
 
 func _get_monster_wave(phase: float, style: String) -> float:
-	"""Get waveform based on monster style"""
+	"""Get waveform based on monster style - using softer tones"""
 	match style:
 		"bouncy":
-			return _triangle_wave(phase)  # Soft, bouncy
-		"frantic", "chaotic":
-			return _square_wave(phase)  # Harsh, aggressive
-		"creepy", "spooky":
-			return _triangle_wave(phase) * 0.7 + _square_wave(phase * 2) * 0.3  # Dissonant
-		"ethereal", "floating":
-			return sin(phase * TAU) * 0.8 + _triangle_wave(phase * 1.5) * 0.2  # Smooth
-		"tribal", "tense":
-			return _square_wave(phase) * 0.6 + _triangle_wave(phase) * 0.4
+			# Warm, rounded sound for slimes
+			return _warm_wave(phase) * 0.7 + _triangle_wave(phase) * 0.3
+		"frantic":
+			# Fast but not harsh - pulse wave with harmonics
+			return _soft_square(phase) * 0.6 + _sine_wave(phase * 2) * 0.3 + _triangle_wave(phase) * 0.1
+		"chaotic":
+			# Unpredictable but still musical
+			return _pulse_wave(phase, 0.35) * 0.5 + _warm_wave(phase) * 0.4 + _triangle_wave(phase * 1.5) * 0.1
+		"creepy":
+			# Unsettling but smooth
+			return _sine_wave(phase) * 0.6 + _triangle_wave(phase * 1.5) * 0.3 + _pulse_wave(phase * 0.5, 0.2) * 0.1
+		"spooky":
+			# Hollow, ghostly tone
+			return _triangle_wave(phase) * 0.5 + _sine_wave(phase) * 0.4 + _pulse_wave(phase * 2, 0.15) * 0.1
+		"ethereal":
+			# Pure, floating - mostly sine
+			return _sine_wave(phase) * 0.7 + _sine_wave(phase * 1.5) * 0.2 + _triangle_wave(phase * 0.5) * 0.1
+		"tribal":
+			# Punchy but warm
+			return _warm_wave(phase) * 0.5 + _soft_square(phase) * 0.3 + _triangle_wave(phase) * 0.2
+		"tense":
+			# Driving but not piercing
+			return _soft_square(phase) * 0.5 + _triangle_wave(phase) * 0.3 + _sine_wave(phase * 2) * 0.2
 		"slither":
-			var bend = sin(phase * TAU * 0.5) * 0.1
-			return _triangle_wave(phase + bend)  # Wavering pitch
+			# Wavering, serpentine
+			var bend = sin(phase * TAU * 0.5) * 0.15
+			return _warm_wave(phase + bend) * 0.6 + _sine_wave(phase * 1.5 + bend) * 0.4
 		_:
-			return _square_wave(phase)
+			return _warm_wave(phase)
 
 
 func _get_monster_envelope(beat_pos: float, style: String) -> float:
@@ -1400,66 +1488,195 @@ func _get_bass_envelope(beat_pos: float, bass_style: String) -> float:
 
 
 func _get_monster_drums(beat_pos: float, t: float, style: String) -> float:
-	"""Get drum pattern based on monster style"""
+	"""Get drum pattern based on monster style - rich, varied patterns"""
 	var sub_beat = fmod(beat_pos, 1.0)
+	var beat_num = int(beat_pos)
+	var bar_beat = beat_num % 4  # Which beat in the 4-beat bar
 	var sample = 0.0
+
+	# Helper for kick drum with pitch sweep
+	var kick_time = sub_beat
+	var kick_pitch = 150.0 * pow(0.3, kick_time * 20)  # Pitch drops quickly
+	var kick_env = pow(max(0, 1.0 - kick_time * 15), 2)
+
+	# Helper for snare
+	var snare_time = sub_beat
+	var snare_env = pow(max(0, 1.0 - snare_time * 12), 1.5)
+
+	# Helper for hi-hat (16th note position)
+	var sixteenth = fmod(beat_pos * 4, 1.0)
+	var hat_env = pow(max(0, 1.0 - sixteenth * 25), 3)
 
 	match style:
 		"bouncy":
-			# Light kick on 1 and 3, hi-hat on off-beats
-			if sub_beat < 0.05 and (int(beat_pos) == 0 or int(beat_pos) == 2):
-				sample += 0.6  # Kick
-			if sub_beat > 0.45 and sub_beat < 0.55:
-				sample += randf() * 0.3  # Light hi-hat
+			# Funky slime groove - kick on 1 and the "and" of 2, snare on 2 and 4
+			var kick_hits = [0, 1.5]  # Beat 1 and "and" of 2
+			for hit in kick_hits:
+				if abs(beat_pos - int(beat_pos / 4) * 4 - hit) < 0.08:
+					sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.7
+					sample += sin(kick_time * kick_pitch * 0.5 * TAU) * kick_env * 0.4  # Sub
+			# Snare on 2 and 4
+			if bar_beat in [1, 3] and sub_beat < 0.1:
+				sample += randf_range(-0.5, 0.5) * snare_env
+				sample += sin(snare_time * 200 * TAU) * snare_env * 0.3
+			# Bouncy hi-hats - accented on off-beats
+			if sixteenth < 0.08:
+				var hat_accent = 0.3 if int(beat_pos * 4) % 2 == 1 else 0.15
+				sample += randf_range(-hat_accent, hat_accent) * hat_env
+
 		"frantic":
-			# Fast hi-hats, heavy kicks
-			if sub_beat < 0.03:
-				sample += 0.8
-			if fmod(beat_pos * 2, 1.0) < 0.05:
-				sample += randf() * 0.4
+			# Breakbeat-style for bats - fast, syncopated
+			# Kick on 1, ghost kick on "e" of 2, kick on 3
+			var kick_pattern = [0.0, 1.25, 2.0, 3.5]
+			for hit in kick_pattern:
+				if abs(fmod(beat_pos, 4.0) - hit) < 0.06:
+					sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.8
+					sample += sin(kick_time * kick_pitch * 0.5 * TAU) * kick_env * 0.3
+			# Snare on 2 and 4 with ghost notes
+			if bar_beat in [1, 3] and sub_beat < 0.08:
+				sample += randf_range(-0.6, 0.6) * snare_env
+				sample += sin(snare_time * 180 * TAU) * snare_env * 0.25
+			# Ghost snare on "a" of 1 and 3
+			if bar_beat in [0, 2] and sub_beat > 0.7 and sub_beat < 0.85:
+				sample += randf_range(-0.2, 0.2) * pow(1.0 - (sub_beat - 0.7) * 7, 2)
+			# 16th note hi-hats with accents
+			if sixteenth < 0.05:
+				var accent = 0.4 if int(beat_pos * 4) % 4 == 0 else 0.2
+				sample += randf_range(-accent, accent) * hat_env
+
 		"creepy":
-			# Sparse, unsettling
-			if sub_beat < 0.02 and int(beat_pos) == 0:
-				sample += 0.5
-			sample += randf() * 0.05  # Ambient noise
+			# Sparse, unsettling mushroom beat - irregular timing
+			# Deep kick only on beat 1
+			if bar_beat == 0 and sub_beat < 0.12:
+				sample += sin(kick_time * kick_pitch * 0.8 * TAU) * kick_env * 0.6
+				sample += sin(kick_time * 40 * TAU) * kick_env * 0.5  # Very low sub
+			# Weird off-beat hit on the "and" of 3
+			if abs(fmod(beat_pos, 4.0) - 2.5) < 0.08:
+				sample += randf_range(-0.3, 0.3) * snare_env * 0.7
+			# Ambient crackle
+			sample += randf_range(-0.03, 0.03) * (0.5 + sin(t * 0.3) * 0.5)
+			# Occasional shaker on 8ths
+			if fmod(beat_pos * 2, 1.0) < 0.04 and randf() < 0.6:
+				sample += randf_range(-0.12, 0.12) * pow(1.0 - fmod(beat_pos * 2, 1.0) * 25, 2)
+
 		"chaotic":
-			# Random hits
-			if randf() < 0.15:
-				sample += randf() * 0.5
+			# Imp chaos - semi-random but groovy
+			# Base kick on 1 and 3
+			if bar_beat in [0, 2] and sub_beat < 0.07:
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.75
+				sample += sin(kick_time * kick_pitch * 0.5 * TAU) * kick_env * 0.35
+			# Random extra kicks
+			if randf() < 0.08 and sub_beat < 0.05:
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.4
+			# Snare on 2 and 4 with random flams
+			if bar_beat in [1, 3] and sub_beat < 0.09:
+				sample += randf_range(-0.55, 0.55) * snare_env
+			# Random percussion hits
+			if randf() < 0.12:
+				sample += randf_range(-0.25, 0.25) * hat_env
+			# Chaotic hi-hats
+			if sixteenth < 0.06:
+				sample += randf_range(-0.25, 0.25) * hat_env * (0.5 + randf() * 0.5)
+
 		"tribal":
-			# Heavy drum pattern
-			if sub_beat < 0.05:
-				sample += 0.9  # Heavy kick every beat
-			if fmod(beat_pos * 2, 1.0) < 0.03:
-				sample += 0.5  # Snare on off-beats
-			if fmod(beat_pos * 4, 1.0) < 0.02:
-				sample += randf() * 0.3  # Hi-hat
+			# Heavy goblin war drums - four-on-floor with toms
+			# Kick every beat with extra punch
+			if sub_beat < 0.08:
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.9
+				sample += sin(kick_time * kick_pitch * 0.5 * TAU) * kick_env * 0.5
+				sample += sin(kick_time * 60 * TAU) * kick_env * 0.4  # Sub boom
+			# Heavy snare on 2 and 4
+			if bar_beat in [1, 3] and sub_beat < 0.1:
+				sample += randf_range(-0.7, 0.7) * snare_env
+				sample += sin(snare_time * 170 * TAU) * snare_env * 0.35
+			# Tom fills - descending on beat 4
+			if bar_beat == 3:
+				var tom_freqs = [200.0, 150.0, 120.0, 90.0]
+				var tom_idx = int(sub_beat * 4) % 4
+				if fmod(sub_beat * 4, 1.0) < 0.15:
+					var tom_t = fmod(sub_beat * 4, 1.0)
+					var tom_env = pow(1.0 - tom_t * 7, 2)
+					sample += sin(tom_t * tom_freqs[tom_idx] * TAU) * tom_env * 0.5
+			# 8th note shaker
+			if fmod(beat_pos * 2, 1.0) < 0.04:
+				sample += randf_range(-0.2, 0.2) * pow(1.0 - fmod(beat_pos * 2, 1.0) * 25, 2)
+
 		"spooky":
-			# Sparse with rattles
-			if sub_beat < 0.02 and (int(beat_pos) == 0 or int(beat_pos) == 2):
-				sample += 0.4
-			if fmod(beat_pos * 8, 1.0) < 0.03:
-				sample += randf() * 0.2  # Bone rattles
+			# Skeleton bone rattles - sparse with rattling fills
+			# Hollow kick on 1 and 3
+			if bar_beat in [0, 2] and sub_beat < 0.06:
+				sample += sin(kick_time * 100 * TAU) * kick_env * 0.5
+				sample += sin(kick_time * 50 * TAU) * kick_env * 0.3
+			# Rim shot on 2 and 4
+			if bar_beat in [1, 3] and sub_beat < 0.04:
+				sample += sin(snare_time * 400 * TAU) * snare_env * 0.4
+			# Bone rattles - 16th note fills
+			if sixteenth < 0.06:
+				var rattle_vol = 0.2 if int(beat_pos * 4) % 2 == 0 else 0.35
+				sample += randf_range(-rattle_vol, rattle_vol) * hat_env
+			# Occasional longer rattle on beat 4
+			if bar_beat == 3 and sub_beat > 0.5:
+				sample += randf_range(-0.15, 0.15) * (1.0 - (sub_beat - 0.5) * 2)
+
 		"tense":
-			# Driving pattern
-			if sub_beat < 0.04:
-				sample += 0.7
-			if fmod(beat_pos * 2, 1.0) > 0.45 and fmod(beat_pos * 2, 1.0) < 0.55:
-				sample += 0.4
+			# Wolf hunting groove - driving and relentless
+			# Kick on every beat, extra hit on "and" of 4
+			if sub_beat < 0.06:
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.8
+				sample += sin(kick_time * kick_pitch * 0.5 * TAU) * kick_env * 0.4
+			if abs(fmod(beat_pos, 4.0) - 3.5) < 0.06:
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.6
+			# Snare on 2 and 4 with buildup
+			if bar_beat in [1, 3] and sub_beat < 0.08:
+				sample += randf_range(-0.6, 0.6) * snare_env
+				sample += sin(snare_time * 190 * TAU) * snare_env * 0.3
+			# Driving 8th note hats
+			if fmod(beat_pos * 2, 1.0) < 0.05:
+				var eighth_env = pow(1.0 - fmod(beat_pos * 2, 1.0) * 20, 2.5)
+				sample += randf_range(-0.3, 0.3) * eighth_env
+			# Ride bell accent on beat 1
+			if bar_beat == 0 and sub_beat < 0.1:
+				sample += sin(sub_beat * 800 * TAU) * pow(1.0 - sub_beat * 10, 2) * 0.25
+
 		"ethereal":
-			# Very sparse, reverb-like
-			if sub_beat < 0.01 and int(beat_pos) == 0:
-				sample += 0.3
-			sample += sin(t * 200) * 0.02  # Shimmer
+			# Ghost floating - minimal, reverb-tail sounds
+			# Soft thud only on beat 1
+			if bar_beat == 0 and sub_beat < 0.15:
+				sample += sin(kick_time * 60 * TAU) * pow(max(0, 1.0 - kick_time * 8), 1.5) * 0.4
+			# Shimmering cymbal swell
+			var swell = sin(beat_pos * TAU * 0.25) * 0.5 + 0.5
+			sample += randf_range(-0.06, 0.06) * swell
+			# Soft brush on 3
+			if bar_beat == 2 and sub_beat < 0.2:
+				sample += randf_range(-0.15, 0.15) * pow(1.0 - sub_beat * 5, 2)
+			# Wind-like texture
+			sample += sin(t * 0.7) * randf_range(-0.02, 0.02)
+
 		"slither":
-			# Serpentine rhythm
-			if sub_beat < 0.03 and (int(beat_pos) % 2 == 0):
-				sample += 0.5
-			if fmod(beat_pos * 3, 1.0) < 0.02:
-				sample += randf() * 0.25  # Hiss-like
+			# Snake sinuous groove - triplet feel, hissing
+			# Kick with slither - beat 1 and "ah" of 2
+			if bar_beat == 0 and sub_beat < 0.07:
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.7
+				sample += sin(kick_time * kick_pitch * 0.5 * TAU) * kick_env * 0.35
+			if abs(fmod(beat_pos, 4.0) - 1.67) < 0.08:  # Triplet timing
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.5
+			# Hissing hi-hat - triplet feel
+			var triplet_pos = fmod(beat_pos * 3, 1.0)
+			if triplet_pos < 0.08:
+				var hiss_env = pow(1.0 - triplet_pos * 12, 3)
+				sample += randf_range(-0.25, 0.25) * hiss_env
+			# Shaker/rattle on off-triplets
+			if triplet_pos > 0.3 and triplet_pos < 0.4:
+				sample += randf_range(-0.12, 0.12)
+			# Occasional snap on 3
+			if bar_beat == 2 and sub_beat < 0.03:
+				sample += sin(snare_time * 300 * TAU) * snare_env * 0.35
 		_:
-			if sub_beat < 0.05:
-				sample += 0.5
+			# Default groove
+			if sub_beat < 0.06:
+				sample += sin(kick_time * kick_pitch * TAU) * kick_env * 0.6
+			if bar_beat in [1, 3] and sub_beat < 0.08:
+				sample += randf_range(-0.4, 0.4) * snare_env
 
 	return sample
 

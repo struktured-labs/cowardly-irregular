@@ -164,35 +164,106 @@ func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Calla
 ## Effect Animations
 
 func _animate_fire(effect: Node2D, on_complete: Callable) -> void:
-	"""Fire spell - rising flames with particles"""
+	"""Fire spell - dramatic explosion with rising flames"""
 	var particles: Array[Sprite2D] = []
-	var particle_count = 12
+	var particle_count = 24  # More particles!
+
+	# Initial flash/explosion
+	var flash = ColorRect.new()
+	flash.size = Vector2(120, 120)
+	flash.position = Vector2(-60, -60)
+	flash.color = Color(1.0, 0.6, 0.0, 0.0)
+	effect.add_child(flash)
+
+	# Screen shake effect
+	_trigger_screen_shake(8.0, 0.3)
+
+	# Explosion ring
+	var ring = _create_explosion_ring(Color(1.0, 0.5, 0.0))
+	ring.scale = Vector2.ZERO
+	effect.add_child(ring)
 
 	for i in range(particle_count):
 		var particle = _create_fire_particle()
-		particle.position = Vector2(randf_range(-20, 20), randf_range(-10, 10))
+		var angle = randf() * TAU
+		var dist = randf_range(0, 15)
+		particle.position = Vector2(cos(angle) * dist, sin(angle) * dist)
 		effect.add_child(particle)
 		particles.append(particle)
 
-	# Animate particles rising and fading
-	var duration = 0.6
+	var duration = 0.8
 	var tween = create_tween()
 	tween.set_parallel(true)
 
+	# Flash
+	tween.tween_property(flash, "color:a", 0.6, 0.05)
+	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.05)
+
+	# Ring expands
+	tween.tween_property(ring, "scale", Vector2(2.5, 2.5), 0.3)
+	tween.tween_property(ring, "modulate:a", 0.0, 0.2).set_delay(0.15)
+
 	for i in range(particles.size()):
 		var p = particles[i]
-		var delay = randf() * 0.2
-		var rise = randf_range(40, 80)
+		var delay = randf() * 0.15
+		var rise = randf_range(50, 100)
+		var spread = randf_range(-30, 30)
 
 		tween.tween_property(p, "position:y", p.position.y - rise, duration).set_delay(delay)
-		tween.tween_property(p, "modulate:a", 0.0, duration * 0.7).set_delay(delay + duration * 0.3)
-		tween.tween_property(p, "scale", Vector2(1.5, 2.0), duration).set_delay(delay)
+		tween.tween_property(p, "position:x", p.position.x + spread, duration).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.5).set_delay(delay + duration * 0.4)
+		tween.tween_property(p, "scale", Vector2(2.0, 2.5), duration).set_delay(delay)
+		tween.tween_property(p, "rotation", randf_range(-PI, PI), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
 		effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
+
+
+func _create_explosion_ring(color: Color) -> Sprite2D:
+	"""Create an expanding ring effect"""
+	var sprite = Sprite2D.new()
+	var size = 64
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var center = size / 2
+	for y in range(size):
+		for x in range(size):
+			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+			if dist > 20 and dist < 28:
+				var alpha = 1.0 - abs(dist - 24) / 4.0
+				var c = color
+				c.a = alpha * 0.8
+				img.set_pixel(x, y, c)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _trigger_screen_shake(intensity: float, duration: float) -> void:
+	"""Trigger screen shake effect"""
+	var viewport = get_viewport()
+	if not viewport:
+		return
+
+	var camera = viewport.get_camera_2d()
+	if not camera:
+		# Try to find any Camera2D in the tree
+		var cameras = get_tree().get_nodes_in_group("camera")
+		if cameras.size() > 0:
+			camera = cameras[0]
+
+	if camera:
+		var original_offset = camera.offset
+		var shake_tween = create_tween()
+		var steps = int(duration * 30)
+		for i in range(steps):
+			var offset = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+			shake_tween.tween_property(camera, "offset", original_offset + offset, duration / steps)
+		shake_tween.tween_property(camera, "offset", original_offset, 0.05)
 
 
 func _create_fire_particle() -> Sprite2D:
@@ -293,36 +364,91 @@ func _create_ice_particle() -> Sprite2D:
 
 
 func _animate_lightning(effect: Node2D, on_complete: Callable) -> void:
-	"""Lightning spell - bolt striking down"""
-	var bolt = _create_lightning_bolt()
-	bolt.modulate.a = 0.0
-	effect.add_child(bolt)
+	"""Lightning spell - dramatic multi-bolt strike with bright flash"""
+	# Multiple bolts for more impact
+	var bolts: Array[Sprite2D] = []
+	for i in range(3):
+		var bolt = _create_lightning_bolt()
+		bolt.modulate.a = 0.0
+		bolt.position.x = randf_range(-15, 15)
+		bolt.rotation = randf_range(-0.2, 0.2)
+		effect.add_child(bolt)
+		bolts.append(bolt)
 
-	# Flash effect
+	# Bright flash effect
 	var flash = ColorRect.new()
-	flash.size = Vector2(200, 200)
-	flash.position = Vector2(-100, -100)
-	flash.color = Color(1.0, 1.0, 0.8, 0.0)
+	flash.size = Vector2(300, 300)
+	flash.position = Vector2(-150, -150)
+	flash.color = Color(1.0, 1.0, 0.9, 0.0)
 	effect.add_child(flash)
 
-	var duration = 0.4
+	# Electric sparks at impact point
+	var sparks: Array[Sprite2D] = []
+	for i in range(12):
+		var spark = _create_spark()
+		spark.position = Vector2(randf_range(-10, 10), randf_range(-5, 5))
+		spark.modulate.a = 0.0
+		effect.add_child(spark)
+		sparks.append(spark)
+
+	# Screen shake
+	_trigger_screen_shake(12.0, 0.25)
+
+	var duration = 0.5
 	var tween = create_tween()
+	tween.set_parallel(true)
 
-	# Quick flash
-	tween.tween_property(flash, "color:a", 0.5, 0.05)
-	tween.tween_property(flash, "color:a", 0.0, 0.1)
+	# Intense flash
+	tween.tween_property(flash, "color:a", 0.8, 0.03)
+	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.03)
 
-	# Bolt appears
-	tween.parallel().tween_property(bolt, "modulate:a", 1.0, 0.05)
-	tween.tween_property(bolt, "modulate:a", 0.3, 0.05)
-	tween.tween_property(bolt, "modulate:a", 1.0, 0.05)
-	tween.tween_property(bolt, "modulate:a", 0.0, 0.2)
+	# Bolts flash rapidly
+	for i in range(bolts.size()):
+		var bolt = bolts[i]
+		var delay = float(i) * 0.02
+		tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(delay)
+		tween.tween_property(bolt, "modulate:a", 0.2, 0.03).set_delay(delay + 0.02)
+		tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(delay + 0.05)
+		tween.tween_property(bolt, "modulate:a", 0.5, 0.02).set_delay(delay + 0.07)
+		tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(delay + 0.09)
+		tween.tween_property(bolt, "modulate:a", 0.0, 0.15).set_delay(delay + 0.15)
 
-	tween.tween_callback(func():
+	# Sparks fly outward
+	for i in range(sparks.size()):
+		var spark = sparks[i]
+		var angle = (float(i) / sparks.size()) * TAU
+		var dist = randf_range(30, 60)
+		var end_pos = Vector2(cos(angle) * dist, sin(angle) * dist)
+
+		tween.tween_property(spark, "modulate:a", 1.0, 0.05).set_delay(0.05)
+		tween.tween_property(spark, "position", end_pos, 0.2).set_delay(0.05)
+		tween.tween_property(spark, "modulate:a", 0.0, 0.15).set_delay(0.2)
+
+	tween.chain().tween_callback(func():
 		effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
+
+
+func _create_spark() -> Sprite2D:
+	"""Create a small electric spark"""
+	var sprite = Sprite2D.new()
+	var size = 8
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var colors = [Color(1.0, 1.0, 0.5), Color(0.8, 0.9, 1.0), Color(0.5, 0.7, 1.0)]
+	var center = size / 2
+	for y in range(size):
+		for x in range(size):
+			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+			if dist < 3:
+				var idx = int(dist) % colors.size()
+				img.set_pixel(x, y, colors[idx])
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
 
 
 func _create_lightning_bolt() -> Sprite2D:
@@ -729,24 +855,107 @@ func _create_poison_bubble() -> Sprite2D:
 
 
 func _animate_physical(effect: Node2D, on_complete: Callable) -> void:
-	"""Physical hit - slash/impact effect"""
-	var slash = _create_slash_effect()
-	slash.scale = Vector2(0.5, 0.5)
-	slash.modulate.a = 0.0
-	effect.add_child(slash)
+	"""Physical hit - dramatic slash with impact burst"""
+	# Multiple slash lines for more impact
+	var slashes: Array[Sprite2D] = []
+	for i in range(3):
+		var slash = _create_slash_effect()
+		slash.scale = Vector2(0.3, 0.3)
+		slash.modulate.a = 0.0
+		slash.rotation = randf_range(-0.3, 0.3)
+		effect.add_child(slash)
+		slashes.append(slash)
 
-	var duration = 0.25
+	# Impact burst
+	var burst = _create_impact_burst()
+	burst.scale = Vector2.ZERO
+	burst.modulate.a = 0.8
+	effect.add_child(burst)
+
+	# Hit sparks
+	var sparks: Array[Sprite2D] = []
+	for i in range(8):
+		var spark = _create_hit_spark()
+		spark.modulate.a = 0.0
+		effect.add_child(spark)
+		sparks.append(spark)
+
+	# Small screen shake
+	_trigger_screen_shake(5.0, 0.15)
+
+	var duration = 0.35
 	var tween = create_tween()
+	tween.set_parallel(true)
 
-	tween.tween_property(slash, "modulate:a", 1.0, 0.05)
-	tween.parallel().tween_property(slash, "scale", Vector2(1.2, 1.2), duration * 0.4)
-	tween.tween_property(slash, "modulate:a", 0.0, duration * 0.5)
+	# Slashes appear in quick succession
+	for i in range(slashes.size()):
+		var slash = slashes[i]
+		var delay = float(i) * 0.04
+		tween.tween_property(slash, "modulate:a", 1.0, 0.03).set_delay(delay)
+		tween.tween_property(slash, "scale", Vector2(1.5, 1.5), duration * 0.5).set_delay(delay)
+		tween.tween_property(slash, "modulate:a", 0.0, duration * 0.4).set_delay(delay + 0.1)
 
-	tween.tween_callback(func():
+	# Burst expands
+	tween.tween_property(burst, "scale", Vector2(1.8, 1.8), 0.15)
+	tween.tween_property(burst, "modulate:a", 0.0, 0.15).set_delay(0.1)
+
+	# Sparks fly outward
+	for i in range(sparks.size()):
+		var spark = sparks[i]
+		var angle = (float(i) / sparks.size()) * TAU + randf_range(-0.3, 0.3)
+		var dist = randf_range(25, 50)
+		var end_pos = Vector2(cos(angle) * dist, sin(angle) * dist)
+
+		tween.tween_property(spark, "modulate:a", 1.0, 0.03).set_delay(0.05)
+		tween.tween_property(spark, "position", end_pos, 0.2).set_delay(0.05)
+		tween.tween_property(spark, "modulate:a", 0.0, 0.1).set_delay(0.15)
+
+	tween.chain().tween_callback(func():
 		effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
+
+
+func _create_impact_burst() -> Sprite2D:
+	"""Create impact burst sprite"""
+	var sprite = Sprite2D.new()
+	var size = 48
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var center = size / 2
+	# Starburst pattern
+	for angle_idx in range(8):
+		var angle = (float(angle_idx) / 8) * TAU
+		for dist in range(5, 22):
+			var x = int(center + cos(angle) * dist)
+			var y = int(center + sin(angle) * dist)
+			if x >= 0 and x < size and y >= 0 and y < size:
+				var alpha = 1.0 - (float(dist - 5) / 17.0)
+				img.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _create_hit_spark() -> Sprite2D:
+	"""Create a small hit spark"""
+	var sprite = Sprite2D.new()
+	var size = 6
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var center = size / 2
+	for y in range(size):
+		for x in range(size):
+			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+			if dist < 2.5:
+				var alpha = 1.0 - dist / 2.5
+				img.set_pixel(x, y, Color(1.0, 1.0, 0.8, alpha))
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
 
 
 func _create_slash_effect() -> Sprite2D:

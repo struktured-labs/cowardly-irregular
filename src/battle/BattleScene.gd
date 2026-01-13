@@ -100,6 +100,10 @@ var _is_danger_music: bool = false
 var _base_music_track: String = "battle"  # "battle" or "boss"
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
 
+## Autobattle state
+var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
+# Note: cancel flag is stored in AutobattleSystem.cancel_all_next_turn for persistence across scenes
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -130,6 +134,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
+	BattleManager.monster_summoned.connect(_on_monster_summoned)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -633,18 +638,25 @@ func _create_battle_sprites() -> void:
 		var member = party_members[i]
 		var sprite = AnimatedSprite2D.new()
 
-		# Choose sprite based on job
+		# Choose sprite based on job and set scale
+		# Fighter (hero) is already large, others get scaled up
 		var job_id = member.job.get("id", "fighter") if member.job else "fighter"
+		var sprite_scale = Vector2(1.0, 1.0)  # Default scale
 		match job_id:
 			"white_mage":
 				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.9, 0.9, 1.0))
+				sprite_scale = Vector2(1.4, 1.4)  # Mira bigger
 			"black_mage":
 				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.15, 0.1, 0.25))
+				sprite_scale = Vector2(1.3, 1.3)  # Vex bigger
 			"thief":
 				sprite.sprite_frames = BattleAnimatorClass.create_thief_sprite_frames()
+				sprite_scale = Vector2(1.35, 1.35)  # Zack bigger
 			_:
 				sprite.sprite_frames = BattleAnimatorClass.create_hero_sprite_frames()
+				sprite_scale = Vector2(1.0, 1.0)  # Hero already large
 
+		sprite.scale = sprite_scale
 		sprite.position = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
 		sprite.flip_h = true  # Flip to face left
 		sprite.play("idle")
@@ -798,6 +810,46 @@ func _update_ui() -> void:
 	_update_character_status()
 	_update_enemy_status()
 	_update_action_buttons()
+	_update_danger_music()
+
+
+func _update_danger_music() -> void:
+	"""Update music danger intensity based on party HP"""
+	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else party_members
+	if members.size() == 0:
+		return
+
+	# Calculate party danger level
+	var total_hp_percent = 0.0
+	var alive_count = 0
+	var dead_count = 0
+
+	for member in members:
+		if not is_instance_valid(member):
+			continue
+		if member.is_alive:
+			total_hp_percent += member.get_hp_percentage()
+			alive_count += 1
+		else:
+			dead_count += 1
+
+	# Calculate danger intensity:
+	# - 0.0 = party above 75% average HP, no deaths
+	# - 0.5 = party around 40% average HP or 1 death
+	# - 1.0 = party critical (below 20% average HP or 2+ deaths)
+	var avg_hp_percent = total_hp_percent / max(1, alive_count)
+	var death_penalty = dead_count * 25.0  # Each death adds 25% to danger
+
+	# Convert HP to danger (inverse relationship)
+	# 100% HP = 0 danger, 0% HP = 100 danger
+	var hp_danger = (100.0 - avg_hp_percent) + death_penalty
+
+	# Scale to 0.0 - 1.0 range (danger starts above 25% damage)
+	var intensity = clamp((hp_danger - 25.0) / 75.0, 0.0, 1.0)
+
+	# Apply to music system
+	if has_node("/root/SoundManager"):
+		get_node("/root/SoundManager").set_danger_intensity(intensity)
 
 
 ## Dynamic party status UI elements
@@ -941,22 +993,54 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		var job_name = member.job.get("name", "None") if member.job else "None"
 		var level_text = " Lv.%d" % member.job_level if member.job_level > 1 else ""
 		var char_id = member.combatant_name.to_lower().replace(" ", "_")
-		var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
+		var is_auto_enabled = AutobattleSystem.is_autobattle_enabled(char_id)
+		var auto_indicator = ""
+		var name_color: Color = Color.WHITE
+
+		if is_auto_enabled:
+			if AutobattleSystem.cancel_all_next_turn:
+				# Autobattle is on but pending cancel - show orange [A]
+				auto_indicator = " [A]"
+				name_color = Color(1.0, 0.6, 0.2)  # Orange for pending cancel
+			else:
+				# Autobattle is on - show green [A]
+				auto_indicator = " [A]"
+				name_color = Color(0.4, 1.0, 0.4)  # Green for auto
+
 		name_label.text = "%s (%s%s)%s" % [member.combatant_name, job_name, level_text, auto_indicator]
-		# Color the indicator
+		# Color the name based on autobattle state
 		if auto_indicator != "":
-			name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))  # Green for auto
+			name_label.add_theme_color_override("font_color", name_color)
 		else:
 			name_label.remove_theme_color_override("font_color")
 
-	# Update HP
+	# Update HP (with KO indicator)
 	var hp_bar = box.get_node_or_null("HP")
 	if hp_bar:
 		hp_bar.max_value = member.max_hp
 		hp_bar.value = member.current_hp
 		var hp_label = hp_bar.get_node_or_null("HPLabel")
 		if hp_label:
-			hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
+			if not member.is_alive:
+				hp_label.text = "-- KO --"
+				hp_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+			else:
+				hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
+				hp_label.remove_theme_color_override("font_color")
+
+	# Gray out the name label if KO'd
+	if name_label:
+		if not member.is_alive:
+			name_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+
+	# Gray out the sprite if KO'd
+	if idx < party_sprite_nodes.size():
+		var sprite = party_sprite_nodes[idx]
+		if is_instance_valid(sprite):
+			if not member.is_alive:
+				sprite.modulate = Color(0.3, 0.3, 0.3, 0.7)  # Dark gray, semi-transparent
+			else:
+				sprite.modulate = Color(1, 1, 1, 1)  # Normal
 
 	# Update MP
 	var mp_bar = box.get_node_or_null("MP")
@@ -1581,6 +1665,93 @@ func _on_autobattle_toggled(enabled: bool) -> void:
 		log_message("[color=gray]Autobattle disabled - manual control[/color]")
 
 
+## Autobattle system functions
+func _enable_all_autobattle() -> void:
+	"""Enable autobattle for ALL players and immediately execute all remaining turns"""
+	_all_autobattle_enabled = true
+	AutobattleSystem.cancel_all_next_turn = false
+
+	# Enable autobattle for every party member
+	for member in party_members:
+		var char_id = member.combatant_name.to_lower().replace(" ", "_")
+		AutobattleSystem.set_autobattle_enabled(char_id, true)
+
+	# Play enable sound
+	SoundManager.play_ui("autobattle_on")
+	log_message("[color=lime]>>> AUTOBATTLE: ALL PLAYERS ENABLED[/color]")
+
+	# Close any open menu
+	_close_win98_menu()
+
+	# If we're currently on a player's turn, execute their autobattle and let BattleManager continue
+	if BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING:
+		BattleManager.execute_autobattle_for_current()
+
+	_update_ui()
+
+
+func _toggle_cancel_all_autobattle() -> void:
+	"""Toggle autobattle cancel state (Select button during execution).
+	If autobattle is on, queue cancel. If already pending cancel, revoke it."""
+	if AutobattleSystem.cancel_all_next_turn:
+		# Already pending cancel - re-enable autobattle instead
+		AutobattleSystem.cancel_all_next_turn = false
+		SoundManager.play_ui("autobattle_on")
+		log_message("[color=lime]>>> AUTOBATTLE: Cancel revoked - staying enabled[/color]")
+		_update_ui()
+		return
+
+	AutobattleSystem.cancel_all_next_turn = true
+
+	# Play disable sound
+	SoundManager.play_ui("autobattle_off")
+	log_message("[color=orange]>>> AUTOBATTLE: Will disable for all players next turn[/color]")
+	_update_ui()
+
+
+func _cancel_autobattle_during_execution() -> void:
+	"""Cancel autobattle during execution (B button). One-way cancel, no toggle."""
+	if not AutobattleSystem.cancel_all_next_turn:
+		AutobattleSystem.cancel_all_next_turn = true
+		SoundManager.play_ui("autobattle_off")
+		log_message("[color=orange]>>> AUTOBATTLE: Will disable for all players next turn[/color]")
+		_update_ui()
+
+
+func _cancel_all_autobattle() -> void:
+	"""Immediately cancel autobattle for all players"""
+	_all_autobattle_enabled = false
+	AutobattleSystem.cancel_all_next_turn = false
+
+	# Disable autobattle for every party member
+	for member in party_members:
+		var char_id = member.combatant_name.to_lower().replace(" ", "_")
+		AutobattleSystem.set_autobattle_enabled(char_id, false)
+
+	log_message("[color=gray]>>> AUTOBATTLE: Disabled for all players[/color]")
+	_update_ui()
+
+
+func _cancel_single_player_autobattle(combatant: Combatant) -> void:
+	"""Cancel autobattle for a single player (when they press B after selecting Auto)"""
+	var char_id = combatant.combatant_name.to_lower().replace(" ", "_")
+	AutobattleSystem.set_autobattle_enabled(char_id, false)
+
+	# Check if any player still has autobattle - if none, clear the global flag
+	var any_autobattle = false
+	for member in party_members:
+		var member_id = member.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(member_id):
+			any_autobattle = true
+			break
+
+	if not any_autobattle:
+		_all_autobattle_enabled = false
+
+	SoundManager.play_ui("autobattle_off")
+	log_message("[color=gray]%s: Autobattle disabled[/color]" % combatant.combatant_name)
+
+
 func _flash_sprite(sprite: Sprite2D, flash_color: Color) -> void:
 	"""Flash sprite with color effect"""
 	if not sprite:
@@ -1599,6 +1770,11 @@ func _flash_sprite(sprite: Sprite2D, flash_color: Color) -> void:
 func _on_battle_started() -> void:
 	"""Handle battle start"""
 	log_message("[color=yellow]>>> Battle commenced![/color]")
+
+	# Apply any pending autobattle cancellation from previous battle
+	if AutobattleSystem.cancel_all_next_turn:
+		_cancel_all_autobattle()
+
 	_update_ui()
 	# Start battle music - use boss music if fighting a miniboss
 	var is_boss_fight = _check_for_boss()
@@ -1822,6 +1998,11 @@ func _restart_battle() -> void:
 func _on_selection_phase_started() -> void:
 	"""Handle selection phase start"""
 	log_message("\n[color=yellow]>>> Selection Phase[/color]")
+
+	# Check if autobattle cancellation was queued during last execution phase
+	if AutobattleSystem.cancel_all_next_turn:
+		_cancel_all_autobattle()
+
 	_update_turn_info()
 	_update_ui()
 
@@ -2043,10 +2224,44 @@ func _on_enemy_died(enemy_idx: int) -> void:
 ## Win98 Menu Functions
 func _unhandled_input(event: InputEvent) -> void:
 	"""Handle input for menu and Advance/Defer controls"""
-	if event is InputEventKey and event.pressed and not event.echo:
-		var current = BattleManager.current_combatant
-		var is_player_selecting = BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING
+	var current = BattleManager.current_combatant
+	var is_player_selecting = BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING
+	var is_executing = BattleManager.current_state == BattleManager.BattleState.EXECUTION_PHASE or \
+					   BattleManager.current_state == BattleManager.BattleState.PROCESSING_ACTION
+	var is_in_selection_phase = BattleManager.current_state == BattleManager.BattleState.SELECTION_PHASE or \
+								BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING or \
+								BattleManager.current_state == BattleManager.BattleState.ENEMY_SELECTING
 
+	# Handle autobattle toggle via Select button (Tab on keyboard, Back/Select on controller)
+	var is_select_pressed = false
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
+		is_select_pressed = true
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
+		is_select_pressed = true
+
+	if is_select_pressed:
+		if is_player_selecting or is_in_selection_phase:
+			# During selection: Enable autobattle for ALL players and start battle immediately
+			_enable_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
+		elif is_executing:
+			# During execution: Select TOGGLES autobattle (cancel if on, re-enable if pending cancel)
+			_toggle_cancel_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
+
+	# Handle B/Cancel button during execution to cancel autobattle
+	# Use ui_cancel action which maps correctly across controller types
+	var is_cancel_pressed = event.is_action_pressed("ui_cancel") and not event.is_echo()
+
+	if is_cancel_pressed and is_executing:
+		# During execution: B ONLY cancels autobattle (one-way, no toggle)
+		_cancel_autobattle_during_execution()
+		get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventKey and event.pressed and not event.echo:
 		# R key = Defer (skip turn, gain AP) during selection
 		if event.keycode == KEY_R and is_player_selecting and current:
 			_close_win98_menu()
@@ -2242,6 +2457,39 @@ func _build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 					"submenu": ally_targets,
 					"disabled": not can_afford
 				})
+			# For dead ally targeting (Raise, Phoenix Down), show only dead party members
+			elif target_type == "dead_ally" and can_afford:
+				var dead_targets = []
+				for i in range(party_members.size()):
+					var member = party_members[i]
+					if not is_instance_valid(member) or member.is_alive:
+						continue  # Skip alive members
+					var target_pos = Vector2.ZERO
+					if i < party_sprite_nodes.size():
+						var sprite = party_sprite_nodes[i]
+						if is_instance_valid(sprite):
+							target_pos = canvas_transform * sprite.global_position
+					dead_targets.append({
+						"id": "ability_" + ability_id + "_dead_" + str(i),
+						"label": "%s (KO)" % member.combatant_name,
+						"data": {"ability_id": ability_id, "target_idx": i, "target_type": "dead_ally", "target_pos": target_pos}
+					})
+				# Only show if there are dead allies to revive
+				if dead_targets.size() > 0:
+					ability_items.append({
+						"id": "ability_menu_" + ability_id,
+						"label": "%s (%d)" % [ability["name"], mp_cost],
+						"submenu": dead_targets,
+						"disabled": not can_afford
+					})
+				else:
+					# Show disabled if no dead allies
+					ability_items.append({
+						"id": "ability_" + ability_id,
+						"label": "%s (%d)" % [ability["name"], mp_cost],
+						"data": {"ability_id": ability_id},
+						"disabled": true
+					})
 			else:
 				ability_items.append({
 					"id": "ability_" + ability_id,
@@ -2450,9 +2698,12 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			var char_id = combatant_for_auto.combatant_name.to_lower().replace(" ", "_")
 			# Enable autobattle for this character
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
+			SoundManager.play_ui("autobattle_on")
+			log_message("[color=lime]%s: Autobattle enabled[/color]" % combatant_for_auto.combatant_name)
 			print("[AUTOBATTLE] %s enabled - executing auto turn" % combatant_for_auto.combatant_name)
 			# Let BattleManager handle the autobattle action
 			BattleManager.execute_autobattle_for_current()
+			_update_ui()
 		return
 
 	# Attack with target from menu tree (attack_0, attack_1, etc)
@@ -2619,7 +2870,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 				if is_instance_valid(target):
 					battle_actions.append({"type": "attack", "target": target})
 
-		# Handle ability actions (enemy or ally targets)
+		# Handle ability actions (enemy, ally, or dead ally targets)
 		elif action_id.begins_with("ability_") and action_data is Dictionary:
 			var ability_id = action_data.get("ability_id", "")
 			var target_idx = action_data.get("target_idx", -1)
@@ -2627,7 +2878,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 
 			if target_idx >= 0:
 				var target: Combatant = null
-				if target_type == "ally" and target_idx < party_members.size():
+				if (target_type == "ally" or target_type == "dead_ally") and target_idx < party_members.size():
 					target = party_members[target_idx]
 				elif target_idx < test_enemies.size():
 					target = test_enemies[target_idx]
@@ -2677,6 +2928,16 @@ func _on_win98_go_back_requested() -> void:
 		active_win98_menu = null
 	BattleManager.go_back_to_previous_player()
 
+	# Disable autobattle for the player we went back to (they're taking manual control)
+	var new_current = BattleManager.current_combatant
+	if new_current and new_current in party_members:
+		var char_id = new_current.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(char_id):
+			AutobattleSystem.set_autobattle_enabled(char_id, false)
+			SoundManager.play_ui("autobattle_off")
+			log_message("[color=gray]%s: Autobattle disabled (manual control)[/color]" % new_current.combatant_name)
+			_update_ui()
+
 
 func _close_win98_menu() -> void:
 	"""Close the active Win98 menu"""
@@ -2708,6 +2969,95 @@ func _on_battle_log_message(message: String) -> void:
 	if battle_log:
 		battle_log.append_text(message + "\n")
 		battle_log.scroll_to_line(battle_log.get_line_count())
+
+
+func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
+	"""Handle monster summon - spawn new enemy mid-battle"""
+	# Find the monster type data
+	var monster_data = null
+	for mt in MONSTER_TYPES:
+		if mt["id"] == monster_type:
+			monster_data = mt
+			break
+
+	if not monster_data:
+		push_warning("Unknown monster type for summon: %s" % monster_type)
+		return
+
+	# Create the new enemy
+	var enemy = Combatant.new()
+	var stats = monster_data["stats"].duplicate()
+
+	# Count existing enemies of this type for naming
+	var type_count = 0
+	for e in test_enemies:
+		if e.get_meta("monster_type", "") == monster_type:
+			type_count += 1
+	if type_count > 0:
+		stats["name"] = monster_data["name"] + " " + ["A", "B", "C", "D", "E"][mini(type_count, 4)]
+	else:
+		stats["name"] = monster_data["name"]
+
+	enemy.initialize(stats)
+	add_child(enemy)
+	enemy.set_meta("monster_type", monster_type)
+
+	# Add weaknesses/resistances
+	for weakness in monster_data.get("weaknesses", []):
+		enemy.elemental_weaknesses.append(weakness)
+	for resistance in monster_data.get("resistances", []):
+		enemy.elemental_resistances.append(resistance)
+
+	# Find a position for the new enemy
+	var new_idx = test_enemies.size()
+	enemy.hp_changed.connect(_on_enemy_hp_changed.bind(new_idx))
+	enemy.died.connect(_on_enemy_died.bind(new_idx))
+
+	test_enemies.append(enemy)
+
+	# Add to BattleManager's enemy party
+	BattleManager.enemy_party.append(enemy)
+	BattleManager.all_combatants.append(enemy)
+
+	# Create sprite for the new enemy
+	var sprite = AnimatedSprite2D.new()
+	sprite.sprite_frames = _get_monster_sprite_frames(monster_type)
+
+	# Position near the summoner or in an available slot
+	var base_pos = Vector2(200, 300)
+	if enemy_positions.size() > new_idx:
+		sprite.position = enemy_positions[new_idx].global_position
+	else:
+		# Calculate position based on existing enemies
+		sprite.position = base_pos + Vector2(new_idx * 80, (new_idx % 2) * 50)
+
+	sprite.play("idle")
+	sprite.scale = Vector2.ZERO  # Start invisible for spawn animation
+
+	$BattleField/EnemySprites.add_child(sprite)
+	enemy_sprite_nodes.append(sprite)
+
+	# Create animator
+	var animator = BattleAnimatorClass.new()
+	animator.setup(sprite)
+	add_child(animator)
+	enemy_animators.append(animator)
+
+	# Add label
+	_add_sprite_label(sprite, enemy.combatant_name.to_upper(), Vector2(-20, 40))
+
+	# Spawn animation - pop in with flash
+	var tween = create_tween()
+	tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.15)
+	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
+
+	# Flash effect at spawn position
+	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, sprite.global_position)
+
+	# Log message
+	log_message("[color=red]%s appears![/color]" % stats["name"])
+
+	_update_ui()
 
 
 func _get_combatant_sprite_position(combatant: Combatant) -> Vector2:

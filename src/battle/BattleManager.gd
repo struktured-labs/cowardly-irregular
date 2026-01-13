@@ -16,6 +16,7 @@ signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool)
 signal healing_done(target: Combatant, amount: int)
 signal battle_log_message(message: String)
+signal monster_summoned(monster_type: String, summoner: Combatant)
 
 enum BattleState {
 	INACTIVE,
@@ -461,6 +462,20 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		_end_selection_turn()
 		return
 
+	# Check if monster wants to summon reinforcements
+	var can_summon = _can_monster_summon(combatant)
+	if can_summon and randf() < 0.12:  # 12% chance to summon
+		var summon_action = {
+			"type": "summon",
+			"combatant": combatant,
+			"monster_type": _get_summon_type(combatant),
+			"speed": _compute_action_speed(combatant, "summon")
+		}
+		_queue_action(summon_action)
+		print("%s calls for reinforcements!" % combatant.combatant_name)
+		_end_selection_turn()
+		return
+
 	# Normal AI decision
 	var action = _make_ai_decision(combatant, alive_allies, alive_enemies)
 	_queue_action(action)
@@ -580,6 +595,8 @@ func _execute_next_action() -> void:
 			_execute_item(combatant, action["item_id"], action.get("targets", []))
 		"defer":
 			_execute_defer(combatant)
+		"summon":
+			_execute_summon(combatant, action.get("monster_type", "slime"))
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
@@ -595,6 +612,49 @@ func _execute_defer(combatant: Combatant) -> void:
 	"""Execute defer action"""
 	combatant.execute_defer()
 	print("%s defers (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
+
+
+func _can_monster_summon(combatant: Combatant) -> bool:
+	"""Check if this monster can summon reinforcements"""
+	# Only enemies can summon
+	if combatant in player_party:
+		return false
+
+	# Limit total enemies to prevent overwhelming battles
+	var alive_enemies = enemy_party.filter(func(e): return e.is_alive)
+	if alive_enemies.size() >= 5:
+		return false
+
+	# Check if this monster type can summon
+	var monster_type = combatant.get_meta("monster_type", "")
+	var summoner_types = ["goblin", "imp", "skeleton", "wolf", "bat"]
+	return monster_type in summoner_types
+
+
+func _get_summon_type(combatant: Combatant) -> String:
+	"""Get the type of monster to summon based on summoner"""
+	var monster_type = combatant.get_meta("monster_type", "slime")
+
+	# Each monster type summons specific allies
+	match monster_type:
+		"goblin":
+			return ["goblin", "imp"][randi() % 2]
+		"imp":
+			return ["imp", "bat"][randi() % 2]
+		"skeleton":
+			return ["skeleton", "ghost"][randi() % 2]
+		"wolf":
+			return "wolf"
+		"bat":
+			return "bat"
+		_:
+			return "slime"
+
+
+func _execute_summon(combatant: Combatant, monster_type: String) -> void:
+	"""Execute summon action - spawn a new enemy"""
+	print("  → %s summons a %s!" % [combatant.combatant_name, monster_type.capitalize()])
+	monster_summoned.emit(monster_type, combatant)
 
 
 func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:

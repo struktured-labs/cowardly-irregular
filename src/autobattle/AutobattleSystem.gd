@@ -22,6 +22,9 @@ var character_scripts: Dictionary = {}  # {character_id: Script}
 ## Autobattle enabled state per character
 var autobattle_enabled: Dictionary = {}  # {character_id: bool}
 
+## Flag to cancel all autobattle at start of next selection phase (persists across scene changes)
+var cancel_all_next_turn: bool = false
+
 ## Condition types
 enum ConditionType {
 	HP_PERCENT,        # self_hp < 50
