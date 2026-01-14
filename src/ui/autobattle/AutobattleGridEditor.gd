@@ -193,14 +193,14 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  Start:Save & Exit"
+	help_label1.text = "D-Pad:Navigate  A:Edit/Insert  B:Delete  Start:Save"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "L:Add Row  R:Add Action  Y:Toggle Row  Select:Auto ON/OFF"
+	help_label2.text = "L:Split Group  R:Dup Action  Y:Toggle Row  Select:Auto"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -885,6 +885,14 @@ func _get_cell_at_cursor() -> Control:
 				elif cell_type == "empty_action" and group_idx == action_groups.size():
 					# Empty action slot (after all groups)
 					return child
+				elif cell_type == "row_insert":
+					# [++] button is at the very end
+					var last_is_defer = actions.size() > 0 and actions[-1].get("type") == "defer"
+					var expected_groups = action_groups.size()
+					if actions.size() < MAX_ACTIONS and not last_is_defer:
+						expected_groups += 1  # Account for empty slot
+					if group_idx == expected_groups:
+						return child
 
 	return null
 
@@ -919,7 +927,8 @@ func _get_max_col_for_row(row_idx: int) -> int:
 	if actions.size() < MAX_ACTIONS and not last_is_defer:
 		action_slots += 1  # Include empty slot
 
-	return condition_slots + action_slots - 1
+	# +1 for the [++] row insert button at the end
+	return condition_slots + action_slots
 
 
 func _is_on_condition_cell() -> bool:
@@ -1211,6 +1220,8 @@ func _edit_current_cell() -> void:
 		_add_action()
 	elif cell_type == "empty_condition":
 		_add_and_condition()
+	elif cell_type == "row_insert":
+		_insert_row_after(cursor_row)
 
 	SoundManager.play_ui("menu_select")
 
@@ -1435,6 +1446,24 @@ func _add_or_row() -> void:
 	var new_rule = _create_default_rule()
 	rules.insert(cursor_row + 1, new_rule)
 	cursor_row += 1
+	cursor_col = 0
+	_refresh_grid()
+	SoundManager.play_ui("menu_expand")
+
+
+func _insert_row_after(row_idx: int) -> void:
+	"""Insert a new rule row after the specified row index"""
+	var new_rule = {
+		"conditions": [{"type": "always"}],
+		"actions": [{"type": "attack", "target": "lowest_hp_enemy"}],
+		"enabled": true
+	}
+
+	# Insert after current row
+	rules.insert(row_idx + 1, new_rule)
+
+	# Move cursor to the new row
+	cursor_row = row_idx + 1
 	cursor_col = 0
 	_refresh_grid()
 	SoundManager.play_ui("menu_expand")
