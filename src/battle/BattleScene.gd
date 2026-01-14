@@ -251,14 +251,14 @@ func _input(event: InputEvent) -> void:
 			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
 
-	# Gamepad buttons
+	# Gamepad buttons (Nintendo layout: Y=left, X=top)
 	if event is InputEventJoypadButton and event.pressed:
-		# X button (index 2) - toggle battle speed
-		if event.button_index == JOY_BUTTON_X:
+		# Y button - toggle battle speed
+		if event.button_index == JOY_BUTTON_Y:
 			_toggle_battle_speed()
 			get_viewport().set_input_as_handled()
-		# Y button (index 3) - repeat previous actions
-		elif event.button_index == JOY_BUTTON_Y:
+		# X button - repeat previous actions
+		elif event.button_index == JOY_BUTTON_X:
 			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
 
