@@ -47,6 +47,9 @@ var current_combatant: Combatant = null
 var pending_actions: Array[Dictionary] = []  # All selected actions before execution
 var execution_order: Array[Dictionary] = []  # Sorted by computed turn order
 
+## Previous round actions for repeat functionality (Y button)
+var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
+
 ## Battle configuration
 var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
@@ -551,6 +554,9 @@ func _start_execution_phase() -> void:
 	"""Start executing all queued actions in computed turn order"""
 	current_state = BattleState.EXECUTION_PHASE
 
+	# Save player actions for repeat functionality (Y button)
+	_save_previous_actions()
+
 	# Sort actions by speed (lower speed value = executes first)
 	execution_order = pending_actions.duplicate()
 	execution_order.sort_custom(func(a, b): return a["speed"] < b["speed"])
@@ -559,6 +565,98 @@ func _start_execution_phase() -> void:
 	execution_phase_started.emit()
 
 	_execute_next_action()
+
+
+func _save_previous_actions() -> void:
+	"""Save current round's player actions for repeat functionality"""
+	previous_round_actions.clear()
+	for action in pending_actions:
+		var combatant = action.get("combatant") as Combatant
+		if combatant and combatant in player_party:
+			var combatant_id = combatant.combatant_name.to_lower()
+			if not previous_round_actions.has(combatant_id):
+				previous_round_actions[combatant_id] = []
+			# Store action without combatant reference (will be re-bound on replay)
+			var saved_action = action.duplicate()
+			saved_action.erase("combatant")
+			previous_round_actions[combatant_id].append(saved_action)
+
+
+func repeat_previous_actions() -> bool:
+	"""Queue previous round's actions for all players. Returns true if successful."""
+	if previous_round_actions.is_empty():
+		print("[REPEAT] No previous actions to repeat")
+		return false
+
+	if current_state != BattleState.SELECTION_PHASE and current_state != BattleState.PLAYER_SELECTING:
+		print("[REPEAT] Can only repeat during selection phase")
+		return false
+
+	print("[REPEAT] Repeating previous round's actions for all players")
+
+	# Queue actions for all players who haven't selected yet
+	var repeated_any = false
+	for combatant in selection_order:
+		if combatant not in player_party:
+			continue
+
+		var combatant_id = combatant.combatant_name.to_lower()
+		if not previous_round_actions.has(combatant_id):
+			# No previous action for this player, use default attack
+			_queue_action({
+				"combatant": combatant,
+				"type": "attack",
+				"target": _get_alive_enemies()[0] if _get_alive_enemies().size() > 0 else null,
+				"speed": ACTION_SPEEDS["attack"] + combatant.stats.speed
+			})
+			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
+			repeated_any = true
+			continue
+
+		# Replay all actions for this combatant
+		var actions = previous_round_actions[combatant_id]
+		for saved_action in actions:
+			var action = saved_action.duplicate()
+			action["combatant"] = combatant
+
+			# Retarget if target is dead
+			if action.has("target") and action["target"] is Combatant:
+				if not action["target"].is_alive:
+					var alive_enemies = _get_alive_enemies()
+					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
+
+			# Retarget for abilities/items
+			if action.has("targets"):
+				var new_targets = []
+				for target in action["targets"]:
+					if target is Combatant and target.is_alive:
+						new_targets.append(target)
+					else:
+						# Replace dead targets with first alive enemy
+						var alive_enemies = _get_alive_enemies()
+						if alive_enemies.size() > 0:
+							new_targets.append(alive_enemies[0])
+				action["targets"] = new_targets
+
+			_queue_action(action)
+			print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
+			repeated_any = true
+
+	if repeated_any:
+		# Skip remaining selections and start execution
+		selection_index = selection_order.size()
+		_process_next_selection()
+
+	return repeated_any
+
+
+func _get_alive_enemies() -> Array[Combatant]:
+	"""Get list of alive enemies"""
+	var alive: Array[Combatant] = []
+	for enemy in enemy_party:
+		if enemy.is_alive:
+			alive.append(enemy)
+	return alive
 
 
 func _execute_next_action() -> void:

@@ -240,21 +240,37 @@ func _toggle_battle_speed() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	"""Handle global input for battle speed toggle"""
+	"""Handle global input for battle speed toggle and repeat actions"""
 	# Tab or ` (grave) to toggle speed
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_TAB or event.keycode == KEY_QUOTELEFT:
+		if event.keycode == KEY_QUOTELEFT:
 			_toggle_battle_speed()
+			get_viewport().set_input_as_handled()
+		# Y key to repeat previous actions
+		elif event.keycode == KEY_Y:
+			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
 
-	# Gamepad X button - handle multiple controller types
-	# Xbox: X = button 2, PlayStation: Square = button 2, Nintendo: Y = button 2
+	# Gamepad buttons
 	if event is InputEventJoypadButton and event.pressed:
-		# JOY_BUTTON_X (index 2) covers X on Xbox, Square on PS, Y on Nintendo
-		# Also check JOY_BUTTON_Y (index 3) for Nintendo X button
-		if event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y:
+		# X button (index 2) - toggle battle speed
+		if event.button_index == JOY_BUTTON_X:
 			_toggle_battle_speed()
 			get_viewport().set_input_as_handled()
+		# Y button (index 3) - repeat previous actions
+		elif event.button_index == JOY_BUTTON_Y:
+			_repeat_previous_actions()
+			get_viewport().set_input_as_handled()
+
+
+func _repeat_previous_actions() -> void:
+	"""Repeat all players' previous turn actions (Y button)"""
+	var is_in_selection = BattleManager.current_state == BattleManager.BattleState.SELECTION_PHASE or \
+						  BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING
+	if is_in_selection:
+		if BattleManager.repeat_previous_actions():
+			_close_win98_menu()
+			log_message("[color=yellow]>>> Repeating previous actions![/color]")
 
 
 func _start_test_battle() -> void:

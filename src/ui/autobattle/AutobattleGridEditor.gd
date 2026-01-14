@@ -114,7 +114,8 @@ func _init() -> void:
 
 func _ready() -> void:
 	_build_ui()
-	_refresh_grid()
+	# Don't refresh grid here - wait for setup() to be called with character data
+	# _refresh_grid() will be called in setup() after rules are loaded
 
 
 func setup(char_id: String, char_name: String, char_combatant: Combatant = null) -> void:
@@ -141,10 +142,13 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null)
 	cursor_row = 0
 	cursor_col = 0
 
+	# Rebuild UI and grid - defer if not in tree yet
 	if is_inside_tree():
-		# Rebuild UI with new style colors
 		_build_ui()
 		_refresh_grid()
+	else:
+		# Will be called from _ready() is not in tree yet, so defer
+		call_deferred("_refresh_grid")
 
 
 func _build_ui() -> void:
@@ -284,7 +288,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 	_grid_container.add_child(arrow)
 	x_offset += CONNECTOR_WIDTH + 8
 
-	# Group consecutive identical actions for cycle display
+	# Group consecutive identical actions for cycle display (e.g., Attack ×3)
 	var action_groups = _group_actions(actions)
 
 	# Draw action groups (with cycle indicators)
@@ -322,6 +326,12 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		var hint = _create_empty_action_hint(row_idx, actions.size())
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
+		x_offset += CELL_WIDTH / 2 + CELL_PADDING
+
+	# Row insert button [++] at end of row
+	var row_btn = _create_row_insert_hint(row_idx)
+	row_btn.position = Vector2(x_offset, y_offset)
+	_grid_container.add_child(row_btn)
 
 
 func _group_actions(actions: Array) -> Array:
@@ -445,6 +455,50 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 	return cell
 
 
+func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total_count: int) -> Control:
+	"""Create a collapsed action cell showing first action + total count (e.g., 'Attack ×3')"""
+	var cell = Control.new()
+	cell.custom_minimum_size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	cell.set_meta("cell_type", "collapsed_action")
+	cell.set_meta("row", row_idx)
+	cell.set_meta("count", total_count)
+
+	# Background - slightly different shade to indicate collapsed
+	var base_action_color = style.get("action_bg", ACTION_COLOR)
+	var bg = ColorRect.new()
+	bg.color = base_action_color.darkened(0.1)
+	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	cell.add_child(bg)
+
+	# Border
+	_add_pixel_border(cell, CELL_WIDTH, CELL_HEIGHT)
+
+	# Text showing first action type + total count
+	var label = Label.new()
+	var first_type = first_action.get("type", "attack")
+	var type_text = first_type.capitalize()
+	if first_type == "ability":
+		type_text = first_action.get("id", "Ability").capitalize()
+	label.text = "%s... ×%d" % [type_text, total_count]
+	label.position = Vector2(6, 4)
+	label.size = Vector2(CELL_WIDTH - 12, CELL_HEIGHT - 8)
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", style.text)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cell.add_child(label)
+
+	# Stack indicator badge
+	var badge = Label.new()
+	badge.text = "⊞"  # Stack symbol
+	badge.position = Vector2(CELL_WIDTH - 16, 2)
+	badge.add_theme_font_size_override("font_size", 12)
+	badge.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
+	cell.add_child(badge)
+
+	return cell
+
+
 func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	"""Create an empty action slot hint"""
 	var cell = Control.new()
@@ -467,6 +521,35 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 8)
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cell.add_child(label)
+
+	return cell
+
+
+func _create_row_insert_hint(row_idx: int) -> Control:
+	"""Create a row insert button [++] at end of row"""
+	var cell = Control.new()
+	cell.custom_minimum_size = Vector2(40, CELL_HEIGHT)
+	cell.set_meta("cell_type", "row_insert")
+	cell.set_meta("row", row_idx)
+	cell.set_meta("index", -2)  # Special index for row insert
+
+	# Background
+	var bg = ColorRect.new()
+	bg.color = Color(0.2, 0.25, 0.2).darkened(0.3)
+	bg.modulate.a = 0.5
+	bg.size = Vector2(40, CELL_HEIGHT)
+	cell.add_child(bg)
+
+	# Hint text
+	var label = Label.new()
+	label.text = "[++]"
+	label.position = Vector2(2, 4)
+	label.size = Vector2(36, CELL_HEIGHT - 8)
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
@@ -701,6 +784,7 @@ func _update_cursor() -> void:
 	# Find the cell at current cursor position
 	var target_cell = _get_cell_at_cursor()
 	if not target_cell:
+		print("[CURSOR] No cell found at row=%d col=%d, hiding cursor" % [cursor_row, cursor_col])
 		_cursor.visible = false
 		return
 
@@ -749,28 +833,39 @@ func _update_cursor() -> void:
 
 func _get_cell_at_cursor() -> Control:
 	"""Get the cell control at current cursor position"""
+	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var conditions = rule.get("conditions", [])
+	var actions = rule.get("actions", [])
+
+	# Check if any condition is ALWAYS (no empty AND slot in that case)
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	# Extra slot for empty_condition if room for more AND conditions (but not for ALWAYS)
+	var condition_slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		condition_slots += 1  # Include empty AND slot
+
+	# Get action groups for mapping cursor to actual cells
+	var action_groups = _group_actions(actions)
+
+	var cells_in_row = 0
+	for child in _grid_container.get_children():
+		if child.has_meta("row") and child.get_meta("row") == cursor_row:
+			cells_in_row += 1
+
+	if cells_in_row == 0:
+		print("[GET_CELL] No cells found in row %d, grid has %d children" % [cursor_row, _grid_container.get_child_count()])
+
 	for child in _grid_container.get_children():
 		if child.has_meta("row") and child.get_meta("row") == cursor_row:
 			var cell_type = child.get_meta("cell_type")
 			var index = child.get_meta("index")
 
-			var rule = rules[cursor_row] if cursor_row < rules.size() else {}
-			var conditions = rule.get("conditions", [])
-			var actions = rule.get("actions", [])
-
-			# Check if any condition is ALWAYS (no empty AND slot in that case)
-			var has_always = false
-			for cond in conditions:
-				if cond.get("type", "") == "always":
-					has_always = true
-					break
-
-			# Extra slot for empty_condition if room for more AND conditions (but not for ALWAYS)
-			var condition_slots = conditions.size()
-			if conditions.size() < MAX_CONDITIONS and not has_always:
-				condition_slots += 1  # Include empty AND slot
-
-			# Cursor column: 0..conditions-1 = conditions, conditions = empty_condition, rest = actions
+			# Cursor column: 0..conditions-1 = conditions, conditions = empty_condition, rest = action groups
 			if cursor_col < conditions.size():
 				if cell_type == "condition" and index == cursor_col:
 					return child
@@ -779,9 +874,16 @@ func _get_cell_at_cursor() -> Control:
 				if cell_type == "empty_condition" and index == cursor_col:
 					return child
 			else:
-				# Actions start after condition slots
-				var action_idx = cursor_col - condition_slots
-				if (cell_type == "action" or cell_type == "empty_action") and index == action_idx:
+				# Actions - cursor_col counts groups, not individual actions
+				var group_idx = cursor_col - condition_slots
+
+				if cell_type == "action":
+					# Find which group this cell belongs to
+					for i in range(action_groups.size()):
+						if action_groups[i]["start_idx"] == index and i == group_idx:
+							return child
+				elif cell_type == "empty_action" and group_idx == action_groups.size():
+					# Empty action slot (after all groups)
 					return child
 
 	return null
@@ -808,12 +910,124 @@ func _get_max_col_for_row(row_idx: int) -> int:
 	if conditions.size() < MAX_CONDITIONS and not has_always:
 		condition_slots += 1
 
-	# Can move to empty action slot if room
-	var action_slots = actions.size()
-	if action_slots < MAX_ACTIONS:
+	# Count action GROUPS, not individual actions (since grouped actions show as one cell)
+	var action_groups = _group_actions(actions)
+	var action_slots = action_groups.size()
+
+	# Can move to empty action slot if room and not after defer
+	var last_is_defer = actions.size() > 0 and actions[-1].get("type") == "defer"
+	if actions.size() < MAX_ACTIONS and not last_is_defer:
 		action_slots += 1  # Include empty slot
 
 	return condition_slots + action_slots - 1
+
+
+func _is_on_condition_cell() -> bool:
+	"""Check if cursor is on a condition cell (not empty slot)"""
+	if cursor_row >= rules.size():
+		return false
+
+	var rule = rules[cursor_row]
+	var conditions = rule.get("conditions", [])
+
+	# Cursor is on a condition if it's within the conditions array bounds
+	return cursor_col < conditions.size()
+
+
+func _is_on_action_group() -> bool:
+	"""Check if cursor is on an action group with count > 1"""
+	if cursor_row >= rules.size():
+		return false
+
+	var rule = rules[cursor_row]
+	var conditions = rule.get("conditions", [])
+	var actions = rule.get("actions", [])
+
+	# Calculate condition slots
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	var condition_slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		condition_slots += 1
+
+	# Check if cursor is in action area
+	if cursor_col < condition_slots:
+		return false
+
+	var group_idx = cursor_col - condition_slots
+	var action_groups = _group_actions(actions)
+
+	if group_idx < action_groups.size():
+		return action_groups[group_idx]["count"] > 1
+
+	return false
+
+
+func _split_action_group() -> void:
+	"""Split an action group: remove one action and change it to a different type"""
+	var rule = rules[cursor_row]
+	var conditions = rule.get("conditions", [])
+	var actions = rule.get("actions", [])
+
+	# Calculate condition slots
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	var condition_slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		condition_slots += 1
+
+	var group_idx = cursor_col - condition_slots
+	var action_groups = _group_actions(actions)
+
+	if group_idx >= action_groups.size():
+		return
+
+	var group = action_groups[group_idx]
+	if group["count"] <= 1:
+		# Single action - just cycle to next type instead of splitting
+		_open_action_editor()
+		return
+
+	# Remove the last action from the group
+	var last_idx = group["start_idx"] + group["count"] - 1
+	var removed_action = actions[last_idx].duplicate()
+
+	# Change the removed action to a different type
+	var char_abilities = _get_character_abilities()
+	if removed_action["type"] == "attack":
+		if char_abilities.size() > 0:
+			removed_action["type"] = "ability"
+			removed_action["id"] = char_abilities[0]["id"]
+		else:
+			removed_action["type"] = "defer"
+			removed_action.erase("target")
+	elif removed_action["type"] == "ability":
+		removed_action["type"] = "attack"
+		removed_action.erase("id")
+	else:
+		removed_action["type"] = "attack"
+		removed_action.erase("id")
+		if not removed_action.has("target"):
+			removed_action["target"] = "lowest_hp_enemy"
+
+	# Replace the action at the end of the group
+	actions[last_idx] = removed_action
+	rule["actions"] = actions
+
+	# Move cursor to the new split action
+	var new_groups = _group_actions(actions)
+	cursor_col = condition_slots + new_groups.size() - 1
+
+	_refresh_grid()
+	SoundManager.play_ui("menu_select")
 
 
 func _create_default_rule() -> Dictionary:
@@ -884,9 +1098,12 @@ func _input(event: InputEvent) -> void:
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# L trigger - Add OR row
+	# L trigger - Split grouped action OR add AND condition
 	elif event.is_action_pressed("battle_defer"):  # L button
-		_add_condition()
+		if _is_on_action_group():
+			_split_action_group()
+		elif _is_on_condition_cell():
+			_add_and_condition()
 		get_viewport().set_input_as_handled()
 
 	# R trigger - Add action
@@ -900,12 +1117,40 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# Gamepad Y button - Toggle row enabled
-	# JOY_BUTTON_X (index 2) = Y on Nintendo controllers
-	# JOY_BUTTON_Y (index 3) = X on Nintendo / Y on Xbox
-	elif event is InputEventJoypadButton and event.pressed and (event.button_index == JOY_BUTTON_X or event.button_index == JOY_BUTTON_Y):
+	# X button (top-right on SNES) - Cycle operator on condition cells
+	# C key on keyboard for same function
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_C:
+		if _is_on_condition_cell():
+			_cycle_condition_operator()
+		get_viewport().set_input_as_handled()
+
+	# Gamepad X button (top-right, index 3) - Cycle operator
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
+		if _is_on_condition_cell():
+			_cycle_condition_operator()
+		else:
+			# If not on condition, toggle row instead
+			_toggle_row_enabled()
+			SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
+
+	# Gamepad Y button (top-left, index 2) - Toggle row enabled
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_toggle_row_enabled()
 		SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
+
+	# W/S keys - Adjust condition value when on condition cell
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_W:
+		if _is_on_condition_cell():
+			_adjust_condition_value(1)
+			SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_S:
+		if _is_on_condition_cell():
+			_adjust_condition_value(-1)
+			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	# Select button - Toggle autobattle ON/OFF
@@ -971,13 +1216,10 @@ func _edit_current_cell() -> void:
 
 
 func _open_condition_editor() -> void:
-	"""Open condition editor modal"""
-	# TODO: Implement condition editor modal
+	"""Open condition editor - A button cycles condition type"""
 	is_editing = true
 	_update_cursor()
-	print("[AUTOBATTLE] Opening condition editor (TODO)")
 
-	# For now, just cycle through condition types as placeholder
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 	if cursor_col < conditions.size():
@@ -988,12 +1230,70 @@ func _open_condition_editor() -> void:
 		idx = (idx + 1) % types.size()
 		cond["type"] = types[idx]
 		if types[idx] != "always":
-			cond["op"] = "<"
-			cond["value"] = 50
+			if not cond.has("op"):
+				cond["op"] = "<"
+			if not cond.has("value"):
+				cond["value"] = 50
 		_refresh_grid()
 
 	is_editing = false
 	_update_cursor()
+
+
+func _cycle_condition_operator() -> void:
+	"""Cycle through operators (<, <=, ==, >=, >, !=) - X button"""
+	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var conditions = rule.get("conditions", [])
+
+	print("[CYCLE_OP] row=%d col=%d, conditions.size=%d" % [cursor_row, cursor_col, conditions.size()])
+
+	if cursor_col < conditions.size():
+		var cond = conditions[cursor_col]
+		var cond_type = cond.get("type", "always")
+		print("[CYCLE_OP] cond_type=%s, cond=%s" % [cond_type, cond])
+
+		# ALWAYS conditions don't have operators
+		if cond_type == "always":
+			SoundManager.play_ui("menu_error")
+			return
+
+		var operators = ["<", "<=", "==", ">=", ">", "!="]
+		var current_op = cond.get("op", "<")
+		var idx = operators.find(current_op)
+		idx = (idx + 1) % operators.size()
+		cond["op"] = operators[idx]
+		print("[CYCLE_OP] changed op to: %s" % operators[idx])
+
+		SoundManager.play_ui("menu_select")
+		_refresh_grid()
+	else:
+		print("[CYCLE_OP] cursor_col >= conditions.size, not on condition")
+
+
+func _adjust_condition_value(delta: int) -> void:
+	"""Adjust condition value up/down - used with shoulder buttons"""
+	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var conditions = rule.get("conditions", [])
+
+	if cursor_col < conditions.size():
+		var cond = conditions[cursor_col]
+		var cond_type = cond.get("type", "always")
+
+		# ALWAYS conditions don't have values
+		if cond_type == "always":
+			return
+
+		var current_value = cond.get("value", 50)
+		var step = 5  # Adjust by 5 for percentages, 1 for counts
+
+		# Use smaller steps for AP and counts
+		if cond_type in ["ap", "enemy_count", "ally_count", "turn"]:
+			step = 1
+
+		current_value = clamp(current_value + delta * step, 0, 100)
+		cond["value"] = current_value
+
+		_refresh_grid()
 
 
 func _open_action_editor() -> void:
@@ -1016,9 +1316,15 @@ func _open_action_editor() -> void:
 	var condition_slots = conditions.size()
 	if conditions.size() < MAX_CONDITIONS and not has_always:
 		condition_slots += 1
-	var action_idx = cursor_col - condition_slots
 
-	if action_idx < actions.size():
+	# cursor_col counts groups, not individual actions - convert to actual action index
+	var group_idx = cursor_col - condition_slots
+	var action_groups = _group_actions(actions)
+
+	if group_idx < action_groups.size():
+		var group = action_groups[group_idx]
+		var action_idx = group["start_idx"]
+		var group_count = group["count"]
 		var action = actions[action_idx]
 		var current_type = action.get("type", "attack")
 		var current_ability_id = action.get("id", "")
@@ -1026,8 +1332,12 @@ func _open_action_editor() -> void:
 		# Get character-specific abilities
 		var char_abilities = _get_character_abilities()
 
-		# Defer is ONLY allowed as the first action (action_idx == 0)
-		var can_defer = (action_idx == 0)
+		# Defer is now allowed at any position (removed AP restriction)
+
+		# Determine the new action type/id
+		var new_type = current_type
+		var new_id = current_ability_id
+		var new_target = action.get("target", "lowest_hp_enemy")
 
 		if current_type == "ability" and char_abilities.size() > 0:
 			# Cycle through abilities
@@ -1039,35 +1349,43 @@ func _open_action_editor() -> void:
 
 			if ability_idx >= 0 and ability_idx < char_abilities.size() - 1:
 				# Next ability
-				action["id"] = char_abilities[ability_idx + 1]["id"]
-			elif can_defer:
-				# Move to defer (only if first action)
-				action["type"] = "defer"
-				action.erase("id")
-				action.erase("target")
+				new_id = char_abilities[ability_idx + 1]["id"]
 			else:
-				# Back to attack (can't defer if not first action)
-				action["type"] = "attack"
-				action["target"] = "lowest_hp_enemy"
+				# After last ability, go to defer
+				new_type = "defer"
+				new_id = ""
+				new_target = ""
 		elif current_type == "defer":
 			# Back to attack
-			action["type"] = "attack"
-			action["target"] = "lowest_hp_enemy"
+			new_type = "attack"
+			new_id = ""
 		elif current_type == "attack":
 			if char_abilities.size() > 0:
 				# Move to first ability
-				action["type"] = "ability"
-				action["id"] = char_abilities[0]["id"]
-				action["target"] = "lowest_hp_enemy"
-			elif can_defer:
-				# No abilities, go to defer (only if first action)
-				action["type"] = "defer"
-				action.erase("target")
-			# else: stay on attack (can't cycle to defer if not first)
+				new_type = "ability"
+				new_id = char_abilities[0]["id"]
+			else:
+				# No abilities, go to defer
+				new_type = "defer"
+				new_id = ""
+				new_target = ""
 		else:
 			# Unknown type, reset to attack
-			action["type"] = "attack"
-			action["target"] = "lowest_hp_enemy"
+			new_type = "attack"
+			new_id = ""
+
+		# Apply change to ALL actions in the group
+		for i in range(group_count):
+			var idx = action_idx + i
+			actions[idx]["type"] = new_type
+			if new_id != "":
+				actions[idx]["id"] = new_id
+			else:
+				actions[idx].erase("id")
+			if new_target != "":
+				actions[idx]["target"] = new_target
+			else:
+				actions[idx].erase("target")
 
 		_refresh_grid()
 
@@ -1139,12 +1457,52 @@ func _add_action() -> void:
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
+	# Check if any condition is ALWAYS (affects condition slot count)
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	var condition_slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		condition_slots += 1  # Empty condition slot exists
+
+	# R only works when cursor is in action area (past all condition slots)
+	if cursor_col < condition_slots:
+		SoundManager.play_ui("menu_error")
+		return
+
+	# Check if last action is defer - can't add after defer
+	if actions.size() > 0 and actions[-1].get("type") == "defer":
+		SoundManager.play_ui("menu_error")
+		return
+
+	if actions.size() >= MAX_ACTIONS:
+		SoundManager.play_ui("menu_error")
+		return
+
+	# Duplicate the last action (or default to attack if no actions exist)
+	var new_action: Dictionary
+	if actions.size() > 0:
+		new_action = actions[-1].duplicate()
+	else:
+		new_action = {"type": "attack", "target": "lowest_hp_enemy"}
+	actions.append(new_action)
+	rule["actions"] = actions
+
+	# After adding, position cursor on the empty [+R] slot if available
+	# This allows user to keep pressing R to add more actions
+	var action_groups = _group_actions(actions)
 	if actions.size() < MAX_ACTIONS:
-		actions.append({"type": "attack", "target": "lowest_hp_enemy"})
-		rule["actions"] = actions
-		cursor_col = conditions.size() + actions.size() - 1
-		_refresh_grid()
-		SoundManager.play_ui("advance_queue")
+		# Position on empty slot (after all groups)
+		cursor_col = condition_slots + action_groups.size()
+	else:
+		# At max actions, position on last group
+		cursor_col = condition_slots + action_groups.size() - 1
+
+	_refresh_grid()
+	SoundManager.play_ui("advance_queue")
 
 
 func _show_rule_menu() -> void:
@@ -1164,6 +1522,18 @@ func _delete_current_cell() -> void:
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
+	# Check if any condition is ALWAYS (affects slot count)
+	var has_always = false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+			break
+
+	# Calculate condition slots (including empty AND slot if applicable)
+	var condition_slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		condition_slots += 1  # Account for empty condition slot
+
 	if cursor_col < conditions.size():
 		# Deleting a condition
 		if conditions.size() > 1:
@@ -1175,16 +1545,31 @@ func _delete_current_cell() -> void:
 		elif rules.size() > 1:
 			# Last condition in rule - delete whole rule
 			_show_rule_menu()
+	elif cursor_col < condition_slots:
+		# On empty condition slot - nothing to delete
+		SoundManager.play_ui("menu_error")
 	else:
-		# Deleting an action
-		var action_idx = cursor_col - conditions.size()
-		if action_idx < actions.size():
-			actions.remove_at(action_idx)
+		# Deleting an action - cursor_col counts groups, not individual actions
+		var group_idx = cursor_col - condition_slots
+		var action_groups = _group_actions(actions)
+
+		if group_idx < action_groups.size():
+			var group = action_groups[group_idx]
+			var start_idx = group["start_idx"]
+			var count = group["count"]
+
+			# Delete all actions in this group (from end to start to preserve indices)
+			for i in range(count):
+				actions.remove_at(start_idx)
+
 			rule["actions"] = actions
 			if actions.size() == 0:
 				# Must have at least one action - add default
 				actions.append({"type": "attack", "target": "lowest_hp_enemy"})
 				rule["actions"] = actions
-			cursor_col = min(cursor_col, conditions.size() + actions.size() - 1)
+
+			# Recalculate cursor position based on new groups
+			var new_groups = _group_actions(actions)
+			cursor_col = min(cursor_col, condition_slots + new_groups.size() - 1)
 			_refresh_grid()
 			SoundManager.play_ui("menu_cancel")

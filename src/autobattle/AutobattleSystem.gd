@@ -546,7 +546,42 @@ func _load_character_scripts() -> void:
 			if data is Dictionary:
 				character_scripts = data.get("scripts", {})
 				autobattle_enabled = data.get("enabled", {})
+				# Migrate old format scripts to new format
+				_migrate_old_format_scripts()
 				print("Loaded %d character autobattle scripts" % character_scripts.size())
+
+
+func _migrate_old_format_scripts() -> void:
+	"""Migrate old numeric format scripts to new string format"""
+	var needs_save = false
+
+	for character_id in character_scripts.keys():
+		var script = character_scripts[character_id]
+		if not script.has("rules"):
+			continue
+
+		for rule in script["rules"]:
+			# Check if this is old format (has action_type instead of actions array)
+			if rule.has("action_type") and not rule.has("actions"):
+				# Old format detected - reset to default
+				print("Migrating old format script for %s" % character_id)
+				character_scripts[character_id] = create_default_character_script(character_id)
+				needs_save = true
+				break
+
+			# Check conditions for old numeric format
+			if rule.has("conditions"):
+				for condition in rule["conditions"]:
+					var cond_type = condition.get("type")
+					# If type is a number (old enum format), reset script
+					if cond_type is float or cond_type is int:
+						print("Migrating old numeric condition format for %s" % character_id)
+						character_scripts[character_id] = create_default_character_script(character_id)
+						needs_save = true
+						break
+
+	if needs_save:
+		_save_character_scripts()
 
 
 func _save_character_scripts() -> void:
