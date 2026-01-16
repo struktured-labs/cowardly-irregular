@@ -619,9 +619,10 @@ func repeat_previous_actions() -> bool:
 			var action = saved_action.duplicate()
 			action["combatant"] = combatant
 
-			# Retarget if target is dead
-			if action.has("target") and action["target"] is Combatant:
-				if not action["target"].is_alive:
+			# Retarget if target is dead or freed
+			if action.has("target"):
+				var target = action["target"]
+				if not is_instance_valid(target) or (target is Combatant and not target.is_alive):
 					var alive_enemies = _get_alive_enemies()
 					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
 
@@ -629,10 +630,10 @@ func repeat_previous_actions() -> bool:
 			if action.has("targets"):
 				var new_targets = []
 				for target in action["targets"]:
-					if target is Combatant and target.is_alive:
+					if is_instance_valid(target) and target is Combatant and target.is_alive:
 						new_targets.append(target)
 					else:
-						# Replace dead targets with first alive enemy
+						# Replace dead/freed targets with first alive enemy
 						var alive_enemies = _get_alive_enemies()
 						if alive_enemies.size() > 0:
 							new_targets.append(alive_enemies[0])

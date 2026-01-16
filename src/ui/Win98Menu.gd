@@ -10,6 +10,7 @@ signal menu_closed()
 signal actions_submitted(actions: Array)  # For Advance mode - multiple actions
 signal defer_requested()  # L button with no queue - defer turn
 signal go_back_requested()  # B button at root to go back to previous player
+signal confirm_turn_requested()  # L button held - confirm current queue and end turn
 
 
 ## Get currently selected item ID (for hold detection)
@@ -91,6 +92,9 @@ var _can_go_back: bool = false  # Whether B button can go to previous player
 var battle_mode: bool = true  # Whether to show battle-specific UI (AP, advance/defer)
 var _initial_selection_id: String = ""  # ID to pre-select when menu opens
 var _submenu_memory: Dictionary = {}  # {menu_id: submenu_item_id} for command memory
+var _l_button_pressed: bool = false  # Track if L button is held
+var _l_button_press_time: float = 0.0  # When L was pressed
+const L_HOLD_CONFIRM_TIME: float = 0.5  # Seconds to hold L for confirm
 
 ## Signals for target selection with position
 signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
@@ -112,6 +116,15 @@ func _ready() -> void:
 	_setup_timers()
 	_setup_audio()
 	_build_menu()
+
+
+func _process(delta: float) -> void:
+	# Check for L button hold-to-confirm
+	if _l_button_pressed and battle_mode:
+		var hold_time = Time.get_ticks_msec() / 1000.0 - _l_button_press_time
+		if hold_time >= L_HOLD_CONFIRM_TIME:
+			_l_button_pressed = false
+			_confirm_turn_with_queue()
 
 
 func _exit_tree() -> void:
@@ -866,13 +879,29 @@ func _handle_advance_input() -> void:
 
 
 func _handle_defer_input() -> void:
-	"""Handle L button - undo last queued action, or defer if no queue"""
+	"""Handle L button release - undo last queued action, or defer if no queue"""
 	var root = _get_root_menu()
 	if root._queued_actions.size() > 0:
 		# Undo last queued action (from any menu depth)
 		_undo_last_action()
 	else:
 		# No actions queued - emit defer signal from root (where it's connected)
+		_play_defer_sound()
+		root.defer_requested.emit()
+		root._close_entire_tree()
+
+
+func _confirm_turn_with_queue() -> void:
+	"""L button held for 2 seconds - confirm current queue and end turn"""
+	var root = _get_root_menu()
+	if root._queued_actions.size() > 0:
+		# Submit queued actions as advance
+		SoundManager.play_ui("menu_select")
+		root.actions_submitted.emit(root._queued_actions.duplicate())
+		root._queued_actions.clear()
+		root._close_entire_tree()
+	else:
+		# No queue - just defer
 		_play_defer_sound()
 		root.defer_requested.emit()
 		root._close_entire_tree()
@@ -1073,9 +1102,25 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+		# L button: Track press/release for hold-to-confirm
 		if event.is_action_pressed("battle_defer"):
-			# L button: Undo last queued action, or Defer if no queue
-			_handle_defer_input()
+			# Start tracking L button hold
+			var root = _get_root_menu()
+			root._l_button_pressed = true
+			root._l_button_press_time = Time.get_ticks_msec() / 1000.0
+			get_viewport().set_input_as_handled()
+			return
+
+		if event.is_action_released("battle_defer"):
+			# L button released - check if it was a quick press
+			var root = _get_root_menu()
+			if root._l_button_pressed:
+				root._l_button_pressed = false
+				var hold_time = Time.get_ticks_msec() / 1000.0 - root._l_button_press_time
+				if hold_time < L_HOLD_CONFIRM_TIME:
+					# Quick press - do normal defer/undo behavior
+					_handle_defer_input()
+				# If hold_time >= L_HOLD_CONFIRM_TIME, it was already handled in _process
 			get_viewport().set_input_as_handled()
 			return
 
