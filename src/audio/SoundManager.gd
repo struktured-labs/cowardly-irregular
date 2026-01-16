@@ -1280,42 +1280,42 @@ func _warm_wave(phase: float) -> float:
 ## Monster-Specific Battle Music
 
 # Monster music parameters - each monster has unique feel
-# 32 bars = 4 sections of 8 bars each
+# 48 bars = 6 sections of 8 bars each for more variety
 const MONSTER_MUSIC_PARAMS = {
 	"slime": {
-		"bpm": 120, "bars": 32, "key": "C_major",
+		"bpm": 128, "bars": 48, "key": "C_major",
 		"style": "bouncy", "bass_style": "bounce"
 	},
 	"bat": {
-		"bpm": 165, "bars": 32, "key": "D_minor",
+		"bpm": 170, "bars": 48, "key": "D_minor",
 		"style": "frantic", "bass_style": "fast"
 	},
 	"mushroom": {
-		"bpm": 85, "bars": 32, "key": "E_minor",
+		"bpm": 90, "bars": 48, "key": "E_minor",
 		"style": "creepy", "bass_style": "drone"
 	},
 	"imp": {
-		"bpm": 155, "bars": 32, "key": "F_minor",
+		"bpm": 160, "bars": 48, "key": "F_minor",
 		"style": "chaotic", "bass_style": "chromatic"
 	},
 	"goblin": {
-		"bpm": 135, "bars": 32, "key": "A_minor",
+		"bpm": 140, "bars": 48, "key": "A_minor",
 		"style": "tribal", "bass_style": "drums"
 	},
 	"skeleton": {
-		"bpm": 115, "bars": 32, "key": "B_minor",
+		"bpm": 120, "bars": 48, "key": "B_minor",
 		"style": "spooky", "bass_style": "staccato"
 	},
 	"wolf": {
-		"bpm": 145, "bars": 32, "key": "E_minor",
+		"bpm": 150, "bars": 48, "key": "E_minor",
 		"style": "tense", "bass_style": "prowl"
 	},
 	"ghost": {
-		"bpm": 95, "bars": 32, "key": "G_minor",
+		"bpm": 100, "bars": 48, "key": "G_minor",
 		"style": "ethereal", "bass_style": "floating"
 	},
 	"snake": {
-		"bpm": 130, "bars": 32, "key": "C_minor",
+		"bpm": 135, "bars": 48, "key": "C_minor",
 		"style": "slither", "bass_style": "serpent"
 	}
 }
@@ -1357,22 +1357,28 @@ func _start_monster_music(monster_type: String) -> void:
 
 
 func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, monster_type: String) -> PackedVector2Array:
-	"""Generate battle music with monster-specific character"""
+	"""Generate battle music with monster-specific character - now with counter-melody and dynamics"""
 	var buffer = PackedVector2Array()
 	var samples = int(rate * duration)
 	var beat_duration = 60.0 / bpm
 	var params = MONSTER_MUSIC_PARAMS.get(monster_type, MONSTER_MUSIC_PARAMS["slime"])
 
-	# Get melody and bass based on monster type
+	# Get melody, counter-melody, and bass based on monster type
 	var melody = _get_monster_melody(monster_type)
+	var counter = _get_monster_counter_melody(monster_type)
 	var bass_notes = _get_monster_bass(monster_type)
+	var total_bars = params["bars"]
 
 	for i in range(samples):
 		var t = float(i) / rate
 		var beat_pos = fmod(t / beat_duration, 4.0)
-		var bar = int(t / (beat_duration * 4))
-		var sixteenth = int(beat_pos * 4) % 64
+		var bar = int(t / (beat_duration * 4)) % total_bars
+		var section = bar / 8  # Which 8-bar section (0-5)
 		var sample = 0.0
+
+		# Dynamic volume based on section (build and release)
+		var section_dynamics = [0.85, 0.9, 1.0, 0.95, 1.0, 0.9]  # Subtle dynamics
+		var dyn = section_dynamics[section % 6] if section < 6 else 0.9
 
 		# Melody (sixteenth notes, style-dependent)
 		var melody_idx = (bar * 16 + int(beat_pos * 4)) % melody.size()
@@ -1381,22 +1387,42 @@ func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, mons
 			var note_phase = fmod(t * melody_note, 1.0)
 			var wave = _get_monster_wave(note_phase, params["style"])
 			var env = _get_monster_envelope(beat_pos, params["style"])
-			sample += wave * 0.3 * env
+			sample += wave * 0.28 * env * dyn
 
-		# Bass (quarter notes)
+		# Counter-melody (eighth notes, comes in on section 2+)
+		if section >= 1 and counter.size() > 0:
+			var counter_idx = (bar * 8 + int(beat_pos * 2)) % counter.size()
+			var counter_note = counter[counter_idx]
+			if counter_note > 0:
+				var counter_phase = fmod(t * counter_note, 1.0)
+				var counter_wave = _triangle_wave(counter_phase)
+				var counter_env = 0.7 + 0.3 * (1.0 - fmod(beat_pos * 2, 1.0))
+				# Pan counter-melody slightly for stereo width
+				var counter_vol = 0.15 * counter_env * (dyn * 0.8)
+				sample += counter_wave * counter_vol
+
+		# Bass (quarter notes) - with occasional octave jumps
 		var bass_idx = (bar * 4 + int(beat_pos)) % bass_notes.size()
 		var bass_note = bass_notes[bass_idx]
 		if bass_note > 0:
-			var bass_phase = fmod(t * bass_note, 1.0)
-			var bass_wave = _square_wave(bass_phase)
+			# Octave variation on strong beats in later sections
+			var bass_freq = bass_note
+			if section >= 3 and int(beat_pos) == 0 and bar % 4 == 0:
+				bass_freq *= 2.0  # Octave up on downbeat every 4 bars
+			var bass_phase = fmod(t * bass_freq, 1.0)
+			var bass_wave = _soft_square(bass_phase) * 0.6 + _triangle_wave(bass_phase) * 0.4
 			var bass_env = _get_bass_envelope(beat_pos, params["bass_style"])
-			sample += bass_wave * 0.2 * bass_env
+			sample += bass_wave * 0.22 * bass_env * dyn
 
-		# Drums (style-dependent)
-		sample += _get_monster_drums(beat_pos, t, params["style"]) * 0.25
+		# Drums (style-dependent) with fills
+		var drum_vol = 0.25 * dyn
+		# Add fills at end of sections
+		if bar % 8 == 7 and beat_pos >= 3.0:
+			drum_vol *= 1.3  # Louder fill
+		sample += _get_monster_drums(beat_pos, t, params["style"]) * drum_vol
 
-		# Soft clip
-		sample = clamp(sample * 1.2, -0.95, 0.95)
+		# Soft clip for warmth
+		sample = clamp(sample * 1.15, -0.92, 0.92)
 		buffer.append(Vector2(sample, sample))
 
 	return buffer
@@ -1682,159 +1708,305 @@ func _get_monster_drums(beat_pos: float, t: float, style: String) -> float:
 
 
 func _get_monster_melody(monster_type: String) -> Array:
-	"""Get melody pattern for monster type - 4 sections of 32 notes each (128 total)"""
-	# Base frequencies
-	const C4 = 261.63; const D4 = 293.66; const E4 = 329.63; const F4 = 349.23
-	const G4 = 392.0; const A4 = 440.0; const B4 = 493.88; const C5 = 523.25
-	const D5 = 587.33; const E5 = 659.25; const G5 = 783.99
-	const Eb4 = 311.13; const Bb4 = 466.16; const Db4 = 277.18; const Ab4 = 415.30
-	const Gb4 = 369.99; const Fs4 = 369.99; const Bb3 = 233.08; const Eb5 = 622.25
+	"""Get melody pattern for monster type - 6 sections of 32 notes each (192 total)
+	   Each melody uses JRPG-style hooks with memorable motifs and proper phrase structure"""
+	# Base frequencies - full chromatic set
+	const C4 = 261.63; const Cs4 = 277.18; const D4 = 293.66; const Ds4 = 311.13
+	const E4 = 329.63; const F4 = 349.23; const Fs4 = 369.99; const G4 = 392.0
+	const Gs4 = 415.30; const A4 = 440.0; const As4 = 466.16; const B4 = 493.88
+	const C5 = 523.25; const Cs5 = 554.37; const D5 = 587.33; const Ds5 = 622.25
+	const E5 = 659.25; const F5 = 698.46; const G5 = 783.99; const A5 = 880.0
+	# Flats as aliases
+	const Eb4 = Ds4; const Bb4 = As4; const Ab4 = Gs4; const Db4 = Cs4; const Gb4 = Fs4
+	const Eb5 = Ds5; const Bb3 = 233.08
 
 	match monster_type:
 		"slime":
-			# Bouncy C major melody - 4 sections
+			# BOUNCY C MAJOR - Dragon Quest style, super catchy!
+			# Hook: C-E-G-E-C  (the "boing" motif)
 			return [
-				# Section A - Main bouncy theme
-				C4, 0, E4, 0, G4, 0, E4, 0, C4, 0, G4, 0, E4, 0, C4, 0,
-				G4, 0, C5, 0, G4, 0, E4, 0, G4, 0, E4, 0, C4, 0, 0, 0,
-				# Section B - Higher energy
-				C5, 0, E5, 0, C5, 0, G4, 0, E4, 0, G4, 0, C5, 0, G4, 0,
-				E4, G4, C5, 0, G4, E4, C4, 0, E4, 0, G4, 0, C5, 0, 0, 0,
-				# Section C - Playful variation
-				E4, 0, C4, 0, E4, 0, G4, 0, C5, 0, G4, 0, E4, 0, C4, 0,
-				G4, C5, G4, 0, E4, 0, C4, E4, G4, 0, C5, 0, G4, 0, 0, 0,
-				# Section D - Return with flourish
-				C4, E4, G4, C5, G4, E4, C4, 0, E4, G4, C5, G4, E4, C4, 0, 0,
-				C5, 0, G4, 0, E4, 0, C4, 0, E4, G4, C5, 0, C4, 0, 0, 0]
+				# Section A (bars 1-2) - THE HOOK - this is the earworm
+				C4, 0, E4, G4, E4, 0, C4, 0,  G4, E4, C4, E4, G4, 0, 0, 0,
+				C4, 0, E4, G4, E4, 0, C4, 0,  G4, 0, C5, G4, E4, C4, 0, 0,
+				# Section A repeat (bars 3-4) - hook with variation
+				C4, 0, E4, G4, E4, 0, C4, 0,  G4, E4, C4, E4, G4, 0, 0, 0,
+				E4, G4, C5, 0, G4, E4, G4, 0,  E4, 0, C4, 0, 0, 0, 0, 0,
+				# Section B (bars 5-6) - ascending energy, builds tension
+				E4, 0, E4, 0, G4, 0, G4, 0,  A4, 0, A4, 0, C5, 0, 0, 0,
+				C5, 0, B4, 0, A4, 0, G4, 0,  A4, G4, E4, 0, C4, 0, 0, 0,
+				# Section B variation (bars 7-8) - higher climax
+				G4, 0, G4, 0, C5, 0, C5, 0,  D5, 0, E5, 0, D5, C5, 0, 0,
+				C5, 0, G4, 0, E4, 0, G4, 0,  C4, E4, G4, C5, G4, 0, 0, 0,
+				# Section C (bars 9-10) - playful call and response
+				C5, E5, C5, 0, G4, 0, 0, 0,  E4, G4, E4, 0, C4, 0, 0, 0,
+				C5, E5, C5, 0, G4, E4, G4, 0,  C4, E4, G4, E4, C4, 0, 0, 0,
+				# Section C variation (bars 11-12) - bounce finale
+				E4, 0, G4, 0, C5, 0, E5, 0,  C5, G4, E4, G4, C5, 0, 0, 0,
+				E5, D5, C5, 0, G4, 0, E4, 0,  C4, 0, E4, G4, C4, 0, 0, 0]
 		"bat":
-			# Fast D minor - frantic, 4 sections
+			# FRANTIC D MINOR - Castlevania/Mega Man style, urgent and driving
+			# Hook: D-F-A-D (rising) then rapid D-Eb-D (flutter)
 			return [
-				# Section A - Frantic main
-				D4, Eb4, D4, 0, F4, 0, D4, Eb4, D4, 0, A4, 0, D4, F4, D4, 0,
-				A4, 0, D4, 0, F4, Eb4, D4, 0, A4, F4, D4, 0, Eb4, D4, 0, 0,
-				# Section B - Ascending panic
-				D4, 0, F4, 0, A4, 0, D5, 0, A4, 0, F4, 0, D4, 0, Eb4, 0,
-				F4, A4, D5, A4, F4, D4, Eb4, D4, F4, 0, A4, 0, D4, 0, 0, 0,
-				# Section C - Swooping
-				A4, D5, A4, F4, D4, 0, Eb4, F4, A4, 0, D4, 0, F4, 0, A4, 0,
-				D5, 0, A4, F4, D4, Eb4, F4, 0, D4, 0, A4, 0, F4, D4, 0, 0,
-				# Section D - Chaotic finish
-				D4, F4, D4, A4, D4, F4, D4, Eb4, D4, F4, A4, D5, A4, F4, D4, 0,
-				Eb4, D4, F4, D4, A4, F4, D4, 0, F4, A4, D4, 0, Eb4, D4, 0, 0]
+				# Section A - THE FLUTTER HOOK
+				D4, 0, F4, A4, D5, A4, F4, 0,  D4, Eb4, D4, 0, D4, Eb4, D4, 0,
+				D4, 0, F4, A4, D5, 0, A4, F4,  D4, Eb4, D4, Eb4, D4, 0, 0, 0,
+				# Section A repeat with higher tension
+				D4, 0, F4, A4, D5, A4, F4, 0,  D4, Eb4, D4, 0, F4, Eb4, D4, 0,
+				A4, 0, D5, 0, A4, F4, D4, Eb4,  D4, 0, F4, 0, D4, 0, 0, 0,
+				# Section B - frantic ascending panic
+				D4, F4, A4, 0, D5, 0, F5, D5,  A4, 0, F4, D4, Eb4, D4, 0, 0,
+				A4, A4, D5, D5, A4, A4, F4, 0,  D4, Eb4, F4, Eb4, D4, 0, 0, 0,
+				# Section B intensified - breakneck speed feel
+				D5, A4, D5, A4, F4, D4, F4, D4,  Eb4, D4, Eb4, D4, F4, 0, 0, 0,
+				D5, 0, A4, 0, F4, D4, Eb4, D4,  F4, A4, D5, A4, D4, 0, 0, 0,
+				# Section C - swooping dive-bomb runs
+				D5, A4, F4, D4, 0, D4, F4, A4,  D5, 0, A4, F4, D4, 0, 0, 0,
+				A4, D5, A4, F4, D4, Eb4, F4, A4,  D4, 0, F4, A4, D5, 0, 0, 0,
+				# Section C finale - return to hook
+				D4, 0, F4, A4, D5, A4, F4, D4,  Eb4, D4, 0, Eb4, D4, 0, 0, 0,
+				D5, A4, F4, D4, Eb4, D4, F4, A4,  D4, Eb4, D4, 0, D4, 0, 0, 0]
 		"mushroom":
-			# Slow E minor - creepy, 4 sections
+			# CREEPY E MINOR - sparse, unsettling, Silent Hill vibes
+			# Hook: E...G...B... (slow, haunting intervals)
 			return [
-				# Section A - Eerie main
-				E4, 0, 0, 0, G4, 0, 0, 0, B4, 0, 0, E4, 0, 0, G4, 0,
-				0, 0, E4, 0, 0, 0, Fs4, 0, 0, E4, 0, 0, 0, 0, 0, 0,
-				# Section B - Dissonant
-				Fs4, 0, 0, 0, E4, 0, 0, 0, G4, 0, 0, Fs4, 0, 0, E4, 0,
-				0, 0, B4, 0, 0, 0, G4, 0, 0, E4, 0, 0, 0, 0, 0, 0,
-				# Section C - Unsettling climb
-				E4, 0, 0, G4, 0, 0, B4, 0, 0, E5, 0, 0, B4, 0, 0, G4,
-				0, 0, E4, 0, 0, Fs4, 0, 0, G4, 0, 0, E4, 0, 0, 0, 0,
-				# Section D - Decay
-				B4, 0, 0, 0, G4, 0, 0, 0, E4, 0, 0, 0, Fs4, 0, 0, 0,
-				E4, 0, 0, 0, 0, 0, 0, 0, E4, 0, 0, 0, 0, 0, 0, 0]
+				# Section A - THE DREAD MOTIF - lots of silence
+				E4, 0, 0, 0, 0, 0, G4, 0,  0, 0, 0, 0, B4, 0, 0, 0,
+				0, 0, E4, 0, 0, 0, 0, 0,  Fs4, 0, 0, E4, 0, 0, 0, 0,
+				# Section A with dissonance
+				E4, 0, 0, 0, 0, 0, G4, 0,  0, 0, Fs4, 0, 0, 0, E4, 0,
+				0, 0, 0, 0, G4, 0, 0, 0,  0, E4, 0, 0, 0, 0, 0, 0,
+				# Section B - rising unease
+				B4, 0, 0, 0, 0, 0, G4, 0,  0, 0, E4, 0, 0, 0, 0, 0,
+				Fs4, 0, 0, G4, 0, 0, 0, 0,  E4, 0, 0, 0, 0, 0, 0, 0,
+				# Section B - chromatic creep
+				E4, 0, 0, F4, 0, 0, Fs4, 0,  0, G4, 0, 0, 0, 0, 0, 0,
+				B4, 0, 0, 0, 0, Fs4, 0, 0,  E4, 0, 0, 0, 0, 0, 0, 0,
+				# Section C - brief climax then decay
+				E5, 0, 0, 0, B4, 0, 0, 0,  G4, 0, 0, E4, 0, 0, 0, 0,
+				0, 0, G4, 0, 0, 0, E4, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+				# Section C - return to stillness
+				E4, 0, 0, 0, 0, 0, 0, 0,  G4, 0, 0, 0, 0, 0, E4, 0,
+				0, 0, 0, 0, 0, 0, 0, 0,  E4, 0, 0, 0, 0, 0, 0, 0]
 		"imp":
-			# Chaotic F minor chromatic, 4 sections
+			# CHAOTIC F MINOR - mischievous, chromatic, Kefka vibes
+			# Hook: F-Gb-Ab-Bb-Ab-Gb-F (chromatic laugh)
 			return [
-				# Section A - Mischievous main
-				F4, 0, Gb4, 0, F4, Ab4, 0, F4, Gb4, F4, 0, Ab4, Bb4, 0, Ab4, 0,
-				F4, Gb4, Ab4, 0, Bb4, Ab4, Gb4, F4, 0, Ab4, 0, F4, Gb4, 0, F4, 0,
-				# Section B - Trickster
-				Ab4, Bb4, Ab4, Gb4, F4, 0, Gb4, Ab4, Bb4, 0, Ab4, 0, Gb4, F4, 0, 0,
-				F4, 0, Ab4, 0, Gb4, 0, F4, Ab4, Bb4, Ab4, Gb4, F4, 0, 0, 0, 0,
-				# Section C - Chaotic dance
-				Bb4, Ab4, Gb4, F4, Gb4, Ab4, Bb4, 0, Ab4, Gb4, F4, 0, Gb4, 0, F4, 0,
-				Ab4, 0, Bb4, Ab4, Gb4, F4, 0, Gb4, Ab4, 0, F4, 0, Gb4, 0, 0, 0,
-				# Section D - Wild finish
-				F4, Gb4, Ab4, Bb4, Ab4, Gb4, F4, Gb4, Ab4, Bb4, Ab4, Gb4, F4, 0, 0, 0,
-				Bb4, 0, Ab4, 0, Gb4, 0, F4, 0, Gb4, Ab4, F4, 0, 0, 0, 0, 0]
+				# Section A - THE LAUGH MOTIF
+				F4, 0, Gb4, 0, Ab4, 0, Bb4, Ab4,  Gb4, F4, 0, 0, F4, 0, 0, 0,
+				F4, 0, Gb4, 0, Ab4, Bb4, Ab4, Gb4,  F4, 0, Ab4, 0, F4, 0, 0, 0,
+				# Section A with tricks
+				Ab4, Bb4, Ab4, Gb4, F4, Gb4, Ab4, 0,  F4, 0, Gb4, F4, 0, 0, 0, 0,
+				F4, Gb4, Ab4, Bb4, 0, Ab4, Gb4, F4,  Gb4, 0, F4, 0, 0, 0, 0, 0,
+				# Section B - chaotic dance
+				Bb4, 0, Ab4, Gb4, F4, 0, Gb4, Ab4,  Bb4, Ab4, Gb4, F4, 0, 0, 0, 0,
+				F4, Ab4, F4, Gb4, F4, Ab4, Bb4, 0,  Ab4, Gb4, F4, 0, 0, 0, 0, 0,
+				# Section B - wild leaps
+				F4, 0, Bb4, 0, F4, 0, Gb4, Ab4,  Bb4, 0, Ab4, 0, Gb4, F4, 0, 0,
+				Ab4, Bb4, Ab4, 0, Gb4, F4, Gb4, 0,  F4, 0, Ab4, 0, F4, 0, 0, 0,
+				# Section C - frenzied finale
+				F4, Gb4, Ab4, Bb4, Ab4, Gb4, F4, 0,  Gb4, Ab4, Bb4, Ab4, Gb4, F4, 0, 0,
+				Bb4, Ab4, Gb4, F4, Gb4, Ab4, F4, 0,  Ab4, Gb4, F4, 0, 0, 0, 0, 0,
+				# Section C - return to laugh
+				F4, 0, Gb4, 0, Ab4, 0, Bb4, Ab4,  Gb4, F4, 0, Gb4, F4, 0, 0, 0,
+				Ab4, Bb4, Ab4, Gb4, F4, 0, Ab4, F4,  Gb4, F4, 0, 0, F4, 0, 0, 0]
 		"goblin":
-			# Tribal A minor pentatonic, 4 sections
+			# TRIBAL A MINOR - war drums, pentatonic, primal
+			# Hook: A-C-A-G-E (war chant)
 			return [
-				# Section A - War chant
-				A4, 0, C5, 0, A4, 0, G4, 0, A4, 0, E4, 0, G4, 0, A4, 0,
-				C5, 0, A4, 0, G4, 0, E4, 0, G4, A4, 0, 0, A4, 0, 0, 0,
-				# Section B - Battle cry
-				E4, G4, A4, 0, C5, 0, A4, 0, G4, A4, C5, 0, A4, 0, G4, 0,
-				A4, 0, E4, 0, G4, 0, A4, G4, E4, 0, A4, 0, 0, 0, 0, 0,
-				# Section C - Marching
-				A4, A4, 0, 0, C5, C5, 0, 0, A4, A4, 0, 0, G4, G4, 0, 0,
-				E4, E4, G4, G4, A4, A4, C5, 0, A4, 0, G4, 0, E4, 0, 0, 0,
-				# Section D - Victory stomp
-				C5, A4, G4, E4, G4, A4, C5, 0, A4, C5, A4, G4, E4, G4, A4, 0,
-				A4, 0, C5, 0, A4, 0, G4, 0, E4, G4, A4, 0, A4, 0, 0, 0]
+				# Section A - THE WAR CHANT
+				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, 0, 0, A4, 0, 0, 0,
+				A4, 0, C5, 0, A4, 0, G4, E4,  G4, A4, 0, 0, 0, 0, 0, 0,
+				# Section A with response
+				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, C5, A4, G4, 0, 0, 0,
+				E4, G4, A4, 0, C5, A4, G4, E4,  A4, 0, 0, 0, 0, 0, 0, 0,
+				# Section B - battle intensifies
+				A4, A4, C5, C5, A4, A4, G4, G4,  E4, E4, G4, G4, A4, 0, 0, 0,
+				C5, A4, G4, E4, G4, A4, C5, 0,  A4, G4, E4, 0, A4, 0, 0, 0,
+				# Section B - marching stomp
+				A4, 0, A4, 0, C5, 0, C5, 0,  A4, 0, G4, 0, E4, 0, A4, 0,
+				G4, A4, C5, A4, G4, E4, G4, A4,  0, 0, A4, 0, 0, 0, 0, 0,
+				# Section C - victory surge
+				C5, 0, E5, 0, C5, 0, A4, G4,  A4, C5, A4, G4, E4, 0, 0, 0,
+				A4, C5, E5, C5, A4, G4, A4, 0,  E4, G4, A4, 0, 0, 0, 0, 0,
+				# Section C - return to war chant
+				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, C5, 0, A4, 0, 0, 0,
+				E4, G4, A4, C5, A4, G4, E4, G4,  A4, 0, 0, 0, A4, 0, 0, 0]
 		"skeleton":
-			# Spooky B minor staccato, 4 sections
+			# SPOOKY B MINOR - Castlevania bone-rattling, staccato
+			# Hook: B-D-B..Fs-B (bone clatter)
 			return [
-				# Section A - Bone rattle main
-				B4, 0, 0, B4, 0, 0, D4, 0, B4, 0, 0, 0, Fs4, 0, 0, B4,
-				0, D4, 0, 0, B4, 0, 0, Fs4, 0, 0, B4, 0, 0, 0, 0, 0,
-				# Section B - Creaking
-				Fs4, 0, 0, 0, B4, 0, 0, 0, D4, 0, 0, B4, 0, 0, Fs4, 0,
-				0, B4, 0, 0, D4, 0, 0, 0, Fs4, 0, 0, 0, B4, 0, 0, 0,
-				# Section C - Shambling
-				B4, 0, D4, 0, 0, B4, 0, Fs4, 0, 0, B4, 0, D4, 0, 0, 0,
-				Fs4, 0, 0, B4, 0, 0, D4, 0, B4, 0, 0, Fs4, 0, 0, 0, 0,
-				# Section D - Death march
-				B4, D4, B4, 0, Fs4, 0, B4, 0, D4, B4, Fs4, 0, B4, 0, 0, 0,
-				0, B4, 0, D4, 0, Fs4, 0, B4, 0, 0, B4, 0, 0, 0, 0, 0]
+				# Section A - THE BONE RATTLE
+				B4, 0, 0, D5, 0, B4, 0, 0,  Fs4, 0, 0, B4, 0, 0, 0, 0,
+				B4, 0, 0, D5, 0, B4, 0, 0,  Fs4, B4, 0, 0, 0, 0, 0, 0,
+				# Section A with echo
+				B4, 0, 0, D5, 0, B4, 0, 0,  Fs4, 0, 0, 0, B4, 0, 0, 0,
+				D5, 0, B4, 0, 0, Fs4, 0, 0,  B4, 0, 0, 0, 0, 0, 0, 0,
+				# Section B - creaking joints
+				Fs4, 0, 0, 0, B4, 0, 0, 0,  D5, 0, 0, 0, B4, 0, 0, 0,
+				Fs4, 0, B4, 0, D5, 0, B4, 0,  Fs4, 0, 0, 0, 0, 0, 0, 0,
+				# Section B - shambling march
+				B4, D5, B4, 0, 0, Fs4, 0, 0,  B4, 0, D5, 0, B4, 0, 0, 0,
+				Fs4, B4, D5, B4, Fs4, 0, B4, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+				# Section C - death approaches
+				D5, 0, 0, B4, 0, 0, Fs4, 0,  0, B4, 0, 0, D5, 0, 0, 0,
+				B4, Fs4, B4, D5, B4, 0, 0, 0,  Fs4, 0, B4, 0, 0, 0, 0, 0,
+				# Section C - return to rattle
+				B4, 0, 0, D5, 0, B4, 0, 0,  Fs4, 0, 0, B4, 0, 0, 0, 0,
+				D5, B4, Fs4, 0, B4, 0, D5, 0,  B4, 0, 0, 0, B4, 0, 0, 0]
 		"wolf":
-			# Tense E minor, 4 sections
+			# TENSE E MINOR - stalking, building, predatory
+			# Hook: E-G-B-E (pack hunting motif)
 			return [
-				# Section A - Prowling
-				E4, 0, E4, G4, 0, E4, 0, 0, B4, 0, E4, 0, G4, 0, E4, 0,
-				E4, G4, B4, 0, G4, E4, 0, 0, B4, G4, E4, 0, 0, E4, 0, 0,
-				# Section B - Stalking
-				G4, 0, E4, 0, G4, 0, B4, 0, E5, 0, B4, 0, G4, 0, E4, 0,
-				B4, E5, B4, G4, E4, 0, G4, 0, E4, 0, B4, 0, E4, 0, 0, 0,
-				# Section C - Chase
-				E4, G4, B4, E5, B4, G4, E4, 0, G4, B4, E5, B4, G4, E4, 0, 0,
-				E5, B4, G4, E4, G4, B4, E5, 0, B4, G4, E4, 0, G4, E4, 0, 0,
-				# Section D - Howl
-				E5, 0, 0, B4, 0, 0, G4, 0, E4, 0, G4, B4, E5, 0, 0, 0,
-				B4, 0, G4, 0, E4, 0, G4, 0, B4, 0, E4, 0, 0, 0, 0, 0]
+				# Section A - THE PROWL
+				E4, 0, E4, 0, G4, 0, E4, 0,  B4, 0, G4, E4, 0, 0, 0, 0,
+				E4, 0, E4, 0, G4, 0, B4, G4,  E4, 0, 0, 0, 0, 0, 0, 0,
+				# Section A - circling
+				E4, G4, E4, 0, B4, G4, E4, 0,  G4, E4, 0, 0, E4, 0, 0, 0,
+				E4, 0, G4, 0, B4, 0, G4, E4,  B4, G4, E4, 0, 0, 0, 0, 0,
+				# Section B - tension builds
+				B4, 0, E5, 0, B4, 0, G4, 0,  E4, 0, G4, 0, B4, 0, 0, 0,
+				E5, B4, G4, E4, G4, B4, E5, 0,  B4, G4, E4, 0, 0, 0, 0, 0,
+				# Section B - the chase
+				E4, G4, B4, E5, B4, G4, E4, G4,  B4, E5, B4, G4, E4, 0, 0, 0,
+				E5, 0, B4, 0, G4, 0, E4, G4,  B4, 0, E4, 0, 0, 0, 0, 0,
+				# Section C - the strike
+				E5, E5, B4, B4, G4, G4, E4, 0,  G4, B4, E5, 0, B4, G4, 0, 0,
+				E4, 0, G4, B4, E5, B4, G4, E4,  G4, 0, E4, 0, 0, 0, 0, 0,
+				# Section C - return to prowl
+				E4, 0, E4, 0, G4, 0, E4, 0,  B4, 0, G4, E4, G4, 0, 0, 0,
+				B4, G4, E4, 0, G4, E4, B4, 0,  E4, 0, 0, 0, E4, 0, 0, 0]
 		"ghost":
-			# Ethereal G minor - high, floating, 4 sections
+			# ETHEREAL G MINOR - floating, otherworldly, melancholic
+			# Hook: G...Bb...D (rising wail)
 			return [
-				# Section A - Haunting
-				G4, 0, 0, 0, Bb4, 0, 0, 0, D4, 0, 0, G4, 0, 0, 0, 0,
-				Bb4, 0, 0, 0, G4, 0, 0, 0, D4, 0, 0, 0, G4, 0, 0, 0,
-				# Section B - Drifting
-				D4, 0, 0, G4, 0, 0, Bb4, 0, 0, D5, 0, 0, Bb4, 0, 0, G4,
-				0, 0, D4, 0, 0, 0, G4, 0, 0, 0, Bb4, 0, 0, 0, 0, 0,
-				# Section C - Wailing
-				D5, 0, 0, 0, Bb4, 0, 0, 0, G4, 0, 0, 0, D4, 0, 0, 0,
-				G4, 0, Bb4, 0, D5, 0, 0, 0, Bb4, 0, G4, 0, 0, 0, 0, 0,
-				# Section D - Fading
-				G4, 0, 0, 0, 0, 0, Bb4, 0, 0, 0, 0, 0, D4, 0, 0, 0,
-				0, 0, G4, 0, 0, 0, 0, 0, 0, 0, 0, 0, G4, 0, 0, 0]
+				# Section A - THE WAIL
+				G4, 0, 0, 0, 0, 0, Bb4, 0,  0, 0, 0, 0, D5, 0, 0, 0,
+				0, 0, Bb4, 0, 0, 0, G4, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+				# Section A - drifting
+				D5, 0, 0, 0, 0, 0, Bb4, 0,  0, 0, G4, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, G4, 0, 0, Bb4,  0, 0, 0, 0, 0, 0, 0, 0,
+				# Section B - spectral dance
+				G4, 0, Bb4, 0, D5, 0, Bb4, 0,  G4, 0, 0, 0, 0, 0, 0, 0,
+				D5, 0, 0, Bb4, 0, 0, G4, 0,  0, 0, Bb4, 0, 0, 0, 0, 0,
+				# Section B - ascending spirit
+				G4, 0, 0, Bb4, 0, 0, D5, 0,  0, F5, 0, 0, D5, 0, 0, 0,
+				0, 0, Bb4, 0, 0, 0, G4, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+				# Section C - full manifestation
+				D5, 0, Bb4, 0, G4, 0, Bb4, D5,  0, 0, Bb4, 0, G4, 0, 0, 0,
+				G4, Bb4, D5, 0, Bb4, G4, 0, 0,  D5, 0, 0, 0, 0, 0, 0, 0,
+				# Section C - fade to nothing
+				G4, 0, 0, 0, 0, 0, 0, 0,  Bb4, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, G4, 0, 0, 0,  0, 0, 0, 0, G4, 0, 0, 0]
 		"snake":
-			# Slithering C minor, 4 sections
+			# SLITHERING C MINOR - serpentine, winding, hypnotic
+			# Hook: C-Eb-G-Eb-C (coiling motif)
 			return [
-				# Section A - Slithering main
-				C4, 0, Eb4, 0, G4, 0, Eb4, C4, 0, G4, Eb4, 0, C4, 0, Eb4, G4,
-				0, Eb4, C4, 0, G4, 0, Eb4, C4, Eb4, G4, 0, Eb4, C4, 0, 0, 0,
-				# Section B - Coiling
-				G4, Eb4, C4, Eb4, G4, 0, C4, 0, Eb4, G4, Eb4, C4, 0, Eb4, 0, 0,
-				C4, Eb4, G4, Eb4, C4, 0, Eb4, G4, C4, 0, Eb4, 0, G4, 0, 0, 0,
-				# Section C - Strike
-				C4, 0, 0, Eb4, 0, 0, G4, 0, 0, Eb5, 0, 0, G4, 0, 0, Eb4,
-				0, 0, C4, 0, Eb4, G4, Eb4, C4, 0, G4, 0, Eb4, C4, 0, 0, 0,
-				# Section D - Retreat
-				Eb5, G4, Eb4, C4, 0, Eb4, G4, 0, Eb4, C4, 0, Eb4, 0, C4, 0, 0,
-				G4, 0, Eb4, 0, C4, 0, Eb4, 0, C4, Eb4, G4, 0, C4, 0, 0, 0]
+				# Section A - THE COIL
+				C4, 0, Eb4, 0, G4, 0, Eb4, C4,  0, G4, Eb4, C4, 0, 0, 0, 0,
+				C4, 0, Eb4, G4, Eb4, C4, 0, Eb4,  G4, Eb4, C4, 0, 0, 0, 0, 0,
+				# Section A - winding
+				G4, Eb4, C4, Eb4, G4, Eb4, C4, 0,  Eb4, 0, G4, 0, Eb4, C4, 0, 0,
+				C4, Eb4, G4, 0, Eb4, C4, Eb4, G4,  C4, 0, 0, 0, 0, 0, 0, 0,
+				# Section B - rising threat
+				Eb4, G4, Eb5, G4, Eb4, C4, Eb4, 0,  G4, 0, Eb4, C4, 0, 0, 0, 0,
+				C4, 0, Eb4, 0, G4, Eb4, C4, Eb4,  G4, Eb4, C4, 0, 0, 0, 0, 0,
+				# Section B - strike preparation
+				G4, 0, G4, 0, Eb5, 0, G4, 0,  Eb4, 0, C4, 0, Eb4, G4, 0, 0,
+				Eb5, G4, Eb4, C4, Eb4, G4, Eb5, 0,  G4, Eb4, C4, 0, 0, 0, 0, 0,
+				# Section C - the strike!
+				Eb5, 0, 0, 0, G4, 0, 0, 0,  Eb4, 0, 0, 0, C4, 0, 0, 0,
+				C4, Eb4, G4, Eb5, G4, Eb4, C4, 0,  Eb4, G4, C4, 0, 0, 0, 0, 0,
+				# Section C - retreat and coil
+				C4, 0, Eb4, 0, G4, 0, Eb4, C4,  0, Eb4, G4, Eb4, C4, 0, 0, 0,
+				G4, Eb4, C4, 0, Eb4, 0, C4, 0,  Eb4, G4, C4, 0, C4, 0, 0, 0]
 		_:
-			return [C4, 0, E4, 0, G4, 0, E4, 0, C4, 0, G4, 0, E4, 0, C4, 0,
-					G4, 0, C5, 0, G4, 0, E4, 0, G4, 0, E4, 0, C4, 0, 0, 0,
-					C4, 0, E4, 0, G4, 0, E4, 0, C4, 0, G4, 0, E4, 0, C4, 0,
-					G4, 0, C5, 0, G4, 0, E4, 0, G4, 0, E4, 0, C4, 0, 0, 0]
+			# Default C major
+			return [C4, 0, E4, G4, E4, 0, C4, 0, G4, E4, C4, E4, G4, 0, 0, 0,
+					C4, 0, E4, G4, E4, 0, C4, 0, G4, 0, C5, G4, E4, C4, 0, 0,
+					C4, 0, E4, G4, E4, 0, C4, 0, G4, E4, C4, E4, G4, 0, 0, 0,
+					E4, G4, C5, 0, G4, E4, G4, 0, E4, 0, C4, 0, 0, 0, 0, 0,
+					E4, 0, E4, 0, G4, 0, G4, 0, A4, 0, A4, 0, C5, 0, 0, 0,
+					C5, 0, B4, 0, A4, 0, G4, 0, A4, G4, E4, 0, C4, 0, 0, 0]
+
+
+func _get_monster_counter_melody(monster_type: String) -> Array:
+	"""Get counter-melody pattern (eighth notes) - adds harmonic depth
+	   Plays harmonizing notes that complement the main melody"""
+	const C4 = 261.63; const D4 = 293.66; const E4 = 329.63; const F4 = 349.23
+	const G4 = 392.0; const A4 = 440.0; const B4 = 493.88; const C5 = 523.25
+	const Eb4 = 311.13; const Bb4 = 466.16; const Ab4 = 415.30; const Fs4 = 369.99
+	const Gb4 = 369.99; const D5 = 587.33
+
+	match monster_type:
+		"slime":
+			# Harmonizing thirds and fifths - bouncy feel
+			return [
+				E4, 0, G4, 0, C5, 0, G4, 0,  E4, 0, C5, 0, G4, 0, E4, 0,
+				G4, 0, E4, 0, G4, 0, C5, 0,  G4, 0, E4, 0, C5, G4, E4, 0,
+				C5, 0, G4, 0, E4, 0, G4, C5,  G4, E4, G4, 0, E4, 0, C5, 0,
+				E4, G4, C5, G4, E4, 0, G4, 0,  C5, 0, G4, 0, E4, 0, 0, 0]
+		"bat":
+			# Urgent, syncopated counter-melody
+			return [
+				F4, 0, A4, 0, F4, 0, D4, 0,  A4, F4, D4, 0, F4, 0, A4, 0,
+				D4, A4, F4, 0, A4, 0, D4, F4,  A4, 0, F4, 0, D4, 0, A4, 0,
+				A4, D5, A4, F4, D4, 0, F4, A4,  D4, 0, F4, 0, A4, 0, D4, 0,
+				F4, 0, D4, F4, A4, D5, A4, F4,  D4, F4, A4, 0, D4, 0, 0, 0]
+		"mushroom":
+			# Sparse, unsettling harmonies
+			return [
+				0, 0, G4, 0, 0, 0, B4, 0,  0, 0, 0, 0, E4, 0, 0, 0,
+				0, 0, 0, 0, Fs4, 0, 0, 0,  0, 0, G4, 0, 0, 0, 0, 0,
+				B4, 0, 0, 0, 0, 0, G4, 0,  0, 0, E4, 0, 0, 0, 0, 0,
+				0, 0, Fs4, 0, 0, 0, E4, 0,  0, 0, 0, 0, 0, 0, 0, 0]
+		"imp":
+			# Chromatic chaos companion
+			return [
+				Ab4, 0, F4, 0, Gb4, 0, Ab4, Bb4,  Ab4, Gb4, F4, 0, Ab4, 0, F4, 0,
+				Bb4, Ab4, Gb4, 0, F4, Gb4, Ab4, 0,  F4, 0, Ab4, 0, Gb4, 0, F4, 0,
+				F4, 0, Ab4, Bb4, Ab4, 0, Gb4, F4,  Ab4, 0, Gb4, F4, Ab4, 0, 0, 0,
+				Gb4, Ab4, F4, 0, Ab4, Bb4, Ab4, Gb4,  F4, 0, Ab4, 0, F4, 0, 0, 0]
+		"goblin":
+			# Pentatonic war harmony
+			return [
+				C5, 0, A4, 0, E4, 0, G4, 0,  A4, 0, C5, 0, A4, 0, G4, 0,
+				E4, G4, A4, 0, G4, E4, C5, 0,  A4, 0, G4, 0, E4, 0, A4, 0,
+				A4, 0, C5, 0, A4, G4, E4, 0,  G4, A4, C5, 0, A4, 0, 0, 0,
+				E4, 0, G4, A4, C5, A4, G4, E4,  A4, 0, G4, 0, A4, 0, 0, 0]
+		"skeleton":
+			# Sparse bone harmonics
+			return [
+				D5, 0, 0, B4, 0, 0, Fs4, 0,  0, B4, 0, 0, 0, 0, 0, 0,
+				Fs4, 0, 0, 0, B4, 0, 0, D5,  0, 0, B4, 0, 0, 0, 0, 0,
+				B4, 0, 0, Fs4, 0, 0, D5, 0,  B4, 0, 0, 0, Fs4, 0, 0, 0,
+				0, 0, B4, 0, D5, 0, 0, B4,  Fs4, 0, 0, 0, B4, 0, 0, 0]
+		"wolf":
+			# Hunting pack harmonies
+			return [
+				G4, 0, B4, 0, E4, 0, G4, 0,  B4, 0, E4, 0, G4, 0, B4, 0,
+				E4, 0, G4, B4, E4, 0, G4, 0,  B4, G4, E4, 0, G4, 0, 0, 0,
+				B4, 0, G4, 0, E4, G4, B4, 0,  G4, 0, E4, 0, B4, 0, G4, 0,
+				E4, G4, B4, G4, E4, 0, G4, B4,  E4, 0, G4, 0, E4, 0, 0, 0]
+		"ghost":
+			# Ethereal floating harmonies
+			return [
+				0, 0, Bb4, 0, 0, 0, D5, 0,  0, 0, G4, 0, 0, 0, 0, 0,
+				D5, 0, 0, 0, Bb4, 0, 0, 0,  G4, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, G4, 0, 0, Bb4, 0, 0,  D5, 0, 0, 0, Bb4, 0, 0, 0,
+				G4, 0, 0, Bb4, 0, 0, 0, 0,  0, 0, G4, 0, 0, 0, 0, 0]
+		"snake":
+			# Slithering thirds
+			return [
+				Eb4, 0, G4, 0, C5, 0, G4, Eb4,  0, C5, G4, 0, Eb4, 0, 0, 0,
+				G4, 0, Eb4, 0, C5, G4, Eb4, 0,  C5, 0, G4, 0, Eb4, 0, 0, 0,
+				C5, G4, Eb4, 0, G4, 0, Eb4, C5,  G4, 0, Eb4, 0, C5, 0, 0, 0,
+				Eb4, 0, G4, C5, G4, Eb4, 0, G4,  C5, 0, G4, 0, Eb4, 0, 0, 0]
+		_:
+			return []
 
 
 func _get_monster_bass(monster_type: String) -> Array:
-	"""Get bass pattern for monster type - 4 sections of 8 notes each (32 total)"""
+	"""Get bass pattern for monster type - 6 sections of 8 notes each (48 total)"""
 	const C2 = 65.41; const D2 = 73.42; const E2 = 82.41; const F2 = 87.31
 	const G2 = 98.0; const A2 = 110.0; const B2 = 123.47; const C3 = 130.81
 	const Eb2 = 77.78; const Bb2 = 116.54; const Fs2 = 92.50; const Ab2 = 103.83
@@ -1842,59 +2014,77 @@ func _get_monster_bass(monster_type: String) -> Array:
 
 	match monster_type:
 		"slime":
-			# Bouncy bass - 4 sections
+			# Bouncy bass - 6 sections for full 48 bars
 			return [C2, G2, C2, G2, C2, E2, G2, C2,  # Section A
+					C2, G2, C2, G2, E2, G2, C2, G2,  # Section A'
 					C2, E2, G2, C3, G2, E2, C2, G2,  # Section B - higher
+					E2, G2, C3, G2, E2, C2, G2, E2,  # Section B'
 					E2, G2, C2, G2, E2, C2, G2, E2,  # Section C - variation
-					C2, G2, E2, G2, C2, E2, G2, C2]  # Section D - return
+					C2, G2, E2, G2, C2, E2, G2, C2]  # Section C' - return
 		"bat":
-			# Frantic bass - 4 sections
+			# Frantic bass - 6 sections
 			return [D2, D2, A2, D2, D2, F2, A2, D2,  # Section A
+					D2, A2, D2, F2, D2, A2, F2, D2,  # Section A'
 					D2, F2, D2, A2, F2, D2, A2, D2,  # Section B - ascending
+					A2, F2, D2, F2, A2, D2, F2, A2,  # Section B'
 					A2, D2, F2, D2, A2, F2, D2, F2,  # Section C - swooping
-					D2, A2, D2, F2, D2, A2, F2, D2]  # Section D - chaotic
+					D2, A2, D2, F2, D2, A2, F2, D2]  # Section C' - chaotic
 		"mushroom":
-			# Droning bass - 4 sections
+			# Droning bass - 6 sections
 			return [E2, E2, E2, E2, B2, E2, E2, E2,  # Section A - drone
+					E2, E2, E2, E2, E2, E2, B2, E2,  # Section A'
 					E2, Fs2, E2, E2, E2, G2, E2, E2,  # Section B - subtle
+					E2, E2, G2, E2, Fs2, E2, E2, E2,  # Section B'
 					B2, E2, G2, E2, Fs2, E2, E2, E2,  # Section C - movement
-					E2, E2, E2, E2, E2, E2, E2, E2]  # Section D - decay
+					E2, E2, E2, E2, E2, E2, E2, E2]  # Section C' - decay
 		"imp":
-			# Chromatic bass - 4 sections
+			# Chromatic bass - 6 sections
 			return [F2, Eb2, F2, G2, F2, Eb2, F2, Bb2,  # Section A
+					F2, Gb2, F2, Eb2, F2, G2, F2, Bb2,  # Section A'
 					Ab2, Gb2, F2, Gb2, Ab2, Bb2, Ab2, F2,  # Section B - trickster
+					Bb2, Ab2, Gb2, F2, Gb2, Ab2, Bb2, Ab2,  # Section B'
 					Bb2, Ab2, Gb2, F2, Gb2, Ab2, F2, Gb2,  # Section C - dance
-					F2, Gb2, Ab2, Bb2, Ab2, Gb2, F2, F2]  # Section D - wild
+					F2, Gb2, Ab2, Bb2, Ab2, Gb2, F2, F2]  # Section C' - wild
 		"goblin":
-			# Tribal bass - 4 sections
+			# Tribal bass - 6 sections
 			return [A2, A2, E2, A2, A2, G2, E2, A2,  # Section A - war
+					A2, E2, A2, G2, A2, E2, G2, A2,  # Section A'
 					E2, G2, A2, A2, G2, E2, A2, G2,  # Section B - battle
+					A2, G2, E2, G2, A2, G2, E2, A2,  # Section B'
 					A2, A2, A2, A2, G2, G2, E2, E2,  # Section C - march
-					A2, G2, E2, G2, A2, E2, G2, A2]  # Section D - stomp
+					A2, G2, E2, G2, A2, E2, G2, A2]  # Section C' - stomp
 		"skeleton":
-			# Staccato bass - 4 sections
+			# Staccato bass - 6 sections
 			return [B2, 0, B2, 0, Fs2, 0, B2, 0,  # Section A - rattle
+					B2, 0, Fs2, 0, B2, 0, D2, 0,  # Section A'
 					Fs2, 0, B2, 0, D2, 0, B2, 0,  # Section B - creak
+					D2, 0, B2, 0, Fs2, 0, D2, 0,  # Section B'
 					B2, D2, 0, B2, Fs2, 0, B2, 0,  # Section C - shamble
-					B2, 0, D2, 0, Fs2, 0, B2, 0]  # Section D - march
+					B2, 0, D2, 0, Fs2, 0, B2, 0]  # Section C' - march
 		"wolf":
-			# Prowling bass - 4 sections
+			# Prowling bass - 6 sections
 			return [E2, E2, G2, E2, B2, E2, G2, E2,  # Section A - prowl
-					G2, E2, B2, G2, E2, G2, B2, E2,  # Section B - stalk
-					E2, G2, B2, E2, G2, B2, E2, G2,  # Section C - chase
-					B2, G2, E2, G2, B2, E2, G2, E2]  # Section D - howl
+					G2, E2, B2, G2, E2, G2, B2, E2,  # Section A' - stalk
+					E2, G2, B2, E2, G2, B2, E2, G2,  # Section B - chase
+					B2, G2, E2, G2, B2, E2, G2, E2,  # Section B' - howl
+					B2, E2, B2, E2, G2, E2, B2, E2,  # Section C - pack
+					E2, G2, E2, B2, E2, G2, E2, E2]  # Section C' - hunt
 		"ghost":
-			# Sparse floating bass - 4 sections
+			# Sparse floating bass - 6 sections
 			return [G2, 0, G2, 0, D2, 0, G2, 0,  # Section A - haunt
-					D2, 0, G2, 0, Bb2, 0, G2, 0,  # Section B - drift
-					G2, 0, D2, 0, G2, 0, Bb2, 0,  # Section C - wail
-					G2, 0, 0, 0, D2, 0, 0, G2]  # Section D - fade
+					D2, 0, G2, 0, Bb2, 0, G2, 0,  # Section A' - drift
+					G2, 0, D2, 0, G2, 0, Bb2, 0,  # Section B - wail
+					Bb2, 0, G2, 0, D2, 0, G2, 0,  # Section B' - moan
+					D2, 0, Bb2, 0, G2, 0, D2, 0,  # Section C - apparition
+					G2, 0, 0, 0, D2, 0, 0, G2]  # Section C' - fade
 		"snake":
-			# Serpentine bass - 4 sections
+			# Serpentine bass - 6 sections
 			return [C2, Eb2, G2, Eb2, C2, G2, Eb2, C2,  # Section A - slither
-					G2, Eb2, C2, Eb2, G2, C2, Eb2, G2,  # Section B - coil
-					C2, G2, Eb2, C2, Eb2, G2, C2, Eb2,  # Section C - strike
-					Eb2, G2, Eb2, C2, Eb2, C2, G2, C2]  # Section D - retreat
+					G2, Eb2, C2, Eb2, G2, C2, Eb2, G2,  # Section A' - coil
+					C2, G2, Eb2, C2, Eb2, G2, C2, Eb2,  # Section B - strike
+					Eb2, G2, Eb2, C2, Eb2, C2, G2, C2,  # Section B' - retreat
+					G2, C2, Eb2, G2, C2, Eb2, G2, Eb2,  # Section C - hypnotic
+					C2, Eb2, C2, G2, Eb2, C2, Eb2, C2]  # Section C' - constrict
 		_:
 			return [C2, G2, C2, G2, C2, E2, G2, C2,
 					C2, E2, G2, C3, G2, E2, C2, G2,
