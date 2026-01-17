@@ -58,11 +58,16 @@ func _setup_scene() -> void:
 	transitions.name = "Transitions"
 	add_child(transitions)
 
+	# Create boundary walls (StaticBody2D around the map)
+	_create_map_boundaries()
+
 
 func _generate_map() -> void:
 	# Define the map layout (matching the plan's ASCII art)
 	# ~ = water, M = mountain, . = path, g = grass
 	# C = cave entrance, V = village entrance
+
+	print("Generating overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
 	var map_data: Array[String] = [
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
@@ -102,6 +107,7 @@ func _generate_map() -> void:
 		map_data.append("........................................")
 
 	# Convert map_data to tiles
+	var tile_counts = {}
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
 		for x in range(MAP_WIDTH):
@@ -110,11 +116,16 @@ func _generate_map() -> void:
 			var atlas_coords = _get_atlas_coords(tile_type)
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
+			# Count tiles for debug
+			tile_counts[tile_type] = tile_counts.get(tile_type, 0) + 1
+
 			# Mark special locations
 			if char == "C":
 				spawn_points["cave_entrance"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 			elif char == "V":
 				spawn_points["village_entrance"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+
+	print("Tile counts: ", tile_counts)
 
 	# Default spawn point (near village)
 	spawn_points["default"] = spawn_points.get("village_entrance", Vector2(320, 224))
@@ -249,3 +260,32 @@ func pause() -> void:
 func set_player_job(job_name: String) -> void:
 	if player:
 		player.set_job(job_name)
+
+
+## Create invisible walls around map boundaries
+func _create_map_boundaries() -> void:
+	var bounds = StaticBody2D.new()
+	bounds.name = "MapBoundaries"
+	add_child(bounds)
+
+	var map_w = MAP_WIDTH * TILE_SIZE
+	var map_h = MAP_HEIGHT * TILE_SIZE
+	var wall_thickness = 32.0
+
+	# Top wall
+	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	# Bottom wall
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	# Left wall
+	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	# Right wall
+	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+
+
+func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:
+	var collision = CollisionShape2D.new()
+	var shape = RectangleShape2D.new()
+	shape.size = size
+	collision.shape = shape
+	collision.position = pos
+	parent.add_child(collision)

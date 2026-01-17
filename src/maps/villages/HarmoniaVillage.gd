@@ -8,6 +8,7 @@ const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
 const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
+const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -28,6 +29,9 @@ var tile_generator: Node  # TileGenerator
 ## Area transitions
 var transitions: Node2D
 
+## NPCs container
+var npcs: Node2D
+
 ## Spawn points
 var spawn_points: Dictionary = {}
 
@@ -36,6 +40,7 @@ func _ready() -> void:
 	_setup_scene()
 	_generate_map()
 	_setup_transitions()
+	_setup_npcs()
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
@@ -57,6 +62,11 @@ func _setup_scene() -> void:
 	transitions = Node2D.new()
 	transitions.name = "Transitions"
 	add_child(transitions)
+
+	# Create NPCs container
+	npcs = Node2D.new()
+	npcs.name = "NPCs"
+	add_child(npcs)
 
 
 func _generate_map() -> void:
@@ -134,6 +144,78 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	shape.size = size
 	collision.shape = shape
 	trans.add_child(collision)
+
+
+func _setup_npcs() -> void:
+	# Village Elder - center of village (N area - row 5, col 9)
+	var elder = _create_npc("Elder Theron", "elder", Vector2(9 * TILE_SIZE, 5 * TILE_SIZE), [
+		"Welcome to Harmonia Village, young adventurer.",
+		"Our peaceful village has stood for generations...",
+		"But dark rumors spread from the Whispering Cave to the north.",
+		"Many brave souls have ventured there... few return.",
+		"If you seek glory, be warned: the cave adapts to those who challenge it.",
+		"May the light guide your path."
+	])
+	npcs.add_child(elder)
+
+	# Innkeeper - near the inn (I area - row 3, col 4)
+	var innkeeper = _create_npc("Martha", "innkeeper", Vector2(4 * TILE_SIZE, 3 * TILE_SIZE), [
+		"Welcome to the Sleepy Slime Inn!",
+		"A good rest restores the body and spirit.",
+		"We don't get many visitors these days...",
+		"The cave's been making folks nervous.",
+		"Stay safe out there, dear."
+	])
+	npcs.add_child(innkeeper)
+
+	# Shopkeeper - near the shop (S area - row 3, col 14)
+	var shopkeeper = _create_npc("Garvin", "shopkeeper", Vector2(14 * TILE_SIZE, 3 * TILE_SIZE), [
+		"Potions! Antidotes! Everything an adventurer needs!",
+		"Business has been slow since the cave got... strange.",
+		"They say monsters in there grow stronger the more you fight.",
+		"Some kind of adaptation, perhaps?",
+		"Stock up before you go - you'll need it!"
+	])
+	npcs.add_child(shopkeeper)
+
+	# Wandering villager - somewhere in the middle
+	var villager1 = _create_npc("Farmer Gil", "villager", Vector2(6 * TILE_SIZE, 7 * TILE_SIZE), [
+		"*yawn* Another day, another harvest.",
+		"Say, you look like an adventurer type.",
+		"My cousin went into that cave last month...",
+		"Came back babbling about 'infinite loops' and 'meta awareness'.",
+		"Poor fellow's been talking to his reflection ever since."
+	])
+	npcs.add_child(villager1)
+
+	# Another villager near save point
+	var villager2 = _create_npc("Young Pip", "villager", Vector2(12 * TILE_SIZE, 8 * TILE_SIZE), [
+		"Wow! A real adventurer!",
+		"I'm gonna be just like you when I grow up!",
+		"I heard you can AUTOMATE fighting in this world...",
+		"Isn't that kind of... cheating?",
+		"My mom says it's 'enlightenment', whatever that means."
+	])
+	npcs.add_child(villager2)
+
+	# Guard near exit
+	var guard = _create_npc("Guard Boris", "guard", Vector2(7 * TILE_SIZE, 11 * TILE_SIZE), [
+		"Halt! ...Oh, you're heading OUT? Carry on then.",
+		"I'm here to keep monsters from getting IN.",
+		"The overworld isn't too dangerous...",
+		"But watch out for the cave. Strange things happen there.",
+		"Rumor has it the boss gets stronger each time it's defeated."
+	])
+	npcs.add_child(guard)
+
+
+func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
+	var npc = OverworldNPCScript.new()
+	npc.npc_name = npc_name
+	npc.npc_type = npc_type
+	npc.position = pos
+	npc.dialogue_lines = dialogue
+	return npc
 
 
 func _setup_player() -> void:

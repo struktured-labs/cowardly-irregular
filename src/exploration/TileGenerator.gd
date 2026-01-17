@@ -453,8 +453,14 @@ func _draw_floor(img: Image, palette: Dictionary, variant: int) -> void:
 
 ## Create a TileSet with all tile types for use in TileMap
 func create_tileset() -> TileSet:
+	print("Creating tileset...")
 	var tileset = TileSet.new()
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
+
+	# Add physics layer for collision
+	tileset.add_physics_layer()
+	tileset.set_physics_layer_collision_layer(0, 1)  # Layer 1
+	tileset.set_physics_layer_collision_mask(0, 1)
 
 	# Create atlas source from generated tiles
 	var atlas = TileSetAtlasSource.new()
@@ -470,6 +476,9 @@ func create_tileset() -> TileSet:
 		TileType.WALL, TileType.FLOOR, TileType.GRASS, TileType.GRASS,  # Variants
 		TileType.WATER, TileType.WATER, TileType.WATER, TileType.WATER   # Animation frames
 	]
+
+	# Impassable tile types (need collision)
+	var impassable_types = [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL]
 
 	for i in range(tile_order.size()):
 		var tile_type = tile_order[i]
@@ -494,10 +503,30 @@ func create_tileset() -> TileSet:
 	atlas.texture = atlas_texture
 	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
-	# Create tiles in atlas
+	# Debug: Save atlas to disk for inspection
+	atlas_img.save_png("user://debug_atlas.png")
+	print("Atlas saved to user://debug_atlas.png (size: %dx%d)" % [atlas_img.get_width(), atlas_img.get_height()])
+
+	# Create tiles in atlas and add collision for impassable ones
 	for i in range(tile_order.size()):
 		var coords = Vector2i(i % atlas_size, i / atlas_size)
 		atlas.create_tile(coords)
+
+		var tile_type = tile_order[i]
+		# Add collision for impassable tiles
+		if tile_type in impassable_types:
+			var tile_data = atlas.get_tile_data(coords, 0)
+			if tile_data:
+				# Create full-tile collision polygon (centered around tile origin)
+				var half = TILE_SIZE / 2.0
+				var polygon = PackedVector2Array([
+					Vector2(-half, -half),
+					Vector2(half, -half),
+					Vector2(half, half),
+					Vector2(-half, half)
+				])
+				tile_data.add_collision_polygon(0)
+				tile_data.set_collision_polygon_points(0, 0, polygon)
 
 	tileset.add_source(atlas)
 
