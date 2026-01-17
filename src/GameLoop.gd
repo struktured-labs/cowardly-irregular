@@ -1,17 +1,19 @@
 extends Node
 
-## GameLoop - Controls the battle → menu → battle game loop
+## GameLoop - Controls the exploration → battle → menu game loop
 ## Manages scene transitions and player persistence
 
 const BattleSceneRes = preload("res://src/battle/BattleScene.tscn")
 const MenuSceneRes = preload("res://src/ui/MenuScene.tscn")
+const OverworldSceneRes = preload("res://src/exploration/OverworldScene.tscn")
 
 enum LoopState {
 	BATTLE,
-	MENU
+	MENU,
+	EXPLORATION
 }
 
-var current_state: LoopState = LoopState.BATTLE
+var current_state: LoopState = LoopState.EXPLORATION
 var current_scene: Node = null
 
 ## Persistent party data
@@ -29,6 +31,11 @@ var equipment_pool: Dictionary = {
 ## Autobattle editor overlay
 var _autobattle_editor: Control = null
 
+## Exploration state
+var _current_map_id: String = "overworld"
+var _spawn_point: String = "default"
+var _exploration_scene: Node = null
+
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
@@ -36,8 +43,8 @@ func _ready() -> void:
 	# Create persistent party
 	_create_party()
 
-	# Start with first battle
-	_start_battle()
+	# Start with exploration (overworld)
+	_start_exploration()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -297,16 +304,18 @@ func _on_battle_ended(victory: bool) -> void:
 			member.restore_mp(mp_restore)
 			member.current_ap = 0
 
-		# Show menu after delay
+		# Return to exploration after delay
 		await get_tree().create_timer(1.5).timeout
-		_show_menu()
+		_return_to_exploration()
 	else:
-		# Game over - for now just restart
+		# Game over - for now restart exploration
 		print("GAME OVER - Restarting...")
 		await get_tree().create_timer(2.0).timeout
 		_create_party()
 		battles_won = 0
-		_start_battle()
+		_current_map_id = "overworld"
+		_spawn_point = "default"
+		_start_exploration()
 
 
 func _show_menu() -> void:
@@ -331,8 +340,96 @@ func _show_menu() -> void:
 
 
 func _on_continue_pressed() -> void:
-	"""Handle continue from menu"""
+	"""Handle continue from menu - return to exploration"""
+	_return_to_exploration()
+
+
+## Exploration Management
+
+func _start_exploration() -> void:
+	"""Start exploration mode (overworld or interior)"""
+	current_state = LoopState.EXPLORATION
+
+	# Remove old scene
+	if current_scene:
+		current_scene.queue_free()
+		await current_scene.tree_exited
+
+	# Create exploration scene based on current map
+	var exploration_scene: Node = null
+
+	match _current_map_id:
+		"overworld":
+			exploration_scene = OverworldSceneRes.instantiate()
+		"harmonia_village":
+			exploration_scene = _create_village_scene()
+		"whispering_cave":
+			exploration_scene = _create_cave_scene()
+		_:
+			exploration_scene = OverworldSceneRes.instantiate()
+
+	add_child(exploration_scene)
+	current_scene = exploration_scene
+	_exploration_scene = exploration_scene
+
+	# Spawn player at correct position
+	if exploration_scene.has_method("spawn_player_at"):
+		exploration_scene.spawn_player_at(_spawn_point)
+
+	# Set player job based on party leader
+	if party.size() > 0 and exploration_scene.has_method("set_player_job"):
+		var leader_job = "fighter"
+		if party[0].job and party[0].job is Dictionary:
+			leader_job = party[0].job.get("id", "fighter")
+		elif party[0].job is String:
+			leader_job = party[0].job
+		exploration_scene.set_player_job(leader_job)
+
+	# Connect signals
+	if exploration_scene.has_signal("battle_triggered"):
+		exploration_scene.battle_triggered.connect(_on_exploration_battle_triggered)
+	if exploration_scene.has_signal("area_transition"):
+		exploration_scene.area_transition.connect(_on_area_transition)
+
+
+func _return_to_exploration() -> void:
+	"""Return to exploration after battle"""
+	# Keep same map and spawn point (player stays where they were)
+	_start_exploration()
+
+
+func _on_exploration_battle_triggered(enemies: Array) -> void:
+	"""Handle battle triggered from exploration"""
+	# Store current position info could be done here if needed
 	_start_battle()
+
+
+func _on_area_transition(target_map: String, spawn_point: String) -> void:
+	"""Handle transitioning between areas"""
+	_current_map_id = target_map
+	_spawn_point = spawn_point
+	_start_exploration()
+
+
+func _create_village_scene() -> Node:
+	"""Create Harmonia Village scene (placeholder until scene file exists)"""
+	# For now, just return overworld - village scene will be created later
+	var VillageSceneRes = load("res://src/maps/villages/HarmoniaVillage.tscn")
+	if VillageSceneRes:
+		return VillageSceneRes.instantiate()
+	# Fallback to overworld if scene doesn't exist
+	push_warning("HarmoniaVillage.tscn not found, using overworld")
+	return OverworldSceneRes.instantiate()
+
+
+func _create_cave_scene() -> Node:
+	"""Create Whispering Cave scene (placeholder until scene file exists)"""
+	var CaveSceneRes = load("res://src/maps/dungeons/WhisperingCave.tscn")
+	if CaveSceneRes:
+		return CaveSceneRes.instantiate()
+	# Fallback to overworld if scene doesn't exist
+	push_warning("WhisperingCave.tscn not found, using overworld")
+	return OverworldSceneRes.instantiate()
 
 
 ## Equipment Pool Management

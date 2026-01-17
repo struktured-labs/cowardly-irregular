@@ -91,7 +91,11 @@ func _get_map_path(map_id: String) -> String:
 	"""Get resource path for a map"""
 	match map_id:
 		"overworld":
-			return "res://src/maps/Overworld.tscn"
+			return "res://src/exploration/OverworldScene.tscn"
+		"harmonia_village":
+			return "res://src/maps/villages/HarmoniaVillage.tscn"
+		"whispering_cave":
+			return "res://src/maps/dungeons/WhisperingCave.tscn"
 		"village_starter":
 			return "res://src/maps/villages/StarterVillage.tscn"
 		"dungeon_cave":
