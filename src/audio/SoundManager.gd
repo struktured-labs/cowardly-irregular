@@ -61,8 +61,6 @@ var _ability_sounds: Dictionary = {}
 func _ready() -> void:
 	_setup_audio_players()
 	_setup_default_ability_sounds()
-	# Queue background music preloading (deferred to not block startup)
-	call_deferred("_preload_music_async")
 
 
 func _setup_audio_players() -> void:
@@ -90,33 +88,6 @@ func _setup_audio_players() -> void:
 	_music_player.volume_db = -12.0  # Music quieter than SFX
 	_music_player.bus = "Master"
 	add_child(_music_player)
-
-
-var _preload_queue: Array = []
-var _preload_timer: Timer = null
-
-func _preload_music_async() -> void:
-	"""Preload all monster music in background (one per timer tick)"""
-	_preload_queue = MONSTER_MUSIC_PARAMS.keys().duplicate()
-	_preload_timer = Timer.new()
-	_preload_timer.wait_time = 0.05  # 50ms between each track generation
-	_preload_timer.one_shot = false
-	_preload_timer.timeout.connect(_preload_next_track)
-	add_child(_preload_timer)
-	_preload_timer.start()
-
-
-func _preload_next_track() -> void:
-	"""Generate and cache the next monster's music"""
-	if _preload_queue.is_empty():
-		_preload_timer.stop()
-		_preload_timer.queue_free()
-		_preload_timer = null
-		return
-
-	var monster_type = _preload_queue.pop_front()
-	if not _music_cache.has(monster_type):
-		_generate_and_cache_music(monster_type)
 
 
 func _setup_default_ability_sounds() -> void:
@@ -1312,42 +1283,42 @@ func _warm_wave(phase: float) -> float:
 ## Monster-Specific Battle Music
 
 # Monster music parameters - each monster has unique feel
-# 48 bars = 6 sections of 8 bars each for more variety
+# 24 bars = 3 sections of 8 bars each (A-B-C structure, fast generation)
 const MONSTER_MUSIC_PARAMS = {
 	"slime": {
-		"bpm": 128, "bars": 48, "key": "C_major",
+		"bpm": 128, "bars": 24, "key": "C_major",
 		"style": "bouncy", "bass_style": "bounce"
 	},
 	"bat": {
-		"bpm": 170, "bars": 48, "key": "D_minor",
+		"bpm": 170, "bars": 24, "key": "D_minor",
 		"style": "frantic", "bass_style": "fast"
 	},
 	"mushroom": {
-		"bpm": 90, "bars": 48, "key": "E_minor",
+		"bpm": 90, "bars": 24, "key": "E_minor",
 		"style": "creepy", "bass_style": "drone"
 	},
 	"imp": {
-		"bpm": 160, "bars": 48, "key": "F_minor",
+		"bpm": 160, "bars": 24, "key": "F_minor",
 		"style": "chaotic", "bass_style": "chromatic"
 	},
 	"goblin": {
-		"bpm": 140, "bars": 48, "key": "A_minor",
+		"bpm": 140, "bars": 24, "key": "A_minor",
 		"style": "tribal", "bass_style": "drums"
 	},
 	"skeleton": {
-		"bpm": 120, "bars": 48, "key": "B_minor",
+		"bpm": 120, "bars": 24, "key": "B_minor",
 		"style": "spooky", "bass_style": "staccato"
 	},
 	"wolf": {
-		"bpm": 150, "bars": 48, "key": "E_minor",
+		"bpm": 150, "bars": 24, "key": "E_minor",
 		"style": "tense", "bass_style": "prowl"
 	},
 	"ghost": {
-		"bpm": 100, "bars": 48, "key": "G_minor",
+		"bpm": 100, "bars": 24, "key": "G_minor",
 		"style": "ethereal", "bass_style": "floating"
 	},
 	"snake": {
-		"bpm": 135, "bars": 48, "key": "C_minor",
+		"bpm": 135, "bars": 24, "key": "C_minor",
 		"style": "slither", "bass_style": "serpent"
 	}
 }
@@ -1371,7 +1342,7 @@ func _start_monster_music(monster_type: String) -> void:
 func _generate_and_cache_music(monster_type: String) -> AudioStreamWAV:
 	"""Generate music for a monster type and cache it"""
 	var params = MONSTER_MUSIC_PARAMS.get(monster_type, MONSTER_MUSIC_PARAMS["slime"])
-	var sample_rate = 22050
+	var sample_rate = 16000  # Lower rate = faster generation, fine for 8-bit style
 	var bpm = float(params["bpm"])
 	var bars = params["bars"]
 	var beat_duration = 60.0 / bpm
