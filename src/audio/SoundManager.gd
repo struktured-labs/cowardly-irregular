@@ -14,6 +14,9 @@ var _music_player: AudioStreamPlayer
 var _music_playing: bool = false
 var _current_music: String = ""
 
+# Music cache - stores pre-generated AudioStreamWAV for each monster type
+var _music_cache: Dictionary = {}
+
 # Sound definitions - procedural parameters
 const SOUNDS = {
 	# UI Sounds
@@ -58,6 +61,8 @@ var _ability_sounds: Dictionary = {}
 func _ready() -> void:
 	_setup_audio_players()
 	_setup_default_ability_sounds()
+	# Queue background music preloading (deferred to not block startup)
+	call_deferred("_preload_music_async")
 
 
 func _setup_audio_players() -> void:
@@ -85,6 +90,33 @@ func _setup_audio_players() -> void:
 	_music_player.volume_db = -12.0  # Music quieter than SFX
 	_music_player.bus = "Master"
 	add_child(_music_player)
+
+
+var _preload_queue: Array = []
+var _preload_timer: Timer = null
+
+func _preload_music_async() -> void:
+	"""Preload all monster music in background (one per timer tick)"""
+	_preload_queue = MONSTER_MUSIC_PARAMS.keys().duplicate()
+	_preload_timer = Timer.new()
+	_preload_timer.wait_time = 0.05  # 50ms between each track generation
+	_preload_timer.one_shot = false
+	_preload_timer.timeout.connect(_preload_next_track)
+	add_child(_preload_timer)
+	_preload_timer.start()
+
+
+func _preload_next_track() -> void:
+	"""Generate and cache the next monster's music"""
+	if _preload_queue.is_empty():
+		_preload_timer.stop()
+		_preload_timer.queue_free()
+		_preload_timer = null
+		return
+
+	var monster_type = _preload_queue.pop_front()
+	if not _music_cache.has(monster_type):
+		_generate_and_cache_music(monster_type)
 
 
 func _setup_default_ability_sounds() -> void:
@@ -1321,9 +1353,23 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Generate and start monster-specific battle music"""
+	"""Start monster-specific battle music (uses cache for instant playback)"""
 	_music_playing = true
 
+	# Check cache first
+	if _music_cache.has(monster_type):
+		_music_player.stream = _music_cache[monster_type]
+		_music_player.play()
+		return
+
+	# Generate and cache if not found
+	var wav = _generate_and_cache_music(monster_type)
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_and_cache_music(monster_type: String) -> AudioStreamWAV:
+	"""Generate music for a monster type and cache it"""
 	var params = MONSTER_MUSIC_PARAMS.get(monster_type, MONSTER_MUSIC_PARAMS["slime"])
 	var sample_rate = 22050
 	var bpm = float(params["bpm"])
@@ -1352,8 +1398,8 @@ func _start_monster_music(monster_type: String) -> void:
 		data.append((right >> 8) & 0xFF)
 
 	wav.data = data
-	_music_player.stream = wav
-	_music_player.play()
+	_music_cache[monster_type] = wav
+	return wav
 
 
 func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, monster_type: String) -> PackedVector2Array:
