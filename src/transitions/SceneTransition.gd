@@ -66,24 +66,42 @@ func fade_transition(callable: Callable) -> void:
 
 ## Battle transitions
 func transition_to_battle(enemy_data: Array) -> void:
-	"""Transition from exploration to battle"""
+	"""Transition from exploration to battle with dramatic effects"""
 	battle_transition_started.emit()
 	print("Transitioning to battle...")
 
-	# Fade out
-	await fade_to_black()
-
-	# Hide player controller
+	# Disable player movement immediately
 	var player = MapSystem.get_player()
 	if player:
 		player.set_can_move(false)
+
+	# Extract enemy types for transition effect
+	var enemy_types: Array = []
+	for enemy in enemy_data:
+		if enemy is Dictionary and enemy.has("name"):
+			enemy_types.append(enemy["name"])
+		elif enemy is Dictionary and enemy.has("id"):
+			enemy_types.append(enemy["id"])
+
+	# Play dramatic battle transition with monster-specific effects
+	if BattleTransition:
+		await BattleTransition.play_battle_transition(enemy_types)
+	else:
+		# Fallback to simple fade
+		await fade_to_black()
+
+	# Hide player
+	if player:
 		player.visible = false
 
 	# Create battle scene
 	_start_battle(enemy_data)
 
-	# Fade in
-	await fade_from_black()
+	# Fade in from transition
+	if BattleTransition:
+		await BattleTransition.fade_out()
+	else:
+		await fade_from_black()
 
 	battle_transition_finished.emit()
 

@@ -507,14 +507,20 @@ func create_tileset() -> TileSet:
 	atlas_img.save_png("user://debug_atlas.png")
 	print("Atlas saved to user://debug_atlas.png (size: %dx%d)" % [atlas_img.get_width(), atlas_img.get_height()])
 
-	# Create tiles in atlas and add collision for impassable ones
+	# First, create all tiles in atlas without collision
 	for i in range(tile_order.size()):
 		var coords = Vector2i(i % atlas_size, i / atlas_size)
 		atlas.create_tile(coords)
 
+	# Add the atlas source to the tileset BEFORE setting collision data
+	# This ensures the tile data has access to the tileset's physics layers
+	tileset.add_source(atlas)
+
+	# Now add collision for impassable tiles (after source is added to tileset)
+	for i in range(tile_order.size()):
 		var tile_type = tile_order[i]
-		# Add collision for impassable tiles
 		if tile_type in impassable_types:
+			var coords = Vector2i(i % atlas_size, i / atlas_size)
 			var tile_data = atlas.get_tile_data(coords, 0)
 			if tile_data:
 				# Create full-tile collision polygon (centered around tile origin)
@@ -527,8 +533,6 @@ func create_tileset() -> TileSet:
 				])
 				tile_data.add_collision_polygon(0)
 				tile_data.set_collision_polygon_points(0, 0, polygon)
-
-	tileset.add_source(atlas)
 
 	return tileset
 

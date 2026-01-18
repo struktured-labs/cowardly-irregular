@@ -96,6 +96,10 @@ func _setup_sprite() -> void:
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)
 
+	# Set collision layers: layer 1 = walls, layer 2 = player (for NPC detection)
+	collision_layer = 2  # Player is on layer 2 so NPCs can detect us
+	collision_mask = 1   # Player collides with walls (layer 1)
+
 
 func _physics_process(delta: float) -> void:
 	if not can_move:

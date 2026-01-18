@@ -2230,3 +2230,294 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 		buffer.append(Vector2(sample, sample))
 
 	return buffer
+
+
+## ============================================================
+## AREA MUSIC - Exploration themes for different areas
+## ============================================================
+
+var _current_area: String = ""
+
+func play_area_music(area_type: String) -> void:
+	"""Play appropriate music for an exploration area"""
+	if _current_area == area_type and _music_playing:
+		return  # Already playing
+
+	_current_area = area_type
+	stop_music()
+
+	match area_type:
+		"overworld":
+			_start_overworld_music()
+		"village", "harmonia_village":
+			_start_village_music()
+		"cave", "dungeon", "whispering_cave":
+			_start_cave_music()
+		_:
+			_start_overworld_music()
+
+
+func _start_overworld_music() -> void:
+	"""Generate peaceful overworld exploration theme"""
+	_music_playing = true
+	print("[MUSIC] Playing overworld theme")
+
+	var sample_rate = 22050
+	var bpm = 100.0
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_overworld_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _start_village_music() -> void:
+	"""Generate peaceful village theme"""
+	_music_playing = true
+	print("[MUSIC] Playing village theme")
+
+	var sample_rate = 22050
+	var bpm = 80.0
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_village_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _start_cave_music() -> void:
+	"""Generate mysterious dungeon/cave theme"""
+	_music_playing = true
+	print("[MUSIC] Playing cave/dungeon theme")
+
+	var sample_rate = 22050
+	var bpm = 90.0
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_cave_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _create_and_play_looping_wav(buffer: PackedVector2Array, sample_rate: int) -> void:
+	"""Helper to create looping WAV from buffer"""
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = buffer.size()
+
+	var data = PackedByteArray()
+	for frame in buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_overworld_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate adventurous overworld theme - C major, uplifting"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	const NOTE_C3 = 130.81
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+	const NOTE_C5 = 523.25
+
+	var melody = [
+		NOTE_C4, 0, NOTE_E4, 0, NOTE_G4, 0, NOTE_E4, 0, NOTE_C4, 0, NOTE_D4, 0, NOTE_E4, 0, 0, 0,
+		NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_C4, 0, NOTE_D4, 0, NOTE_E4, 0, NOTE_C4, 0, 0, 0,
+		NOTE_G4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_E4, 0, 0, 0,
+		NOTE_C4, 0, NOTE_E4, 0, NOTE_G4, 0, NOTE_C5, 0, NOTE_G4, 0, NOTE_E4, 0, NOTE_C4, 0, 0, 0,
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_E4, 0, NOTE_F4, 0, 0, 0,
+		NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_C4, 0, NOTE_D4, 0, NOTE_E4, 0, 0, 0,
+		NOTE_E4, 0, NOTE_F4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_B4, 0, NOTE_A4, 0, NOTE_G4, 0, 0, 0,
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_C4, 0, NOTE_D4, NOTE_E4, 0, 0,
+	]
+
+	var bass = [
+		NOTE_C3, NOTE_C3, NOTE_G3, NOTE_G3, NOTE_C3, NOTE_C3, NOTE_G3, NOTE_G3,
+		NOTE_F3, NOTE_F3, NOTE_C3, NOTE_C3, NOTE_G3, NOTE_G3, NOTE_C3, NOTE_C3,
+		NOTE_A3, NOTE_A3, NOTE_F3, NOTE_F3, NOTE_G3, NOTE_G3, NOTE_C3, NOTE_C3,
+		NOTE_E3, NOTE_E3, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_A3, NOTE_G3, NOTE_G3,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 128
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+
+		var sample = 0.0
+
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.4)
+			sample += _triangle_wave(t * melody_freq) * 0.25 * melody_env
+
+		var bass_freq = bass[quarter_idx] * 0.5
+		sample += _square_wave(t * bass_freq) * 0.15
+
+		var beat_pos = fmod(t, beat_duration)
+		if beat_pos < 0.03 and int(t / beat_duration) % 2 == 0:
+			sample += sin(beat_pos * 60 * TAU) * pow(1.0 - beat_pos / 0.03, 2) * 0.15
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _generate_village_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate warm village theme - F major, pastoral"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	const NOTE_F3 = 174.61
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_C4 = 261.63
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_Bb4 = 466.16
+	const NOTE_C5 = 523.25
+
+	var melody = [
+		NOTE_F4, NOTE_A4, NOTE_C5, NOTE_A4, NOTE_F4, 0, NOTE_G4, NOTE_A4,
+		NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4, 0, NOTE_F4, 0,
+		NOTE_C4, 0, NOTE_E4, NOTE_F4, NOTE_G4, NOTE_A4, NOTE_Bb4, 0,
+		NOTE_A4, NOTE_G4, NOTE_F4, 0, NOTE_F4, 0, 0, 0,
+		NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4, NOTE_F4, NOTE_G4, NOTE_A4, 0,
+		NOTE_Bb4, NOTE_A4, NOTE_G4, 0, NOTE_F4, 0, NOTE_G4, 0,
+		NOTE_C5, NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4, NOTE_E4, NOTE_F4, 0,
+		NOTE_F4, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	var bass = [
+		NOTE_F3, NOTE_F3, NOTE_C4, NOTE_C4, NOTE_F3, NOTE_F3, NOTE_C4, NOTE_C4,
+		NOTE_Bb3, NOTE_Bb3, NOTE_F3, NOTE_F3, NOTE_C4, NOTE_C4, NOTE_F3, NOTE_F3,
+		NOTE_A3, NOTE_A3, NOTE_F3, NOTE_F3, NOTE_Bb3, NOTE_Bb3, NOTE_C4, NOTE_C4,
+		NOTE_F3, NOTE_F3, NOTE_C4, NOTE_C4, NOTE_F3, NOTE_F3, NOTE_F3, NOTE_F3,
+	]
+
+	var eighth_dur = beat_duration / 2.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var eighth_idx = int(t / eighth_dur) % 64
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_eighth = fmod(t, eighth_dur) / eighth_dur
+
+		var sample = 0.0
+
+		var melody_freq = melody[eighth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_eighth, 0.3)
+			sample += _triangle_wave(t * melody_freq) * 0.22 * melody_env
+			sample += sin(t * melody_freq * TAU) * 0.08 * melody_env
+
+		var bass_freq = bass[quarter_idx] * 0.5
+		sample += sin(t * bass_freq * TAU) * 0.12
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate tense cave theme - E minor, mysterious"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	const NOTE_E2 = 82.41
+	const NOTE_B2 = 123.47
+	const NOTE_A3 = 220.0
+	const NOTE_G3 = 196.0
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+
+	var melody = [
+		NOTE_E4, 0, 0, 0, 0, 0, NOTE_D4, 0, 0, 0, 0, 0, NOTE_E4, 0, 0, 0,
+		0, 0, NOTE_G4, 0, 0, 0, NOTE_F4, 0, NOTE_E4, 0, 0, 0, 0, 0, 0, 0,
+		NOTE_B4, 0, 0, 0, NOTE_A4, 0, 0, 0, NOTE_G4, 0, 0, 0, NOTE_F4, 0, NOTE_E4, 0,
+		0, 0, 0, 0, NOTE_D4, 0, NOTE_E4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		NOTE_E4, 0, NOTE_F4, 0, NOTE_E4, 0, 0, 0, NOTE_D4, 0, NOTE_E4, 0, 0, 0, 0, 0,
+		NOTE_A4, 0, 0, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, 0, 0, 0, 0, 0, 0,
+		NOTE_B3, 0, NOTE_C4, 0, NOTE_D4, 0, NOTE_E4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, 0, 0,
+		NOTE_E4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	var bass = [
+		NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_B2,
+		NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_B2, NOTE_B2, NOTE_E2, NOTE_E2,
+		NOTE_E2, NOTE_E2, NOTE_A3, NOTE_A3, NOTE_G3, NOTE_G3, NOTE_E2, NOTE_E2,
+		NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 128
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+
+		var sample = 0.0
+
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.5)
+			sample += _triangle_wave(t * melody_freq) * 0.18 * melody_env
+			sample += _triangle_wave(t * melody_freq * 1.008) * 0.08 * melody_env
+
+		var bass_freq = bass[quarter_idx] * 0.5
+		sample += sin(t * bass_freq * TAU) * 0.2
+		sample += _square_wave(t * bass_freq) * 0.08
+
+		var drip_time = fmod(t * 1.7, 2.5)
+		if drip_time < 0.03:
+			sample += sin(drip_time * 2000 * TAU) * pow(1.0 - drip_time / 0.03, 2) * 0.1
+
+		sample += randf_range(-0.02, 0.02)
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer

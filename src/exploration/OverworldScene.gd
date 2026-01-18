@@ -40,6 +40,10 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 
+	# Start overworld music
+	if SoundManager:
+		SoundManager.play_area_music("overworld")
+
 	exploration_ready.emit()
 
 

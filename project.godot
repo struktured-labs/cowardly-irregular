@@ -29,14 +29,17 @@ AutogrindSystem="*res://src/autogrind/AutogrindSystem.gd"
 MapSystem="*res://src/maps/MapSystem.gd"
 EncounterSystem="*res://src/encounters/EncounterSystem.gd"
 SceneTransition="*res://src/transitions/SceneTransition.gd"
+BattleTransition="*res://src/transitions/BattleTransition.gd"
 SaveSystem="*res://src/save/SaveSystem.gd"
 SoundManager="*res://src/audio/SoundManager.gd"
 EffectSystem="*res://src/battle/EffectSystem.gd"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/size/window_width_override=1280
+window/size/window_height_override=720
 window/size/resizable=true
 window/stretch/mode="viewport"
 window/stretch/aspect="keep"

@@ -45,6 +45,10 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 
+	# Start village music
+	if SoundManager:
+		SoundManager.play_area_music("village")
+
 	exploration_ready.emit()
 
 
@@ -232,11 +236,14 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
-	# Set camera limits to map bounds
+	var map_pixel_width = MAP_WIDTH * TILE_SIZE
+	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
+
+	# Normal camera limits to map bounds
 	camera.limit_left = 0
 	camera.limit_top = 0
-	camera.limit_right = MAP_WIDTH * TILE_SIZE
-	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
+	camera.limit_right = map_pixel_width
+	camera.limit_bottom = map_pixel_height
 
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
