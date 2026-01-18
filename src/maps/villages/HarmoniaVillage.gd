@@ -236,6 +236,9 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
+	# Zoom in for larger sprites (2x)
+	camera.zoom = Vector2(2.0, 2.0)
+
 	var map_pixel_width = MAP_WIDTH * TILE_SIZE
 	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
 

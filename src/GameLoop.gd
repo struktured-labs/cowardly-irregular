@@ -30,11 +30,13 @@ var equipment_pool: Dictionary = {
 
 ## Autobattle editor overlay
 var _autobattle_editor: Control = null
+var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 
 ## Exploration state
 var _current_map_id: String = "overworld"
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
+var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
 
 func _ready() -> void:
 	# Initialize equipment pool with extra items
@@ -80,6 +82,9 @@ func _toggle_autobattle_editor() -> void:
 		else:
 			_autobattle_editor.queue_free()
 		_autobattle_editor = null
+		if _autobattle_layer:
+			_autobattle_layer.queue_free()
+			_autobattle_layer = null
 		# Show battle menu again if it was hidden
 		_set_battle_menu_visible(true)
 		SoundManager.play_ui("autobattle_close")
@@ -105,10 +110,15 @@ func _toggle_autobattle_editor() -> void:
 		char_id = party[0].combatant_name.to_lower().replace(" ", "_")
 		char_name = party[0].combatant_name
 
+	# Create CanvasLayer to isolate from camera zoom
+	_autobattle_layer = CanvasLayer.new()
+	_autobattle_layer.layer = 50  # Above game, below BattleTransition
+	add_child(_autobattle_layer)
+
 	var AutobattleGridEditorClass = load("res://src/ui/autobattle/AutobattleGridEditor.gd")
 	_autobattle_editor = AutobattleGridEditorClass.new()
 	_autobattle_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_autobattle_editor)
+	_autobattle_layer.add_child(_autobattle_editor)
 	_autobattle_editor.setup(char_id, char_name, combatant)
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
 	SoundManager.play_ui("autobattle_open")
@@ -159,6 +169,9 @@ func _on_autobattle_editor_closed() -> void:
 	if _autobattle_editor and is_instance_valid(_autobattle_editor):
 		_autobattle_editor.queue_free()
 		_autobattle_editor = null
+	if _autobattle_layer and is_instance_valid(_autobattle_layer):
+		_autobattle_layer.queue_free()
+		_autobattle_layer = null
 	# Show battle menu again
 	_set_battle_menu_visible(true)
 
@@ -394,14 +407,35 @@ func _start_exploration() -> void:
 
 func _return_to_exploration() -> void:
 	"""Return to exploration after battle"""
-	# Keep same map and spawn point (player stays where they were)
+	# Keep same map, restore player to saved position
 	_start_exploration()
+
+	# Restore player position after scene is set up
+	if _player_position != Vector2.ZERO and _exploration_scene and _exploration_scene.get("player"):
+		_exploration_scene.player.position = _player_position
 
 
 func _on_exploration_battle_triggered(enemies: Array) -> void:
 	"""Handle battle triggered from exploration"""
-	# Store current position info could be done here if needed
-	_start_battle()
+	# Save player position before battle
+	if _exploration_scene and _exploration_scene.has_method("get") and _exploration_scene.get("player"):
+		_player_position = _exploration_scene.player.position
+
+	# Play dramatic battle transition with monster-specific effects
+	if BattleTransition:
+		var enemy_types: Array = []
+		for enemy in enemies:
+			if enemy is Dictionary:
+				var enemy_type = enemy.get("name", enemy.get("type", enemy.get("id", "unknown")))
+				enemy_types.append(enemy_type)
+		await BattleTransition.play_battle_transition(enemy_types)
+
+	await _start_battle()
+
+	# Wait a frame for battle scene to render, then fade out transition
+	if BattleTransition:
+		await get_tree().process_frame
+		await BattleTransition.fade_out()
 
 
 func _on_area_transition(target_map: String, spawn_point: String) -> void:

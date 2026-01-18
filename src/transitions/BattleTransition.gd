@@ -44,8 +44,8 @@ const MONSTER_TRANSITIONS: Dictionary = {
 	"miniboss": TransitionType.ZOOM_BURST,
 }
 
-## Transition duration
-@export var transition_duration: float = 0.8
+## Transition duration (faster = snappier feel)
+@export var transition_duration: float = 0.4
 
 ## Visual elements
 var _overlay: ColorRect
@@ -208,7 +208,7 @@ func _get_sound_profile_for_enemies(enemy_types: Array) -> Dictionary:
 
 func _generate_monster_sound(profile: Dictionary, transition_type: TransitionType) -> AudioStream:
 	var sample_rate = 22050
-	var duration = 0.5
+	var duration = 0.3  # Shorter for snappier feel
 	var samples = int(sample_rate * duration)
 
 	var audio = AudioStreamWAV.new()
@@ -458,12 +458,12 @@ func _play_zoom_burst() -> void:
 		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.05).set_delay(delay)
 		tween.parallel().tween_property(fragment, "scale:y", 1.5, 0.2).set_delay(delay).set_ease(Tween.EASE_OUT)
 
-	await get_tree().create_timer(0.15).timeout
+	await get_tree().create_timer(0.08).timeout
 
 	# Flash
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.08).timeout
+	await get_tree().create_timer(0.04).timeout
 	_overlay.color = Color.BLACK
 
 	await tween.finished
@@ -473,7 +473,7 @@ func _play_zoom_burst() -> void:
 func _play_shake_flash() -> void:
 	var original_offset = _effect_container.position
 	var shake_intensity = 20.0
-	var flash_count = 6
+	var flash_count = 4  # Fewer flashes for speed
 
 	# Shake and flash
 	for i in range(flash_count):
@@ -487,14 +487,14 @@ func _play_shake_flash() -> void:
 		_overlay.color = Color.WHITE if i % 2 == 0 else Color.RED
 		_overlay.modulate.a = 0.8 if i % 2 == 0 else 0.6
 
-		await get_tree().create_timer(0.06).timeout
-		shake_intensity *= 1.2
+		await get_tree().create_timer(0.04).timeout
+		shake_intensity *= 1.3
 
 	# Final flash to black
 	_effect_container.position = original_offset
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.05).timeout
+	await get_tree().create_timer(0.03).timeout
 	_overlay.color = Color.BLACK
 
 
@@ -711,19 +711,19 @@ func _play_shockwave() -> void:
 
 	for i in range(_fragments.size()):
 		var ring = _fragments[i]
-		var delay = i * 0.05
+		var delay = i * 0.03
 		var target_scale = 4.0 + i * 0.5
 
-		tween.tween_property(ring, "modulate:a", 1.0, 0.1).set_delay(delay)
-		tween.tween_property(ring, "scale", Vector2(target_scale, target_scale), 0.4).set_delay(delay).set_ease(Tween.EASE_OUT)
-		tween.tween_property(ring, "modulate:a", 0.5, 0.3).set_delay(delay + 0.2)
+		tween.tween_property(ring, "modulate:a", 1.0, 0.05).set_delay(delay)
+		tween.tween_property(ring, "scale", Vector2(target_scale, target_scale), 0.2).set_delay(delay).set_ease(Tween.EASE_OUT)
+		tween.tween_property(ring, "modulate:a", 0.5, 0.15).set_delay(delay + 0.1)
 
-	await get_tree().create_timer(0.3).timeout
+	await get_tree().create_timer(0.15).timeout
 
 	# Flash
 	_overlay.color = Color(0.8, 0.6, 1.0)
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.05).timeout
+	await get_tree().create_timer(0.03).timeout
 	_overlay.color = Color.BLACK
 
 

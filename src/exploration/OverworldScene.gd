@@ -202,6 +202,9 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
+	# Zoom in for larger sprites (2x)
+	camera.zoom = Vector2(2.0, 2.0)
+
 	# Set camera limits to map bounds
 	camera.limit_left = 0
 	camera.limit_top = 0
