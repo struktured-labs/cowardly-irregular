@@ -221,14 +221,14 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Profile  R:Character"
+	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  R:Character"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:Toggle Row  Select:Auto ON/OFF  Start:Save & Exit"
+	help_label2.text = "Y:Toggle Row  Shift+Tab:Profile  Select:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1340,8 +1340,16 @@ func _input(event: InputEvent) -> void:
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# L trigger - Cycle to previous/next profile
+	# L trigger - Split grouped action OR add AND condition
 	elif event.is_action_pressed("battle_defer"):  # L button
+		if _is_on_action_group():
+			_split_action_group()
+		elif _is_on_condition_cell():
+			_add_and_condition()
+		get_viewport().set_input_as_handled()
+
+	# Tab key - Cycle profiles
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB and event.shift_pressed:
 		_cycle_profile()
 		get_viewport().set_input_as_handled()
 
@@ -1589,8 +1597,9 @@ func _open_action_editor() -> void:
 					break
 
 			if ability_idx >= 0 and ability_idx < char_abilities.size() - 1:
-				# Next ability
+				# Next ability - use smart target based on ability type
 				new_id = char_abilities[ability_idx + 1]["id"]
+				new_target = _get_target_for_ability(new_id)
 			else:
 				# After last ability, go to defer
 				new_type = "defer"
@@ -1600,11 +1609,13 @@ func _open_action_editor() -> void:
 			# Back to attack
 			new_type = "attack"
 			new_id = ""
+			new_target = "lowest_hp_enemy"
 		elif current_type == "attack":
 			if char_abilities.size() > 0:
-				# Move to first ability
+				# Move to first ability - use smart target based on ability type
 				new_type = "ability"
 				new_id = char_abilities[0]["id"]
+				new_target = _get_target_for_ability(new_id)
 			else:
 				# No abilities, go to defer
 				new_type = "defer"
@@ -1614,6 +1625,7 @@ func _open_action_editor() -> void:
 			# Unknown type, reset to attack
 			new_type = "attack"
 			new_id = ""
+			new_target = "lowest_hp_enemy"
 
 		# Apply change to ALL actions in the group
 		for i in range(group_count):
@@ -1644,6 +1656,32 @@ func _get_character_abilities() -> Array:
 				abilities.append({"id": ability_id, "name": ability.get("name", ability_id)})
 		return abilities
 	return []
+
+
+func _get_target_for_ability(ability_id: String) -> String:
+	"""Get appropriate autobattle target based on ability's target_type"""
+	var ability = JobSystem.get_ability(ability_id)
+	if ability.is_empty():
+		return "lowest_hp_enemy"
+
+	var target_type = ability.get("target_type", "single_enemy")
+	var ability_type = ability.get("type", "")
+
+	# Map ability target_type to autobattle target
+	match target_type:
+		"single_ally", "all_allies":
+			return "lowest_hp_ally"
+		"self":
+			return "self"
+		"dead_ally":
+			return "lowest_hp_ally"  # Autobattle will handle dead ally targeting
+		"single_enemy", "all_enemies":
+			return "lowest_hp_enemy"
+		_:
+			# Fallback: check ability type for healing
+			if ability_type in ["healing", "revival", "support"]:
+				return "lowest_hp_ally"
+			return "lowest_hp_enemy"
 
 
 func _add_condition() -> void:
