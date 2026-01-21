@@ -39,6 +39,9 @@ var _status_label: Label
 var _grid_container: Control
 var _cursor: Control
 var _edit_modal: Control
+var _keyboard: VirtualKeyboard = null
+var _profile_label: Label
+var _stats_panel: Control
 
 ## Grid layout constants
 const CELL_WIDTH = 110
@@ -228,7 +231,7 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:Toggle Row  Shift+Tab:Profile  Select:Auto  Start:Save"
+	help_label2.text = "Y:Toggle  Sh+Tab:Profile  Sh+R:Rename  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -255,6 +258,20 @@ func _build_profile_panel() -> void:
 	_profile_label.add_theme_font_size_override("font_size", 11)
 	_profile_label.add_theme_color_override("font_color", Color.YELLOW)
 	add_child(_profile_label)
+
+
+func _update_profile_indicator() -> void:
+	"""Update just the profile indicator label text"""
+	if not _profile_label or not is_instance_valid(_profile_label):
+		return
+
+	var profile_idx = AutobattleSystem.get_active_profile_index(character_id)
+	var profiles = AutobattleSystem.get_character_profiles(character_id)
+	var profile_name = "Default"
+	if profile_idx < profiles.size():
+		profile_name = profiles[profile_idx].get("name", "Default")
+
+	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
 
 
 func _build_stats_panel() -> void:
@@ -1299,6 +1316,10 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# Keyboard handles its own input when open
+	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
+		return
+
 	if is_editing:
 		# Edit modal handles input
 		return
@@ -1351,6 +1372,11 @@ func _input(event: InputEvent) -> void:
 	# Tab key - Cycle profiles
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB and event.shift_pressed:
 		_cycle_profile()
+		get_viewport().set_input_as_handled()
+
+	# Shift+R - Rename current profile
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
+		_open_rename_profile()
 		get_viewport().set_input_as_handled()
 
 	# R trigger - Cycle to next party member
@@ -1870,3 +1896,44 @@ func _delete_current_cell() -> void:
 			cursor_col = min(cursor_col, condition_slots + new_groups.size() - 1)
 			_refresh_grid()
 			SoundManager.play_ui("menu_cancel")
+
+
+func _open_rename_profile() -> void:
+	"""Open virtual keyboard to rename the current profile"""
+	var current_name = AutobattleSystem.get_active_profile_name(character_id)
+
+	# Create keyboard as child of this control
+	_keyboard = VirtualKeyboard.new()
+	_keyboard.size = size
+	add_child(_keyboard)
+	_keyboard.setup("Rename Profile", current_name, 16)
+
+	# Connect signals
+	_keyboard.text_submitted.connect(_on_profile_renamed)
+	_keyboard.cancelled.connect(_on_rename_cancelled)
+
+	SoundManager.play_ui("menu_select")
+
+
+func _on_profile_renamed(new_name: String) -> void:
+	"""Handle profile rename submission"""
+	if _keyboard:
+		_keyboard.queue_free()
+		_keyboard = null
+
+	var profile_idx = AutobattleSystem.get_active_profile_index(character_id)
+	if AutobattleSystem.rename_profile(character_id, profile_idx, new_name):
+		print("[PROFILE] Renamed to: %s" % new_name)
+		_update_profile_indicator()
+		SoundManager.play_ui("menu_select")
+	else:
+		print("[PROFILE] Failed to rename")
+		SoundManager.play_ui("menu_error")
+
+
+func _on_rename_cancelled() -> void:
+	"""Handle rename cancellation"""
+	if _keyboard:
+		_keyboard.queue_free()
+		_keyboard = null
+	SoundManager.play_ui("menu_close")
