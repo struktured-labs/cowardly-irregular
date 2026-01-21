@@ -333,3 +333,19 @@ func reset_game_state() -> void:
 		"encounter_rate": 1.0,
 		"drop_rate_multiplier": 1.0,
 	}
+
+
+## Serialization methods for SaveSystem
+func to_dict() -> Dictionary:
+	"""Serialize game state for saving"""
+	return _create_save_data()
+
+
+func from_dict(data: Dictionary) -> void:
+	"""Restore game state from saved data"""
+	_apply_save_data(data)
+
+
+func get_play_time() -> float:
+	"""Get current playtime in seconds"""
+	return playtime_seconds

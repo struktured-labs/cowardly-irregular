@@ -16,7 +16,11 @@ signal character_script_changed(character_id: String)
 ## Loaded preset scripts (saved setups)
 var saved_scripts: Dictionary = {}  # {script_name: Script}
 
-## Per-character scripts
+## Per-character profile data
+## Format: {character_id: {profiles: [{name, script}...], active: int}}
+var character_profiles: Dictionary = {}
+
+## Legacy: Per-character scripts (for migration)
 var character_scripts: Dictionary = {}  # {character_id: Script}
 
 ## Autobattle enabled state per character
@@ -24,6 +28,17 @@ var autobattle_enabled: Dictionary = {}  # {character_id: bool}
 
 ## Flag to cancel all autobattle at start of next selection phase (persists across scene changes)
 var cancel_all_next_turn: bool = false
+
+## Max profiles per character (GBA-like limit)
+const MAX_PROFILES_PER_CHARACTER: int = 8
+
+## Default profile names for each job
+const DEFAULT_PROFILE_TEMPLATES: Dictionary = {
+	"hero": ["Aggressive", "Defensive", "Balanced"],
+	"mira": ["Healer", "Support", "Offensive"],
+	"zack": ["Steal First", "DPS", "Cautious"],
+	"vex": ["Nuke", "Conserve MP", "AoE Focus"]
+}
 
 ## Condition types
 enum ConditionType {
@@ -354,17 +369,194 @@ func toggle_autobattle(character_id: String) -> bool:
 
 
 func get_character_script(character_id: String) -> Dictionary:
-	"""Get autobattle script for a character"""
-	if character_scripts.has(character_id):
-		return character_scripts[character_id]
+	"""Get active autobattle script for a character"""
+	_ensure_character_profiles(character_id)
+	var data = character_profiles[character_id]
+	var active_idx = data.get("active", 0)
+	var profiles = data.get("profiles", [])
+	if active_idx < profiles.size():
+		return profiles[active_idx].get("script", {})
 	return create_default_character_script(character_id)
 
 
 func set_character_script(character_id: String, script: Dictionary) -> void:
-	"""Set autobattle script for a character"""
-	character_scripts[character_id] = script
-	_save_character_scripts()
+	"""Set active autobattle script for a character"""
+	_ensure_character_profiles(character_id)
+	var data = character_profiles[character_id]
+	var active_idx = data.get("active", 0)
+	var profiles = data.get("profiles", [])
+	if active_idx < profiles.size():
+		profiles[active_idx]["script"] = script
+	_save_character_profiles()
 	character_script_changed.emit(character_id)
+
+
+## Profile Management Functions
+
+func _ensure_character_profiles(character_id: String) -> void:
+	"""Ensure character has profile data initialized"""
+	if not character_profiles.has(character_id):
+		# Check for legacy migration
+		if character_scripts.has(character_id):
+			# Migrate legacy script to first profile
+			var legacy_script = character_scripts[character_id]
+			character_profiles[character_id] = {
+				"profiles": [{"name": "Default", "script": legacy_script}],
+				"active": 0
+			}
+		else:
+			# Create fresh default profiles
+			character_profiles[character_id] = _create_default_profiles(character_id)
+
+
+func _create_default_profiles(character_id: String) -> Dictionary:
+	"""Create default profile set for a character"""
+	var profile_names = DEFAULT_PROFILE_TEMPLATES.get(character_id, ["Default", "Custom 1", "Custom 2"])
+	var profiles = []
+
+	for i in range(profile_names.size()):
+		var name = profile_names[i]
+		var script = create_default_character_script(character_id) if i == 0 else _create_empty_script(character_id)
+		profiles.append({"name": name, "script": script})
+
+	return {"profiles": profiles, "active": 0}
+
+
+func _create_empty_script(character_id: String) -> Dictionary:
+	"""Create an empty script template"""
+	return {
+		"character_id": character_id,
+		"name": "Empty",
+		"rules": [
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}],
+				"enabled": true
+			}
+		]
+	}
+
+
+func get_character_profiles(character_id: String) -> Array:
+	"""Get all profiles for a character"""
+	_ensure_character_profiles(character_id)
+	return character_profiles[character_id].get("profiles", [])
+
+
+func get_active_profile_index(character_id: String) -> int:
+	"""Get index of active profile"""
+	_ensure_character_profiles(character_id)
+	return character_profiles[character_id].get("active", 0)
+
+
+func get_active_profile_name(character_id: String) -> String:
+	"""Get name of active profile"""
+	_ensure_character_profiles(character_id)
+	var data = character_profiles[character_id]
+	var active_idx = data.get("active", 0)
+	var profiles = data.get("profiles", [])
+	if active_idx < profiles.size():
+		return profiles[active_idx].get("name", "Default")
+	return "Default"
+
+
+func set_active_profile(character_id: String, index: int) -> void:
+	"""Set active profile by index"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+	if index >= 0 and index < profiles.size():
+		character_profiles[character_id]["active"] = index
+		_save_character_profiles()
+		character_script_changed.emit(character_id)
+
+
+func create_new_profile(character_id: String, name: String = "") -> int:
+	"""Create a new profile for character, returns index or -1 if at max"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+
+	if profiles.size() >= MAX_PROFILES_PER_CHARACTER:
+		return -1
+
+	if name.is_empty():
+		name = "Custom %d" % (profiles.size() + 1)
+
+	profiles.append({
+		"name": name,
+		"script": _create_empty_script(character_id)
+	})
+
+	_save_character_profiles()
+	return profiles.size() - 1
+
+
+func delete_profile(character_id: String, index: int) -> bool:
+	"""Delete a profile (cannot delete last one)"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+
+	if profiles.size() <= 1 or index < 0 or index >= profiles.size():
+		return false
+
+	profiles.remove_at(index)
+
+	# Adjust active index if needed
+	var active = character_profiles[character_id].get("active", 0)
+	if active >= profiles.size():
+		character_profiles[character_id]["active"] = profiles.size() - 1
+	elif active > index:
+		character_profiles[character_id]["active"] = active - 1
+
+	_save_character_profiles()
+	return true
+
+
+func rename_profile(character_id: String, index: int, new_name: String) -> bool:
+	"""Rename a profile"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+
+	if index < 0 or index >= profiles.size() or new_name.is_empty():
+		return false
+
+	profiles[index]["name"] = new_name
+	_save_character_profiles()
+	return true
+
+
+func reset_profile_to_default(character_id: String, index: int) -> bool:
+	"""Reset a profile back to default values"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+
+	if index < 0 or index >= profiles.size():
+		return false
+
+	var name = profiles[index].get("name", "Default")
+	profiles[index]["script"] = create_default_character_script(character_id)
+	_save_character_profiles()
+	return true
+
+
+func copy_profile(character_id: String, source_index: int, new_name: String = "") -> int:
+	"""Copy a profile, returns new index or -1 if at max"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+
+	if profiles.size() >= MAX_PROFILES_PER_CHARACTER or source_index < 0 or source_index >= profiles.size():
+		return -1
+
+	var source = profiles[source_index]
+	if new_name.is_empty():
+		new_name = source.get("name", "Copy") + " Copy"
+
+	profiles.append({
+		"name": new_name,
+		"script": source.get("script", {}).duplicate(true)
+	})
+
+	_save_character_profiles()
+	return profiles.size() - 1
 
 
 func create_default_character_script(character_id: String) -> Dictionary:
@@ -524,14 +716,31 @@ func _create_black_mage_default_script(character_id: String) -> Dictionary:
 
 
 func _load_character_scripts() -> void:
-	"""Load all character scripts from file"""
+	"""Load all character scripts from file (legacy + new profiles)"""
 	var save_path = "user://autobattle/characters.json"
+	var profiles_path = "user://autobattle/profiles.json"
 
 	# Create directory if it doesn't exist
 	var dir = DirAccess.open("user://")
 	if dir and not dir.dir_exists("autobattle"):
 		dir.make_dir("autobattle")
 
+	# Load new profiles format first
+	if FileAccess.file_exists(profiles_path):
+		var file = FileAccess.open(profiles_path, FileAccess.READ)
+		if file:
+			var json_string = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(json_string) == OK:
+				var data = json.data
+				if data is Dictionary:
+					character_profiles = data.get("profiles", {})
+					autobattle_enabled = data.get("enabled", {})
+					print("Loaded profiles for %d characters" % character_profiles.size())
+					return
+
+	# Fallback: load legacy format for migration
 	if not FileAccess.file_exists(save_path):
 		return
 
@@ -548,7 +757,28 @@ func _load_character_scripts() -> void:
 				autobattle_enabled = data.get("enabled", {})
 				# Migrate old format scripts to new format
 				_migrate_old_format_scripts()
-				print("Loaded %d character autobattle scripts" % character_scripts.size())
+				print("Loaded %d character autobattle scripts (legacy)" % character_scripts.size())
+
+
+func _save_character_profiles() -> void:
+	"""Save all character profiles to file"""
+	var save_path = "user://autobattle/profiles.json"
+
+	# Create directory if it doesn't exist
+	var dir = DirAccess.open("user://")
+	if dir and not dir.dir_exists("autobattle"):
+		dir.make_dir("autobattle")
+
+	var data = {
+		"profiles": character_profiles,
+		"enabled": autobattle_enabled
+	}
+
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		var json_string = JSON.stringify(data, "\t")
+		file.store_string(json_string)
+		file.close()
 
 
 func _migrate_old_format_scripts() -> void:
@@ -585,24 +815,17 @@ func _migrate_old_format_scripts() -> void:
 
 
 func _save_character_scripts() -> void:
-	"""Save all character scripts to file"""
-	var save_path = "user://autobattle/characters.json"
-
-	# Create directory if it doesn't exist
-	var dir = DirAccess.open("user://")
-	if dir and not dir.dir_exists("autobattle"):
-		dir.make_dir("autobattle")
-
-	var data = {
-		"scripts": character_scripts,
-		"enabled": autobattle_enabled
-	}
-
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if file:
-		var json_string = JSON.stringify(data, "\t")
-		file.store_string(json_string)
-		file.close()
+	"""Legacy save - redirects to profile save after migration"""
+	# First migrate any legacy scripts to profiles
+	for character_id in character_scripts.keys():
+		if not character_profiles.has(character_id):
+			var legacy_script = character_scripts[character_id]
+			character_profiles[character_id] = {
+				"profiles": [{"name": "Default", "script": legacy_script}],
+				"active": 0
+			}
+	# Save using new profile format
+	_save_character_profiles()
 
 
 func _evaluate_rule(combatant: Combatant, rule: Dictionary) -> bool:

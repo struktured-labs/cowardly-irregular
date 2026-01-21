@@ -38,6 +38,10 @@ var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
 
+## Overworld menu
+var _overworld_menu: Control = null
+var _overworld_menu_layer: CanvasLayer = null
+
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
@@ -72,6 +76,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			_toggle_autobattle_editor()
 			get_viewport().set_input_as_handled()
 
+	# X key = Open overworld menu (only in exploration mode)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_X:
+		if current_state == LoopState.EXPLORATION and not _overworld_menu:
+			_open_overworld_menu()
+			get_viewport().set_input_as_handled()
+
+	# Escape key also opens overworld menu in exploration
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if current_state == LoopState.EXPLORATION and not _overworld_menu:
+			_open_overworld_menu()
+			get_viewport().set_input_as_handled()
+
 
 func _toggle_autobattle_editor() -> void:
 	"""Toggle the autobattle grid editor overlay"""
@@ -87,9 +103,16 @@ func _toggle_autobattle_editor() -> void:
 			_autobattle_layer = null
 		# Show battle menu again if it was hidden
 		_set_battle_menu_visible(true)
+		# Resume exploration if we were in exploration mode
+		if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("resume"):
+			_exploration_scene.resume()
 		SoundManager.play_ui("autobattle_close")
 		print("Autobattle editor closed (saved)")
 		return
+
+	# Pause exploration while editor is open (no encounters)
+	if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
 
 	# Hide the battle menu while editor is open
 	_set_battle_menu_visible(false)
@@ -119,10 +142,10 @@ func _toggle_autobattle_editor() -> void:
 	_autobattle_editor = AutobattleGridEditorClass.new()
 	_autobattle_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_autobattle_layer.add_child(_autobattle_editor)
-	_autobattle_editor.setup(char_id, char_name, combatant)
+	_autobattle_editor.setup(char_id, char_name, combatant, party)  # Pass party for R to cycle
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
 	SoundManager.play_ui("autobattle_open")
-	print("Autobattle editor opened for %s (Start to save & exit)" % char_name)
+	print("Autobattle editor opened for %s (R to switch character, Start to save & exit)" % char_name)
 
 
 func _set_battle_menu_visible(visible: bool) -> void:
@@ -174,6 +197,82 @@ func _on_autobattle_editor_closed() -> void:
 		_autobattle_layer = null
 	# Show battle menu again
 	_set_battle_menu_visible(true)
+	# Resume exploration if we were in exploration mode
+	if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("resume"):
+		_exploration_scene.resume()
+
+
+func _open_overworld_menu() -> void:
+	"""Open the overworld/pause menu"""
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		return  # Already open
+
+	# Pause exploration
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
+	# Create menu in CanvasLayer
+	_overworld_menu_layer = CanvasLayer.new()
+	_overworld_menu_layer.layer = 50
+	add_child(_overworld_menu_layer)
+
+	var OverworldMenuClass = load("res://src/ui/OverworldMenu.gd")
+	_overworld_menu = OverworldMenuClass.new()
+	_overworld_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overworld_menu_layer.add_child(_overworld_menu)
+	_overworld_menu.setup(party)
+	_overworld_menu.closed.connect(_on_overworld_menu_closed)
+	_overworld_menu.menu_action.connect(_on_overworld_menu_action)
+	SoundManager.play_ui("menu_open")
+	print("Overworld menu opened")
+
+
+func _on_overworld_menu_closed() -> void:
+	"""Handle overworld menu close"""
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		_overworld_menu.queue_free()
+		_overworld_menu = null
+	if _overworld_menu_layer and is_instance_valid(_overworld_menu_layer):
+		_overworld_menu_layer.queue_free()
+		_overworld_menu_layer = null
+
+	# Resume exploration
+	if _exploration_scene and _exploration_scene.has_method("resume"):
+		_exploration_scene.resume()
+
+
+func _on_overworld_menu_action(action: String, target: Combatant) -> void:
+	"""Handle menu action from overworld menu"""
+	match action:
+		"autobattle":
+			# Close menu first, then open autobattle editor
+			_on_overworld_menu_closed()
+			if target:
+				var char_id = target.combatant_name.to_lower().replace(" ", "_")
+				_open_autobattle_for_character(char_id, target.combatant_name, target)
+
+
+func _open_autobattle_for_character(char_id: String, char_name: String, combatant: Combatant) -> void:
+	"""Open autobattle editor for a specific character"""
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		return  # Already open
+
+	# Pause exploration
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
+	_autobattle_layer = CanvasLayer.new()
+	_autobattle_layer.layer = 50
+	add_child(_autobattle_layer)
+
+	var AutobattleGridEditorClass = load("res://src/ui/autobattle/AutobattleGridEditor.gd")
+	_autobattle_editor = AutobattleGridEditorClass.new()
+	_autobattle_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_autobattle_layer.add_child(_autobattle_editor)
+	_autobattle_editor.setup(char_id, char_name, combatant, party)
+	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
+	SoundManager.play_ui("autobattle_open")
+	print("Autobattle editor opened for %s" % char_name)
 
 
 func _create_party() -> void:

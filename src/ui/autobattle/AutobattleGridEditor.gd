@@ -7,11 +7,11 @@ class_name AutobattleGridEditor
 ##
 ## Controller Mapping:
 ## - D-Pad: Navigate grid
-## - A (Z): Edit selected cell
-## - B (X): Cancel / Back
-## - L: Add condition (OR = new row, L+Right = AND extend)
-## - R: Add action column
-## - Start: Rule menu (delete, reorder)
+## - A (Z): Edit selected cell (add action when on action area)
+## - B (X): Delete current cell
+## - L: Split action group OR add AND condition
+## - R: Cycle to next party member
+## - Start: Save and exit
 ## - Select: Toggle autobattle ON/OFF
 
 signal closed()
@@ -22,6 +22,10 @@ var character_id: String = ""
 var character_name: String = ""
 var char_script: Dictionary = {}
 var combatant: Combatant = null  # Reference to the actual combatant for ability lookup
+
+## Party for cycling between characters (R button)
+var party: Array = []
+var current_party_index: int = 0
 
 ## Grid state
 var rules: Array = []  # Array of rule rows
@@ -118,11 +122,20 @@ func _ready() -> void:
 	# _refresh_grid() will be called in setup() after rules are loaded
 
 
-func setup(char_id: String, char_name: String, char_combatant: Combatant = null) -> void:
+func setup(char_id: String, char_name: String, char_combatant: Combatant = null, char_party: Array = []) -> void:
 	"""Setup editor for a specific character"""
 	character_id = char_id
 	character_name = char_name
 	combatant = char_combatant
+
+	# Store party for R button cycling
+	if char_party.size() > 0:
+		party = char_party
+		# Find current character's index in party
+		for i in range(party.size()):
+			if party[i] == combatant or party[i].combatant_name.to_lower().replace(" ", "_") == char_id:
+				current_party_index = i
+				break
 
 	# Apply character-specific style
 	if CHARACTER_STYLES.has(char_id):
@@ -151,33 +164,48 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null)
 		call_deferred("_refresh_grid")
 
 
+## Profile UI elements
+var _profile_label: Label
+var _stats_panel: Control
+
 func _build_ui() -> void:
 	"""Build the editor UI"""
+	# Clear existing children first (for rebuilding)
+	for child in get_children():
+		child.queue_free()
+
 	# Background panel
 	var bg = ColorRect.new()
 	bg.color = style.bg
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Title
+	# Title with profile name
 	_title_label = Label.new()
-	_title_label.text = "%s - Autobattle Script" % character_name
+	var profile_name = AutobattleSystem.get_active_profile_name(character_id)
+	_title_label.text = "%s - %s" % [character_name, profile_name]
 	_title_label.position = Vector2(16, 8)
 	_title_label.add_theme_font_size_override("font_size", 14)
 	_title_label.add_theme_color_override("font_color", style.text)
 	add_child(_title_label)
 
+	# Profile indicator panel (upper right)
+	_build_profile_panel()
+
+	# Character stats panel (left side)
+	_build_stats_panel()
+
 	# Autobattle status
 	_status_label = Label.new()
-	_status_label.position = Vector2(size.x - 120, 8)
+	_status_label.position = Vector2(size.x - 120, 28)
 	_status_label.add_theme_font_size_override("font_size", 12)
 	add_child(_status_label)
 	_update_status_label()
 
-	# Grid container
+	# Grid container (shifted right to make room for stats)
 	_grid_container = Control.new()
-	_grid_container.position = Vector2(16, 40)
-	_grid_container.size = Vector2(size.x - 32, size.y - 80)
+	_grid_container.position = Vector2(120, 50)
+	_grid_container.size = Vector2(size.x - 136, size.y - 100)
 	add_child(_grid_container)
 
 	# Cursor (animated highlight)
@@ -193,18 +221,142 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit/Insert  B:Delete  Start:Save"
+	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Profile  R:Character"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "L:Split Group  R:Dup Action  Y:Toggle Row  Select:Auto"
+	help_label2.text = "Y:Toggle Row  Select:Auto ON/OFF  Start:Save & Exit"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label2)
+
+
+func _build_profile_panel() -> void:
+	"""Build the profile indicator in upper right"""
+	var panel = ColorRect.new()
+	panel.color = style.border_shadow
+	panel.position = Vector2(size.x - 180, 4)
+	panel.size = Vector2(170, 22)
+	add_child(panel)
+
+	var profile_idx = AutobattleSystem.get_active_profile_index(character_id)
+	var profiles = AutobattleSystem.get_character_profiles(character_id)
+	var profile_name = "Default"
+	if profile_idx < profiles.size():
+		profile_name = profiles[profile_idx].get("name", "Default")
+
+	_profile_label = Label.new()
+	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
+	_profile_label.position = Vector2(size.x - 175, 6)
+	_profile_label.add_theme_font_size_override("font_size", 11)
+	_profile_label.add_theme_color_override("font_color", Color.YELLOW)
+	add_child(_profile_label)
+
+
+func _build_stats_panel() -> void:
+	"""Build character stats panel on left side"""
+	_stats_panel = Control.new()
+	_stats_panel.position = Vector2(8, 50)
+	_stats_panel.size = Vector2(105, 180)
+	add_child(_stats_panel)
+
+	var panel_bg = ColorRect.new()
+	panel_bg.color = Color(0.1, 0.1, 0.15, 0.9)
+	panel_bg.size = _stats_panel.size
+	_stats_panel.add_child(panel_bg)
+
+	# Character portrait placeholder
+	var portrait_bg = ColorRect.new()
+	portrait_bg.color = style.highlight_bg
+	portrait_bg.position = Vector2(4, 4)
+	portrait_bg.size = Vector2(40, 40)
+	_stats_panel.add_child(portrait_bg)
+
+	var portrait_label = Label.new()
+	portrait_label.text = character_name.substr(0, 1)  # First letter
+	portrait_label.position = Vector2(14, 8)
+	portrait_label.add_theme_font_size_override("font_size", 24)
+	portrait_label.add_theme_color_override("font_color", style.text)
+	_stats_panel.add_child(portrait_label)
+
+	# Job name
+	var job_label = Label.new()
+	job_label.text = _get_job_name()
+	job_label.position = Vector2(48, 4)
+	job_label.add_theme_font_size_override("font_size", 10)
+	job_label.add_theme_color_override("font_color", style.text.darkened(0.2))
+	_stats_panel.add_child(job_label)
+
+	# Character name
+	var name_label = Label.new()
+	name_label.text = character_name
+	name_label.position = Vector2(48, 18)
+	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_color_override("font_color", style.text)
+	_stats_panel.add_child(name_label)
+
+	# Stats (if combatant available)
+	if combatant:
+		var stats_y = 50
+		var stat_size = 11
+
+		var hp_label = Label.new()
+		hp_label.text = "HP: %d/%d" % [combatant.current_hp, combatant.max_hp]
+		hp_label.position = Vector2(4, stats_y)
+		hp_label.add_theme_font_size_override("font_size", stat_size)
+		hp_label.add_theme_color_override("font_color", Color.LIME if combatant.current_hp > combatant.max_hp * 0.3 else Color.RED)
+		_stats_panel.add_child(hp_label)
+
+		var mp_label = Label.new()
+		mp_label.text = "MP: %d/%d" % [combatant.current_mp, combatant.max_mp]
+		mp_label.position = Vector2(4, stats_y + 14)
+		mp_label.add_theme_font_size_override("font_size", stat_size)
+		mp_label.add_theme_color_override("font_color", Color.CYAN)
+		_stats_panel.add_child(mp_label)
+
+		var atk_label = Label.new()
+		atk_label.text = "ATK: %d" % combatant.attack
+		atk_label.position = Vector2(4, stats_y + 32)
+		atk_label.add_theme_font_size_override("font_size", stat_size)
+		atk_label.add_theme_color_override("font_color", Color.ORANGE)
+		_stats_panel.add_child(atk_label)
+
+		var def_label = Label.new()
+		def_label.text = "DEF: %d" % combatant.defense
+		def_label.position = Vector2(52, stats_y + 32)
+		def_label.add_theme_font_size_override("font_size", stat_size)
+		def_label.add_theme_color_override("font_color", Color.GRAY)
+		_stats_panel.add_child(def_label)
+
+		var mag_label = Label.new()
+		mag_label.text = "MAG: %d" % combatant.magic
+		mag_label.position = Vector2(4, stats_y + 46)
+		mag_label.add_theme_font_size_override("font_size", stat_size)
+		mag_label.add_theme_color_override("font_color", Color.MAGENTA)
+		_stats_panel.add_child(mag_label)
+
+		var spd_label = Label.new()
+		spd_label.text = "SPD: %d" % combatant.speed
+		spd_label.position = Vector2(52, stats_y + 46)
+		spd_label.add_theme_font_size_override("font_size", stat_size)
+		spd_label.add_theme_color_override("font_color", Color.YELLOW)
+		_stats_panel.add_child(spd_label)
+
+
+func _get_job_name() -> String:
+	"""Get display name for character's job"""
+	if combatant and combatant.job:
+		return combatant.job.get("name", "Fighter")
+	match character_id:
+		"hero": return "Fighter"
+		"mira": return "White Mage"
+		"zack": return "Thief"
+		"vex": return "Black Mage"
+		_: return "Fighter"
 
 
 func _update_status_label() -> void:
@@ -1061,6 +1213,87 @@ func save_and_close() -> void:
 	queue_free()
 
 
+func _cycle_character() -> void:
+	"""Cycle to the next party member (R button)"""
+	if party.size() < 2:
+		# No other characters to cycle to
+		SoundManager.play_ui("menu_error")
+		return
+
+	# Save current character's script before switching
+	_save_script()
+
+	# Cycle to next character
+	current_party_index = (current_party_index + 1) % party.size()
+	var next_member = party[current_party_index]
+
+	# Setup for new character
+	var new_id = next_member.combatant_name.to_lower().replace(" ", "_")
+	var new_name = next_member.combatant_name
+
+	character_id = new_id
+	character_name = new_name
+	combatant = next_member
+
+	# Apply character-specific style
+	if CHARACTER_STYLES.has(new_id):
+		style = CHARACTER_STYLES[new_id].duplicate()
+	else:
+		style = CHARACTER_STYLES["hero"].duplicate()
+
+	# Load new character's script
+	char_script = AutobattleSystem.get_character_script(character_id)
+	rules = char_script.get("rules", []).duplicate(true)
+
+	if rules.size() == 0:
+		rules.append(_create_default_rule())
+
+	cursor_row = 0
+	cursor_col = 0
+
+	# Rebuild UI with new style
+	_build_ui()
+	_refresh_grid()
+
+	SoundManager.play_ui("menu_select")
+	print("Switched to %s autobattle editor" % new_name)
+
+
+func _cycle_profile() -> void:
+	"""Cycle to the next profile for current character (L button)"""
+	var profiles = AutobattleSystem.get_character_profiles(character_id)
+	if profiles.size() < 2:
+		# No other profiles to cycle to
+		SoundManager.play_ui("menu_error")
+		return
+
+	# Save current script before switching
+	_save_script()
+
+	# Cycle to next profile
+	var current_idx = AutobattleSystem.get_active_profile_index(character_id)
+	var next_idx = (current_idx + 1) % profiles.size()
+	AutobattleSystem.set_active_profile(character_id, next_idx)
+
+	# Reload script for new profile
+	char_script = AutobattleSystem.get_character_script(character_id)
+	rules = char_script.get("rules", []).duplicate(true)
+
+	if rules.size() == 0:
+		rules.append(_create_default_rule())
+
+	cursor_row = 0
+	cursor_col = 0
+
+	# Rebuild UI to show new profile
+	_build_ui()
+	_refresh_grid()
+
+	var new_profile_name = profiles[next_idx].get("name", "Default")
+	SoundManager.play_ui("menu_select")
+	print("Switched to profile: %s" % new_profile_name)
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for grid navigation and editing"""
 	if not visible:
@@ -1107,17 +1340,14 @@ func _input(event: InputEvent) -> void:
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# L trigger - Split grouped action OR add AND condition
+	# L trigger - Cycle to previous/next profile
 	elif event.is_action_pressed("battle_defer"):  # L button
-		if _is_on_action_group():
-			_split_action_group()
-		elif _is_on_condition_cell():
-			_add_and_condition()
+		_cycle_profile()
 		get_viewport().set_input_as_handled()
 
-	# R trigger - Add action
+	# R trigger - Cycle to next party member
 	elif event.is_action_pressed("battle_advance"):  # R button
-		_add_action()
+		_cycle_character()
 		get_viewport().set_input_as_handled()
 
 	# Tab / Y - Toggle current row enabled/disabled
