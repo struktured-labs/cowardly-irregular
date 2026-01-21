@@ -1,36 +1,41 @@
 extends Node2D
 class_name HarmoniaVillageScene
 
-## HarmoniaVillage - Starter village, safe zone
-## No random encounters, NPCs, shops, inn
+## HarmoniaVillage - Starter village with full JRPG amenities
+## Features: Inn, Shops, Bar with dancer, Fountain, Treasures, NPCs
 
 const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
 const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
+const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
+const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
+const VillageBarScript = preload("res://src/exploration/VillageBar.gd")
+const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+const VillageFountainScript = preload("res://src/exploration/VillageFountain.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
 signal area_transition(target_map: String, spawn_point: String)
 
-## Map dimensions (in tiles)
-const MAP_WIDTH: int = 20
-const MAP_HEIGHT: int = 15
+## Map dimensions (expanded for full village)
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 25
 const TILE_SIZE: int = 32
 
 ## Scene components
 var tile_map: TileMapLayer
-var player: Node2D  # OverworldPlayer
+var player: Node2D
 var camera: Camera2D
-var controller: Node  # OverworldController
-var tile_generator: Node  # TileGenerator
+var controller: Node
+var tile_generator: Node
 
-## Area transitions
+## Containers
 var transitions: Node2D
-
-## NPCs container
 var npcs: Node2D
+var buildings: Node2D
+var treasures: Node2D
 
 ## Spawn points
 var spawn_points: Dictionary = {}
@@ -40,6 +45,8 @@ func _ready() -> void:
 	_setup_scene()
 	_generate_map()
 	_setup_transitions()
+	_setup_buildings()
+	_setup_treasures()
 	_setup_npcs()
 	_setup_player()
 	_setup_camera()
@@ -56,45 +63,61 @@ func _setup_scene() -> void:
 	tile_generator = TileGeneratorScript.new()
 	add_child(tile_generator)
 
-	# Create TileMapLayer
 	tile_map = TileMapLayer.new()
 	tile_map.name = "TileMap"
 	tile_map.tile_set = tile_generator.create_tileset()
 	add_child(tile_map)
 
-	# Create transitions container
 	transitions = Node2D.new()
 	transitions.name = "Transitions"
 	add_child(transitions)
 
-	# Create NPCs container
+	buildings = Node2D.new()
+	buildings.name = "Buildings"
+	add_child(buildings)
+
+	treasures = Node2D.new()
+	treasures.name = "Treasures"
+	add_child(treasures)
+
 	npcs = Node2D.new()
 	npcs.name = "NPCs"
 	add_child(npcs)
 
 
 func _generate_map() -> void:
-	# Village layout:
-	# W = wall, . = floor, I = inn, S = shop, N = NPC spot, X = exit, P = save point
+	# Expanded village layout:
+	# W = wall, . = floor, H = house, F = fountain area
+	# I = inn, A = armor shop, P = weapon shop, G = general store, B = bar
+	# X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWW",
-		"W..................W",
-		"W..III.......SSS...W",
-		"W..III.......SSS...W",
-		"W..................W",
-		"W.......NNN........W",
-		"W..................W",
-		"W..................W",
-		"W........PPP.......W",
-		"W........PPP.......W",
-		"W..................W",
-		"W..................W",
-		"W.......XXXX.......W",
-		"W.......XXXX.......W",
-		"WWWWWWWWWWWWWWWWWWWW"
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W..HHH..........AAA..........W",
+		"W..HHH..........AAA....PPP...W",
+		"W..HHH..........AAA....PPP...W",
+		"W............................W",
+		"W........FFFFFF..............W",
+		"W..III...FFFFFF....GGG.......W",
+		"W..III...FFFFFF....GGG.......W",
+		"W..III...FFFFFF....GGG.......W",
+		"W........FFFFFF..............W",
+		"W............................W",
+		"W............................W",
+		"W..HHH...................BBB.W",
+		"W..HHH...................BBB.W",
+		"W..HHH...................BBB.W",
+		"W............................W",
+		"W....HHH.....................W",
+		"W....HHH.....................W",
+		"W....HHH.....................W",
+		"W............................W",
+		"W..........XXXXXX............W",
+		"W..........XXXXXX............W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
 	]
 
-	# Convert map_data to tiles
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
 		for x in range(MAP_WIDTH):
@@ -107,20 +130,15 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	# Default spawn (entrance from overworld) - slightly inside to avoid immediate exit trigger
-	spawn_points["entrance"] = Vector2(10 * TILE_SIZE, 10 * TILE_SIZE)
+	# Entrance spawn (safe distance from exit)
+	spawn_points["entrance"] = Vector2(15 * TILE_SIZE, 18 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 
 
 func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
-		".": return TileGeneratorScript.TileType.FLOOR
-		"I": return TileGeneratorScript.TileType.FLOOR  # Inn area (floor)
-		"S": return TileGeneratorScript.TileType.FLOOR  # Shop area (floor)
-		"N": return TileGeneratorScript.TileType.FLOOR  # NPC area (floor)
-		"X": return TileGeneratorScript.TileType.FLOOR  # Exit (floor)
-		"P": return TileGeneratorScript.TileType.FLOOR  # Save point (floor)
+		"F": return TileGeneratorScript.TileType.WATER  # Fountain water effect
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -135,14 +153,19 @@ func _setup_transitions() -> void:
 	exit_trans.name = "Exit"
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "village_entrance"
-	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(320, 416))
-	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 4, TILE_SIZE))
+	exit_trans.require_interaction = false  # Auto-exit on touch
+	exit_trans.position = spawn_points.get("exit", Vector2(480, 704))
+	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
+	trans.collision_layer = 4
+	trans.collision_mask = 2
+	trans.monitoring = true
+	trans.monitorable = true
+
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
 	shape.size = size
@@ -150,9 +173,92 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	trans.add_child(collision)
 
 
+func _setup_buildings() -> void:
+	# === INN ===
+	var inn = VillageInnScript.new()
+	inn.inn_name = "Sleepy Slime Inn"
+	inn.position = Vector2(3.5 * TILE_SIZE, 8 * TILE_SIZE)
+	buildings.add_child(inn)
+
+	# === WEAPON SHOP ===
+	var weapon_shop = VillageShopScript.new()
+	weapon_shop.shop_name = "Ironclad Arms"
+	weapon_shop.shop_type = VillageShopScript.ShopType.WEAPON
+	weapon_shop.keeper_name = "Brutus"
+	weapon_shop.position = Vector2(25 * TILE_SIZE, 3.5 * TILE_SIZE)
+	buildings.add_child(weapon_shop)
+
+	# === ARMOR SHOP ===
+	var armor_shop = VillageShopScript.new()
+	armor_shop.shop_name = "Guardian's Garb"
+	armor_shop.shop_type = VillageShopScript.ShopType.ARMOR
+	armor_shop.keeper_name = "Helga"
+	armor_shop.position = Vector2(16 * TILE_SIZE, 3.5 * TILE_SIZE)
+	buildings.add_child(armor_shop)
+
+	# === ITEM SHOP ===
+	var item_shop = VillageShopScript.new()
+	item_shop.shop_name = "Mystic Remedies"
+	item_shop.shop_type = VillageShopScript.ShopType.ITEM
+	item_shop.keeper_name = "Willow"
+	item_shop.position = Vector2(22 * TILE_SIZE, 8 * TILE_SIZE)
+	buildings.add_child(item_shop)
+
+	# === BAR ===
+	var bar = VillageBarScript.new()
+	bar.bar_name = "The Dancing Tonberry"
+	bar.position = Vector2(26 * TILE_SIZE, 14.5 * TILE_SIZE)
+	buildings.add_child(bar)
+
+	# === FOUNTAIN ===
+	var fountain = VillageFountainScript.new()
+	fountain.fountain_name = "Harmony Fountain"
+	fountain.tree_type = "cherry"
+	fountain.position = Vector2(11 * TILE_SIZE, 8 * TILE_SIZE)
+	buildings.add_child(fountain)
+
+
+func _setup_treasures() -> void:
+	# Hidden treasure behind house 1 (top left)
+	var chest1 = TreasureChestScript.new()
+	chest1.chest_id = "harmonia_chest_1"
+	chest1.contents_type = "item"
+	chest1.contents_id = "potion"
+	chest1.contents_amount = 3
+	chest1.position = Vector2(1.5 * TILE_SIZE, 4 * TILE_SIZE)
+	treasures.add_child(chest1)
+
+	# Treasure near bar
+	var chest2 = TreasureChestScript.new()
+	chest2.chest_id = "harmonia_chest_2"
+	chest2.contents_type = "gold"
+	chest2.gold_amount = 150
+	chest2.position = Vector2(28 * TILE_SIZE, 13 * TILE_SIZE)
+	treasures.add_child(chest2)
+
+	# Treasure behind bottom left house
+	var chest3 = TreasureChestScript.new()
+	chest3.chest_id = "harmonia_chest_3"
+	chest3.contents_type = "item"
+	chest3.contents_id = "ether"
+	chest3.contents_amount = 2
+	chest3.position = Vector2(1.5 * TILE_SIZE, 20 * TILE_SIZE)
+	treasures.add_child(chest3)
+
+	# Equipment treasure (hidden corner)
+	var chest4 = TreasureChestScript.new()
+	chest4.chest_id = "harmonia_chest_4"
+	chest4.contents_type = "equipment"
+	chest4.contents_id = "lucky_charm"
+	chest4.position = Vector2(28 * TILE_SIZE, 1.5 * TILE_SIZE)
+	treasures.add_child(chest4)
+
+
 func _setup_npcs() -> void:
-	# Village Elder - center of village (N area - row 5, col 9)
-	var elder = _create_npc("Elder Theron", "elder", Vector2(9 * TILE_SIZE, 5 * TILE_SIZE), [
+	# === STORY/LORE NPCs ===
+
+	# Village Elder (near fountain)
+	var elder = _create_npc("Elder Theron", "elder", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Welcome to Harmonia Village, young adventurer.",
 		"Our peaceful village has stood for generations...",
 		"But dark rumors spread from the Whispering Cave to the north.",
@@ -162,55 +268,109 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(elder)
 
-	# Innkeeper - near the inn (I area - row 3, col 4)
-	var innkeeper = _create_npc("Martha", "innkeeper", Vector2(4 * TILE_SIZE, 3 * TILE_SIZE), [
-		"Welcome to the Sleepy Slime Inn!",
-		"A good rest restores the body and spirit.",
-		"We don't get many visitors these days...",
-		"The cave's been making folks nervous.",
-		"Stay safe out there, dear."
-	])
-	npcs.add_child(innkeeper)
+	# === AUTOBATTLE HINT NPCs ===
 
-	# Shopkeeper - near the shop (S area - row 3, col 14)
-	var shopkeeper = _create_npc("Garvin", "shopkeeper", Vector2(14 * TILE_SIZE, 3 * TILE_SIZE), [
-		"Potions! Antidotes! Everything an adventurer needs!",
-		"Business has been slow since the cave got... strange.",
-		"They say monsters in there grow stronger the more you fight.",
-		"Some kind of adaptation, perhaps?",
-		"Stock up before you go - you'll need it!"
+	# Scholar (hints about automation)
+	var scholar = _create_npc("Scholar Milo", "villager", Vector2(14 * TILE_SIZE, 7 * TILE_SIZE), [
+		"Ah, a fellow seeker of knowledge!",
+		"I've been studying an ancient art called 'AUTOBATTLE'.",
+		"Press F5 or START to open the Autobattle Editor!",
+		"You can create rules like 'If HP < 25%, use Potion'.",
+		"The system executes your script when it's your turn.",
+		"It's not cheating - it's ENLIGHTENMENT!"
 	])
-	npcs.add_child(shopkeeper)
+	npcs.add_child(scholar)
 
-	# Wandering villager - somewhere in the middle
-	var villager1 = _create_npc("Farmer Gil", "villager", Vector2(6 * TILE_SIZE, 7 * TILE_SIZE), [
-		"*yawn* Another day, another harvest.",
-		"Say, you look like an adventurer type.",
-		"My cousin went into that cave last month...",
-		"Came back babbling about 'infinite loops' and 'meta awareness'.",
-		"Poor fellow's been talking to his reflection ever since."
+	# Retired Adventurer (autogrind hints)
+	var retired = _create_npc("Greta the Grey", "elder", Vector2(4 * TILE_SIZE, 15 * TILE_SIZE), [
+		"*cough* In my day, we ground levels by HAND!",
+		"But these young folk... they let the game PLAY ITSELF.",
+		"Press F6 or Select to toggle autobattle for everyone!",
+		"Some say it's lazy. I say it's WISDOM.",
+		"Why waste time when monsters await?",
+		"Just... be careful in that cave. It... adapts."
 	])
-	npcs.add_child(villager1)
+	npcs.add_child(retired)
 
-	# Another villager near save point
-	var villager2 = _create_npc("Young Pip", "villager", Vector2(12 * TILE_SIZE, 8 * TILE_SIZE), [
-		"Wow! A real adventurer!",
-		"I'm gonna be just like you when I grow up!",
-		"I heard you can AUTOMATE fighting in this world...",
-		"Isn't that kind of... cheating?",
-		"My mom says it's 'enlightenment', whatever that means."
+	# === HUMOROUS NPCs ===
+
+	# Existential Villager
+	var existential = _create_npc("Phil the Lost", "villager", Vector2(20 * TILE_SIZE, 16 * TILE_SIZE), [
+		"Do you ever wonder if we're just... NPCs?",
+		"Standing here... saying the same things...",
+		"Waiting for someone to talk to us...",
+		"What if there's someone CONTROLLING us?!",
+		"...",
+		"Nah, that's ridiculous. Carry on!"
 	])
-	npcs.add_child(villager2)
+	npcs.add_child(existential)
+
+	# Chicken Chaser wannabe
+	var chicken = _create_npc("Cluck Norris", "villager", Vector2(6 * TILE_SIZE, 19 * TILE_SIZE), [
+		"HAVE YOU SEEN MY CHICKENS?!",
+		"They escaped during the last monster attack!",
+		"I had SEVENTEEN of them!",
+		"...What do you mean 'wrong game'?",
+		"Every game needs a chicken guy!",
+		"*bawk bawk*"
+	])
+	npcs.add_child(chicken)
+
+	# Fourth Wall Breaker
+	var meta = _create_npc("???", "villager", Vector2(25 * TILE_SIZE, 20 * TILE_SIZE), [
+		"Psst... hey... over here...",
+		"I know things. SECRET things.",
+		"Like how the save file is just JSON.",
+		"Or how the monsters in the cave scale with you.",
+		"The more you fight, the STRONGER they get.",
+		"But also... so do YOU. Funny how that works."
+	])
+	npcs.add_child(meta)
+
+	# Sleeping NPC
+	var sleepy = _create_npc("Zzz...", "villager", Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE), [
+		"Zzz...",
+		"Zzz... five more minutes...",
+		"Zzz... no... I don't want to fight slimes...",
+		"Zzz... automate... the farming...",
+		"Zzz... *snore* ...",
+		"ZZZ!!!"
+	])
+	npcs.add_child(sleepy)
+
+	# === HELPFUL NPCs ===
 
 	# Guard near exit
-	var guard = _create_npc("Guard Boris", "guard", Vector2(7 * TILE_SIZE, 11 * TILE_SIZE), [
+	var guard = _create_npc("Guard Boris", "guard", Vector2(8 * TILE_SIZE, 21 * TILE_SIZE), [
 		"Halt! ...Oh, you're heading OUT? Carry on then.",
 		"I'm here to keep monsters from getting IN.",
 		"The overworld isn't too dangerous...",
-		"But watch out for the cave. Strange things happen there.",
-		"Rumor has it the boss gets stronger each time it's defeated."
+		"Slimes, bats, goblins - nothing you can't handle.",
+		"But the cave... *shudder* ...don't ask."
 	])
 	npcs.add_child(guard)
+
+	# Kid by fountain
+	var kid = _create_npc("Young Pip", "villager", Vector2(13 * TILE_SIZE, 10 * TILE_SIZE), [
+		"Wow! A real adventurer!",
+		"I'm gonna be just like you when I grow up!",
+		"I practice swinging my stick every day!",
+		"Mom says I can't go near the cave though.",
+		"Something about 'infinite loops'?",
+		"Whatever that means!"
+	])
+	npcs.add_child(kid)
+
+	# Flower Lady
+	var flower = _create_npc("Flora", "villager", Vector2(17 * TILE_SIZE, 12 * TILE_SIZE), [
+		"*humming* La la la~",
+		"Oh! Would you like to buy some flowers?",
+		"...I don't actually sell them. Just ask.",
+		"They remind me of the old days.",
+		"Before the cave started... changing.",
+		"Take care of yourself out there."
+	])
+	npcs.add_child(flower)
 
 
 func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
@@ -225,7 +385,7 @@ func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Arr
 func _setup_player() -> void:
 	player = OverworldPlayerScript.new()
 	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(320, 384))
+	player.position = spawn_points.get("default", Vector2(480, 576))
 	player.set_job("fighter")
 	add_child(player)
 
@@ -242,7 +402,6 @@ func _setup_camera() -> void:
 	var map_pixel_width = MAP_WIDTH * TILE_SIZE
 	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
 
-	# Normal camera limits to map bounds
 	camera.limit_left = 0
 	camera.limit_top = 0
 	camera.limit_right = map_pixel_width
@@ -259,7 +418,6 @@ func _setup_controller() -> void:
 	controller.encounter_enabled = false  # Safe zone!
 	controller.current_area_id = "harmonia_village"
 
-	# Configure as safe zone
 	controller.set_area_config("harmonia_village", true, 0.0, [])
 
 	controller.battle_triggered.connect(_on_battle_triggered)

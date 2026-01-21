@@ -288,17 +288,15 @@ func _start_battle() -> void:
 	# Create battle scene
 	var battle_scene = BattleSceneRes.instantiate()
 
-	# Set flags BEFORE adding to tree (since _ready() spawns enemies)
+	# Set flags and party BEFORE adding to tree (since _ready() uses these)
 	battle_scene.managed_by_game_loop = true  # Disable BattleScene's internal restart
+	battle_scene.set_party(party)  # MUST be before add_child so _ready() uses correct party
 	if is_miniboss_battle:
 		battle_scene.force_miniboss = true
 		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
 
 	add_child(battle_scene)
 	current_scene = battle_scene
-
-	# Pass party to battle scene
-	battle_scene.set_party(party)
 
 	# Connect to battle end
 	BattleManager.battle_ended.connect(_on_battle_ended, CONNECT_ONE_SHOT)
@@ -363,6 +361,9 @@ func _start_exploration() -> void:
 	"""Start exploration mode (overworld or interior)"""
 	current_state = LoopState.EXPLORATION
 
+	# Ensure normal speed in exploration (battle speed is separate)
+	Engine.time_scale = 1.0
+
 	# Remove old scene
 	if current_scene:
 		current_scene.queue_free()
@@ -407,41 +408,96 @@ func _start_exploration() -> void:
 
 func _return_to_exploration() -> void:
 	"""Return to exploration after battle"""
-	# Keep same map, restore player to saved position
-	_start_exploration()
+	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
+	Engine.time_scale = 1.0
 
-	# Restore player position after scene is set up
-	if _player_position != Vector2.ZERO and _exploration_scene and _exploration_scene.get("player"):
-		_exploration_scene.player.position = _player_position
+	# Keep same map, restore player to saved position
+	await _start_exploration()
+
+	# Restore player position after scene is fully set up
+	if _player_position != Vector2.ZERO and _exploration_scene:
+		var player = _exploration_scene.get("player")
+		if player:
+			player.position = _player_position
+			print("[POSITION] Restored player to: %s" % _player_position)
+		else:
+			push_warning("[POSITION] Could not get player from scene")
+
+	# Clear saved position after restoring
+	_player_position = Vector2.ZERO
 
 
 func _on_exploration_battle_triggered(enemies: Array) -> void:
 	"""Handle battle triggered from exploration"""
 	# Save player position before battle
-	if _exploration_scene and _exploration_scene.has_method("get") and _exploration_scene.get("player"):
-		_player_position = _exploration_scene.player.position
+	if _exploration_scene:
+		var player = _exploration_scene.get("player")
+		if player:
+			_player_position = player.position
+			print("[POSITION] Saved player at: %s" % _player_position)
 
-	# Play dramatic battle transition with monster-specific effects
+	# Extract enemy types for transition
+	var enemy_types: Array = []
+	for enemy in enemies:
+		if enemy is Dictionary:
+			var enemy_type = enemy.get("name", enemy.get("type", enemy.get("id", "unknown")))
+			enemy_types.append(enemy_type)
+
+	# Start battle loading in background (async)
+	ResourceLoader.load_threaded_request("res://src/battle/BattleScene.tscn")
+
+	# Play transition animation (loads in parallel)
 	if BattleTransition:
-		var enemy_types: Array = []
-		for enemy in enemies:
-			if enemy is Dictionary:
-				var enemy_type = enemy.get("name", enemy.get("type", enemy.get("id", "unknown")))
-				enemy_types.append(enemy_type)
 		await BattleTransition.play_battle_transition(enemy_types)
 
-	await _start_battle()
+	# Wait for battle scene to finish loading
+	while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		await get_tree().process_frame
 
-	# Wait a frame for battle scene to render, then fade out transition
+	# Start battle with pre-loaded scene
+	await _start_battle_async()
+
+	# Fade out transition to reveal battle
 	if BattleTransition:
 		await get_tree().process_frame
 		await BattleTransition.fade_out()
+
+
+func _start_battle_async() -> void:
+	"""Start battle using async-loaded scene"""
+	current_state = LoopState.BATTLE
+
+	# Remove old scene
+	if current_scene:
+		current_scene.queue_free()
+		await current_scene.tree_exited
+
+	# Check if this is a miniboss battle (every 3rd battle)
+	var is_miniboss_battle = (battles_won + 1) % 3 == 0 and battles_won > 0
+
+	# Get pre-loaded battle scene
+	var loaded_res = ResourceLoader.load_threaded_get("res://src/battle/BattleScene.tscn")
+	var battle_scene = loaded_res.instantiate()
+
+	# Set flags and party BEFORE adding to tree (since _ready() uses these)
+	battle_scene.managed_by_game_loop = true
+	battle_scene.set_party(party)
+	if is_miniboss_battle:
+		battle_scene.force_miniboss = true
+		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
+
+	add_child(battle_scene)
+	current_scene = battle_scene
+
+	# Connect to battle end
+	BattleManager.battle_ended.connect(_on_battle_ended, CONNECT_ONE_SHOT)
 
 
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	"""Handle transitioning between areas"""
 	_current_map_id = target_map
 	_spawn_point = spawn_point
+	_player_position = Vector2.ZERO  # Clear saved position when changing maps
 	_start_exploration()
 
 

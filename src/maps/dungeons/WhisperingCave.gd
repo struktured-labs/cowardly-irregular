@@ -140,6 +140,14 @@ func _setup_transitions() -> void:
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
+	# Set collision layers for interaction
+	# Layer 4 = interactables (so controller can detect us for require_interaction)
+	# Mask 2 = player layer (to detect player entering zone)
+	trans.collision_layer = 4  # Interactable layer for controller queries
+	trans.collision_mask = 2   # Detect player on layer 2
+	trans.monitoring = true
+	trans.monitorable = true
+
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
 	shape.size = size

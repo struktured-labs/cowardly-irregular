@@ -178,6 +178,9 @@ func set_command_menu_visible(visible: bool) -> void:
 	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
 	if active_win98_menu and is_instance_valid(active_win98_menu):
 		active_win98_menu.visible = visible
+		# Restore focus when making visible again
+		if visible:
+			active_win98_menu.grab_focus()
 
 
 ## Hold-A detection for autobattle editor

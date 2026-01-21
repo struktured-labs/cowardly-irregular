@@ -90,19 +90,29 @@ func _on_interaction_requested() -> void:
 	var check_offset = Vector2.ZERO
 	match player.current_direction:
 		OverworldPlayerScript.Direction.DOWN:
-			check_offset = Vector2(0, 24)
+			check_offset = Vector2(0, 20)
 		OverworldPlayerScript.Direction.UP:
-			check_offset = Vector2(0, -24)
+			check_offset = Vector2(0, -20)
 		OverworldPlayerScript.Direction.LEFT:
-			check_offset = Vector2(-24, 0)
+			check_offset = Vector2(-20, 0)
 		OverworldPlayerScript.Direction.RIGHT:
-			check_offset = Vector2(24, 0)
+			check_offset = Vector2(20, 0)
 
 	query.position = player.global_position + check_offset
 	query.collide_with_areas = true
 	query.collide_with_bodies = false
+	query.collision_mask = 4  # Layer 4 = interactables (NPCs, transitions, etc.)
 
 	var results = space.intersect_point(query)
+	for result in results:
+		var collider = result["collider"]
+		if collider.has_method("interact"):
+			collider.interact(player)
+			return
+
+	# Also check at player's position (for when standing on/in interactable)
+	query.position = player.global_position
+	results = space.intersect_point(query)
 	for result in results:
 		var collider = result["collider"]
 		if collider.has_method("interact"):

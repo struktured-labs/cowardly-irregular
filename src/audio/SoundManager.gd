@@ -24,6 +24,7 @@ const SOUNDS = {
 	"menu_select": {"freq": 1200, "duration": 0.06, "type": "rising"},
 	"menu_cancel": {"freq": 400, "duration": 0.08, "type": "falling"},
 	"menu_expand": {"freq": 600, "duration": 0.05, "type": "chord"},
+	"menu_open": {"freq": 500, "duration": 0.1, "type": "ascending"},  # Shop/Inn open
 	"advance_queue": {"freq": 50, "duration": 0.4, "type": "explosion"},  # Lower, boomier
 	"advance_undo": {"freq": 500, "duration": 0.06, "type": "falling"},
 	"defer": {"freq": 300, "duration": 0.1, "type": "low_pulse"},
@@ -32,6 +33,7 @@ const SOUNDS = {
 	"autobattle_off": {"freq": 500, "duration": 0.15, "type": "descending"},
 	"autobattle_open": {"freq": 440, "duration": 0.2, "type": "chord"},
 	"autobattle_close": {"freq": 350, "duration": 0.15, "type": "falling"},
+	"chest_open": {"freq": 700, "duration": 0.25, "type": "sparkle"},  # Treasure chest
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},

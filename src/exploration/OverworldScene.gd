@@ -76,11 +76,11 @@ func _generate_map() -> void:
 	var map_data: Array[String] = [
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
 		"~~MMMMM~~~~~~MMM~~~MMMMMM~~~~~~~~~~~~~~~",
-		"~~MCMMM~~~~~~MMM~~~MMMMMMM~~~~~~~~~~~~~~",
-		"~~MMMM~~~~~~~MMM~~~MMMMMMM~~~~~~~~~~~~~~",
-		"~~~~~~~~~....MMM~~~~~~~~~~~~~~~~~~~~~~~~",
-		"~~~~~~~......MMM~~~~~~~~~~~~~~~~~~~~~~~~",
-		"~~~~~~...V..............................",
+		"~~MC.........MMM~~~MMMMMMM~~~~~~~~~~~~~~",
+		"~~MM.~~~~~~~~MMM~~~MMMMMMM~~~~~~~~~~~~~~",
+		"~~~~.~~~~....MMM~~~~~~~~~~~~~~~~~~~~~~~~",
+		"~~~~.~~......MMM~~~~~~~~~~~~~~~~~~~~~~~~",
+		"~~~~..V.................................",
 		"~~~~~~~.................................",
 		"~~~~~~~......gggggg.....................",
 		"~~~~~~~~....gggggggg....................",
@@ -155,30 +155,47 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Village entrance transition
+	# Village entrance transition - REQUIRES INTERACTION to prevent spawn loop
 	var village_trans = AreaTransitionScript.new()
 	village_trans.name = "VillageEntrance"
 	village_trans.target_map = "harmonia_village"
 	village_trans.target_spawn = "entrance"
-	village_trans.require_interaction = false
+	village_trans.require_interaction = true  # Must press button to enter
+	village_trans.indicator_text = "Enter Village"
 	village_trans.position = spawn_points.get("village_entrance", Vector2(320, 224))
 	_setup_transition_collision(village_trans, Vector2(TILE_SIZE, TILE_SIZE))
 	village_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(village_trans)
 
-	# Cave entrance transition
+	# Spawn point is ON the trigger - player must press button to re-enter
+	spawn_points["village_entrance"] = village_trans.position
+
+	# Cave entrance transition - REQUIRES INTERACTION to prevent spawn loop
 	var cave_trans = AreaTransitionScript.new()
 	cave_trans.name = "CaveEntrance"
 	cave_trans.target_map = "whispering_cave"
 	cave_trans.target_spawn = "entrance"
-	cave_trans.require_interaction = false
+	cave_trans.require_interaction = true  # Must press button to enter
+	cave_trans.indicator_text = "Enter Cave"
 	cave_trans.position = spawn_points.get("cave_entrance", Vector2(96, 96))
 	_setup_transition_collision(cave_trans, Vector2(TILE_SIZE, TILE_SIZE))
 	cave_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(cave_trans)
 
+	# Spawn point is on the PATH next to the cave (not inside the mountain!)
+	# The path is at column 4, row 2 = (4*32+16, 2*32+16) = (144, 80)
+	spawn_points["cave_entrance"] = Vector2(4 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
+
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
+	# Set collision layers for interaction
+	# Layer 4 = interactables (so controller can detect us for require_interaction)
+	# Mask 2 = player layer (to detect player entering zone)
+	trans.collision_layer = 4  # Interactable layer for controller queries
+	trans.collision_mask = 2   # Detect player on layer 2
+	trans.monitoring = true
+	trans.monitorable = true
+
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
 	shape.size = size

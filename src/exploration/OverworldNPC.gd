@@ -146,8 +146,10 @@ func _setup_collision() -> void:
 	add_child(collision)
 
 	# Set collision layer/mask for interaction
-	collision_layer = 0
-	collision_mask = 2  # Player layer
+	# Layer 4 = interactables (NPCs, signs, etc.) - detected by controller queries
+	# Mask 2 = player layer - for detecting when player enters NPC zone
+	collision_layer = 4  # So controller can find us via physics query
+	collision_mask = 2   # To detect player entering our zone
 	monitoring = true
 	monitorable = true
 
