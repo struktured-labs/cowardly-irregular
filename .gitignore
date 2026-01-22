@@ -39,3 +39,11 @@ user://
 .vscode/
 .idea/
 *.sublime-workspace
+
+# GUT test framework
+addons/gut/.gut_editor_*
+.gut_editor_config.json
+
+# Godot UID cache files
+*.gd.uid
+
