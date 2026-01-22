@@ -78,6 +78,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# X key = Open overworld menu (only in exploration mode)
 	if event is InputEventKey and event.pressed and event.keycode == KEY_X:
+		print("[MENU] X pressed, state=%s, menu=%s" % [LoopState.keys()[current_state], _overworld_menu != null])
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
 			_open_overworld_menu()
 			get_viewport().set_input_as_handled()

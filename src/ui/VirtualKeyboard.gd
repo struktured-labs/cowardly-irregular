@@ -312,8 +312,14 @@ func _input(event: InputEvent) -> void:
 			cancelled.emit()
 		get_viewport().set_input_as_handled()
 
-	# Toggle case (Select button)
-	elif event.is_action_pressed("battle_toggle_auto"):  # Select
+	# Toggle case (Select button / Tab key)
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
+		char_set = (char_set + 1) % 3
+		_refresh_keys()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB:
 		char_set = (char_set + 1) % 3
 		_refresh_keys()
 		SoundManager.play_ui("menu_move")
