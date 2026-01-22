@@ -167,10 +167,6 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null,
 		call_deferred("_refresh_grid")
 
 
-## Profile UI elements
-var _profile_label: Label
-var _stats_panel: Control
-
 func _build_ui() -> void:
 	"""Build the editor UI"""
 	# Clear existing children first (for rebuilding)
