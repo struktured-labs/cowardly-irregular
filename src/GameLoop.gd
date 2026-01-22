@@ -53,7 +53,7 @@ func _ready() -> void:
 	_start_exploration()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	# F5 = Open autobattle editor for current/first player
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
 		_toggle_autobattle_editor()
@@ -76,15 +76,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			_toggle_autobattle_editor()
 			get_viewport().set_input_as_handled()
 
-	# X key = Open overworld menu (only in exploration mode)
+	# X key or gamepad X button = Open overworld menu (only in exploration mode)
+	var x_pressed = false
 	if event is InputEventKey and event.pressed and event.keycode == KEY_X:
-		print("[MENU] X pressed, state=%s, menu=%s" % [LoopState.keys()[current_state], _overworld_menu != null])
-		if current_state == LoopState.EXPLORATION and not _overworld_menu:
-			_open_overworld_menu()
-			get_viewport().set_input_as_handled()
+		x_pressed = true
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
+		x_pressed = true
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		x_pressed = true
 
-	# Escape key also opens overworld menu in exploration
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+	if x_pressed:
+		print("[MENU] X pressed, state=%s, menu=%s" % [LoopState.keys()[current_state], _overworld_menu != null])
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
 			_open_overworld_menu()
 			get_viewport().set_input_as_handled()
