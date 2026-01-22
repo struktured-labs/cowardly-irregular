@@ -95,7 +95,7 @@ func _create_party_panel() -> Control:
 	panel.add_child(panel_bg)
 
 	# Border
-	var border = _create_border(panel)
+	_create_border(panel)
 
 	# Title
 	var title = Label.new()
