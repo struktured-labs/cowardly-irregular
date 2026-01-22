@@ -146,11 +146,9 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	Returns array of actions (1-4) for Advance mode."""
 	var character_id = _get_character_id(combatant)
 
-	if not character_scripts.has(character_id):
-		return [_get_default_action(combatant)]
-
-	var script = character_scripts[character_id]
-	if not script.has("rules"):
+	# Use get_character_script() to properly retrieve from profiles
+	var script = get_character_script(character_id)
+	if script.is_empty() or not script.has("rules"):
 		return [_get_default_action(combatant)]
 
 	# Evaluate rules in order (first match wins)

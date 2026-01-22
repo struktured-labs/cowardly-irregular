@@ -76,10 +76,6 @@ func _input(event: InputEvent) -> void:
 			_toggle_autobattle_editor()
 			get_viewport().set_input_as_handled()
 
-	# Debug: Show any joypad button press
-	if event is InputEventJoypadButton and event.pressed:
-		print("[INPUT] Joypad button %d pressed" % event.button_index)
-
 	# X key or gamepad X/Y button = Open overworld menu (only in exploration mode)
 	# Note: JOY_BUTTON_X=2 (Xbox X), JOY_BUTTON_Y=3 (Xbox Y) - support both for different controllers
 	var x_pressed = false
