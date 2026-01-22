@@ -2252,11 +2252,8 @@ func _unhandled_input(event: InputEvent) -> void:
 								BattleManager.current_state == BattleManager.BattleState.ENEMY_SELECTING
 
 	# Handle autobattle toggle via Select button (Tab on keyboard, Back/Select on controller)
-	var is_select_pressed = false
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
-		is_select_pressed = true
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
-		is_select_pressed = true
+	# Uses battle_toggle_auto action for robust controller support
+	var is_select_pressed = event.is_action_pressed("battle_toggle_auto") and not event.is_echo()
 
 	if is_select_pressed:
 		if is_player_selecting or is_in_selection_phase:
