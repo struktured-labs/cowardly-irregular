@@ -39,7 +39,8 @@ var _status_label: Label
 var _grid_container: Control
 var _cursor: Control
 var _edit_modal: Control
-var _keyboard: VirtualKeyboard = null
+var _keyboard: Control = null  # VirtualKeyboard type
+const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
 var _profile_label: Label
 var _stats_panel: Control
 
@@ -1899,7 +1900,7 @@ func _open_rename_profile() -> void:
 	var current_name = AutobattleSystem.get_active_profile_name(character_id)
 
 	# Create keyboard as child of this control
-	_keyboard = VirtualKeyboard.new()
+	_keyboard = VirtualKeyboardClass.new()
 	_keyboard.size = size
 	add_child(_keyboard)
 	_keyboard.setup("Rename Profile", current_name, 16)
