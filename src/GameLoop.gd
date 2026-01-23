@@ -37,6 +37,7 @@ var _current_map_id: String = "overworld"
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
+var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
 
 ## Overworld menu
 var _overworld_menu: Control = null
@@ -532,12 +533,17 @@ func _return_to_exploration() -> void:
 
 func _on_exploration_battle_triggered(enemies: Array) -> void:
 	"""Handle battle triggered from exploration"""
-	# Save player position before battle
+	# Save player position and cave floor before battle
 	if _exploration_scene:
 		var player = _exploration_scene.get("player")
 		if player:
 			_player_position = player.position
 			print("[POSITION] Saved player at: %s" % _player_position)
+
+		# Save current floor if in cave
+		if _current_map_id == "whispering_cave" and _exploration_scene.has("current_floor"):
+			_current_cave_floor = _exploration_scene.get("current_floor")
+			print("[CAVE] Saved floor: %d" % _current_cave_floor)
 
 	# Extract enemy types for transition
 	var enemy_types: Array = []
@@ -623,10 +629,15 @@ func _create_village_scene() -> Node:
 
 
 func _create_cave_scene() -> Node:
-	"""Create Whispering Cave scene (placeholder until scene file exists)"""
+	"""Create Whispering Cave scene and restore floor state"""
 	var CaveSceneRes = load("res://src/maps/dungeons/WhisperingCave.tscn")
 	if CaveSceneRes:
-		return CaveSceneRes.instantiate()
+		var cave_scene = CaveSceneRes.instantiate()
+		# Restore the floor we were on before battle
+		if _current_cave_floor > 1 and cave_scene.has("current_floor"):
+			cave_scene.current_floor = _current_cave_floor
+			print("[CAVE] Restoring to floor %d" % _current_cave_floor)
+		return cave_scene
 	# Fallback to overworld if scene doesn't exist
 	push_warning("WhisperingCave.tscn not found, using overworld")
 	return OverworldSceneRes.instantiate()
