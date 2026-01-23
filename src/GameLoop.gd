@@ -548,8 +548,8 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 				player.set_can_move(false)
 
 		# Save current floor if in cave
-		if _current_map_id == "whispering_cave" and _exploration_scene.has("current_floor"):
-			_current_cave_floor = _exploration_scene.get("current_floor")
+		if _current_map_id == "whispering_cave" and "current_floor" in _exploration_scene:
+			_current_cave_floor = _exploration_scene.current_floor
 			print("[CAVE] Saved floor: %d" % _current_cave_floor)
 
 	# Extract enemy types for transition
@@ -648,7 +648,7 @@ func _create_cave_scene() -> Node:
 	if CaveSceneRes:
 		var cave_scene = CaveSceneRes.instantiate()
 		# Restore the floor we were on before battle
-		if _current_cave_floor > 1 and cave_scene.has("current_floor"):
+		if _current_cave_floor > 1 and "current_floor" in cave_scene:
 			cave_scene.current_floor = _current_cave_floor
 			print("[CAVE] Restoring to floor %d" % _current_cave_floor)
 		return cave_scene
