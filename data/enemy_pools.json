@@ -1,5 +1,11 @@
 {
 	"cave_dungeon": ["slime", "bat", "goblin"],
+	"cave_floor_1": ["slime", "bat"],
+	"cave_floor_2": ["slime", "bat", "cave_rat"],
+	"cave_floor_3": ["bat", "cave_rat", "goblin"],
+	"cave_floor_4": ["cave_rat", "goblin", "rat_guard"],
+	"cave_floor_5": ["goblin", "rat_guard", "diseased_rat"],
+	"cave_floor_6": [],
 	"forest_dungeon": ["wolf", "corrupted_sprite"],
 	"overworld_plains": ["slime", "goblin"],
 	"overworld_forest": ["wolf", "bat"],

@@ -4,6 +4,7 @@
 			"id": "bronze_sword",
 			"name": "Bronze Sword",
 			"description": "A basic bronze sword",
+			"cost": 150,
 			"stat_mods": {
 				"attack": 5
 			}
@@ -12,6 +13,7 @@
 			"id": "iron_sword",
 			"name": "Iron Sword",
 			"description": "A sturdy iron blade",
+			"cost": 500,
 			"stat_mods": {
 				"attack": 12
 			}
@@ -20,6 +22,7 @@
 			"id": "flame_sword",
 			"name": "Flame Sword",
 			"description": "A blade wreathed in flames",
+			"cost": 1800,
 			"stat_mods": {
 				"attack": 18,
 				"magic": 5
@@ -32,6 +35,7 @@
 			"id": "wooden_staff",
 			"name": "Wooden Staff",
 			"description": "A simple wooden staff",
+			"cost": 150,
 			"stat_mods": {
 				"magic": 8,
 				"attack": 2
@@ -41,6 +45,7 @@
 			"id": "oak_staff",
 			"name": "Oak Staff",
 			"description": "A staff carved from sturdy oak",
+			"cost": 600,
 			"stat_mods": {
 				"magic": 12,
 				"attack": 3,
@@ -51,6 +56,7 @@
 			"id": "crystal_staff",
 			"name": "Crystal Staff",
 			"description": "A staff topped with a magic crystal",
+			"cost": 2000,
 			"stat_mods": {
 				"magic": 20,
 				"max_mp": 15
@@ -60,6 +66,7 @@
 			"id": "iron_dagger",
 			"name": "Iron Dagger",
 			"description": "A quick stabbing blade",
+			"cost": 250,
 			"stat_mods": {
 				"attack": 8,
 				"speed": 5
@@ -69,6 +76,7 @@
 			"id": "shadow_rod",
 			"name": "Shadow Rod",
 			"description": "A rod infused with dark energy",
+			"cost": 800,
 			"stat_mods": {
 				"magic": 15,
 				"attack": 2
@@ -80,6 +88,7 @@
 			"id": "leather_armor",
 			"name": "Leather Armor",
 			"description": "Basic leather protection",
+			"cost": 200,
 			"stat_mods": {
 				"defense": 8,
 				"max_hp": 10
@@ -89,6 +98,7 @@
 			"id": "iron_armor",
 			"name": "Iron Armor",
 			"description": "Heavy iron plating",
+			"cost": 1000,
 			"stat_mods": {
 				"defense": 18,
 				"max_hp": 25,
@@ -99,6 +109,7 @@
 			"id": "cloth_robe",
 			"name": "Cloth Robe",
 			"description": "Simple robes for a caster",
+			"cost": 200,
 			"stat_mods": {
 				"defense": 4,
 				"magic": 5,
@@ -109,6 +120,7 @@
 			"id": "thief_garb",
 			"name": "Thief Garb",
 			"description": "Light armor for stealth",
+			"cost": 250,
 			"stat_mods": {
 				"defense": 6,
 				"speed": 8
@@ -118,6 +130,7 @@
 			"id": "dark_robe",
 			"name": "Dark Robe",
 			"description": "Robes imbued with dark magic",
+			"cost": 700,
 			"stat_mods": {
 				"defense": 5,
 				"magic": 8,
@@ -128,6 +141,7 @@
 			"id": "mage_robe",
 			"name": "Mage Robe",
 			"description": "Enchanted cloth robes",
+			"cost": 900,
 			"stat_mods": {
 				"defense": 5,
 				"magic": 10,
@@ -138,6 +152,7 @@
 			"id": "dragon_mail",
 			"name": "Dragon Mail",
 			"description": "Armor made from dragon scales",
+			"cost": 3500,
 			"stat_mods": {
 				"defense": 30,
 				"max_hp": 50,
@@ -153,6 +168,7 @@
 			"id": "power_ring",
 			"name": "Power Ring",
 			"description": "Increases physical strength",
+			"cost": 600,
 			"stat_mods": {
 				"attack": 10
 			}
@@ -161,6 +177,7 @@
 			"id": "magic_ring",
 			"name": "Magic Ring",
 			"description": "Enhances magical power",
+			"cost": 600,
 			"stat_mods": {
 				"magic": 10
 			}
@@ -169,6 +186,7 @@
 			"id": "speed_boots",
 			"name": "Speed Boots",
 			"description": "Increases movement speed",
+			"cost": 800,
 			"stat_mods": {
 				"speed": 15
 			}
@@ -177,6 +195,7 @@
 			"id": "hp_amulet",
 			"name": "HP Amulet",
 			"description": "Boosts maximum health",
+			"cost": 1200,
 			"stat_mods": {
 				"max_hp": 40
 			}
@@ -185,6 +204,7 @@
 			"id": "mp_amulet",
 			"name": "MP Amulet",
 			"description": "Boosts maximum magic",
+			"cost": 1000,
 			"stat_mods": {
 				"max_mp": 30
 			}
@@ -193,6 +213,7 @@
 			"id": "glass_amulet",
 			"name": "Glass Amulet",
 			"description": "Immense power, but fragile - +50% damage, -30% defense",
+			"cost": 2500,
 			"stat_mods": {
 				"attack": 15,
 				"magic": 15,

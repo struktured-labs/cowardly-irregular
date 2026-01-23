@@ -112,6 +112,134 @@
 		"weaknesses": ["lightning"],
 		"resistances": []
 	},
+	"cave_rat": {
+		"id": "cave_rat",
+		"name": "Cave Rat",
+		"description": "A large rat that infests caves. Faster than slimes but just as weak.",
+		"level": 3,
+		"stats": {
+			"max_hp": 90,
+			"max_mp": 15,
+			"attack": 30,
+			"defense": 8,
+			"magic": 10,
+			"speed": 14
+		},
+		"abilities": ["bite", "scratch"],
+		"exp_reward": 20,
+		"gold_reward": 15,
+		"drop_table": [
+			{"item": "rat_tail", "chance": 0.35}
+		],
+		"weaknesses": ["fire"],
+		"resistances": []
+	},
+	"giant_bat": {
+		"id": "giant_bat",
+		"name": "Giant Bat",
+		"description": "An unusually large bat. Still fragile but hits harder.",
+		"level": 5,
+		"stats": {
+			"max_hp": 85,
+			"max_mp": 20,
+			"attack": 35,
+			"defense": 7,
+			"magic": 18,
+			"speed": 20
+		},
+		"abilities": ["bite", "screech", "dive_attack"],
+		"exp_reward": 35,
+		"gold_reward": 25,
+		"drop_table": [
+			{"item": "bat_wing", "chance": 0.5}
+		],
+		"weaknesses": ["fire", "lightning"],
+		"resistances": []
+	},
+	"rat_guard": {
+		"id": "rat_guard",
+		"name": "Rat Guard",
+		"description": "An armored rat soldier serving the Rat King. Surprisingly well-equipped.",
+		"level": 6,
+		"stats": {
+			"max_hp": 160,
+			"max_mp": 25,
+			"attack": 40,
+			"defense": 18,
+			"magic": 12,
+			"speed": 11
+		},
+		"abilities": ["shield_bash", "defensive_stance", "guard_strike"],
+		"exp_reward": 50,
+		"gold_reward": 35,
+		"drop_table": [
+			{"item": "rusty_armor", "chance": 0.4},
+			{"item": "rat_tail", "chance": 0.3}
+		],
+		"weaknesses": ["lightning"],
+		"resistances": ["physical"]
+	},
+	"diseased_rat": {
+		"id": "diseased_rat",
+		"name": "Diseased Rat",
+		"description": "A plague-ridden rat. Its attacks can poison and sicken.",
+		"level": 7,
+		"stats": {
+			"max_hp": 140,
+			"max_mp": 30,
+			"attack": 38,
+			"defense": 10,
+			"magic": 20,
+			"speed": 13
+		},
+		"abilities": ["plague_bite", "disease_cloud", "fester"],
+		"exp_reward": 55,
+		"gold_reward": 40,
+		"drop_table": [
+			{"item": "antidote", "chance": 0.6},
+			{"item": "plague_sample", "chance": 0.25}
+		],
+		"weaknesses": ["fire", "holy"],
+		"resistances": ["poison"]
+	},
+	"cave_rat_king": {
+		"id": "cave_rat_king",
+		"name": "Cave Rat King",
+		"description": "The self-proclaimed ruler of all cave rats. Just a disappointingly large rat with a tiny crown.",
+		"level": 8,
+		"boss": true,
+		"stats": {
+			"max_hp": 450,
+			"max_mp": 60,
+			"attack": 40,
+			"defense": 22,
+			"magic": 15,
+			"speed": 16
+		},
+		"abilities": ["rat_swarm", "filth_spray", "crown_authority", "desperate_bite"],
+		"exp_reward": 200,
+		"gold_reward": 150,
+		"drop_table": [
+			{"item": "crown_of_rats", "chance": 1.0},
+			{"item": "rat_king_pelt", "chance": 0.8},
+			{"item": "hi_potion", "chance": 0.6}
+		],
+		"weaknesses": ["fire", "lightning"],
+		"resistances": [],
+		"dialogue": {
+			"intro": [
+				"The party climbs the final stairs, expecting a dragon...",
+				"...it's just a really big rat.",
+				"Hero: 'Are you serious?'",
+				"Cave Rat King SQUEAKS defiantly!"
+			],
+			"defeat": [
+				"The Cave Rat King squeals pitifully and flees!",
+				"You obtained the Crown of Rats!",
+				"(It's literally just a tiny crown. Why does this exist?)"
+			]
+		}
+	},
 	"skeleton": {
 		"id": "skeleton",
 		"name": "Skeleton",

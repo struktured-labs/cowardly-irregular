@@ -19,6 +19,9 @@ var corruption_level: float = 0.0  # 0.0 to 1.0, affects save stability
 ## Player party state (references to Combatant nodes)
 var player_party: Array[Dictionary] = []
 
+## Economy
+var party_gold: int = 500  # Starting gold
+
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {
 	"exp_multiplier": 1.0,
@@ -131,6 +134,7 @@ func _create_save_data() -> Dictionary:
 		"timestamp": Time.get_unix_time_from_system(),
 		"playtime": playtime_seconds,
 		"corruption_level": corruption_level,
+		"party_gold": party_gold,
 		"player_party": player_party.duplicate(true),
 		"game_constants": game_constants.duplicate(),
 		"meta_features": meta_features.duplicate(),
@@ -144,6 +148,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		playtime_seconds = save_data["playtime"]
 	if save_data.has("corruption_level"):
 		corruption_level = save_data["corruption_level"]
+	if save_data.has("party_gold"):
+		party_gold = save_data["party_gold"]
 	if save_data.has("player_party"):
 		player_party = save_data["player_party"].duplicate(true)
 	if save_data.has("game_constants"):
@@ -307,6 +313,30 @@ func rewind_to_previous_save() -> bool:
 	return true
 
 
+## Economy methods
+func add_gold(amount: int) -> void:
+	"""Add gold to party (applies gold_multiplier)"""
+	var multiplied_amount = int(amount * game_constants["gold_multiplier"])
+	party_gold += multiplied_amount
+	print("Gold gained: %d (base: %d)" % [multiplied_amount, amount])
+
+
+func spend_gold(amount: int) -> bool:
+	"""Spend gold (returns false if insufficient funds)"""
+	if party_gold < amount:
+		print("Error: Insufficient gold (have %d, need %d)" % [party_gold, amount])
+		return false
+
+	party_gold -= amount
+	print("Gold spent: %d (remaining: %d)" % [amount, party_gold])
+	return true
+
+
+func get_gold() -> int:
+	"""Get current party gold"""
+	return party_gold
+
+
 ## Utility
 func get_playtime_formatted() -> String:
 	"""Get formatted playtime string"""
@@ -320,6 +350,7 @@ func reset_game_state() -> void:
 	"""Reset game state to defaults"""
 	playtime_seconds = 0.0
 	corruption_level = 0.0
+	party_gold = 500
 	player_party.clear()
 	corruption_effects.clear()
 	save_history.clear()

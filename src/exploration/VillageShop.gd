@@ -217,11 +217,46 @@ func interact(player: Node2D) -> void:
 
 func _show_shop_menu() -> void:
 	_is_showing_menu = true
-	_dialogue_state = 0
-	dialogue_box.visible = true
-	_update_dialogue()
+
+	# Open the ShopScene
+	var shop_scene = preload("res://src/exploration/ShopScene.gd").new()
+	shop_scene.setup(_get_shop_type_enum(), shop_name, _get_inventory())
+
+	# Disable player movement
+	var player = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(false)
+
+	# Add shop to scene
+	get_tree().root.add_child(shop_scene)
+	shop_scene.shop_closed.connect(_on_shop_closed.bind(player))
+
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
+
+
+func _on_shop_closed(player: Node) -> void:
+	"""Handle shop closing"""
+	_is_showing_menu = false
+
+	# Re-enable player movement
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(true)
+
+	if SoundManager:
+		SoundManager.play_ui("menu_close")
+
+
+func _get_shop_type_enum() -> int:
+	"""Convert ShopType enum to ShopScene.ShopType enum"""
+	match shop_type:
+		ShopType.WEAPON:
+			return 0  # ShopScene.ShopType.WEAPON
+		ShopType.ARMOR:
+			return 1  # ShopScene.ShopType.ARMOR
+		ShopType.ITEM:
+			return 2  # ShopScene.ShopType.ITEM
+	return 2
 
 
 func _advance_dialogue() -> void:
