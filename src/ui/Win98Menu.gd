@@ -1094,6 +1094,10 @@ func _input(event: InputEvent) -> void:
 	if submenu and is_instance_valid(submenu):
 		return
 
+	# DON'T consume battle_toggle_auto - let it pass through to BattleScene
+	if event.is_action_pressed("battle_toggle_auto"):
+		return
+
 	# Handle input actions (gamepad + keyboard unified) - only in battle mode
 	if battle_mode:
 		if event.is_action_pressed("battle_advance"):

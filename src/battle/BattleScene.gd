@@ -2238,6 +2238,11 @@ func _on_enemy_died(enemy_idx: int) -> void:
 			if is_instance_valid(sprite):
 				var tween = create_tween()
 				tween.tween_property(sprite, "modulate:a", 0.0, 0.8)
+				# Hide sprite completely after fade
+				tween.tween_callback(func():
+					if is_instance_valid(sprite):
+						sprite.visible = false
+				)
 
 
 ## Win98 Menu Functions

@@ -184,7 +184,7 @@ func _play_encounter_sound(transition_type: TransitionType) -> void:
 	if sound:
 		var player = AudioStreamPlayer.new()
 		player.stream = sound
-		player.volume_db = -6.0
+		player.volume_db = -15.0  # Reduced from -6.0 to be less jarring
 		add_child(player)
 		player.play()
 		player.finished.connect(func(): player.queue_free())
