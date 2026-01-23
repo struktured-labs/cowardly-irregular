@@ -60,13 +60,20 @@ func test_is_alive_when_hp_positive() -> void:
 
 
 func test_is_dead_when_hp_zero() -> void:
-	_combatant.current_hp = 0
-	assert_false(_combatant.is_alive, "Combatant with HP = 0 should be dead")
+	# is_alive is set false by die() which is called by take_damage when HP reaches 0
+	# Set low HP first, then deal lethal damage to trigger die()
+	_combatant.current_hp = 1
+	_combatant.defense = 0  # Remove defense to ensure 1 damage kills
+	_combatant.take_damage(100)  # Overkill to ensure death
+	assert_false(_combatant.is_alive, "Combatant should be dead after taking lethal damage")
 
 
 func test_take_damage_reduces_hp() -> void:
+	# Damage formula: amount^2 / (amount + defense), minimum 1
+	# With defense=10 and damage=30: 30^2 / (30+10) = 900/40 = 22 damage
+	# Expected HP: 100 - 22 = 78
 	_combatant.take_damage(30)
-	assert_eq(_combatant.current_hp, 70, "Taking 30 damage from 100 HP should leave 70 HP")
+	assert_eq(_combatant.current_hp, 78, "Taking 30 damage with def 10 should leave 78 HP (formula: 30^2/(30+10)=22)")
 
 
 func test_take_damage_caps_at_zero() -> void:
@@ -86,16 +93,16 @@ func test_heal_caps_at_max() -> void:
 	assert_eq(_combatant.current_hp, 100, "HP should not exceed max_hp")
 
 
-func test_consume_mp_reduces_mp() -> void:
-	var result = _combatant.consume_mp(20)
-	assert_true(result, "Should be able to consume MP")
-	assert_eq(_combatant.current_mp, 30, "Consuming 20 MP from 50 should leave 30")
+func test_spend_mp_reduces_mp() -> void:
+	var result = _combatant.spend_mp(20)
+	assert_true(result, "Should be able to spend MP")
+	assert_eq(_combatant.current_mp, 30, "Spending 20 MP from 50 should leave 30")
 
 
-func test_consume_mp_fails_when_insufficient() -> void:
-	var result = _combatant.consume_mp(100)  # More than available
-	assert_false(result, "Should not consume MP when insufficient")
-	assert_eq(_combatant.current_mp, 50, "MP should be unchanged on failed consume")
+func test_spend_mp_fails_when_insufficient() -> void:
+	var result = _combatant.spend_mp(100)  # More than available
+	assert_false(result, "Should not spend MP when insufficient")
+	assert_eq(_combatant.current_mp, 50, "MP should be unchanged on failed spend")
 
 
 func test_restore_mp_increases_mp() -> void:

@@ -1,0 +1,3 @@
+[submodule "mcp/godot-mcp"]
+	path = mcp/godot-mcp
+	url = git@github.com:struktured-labs/godot-mcp.git

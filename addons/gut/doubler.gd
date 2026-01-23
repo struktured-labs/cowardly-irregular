@@ -1,13 +1,8 @@
 extends RefCounted
 
 
-static var _base_script_text = GutUtils.get_file_as_text('res://addons/gut/double_templates/script_template.txt')
-static var _singleton_script_text = GutUtils.get_file_as_text('res://addons/gut/double_templates/singleton_template.txt')
-static var _double_data_text = GutUtils.get_file_as_text('res://addons/gut/double_templates/double_data_template.txt')
-
+var _base_script_text = GutUtils.get_file_as_text('res://addons/gut/double_templates/script_template.txt')
 var _script_collector = GutUtils.ScriptCollector.new()
-var _singleton_parser = GutUtils.SingletonParser.new()
-
 # used by tests for debugging purposes.
 var print_source = false
 var inner_class_registry = GutUtils.InnerClassRegistry.new()
@@ -49,6 +44,7 @@ func set_strategy(strategy):
 	else:
 		_lgr.error(str('doubler.gd:  invalid double strategy ', strategy))
 
+
 var _method_maker = GutUtils.MethodMaker.new()
 func get_method_maker():
 	return _method_maker
@@ -57,7 +53,6 @@ var _ignored_methods = GutUtils.OneToMany.new()
 func get_ignored_methods():
 	return _ignored_methods
 
-
 # ###############
 # Private
 # ###############
@@ -65,11 +60,6 @@ func _init(strategy=GutUtils.DOUBLE_STRATEGY.SCRIPT_ONLY):
 	set_logger(GutUtils.get_logger())
 	_strategy = strategy
 
-
-func _notification(what: int) -> void:
-	if(what == NOTIFICATION_PREDELETE):
-		if(_stubber != null):
-			_stubber.clear()
 
 func _get_indented_line(indents, text):
 	var to_return = ''
@@ -82,13 +72,8 @@ func _stub_to_call_super(parsed, method_name):
 	if(!parsed.get_method(method_name).is_eligible_for_doubling()):
 		return
 
-	var params = null
-	if(parsed.is_native):
-		params = GutUtils.StubParams.new(parsed._native_class, method_name, parsed.subpath)
-	else:
-		params = GutUtils.StubParams.new(parsed.script_path, method_name, parsed.subpath)
+	var params = GutUtils.StubParams.new(parsed.script_path, method_name, parsed.subpath)
 	params.to_call_super()
-	params.is_script_default  = true
 	_stubber.add_stub(params)
 
 
@@ -110,61 +95,25 @@ func _get_base_script_text(parsed, override_path, partial, included_methods):
 		gut_id = _gut.get_instance_id()
 
 	var extends_text  = parsed.get_extends_text()
-	var double_data_values = {
+
+	var values = {
+		# Top  sections
+		"extends":extends_text,
+		"constants":'',#obj_info.get_constants_text(),
+		"properties":'',#obj_info.get_properties_text(),
+
+		# metadata values
 		"path":path,
 		"subpath":GutUtils.nvl(parsed.subpath, ''),
 		"stubber_id":stubber_id,
 		"spy_id":spy_id,
 		"gut_id":gut_id,
-		"singleton_name":'',
-		"singleton_id":-1,
+		"singleton_name":'',#GutUtils.nvl(obj_info.get_singleton_name(), ''),
 		"is_partial":partial,
 		"doubled_methods":included_methods,
 	}
 
-	var values = {
-		"extends":extends_text,
-		"double_data":_double_data_text.format(double_data_values),
-	}
-
 	return _base_script_text.format(values)
-
-
-func _get_singleton_text(parsed, included_methods, is_partial):
-	var stubber_id = -1
-	if(_stubber != null):
-		stubber_id = _stubber.get_instance_id()
-
-	var spy_id = -1
-	if(_spy != null):
-		spy_id = _spy.get_instance_id()
-
-	var gut_id = -1
-	if(_gut != null):
-		gut_id = _gut.get_instance_id()
-
-	var double_data_values = {
-		"path":'',
-		"subpath":'',
-		"stubber_id":stubber_id,
-		"spy_id":spy_id,
-		"gut_id":gut_id,
-		"singleton_name":parsed.singleton_name,
-		"singleton_id":parsed.singleton_id,
-		"is_partial":is_partial,
-		"doubled_methods":included_methods,
-	}
-
-	var values = {
-		"extends":"extends RefCounted",
-		"double_data":_double_data_text.format(double_data_values),
-		"signals":parsed.get_all_signal_text(),
-		"constants":parsed.get_all_constants_text(),
-		"properties":parsed.get_all_properties_text()
-	}
-
-	var src = _singleton_script_text.format(values)
-	return src
 
 
 func _is_method_eligible_for_doubling(parsed_script, parsed_method):
@@ -189,63 +138,46 @@ func _create_script_no_warnings(src):
 
 
 func _create_double(parsed, strategy, override_path, partial):
+	var path = ""
+
+	path = parsed.script_path
 	var dbl_src = ""
 	var included_methods = []
 
 	for method in parsed.get_local_methods():
 		if(_is_method_eligible_for_doubling(parsed, method)):
 			included_methods.append(method.meta.name)
-			dbl_src += _get_func_text(method.meta)
+			var mthd = parsed.get_local_method(method.meta.name)
+			if(parsed.is_native):
+				dbl_src += _get_func_text(method.meta, parsed.resource)
+			else:
+				dbl_src += _get_func_text(method.meta, path)
 
 	if(strategy == GutUtils.DOUBLE_STRATEGY.INCLUDE_NATIVE):
 		for method in parsed.get_super_methods():
 			if(_is_method_eligible_for_doubling(parsed, method)):
 				included_methods.append(method.meta.name)
 				_stub_to_call_super(parsed, method.meta.name)
-				dbl_src += _get_func_text(method.meta)
+				if(parsed.is_native):
+					dbl_src += _get_func_text(method.meta, parsed.resource)
+				else:
+					dbl_src += _get_func_text(method.meta, path)
 
 	var base_script = _get_base_script_text(parsed, override_path, partial, included_methods)
 	dbl_src = base_script + "\n\n" + dbl_src
 
+
 	if(print_source):
-		var to_print :String = GutUtils.add_line_numbers(dbl_src)
-		to_print = to_print.rstrip("\n")
-		_lgr.log(str(to_print))
+		print(GutUtils.add_line_numbers(dbl_src))
 
 	var DblClass = _create_script_no_warnings(dbl_src)
 	if(_stubber != null):
-		_stub_method_default_values(parsed)
-
-	if(print_source):
-		_lgr.log(str("  path | ", DblClass.resource_path, "\n"))
+		_stub_method_default_values(DblClass, parsed, strategy)
 
 	return DblClass
 
 
-func _create_singleton_double(singleton, is_partial):
-	var parsed = _singleton_parser.parse(singleton)
-	var dbl_src = _get_singleton_text(parsed, parsed.methods_by_name.keys(), is_partial)
-
-	for key in parsed.methods_by_name:
-		if(!_ignored_methods.has(singleton, key)):
-			dbl_src += _method_maker.get_function_text(parsed.methods_by_name[key], singleton) + "\n"
-
-	if(print_source):
-		var to_print :String = GutUtils.add_line_numbers(dbl_src)
-		to_print = to_print.rstrip("\n")
-		_lgr.log(str(to_print))
-
-	var DblClass = GutUtils.create_script_from_source(dbl_src)
-	if(_stubber != null):
-		for key in parsed.methods_by_name:
-			var meta = parsed.methods_by_name[key]
-			if(meta != {} and !meta.flags & METHOD_FLAG_VARARG):
-				_stubber.stub_defaults_from_meta(singleton, meta)
-
-	return DblClass
-
-
-func _stub_method_default_values(parsed):
+func _stub_method_default_values(which, parsed, strategy):
 	for method in parsed.get_local_methods():
 		if(method.is_eligible_for_doubling() and !_ignored_methods.has(parsed.resource, method.meta.name)):
 			_stubber.stub_defaults_from_meta(parsed.script_path, method.meta)
@@ -281,8 +213,14 @@ func _get_inst_id_ref_str(inst):
 	return ref_str
 
 
-func _get_func_text(method_hash):
-	return _method_maker.get_function_text(method_hash) + "\n"
+func _get_func_text(method_hash, path):
+	var override_count = null;
+	if(_stubber != null):
+		override_count = _stubber.get_parameter_count(path, method_hash.name)
+
+	var text = _method_maker.get_function_text(method_hash, override_count) + "\n"
+
+	return text
 
 
 func _parse_script(obj):
@@ -320,7 +258,6 @@ func _partial_double(obj, strategy, override_path=null):
 func double(obj, strategy=_strategy):
 	return _double(obj, strategy)
 
-
 func partial_double(obj, strategy=_strategy):
 	return _partial_double(obj, strategy)
 
@@ -352,17 +289,8 @@ func partial_double_inner(parent, inner, strategy=_strategy):
 	return _create_double(parsed, strategy, null, true)
 
 
-func double_singleton(obj):
-	return _create_singleton_double(obj, false)
-
-
-func partial_double_singleton(obj):
-	return _create_singleton_double(obj, true)
-
-
 func add_ignored_method(obj, method_name):
 	_ignored_methods.add(obj, method_name)
-
 
 
 
