@@ -533,12 +533,19 @@ func _return_to_exploration() -> void:
 
 func _on_exploration_battle_triggered(enemies: Array) -> void:
 	"""Handle battle triggered from exploration"""
+	# Disable player input during battle transition
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
 	# Save player position and cave floor before battle
 	if _exploration_scene:
 		var player = _exploration_scene.get("player")
 		if player:
 			_player_position = player.position
 			print("[POSITION] Saved player at: %s" % _player_position)
+			# Explicitly disable movement
+			if player.has_method("set_can_move"):
+				player.set_can_move(false)
 
 		# Save current floor if in cave
 		if _current_map_id == "whispering_cave" and _exploration_scene.has("current_floor"):
@@ -557,14 +564,19 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 
 	# Play transition animation (loads in parallel)
 	if BattleTransition:
+		print("[GAMELOOP] Starting battle transition")
 		await BattleTransition.play_battle_transition(enemy_types)
+		print("[GAMELOOP] Battle transition complete")
 
 	# Wait for battle scene to finish loading
+	print("[GAMELOOP] Waiting for battle scene to load")
 	while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 		await get_tree().process_frame
+	print("[GAMELOOP] Battle scene loaded")
 
 	# Start battle with pre-loaded scene
 	await _start_battle_async()
+	print("[GAMELOOP] Battle scene started")
 
 	# Small delay to ensure battle scene is fully initialized
 	# (battle_started may have already fired during _ready())
@@ -572,7 +584,9 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 
 	# Fade out transition to reveal battle
 	if BattleTransition:
+		print("[GAMELOOP] Starting fade out")
 		await BattleTransition.fade_out()
+		print("[GAMELOOP] Fade out complete - battle should be visible")
 
 
 func _start_battle_async() -> void:
