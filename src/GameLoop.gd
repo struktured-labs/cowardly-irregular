@@ -560,9 +560,11 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 	# Start battle with pre-loaded scene
 	await _start_battle_async()
 
+	# Wait for battle to actually start (sprites created, etc.)
+	await BattleManager.battle_started
+
 	# Fade out transition to reveal battle
 	if BattleTransition:
-		await get_tree().process_frame
 		await BattleTransition.fade_out()
 
 
@@ -592,6 +594,8 @@ func _start_battle_async() -> void:
 	add_child(battle_scene)
 	current_scene = battle_scene
 
+	# Wait for battle scene to be fully ready before proceeding
+	await get_tree().process_frame
 	print("[GAMELOOP] BattleScene added - visible: %s, in tree: %s, parent: %s" % [battle_scene.visible, battle_scene.is_inside_tree(), battle_scene.get_parent().name])
 
 	# Connect to battle end
