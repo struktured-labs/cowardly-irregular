@@ -116,21 +116,33 @@ Risk/reward automation with escalating stakes:
 ## Development Workflow
 
 ### Pre-Launch Validation
-**IMPORTANT: Always run godot-mcp tool suite before launching the game.**
+**CRITICAL: Always use godot-mcp MCP tools before launching the game.**
 
-Before running the game after making code changes:
-1. **Run GDScript validator** via godot-mcp to catch syntax errors
-2. **Check for script errors** in recently modified files
-3. **Run unit tests** if available (via `godot --headless -s test/run_tests.gd`)
-4. **Then launch** the game
+The `mcp/godot-mcp` submodule provides MCP tools for safe validation:
 
-This prevents runtime errors and saves debugging time by catching issues early.
+**Before running the game after making code changes:**
+1. **Check for errors**: Use `godot_check_errors` tool to catch syntax/parse errors
+2. **Run tests**: Use `godot_run_tests` tool to run GUT unit tests
+3. **Review output**: Fix any issues found
+4. **Then launch**: Use `godot_run_scene` tool to run the game
 
-Example godot-mcp validation workflow:
+**Available godot-mcp tools:**
+- `godot_check_errors` - Check GDScript syntax without running game
+- `godot_run_tests` - Run GUT unit tests with structured output
+- `godot_run_scene` - Run the game (specific scene or main)
+- `godot_import` - Import/reimport assets
+- `godot_export` - Export project to platform
+
+**Why use MCP tools instead of direct Bash:**
+- Structured output (parsed, not raw console)
+- Automatic error detection and reporting
+- Safe headless execution
+- Better integration with AI workflow
+
+**Fallback:** Godot headless commands via Bash are always safe:
 ```bash
-# Use godot-mcp to validate scripts before launch
-# Check syntax, validate scene references, etc.
-# Only proceed to game launch if validation passes
+godot --headless --check-only --script <file>  # Check syntax
+godot --headless -s test/run_tests.gd          # Run tests
 ```
 
 ### Testing
