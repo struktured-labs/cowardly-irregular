@@ -47,3 +47,4 @@ addons/gut/.gut_editor_*
 # Godot UID cache files
 *.gd.uid
 
+tmp/
