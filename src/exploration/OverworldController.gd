@@ -64,6 +64,10 @@ func _generate_enemies() -> Array:
 		var es = Engine.get_singleton("EncounterSystem")
 		return es.generate_enemy_party()
 
+	# Return empty if no enemies in pool (boss-only floors)
+	if _enemy_pool.is_empty():
+		return []
+
 	# Fallback: generate 1-3 random enemies from pool
 	var count = randi_range(1, 3)
 	var enemies = []

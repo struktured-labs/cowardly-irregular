@@ -315,14 +315,19 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		transitions.add_child(down_trans)
 
 	# Boss trigger on floor 6
-	if floor_num == 6 and spawn_points.has("boss") and not boss_defeated:
-		var boss_trans = AreaTransitionScript.new()
-		boss_trans.name = "BossTrigger"
-		boss_trans.require_interaction = true
-		boss_trans.position = spawn_points["boss"]
-		_setup_transition_collision(boss_trans, Vector2(TILE_SIZE, TILE_SIZE))
-		boss_trans.body_entered.connect(_on_boss_trigger_entered)
-		transitions.add_child(boss_trans)
+	if floor_num == 6:
+		print("[BOSS] Floor 6 - boss_defeated: %s, has boss spawn: %s" % [boss_defeated, spawn_points.has("boss")])
+		if spawn_points.has("boss"):
+			print("[BOSS] Boss spawn point at: %s" % spawn_points["boss"])
+		if spawn_points.has("boss") and not boss_defeated:
+			var boss_trans = AreaTransitionScript.new()
+			boss_trans.name = "BossTrigger"
+			boss_trans.require_interaction = true
+			boss_trans.position = spawn_points["boss"]
+			_setup_transition_collision(boss_trans, Vector2(TILE_SIZE, TILE_SIZE))
+			boss_trans.body_entered.connect(_on_boss_trigger_entered)
+			transitions.add_child(boss_trans)
+			print("[BOSS] Cave Rat King boss trigger created at %s - walk up and press A to fight!" % spawn_points["boss"])
 
 
 func _add_stair_visuals() -> void:
@@ -340,6 +345,12 @@ func _add_stair_visuals() -> void:
 	if spawn_points.has("stairs_down"):
 		var down_marker = _create_stair_marker(spawn_points["stairs_down"], false)
 		stair_sprites.add_child(down_marker)
+
+	# Boss marker on floor 6 (if boss not defeated)
+	var boss_defeated = GameStateRef.is_boss_defeated("cave_rat_king")
+	if current_floor == 6 and spawn_points.has("boss") and not boss_defeated:
+		var boss_marker = _create_boss_marker(spawn_points["boss"])
+		stair_sprites.add_child(boss_marker)
 
 
 func _create_stair_marker(position: Vector2, is_up: bool) -> Node2D:
@@ -367,6 +378,35 @@ func _create_stair_marker(position: Vector2, is_up: bool) -> Node2D:
 	tween.set_loops()
 	tween.tween_property(label, "modulate:a", 0.5, 0.8)
 	tween.tween_property(label, "modulate:a", 1.0, 0.8)
+
+	return marker
+
+
+func _create_boss_marker(position: Vector2) -> Node2D:
+	"""Create a visual marker for the boss"""
+	var marker = Node2D.new()
+	marker.position = position
+
+	# Red background tile to make boss stand out
+	var bg = ColorRect.new()
+	bg.size = Vector2(TILE_SIZE, TILE_SIZE)
+	bg.position = Vector2(-TILE_SIZE/2, -TILE_SIZE/2)
+	bg.color = Color(0.8, 0.2, 0.2, 0.8)  # Bright red
+	marker.add_child(bg)
+
+	# Skull with crown icon
+	var label = Label.new()
+	label.text = "👑"  # Crown emoji to represent the Rat King
+	label.position = Vector2(-12, -12)
+	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_color_override("font_color", Color.YELLOW)
+	marker.add_child(label)
+
+	# Pulsing animation (faster than stairs to draw attention)
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(bg, "modulate:a", 0.6, 0.5)
+	tween.tween_property(bg, "modulate:a", 1.0, 0.5)
 
 	return marker
 
