@@ -126,11 +126,14 @@ func play_battle_transition(enemy_types: Array) -> void:
 
 ## Fade out after battle transition (to reveal battle scene)
 func fade_out() -> void:
+	print("[TRANSITION] fade_out() called - overlay alpha: %s, color: %s" % [_overlay.modulate.a, _overlay.color])
 	var tween = create_tween()
 	tween.tween_property(_overlay, "modulate:a", 0.0, 0.3)
 	await tween.finished
+	print("[TRANSITION] fade_out() finished - overlay alpha: %s" % _overlay.modulate.a)
 	_cleanup_effects()
 	_is_transitioning = false
+	print("[TRANSITION] Overlay visible: %s, layer: %s" % [_overlay.visible, layer])
 	transition_finished.emit()
 
 

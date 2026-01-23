@@ -592,6 +592,8 @@ func _start_battle_async() -> void:
 	add_child(battle_scene)
 	current_scene = battle_scene
 
+	print("[GAMELOOP] BattleScene added - visible: %s, in tree: %s, parent: %s" % [battle_scene.visible, battle_scene.is_inside_tree(), battle_scene.get_parent().name])
+
 	# Connect to battle end
 	BattleManager.battle_ended.connect(_on_battle_ended, CONNECT_ONE_SHOT)
 

@@ -271,7 +271,7 @@ func _setup_npcs() -> void:
 	# === AUTOBATTLE HINT NPCs ===
 
 	# Scholar (hints about automation)
-	var scholar = _create_npc("Scholar Milo", "villager", Vector2(14 * TILE_SIZE, 7 * TILE_SIZE), [
+	var scholar = _create_npc("Scholar Milo", "villager", Vector2(16 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Ah, a fellow seeker of knowledge!",
 		"I've been studying an ancient art called 'AUTOBATTLE'.",
 		"Press F5 or START to open the Autobattle Editor!",
@@ -351,7 +351,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(guard)
 
 	# Kid by fountain
-	var kid = _create_npc("Young Pip", "villager", Vector2(13 * TILE_SIZE, 10 * TILE_SIZE), [
+	var kid = _create_npc("Young Pip", "villager", Vector2(16 * TILE_SIZE, 10 * TILE_SIZE), [
 		"Wow! A real adventurer!",
 		"I'm gonna be just like you when I grow up!",
 		"I practice swinging my stick every day!",
