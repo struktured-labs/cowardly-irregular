@@ -347,7 +347,6 @@ func _add_stair_visuals() -> void:
 		stair_sprites.add_child(down_marker)
 
 	# Boss marker on floor 6 (if boss not defeated)
-	var boss_defeated = GameStateRef.is_boss_defeated("cave_rat_king")
 	if current_floor == 6 and spawn_points.has("boss") and not boss_defeated:
 		var boss_marker = _create_boss_marker(spawn_points["boss"])
 		stair_sprites.add_child(boss_marker)
