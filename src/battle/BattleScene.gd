@@ -2883,8 +2883,11 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 			var target_idx = action_data.get("target_idx", -1)
 			if target_idx >= 0 and target_idx < test_enemies.size():
 				var target = test_enemies[target_idx]
-				if is_instance_valid(target):
+				# Skip dead enemies
+				if is_instance_valid(target) and target.is_alive:
 					battle_actions.append({"type": "attack", "target": target})
+				else:
+					log_message("[color=gray]Target no longer valid, skipping action[/color]")
 
 		# Handle ability actions (enemy, ally, or dead ally targets)
 		elif action_id.begins_with("ability_") and action_data is Dictionary:

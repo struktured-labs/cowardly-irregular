@@ -22,6 +22,7 @@ const TILE_SIZE: int = 32
 ## Floor state
 var current_floor: int = 1
 var boss_defeated: bool = false
+var _transitioning: bool = false  # Prevent rapid re-triggering
 
 ## Scene components
 var tile_map: TileMapLayer
@@ -329,13 +330,13 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _on_stairs_up_entered(body: Node2D) -> void:
 	"""Player entered stairs up - transition to next floor"""
-	if body.has_method("set_can_move"):
+	if body.has_method("set_can_move") and not _transitioning:
 		_transition_to_floor(current_floor + 1)
 
 
 func _on_stairs_down_entered(body: Node2D) -> void:
 	"""Player entered stairs down - transition to previous floor"""
-	if body.has_method("set_can_move"):
+	if body.has_method("set_can_move") and not _transitioning:
 		_transition_to_floor(current_floor - 1)
 
 
@@ -343,6 +344,9 @@ func _transition_to_floor(target_floor: int) -> void:
 	"""Transition to a different floor"""
 	if target_floor < 1 or target_floor > 6:
 		return
+
+	# Set transition lock
+	_transitioning = true
 
 	# Fade out
 	controller.pause_exploration()
@@ -374,6 +378,10 @@ func _transition_to_floor(target_floor: int) -> void:
 	floor_changed.emit(current_floor)
 
 	print("Transitioned to Whispering Cave Floor %d" % current_floor)
+
+	# Release transition lock after a delay (prevent immediate re-trigger)
+	await get_tree().create_timer(0.5).timeout
+	_transitioning = false
 
 
 func _update_floor_encounters(floor: int) -> void:
