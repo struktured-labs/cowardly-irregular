@@ -242,28 +242,7 @@ func _toggle_battle_speed() -> void:
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
 
 
-func _input(event: InputEvent) -> void:
-	"""Handle global input for battle speed toggle and repeat actions"""
-	# Tab or ` (grave) to toggle speed
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_QUOTELEFT:
-			_toggle_battle_speed()
-			get_viewport().set_input_as_handled()
-		# Y key to repeat previous actions
-		elif event.keycode == KEY_Y:
-			_repeat_previous_actions()
-			get_viewport().set_input_as_handled()
-
-	# Gamepad buttons (Nintendo layout: Y=left, X=top)
-	if event is InputEventJoypadButton and event.pressed:
-		# Y button - toggle battle speed
-		if event.button_index == JOY_BUTTON_Y:
-			_toggle_battle_speed()
-			get_viewport().set_input_as_handled()
-		# X button - repeat previous actions
-		elif event.button_index == JOY_BUTTON_X:
-			_repeat_previous_actions()
-			get_viewport().set_input_as_handled()
+# Duplicate _input function removed - merged with the one at line 2250
 
 
 func _repeat_previous_actions() -> void:
@@ -2248,8 +2227,8 @@ func _on_enemy_died(enemy_idx: int) -> void:
 ## Win98 Menu Functions
 
 func _input(event: InputEvent) -> void:
-	"""Handle high-priority inputs like Select button"""
-	# Handle autobattle toggle with highest priority
+	"""Handle high-priority inputs: Select button, battle speed toggle, and repeat actions"""
+	# Handle autobattle toggle with highest priority (Select button)
 	var is_select_pressed = event.is_action_pressed("battle_toggle_auto") and not event.is_echo()
 
 	if is_select_pressed:
@@ -2268,6 +2247,31 @@ func _input(event: InputEvent) -> void:
 		elif is_executing:
 			# During execution: Toggle autobattle
 			_toggle_cancel_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
+
+	# Battle speed toggle (Tab or ` key)
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_QUOTELEFT:
+			_toggle_battle_speed()
+			get_viewport().set_input_as_handled()
+			return
+		# Y key to repeat previous actions
+		elif event.keycode == KEY_Y:
+			_repeat_previous_actions()
+			get_viewport().set_input_as_handled()
+			return
+
+	# Gamepad buttons (Nintendo layout: Y=left, X=top)
+	if event is InputEventJoypadButton and event.pressed:
+		# Y button - toggle battle speed
+		if event.button_index == JOY_BUTTON_Y:
+			_toggle_battle_speed()
+			get_viewport().set_input_as_handled()
+			return
+		# X button - repeat previous actions
+		elif event.button_index == JOY_BUTTON_X:
+			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
 			return
 
