@@ -211,7 +211,7 @@ func _create_save_data() -> Dictionary:
 	# Autogrind/autobattle stats
 	data["automation"] = {
 		"region_crack_levels": AutogrindSystem.region_crack_levels if AutogrindSystem else {},
-		"total_battles": BattleManager.total_battles_won if BattleManager.has("total_battles_won") else 0
+		"total_battles": BattleManager.total_battles_won if BattleManager and "total_battles_won" in BattleManager else 0
 	}
 
 	return data

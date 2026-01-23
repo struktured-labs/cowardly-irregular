@@ -9,7 +9,8 @@ func _init():
 
 	# Configure GUT
 	gut.add_directory("res://test/unit")
-	gut.set_log_level(gut.LOG_LEVEL_ALL_ASSERTS)
+	# Log level is set via property in GUT 9.x, not method
+	gut.log_level = gut.LOG_LEVEL_ALL_ASSERTS if gut.has("LOG_LEVEL_ALL_ASSERTS") else 2
 
 	# Connect to completion signal
 	gut.end_run.connect(_on_tests_finished)
