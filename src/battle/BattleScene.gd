@@ -2267,6 +2267,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+	# DEBUGGING: Print when Select button doesn't trigger
+	if event.is_action_pressed("battle_toggle_auto") and not event.is_echo():
+		print("[DEBUG] Select pressed but conditions not met: is_player_selecting=%s, is_in_selection_phase=%s, is_executing=%s, state=%s" % [is_player_selecting, is_in_selection_phase, is_executing, BattleManager.current_state])
+
 	# Handle B/Cancel button during execution to cancel autobattle
 	# Use ui_cancel action which maps correctly across controller types
 	var is_cancel_pressed = event.is_action_pressed("ui_cancel") and not event.is_echo()
