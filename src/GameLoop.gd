@@ -560,8 +560,9 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 	# Start battle with pre-loaded scene
 	await _start_battle_async()
 
-	# Wait for battle to actually start (sprites created, etc.)
-	await BattleManager.battle_started
+	# Small delay to ensure battle scene is fully initialized
+	# (battle_started may have already fired during _ready())
+	await get_tree().create_timer(0.1).timeout
 
 	# Fade out transition to reveal battle
 	if BattleTransition:

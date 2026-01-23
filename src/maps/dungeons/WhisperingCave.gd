@@ -388,22 +388,26 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 func _on_stairs_up_entered(body: Node2D) -> void:
 	"""Player entered stairs up - transition to next floor"""
 	if body.has_method("set_can_move") and not _transitioning:
-		_transition_to_floor(current_floor + 1)
+		_transition_to_floor(current_floor + 1, "up")
 
 
 func _on_stairs_down_entered(body: Node2D) -> void:
 	"""Player entered stairs down - transition to previous floor"""
 	if body.has_method("set_can_move") and not _transitioning:
-		_transition_to_floor(current_floor - 1)
+		_transition_to_floor(current_floor - 1, "down")
 
 
-func _transition_to_floor(target_floor: int) -> void:
+func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	"""Transition to a different floor"""
 	if target_floor < 1 or target_floor > 6:
 		return
 
 	# Set transition lock
 	_transitioning = true
+
+	# Disable player movement immediately
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(false)
 
 	# Fade out
 	controller.pause_exploration()
@@ -418,17 +422,31 @@ func _transition_to_floor(target_floor: int) -> void:
 	# Update encounter settings
 	_update_floor_encounters(current_floor)
 
-	# Spawn player at appropriate stairs
+	# Spawn player at appropriate stairs based on direction
 	var spawn_key = "default"
-	if target_floor > 1:
-		# Coming from stairs (either up or down), spawn at the opposite stairs
-		# This logic ensures player doesn't immediately re-trigger
-		if spawn_points.has("stairs_down"):
-			spawn_key = "stairs_down"
+	if direction == "up":
+		# Going up: spawn at stairs_down of new floor (away from up stairs)
+		spawn_key = "stairs_down"
+	elif direction == "down":
+		# Going down: spawn at stairs_up of new floor (away from down stairs)
+		# For floor 1, there are no up stairs, so use default/entrance
+		if target_floor == 1:
+			spawn_key = "entrance"
+		else:
+			spawn_key = "stairs_up"
 
 	if spawn_points.has(spawn_key):
 		player.teleport(spawn_points[spawn_key])
-		player.reset_step_count()
+	else:
+		# Fallback to default
+		player.teleport(spawn_points.get("default", Vector2(400, 400)))
+
+	player.reset_step_count()
+
+	# Re-enable player movement after a short delay
+	await get_tree().create_timer(0.3).timeout
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(true)
 
 	# Fade in
 	controller.resume_exploration()
@@ -436,7 +454,7 @@ func _transition_to_floor(target_floor: int) -> void:
 
 	print("Transitioned to Whispering Cave Floor %d" % current_floor)
 
-	# Release transition lock after a delay (prevent immediate re-trigger)
+	# Release transition lock after additional delay (prevent immediate re-trigger)
 	await get_tree().create_timer(0.5).timeout
 	_transitioning = false
 
