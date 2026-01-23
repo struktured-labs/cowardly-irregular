@@ -2246,6 +2246,32 @@ func _on_enemy_died(enemy_idx: int) -> void:
 
 
 ## Win98 Menu Functions
+
+func _input(event: InputEvent) -> void:
+	"""Handle high-priority inputs like Select button"""
+	# Handle autobattle toggle with highest priority
+	var is_select_pressed = event.is_action_pressed("battle_toggle_auto") and not event.is_echo()
+
+	if is_select_pressed:
+		var is_player_selecting = BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING
+		var is_in_selection_phase = BattleManager.current_state == BattleManager.BattleState.SELECTION_PHASE or \
+									BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING or \
+									BattleManager.current_state == BattleManager.BattleState.ENEMY_SELECTING
+		var is_executing = BattleManager.current_state == BattleManager.BattleState.EXECUTION_PHASE or \
+						   BattleManager.current_state == BattleManager.BattleState.PROCESSING_ACTION
+
+		if is_player_selecting or is_in_selection_phase:
+			# During selection: Enable autobattle for ALL players
+			_enable_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
+		elif is_executing:
+			# During execution: Toggle autobattle
+			_toggle_cancel_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	"""Handle input for menu and Advance/Defer controls"""
 	var current = BattleManager.current_combatant
@@ -2255,26 +2281,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	var is_in_selection_phase = BattleManager.current_state == BattleManager.BattleState.SELECTION_PHASE or \
 								BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING or \
 								BattleManager.current_state == BattleManager.BattleState.ENEMY_SELECTING
-
-	# Handle autobattle toggle via Select button (Tab on keyboard, Back/Select on controller)
-	# Uses battle_toggle_auto action for robust controller support
-	var is_select_pressed = event.is_action_pressed("battle_toggle_auto") and not event.is_echo()
-
-	if is_select_pressed:
-		if is_player_selecting or is_in_selection_phase:
-			# During selection: Enable autobattle for ALL players and start battle immediately
-			_enable_all_autobattle()
-			get_viewport().set_input_as_handled()
-			return
-		elif is_executing:
-			# During execution: Select TOGGLES autobattle (cancel if on, re-enable if pending cancel)
-			_toggle_cancel_all_autobattle()
-			get_viewport().set_input_as_handled()
-			return
-
-	# DEBUGGING: Print when Select button doesn't trigger
-	if event.is_action_pressed("battle_toggle_auto") and not event.is_echo():
-		print("[DEBUG] Select pressed but conditions not met: is_player_selecting=%s, is_in_selection_phase=%s, is_executing=%s, state=%s" % [is_player_selecting, is_in_selection_phase, is_executing, BattleManager.current_state])
 
 	# Handle B/Cancel button during execution to cancel autobattle
 	# Use ui_cancel action which maps correctly across controller types

@@ -1,4 +1,4 @@
-extends Control
+extends CanvasLayer
 class_name ShopScene
 
 ## FF5-Style Shop System
@@ -34,6 +34,7 @@ var current_menu: Win98Menu = null
 
 
 func _ready() -> void:
+	layer = 10  # Render above game world
 	_setup_ui()
 	_open_main_menu()
 

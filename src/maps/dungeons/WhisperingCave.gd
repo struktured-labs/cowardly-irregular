@@ -34,6 +34,9 @@ var tile_generator: Node  # TileGenerator
 ## Area transitions
 var transitions: Node2D
 
+## Stair sprites
+var stair_sprites: Node2D
+
 ## Spawn points
 var spawn_points: Dictionary = {}
 
@@ -216,6 +219,11 @@ func _setup_scene() -> void:
 	transitions.name = "Transitions"
 	add_child(transitions)
 
+	# Create stair sprites container
+	stair_sprites = Node2D.new()
+	stair_sprites.name = "StairSprites"
+	add_child(stair_sprites)
+
 
 func _generate_map_for_floor(floor_num: int) -> void:
 	"""Generate map for specific floor"""
@@ -249,6 +257,9 @@ func _generate_map_for_floor(floor_num: int) -> void:
 
 	# Setup transitions for this floor
 	_setup_transitions_for_floor(floor_num)
+
+	# Add visual markers for stairs
+	_add_stair_visuals()
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -312,6 +323,52 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		_setup_transition_collision(boss_trans, Vector2(TILE_SIZE, TILE_SIZE))
 		boss_trans.body_entered.connect(_on_boss_trigger_entered)
 		transitions.add_child(boss_trans)
+
+
+func _add_stair_visuals() -> void:
+	"""Add visual markers for stairs"""
+	# Clear existing stair sprites
+	for child in stair_sprites.get_children():
+		child.queue_free()
+
+	# Stairs up marker
+	if spawn_points.has("stairs_up"):
+		var up_marker = _create_stair_marker(spawn_points["stairs_up"], true)
+		stair_sprites.add_child(up_marker)
+
+	# Stairs down marker
+	if spawn_points.has("stairs_down"):
+		var down_marker = _create_stair_marker(spawn_points["stairs_down"], false)
+		stair_sprites.add_child(down_marker)
+
+
+func _create_stair_marker(position: Vector2, is_up: bool) -> Node2D:
+	"""Create a visual marker for stairs"""
+	var marker = Node2D.new()
+	marker.position = position
+
+	# Background tile with different color
+	var bg = ColorRect.new()
+	bg.size = Vector2(TILE_SIZE, TILE_SIZE)
+	bg.position = Vector2(-TILE_SIZE/2, -TILE_SIZE/2)
+	bg.color = Color(0.3, 0.4, 0.5, 0.7) if is_up else Color(0.5, 0.4, 0.3, 0.7)
+	marker.add_child(bg)
+
+	# Arrow indicator
+	var label = Label.new()
+	label.text = "▲" if is_up else "▼"
+	label.position = Vector2(-8, -12)
+	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	marker.add_child(label)
+
+	# Pulsing animation
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(label, "modulate:a", 0.5, 0.8)
+	tween.tween_property(label, "modulate:a", 1.0, 0.8)
+
+	return marker
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
