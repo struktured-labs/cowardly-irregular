@@ -113,6 +113,38 @@ Risk/reward automation with escalating stakes:
 - Only after core design is proven
 - Would be scoped-down "Origins" version
 
+## Development Workflow
+
+### Pre-Launch Validation
+**IMPORTANT: Always run godot-mcp tool suite before launching the game.**
+
+Before running the game after making code changes:
+1. **Run GDScript validator** via godot-mcp to catch syntax errors
+2. **Check for script errors** in recently modified files
+3. **Run unit tests** if available (via `godot4 --headless -s test/run_tests.gd`)
+4. **Then launch** the game
+
+This prevents runtime errors and saves debugging time by catching issues early.
+
+Example godot-mcp validation workflow:
+```bash
+# Use godot-mcp to validate scripts before launch
+# Check syntax, validate scene references, etc.
+# Only proceed to game launch if validation passes
+```
+
+### Testing
+- Unit tests in `test/unit/` using GUT framework
+- Run tests via: `godot4 --headless -s test/run_tests.gd`
+- All tests should pass before committing changes
+
+**Regression Prevention Rule:**
+- **Every time a bug is fixed, add a regression test**
+- If a bug made it to runtime, write a test that would have caught it
+- This prevents the same bug from reoccurring
+- Test file naming: `test_<feature>_regression.gd` for regression-specific tests
+- Include bug reference in test comments (e.g., "Regression test for gray screen battle transition")
+
 ## Controls & Input
 
 **This game is designed for SNES-style gamepad. NO MOUSE/CLICKING required.**
