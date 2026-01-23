@@ -128,6 +128,36 @@ func set_area_config(area_id: String, safe_zone: bool, encounter_rate: float, en
 	_enemy_pool = enemy_pool
 
 
+## Set enemy pool directly (convenience method)
+func set_enemy_pool(pool_id: String) -> void:
+	"""Load enemy pool from enemy_pools.json by ID"""
+	var pools = _load_enemy_pools()
+	if pools.has(pool_id):
+		_enemy_pool = pools[pool_id]
+		print("Loaded enemy pool '%s': %s" % [pool_id, _enemy_pool])
+	else:
+		print("Warning: Enemy pool '%s' not found" % pool_id)
+
+
+func _load_enemy_pools() -> Dictionary:
+	"""Load enemy pools from data file"""
+	var file_path = "res://data/enemy_pools.json"
+	if not FileAccess.file_exists(file_path):
+		return {}
+
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if not file:
+		return {}
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	if json.parse(json_string) == OK:
+		return json.data
+	return {}
+
+
 ## Resume player control after battle or menu
 func resume_exploration() -> void:
 	if player:

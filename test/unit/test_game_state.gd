@@ -87,3 +87,84 @@ func test_save_history_is_array() -> void:
 		pending("GameState not available")
 		return
 	assert_typeof(_game_state.save_history, TYPE_ARRAY, "save_history should be an Array")
+
+
+## Gold System Tests
+
+func test_party_gold_starts_at_500() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	# Reset state to ensure clean test
+	_game_state.reset_game_state()
+	assert_eq(_game_state.party_gold, 500, "party_gold should start at 500")
+
+
+func test_get_gold_returns_current_gold() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	_game_state.reset_game_state()
+	assert_eq(_game_state.get_gold(), 500, "get_gold() should return 500")
+
+
+func test_add_gold_increases_gold() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	_game_state.reset_game_state()
+	_game_state.add_gold(100)
+	assert_eq(_game_state.get_gold(), 600, "Adding 100 gold should result in 600")
+
+
+func test_add_gold_applies_multiplier() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	_game_state.reset_game_state()
+	_game_state.game_constants["gold_multiplier"] = 2.0
+	_game_state.add_gold(100)
+	assert_eq(_game_state.get_gold(), 700, "With 2x multiplier, 100 base gold should add 200 (500 + 200 = 700)")
+	# Reset multiplier
+	_game_state.game_constants["gold_multiplier"] = 1.0
+
+
+func test_spend_gold_decreases_gold() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	_game_state.reset_game_state()
+	var success = _game_state.spend_gold(100)
+	assert_true(success, "Spending 100 gold should succeed")
+	assert_eq(_game_state.get_gold(), 400, "After spending 100, should have 400 left")
+
+
+func test_spend_gold_fails_with_insufficient_funds() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	_game_state.reset_game_state()
+	var success = _game_state.spend_gold(600)
+	assert_false(success, "Spending 600 gold should fail (only have 500)")
+	assert_eq(_game_state.get_gold(), 500, "Gold should remain at 500 after failed transaction")
+
+
+func test_gold_persists_in_save_data() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	_game_state.reset_game_state()
+	_game_state.add_gold(250)
+	var save_data = _game_state._create_save_data()
+	assert_true(save_data.has("party_gold"), "Save data should include party_gold")
+	assert_eq(save_data["party_gold"], 750, "Save data should have 750 gold")
+
+
+func test_gold_loads_from_save_data() -> void:
+	if _game_state == null:
+		pending("GameState not available")
+		return
+	_game_state.reset_game_state()
+	var save_data = {"party_gold": 1234}
+	_game_state._apply_save_data(save_data)
+	assert_eq(_game_state.get_gold(), 1234, "Gold should load from save data")
