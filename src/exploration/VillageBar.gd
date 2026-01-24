@@ -2,18 +2,18 @@ extends Area2D
 class_name VillageBar
 
 ## VillageBar - Classic JRPG bar with dancing girl (FF5 style)
-## Features animated dancer sprite and bar dialogue
+## Now triggers transition to TavernInterior scene when entered
 
 signal drink_purchased()
+signal transition_triggered(target_map: String, target_spawn: String)
 
-@export var bar_name: String = "Tavern"
+@export var bar_name: String = "The Dancing Tonberry"
 
 ## Visual
 var sprite: Sprite2D
 var dancer_sprite: Sprite2D
 var name_label: Label
-var dialogue_box: Control
-var dialogue_label: Label
+var enter_label: Label
 
 ## Animation state
 var _anim_frame: int = 0
@@ -25,20 +25,8 @@ var _dancer_frames: Array[ImageTexture] = []
 
 ## State
 var _player_nearby: bool = false
-var _is_showing_menu: bool = false
-var _dialogue_state: int = 0
 
 const TILE_SIZE: int = 32
-
-## Bar dialogue options
-const BAR_DIALOGUE = [
-	"Bartender: What'll it be, adventurer?",
-	"*The dancer twirls gracefully on stage*",
-	"Regular: Did ya hear? The cave's been actin' strange lately...",
-	"Regular: Some fool tried to AUTOMATE his battles. Now he's rich!",
-	"Dancer: *wink* Good luck out there, hero~",
-	"Bartender: Come back anytime!"
-]
 
 
 func _ready() -> void:
@@ -46,7 +34,7 @@ func _ready() -> void:
 	_generate_dancer_sprites()
 	_setup_collision()
 	_setup_name_label()
-	_setup_dialogue_box()
+	_setup_enter_label()
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -229,9 +217,9 @@ func _setup_name_label() -> void:
 	name_label = Label.new()
 	name_label.text = bar_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.position = Vector2(-50, -45)
-	name_label.size = Vector2(100, 20)
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.position = Vector2(-70, -50)
+	name_label.size = Vector2(140, 20)
+	name_label.add_theme_font_size_override("font_size", 14)
 	name_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.5))
 	name_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -240,78 +228,37 @@ func _setup_name_label() -> void:
 	add_child(name_label)
 
 
-func _setup_dialogue_box() -> void:
-	dialogue_box = Control.new()
-	dialogue_box.name = "DialogueBox"
-	dialogue_box.visible = false
-	dialogue_box.z_index = 100
-
-	var panel = Panel.new()
-	panel.position = Vector2(-140, -110)
-	panel.size = Vector2(280, 90)
-
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.2, 0.12, 0.08, 0.95)
-	style.border_color = Color(0.7, 0.5, 0.3)
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(4)
-	panel.add_theme_stylebox_override("panel", style)
-	dialogue_box.add_child(panel)
-
-	dialogue_label = Label.new()
-	dialogue_label.position = Vector2(-132, -102)
-	dialogue_label.size = Vector2(264, 74)
-	dialogue_label.add_theme_font_size_override("font_size", 11)
-	dialogue_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.85))
-	dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialogue_box.add_child(dialogue_label)
-
-	add_child(dialogue_box)
+func _setup_enter_label() -> void:
+	enter_label = Label.new()
+	enter_label.text = "[A] Enter"
+	enter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	enter_label.position = Vector2(-30, 35)
+	enter_label.size = Vector2(60, 20)
+	enter_label.add_theme_font_size_override("font_size", 10)
+	enter_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	enter_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	enter_label.add_theme_constant_override("shadow_offset_x", 1)
+	enter_label.add_theme_constant_override("shadow_offset_y", 1)
+	enter_label.visible = false
+	add_child(enter_label)
 
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move"):
 		_player_nearby = true
 		name_label.visible = true
+		enter_label.visible = true
 
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.has_method("set_can_move"):
 		_player_nearby = false
 		name_label.visible = false
-		_close_menu()
+		enter_label.visible = false
 
 
-func interact(player: Node2D) -> void:
-	if _is_showing_menu:
-		_advance_dialogue()
-	else:
-		_show_bar_menu()
-
-
-func _show_bar_menu() -> void:
-	_is_showing_menu = true
-	_dialogue_state = 0
-	dialogue_box.visible = true
-	_update_dialogue()
+func interact(_player: Node2D) -> void:
+	# Trigger transition to tavern interior
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
-
-
-func _advance_dialogue() -> void:
-	_dialogue_state += 1
-	if _dialogue_state >= BAR_DIALOGUE.size():
-		_close_menu()
-	else:
-		_update_dialogue()
-
-
-func _update_dialogue() -> void:
-	if _dialogue_state < BAR_DIALOGUE.size():
-		dialogue_label.text = BAR_DIALOGUE[_dialogue_state]
-
-
-func _close_menu() -> void:
-	_is_showing_menu = false
-	_dialogue_state = 0
-	dialogue_box.visible = false
+	transition_triggered.emit("tavern_interior", "entrance")

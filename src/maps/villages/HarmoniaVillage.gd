@@ -133,6 +133,8 @@ func _generate_map() -> void:
 	# Entrance spawn (safe distance from exit)
 	spawn_points["entrance"] = Vector2(15 * TILE_SIZE, 18 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
+	# Bar exit spawn (in front of The Dancing Tonberry)
+	spawn_points["bar_exit"] = Vector2(26 * TILE_SIZE, 16 * TILE_SIZE)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -208,6 +210,7 @@ func _setup_buildings() -> void:
 	var bar = VillageBarScript.new()
 	bar.bar_name = "The Dancing Tonberry"
 	bar.position = Vector2(26 * TILE_SIZE, 14.5 * TILE_SIZE)
+	bar.transition_triggered.connect(_on_transition_triggered)
 	buildings.add_child(bar)
 
 	# === FOUNTAIN ===

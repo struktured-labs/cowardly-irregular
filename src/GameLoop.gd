@@ -483,6 +483,8 @@ func _start_exploration() -> void:
 			exploration_scene = _create_village_scene()
 		"whispering_cave":
 			exploration_scene = _create_cave_scene()
+		"tavern_interior":
+			exploration_scene = _create_tavern_scene()
 		_:
 			exploration_scene = OverworldSceneRes.instantiate()
 
@@ -655,6 +657,19 @@ func _create_cave_scene() -> Node:
 	# Fallback to overworld if scene doesn't exist
 	push_warning("WhisperingCave.tscn not found, using overworld")
 	return OverworldSceneRes.instantiate()
+
+
+func _create_tavern_scene() -> Node:
+	"""Create The Dancing Tonberry tavern interior scene"""
+	var TavernScript = load("res://src/maps/interiors/TavernInterior.gd")
+	if TavernScript:
+		var tavern_scene = TavernScript.new()
+		return tavern_scene
+	# Fallback to village if script doesn't exist
+	push_warning("TavernInterior.gd not found, returning to village")
+	_current_map_id = "harmonia_village"
+	_spawn_point = "bar_exit"
+	return _create_village_scene()
 
 
 ## Equipment Pool Management

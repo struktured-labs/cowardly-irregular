@@ -127,6 +127,16 @@ func _get_clothes_color() -> Color:
 			return Color(0.4, 0.4, 0.5)  # Gray armor
 		"innkeeper":
 			return Color(0.7, 0.5, 0.3)  # Brown
+		"bartender":
+			return Color(0.5, 0.35, 0.2)  # Dark brown apron
+		"dancer":
+			return Color(0.9, 0.3, 0.4)  # Red dress
+		"knight":
+			return Color(0.55, 0.55, 0.65)  # Silver armor
+		"mysterious":
+			return Color(0.25, 0.2, 0.35)  # Dark purple cloak
+		"bard":
+			return Color(0.7, 0.55, 0.3)  # Gold/tan tunic
 		_:
 			# Random villager colors
 			var colors = [
