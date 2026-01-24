@@ -157,13 +157,13 @@ var floor_layouts: Dictionary = {
 		"M.......................M",
 		"M.......................M",
 		"M.......................M",
-		"M.....MMMMMMMMMMM.......M",
+		"M.....MMMMM.MMMMM.......M",
 		"M.....M.........M.......M",
 		"M.....M.........M.......M",
-		"M.....M....B....M.......M",
+		"M.........B.............M",
 		"M.....M.........M.......M",
 		"M.....M.........M.......M",
-		"M.....MMMMMMMMMMM.......M",
+		"M.....MMMMM.MMMMM.......M",
 		"M.......................M",
 		"M.......................M",
 		"M.......................M",
@@ -393,11 +393,11 @@ func _create_boss_marker(position: Vector2) -> Node2D:
 	bg.color = Color(0.8, 0.2, 0.2, 0.8)  # Bright red
 	marker.add_child(bg)
 
-	# Skull with crown icon
+	# Boss text marker
 	var label = Label.new()
-	label.text = "👑"  # Crown emoji to represent the Rat King
-	label.position = Vector2(-12, -12)
-	label.add_theme_font_size_override("font_size", 28)
+	label.text = "B"  # Simple B for Boss
+	label.position = Vector2(-8, -12)
+	label.add_theme_font_size_override("font_size", 32)
 	label.add_theme_color_override("font_color", Color.YELLOW)
 	marker.add_child(label)
 
