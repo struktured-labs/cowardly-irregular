@@ -259,6 +259,8 @@ func _on_body_exited(body: Node2D) -> void:
 
 func interact(_player: Node2D) -> void:
 	# Trigger transition to tavern interior
+	print("[BAR] Interact triggered - transitioning to tavern_interior")
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
 	transition_triggered.emit("tavern_interior", "entrance")
+	print("[BAR] transition_triggered signal emitted")

@@ -20,6 +20,7 @@ var camera: Camera2D
 var npcs: Node2D
 var transitions: Node2D
 var decorations: Node2D
+var controller: Node
 
 ## Dancing girl animation
 var dancer_sprite: Sprite2D
@@ -61,6 +62,11 @@ func _ready() -> void:
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()
+	_setup_controller()
+
+	# Play tavern music
+	if SoundManager:
+		SoundManager.play_area_music("village")  # Reuse village music for now
 
 
 func _process(delta: float) -> void:
@@ -605,3 +611,12 @@ func _setup_camera() -> void:
 func spawn_player_at(spawn_name: String) -> void:
 	if spawn_points.has(spawn_name) and player:
 		player.position = spawn_points[spawn_name] * TILE_SIZE
+
+
+func _setup_controller() -> void:
+	var ControllerScript = load("res://src/exploration/OverworldController.gd")
+	if ControllerScript and player:
+		controller = ControllerScript.new()
+		controller.player = player
+		controller.encounter_enabled = false  # No random battles in tavern
+		add_child(controller)

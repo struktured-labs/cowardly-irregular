@@ -245,6 +245,8 @@ func _start_dialogue() -> void:
 	dialogue_box.visible = true
 	dialogue_label.text = dialogue_lines[0]
 	dialogue_started.emit(npc_name)
+	if SoundManager:
+		SoundManager.play_ui("menu_open")
 
 
 func _advance_dialogue() -> void:
@@ -253,6 +255,8 @@ func _advance_dialogue() -> void:
 		_end_dialogue()
 	else:
 		dialogue_label.text = dialogue_lines[_current_line]
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
 
 
 func _end_dialogue() -> void:
@@ -260,6 +264,8 @@ func _end_dialogue() -> void:
 	dialogue_box.visible = false
 	_current_line = 0
 	dialogue_ended.emit(npc_name)
+	if SoundManager:
+		SoundManager.play_ui("menu_close")
 
 
 ## Called by interaction system
