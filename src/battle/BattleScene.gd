@@ -2768,8 +2768,8 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		if ability_id != "" and target_idx >= 0:
 			var target: Combatant = null
 
-			if target_type == "ally":
-				# Ally target (party member)
+			if target_type == "ally" or target_type == "dead_ally":
+				# Ally target (party member) - alive or dead depending on ability
 				if target_idx < party_members.size():
 					target = party_members[target_idx]
 			else:
@@ -2777,7 +2777,17 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 				if target_idx < test_enemies.size():
 					target = test_enemies[target_idx]
 
-			if is_instance_valid(target) and target.is_alive:
+			# Check target validity based on ability type
+			var is_valid_target = false
+			if is_instance_valid(target):
+				if target_type == "dead_ally":
+					# Resurrection abilities need dead targets
+					is_valid_target = not target.is_alive
+				else:
+					# Normal abilities need alive targets
+					is_valid_target = target.is_alive
+
+			if is_valid_target:
 				_execute_ability(ability_id, target)
 			else:
 				log_message("Target no longer valid!")
