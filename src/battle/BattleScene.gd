@@ -118,6 +118,13 @@ func set_party(party: Array[Combatant]) -> void:
 
 
 func _ready() -> void:
+	# Reset any camera zoom from exploration scenes
+	var viewport = get_viewport()
+	if viewport:
+		var current_camera = viewport.get_camera_2d()
+		if current_camera:
+			current_camera.zoom = Vector2(1.0, 1.0)
+
 	# Apply retro font styling
 	RetroFontClass.configure_battle_log(battle_log)
 
