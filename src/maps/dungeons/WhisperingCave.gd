@@ -321,13 +321,12 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		if spawn_points.has("boss"):
 			print("[BOSS] Boss spawn point at: %s" % spawn_points["boss"])
 		if spawn_points.has("boss") and not boss_defeated:
-			var boss_area = Area2D.new()
+			var BossTriggerScript = load("res://src/maps/dungeons/BossTrigger.gd")
+			var boss_area = BossTriggerScript.new()
 			boss_area.name = "BossTrigger"
 			boss_area.position = spawn_points["boss"]
+			boss_area.cave_ref = self
 			_setup_transition_collision(boss_area, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
-			# Add interact method so controller can call it
-			boss_area.set_script(_create_boss_interactable_script())
-			boss_area.set_meta("cave_ref", self)
 			transitions.add_child(boss_area)
 			print("[BOSS] Cave Rat King boss trigger created at %s - walk up and press A to fight!" % spawn_points["boss"])
 
@@ -513,19 +512,6 @@ func _update_floor_encounters(floor: int) -> void:
 	print("Floor %d encounters: rate=%.2f, pool=%s" % [floor, encounter_rate, enemy_pool_id])
 
 
-func _create_boss_interactable_script() -> GDScript:
-	"""Create a script for the boss trigger that responds to interact()"""
-	var script = GDScript.new()
-	script.source_code = """
-extends Area2D
-
-func interact(_player: Node2D) -> void:
-	var cave = get_meta("cave_ref")
-	if cave and not cave.boss_defeated:
-		cave._trigger_boss_battle()
-"""
-	script.reload()
-	return script
 
 
 func _trigger_boss_battle() -> void:
