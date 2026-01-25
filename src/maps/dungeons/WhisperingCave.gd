@@ -189,13 +189,14 @@ var floor_spawn_points: Dictionary = {
 
 func _ready() -> void:
 	_setup_scene()
+
+	# Load boss defeated state BEFORE generating map (so boss trigger is set correctly)
+	_load_boss_state()
+
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
-
-	# Load boss defeated state from GameState
-	_load_boss_state()
 
 	# Start cave music
 	if SoundManager:
@@ -320,13 +321,13 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		if spawn_points.has("boss"):
 			print("[BOSS] Boss spawn point at: %s" % spawn_points["boss"])
 		if spawn_points.has("boss") and not boss_defeated:
-			var boss_trans = AreaTransitionScript.new()
-			boss_trans.name = "BossTrigger"
-			boss_trans.require_interaction = true
-			boss_trans.position = spawn_points["boss"]
-			_setup_transition_collision(boss_trans, Vector2(TILE_SIZE, TILE_SIZE))
-			boss_trans.body_entered.connect(_on_boss_trigger_entered)
-			transitions.add_child(boss_trans)
+			var boss_area = Area2D.new()
+			boss_area.name = "BossTrigger"
+			boss_area.position = spawn_points["boss"]
+			_setup_transition_collision(boss_area, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+			boss_area.body_entered.connect(_on_boss_area_entered)
+			boss_area.body_exited.connect(_on_boss_area_exited)
+			transitions.add_child(boss_area)
 			print("[BOSS] Cave Rat King boss trigger created at %s - walk up and press A to fight!" % spawn_points["boss"])
 
 
@@ -511,10 +512,27 @@ func _update_floor_encounters(floor: int) -> void:
 	print("Floor %d encounters: rate=%.2f, pool=%s" % [floor, encounter_rate, enemy_pool_id])
 
 
-func _on_boss_trigger_entered(body: Node2D) -> void:
-	"""Player triggered boss fight"""
-	if body.has_method("set_can_move") and not boss_defeated:
-		_trigger_boss_battle()
+var _player_near_boss: bool = false
+
+func _on_boss_area_entered(body: Node2D) -> void:
+	"""Player entered boss area"""
+	if body.has_method("set_can_move"):
+		_player_near_boss = true
+		print("[BOSS] Player near boss - press A to fight!")
+
+
+func _on_boss_area_exited(body: Node2D) -> void:
+	"""Player left boss area"""
+	if body.has_method("set_can_move"):
+		_player_near_boss = false
+
+
+func _input(event: InputEvent) -> void:
+	# Boss fight requires pressing A when near boss
+	if _player_near_boss and not boss_defeated:
+		if event.is_action_pressed("ui_accept"):
+			_trigger_boss_battle()
+			get_viewport().set_input_as_handled()
 
 
 func _trigger_boss_battle() -> void:
