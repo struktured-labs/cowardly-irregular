@@ -505,11 +505,19 @@ func _update_floor_encounters(floor: int) -> void:
 	var encounter_rate = base_rate + (floor - 1) * 0.01  # 0.05 -> 0.10
 	var enemy_pool_id = "cave_floor_%d" % floor
 
-	controller.set_area_config("whispering_cave_f%d" % floor, false, encounter_rate, [])
+	# Floor 6 is boss-only - no random encounters
+	var is_boss_floor = (floor == 6)
+	if is_boss_floor:
+		encounter_rate = 0.0
+		controller.encounter_enabled = false
+	else:
+		controller.encounter_enabled = true
+
+	controller.set_area_config("whispering_cave_f%d" % floor, is_boss_floor, encounter_rate, [])
 	controller.set_enemy_pool(enemy_pool_id)
 	controller.current_area_id = "whispering_cave_f%d" % floor
 
-	print("Floor %d encounters: rate=%.2f, pool=%s" % [floor, encounter_rate, enemy_pool_id])
+	print("Floor %d encounters: rate=%.2f, pool=%s, boss_floor=%s" % [floor, encounter_rate, enemy_pool_id, is_boss_floor])
 
 
 
