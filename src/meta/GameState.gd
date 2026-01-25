@@ -22,6 +22,9 @@ var player_party: Array[Dictionary] = []
 ## Economy
 var party_gold: int = 500  # Starting gold
 
+## Settings (exposed to UI)
+var encounter_rate_multiplier: float = 1.0  # 0.0 to 1.0, controlled via settings menu
+
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {
 	"exp_multiplier": 1.0,

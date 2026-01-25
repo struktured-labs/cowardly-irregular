@@ -440,7 +440,28 @@ func _handle_menu_action(action_id: String) -> void:
 		"load":
 			print("[MENU] Load - not yet implemented")
 		"settings":
-			print("[MENU] Settings - not yet implemented")
+			_open_settings()
+
+
+func _open_settings() -> void:
+	"""Open the settings submenu"""
+	var SettingsMenuScript = load("res://src/ui/SettingsMenu.gd")
+	if SettingsMenuScript:
+		var settings = SettingsMenuScript.new()
+		settings.size = size
+		settings.closed.connect(_on_settings_closed)
+		add_child(settings)
+		# Hide main menu while settings is open
+		for child in get_children():
+			if child != settings:
+				child.visible = false
+
+
+func _on_settings_closed() -> void:
+	"""Settings menu closed - show main menu again"""
+	for child in get_children():
+		child.visible = true
+	_build_ui()  # Refresh UI
 
 
 func _close_menu() -> void:

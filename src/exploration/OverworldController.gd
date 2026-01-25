@@ -37,13 +37,23 @@ func _on_player_moved(steps: int) -> void:
 
 
 func _check_encounter() -> bool:
+	# Apply settings multiplier from GameState
+	var rate_multiplier = 1.0
+	if GameState:
+		rate_multiplier = GameState.encounter_rate_multiplier
+
+	# If multiplier is 0, no encounters
+	if rate_multiplier <= 0.0:
+		return false
+
 	# Use EncounterSystem if available, otherwise simple random
 	if Engine.has_singleton("EncounterSystem"):
 		var es = Engine.get_singleton("EncounterSystem")
-		return es.check_for_encounter()
+		# EncounterSystem should also respect the multiplier
+		return es.check_for_encounter() and randf() < rate_multiplier
 
-	# Fallback: simple random check
-	return randf() < _encounter_rate
+	# Fallback: simple random check with multiplier
+	return randf() < (_encounter_rate * rate_multiplier)
 
 
 func _trigger_battle() -> void:
