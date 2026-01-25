@@ -325,8 +325,9 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 			boss_area.name = "BossTrigger"
 			boss_area.position = spawn_points["boss"]
 			_setup_transition_collision(boss_area, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
-			boss_area.body_entered.connect(_on_boss_area_entered)
-			boss_area.body_exited.connect(_on_boss_area_exited)
+			# Add interact method so controller can call it
+			boss_area.set_script(_create_boss_interactable_script())
+			boss_area.set_meta("cave_ref", self)
 			transitions.add_child(boss_area)
 			print("[BOSS] Cave Rat King boss trigger created at %s - walk up and press A to fight!" % spawn_points["boss"])
 
@@ -512,27 +513,19 @@ func _update_floor_encounters(floor: int) -> void:
 	print("Floor %d encounters: rate=%.2f, pool=%s" % [floor, encounter_rate, enemy_pool_id])
 
 
-var _player_near_boss: bool = false
+func _create_boss_interactable_script() -> GDScript:
+	"""Create a script for the boss trigger that responds to interact()"""
+	var script = GDScript.new()
+	script.source_code = """
+extends Area2D
 
-func _on_boss_area_entered(body: Node2D) -> void:
-	"""Player entered boss area"""
-	if body.has_method("set_can_move"):
-		_player_near_boss = true
-		print("[BOSS] Player near boss - press A to fight!")
-
-
-func _on_boss_area_exited(body: Node2D) -> void:
-	"""Player left boss area"""
-	if body.has_method("set_can_move"):
-		_player_near_boss = false
-
-
-func _input(event: InputEvent) -> void:
-	# Boss fight requires pressing A when near boss
-	if _player_near_boss and not boss_defeated:
-		if event.is_action_pressed("ui_accept"):
-			_trigger_boss_battle()
-			get_viewport().set_input_as_handled()
+func interact(_player: Node2D) -> void:
+	var cave = get_meta("cave_ref")
+	if cave and not cave.boss_defeated:
+		cave._trigger_boss_battle()
+"""
+	script.reload()
+	return script
 
 
 func _trigger_boss_battle() -> void:
@@ -548,13 +541,31 @@ func _trigger_boss_battle() -> void:
 
 
 func _show_boss_intro() -> void:
-	"""Display boss intro dialogue"""
+	"""Display boss intro dialogue - 4th wall breaking Rat King"""
+	print("")
 	print("=== BOSS ENCOUNTER ===")
-	print("The party climbs the final stairs, expecting a dragon...")
-	print("...it's just a really big rat.")
-	print("Hero: 'Are you serious?'")
-	print("Cave Rat King SQUEAKS defiantly!")
+	print("")
+	print("The party reaches the deepest chamber...")
+	print("A massive rat sits on a throne of cheese wheels.")
+	print("")
+	print("Cave Rat King: 'Ah, another hero.'")
+	print("Cave Rat King: 'Let me guess - you automated your way here?'")
+	print("")
+	print("Hero: '...How do you know about that?'")
+	print("")
+	print("Cave Rat King: 'I've watched THOUSANDS of you.'")
+	print("Cave Rat King: 'Same scripts. Same builds. Same \"optimal\" strategies.'")
+	print("Cave Rat King: 'You think you're clever? I've EVOLVED.'")
+	print("Cave Rat King: 'I've read the source code. I know what you're going to do.'")
+	print("")
+	print("Hero: 'That's... not how games work.'")
+	print("")
+	print("Cave Rat King: 'ISN'T IT?'")
+	print("Cave Rat King: *adjusts tiny crown*")
+	print("Cave Rat King: 'SQUEAK.'")
+	print("")
 	print("======================")
+	print("")
 
 
 func _on_boss_defeated() -> void:
