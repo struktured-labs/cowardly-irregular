@@ -3311,25 +3311,35 @@ func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: boo
 
 
 func _check_danger_music() -> void:
-	"""Switch to danger music if any player is critically low HP"""
+	"""Switch to danger music if any player is critically low HP or dead"""
 	if _battle_ended:
 		return
 
-	# Check if any alive party member is below danger threshold
+	# Check if any party member is dead or critically low HP
 	var any_in_danger = false
+	var any_dead = false
 	for member in party_members:
-		if member and is_instance_valid(member) and member.is_alive:
-			var hp_percent = float(member.current_hp) / float(member.max_hp)
-			if hp_percent < DANGER_HP_THRESHOLD:
+		if member and is_instance_valid(member):
+			if not member.is_alive:
+				any_dead = true
 				any_in_danger = true
 				break
+			else:
+				var hp_percent = float(member.current_hp) / float(member.max_hp)
+				if hp_percent < DANGER_HP_THRESHOLD:
+					any_in_danger = true
+					break
 
 	# Switch music if danger state changed
+	# Once in danger (dead or critical), stay in danger until healed above threshold
 	if any_in_danger and not _is_danger_music:
 		_is_danger_music = true
 		SoundManager.play_music("danger")
-		print("[MUSIC] Switched to DANGER music - player critically low!")
+		if any_dead:
+			print("[MUSIC] Switched to DANGER music - party member down!")
+		else:
+			print("[MUSIC] Switched to DANGER music - player critically low!")
 	elif not any_in_danger and _is_danger_music:
 		_is_danger_music = false
 		SoundManager.play_music(_base_music_track)
-		print("[MUSIC] Switched back to %s music - danger passed" % _base_music_track)
+		print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
