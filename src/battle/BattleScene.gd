@@ -10,6 +10,7 @@ const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 const DamageNumber = preload("res://src/ui/DamageNumber.gd")
 const AutobattleToggleUIClass = preload("res://src/ui/autobattle/AutobattleToggleUI.gd")
 const BattleDialogueClass = preload("res://src/ui/BattleDialogue.gd")
+const BattleBackgroundClass = preload("res://src/battle/BattleBackground.gd")
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -111,6 +112,10 @@ const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
 # Note: cancel flag is stored in AutobattleSystem.cancel_all_next_turn for persistence across scenes
 
+## Terrain/background
+var _current_terrain: String = "plains"
+var _battle_background: BattleBackgroundClass = null
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -124,6 +129,15 @@ func set_party(party: Array[Combatant]) -> void:
 	_has_external_party = true
 
 
+func set_terrain(terrain: String) -> void:
+	"""Set the terrain type for battle background and elemental modifiers"""
+	_current_terrain = terrain
+	if _battle_background and is_instance_valid(_battle_background):
+		_battle_background.set_terrain_from_string(terrain)
+	# Pass terrain to BattleManager for damage modifiers
+	BattleManager.set_terrain(terrain)
+
+
 func _ready() -> void:
 	# Reset any camera zoom from exploration scenes
 	var viewport = get_viewport()
@@ -131,6 +145,9 @@ func _ready() -> void:
 		var current_camera = viewport.get_camera_2d()
 		if current_camera:
 			current_camera.zoom = Vector2(1.0, 1.0)
+
+	# Create dynamic battle background (behind everything)
+	_create_battle_background()
 
 	# Apply retro font styling
 	RetroFontClass.configure_battle_log(battle_log)
@@ -189,6 +206,17 @@ func _create_autobattle_toggle() -> void:
 	# Removed overlapping UI - autobattle indicators now shown next to character names
 	# The "Auto" command in battle menu enables autobattle for individual characters
 	pass
+
+
+func _create_battle_background() -> void:
+	"""Create the dynamic battle background based on terrain"""
+	_battle_background = BattleBackgroundClass.new()
+	_battle_background.name = "BattleBackground"
+	# Insert at index 0 to be behind everything
+	add_child(_battle_background)
+	move_child(_battle_background, 0)
+	# Apply current terrain
+	_battle_background.set_terrain_from_string(_current_terrain)
 
 
 func set_command_menu_visible(visible: bool) -> void:
@@ -3254,7 +3282,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 		sprite.position = base_pos + Vector2(new_idx * 80, (new_idx % 2) * 50)
 
 	sprite.play("idle")
-	sprite.scale = Vector2.ZERO  # Start invisible for spawn animation
+	sprite.scale = Vector2(0.01, 0.01)  # Start nearly invisible (not ZERO to avoid tween issues)
 
 	$BattleField/EnemySprites.add_child(sprite)
 	enemy_sprite_nodes.append(sprite)
@@ -3272,6 +3300,8 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var tween = create_tween()
 	tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.15)
 	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
+	# Guarantee final scale in case tween is interrupted
+	tween.finished.connect(func(): sprite.scale = Vector2(1.0, 1.0))
 
 	# Flash effect at spawn position
 	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, sprite.global_position)

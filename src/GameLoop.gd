@@ -6,6 +6,8 @@ extends Node
 const BattleSceneRes = preload("res://src/battle/BattleScene.tscn")
 const MenuSceneRes = preload("res://src/ui/MenuScene.tscn")
 const OverworldSceneRes = preload("res://src/exploration/OverworldScene.tscn")
+const CharacterCreationScreenClass = preload("res://src/ui/CharacterCreationScreen.gd")
+const CustomizationScript = preload("res://src/character/CharacterCustomization.gd")
 
 enum LoopState {
 	BATTLE,
@@ -39,20 +41,31 @@ var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
 var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
+var _current_terrain: String = "plains"  # Current terrain type for battle backgrounds
 
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
 
+## Character creation
+var _character_creation_screen: Control = null
+var _party_customizations: Array = []  # Store CharacterCustomization data
+var _first_launch: bool = true  # True if no save exists
+
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
 
-	# Create persistent party
-	_create_party()
+	# Check for existing save to determine if this is first launch
+	_first_launch = not _save_exists()
 
-	# Start with exploration (overworld)
-	_start_exploration()
+	if _first_launch:
+		# Show character creation on first launch
+		_show_character_creation()
+	else:
+		# Create party from saved customizations and start normally
+		_create_party()
+		_start_exploration()
 
 	# Log startup
 	if DebugLogOverlay:
@@ -283,6 +296,157 @@ func _open_autobattle_for_character(char_id: String, char_name: String, combatan
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
 	SoundManager.play_ui("autobattle_open")
 	print("Autobattle editor opened for %s" % char_name)
+
+
+## Character Creation
+
+func _save_exists() -> bool:
+	"""Check if a save file exists"""
+	return FileAccess.file_exists("user://save_data.json")
+
+
+func _show_character_creation() -> void:
+	"""Show the character creation screen"""
+	var layer = CanvasLayer.new()
+	layer.layer = 100
+	add_child(layer)
+
+	_character_creation_screen = CharacterCreationScreenClass.new()
+	_character_creation_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(_character_creation_screen)
+
+	_character_creation_screen.creation_complete.connect(_on_character_creation_complete.bind(layer))
+	_character_creation_screen.creation_skipped.connect(_on_character_creation_skipped.bind(layer))
+
+	print("[GAME] Showing character creation screen")
+
+
+func _on_character_creation_complete(customizations: Array, layer: CanvasLayer) -> void:
+	"""Handle character creation completion"""
+	_party_customizations = customizations
+	print("[GAME] Character creation complete with %d characters" % customizations.size())
+
+	# Create party from customizations
+	_create_party_from_customizations(customizations)
+
+	# Clean up creation screen
+	if layer:
+		layer.queue_free()
+	_character_creation_screen = null
+
+	# Save customizations
+	_save_customizations(customizations)
+
+	# Start exploration
+	_start_exploration()
+
+
+func _on_character_creation_skipped(layer: CanvasLayer) -> void:
+	"""Handle character creation skip - use defaults"""
+	print("[GAME] Character creation skipped, using defaults")
+
+	# Clean up creation screen
+	if layer:
+		layer.queue_free()
+	_character_creation_screen = null
+
+	# Create default party
+	_create_party()
+
+	# Start exploration
+	_start_exploration()
+
+
+func _create_party_from_customizations(customizations: Array) -> void:
+	"""Create party members based on customizations"""
+	party.clear()
+
+	# Base stats for party members
+	var base_stats_list = [
+		{"max_hp": 150, "max_mp": 50, "attack": 25, "defense": 15, "magic": 12, "speed": 12},
+		{"max_hp": 100, "max_mp": 120, "attack": 10, "defense": 12, "magic": 28, "speed": 14},
+		{"max_hp": 90, "max_mp": 40, "attack": 18, "defense": 10, "magic": 8, "speed": 22},
+		{"max_hp": 80, "max_mp": 150, "attack": 8, "defense": 8, "magic": 35, "speed": 12}
+	]
+
+	for i in range(min(customizations.size(), 4)):
+		var custom = customizations[i]
+		var base_stats = base_stats_list[i] if i < base_stats_list.size() else base_stats_list[0]
+
+		var member = Combatant.new()
+		member.initialize({
+			"name": custom.name,
+			"max_hp": base_stats["max_hp"],
+			"max_mp": base_stats["max_mp"],
+			"attack": base_stats["attack"],
+			"defense": base_stats["defense"],
+			"magic": base_stats["magic"],
+			"speed": base_stats["speed"]
+		})
+		add_child(member)
+
+		# Apply personality stat bonus
+		custom.apply_stat_bonus(member)
+
+		# Assign first job
+		if custom.starting_jobs.size() > 0:
+			JobSystem.assign_job(member, custom.starting_jobs[0])
+
+		# Add starting items from personality
+		var starting_items = custom.get_starting_items()
+		for item_id in starting_items:
+			member.add_item(item_id, starting_items[item_id])
+
+		# Add phoenix down for all
+		member.add_item("phoenix_down", 1)
+
+		party.append(member)
+		print("[PARTY] Created %s (%s) - %s personality" % [
+			custom.name,
+			custom.starting_jobs[0] if custom.starting_jobs.size() > 0 else "none",
+			CustomizationScript.get_personality_name(custom.personality)
+		])
+
+
+func _save_customizations(customizations: Array) -> void:
+	"""Save character customizations to file"""
+	var data = []
+	for custom in customizations:
+		data.append(custom.to_dict())
+
+	var file = FileAccess.open("user://save_data.json", FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify({"party_customizations": data}))
+		file.close()
+		print("[SAVE] Saved party customizations")
+
+
+func _load_customizations() -> Array:
+	"""Load character customizations from file"""
+	if not FileAccess.file_exists("user://save_data.json"):
+		return []
+
+	var file = FileAccess.open("user://save_data.json", FileAccess.READ)
+	if not file:
+		return []
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	if json.parse(json_string) != OK:
+		return []
+
+	var data = json.data
+	if not data.has("party_customizations"):
+		return []
+
+	var customizations = []
+	for custom_data in data["party_customizations"]:
+		customizations.append(CustomizationScript.from_dict_with_script(custom_data, CustomizationScript))
+
+	print("[LOAD] Loaded %d character customizations" % customizations.size())
+	return customizations
 
 
 func _create_party() -> void:
@@ -538,11 +702,19 @@ func _return_to_exploration() -> void:
 	_player_position = Vector2.ZERO
 
 
-func _on_exploration_battle_triggered(enemies: Array) -> void:
+func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
 	# Disable player input during battle transition
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
+
+	# Save terrain for battle background
+	if terrain != "":
+		_current_terrain = terrain
+	else:
+		# Infer terrain from map if not provided
+		_current_terrain = _get_terrain_for_map(_current_map_id)
+	print("[TERRAIN] Battle terrain: %s" % _current_terrain)
 
 	# Save player position and cave floor before battle
 	if _exploration_scene:
@@ -628,9 +800,15 @@ func _start_battle_async(specific_enemies: Array = []) -> void:
 	if has_forced_enemies:
 		battle_scene.forced_enemies = specific_enemies
 		print("[BOSS] Forcing specific enemies: %s" % [specific_enemies])
+		# Boss battles use boss terrain
+		battle_scene.set_terrain("boss")
 	elif is_miniboss_battle:
 		battle_scene.force_miniboss = true
 		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
+		battle_scene.set_terrain(_current_terrain)
+	else:
+		# Regular battle - use current terrain
+		battle_scene.set_terrain(_current_terrain)
 
 	add_child(battle_scene)
 	current_scene = battle_scene
@@ -648,7 +826,28 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	_current_map_id = target_map
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO  # Clear saved position when changing maps
+	_current_terrain = _get_terrain_for_map(target_map)  # Update terrain for new area
 	_start_exploration()
+
+
+func _get_terrain_for_map(map_id: String) -> String:
+	"""Get the terrain type for a given map ID"""
+	match map_id:
+		"overworld":
+			return "plains"
+		"whispering_cave":
+			return "cave"
+		"harmonia_village", "tavern_interior":
+			return "village"
+		_:
+			# Default to plains for unknown maps
+			if "cave" in map_id or "dungeon" in map_id:
+				return "cave"
+			elif "village" in map_id or "town" in map_id:
+				return "village"
+			elif "forest" in map_id:
+				return "forest"
+			return "plains"
 
 
 func _create_village_scene() -> Node:

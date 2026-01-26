@@ -10,10 +10,30 @@ signal settings_changed(setting: String, value: Variant)
 const ENCOUNTER_PRESETS = [0.0, 0.25, 0.50, 0.75, 1.0, 1.5, 2.0]
 const ENCOUNTER_LABELS = ["0", "25", "50", "75", "100", "150", "200"]  # % shown in title
 
+## Volume presets (0-100%)
+const VOLUME_PRESETS = [0, 25, 50, 75, 100]
+const VOLUME_LABELS = ["0", "25", "50", "75", "100"]
+
+## Battle speed presets
+const BATTLE_SPEED_PRESETS = [0.25, 0.5, 1.0, 2.0, 4.0]
+const BATTLE_SPEED_LABELS = ["0.25x", "0.5x", "1x", "2x", "4x"]
+
+## Text speed presets
+const TEXT_SPEED_PRESETS = ["slow", "normal", "fast", "instant"]
+const TEXT_SPEED_LABELS = ["Slow", "Normal", "Fast", "Instant"]
+
 ## Current settings
 var encounter_rate: float = 1.0  # Default 100%
 var encounter_preset_index: int = 4  # Index into ENCOUNTER_PRESETS (100%)
 var debug_log_enabled: bool = true  # Default on
+var music_volume: int = 100  # 0-100
+var music_volume_index: int = 4
+var sfx_volume: int = 100  # 0-100
+var sfx_volume_index: int = 4
+var battle_speed: float = 1.0
+var battle_speed_index: int = 2
+var text_speed: String = "normal"
+var text_speed_index: int = 1
 
 ## UI State
 var selected_index: int = 0
@@ -38,6 +58,20 @@ func _ready() -> void:
 			encounter_preset_index = _find_closest_preset(encounter_rate)
 		if "debug_log_enabled" in GameState:
 			debug_log_enabled = GameState.debug_log_enabled
+		if "music_volume" in GameState:
+			music_volume = GameState.music_volume
+			music_volume_index = _find_volume_preset(music_volume)
+		if "sfx_volume" in GameState:
+			sfx_volume = GameState.sfx_volume
+			sfx_volume_index = _find_volume_preset(sfx_volume)
+		if "default_battle_speed" in GameState:
+			battle_speed = GameState.default_battle_speed
+			battle_speed_index = _find_battle_speed_preset(battle_speed)
+		if "text_speed" in GameState:
+			text_speed = GameState.text_speed
+			text_speed_index = TEXT_SPEED_PRESETS.find(text_speed)
+			if text_speed_index < 0:
+				text_speed_index = 1
 	_build_ui()
 
 
@@ -47,6 +81,30 @@ func _find_closest_preset(value: float) -> int:
 	var best_diff = 999.0
 	for i in range(ENCOUNTER_PRESETS.size()):
 		var diff = abs(ENCOUNTER_PRESETS[i] - value)
+		if diff < best_diff:
+			best_diff = diff
+			best_index = i
+	return best_index
+
+
+func _find_volume_preset(value: int) -> int:
+	"""Find the closest volume preset index"""
+	var best_index = 4  # Default to 100
+	var best_diff = 999
+	for i in range(VOLUME_PRESETS.size()):
+		var diff = abs(VOLUME_PRESETS[i] - value)
+		if diff < best_diff:
+			best_diff = diff
+			best_index = i
+	return best_index
+
+
+func _find_battle_speed_preset(value: float) -> int:
+	"""Find the closest battle speed preset index"""
+	var best_index = 2  # Default to 1x
+	var best_diff = 999.0
+	for i in range(BATTLE_SPEED_PRESETS.size()):
+		var diff = abs(BATTLE_SPEED_PRESETS[i] - value)
 		if diff < best_diff:
 			best_diff = diff
 			best_index = i
@@ -107,13 +165,53 @@ func _build_ui() -> void:
 	panel.add_child(debug_item)
 	_settings_items.append({"control": debug_item, "type": "toggle", "id": "debug_log"})
 
-	# Future settings placeholder
-	var sound_label = Label.new()
-	sound_label.text = "More settings coming soon..."
-	sound_label.position = Vector2(16, 200)
-	sound_label.add_theme_font_size_override("font_size", 12)
-	sound_label.add_theme_color_override("font_color", DISABLED_COLOR)
-	panel.add_child(sound_label)
+	# Music Volume
+	var music_item = _create_volume_setting(
+		"Music Volume",
+		"Background music volume",
+		VOLUME_LABELS,
+		music_volume_index,
+		2
+	)
+	music_item.position = Vector2(16, 188)
+	panel.add_child(music_item)
+	_settings_items.append({"control": music_item, "type": "volume", "id": "music_volume"})
+
+	# SFX Volume
+	var sfx_item = _create_volume_setting(
+		"SFX Volume",
+		"Sound effects volume",
+		VOLUME_LABELS,
+		sfx_volume_index,
+		3
+	)
+	sfx_item.position = Vector2(16, 248)
+	panel.add_child(sfx_item)
+	_settings_items.append({"control": sfx_item, "type": "volume", "id": "sfx_volume"})
+
+	# Battle Speed Default
+	var speed_item = _create_option_setting_small(
+		"Battle Speed Default",
+		"Default battle animation speed",
+		BATTLE_SPEED_LABELS,
+		battle_speed_index,
+		4
+	)
+	speed_item.position = Vector2(16, 308)
+	panel.add_child(speed_item)
+	_settings_items.append({"control": speed_item, "type": "battle_speed", "id": "battle_speed"})
+
+	# Text Speed
+	var text_item = _create_option_setting_small(
+		"Text Speed",
+		"Dialogue text display speed",
+		TEXT_SPEED_LABELS,
+		text_speed_index,
+		5
+	)
+	text_item.position = Vector2(16, 368)
+	panel.add_child(text_item)
+	_settings_items.append({"control": text_item, "type": "text_speed", "id": "text_speed"})
 
 	# Footer
 	var footer = Label.new()
@@ -182,6 +280,124 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 		if i < options.size() - 1:
 			var spacer = Control.new()
 			spacer.custom_minimum_size = Vector2(2, 1)  # Less spacing
+			options_container.add_child(spacer)
+
+	return container
+
+
+func _create_volume_setting(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
+	"""Create a volume slider setting control"""
+	var container = Control.new()
+	container.size = Vector2(400, 60)
+
+	# Selection highlight
+	var highlight = ColorRect.new()
+	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
+	highlight.size = Vector2(400, 60)
+	highlight.name = "Highlight"
+	container.add_child(highlight)
+
+	# Label
+	var label = Label.new()
+	label.text = label_text
+	label.position = Vector2(8, 4)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", TEXT_COLOR)
+	container.add_child(label)
+
+	# Description
+	var desc = Label.new()
+	desc.text = description
+	desc.position = Vector2(8, 22)
+	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	container.add_child(desc)
+
+	# Options row
+	var options_container = HBoxContainer.new()
+	options_container.position = Vector2(8, 38)
+	options_container.name = "OptionsContainer"
+	container.add_child(options_container)
+
+	for i in range(options.size()):
+		var option_bg = ColorRect.new()
+		option_bg.custom_minimum_size = Vector2(50, 20)
+		option_bg.color = OPTION_SELECTED if i == current_index else OPTION_BG
+		option_bg.name = "OptionBG_%d" % i
+		options_container.add_child(option_bg)
+
+		var option_label = Label.new()
+		option_label.text = options[i] + "%"
+		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		option_label.size = Vector2(50, 20)
+		option_label.add_theme_font_size_override("font_size", 10)
+		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
+		option_label.name = "OptionLabel_%d" % i
+		option_bg.add_child(option_label)
+
+		if i < options.size() - 1:
+			var spacer = Control.new()
+			spacer.custom_minimum_size = Vector2(2, 1)
+			options_container.add_child(spacer)
+
+	return container
+
+
+func _create_option_setting_small(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
+	"""Create a smaller option selector setting control"""
+	var container = Control.new()
+	container.size = Vector2(400, 60)
+
+	# Selection highlight
+	var highlight = ColorRect.new()
+	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
+	highlight.size = Vector2(400, 60)
+	highlight.name = "Highlight"
+	container.add_child(highlight)
+
+	# Label
+	var label = Label.new()
+	label.text = label_text
+	label.position = Vector2(8, 4)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", TEXT_COLOR)
+	container.add_child(label)
+
+	# Description
+	var desc = Label.new()
+	desc.text = description
+	desc.position = Vector2(8, 22)
+	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	container.add_child(desc)
+
+	# Options row
+	var options_container = HBoxContainer.new()
+	options_container.position = Vector2(8, 38)
+	options_container.name = "OptionsContainer"
+	container.add_child(options_container)
+
+	for i in range(options.size()):
+		var option_bg = ColorRect.new()
+		option_bg.custom_minimum_size = Vector2(60, 20)
+		option_bg.color = OPTION_SELECTED if i == current_index else OPTION_BG
+		option_bg.name = "OptionBG_%d" % i
+		options_container.add_child(option_bg)
+
+		var option_label = Label.new()
+		option_label.text = options[i]
+		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		option_label.size = Vector2(60, 20)
+		option_label.add_theme_font_size_override("font_size", 10)
+		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
+		option_label.name = "OptionLabel_%d" % i
+		option_bg.add_child(option_label)
+
+		if i < options.size() - 1:
+			var spacer = Control.new()
+			spacer.custom_minimum_size = Vector2(2, 1)
 			options_container.add_child(spacer)
 
 	return container
@@ -370,6 +586,34 @@ func _adjust_setting(delta: int) -> void:
 		_save_debug_log_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "music_volume":
+		music_volume_index = clampi(music_volume_index + delta, 0, VOLUME_PRESETS.size() - 1)
+		music_volume = VOLUME_PRESETS[music_volume_index]
+		_update_volume_display(selected_index, music_volume_index)
+		_save_music_volume()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+	elif item["id"] == "sfx_volume":
+		sfx_volume_index = clampi(sfx_volume_index + delta, 0, VOLUME_PRESETS.size() - 1)
+		sfx_volume = VOLUME_PRESETS[sfx_volume_index]
+		_update_volume_display(selected_index, sfx_volume_index)
+		_save_sfx_volume()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+	elif item["id"] == "battle_speed":
+		battle_speed_index = clampi(battle_speed_index + delta, 0, BATTLE_SPEED_PRESETS.size() - 1)
+		battle_speed = BATTLE_SPEED_PRESETS[battle_speed_index]
+		_update_small_option_display(selected_index, battle_speed_index, BATTLE_SPEED_PRESETS.size())
+		_save_battle_speed()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+	elif item["id"] == "text_speed":
+		text_speed_index = clampi(text_speed_index + delta, 0, TEXT_SPEED_PRESETS.size() - 1)
+		text_speed = TEXT_SPEED_PRESETS[text_speed_index]
+		_update_small_option_display(selected_index, text_speed_index, TEXT_SPEED_PRESETS.size())
+		_save_text_speed()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 
 
 func _save_encounter_rate() -> void:
@@ -389,6 +633,74 @@ func _save_debug_log_setting() -> void:
 		DebugLogOverlay.set_enabled(debug_log_enabled)
 	settings_changed.emit("debug_log", debug_log_enabled)
 	print("[SETTINGS] Debug log %s" % ("enabled" if debug_log_enabled else "disabled"))
+
+
+func _update_volume_display(index: int, option_index: int) -> void:
+	"""Update volume selector visual"""
+	if index >= _settings_items.size():
+		return
+	var item = _settings_items[index]
+	var control = item["control"]
+
+	for i in range(VOLUME_PRESETS.size()):
+		var bg = control.get_node_or_null("OptionsContainer/OptionBG_%d" % i)
+		if bg:
+			bg.color = OPTION_SELECTED if i == option_index else OPTION_BG
+			var label = bg.get_node_or_null("OptionLabel_%d" % i)
+			if label:
+				label.add_theme_color_override("font_color", Color.YELLOW if i == option_index else TEXT_COLOR)
+
+
+func _update_small_option_display(index: int, option_index: int, count: int) -> void:
+	"""Update small option selector visual"""
+	if index >= _settings_items.size():
+		return
+	var item = _settings_items[index]
+	var control = item["control"]
+
+	for i in range(count):
+		var bg = control.get_node_or_null("OptionsContainer/OptionBG_%d" % i)
+		if bg:
+			bg.color = OPTION_SELECTED if i == option_index else OPTION_BG
+			var label = bg.get_node_or_null("OptionLabel_%d" % i)
+			if label:
+				label.add_theme_color_override("font_color", Color.YELLOW if i == option_index else TEXT_COLOR)
+
+
+func _save_music_volume() -> void:
+	"""Save music volume setting"""
+	if GameState:
+		GameState.music_volume = music_volume
+	if SoundManager:
+		SoundManager.set_music_volume(music_volume / 100.0)
+	settings_changed.emit("music_volume", music_volume)
+	print("[SETTINGS] Music volume set to %d%%" % music_volume)
+
+
+func _save_sfx_volume() -> void:
+	"""Save SFX volume setting"""
+	if GameState:
+		GameState.sfx_volume = sfx_volume
+	if SoundManager:
+		SoundManager.set_sfx_volume(sfx_volume / 100.0)
+	settings_changed.emit("sfx_volume", sfx_volume)
+	print("[SETTINGS] SFX volume set to %d%%" % sfx_volume)
+
+
+func _save_battle_speed() -> void:
+	"""Save battle speed default setting"""
+	if GameState:
+		GameState.default_battle_speed = battle_speed
+	settings_changed.emit("battle_speed", battle_speed)
+	print("[SETTINGS] Default battle speed set to %.2fx" % battle_speed)
+
+
+func _save_text_speed() -> void:
+	"""Save text speed setting"""
+	if GameState:
+		GameState.text_speed = text_speed
+	settings_changed.emit("text_speed", text_speed)
+	print("[SETTINGS] Text speed set to %s" % text_speed)
 
 
 func _close_settings() -> void:

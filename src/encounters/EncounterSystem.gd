@@ -3,9 +3,12 @@ extends Node
 ## EncounterSystem - Manages random encounters during exploration
 ## Classic JRPG step-based encounter system
 
-signal encounter_triggered(enemy_data: Array)
+signal encounter_triggered(enemy_data: Array, terrain_type: String)
 signal encounter_check_passed()
 signal encounter_rate_changed(new_rate: float)
+
+## Current terrain type for encounters
+var current_terrain: String = "plains"
 
 ## Encounter configuration
 var encounters_enabled: bool = true
@@ -75,10 +78,16 @@ func _trigger_encounter() -> void:
 	# Generate enemy party
 	var enemy_data = _generate_enemy_party()
 
-	encounter_triggered.emit(enemy_data)
-	print("=== ENCOUNTER! ===")
+	encounter_triggered.emit(enemy_data, current_terrain)
+	print("=== ENCOUNTER! (%s terrain) ===" % current_terrain)
 	for enemy in enemy_data:
 		print("  - %s" % enemy.get("name", "Unknown"))
+
+
+func set_terrain(terrain: String) -> void:
+	"""Set the current terrain type for encounters"""
+	current_terrain = terrain
+	print("Terrain set to: %s" % terrain)
 
 
 func _generate_enemy_party() -> Array:

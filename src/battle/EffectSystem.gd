@@ -15,7 +15,8 @@ enum EffectType {
 	PHYSICAL,
 	BUFF,
 	DEBUFF,
-	POISON
+	POISON,
+	MP_RESTORE  # Blue sparkle effect for ether/mana restoration
 }
 
 ## Active effects container
@@ -84,6 +85,10 @@ func _get_effect_type_for_ability(ability_id: String) -> EffectType:
 	if ability_id in ["cure", "cura", "curaga", "heal", "regen"]:
 		return EffectType.HEAL
 
+	# MP restore abilities
+	if ability_id in ["ether", "hi_ether", "mega_ether", "elixir", "megalixir"]:
+		return EffectType.MP_RESTORE
+
 	# Buff abilities
 	if ability_id in ["protect", "shell", "haste", "brave", "faith"]:
 		return EffectType.BUFF
@@ -116,6 +121,8 @@ func _play_effect_sound(effect_type: EffectType) -> void:
 			sound_key = "ability_dark"
 		EffectType.HEAL:
 			sound_key = "ability_heal"
+		EffectType.MP_RESTORE:
+			sound_key = "ability_heal"  # Reuse heal sound for MP restore
 		EffectType.BUFF:
 			sound_key = "buff"
 		EffectType.DEBUFF:
@@ -151,6 +158,8 @@ func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Calla
 			_animate_dark(effect, on_complete)
 		EffectType.HEAL:
 			_animate_heal(effect, on_complete)
+		EffectType.MP_RESTORE:
+			_animate_mp_restore(effect, on_complete)
 		EffectType.BUFF:
 			_animate_buff(effect, on_complete)
 		EffectType.DEBUFF:
@@ -988,6 +997,79 @@ func _create_slash_effect() -> Sprite2D:
 			img.set_pixel(px, py, color)
 			if py + 1 < size:
 				img.set_pixel(px, py + 1, color)
+
+	sprite.texture = ImageTexture.create_from_image(img)
+	return sprite
+
+
+func _animate_mp_restore(effect: Node2D, on_complete: Callable) -> void:
+	"""MP restore spell - rising blue sparkles"""
+	var particles: Array[Sprite2D] = []
+	var particle_count = 15
+
+	for i in range(particle_count):
+		var particle = _create_mp_particle()
+		particle.position = Vector2(randf_range(-25, 25), randf_range(10, 30))
+		particle.modulate.a = 0.0
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = 0.8
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	for i in range(particles.size()):
+		var p = particles[i]
+		var delay = randf() * 0.3
+		var rise = randf_range(50, 80)
+
+		tween.tween_property(p, "modulate:a", 1.0, 0.1).set_delay(delay)
+		tween.tween_property(p, "position:y", p.position.y - rise, duration * 0.7).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
+		# Add slight shimmer rotation
+		tween.tween_property(p, "rotation", randf_range(-0.5, 0.5), duration).set_delay(delay)
+
+	tween.chain().tween_callback(func():
+		effect.queue_free()
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+
+func _create_mp_particle() -> Sprite2D:
+	"""Create a blue MP sparkle particle"""
+	var sprite = Sprite2D.new()
+	var size = 12
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Diamond/star shape with blue tones
+	var center = size / 2
+	var colors = [
+		Color(0.3, 0.6, 1.0),   # Blue core
+		Color(0.5, 0.8, 1.0),   # Light blue
+		Color(0.8, 0.9, 1.0),   # White-blue highlight
+	]
+
+	# Vertical line
+	for y in range(2, size - 2):
+		for x in range(center - 1, center + 2):
+			var color = colors[2] if abs(y - center) <= 1 else colors[0]
+			img.set_pixel(x, y, color)
+
+	# Horizontal line
+	for x in range(2, size - 2):
+		for y in range(center - 1, center + 2):
+			var color = colors[2] if abs(x - center) <= 1 else colors[0]
+			img.set_pixel(x, y, color)
+
+	# Corner sparkles
+	var corner_offsets = [[-2, -2], [2, -2], [-2, 2], [2, 2]]
+	for offset in corner_offsets:
+		var px = center + offset[0]
+		var py = center + offset[1]
+		if px >= 0 and px < size and py >= 0 and py < size:
+			img.set_pixel(px, py, colors[1])
 
 	sprite.texture = ImageTexture.create_from_image(img)
 	return sprite

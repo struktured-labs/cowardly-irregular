@@ -94,7 +94,7 @@ var _initial_selection_id: String = ""  # ID to pre-select when menu opens
 var _submenu_memory: Dictionary = {}  # {menu_id: submenu_item_id} for command memory
 var _l_button_pressed: bool = false  # Track if L button is held
 var _l_button_press_time: float = 0.0  # When L was pressed
-const L_HOLD_CONFIRM_TIME: float = 0.5  # Seconds to hold L for confirm
+const L_HOLD_CONFIRM_TIME: float = 0.15  # Seconds to hold L for confirm (reduced for snappier response)
 
 ## Signals for target selection with position
 signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
@@ -445,9 +445,9 @@ func _build_menu() -> void:
 
 	# Allow input after a short delay to prevent stray key presses
 	# Use ignore_time_scale=true to keep consistent regardless of battle speed
-	await get_tree().create_timer(0.15, true, false, true).timeout
+	await get_tree().create_timer(0.08, true, false, true).timeout  # Reduced from 0.15 for faster response
 	_can_accept_input = true
-	await get_tree().create_timer(0.1, true, false, true).timeout
+	await get_tree().create_timer(0.05, true, false, true).timeout  # Reduced from 0.1 for faster response
 	_can_close_on_click = true
 
 
@@ -870,7 +870,7 @@ func _handle_advance_input() -> void:
 	var root = _get_root_menu()
 	if root._queued_actions.size() >= root._max_queue_size - 1:
 		# At or near limit - this will be the last action, so submit
-		_play_select_sound()
+		_play_advance_sound()  # Consistent advance sound even when auto-submitting
 		_submit_actions()
 		return
 

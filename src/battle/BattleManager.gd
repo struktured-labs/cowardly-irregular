@@ -55,6 +55,11 @@ var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
 
+## Terrain modifiers for elemental damage
+var _current_terrain: String = "plains"
+var _terrain_modifiers: Dictionary = {"boost": [], "reduce": []}
+const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
+
 ## Autobattle toggle signal
 signal autobattle_toggled(character_id: String, enabled: bool)
 
@@ -70,6 +75,41 @@ const ACTION_SPEEDS = {
 
 func _ready() -> void:
 	pass
+
+
+func set_terrain(terrain: String) -> void:
+	"""Set the current terrain for elemental damage modifiers"""
+	_current_terrain = terrain
+	_terrain_modifiers = _get_terrain_modifiers(terrain)
+	print("[TERRAIN] Battle terrain: %s (boost: %s, reduce: %s)" % [
+		terrain,
+		_terrain_modifiers["boost"],
+		_terrain_modifiers["reduce"]
+	])
+
+
+func _get_terrain_modifiers(terrain: String) -> Dictionary:
+	"""Get elemental modifiers for the given terrain"""
+	match terrain.to_lower():
+		"cave", "dungeon":
+			return {"boost": ["ice", "dark"], "reduce": ["fire", "lightning"]}
+		"forest", "woods":
+			return {"boost": ["fire", "wind"], "reduce": ["water"]}
+		"village", "town":
+			return {"boost": ["holy"], "reduce": ["dark"]}
+		"boss":
+			return {"boost": ["dark"], "reduce": []}
+		_:  # "plains" and default
+			return {"boost": [], "reduce": []}
+
+
+func get_terrain_damage_modifier(element: String) -> float:
+	"""Get the damage modifier for an element based on current terrain"""
+	if element in _terrain_modifiers["boost"]:
+		return 1.0 + TERRAIN_MODIFIER_VALUE
+	elif element in _terrain_modifiers["reduce"]:
+		return 1.0 - TERRAIN_MODIFIER_VALUE
+	return 1.0
 
 
 ## Battle initialization
@@ -959,6 +999,12 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var damage = int(base_damage * multiplier)
 		damage = int(damage * randf_range(0.9, 1.1))
 
+		# Apply terrain modifier for elemental damage
+		var terrain_mod = 1.0
+		if element:
+			terrain_mod = get_terrain_damage_modifier(element)
+			damage = int(damage * terrain_mod)
+
 		var actual_damage = 0
 		if element:
 			actual_damage = target.take_elemental_damage(damage, element)
@@ -967,9 +1013,14 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 
 		damage_dealt.emit(target, actual_damage, false)
 		var elem_text = element if element else "magic"
-		var log_msg = "  → [color=red]%s[/color] takes [color=cyan]%d[/color] %s damage!" % [target.combatant_name, actual_damage, elem_text]
+		var terrain_text = ""
+		if terrain_mod > 1.0:
+			terrain_text = " [color=lime](terrain +%d%%)[/color]" % int((terrain_mod - 1.0) * 100)
+		elif terrain_mod < 1.0:
+			terrain_text = " [color=gray](terrain -%d%%)[/color]" % int((1.0 - terrain_mod) * 100)
+		var log_msg = "  → [color=red]%s[/color] takes [color=cyan]%d[/color] %s damage!%s" % [target.combatant_name, actual_damage, elem_text, terrain_text]
 		battle_log_message.emit(log_msg)
-		print("  → %s takes %d %s damage!" % [target.combatant_name, actual_damage, elem_text])
+		print("  → %s takes %d %s damage! (terrain: %.2fx)" % [target.combatant_name, actual_damage, elem_text, terrain_mod])
 
 		if drain_pct > 0:
 			var drained = int(actual_damage * drain_pct / 100.0)
