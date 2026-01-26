@@ -486,5 +486,17 @@
 		"target_type": "all_enemies",
 		"effect": "amplify_poison",
 		"multiplier": 2.0
+	},
+	"royal_summon": {
+		"id": "royal_summon",
+		"name": "Royal Summon",
+		"type": "summon",
+		"animation": "special",
+		"mp_cost": 20,
+		"description": "The Rat King summons his loyal rat guards to defend the throne",
+		"target_type": "self",
+		"summon_id": "rat_guard",
+		"summon_count": 1,
+		"summon_message": "The Rat King SQUEAKS imperiously! A Rat Guard answers the call!"
 	}
 }

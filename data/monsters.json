@@ -205,38 +205,52 @@
 	"cave_rat_king": {
 		"id": "cave_rat_king",
 		"name": "Cave Rat King",
-		"description": "The self-proclaimed ruler of all cave rats. Just a disappointingly large rat with a tiny crown.",
-		"level": 8,
+		"description": "The self-proclaimed ruler of all cave rats. Just a disappointingly large rat with a tiny crown. Surprisingly dangerous.",
+		"level": 10,
 		"boss": true,
 		"stats": {
-			"max_hp": 450,
-			"max_mp": 60,
-			"attack": 40,
-			"defense": 22,
-			"magic": 15,
-			"speed": 16
+			"max_hp": 650,
+			"max_mp": 80,
+			"attack": 52,
+			"defense": 28,
+			"magic": 22,
+			"speed": 20
 		},
-		"abilities": ["rat_swarm", "filth_spray", "crown_authority", "desperate_bite"],
-		"exp_reward": 200,
-		"gold_reward": 150,
+		"abilities": ["rat_swarm", "filth_spray", "crown_authority", "desperate_bite", "royal_summon"],
+		"exp_reward": 350,
+		"gold_reward": 250,
 		"drop_table": [
 			{"item": "crown_of_rats", "chance": 1.0},
 			{"item": "rat_king_pelt", "chance": 0.8},
 			{"item": "hi_potion", "chance": 0.6}
 		],
 		"weaknesses": ["fire", "lightning"],
-		"resistances": [],
+		"resistances": ["poison"],
 		"dialogue": {
 			"intro": [
-				"The party climbs the final stairs, expecting a dragon...",
-				"...it's just a really big rat.",
-				"Hero: 'Are you serious?'",
-				"Cave Rat King SQUEAKS defiantly!"
+				"*The party climbs the final stairs, expecting a dragon...*",
+				"*...it's just a really big rat.*",
+				"*With a tiny crown.*",
+				"Hero: Are you serious?",
+				"Hero: We came all this way for THIS?",
+				"*The Cave Rat King adjusts its crown indignantly*",
+				"Cave Rat King: SQUEAK! (How DARE you mock the royal lineage!)",
+				"Cave Rat King: SQUEAK SQUEAK! (I am the sovereign of these caves!)",
+				"Hero: Did... did that rat just talk?",
+				"Cave Rat King: SQUEEEEAK! (ENOUGH! Minions, to me!)",
+				"*A horde of rats swarms from the shadows*"
+			],
+			"low_hp": [
+				"Cave Rat King: SQUEAK?! (Impossible! The crown... it protects me!)",
+				"*The tiny crown wobbles precariously*"
 			],
 			"defeat": [
-				"The Cave Rat King squeals pitifully and flees!",
-				"You obtained the Crown of Rats!",
-				"(It's literally just a tiny crown. Why does this exist?)"
+				"*The Cave Rat King squeals pitifully*",
+				"Cave Rat King: SQUEAK... (The kingdom... it falls...)",
+				"*The tiny crown clatters to the ground*",
+				"Hero: ...Did we just commit regicide?",
+				"*You obtained the Crown of Rats!*",
+				"*(It's literally just a tiny crown. Why does this exist?)*"
 			]
 		}
 	},

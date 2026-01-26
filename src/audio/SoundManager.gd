@@ -533,6 +533,8 @@ func play_music(track: String) -> void:
 			_start_battle_music()
 		"boss":
 			_start_boss_music()
+		"boss_rat_king":
+			_start_rat_king_music()
 		"danger":
 			_start_danger_music()
 		"victory":
@@ -1077,6 +1079,209 @@ func _generate_boss_music_buffer(rate: int, duration: float, bpm: float) -> Pack
 
 		# Heavier soft clip
 		sample = clamp(sample * 1.4, -0.95, 0.95)
+
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## Rat King Music - Sneaky, dodgy theme for the rat boss
+
+func _start_rat_king_music() -> void:
+	"""Generate and start looping sneaky rat king boss music"""
+	_music_playing = true
+
+	# Generate music buffer (16 bars at 140 BPM - sneaky, slightly faster than normal)
+	var sample_rate = 22050
+	var bpm = 140.0
+	var beats_per_bar = 4
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * beats_per_bar * bars
+
+	_music_buffer = _generate_rat_king_music_buffer(sample_rate, total_duration, bpm)
+
+	# Create looping audio stream
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = _music_buffer.size()
+
+	# Convert to 16-bit PCM
+	var data = PackedByteArray()
+	for frame in _music_buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+	_music_player.stream = wav
+	_music_player.play()
+
+
+func _generate_rat_king_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate sneaky rat king theme - E minor, staccato, dodgy feel"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# Notes in E minor (sneaky, mysterious)
+	const NOTE_E2 = 82.41   # Bass
+	const NOTE_B2 = 123.47
+	const NOTE_E3 = 164.81
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_Fs4 = 369.99  # F#
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+	const NOTE_C5 = 523.25
+	const NOTE_D5 = 587.33
+	const NOTE_E5 = 659.25
+
+	# Section A - Sneaky intro with staccato notes (bars 1-4)
+	var melody_a = [
+		NOTE_E4, 0, 0, NOTE_E4, 0, 0, NOTE_G4, 0,        # Bar 1 - tiptoeing
+		NOTE_Fs4, 0, 0, 0, NOTE_E4, 0, 0, 0,
+		NOTE_B3, 0, 0, NOTE_B3, 0, 0, NOTE_D4, 0,        # Bar 2
+		NOTE_C4, 0, 0, 0, NOTE_B3, 0, 0, 0,
+		NOTE_E4, 0, NOTE_G4, 0, NOTE_Fs4, 0, NOTE_E4, 0, # Bar 3 - quick scurry
+		NOTE_D4, 0, NOTE_E4, 0, NOTE_Fs4, 0, NOTE_G4, 0,
+		NOTE_A4, 0, 0, NOTE_G4, 0, NOTE_Fs4, 0, NOTE_E4, # Bar 4
+		0, 0, 0, 0, NOTE_E4, 0, NOTE_D4, 0,
+	]
+
+	# Section B - More aggressive, the rat reveals himself (bars 5-8)
+	var melody_b = [
+		NOTE_E4, NOTE_E4, 0, NOTE_E4, NOTE_E4, 0, NOTE_G4, 0, # Bar 5 - chittering
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_Fs4, 0, NOTE_E4, 0,
+		NOTE_B4, 0, 0, NOTE_A4, 0, 0, NOTE_G4, 0,        # Bar 6
+		NOTE_Fs4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_B4, 0,
+		NOTE_E5, 0, NOTE_D5, 0, NOTE_C5, 0, NOTE_B4, 0,  # Bar 7 - angry squeak
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_Fs4, 0, NOTE_E4, 0,
+		NOTE_E4, NOTE_Fs4, NOTE_G4, NOTE_A4, NOTE_B4, 0, 0, 0, # Bar 8
+		NOTE_A4, NOTE_G4, NOTE_Fs4, NOTE_E4, NOTE_D4, 0, 0, 0,
+	]
+
+	# Section C - Royal pomposity (the crown) (bars 9-12)
+	var melody_c = [
+		NOTE_B4, 0, NOTE_B4, 0, NOTE_B4, NOTE_A4, NOTE_G4, 0, # Bar 9 - majestic attempt
+		NOTE_Fs4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_B4, 0,
+		NOTE_E5, 0, 0, 0, NOTE_D5, 0, 0, 0,             # Bar 10 - holding note
+		NOTE_C5, 0, NOTE_B4, 0, NOTE_A4, 0, NOTE_G4, 0,
+		NOTE_Fs4, NOTE_G4, NOTE_A4, NOTE_B4, NOTE_C5, NOTE_B4, NOTE_A4, NOTE_G4, # Bar 11
+		NOTE_Fs4, NOTE_E4, NOTE_D4, NOTE_C4, NOTE_B3, 0, 0, 0,
+		NOTE_E4, 0, 0, 0, NOTE_E4, 0, NOTE_Fs4, NOTE_G4, # Bar 12
+		NOTE_A4, NOTE_B4, NOTE_A4, NOTE_G4, NOTE_Fs4, 0, NOTE_E4, 0,
+	]
+
+	# Section D - Dodging and weaving (bars 13-16)
+	var melody_d = [
+		NOTE_E4, 0, NOTE_G4, 0, NOTE_E4, 0, NOTE_B3, 0,  # Bar 13 - erratic
+		NOTE_E4, 0, NOTE_A4, 0, NOTE_E4, 0, NOTE_D4, 0,
+		NOTE_C4, NOTE_D4, NOTE_E4, NOTE_Fs4, NOTE_G4, NOTE_A4, NOTE_B4, NOTE_C5, # Bar 14
+		NOTE_B4, NOTE_A4, NOTE_G4, NOTE_Fs4, NOTE_E4, NOTE_D4, NOTE_C4, NOTE_B3,
+		NOTE_E4, 0, 0, NOTE_E4, 0, 0, NOTE_E4, NOTE_E4,  # Bar 15 - building
+		NOTE_Fs4, NOTE_Fs4, NOTE_G4, NOTE_G4, NOTE_A4, NOTE_A4, NOTE_B4, 0,
+		NOTE_E5, 0, 0, 0, 0, 0, NOTE_E4, NOTE_E4,        # Bar 16 - resolve
+		NOTE_E4, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	# Bass line - stalking, predatory feel
+	var bass_pattern = [
+		NOTE_E2, 0, NOTE_E2, 0, NOTE_E3, 0, NOTE_E2, 0,
+		NOTE_B2, 0, NOTE_B2, 0, NOTE_E3, 0, NOTE_B2, 0,
+	]
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sample = 0.0
+
+		# Position within the beat for drums
+		var beat_pos = fmod(t, beat_duration)
+		var current_beat = int(t / beat_duration)
+		var bar = current_beat / 8  # 8 melody notes per bar (16th notes effectively)
+
+		# Determine which section we're in
+		var melody_note = 0.0
+		var section_beat = current_beat % 64  # 64 beats per section (4 bars of 16)
+
+		if bar < 4:
+			if section_beat < melody_a.size():
+				melody_note = melody_a[section_beat]
+		elif bar < 8:
+			if section_beat < melody_b.size():
+				melody_note = melody_b[section_beat]
+		elif bar < 12:
+			if section_beat < melody_c.size():
+				melody_note = melody_c[section_beat]
+		else:
+			if section_beat < melody_d.size():
+				melody_note = melody_d[section_beat]
+
+		# Staccato melody - short, punchy notes
+		if melody_note > 0:
+			var note_t = beat_pos
+			# Very short envelope for staccato effect
+			var staccato_length = beat_duration * 0.4
+			if note_t < staccato_length:
+				var env = pow(1.0 - note_t / staccato_length, 2.5)
+				# Square wave with slight detuning for sneaky feel
+				var sq = sign(sin(t * melody_note * TAU)) * 0.15 * env
+				# Add slight vibrato for creepiness
+				var vibrato = sin(t * 6.0) * 3.0
+				sq += sign(sin(t * (melody_note + vibrato) * TAU)) * 0.08 * env
+				sample += sq
+
+		# Sneaky bass - pizzicato style
+		var bass_beat = current_beat % 16
+		if bass_beat < bass_pattern.size():
+			var bass_freq = bass_pattern[bass_beat]
+			if bass_freq > 0:
+				var bass_t = beat_pos
+				var bass_env = pow(1.0 - bass_t / (beat_duration * 0.5), 2) if bass_t < beat_duration * 0.5 else 0.0
+				# Triangle wave for plucky bass
+				var bass = (2.0 * abs(2.0 * fmod(t * bass_freq, 1.0) - 1.0) - 1.0) * 0.2 * bass_env
+				sample += bass
+
+		# Light, shuffling drums - more hi-hat focused
+		# Kick on 1 and 3, but lighter
+		if current_beat % 4 in [0, 2] and beat_pos < 0.03:
+			var kick_env = pow(1.0 - beat_pos / 0.03, 2)
+			var kick = sin(beat_pos * 55 * TAU) * kick_env * 0.25
+			sample += kick
+
+		# Snare rim click on 2 and 4 (quiet, sneaky)
+		if current_beat % 4 in [1, 3] and beat_pos < 0.02:
+			var rim_env = pow(1.0 - beat_pos / 0.02, 3)
+			var rim = sin(beat_pos * 800 * TAU) * rim_env * 0.15
+			sample += rim
+
+		# Rapid hi-hats (16th notes, very quiet for tiptoeing feel)
+		var sixteenth_pos = fmod(t, beat_duration / 4.0)
+		if sixteenth_pos < 0.008:
+			var hat_env = pow(1.0 - sixteenth_pos / 0.008, 4)
+			var hat = randf_range(-0.08, 0.08) * hat_env
+			sample += hat
+
+		# Occasional shaker/scratch sound (rat scurrying)
+		if current_beat % 8 == 3 and beat_pos > beat_duration * 0.5 and beat_pos < beat_duration * 0.7:
+			var scratch_t = (beat_pos - beat_duration * 0.5) / (beat_duration * 0.2)
+			var scratch = randf_range(-0.1, 0.1) * (1.0 - scratch_t)
+			sample += scratch
+
+		# Soft clip
+		sample = clamp(sample * 1.2, -0.85, 0.85)
 
 		buffer.append(Vector2(sample, sample))
 

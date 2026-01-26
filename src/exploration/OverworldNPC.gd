@@ -33,6 +33,9 @@ func _ready() -> void:
 	_setup_name_label()
 	_setup_dialogue_box()
 
+	# Add to interactables group for reliable interaction detection
+	add_to_group("interactables")
+
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 

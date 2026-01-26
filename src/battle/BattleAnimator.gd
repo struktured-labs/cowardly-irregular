@@ -3293,3 +3293,659 @@ static func _draw_cave_troll_body(img: Image, cx: int, cy: int, pose: int, skin:
 		for fx in range(_s(-9), _s(6)):
 			for fy in range(_s(4)):
 				_safe_pixel(img, leg_x + fx * leg_side, cy + _s(27) + fy, skin_dark)
+
+
+## =================
+## CAVE RAT KING BOSS SPRITE
+## =================
+
+static func create_cave_rat_king_sprite_frames() -> SpriteFrames:
+	"""Create animated sprite frames for Cave Rat King boss (large rat with tiny crown)"""
+	var frames = SpriteFrames.new()
+
+	# Idle animation (2 frames, twitchy rat behavior)
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_rat_king_frame(0, 0.0))
+	frames.add_frame("idle", _create_rat_king_frame(0, -1.0))
+
+	# Attack animation (5 frames, lunging bite)
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_rat_king_frame(1, 0.0))   # Rear back
+	frames.add_frame("attack", _create_rat_king_frame(2, -2.0))  # Crouch
+	frames.add_frame("attack", _create_rat_king_frame(3, 0.0))   # Lunge forward
+	frames.add_frame("attack", _create_rat_king_frame(4, 2.0))   # Bite
+	frames.add_frame("attack", _create_rat_king_frame(0, 0.0))   # Return
+
+	# Hit animation (3 frames)
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_rat_king_frame(5, 2.0))
+	frames.add_frame("hit", _create_rat_king_frame(5, 0.0))
+	frames.add_frame("hit", _create_rat_king_frame(0, 0.0))
+
+	# Defeat animation (4 frames, dramatic collapse with crown falling)
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_rat_king_frame(6, 0.0))
+	frames.add_frame("defeat", _create_rat_king_frame(6, 3.0))
+	frames.add_frame("defeat", _create_rat_king_frame(7, 6.0))
+	frames.add_frame("defeat", _create_rat_king_frame(8, 10.0))
+
+	# Summon animation (calling rat minions)
+	frames.add_animation("summon")
+	frames.set_animation_speed("summon", 3.0)
+	frames.set_animation_loop("summon", false)
+	frames.add_frame("summon", _create_rat_king_frame(9, 0.0))   # Stand tall
+	frames.add_frame("summon", _create_rat_king_frame(10, -2.0)) # Raise paws
+	frames.add_frame("summon", _create_rat_king_frame(10, 0.0))  # Squeak command
+	frames.add_frame("summon", _create_rat_king_frame(0, 0.0))   # Return
+
+	return frames
+
+
+static func _create_rat_king_frame(pose: int, y_offset: float) -> ImageTexture:
+	"""Create a single Cave Rat King sprite frame"""
+	var size = SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Mangy rat color palette
+	var color_fur = Color(0.35, 0.28, 0.22)          # Dirty brown fur
+	var color_fur_dark = Color(0.22, 0.17, 0.13)     # Dark shadows
+	var color_fur_mid = Color(0.42, 0.35, 0.28)      # Mid tone
+	var color_fur_light = Color(0.55, 0.45, 0.38)    # Highlights
+	var color_skin = Color(0.7, 0.55, 0.5)           # Pink skin (ears, tail, paws)
+	var color_skin_dark = Color(0.55, 0.4, 0.38)     # Darker skin
+	var color_eye = Color(0.9, 0.15, 0.1)            # Beady red eyes
+	var color_eye_glow = Color(1.0, 0.3, 0.2)        # Eye shine
+	var color_nose = Color(0.85, 0.5, 0.5)           # Pink nose
+	var color_teeth = Color(0.95, 0.9, 0.7)          # Yellowed teeth
+	var color_crown = Color(0.95, 0.8, 0.2)          # Gold crown
+	var color_crown_dark = Color(0.7, 0.55, 0.1)     # Crown shadow
+	var color_crown_gem = Color(0.8, 0.15, 0.2)      # Red gem
+	var color_outline = Color(0.12, 0.08, 0.06)      # Dark outline
+
+	var center_x = size / 2
+	var base_y = int(size * 0.75 + _sf(y_offset))
+
+	_draw_rat_king_body(img, center_x, base_y, pose, color_fur, color_fur_dark, color_fur_mid, color_fur_light, color_skin, color_skin_dark, color_eye, color_eye_glow, color_nose, color_teeth, color_crown, color_crown_dark, color_crown_gem, color_outline)
+
+	return ImageTexture.create_from_image(img)
+
+
+static func _draw_rat_king_body(img: Image, cx: int, cy: int, pose: int, fur: Color, fur_dark: Color, fur_mid: Color, fur_light: Color, skin: Color, skin_dark: Color, eye: Color, eye_glow: Color, nose: Color, teeth: Color, crown: Color, crown_dark: Color, crown_gem: Color, outline: Color) -> void:
+	"""Draw Cave Rat King boss (giant mangy rat with crown)"""
+	var s = img.get_width()
+
+	var lean = 0
+	var crouch = 0
+	var mouth_open = false
+	var tail_up = false
+	var paws_up = false
+	var crown_tilt = 0
+
+	match pose:
+		1: lean = _s(-5); tail_up = true          # Rear back
+		2: crouch = _s(8); lean = _s(-3)          # Crouch
+		3: lean = _s(12); mouth_open = true       # Lunge
+		4: lean = _s(15); mouth_open = true       # Bite
+		5: lean = _s(-10); crown_tilt = 15        # Hit
+		6: lean = _s(-18); crown_tilt = 30        # Defeat start
+		7: lean = _s(-35); crown_tilt = 60        # Falling
+		8: lean = _s(-45); crown_tilt = 90        # Defeated
+		9: tail_up = true                         # Stand tall
+		10: paws_up = true; tail_up = true        # Summoning
+
+	# Defeated pose - collapsed rat
+	if pose >= 7:
+		# Fallen rat body (side view, pathetic)
+		for y in range(_s(-10), _s(10)):
+			for x in range(_s(-25), _s(25)):
+				var dist = sqrt(pow(float(x) / _sf(25), 2) + pow(float(y) / _sf(8), 2))
+				if dist < 1.0:
+					var color = fur_dark if dist > 0.6 else fur_mid
+					_safe_pixel(img, cx + x, cy + y + _s(8), color)
+		# Fallen crown nearby
+		var crown_x = cx + _s(20)
+		var crown_y = cy + _s(5)
+		for cy2 in range(_s(-4), _s(2)):
+			for cx2 in range(_s(-6), _s(7)):
+				if cy2 < 0 and abs(cx2) < _s(5):
+					_safe_pixel(img, crown_x + cx2, crown_y + cy2, crown)
+		return
+
+	# === TAIL (draw first, behind body) ===
+	var tail_x = cx - _s(18) + lean/3
+	var tail_y = cy + _s(5) + crouch/2
+	var tail_length = _s(30)
+	var tail_curve = 0.08 if not tail_up else -0.12
+
+	for i in range(tail_length):
+		var t = float(i) / tail_length
+		var curve = sin(t * PI * 1.5) * _s(15) * tail_curve
+		var tx = tail_x - int(cos(0.3) * i)
+		var ty = tail_y + int(curve) - int(t * _s(8)) if tail_up else tail_y + int(curve)
+		var thickness = _s(4) - int(t * _s(3))
+		for tw in range(-thickness, thickness + 1):
+			_safe_pixel(img, tx, ty + tw, skin if t > 0.3 else skin_dark)
+
+	# === BODY (large, hunched rat body) ===
+	var body_x = cx + lean/4
+	var body_y = cy - _s(5) + crouch
+	var body_rx = _s(18)
+	var body_ry = _s(14)
+
+	# Body outline
+	for y in range(-body_ry - 2, body_ry + 3):
+		for x in range(-body_rx - 2, body_rx + 3):
+			var dist = sqrt(pow(float(x) / (body_rx + 2), 2) + pow(float(y) / (body_ry + 2), 2))
+			if dist >= 0.9 and dist < 1.0:
+				_safe_pixel(img, body_x + x, body_y + y, outline)
+
+	# Body fill with fur texture
+	for y in range(-body_ry, body_ry + 1):
+		for x in range(-body_rx, body_rx + 1):
+			var dist = sqrt(pow(float(x) / body_rx, 2) + pow(float(y) / body_ry, 2))
+			if dist < 1.0:
+				var color = fur
+				# Shading
+				if y < -body_ry * 0.3:
+					color = fur_light
+				elif y > body_ry * 0.4:
+					color = fur_dark
+				if x < -body_rx * 0.5:
+					color = fur_mid
+				# Mangy patches
+				if (x + y) % _s(8) < _s(2) and dist > 0.5:
+					color = fur_dark
+				_safe_pixel(img, body_x + x, body_y + y, color)
+
+	# === HIND LEGS ===
+	for leg_side in [-1, 1]:
+		var leg_x = body_x + leg_side * _s(10) - _s(5)
+		var leg_y = body_y + _s(10)
+		# Thigh
+		for ly in range(_s(12)):
+			var lw = _s(6) - ly / 4
+			for lx in range(-lw, lw + 1):
+				_safe_pixel(img, leg_x + lx, leg_y + ly, fur_mid if lx * leg_side > 0 else fur_dark)
+		# Paw
+		for py in range(_s(4)):
+			for px in range(_s(-5), _s(6)):
+				_safe_pixel(img, leg_x + px, leg_y + _s(12) + py, skin_dark)
+
+	# === FRONT PAWS ===
+	var paw_y_offset = 0 if not paws_up else _s(-15)
+	for paw_side in [-1, 1]:
+		var paw_x = body_x + paw_side * _s(12) + lean/3
+		var paw_y = body_y + _s(8) + paw_y_offset
+		# Arm
+		for ay in range(_s(10)):
+			var aw = _s(4) - ay / 5
+			for ax in range(-aw, aw + 1):
+				_safe_pixel(img, paw_x + ax, paw_y + ay - _s(5), fur_mid)
+		# Paw with claws
+		for py in range(_s(5)):
+			for px in range(_s(-4), _s(5)):
+				_safe_pixel(img, paw_x + px, paw_y + _s(5) + py, skin)
+		# Claws
+		for claw in range(3):
+			var claw_x = paw_x - _s(2) + claw * _s(2)
+			for cl in range(_s(3)):
+				_safe_pixel(img, claw_x, paw_y + _s(10) + cl, Color(0.3, 0.25, 0.2))
+
+	# === HEAD ===
+	var head_x = cx + _s(12) + lean/2
+	var head_y = cy - _s(18) + crouch/2
+	var head_rx = _s(12)
+	var head_ry = _s(10)
+
+	# Head outline
+	for y in range(-head_ry - 1, head_ry + 2):
+		for x in range(-head_rx - 1, head_rx + 2):
+			var dist = sqrt(pow(float(x) / (head_rx + 1), 2) + pow(float(y) / (head_ry + 1), 2))
+			if dist >= 0.9 and dist < 1.0:
+				_safe_pixel(img, head_x + x, head_y + y, outline)
+
+	# Head fill
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = fur
+				if y < -head_ry * 0.3:
+					color = fur_light
+				elif x > head_rx * 0.3:
+					color = fur_mid  # Snout area lighter
+				_safe_pixel(img, head_x + x, head_y + y, color)
+
+	# === EARS (large rat ears) ===
+	for ear_side in [-1, 1]:
+		var ear_x = head_x + ear_side * _s(8)
+		var ear_y = head_y - _s(12)
+		# Outer ear
+		for ey in range(_s(10)):
+			var ew = _s(5) - abs(ey - _s(5)) / 2
+			for ex in range(-ew, ew + 1):
+				_safe_pixel(img, ear_x + ex, ear_y + ey, skin_dark)
+		# Inner ear (pink)
+		for ey in range(_s(2), _s(8)):
+			var ew = _s(3) - abs(ey - _s(5)) / 2
+			for ex in range(-ew, ew + 1):
+				_safe_pixel(img, ear_x + ex, ear_y + ey, skin)
+
+	# === SNOUT ===
+	var snout_x = head_x + _s(10)
+	var snout_y = head_y + _s(2)
+	for sy in range(_s(-4), _s(5)):
+		for sx in range(_s(8)):
+			var dist = sqrt(pow(float(sx) / _sf(8), 2) + pow(float(sy) / _sf(4), 2))
+			if dist < 1.0:
+				_safe_pixel(img, snout_x + sx, snout_y + sy, fur_light if sy < 0 else fur_mid)
+
+	# Nose
+	for ny in range(_s(-2), _s(3)):
+		for nx in range(_s(-2), _s(3)):
+			if nx * nx + ny * ny <= _s(2) * _s(2):
+				_safe_pixel(img, snout_x + _s(7) + nx, snout_y + ny, nose)
+
+	# Whiskers
+	for whisker in range(3):
+		var wy = snout_y - _s(2) + whisker * _s(3)
+		for wx in range(_s(12)):
+			_safe_pixel(img, snout_x + _s(5) + wx, wy + wx/8, Color(0.6, 0.55, 0.5))
+			_safe_pixel(img, snout_x + _s(5) + wx, wy - wx/8, Color(0.6, 0.55, 0.5))
+
+	# === EYES (beady, menacing) ===
+	var eye_x = head_x + _s(4)
+	var eye_y = head_y - _s(2)
+	# Eye socket
+	for ey in range(_s(-3), _s(4)):
+		for ex in range(_s(-3), _s(4)):
+			if ex * ex + ey * ey <= _s(3) * _s(3):
+				_safe_pixel(img, eye_x + ex, eye_y + ey, fur_dark)
+	# Eye
+	for ey in range(_s(-2), _s(3)):
+		for ex in range(_s(-2), _s(3)):
+			if ex * ex + ey * ey <= _s(2) * _s(2):
+				_safe_pixel(img, eye_x + ex, eye_y + ey, eye)
+	# Eye shine
+	_safe_pixel(img, eye_x - _s(1), eye_y - _s(1), eye_glow)
+
+	# === MOUTH / TEETH ===
+	if mouth_open:
+		var mouth_x = snout_x + _s(4)
+		var mouth_y = snout_y + _s(3)
+		# Open mouth
+		for my in range(_s(6)):
+			for mx in range(_s(-4), _s(5)):
+				_safe_pixel(img, mouth_x + mx, mouth_y + my, Color(0.3, 0.1, 0.1))
+		# Teeth (prominent front teeth)
+		for tooth_side in [-1, 1]:
+			var tooth_x = mouth_x + tooth_side * _s(2)
+			for ty in range(_s(5)):
+				_safe_pixel(img, tooth_x, mouth_y + ty, teeth)
+				_safe_pixel(img, tooth_x + tooth_side, mouth_y + ty, teeth)
+	else:
+		# Closed mouth with buck teeth showing
+		var mouth_x = snout_x + _s(6)
+		var mouth_y = snout_y + _s(4)
+		for tooth_side in [-1, 1]:
+			for ty in range(_s(3)):
+				_safe_pixel(img, mouth_x + tooth_side, mouth_y + ty, teeth)
+
+	# === CROWN (tiny, comically small, tilted) ===
+	var crown_x = head_x - _s(2)
+	var crown_y = head_y - _s(14)
+	var crown_tilt_rad = deg_to_rad(crown_tilt)
+
+	# Crown base
+	for cby in range(_s(4)):
+		for cbx in range(_s(-6), _s(7)):
+			var rotated_x = int(cbx * cos(crown_tilt_rad) - cby * sin(crown_tilt_rad))
+			var rotated_y = int(cbx * sin(crown_tilt_rad) + cby * cos(crown_tilt_rad))
+			_safe_pixel(img, crown_x + rotated_x, crown_y + rotated_y, crown if cby < _s(2) else crown_dark)
+
+	# Crown points (3 points)
+	for point in range(3):
+		var point_x = _s(-4) + point * _s(4)
+		for py in range(_s(6)):
+			var pw = _s(2) - py / 3
+			for px in range(-pw, pw + 1):
+				var rx = int((point_x + px) * cos(crown_tilt_rad) - (-py) * sin(crown_tilt_rad))
+				var ry = int((point_x + px) * sin(crown_tilt_rad) + (-py) * cos(crown_tilt_rad))
+				_safe_pixel(img, crown_x + rx, crown_y + ry, crown)
+
+	# Crown gem (center)
+	var gem_x = crown_x
+	var gem_y = crown_y - _s(2)
+	for gy in range(_s(-2), _s(2)):
+		for gx in range(_s(-2), _s(2)):
+			if abs(gx) + abs(gy) <= _s(2):
+				_safe_pixel(img, gem_x + gx, gem_y + gy, crown_gem)
+
+
+## =================
+## CAVE RAT SPRITE (summoned minion)
+## =================
+
+static func create_cave_rat_sprite_frames() -> SpriteFrames:
+	"""Create animated sprite frames for Cave Rat (smaller rat minion)"""
+	var frames = SpriteFrames.new()
+
+	# Idle animation (2 frames, twitchy)
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 3.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_cave_rat_frame(0, 0.0))
+	frames.add_frame("idle", _create_cave_rat_frame(0, -1.0))
+
+	# Attack animation (3 frames, quick bite)
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 5.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_cave_rat_frame(1, 0.0))
+	frames.add_frame("attack", _create_cave_rat_frame(2, 0.0))
+	frames.add_frame("attack", _create_cave_rat_frame(0, 0.0))
+
+	# Hit animation
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_cave_rat_frame(3, 1.0))
+	frames.add_frame("hit", _create_cave_rat_frame(0, 0.0))
+
+	# Defeat animation
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_cave_rat_frame(4, 2.0))
+	frames.add_frame("defeat", _create_cave_rat_frame(5, 5.0))
+
+	return frames
+
+
+static func _create_cave_rat_frame(pose: int, y_offset: float) -> ImageTexture:
+	"""Create a single Cave Rat sprite frame (small rat)"""
+	var size = SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Rat colors
+	var fur = Color(0.4, 0.32, 0.25)
+	var fur_dark = Color(0.28, 0.2, 0.15)
+	var fur_light = Color(0.52, 0.42, 0.35)
+	var skin = Color(0.7, 0.55, 0.5)
+	var eye = Color(0.85, 0.2, 0.15)
+	var teeth = Color(0.9, 0.85, 0.7)
+
+	var cx = size / 2
+	var cy = int(size * 0.7 + y_offset)
+
+	var lean = 0
+	var mouth_open = false
+
+	match pose:
+		1: lean = -3  # Prep bite
+		2: lean = 8; mouth_open = true  # Bite
+		3: lean = -6  # Hit
+		4: lean = -12  # Defeated start
+		5: lean = -20  # Defeated
+
+	# Defeated - collapsed rat
+	if pose >= 4:
+		for y in range(-4, 5):
+			for x in range(-15, 16):
+				var dist = sqrt(pow(float(x) / 15.0, 2) + pow(float(y) / 4.0, 2))
+				if dist < 1.0:
+					_safe_pixel(img, cx + x, cy + y + 5, fur_dark if dist > 0.5 else fur)
+		return ImageTexture.create_from_image(img)
+
+	# Tail
+	var tail_x = cx - 12 + lean/4
+	var tail_y = cy + 2
+	for i in range(20):
+		var t = float(i) / 20.0
+		var ty = tail_y + int(sin(t * PI) * 6)
+		var tx = tail_x - i
+		var thickness = 2 - int(t * 1.5)
+		for tw in range(-thickness, thickness + 1):
+			_safe_pixel(img, tx, ty + tw, skin)
+
+	# Body (small oval)
+	for y in range(-8, 9):
+		for x in range(-12, 13):
+			var dist = sqrt(pow(float(x) / 12.0, 2) + pow(float(y) / 7.0, 2))
+			if dist < 1.0:
+				var color = fur_dark if dist > 0.7 else fur if dist > 0.4 else fur_light
+				_safe_pixel(img, cx + x + lean/3, cy + y, color)
+
+	# Head
+	var head_x = cx + 8 + lean/2
+	var head_y = cy - 2
+	for y in range(-6, 7):
+		for x in range(-6, 10):
+			var dist = sqrt(pow(float(x) / 8.0, 2) + pow(float(y) / 5.0, 2))
+			if dist < 1.0:
+				_safe_pixel(img, head_x + x, head_y + y, fur if dist > 0.5 else fur_light)
+
+	# Ears
+	for ear_side in [-1, 1]:
+		var ear_x = head_x - 2
+		var ear_y = head_y - 6 + ear_side * 3
+		for ey in range(-4, 2):
+			for ex in range(-3, 4):
+				if ex * ex / 9.0 + ey * ey / 12.0 < 1.0:
+					_safe_pixel(img, ear_x + ex, ear_y + ey, skin if ex * ex + ey * ey < 4 else fur)
+
+	# Eye
+	_safe_pixel(img, head_x + 3, head_y - 1, eye)
+	_safe_pixel(img, head_x + 4, head_y - 1, eye)
+	_safe_pixel(img, head_x + 3, head_y, eye)
+
+	# Nose
+	_safe_pixel(img, head_x + 8, head_y + 1, skin)
+	_safe_pixel(img, head_x + 9, head_y + 1, skin)
+
+	# Mouth/teeth
+	if mouth_open:
+		for my in range(3):
+			for mx in range(-2, 3):
+				_safe_pixel(img, head_x + 6 + mx, head_y + 3 + my, Color(0.2, 0.1, 0.1))
+		_safe_pixel(img, head_x + 5, head_y + 3, teeth)
+		_safe_pixel(img, head_x + 7, head_y + 3, teeth)
+
+	# Legs
+	for leg in range(4):
+		var leg_x = cx - 6 + leg * 5 + lean/4
+		var leg_y = cy + 6
+		for ly in range(4):
+			_safe_pixel(img, leg_x, leg_y + ly, fur_dark)
+			_safe_pixel(img, leg_x + 1, leg_y + ly, fur_dark)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## RAT GUARD SPRITE (armored rat soldier)
+## =================
+
+static func create_rat_guard_sprite_frames() -> SpriteFrames:
+	"""Create animated sprite frames for Rat Guard (armored rat soldier)"""
+	var frames = SpriteFrames.new()
+
+	# Idle animation
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_rat_guard_frame(0, 0.0))
+	frames.add_frame("idle", _create_rat_guard_frame(0, -1.0))
+
+	# Attack animation (shield bash)
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_rat_guard_frame(1, 0.0))
+	frames.add_frame("attack", _create_rat_guard_frame(2, 0.0))
+	frames.add_frame("attack", _create_rat_guard_frame(3, 0.0))
+	frames.add_frame("attack", _create_rat_guard_frame(0, 0.0))
+
+	# Hit animation
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_rat_guard_frame(4, 1.0))
+	frames.add_frame("hit", _create_rat_guard_frame(4, 0.0))
+	frames.add_frame("hit", _create_rat_guard_frame(0, 0.0))
+
+	# Defeat animation
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_rat_guard_frame(5, 2.0))
+	frames.add_frame("defeat", _create_rat_guard_frame(6, 5.0))
+	frames.add_frame("defeat", _create_rat_guard_frame(7, 8.0))
+
+	return frames
+
+
+static func _create_rat_guard_frame(pose: int, y_offset: float) -> ImageTexture:
+	"""Create a single Rat Guard sprite frame (armored rat)"""
+	var size = SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Colors
+	var fur = Color(0.38, 0.3, 0.25)
+	var fur_dark = Color(0.25, 0.18, 0.14)
+	var fur_light = Color(0.5, 0.4, 0.35)
+	var armor = Color(0.5, 0.45, 0.4)       # Rusty metal
+	var armor_dark = Color(0.35, 0.3, 0.28)
+	var armor_light = Color(0.65, 0.6, 0.55)
+	var skin = Color(0.65, 0.5, 0.45)
+	var eye = Color(0.8, 0.25, 0.2)
+	var shield_color = Color(0.55, 0.4, 0.3)
+	var shield_emblem = Color(0.7, 0.55, 0.2)
+
+	var cx = size / 2
+	var cy = int(size * 0.72 + y_offset)
+
+	var lean = 0
+	var shield_up = true
+	var attacking = false
+
+	match pose:
+		1: lean = -3; shield_up = true     # Wind up
+		2: lean = 5; attacking = true       # Strike
+		3: lean = 10; attacking = true      # Follow through
+		4: lean = -8; shield_up = false     # Hit
+		5: lean = -15; shield_up = false    # Defeat 1
+		6: lean = -25; shield_up = false    # Defeat 2
+		7: lean = -35; shield_up = false    # Defeated
+
+	# Defeated pose
+	if pose >= 6:
+		# Fallen armored rat
+		for y in range(-6, 8):
+			for x in range(-18, 19):
+				var dist = sqrt(pow(float(x) / 18.0, 2) + pow(float(y) / 6.0, 2))
+				if dist < 1.0:
+					var color = armor_dark if (x + y) % 3 == 0 else fur_dark
+					_safe_pixel(img, cx + x, cy + y + 6, color)
+		# Fallen shield
+		for sy in range(-8, 3):
+			for sx in range(-5, 6):
+				if abs(sx) + abs(sy) / 2 < 8:
+					_safe_pixel(img, cx + 20 + sx, cy + sy + 8, shield_color)
+		return ImageTexture.create_from_image(img)
+
+	# Tail (behind everything)
+	var tail_x = cx - 14 + lean/4
+	var tail_y = cy + 4
+	for i in range(18):
+		var t = float(i) / 18.0
+		var ty = tail_y + int(sin(t * PI) * 5)
+		for tw in range(-1, 2):
+			_safe_pixel(img, tail_x - i, ty + tw, skin)
+
+	# Body with armor
+	for y in range(-12, 10):
+		for x in range(-10, 11):
+			var dist = sqrt(pow(float(x) / 10.0, 2) + pow(float(y + 2) / 10.0, 2))
+			if dist < 1.0:
+				# Armor on chest
+				if y > -8 and y < 5 and abs(x) < 8:
+					var color = armor_light if y < -4 else armor if y < 2 else armor_dark
+					_safe_pixel(img, cx + x + lean/4, cy + y, color)
+				else:
+					_safe_pixel(img, cx + x + lean/4, cy + y, fur if dist > 0.6 else fur_light)
+
+	# Helmet (simple metal cap)
+	var head_x = cx + 6 + lean/3
+	var head_y = cy - 8
+	# Helmet
+	for y in range(-8, 2):
+		for x in range(-7, 8):
+			var dist = sqrt(pow(float(x) / 7.0, 2) + pow(float(y + 3) / 6.0, 2))
+			if dist < 1.0 and y < 0:
+				_safe_pixel(img, head_x + x, head_y + y, armor if y < -2 else armor_dark)
+	# Face visible below helmet
+	for y in range(-2, 6):
+		for x in range(-5, 8):
+			var dist = sqrt(pow(float(x) / 6.0, 2) + pow(float(y) / 4.0, 2))
+			if dist < 1.0:
+				_safe_pixel(img, head_x + x, head_y + y, fur if dist > 0.5 else fur_light)
+
+	# Ears poking through helmet
+	for ear_y in range(-4, 0):
+		_safe_pixel(img, head_x - 4, head_y + ear_y - 4, fur)
+		_safe_pixel(img, head_x + 4, head_y + ear_y - 4, fur)
+
+	# Eye
+	_safe_pixel(img, head_x + 3, head_y + 1, eye)
+	_safe_pixel(img, head_x + 4, head_y + 1, eye)
+
+	# Snout
+	for sy in range(-2, 3):
+		for sx in range(5):
+			_safe_pixel(img, head_x + 5 + sx, head_y + 2 + sy/2, fur_light)
+	_safe_pixel(img, head_x + 10, head_y + 2, skin)
+
+	# Shield (on left side)
+	if shield_up:
+		var shield_x = cx - 8 + lean/3
+		var shield_y = cy - 2
+		# Shield body
+		for sy in range(-10, 8):
+			for sx in range(-5, 6):
+				var shield_dist = sqrt(pow(float(sx) / 5.0, 2) + pow(float(sy + 1) / 9.0, 2))
+				if shield_dist < 1.0:
+					var color = shield_color
+					if sy < -6:
+						color = armor_light
+					elif sy > 4:
+						color = armor_dark
+					_safe_pixel(img, shield_x + sx, shield_y + sy, color)
+		# Shield emblem (rat symbol)
+		for ey in range(-3, 4):
+			for ex in range(-2, 3):
+				if abs(ex) + abs(ey) < 4:
+					_safe_pixel(img, shield_x + ex, shield_y + ey, shield_emblem)
+
+	# Legs with greaves
+	for leg in range(2):
+		var leg_x = cx - 4 + leg * 8 + lean/4
+		var leg_y = cy + 8
+		for ly in range(8):
+			var color = armor_dark if ly < 4 else fur_dark
+			_safe_pixel(img, leg_x, leg_y + ly, color)
+			_safe_pixel(img, leg_x + 1, leg_y + ly, color)
+			_safe_pixel(img, leg_x + 2, leg_y + ly, color)
+
+	return ImageTexture.create_from_image(img)

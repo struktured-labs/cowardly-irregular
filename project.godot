@@ -33,6 +33,7 @@ BattleTransition="*res://src/transitions/BattleTransition.gd"
 SaveSystem="*res://src/save/SaveSystem.gd"
 SoundManager="*res://src/audio/SoundManager.gd"
 EffectSystem="*res://src/battle/EffectSystem.gd"
+DebugLogOverlay="*res://src/ui/DebugLogOverlay.gd"
 
 [display]
 

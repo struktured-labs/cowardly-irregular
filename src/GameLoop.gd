@@ -32,6 +32,7 @@ var equipment_pool: Dictionary = {
 var _autobattle_editor: Control = null
 var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 
+
 ## Exploration state
 var _current_map_id: String = "overworld"
 var _spawn_point: String = "default"
@@ -52,6 +53,10 @@ func _ready() -> void:
 
 	# Start with exploration (overworld)
 	_start_exploration()
+
+	# Log startup
+	if DebugLogOverlay:
+		DebugLogOverlay.log("[GAME] Started")
 
 
 func _input(event: InputEvent) -> void:
@@ -554,12 +559,17 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 			_current_cave_floor = _exploration_scene.current_floor
 			print("[CAVE] Saved floor: %d" % _current_cave_floor)
 
-	# Extract enemy types for transition
+	# Extract enemy types for transition visual
 	var enemy_types: Array = []
 	for enemy in enemies:
 		if enemy is Dictionary:
 			var enemy_type = enemy.get("name", enemy.get("type", enemy.get("id", "unknown")))
 			enemy_types.append(enemy_type)
+		elif enemy is String:
+			# Boss/specific enemy is passed as string ID
+			enemy_types.append(enemy)
+
+	print("[GAMELOOP] Battle triggered with enemies: %s" % [enemies])
 
 	# Start battle loading in background (async)
 	ResourceLoader.load_threaded_request("res://src/battle/BattleScene.tscn")
@@ -576,8 +586,8 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 		await get_tree().process_frame
 	print("[GAMELOOP] Battle scene loaded")
 
-	# Start battle with pre-loaded scene
-	await _start_battle_async()
+	# Start battle with pre-loaded scene, passing specific enemies if provided
+	await _start_battle_async(enemies)
 	print("[GAMELOOP] Battle scene started")
 
 	# Small delay to ensure battle scene is fully initialized
@@ -591,7 +601,7 @@ func _on_exploration_battle_triggered(enemies: Array) -> void:
 		print("[GAMELOOP] Fade out complete - battle should be visible")
 
 
-func _start_battle_async() -> void:
+func _start_battle_async(specific_enemies: Array = []) -> void:
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
 
@@ -600,8 +610,11 @@ func _start_battle_async() -> void:
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
-	# Check if this is a miniboss battle (every 3rd battle)
-	var is_miniboss_battle = (battles_won + 1) % 3 == 0 and battles_won > 0
+	# Check if specific enemies were provided (e.g., boss battles)
+	var has_forced_enemies = specific_enemies.size() > 0 and specific_enemies[0] is String
+
+	# Check if this is a miniboss battle (every 3rd battle), but not if forced enemies
+	var is_miniboss_battle = not has_forced_enemies and (battles_won + 1) % 3 == 0 and battles_won > 0
 
 	# Get pre-loaded battle scene
 	var loaded_res = ResourceLoader.load_threaded_get("res://src/battle/BattleScene.tscn")
@@ -610,7 +623,12 @@ func _start_battle_async() -> void:
 	# Set flags and party BEFORE adding to tree (since _ready() uses these)
 	battle_scene.managed_by_game_loop = true
 	battle_scene.set_party(party)
-	if is_miniboss_battle:
+
+	# Handle forced enemies (boss battles)
+	if has_forced_enemies:
+		battle_scene.forced_enemies = specific_enemies
+		print("[BOSS] Forcing specific enemies: %s" % [specific_enemies])
+	elif is_miniboss_battle:
 		battle_scene.force_miniboss = true
 		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
 

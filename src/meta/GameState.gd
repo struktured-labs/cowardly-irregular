@@ -23,7 +23,8 @@ var player_party: Array[Dictionary] = []
 var party_gold: int = 500  # Starting gold
 
 ## Settings (exposed to UI)
-var encounter_rate_multiplier: float = 1.0  # 0.0 to 1.0, controlled via settings menu
+var encounter_rate_multiplier: float = 1.0  # 0.0 to 2.0, controlled via settings menu
+var debug_log_enabled: bool = true  # Show debug log overlay (default on)
 
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {

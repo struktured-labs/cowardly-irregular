@@ -328,7 +328,9 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 			boss_area.cave_ref = self
 			_setup_transition_collision(boss_area, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
 			transitions.add_child(boss_area)
-			print("[BOSS] Cave Rat King boss trigger created at %s - walk up and press A to fight!" % spawn_points["boss"])
+			print("[BOSS] Cave Rat King boss trigger created at %s (global: %s)" % [boss_area.position, boss_area.global_position])
+			print("[BOSS] Boss collision - layer: %d, mask: %d, monitoring: %s, monitorable: %s" % [boss_area.collision_layer, boss_area.collision_mask, boss_area.monitoring, boss_area.monitorable])
+			print("[BOSS] Walk to position %s and press A to fight!" % spawn_points["boss"])
 
 
 func _add_stair_visuals() -> void:
@@ -353,10 +355,10 @@ func _add_stair_visuals() -> void:
 		stair_sprites.add_child(boss_marker)
 
 
-func _create_stair_marker(position: Vector2, is_up: bool) -> Node2D:
+func _create_stair_marker(pos: Vector2, is_up: bool) -> Node2D:
 	"""Create a visual marker for stairs"""
 	var marker = Node2D.new()
-	marker.position = position
+	marker.position = pos
 
 	# Background tile with different color
 	var bg = ColorRect.new()
@@ -373,19 +375,21 @@ func _create_stair_marker(position: Vector2, is_up: bool) -> Node2D:
 	label.add_theme_color_override("font_color", Color.WHITE)
 	marker.add_child(label)
 
-	# Pulsing animation
-	var tween = create_tween()
-	tween.set_loops()
-	tween.tween_property(label, "modulate:a", 0.5, 0.8)
-	tween.tween_property(label, "modulate:a", 1.0, 0.8)
+	# Pulsing animation - bind to marker so it gets cleaned up when marker is freed
+	marker.ready.connect(func():
+		var tween = marker.create_tween()
+		tween.set_loops()
+		tween.tween_property(label, "modulate:a", 0.5, 0.8)
+		tween.tween_property(label, "modulate:a", 1.0, 0.8)
+	)
 
 	return marker
 
 
-func _create_boss_marker(position: Vector2) -> Node2D:
+func _create_boss_marker(pos: Vector2) -> Node2D:
 	"""Create a visual marker for the boss"""
 	var marker = Node2D.new()
-	marker.position = position
+	marker.position = pos
 
 	# Red background tile to make boss stand out
 	var bg = ColorRect.new()
@@ -402,11 +406,13 @@ func _create_boss_marker(position: Vector2) -> Node2D:
 	label.add_theme_color_override("font_color", Color.YELLOW)
 	marker.add_child(label)
 
-	# Pulsing animation (faster than stairs to draw attention)
-	var tween = create_tween()
-	tween.set_loops()
-	tween.tween_property(bg, "modulate:a", 0.6, 0.5)
-	tween.tween_property(bg, "modulate:a", 1.0, 0.5)
+	# Pulsing animation - bind to marker so it gets cleaned up when marker is freed
+	marker.ready.connect(func():
+		var tween = marker.create_tween()
+		tween.set_loops()
+		tween.tween_property(bg, "modulate:a", 0.6, 0.5)
+		tween.tween_property(bg, "modulate:a", 1.0, 0.5)
+	)
 
 	return marker
 
@@ -492,7 +498,7 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	controller.resume_exploration()
 	floor_changed.emit(current_floor)
 
-	print("Transitioned to Whispering Cave Floor %d" % current_floor)
+	DebugLogOverlay.log("[CAVE] Floor %d" % current_floor)
 
 	# Release transition lock after additional delay (prevent immediate re-trigger)
 	await get_tree().create_timer(0.5).timeout
@@ -517,7 +523,7 @@ func _update_floor_encounters(floor: int) -> void:
 	controller.set_enemy_pool(enemy_pool_id)
 	controller.current_area_id = "whispering_cave_f%d" % floor
 
-	print("Floor %d encounters: rate=%.2f, pool=%s, boss_floor=%s" % [floor, encounter_rate, enemy_pool_id, is_boss_floor])
+	DebugLogOverlay.log("[CAVE] Encounters: rate=%.0f%%, pool=%s" % [encounter_rate * 100, enemy_pool_id])
 
 
 

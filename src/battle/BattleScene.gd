@@ -9,6 +9,7 @@ const RetroFontClass = preload("res://src/ui/RetroFont.gd")
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 const DamageNumber = preload("res://src/ui/DamageNumber.gd")
 const AutobattleToggleUIClass = preload("res://src/ui/autobattle/AutobattleToggleUI.gd")
+const BattleDialogueClass = preload("res://src/ui/BattleDialogue.gd")
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -85,6 +86,7 @@ var _battle_victory: bool = false
 var managed_by_game_loop: bool = false  # When true, don't handle restart internally
 var command_memory_enabled: bool = true  # Remember last command per character
 var force_miniboss: bool = false  # When true, spawn a miniboss instead of regular enemies
+var forced_enemies: Array = []  # When set, spawn these specific enemies (e.g., ["cave_rat_king"])
 
 ## Battle speed settings
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
@@ -97,6 +99,11 @@ var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 
 ## Danger music state
 var _is_danger_music: bool = false
+
+## Dialogue system
+var _battle_dialogue: BattleDialogueClass = null
+var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
+var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # "battle" or "boss"
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
 
@@ -166,6 +173,9 @@ func _ready() -> void:
 
 	# Create battle speed indicator
 	_create_speed_indicator()
+
+	# Create dialogue system
+	_create_dialogue_system()
 
 	# Load default autobattle script
 	BattleManager.set_autobattle_script("Aggressive")
@@ -240,6 +250,32 @@ func _update_speed_indicator() -> void:
 	_speed_indicator.text = text
 
 
+func _create_dialogue_system() -> void:
+	"""Create battle dialogue overlay"""
+	_battle_dialogue = BattleDialogueClass.new()
+	_battle_dialogue.dialogue_finished.connect(_on_dialogue_finished)
+	add_child(_battle_dialogue)
+
+
+func _on_dialogue_finished() -> void:
+	"""Handle dialogue completion - resume battle"""
+	_waiting_for_dialogue = false
+	# Now actually start the battle
+	_start_battle_after_dialogue()
+
+
+func _show_boss_intro_dialogue() -> void:
+	"""Show boss intro dialogue if available"""
+	if _boss_dialogue_data.has("intro") and _boss_dialogue_data["intro"].size() > 0:
+		_waiting_for_dialogue = true
+		_battle_dialogue.show_boss_intro("Boss", _boss_dialogue_data["intro"])
+
+
+func _start_battle_after_dialogue() -> void:
+	"""Start the battle after dialogue is finished"""
+	BattleManager.start_battle(party_members, test_enemies)
+
+
 func _toggle_battle_speed() -> void:
 	"""Cycle through battle speeds"""
 	_battle_speed_index = (_battle_speed_index + 1) % BATTLE_SPEEDS.size()
@@ -285,8 +321,12 @@ func _start_test_battle() -> void:
 	# Create sprites
 	_create_battle_sprites()
 
-	# Start battle
-	BattleManager.start_battle(party_members, test_enemies)
+	# Check for boss dialogue - if present, show it before starting battle
+	if _boss_dialogue_data.has("intro") and _boss_dialogue_data["intro"].size() > 0:
+		_show_boss_intro_dialogue()
+	else:
+		# Start battle immediately
+		BattleManager.start_battle(party_members, test_enemies)
 
 
 func _create_default_party() -> void:
@@ -459,6 +499,22 @@ const MONSTER_TYPES = [
 		"stats": {"max_hp": 70, "max_mp": 30, "attack": 12, "defense": 7, "magic": 8, "speed": 20},
 		"weaknesses": ["ice"],
 		"resistances": ["poison"]
+	},
+	{
+		"id": "cave_rat",
+		"name": "Cave Rat",
+		"color": Color(0.45, 0.35, 0.3),
+		"stats": {"max_hp": 90, "max_mp": 15, "attack": 30, "defense": 8, "magic": 10, "speed": 14},
+		"weaknesses": ["fire"],
+		"resistances": []
+	},
+	{
+		"id": "rat_guard",
+		"name": "Rat Guard",
+		"color": Color(0.4, 0.35, 0.35),
+		"stats": {"max_hp": 160, "max_mp": 25, "attack": 40, "defense": 18, "magic": 12, "speed": 11},
+		"weaknesses": ["lightning"],
+		"resistances": ["physical"]
 	}
 ]
 
@@ -470,6 +526,11 @@ func _spawn_enemies() -> void:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 	test_enemies.clear()
+
+	# Check for forced specific enemies (e.g., boss battles)
+	if forced_enemies.size() > 0:
+		_spawn_forced_enemies()
+		return
 
 	# Check for miniboss battle
 	if force_miniboss:
@@ -573,6 +634,91 @@ const MINIBOSS_TYPES = [
 		"resistances": ["dark", "ice"]
 	}
 ]
+
+
+func _spawn_forced_enemies() -> void:
+	"""Spawn specific enemies from the forced_enemies array (e.g., boss battles)"""
+	# Load monster data
+	var monsters_data = _load_monsters_data()
+	if monsters_data.is_empty():
+		push_error("Failed to load monsters.json - falling back to random enemies")
+		forced_enemies.clear()
+		_spawn_enemies()
+		return
+
+	var enemy_names: Array = []
+	var is_boss_battle = false
+
+	for i in range(forced_enemies.size()):
+		var enemy_id = forced_enemies[i]
+		if not monsters_data.has(enemy_id):
+			push_warning("Unknown monster ID: %s" % enemy_id)
+			continue
+
+		var monster_data = monsters_data[enemy_id]
+		var enemy = Combatant.new()
+		var stats = {
+			"name": monster_data.get("name", enemy_id),
+			"max_hp": monster_data["stats"].get("max_hp", 100),
+			"max_mp": monster_data["stats"].get("max_mp", 0),
+			"attack": monster_data["stats"].get("attack", 10),
+			"defense": monster_data["stats"].get("defense", 5),
+			"magic": monster_data["stats"].get("magic", 5),
+			"speed": monster_data["stats"].get("speed", 10)
+		}
+		enemy.initialize(stats)
+		add_child(enemy)
+
+		# Store monster type ID for sprite selection
+		enemy.set_meta("monster_type", enemy_id)
+		if monster_data.get("boss", false) or monster_data.get("miniboss", false):
+			enemy.set_meta("is_boss", true)
+			enemy.set_meta("is_miniboss", true)  # For music selection
+			is_boss_battle = true
+			# Store dialogue data for this boss
+			if monster_data.has("dialogue"):
+				_boss_dialogue_data = monster_data["dialogue"]
+
+		# Connect signals
+		enemy.hp_changed.connect(_on_enemy_hp_changed.bind(i))
+		enemy.died.connect(_on_enemy_died.bind(i))
+
+		test_enemies.append(enemy)
+		enemy_names.append(stats["name"])
+
+	# Announcement based on battle type
+	if is_boss_battle:
+		log_message("")
+		log_message("[color=red]═══════════════════════════════[/color]")
+		log_message("[color=orange]   👑  BOSS BATTLE!  👑[/color]")
+		for enemy_name in enemy_names:
+			log_message("[color=yellow]   %s appeared![/color]" % enemy_name)
+		log_message("[color=red]═══════════════════════════════[/color]")
+		log_message("")
+	else:
+		for enemy_name in enemy_names:
+			log_message("[color=yellow]%s appeared![/color]" % enemy_name)
+
+	_update_ui()
+
+
+func _load_monsters_data() -> Dictionary:
+	"""Load monster definitions from data file"""
+	var file_path = "res://data/monsters.json"
+	if not FileAccess.file_exists(file_path):
+		return {}
+
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if not file:
+		return {}
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	if json.parse(json_string) == OK:
+		return json.data
+	return {}
 
 
 func _spawn_miniboss() -> void:
@@ -723,6 +869,12 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 			return BattleAnimatorClass.create_shadow_knight_sprite_frames()
 		"cave_troll":
 			return BattleAnimatorClass.create_cave_troll_sprite_frames()
+		"cave_rat_king":
+			return BattleAnimatorClass.create_cave_rat_king_sprite_frames()
+		"cave_rat":
+			return BattleAnimatorClass.create_cave_rat_sprite_frames()
+		"rat_guard":
+			return BattleAnimatorClass.create_rat_guard_sprite_frames()
 		_:
 			# Default to slime for unknown types
 			return BattleAnimatorClass.create_slime_sprite_frames()
@@ -1783,9 +1935,15 @@ func _on_battle_started() -> void:
 	_update_ui()
 	# Start battle music - use boss music if fighting a miniboss
 	var is_boss_fight = _check_for_boss()
+	var boss_type = _get_boss_type()
 	if is_boss_fight:
-		_base_music_track = "boss"
-		SoundManager.play_music("boss")
+		if boss_type == "cave_rat_king":
+			_base_music_track = "boss_rat_king"
+			SoundManager.play_music("boss_rat_king")
+			print("[MUSIC] Playing sneaky Rat King theme")
+		else:
+			_base_music_track = "boss"
+			SoundManager.play_music("boss")
 	else:
 		# Play monster-specific music based on dominant enemy type
 		var dominant_monster = _get_dominant_monster_type()
@@ -1830,6 +1988,15 @@ func _check_for_boss() -> bool:
 			if enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss"):
 				return true
 	return force_miniboss
+
+
+func _get_boss_type() -> String:
+	"""Get the monster_type of the boss enemy if any"""
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy):
+			if enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss"):
+				return enemy.get_meta("monster_type", "")
+	return ""
 
 
 func _on_battle_ended(victory: bool) -> void:

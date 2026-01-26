@@ -96,6 +96,8 @@ func _on_interaction_requested() -> void:
 	if not player:
 		return
 
+	DebugLogOverlay.log("[INTERACT] At pos: %s" % player.global_position)
+
 	# Get nearby Area2D nodes and try to interact
 	var space = player.get_world_2d().direct_space_state
 	var query = PhysicsPointQueryParameters2D.new()
@@ -121,6 +123,7 @@ func _on_interaction_requested() -> void:
 	for result in results:
 		var collider = result["collider"]
 		if collider.has_method("interact"):
+			DebugLogOverlay.log("[INTERACT] Found: %s (physics)" % collider.name)
 			collider.interact(player)
 			return
 
@@ -130,8 +133,22 @@ func _on_interaction_requested() -> void:
 	for result in results:
 		var collider = result["collider"]
 		if collider.has_method("interact"):
+			DebugLogOverlay.log("[INTERACT] Found: %s (standing)" % collider.name)
 			collider.interact(player)
 			return
+
+	# Fallback: check interactables group by distance (more reliable than physics queries)
+	var interactables = player.get_tree().get_nodes_in_group("interactables")
+	var interaction_range = 48.0  # ~1.5 tiles
+	for interactable in interactables:
+		if interactable.has_method("interact"):
+			var dist = player.global_position.distance_to(interactable.global_position)
+			if dist <= interaction_range:
+				DebugLogOverlay.log("[INTERACT] Found: %s (dist: %.0f)" % [interactable.name, dist])
+				interactable.interact(player)
+				return
+
+	DebugLogOverlay.log("[INTERACT] Nothing found")
 
 
 ## Configure area for encounters

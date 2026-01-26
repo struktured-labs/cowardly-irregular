@@ -14,14 +14,18 @@ func _ready() -> void:
 	collision_mask = 2   # Player layer
 	monitoring = true
 	monitorable = true
-	print("[BOSS TRIGGER] Ready - collision_layer=%d, collision_mask=%d" % [collision_layer, collision_mask])
+
+	# Add to interactables group for easier discovery
+	add_to_group("interactables")
+
+	DebugLogOverlay.log("[BOSS] Trigger ready at %s" % global_position)
 
 
 func interact(_player: Node2D) -> void:
-	print("[BOSS TRIGGER] interact() called! cave_ref=%s, boss_defeated=%s" % [cave_ref != null, cave_ref.boss_defeated if cave_ref else "N/A"])
+	DebugLogOverlay.log("[BOSS] interact() - defeated: %s" % (cave_ref.boss_defeated if cave_ref else "N/A"))
 	if cave_ref and not cave_ref.boss_defeated:
-		print("[BOSS TRIGGER] Triggering boss battle!")
+		DebugLogOverlay.log("[BOSS] Starting Cave Rat King battle!")
 		boss_triggered.emit()
 		cave_ref._trigger_boss_battle()
 	else:
-		print("[BOSS TRIGGER] Cannot trigger - cave_ref=%s, boss_defeated=%s" % [cave_ref != null, cave_ref.boss_defeated if cave_ref else "N/A"])
+		DebugLogOverlay.log("[BOSS] Already defeated or no cave ref")
