@@ -17,11 +17,14 @@ var battle_count: int = 0
 
 ## Menu state
 var main_menu: Win98Menu = null
-var current_view: String = "status"  # status, equipment, abilities, passives, items, formation, autobattle
+var current_view: String = "status"  # status, equipment, abilities, passives, items, formation, autobattle, autogrind
 var party_member_rows: Array = []
 
 ## Autobattle editor
 var autobattle_editor: Control = null
+
+## Autogrind editor
+var autogrind_editor: Control = null
 
 ## Equipment/Passive editing state
 var editing_slot: String = ""  # weapon, armor, accessory, passive
@@ -194,6 +197,7 @@ func _create_main_menu() -> void:
 		{"id": "items", "label": "Items"},
 		{"id": "formation", "label": "Formation"},
 		{"id": "autobattle", "label": "Autobattle"},
+		{"id": "autogrind", "label": "Autogrind"},
 		{"id": "continue", "label": "Continue"}
 	]
 
@@ -230,6 +234,9 @@ func _on_menu_selected(item_id: String, _data: Variant) -> void:
 		"autobattle":
 			current_view = "autobattle"
 			_show_autobattle_view()
+		"autogrind":
+			current_view = "autogrind"
+			_show_autogrind_view()
 		"continue":
 			continue_pressed.emit()
 
@@ -1259,6 +1266,193 @@ func _on_autobattle_editor_closed() -> void:
 	_show_autobattle_view()
 
 
+## Autogrind View
+
+func _show_autogrind_view() -> void:
+	"""Show autogrind configuration overview"""
+	_clear_content()
+	_content_focus_active = false
+
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	content_area.add_child(vbox)
+
+	var header = Label.new()
+	header.text = "Autogrind Setup"
+	header.add_theme_font_size_override("font_size", 16)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(header)
+
+	var sub = Label.new()
+	sub.text = "Party-level rules for automated grinding"
+	sub.add_theme_font_size_override("font_size", 11)
+	sub.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(sub)
+
+	vbox.add_child(HSeparator.new())
+
+	var buttons: Array[Button] = []
+
+	# Show current autogrind profile
+	var profile_name = AutogrindSystem.get_active_autogrind_profile_name()
+	var profile_idx = AutogrindSystem.get_active_autogrind_profile_index()
+	var profiles = AutogrindSystem.get_autogrind_profiles()
+
+	var profile_label = Label.new()
+	profile_label.text = "Active Profile: %s (%d/%d)" % [profile_name, profile_idx + 1, profiles.size()]
+	profile_label.add_theme_font_size_override("font_size", 13)
+	profile_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	vbox.add_child(profile_label)
+
+	vbox.add_child(HSeparator.new())
+
+	# Show current rules summary
+	var rules = AutogrindSystem.get_autogrind_rules()
+	var rules_label = Label.new()
+	rules_label.text = "Rules: %d" % rules.size()
+	rules_label.add_theme_font_size_override("font_size", 12)
+	vbox.add_child(rules_label)
+
+	for i in range(min(rules.size(), 5)):
+		var rule = rules[i]
+		var enabled = rule.get("enabled", true)
+		var conditions = rule.get("conditions", [])
+		var actions = rule.get("actions", [])
+
+		var cond_text = ""
+		for cond in conditions:
+			if cond_text != "":
+				cond_text += " AND "
+			cond_text += _format_condition_brief(cond)
+
+		var action_text = ""
+		for act in actions:
+			if action_text != "":
+				action_text += ", "
+			action_text += _format_action_brief(act)
+
+		var rule_label = Label.new()
+		var status = "✓" if enabled else "✗"
+		rule_label.text = "%s IF %s → %s" % [status, cond_text, action_text]
+		rule_label.add_theme_font_size_override("font_size", 10)
+		rule_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8) if enabled else Color(0.4, 0.4, 0.4))
+		rule_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		vbox.add_child(rule_label)
+
+	if rules.size() > 5:
+		var more = Label.new()
+		more.text = "...and %d more rules" % (rules.size() - 5)
+		more.add_theme_font_size_override("font_size", 10)
+		more.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		vbox.add_child(more)
+
+	vbox.add_child(HSeparator.new())
+
+	# Edit button
+	var edit_btn = Button.new()
+	edit_btn.text = "Edit Autogrind Rules"
+	edit_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	edit_btn.pressed.connect(_open_autogrind_editor)
+	vbox.add_child(edit_btn)
+	buttons.append(edit_btn)
+
+	# Current party profiles
+	vbox.add_child(HSeparator.new())
+
+	var party_label = Label.new()
+	party_label.text = "Current Party Profiles:"
+	party_label.add_theme_font_size_override("font_size", 12)
+	vbox.add_child(party_label)
+
+	for member in party:
+		var char_id = member.combatant_name.to_lower().replace(" ", "_")
+		var char_profile = AutobattleSystem.get_active_profile_name(char_id)
+		var char_enabled = AutobattleSystem.is_autobattle_enabled(char_id)
+
+		var member_label = Label.new()
+		member_label.text = "  %s → %s %s" % [member.combatant_name, char_profile, "●" if char_enabled else "○"]
+		member_label.add_theme_font_size_override("font_size", 11)
+		member_label.add_theme_color_override("font_color", Color(0.7, 0.9, 0.5) if char_enabled else Color(0.5, 0.5, 0.5))
+		vbox.add_child(member_label)
+
+	# Hint
+	vbox.add_child(HSeparator.new())
+	var hint = Label.new()
+	hint.text = "Edit rules to control profile switching during autogrind"
+	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	vbox.add_child(hint)
+
+	if buttons.size() > 0:
+		_setup_button_focus(buttons)
+
+
+func _format_condition_brief(condition: Dictionary) -> String:
+	"""Brief format for condition display in overview"""
+	var cond_type = condition.get("type", "always")
+	var op = condition.get("op", "==")
+	var value = condition.get("value", 0)
+
+	match cond_type:
+		"party_hp_avg": return "HP Avg %s %d%%" % [op, value]
+		"party_mp_avg": return "MP Avg %s %d%%" % [op, value]
+		"party_hp_min": return "Min HP %s %d%%" % [op, value]
+		"alive_count": return "Alive %s %d" % [op, value]
+		"battles_done": return "Battles %s %d" % [op, value]
+		"corruption": return "Corrupt %s %s" % [op, value]
+		"efficiency": return "Effic %s %s" % [op, value]
+		"always": return "ALWAYS"
+	return cond_type
+
+
+func _format_action_brief(action: Dictionary) -> String:
+	"""Brief format for action display in overview"""
+	var action_type = action.get("type", "switch_profile")
+
+	match action_type:
+		"switch_profile":
+			var char_id = action.get("character_id", "hero")
+			var profile_idx = action.get("profile_index", 0)
+			var profile_name = ""
+			var profiles = AutobattleSystem.get_character_profiles(char_id)
+			if profile_idx < profiles.size():
+				profile_name = profiles[profile_idx].get("name", "P%d" % profile_idx)
+			else:
+				profile_name = "P%d" % profile_idx
+			return "%s→%s" % [char_id.capitalize(), profile_name]
+		"stop_grinding":
+			return "STOP"
+	return action_type
+
+
+func _open_autogrind_editor() -> void:
+	"""Open the autogrind grid editor"""
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = false
+
+	var AutogrindGridEditorClass = load("res://src/ui/autogrind/AutogrindGridEditor.gd")
+	autogrind_editor = AutogrindGridEditorClass.new()
+	autogrind_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	autogrind_editor.size = size
+	add_child(autogrind_editor)
+
+	autogrind_editor.setup(party)
+	autogrind_editor.closed.connect(_on_autogrind_editor_closed)
+
+
+func _on_autogrind_editor_closed() -> void:
+	"""Handle autogrind editor closing"""
+	if autogrind_editor and is_instance_valid(autogrind_editor):
+		autogrind_editor.queue_free()
+		autogrind_editor = null
+
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = true
+
+	_show_autogrind_view()
+
+
 ## Input Handling
 
 func _input(event: InputEvent) -> void:
@@ -1304,3 +1498,4 @@ func _cycle_party_member(direction: int) -> void:
 		"items": _show_items_view()
 		"formation": _show_formation_view()
 		"autobattle": _show_autobattle_view()
+		"autogrind": _show_autogrind_view()
