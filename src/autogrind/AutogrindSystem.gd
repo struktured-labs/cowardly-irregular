@@ -2,6 +2,11 @@ extends Node
 
 ## AutogrindSystem - Automated battle grinding with escalating risk/reward
 ## The more efficient you grind, the more dangerous it becomes
+##
+## Autogrind rules are party-level: IF [party condition] THEN [profile assignments]
+## This mirrors the autobattle system but operates on the whole party:
+##   Autobattle = per-character: IF [char condition] THEN [combat action]
+##   Autogrind  = per-party:     IF [party condition] THEN [autobattle profile set]
 
 signal grind_started()
 signal grind_stopped(results: Dictionary)
@@ -13,6 +18,7 @@ signal meta_boss_spawned(boss_name: String)
 signal system_collapse()
 signal region_cracked(region_id: String, crack_level: int)
 signal autobattle_interrupted(reason: String)
+signal autogrind_rules_changed()
 
 ## Grind state
 var is_grinding: bool = false
@@ -61,9 +67,60 @@ var meta_boss_spawn_chance: float = 0.0  # Increases with corruption
 var grind_enemy_template: Dictionary = {}
 var grind_party: Array[Combatant] = []
 
+## ═══════════════════════════════════════════════════════════════════════
+## AUTOGRIND PROFILES - Party-level rule management
+## ═══════════════════════════════════════════════════════════════════════
+
+## Autogrind profiles (named rulesets for party-level automation)
+## Format: {profiles: [{name: String, rules: Array}, ...], active: int}
+var autogrind_profiles: Dictionary = {}
+
+## Max profiles (GBA-style limit)
+const MAX_AUTOGRIND_PROFILES: int = 8
+
+## Max rules per profile
+const MAX_AUTOGRIND_RULES: int = 12
+
+## Max conditions per rule (AND chain)
+const MAX_AUTOGRIND_CONDITIONS: int = 3
+
+## Max actions per rule (profile assignments)
+const MAX_AUTOGRIND_ACTIONS: int = 4
+
+## Party-level condition types for autogrind rules
+const PARTY_CONDITION_TYPES = {
+	"party_hp_avg": "Party HP Avg",
+	"party_mp_avg": "Party MP Avg",
+	"party_hp_min": "Lowest HP %",
+	"alive_count": "Alive Count",
+	"battles_done": "Battles Done",
+	"corruption": "Corruption",
+	"efficiency": "Efficiency",
+	"always": "Always"
+}
+
+## Operators (shared with autobattle)
+const OPERATORS = {
+	"<": "Less Than",
+	"<=": "Less or Equal",
+	"==": "Equal",
+	">=": "Greater or Equal",
+	">": "Greater Than",
+	"!=": "Not Equal"
+}
+
+## Autogrind action types
+const AUTOGRIND_ACTION_TYPES = {
+	"switch_profile": "Switch Profile",
+	"stop_grinding": "Stop Grinding"
+}
+
+## Default autogrind profile templates
+const DEFAULT_AUTOGRIND_TEMPLATES = ["Standard Grind", "Safe Grind", "Aggressive Grind"]
+
 
 func _ready() -> void:
-	pass
+	_load_autogrind_profiles()
 
 
 ## Autogrind control
@@ -498,3 +555,356 @@ func interrupt_to_manual(reason: String) -> void:
 	print("Switching to manual control...")
 
 	# In full implementation, would disable autobattle and return control to player
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## AUTOGRIND PROFILE MANAGEMENT
+## ═══════════════════════════════════════════════════════════════════════
+
+func _ensure_autogrind_profiles() -> void:
+	"""Ensure autogrind profiles are initialized"""
+	if autogrind_profiles.is_empty() or not autogrind_profiles.has("profiles"):
+		autogrind_profiles = _create_default_autogrind_profiles()
+
+
+func _create_default_autogrind_profiles() -> Dictionary:
+	"""Create default autogrind profile set"""
+	var profile_list = []
+
+	for i in range(DEFAULT_AUTOGRIND_TEMPLATES.size()):
+		var profile_name = DEFAULT_AUTOGRIND_TEMPLATES[i]
+		var profile_rules = _create_default_autogrind_rules() if i == 0 else _create_empty_autogrind_rules()
+		profile_list.append({"name": profile_name, "rules": profile_rules})
+
+	return {"profiles": profile_list, "active": 0}
+
+
+func _create_default_autogrind_rules() -> Array:
+	"""Create a sensible default autogrind ruleset"""
+	return [
+		# If party HP is critically low, switch everyone to defensive profiles
+		{
+			"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}],
+			"actions": [
+				{"type": "switch_profile", "character_id": "hero", "profile_index": 1},
+				{"type": "switch_profile", "character_id": "mira", "profile_index": 0}
+			],
+			"enabled": true
+		},
+		# If only 2 members alive, stop grinding
+		{
+			"conditions": [{"type": "alive_count", "op": "<=", "value": 2}],
+			"actions": [{"type": "stop_grinding"}],
+			"enabled": true
+		},
+		# Default: use standard profiles
+		{
+			"conditions": [{"type": "always"}],
+			"actions": [
+				{"type": "switch_profile", "character_id": "hero", "profile_index": 0},
+				{"type": "switch_profile", "character_id": "mira", "profile_index": 0}
+			],
+			"enabled": true
+		}
+	]
+
+
+func _create_empty_autogrind_rules() -> Array:
+	"""Create minimal empty autogrind ruleset"""
+	return [
+		{
+			"conditions": [{"type": "always"}],
+			"actions": [{"type": "switch_profile", "character_id": "hero", "profile_index": 0}],
+			"enabled": true
+		}
+	]
+
+
+func get_autogrind_rules() -> Array:
+	"""Get active autogrind rules"""
+	_ensure_autogrind_profiles()
+	var data = autogrind_profiles
+	var active_idx = data.get("active", 0)
+	var profiles = data.get("profiles", [])
+	if active_idx < profiles.size():
+		return profiles[active_idx].get("rules", [])
+	return _create_empty_autogrind_rules()
+
+
+func set_autogrind_rules(rules: Array) -> void:
+	"""Set active autogrind rules"""
+	_ensure_autogrind_profiles()
+	var active_idx = autogrind_profiles.get("active", 0)
+	var profiles = autogrind_profiles.get("profiles", [])
+	if active_idx < profiles.size():
+		profiles[active_idx]["rules"] = rules
+	_save_autogrind_profiles()
+	autogrind_rules_changed.emit()
+
+
+func get_autogrind_profiles() -> Array:
+	"""Get all autogrind profiles"""
+	_ensure_autogrind_profiles()
+	return autogrind_profiles.get("profiles", [])
+
+
+func get_active_autogrind_profile_index() -> int:
+	"""Get index of active autogrind profile"""
+	_ensure_autogrind_profiles()
+	return autogrind_profiles.get("active", 0)
+
+
+func get_active_autogrind_profile_name() -> String:
+	"""Get name of active autogrind profile"""
+	_ensure_autogrind_profiles()
+	var active_idx = autogrind_profiles.get("active", 0)
+	var profiles = autogrind_profiles.get("profiles", [])
+	if active_idx < profiles.size():
+		return profiles[active_idx].get("name", "Default")
+	return "Default"
+
+
+func set_active_autogrind_profile(index: int) -> void:
+	"""Set active autogrind profile by index"""
+	_ensure_autogrind_profiles()
+	var profiles = autogrind_profiles.get("profiles", [])
+	if index >= 0 and index < profiles.size():
+		autogrind_profiles["active"] = index
+		_save_autogrind_profiles()
+		autogrind_rules_changed.emit()
+
+
+func create_new_autogrind_profile(name: String = "") -> int:
+	"""Create a new autogrind profile, returns index or -1 if at max"""
+	_ensure_autogrind_profiles()
+	var profiles = autogrind_profiles.get("profiles", [])
+
+	if profiles.size() >= MAX_AUTOGRIND_PROFILES:
+		return -1
+
+	if name.is_empty():
+		name = "Custom %d" % (profiles.size() + 1)
+
+	profiles.append({
+		"name": name,
+		"rules": _create_empty_autogrind_rules()
+	})
+
+	_save_autogrind_profiles()
+	return profiles.size() - 1
+
+
+func rename_autogrind_profile(index: int, new_name: String) -> bool:
+	"""Rename an autogrind profile"""
+	_ensure_autogrind_profiles()
+	var profiles = autogrind_profiles.get("profiles", [])
+
+	if index < 0 or index >= profiles.size() or new_name.is_empty():
+		return false
+
+	profiles[index]["name"] = new_name
+	_save_autogrind_profiles()
+	return true
+
+
+func delete_autogrind_profile(index: int) -> bool:
+	"""Delete an autogrind profile (cannot delete last one)"""
+	_ensure_autogrind_profiles()
+	var profiles = autogrind_profiles.get("profiles", [])
+
+	if profiles.size() <= 1 or index < 0 or index >= profiles.size():
+		return false
+
+	profiles.remove_at(index)
+
+	var active = autogrind_profiles.get("active", 0)
+	if active >= profiles.size():
+		autogrind_profiles["active"] = profiles.size() - 1
+	elif active > index:
+		autogrind_profiles["active"] = active - 1
+
+	_save_autogrind_profiles()
+	return true
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## AUTOGRIND RULE EVALUATION
+## ═══════════════════════════════════════════════════════════════════════
+
+func evaluate_autogrind_rules(party: Array) -> Dictionary:
+	"""Evaluate autogrind rules against current party state.
+	Returns the first matching rule's action set, or empty dict if none match."""
+	var rules = get_autogrind_rules()
+
+	for rule in rules:
+		if not rule.get("enabled", true):
+			continue
+
+		if _evaluate_party_rule(party, rule):
+			return rule
+
+	return {}
+
+
+func _evaluate_party_rule(party: Array, rule: Dictionary) -> bool:
+	"""Evaluate a party-level rule (AND chain of conditions)"""
+	var conditions = rule.get("conditions", [])
+	if conditions.size() == 0:
+		return true
+
+	for condition in conditions:
+		if not _evaluate_party_condition(party, condition):
+			return false
+
+	return true
+
+
+func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
+	"""Evaluate a single party-level condition"""
+	var cond_type = condition.get("type", "always")
+	var op = condition.get("op", "==")
+	var value = condition.get("value", 0)
+
+	match cond_type:
+		"party_hp_avg":
+			var avg = _get_party_hp_avg(party)
+			return _compare_op(avg, op, value)
+
+		"party_mp_avg":
+			var avg = _get_party_mp_avg(party)
+			return _compare_op(avg, op, value)
+
+		"party_hp_min":
+			var min_hp = _get_party_hp_min(party)
+			return _compare_op(min_hp, op, value)
+
+		"alive_count":
+			var count = _get_alive_count(party)
+			return _compare_op(count, op, value)
+
+		"battles_done":
+			return _compare_op(battles_completed, op, value)
+
+		"corruption":
+			return _compare_op(meta_corruption_level, op, value)
+
+		"efficiency":
+			return _compare_op(efficiency_multiplier, op, value)
+
+		"always":
+			return true
+
+	return false
+
+
+func _compare_op(a: float, op: String, b: float) -> bool:
+	"""Compare two values with string operator"""
+	match op:
+		"<": return a < b
+		"<=": return a <= b
+		"==": return a == b
+		">=": return a >= b
+		">": return a > b
+		"!=": return a != b
+	return false
+
+
+func _get_party_hp_avg(party: Array) -> float:
+	"""Get average HP percentage of alive party members"""
+	var total = 0.0
+	var count = 0
+	for member in party:
+		if member is Combatant and member.is_alive:
+			total += member.get_hp_percentage()
+			count += 1
+	return total / max(count, 1)
+
+
+func _get_party_mp_avg(party: Array) -> float:
+	"""Get average MP percentage of alive party members"""
+	var total = 0.0
+	var count = 0
+	for member in party:
+		if member is Combatant and member.is_alive:
+			total += member.get_mp_percentage()
+			count += 1
+	return total / max(count, 1)
+
+
+func _get_party_hp_min(party: Array) -> float:
+	"""Get lowest HP percentage in party"""
+	var min_hp = 100.0
+	for member in party:
+		if member is Combatant and member.is_alive:
+			min_hp = min(min_hp, member.get_hp_percentage())
+	return min_hp
+
+
+func _get_alive_count(party: Array) -> int:
+	"""Get number of alive party members"""
+	var count = 0
+	for member in party:
+		if member is Combatant and member.is_alive:
+			count += 1
+	return count
+
+
+func apply_autogrind_actions(actions: Array) -> void:
+	"""Apply autogrind rule actions (switch profiles, stop grinding, etc.)"""
+	for action in actions:
+		var action_type = action.get("type", "")
+
+		match action_type:
+			"switch_profile":
+				var char_id = action.get("character_id", "")
+				var profile_idx = action.get("profile_index", 0)
+				if char_id != "":
+					AutobattleSystem.set_active_profile(char_id, profile_idx)
+					print("[AUTOGRIND] Switched %s to profile %d" % [char_id, profile_idx])
+
+			"stop_grinding":
+				stop_autogrind("Autogrind rule triggered stop")
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## AUTOGRIND PROFILE SAVE/LOAD
+## ═══════════════════════════════════════════════════════════════════════
+
+func _load_autogrind_profiles() -> void:
+	"""Load autogrind profiles from file"""
+	var save_path = "user://autogrind/profiles.json"
+
+	var dir = DirAccess.open("user://")
+	if dir and not dir.dir_exists("autogrind"):
+		dir.make_dir("autogrind")
+
+	if FileAccess.file_exists(save_path):
+		var file = FileAccess.open(save_path, FileAccess.READ)
+		if file:
+			var json_string = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(json_string) == OK:
+				var data = json.data
+				if data is Dictionary and data.has("profiles"):
+					autogrind_profiles = data
+					print("Loaded autogrind profiles (%d)" % data.get("profiles", []).size())
+					return
+
+	# No saved profiles, will create defaults on first access
+	autogrind_profiles = {}
+
+
+func _save_autogrind_profiles() -> void:
+	"""Save autogrind profiles to file"""
+	var save_path = "user://autogrind/profiles.json"
+
+	var dir = DirAccess.open("user://")
+	if dir and not dir.dir_exists("autogrind"):
+		dir.make_dir("autogrind")
+
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		var json_string = JSON.stringify(autogrind_profiles, "\t")
+		file.store_string(json_string)
+		file.close()
