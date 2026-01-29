@@ -10,7 +10,7 @@ class_name AutobattleGridEditor
 ## - A (Z): Edit selected cell (add action when on action area)
 ## - B (X): Delete current cell
 ## - L: Split action group OR add AND condition
-## - R: Cycle to next party member
+## - D-pad Left (at col 0): Enter portrait panel to switch characters
 ## - Start: Save and exit
 ## - Select: Toggle autobattle ON/OFF
 
@@ -23,7 +23,7 @@ var character_name: String = ""
 var char_script: Dictionary = {}
 var combatant: Combatant = null  # Reference to the actual combatant for ability lookup
 
-## Party for cycling between characters (R button)
+## Party for cycling between characters (portrait focus D-pad)
 var party: Array = []
 var current_party_index: int = 0
 
@@ -32,6 +32,7 @@ var rules: Array = []  # Array of rule rows
 var cursor_row: int = 0  # Current rule (row)
 var cursor_col: int = 0  # Current cell in row (conditions then actions)
 var is_editing: bool = false  # Currently editing a cell
+var _portrait_focused: bool = false  # True when cursor is on character portrait panel
 
 ## Visual elements
 var _title_label: Label
@@ -41,6 +42,7 @@ var _cursor: Control
 var _edit_modal: Control
 var _keyboard: Control = null  # VirtualKeyboard type
 const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
+const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 var _profile_label: Label
 var _stats_panel: Control
 
@@ -221,7 +223,7 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  R:Character"
+	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  \u25c0:Switch Char"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -283,19 +285,26 @@ func _build_stats_panel() -> void:
 	panel_bg.size = _stats_panel.size
 	_stats_panel.add_child(panel_bg)
 
-	# Character portrait placeholder
-	var portrait_bg = ColorRect.new()
-	portrait_bg.color = style.highlight_bg
-	portrait_bg.position = Vector2(4, 4)
-	portrait_bg.size = Vector2(40, 40)
-	_stats_panel.add_child(portrait_bg)
+	# Character portrait - use CharacterPortrait widget if customization available
+	var custom = combatant.customization if combatant else null
+	if custom:
+		var portrait = CharacterPortraitClass.new(custom, _get_job_id(), CharacterPortraitClass.PortraitSize.SMALL)
+		portrait.position = Vector2(4, 4)
+		_stats_panel.add_child(portrait)
+	else:
+		# Fallback to placeholder letter
+		var portrait_bg = ColorRect.new()
+		portrait_bg.color = style.highlight_bg
+		portrait_bg.position = Vector2(4, 4)
+		portrait_bg.size = Vector2(40, 40)
+		_stats_panel.add_child(portrait_bg)
 
-	var portrait_label = Label.new()
-	portrait_label.text = character_name.substr(0, 1)  # First letter
-	portrait_label.position = Vector2(14, 8)
-	portrait_label.add_theme_font_size_override("font_size", 24)
-	portrait_label.add_theme_color_override("font_color", style.text)
-	_stats_panel.add_child(portrait_label)
+		var portrait_label = Label.new()
+		portrait_label.text = character_name.substr(0, 1)
+		portrait_label.position = Vector2(14, 8)
+		portrait_label.add_theme_font_size_override("font_size", 24)
+		portrait_label.add_theme_color_override("font_color", style.text)
+		_stats_panel.add_child(portrait_label)
 
 	# Job name
 	var job_label = Label.new()
@@ -371,6 +380,18 @@ func _get_job_name() -> String:
 		"zack": return "Thief"
 		"vex": return "Black Mage"
 		_: return "Fighter"
+
+
+func _get_job_id() -> String:
+	"""Get job ID string for CharacterPortrait"""
+	if combatant and combatant.job:
+		return combatant.job.get("id", "fighter")
+	match character_id:
+		"hero": return "fighter"
+		"mira": return "white_mage"
+		"zack": return "thief"
+		"vex": return "black_mage"
+		_: return "fighter"
 
 
 func _update_status_label() -> void:
@@ -682,7 +703,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 
 	# Hint text
 	var label = Label.new()
-	label.text = "[+R]"
+	label.text = "[+A]"
 	label.position = Vector2(4, 4)
 	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 8)
 	label.add_theme_font_size_override("font_size", 11)
@@ -947,6 +968,43 @@ func _short_target(target: String) -> String:
 
 func _update_cursor() -> void:
 	"""Update cursor visual position"""
+	# Clear and redraw cursor
+	for child in _cursor.get_children():
+		child.queue_free()
+
+	# Portrait focus mode - draw cursor around portrait area
+	if _portrait_focused:
+		_cursor.visible = true
+		var portrait_pos = _stats_panel.position + Vector2(4, 4)
+		var portrait_size = Vector2(40, 40)
+		var border_width = 3
+		var cursor_color = Color.CYAN
+
+		var top = ColorRect.new()
+		top.color = cursor_color
+		top.position = portrait_pos - Vector2(border_width, border_width)
+		top.size = Vector2(portrait_size.x + border_width * 2, border_width)
+		_cursor.add_child(top)
+
+		var bottom = ColorRect.new()
+		bottom.color = cursor_color
+		bottom.position = portrait_pos + Vector2(-border_width, portrait_size.y)
+		bottom.size = Vector2(portrait_size.x + border_width * 2, border_width)
+		_cursor.add_child(bottom)
+
+		var left = ColorRect.new()
+		left.color = cursor_color
+		left.position = portrait_pos - Vector2(border_width, 0)
+		left.size = Vector2(border_width, portrait_size.y)
+		_cursor.add_child(left)
+
+		var right = ColorRect.new()
+		right.color = cursor_color
+		right.position = portrait_pos + Vector2(portrait_size.x, 0)
+		right.size = Vector2(border_width, portrait_size.y)
+		_cursor.add_child(right)
+		return
+
 	# Find the cell at current cursor position
 	var target_cell = _get_cell_at_cursor()
 	if not target_cell:
@@ -955,10 +1013,6 @@ func _update_cursor() -> void:
 		return
 
 	_cursor.visible = true
-
-	# Clear and redraw cursor
-	for child in _cursor.get_children():
-		child.queue_free()
 
 	var cell_pos = target_cell.global_position - _grid_container.global_position + _grid_container.position
 	# Get actual cell size from the cell (handles smaller empty_condition cells)
@@ -1227,8 +1281,8 @@ func save_and_close() -> void:
 	queue_free()
 
 
-func _cycle_character() -> void:
-	"""Cycle to the next party member (R button)"""
+func _cycle_character(direction: int = 1) -> void:
+	"""Cycle to the next/previous party member (D-pad up/down in portrait focus)"""
 	if party.size() < 2:
 		# No other characters to cycle to
 		SoundManager.play_ui("menu_error")
@@ -1237,8 +1291,8 @@ func _cycle_character() -> void:
 	# Save current character's script before switching
 	_save_script()
 
-	# Cycle to next character
-	current_party_index = (current_party_index + 1) % party.size()
+	# Cycle to next/previous character
+	current_party_index = (current_party_index + direction + party.size()) % party.size()
 	var next_member = party[current_party_index]
 
 	# Setup for new character
@@ -1321,6 +1375,34 @@ func _input(event: InputEvent) -> void:
 		# Edit modal handles input
 		return
 
+	# Portrait panel focus mode (character selection via D-pad)
+	if _portrait_focused:
+		if event.is_action_pressed("ui_up"):
+			_cycle_character(-1)
+			get_viewport().set_input_as_handled()
+			return
+		elif event.is_action_pressed("ui_down"):
+			_cycle_character(1)
+			get_viewport().set_input_as_handled()
+			return
+		elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_accept"):
+			_portrait_focused = false
+			_update_cursor()
+			SoundManager.play_ui("menu_move")
+			get_viewport().set_input_as_handled()
+			return
+		elif event.is_action_pressed("ui_left"):
+			SoundManager.play_ui("menu_error")
+			get_viewport().set_input_as_handled()
+			return
+		elif event.is_action_pressed("ui_cancel"):
+			_portrait_focused = false
+			_update_cursor()
+			SoundManager.play_ui("menu_move")
+			get_viewport().set_input_as_handled()
+			return
+		# Fall through for other inputs (save, toggle, etc.)
+
 	# D-Pad navigation
 	if event.is_action_pressed("ui_up"):
 		cursor_row = max(0, cursor_row - 1)
@@ -1337,8 +1419,13 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_left"):
-		cursor_col = max(0, cursor_col - 1)
-		_update_cursor()
+		if cursor_col == 0:
+			# Enter portrait panel focus mode for character switching
+			_portrait_focused = true
+			_update_cursor()
+		else:
+			cursor_col = max(0, cursor_col - 1)
+			_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
@@ -1374,11 +1461,6 @@ func _input(event: InputEvent) -> void:
 	# Shift+R - Rename current profile
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
 		_open_rename_profile()
-		get_viewport().set_input_as_handled()
-
-	# R trigger - Cycle to next party member
-	elif event.is_action_pressed("battle_advance"):  # R button
-		_cycle_character()
 		get_viewport().set_input_as_handled()
 
 	# Tab / Y - Toggle current row enabled/disabled

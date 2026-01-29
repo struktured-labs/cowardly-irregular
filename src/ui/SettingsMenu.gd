@@ -5,6 +5,7 @@ class_name SettingsMenu
 
 signal closed()
 signal settings_changed(setting: String, value: Variant)
+signal quit_to_title()
 
 ## Encounter rate presets (default 100%)
 const ENCOUNTER_PRESETS = [0.0, 0.25, 0.50, 0.75, 1.0, 1.5, 2.0]
@@ -213,9 +214,19 @@ func _build_ui() -> void:
 	panel.add_child(text_item)
 	_settings_items.append({"control": text_item, "type": "text_speed", "id": "text_speed"})
 
+	# Quit to Title button
+	var quit_item = _create_action_button(
+		"Quit to Title",
+		"Return to the title screen",
+		6
+	)
+	quit_item.position = Vector2(16, 428)
+	panel.add_child(quit_item)
+	_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
+
 	# Footer
 	var footer = Label.new()
-	footer.text = "←→: Adjust  B: Back"
+	footer.text = "←→: Adjust  A: Select  B: Back"
 	footer.position = Vector2(16, panel.size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -479,6 +490,46 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	return container
 
 
+func _create_action_button(label_text: String, description: String, index: int) -> Control:
+	"""Create an action button setting (press A to activate)"""
+	var container = Control.new()
+	container.size = Vector2(400, 50)
+
+	# Selection highlight
+	var highlight = ColorRect.new()
+	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
+	highlight.size = Vector2(400, 50)
+	highlight.name = "Highlight"
+	container.add_child(highlight)
+
+	# Label
+	var label = Label.new()
+	label.text = label_text
+	label.position = Vector2(8, 4)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))  # Reddish for quit action
+	container.add_child(label)
+
+	# Description
+	var desc = Label.new()
+	desc.text = description
+	desc.position = Vector2(8, 22)
+	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	container.add_child(desc)
+
+	# Action hint
+	var hint = Label.new()
+	hint.text = "[Press A]"
+	hint.position = Vector2(8, 36)
+	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_color_override("font_color", Color.YELLOW)
+	hint.name = "ActionHint"
+	container.add_child(hint)
+
+	return container
+
+
 func _update_toggle_display(index: int, is_on: bool) -> void:
 	"""Update toggle visual"""
 	if index >= _settings_items.size():
@@ -558,6 +609,11 @@ func _input(event: InputEvent) -> void:
 
 	elif event.is_action_pressed("ui_right"):
 		_adjust_setting(1)
+		get_viewport().set_input_as_handled()
+
+	# Confirm/Activate
+	elif event.is_action_pressed("ui_accept"):
+		_activate_setting()
 		get_viewport().set_input_as_handled()
 
 	# Close
@@ -701,6 +757,23 @@ func _save_text_speed() -> void:
 		GameState.text_speed = text_speed
 	settings_changed.emit("text_speed", text_speed)
 	print("[SETTINGS] Text speed set to %s" % text_speed)
+
+
+func _activate_setting() -> void:
+	"""Activate the currently selected setting (for action buttons)"""
+	if selected_index >= _settings_items.size():
+		return
+
+	var item = _settings_items[selected_index]
+	if item["type"] == "action":
+		if item["id"] == "quit_to_title":
+			if SoundManager:
+				SoundManager.play_ui("menu_select")
+			quit_to_title.emit()
+			queue_free()
+	elif item["type"] == "toggle":
+		# A button also toggles for convenience
+		_adjust_setting(1)
 
 
 func _close_settings() -> void:

@@ -8,11 +8,14 @@ const MenuSceneRes = preload("res://src/ui/MenuScene.tscn")
 const OverworldSceneRes = preload("res://src/exploration/OverworldScene.tscn")
 const CharacterCreationScreenClass = preload("res://src/ui/CharacterCreationScreen.gd")
 const CustomizationScript = preload("res://src/character/CharacterCustomization.gd")
+const TitleScreenClass = preload("res://src/ui/TitleScreen.gd")
 
 enum LoopState {
+	TITLE,
 	BATTLE,
 	MENU,
-	EXPLORATION
+	EXPLORATION,
+	AUTOGRIND
 }
 
 var current_state: LoopState = LoopState.EXPLORATION
@@ -47,10 +50,20 @@ var _current_terrain: String = "plains"  # Current terrain type for battle backg
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
 
+## Autogrind
+var _autogrind_controller: Node = null
+var _autogrind_ui: Control = null
+var _autogrind_ui_layer: CanvasLayer = null
+var _is_autogrinding: bool = false
+
 ## Character creation
 var _character_creation_screen: Control = null
 var _party_customizations: Array = []  # Store CharacterCustomization data
 var _first_launch: bool = true  # True if no save exists
+
+## Title screen
+var _title_screen: Control = null
+var _title_layer: CanvasLayer = null
 
 func _ready() -> void:
 	# Initialize equipment pool with extra items
@@ -59,13 +72,8 @@ func _ready() -> void:
 	# Check for existing save to determine if this is first launch
 	_first_launch = not _save_exists()
 
-	if _first_launch:
-		# Show character creation on first launch
-		_show_character_creation()
-	else:
-		# Create party from saved customizations and start normally
-		_create_party()
-		_start_exploration()
+	# Always show title screen first
+	_show_title_screen()
 
 	# Log startup
 	if DebugLogOverlay:
@@ -73,6 +81,19 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Block input handling during title screen or character creation
+	if current_state == LoopState.TITLE or _character_creation_screen:
+		return
+
+	# During autogrind, block editor/menu but allow B to stop
+	if current_state == LoopState.AUTOGRIND:
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			return  # UI handles its own input
+		if event.is_action_pressed("ui_cancel"):
+			_stop_autogrind("Manual stop")
+			get_viewport().set_input_as_handled()
+		return
+
 	# F5 = Open autobattle editor for current/first player
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
 		_toggle_autobattle_editor()
@@ -246,6 +267,7 @@ func _open_overworld_menu() -> void:
 	_overworld_menu.setup(party)
 	_overworld_menu.closed.connect(_on_overworld_menu_closed)
 	_overworld_menu.menu_action.connect(_on_overworld_menu_action)
+	_overworld_menu.quit_to_title.connect(_on_quit_to_title)
 	SoundManager.play_ui("menu_open")
 	print("Overworld menu opened")
 
@@ -264,6 +286,30 @@ func _on_overworld_menu_closed() -> void:
 		_exploration_scene.resume()
 
 
+func _on_quit_to_title() -> void:
+	"""Handle quit to title from overworld menu settings"""
+	print("[GAME] Returning to title screen")
+
+	# Clean up overworld menu
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		_overworld_menu.queue_free()
+		_overworld_menu = null
+	if _overworld_menu_layer and is_instance_valid(_overworld_menu_layer):
+		_overworld_menu_layer.queue_free()
+		_overworld_menu_layer = null
+
+	# Clean up exploration scene
+	if _exploration_scene and is_instance_valid(_exploration_scene):
+		_exploration_scene.queue_free()
+		_exploration_scene = null
+
+	# Clear party
+	party.clear()
+
+	# Show title screen
+	_show_title_screen()
+
+
 func _on_overworld_menu_action(action: String, target: Combatant) -> void:
 	"""Handle menu action from overworld menu"""
 	match action:
@@ -273,6 +319,10 @@ func _on_overworld_menu_action(action: String, target: Combatant) -> void:
 			if target:
 				var char_id = target.combatant_name.to_lower().replace(" ", "_")
 				_open_autobattle_for_character(char_id, target.combatant_name, target)
+		"autogrind":
+			# Close menu first, then open autogrind config UI
+			_on_overworld_menu_closed()
+			_open_autogrind_ui()
 
 
 func _open_autobattle_for_character(char_id: String, char_name: String, combatant: Combatant) -> void:
@@ -301,8 +351,88 @@ func _open_autobattle_for_character(char_id: String, char_name: String, combatan
 ## Character Creation
 
 func _save_exists() -> bool:
-	"""Check if a save file exists"""
-	return FileAccess.file_exists("user://save_data.json")
+	"""Check if a save file exists (new or legacy format)"""
+	# Check for new customization save
+	if FileAccess.file_exists("user://save_data.json"):
+		return true
+	# Check for legacy save format
+	if FileAccess.file_exists("user://saves/save_00.json"):
+		return true
+	return false
+
+
+## Title Screen
+
+func _show_title_screen() -> void:
+	"""Show the title screen"""
+	current_state = LoopState.TITLE
+
+	# Create title screen in its own layer
+	_title_layer = CanvasLayer.new()
+	_title_layer.layer = 100
+	add_child(_title_layer)
+
+	_title_screen = TitleScreenClass.new()
+	_title_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_title_layer.add_child(_title_screen)
+
+	# Connect signals
+	_title_screen.new_game_selected.connect(_on_title_new_game)
+	_title_screen.continue_selected.connect(_on_title_continue)
+	_title_screen.settings_selected.connect(_on_title_settings)
+
+	print("[GAME] Showing title screen")
+
+
+func _close_title_screen() -> void:
+	"""Close the title screen"""
+	if _title_screen and is_instance_valid(_title_screen):
+		_title_screen.queue_free()
+		_title_screen = null
+	if _title_layer and is_instance_valid(_title_layer):
+		_title_layer.queue_free()
+		_title_layer = null
+
+
+func _on_title_new_game() -> void:
+	"""Handle new game selected from title screen"""
+	print("[GAME] New Game selected")
+	_close_title_screen()
+	# Show character creation for new game
+	_show_character_creation()
+
+
+func _on_title_continue() -> void:
+	"""Handle continue selected from title screen"""
+	print("[GAME] Continue selected")
+	_close_title_screen()
+	# Load saved party and start exploration
+	_create_party()
+	_start_exploration()
+
+
+func _on_title_settings() -> void:
+	"""Handle settings selected from title screen"""
+	print("[GAME] Settings selected from title")
+	# Create settings menu overlay
+	var SettingsMenuClass = load("res://src/ui/SettingsMenu.gd")
+	if SettingsMenuClass:
+		var settings_layer = CanvasLayer.new()
+		settings_layer.layer = 110  # Above title screen
+		add_child(settings_layer)
+
+		var settings_menu = SettingsMenuClass.new()
+		settings_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+		settings_layer.add_child(settings_menu)
+
+		# Connect close signal
+		settings_menu.closed.connect(func():
+			settings_layer.queue_free()
+			# Rebuild title menu in case settings changed (e.g., save deleted)
+			if _title_screen and is_instance_valid(_title_screen):
+				if _title_screen.has_method("_build_menu"):
+					_title_screen._build_menu()
+		)
 
 
 func _show_character_creation() -> void:
@@ -385,6 +515,9 @@ func _create_party_from_customizations(customizations: Array) -> void:
 		})
 		add_child(member)
 
+		# Store customization reference for portraits
+		member.customization = custom
+
 		# Apply personality stat bonus
 		custom.apply_stat_bonus(member)
 
@@ -453,6 +586,9 @@ func _create_party() -> void:
 	"""Create the persistent party"""
 	party.clear()
 
+	# Get default customizations
+	var default_customs = CustomizationScript.create_default_party_with_script(CustomizationScript)
+
 	# Create Hero (Fighter)
 	var hero = Combatant.new()
 	hero.initialize({
@@ -465,6 +601,7 @@ func _create_party() -> void:
 		"speed": 12
 	})
 	add_child(hero)
+	hero.customization = default_customs[0] if default_customs.size() > 0 else null
 	JobSystem.assign_job(hero, "fighter")
 	EquipmentSystem.equip_weapon(hero, "iron_sword")
 	EquipmentSystem.equip_armor(hero, "leather_armor")
@@ -491,6 +628,7 @@ func _create_party() -> void:
 		"speed": 14
 	})
 	add_child(mira)
+	mira.customization = default_customs[1] if default_customs.size() > 1 else null
 	JobSystem.assign_job(mira, "white_mage")
 	EquipmentSystem.equip_weapon(mira, "oak_staff")
 	EquipmentSystem.equip_armor(mira, "cloth_robe")
@@ -513,6 +651,7 @@ func _create_party() -> void:
 		"speed": 22
 	})
 	add_child(zack)
+	zack.customization = default_customs[2] if default_customs.size() > 2 else null
 	JobSystem.assign_job(zack, "thief")
 	EquipmentSystem.equip_weapon(zack, "iron_dagger")
 	EquipmentSystem.equip_armor(zack, "thief_garb")
@@ -535,6 +674,7 @@ func _create_party() -> void:
 		"speed": 12
 	})
 	add_child(vex)
+	vex.customization = default_customs[3] if default_customs.size() > 3 else null
 	JobSystem.assign_job(vex, "black_mage")
 	EquipmentSystem.equip_weapon(vex, "shadow_rod")
 	EquipmentSystem.equip_armor(vex, "dark_robe")
@@ -665,14 +805,20 @@ func _start_exploration() -> void:
 	if exploration_scene.has_method("spawn_player_at"):
 		exploration_scene.spawn_player_at(_spawn_point)
 
-	# Set player job based on party leader
-	if party.size() > 0 and exploration_scene.has_method("set_player_job"):
+	# Set player appearance based on party leader
+	if party.size() > 0:
+		var leader = party[0]
 		var leader_job = "fighter"
-		if party[0].job and party[0].job is Dictionary:
-			leader_job = party[0].job.get("id", "fighter")
-		elif party[0].job is String:
-			leader_job = party[0].job
-		exploration_scene.set_player_job(leader_job)
+		if leader.job and leader.job is Dictionary:
+			leader_job = leader.job.get("id", "fighter")
+		elif leader.job is String:
+			leader_job = leader.job
+
+		# Try the new appearance method first, fall back to job-only
+		if exploration_scene.has_method("set_player_appearance"):
+			exploration_scene.set_player_appearance(leader)
+		elif exploration_scene.has_method("set_player_job"):
+			exploration_scene.set_player_job(leader_job)
 
 	# Connect signals
 	if exploration_scene.has_signal("battle_triggered"):
@@ -971,3 +1117,206 @@ func unequip_to_pool(combatant: Combatant, slot: String) -> bool:
 		return true
 
 	return false
+
+
+## Autogrind System
+
+func _open_autogrind_ui() -> void:
+	"""Open the autogrind configuration UI overlay"""
+	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		return  # Already open
+
+	# Pause exploration
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
+	# Create UI overlay in CanvasLayer
+	_autogrind_ui_layer = CanvasLayer.new()
+	_autogrind_ui_layer.layer = 50
+	add_child(_autogrind_ui_layer)
+
+	var AutogrindUIClass = load("res://src/ui/autogrind/AutogrindUI.gd")
+	_autogrind_ui = AutogrindUIClass.new()
+	_autogrind_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_autogrind_ui_layer.add_child(_autogrind_ui)
+
+	# Get region name from current map
+	var region_name = _current_map_id.replace("_", " ").capitalize()
+	_autogrind_ui.setup(party, region_name)
+
+	# Connect signals
+	_autogrind_ui.closed.connect(_on_autogrind_ui_closed)
+	_autogrind_ui.grind_requested.connect(_start_autogrind)
+	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
+
+	SoundManager.play_ui("menu_open")
+	print("[AUTOGRIND] Config UI opened")
+
+
+func _on_autogrind_ui_closed() -> void:
+	"""Handle autogrind UI close"""
+	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		_autogrind_ui.queue_free()
+		_autogrind_ui = null
+	if _autogrind_ui_layer and is_instance_valid(_autogrind_ui_layer):
+		_autogrind_ui_layer.queue_free()
+		_autogrind_ui_layer = null
+
+	# If not grinding, resume exploration
+	if not _is_autogrinding:
+		if _exploration_scene and _exploration_scene.has_method("resume"):
+			_exploration_scene.resume()
+
+
+func _start_autogrind(config: Dictionary) -> void:
+	"""Start the autogrind session"""
+	current_state = LoopState.AUTOGRIND
+	_is_autogrinding = true
+
+	# Create controller
+	var AutogrindControllerClass = load("res://src/autogrind/AutogrindController.gd")
+	_autogrind_controller = AutogrindControllerClass.new()
+	add_child(_autogrind_controller)
+
+	# Connect controller signals
+	_autogrind_controller.grind_battle_requested.connect(_on_grind_battle_requested)
+	_autogrind_controller.grind_complete.connect(_on_grind_complete)
+
+	# Start grinding
+	_autogrind_controller.start_grind(party, config, _current_terrain)
+
+	print("[AUTOGRIND] Session started")
+
+
+func _on_autogrind_stop_requested() -> void:
+	"""Handle stop request from UI"""
+	_stop_autogrind("Manual stop")
+
+
+func _stop_autogrind(reason: String) -> void:
+	"""Stop the autogrind session"""
+	if not _is_autogrinding:
+		return
+
+	_is_autogrinding = false
+
+	# Stop controller
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.stop_grind(reason)
+		_autogrind_controller.queue_free()
+		_autogrind_controller = null
+
+	# Update UI state
+	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		_autogrind_ui.set_grinding(false)
+
+	# Reset engine speed
+	Engine.time_scale = 1.0
+
+	print("[AUTOGRIND] Session stopped: %s" % reason)
+
+	# Return to exploration if UI is also closed
+	if not _autogrind_ui or not is_instance_valid(_autogrind_ui):
+		_return_to_exploration()
+	else:
+		current_state = LoopState.EXPLORATION
+
+
+func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
+	"""Handle battle request from autogrind controller"""
+	# Save player position before battle
+	if _exploration_scene:
+		var player = _exploration_scene.get("player")
+		if player:
+			_player_position = player.position
+
+	# Set terrain
+	_current_terrain = terrain
+
+	# Start battle without transition animation (fast chain)
+	await _start_autogrind_battle(enemies)
+
+
+func _start_autogrind_battle(enemy_data: Array) -> void:
+	"""Start a battle scene with pre-configured autogrind enemies"""
+	# Remove old scene
+	if current_scene:
+		current_scene.queue_free()
+		await current_scene.tree_exited
+
+	# Create battle scene
+	var loaded_res = load("res://src/battle/BattleScene.tscn")
+	var battle_scene = loaded_res.instantiate()
+
+	# Configure for autogrind
+	battle_scene.managed_by_game_loop = true
+	battle_scene.set_party(party)
+	battle_scene.autogrind_enemy_data = enemy_data
+	battle_scene.set_terrain(_current_terrain)
+
+	add_child(battle_scene)
+	current_scene = battle_scene
+
+	# Wait for scene to be ready
+	await get_tree().process_frame
+
+	# Connect to battle end with autogrind handler
+	BattleManager.battle_ended.connect(_on_autogrind_battle_ended, CONNECT_ONE_SHOT)
+
+
+func _on_autogrind_battle_ended(victory: bool) -> void:
+	"""Handle battle end during autogrind"""
+	if not _is_autogrinding:
+		# Autogrind was stopped during battle
+		_on_battle_ended(victory)
+		return
+
+	# Heal party between battles
+	var exp_gained = 0
+	var items_gained = {}
+
+	if victory:
+		# Calculate base EXP from defeated enemies (estimate from enemy stats)
+		for enemy in BattleManager.enemy_party:
+			if enemy is Combatant:
+				exp_gained += int(enemy.max_hp * 0.5 + enemy.attack * 2)
+
+		# Heal party between battles (rest bonus)
+		for member in party:
+			var heal_amount = int(member.max_hp * 0.25)
+			member.heal(heal_amount)
+			var mp_restore = int(member.max_mp * 0.25)
+			member.restore_mp(mp_restore)
+			member.current_ap = 0
+
+	# Forward to controller
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
+
+		# Update UI with latest stats
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			_autogrind_ui.update_stats(_autogrind_controller.get_grind_stats())
+			_autogrind_ui.update_party_status()
+
+
+func _on_grind_complete(reason: String) -> void:
+	"""Handle autogrind session completion"""
+	_is_autogrinding = false
+	current_state = LoopState.EXPLORATION
+
+	# Clean up controller
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.queue_free()
+		_autogrind_controller = null
+
+	# Reset engine speed
+	Engine.time_scale = 1.0
+
+	# Update UI
+	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		_autogrind_ui.set_grinding(false)
+	else:
+		# If UI is closed, return to exploration
+		_return_to_exploration()
+
+	print("[AUTOGRIND] Grind complete: %s" % reason)

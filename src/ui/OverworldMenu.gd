@@ -5,8 +5,11 @@ class_name OverworldMenu
 ## Shows party stats on left, menu options on right
 ## Triggered by X button on overworld
 
+const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
+
 signal closed()
 signal menu_action(action: String, target: Combatant)
+signal quit_to_title()
 
 ## Menu options
 const MENU_OPTIONS = [
@@ -15,6 +18,7 @@ const MENU_OPTIONS = [
 	{"id": "status", "label": "Status", "enabled": true},
 	{"id": "abilities", "label": "Abilities", "enabled": true},
 	{"id": "autobattle", "label": "Autobattle", "enabled": true},
+	{"id": "autogrind", "label": "Autogrind", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": false},  # Grayed out for now
 	{"id": "load", "label": "Load", "enabled": false},
 	{"id": "settings", "label": "Settings", "enabled": true},
@@ -39,13 +43,15 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 
 
 func _ready() -> void:
-	_build_ui()
+	# Defer UI build to ensure size is set
+	call_deferred("_build_ui")
 
 
 func setup(game_party: Array) -> void:
 	"""Initialize menu with party data"""
 	party = game_party
-	_build_ui()
+	# Defer rebuild to ensure size is set
+	call_deferred("_build_ui")
 
 
 func _build_ui() -> void:
@@ -56,6 +62,11 @@ func _build_ui() -> void:
 	_menu_labels.clear()
 	_party_panels.clear()
 
+	# Get viewport size for layout calculations
+	var viewport_size = get_viewport().get_visible_rect().size
+	if viewport_size.x == 0 or viewport_size.y == 0:
+		viewport_size = Vector2(640, 480)  # Fallback
+
 	# Full screen background
 	var bg = ColorRect.new()
 	bg.color = BG_COLOR
@@ -63,21 +74,23 @@ func _build_ui() -> void:
 	add_child(bg)
 
 	# Party panel (left side - 45% of screen)
-	var party_panel = _create_party_panel()
+	var party_panel_size = Vector2(viewport_size.x * 0.45 - 24, viewport_size.y - 80)
+	var party_panel = _create_party_panel(party_panel_size)
 	party_panel.position = Vector2(16, 16)
-	party_panel.size = Vector2(size.x * 0.45 - 24, size.y - 80)
+	party_panel.size = party_panel_size
 	add_child(party_panel)
 
 	# Menu options (right side - 55% of screen)
-	var menu_panel = _create_menu_panel()
-	menu_panel.position = Vector2(size.x * 0.45 + 8, 16)
-	menu_panel.size = Vector2(size.x * 0.55 - 24, size.y - 80)
+	var menu_panel_size = Vector2(viewport_size.x * 0.55 - 24, viewport_size.y - 80)
+	var menu_panel = _create_menu_panel(menu_panel_size)
+	menu_panel.position = Vector2(viewport_size.x * 0.45 + 8, 16)
+	menu_panel.size = menu_panel_size
 	add_child(menu_panel)
 
 	# Footer help text
 	var footer = Label.new()
 	footer.text = "↑↓: Select  A: Confirm  B/X: Close  ←→: Character"
-	footer.position = Vector2(16, size.y - 32)
+	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
@@ -85,7 +98,7 @@ func _build_ui() -> void:
 	_update_selection()
 
 
-func _create_party_panel() -> Control:
+func _create_party_panel(panel_size: Vector2) -> Control:
 	"""Create the party status panel"""
 	var panel = Control.new()
 
@@ -113,7 +126,7 @@ func _create_party_panel() -> Control:
 		var member = party[i]
 		var card = _create_character_card(member, i)
 		card.position = Vector2(4, y_offset + i * (card_height + 8))
-		card.size = Vector2(panel_bg.size.x - 8, card_height)
+		card.size = Vector2(panel_size.x - 8, card_height)
 		panel.add_child(card)
 		_party_panels.append(card)
 
@@ -131,19 +144,12 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	card_bg.name = "Background"
 	card.add_child(card_bg)
 
-	# Portrait placeholder (left)
-	var portrait = ColorRect.new()
-	portrait.color = _get_job_color(member)
+	# Character portrait (left)
+	var job_id = member.job.get("id", "fighter") if member.job else "fighter"
+	var custom = member.get("customization") if "customization" in member else null
+	var portrait = CharacterPortraitClass.new(custom, job_id, CharacterPortraitClass.PortraitSize.MEDIUM)
 	portrait.position = Vector2(4, 4)
-	portrait.size = Vector2(48, 48)
 	card.add_child(portrait)
-
-	var initial = Label.new()
-	initial.text = member.combatant_name.substr(0, 1)
-	initial.position = Vector2(16, 8)
-	initial.add_theme_font_size_override("font_size", 28)
-	initial.add_theme_color_override("font_color", TEXT_COLOR)
-	card.add_child(initial)
 
 	# Name and job
 	var name_label = Label.new()
@@ -226,7 +232,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	return container
 
 
-func _create_menu_panel() -> Control:
+func _create_menu_panel(_panel_size: Vector2) -> Control:
 	"""Create the menu options panel"""
 	var panel = Control.new()
 
@@ -435,6 +441,10 @@ func _handle_menu_action(action_id: String) -> void:
 			print("[MENU] Autobattle editor for %s" % (target.combatant_name if target else "party"))
 			menu_action.emit("autobattle", target)
 			_close_menu()
+		"autogrind":
+			print("[MENU] Autogrind session config")
+			menu_action.emit("autogrind", null)
+			_close_menu()
 		"save":
 			print("[MENU] Save - not yet implemented")
 		"load":
@@ -450,11 +460,18 @@ func _open_settings() -> void:
 		var settings = SettingsMenuScript.new()
 		settings.size = size
 		settings.closed.connect(_on_settings_closed)
+		settings.quit_to_title.connect(_on_quit_to_title)
 		add_child(settings)
 		# Hide main menu while settings is open
 		for child in get_children():
 			if child != settings:
 				child.visible = false
+
+
+func _on_quit_to_title() -> void:
+	"""Handle quit to title request from settings"""
+	quit_to_title.emit()
+	queue_free()
 
 
 func _on_settings_closed() -> void:
