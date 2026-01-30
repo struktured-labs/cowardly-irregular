@@ -230,7 +230,7 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:Toggle  Sh+Tab:Profile  Sh+R:Rename  Sel:Auto  Start:Save"
+	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -430,12 +430,6 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 
 	var x_offset = 0
 
-	# Draw enable/disable toggle at start of row
-	var toggle = _create_row_toggle(row_idx, is_enabled)
-	toggle.position = Vector2(x_offset, y_offset)
-	_grid_container.add_child(toggle)
-	x_offset += 24  # Small toggle width
-
 	# Draw conditions (AND chain) with proper spacing for connectors
 	for i in range(conditions.size()):
 		var cell = _create_condition_cell(row_idx, i, conditions[i])
@@ -519,6 +513,12 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 	var row_btn = _create_row_insert_hint(row_idx)
 	row_btn.position = Vector2(x_offset, y_offset)
 	_grid_container.add_child(row_btn)
+	x_offset += 48  # Row insert button width + padding
+
+	# Row toggle cell [ON]/[OFF] at the very end
+	var toggle_cell = _create_row_toggle_cell(row_idx, is_enabled)
+	toggle_cell.position = Vector2(x_offset, y_offset)
+	_grid_container.add_child(toggle_cell)
 
 
 func _group_actions(actions: Array) -> Array:
@@ -744,39 +744,61 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	return cell
 
 
-func _create_row_toggle(row_idx: int, is_enabled: bool) -> Control:
-	"""Create a small toggle checkbox for enabling/disabling the row"""
-	var toggle = Control.new()
-	toggle.custom_minimum_size = Vector2(20, CELL_HEIGHT)
-	toggle.set_meta("cell_type", "toggle")
-	toggle.set_meta("row", row_idx)
-	toggle.set_meta("index", -1)  # Special index for toggle
+func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
+	"""Create a selectable toggle cell [ON]/[OFF] for enabling/disabling the row"""
+	var cell = Control.new()
+	cell.custom_minimum_size = Vector2(50, CELL_HEIGHT)
+	cell.set_meta("cell_type", "row_toggle")
+	cell.set_meta("row", row_idx)
+	cell.set_meta("index", -3)  # Special index for toggle cell (after row_insert which is -2)
 
-	# Checkbox visual
-	var check_bg = ColorRect.new()
-	check_bg.color = Color(0.15, 0.15, 0.2)
-	check_bg.position = Vector2(2, CELL_HEIGHT / 2 - 8)
-	check_bg.size = Vector2(16, 16)
-	toggle.add_child(check_bg)
-
-	# Checkmark if enabled
+	# Background with color based on state
+	var bg = ColorRect.new()
 	if is_enabled:
-		var checkmark = Label.new()
-		checkmark.text = "✓"
-		checkmark.position = Vector2(3, CELL_HEIGHT / 2 - 10)
-		checkmark.add_theme_font_size_override("font_size", 14)
-		checkmark.add_theme_color_override("font_color", Color.GREEN)
-		toggle.add_child(checkmark)
+		bg.color = Color(0.15, 0.35, 0.15)  # Dark green
 	else:
-		# X mark if disabled
-		var xmark = Label.new()
-		xmark.text = "✗"
-		xmark.position = Vector2(4, CELL_HEIGHT / 2 - 10)
-		xmark.add_theme_font_size_override("font_size", 14)
-		xmark.add_theme_color_override("font_color", Color.RED)
-		toggle.add_child(xmark)
+		bg.color = Color(0.35, 0.15, 0.15)  # Dark red
+	bg.size = Vector2(50, CELL_HEIGHT)
+	cell.add_child(bg)
 
-	return toggle
+	# Border
+	var border_color = Color.GREEN if is_enabled else Color.RED
+	var border_top = ColorRect.new()
+	border_top.color = border_color
+	border_top.size = Vector2(50, 2)
+	border_top.position = Vector2(0, 0)
+	cell.add_child(border_top)
+
+	var border_bottom = ColorRect.new()
+	border_bottom.color = border_color.darkened(0.3)
+	border_bottom.size = Vector2(50, 2)
+	border_bottom.position = Vector2(0, CELL_HEIGHT - 2)
+	cell.add_child(border_bottom)
+
+	var border_left = ColorRect.new()
+	border_left.color = border_color
+	border_left.size = Vector2(2, CELL_HEIGHT)
+	border_left.position = Vector2(0, 0)
+	cell.add_child(border_left)
+
+	var border_right = ColorRect.new()
+	border_right.color = border_color.darkened(0.3)
+	border_right.size = Vector2(2, CELL_HEIGHT)
+	border_right.position = Vector2(48, 0)
+	cell.add_child(border_right)
+
+	# Label text
+	var label = Label.new()
+	label.text = "[ON]" if is_enabled else "[OFF]"
+	label.position = Vector2(4, 8)
+	label.size = Vector2(42, CELL_HEIGHT - 16)
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color.LIME if is_enabled else Color(1.0, 0.4, 0.4))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cell.add_child(label)
+
+	return cell
 
 
 func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
@@ -1106,12 +1128,21 @@ func _get_cell_at_cursor() -> Control:
 					# Empty action slot (after all groups)
 					return child
 				elif cell_type == "row_insert":
-					# [++] button is at the very end
+					# [++] button is before the toggle
 					var last_is_defer = actions.size() > 0 and actions[-1].get("type") == "defer"
 					var expected_groups = action_groups.size()
 					if actions.size() < MAX_ACTIONS and not last_is_defer:
 						expected_groups += 1  # Account for empty slot
 					if group_idx == expected_groups:
+						return child
+				elif cell_type == "row_toggle":
+					# [ON]/[OFF] toggle is at the very end
+					var last_is_defer = actions.size() > 0 and actions[-1].get("type") == "defer"
+					var expected_groups = action_groups.size()
+					if actions.size() < MAX_ACTIONS and not last_is_defer:
+						expected_groups += 1  # Account for empty slot
+					# Toggle is one past the row_insert button
+					if group_idx == expected_groups + 1:
 						return child
 
 	return null
@@ -1147,8 +1178,8 @@ func _get_max_col_for_row(row_idx: int) -> int:
 	if actions.size() < MAX_ACTIONS and not last_is_defer:
 		action_slots += 1  # Include empty slot
 
-	# +1 for the [++] row insert button at the end
-	return condition_slots + action_slots
+	# +1 for the [++] row insert button, +1 for the [ON]/[OFF] toggle cell
+	return condition_slots + action_slots + 1
 
 
 func _is_on_condition_cell() -> bool:
@@ -1476,20 +1507,12 @@ func _input(event: InputEvent) -> void:
 			_cycle_condition_operator()
 		get_viewport().set_input_as_handled()
 
-	# Gamepad X button (top-right, index 3) - Cycle operator
+	# Gamepad Y button - Cycle operator on condition cells ONLY
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
 		if _is_on_condition_cell():
 			_cycle_condition_operator()
 		else:
-			# If not on condition, toggle row instead
-			_toggle_row_enabled()
-			SoundManager.play_ui("menu_select")
-		get_viewport().set_input_as_handled()
-
-	# Gamepad Y button (top-left, index 2) - Toggle row enabled
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
-		_toggle_row_enabled()
-		SoundManager.play_ui("menu_select")
+			SoundManager.play_ui("menu_error")
 		get_viewport().set_input_as_handled()
 
 	# W/S keys - Adjust condition value when on condition cell
@@ -1565,6 +1588,8 @@ func _edit_current_cell() -> void:
 		_add_and_condition()
 	elif cell_type == "row_insert":
 		_insert_row_after(cursor_row)
+	elif cell_type == "row_toggle":
+		_toggle_row_enabled()
 
 	SoundManager.play_ui("menu_select")
 

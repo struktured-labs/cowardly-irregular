@@ -218,7 +218,10 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			return false
 
 		"turn":
-			return _compare_str(BattleManager.current_round, op, value)
+			var battle_mgr = get_node_or_null("/root/BattleManager")
+			if battle_mgr:
+				return _compare_str(battle_mgr.current_round, op, value)
+			return false
 
 		"enemy_count":
 			var enemies = _get_enemies_for(combatant)
@@ -342,8 +345,9 @@ func _get_item_count(combatant: Combatant, item_id: String) -> int:
 	if combatant.has_method("get_item_count"):
 		return combatant.get_item_count(item_id)
 	# Fallback: check GameState inventory
-	if GameState and GameState.has_method("get_item_count"):
-		return GameState.get_item_count(item_id)
+	var game_state = get_node_or_null("/root/GameState")
+	if game_state and game_state.has_method("get_item_count"):
+		return game_state.get_item_count(item_id)
 	return 0
 
 
@@ -874,7 +878,10 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 			return false
 
 		ConditionType.TURN_COUNT:
-			return _compare(BattleManager.current_round, compare_op, value)
+			var battle_mgr2 = get_node_or_null("/root/BattleManager")
+			if battle_mgr2:
+				return _compare(battle_mgr2.current_round, compare_op, value)
+			return false
 
 		ConditionType.ENEMY_COUNT:
 			var enemies = _get_enemies_for(combatant)
@@ -1006,15 +1013,21 @@ func _action_type_to_string(action_type: ActionType) -> String:
 ## Helper functions
 func _get_enemies_for(combatant: Combatant) -> Array[Combatant]:
 	"""Get alive enemies for a combatant"""
-	var is_player = combatant in BattleManager.player_party
-	var enemy_party = BattleManager.enemy_party if is_player else BattleManager.player_party
+	var bm = get_node_or_null("/root/BattleManager")
+	if not bm:
+		return []
+	var is_player = combatant in bm.player_party
+	var enemy_party = bm.enemy_party if is_player else bm.player_party
 	return enemy_party.filter(func(e): return e.is_alive)
 
 
 func _get_allies_for(combatant: Combatant) -> Array[Combatant]:
 	"""Get alive allies for a combatant"""
-	var is_player = combatant in BattleManager.player_party
-	var ally_party = BattleManager.player_party if is_player else BattleManager.enemy_party
+	var bm = get_node_or_null("/root/BattleManager")
+	if not bm:
+		return []
+	var is_player = combatant in bm.player_party
+	var ally_party = bm.player_party if is_player else bm.enemy_party
 	return ally_party.filter(func(a): return a.is_alive)
 
 

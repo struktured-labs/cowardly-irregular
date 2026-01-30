@@ -5,6 +5,12 @@
 			"name": "Bronze Sword",
 			"description": "A basic bronze sword",
 			"cost": 150,
+			"weapon_type": "sword",
+			"visual": {
+				"blade_color": [0.75, 0.55, 0.35],
+				"blade_light": [0.9, 0.7, 0.5],
+				"blade_dark": [0.5, 0.35, 0.2]
+			},
 			"stat_mods": {
 				"attack": 5
 			}
@@ -14,6 +20,12 @@
 			"name": "Iron Sword",
 			"description": "A sturdy iron blade",
 			"cost": 500,
+			"weapon_type": "sword",
+			"visual": {
+				"blade_color": [0.7, 0.7, 0.8],
+				"blade_light": [0.95, 0.95, 1.0],
+				"blade_dark": [0.5, 0.5, 0.6]
+			},
 			"stat_mods": {
 				"attack": 12
 			}
@@ -23,6 +35,14 @@
 			"name": "Flame Sword",
 			"description": "A blade wreathed in flames",
 			"cost": 1800,
+			"weapon_type": "sword",
+			"visual": {
+				"blade_color": [0.9, 0.4, 0.2],
+				"blade_light": [1.0, 0.8, 0.4],
+				"blade_dark": [0.6, 0.2, 0.1],
+				"glow": true,
+				"glow_color": [1.0, 0.5, 0.2]
+			},
 			"stat_mods": {
 				"attack": 18,
 				"magic": 5
@@ -36,6 +56,11 @@
 			"name": "Wooden Staff",
 			"description": "A simple wooden staff",
 			"cost": 150,
+			"weapon_type": "staff",
+			"visual": {
+				"wood_color": [0.5, 0.3, 0.2],
+				"gem_color": [0.3, 0.8, 1.0]
+			},
 			"stat_mods": {
 				"magic": 8,
 				"attack": 2
@@ -46,6 +71,11 @@
 			"name": "Oak Staff",
 			"description": "A staff carved from sturdy oak",
 			"cost": 600,
+			"weapon_type": "staff",
+			"visual": {
+				"wood_color": [0.4, 0.25, 0.15],
+				"gem_color": [0.2, 1.0, 0.4]
+			},
 			"stat_mods": {
 				"magic": 12,
 				"attack": 3,
@@ -57,6 +87,13 @@
 			"name": "Crystal Staff",
 			"description": "A staff topped with a magic crystal",
 			"cost": 2000,
+			"weapon_type": "staff",
+			"visual": {
+				"wood_color": [0.6, 0.6, 0.7],
+				"gem_color": [0.9, 0.5, 1.0],
+				"glow": true,
+				"glow_color": [0.8, 0.4, 1.0]
+			},
 			"stat_mods": {
 				"magic": 20,
 				"max_mp": 15
@@ -67,6 +104,11 @@
 			"name": "Iron Dagger",
 			"description": "A quick stabbing blade",
 			"cost": 250,
+			"weapon_type": "dagger",
+			"visual": {
+				"blade_color": [0.8, 0.8, 0.9],
+				"blade_light": [1.0, 1.0, 1.0]
+			},
 			"stat_mods": {
 				"attack": 8,
 				"speed": 5
@@ -77,9 +119,93 @@
 			"name": "Shadow Rod",
 			"description": "A rod infused with dark energy",
 			"cost": 800,
+			"weapon_type": "staff",
+			"visual": {
+				"wood_color": [0.2, 0.1, 0.25],
+				"gem_color": [0.5, 0.2, 0.8],
+				"glow": true,
+				"glow_color": [0.4, 0.1, 0.6]
+			},
 			"stat_mods": {
 				"magic": 15,
 				"attack": 2
+			}
+		},
+		"ice_blade": {
+			"id": "ice_blade",
+			"name": "Ice Blade",
+			"description": "A sword of frozen crystal",
+			"cost": 1600,
+			"weapon_type": "sword",
+			"visual": {
+				"blade_color": [0.5, 0.8, 1.0],
+				"blade_light": [0.8, 0.95, 1.0],
+				"blade_dark": [0.3, 0.5, 0.7],
+				"glow": true,
+				"glow_color": [0.6, 0.9, 1.0]
+			},
+			"stat_mods": {
+				"attack": 16,
+				"magic": 3
+			},
+			"special_effects": {
+				"ice_damage_bonus": 1.5
+			}
+		},
+		"poison_dagger": {
+			"id": "poison_dagger",
+			"name": "Poison Dagger",
+			"description": "A blade dripping with venom",
+			"cost": 700,
+			"weapon_type": "dagger",
+			"visual": {
+				"blade_color": [0.4, 0.7, 0.3],
+				"blade_light": [0.6, 0.9, 0.4]
+			},
+			"stat_mods": {
+				"attack": 10,
+				"speed": 3
+			},
+			"special_effects": {
+				"poison_chance": 0.25
+			}
+		},
+		"holy_staff": {
+			"id": "holy_staff",
+			"name": "Holy Staff",
+			"description": "A blessed staff radiating divine light",
+			"cost": 2500,
+			"weapon_type": "staff",
+			"visual": {
+				"wood_color": [0.9, 0.85, 0.7],
+				"gem_color": [1.0, 0.95, 0.6],
+				"glow": true,
+				"glow_color": [1.0, 1.0, 0.8]
+			},
+			"stat_mods": {
+				"magic": 25,
+				"max_mp": 20
+			},
+			"special_effects": {
+				"holy_damage_bonus": 1.5
+			}
+		},
+		"assassin_blade": {
+			"id": "assassin_blade",
+			"name": "Assassin Blade",
+			"description": "A wickedly curved obsidian dagger",
+			"cost": 1200,
+			"weapon_type": "dagger",
+			"visual": {
+				"blade_color": [0.15, 0.15, 0.2],
+				"blade_light": [0.3, 0.3, 0.4]
+			},
+			"stat_mods": {
+				"attack": 14,
+				"speed": 8
+			},
+			"special_effects": {
+				"critical_bonus": 0.15
 			}
 		}
 	},

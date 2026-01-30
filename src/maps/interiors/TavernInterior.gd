@@ -33,8 +33,13 @@ const ANIM_SPEED: float = 0.15
 var spawn_points: Dictionary = {
 	"entrance": Vector2(8, 10),
 	"stage": Vector2(12, 4),
-	"bar": Vector2(4, 4)
+	"bar": Vector2(4, 4),
+	"piano": Vector2(14, 10)
 }
+
+## Piano state
+var _piano_sprite: Sprite2D
+var _piano_playing: bool = false
 
 ## Floor layout
 ## . = floor, W = wall, B = bar counter, S = stage, T = table, D = door
@@ -160,6 +165,9 @@ func _setup_decorations() -> void:
 
 	# Tables
 	_create_tables()
+
+	# Piano in corner
+	_create_piano()
 
 	# Ambient lighting (warm tavern glow)
 	var light = PointLight2D.new()
@@ -303,6 +311,207 @@ func _create_tables() -> void:
 		table.texture = ImageTexture.create_from_image(img)
 		table.position = pos * TILE_SIZE
 		decorations.add_child(table)
+
+
+func _create_piano() -> void:
+	"""Create an upright piano in the corner"""
+	var piano = Node2D.new()
+	piano.name = "Piano"
+
+	# Piano sprite
+	_piano_sprite = Sprite2D.new()
+	var img = Image.create(TILE_SIZE * 2, TILE_SIZE * 2, false, Image.FORMAT_RGBA8)
+
+	var piano_black = Color(0.1, 0.08, 0.06)
+	var piano_brown = Color(0.25, 0.15, 0.10)
+	var keys_white = Color(0.95, 0.93, 0.88)
+	var keys_black = Color(0.08, 0.06, 0.04)
+	var gold_trim = Color(0.75, 0.6, 0.25)
+
+	# Piano body
+	for y in range(8, 56):
+		for x in range(4, 60):
+			# Main body
+			var color = piano_black
+			# Wood panel detail
+			if x > 8 and x < 56 and y > 12 and y < 50:
+				color = piano_brown
+			# Gold trim
+			if y == 8 or y == 55 or x == 4 or x == 59:
+				color = gold_trim
+			img.set_pixel(x, y, color)
+
+	# Piano keys (visible at front)
+	var key_y = 44
+	for i in range(14):  # 2 octaves
+		var key_x = 8 + i * 4
+		var is_black_key = i % 7 in [1, 2, 4, 5, 6]
+		var key_color = keys_black if (i % 2 == 1) else keys_white
+
+		for y in range(key_y, key_y + 10):
+			for x in range(key_x, key_x + 3):
+				if x < 60:
+					img.set_pixel(x, y, key_color)
+
+	# Music stand
+	for y in range(16, 22):
+		for x in range(20, 44):
+			img.set_pixel(x, y, piano_brown.lightened(0.1))
+
+	# Sheet music on stand
+	for y in range(17, 21):
+		for x in range(22, 42):
+			img.set_pixel(x, y, Color(0.95, 0.92, 0.85))
+			# Music note lines
+			if y % 2 == 0:
+				img.set_pixel(x, y, Color(0.1, 0.1, 0.1))
+
+	_piano_sprite.texture = ImageTexture.create_from_image(img)
+	_piano_sprite.position = Vector2(14 * TILE_SIZE, 10 * TILE_SIZE)
+	piano.add_child(_piano_sprite)
+
+	decorations.add_child(piano)
+
+	# Create piano interactable
+	_create_piano_interactable()
+
+
+func _create_piano_interactable() -> void:
+	"""Create an interactable area for the piano"""
+	var piano_area = Area2D.new()
+	piano_area.name = "PianoInteractable"
+	piano_area.position = Vector2(14 * TILE_SIZE, 10 * TILE_SIZE)
+
+	# Collision shape
+	var collision = CollisionShape2D.new()
+	var shape = RectangleShape2D.new()
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 2)
+	collision.shape = shape
+	piano_area.add_child(collision)
+
+	# Set collision layers for interaction
+	piano_area.collision_layer = 4  # Interactable layer
+	piano_area.collision_mask = 2   # Detect player
+	piano_area.monitoring = true
+	piano_area.monitorable = true
+
+	# Add to interactables group
+	piano_area.add_to_group("interactables")
+
+	# Store reference to self for interaction callback
+	piano_area.set_meta("interaction_callback", _on_piano_interact)
+	piano_area.set_meta("parent_scene", self)
+
+	add_child(piano_area)
+
+
+func _on_piano_interact() -> void:
+	"""Handle piano interaction - check personality before allowing play"""
+	if _piano_playing:
+		_stop_piano()
+		return
+
+	# Check if party leader has 'scholarly' personality
+	var can_play = _check_can_play_piano()
+
+	if can_play:
+		_play_piano()
+	else:
+		_show_piano_fail_dialogue()
+
+
+func _check_can_play_piano() -> bool:
+	"""Check if any party member has the scholarly personality"""
+	# Get party from GameLoop
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if not game_loop or not game_loop.party:
+		return false
+
+	for member in game_loop.party:
+		if member.customization:
+			var personality = member.customization.personality
+			# Scholarly characters can play piano
+			if personality == member.customization.Personality.SCHOLARLY:
+				return true
+			# Brave characters try anyway (with a different tune)
+			if personality == member.customization.Personality.BRAVE:
+				return true
+
+	return false
+
+
+func _play_piano() -> void:
+	"""Play a procedural piano melody"""
+	_piano_playing = true
+
+	# Create a simple procedural melody
+	if SoundManager:
+		SoundManager.play_piano_melody()
+
+	# Show playing message
+	_show_dialogue("*plays a beautiful melody on the piano*")
+
+	# Auto-stop after melody finishes
+	await get_tree().create_timer(3.0).timeout
+	if _piano_playing:
+		_stop_piano()
+
+
+func _stop_piano() -> void:
+	"""Stop playing piano"""
+	_piano_playing = false
+
+
+func _show_piano_fail_dialogue() -> void:
+	"""Show dialogue when non-scholarly character tries to play"""
+	# Check what personality the leader has for flavor text
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	var message = "*You press some keys... it sounds terrible.*"
+
+	if game_loop and game_loop.party.size() > 0:
+		var leader = game_loop.party[0]
+		if leader.customization:
+			match leader.customization.personality:
+				leader.customization.Personality.CAUTIOUS:
+					message = "*You carefully press a key... then immediately regret it.*"
+				leader.customization.Personality.QUICK:
+					message = "*You mash some keys rapidly. It's chaos.*"
+
+	_show_dialogue(message)
+
+
+func _show_dialogue(text: String) -> void:
+	"""Show a simple dialogue message"""
+	# Create temporary dialogue box
+	var dialogue = Control.new()
+	dialogue.z_index = 100
+
+	var panel = Panel.new()
+	panel.position = Vector2(100, 280)
+	panel.size = Vector2(300, 60)
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.2, 0.95)
+	style.border_color = Color(0.8, 0.8, 0.9)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	panel.add_theme_stylebox_override("panel", style)
+	dialogue.add_child(panel)
+
+	var label = Label.new()
+	label.text = text
+	label.position = Vector2(110, 290)
+	label.size = Vector2(280, 50)
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue.add_child(label)
+
+	add_child(dialogue)
+
+	# Auto-dismiss after 2 seconds
+	await get_tree().create_timer(2.0).timeout
+	dialogue.queue_free()
 
 
 func _setup_dancer() -> void:

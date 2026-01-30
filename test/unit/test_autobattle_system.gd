@@ -6,13 +6,14 @@ extends GutTest
 var _autobattle: Node
 
 
-func before_all() -> void:
-	# Get reference to AutobattleSystem singleton
-	_autobattle = get_tree().root.get_node_or_null("AutobattleSystem")
+func before_each() -> void:
+	# Create a fresh AutobattleSystem instance for isolated testing
+	_autobattle = preload("res://src/autobattle/AutobattleSystem.gd").new()
+	add_child_autofree(_autobattle)
 
 
 func test_autobattle_system_exists() -> void:
-	assert_not_null(_autobattle, "AutobattleSystem singleton should exist")
+	assert_not_null(_autobattle, "AutobattleSystem instance should exist")
 
 
 func test_get_character_script_returns_dict() -> void:

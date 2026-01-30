@@ -3,8 +3,8 @@ extends CanvasLayer
 ## In-game debug log overlay (autoload singleton)
 ## Shows recent debug messages in a semi-transparent panel
 
-const MAX_LINES = 12
-const LOG_RETENTION_TIME = 10.0  # Seconds before old logs fade
+const MAX_LINES = 6
+const LOG_RETENTION_TIME = 8.0  # Seconds before old logs fade
 
 var _log_container: VBoxContainer
 var _background: ColorRect
@@ -23,24 +23,24 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	# Semi-transparent background panel in bottom-left
+	# Semi-transparent background panel in bottom-left corner (smaller)
 	_background = ColorRect.new()
-	_background.color = Color(0.0, 0.0, 0.0, 0.6)
-	_background.position = Vector2(8, 400)
-	_background.size = Vector2(500, 180)
+	_background.color = Color(0.0, 0.0, 0.0, 0.5)
+	_background.position = Vector2(4, 520)
+	_background.size = Vector2(320, 100)
 	add_child(_background)
 
 	# Container for log lines
 	_log_container = VBoxContainer.new()
-	_log_container.position = Vector2(12, 404)
-	_log_container.size = Vector2(492, 172)
+	_log_container.position = Vector2(8, 522)
+	_log_container.size = Vector2(312, 96)
 	add_child(_log_container)
 
 	# Title
 	var title = Label.new()
-	title.text = "Debug Log (toggle in Settings)"
-	title.add_theme_font_size_override("font_size", 10)
-	title.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	title.text = "Debug"
+	title.add_theme_font_size_override("font_size", 9)
+	title.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	_log_container.add_child(title)
 
 
@@ -85,10 +85,10 @@ func _rebuild_log_display() -> void:
 	for log_entry in _logs:
 		var label = Label.new()
 		label.text = log_entry["text"]
-		label.add_theme_font_size_override("font_size", 11)
+		label.add_theme_font_size_override("font_size", 9)
 		label.add_theme_color_override("font_color", _get_log_color(log_entry["text"]))
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.custom_minimum_size = Vector2(480, 0)
+		label.custom_minimum_size = Vector2(300, 0)
 		_log_container.add_child(label)
 
 

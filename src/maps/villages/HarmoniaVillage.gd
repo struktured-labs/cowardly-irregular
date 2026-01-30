@@ -462,3 +462,9 @@ func pause() -> void:
 func set_player_job(job_name: String) -> void:
 	if player:
 		player.set_job(job_name)
+
+
+## Set the player's appearance from the party leader
+func set_player_appearance(leader) -> void:
+	if player and player.has_method("set_appearance_from_leader"):
+		player.set_appearance_from_leader(leader)

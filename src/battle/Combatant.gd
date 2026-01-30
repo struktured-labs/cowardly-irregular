@@ -42,6 +42,9 @@ var job = null
 var job_level: int = 1
 var job_exp: int = 0
 
+## Character customization (appearance data)
+var customization = null  # CharacterCustomization reference
+
 ## Passive system
 var equipped_passives: Array[String] = []  # Passive IDs
 var max_passive_slots: int = 5

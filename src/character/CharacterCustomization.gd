@@ -3,12 +3,36 @@ class_name CharacterCustomization
 
 ## CharacterCustomization - Data class for character appearance and personality
 
-## Face style options
-enum FaceStyle {
-	DETERMINED,
-	CHEERFUL,
-	SERIOUS,
-	MYSTERIOUS
+## Eye shape options (like FF1-5)
+enum EyeShape {
+	NORMAL,
+	NARROW,
+	WIDE,
+	CLOSED
+}
+
+## Eyebrow style options
+enum EyebrowStyle {
+	NORMAL,
+	THICK,
+	THIN,
+	ARCHED
+}
+
+## Nose shape options
+enum NoseShape {
+	NORMAL,
+	SMALL,
+	POINTED,
+	BROAD
+}
+
+## Mouth/Expression options
+enum MouthStyle {
+	NEUTRAL,
+	SMILE,
+	FROWN,
+	SMIRK
 }
 
 ## Hair style options
@@ -52,7 +76,10 @@ const HAIR_COLORS: Array[Color] = [
 
 ## Character data
 var name: String = ""
-var face_style: FaceStyle = FaceStyle.DETERMINED
+var eye_shape: EyeShape = EyeShape.NORMAL
+var eyebrow_style: EyebrowStyle = EyebrowStyle.NORMAL
+var nose_shape: NoseShape = NoseShape.NORMAL
+var mouth_style: MouthStyle = MouthStyle.NEUTRAL
 var hair_style: HairStyle = HairStyle.SHORT
 var hair_color: Color = HAIR_COLORS[1]  # Brown
 var skin_tone: Color = SKIN_TONES[1]    # Fair
@@ -65,12 +92,39 @@ func _init(char_name: String = "Hero") -> void:
 
 
 ## Getters for display labels
-static func get_face_style_name(style: FaceStyle) -> String:
+static func get_eye_shape_name(shape: EyeShape) -> String:
+	match shape:
+		EyeShape.NORMAL: return "Normal"
+		EyeShape.NARROW: return "Narrow"
+		EyeShape.WIDE: return "Wide"
+		EyeShape.CLOSED: return "Closed"
+	return "Unknown"
+
+
+static func get_eyebrow_style_name(style: EyebrowStyle) -> String:
 	match style:
-		FaceStyle.DETERMINED: return "Determined"
-		FaceStyle.CHEERFUL: return "Cheerful"
-		FaceStyle.SERIOUS: return "Serious"
-		FaceStyle.MYSTERIOUS: return "Mysterious"
+		EyebrowStyle.NORMAL: return "Normal"
+		EyebrowStyle.THICK: return "Thick"
+		EyebrowStyle.THIN: return "Thin"
+		EyebrowStyle.ARCHED: return "Arched"
+	return "Unknown"
+
+
+static func get_nose_shape_name(shape: NoseShape) -> String:
+	match shape:
+		NoseShape.NORMAL: return "Normal"
+		NoseShape.SMALL: return "Small"
+		NoseShape.POINTED: return "Pointed"
+		NoseShape.BROAD: return "Broad"
+	return "Unknown"
+
+
+static func get_mouth_style_name(style: MouthStyle) -> String:
+	match style:
+		MouthStyle.NEUTRAL: return "Neutral"
+		MouthStyle.SMILE: return "Smile"
+		MouthStyle.FROWN: return "Frown"
+		MouthStyle.SMIRK: return "Smirk"
 	return "Unknown"
 
 
@@ -135,7 +189,10 @@ func get_starting_items() -> Dictionary:
 func to_dict() -> Dictionary:
 	return {
 		"name": name,
-		"face_style": face_style,
+		"eye_shape": eye_shape,
+		"eyebrow_style": eyebrow_style,
+		"nose_shape": nose_shape,
+		"mouth_style": mouth_style,
 		"hair_style": hair_style,
 		"hair_color": [hair_color.r, hair_color.g, hair_color.b],
 		"skin_tone": [skin_tone.r, skin_tone.g, skin_tone.b],
@@ -147,7 +204,10 @@ func to_dict() -> Dictionary:
 ## Deserialize from dictionary - requires passing the script as parameter
 static func from_dict_with_script(data: Dictionary, script: GDScript):
 	var custom = script.new(data.get("name", "Hero"))
-	custom.face_style = data.get("face_style", FaceStyle.DETERMINED)
+	custom.eye_shape = data.get("eye_shape", EyeShape.NORMAL)
+	custom.eyebrow_style = data.get("eyebrow_style", EyebrowStyle.NORMAL)
+	custom.nose_shape = data.get("nose_shape", NoseShape.NORMAL)
+	custom.mouth_style = data.get("mouth_style", MouthStyle.NEUTRAL)
 	custom.hair_style = data.get("hair_style", HairStyle.SHORT)
 	var hair_arr = data.get("hair_color", [0.45, 0.30, 0.18])
 	custom.hair_color = Color(hair_arr[0], hair_arr[1], hair_arr[2])
@@ -162,9 +222,12 @@ static func from_dict_with_script(data: Dictionary, script: GDScript):
 static func create_default_party_with_script(script: GDScript) -> Array:
 	var party: Array = []
 
-	# Hero - Fighter/Brave
+	# Hero - Fighter/Brave (determined look)
 	var hero = script.new("Hero")
-	hero.face_style = FaceStyle.DETERMINED
+	hero.eye_shape = EyeShape.NORMAL
+	hero.eyebrow_style = EyebrowStyle.THICK
+	hero.nose_shape = NoseShape.NORMAL
+	hero.mouth_style = MouthStyle.NEUTRAL
 	hero.hair_style = HairStyle.SHORT
 	hero.hair_color = HAIR_COLORS[1]  # Brown
 	hero.skin_tone = SKIN_TONES[1]
@@ -172,9 +235,12 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	hero.starting_jobs = ["fighter", "thief"]
 	party.append(hero)
 
-	# Mira - White Mage/Cautious
+	# Mira - White Mage/Cautious (cheerful look)
 	var mira = script.new("Mira")
-	mira.face_style = FaceStyle.CHEERFUL
+	mira.eye_shape = EyeShape.WIDE
+	mira.eyebrow_style = EyebrowStyle.ARCHED
+	mira.nose_shape = NoseShape.SMALL
+	mira.mouth_style = MouthStyle.SMILE
 	mira.hair_style = HairStyle.LONG
 	mira.hair_color = HAIR_COLORS[3]  # Red
 	mira.skin_tone = SKIN_TONES[0]
@@ -182,9 +248,12 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	mira.starting_jobs = ["white_mage", "black_mage"]
 	party.append(mira)
 
-	# Zack - Thief/Quick
+	# Zack - Thief/Quick (mysterious look)
 	var zack = script.new("Zack")
-	zack.face_style = FaceStyle.MYSTERIOUS
+	zack.eye_shape = EyeShape.NARROW
+	zack.eyebrow_style = EyebrowStyle.THIN
+	zack.nose_shape = NoseShape.POINTED
+	zack.mouth_style = MouthStyle.SMIRK
 	zack.hair_style = HairStyle.SPIKY
 	zack.hair_color = HAIR_COLORS[0]  # Black
 	zack.skin_tone = SKIN_TONES[2]
@@ -192,9 +261,12 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	zack.starting_jobs = ["thief", "fighter"]
 	party.append(zack)
 
-	# Vex - Black Mage/Scholarly
+	# Vex - Black Mage/Scholarly (serious look)
 	var vex = script.new("Vex")
-	vex.face_style = FaceStyle.SERIOUS
+	vex.eye_shape = EyeShape.CLOSED
+	vex.eyebrow_style = EyebrowStyle.NORMAL
+	vex.nose_shape = NoseShape.BROAD
+	vex.mouth_style = MouthStyle.FROWN
 	vex.hair_style = HairStyle.PONYTAIL
 	vex.hair_color = HAIR_COLORS[4]  # Silver
 	vex.skin_tone = SKIN_TONES[3]

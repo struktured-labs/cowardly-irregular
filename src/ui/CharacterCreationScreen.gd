@@ -15,15 +15,18 @@ var current_option_index: int = 0
 var party_customizations: Array = []  # Array of CharacterCustomization objects
 
 ## UI constants
-const PANEL_WIDTH: int = 600
-const PANEL_HEIGHT: int = 400
-const OPTION_HEIGHT: int = 28
+const PANEL_WIDTH: int = 620
+const PANEL_HEIGHT: int = 440
+const OPTION_HEIGHT: int = 24
 const MAX_NAME_LENGTH: int = 8
 
 ## Available options per character
 const OPTIONS: Array[String] = [
 	"name",
-	"face_style",
+	"eye_shape",
+	"eyebrow_style",
+	"nose_shape",
+	"mouth_style",
 	"hair_style",
 	"hair_color",
 	"skin_tone",
@@ -31,6 +34,10 @@ const OPTIONS: Array[String] = [
 	"starting_job_1",
 	"starting_job_2"
 ]
+
+## Letter grid for name input (classic FF style)
+const NAME_CHARS: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz0123456789"
+const NAME_GRID_COLS: int = 13
 
 ## Job options
 const AVAILABLE_JOBS: Array[String] = ["fighter", "white_mage", "black_mage", "thief"]
@@ -45,6 +52,9 @@ var _confirm_button: Label = null
 var _skip_button: Label = null
 var _input_blocked: bool = false
 var _name_editing: bool = false
+var _name_grid: Control = null
+var _name_cursor_x: int = 0
+var _name_cursor_y: int = 0
 
 
 func _ready() -> void:
@@ -260,11 +270,14 @@ func _get_option_label(option: String) -> String:
 	"""Get display label for option"""
 	match option:
 		"name": return "Name:"
-		"face_style": return "Face:"
+		"eye_shape": return "Eyes:"
+		"eyebrow_style": return "Brows:"
+		"nose_shape": return "Nose:"
+		"mouth_style": return "Mouth:"
 		"hair_style": return "Hair:"
-		"hair_color": return "Hair Color:"
+		"hair_color": return "Color:"
 		"skin_tone": return "Skin:"
-		"personality": return "Personality:"
+		"personality": return "Nature:"
 		"starting_job_1": return "Job 1:"
 		"starting_job_2": return "Job 2:"
 	return option.capitalize()
@@ -315,8 +328,14 @@ func _get_option_value(custom, option: String) -> String:
 	match option:
 		"name":
 			return custom.name
-		"face_style":
-			return CustomizationScript.get_face_style_name(custom.face_style)
+		"eye_shape":
+			return CustomizationScript.get_eye_shape_name(custom.eye_shape)
+		"eyebrow_style":
+			return CustomizationScript.get_eyebrow_style_name(custom.eyebrow_style)
+		"nose_shape":
+			return CustomizationScript.get_nose_shape_name(custom.nose_shape)
+		"mouth_style":
+			return CustomizationScript.get_mouth_style_name(custom.mouth_style)
 		"hair_style":
 			return CustomizationScript.get_hair_style_name(custom.hair_style)
 		"hair_color":
@@ -360,30 +379,129 @@ func _get_color_name(color: Color, presets: Array[Color]) -> String:
 
 
 func _update_preview(custom) -> void:
-	"""Update the character preview sprite"""
+	"""Update the character preview sprite with face details"""
 	# Clear existing preview
 	for child in _preview_sprite.get_children():
 		child.queue_free()
 
-	# Create simple preview showing colors
+	# Face base (oval shape approximation)
 	var face = ColorRect.new()
 	face.color = custom.skin_tone
-	face.size = Vector2(60, 60)
-	face.position = Vector2(-30, 0)
+	face.size = Vector2(56, 64)
+	face.position = Vector2(-28, 0)
 	_preview_sprite.add_child(face)
 
+	# Hair (varies by style)
 	var hair = ColorRect.new()
 	hair.color = custom.hair_color
-	hair.size = Vector2(65, 25)
-	hair.position = Vector2(-32, -20)
+	match custom.hair_style:
+		CustomizationScript.HairStyle.SHORT:
+			hair.size = Vector2(60, 20)
+			hair.position = Vector2(-30, -15)
+		CustomizationScript.HairStyle.LONG:
+			hair.size = Vector2(64, 45)
+			hair.position = Vector2(-32, -20)
+		CustomizationScript.HairStyle.SPIKY:
+			hair.size = Vector2(70, 30)
+			hair.position = Vector2(-35, -25)
+		CustomizationScript.HairStyle.BRAIDED:
+			hair.size = Vector2(58, 35)
+			hair.position = Vector2(-29, -18)
+		CustomizationScript.HairStyle.PONYTAIL:
+			hair.size = Vector2(55, 25)
+			hair.position = Vector2(-27, -18)
+		CustomizationScript.HairStyle.MOHAWK:
+			hair.size = Vector2(20, 40)
+			hair.position = Vector2(-10, -35)
 	_preview_sprite.add_child(hair)
+
+	# Eyes (varies by shape)
+	var eye_color = Color(0.2, 0.2, 0.3)
+	var eye_left = ColorRect.new()
+	var eye_right = ColorRect.new()
+	eye_left.color = eye_color
+	eye_right.color = eye_color
+	match custom.eye_shape:
+		CustomizationScript.EyeShape.NORMAL:
+			eye_left.size = Vector2(8, 6)
+			eye_right.size = Vector2(8, 6)
+		CustomizationScript.EyeShape.NARROW:
+			eye_left.size = Vector2(10, 3)
+			eye_right.size = Vector2(10, 3)
+		CustomizationScript.EyeShape.WIDE:
+			eye_left.size = Vector2(10, 8)
+			eye_right.size = Vector2(10, 8)
+		CustomizationScript.EyeShape.CLOSED:
+			eye_left.size = Vector2(10, 2)
+			eye_right.size = Vector2(10, 2)
+	eye_left.position = Vector2(-20, 18)
+	eye_right.position = Vector2(6, 18)
+	_preview_sprite.add_child(eye_left)
+	_preview_sprite.add_child(eye_right)
+
+	# Eyebrows (varies by style)
+	var brow_color = custom.hair_color.darkened(0.3)
+	var brow_left = ColorRect.new()
+	var brow_right = ColorRect.new()
+	brow_left.color = brow_color
+	brow_right.color = brow_color
+	match custom.eyebrow_style:
+		CustomizationScript.EyebrowStyle.NORMAL:
+			brow_left.size = Vector2(10, 2)
+			brow_right.size = Vector2(10, 2)
+		CustomizationScript.EyebrowStyle.THICK:
+			brow_left.size = Vector2(12, 4)
+			brow_right.size = Vector2(12, 4)
+		CustomizationScript.EyebrowStyle.THIN:
+			brow_left.size = Vector2(10, 1)
+			brow_right.size = Vector2(10, 1)
+		CustomizationScript.EyebrowStyle.ARCHED:
+			brow_left.size = Vector2(10, 2)
+			brow_right.size = Vector2(10, 2)
+	brow_left.position = Vector2(-21, 12)
+	brow_right.position = Vector2(5, 12)
+	_preview_sprite.add_child(brow_left)
+	_preview_sprite.add_child(brow_right)
+
+	# Nose (varies by shape)
+	var nose = ColorRect.new()
+	nose.color = custom.skin_tone.darkened(0.15)
+	match custom.nose_shape:
+		CustomizationScript.NoseShape.NORMAL:
+			nose.size = Vector2(6, 10)
+		CustomizationScript.NoseShape.SMALL:
+			nose.size = Vector2(4, 6)
+		CustomizationScript.NoseShape.POINTED:
+			nose.size = Vector2(5, 12)
+		CustomizationScript.NoseShape.BROAD:
+			nose.size = Vector2(10, 8)
+	nose.position = Vector2(-nose.size.x / 2, 28)
+	_preview_sprite.add_child(nose)
+
+	# Mouth (varies by style)
+	var mouth = ColorRect.new()
+	match custom.mouth_style:
+		CustomizationScript.MouthStyle.NEUTRAL:
+			mouth.color = Color(0.6, 0.3, 0.3)
+			mouth.size = Vector2(12, 3)
+		CustomizationScript.MouthStyle.SMILE:
+			mouth.color = Color(0.7, 0.4, 0.4)
+			mouth.size = Vector2(16, 4)
+		CustomizationScript.MouthStyle.FROWN:
+			mouth.color = Color(0.5, 0.25, 0.25)
+			mouth.size = Vector2(14, 3)
+		CustomizationScript.MouthStyle.SMIRK:
+			mouth.color = Color(0.65, 0.35, 0.35)
+			mouth.size = Vector2(10, 3)
+	mouth.position = Vector2(-mouth.size.x / 2, 45)
+	_preview_sprite.add_child(mouth)
 
 	# Name under preview
 	var name_label = Label.new()
 	name_label.text = custom.name
-	name_label.position = Vector2(-30, 70)
+	name_label.position = Vector2(-40, 75)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.custom_minimum_size = Vector2(60, 20)
+	name_label.custom_minimum_size = Vector2(80, 20)
 	name_label.add_theme_font_size_override("font_size", 12)
 	_preview_sprite.add_child(name_label)
 
@@ -393,7 +511,7 @@ func _update_preview(custom) -> void:
 		custom.starting_jobs[0].capitalize() if custom.starting_jobs.size() > 0 else "",
 		custom.starting_jobs[1].capitalize() if custom.starting_jobs.size() > 1 else ""
 	]
-	job_label.position = Vector2(-50, 90)
+	job_label.position = Vector2(-50, 95)
 	job_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	job_label.custom_minimum_size = Vector2(100, 20)
 	job_label.add_theme_font_size_override("font_size", 10)
@@ -460,12 +578,33 @@ func _change_option(direction: int) -> void:
 		"name":
 			_start_name_editing()
 
-		"face_style":
-			var styles = CustomizationScript.FaceStyle.values()
-			var idx = styles.find(current.face_style)
+		"eye_shape":
+			var shapes = CustomizationScript.EyeShape.values()
+			var idx = shapes.find(current.eye_shape)
+			idx = (idx + direction) % shapes.size()
+			if idx < 0: idx = shapes.size() - 1
+			current.eye_shape = shapes[idx]
+
+		"eyebrow_style":
+			var styles = CustomizationScript.EyebrowStyle.values()
+			var idx = styles.find(current.eyebrow_style)
 			idx = (idx + direction) % styles.size()
 			if idx < 0: idx = styles.size() - 1
-			current.face_style = styles[idx]
+			current.eyebrow_style = styles[idx]
+
+		"nose_shape":
+			var shapes = CustomizationScript.NoseShape.values()
+			var idx = shapes.find(current.nose_shape)
+			idx = (idx + direction) % shapes.size()
+			if idx < 0: idx = shapes.size() - 1
+			current.nose_shape = shapes[idx]
+
+		"mouth_style":
+			var styles = CustomizationScript.MouthStyle.values()
+			var idx = styles.find(current.mouth_style)
+			idx = (idx + direction) % styles.size()
+			if idx < 0: idx = styles.size() - 1
+			current.mouth_style = styles[idx]
 
 		"hair_style":
 			var styles = CustomizationScript.HairStyle.values()
@@ -520,49 +659,215 @@ func _find_color_index(color: Color, presets: Array[Color]) -> int:
 
 
 func _start_name_editing() -> void:
-	"""Start editing name (text input mode)"""
+	"""Start editing name with letter grid (FF-style)"""
 	_name_editing = true
-	# Show editing cursor
-	var row = _options_container.get_child(0)
-	var value = row.get_node("Value")
-	value.text = party_customizations[current_character_index].name + "_"
+	_name_cursor_x = 0
+	_name_cursor_y = 0
+	_show_name_grid()
 	SoundManager.play_ui("menu_select")
 
 
+func _show_name_grid() -> void:
+	"""Show the letter selection grid"""
+	if _name_grid:
+		_name_grid.queue_free()
+
+	_name_grid = Control.new()
+	_name_grid.position = Vector2(20, 320)
+	_panel.add_child(_name_grid)
+
+	# Background - solid color for readability
+	var bg = ColorRect.new()
+	bg.color = Color(0.08, 0.06, 0.15, 1.0)
+	bg.size = Vector2(560, 100)
+	_name_grid.add_child(bg)
+
+	# Border for visual clarity
+	var border = ColorRect.new()
+	border.color = Color(0.4, 0.35, 0.5)
+	border.size = Vector2(564, 104)
+	border.position = Vector2(-2, -2)
+	border.z_index = -1
+	_name_grid.add_child(border)
+
+	# Current name display
+	var name_label = Label.new()
+	name_label.name = "NameDisplay"
+	name_label.text = "Name: " + party_customizations[current_character_index].name + "_"
+	name_label.position = Vector2(10, 5)
+	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.5))
+	_name_grid.add_child(name_label)
+
+	# Letter grid
+	var grid_start_y = 30
+	var rows = (NAME_CHARS.length() + NAME_GRID_COLS - 1) / NAME_GRID_COLS
+	for row_idx in range(rows):
+		for col_idx in range(NAME_GRID_COLS):
+			var char_idx = row_idx * NAME_GRID_COLS + col_idx
+			if char_idx >= NAME_CHARS.length():
+				break
+			var c = NAME_CHARS[char_idx]
+			var letter = Label.new()
+			letter.name = "Char_%d_%d" % [row_idx, col_idx]
+			letter.text = c if c != " " else "_"
+			letter.position = Vector2(15 + col_idx * 22, grid_start_y + row_idx * 18)
+			letter.add_theme_font_size_override("font_size", 12)
+			_name_grid.add_child(letter)
+
+	# Special buttons: [DEL] [OK]
+	var del_btn = Label.new()
+	del_btn.name = "DelBtn"
+	del_btn.text = "[DEL]"
+	del_btn.position = Vector2(320, grid_start_y + 54)
+	del_btn.add_theme_font_size_override("font_size", 12)
+	_name_grid.add_child(del_btn)
+
+	var ok_btn = Label.new()
+	ok_btn.name = "OkBtn"
+	ok_btn.text = "[OK]"
+	ok_btn.position = Vector2(380, grid_start_y + 54)
+	ok_btn.add_theme_font_size_override("font_size", 12)
+	_name_grid.add_child(ok_btn)
+
+	# Instructions
+	var hint = Label.new()
+	hint.text = "[D-pad] Move  [A/Z] Select  [B/X] Delete  [Start] Done"
+	hint.position = Vector2(10, 85)
+	hint.add_theme_font_size_override("font_size", 9)
+	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	_name_grid.add_child(hint)
+
+	_update_name_grid_cursor()
+
+
+func _update_name_grid_cursor() -> void:
+	"""Update cursor highlighting in name grid"""
+	if not _name_grid:
+		return
+
+	var rows = (NAME_CHARS.length() + NAME_GRID_COLS - 1) / NAME_GRID_COLS
+
+	# Reset all letter colors
+	for row_idx in range(rows):
+		for col_idx in range(NAME_GRID_COLS):
+			var letter = _name_grid.get_node_or_null("Char_%d_%d" % [row_idx, col_idx])
+			if letter:
+				letter.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+
+	# Highlight special buttons
+	var del_btn = _name_grid.get_node_or_null("DelBtn")
+	var ok_btn = _name_grid.get_node_or_null("OkBtn")
+	if del_btn:
+		del_btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+	if ok_btn:
+		ok_btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+
+	# Highlight current selection
+	if _name_cursor_y < rows:
+		var letter = _name_grid.get_node_or_null("Char_%d_%d" % [_name_cursor_y, _name_cursor_x])
+		if letter:
+			letter.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
+	elif _name_cursor_y == rows:
+		# Special button row
+		if _name_cursor_x == 0 and del_btn:
+			del_btn.add_theme_color_override("font_color", Color(1.0, 0.5, 0.5))
+		elif _name_cursor_x == 1 and ok_btn:
+			ok_btn.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+
+
 func _handle_name_input(event: InputEvent) -> void:
-	"""Handle keyboard input for name editing"""
-	if not event is InputEventKey or not event.pressed:
-		return
-
+	"""Handle gamepad/keyboard input for name grid"""
 	var current = party_customizations[current_character_index]
+	var rows = (NAME_CHARS.length() + NAME_GRID_COLS - 1) / NAME_GRID_COLS
+	var max_rows = rows + 1  # +1 for special buttons row
 
-	if event.keycode == KEY_ENTER or event.keycode == KEY_ESCAPE:
-		_name_editing = false
-		_update_display()
+	if event.is_action_pressed("ui_up"):
+		_name_cursor_y = (_name_cursor_y - 1) if _name_cursor_y > 0 else max_rows - 1
+		if _name_cursor_y == rows:
+			_name_cursor_x = mini(_name_cursor_x, 1)  # Only 2 buttons
+		SoundManager.play_ui("menu_move")
+		_update_name_grid_cursor()
 		get_viewport().set_input_as_handled()
-		return
 
-	if event.keycode == KEY_BACKSPACE:
+	elif event.is_action_pressed("ui_down"):
+		_name_cursor_y = (_name_cursor_y + 1) % max_rows
+		if _name_cursor_y == rows:
+			_name_cursor_x = mini(_name_cursor_x, 1)  # Only 2 buttons
+		SoundManager.play_ui("menu_move")
+		_update_name_grid_cursor()
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_left"):
+		if _name_cursor_y < rows:
+			_name_cursor_x = (_name_cursor_x - 1) if _name_cursor_x > 0 else NAME_GRID_COLS - 1
+		else:
+			_name_cursor_x = (_name_cursor_x - 1) if _name_cursor_x > 0 else 1
+		SoundManager.play_ui("menu_move")
+		_update_name_grid_cursor()
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_right"):
+		if _name_cursor_y < rows:
+			_name_cursor_x = (_name_cursor_x + 1) % NAME_GRID_COLS
+		else:
+			_name_cursor_x = (_name_cursor_x + 1) % 2
+		SoundManager.play_ui("menu_move")
+		_update_name_grid_cursor()
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_accept"):
+		if _name_cursor_y < rows:
+			# Add letter
+			var char_idx = _name_cursor_y * NAME_GRID_COLS + _name_cursor_x
+			if char_idx < NAME_CHARS.length() and current.name.length() < MAX_NAME_LENGTH:
+				current.name += NAME_CHARS[char_idx]
+				_update_name_display_in_grid()
+				SoundManager.play_ui("menu_select")
+		elif _name_cursor_y == rows:
+			if _name_cursor_x == 0:
+				# DEL
+				if current.name.length() > 0:
+					current.name = current.name.substr(0, current.name.length() - 1)
+					_update_name_display_in_grid()
+					SoundManager.play_ui("menu_cancel")
+			else:
+				# OK
+				_close_name_grid()
+				SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_cancel"):
+		# Delete last character
 		if current.name.length() > 0:
 			current.name = current.name.substr(0, current.name.length() - 1)
-		_update_name_display()
+			_update_name_display_in_grid()
+			SoundManager.play_ui("menu_cancel")
 		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_menu"):
+		# Start = done
+		_close_name_grid()
+		SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
+
+
+func _update_name_display_in_grid() -> void:
+	"""Update the name display in the grid"""
+	if not _name_grid:
 		return
-
-	# Add character
-	var char_str = char(event.unicode)
-	if char_str.length() > 0 and current.name.length() < MAX_NAME_LENGTH:
-		if event.unicode >= 32 and event.unicode < 127:  # Printable ASCII
-			current.name += char_str
-			_update_name_display()
-	get_viewport().set_input_as_handled()
+	var name_label = _name_grid.get_node_or_null("NameDisplay")
+	if name_label:
+		name_label.text = "Name: " + party_customizations[current_character_index].name + "_"
 
 
-func _update_name_display() -> void:
-	"""Update name display during editing"""
-	var row = _options_container.get_child(0)
-	var value = row.get_node("Value")
-	value.text = party_customizations[current_character_index].name + "_"
+func _close_name_grid() -> void:
+	"""Close the name editing grid"""
+	_name_editing = false
+	if _name_grid:
+		_name_grid.queue_free()
+		_name_grid = null
+	_update_display()
 
 
 func _next_character() -> void:

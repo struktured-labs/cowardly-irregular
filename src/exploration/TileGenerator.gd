@@ -124,7 +124,7 @@ func generate_tile(type: TileType, variant: int = 0) -> ImageTexture:
 	return texture
 
 
-## Grass tile - green base with scattered darker patches
+## Grass tile - green base with scattered darker patches, flowers, and grass tufts
 func _draw_grass(img: Image, palette: Dictionary, variant: int) -> void:
 	# Fill with base color
 	img.fill(palette["base"])
@@ -133,22 +133,57 @@ func _draw_grass(img: Image, palette: Dictionary, variant: int) -> void:
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 12345
 
+	# Simplex-like noise pattern for natural look
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var noise_val = rng.randf()
-			if noise_val < 0.15:
+			# Create clustered variation (not pure random)
+			var cluster_val = sin(x * 0.4 + variant) * cos(y * 0.3) * 0.5 + 0.5
+			var noise_val = rng.randf() * 0.7 + cluster_val * 0.3
+
+			if noise_val < 0.12:
 				img.set_pixel(x, y, palette["dark"])
-			elif noise_val < 0.25:
+			elif noise_val < 0.22:
 				img.set_pixel(x, y, palette["light"])
-			elif noise_val < 0.30:
+			elif noise_val < 0.28:
 				img.set_pixel(x, y, palette["accent"])
 
-	# Add small grass blades
-	for i in range(8):
-		var bx = rng.randi_range(2, TILE_SIZE - 3)
-		var by = rng.randi_range(2, TILE_SIZE - 3)
-		img.set_pixel(bx, by, palette["dark"])
-		img.set_pixel(bx, by - 1, palette["light"])
+	# Add grass tufts (multiple blades)
+	for i in range(5):
+		var tuft_x = rng.randi_range(4, TILE_SIZE - 5)
+		var tuft_y = rng.randi_range(4, TILE_SIZE - 4)
+
+		# Draw a small tuft of 3 blades
+		for blade in range(3):
+			var bx = tuft_x + blade - 1
+			var blade_height = rng.randi_range(2, 4)
+			for h in range(blade_height):
+				if bx >= 0 and bx < TILE_SIZE and tuft_y - h >= 0:
+					var shade = palette["light"] if h == blade_height - 1 else palette["dark"]
+					img.set_pixel(bx, tuft_y - h, shade)
+
+	# Add occasional small flowers (based on variant)
+	if variant % 3 == 0:  # Only some tiles get flowers
+		var flower_colors = [
+			Color(0.9, 0.9, 0.3),  # Yellow
+			Color(0.9, 0.6, 0.7),  # Pink
+			Color(0.7, 0.7, 0.9),  # Light purple
+			Color(0.9, 0.5, 0.4),  # Orange-red
+		]
+		var flower_count = rng.randi_range(1, 3)
+		for f in range(flower_count):
+			var fx = rng.randi_range(3, TILE_SIZE - 4)
+			var fy = rng.randi_range(3, TILE_SIZE - 4)
+			var flower_color = flower_colors[rng.randi() % flower_colors.size()]
+			# Draw small flower (cross pattern)
+			img.set_pixel(fx, fy, flower_color)
+			if fx > 0:
+				img.set_pixel(fx - 1, fy, flower_color)
+			if fx < TILE_SIZE - 1:
+				img.set_pixel(fx + 1, fy, flower_color)
+			if fy > 0:
+				img.set_pixel(fx, fy - 1, flower_color)
+			# Flower center
+			img.set_pixel(fx, fy, Color(1.0, 1.0, 0.6))
 
 
 ## Forest tile - tree pattern (impassable)
@@ -225,7 +260,7 @@ func _draw_mountain(img: Image, palette: Dictionary, variant: int) -> void:
 				img.set_pixel(x, y, palette["snow"])
 
 
-## Water tile - animated blue waves
+## Water tile - animated blue waves with ripples and depth
 func _draw_water(img: Image, palette: Dictionary, variant: int) -> void:
 	# Fill with base blue
 	img.fill(palette["base"])
@@ -235,48 +270,112 @@ func _draw_water(img: Image, palette: Dictionary, variant: int) -> void:
 
 	# Wave pattern based on variant (for animation frames)
 	var wave_offset = (variant % 4) * 8
+	var secondary_wave_offset = (variant % 4) * 4
 
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			# Sinusoidal wave pattern
-			var wave = sin((x + wave_offset) * 0.4 + y * 0.2) * 0.5 + 0.5
-			if wave > 0.7:
+			# Multiple overlapping wave patterns for realistic water
+			var wave1 = sin((x + wave_offset) * 0.4 + y * 0.2) * 0.5 + 0.5
+			var wave2 = sin((x - secondary_wave_offset) * 0.25 + y * 0.35) * 0.3 + 0.5
+			var combined = (wave1 + wave2) / 2.0
+
+			if combined > 0.65:
 				img.set_pixel(x, y, palette["light"])
-			elif wave < 0.3:
+			elif combined < 0.35:
 				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.55:
+				# Subtle mid-tone variation
+				var mid_light = palette["base"].lightened(0.1)
+				img.set_pixel(x, y, mid_light)
 
-	# Add foam highlights
-	for i in range(3):
-		var fx = rng.randi_range(4, TILE_SIZE - 5)
-		var fy = rng.randi_range(4, TILE_SIZE - 5)
-		img.set_pixel(fx, fy, palette["foam"])
-		img.set_pixel(fx + 1, fy, palette["foam"])
+	# Add foam highlights in curved patterns
+	for i in range(2):
+		var foam_x = rng.randi_range(6, TILE_SIZE - 8)
+		var foam_y = rng.randi_range(6, TILE_SIZE - 8)
+		# Draw curved foam line (wave crest)
+		for f in range(6):
+			var fx = foam_x + f
+			var fy = foam_y + int(sin(f * 0.8) * 2)
+			if fx >= 0 and fx < TILE_SIZE and fy >= 0 and fy < TILE_SIZE:
+				img.set_pixel(fx, fy, palette["foam"])
+				# Add slight foam glow below
+				if fy + 1 < TILE_SIZE:
+					var glow = palette["foam"]
+					glow.a = 0.5
+					img.set_pixel(fx, fy + 1, palette["light"])
+
+	# Add subtle depth variation (darker towards edges)
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var edge_dist = min(x, y, TILE_SIZE - 1 - x, TILE_SIZE - 1 - y)
+			if edge_dist < 3 and rng.randf() < 0.3:
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.darkened(0.1))
 
 
-## Path/road tile - worn ground
+## Path/road tile - worn ground with wheel ruts and varied stones
 func _draw_path(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 33333
 
-	# Add dirt texture
+	# Add dirt texture with worn patterns
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
+			# Center of path is more worn (lighter)
+			var center_dist = abs(x - TILE_SIZE / 2) + abs(y - TILE_SIZE / 2)
+			var wear_factor = 1.0 - (center_dist / 32.0) * 0.3
+
 			var noise = rng.randf()
-			if noise < 0.12:
+			if noise < 0.10 * wear_factor:
 				img.set_pixel(x, y, palette["dark"])
-			elif noise < 0.22:
+			elif noise < 0.18:
 				img.set_pixel(x, y, palette["light"])
-			elif noise < 0.26:
+			elif noise < 0.24:
 				img.set_pixel(x, y, palette["stone"])
 
-	# Add occasional small stones
-	for i in range(2):
-		var sx = rng.randi_range(4, TILE_SIZE - 5)
-		var sy = rng.randi_range(4, TILE_SIZE - 5)
-		img.set_pixel(sx, sy, palette["stone"])
-		img.set_pixel(sx + 1, sy, palette["stone"])
+	# Add wheel rut marks (subtle darker lines)
+	var rut_positions = [10, 22]  # Two ruts for cart wheels
+	for rut_x in rut_positions:
+		for y in range(TILE_SIZE):
+			if rng.randf() < 0.6:  # Not continuous
+				var rx = rut_x + rng.randi_range(-1, 1)
+				if rx >= 0 and rx < TILE_SIZE:
+					var current = img.get_pixel(rx, y)
+					img.set_pixel(rx, y, current.darkened(0.15))
+
+	# Add varied stones
+	var stone_count = rng.randi_range(2, 5)
+	for i in range(stone_count):
+		var sx = rng.randi_range(2, TILE_SIZE - 4)
+		var sy = rng.randi_range(2, TILE_SIZE - 4)
+		var stone_size = rng.randi_range(1, 3)
+		var stone_shade = palette["stone"].lightened(rng.randf_range(-0.1, 0.1))
+
+		# Draw irregular stone shape
+		for dy in range(stone_size):
+			for dx in range(stone_size):
+				var px = sx + dx
+				var py = sy + dy
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					if dx == 0 and dy == 0:
+						img.set_pixel(px, py, stone_shade.lightened(0.1))  # Highlight
+					elif dx == stone_size - 1 or dy == stone_size - 1:
+						img.set_pixel(px, py, stone_shade.darkened(0.1))  # Shadow
+					else:
+						img.set_pixel(px, py, stone_shade)
+
+	# Add grass edges on sides
+	var grass_color = Color(0.25, 0.45, 0.20)
+	for y in range(TILE_SIZE):
+		if rng.randf() < 0.3:
+			if rng.randf() < 0.5:
+				img.set_pixel(0, y, grass_color)
+				img.set_pixel(1, y, grass_color.darkened(0.1))
+			if rng.randf() < 0.5:
+				img.set_pixel(TILE_SIZE - 1, y, grass_color)
+				img.set_pixel(TILE_SIZE - 2, y, grass_color.darkened(0.1))
 
 
 ## Bridge tile - wooden planks
@@ -310,21 +409,30 @@ func _draw_bridge(img: Image, palette: Dictionary, variant: int) -> void:
 		img.set_pixel(27, py, palette["nail"])
 
 
-## Cave entrance tile - dark opening in rock
+## Cave entrance tile - dark opening in rock with stalactites and crystals
 func _draw_cave_entrance(img: Image, palette: Dictionary) -> void:
 	# Rock surround
 	var mtn_pal = PALETTES[TileType.MOUNTAIN]
 	img.fill(mtn_pal["base"])
 
-	# Draw rock texture
+	# Draw detailed rock texture with cracks
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 77777
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			if rng.randf() < 0.2:
+			var noise = rng.randf()
+			if noise < 0.15:
 				img.set_pixel(x, y, mtn_pal["dark"])
-			elif rng.randf() < 0.1:
+			elif noise < 0.25:
 				img.set_pixel(x, y, mtn_pal["light"])
+
+	# Add horizontal crack lines in rock
+	for crack_y in [5, 8, 26, 29]:
+		var crack_start = rng.randi_range(0, 8)
+		var crack_end = rng.randi_range(24, 32)
+		for x in range(crack_start, crack_end):
+			if x >= 0 and x < TILE_SIZE:
+				img.set_pixel(x, crack_y, mtn_pal["dark"])
 
 	# Draw cave opening (arch shape)
 	var cave_cx = 16
@@ -337,13 +445,39 @@ func _draw_cave_entrance(img: Image, palette: Dictionary) -> void:
 		var width = int(cave_width * (1.0 - progress * 0.5))
 		for x in range(cave_cx - width, cave_cx + width):
 			if x >= 0 and x < TILE_SIZE and y >= 0 and y < TILE_SIZE:
-				# Gradient from dark at back to slightly lighter at front
+				# Deeper gradient for more dramatic cave depth
 				var depth = float(cave_bottom - y) / float(cave_height)
-				var dark_amt = 0.8 + depth * 0.2
+				var dark_amt = 0.6 + depth * 0.3
 				var c = Color(palette["base"].r * dark_amt, palette["base"].g * dark_amt, palette["base"].b * dark_amt)
 				img.set_pixel(x, y, c)
 
-	# Highlight around entrance
+	# Stalactites hanging from cave ceiling
+	var stalactite_positions = [11, 14, 17, 20]
+	for sx in stalactite_positions:
+		var stala_len = rng.randi_range(3, 6)
+		var stala_y = cave_bottom - cave_height
+		for i in range(stala_len):
+			var width_offset = 1 if i < 2 else 0
+			for dx in range(-width_offset, width_offset + 1):
+				var px = sx + dx
+				var py = stala_y + i
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					var shade = palette["rock"] if i == 0 else palette["dark"]
+					img.set_pixel(px, py, shade)
+
+	# Small glowing crystals inside cave (subtle purple/blue)
+	var crystal_color = Color(0.4, 0.3, 0.6)
+	var crystal_glow = Color(0.6, 0.5, 0.8)
+	var crystal_positions = [[13, 20], [19, 22], [15, 25]]
+	for pos in crystal_positions:
+		var cx = pos[0]
+		var cy = pos[1]
+		if cx >= 0 and cx < TILE_SIZE and cy >= 0 and cy < TILE_SIZE:
+			img.set_pixel(cx, cy, crystal_glow)
+			img.set_pixel(cx, cy + 1, crystal_color)
+			img.set_pixel(cx, cy + 2, crystal_color)
+
+	# Highlight around entrance (lighter on left, darker on right for 3D effect)
 	for y in range(cave_bottom - cave_height - 1, cave_bottom):
 		var progress = float(cave_bottom - y) / float(cave_height)
 		var width = int(cave_width * (1.0 - progress * 0.5)) + 1
@@ -351,48 +485,146 @@ func _draw_cave_entrance(img: Image, palette: Dictionary) -> void:
 		var right_x = cave_cx + width - 1
 		if left_x >= 0 and y >= 0 and y < TILE_SIZE:
 			img.set_pixel(left_x, y, palette["highlight"])
+			if left_x + 1 < TILE_SIZE:
+				img.set_pixel(left_x + 1, y, mtn_pal["light"])
 		if right_x < TILE_SIZE and y >= 0 and y < TILE_SIZE:
 			img.set_pixel(right_x, y, mtn_pal["dark"])
+			if right_x - 1 >= 0:
+				img.set_pixel(right_x - 1, y, palette["dark"])
+
+	# Moss/lichen near entrance (greenish)
+	var moss_color = Color(0.25, 0.35, 0.20)
+	for moss_y in [cave_bottom - cave_height - 2, cave_bottom - cave_height - 1]:
+		for mx in range(cave_cx - 8, cave_cx + 8):
+			if rng.randf() < 0.3 and mx >= 0 and mx < TILE_SIZE and moss_y >= 0:
+				img.set_pixel(mx, moss_y, moss_color)
 
 
-## Village gate tile - wooden arch entrance
+## Village gate tile - ornate wooden arch entrance with lanterns
 func _draw_village_gate(img: Image, palette: Dictionary) -> void:
-	# Path base
+	# Cobblestone path base instead of plain dirt
 	var path_pal = PALETTES[TileType.PATH]
 	img.fill(path_pal["base"])
 
-	# Draw gate posts (left and right)
-	for post_x in [4, 24]:
-		for y in range(2, 28):
-			for x in range(post_x, post_x + 4):
+	# Draw cobblestone pattern
+	var rng = RandomNumberGenerator.new()
+	rng.seed = 88888
+	for stone_y in range(0, TILE_SIZE, 6):
+		var offset = (stone_y / 6 % 2) * 4
+		for stone_x in range(-2 + offset, TILE_SIZE, 8):
+			# Draw individual cobblestone
+			for dy in range(5):
+				for dx in range(7):
+					var px = stone_x + dx
+					var py = stone_y + dy
+					if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+						var shade = path_pal["stone"]
+						if dy == 0 or dx == 0:
+							shade = path_pal["dark"]
+						elif dy == 4 or dx == 6:
+							shade = path_pal["light"]
+						img.set_pixel(px, py, shade)
+
+	# Draw ornate gate posts (left and right) - thicker with details
+	for post_x in [2, 24]:
+		# Main post body
+		for y in range(0, 28):
+			for x in range(post_x, post_x + 6):
 				var shade = palette["base"]
 				if x == post_x:
 					shade = palette["dark"]
-				elif x == post_x + 3:
+				elif x == post_x + 5:
 					shade = palette["light"]
 				img.set_pixel(x, y, shade)
 
-	# Draw arch across top
-	for y in range(2, 8):
-		for x in range(4, 28):
+		# Post cap (wider at top)
+		for y in range(0, 3):
+			for x in range(post_x - 1, post_x + 7):
+				if x >= 0 and x < TILE_SIZE:
+					var shade = palette["base"]
+					if y == 0:
+						shade = palette["light"]
+					elif y == 2:
+						shade = palette["dark"]
+					img.set_pixel(x, y, shade)
+
+		# Decorative carved lines on posts
+		for carved_y in [6, 12, 18, 24]:
+			for x in range(post_x + 1, post_x + 5):
+				img.set_pixel(x, carved_y, palette["dark"])
+
+	# Draw arch across top with decorative trim
+	for y in range(3, 10):
+		for x in range(8, 24):
 			var shade = palette["base"]
-			if y == 2:
+			if y == 3:
 				shade = palette["light"]
-			elif y == 7:
+			elif y == 9:
 				shade = palette["dark"]
+			# Add decorative pattern in middle of arch
+			if y == 6 and (x % 4 == 0):
+				shade = palette["light"]
 			img.set_pixel(x, y, shade)
 
-	# Gate opening (darker area under arch)
-	for y in range(8, 30):
-		for x in range(8, 24):
-			# Slightly darker path to indicate entrance
-			img.set_pixel(x, y, path_pal["dark"])
+	# Arch keystone (center decorative piece)
+	for y in range(3, 8):
+		for x in range(14, 18):
+			var shade = palette["light"] if y < 5 else palette["base"]
+			img.set_pixel(x, y, shade)
 
-	# Metal bands on posts
-	for post_x in [4, 24]:
-		for band_y in [8, 18]:
-			for x in range(post_x, post_x + 4):
+	# Village sign hanging from arch
+	var sign_color = Color(0.4, 0.35, 0.25)
+	var sign_text_color = Color(0.8, 0.75, 0.6)
+	for y in range(10, 16):
+		for x in range(11, 21):
+			img.set_pixel(x, y, sign_color)
+	# Sign border
+	for x in range(11, 21):
+		img.set_pixel(x, 10, palette["dark"])
+		img.set_pixel(x, 15, palette["dark"])
+	for y in range(10, 16):
+		img.set_pixel(11, y, palette["dark"])
+		img.set_pixel(20, y, palette["dark"])
+	# Simple text representation on sign (just lines)
+	for x in range(13, 19):
+		img.set_pixel(x, 12, sign_text_color)
+		if x % 2 == 0:
+			img.set_pixel(x, 13, sign_text_color)
+
+	# Hanging chains for sign
+	img.set_pixel(12, 9, palette["metal"])
+	img.set_pixel(19, 9, palette["metal"])
+
+	# Lanterns on posts (warm glow)
+	var lantern_color = Color(0.9, 0.7, 0.3)
+	var lantern_glow = Color(1.0, 0.9, 0.5)
+	var lantern_frame = palette["metal"]
+	for lantern_x in [0, 30]:
+		if lantern_x >= 0 and lantern_x < TILE_SIZE - 1:
+			# Lantern body
+			for y in range(8, 14):
+				img.set_pixel(lantern_x, y, lantern_frame)
+				img.set_pixel(lantern_x + 1, y, lantern_color)
+			# Lantern glow center
+			img.set_pixel(lantern_x + 1, 10, lantern_glow)
+			img.set_pixel(lantern_x + 1, 11, lantern_glow)
+
+	# Metal bands on posts (decorative)
+	for post_x in [2, 24]:
+		for band_y in [8, 20]:
+			for x in range(post_x, post_x + 6):
 				img.set_pixel(x, band_y, palette["metal"])
+
+	# Flowers/plants at base of posts (greenery)
+	var plant_color = Color(0.3, 0.5, 0.25)
+	var flower_color = Color(0.8, 0.4, 0.5)
+	for base_x in [1, 29]:
+		for py in range(26, 30):
+			if base_x >= 0 and base_x < TILE_SIZE:
+				if rng.randf() < 0.6:
+					img.set_pixel(base_x, py, plant_color)
+				elif rng.randf() < 0.3:
+					img.set_pixel(base_x, py, flower_color)
 
 
 ## Wall tile - stone/brick pattern

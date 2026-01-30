@@ -136,15 +136,20 @@ func end_battle(victory: bool) -> void:
 	if victory:
 		current_state = BattleState.VICTORY
 
+		# Calculate reward multiplier from enemies (for rare encounters like Hero Mimics)
+		var reward_multiplier = _get_battle_reward_multiplier()
+
 		# Award job EXP to player party
 		var base_exp = 50
 		for combatant in player_party:
 			if combatant.is_alive:
-				var exp_gained = base_exp
+				var exp_gained = int(base_exp * reward_multiplier)
 				combatant.gain_job_exp(exp_gained)
-				print("%s gained %d job EXP (Level: %d, EXP: %d/%d)" % [
+				var bonus_text = " (%.1fx bonus!)" % reward_multiplier if reward_multiplier > 1.0 else ""
+				print("%s gained %d job EXP%s (Level: %d, EXP: %d/%d)" % [
 					combatant.combatant_name,
 					exp_gained,
+					bonus_text,
 					combatant.job_level,
 					combatant.job_exp,
 					combatant.job_level * 100
@@ -154,6 +159,18 @@ func end_battle(victory: bool) -> void:
 
 	battle_ended.emit(victory)
 	_cleanup_battle()
+
+
+func _get_battle_reward_multiplier() -> float:
+	"""Get reward multiplier from defeated enemies (for rare encounters)"""
+	var max_multiplier = 1.0
+	for enemy in enemy_party:
+		# Check if enemy has reward_multiplier in their data
+		if enemy.has_method("get") and enemy.get("_enemy_data"):
+			var data = enemy.get("_enemy_data")
+			if data is Dictionary and data.has("reward_multiplier"):
+				max_multiplier = max(max_multiplier, data["reward_multiplier"])
+	return max_multiplier
 
 
 func _cleanup_battle() -> void:
@@ -885,11 +902,21 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var variance = randf_range(0.85, 1.15)
 	var damage = int(base_damage * variance)
 
+	# Critical hit calculation (physical attacks can crit)
+	var is_crit = false
+	var crit_chance = _calculate_crit_chance(attacker)
+	if randf() < crit_chance:
+		is_crit = true
+		var crit_multiplier = _get_crit_multiplier(attacker)
+		damage = int(damage * crit_multiplier)
+
 	var actual_damage = actual_target.take_damage(damage, false)
-	damage_dealt.emit(actual_target, actual_damage, false)
-	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!" % [attacker.combatant_name, actual_target.combatant_name, actual_damage]
+	damage_dealt.emit(actual_target, actual_damage, is_crit)
+
+	var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
+	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, crit_text]
 	battle_log_message.emit(log_msg)
-	print("%s attacks %s for %d damage!" % [attacker.combatant_name, actual_target.combatant_name, actual_damage])
+	print("%s attacks %s for %d damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, " CRIT!" if is_crit else ""])
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
@@ -1029,6 +1056,41 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			var drain_log = "  → [color=white]%s[/color] drains [color=lime]%d[/color] HP!" % [caster.combatant_name, drained]
 			battle_log_message.emit(drain_log)
 			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
+
+
+## Critical hit system
+## Physical attacks can crit, magic does NOT crit by default
+
+func _calculate_crit_chance(attacker: Combatant) -> float:
+	"""Calculate critical hit chance based on speed and equipment"""
+	# Base crit chance is 5%
+	var base_crit = 0.05
+
+	# Speed adds to crit chance (each 10 speed = +1% crit)
+	var speed_bonus = attacker.speed * 0.001
+
+	# Check for crit-boosting passives
+	var passive_bonus = 0.0
+	if "critical_strike" in attacker.equipped_passives:
+		passive_bonus += 0.10  # +10% from passive
+
+	# Check for equipment bonuses (could add this later)
+	var equip_bonus = 0.0
+
+	# Cap at 50% crit chance
+	return min(base_crit + speed_bonus + passive_bonus + equip_bonus, 0.50)
+
+
+func _get_crit_multiplier(attacker: Combatant) -> float:
+	"""Get critical hit damage multiplier"""
+	# Base crit multiplier is 1.5x
+	var base_mult = 1.5
+
+	# Check for enhanced crit passives
+	if "devastating_criticals" in attacker.equipped_passives:
+		base_mult = 2.0
+
+	return base_mult
 
 
 func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:

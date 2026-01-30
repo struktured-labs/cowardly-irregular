@@ -182,5 +182,187 @@
 			"can_inflict_permadeath": true,
 			"extremely_high_risk": true
 		}
+	},
+	"guardian": {
+		"id": "guardian",
+		"name": "Guardian",
+		"type": 1,
+		"description": "A stalwart defender who uses Brave/Default BP stacking. Can bank actions or unleash multiple attacks at once.",
+		"stat_modifiers": {
+			"max_hp": 140,
+			"max_mp": 35,
+			"attack": 13,
+			"defense": 18,
+			"magic": 6,
+			"speed": 6
+		},
+		"abilities": [
+			"default",
+			"brave",
+			"shield_bash",
+			"guardian_wall",
+			"last_stand"
+		],
+		"passive_abilities": [
+			"bp_recovery",
+			"damage_reduction",
+			"cover_ally"
+		],
+		"unlock_condition": {
+			"type": "story",
+			"chapter": 2,
+			"quest": "protectors_oath"
+		},
+		"combat_mode": {
+			"type": "brave_default",
+			"max_bp": 4,
+			"bp_per_turn": 1
+		}
+	},
+	"ninja": {
+		"id": "ninja",
+		"name": "Ninja",
+		"type": 1,
+		"description": "A speedrun specialist with shortcuts and evasion. Can skip encounters and move through the world faster.",
+		"stat_modifiers": {
+			"max_hp": 85,
+			"max_mp": 45,
+			"attack": 14,
+			"defense": 8,
+			"magic": 8,
+			"speed": 20
+		},
+		"abilities": [
+			"smoke_bomb",
+			"shadow_step",
+			"quick_strike",
+			"throw_shuriken",
+			"vanish"
+		],
+		"passive_abilities": [
+			"speedrun_mode",
+			"encounter_skip",
+			"double_jump",
+			"wall_climb"
+		],
+		"unlock_condition": {
+			"type": "achievement",
+			"id": "speed_demon",
+			"description": "Complete a dungeon in under 5 minutes"
+		},
+		"overworld_abilities": {
+			"movement_speed_bonus": 1.5,
+			"can_skip_cutscenes": true,
+			"reduced_encounter_rate": 0.5
+		}
+	},
+	"summoner": {
+		"id": "summoner",
+		"name": "Summoner",
+		"type": 1,
+		"description": "Calls forth powerful beings. Can recursively summon other summoners for exponential power.",
+		"stat_modifiers": {
+			"max_hp": 80,
+			"max_mp": 100,
+			"attack": 6,
+			"defense": 7,
+			"magic": 19,
+			"speed": 10
+		},
+		"abilities": [
+			"summon_ifrit",
+			"summon_shiva",
+			"summon_ramuh",
+			"summon_bahamut",
+			"recursive_summon"
+		],
+		"passive_abilities": [
+			"summon_boost",
+			"mp_recovery",
+			"elemental_affinity"
+		],
+		"unlock_condition": {
+			"type": "story",
+			"chapter": 3,
+			"quest": "pact_of_eidolons"
+		},
+		"summon_system": {
+			"recursive_depth": 3,
+			"summon_duration": 3,
+			"can_summon_summoners": true
+		}
+	},
+	"bossbinder": {
+		"id": "bossbinder",
+		"name": "Bossbinder",
+		"type": 2,
+		"description": "A meta job that can swap control with bosses mid-battle. If the boss wins while you control it, your save corrupts.",
+		"stat_modifiers": {
+			"max_hp": 95,
+			"max_mp": 70,
+			"attack": 11,
+			"defense": 11,
+			"magic": 16,
+			"speed": 11
+		},
+		"abilities": [
+			"mind_swap",
+			"boss_puppet",
+			"control_override",
+			"release_binding",
+			"mutual_destruction"
+		],
+		"passive_abilities": [
+			"boss_insight",
+			"shared_damage",
+			"pattern_recognition"
+		],
+		"unlock_condition": {
+			"type": "boss_defeat",
+			"boss_count": 10,
+			"description": "Defeat 10 unique bosses"
+		},
+		"meta_powers": {
+			"can_control_bosses": true,
+			"boss_victory_corrupts_save": true,
+			"learns_boss_patterns": true
+		}
+	},
+	"skiptrotter": {
+		"id": "skiptrotter",
+		"name": "Skiptrotter",
+		"type": 2,
+		"description": "A meta job that warps to objectives and bypasses content. Skips dungeons but misses rewards.",
+		"stat_modifiers": {
+			"max_hp": 90,
+			"max_mp": 55,
+			"attack": 10,
+			"defense": 9,
+			"magic": 12,
+			"speed": 14
+		},
+		"abilities": [
+			"warp_to_boss",
+			"skip_cutscene",
+			"bypass_puzzle",
+			"sequence_break",
+			"new_game_plus_warp"
+		],
+		"passive_abilities": [
+			"content_radar",
+			"optional_detector",
+			"speedrun_timer"
+		],
+		"unlock_condition": {
+			"type": "completion",
+			"requirement": "beat_game_once",
+			"description": "Complete the game at least once"
+		},
+		"meta_powers": {
+			"can_warp_to_objectives": true,
+			"can_skip_dungeons": true,
+			"missed_content_penalty": true,
+			"unlocks_sequence_breaks": true
+		}
 	}
 }

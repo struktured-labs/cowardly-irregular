@@ -141,6 +141,19 @@ func play_battle(sound_key: String) -> void:
 	_play_sound(_battle_player, SOUNDS[sound_key])
 
 
+func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
+	"""Play a battle sound with volume and pitch scaling for power-based effects"""
+	if not SOUNDS.has(sound_key):
+		return
+	var params = SOUNDS[sound_key].duplicate()
+	# Apply volume scaling
+	params["volume_db"] = volume_db
+	# Apply pitch scaling to frequency
+	if params.has("freq"):
+		params["freq"] = params["freq"] * pitch_scale
+	_play_sound(_battle_player, params)
+
+
 func play_ability(ability_id: String) -> void:
 	"""Play sound for an ability (looks up mapping or uses default)"""
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
@@ -161,11 +174,13 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	var duration = params.get("duration", 0.1)
 	var freq = params.get("freq", 440.0)
 	var sound_type = params.get("type", "blip")
+	var volume_db = params.get("volume_db", 0.0)
 
 	var generator = AudioStreamGenerator.new()
 	generator.mix_rate = sample_rate
 
 	player.stream = generator
+	player.volume_db = volume_db
 	player.play()
 
 	var playback = player.get_stream_playback()
@@ -529,6 +544,8 @@ func play_music(track: String) -> void:
 	_current_music = track
 
 	match track:
+		"title":
+			_start_title_music()
 		"battle":
 			_start_battle_music()
 		"boss":
@@ -2509,6 +2526,138 @@ func _start_cave_music() -> void:
 	_create_and_play_looping_wav(_music_buffer, sample_rate)
 
 
+func _start_title_music() -> void:
+	"""Generate majestic EarthBound-style trippy title theme"""
+	_music_playing = true
+	print("[MUSIC] Playing title theme")
+
+	var sample_rate = 22050
+	var bpm = 72.0  # Slow and majestic
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_title_music_buffer(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_title_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate majestic yet trippy EarthBound-style title music
+	   Features: detuned pads, wobbly bass, unexpected chord changes, phasing"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# Majestic chord progression with unexpected changes (EarthBound-style)
+	# Cmaj7 -> Em7 -> Fmaj7 -> G7 -> Am7 -> Dm7 -> Emaj(!) -> G7sus4
+	var chords = [
+		[261.63, 329.63, 392.00, 493.88],  # Cmaj7
+		[329.63, 392.00, 493.88, 587.33],  # Em7
+		[349.23, 440.00, 523.25, 659.25],  # Fmaj7
+		[392.00, 493.88, 587.33, 698.46],  # G7
+		[440.00, 523.25, 659.25, 783.99],  # Am7
+		[293.66, 349.23, 440.00, 523.25],  # Dm7
+		[329.63, 415.30, 493.88, 622.25],  # Emaj (unexpected!)
+		[392.00, 523.25, 587.33, 698.46],  # G7sus4
+	]
+
+	# Trippy melody - pentatonic with chromatic passing tones
+	var melody_notes = [
+		523.25, 587.33, 659.25, 783.99, 880.00,  # Bar 1-2: ascending
+		830.61, 783.99, 698.46, 659.25, 587.33,  # Bar 3-4: chromatic descent
+		523.25, 0, 659.25, 0, 783.99, 0, 880.00, 0,  # Bar 5-6: staccato
+		987.77, 880.00, 783.99, 739.99, 698.46, 659.25, 622.25, 587.33,  # Bar 7-8: cascade
+		523.25, 587.33, 659.25, 523.25, 493.88, 440.00, 392.00, 349.23,  # Bar 9-10
+		329.63, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 783.99,  # Bar 11-12
+		880.00, 0, 783.99, 0, 698.46, 0, 659.25, 0,  # Bar 13-14: breathing space
+		587.33, 523.25, 493.88, 440.00, 392.00, 349.23, 329.63, 293.66,  # Bar 15-16: resolve
+	]
+
+	# Sub-bass with wobble (very EarthBound)
+	var bass_notes = [
+		65.41, 65.41, 82.41, 82.41,  # C, C, E, E
+		87.31, 87.31, 98.00, 98.00,  # F, F, G, G
+		110.00, 110.00, 73.42, 73.42,  # A, A, D, D
+		82.41, 82.41, 98.00, 98.00,   # E, E, G, G
+	]
+
+	var quarter_dur = beat_duration
+	var eighth_dur = beat_duration / 2.0
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var beat_idx = int(t / quarter_dur) % 64
+		var eighth_idx = int(t / eighth_dur) % 128
+		var bar_idx = int(t / (quarter_dur * 4)) % 16
+		var chord_idx = int(t / (quarter_dur * 8)) % 8
+		var t_in_beat = fmod(t, quarter_dur) / quarter_dur
+
+		var sample = 0.0
+
+		# === Pad layer (detuned for trippy feel) ===
+		var chord = chords[chord_idx]
+		var pad_env = 0.6  # Sustained
+		# Main pad voices with slight detuning
+		for note_idx in range(chord.size()):
+			var freq = chord[note_idx] * 0.5  # One octave down
+			var detune = sin(t * 0.3 + note_idx * 1.5) * 0.008  # Slow wobble
+			var phase_offset = sin(t * 0.7 + note_idx) * 0.1  # Phasing
+
+			# Saw-ish pad with filtering
+			var pad_wave = _triangle_wave(t * freq * (1.0 + detune) + phase_offset)
+			pad_wave += _triangle_wave(t * freq * (1.0 - detune * 0.5) + phase_offset) * 0.5
+			sample += pad_wave * 0.08 * pad_env
+
+		# === Melody layer ===
+		var melody_idx = eighth_idx % melody_notes.size()
+		var melody_freq = melody_notes[melody_idx]
+		if melody_freq > 0:
+			# Envelope with gentle attack
+			var mel_attack = min(t_in_beat * 4.0, 1.0)
+			var mel_decay = pow(1.0 - t_in_beat, 0.3)
+			var mel_env = mel_attack * mel_decay
+
+			# Sine with slight vibrato (trippy)
+			var vibrato = sin(t * 5.5) * 0.015
+			sample += sin(t * melody_freq * (1.0 + vibrato) * TAU) * 0.15 * mel_env
+			# Add harmonics for richer sound
+			sample += sin(t * melody_freq * 2.0 * TAU) * 0.04 * mel_env
+			sample += _triangle_wave(t * melody_freq * 1.5) * 0.03 * mel_env
+
+		# === Sub-bass with wobble ===
+		var bass_idx = beat_idx % bass_notes.size()
+		var bass_freq = bass_notes[bass_idx]
+		# Wobble effect (very EarthBound)
+		var wobble_rate = 3.0 + sin(t * 0.1) * 1.5  # Varying wobble speed
+		var wobble = sin(t * wobble_rate * TAU) * 0.3 + 0.7
+		sample += sin(t * bass_freq * TAU) * 0.25 * wobble
+		# Add subtle distortion harmonics
+		sample += sin(t * bass_freq * 2.0 * TAU) * 0.05 * wobble
+
+		# === Ethereal high layer (sparkles) ===
+		if bar_idx % 2 == 0:
+			var sparkle_time = fmod(t * 3.7, 1.0)
+			if sparkle_time < 0.1:
+				var sparkle_freq = 1760.0 + sin(t * 11) * 200  # Random-ish pitch
+				var sparkle_env = pow(1.0 - sparkle_time / 0.1, 2)
+				sample += sin(sparkle_time * sparkle_freq * TAU) * 0.03 * sparkle_env
+
+		# === Phaser sweep (trippy texture) ===
+		var sweep_freq = 0.15 + sin(t * 0.05) * 0.1  # Very slow sweep
+		var sweep = sin(t * sweep_freq * TAU + sin(t * 2.3) * 0.5)
+		sample *= 0.85 + sweep * 0.15  # Subtle phase modulation
+
+		# === Soft noise bed for atmosphere ===
+		sample += randf_range(-0.015, 0.015)
+
+		# Soft clip for warmth
+		sample = tanh(sample * 1.2) * 0.85
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
 func _create_and_play_looping_wav(buffer: PackedVector2Array, sample_rate: int) -> void:
 	"""Helper to create looping WAV from buffer"""
 	var wav = AudioStreamWAV.new()
@@ -2725,6 +2874,126 @@ func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVecto
 
 		sample += randf_range(-0.02, 0.02)
 		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## Piano melody for tavern interaction
+func play_piano_melody() -> void:
+	"""Play a procedural piano melody for the tavern piano"""
+	var sample_rate = 22050
+	var duration = 3.0
+	var buffer = _generate_piano_melody(sample_rate, duration)
+
+	# Create non-looping audio
+	var wav = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = true
+	wav.loop_mode = AudioStreamWAV.LOOP_DISABLED
+
+	var data = PackedByteArray()
+	for frame in buffer:
+		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
+		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
+		data.append(left & 0xFF)
+		data.append((left >> 8) & 0xFF)
+		data.append(right & 0xFF)
+		data.append((right >> 8) & 0xFF)
+
+	wav.data = data
+
+	# Use ability player for one-shot sounds
+	_ability_player.stream = wav
+	_ability_player.play()
+
+
+func _generate_piano_melody(rate: int, duration: float) -> PackedVector2Array:
+	"""Generate a simple piano melody - Chopin-esque"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+
+	# Piano frequencies - C major broken chords with melody
+	# Note frequencies (Hz)
+	var C4 = 261.63
+	var D4 = 293.66
+	var E4 = 329.63
+	var F4 = 349.23
+	var G4 = 392.00
+	var A4 = 440.00
+	var B4 = 493.88
+	var C5 = 523.25
+	var D5 = 587.33
+	var E5 = 659.25
+	var G5 = 783.99
+
+	# Melody pattern (notes with timing)
+	var melody = [
+		{"note": E5, "start": 0.0, "dur": 0.4},
+		{"note": D5, "start": 0.4, "dur": 0.4},
+		{"note": C5, "start": 0.8, "dur": 0.6},
+		{"note": G4, "start": 1.4, "dur": 0.3},
+		{"note": A4, "start": 1.7, "dur": 0.3},
+		{"note": B4, "start": 2.0, "dur": 0.3},
+		{"note": C5, "start": 2.3, "dur": 0.7},
+	]
+
+	# Bass/accompaniment (arpeggiated chords)
+	var bass = [
+		{"note": C4, "start": 0.0, "dur": 0.2},
+		{"note": E4, "start": 0.15, "dur": 0.2},
+		{"note": G4, "start": 0.3, "dur": 0.2},
+		{"note": C4, "start": 0.8, "dur": 0.2},
+		{"note": E4, "start": 0.95, "dur": 0.2},
+		{"note": G4, "start": 1.1, "dur": 0.2},
+		{"note": F4, "start": 1.4, "dur": 0.2},
+		{"note": A4, "start": 1.55, "dur": 0.2},
+		{"note": G4, "start": 2.0, "dur": 0.2},
+		{"note": B4, "start": 2.15, "dur": 0.2},
+		{"note": D5, "start": 2.3, "dur": 0.4},
+	]
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sample = 0.0
+
+		# Process melody notes
+		for note in melody:
+			var note_t = t - note["start"]
+			if note_t >= 0 and note_t < note["dur"] * 1.5:  # Sustain + decay
+				# Piano-like envelope (sharp attack, gradual decay)
+				var attack = min(note_t * 50.0, 1.0)  # Fast attack
+				var decay = pow(0.4, note_t * 2.0)    # Gradual decay
+				var env = attack * decay
+
+				# Piano tone (fundamental + harmonics)
+				var freq = note["note"]
+				var tone = sin(t * freq * TAU) * 0.6
+				tone += sin(t * freq * 2.0 * TAU) * 0.25  # 2nd harmonic
+				tone += sin(t * freq * 3.0 * TAU) * 0.1   # 3rd harmonic
+				tone += sin(t * freq * 4.0 * TAU) * 0.05  # 4th harmonic
+
+				sample += tone * env * 0.25
+
+		# Process bass notes
+		for note in bass:
+			var note_t = t - note["start"]
+			if note_t >= 0 and note_t < note["dur"] * 1.5:
+				var attack = min(note_t * 50.0, 1.0)
+				var decay = pow(0.5, note_t * 3.0)
+				var env = attack * decay
+
+				var freq = note["note"]
+				var tone = sin(t * freq * TAU) * 0.5
+				tone += sin(t * freq * 2.0 * TAU) * 0.2
+
+				sample += tone * env * 0.15
+
+		# Soft reverb simulation (simple delay mix)
+		# Note: For a real implementation, you'd use a proper reverb
+
+		sample = clamp(sample, -0.95, 0.95)
 		buffer.append(Vector2(sample, sample))
 
 	return buffer

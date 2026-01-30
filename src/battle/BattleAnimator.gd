@@ -34,6 +34,102 @@ const SPRITE_SIZE: int = 96  # Increased from 64 for more detail
 const BASE_SIZE: int = 64    # Original design size for scaling calculations
 const SPRITE_SCALE: float = float(SPRITE_SIZE) / float(BASE_SIZE)  # 1.5x scale
 
+## Cached equipment data for weapon visuals
+static var _equipment_data: Dictionary = {}
+static var _equipment_loaded: bool = false
+
+## Load equipment data from JSON
+static func _load_equipment_data() -> void:
+	if _equipment_loaded:
+		return
+	var file = FileAccess.open("res://data/equipment.json", FileAccess.READ)
+	if file:
+		var json = JSON.new()
+		var error = json.parse(file.get_as_text())
+		if error == OK:
+			_equipment_data = json.data
+		file.close()
+	_equipment_loaded = true
+
+
+## Get weapon visual parameters for drawing
+static func get_weapon_visual(weapon_id: String) -> Dictionary:
+	"""Returns visual params for a weapon: type, colors, glow effects"""
+	_load_equipment_data()
+
+	if weapon_id.is_empty() or not _equipment_data.has("weapons"):
+		return _get_default_weapon_visual("sword")
+
+	var weapons = _equipment_data["weapons"]
+	if not weapons.has(weapon_id):
+		return _get_default_weapon_visual("sword")
+
+	var weapon = weapons[weapon_id]
+	var weapon_type = weapon.get("weapon_type", "sword")
+	var visual = weapon.get("visual", {})
+
+	var result = {
+		"type": weapon_type,
+		"glow": visual.get("glow", false),
+	}
+
+	match weapon_type:
+		"sword":
+			var blade = visual.get("blade_color", [0.7, 0.7, 0.8])
+			var blade_light = visual.get("blade_light", [0.95, 0.95, 1.0])
+			var blade_dark = visual.get("blade_dark", [0.5, 0.5, 0.6])
+			result["metal"] = Color(blade[0], blade[1], blade[2])
+			result["metal_light"] = Color(blade_light[0], blade_light[1], blade_light[2])
+			result["metal_dark"] = Color(blade_dark[0], blade_dark[1], blade_dark[2])
+			if visual.has("glow_color"):
+				var gc = visual["glow_color"]
+				result["glow_color"] = Color(gc[0], gc[1], gc[2])
+		"staff":
+			var wood = visual.get("wood_color", [0.5, 0.3, 0.2])
+			var gem = visual.get("gem_color", [0.3, 0.8, 1.0])
+			result["wood"] = Color(wood[0], wood[1], wood[2])
+			result["gem"] = Color(gem[0], gem[1], gem[2])
+			if visual.has("glow_color"):
+				var gc = visual["glow_color"]
+				result["glow_color"] = Color(gc[0], gc[1], gc[2])
+		"dagger":
+			var blade = visual.get("blade_color", [0.8, 0.8, 0.9])
+			var blade_light = visual.get("blade_light", [1.0, 1.0, 1.0])
+			result["blade"] = Color(blade[0], blade[1], blade[2])
+			result["blade_light"] = Color(blade_light[0], blade_light[1], blade_light[2])
+
+	return result
+
+
+## Get default weapon visual for a type
+static func _get_default_weapon_visual(weapon_type: String) -> Dictionary:
+	match weapon_type:
+		"sword":
+			return {
+				"type": "sword",
+				"metal": Color(0.7, 0.7, 0.8),
+				"metal_light": Color(0.95, 0.95, 1.0),
+				"metal_dark": Color(0.5, 0.5, 0.6),
+				"glow": false
+			}
+		"staff":
+			return {
+				"type": "staff",
+				"wood": Color(0.5, 0.3, 0.2),
+				"gem": Color(0.3, 0.8, 1.0),
+				"glow": false
+			}
+		"dagger":
+			return {
+				"type": "dagger",
+				"blade": Color(0.8, 0.8, 0.9),
+				"blade_light": Color(1.0, 1.0, 1.0),
+				"glow": false
+			}
+		_:
+			return _get_default_weapon_visual("sword")
+
+
 ## Helper function to scale a value from base to current sprite size
 static func _s(value: float) -> int:
 	"""Scale a coordinate/size value to current sprite size"""
@@ -402,60 +498,61 @@ func cast_sequence(on_complete: Callable = Callable()) -> void:
 
 ## Procedural sprite frame generation for 12-bit style
 
-static func create_hero_sprite_frames() -> SpriteFrames:
+static func create_hero_sprite_frames(weapon_id: String = "") -> SpriteFrames:
 	"""Create animated sprite frames for hero (12-bit style)"""
 	var frames = SpriteFrames.new()
+	var weapon_visual = get_weapon_visual(weapon_id)
 
 	# Idle animation (2 frames, slight bob)
 	frames.add_animation("idle")
 	frames.set_animation_speed("idle", 2.0)  # Slower idle
 	frames.set_animation_loop("idle", true)
-	frames.add_frame("idle", _create_hero_frame(0, 0.0))  # Normal
-	frames.add_frame("idle", _create_hero_frame(0, -1.0))  # Slight up
+	frames.add_frame("idle", _create_hero_frame(0, 0.0, weapon_visual))  # Normal
+	frames.add_frame("idle", _create_hero_frame(0, -1.0, weapon_visual))  # Slight up
 
 	# Attack animation (4 frames, swing sword) - SLOWER for visibility
 	frames.add_animation("attack")
 	frames.set_animation_speed("attack", 4.0)  # Much slower
 	frames.set_animation_loop("attack", false)
-	frames.add_frame("attack", _create_hero_frame(1, 0.0))  # Wind up
-	frames.add_frame("attack", _create_hero_frame(2, 0.0))  # Mid swing
-	frames.add_frame("attack", _create_hero_frame(3, 0.0))  # Full swing
-	frames.add_frame("attack", _create_hero_frame(0, 0.0))  # Return
+	frames.add_frame("attack", _create_hero_frame(1, 0.0, weapon_visual))  # Wind up
+	frames.add_frame("attack", _create_hero_frame(2, 0.0, weapon_visual))  # Mid swing
+	frames.add_frame("attack", _create_hero_frame(3, 0.0, weapon_visual))  # Full swing
+	frames.add_frame("attack", _create_hero_frame(0, 0.0, weapon_visual))  # Return
 
 	# Defend animation (2 frames, shield up)
 	frames.add_animation("defend")
 	frames.set_animation_speed("defend", 3.0)  # Slower
 	frames.set_animation_loop("defend", false)
-	frames.add_frame("defend", _create_hero_frame(4, 0.0))  # Shield up
-	frames.add_frame("defend", _create_hero_frame(4, 0.0))  # Hold
+	frames.add_frame("defend", _create_hero_frame(4, 0.0, weapon_visual))  # Shield up
+	frames.add_frame("defend", _create_hero_frame(4, 0.0, weapon_visual))  # Hold
 
 	# Hit animation (3 frames, recoil) - SLOWER for visibility
 	frames.add_animation("hit")
 	frames.set_animation_speed("hit", 5.0)  # Much slower
 	frames.set_animation_loop("hit", false)
-	frames.add_frame("hit", _create_hero_frame(5, 2.0))   # Recoil back
-	frames.add_frame("hit", _create_hero_frame(5, 1.0))   # Mid recoil
-	frames.add_frame("hit", _create_hero_frame(0, 0.0))   # Return to normal
+	frames.add_frame("hit", _create_hero_frame(5, 2.0, weapon_visual))   # Recoil back
+	frames.add_frame("hit", _create_hero_frame(5, 1.0, weapon_visual))   # Mid recoil
+	frames.add_frame("hit", _create_hero_frame(0, 0.0, weapon_visual))   # Return to normal
 
 	# Victory animation (2 frames, pose)
 	frames.add_animation("victory")
 	frames.set_animation_speed("victory", 1.5)  # Slower
 	frames.set_animation_loop("victory", true)
-	frames.add_frame("victory", _create_hero_frame(6, 0.0))  # Victory pose
-	frames.add_frame("victory", _create_hero_frame(6, -1.0))  # Slight bob
+	frames.add_frame("victory", _create_hero_frame(6, 0.0, weapon_visual))  # Victory pose
+	frames.add_frame("victory", _create_hero_frame(6, -1.0, weapon_visual))  # Slight bob
 
 	# Defeat animation (3 frames, collapse) - SLOWER for visibility
 	frames.add_animation("defeat")
 	frames.set_animation_speed("defeat", 3.0)  # Slower
 	frames.set_animation_loop("defeat", false)
-	frames.add_frame("defeat", _create_hero_frame(7, 0.0))   # Stagger
-	frames.add_frame("defeat", _create_hero_frame(7, 2.0))   # Falling
-	frames.add_frame("defeat", _create_hero_frame(7, 4.0))   # Down
+	frames.add_frame("defeat", _create_hero_frame(7, 0.0, weapon_visual))   # Stagger
+	frames.add_frame("defeat", _create_hero_frame(7, 2.0, weapon_visual))   # Falling
+	frames.add_frame("defeat", _create_hero_frame(7, 4.0, weapon_visual))   # Down
 
 	return frames
 
 
-static func _create_hero_frame(pose: int, y_offset: float) -> ImageTexture:
+static func _create_hero_frame(pose: int, y_offset: float, weapon_visual: Dictionary = {}) -> ImageTexture:
 	"""Create a single hero sprite frame (SNES-style knight/fighter with more detail)"""
 	var size = SPRITE_SIZE
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
@@ -470,10 +567,14 @@ static func _create_hero_frame(pose: int, y_offset: float) -> ImageTexture:
 	var color_skin = Color(0.9, 0.7, 0.6)           # Skin tone
 	var color_skin_dark = Color(0.7, 0.5, 0.4)      # Skin shadow
 	var color_hair = Color(0.6, 0.45, 0.3)          # Brown hair
-	var color_metal = Color(0.7, 0.7, 0.8)          # Metal/sword
-	var color_metal_light = Color(0.95, 0.95, 1.0)  # Sword highlight
-	var color_metal_dark = Color(0.5, 0.5, 0.6)     # Sword shadow
 	var color_outline = Color(0.08, 0.15, 0.35)     # Dark outline
+
+	# Get weapon colors from visual params or use defaults
+	var color_metal = weapon_visual.get("metal", Color(0.7, 0.7, 0.8))
+	var color_metal_light = weapon_visual.get("metal_light", Color(0.95, 0.95, 1.0))
+	var color_metal_dark = weapon_visual.get("metal_dark", Color(0.5, 0.5, 0.6))
+	var weapon_glow = weapon_visual.get("glow", false)
+	var glow_color = weapon_visual.get("glow_color", Color(1.0, 0.5, 0.2))
 
 	var center_x = size / 2
 	var base_y = int(size * 0.75 + _sf(y_offset))
@@ -482,18 +583,26 @@ static func _create_hero_frame(pose: int, y_offset: float) -> ImageTexture:
 		0:  # Idle stance
 			_draw_hero_body_enhanced(img, center_x, base_y, 0, color_armor, color_armor_dark, color_armor_mid, color_armor_light, color_armor_shine, color_skin, color_skin_dark, color_hair, color_outline)
 			_draw_sword_enhanced(img, center_x + _s(12), base_y - _s(12), 0, color_metal, color_metal_light, color_metal_dark, color_outline)
+			if weapon_glow:
+				_draw_weapon_glow(img, center_x + _s(12), base_y - _s(12), 0, glow_color)
 
 		1:  # Wind up (sword back)
 			_draw_hero_body_enhanced(img, center_x, base_y, _s(-5), color_armor, color_armor_dark, color_armor_mid, color_armor_light, color_armor_shine, color_skin, color_skin_dark, color_hair, color_outline)
 			_draw_sword_enhanced(img, center_x + _s(18), base_y - _s(18), -30, color_metal, color_metal_light, color_metal_dark, color_outline)
+			if weapon_glow:
+				_draw_weapon_glow(img, center_x + _s(18), base_y - _s(18), -30, glow_color)
 
 		2:  # Mid swing
 			_draw_hero_body_enhanced(img, center_x, base_y, 0, color_armor, color_armor_dark, color_armor_mid, color_armor_light, color_armor_shine, color_skin, color_skin_dark, color_hair, color_outline)
 			_draw_sword_enhanced(img, center_x - _s(12), base_y - _s(24), 45, color_metal, color_metal_light, color_metal_dark, color_outline)
+			if weapon_glow:
+				_draw_weapon_glow(img, center_x - _s(12), base_y - _s(24), 45, glow_color)
 
 		3:  # Full swing (sword forward)
 			_draw_hero_body_enhanced(img, center_x, base_y, _s(5), color_armor, color_armor_dark, color_armor_mid, color_armor_light, color_armor_shine, color_skin, color_skin_dark, color_hair, color_outline)
 			_draw_sword_enhanced(img, center_x - _s(18), base_y - _s(12), 90, color_metal, color_metal_light, color_metal_dark, color_outline)
+			if weapon_glow:
+				_draw_weapon_glow(img, center_x - _s(18), base_y - _s(12), 90, glow_color)
 
 		4:  # Defend (shield up)
 			_draw_hero_body_enhanced(img, center_x, base_y, 0, color_armor, color_armor_dark, color_armor_mid, color_armor_light, color_armor_shine, color_skin, color_skin_dark, color_hair, color_outline)
@@ -505,6 +614,8 @@ static func _create_hero_frame(pose: int, y_offset: float) -> ImageTexture:
 		6:  # Victory pose (sword raised)
 			_draw_hero_body_enhanced(img, center_x, base_y, 0, color_armor, color_armor_dark, color_armor_mid, color_armor_light, color_armor_shine, color_skin, color_skin_dark, color_hair, color_outline)
 			_draw_sword_enhanced(img, center_x, base_y - _s(36), -45, color_metal, color_metal_light, color_metal_dark, color_outline)
+			if weapon_glow:
+				_draw_weapon_glow(img, center_x, base_y - _s(36), -45, glow_color)
 
 		7:  # Defeat (collapsed)
 			_draw_hero_body_enhanced(img, center_x, base_y + int(_sf(y_offset)), 0, color_armor, color_armor_dark, color_armor_mid, color_armor_light, color_armor_shine, color_skin, color_skin_dark, color_hair, color_outline)
@@ -642,6 +753,41 @@ static func _draw_sword_enhanced(img: Image, cx: int, cy: int, angle: int, metal
 			var px = guard_x + int(sin(angle_rad) * gx) + int(cos(angle_rad) * gy)
 			var py = guard_y - int(cos(angle_rad) * gx) + int(sin(angle_rad) * gy)
 			_safe_pixel(img, px, py, Color(0.6, 0.5, 0.3))
+
+
+static func _draw_weapon_glow(img: Image, cx: int, cy: int, angle: int, glow_color: Color) -> void:
+	"""Draw glowing aura around weapon (for magical weapons)"""
+	var length = _s(24)
+	var angle_rad = deg_to_rad(angle)
+
+	# Draw glow particles along blade
+	for i in range(0, length, _s(4)):
+		var base_x = int(cx + cos(angle_rad) * i)
+		var base_y = int(cy + sin(angle_rad) * i)
+
+		# Draw soft glow around each point
+		for gy in range(-_s(4), _s(5)):
+			for gx in range(-_s(4), _s(5)):
+				var dist = sqrt(gx * gx + gy * gy)
+				if dist < _sf(4):
+					var px = base_x + gx
+					var py = base_y + gy
+					if px >= 0 and px < img.get_width() and py >= 0 and py < img.get_height():
+						var alpha = (1.0 - dist / _sf(4)) * 0.4
+						var color = glow_color
+						color.a = alpha
+						var existing = img.get_pixel(px, py)
+						if existing.a > 0:
+							# Blend with additive-style mixing
+							var blended = Color(
+								min(1.0, existing.r + color.r * alpha),
+								min(1.0, existing.g + color.g * alpha),
+								min(1.0, existing.b + color.b * alpha),
+								existing.a
+							)
+							img.set_pixel(px, py, blended)
+						else:
+							img.set_pixel(px, py, color)
 
 
 static func _draw_shield_enhanced(img: Image, cx: int, cy: int, metal: Color, metal_light: Color, accent: Color, accent_dark: Color, outline: Color) -> void:
@@ -931,75 +1077,76 @@ static func _create_slime_frame(pose: int, y_offset: float, scale_y: float) -> I
 	return ImageTexture.create_from_image(img)
 
 
-static func create_mage_sprite_frames(robe_color: Color = Color(0.9, 0.9, 1.0)) -> SpriteFrames:
+static func create_mage_sprite_frames(robe_color: Color = Color(0.9, 0.9, 1.0), weapon_id: String = "") -> SpriteFrames:
 	"""Create animated sprite frames for mage character (12-bit style)"""
 	var frames = SpriteFrames.new()
+	var weapon_visual = get_weapon_visual(weapon_id) if not weapon_id.is_empty() else _get_default_weapon_visual("staff")
 
 	# Idle animation (2 frames, slight bob) - SLOWER
 	frames.add_animation("idle")
 	frames.set_animation_speed("idle", 2.0)
 	frames.set_animation_loop("idle", true)
-	frames.add_frame("idle", _create_mage_frame(0, 0.0, robe_color))
-	frames.add_frame("idle", _create_mage_frame(0, -1.0, robe_color))
+	frames.add_frame("idle", _create_mage_frame(0, 0.0, robe_color, weapon_visual))
+	frames.add_frame("idle", _create_mage_frame(0, -1.0, robe_color, weapon_visual))
 
 	# Attack animation (staff thrust) - MUCH SLOWER
 	frames.add_animation("attack")
 	frames.set_animation_speed("attack", 3.0)
 	frames.set_animation_loop("attack", false)
-	frames.add_frame("attack", _create_mage_frame(1, 0.0, robe_color))
-	frames.add_frame("attack", _create_mage_frame(2, 0.0, robe_color))
-	frames.add_frame("attack", _create_mage_frame(0, 0.0, robe_color))
+	frames.add_frame("attack", _create_mage_frame(1, 0.0, robe_color, weapon_visual))
+	frames.add_frame("attack", _create_mage_frame(2, 0.0, robe_color, weapon_visual))
+	frames.add_frame("attack", _create_mage_frame(0, 0.0, robe_color, weapon_visual))
 
 	# Defend animation - SLOWER
 	frames.add_animation("defend")
 	frames.set_animation_speed("defend", 2.5)
 	frames.set_animation_loop("defend", false)
-	frames.add_frame("defend", _create_mage_frame(3, 0.0, robe_color))
-	frames.add_frame("defend", _create_mage_frame(3, 0.0, robe_color))
+	frames.add_frame("defend", _create_mage_frame(3, 0.0, robe_color, weapon_visual))
+	frames.add_frame("defend", _create_mage_frame(3, 0.0, robe_color, weapon_visual))
 
 	# Hit animation - MUCH SLOWER
 	frames.add_animation("hit")
 	frames.set_animation_speed("hit", 4.0)
 	frames.set_animation_loop("hit", false)
-	frames.add_frame("hit", _create_mage_frame(4, 2.0, robe_color))
-	frames.add_frame("hit", _create_mage_frame(4, 1.0, robe_color))
-	frames.add_frame("hit", _create_mage_frame(0, 0.0, robe_color))
+	frames.add_frame("hit", _create_mage_frame(4, 2.0, robe_color, weapon_visual))
+	frames.add_frame("hit", _create_mage_frame(4, 1.0, robe_color, weapon_visual))
+	frames.add_frame("hit", _create_mage_frame(0, 0.0, robe_color, weapon_visual))
 
 	# Cast animation (magic) - SLOWER for dramatic effect
 	frames.add_animation("cast")
 	frames.set_animation_speed("cast", 2.5)
 	frames.set_animation_loop("cast", false)
-	frames.add_frame("cast", _create_mage_frame(5, 0.0, robe_color))
-	frames.add_frame("cast", _create_mage_frame(6, -2.0, robe_color))
-	frames.add_frame("cast", _create_mage_frame(5, 0.0, robe_color))
-	frames.add_frame("cast", _create_mage_frame(0, 0.0, robe_color))
+	frames.add_frame("cast", _create_mage_frame(5, 0.0, robe_color, weapon_visual))
+	frames.add_frame("cast", _create_mage_frame(6, -2.0, robe_color, weapon_visual))
+	frames.add_frame("cast", _create_mage_frame(5, 0.0, robe_color, weapon_visual))
+	frames.add_frame("cast", _create_mage_frame(0, 0.0, robe_color, weapon_visual))
 
 	# Item animation - SLOWER
 	frames.add_animation("item")
 	frames.set_animation_speed("item", 3.0)
 	frames.set_animation_loop("item", false)
-	frames.add_frame("item", _create_mage_frame(1, 0.0, robe_color))
-	frames.add_frame("item", _create_mage_frame(0, 0.0, robe_color))
+	frames.add_frame("item", _create_mage_frame(1, 0.0, robe_color, weapon_visual))
+	frames.add_frame("item", _create_mage_frame(0, 0.0, robe_color, weapon_visual))
 
 	# Victory animation - SLOWER
 	frames.add_animation("victory")
 	frames.set_animation_speed("victory", 1.5)
 	frames.set_animation_loop("victory", true)
-	frames.add_frame("victory", _create_mage_frame(7, 0.0, robe_color))
-	frames.add_frame("victory", _create_mage_frame(7, -1.0, robe_color))
+	frames.add_frame("victory", _create_mage_frame(7, 0.0, robe_color, weapon_visual))
+	frames.add_frame("victory", _create_mage_frame(7, -1.0, robe_color, weapon_visual))
 
 	# Defeat animation - SLOWER
 	frames.add_animation("defeat")
 	frames.set_animation_speed("defeat", 2.5)
 	frames.set_animation_loop("defeat", false)
-	frames.add_frame("defeat", _create_mage_frame(4, 0.0, robe_color))
-	frames.add_frame("defeat", _create_mage_frame(4, 2.0, robe_color))
-	frames.add_frame("defeat", _create_mage_frame(4, 4.0, robe_color))
+	frames.add_frame("defeat", _create_mage_frame(4, 0.0, robe_color, weapon_visual))
+	frames.add_frame("defeat", _create_mage_frame(4, 2.0, robe_color, weapon_visual))
+	frames.add_frame("defeat", _create_mage_frame(4, 4.0, robe_color, weapon_visual))
 
 	return frames
 
 
-static func _create_mage_frame(pose: int, y_offset: float, robe_color: Color) -> ImageTexture:
+static func _create_mage_frame(pose: int, y_offset: float, robe_color: Color, weapon_visual: Dictionary = {}) -> ImageTexture:
 	"""Create a single mage sprite frame (12-bit style robed figure)"""
 	var size = SPRITE_SIZE
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
@@ -1010,8 +1157,12 @@ static func _create_mage_frame(pose: int, y_offset: float, robe_color: Color) ->
 	var color_robe_dark = robe_color.darkened(0.3)
 	var color_robe_light = robe_color.lightened(0.2)
 	var color_skin = Color(0.9, 0.7, 0.6)
-	var color_staff = Color(0.5, 0.3, 0.2)  # Brown wood
-	var color_gem = Color(0.3, 0.8, 1.0)    # Cyan gem
+
+	# Get weapon colors from visual params or use defaults
+	var color_staff = weapon_visual.get("wood", Color(0.5, 0.3, 0.2))
+	var color_gem = weapon_visual.get("gem", Color(0.3, 0.8, 1.0))
+	var weapon_glow = weapon_visual.get("glow", false)
+	var glow_color = weapon_visual.get("glow_color", color_gem)
 
 	var center_x = size / 2
 	var base_y = int(size * 0.75 + y_offset)
@@ -1020,18 +1171,26 @@ static func _create_mage_frame(pose: int, y_offset: float, robe_color: Color) ->
 		0:  # Idle stance
 			_draw_mage_body(img, center_x, base_y, 0, color_robe, color_robe_dark, color_robe_light, color_skin)
 			_draw_staff(img, center_x + 10, base_y - 10, 0, color_staff, color_gem)
+			if weapon_glow:
+				_draw_staff_glow(img, center_x + 10, base_y - 10, 0, glow_color)
 
 		1:  # Staff forward
 			_draw_mage_body(img, center_x, base_y, 5, color_robe, color_robe_dark, color_robe_light, color_skin)
 			_draw_staff(img, center_x + 6, base_y - 14, 20, color_staff, color_gem)
+			if weapon_glow:
+				_draw_staff_glow(img, center_x + 6, base_y - 14, 20, glow_color)
 
 		2:  # Staff thrust
 			_draw_mage_body(img, center_x, base_y, 10, color_robe, color_robe_dark, color_robe_light, color_skin)
 			_draw_staff(img, center_x - 4, base_y - 16, 60, color_staff, color_gem)
+			if weapon_glow:
+				_draw_staff_glow(img, center_x - 4, base_y - 16, 60, glow_color)
 
 		3:  # Defend (staff across)
 			_draw_mage_body(img, center_x, base_y, 0, color_robe, color_robe_dark, color_robe_light, color_skin)
 			_draw_staff(img, center_x, base_y - 12, 90, color_staff, color_gem)
+			if weapon_glow:
+				_draw_staff_glow(img, center_x, base_y - 12, 90, glow_color)
 
 		4:  # Hit (recoil)
 			_draw_mage_body(img, center_x, base_y, -10, color_robe, color_robe_dark, color_robe_light, color_skin)
@@ -1039,6 +1198,8 @@ static func _create_mage_frame(pose: int, y_offset: float, robe_color: Color) ->
 		5:  # Cast prep (staff raised)
 			_draw_mage_body(img, center_x, base_y, 0, color_robe, color_robe_dark, color_robe_light, color_skin)
 			_draw_staff(img, center_x + 8, base_y - 20, -20, color_staff, color_gem)
+			if weapon_glow:
+				_draw_staff_glow(img, center_x + 8, base_y - 20, -20, glow_color)
 
 		6:  # Cast release (staff glowing)
 			_draw_mage_body(img, center_x, base_y, 0, color_robe, color_robe_dark, color_robe_light, color_skin)
@@ -1049,6 +1210,8 @@ static func _create_mage_frame(pose: int, y_offset: float, robe_color: Color) ->
 		7:  # Victory pose
 			_draw_mage_body(img, center_x, base_y, 0, color_robe, color_robe_dark, color_robe_light, color_skin)
 			_draw_staff(img, center_x, base_y - 28, -45, color_staff, color_gem)
+			if weapon_glow:
+				_draw_staff_glow(img, center_x, base_y - 28, -45, glow_color)
 
 	return ImageTexture.create_from_image(img)
 
@@ -1126,6 +1289,40 @@ static func _draw_staff(img: Image, cx: int, cy: int, angle: int, wood: Color, g
 					img.set_pixel(px, py, gem)
 
 
+static func _draw_staff_glow(img: Image, cx: int, cy: int, angle: int, glow_color: Color) -> void:
+	"""Draw glowing aura around staff gem (for magical staves)"""
+	var length = 24
+	var angle_rad = deg_to_rad(angle)
+
+	# Draw glow around gem at top of staff
+	var gem_x = int(cx + cos(angle_rad) * (length - 2))
+	var gem_y = int(cy + sin(angle_rad) * (length - 2))
+
+	# Draw soft glow around gem
+	for gy in range(-_s(5), _s(6)):
+		for gx in range(-_s(5), _s(6)):
+			var dist = sqrt(gx * gx + gy * gy)
+			if dist < _sf(5):
+				var px = gem_x + gx
+				var py = gem_y + gy
+				if px >= 0 and px < img.get_width() and py >= 0 and py < img.get_height():
+					var alpha = (1.0 - dist / _sf(5)) * 0.5
+					var color = glow_color
+					color.a = alpha
+					var existing = img.get_pixel(px, py)
+					if existing.a > 0:
+						# Blend with additive-style mixing
+						var blended = Color(
+							min(1.0, existing.r + color.r * alpha),
+							min(1.0, existing.g + color.g * alpha),
+							min(1.0, existing.b + color.b * alpha),
+							existing.a
+						)
+						img.set_pixel(px, py, blended)
+					else:
+						img.set_pixel(px, py, color)
+
+
 static func _draw_magic_glow(img: Image, cx: int, cy: int, glow_color: Color) -> void:
 	"""Draw magic glow effect"""
 	for gy in range(-4, 5):
@@ -1146,75 +1343,76 @@ static func _draw_magic_glow(img: Image, cx: int, cy: int, glow_color: Color) ->
 						img.set_pixel(px, py, color)
 
 
-static func create_thief_sprite_frames() -> SpriteFrames:
+static func create_thief_sprite_frames(weapon_id: String = "") -> SpriteFrames:
 	"""Create animated sprite frames for thief character (12-bit style)"""
 	var frames = SpriteFrames.new()
+	var weapon_visual = get_weapon_visual(weapon_id) if not weapon_id.is_empty() else _get_default_weapon_visual("dagger")
 
 	# Idle animation (2 frames, slight bob) - SLOWER
 	frames.add_animation("idle")
 	frames.set_animation_speed("idle", 2.0)
 	frames.set_animation_loop("idle", true)
-	frames.add_frame("idle", _create_thief_frame(0, 0.0))
-	frames.add_frame("idle", _create_thief_frame(0, -1.0))
+	frames.add_frame("idle", _create_thief_frame(0, 0.0, weapon_visual))
+	frames.add_frame("idle", _create_thief_frame(0, -1.0, weapon_visual))
 
 	# Attack animation (quick slash) - SLOWER but still quick for thief
 	frames.add_animation("attack")
 	frames.set_animation_speed("attack", 5.0)
 	frames.set_animation_loop("attack", false)
-	frames.add_frame("attack", _create_thief_frame(1, 0.0))
-	frames.add_frame("attack", _create_thief_frame(2, -2.0))
-	frames.add_frame("attack", _create_thief_frame(3, 0.0))
-	frames.add_frame("attack", _create_thief_frame(0, 0.0))
+	frames.add_frame("attack", _create_thief_frame(1, 0.0, weapon_visual))
+	frames.add_frame("attack", _create_thief_frame(2, -2.0, weapon_visual))
+	frames.add_frame("attack", _create_thief_frame(3, 0.0, weapon_visual))
+	frames.add_frame("attack", _create_thief_frame(0, 0.0, weapon_visual))
 
 	# Defend animation - SLOWER
 	frames.add_animation("defend")
 	frames.set_animation_speed("defend", 2.5)
 	frames.set_animation_loop("defend", false)
-	frames.add_frame("defend", _create_thief_frame(4, 0.0))
-	frames.add_frame("defend", _create_thief_frame(4, 0.0))
+	frames.add_frame("defend", _create_thief_frame(4, 0.0, weapon_visual))
+	frames.add_frame("defend", _create_thief_frame(4, 0.0, weapon_visual))
 
 	# Hit animation - SLOWER
 	frames.add_animation("hit")
 	frames.set_animation_speed("hit", 5.0)
 	frames.set_animation_loop("hit", false)
-	frames.add_frame("hit", _create_thief_frame(5, 2.0))
-	frames.add_frame("hit", _create_thief_frame(5, 1.0))
-	frames.add_frame("hit", _create_thief_frame(0, 0.0))
+	frames.add_frame("hit", _create_thief_frame(5, 2.0, weapon_visual))
+	frames.add_frame("hit", _create_thief_frame(5, 1.0, weapon_visual))
+	frames.add_frame("hit", _create_thief_frame(0, 0.0, weapon_visual))
 
 	# Cast animation (use item/throw) - SLOWER
 	frames.add_animation("cast")
 	frames.set_animation_speed("cast", 3.0)
 	frames.set_animation_loop("cast", false)
-	frames.add_frame("cast", _create_thief_frame(6, 0.0))
-	frames.add_frame("cast", _create_thief_frame(6, -1.0))
-	frames.add_frame("cast", _create_thief_frame(0, 0.0))
+	frames.add_frame("cast", _create_thief_frame(6, 0.0, weapon_visual))
+	frames.add_frame("cast", _create_thief_frame(6, -1.0, weapon_visual))
+	frames.add_frame("cast", _create_thief_frame(0, 0.0, weapon_visual))
 
 	# Item animation - SLOWER
 	frames.add_animation("item")
 	frames.set_animation_speed("item", 3.0)
 	frames.set_animation_loop("item", false)
-	frames.add_frame("item", _create_thief_frame(6, 0.0))
-	frames.add_frame("item", _create_thief_frame(0, 0.0))
+	frames.add_frame("item", _create_thief_frame(6, 0.0, weapon_visual))
+	frames.add_frame("item", _create_thief_frame(0, 0.0, weapon_visual))
 
 	# Victory animation - SLOWER
 	frames.add_animation("victory")
 	frames.set_animation_speed("victory", 1.5)
 	frames.set_animation_loop("victory", true)
-	frames.add_frame("victory", _create_thief_frame(7, 0.0))
-	frames.add_frame("victory", _create_thief_frame(7, -1.0))
+	frames.add_frame("victory", _create_thief_frame(7, 0.0, weapon_visual))
+	frames.add_frame("victory", _create_thief_frame(7, -1.0, weapon_visual))
 
 	# Defeat animation - SLOWER
 	frames.add_animation("defeat")
 	frames.set_animation_speed("defeat", 2.5)
 	frames.set_animation_loop("defeat", false)
-	frames.add_frame("defeat", _create_thief_frame(5, 0.0))
-	frames.add_frame("defeat", _create_thief_frame(5, 2.0))
-	frames.add_frame("defeat", _create_thief_frame(5, 4.0))
+	frames.add_frame("defeat", _create_thief_frame(5, 0.0, weapon_visual))
+	frames.add_frame("defeat", _create_thief_frame(5, 2.0, weapon_visual))
+	frames.add_frame("defeat", _create_thief_frame(5, 4.0, weapon_visual))
 
 	return frames
 
 
-static func _create_thief_frame(pose: int, y_offset: float) -> ImageTexture:
+static func _create_thief_frame(pose: int, y_offset: float, weapon_visual: Dictionary = {}) -> ImageTexture:
 	"""Create a single thief sprite frame (12-bit style nimble rogue)"""
 	var size = SPRITE_SIZE
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
@@ -1225,8 +1423,10 @@ static func _create_thief_frame(pose: int, y_offset: float) -> ImageTexture:
 	var color_cloak_dark = Color(0.2, 0.15, 0.3)
 	var color_cloak_light = Color(0.4, 0.35, 0.5)
 	var color_skin = Color(0.9, 0.7, 0.6)
-	var color_dagger = Color(0.8, 0.8, 0.9)      # Silver dagger
-	var color_dagger_light = Color(1.0, 1.0, 1.0)
+
+	# Get weapon colors from visual params or use defaults
+	var color_dagger = weapon_visual.get("blade", Color(0.8, 0.8, 0.9))
+	var color_dagger_light = weapon_visual.get("blade_light", Color(1.0, 1.0, 1.0))
 
 	var center_x = size / 2
 	var base_y = int(size * 0.75 + y_offset)

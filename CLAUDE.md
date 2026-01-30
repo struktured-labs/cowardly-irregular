@@ -42,6 +42,24 @@ Different jobs unlock alternative combat modes (switchable mid-battle with coold
 | Vanguard | Action RPG Mode |
 | Tactician | Auto-Chess Mode |
 
+### Group Attacks (Planned)
+Entire party can pool their Advance Points for combined attacks:
+- **Requirements**: All party members must have AP to contribute
+- **AP Cost**: Sum of individual costs (e.g., 4 members × 2 AP = 8 total AP spent)
+- **Power Scaling**: Damage/effect scales exponentially with participants
+- **Types**:
+  - **All-Out Attack**: Physical damage, all party members strike together
+  - **Combo Magic**: Elemental fusion (Fire + Ice = Steam, etc.)
+  - **Formation Specials**: Unlocked by specific party compositions
+  - **Limit Breaks**: Ultimate attacks requiring full AP from all members
+- **Strategic tradeoff**: Powerful but leaves entire party vulnerable next turn
+
+### Critical Hits
+- Physical attacks can crit based on Luck/Speed stats
+- Magic does NOT crit by default (can be enabled by specific abilities/equipment)
+- Crit multiplier: 1.5x base, modified by equipment
+- Visual: Screen flash, enhanced hit sound, damage number shake
+
 ## Autobattle System
 
 **Philosophy**: Autobattle is a first-class game mechanic, not a convenience feature. Mastering autobattle scripting IS the game.

@@ -859,7 +859,9 @@ func apply_autogrind_actions(actions: Array) -> void:
 				var char_id = action.get("character_id", "")
 				var profile_idx = action.get("profile_index", 0)
 				if char_id != "":
-					AutobattleSystem.set_active_profile(char_id, profile_idx)
+					var autobattle = get_node_or_null("/root/AutobattleSystem")
+					if autobattle:
+						autobattle.set_active_profile(char_id, profile_idx)
 					print("[AUTOGRIND] Switched %s to profile %d" % [char_id, profile_idx])
 
 			"stop_grinding":

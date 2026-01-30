@@ -92,6 +92,10 @@ func set_terrain(terrain: String) -> void:
 
 func _generate_enemy_party() -> Array:
 	"""Generate a random enemy party from the current pool"""
+	# 2% chance for rare Hero Mimics encounter
+	if randf() < 0.02:
+		return _generate_hero_mimics_party()
+
 	if current_enemy_pool.is_empty():
 		# Fallback to default enemies
 		return [_create_enemy_data("slime")]
@@ -108,6 +112,54 @@ func _generate_enemy_party() -> Array:
 	for i in range(party_size):
 		var enemy_id = current_enemy_pool[randi() % current_enemy_pool.size()]
 		enemy_party.append(_create_enemy_data(enemy_id))
+
+	return enemy_party
+
+
+func _generate_hero_mimics_party() -> Array:
+	"""Generate the rare Hero Mimics encounter - 4 mimics that copy player abilities"""
+	print("[RARE ENCOUNTER] Hero Mimics!")
+
+	var enemy_party = []
+
+	# Get player party data from GameLoop
+	var player_party = []
+	if get_tree().root.has_node("GameLoop"):
+		var game_loop = get_tree().root.get_node("GameLoop")
+		player_party = game_loop.party
+
+	# Create 4 Hero Mimics, each copying a party member
+	for i in range(4):
+		var mimic_data = {
+			"id": "hero_mimic",
+			"name": "Hero Mimic %d" % (i + 1),
+			"max_hp": 100,
+			"max_mp": 50,
+			"attack": 15,
+			"defense": 12,
+			"magic": 15,
+			"speed": 14,
+			"is_mimic": true,
+			"mimic_index": i,
+			"reward_multiplier": 2.5  # 2.5x rewards
+		}
+
+		# Copy stats from corresponding party member if available
+		if i < player_party.size():
+			var member = player_party[i]
+			mimic_data["name"] = "%s Mimic" % member.combatant_name
+			mimic_data["max_hp"] = int(member.max_hp * 0.8)  # Slightly weaker
+			mimic_data["max_mp"] = member.max_mp
+			mimic_data["attack"] = member.attack
+			mimic_data["defense"] = int(member.defense * 0.9)
+			mimic_data["magic"] = member.magic
+			mimic_data["speed"] = member.speed
+			# Copy job abilities
+			if member.job:
+				mimic_data["copied_job"] = member.job.get("id", "fighter")
+				mimic_data["copied_abilities"] = member.job.get("abilities", [])
+
+		enemy_party.append(mimic_data)
 
 	return enemy_party
 
@@ -179,6 +231,20 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 				"magic": 20,
 				"speed": 14,
 				"corruption_effects": ["reality_bending"]
+			}
+
+		"hero_mimic":
+			return {
+				"id": "hero_mimic",
+				"name": "Hero Mimic",
+				"max_hp": 100,
+				"max_mp": 50,
+				"attack": 15,
+				"defense": 12,
+				"magic": 15,
+				"speed": 14,
+				"is_mimic": true,
+				"reward_multiplier": 2.5
 			}
 
 		_:

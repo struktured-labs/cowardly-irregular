@@ -31,32 +31,54 @@ func _ready() -> void:
 	add_child(_effects_container)
 
 
-func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable()) -> void:
-	"""Spawn a visual effect at the given position"""
+## Power scaling constants
+const POWER_MIN: float = 0.5  # Minimum effect scale for weak spells
+const POWER_MAX: float = 2.0  # Maximum effect scale for powerful spells
+
+
+func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable(), power: float = 1.0) -> void:
+	"""Spawn a visual effect at the given position with optional power scaling"""
 	var effect = _create_effect(effect_type)
 	effect.position = position
 	_effects_container.add_child(effect)
 
-	# Play sound for the effect
-	_play_effect_sound(effect_type)
+	# Clamp power to reasonable range
+	power = clamp(power, POWER_MIN, POWER_MAX)
+
+	# Play sound for the effect with power-based volume
+	_play_effect_sound(effect_type, power)
 
 	# Start the effect animation
-	_animate_effect(effect, effect_type, on_complete)
+	_animate_effect(effect, effect_type, on_complete, power)
 
 
-func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_complete: Callable = Callable()) -> void:
-	"""Spawn effect on a target sprite"""
+func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_complete: Callable = Callable(), power: float = 1.0) -> void:
+	"""Spawn effect on a target sprite with power scaling"""
 	if not is_instance_valid(target_sprite):
 		if on_complete.is_valid():
 			on_complete.call()
 		return
-	spawn_effect(effect_type, target_sprite.global_position, on_complete)
+	spawn_effect(effect_type, target_sprite.global_position, on_complete, power)
 
 
-func spawn_ability_effect(ability_id: String, target_position: Vector2, on_complete: Callable = Callable()) -> void:
-	"""Spawn effect based on ability ID"""
+func spawn_ability_effect(ability_id: String, target_position: Vector2, on_complete: Callable = Callable(), power: float = 1.0) -> void:
+	"""Spawn effect based on ability ID with power scaling"""
 	var effect_type = _get_effect_type_for_ability(ability_id)
-	spawn_effect(effect_type, target_position, on_complete)
+	# Auto-scale power based on ability tier
+	var auto_power = _get_ability_power_tier(ability_id)
+	spawn_effect(effect_type, target_position, on_complete, auto_power if power == 1.0 else power)
+
+
+func _get_ability_power_tier(ability_id: String) -> float:
+	"""Get power tier based on ability name suffix (basic -> -a -> -aga)"""
+	# Tier 3 spells (most powerful)
+	if ability_id.ends_with("aga") or ability_id in ["holy", "flare", "ultima", "megalixir"]:
+		return 1.8
+	# Tier 2 spells
+	if ability_id.ends_with("a") or ability_id in ["cura", "fira", "blizzara", "thundara", "hi_ether"]:
+		return 1.3
+	# Tier 1 spells (basic)
+	return 1.0
 
 
 func _get_effect_type_for_ability(ability_id: String) -> EffectType:
@@ -105,8 +127,8 @@ func _get_effect_type_for_ability(ability_id: String) -> EffectType:
 	return EffectType.PHYSICAL
 
 
-func _play_effect_sound(effect_type: EffectType) -> void:
-	"""Play appropriate sound for effect"""
+func _play_effect_sound(effect_type: EffectType, power: float = 1.0) -> void:
+	"""Play appropriate sound for effect with power-based volume and pitch"""
 	var sound_key = ""
 	match effect_type:
 		EffectType.FIRE:
@@ -132,8 +154,12 @@ func _play_effect_sound(effect_type: EffectType) -> void:
 		EffectType.PHYSICAL:
 			sound_key = "attack_hit"
 
-	if sound_key != "":
-		SoundManager.play_battle(sound_key)
+	if sound_key != "" and SoundManager:
+		# Scale volume based on power (more powerful = slightly louder)
+		var volume_db = lerp(-3.0, 3.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+		# Lower pitch for more powerful spells (sounds heavier/bigger)
+		var pitch = lerp(1.1, 0.9, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+		SoundManager.play_battle_scaled(sound_key, volume_db, pitch)
 
 
 func _create_effect(effect_type: EffectType) -> Node2D:
@@ -143,85 +169,99 @@ func _create_effect(effect_type: EffectType) -> Node2D:
 	return effect
 
 
-func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Callable) -> void:
-	"""Animate the effect based on type"""
+func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Callable, power: float = 1.0) -> void:
+	"""Animate the effect based on type with power scaling"""
 	match effect_type:
 		EffectType.FIRE:
-			_animate_fire(effect, on_complete)
+			_animate_fire(effect, on_complete, power)
 		EffectType.ICE:
-			_animate_ice(effect, on_complete)
+			_animate_ice(effect, on_complete, power)
 		EffectType.LIGHTNING:
-			_animate_lightning(effect, on_complete)
+			_animate_lightning(effect, on_complete, power)
 		EffectType.HOLY:
-			_animate_holy(effect, on_complete)
+			_animate_holy(effect, on_complete, power)
 		EffectType.DARK:
-			_animate_dark(effect, on_complete)
+			_animate_dark(effect, on_complete, power)
 		EffectType.HEAL:
-			_animate_heal(effect, on_complete)
+			_animate_heal(effect, on_complete, power)
 		EffectType.MP_RESTORE:
-			_animate_mp_restore(effect, on_complete)
+			_animate_mp_restore(effect, on_complete, power)
 		EffectType.BUFF:
-			_animate_buff(effect, on_complete)
+			_animate_buff(effect, on_complete, power)
 		EffectType.DEBUFF:
-			_animate_debuff(effect, on_complete)
+			_animate_debuff(effect, on_complete, power)
 		EffectType.POISON:
-			_animate_poison(effect, on_complete)
+			_animate_poison(effect, on_complete, power)
 		EffectType.PHYSICAL:
-			_animate_physical(effect, on_complete)
+			_animate_physical(effect, on_complete, power)
 
 
 ## Effect Animations
 
-func _animate_fire(effect: Node2D, on_complete: Callable) -> void:
-	"""Fire spell - dramatic explosion with rising flames"""
+func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
+	"""Fire spell - dramatic explosion with rising flames, scaled by power"""
 	var particles: Array[Sprite2D] = []
-	var particle_count = 24  # More particles!
+	# Scale particle count by power (12 at min, 36 at max)
+	var particle_count = int(lerp(12, 36, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
 
-	# Initial flash/explosion
+	# Initial flash/explosion - size scales with power
+	var flash_size = lerp(80, 180, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
 	var flash = ColorRect.new()
-	flash.size = Vector2(120, 120)
-	flash.position = Vector2(-60, -60)
+	flash.size = Vector2(flash_size, flash_size)
+	flash.position = Vector2(-flash_size / 2, -flash_size / 2)
 	flash.color = Color(1.0, 0.6, 0.0, 0.0)
 	effect.add_child(flash)
 
-	# Screen shake effect
-	_trigger_screen_shake(8.0, 0.3)
+	# Screen shake scales with power
+	var shake_intensity = lerp(4.0, 15.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	var shake_duration = lerp(0.2, 0.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	_trigger_screen_shake(shake_intensity, shake_duration)
 
-	# Explosion ring
+	# Explosion ring - scale with power
 	var ring = _create_explosion_ring(Color(1.0, 0.5, 0.0))
 	ring.scale = Vector2.ZERO
 	effect.add_child(ring)
 
+	# Particle spread and rise scale with power
+	var base_spread = lerp(10, 20, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
 	for i in range(particle_count):
 		var particle = _create_fire_particle()
 		var angle = randf() * TAU
-		var dist = randf_range(0, 15)
+		var dist = randf_range(0, base_spread)
 		particle.position = Vector2(cos(angle) * dist, sin(angle) * dist)
+		# Scale particle size with power
+		particle.scale = Vector2(power * 0.8, power * 0.8)
 		effect.add_child(particle)
 		particles.append(particle)
 
-	var duration = 0.8
+	# Duration scales slightly with power (bigger = slower for impact)
+	var duration = lerp(0.6, 1.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Flash
-	tween.tween_property(flash, "color:a", 0.6, 0.05)
+	# Flash intensity scales with power
+	var flash_alpha = lerp(0.4, 0.8, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	tween.tween_property(flash, "color:a", flash_alpha, 0.05)
 	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.05)
 
-	# Ring expands
-	tween.tween_property(ring, "scale", Vector2(2.5, 2.5), 0.3)
+	# Ring expansion scales with power
+	var ring_scale = lerp(2.0, 4.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	tween.tween_property(ring, "scale", Vector2(ring_scale, ring_scale), 0.3)
 	tween.tween_property(ring, "modulate:a", 0.0, 0.2).set_delay(0.15)
 
+	# Particle movement scales with power
+	var rise_mult = lerp(0.7, 1.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	var spread_mult = lerp(0.7, 1.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
 	for i in range(particles.size()):
 		var p = particles[i]
 		var delay = randf() * 0.15
-		var rise = randf_range(50, 100)
-		var spread = randf_range(-30, 30)
+		var rise = randf_range(50, 100) * rise_mult
+		var spread = randf_range(-30, 30) * spread_mult
 
 		tween.tween_property(p, "position:y", p.position.y - rise, duration).set_delay(delay)
 		tween.tween_property(p, "position:x", p.position.x + spread, duration).set_delay(delay)
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.5).set_delay(delay + duration * 0.4)
-		tween.tween_property(p, "scale", Vector2(2.0, 2.5), duration).set_delay(delay)
+		tween.tween_property(p, "scale", p.scale * Vector2(2.0, 2.5), duration).set_delay(delay)
 		tween.tween_property(p, "rotation", randf_range(-PI, PI), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
@@ -304,7 +344,7 @@ func _create_fire_particle() -> Sprite2D:
 	return sprite
 
 
-func _animate_ice(effect: Node2D, on_complete: Callable) -> void:
+func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Ice spell - crystalline shards forming"""
 	var particles: Array[Sprite2D] = []
 	var particle_count = 8
@@ -372,61 +412,71 @@ func _create_ice_particle() -> Sprite2D:
 	return sprite
 
 
-func _animate_lightning(effect: Node2D, on_complete: Callable) -> void:
-	"""Lightning spell - dramatic multi-bolt strike with bright flash"""
-	# Multiple bolts for more impact
+func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
+	"""Lightning spell - dramatic multi-bolt strike with bright flash, scaled by power"""
+	# Bolt count scales with power (2 at min, 5 at max)
+	var bolt_count = int(lerp(2, 5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
 	var bolts: Array[Sprite2D] = []
-	for i in range(3):
+	var bolt_spread = lerp(10, 25, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	for i in range(bolt_count):
 		var bolt = _create_lightning_bolt()
 		bolt.modulate.a = 0.0
-		bolt.position.x = randf_range(-15, 15)
+		bolt.position.x = randf_range(-bolt_spread, bolt_spread)
 		bolt.rotation = randf_range(-0.2, 0.2)
+		bolt.scale = Vector2(power * 0.8, power * 0.9)
 		effect.add_child(bolt)
 		bolts.append(bolt)
 
-	# Bright flash effect
+	# Bright flash effect - size scales with power
+	var flash_size = lerp(200, 400, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
 	var flash = ColorRect.new()
-	flash.size = Vector2(300, 300)
-	flash.position = Vector2(-150, -150)
+	flash.size = Vector2(flash_size, flash_size)
+	flash.position = Vector2(-flash_size / 2, -flash_size / 2)
 	flash.color = Color(1.0, 1.0, 0.9, 0.0)
 	effect.add_child(flash)
 
-	# Electric sparks at impact point
+	# Electric sparks at impact point - count scales with power
+	var spark_count = int(lerp(8, 20, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
 	var sparks: Array[Sprite2D] = []
-	for i in range(12):
+	for i in range(spark_count):
 		var spark = _create_spark()
 		spark.position = Vector2(randf_range(-10, 10), randf_range(-5, 5))
 		spark.modulate.a = 0.0
+		spark.scale = Vector2(power, power)
 		effect.add_child(spark)
 		sparks.append(spark)
 
-	# Screen shake
-	_trigger_screen_shake(12.0, 0.25)
+	# Screen shake scales with power
+	var shake_intensity = lerp(8.0, 18.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	var shake_duration = lerp(0.15, 0.4, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	_trigger_screen_shake(shake_intensity, shake_duration)
 
-	var duration = 0.5
+	var duration = lerp(0.4, 0.7, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Intense flash
-	tween.tween_property(flash, "color:a", 0.8, 0.03)
+	# Intense flash - alpha scales with power
+	var flash_alpha = lerp(0.6, 1.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	tween.tween_property(flash, "color:a", flash_alpha, 0.03)
 	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.03)
 
-	# Bolts flash rapidly
+	# Bolts flash rapidly - more flicker cycles for higher power
+	var flicker_count = int(lerp(2, 4, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
 	for i in range(bolts.size()):
 		var bolt = bolts[i]
 		var delay = float(i) * 0.02
-		tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(delay)
-		tween.tween_property(bolt, "modulate:a", 0.2, 0.03).set_delay(delay + 0.02)
-		tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(delay + 0.05)
-		tween.tween_property(bolt, "modulate:a", 0.5, 0.02).set_delay(delay + 0.07)
-		tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(delay + 0.09)
+		for f in range(flicker_count):
+			var fd = delay + float(f) * 0.04
+			tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(fd)
+			tween.tween_property(bolt, "modulate:a", 0.3, 0.02).set_delay(fd + 0.02)
 		tween.tween_property(bolt, "modulate:a", 0.0, 0.15).set_delay(delay + 0.15)
 
-	# Sparks fly outward
+	# Sparks fly outward - distance scales with power
+	var spark_dist_mult = lerp(0.7, 1.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
 	for i in range(sparks.size()):
 		var spark = sparks[i]
 		var angle = (float(i) / sparks.size()) * TAU
-		var dist = randf_range(30, 60)
+		var dist = randf_range(30, 60) * spark_dist_mult
 		var end_pos = Vector2(cos(angle) * dist, sin(angle) * dist)
 
 		tween.tween_property(spark, "modulate:a", 1.0, 0.05).set_delay(0.05)
@@ -493,7 +543,7 @@ func _create_lightning_bolt() -> Sprite2D:
 	return sprite
 
 
-func _animate_holy(effect: Node2D, on_complete: Callable) -> void:
+func _animate_holy(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Holy spell - radiant light beams"""
 	var particles: Array[Sprite2D] = []
 	var ray_count = 8
@@ -577,7 +627,7 @@ func _create_holy_glow() -> Sprite2D:
 	return sprite
 
 
-func _animate_dark(effect: Node2D, on_complete: Callable) -> void:
+func _animate_dark(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Dark spell - swirling shadows"""
 	var particles: Array[Sprite2D] = []
 	var particle_count = 10
@@ -631,7 +681,7 @@ func _create_dark_particle() -> Sprite2D:
 	return sprite
 
 
-func _animate_heal(effect: Node2D, on_complete: Callable) -> void:
+func _animate_heal(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Heal spell - rising sparkles"""
 	var particles: Array[Sprite2D] = []
 	var particle_count = 15
@@ -693,7 +743,7 @@ func _create_heal_particle() -> Sprite2D:
 	return sprite
 
 
-func _animate_buff(effect: Node2D, on_complete: Callable) -> void:
+func _animate_buff(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Buff spell - upward arrows/sparkles"""
 	var particles: Array[Sprite2D] = []
 	var particle_count = 6
@@ -750,7 +800,7 @@ func _create_buff_arrow() -> Sprite2D:
 	return sprite
 
 
-func _animate_debuff(effect: Node2D, on_complete: Callable) -> void:
+func _animate_debuff(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Debuff spell - downward arrows"""
 	var particles: Array[Sprite2D] = []
 	var particle_count = 6
@@ -807,7 +857,7 @@ func _create_debuff_arrow() -> Sprite2D:
 	return sprite
 
 
-func _animate_poison(effect: Node2D, on_complete: Callable) -> void:
+func _animate_poison(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Poison spell - bubbling toxic particles"""
 	var particles: Array[Sprite2D] = []
 	var particle_count = 10
@@ -863,7 +913,7 @@ func _create_poison_bubble() -> Sprite2D:
 	return sprite
 
 
-func _animate_physical(effect: Node2D, on_complete: Callable) -> void:
+func _animate_physical(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Physical hit - dramatic slash with impact burst"""
 	# Multiple slash lines for more impact
 	var slashes: Array[Sprite2D] = []
@@ -1002,7 +1052,7 @@ func _create_slash_effect() -> Sprite2D:
 	return sprite
 
 
-func _animate_mp_restore(effect: Node2D, on_complete: Callable) -> void:
+func _animate_mp_restore(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""MP restore spell - rising blue sparkles"""
 	var particles: Array[Sprite2D] = []
 	var particle_count = 15

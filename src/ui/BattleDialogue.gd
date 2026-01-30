@@ -3,6 +3,9 @@ class_name BattleDialogue
 
 ## Battle Dialogue System - Shows character portraits with themed dialogue boxes
 ## Used for boss intros, story moments, and character reactions
+## Supports custom character portraits via CharacterPortrait widget
+
+const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 
 signal dialogue_finished()
 signal dialogue_advanced()
@@ -15,6 +18,17 @@ var _typing_speed: float = 0.03  # Seconds per character
 var _current_text: String = ""
 var _displayed_chars: int = 0
 var _typing_timer: Timer
+
+## Party reference for custom portrait lookups
+var _party: Array = []
+
+## Speaker name to party member mapping
+const SPEAKER_TO_CHAR_ID = {
+	"hero": "hero",
+	"mira": "mira",
+	"zack": "zack",
+	"vex": "vex"
+}
 
 ## UI Elements
 var _background: ColorRect
@@ -241,6 +255,11 @@ func _draw_retro_border(parent: Control, width: float, height: float, color: Col
 
 ## Public API
 
+func set_party(party: Array) -> void:
+	"""Set the party reference for custom portrait lookups"""
+	_party = party
+
+
 func show_dialogue(dialogue_lines: Array) -> void:
 	"""Start showing dialogue. Each line is {speaker: String, text: String, portrait: String (optional)}"""
 	_dialogue_queue = dialogue_lines
@@ -304,9 +323,27 @@ func _show_current_line() -> void:
 	# Set speaker name
 	_speaker_label.text = entry.get("speaker", "")
 
-	# Set portrait
+	# Set portrait - check for party member custom portraits first
 	var portrait_type = entry.get("portrait", "narrator")
-	_portrait_image.texture = _create_portrait(portrait_type)
+	var custom_portrait = _get_party_member_portrait(portrait_type)
+	if custom_portrait:
+		# Remove the default portrait_image and add custom portrait widget
+		_portrait_image.visible = false
+		# Remove any existing custom portrait
+		for child in _portrait_frame.get_children():
+			if child.has_meta("custom_portrait"):
+				child.queue_free()
+		custom_portrait.position = Vector2(4, 4)
+		custom_portrait.set_meta("custom_portrait", true)
+		_portrait_frame.add_child(custom_portrait)
+	else:
+		# Use procedural portrait
+		_portrait_image.visible = true
+		_portrait_image.texture = _create_portrait(portrait_type)
+		# Remove any existing custom portrait
+		for child in _portrait_frame.get_children():
+			if child.has_meta("custom_portrait"):
+				child.queue_free()
 
 	# Start typing effect
 	_current_text = entry.get("text", "")
@@ -371,6 +408,31 @@ func _input(event: InputEvent) -> void:
 
 
 ## Portrait Generation
+
+func _get_party_member_portrait(portrait_type: String) -> Control:
+	"""Try to get a CharacterPortrait for a party member"""
+	# Check if this is a party member portrait type
+	var char_id = SPEAKER_TO_CHAR_ID.get(portrait_type.to_lower(), "")
+	if char_id == "":
+		return null
+
+	# Find the party member
+	for member in _party:
+		if not member is Combatant:
+			continue
+		var member_id = member.combatant_name.to_lower().replace(" ", "_")
+		if member_id == char_id:
+			# Found the party member - create portrait with their customization
+			var custom = member.customization if "customization" in member else null
+			var job_id = member.job.get("id", "fighter") if member.job else "fighter"
+			if custom:
+				# Use CharacterPortrait with customization
+				var portrait = CharacterPortraitClass.new(custom, job_id, CharacterPortraitClass.PortraitSize.LARGE)
+				portrait.size = Vector2(PORTRAIT_SIZE - 8, PORTRAIT_SIZE - 8)
+				return portrait
+
+	return null
+
 
 func _create_portrait(portrait_type: String) -> ImageTexture:
 	"""Create a portrait image based on type"""

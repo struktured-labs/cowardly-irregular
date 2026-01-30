@@ -11,6 +11,7 @@ const DamageNumber = preload("res://src/ui/DamageNumber.gd")
 const AutobattleToggleUIClass = preload("res://src/ui/autobattle/AutobattleToggleUI.gd")
 const BattleDialogueClass = preload("res://src/ui/BattleDialogue.gd")
 const BattleBackgroundClass = preload("res://src/battle/BattleBackground.gd")
+const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -88,6 +89,7 @@ var managed_by_game_loop: bool = false  # When true, don't handle restart intern
 var command_memory_enabled: bool = true  # Remember last command per character
 var force_miniboss: bool = false  # When true, spawn a miniboss instead of regular enemies
 var forced_enemies: Array = []  # When set, spawn these specific enemies (e.g., ["cave_rat_king"])
+var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies from autogrind system
 
 ## Battle speed settings
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
@@ -555,6 +557,11 @@ func _spawn_enemies() -> void:
 			enemy.queue_free()
 	test_enemies.clear()
 
+	# Check for autogrind pre-configured enemies
+	if autogrind_enemy_data.size() > 0:
+		_spawn_from_data(autogrind_enemy_data)
+		return
+
 	# Check for forced specific enemies (e.g., boss battles)
 	if forced_enemies.size() > 0:
 		_spawn_forced_enemies()
@@ -632,6 +639,90 @@ func _spawn_enemies() -> void:
 			enemy_names[monster_type["name"]] += 1
 		else:
 			enemy_names[monster_type["name"]] = 1
+
+	# Build encounter message
+	var msg_parts: Array = []
+	for enemy_name in enemy_names:
+		var count = enemy_names[enemy_name]
+		if count > 1:
+			msg_parts.append("%d %s" % [count, enemy_name + "s"])
+		else:
+			msg_parts.append("1 %s" % enemy_name)
+	log_message("[color=gray]%s appeared![/color]" % " and ".join(msg_parts))
+
+	_update_ui()
+
+
+func _spawn_from_data(enemy_data_array: Array) -> void:
+	"""Spawn enemies from pre-configured data dictionaries (used by autogrind system)"""
+	var enemy_names: Dictionary = {}
+	var max_enemies = mini(enemy_data_array.size(), enemy_positions.size())
+
+	for i in range(max_enemies):
+		var data = enemy_data_array[i]
+		var enemy = Combatant.new()
+
+		var stats = {}
+		if data.has("stats"):
+			stats = data["stats"].duplicate()
+		else:
+			stats = {
+				"max_hp": data.get("max_hp", 100),
+				"max_mp": data.get("max_mp", 20),
+				"attack": data.get("attack", 10),
+				"defense": data.get("defense", 10),
+				"magic": data.get("magic", 10),
+				"speed": data.get("speed", 8)
+			}
+
+		# Count duplicates for suffixing
+		var type_id = data.get("id", "unknown")
+		var type_name = data.get("name", "Monster")
+		var same_type_count = 0
+		for j in range(i):
+			if enemy_data_array[j].get("id", "") == type_id:
+				same_type_count += 1
+
+		var total_same = 0
+		for ed in enemy_data_array:
+			if ed.get("id", "") == type_id:
+				total_same += 1
+
+		if total_same > 1:
+			stats["name"] = type_name + " " + ["A", "B", "C"][same_type_count % 3]
+		else:
+			stats["name"] = type_name
+
+		# Slight speed variation
+		stats["speed"] = stats.get("speed", 8) + i
+
+		enemy.initialize(stats)
+		add_child(enemy)
+
+		# Store monster type ID for sprite selection
+		enemy.set_meta("monster_type", type_id)
+
+		# Add weaknesses/resistances from data
+		for weakness in data.get("weaknesses", []):
+			enemy.elemental_weaknesses.append(weakness)
+		for resistance in data.get("resistances", []):
+			enemy.elemental_resistances.append(resistance)
+
+		# Store corruption effects if present
+		if data.has("corruption_effects"):
+			enemy.set_meta("corruption_effects", data["corruption_effects"])
+
+		# Connect signals
+		enemy.hp_changed.connect(_on_enemy_hp_changed.bind(i))
+		enemy.died.connect(_on_enemy_died.bind(i))
+
+		test_enemies.append(enemy)
+
+		# Track for encounter message
+		if type_name in enemy_names:
+			enemy_names[type_name] += 1
+		else:
+			enemy_names[type_name] = 1
 
 	# Build encounter message
 	var msg_parts: Array = []
@@ -820,19 +911,20 @@ func _create_battle_sprites() -> void:
 		# Choose sprite based on job and set scale
 		# Fighter (hero) is already large, others get scaled up
 		var job_id = member.job.get("id", "fighter") if member.job else "fighter"
+		var weapon_id = member.equipped_weapon if member.equipped_weapon else ""
 		var sprite_scale = Vector2(1.0, 1.0)  # Default scale
 		match job_id:
 			"white_mage":
-				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.9, 0.9, 1.0))
+				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.9, 0.9, 1.0), weapon_id)
 				sprite_scale = Vector2(1.4, 1.4)  # Mira bigger
 			"black_mage":
-				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.15, 0.1, 0.25))
+				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.15, 0.1, 0.25), weapon_id)
 				sprite_scale = Vector2(1.3, 1.3)  # Vex bigger
 			"thief":
-				sprite.sprite_frames = BattleAnimatorClass.create_thief_sprite_frames()
+				sprite.sprite_frames = BattleAnimatorClass.create_thief_sprite_frames(weapon_id)
 				sprite_scale = Vector2(1.35, 1.35)  # Zack bigger
 			_:
-				sprite.sprite_frames = BattleAnimatorClass.create_hero_sprite_frames()
+				sprite.sprite_frames = BattleAnimatorClass.create_hero_sprite_frames(weapon_id)
 				sprite_scale = Vector2(1.0, 1.0)  # Hero already large
 
 		sprite.scale = sprite_scale
@@ -1104,6 +1196,21 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
+	# Header row with portrait and name
+	var header = HBoxContainer.new()
+	header.name = "Header"
+
+	# Portrait
+	var job_id = member.job.get("id", "fighter") if member.job else "fighter"
+	var portrait = CharacterPortraitClass.new(member.customization, job_id, CharacterPortraitClass.PortraitSize.SMALL)
+	portrait.name = "Portrait"
+	header.add_child(portrait)
+
+	# Spacer
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(4, 0)
+	header.add_child(spacer)
+
 	# Name label with autobattle indicator
 	var name_label = Label.new()
 	name_label.name = "Name"
@@ -1113,7 +1220,10 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
 	if auto_indicator != "":
 		name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
-	box.add_child(name_label)
+	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(name_label)
+
+	box.add_child(header)
 
 	# HP bar
 	var hp_bar = ProgressBar.new()

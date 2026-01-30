@@ -6,6 +6,7 @@ class_name OverworldMenu
 ## Triggered by X button on overworld
 
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
+const SaveScreenClass = preload("res://src/ui/SaveScreen.gd")
 
 signal closed()
 signal menu_action(action: String, target: Combatant)
@@ -19,8 +20,8 @@ const MENU_OPTIONS = [
 	{"id": "abilities", "label": "Abilities", "enabled": true},
 	{"id": "autobattle", "label": "Autobattle", "enabled": true},
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
-	{"id": "save", "label": "Save", "enabled": false},  # Grayed out for now
-	{"id": "load", "label": "Load", "enabled": false},
+	{"id": "save", "label": "Save", "enabled": true},
+	{"id": "load", "label": "Load", "enabled": true},
 	{"id": "settings", "label": "Settings", "enabled": true},
 ]
 
@@ -446,11 +447,44 @@ func _handle_menu_action(action_id: String) -> void:
 			menu_action.emit("autogrind", null)
 			_close_menu()
 		"save":
-			print("[MENU] Save - not yet implemented")
+			_open_save_screen(SaveScreenClass.Mode.SAVE)
 		"load":
-			print("[MENU] Load - not yet implemented")
+			_open_save_screen(SaveScreenClass.Mode.LOAD)
 		"settings":
 			_open_settings()
+
+
+func _open_save_screen(mode: int) -> void:
+	"""Open the save/load screen"""
+	var save_screen = SaveScreenClass.new()
+	save_screen.size = size
+	save_screen.setup(mode, party)
+	save_screen.closed.connect(_on_save_screen_closed)
+	save_screen.save_completed.connect(_on_save_completed)
+	save_screen.load_completed.connect(_on_load_completed)
+	add_child(save_screen)
+	# Hide main menu while save screen is open
+	for child in get_children():
+		if child != save_screen:
+			child.visible = false
+
+
+func _on_save_screen_closed() -> void:
+	"""Save screen closed - show main menu again"""
+	for child in get_children():
+		child.visible = true
+	_build_ui()
+
+
+func _on_save_completed(_slot: int) -> void:
+	"""Save completed successfully"""
+	print("[MENU] Game saved to slot %d" % _slot)
+
+
+func _on_load_completed(_slot: int) -> void:
+	"""Load completed - close menu and refresh game state"""
+	print("[MENU] Game loaded from slot %d" % _slot)
+	_close_menu()
 
 
 func _open_settings() -> void:
