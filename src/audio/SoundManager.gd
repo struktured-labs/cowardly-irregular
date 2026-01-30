@@ -578,7 +578,24 @@ func play_music(track: String) -> void:
 		"battle_snake":
 			_start_monster_music("snake")
 		_:
-			push_warning("Unknown music track: %s" % track)
+			# Fallback: unknown battle tracks use generic battle music
+			if track.begins_with("battle_"):
+				var monster = track.substr(7)
+				# Try stripping prefixes (cave_bat → bat, forest_spider → spider)
+				var parts = monster.split("_")
+				var base_name = parts[-1] if parts.size() > 1 else monster
+				var base_track = "battle_" + base_name
+				if base_track != track and base_track in ["battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake"]:
+					print("[MUSIC] Mapping %s → %s" % [track, base_track])
+					play_music(base_track)
+				else:
+					print("[MUSIC] No specific theme for %s, using default battle music" % track)
+					_start_battle_music()
+			elif track.begins_with("boss"):
+				print("[MUSIC] Unknown boss track %s, using generic boss music" % track)
+				_start_boss_music()
+			else:
+				push_warning("Unknown music track: %s" % track)
 
 
 func stop_music() -> void:
