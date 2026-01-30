@@ -7,7 +7,7 @@ class_name ShopScene
 signal shop_closed()
 
 enum ShopMode { MAIN, BUY, SELL, QUANTITY }
-enum ShopType { WEAPON, ARMOR, ITEM }
+enum ShopType { WEAPON, ARMOR, ITEM, ACCESSORY }
 
 ## Shop configuration
 var shop_type: ShopType = ShopType.ITEM
@@ -316,6 +316,8 @@ func _get_item_data(item_id: String) -> Dictionary:
 			return equipment_system.armors.get(item_id, {})
 		ShopType.ITEM:
 			return item_system.items.get(item_id, {})
+		ShopType.ACCESSORY:
+			return equipment_system.accessories.get(item_id, {})
 	return {}
 
 
@@ -397,7 +399,7 @@ func _update_description_for_item(item_id: String) -> void:
 	desc += "%s\n\n" % item_data.get("description", "No description")
 
 	# Show stats for equipment
-	if shop_type in [ShopType.WEAPON, ShopType.ARMOR]:
+	if shop_type in [ShopType.WEAPON, ShopType.ARMOR, ShopType.ACCESSORY]:
 		desc += "Stats:\n"
 		var stat_mods = item_data.get("stat_mods", {})
 		for stat in stat_mods:

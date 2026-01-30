@@ -206,6 +206,14 @@ func _setup_buildings() -> void:
 	item_shop.position = Vector2(22 * TILE_SIZE, 8 * TILE_SIZE)
 	buildings.add_child(item_shop)
 
+	# === ACCESSORY SHOP ===
+	var accessory_shop = VillageShopScript.new()
+	accessory_shop.shop_name = "Glittering Baubles"
+	accessory_shop.shop_type = VillageShopScript.ShopType.ACCESSORY
+	accessory_shop.keeper_name = "Opal"
+	accessory_shop.position = Vector2(10 * TILE_SIZE, 3.5 * TILE_SIZE)
+	buildings.add_child(accessory_shop)
+
 	# === BAR ===
 	var bar = VillageBarScript.new()
 	bar.bar_name = "The Dancing Tonberry"

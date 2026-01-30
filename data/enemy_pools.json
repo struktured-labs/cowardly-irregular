@@ -6,8 +6,14 @@
 	"cave_floor_4": ["cave_rat", "goblin", "rat_guard"],
 	"cave_floor_5": ["goblin", "rat_guard", "diseased_rat"],
 	"cave_floor_6": [],
-	"forest_dungeon": ["wolf", "corrupted_sprite"],
-	"overworld_plains": ["slime", "goblin"],
-	"overworld_forest": ["wolf", "bat"],
-	"corrupted_zone": ["corrupted_sprite", "glitch_entity"]
+	"forest_dungeon": ["wolf", "corrupted_sprite", "mushroom"],
+	"overworld_plains": ["slime", "goblin", "bat"],
+	"overworld_forest": ["wolf", "bat", "mushroom"],
+	"corrupted_zone": ["corrupted_sprite", "glitch_entity", "skeleton"],
+	"deep_cave": ["skeleton", "giant_bat", "rat_guard", "specter"],
+	"frozen_cavern": ["ice_wolf", "bat", "skeleton"],
+	"dark_forest": ["wolf", "imp", "specter", "mushroom"],
+	"miniboss_cave": ["cave_troll", "treasure_mimic", "cursed_armor", "crystal_golem"],
+	"miniboss_forest": ["blood_wolf_alpha", "ironback_beetle", "elder_mushroom"],
+	"miniboss_corrupted": ["rogue_automaton", "shadow_knight"]
 }

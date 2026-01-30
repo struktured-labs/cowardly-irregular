@@ -374,6 +374,207 @@
 		"weaknesses": ["holy", "fire"],
 		"resistances": ["dark", "ice"]
 	},
+	"treasure_mimic": {
+		"id": "treasure_mimic",
+		"name": "Treasure Mimic",
+		"description": "You thought it was a treasure chest. It was not a treasure chest. Miniboss.",
+		"level": 7,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 320,
+			"max_mp": 40,
+			"attack": 42,
+			"defense": 28,
+			"magic": 15,
+			"speed": 16
+		},
+		"abilities": ["chomp", "lure", "gold_scatter", "lid_slam"],
+		"exp_reward": 140,
+		"gold_reward": 200,
+		"drop_table": [
+			{"item": "hi_potion", "chance": 0.8},
+			{"item": "ether", "chance": 0.6},
+			{"item": "elixir", "chance": 0.15}
+		],
+		"weaknesses": ["fire", "lightning"],
+		"resistances": ["ice"],
+		"dialogue": {
+			"intro": [
+				"*You approach the treasure chest eagerly*",
+				"*It has teeth.*",
+				"Hero: Oh come ON."
+			]
+		}
+	},
+	"ironback_beetle": {
+		"id": "ironback_beetle",
+		"name": "Ironback Beetle",
+		"description": "A beetle the size of a horse with armor-plated carapace. Miniboss.",
+		"level": 6,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 280,
+			"max_mp": 20,
+			"attack": 38,
+			"defense": 35,
+			"magic": 8,
+			"speed": 7
+		},
+		"abilities": ["horn_charge", "shell_guard", "acid_spray", "burrow"],
+		"exp_reward": 120,
+		"gold_reward": 80,
+		"drop_table": [
+			{"item": "iron_shell", "chance": 0.7},
+			{"item": "power_drink", "chance": 0.4}
+		],
+		"weaknesses": ["fire", "ice"],
+		"resistances": ["physical", "lightning"]
+	},
+	"cursed_armor": {
+		"id": "cursed_armor",
+		"name": "Cursed Armor",
+		"description": "A suit of armor animated by a vengeful spirit. It clanks ominously. Miniboss.",
+		"level": 8,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 380,
+			"max_mp": 60,
+			"attack": 44,
+			"defense": 32,
+			"magic": 20,
+			"speed": 9
+		},
+		"abilities": ["cursed_strike", "armor_break", "soul_wail", "reflect_shield"],
+		"exp_reward": 160,
+		"gold_reward": 110,
+		"drop_table": [
+			{"item": "cursed_plate", "chance": 0.6},
+			{"item": "dark_crystal", "chance": 0.4},
+			{"item": "remedy", "chance": 0.3}
+		],
+		"weaknesses": ["holy", "lightning"],
+		"resistances": ["physical", "dark"],
+		"undead": true
+	},
+	"blood_wolf_alpha": {
+		"id": "blood_wolf_alpha",
+		"name": "Blood Wolf Alpha",
+		"description": "The leader of a dire wolf pack. Its howl freezes the blood. Miniboss.",
+		"level": 7,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 300,
+			"max_mp": 35,
+			"attack": 50,
+			"defense": 18,
+			"magic": 22,
+			"speed": 18
+		},
+		"abilities": ["rending_bite", "blood_howl", "pack_call", "frenzy"],
+		"exp_reward": 145,
+		"gold_reward": 90,
+		"drop_table": [
+			{"item": "wolf_fang", "chance": 0.9},
+			{"item": "speed_tonic", "chance": 0.5},
+			{"item": "beast_hide", "chance": 0.3}
+		],
+		"weaknesses": ["fire"],
+		"resistances": ["ice"],
+		"dialogue": {
+			"intro": [
+				"*A massive wolf blocks the path, red eyes gleaming*",
+				"*The pack gathers behind it*",
+				"*It snarls. This one is different.*"
+			]
+		}
+	},
+	"crystal_golem": {
+		"id": "crystal_golem",
+		"name": "Crystal Golem",
+		"description": "A construct of living crystal. Reflects magic at random. Miniboss.",
+		"level": 9,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 450,
+			"max_mp": 50,
+			"attack": 40,
+			"defense": 30,
+			"magic": 10,
+			"speed": 5
+		},
+		"abilities": ["crystal_slam", "prismatic_reflect", "gem_shatter", "reconstruct"],
+		"exp_reward": 180,
+		"gold_reward": 150,
+		"drop_table": [
+			{"item": "crystal_shard", "chance": 0.8},
+			{"item": "mythril_ore", "chance": 0.3},
+			{"item": "hi_potion", "chance": 0.5}
+		],
+		"weaknesses": ["physical"],
+		"resistances": ["fire", "ice", "lightning"],
+		"special_effects": {
+			"magic_reflect_chance": 0.3
+		}
+	},
+	"rogue_automaton": {
+		"id": "rogue_automaton",
+		"name": "Rogue Automaton",
+		"description": "A malfunctioning machine that speaks in error codes. Its attacks glitch reality. Miniboss.",
+		"level": 10,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 400,
+			"max_mp": 80,
+			"attack": 35,
+			"defense": 25,
+			"magic": 30,
+			"speed": 15
+		},
+		"abilities": ["voltage_surge", "segfault_slash", "buffer_overflow", "emergency_repair"],
+		"exp_reward": 200,
+		"gold_reward": 130,
+		"drop_table": [
+			{"item": "circuit_board", "chance": 0.7},
+			{"item": "corrupted_core", "chance": 0.25},
+			{"item": "speed_tonic", "chance": 0.4}
+		],
+		"weaknesses": ["lightning"],
+		"resistances": ["ice", "poison"],
+		"meta_enemy": true,
+		"dialogue": {
+			"intro": [
+				"*BZZT* ERR_0x4E554C4C: DIRECTIVE NOT FOUND",
+				"*The machine's eyes flicker between red and green*",
+				"*ENGAGING COMBAT PROTOCOL: KILL_ALL_HUMANS.EXE*",
+				"Hero: That's... not reassuring."
+			]
+		}
+	},
+	"elder_mushroom": {
+		"id": "elder_mushroom",
+		"name": "Elder Mushroom",
+		"description": "An ancient fungoid the size of a tree. Its spores are hallucinogenic. Miniboss.",
+		"level": 6,
+		"miniboss": true,
+		"stats": {
+			"max_hp": 350,
+			"max_mp": 70,
+			"attack": 25,
+			"defense": 20,
+			"magic": 40,
+			"speed": 4
+		},
+		"abilities": ["toxic_cloud", "hallucination_spores", "root_bind", "regenerate"],
+		"exp_reward": 130,
+		"gold_reward": 95,
+		"drop_table": [
+			{"item": "antidote", "chance": 0.9},
+			{"item": "remedy", "chance": 0.4},
+			{"item": "poison_spore", "chance": 0.7}
+		],
+		"weaknesses": ["fire", "ice"],
+		"resistances": ["poison", "dark"]
+	},
 	"corrupted_guardian": {
 		"id": "corrupted_guardian",
 		"name": "Corrupted Guardian",

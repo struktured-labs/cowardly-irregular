@@ -6,7 +6,7 @@ class_name VillageShop
 
 signal item_purchased(item_id: String)
 
-enum ShopType { WEAPON, ARMOR, ITEM }
+enum ShopType { WEAPON, ARMOR, ITEM, ACCESSORY }
 
 @export var shop_name: String = "Shop"
 @export var shop_type: ShopType = ShopType.ITEM
@@ -25,10 +25,34 @@ var _dialogue_state: int = 0
 
 const TILE_SIZE: int = 32
 
-## Shop inventories (placeholder - should load from data)
-const WEAPON_INVENTORY = ["iron_sword", "bronze_sword", "iron_dagger"]
-const ARMOR_INVENTORY = ["leather_armor", "cloth_robe", "iron_armor"]
-const ITEM_INVENTORY = ["potion", "hi_potion", "ether", "antidote", "phoenix_down"]
+## Shop inventories - expanded with full catalog
+const WEAPON_INVENTORY = [
+	"bronze_sword", "iron_dagger", "wooden_staff", "bone_staff",
+	"iron_sword", "poison_dagger", "oak_staff", "sleep_dagger",
+	"steel_sword", "shadow_rod", "war_axe", "thunder_rod",
+	"mythril_dagger", "ice_blade", "flame_sword", "crystal_staff",
+	"assassin_blade", "mythril_sword", "holy_staff"
+]
+const ARMOR_INVENTORY = [
+	"leather_armor", "cloth_robe", "thief_garb",
+	"bone_armor", "chain_mail", "dark_robe",
+	"iron_armor", "mage_robe", "ninja_garb",
+	"sage_robe", "mythril_vest", "dragon_mail"
+]
+const ITEM_INVENTORY = [
+	"potion", "antidote", "eye_drops", "echo_herbs", "smoke_bomb",
+	"hi_potion", "ether", "phoenix_down", "gold_needle",
+	"power_drink", "speed_tonic", "defense_tonic", "magic_tonic",
+	"bomb_fragment", "lightning_bolt", "holy_water",
+	"remedy", "repel", "x_potion", "hi_ether",
+	"arctic_wind", "mega_potion", "tent", "mega_ether", "elixir"
+]
+const ACCESSORY_INVENTORY = [
+	"warriors_belt", "power_ring", "magic_ring", "lucky_charm",
+	"speed_boots", "resist_ring", "barrier_ring",
+	"thiefs_glove", "hp_amulet", "mp_amulet",
+	"elven_cloak", "glass_amulet"
+]
 
 
 func _ready() -> void:
@@ -70,6 +94,9 @@ func _draw_shop(image: Image) -> void:
 		ShopType.ITEM:
 			main_color = Color(0.25, 0.45, 0.35)  # Forest green
 			accent_color = Color(0.7, 0.6, 0.4)  # Tan
+		ShopType.ACCESSORY:
+			main_color = Color(0.45, 0.30, 0.45)  # Purple
+			accent_color = Color(0.8, 0.65, 0.3)  # Gold
 
 	var wood = Color(0.45, 0.30, 0.15)
 	var wood_dark = Color(0.35, 0.22, 0.10)
@@ -256,6 +283,8 @@ func _get_shop_type_enum() -> int:
 			return 1  # ShopScene.ShopType.ARMOR
 		ShopType.ITEM:
 			return 2  # ShopScene.ShopType.ITEM
+		ShopType.ACCESSORY:
+			return 3  # ShopScene.ShopType.ACCESSORY
 	return 2
 
 
@@ -288,6 +317,8 @@ func _get_inventory() -> Array:
 			return ARMOR_INVENTORY
 		ShopType.ITEM:
 			return ITEM_INVENTORY
+		ShopType.ACCESSORY:
+			return ACCESSORY_INVENTORY
 	return []
 
 
@@ -299,6 +330,8 @@ func _get_type_name() -> String:
 			return "armor"
 		ShopType.ITEM:
 			return "items"
+		ShopType.ACCESSORY:
+			return "accessories"
 	return "goods"
 
 

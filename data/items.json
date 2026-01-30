@@ -164,5 +164,139 @@
 			"element": "ice"
 		},
 		"cost": 300
+	},
+	"x_potion": {
+		"id": "x_potion",
+		"name": "X-Potion",
+		"category": 0,
+		"target_type": 0,
+		"description": "Fully restores one ally's HP",
+		"effects": {
+			"heal_hp_percent": 100
+		},
+		"cost": 600
+	},
+	"smoke_bomb": {
+		"id": "smoke_bomb",
+		"name": "Smoke Bomb",
+		"category": 1,
+		"target_type": 1,
+		"description": "Guarantees escape from non-boss battles",
+		"effects": {
+			"escape_battle": true
+		},
+		"cost": 100
+	},
+	"tent": {
+		"id": "tent",
+		"name": "Tent",
+		"category": 0,
+		"target_type": 1,
+		"description": "Restores 50% HP and MP to all allies. Use at save points.",
+		"effects": {
+			"heal_hp_percent": 50,
+			"heal_mp_percent": 50,
+			"save_point_only": true
+		},
+		"cost": 500
+	},
+	"eye_drops": {
+		"id": "eye_drops",
+		"name": "Eye Drops",
+		"category": 2,
+		"target_type": 0,
+		"description": "Cures blindness",
+		"effects": {
+			"cure_status": ["blind"]
+		},
+		"cost": 80
+	},
+	"gold_needle": {
+		"id": "gold_needle",
+		"name": "Gold Needle",
+		"category": 2,
+		"target_type": 0,
+		"description": "Cures petrification",
+		"effects": {
+			"cure_status": ["petrify"]
+		},
+		"cost": 200
+	},
+	"lightning_bolt": {
+		"id": "lightning_bolt",
+		"name": "Lightning Bolt",
+		"category": 3,
+		"target_type": 2,
+		"description": "Deals 120 lightning damage to one enemy",
+		"effects": {
+			"damage": 120,
+			"element": "lightning"
+		},
+		"cost": 250
+	},
+	"holy_water": {
+		"id": "holy_water",
+		"name": "Holy Water",
+		"category": 3,
+		"target_type": 2,
+		"description": "Deals 150 holy damage to undead. Weak against living foes.",
+		"effects": {
+			"damage": 150,
+			"element": "holy",
+			"bonus_vs_undead": 2.0
+		},
+		"cost": 200
+	},
+	"defense_tonic": {
+		"id": "defense_tonic",
+		"name": "Defense Tonic",
+		"category": 1,
+		"target_type": 0,
+		"description": "Increases defense for 3 turns",
+		"effects": {
+			"add_buff": {
+				"type": "defense_up",
+				"power": 1.5,
+				"duration": 3
+			}
+		},
+		"cost": 200
+	},
+	"magic_tonic": {
+		"id": "magic_tonic",
+		"name": "Magic Tonic",
+		"category": 1,
+		"target_type": 0,
+		"description": "Increases magic power for 3 turns",
+		"effects": {
+			"add_buff": {
+				"type": "magic_up",
+				"power": 1.5,
+				"duration": 3
+			}
+		},
+		"cost": 200
+	},
+	"repel": {
+		"id": "repel",
+		"name": "Repel",
+		"category": 1,
+		"target_type": 1,
+		"description": "Prevents random encounters for 50 steps",
+		"effects": {
+			"repel_steps": 50
+		},
+		"cost": 400
+	},
+	"mega_ether": {
+		"id": "mega_ether",
+		"name": "Mega Ether",
+		"category": 0,
+		"target_type": 1,
+		"description": "Restores 50 MP to all allies",
+		"effects": {
+			"heal_mp": 50
+		},
+		"cost": 600
 	}
 }

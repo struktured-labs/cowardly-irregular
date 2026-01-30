@@ -207,6 +207,129 @@
 			"special_effects": {
 				"critical_bonus": 0.15
 			}
+		},
+		"steel_sword": {
+			"id": "steel_sword",
+			"name": "Steel Sword",
+			"description": "A well-forged steel blade. Reliable and sharp.",
+			"cost": 800,
+			"weapon_type": "sword",
+			"visual": {
+				"blade_color": [0.8, 0.82, 0.88],
+				"blade_light": [1.0, 1.0, 1.0],
+				"blade_dark": [0.55, 0.55, 0.65]
+			},
+			"stat_mods": {
+				"attack": 15
+			}
+		},
+		"mythril_dagger": {
+			"id": "mythril_dagger",
+			"name": "Mythril Dagger",
+			"description": "A lightweight dagger forged from mythril ore",
+			"cost": 1500,
+			"weapon_type": "dagger",
+			"visual": {
+				"blade_color": [0.7, 0.85, 0.95],
+				"blade_light": [0.9, 0.95, 1.0],
+				"glow": true,
+				"glow_color": [0.7, 0.9, 1.0]
+			},
+			"stat_mods": {
+				"attack": 13,
+				"speed": 10,
+				"magic": 3
+			}
+		},
+		"thunder_rod": {
+			"id": "thunder_rod",
+			"name": "Thunder Rod",
+			"description": "A rod crackling with electrical energy",
+			"cost": 1200,
+			"weapon_type": "staff",
+			"visual": {
+				"wood_color": [0.3, 0.3, 0.4],
+				"gem_color": [1.0, 0.9, 0.3],
+				"glow": true,
+				"glow_color": [1.0, 1.0, 0.4]
+			},
+			"stat_mods": {
+				"magic": 18,
+				"attack": 2
+			},
+			"special_effects": {
+				"lightning_damage_bonus": 1.5
+			}
+		},
+		"war_axe": {
+			"id": "war_axe",
+			"name": "War Axe",
+			"description": "A heavy axe that hits like a freight train. Slow but devastating.",
+			"cost": 1000,
+			"weapon_type": "axe",
+			"visual": {
+				"blade_color": [0.6, 0.6, 0.65],
+				"blade_light": [0.85, 0.85, 0.9],
+				"blade_dark": [0.4, 0.4, 0.45]
+			},
+			"stat_mods": {
+				"attack": 22,
+				"speed": -4
+			}
+		},
+		"bone_staff": {
+			"id": "bone_staff",
+			"name": "Bone Staff",
+			"description": "A staff carved from the bones of something best not asked about",
+			"cost": 500,
+			"weapon_type": "staff",
+			"visual": {
+				"wood_color": [0.85, 0.82, 0.75],
+				"gem_color": [0.3, 0.8, 0.3]
+			},
+			"stat_mods": {
+				"magic": 10,
+				"attack": 4
+			},
+			"special_effects": {
+				"dark_damage_bonus": 1.3
+			}
+		},
+		"sleep_dagger": {
+			"id": "sleep_dagger",
+			"name": "Sleep Dagger",
+			"description": "A dagger coated in soporific toxin. May put enemies to sleep.",
+			"cost": 900,
+			"weapon_type": "dagger",
+			"visual": {
+				"blade_color": [0.5, 0.4, 0.7],
+				"blade_light": [0.7, 0.6, 0.9]
+			},
+			"stat_mods": {
+				"attack": 9,
+				"speed": 6
+			},
+			"special_effects": {
+				"sleep_chance": 0.2
+			}
+		},
+		"mythril_sword": {
+			"id": "mythril_sword",
+			"name": "Mythril Sword",
+			"description": "A sword forged from rare mythril. Light yet lethal.",
+			"cost": 2200,
+			"weapon_type": "sword",
+			"visual": {
+				"blade_color": [0.75, 0.88, 0.95],
+				"blade_light": [0.95, 1.0, 1.0],
+				"blade_dark": [0.5, 0.65, 0.75],
+				"glow": true,
+				"glow_color": [0.8, 0.95, 1.0]
+			},
+			"stat_mods": {
+				"attack": 20,
+				"speed": 3
+			}
 		}
 	},
 	"armors": {
@@ -272,6 +395,64 @@
 				"defense": 5,
 				"magic": 10,
 				"max_mp": 20
+			}
+		},
+		"chain_mail": {
+			"id": "chain_mail",
+			"name": "Chain Mail",
+			"description": "Interlocking metal rings. Good balance of protection and mobility.",
+			"cost": 600,
+			"stat_mods": {
+				"defense": 12,
+				"max_hp": 15,
+				"speed": -1
+			}
+		},
+		"sage_robe": {
+			"id": "sage_robe",
+			"name": "Sage Robe",
+			"description": "Robes worn by ancient sages. Greatly enhances magical power.",
+			"cost": 1400,
+			"stat_mods": {
+				"defense": 7,
+				"magic": 14,
+				"max_mp": 25
+			}
+		},
+		"ninja_garb": {
+			"id": "ninja_garb",
+			"name": "Ninja Garb",
+			"description": "Lightweight gear that prioritizes speed above all else.",
+			"cost": 1200,
+			"stat_mods": {
+				"defense": 8,
+				"speed": 14,
+				"attack": 3
+			}
+		},
+		"mythril_vest": {
+			"id": "mythril_vest",
+			"name": "Mythril Vest",
+			"description": "A vest woven with mythril threads. Light but surprisingly tough.",
+			"cost": 1800,
+			"stat_mods": {
+				"defense": 20,
+				"max_hp": 30,
+				"speed": 2
+			}
+		},
+		"bone_armor": {
+			"id": "bone_armor",
+			"name": "Bone Armor",
+			"description": "Armor assembled from monster bones. Unsettling but effective.",
+			"cost": 450,
+			"stat_mods": {
+				"defense": 10,
+				"max_hp": 10,
+				"magic": 3
+			},
+			"special_effects": {
+				"dark_resistance": true
 			}
 		},
 		"dragon_mail": {
@@ -344,6 +525,75 @@
 				"attack": 15,
 				"magic": 15,
 				"defense": -10
+			}
+		},
+		"lucky_charm": {
+			"id": "lucky_charm",
+			"name": "Lucky Charm",
+			"description": "A four-leaf clover pendant. Increases critical hit chance.",
+			"cost": 700,
+			"stat_mods": {
+				"speed": 3
+			},
+			"special_effects": {
+				"critical_bonus": 0.1
+			}
+		},
+		"barrier_ring": {
+			"id": "barrier_ring",
+			"name": "Barrier Ring",
+			"description": "Creates a faint magical barrier. Boosts both physical and magical defense.",
+			"cost": 900,
+			"stat_mods": {
+				"defense": 8,
+				"magic": 5
+			}
+		},
+		"resist_ring": {
+			"id": "resist_ring",
+			"name": "Resist Ring",
+			"description": "Helps shrug off status ailments.",
+			"cost": 800,
+			"stat_mods": {
+				"defense": 3
+			},
+			"special_effects": {
+				"status_resistance": 0.3
+			}
+		},
+		"thiefs_glove": {
+			"id": "thiefs_glove",
+			"name": "Thief's Glove",
+			"description": "Sticky fingers guaranteed. Greatly improves steal success rate.",
+			"cost": 1000,
+			"stat_mods": {
+				"speed": 5
+			},
+			"special_effects": {
+				"steal_bonus": 0.5
+			}
+		},
+		"warriors_belt": {
+			"id": "warriors_belt",
+			"name": "Warrior's Belt",
+			"description": "A thick leather belt that bolsters fighting spirit.",
+			"cost": 500,
+			"stat_mods": {
+				"attack": 6,
+				"max_hp": 15
+			}
+		},
+		"elven_cloak": {
+			"id": "elven_cloak",
+			"name": "Elven Cloak",
+			"description": "A shimmering cloak that makes the wearer harder to hit.",
+			"cost": 1500,
+			"stat_mods": {
+				"speed": 8,
+				"defense": 5
+			},
+			"special_effects": {
+				"evasion_bonus": 0.1
 			}
 		}
 	}

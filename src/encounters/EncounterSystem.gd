@@ -27,9 +27,18 @@ var enemy_pools: Dictionary = {}  # {area_id: [enemy_ids]}
 var repel_steps_remaining: int = 0  # Steps with no encounters (from repel item)
 var forced_encounter_next_step: bool = false  # Force encounter on next step
 
+## Miniboss system
+var miniboss_chance: float = 0.05  # 5% chance a random encounter is a miniboss instead
+var miniboss_pools: Dictionary = {}  # {area_prefix: [miniboss_ids]}
+var current_area_prefix: String = "cave"  # Used to pick relevant miniboss pool
+
+## Monster database (loaded from JSON)
+var monster_database: Dictionary = {}
+
 
 func _ready() -> void:
 	_load_enemy_pools()
+	_load_monster_database()
 
 	# Connect to player movement
 	# Note: Player will emit moved signal, we'll connect when player is available
@@ -96,6 +105,12 @@ func _generate_enemy_party() -> Array:
 	if randf() < 0.02:
 		return _generate_hero_mimics_party()
 
+	# Miniboss chance - solo miniboss encounter
+	if randf() < miniboss_chance:
+		var miniboss = _try_generate_miniboss()
+		if miniboss.size() > 0:
+			return miniboss
+
 	if current_enemy_pool.is_empty():
 		# Fallback to default enemies
 		return [_create_enemy_data("slime")]
@@ -114,6 +129,40 @@ func _generate_enemy_party() -> Array:
 		enemy_party.append(_create_enemy_data(enemy_id))
 
 	return enemy_party
+
+
+func _try_generate_miniboss() -> Array:
+	"""Try to generate a miniboss encounter based on current area"""
+	# Find matching miniboss pool for current area
+	var pool_key = "miniboss_" + current_area_prefix
+	var miniboss_pool: Array = []
+
+	if enemy_pools.has(pool_key):
+		miniboss_pool = enemy_pools[pool_key]
+	else:
+		# Fallback: try all miniboss pools
+		for key in enemy_pools:
+			if key.begins_with("miniboss_"):
+				miniboss_pool.append_array(enemy_pools[key])
+
+	if miniboss_pool.is_empty():
+		return []
+
+	var miniboss_id = miniboss_pool[randi() % miniboss_pool.size()]
+	var miniboss_data = _create_enemy_data(miniboss_id)
+
+	if miniboss_data.get("id", "") == "slime" and miniboss_id != "slime":
+		# Fallback triggered, miniboss not in database
+		return []
+
+	print("[MINIBOSS ENCOUNTER] %s appears!" % miniboss_data.get("name", "???"))
+	return [miniboss_data]
+
+
+func set_area_prefix(prefix: String) -> void:
+	"""Set the current area prefix for miniboss pool selection"""
+	current_area_prefix = prefix
+	print("Area prefix set to: %s" % prefix)
 
 
 func _generate_hero_mimics_party() -> Array:
@@ -165,49 +214,38 @@ func _generate_hero_mimics_party() -> Array:
 
 
 func _create_enemy_data(enemy_id: String) -> Dictionary:
-	"""Create enemy data from enemy ID"""
-	# In full implementation, would load from enemy database
-	# For now, create basic enemy data
+	"""Create enemy data from monster database or fallback"""
+	# Load from monster database first
+	if monster_database.has(enemy_id):
+		var db_entry = monster_database[enemy_id]
+		var stats = db_entry.get("stats", {})
+		var data = {
+			"id": db_entry.get("id", enemy_id),
+			"name": db_entry.get("name", enemy_id.capitalize()),
+			"max_hp": stats.get("max_hp", 80),
+			"max_mp": stats.get("max_mp", 20),
+			"attack": stats.get("attack", 10),
+			"defense": stats.get("defense", 8),
+			"magic": stats.get("magic", 5),
+			"speed": stats.get("speed", 8),
+			"elemental_weaknesses": db_entry.get("weaknesses", []),
+			"elemental_resistances": db_entry.get("resistances", []),
+			"abilities": db_entry.get("abilities", []),
+			"exp_reward": db_entry.get("exp_reward", 10),
+			"gold_reward": db_entry.get("gold_reward", 5),
+			"drop_table": db_entry.get("drop_table", [])
+		}
+		# Copy special flags
+		for flag in ["boss", "miniboss", "undead", "meta_enemy", "adaptive",
+					"autogrind_spawned", "corruption_spawned", "is_mimic",
+					"self_aware", "very_dangerous", "extremely_dangerous",
+					"can_cause_permadeath", "dialogue"]:
+			if db_entry.has(flag):
+				data[flag] = db_entry[flag]
+		return data
 
+	# Legacy hardcoded fallbacks for enemies not yet in database
 	match enemy_id:
-		"slime":
-			return {
-				"id": "slime",
-				"name": "Slime",
-				"max_hp": 80,
-				"max_mp": 20,
-				"attack": 10,
-				"defense": 8,
-				"magic": 5,
-				"speed": 8,
-				"elemental_weaknesses": ["fire"],
-				"elemental_resistances": ["ice"]
-			}
-
-		"bat":
-			return {
-				"id": "bat",
-				"name": "Cave Bat",
-				"max_hp": 60,
-				"max_mp": 15,
-				"attack": 12,
-				"defense": 6,
-				"magic": 8,
-				"speed": 15
-			}
-
-		"goblin":
-			return {
-				"id": "goblin",
-				"name": "Goblin",
-				"max_hp": 100,
-				"max_mp": 10,
-				"attack": 15,
-				"defense": 10,
-				"magic": 5,
-				"speed": 12
-			}
-
 		"wolf":
 			return {
 				"id": "wolf",
@@ -233,23 +271,33 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 				"corruption_effects": ["reality_bending"]
 			}
 
-		"hero_mimic":
+		"glitch_entity":
 			return {
-				"id": "hero_mimic",
-				"name": "Hero Mimic",
-				"max_hp": 100,
+				"id": "glitch_entity",
+				"name": "Glitch Entity",
+				"max_hp": 110,
 				"max_mp": 50,
 				"attack": 15,
-				"defense": 12,
-				"magic": 15,
-				"speed": 14,
-				"is_mimic": true,
-				"reward_multiplier": 2.5
+				"defense": 10,
+				"magic": 25,
+				"speed": 13,
+				"meta_enemy": true
 			}
 
 		_:
-			# Unknown enemy, return basic slime
-			return _create_enemy_data("slime")
+			# Unknown enemy, return basic slime from database or hardcoded
+			if monster_database.has("slime"):
+				return _create_enemy_data("slime")
+			return {
+				"id": "slime",
+				"name": "Slime",
+				"max_hp": 80,
+				"max_mp": 20,
+				"attack": 10,
+				"defense": 8,
+				"magic": 5,
+				"speed": 8
+			}
 
 
 ## Configuration
@@ -325,12 +373,34 @@ func _create_default_enemy_pools() -> void:
 	"""Create default enemy pools for areas"""
 	enemy_pools = {
 		"cave_dungeon": ["slime", "bat", "goblin"],
-		"forest_dungeon": ["wolf", "corrupted_sprite"],
-		"overworld_plains": ["slime", "goblin"],
-		"overworld_forest": ["wolf", "bat"]
+		"forest_dungeon": ["wolf", "corrupted_sprite", "mushroom"],
+		"overworld_plains": ["slime", "goblin", "bat"],
+		"overworld_forest": ["wolf", "bat", "mushroom"],
+		"miniboss_cave": ["cave_troll", "treasure_mimic", "cursed_armor", "crystal_golem"],
+		"miniboss_forest": ["blood_wolf_alpha", "ironback_beetle", "elder_mushroom"],
+		"miniboss_corrupted": ["rogue_automaton", "shadow_knight"]
 	}
 
 	print("Created default enemy pools for %d areas" % enemy_pools.size())
+
+
+func _load_monster_database() -> void:
+	"""Load monster data from monsters.json"""
+	var data_path = "res://data/monsters.json"
+
+	if FileAccess.file_exists(data_path):
+		var file = FileAccess.open(data_path, FileAccess.READ)
+		if file:
+			var json_string = file.get_as_text()
+			file.close()
+
+			var json = JSON.new()
+			if json.parse(json_string) == OK:
+				monster_database = json.data
+				print("Loaded %d monsters from database" % monster_database.size())
+				return
+
+	print("Warning: Could not load monster database")
 
 
 ## Utility
