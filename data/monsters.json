@@ -12,14 +12,23 @@
 			"magic": 12,
 			"speed": 8
 		},
-		"abilities": ["tackle"],
+		"abilities": [
+			"tackle"
+		],
 		"exp_reward": 15,
 		"gold_reward": 10,
 		"drop_table": [
-			{"item": "potion", "chance": 0.3}
+			{
+				"item": "potion",
+				"chance": 0.3
+			}
 		],
-		"weaknesses": ["fire"],
-		"resistances": ["physical"]
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"physical"
+		]
 	},
 	"bat": {
 		"id": "bat",
@@ -34,13 +43,22 @@
 			"magic": 15,
 			"speed": 18
 		},
-		"abilities": ["bite", "screech"],
+		"abilities": [
+			"bite",
+			"screech"
+		],
 		"exp_reward": 18,
 		"gold_reward": 12,
 		"drop_table": [
-			{"item": "bat_wing", "chance": 0.4}
+			{
+				"item": "bat_wing",
+				"chance": 0.4
+			}
 		],
-		"weaknesses": ["fire", "lightning"],
+		"weaknesses": [
+			"fire",
+			"lightning"
+		],
 		"resistances": []
 	},
 	"mushroom": {
@@ -56,15 +74,28 @@
 			"magic": 25,
 			"speed": 5
 		},
-		"abilities": ["spore_cloud", "poison_touch"],
+		"abilities": [
+			"spore_cloud",
+			"poison_touch"
+		],
 		"exp_reward": 20,
 		"gold_reward": 15,
 		"drop_table": [
-			{"item": "antidote", "chance": 0.5},
-			{"item": "poison_spore", "chance": 0.3}
+			{
+				"item": "antidote",
+				"chance": 0.5
+			},
+			{
+				"item": "poison_spore",
+				"chance": 0.3
+			}
 		],
-		"weaknesses": ["fire"],
-		"resistances": ["poison"]
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"poison"
+		]
 	},
 	"imp": {
 		"id": "imp",
@@ -79,15 +110,30 @@
 			"magic": 35,
 			"speed": 14
 		},
-		"abilities": ["fire", "dark_bolt"],
+		"abilities": [
+			"fire",
+			"dark_bolt"
+		],
 		"exp_reward": 28,
 		"gold_reward": 22,
 		"drop_table": [
-			{"item": "ether", "chance": 0.3},
-			{"item": "imp_horn", "chance": 0.25}
+			{
+				"item": "ether",
+				"chance": 0.3
+			},
+			{
+				"item": "imp_horn",
+				"chance": 0.25
+			}
 		],
-		"weaknesses": ["ice", "holy"],
-		"resistances": ["fire", "dark"]
+		"weaknesses": [
+			"ice",
+			"holy"
+		],
+		"resistances": [
+			"fire",
+			"dark"
+		]
 	},
 	"goblin": {
 		"id": "goblin",
@@ -102,14 +148,25 @@
 			"magic": 18,
 			"speed": 12
 		},
-		"abilities": ["slash", "steal"],
+		"abilities": [
+			"slash",
+			"steal"
+		],
 		"exp_reward": 25,
 		"gold_reward": 20,
 		"drop_table": [
-			{"item": "potion", "chance": 0.25},
-			{"item": "antidote", "chance": 0.2}
+			{
+				"item": "potion",
+				"chance": 0.25
+			},
+			{
+				"item": "antidote",
+				"chance": 0.2
+			}
 		],
-		"weaknesses": ["lightning"],
+		"weaknesses": [
+			"lightning"
+		],
 		"resistances": []
 	},
 	"cave_rat": {
@@ -125,13 +182,21 @@
 			"magic": 10,
 			"speed": 14
 		},
-		"abilities": ["bite", "scratch"],
+		"abilities": [
+			"bite",
+			"scratch"
+		],
 		"exp_reward": 20,
 		"gold_reward": 15,
 		"drop_table": [
-			{"item": "rat_tail", "chance": 0.35}
+			{
+				"item": "rat_tail",
+				"chance": 0.35
+			}
 		],
-		"weaknesses": ["fire"],
+		"weaknesses": [
+			"fire"
+		],
 		"resistances": []
 	},
 	"giant_bat": {
@@ -147,13 +212,23 @@
 			"magic": 18,
 			"speed": 20
 		},
-		"abilities": ["bite", "screech", "dive_attack"],
+		"abilities": [
+			"bite",
+			"screech",
+			"dive_attack"
+		],
 		"exp_reward": 35,
 		"gold_reward": 25,
 		"drop_table": [
-			{"item": "bat_wing", "chance": 0.5}
+			{
+				"item": "bat_wing",
+				"chance": 0.5
+			}
 		],
-		"weaknesses": ["fire", "lightning"],
+		"weaknesses": [
+			"fire",
+			"lightning"
+		],
 		"resistances": []
 	},
 	"rat_guard": {
@@ -169,15 +244,29 @@
 			"magic": 12,
 			"speed": 11
 		},
-		"abilities": ["shield_bash", "defensive_stance", "guard_strike"],
+		"abilities": [
+			"shield_bash",
+			"defensive_stance",
+			"guard_strike"
+		],
 		"exp_reward": 50,
 		"gold_reward": 35,
 		"drop_table": [
-			{"item": "rusty_armor", "chance": 0.4},
-			{"item": "rat_tail", "chance": 0.3}
+			{
+				"item": "rusty_armor",
+				"chance": 0.4
+			},
+			{
+				"item": "rat_tail",
+				"chance": 0.3
+			}
 		],
-		"weaknesses": ["lightning"],
-		"resistances": ["physical"]
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [
+			"physical"
+		]
 	},
 	"diseased_rat": {
 		"id": "diseased_rat",
@@ -192,15 +281,30 @@
 			"magic": 20,
 			"speed": 13
 		},
-		"abilities": ["plague_bite", "disease_cloud", "fester"],
+		"abilities": [
+			"plague_bite",
+			"disease_cloud",
+			"fester"
+		],
 		"exp_reward": 55,
 		"gold_reward": 40,
 		"drop_table": [
-			{"item": "antidote", "chance": 0.6},
-			{"item": "plague_sample", "chance": 0.25}
+			{
+				"item": "antidote",
+				"chance": 0.6
+			},
+			{
+				"item": "plague_sample",
+				"chance": 0.25
+			}
 		],
-		"weaknesses": ["fire", "holy"],
-		"resistances": ["poison"]
+		"weaknesses": [
+			"fire",
+			"holy"
+		],
+		"resistances": [
+			"poison"
+		]
 	},
 	"cave_rat_king": {
 		"id": "cave_rat_king",
@@ -216,16 +320,41 @@
 			"magic": 22,
 			"speed": 20
 		},
-		"abilities": ["rat_swarm", "filth_spray", "crown_authority", "desperate_bite", "royal_summon"],
+		"abilities": [
+			"rat_swarm",
+			"filth_spray",
+			"crown_authority",
+			"desperate_bite",
+			"royal_summon"
+		],
 		"exp_reward": 350,
 		"gold_reward": 250,
 		"drop_table": [
-			{"item": "crown_of_rats", "chance": 1.0},
-			{"item": "rat_king_pelt", "chance": 0.8},
-			{"item": "hi_potion", "chance": 0.6}
+			{
+				"item": "crown_of_rats",
+				"chance": 1.0
+			},
+			{
+				"item": "rat_king_pelt",
+				"chance": 0.8
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.6
+			}
 		],
-		"weaknesses": ["fire", "lightning"],
-		"resistances": ["poison"],
+		"weaknesses": [
+			"fire",
+			"lightning"
+		],
+		"resistances": [
+			"poison"
+		],
+		"one_shot": {
+			"hp_threshold": 650,
+			"setup_hint": "Stack attack buffs, defer for max AP, then unleash all at once.",
+			"reward_item": "boss_trophy"
+		},
 		"dialogue": {
 			"intro": [
 				"*The party climbs the final stairs, expecting a dragon...*",
@@ -252,7 +381,13 @@
 				"*You obtained the Crown of Rats!*",
 				"*(It's literally just a tiny crown. Why does this exist?)*"
 			]
-		}
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
 	},
 	"skeleton": {
 		"id": "skeleton",
@@ -267,15 +402,30 @@
 			"magic": 15,
 			"speed": 10
 		},
-		"abilities": ["bone_throw", "rattle"],
+		"abilities": [
+			"bone_throw",
+			"rattle"
+		],
 		"exp_reward": 40,
 		"gold_reward": 30,
 		"drop_table": [
-			{"item": "bone", "chance": 0.5},
-			{"item": "ether", "chance": 0.15}
+			{
+				"item": "bone",
+				"chance": 0.5
+			},
+			{
+				"item": "ether",
+				"chance": 0.15
+			}
 		],
-		"weaknesses": ["fire", "holy"],
-		"resistances": ["dark", "ice"],
+		"weaknesses": [
+			"fire",
+			"holy"
+		],
+		"resistances": [
+			"dark",
+			"ice"
+		],
 		"undead": true
 	},
 	"ice_wolf": {
@@ -291,15 +441,28 @@
 			"magic": 28,
 			"speed": 16
 		},
-		"abilities": ["bite", "ice_breath"],
+		"abilities": [
+			"bite",
+			"ice_breath"
+		],
 		"exp_reward": 60,
 		"gold_reward": 45,
 		"drop_table": [
-			{"item": "ice_shard", "chance": 0.4},
-			{"item": "wolf_fang", "chance": 0.3}
+			{
+				"item": "ice_shard",
+				"chance": 0.4
+			},
+			{
+				"item": "wolf_fang",
+				"chance": 0.3
+			}
 		],
-		"weaknesses": ["fire"],
-		"resistances": ["ice"],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"ice"
+		],
 		"element": "ice"
 	},
 	"specter": {
@@ -315,15 +478,30 @@
 			"magic": 35,
 			"speed": 14
 		},
-		"abilities": ["soul_drain", "chill_touch"],
+		"abilities": [
+			"soul_drain",
+			"chill_touch"
+		],
 		"exp_reward": 35,
 		"gold_reward": 25,
 		"drop_table": [
-			{"item": "ectoplasm", "chance": 0.5},
-			{"item": "ether", "chance": 0.25}
+			{
+				"item": "ectoplasm",
+				"chance": 0.5
+			},
+			{
+				"item": "ether",
+				"chance": 0.25
+			}
 		],
-		"weaknesses": ["holy", "fire"],
-		"resistances": ["physical", "ice"],
+		"weaknesses": [
+			"holy",
+			"fire"
+		],
+		"resistances": [
+			"physical",
+			"ice"
+		],
 		"undead": true
 	},
 	"cave_troll": {
@@ -340,15 +518,37 @@
 			"magic": 10,
 			"speed": 6
 		},
-		"abilities": ["smash", "boulder_throw", "enrage"],
+		"abilities": [
+			"smash",
+			"boulder_throw",
+			"enrage"
+		],
 		"exp_reward": 150,
 		"gold_reward": 100,
 		"drop_table": [
-			{"item": "troll_hide", "chance": 0.8},
-			{"item": "hi_potion", "chance": 0.5}
+			{
+				"item": "troll_hide",
+				"chance": 0.8
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.5
+			}
 		],
-		"weaknesses": ["fire", "lightning"],
-		"resistances": ["ice"]
+		"weaknesses": [
+			"fire",
+			"lightning"
+		],
+		"resistances": [
+			"ice"
+		],
+		"one_shot": {
+			"hp_threshold": 400,
+			"setup_hint": "Build AP and strike hard."
+		},
+		"learns_from": [
+			"abilities"
+		]
 	},
 	"shadow_knight": {
 		"id": "shadow_knight",
@@ -364,15 +564,38 @@
 			"magic": 25,
 			"speed": 12
 		},
-		"abilities": ["dark_slash", "shadow_step", "life_drain"],
+		"abilities": [
+			"dark_slash",
+			"shadow_step",
+			"life_drain"
+		],
 		"exp_reward": 175,
 		"gold_reward": 120,
 		"drop_table": [
-			{"item": "dark_crystal", "chance": 0.7},
-			{"item": "shadow_blade", "chance": 0.3}
+			{
+				"item": "dark_crystal",
+				"chance": 0.7
+			},
+			{
+				"item": "shadow_blade",
+				"chance": 0.3
+			}
 		],
-		"weaknesses": ["holy", "fire"],
-		"resistances": ["dark", "ice"]
+		"weaknesses": [
+			"holy",
+			"fire"
+		],
+		"resistances": [
+			"dark",
+			"ice"
+		],
+		"one_shot": {
+			"hp_threshold": 350,
+			"setup_hint": "Build AP and strike hard."
+		},
+		"learns_from": [
+			"abilities"
+		]
 	},
 	"treasure_mimic": {
 		"id": "treasure_mimic",
@@ -388,23 +611,49 @@
 			"magic": 15,
 			"speed": 16
 		},
-		"abilities": ["chomp", "lure", "gold_scatter", "lid_slam"],
+		"abilities": [
+			"chomp",
+			"lure",
+			"gold_scatter",
+			"lid_slam"
+		],
 		"exp_reward": 140,
 		"gold_reward": 200,
 		"drop_table": [
-			{"item": "hi_potion", "chance": 0.8},
-			{"item": "ether", "chance": 0.6},
-			{"item": "elixir", "chance": 0.15}
+			{
+				"item": "hi_potion",
+				"chance": 0.8
+			},
+			{
+				"item": "ether",
+				"chance": 0.6
+			},
+			{
+				"item": "elixir",
+				"chance": 0.15
+			}
 		],
-		"weaknesses": ["fire", "lightning"],
-		"resistances": ["ice"],
+		"weaknesses": [
+			"fire",
+			"lightning"
+		],
+		"resistances": [
+			"ice"
+		],
+		"one_shot": {
+			"hp_threshold": 320,
+			"setup_hint": "Build AP and strike hard."
+		},
 		"dialogue": {
 			"intro": [
 				"*You approach the treasure chest eagerly*",
 				"*It has teeth.*",
 				"Hero: Oh come ON."
 			]
-		}
+		},
+		"learns_from": [
+			"abilities"
+		]
 	},
 	"ironback_beetle": {
 		"id": "ironback_beetle",
@@ -420,15 +669,39 @@
 			"magic": 8,
 			"speed": 7
 		},
-		"abilities": ["horn_charge", "shell_guard", "acid_spray", "burrow"],
+		"abilities": [
+			"horn_charge",
+			"shell_guard",
+			"acid_spray",
+			"burrow"
+		],
 		"exp_reward": 120,
 		"gold_reward": 80,
 		"drop_table": [
-			{"item": "iron_shell", "chance": 0.7},
-			{"item": "power_drink", "chance": 0.4}
+			{
+				"item": "iron_shell",
+				"chance": 0.7
+			},
+			{
+				"item": "power_drink",
+				"chance": 0.4
+			}
 		],
-		"weaknesses": ["fire", "ice"],
-		"resistances": ["physical", "lightning"]
+		"weaknesses": [
+			"fire",
+			"ice"
+		],
+		"resistances": [
+			"physical",
+			"lightning"
+		],
+		"one_shot": {
+			"hp_threshold": 280,
+			"setup_hint": "Build AP and strike hard."
+		},
+		"learns_from": [
+			"abilities"
+		]
 	},
 	"cursed_armor": {
 		"id": "cursed_armor",
@@ -444,17 +717,44 @@
 			"magic": 20,
 			"speed": 9
 		},
-		"abilities": ["cursed_strike", "armor_break", "soul_wail", "reflect_shield"],
+		"abilities": [
+			"cursed_strike",
+			"armor_break",
+			"soul_wail",
+			"reflect_shield"
+		],
 		"exp_reward": 160,
 		"gold_reward": 110,
 		"drop_table": [
-			{"item": "cursed_plate", "chance": 0.6},
-			{"item": "dark_crystal", "chance": 0.4},
-			{"item": "remedy", "chance": 0.3}
+			{
+				"item": "cursed_plate",
+				"chance": 0.6
+			},
+			{
+				"item": "dark_crystal",
+				"chance": 0.4
+			},
+			{
+				"item": "remedy",
+				"chance": 0.3
+			}
 		],
-		"weaknesses": ["holy", "lightning"],
-		"resistances": ["physical", "dark"],
-		"undead": true
+		"weaknesses": [
+			"holy",
+			"lightning"
+		],
+		"resistances": [
+			"physical",
+			"dark"
+		],
+		"undead": true,
+		"one_shot": {
+			"hp_threshold": 380,
+			"setup_hint": "Build AP and strike hard."
+		},
+		"learns_from": [
+			"abilities"
+		]
 	},
 	"blood_wolf_alpha": {
 		"id": "blood_wolf_alpha",
@@ -470,23 +770,48 @@
 			"magic": 22,
 			"speed": 18
 		},
-		"abilities": ["rending_bite", "blood_howl", "pack_call", "frenzy"],
+		"abilities": [
+			"rending_bite",
+			"blood_howl",
+			"pack_call",
+			"frenzy"
+		],
 		"exp_reward": 145,
 		"gold_reward": 90,
 		"drop_table": [
-			{"item": "wolf_fang", "chance": 0.9},
-			{"item": "speed_tonic", "chance": 0.5},
-			{"item": "beast_hide", "chance": 0.3}
+			{
+				"item": "wolf_fang",
+				"chance": 0.9
+			},
+			{
+				"item": "speed_tonic",
+				"chance": 0.5
+			},
+			{
+				"item": "beast_hide",
+				"chance": 0.3
+			}
 		],
-		"weaknesses": ["fire"],
-		"resistances": ["ice"],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"ice"
+		],
+		"one_shot": {
+			"hp_threshold": 300,
+			"setup_hint": "Build AP and strike hard."
+		},
 		"dialogue": {
 			"intro": [
 				"*A massive wolf blocks the path, red eyes gleaming*",
 				"*The pack gathers behind it*",
 				"*It snarls. This one is different.*"
 			]
-		}
+		},
+		"learns_from": [
+			"abilities"
+		]
 	},
 	"crystal_golem": {
 		"id": "crystal_golem",
@@ -502,19 +827,46 @@
 			"magic": 10,
 			"speed": 5
 		},
-		"abilities": ["crystal_slam", "prismatic_reflect", "gem_shatter", "reconstruct"],
+		"abilities": [
+			"crystal_slam",
+			"prismatic_reflect",
+			"gem_shatter",
+			"reconstruct"
+		],
 		"exp_reward": 180,
 		"gold_reward": 150,
 		"drop_table": [
-			{"item": "crystal_shard", "chance": 0.8},
-			{"item": "mythril_ore", "chance": 0.3},
-			{"item": "hi_potion", "chance": 0.5}
+			{
+				"item": "crystal_shard",
+				"chance": 0.8
+			},
+			{
+				"item": "mythril_ore",
+				"chance": 0.3
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.5
+			}
 		],
-		"weaknesses": ["physical"],
-		"resistances": ["fire", "ice", "lightning"],
+		"weaknesses": [
+			"physical"
+		],
+		"resistances": [
+			"fire",
+			"ice",
+			"lightning"
+		],
 		"special_effects": {
 			"magic_reflect_chance": 0.3
-		}
+		},
+		"one_shot": {
+			"hp_threshold": 450,
+			"setup_hint": "Build AP and strike hard."
+		},
+		"learns_from": [
+			"abilities"
+		]
 	},
 	"rogue_automaton": {
 		"id": "rogue_automaton",
@@ -530,16 +882,35 @@
 			"magic": 30,
 			"speed": 15
 		},
-		"abilities": ["voltage_surge", "segfault_slash", "buffer_overflow", "emergency_repair"],
+		"abilities": [
+			"voltage_surge",
+			"segfault_slash",
+			"buffer_overflow",
+			"emergency_repair"
+		],
 		"exp_reward": 200,
 		"gold_reward": 130,
 		"drop_table": [
-			{"item": "circuit_board", "chance": 0.7},
-			{"item": "corrupted_core", "chance": 0.25},
-			{"item": "speed_tonic", "chance": 0.4}
+			{
+				"item": "circuit_board",
+				"chance": 0.7
+			},
+			{
+				"item": "corrupted_core",
+				"chance": 0.25
+			},
+			{
+				"item": "speed_tonic",
+				"chance": 0.4
+			}
 		],
-		"weaknesses": ["lightning"],
-		"resistances": ["ice", "poison"],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [
+			"ice",
+			"poison"
+		],
 		"meta_enemy": true,
 		"dialogue": {
 			"intro": [
@@ -548,6 +919,13 @@
 				"*ENGAGING COMBAT PROTOCOL: KILL_ALL_HUMANS.EXE*",
 				"Hero: That's... not reassuring."
 			]
+		},
+		"learns_from": [
+			"abilities"
+		],
+		"one_shot": {
+			"hp_threshold": 400,
+			"setup_hint": "Build AP and strike hard."
 		}
 	},
 	"elder_mushroom": {
@@ -564,16 +942,43 @@
 			"magic": 40,
 			"speed": 4
 		},
-		"abilities": ["toxic_cloud", "hallucination_spores", "root_bind", "regenerate"],
+		"abilities": [
+			"toxic_cloud",
+			"hallucination_spores",
+			"root_bind",
+			"regenerate"
+		],
 		"exp_reward": 130,
 		"gold_reward": 95,
 		"drop_table": [
-			{"item": "antidote", "chance": 0.9},
-			{"item": "remedy", "chance": 0.4},
-			{"item": "poison_spore", "chance": 0.7}
+			{
+				"item": "antidote",
+				"chance": 0.9
+			},
+			{
+				"item": "remedy",
+				"chance": 0.4
+			},
+			{
+				"item": "poison_spore",
+				"chance": 0.7
+			}
 		],
-		"weaknesses": ["fire", "ice"],
-		"resistances": ["poison", "dark"]
+		"weaknesses": [
+			"fire",
+			"ice"
+		],
+		"resistances": [
+			"poison",
+			"dark"
+		],
+		"learns_from": [
+			"abilities"
+		],
+		"one_shot": {
+			"hp_threshold": 350,
+			"setup_hint": "Build AP and strike hard."
+		}
 	},
 	"corrupted_guardian": {
 		"id": "corrupted_guardian",
@@ -589,17 +994,42 @@
 			"magic": 25,
 			"speed": 14
 		},
-		"abilities": ["corruption_wave", "glitch_strike", "data_drain", "system_crash"],
+		"abilities": [
+			"corruption_wave",
+			"glitch_strike",
+			"data_drain",
+			"system_crash"
+		],
 		"exp_reward": 250,
 		"gold_reward": 200,
 		"drop_table": [
-			{"item": "corrupted_core", "chance": 1.0},
-			{"item": "meta_fragment", "chance": 0.5}
+			{
+				"item": "corrupted_core",
+				"chance": 1.0
+			},
+			{
+				"item": "meta_fragment",
+				"chance": 0.5
+			}
 		],
 		"weaknesses": [],
-		"resistances": ["physical", "magic"],
+		"resistances": [
+			"physical",
+			"magic"
+		],
 		"meta_enemy": true,
-		"corruption_spawned": true
+		"corruption_spawned": true,
+		"one_shot": {
+			"hp_threshold": 500,
+			"setup_hint": "Debuff its defense first, then stack buffs and advance with full AP.",
+			"reward_item": "boss_trophy"
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
 	},
 	"time_phantom": {
 		"id": "time_phantom",
@@ -615,17 +1045,41 @@
 			"magic": 30,
 			"speed": 18
 		},
-		"abilities": ["temporal_strike", "rewind_turn", "future_sight", "time_stop"],
+		"abilities": [
+			"temporal_strike",
+			"rewind_turn",
+			"future_sight",
+			"time_stop"
+		],
 		"exp_reward": 350,
 		"gold_reward": 300,
 		"drop_table": [
-			{"item": "time_crystal", "chance": 1.0},
-			{"item": "chrono_gear", "chance": 0.6}
+			{
+				"item": "time_crystal",
+				"chance": 1.0
+			},
+			{
+				"item": "chrono_gear",
+				"chance": 0.6
+			}
 		],
 		"weaknesses": [],
-		"resistances": ["all"],
+		"resistances": [
+			"all"
+		],
 		"meta_enemy": true,
-		"time_manipulation": true
+		"time_manipulation": true,
+		"one_shot": {
+			"hp_threshold": 600,
+			"setup_hint": "Its speed is high - debuff speed first, then stack attack buffs and advance.",
+			"reward_item": "boss_trophy"
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
 	},
 	"script_error": {
 		"id": "script_error",
@@ -641,17 +1095,38 @@
 			"magic": 40,
 			"speed": 20
 		},
-		"abilities": ["null_reference", "stack_overflow", "infinite_loop", "memory_leak"],
+		"abilities": [
+			"null_reference",
+			"stack_overflow",
+			"infinite_loop",
+			"memory_leak"
+		],
 		"exp_reward": 500,
 		"gold_reward": 0,
 		"drop_table": [
-			{"item": "ERROR", "chance": 1.0}
+			{
+				"item": "ERROR",
+				"chance": 1.0
+			}
 		],
 		"weaknesses": [],
-		"resistances": ["all"],
+		"resistances": [
+			"all"
+		],
 		"meta_enemy": true,
 		"glitch_enemy": true,
-		"very_dangerous": true
+		"very_dangerous": true,
+		"one_shot": {
+			"hp_threshold": 999,
+			"setup_hint": "Near impossible. Max buffs on all party members, full AP advance with strongest abilities.",
+			"reward_item": "boss_trophy"
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
 	},
 	"adaptive_slime": {
 		"id": "adaptive_slime",
@@ -666,17 +1141,38 @@
 			"magic": 15,
 			"speed": 12
 		},
-		"abilities": ["adapt", "counter", "mimic_ability"],
+		"abilities": [
+			"adapt",
+			"counter",
+			"mimic_ability"
+		],
 		"exp_reward": 100,
 		"gold_reward": 80,
 		"drop_table": [
-			{"item": "adaptive_gel", "chance": 0.7},
-			{"item": "evolution_stone", "chance": 0.2}
+			{
+				"item": "adaptive_gel",
+				"chance": 0.7
+			},
+			{
+				"item": "evolution_stone",
+				"chance": 0.2
+			}
 		],
 		"weaknesses": [],
 		"resistances": [],
 		"adaptive": true,
-		"autogrind_spawned": true
+		"autogrind_spawned": true,
+		"learns_from": [
+			"abilities",
+			"targets",
+			"ap_patterns"
+		],
+		"counter_abilities": [
+			"adapt",
+			"counter",
+			"mimic_ability"
+		],
+		"adaptation_speed": 2
 	},
 	"meta_knight": {
 		"id": "meta_knight",
@@ -692,17 +1188,41 @@
 			"magic": 20,
 			"speed": 16
 		},
-		"abilities": ["fourth_wall_break", "player_knowledge", "exploit_weakness", "rules_lawyer"],
+		"abilities": [
+			"fourth_wall_break",
+			"player_knowledge",
+			"exploit_weakness",
+			"rules_lawyer"
+		],
 		"exp_reward": 300,
 		"gold_reward": 250,
 		"drop_table": [
-			{"item": "meta_blade", "chance": 0.8},
-			{"item": "awareness_gem", "chance": 0.4}
+			{
+				"item": "meta_blade",
+				"chance": 0.8
+			},
+			{
+				"item": "awareness_gem",
+				"chance": 0.4
+			}
 		],
 		"weaknesses": [],
-		"resistances": ["physical"],
+		"resistances": [
+			"physical"
+		],
 		"meta_enemy": true,
-		"self_aware": true
+		"self_aware": true,
+		"one_shot": {
+			"hp_threshold": 550,
+			"setup_hint": "It resists physical. Use magic buffs, defer for AP, then magic advance.",
+			"reward_item": "boss_trophy"
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
 	},
 	"permadeath_reaper": {
 		"id": "permadeath_reaper",
@@ -718,18 +1238,42 @@
 			"magic": 50,
 			"speed": 22
 		},
-		"abilities": ["soul_reap", "final_death", "permakill_strike", "save_deletion"],
+		"abilities": [
+			"soul_reap",
+			"final_death",
+			"permakill_strike",
+			"save_deletion"
+		],
 		"exp_reward": 1000,
 		"gold_reward": 500,
 		"drop_table": [
-			{"item": "reaper_scythe", "chance": 1.0},
-			{"item": "soul_gem", "chance": 0.8}
+			{
+				"item": "reaper_scythe",
+				"chance": 1.0
+			},
+			{
+				"item": "soul_gem",
+				"chance": 0.8
+			}
 		],
 		"weaknesses": [],
-		"resistances": ["all"],
+		"resistances": [
+			"all"
+		],
 		"meta_enemy": true,
 		"extremely_dangerous": true,
 		"can_cause_permadeath": true,
-		"autogrind_spawned": true
+		"autogrind_spawned": true,
+		"one_shot": {
+			"hp_threshold": 800,
+			"setup_hint": "Resists everything. Stack every buff possible, full party AP advance. Good luck.",
+			"reward_item": "boss_trophy"
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
 	}
 }

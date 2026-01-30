@@ -17,6 +17,7 @@ signal damage_dealt(target: Combatant, amount: int, is_crit: bool)
 signal healing_done(target: Combatant, amount: int)
 signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
+signal one_shot_achieved(rank: String, setup_turns: int)
 
 enum BattleState {
 	INACTIVE,
@@ -62,6 +63,18 @@ const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
 
 ## Autobattle toggle signal
 signal autobattle_toggled(character_id: String, enabled: bool)
+
+## One-shot tracking
+var _first_damage_round: int = -1    # Round when first damage was dealt to any enemy
+var _first_damage_phase: int = -1    # Execution phase when first damage was dealt
+var _execution_phase_count: int = 0  # Number of execution phases so far
+var _one_shot_achieved: bool = false  # Whether all enemies died in same execution phase as first damage
+var _setup_turns_used: int = 0       # Turns before first damage (for rating)
+var _all_enemies_initial_count: int = 0  # Total enemies at battle start
+
+## Adaptive AI - Action logging
+var _battle_action_log: Array[Dictionary] = []  # Log every player action per battle
+signal battle_actions_logged(summary: Dictionary)
 
 ## Action speed modifiers (lower = faster)
 const ACTION_SPEEDS = {
@@ -122,10 +135,21 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	enemy_party = enemies.duplicate()
 	all_combatants = players + enemies
 
+	# Reset one-shot tracking
+	_first_damage_round = -1
+	_first_damage_phase = -1
+	_execution_phase_count = 0
+	_one_shot_achieved = false
+	_setup_turns_used = 0
+	_all_enemies_initial_count = enemies.size()
+
 	# Connect to combatant signals
 	for combatant in all_combatants:
 		if not combatant.died.is_connected(_on_combatant_died):
 			combatant.died.connect(_on_combatant_died.bind(combatant))
+
+	# Clear action log for adaptive AI
+	_battle_action_log.clear()
 
 	battle_started.emit()
 	_start_new_round()
@@ -136,16 +160,31 @@ func end_battle(victory: bool) -> void:
 	if victory:
 		current_state = BattleState.VICTORY
 
+		# Check for one-shot achievement
+		_check_one_shot()
+
 		# Calculate reward multiplier from enemies (for rare encounters like Hero Mimics)
 		var reward_multiplier = _get_battle_reward_multiplier()
+
+		# Apply one-shot bonus multiplier
+		var one_shot_exp_bonus = 1.0
+		var one_shot_gold_bonus = 1.0
+		if _one_shot_achieved:
+			var rank = _get_one_shot_rank(_setup_turns_used)
+			one_shot_exp_bonus = _get_one_shot_exp_multiplier(rank)
+			one_shot_gold_bonus = _get_one_shot_gold_multiplier(rank)
 
 		# Award job EXP to player party
 		var base_exp = 50
 		for combatant in player_party:
 			if combatant.is_alive:
-				var exp_gained = int(base_exp * reward_multiplier)
+				var exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus)
 				combatant.gain_job_exp(exp_gained)
-				var bonus_text = " (%.1fx bonus!)" % reward_multiplier if reward_multiplier > 1.0 else ""
+				var bonus_text = ""
+				if _one_shot_achieved:
+					bonus_text = " (%.1fx one-shot bonus!)" % one_shot_exp_bonus
+				elif reward_multiplier > 1.0:
+					bonus_text = " (%.1fx bonus!)" % reward_multiplier
 				print("%s gained %d job EXP%s (Level: %d, EXP: %d/%d)" % [
 					combatant.combatant_name,
 					exp_gained,
@@ -154,8 +193,25 @@ func end_battle(victory: bool) -> void:
 					combatant.job_exp,
 					combatant.job_level * 100
 				])
+
+		# Record one-shot in save system if achieved
+		if _one_shot_achieved:
+			var rank = _get_one_shot_rank(_setup_turns_used)
+			var monster_ids: Array = []
+			for enemy in enemy_party:
+				var monster_type = enemy.get_meta("monster_type", "")
+				if not monster_type.is_empty() and monster_type not in monster_ids:
+					monster_ids.append(monster_type)
+			var save_system = get_node_or_null("/root/SaveSystem")
+			if save_system and save_system.has_method("record_one_shot"):
+				save_system.record_one_shot(monster_ids, rank, _setup_turns_used)
 	else:
 		current_state = BattleState.DEFEAT
+
+	# Emit battle action summary for adaptive AI pattern learning
+	if victory:
+		var summary = _summarize_battle_actions()
+		battle_actions_logged.emit(summary)
 
 	battle_ended.emit(victory)
 	_cleanup_battle()
@@ -552,6 +608,18 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 			if not ability.is_empty() and combatant.current_mp >= ability.get("mp_cost", 0):
 				available_abilities.append(ability)
 
+	# Check for adaptive behavior (enemy AI learns from player patterns)
+	var adaptation_level = _get_current_adaptation_level()
+	var counter_strategy = _get_current_counter_strategy()
+
+	if adaptation_level > 0 and not counter_strategy.is_empty():
+		var counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
+		if randf() < counter_chance:
+			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
+			if not counter_action.is_empty():
+				battle_log_message.emit("The enemy anticipates your strategy...")
+				return counter_action
+
 	# Check if should heal (30% chance if ally below 40% HP)
 	var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 40.0)
 	if low_hp_allies.size() > 0 and randf() < 0.3:
@@ -610,6 +678,9 @@ func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {
 func _start_execution_phase() -> void:
 	"""Start executing all queued actions in computed turn order"""
 	current_state = BattleState.EXECUTION_PHASE
+
+	# Track execution phase count for one-shot detection
+	_execution_phase_count += 1
 
 	# Save player actions for repeat functionality (Y button)
 	_save_previous_actions()
@@ -757,6 +828,8 @@ func _execute_next_action() -> void:
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
 
+	# Log player action for adaptive AI pattern detection
+	_log_player_action(combatant, action)
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
 	# Delay between actions - long enough for animations to complete
@@ -838,6 +911,8 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			"item":
 				_execute_item(combatant, action["item_id"], action.get("targets", []))
 
+		# Log player action for adaptive AI pattern detection
+		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 		await get_tree().create_timer(0.5).timeout  # Time for animation
 
@@ -912,6 +987,10 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit)
+
+	# Track first damage for one-shot detection
+	if actual_target in enemy_party:
+		_record_first_damage()
 
 	var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
 	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, crit_text]
@@ -1007,6 +1086,11 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		damage = int(damage * randf_range(0.9, 1.1))
 		var actual_damage = target.take_damage(damage, false)
 		damage_dealt.emit(target, actual_damage, is_crit)
+
+		# Track first damage for one-shot detection
+		if target in enemy_party:
+			_record_first_damage()
+
 		var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
 		var log_msg = "  → [color=red]%s[/color] takes [color=yellow]%d[/color] damage!%s" % [target.combatant_name, actual_damage, crit_text]
 		battle_log_message.emit(log_msg)
@@ -1039,6 +1123,11 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			actual_damage = target.take_damage(damage, true)
 
 		damage_dealt.emit(target, actual_damage, false)
+
+		# Track first damage for one-shot detection
+		if target in enemy_party:
+			_record_first_damage()
+
 		var elem_text = element if element else "magic"
 		var terrain_text = ""
 		if terrain_mod > 1.0:
@@ -1303,6 +1392,187 @@ func _get_character_id(combatant: Combatant) -> String:
 	return combatant.combatant_name.to_lower().replace(" ", "_")
 
 
+## ═══════════════════════════════════════════════════════════════════════
+## ADAPTIVE AI - Action Logging & Pattern Detection
+## ═══════════════════════════════════════════════════════════════════════
+
+func _log_player_action(combatant: Combatant, action: Dictionary) -> void:
+	"""Log a player action for pattern detection"""
+	if combatant not in player_party:
+		return  # Only log player actions
+
+	_battle_action_log.append({
+		"turn": current_round,
+		"character_id": _get_character_id(combatant),
+		"action_type": action.get("type", "attack"),
+		"ability_id": action.get("ability_id", ""),
+		"target_type": _classify_target(action),
+		"ap_before": combatant.current_ap
+	})
+
+
+func _classify_target(action: Dictionary) -> String:
+	"""Classify target type for pattern detection"""
+	var target = action.get("target", null)
+	if target == null:
+		var targets = action.get("targets", [])
+		target = targets[0] if targets.size() > 0 else null
+	if target == null:
+		return "none"
+	if target in enemy_party:
+		# Check if targeting lowest HP
+		var sorted_enemies = enemy_party.filter(func(e): return e.is_alive)
+		sorted_enemies.sort_custom(func(a, b): return a.current_hp < b.current_hp)
+		if sorted_enemies.size() > 0 and target == sorted_enemies[0]:
+			return "lowest_hp"
+		return "enemy"
+	if target in player_party:
+		return "ally"
+	return "self"
+
+
+func _summarize_battle_actions() -> Dictionary:
+	"""Summarize battle actions for pattern learning"""
+	var summary = {
+		"ability_frequency": {},
+		"action_type_frequency": {},
+		"target_priority": {},
+		"avg_ap_usage": 0.0,
+		"common_opener": "",
+		"total_actions": _battle_action_log.size()
+	}
+
+	if _battle_action_log.is_empty():
+		return summary
+
+	var total_ap = 0.0
+	for entry in _battle_action_log:
+		# Count action types
+		var atype = entry["action_type"]
+		summary["action_type_frequency"][atype] = summary["action_type_frequency"].get(atype, 0) + 1
+
+		# Count abilities
+		var ability_id = entry["ability_id"]
+		if not ability_id.is_empty():
+			summary["ability_frequency"][ability_id] = summary["ability_frequency"].get(ability_id, 0) + 1
+
+		# Count target types
+		var ttype = entry["target_type"]
+		summary["target_priority"][ttype] = summary["target_priority"].get(ttype, 0) + 1
+
+		total_ap += entry.get("ap_before", 0)
+
+	summary["avg_ap_usage"] = total_ap / _battle_action_log.size()
+
+	# Determine common opener (first action of battle)
+	if _battle_action_log.size() > 0:
+		var first = _battle_action_log[0]
+		summary["common_opener"] = first["action_type"]
+		if not first["ability_id"].is_empty():
+			summary["common_opener"] = first["ability_id"]
+
+	return summary
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## ADAPTIVE AI - Counter Strategy Logic
+## ═══════════════════════════════════════════════════════════════════════
+
+func _get_current_adaptation_level() -> int:
+	"""Get adaptation level from AutogrindSystem for current region"""
+	if not AutogrindSystem:
+		return 0
+	return AutogrindSystem.get_adaptation_level_for_region(AutogrindSystem.current_region_id)
+
+
+func _get_current_counter_strategy() -> String:
+	"""Get counter strategy from AutogrindSystem for current region"""
+	if not AutogrindSystem:
+		return ""
+	return AutogrindSystem.get_counter_strategy(AutogrindSystem.current_region_id)
+
+
+func _get_counter_action(combatant: Combatant, strategy: String, allies: Array, enemies: Array, abilities: Array) -> Dictionary:
+	"""Generate a counter action based on learned strategy"""
+	match strategy:
+		"fire_resist":
+			# Use fire resistance buff if available
+			var resist_abilities = abilities.filter(func(a): return "resist" in a.get("id", "") or "shield" in a.get("id", ""))
+			if resist_abilities.size() > 0:
+				return {
+					"type": "ability",
+					"combatant": combatant,
+					"ability_id": resist_abilities[0]["id"],
+					"targets": [combatant],
+					"speed": _compute_action_speed(combatant, "ability", resist_abilities[0])
+				}
+		"ice_resist":
+			var resist_abilities = abilities.filter(func(a): return "resist" in a.get("id", "") or "shield" in a.get("id", ""))
+			if resist_abilities.size() > 0:
+				return {
+					"type": "ability",
+					"combatant": combatant,
+					"ability_id": resist_abilities[0]["id"],
+					"targets": [combatant],
+					"speed": _compute_action_speed(combatant, "ability", resist_abilities[0])
+				}
+		"lightning_resist":
+			var resist_abilities = abilities.filter(func(a): return "resist" in a.get("id", "") or "shield" in a.get("id", ""))
+			if resist_abilities.size() > 0:
+				return {
+					"type": "ability",
+					"combatant": combatant,
+					"ability_id": resist_abilities[0]["id"],
+					"targets": [combatant],
+					"speed": _compute_action_speed(combatant, "ability", resist_abilities[0])
+				}
+		"focus_healer":
+			# Target the healer (usually Mira/white mage)
+			var healers = enemies.filter(func(e):
+				return e.job and e.job.get("id", "") in ["white_mage", "healer"]
+			)
+			if healers.size() > 0:
+				return {
+					"type": "attack",
+					"combatant": combatant,
+					"target": healers[0],
+					"speed": _compute_action_speed(combatant, "attack")
+				}
+		"defense_boost":
+			var def_abilities = abilities.filter(func(a): return "defense" in a.get("id", "") or "guard" in a.get("id", "") or "shield" in a.get("id", ""))
+			if def_abilities.size() > 0:
+				return {
+					"type": "ability",
+					"combatant": combatant,
+					"ability_id": def_abilities[0]["id"],
+					"targets": [combatant],
+					"speed": _compute_action_speed(combatant, "ability", def_abilities[0])
+				}
+		"rotate_aggro":
+			return {
+				"type": "attack",
+				"combatant": combatant,
+				"target": enemies[randi() % enemies.size()],
+				"speed": _compute_action_speed(combatant, "attack")
+			}
+		"generic_counter":
+			if abilities.size() > 0:
+				var strongest = abilities[0]
+				for a in abilities:
+					if a.get("power", 0) > strongest.get("power", 0):
+						strongest = a
+				var target = enemies[randi() % enemies.size()]
+				return {
+					"type": "ability",
+					"combatant": combatant,
+					"ability_id": strongest["id"],
+					"targets": [target],
+					"speed": _compute_action_speed(combatant, "ability", strongest)
+				}
+
+	return {}  # No counter available
+
+
 func _process_grid_autobattle(combatant: Combatant) -> void:
 	"""Process grid-based autobattle for a player character"""
 	var is_player_controlled = combatant in player_party
@@ -1511,3 +1781,98 @@ func _resolve_target(combatant: Combatant, target_type: String, allies: Array, e
 			var sorted_enemies = enemies.duplicate()
 			sorted_enemies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
 			return sorted_enemies[0]
+
+
+## One-Shot System
+
+func _record_first_damage() -> void:
+	"""Record when first damage is dealt to an enemy (starts the one-shot timer)"""
+	if _first_damage_round == -1:
+		_first_damage_round = current_round
+		_first_damage_phase = _execution_phase_count
+		_setup_turns_used = current_round - 1  # Turns before damage = setup
+		print("[ONE-SHOT] First damage recorded at round %d, execution phase %d (setup turns: %d)" % [
+			_first_damage_round, _first_damage_phase, _setup_turns_used
+		])
+
+
+func _check_one_shot() -> void:
+	"""Check if one-shot was achieved (all enemies killed in same execution phase as first damage)"""
+	if _first_damage_phase == -1:
+		return  # No damage was dealt
+
+	# Check if all enemies died in the same execution phase as first damage
+	var all_dead = true
+	for enemy in enemy_party:
+		if enemy.is_alive:
+			all_dead = false
+			break
+
+	if all_dead and _execution_phase_count == _first_damage_phase:
+		_one_shot_achieved = true
+		var rank = _get_one_shot_rank(_setup_turns_used)
+		one_shot_achieved.emit(rank, _setup_turns_used)
+		print("[ONE-SHOT] Achieved! Rank: %s, Setup turns: %d, Enemies: %d" % [
+			rank, _setup_turns_used, _all_enemies_initial_count
+		])
+
+
+func _get_one_shot_rank(setup_turns: int) -> String:
+	"""Get one-shot rank based on number of setup turns used"""
+	if setup_turns <= 1:
+		return "S"   # Raw power overwhelm
+	elif setup_turns <= 3:
+		return "A"   # Efficient buff chain
+	elif setup_turns <= 5:
+		return "B"   # Standard setup
+	else:
+		return "C"   # Slow but valid
+
+
+func _get_one_shot_exp_multiplier(rank: String) -> float:
+	"""Get EXP multiplier for one-shot rank"""
+	match rank:
+		"S":
+			return 3.0
+		"A":
+			return 2.0
+		"B":
+			return 1.5
+		"C":
+			return 1.25
+		_:
+			return 1.0
+
+
+func _get_one_shot_gold_multiplier(rank: String) -> float:
+	"""Get gold multiplier for one-shot rank"""
+	match rank:
+		"S":
+			return 2.5
+		"A":
+			return 2.0
+		"B":
+			return 1.5
+		"C":
+			return 1.25
+		_:
+			return 1.0
+
+
+func get_one_shot_achieved() -> bool:
+	"""Check if one-shot was achieved in the current/last battle"""
+	return _one_shot_achieved
+
+
+func get_one_shot_rank() -> String:
+	"""Get the one-shot rank for the current/last battle"""
+	if _one_shot_achieved:
+		return _get_one_shot_rank(_setup_turns_used)
+	return ""
+
+
+func get_one_shot_exp_multiplier() -> float:
+	"""Get the one-shot EXP multiplier for the current/last battle"""
+	if _one_shot_achieved:
+		return _get_one_shot_exp_multiplier(_get_one_shot_rank(_setup_turns_used))
+	return 1.0

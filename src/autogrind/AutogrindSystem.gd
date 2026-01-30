@@ -63,9 +63,115 @@ var permadeath_multiplier: float = 3.0  # 3x rewards but permanent death on wipe
 var meta_bosses_enabled: bool = true
 var meta_boss_spawn_chance: float = 0.0  # Increases with corruption
 
+## Adaptive AI pattern database
+## {region_id: {ability_frequency: {}, target_priority: {}, common_opener: "", counter_strategy: "", battles_analyzed: int}}
+var learned_patterns: Dictionary = {}
+
 ## Battle configuration for grinding
 var grind_enemy_template: Dictionary = {}
 var grind_party: Array[Combatant] = []
+
+## ═══════════════════════════════════════════════════════════════════════
+## ADAPTIVE AI - Pattern Learning & Counter Strategy
+## ═══════════════════════════════════════════════════════════════════════
+
+func update_learned_patterns(region_id: String, battle_summary: Dictionary) -> void:
+	"""Update pattern database with battle results"""
+	if not learned_patterns.has(region_id):
+		learned_patterns[region_id] = {
+			"ability_frequency": {},
+			"target_priority": {},
+			"common_opener": "",
+			"counter_strategy": "",
+			"battles_analyzed": 0
+		}
+
+	var patterns = learned_patterns[region_id]
+	patterns["battles_analyzed"] += 1
+
+	# Merge ability frequencies
+	for ability_id in battle_summary.get("ability_frequency", {}):
+		var count = battle_summary["ability_frequency"][ability_id]
+		patterns["ability_frequency"][ability_id] = patterns["ability_frequency"].get(ability_id, 0) + count
+
+	# Merge target priorities
+	for ttype in battle_summary.get("target_priority", {}):
+		var count = battle_summary["target_priority"][ttype]
+		patterns["target_priority"][ttype] = patterns["target_priority"].get(ttype, 0) + count
+
+	# Track most common opener
+	var opener = battle_summary.get("common_opener", "")
+	if not opener.is_empty():
+		patterns["common_opener"] = opener  # Most recent opener
+
+	# Determine counter strategy
+	patterns["counter_strategy"] = _determine_counter_strategy(patterns)
+
+
+func _determine_counter_strategy(patterns: Dictionary) -> String:
+	"""Determine best counter strategy based on learned patterns"""
+	var abilities = patterns.get("ability_frequency", {})
+	var targets = patterns.get("target_priority", {})
+
+	# Find most used ability type
+	var max_ability = ""
+	var max_count = 0
+	for ability_id in abilities:
+		if abilities[ability_id] > max_count:
+			max_count = abilities[ability_id]
+			max_ability = ability_id
+
+	# Determine counter based on patterns
+	if max_ability.begins_with("fire") or max_ability == "fire":
+		return "fire_resist"
+	elif max_ability.begins_with("ice") or max_ability == "ice" or max_ability == "blizzard":
+		return "ice_resist"
+	elif max_ability.begins_with("thunder") or max_ability == "thunder":
+		return "lightning_resist"
+	elif max_ability == "cure" or max_ability == "heal":
+		return "focus_healer"
+	elif max_ability == "power_strike" or max_ability == "slash":
+		return "defense_boost"
+
+	# Check target patterns
+	var lowest_hp_focus = targets.get("lowest_hp", 0)
+	var total_targets = 0
+	for t in targets.values():
+		total_targets += t
+
+	if total_targets > 0 and float(lowest_hp_focus) / total_targets > 0.7:
+		return "rotate_aggro"
+
+	return "generic_counter"
+
+
+func get_adaptation_level_for_region(region_id: String) -> int:
+	"""Get how adapted enemies are to player strategies in a region"""
+	if not learned_patterns.has(region_id):
+		return 0
+	var battles = learned_patterns[region_id].get("battles_analyzed", 0)
+	if battles >= 20:
+		return 3  # Fully adapted
+	elif battles >= 10:
+		return 2  # Moderately adapted
+	elif battles >= 5:
+		return 1  # Slightly adapted
+	return 0
+
+
+func get_counter_strategy(region_id: String) -> String:
+	"""Get the current counter strategy for a region"""
+	if not learned_patterns.has(region_id):
+		return ""
+	return learned_patterns[region_id].get("counter_strategy", "")
+
+
+func get_learned_patterns_for_region(region_id: String) -> Dictionary:
+	"""Get all learned patterns for a region"""
+	if not learned_patterns.has(region_id):
+		return {}
+	return learned_patterns[region_id]
+
 
 ## ═══════════════════════════════════════════════════════════════════════
 ## AUTOGRIND PROFILES - Party-level rule management
@@ -121,6 +227,7 @@ const DEFAULT_AUTOGRIND_TEMPLATES = ["Standard Grind", "Safe Grind", "Aggressive
 
 func _ready() -> void:
 	_load_autogrind_profiles()
+	_load_learned_patterns()
 
 
 ## Autogrind control
@@ -910,3 +1017,42 @@ func _save_autogrind_profiles() -> void:
 		var json_string = JSON.stringify(autogrind_profiles, "\t")
 		file.store_string(json_string)
 		file.close()
+
+	# Also save learned patterns
+	_save_learned_patterns()
+
+
+func _save_learned_patterns() -> void:
+	"""Save learned patterns to file"""
+	var save_path = "user://autogrind/learned_patterns.json"
+
+	var dir = DirAccess.open("user://")
+	if dir and not dir.dir_exists("autogrind"):
+		dir.make_dir("autogrind")
+
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		var json_string = JSON.stringify(learned_patterns, "\t")
+		file.store_string(json_string)
+		file.close()
+
+
+func _load_learned_patterns() -> void:
+	"""Load learned patterns from file"""
+	var save_path = "user://autogrind/learned_patterns.json"
+
+	if FileAccess.file_exists(save_path):
+		var file = FileAccess.open(save_path, FileAccess.READ)
+		if file:
+			var json_string = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(json_string) == OK:
+				var data = json.data
+				if data is Dictionary:
+					learned_patterns = data
+					print("Loaded learned patterns (%d regions)" % data.size())
+					return
+
+	# No saved patterns
+	learned_patterns = {}

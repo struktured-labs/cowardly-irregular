@@ -87,6 +87,7 @@ const CONDITION_TYPES = {
 	"enemy_count": "Enemy Count",
 	"ally_count": "Ally Count",
 	"item_count": "Has Item",
+	"setup_complete": "Setup Complete",
 	"always": "Always"
 }
 
@@ -105,7 +106,8 @@ const ACTION_TYPES = {
 	"attack": "Attack",
 	"ability": "Ability",
 	"item": "Item",
-	"defer": "Defer"
+	"defer": "Defer",
+	"all_out_attack": "All-Out Attack"
 }
 
 ## Target types
@@ -236,6 +238,12 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			var count = _get_item_count(combatant, item_id)
 			return _compare_str(count, op, value)
 
+		"setup_complete":
+			# True when combatant has buffs and max AP (ready for one-shot)
+			var has_buffs = combatant.active_buffs.size() > 0
+			var max_ap = combatant.current_ap >= 4
+			return has_buffs and max_ap
+
 		"always":
 			return true
 
@@ -310,6 +318,14 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 		"defer":
 			return {
 				"type": "defer"
+			}
+
+		"all_out_attack":
+			# Queue max actions on lowest HP enemy (signals advance mode)
+			return {
+				"type": "attack",
+				"target": _get_target_by_type(combatant, "lowest_hp_enemy"),
+				"force_advance": true  # Signal to queue max actions
 			}
 
 	return {}

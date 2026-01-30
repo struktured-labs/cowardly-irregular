@@ -168,6 +168,7 @@ func _ready() -> void:
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
+	BattleManager.one_shot_achieved.connect(_on_one_shot_achieved)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -2145,6 +2146,11 @@ func _on_battle_ended(victory: bool) -> void:
 
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
+		# Show one-shot bonus in battle log if achieved
+		if BattleManager.get_one_shot_achieved():
+			var rank = BattleManager.get_one_shot_rank()
+			var exp_mult = BattleManager.get_one_shot_exp_multiplier()
+			log_message("[color=yellow]ONE-SHOT! Rank: %s - EXP x%.1f![/color]" % [rank, exp_mult])
 		log_message("[color=gray]Press ENTER to continue...[/color]")
 		# Play victory animation for all party members
 		for animator in party_animators:
@@ -3328,6 +3334,106 @@ func _on_battle_log_message(message: String) -> void:
 	if battle_log:
 		battle_log.append_text(message + "\n")
 		battle_log.scroll_to_line(battle_log.get_line_count())
+
+
+func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
+	"""Display one-shot visual feedback when all enemies are defeated in a single execution phase"""
+	var exp_mult = BattleManager.get_one_shot_exp_multiplier()
+	print("[ONE-SHOT UI] Displaying one-shot flash! Rank: %s, Setup: %d, EXP x%.1f" % [rank, setup_turns, exp_mult])
+
+	# Create the one-shot flash overlay
+	var flash_container = Control.new()
+	flash_container.name = "OneShotFlash"
+	flash_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash_container)
+
+	# Screen flash effect (brief white overlay)
+	var flash_bg = ColorRect.new()
+	flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash_bg.color = Color(1.0, 1.0, 0.8, 0.6)
+	flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(flash_bg)
+
+	# Flash out quickly
+	var flash_tween = create_tween()
+	flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
+	flash_tween.tween_callback(func(): flash_bg.queue_free())
+
+	# "ONE-SHOT!" text label
+	var one_shot_label = Label.new()
+	one_shot_label.text = "ONE-SHOT!"
+	one_shot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	one_shot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	one_shot_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	one_shot_label.offset_top = -60
+	one_shot_label.offset_bottom = 0
+	one_shot_label.offset_left = -200
+	one_shot_label.offset_right = 200
+	one_shot_label.add_theme_font_size_override("font_size", 48)
+	one_shot_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.0))
+	one_shot_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	one_shot_label.add_theme_constant_override("shadow_offset_x", 3)
+	one_shot_label.add_theme_constant_override("shadow_offset_y", 3)
+	one_shot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(one_shot_label)
+
+	# Rank text below
+	var rank_label = Label.new()
+	rank_label.text = "Rank: %s" % rank
+	rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rank_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	rank_label.offset_top = 0
+	rank_label.offset_bottom = 40
+	rank_label.offset_left = -200
+	rank_label.offset_right = 200
+	rank_label.add_theme_font_size_override("font_size", 28)
+	var rank_color = Color(1.0, 0.9, 0.0) if rank == "S" else Color(0.6, 1.0, 0.6) if rank == "A" else Color(0.6, 0.8, 1.0)
+	rank_label.add_theme_color_override("font_color", rank_color)
+	rank_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	rank_label.add_theme_constant_override("shadow_offset_x", 2)
+	rank_label.add_theme_constant_override("shadow_offset_y", 2)
+	rank_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(rank_label)
+
+	# EXP bonus text
+	var bonus_label = Label.new()
+	bonus_label.text = "EXP x%.1f!" % exp_mult
+	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bonus_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	bonus_label.offset_top = 40
+	bonus_label.offset_bottom = 75
+	bonus_label.offset_left = -200
+	bonus_label.offset_right = 200
+	bonus_label.add_theme_font_size_override("font_size", 22)
+	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	bonus_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	bonus_label.add_theme_constant_override("shadow_offset_x", 2)
+	bonus_label.add_theme_constant_override("shadow_offset_y", 2)
+	bonus_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(bonus_label)
+
+	# Animate: scale up from 0, hold, then fade out
+	one_shot_label.scale = Vector2(0.1, 0.1)
+	one_shot_label.pivot_offset = one_shot_label.size / 2
+	rank_label.modulate.a = 0.0
+	bonus_label.modulate.a = 0.0
+
+	var text_tween = create_tween()
+	# Scale up one-shot text
+	text_tween.tween_property(one_shot_label, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Fade in rank
+	text_tween.tween_property(rank_label, "modulate:a", 1.0, 0.2)
+	# Fade in bonus
+	text_tween.tween_property(bonus_label, "modulate:a", 1.0, 0.2)
+	# Hold for a moment
+	text_tween.tween_interval(1.5)
+	# Fade everything out
+	text_tween.tween_property(flash_container, "modulate:a", 0.0, 0.5)
+	# Clean up
+	text_tween.tween_callback(func(): flash_container.queue_free())
 
 
 func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:

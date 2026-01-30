@@ -23,6 +23,9 @@ var auto_save_interval: float = 300.0  # 5 minutes
 ## Auto-save timer
 var time_since_last_auto_save: float = 0.0
 
+## One-shot tracking records
+var one_shot_records: Dictionary = {}  # {monster_id: {count: int, best_rank: String, best_setup: int}}
+
 
 func _ready() -> void:
 	# Create save directory if it doesn't exist
@@ -180,6 +183,45 @@ func delete_save(slot: int) -> bool:
 	return false
 
 
+## One-shot record management
+func record_one_shot(monster_ids: Array, rank: String, setup_turns: int) -> void:
+	"""Record a one-shot achievement for the given monster types"""
+	for id in monster_ids:
+		if not one_shot_records.has(id):
+			one_shot_records[id] = {"count": 0, "best_rank": "C", "best_setup": 999}
+		one_shot_records[id]["count"] += 1
+		if _rank_value(rank) > _rank_value(one_shot_records[id]["best_rank"]):
+			one_shot_records[id]["best_rank"] = rank
+		if setup_turns < one_shot_records[id]["best_setup"]:
+			one_shot_records[id]["best_setup"] = setup_turns
+	print("[SAVE] One-shot recorded for monsters: %s (rank: %s, setup: %d)" % [monster_ids, rank, setup_turns])
+
+
+func _rank_value(rank: String) -> int:
+	"""Convert rank letter to numeric value for comparison"""
+	match rank:
+		"S":
+			return 4
+		"A":
+			return 3
+		"B":
+			return 2
+		"C":
+			return 1
+		_:
+			return 0
+
+
+func _get_one_shot_records() -> Dictionary:
+	"""Get all one-shot records"""
+	return one_shot_records
+
+
+func get_one_shot_record(monster_id: String) -> Dictionary:
+	"""Get one-shot record for a specific monster"""
+	return one_shot_records.get(monster_id, {})
+
+
 ## Save data creation
 func _create_save_data() -> Dictionary:
 	"""Create a dictionary of all save data"""
@@ -215,8 +257,12 @@ func _create_save_data() -> Dictionary:
 	# Autogrind/autobattle stats
 	data["automation"] = {
 		"region_crack_levels": AutogrindSystem.region_crack_levels if AutogrindSystem else {},
-		"total_battles": BattleManager.total_battles_won if BattleManager and "total_battles_won" in BattleManager else 0
+		"total_battles": BattleManager.total_battles_won if BattleManager and "total_battles_won" in BattleManager else 0,
+		"learned_patterns": AutogrindSystem.learned_patterns if AutogrindSystem else {}
 	}
+
+	# One-shot records
+	data["one_shot_records"] = _get_one_shot_records()
 
 	return data
 
@@ -290,8 +336,17 @@ func _apply_save_data(data: Dictionary) -> void:
 
 	# Apply automation stats
 	if data.has("automation"):
-		# Restore region crack levels, etc.
-		pass
+		var automation_data = data["automation"]
+		# Restore region crack levels
+		if automation_data.has("region_crack_levels") and AutogrindSystem:
+			AutogrindSystem.region_crack_levels = automation_data["region_crack_levels"]
+		# Restore learned patterns for adaptive AI
+		if automation_data.has("learned_patterns") and AutogrindSystem:
+			AutogrindSystem.learned_patterns = automation_data["learned_patterns"]
+
+	# Restore one-shot records
+	if data.has("one_shot_records"):
+		one_shot_records = data["one_shot_records"]
 
 
 func _deserialize_party(party_data: Array) -> void:
