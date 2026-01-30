@@ -38,6 +38,56 @@ const SPRITE_SCALE: float = float(SPRITE_SIZE) / float(BASE_SIZE)  # 1.5x scale
 static var _equipment_data: Dictionary = {}
 static var _equipment_loaded: bool = false
 
+## Sprite frame cache - avoids regenerating identical procedural sprites
+## Key format: "type_param1_param2" -> SpriteFrames
+static var _sprite_cache: Dictionary = {}
+static var _sprite_cache_enabled: bool = true
+
+## Get cached sprite frames or generate and cache them
+static func _get_cached_sprite(cache_key: String, generator: Callable) -> SpriteFrames:
+	"""Return cached SpriteFrames if available, otherwise generate, cache, and return."""
+	if _sprite_cache_enabled and _sprite_cache.has(cache_key):
+		# Return a duplicate to avoid shared mutation issues with AnimatedSprite2D
+		return _sprite_cache[cache_key].duplicate()
+	var frames = generator.call()
+	if _sprite_cache_enabled:
+		_sprite_cache[cache_key] = frames
+	return frames.duplicate() if _sprite_cache_enabled else frames
+
+## Clear the sprite cache (call when equipment changes or on memory pressure)
+static func clear_sprite_cache() -> void:
+	_sprite_cache.clear()
+
+## Pre-warm the cache for common sprite types (call during loading screens)
+static func prewarm_cache(monster_ids: Array = [], party_jobs: Array = []) -> void:
+	"""Pre-generate and cache sprites for anticipated encounters."""
+	# Pre-warm common monsters and minibosses
+	for id in monster_ids:
+		match id:
+			"slime": create_slime_sprite_frames()
+			"skeleton": create_skeleton_sprite_frames()
+			"ghost": create_specter_sprite_frames()
+			"imp": create_imp_sprite_frames()
+			"wolf": create_wolf_sprite_frames()
+			"snake": create_viper_sprite_frames()
+			"bat": create_bat_sprite_frames()
+			"mushroom": create_fungoid_sprite_frames()
+			"goblin": create_goblin_sprite_frames()
+			"cave_rat": create_cave_rat_sprite_frames()
+			"rat_guard": create_rat_guard_sprite_frames()
+			"shadow_knight": create_shadow_knight_sprite_frames()
+			"cave_troll": create_cave_troll_sprite_frames()
+			"cave_rat_king": create_cave_rat_king_sprite_frames()
+	# Pre-warm party jobs
+	for job_data in party_jobs:
+		var job_id = job_data.get("job_id", "fighter")
+		var weapon_id = job_data.get("weapon_id", "")
+		match job_id:
+			"fighter": create_hero_sprite_frames(weapon_id)
+			"white_mage": create_mage_sprite_frames(Color(0.9, 0.9, 1.0), weapon_id)
+			"black_mage": create_mage_sprite_frames(Color(0.15, 0.1, 0.25), weapon_id)
+			"thief": create_thief_sprite_frames(weapon_id)
+
 ## Load equipment data from JSON
 static func _load_equipment_data() -> void:
 	if _equipment_loaded:
@@ -500,6 +550,13 @@ func cast_sequence(on_complete: Callable = Callable()) -> void:
 
 static func create_hero_sprite_frames(weapon_id: String = "") -> SpriteFrames:
 	"""Create animated sprite frames for hero (12-bit style)"""
+	var cache_key = "hero_%s" % weapon_id
+	return _get_cached_sprite(cache_key, func():
+		return _generate_hero_sprite_frames(weapon_id)
+	)
+
+static func _generate_hero_sprite_frames(weapon_id: String = "") -> SpriteFrames:
+	"""Generate hero sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 	var weapon_visual = get_weapon_visual(weapon_id)
 
@@ -905,6 +962,12 @@ static func _draw_shield(img: Image, cx: int, cy: int, metal: Color, accent: Col
 
 static func create_slime_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for slime enemy (12-bit style)"""
+	return _get_cached_sprite("slime", func():
+		return _generate_slime_sprite_frames()
+	)
+
+static func _generate_slime_sprite_frames() -> SpriteFrames:
+	"""Generate slime sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (4 frames, bouncy blob)
@@ -1079,6 +1142,13 @@ static func _create_slime_frame(pose: int, y_offset: float, scale_y: float) -> I
 
 static func create_mage_sprite_frames(robe_color: Color = Color(0.9, 0.9, 1.0), weapon_id: String = "") -> SpriteFrames:
 	"""Create animated sprite frames for mage character (12-bit style)"""
+	var cache_key = "mage_%s_%s" % [robe_color.to_html(), weapon_id]
+	return _get_cached_sprite(cache_key, func():
+		return _generate_mage_sprite_frames(robe_color, weapon_id)
+	)
+
+static func _generate_mage_sprite_frames(robe_color: Color = Color(0.9, 0.9, 1.0), weapon_id: String = "") -> SpriteFrames:
+	"""Generate mage sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 	var weapon_visual = get_weapon_visual(weapon_id) if not weapon_id.is_empty() else _get_default_weapon_visual("staff")
 
@@ -1345,6 +1415,13 @@ static func _draw_magic_glow(img: Image, cx: int, cy: int, glow_color: Color) ->
 
 static func create_thief_sprite_frames(weapon_id: String = "") -> SpriteFrames:
 	"""Create animated sprite frames for thief character (12-bit style)"""
+	var cache_key = "thief_%s" % weapon_id
+	return _get_cached_sprite(cache_key, func():
+		return _generate_thief_sprite_frames(weapon_id)
+	)
+
+static func _generate_thief_sprite_frames(weapon_id: String = "") -> SpriteFrames:
+	"""Generate thief sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 	var weapon_visual = get_weapon_visual(weapon_id) if not weapon_id.is_empty() else _get_default_weapon_visual("dagger")
 
@@ -1536,6 +1613,12 @@ static func _draw_dagger(img: Image, cx: int, cy: int, angle: int, blade: Color,
 
 static func create_skeleton_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for skeleton enemy (12-bit style)"""
+	return _get_cached_sprite("skeleton", func():
+		return _generate_skeleton_sprite_frames()
+	)
+
+static func _generate_skeleton_sprite_frames() -> SpriteFrames:
+	"""Generate skeleton sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (2 frames, slight sway)
@@ -1725,6 +1808,12 @@ static func _draw_scattered_bones(img: Image, cx: int, cy: int, scatter: float, 
 
 static func create_specter_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for specter/ghost enemy (12-bit style)"""
+	return _get_cached_sprite("specter", func():
+		return _generate_specter_sprite_frames()
+	)
+
+static func _generate_specter_sprite_frames() -> SpriteFrames:
+	"""Generate specter sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (4 frames, floating bob with shimmer)
@@ -1858,6 +1947,12 @@ static func _draw_specter_body(img: Image, cx: int, cy: int, pose: int, body: Co
 
 static func create_imp_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for imp enemy (small demon)"""
+	return _get_cached_sprite("imp", func():
+		return _generate_imp_sprite_frames()
+	)
+
+static func _generate_imp_sprite_frames() -> SpriteFrames:
+	"""Generate imp sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (3 frames, hovering with wing flaps)
@@ -2019,6 +2114,12 @@ static func _draw_imp_body(img: Image, cx: int, cy: int, pose: int, body: Color,
 
 static func create_wolf_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for dire wolf enemy"""
+	return _get_cached_sprite("wolf", func():
+		return _generate_wolf_sprite_frames()
+	)
+
+static func _generate_wolf_sprite_frames() -> SpriteFrames:
+	"""Generate wolf sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (2 frames, breathing)
@@ -2188,6 +2289,12 @@ static func _draw_wolf_body(img: Image, cx: int, cy: int, pose: int, fur: Color,
 
 static func create_viper_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for viper/snake enemy"""
+	return _get_cached_sprite("viper", func():
+		return _generate_viper_sprite_frames()
+	)
+
+static func _generate_viper_sprite_frames() -> SpriteFrames:
+	"""Generate viper sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (3 frames, coiled swaying)
@@ -2341,6 +2448,12 @@ static func _draw_viper_body(img: Image, cx: int, cy: int, pose: int, scale: Col
 
 static func create_bat_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for bat enemy"""
+	return _get_cached_sprite("bat", func():
+		return _generate_bat_sprite_frames()
+	)
+
+static func _generate_bat_sprite_frames() -> SpriteFrames:
+	"""Generate bat sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (4 frames, wing flap hovering)
@@ -2504,6 +2617,12 @@ static func _draw_bat_body(img: Image, cx: int, cy: int, pose: int, fur: Color, 
 
 static func create_fungoid_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for fungoid/mushroom enemy"""
+	return _get_cached_sprite("fungoid", func():
+		return _generate_fungoid_sprite_frames()
+	)
+
+static func _generate_fungoid_sprite_frames() -> SpriteFrames:
+	"""Generate fungoid sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (3 frames, pulsing)
@@ -2647,6 +2766,12 @@ static func _draw_fungoid_body(img: Image, cx: int, cy: int, pose: int, scale: f
 
 static func create_goblin_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for goblin enemy"""
+	return _get_cached_sprite("goblin", func():
+		return _generate_goblin_sprite_frames()
+	)
+
+static func _generate_goblin_sprite_frames() -> SpriteFrames:
+	"""Generate goblin sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (2 frames, slight bounce)
@@ -2999,6 +3124,12 @@ static func _draw_goblin_body_enhanced(img: Image, cx: int, cy: int, pose: int, 
 
 static func create_shadow_knight_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for Shadow Knight miniboss (larger, more imposing)"""
+	return _get_cached_sprite("shadow_knight", func():
+		return _generate_shadow_knight_sprite_frames()
+	)
+
+static func _generate_shadow_knight_sprite_frames() -> SpriteFrames:
+	"""Generate Shadow Knight sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (2 frames, menacing stance)
@@ -3269,6 +3400,12 @@ static func _draw_shadow_knight_body(img: Image, cx: int, cy: int, pose: int, ar
 
 static func create_cave_troll_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for Cave Troll miniboss (massive brute)"""
+	return _get_cached_sprite("cave_troll", func():
+		return _generate_cave_troll_sprite_frames()
+	)
+
+static func _generate_cave_troll_sprite_frames() -> SpriteFrames:
+	"""Generate Cave Troll sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (2 frames, heavy breathing)
@@ -3501,6 +3638,12 @@ static func _draw_cave_troll_body(img: Image, cx: int, cy: int, pose: int, skin:
 
 static func create_cave_rat_king_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for Cave Rat King boss (large rat with tiny crown)"""
+	return _get_cached_sprite("cave_rat_king", func():
+		return _generate_cave_rat_king_sprite_frames()
+	)
+
+static func _generate_cave_rat_king_sprite_frames() -> SpriteFrames:
+	"""Generate Cave Rat King sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (2 frames, twitchy rat behavior)
@@ -3837,6 +3980,12 @@ static func _draw_rat_king_body(img: Image, cx: int, cy: int, pose: int, fur: Co
 
 static func create_cave_rat_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for Cave Rat (smaller rat minion)"""
+	return _get_cached_sprite("cave_rat", func():
+		return _generate_cave_rat_sprite_frames()
+	)
+
+static func _generate_cave_rat_sprite_frames() -> SpriteFrames:
+	"""Generate Cave Rat sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation (2 frames, twitchy)
@@ -3978,6 +4127,12 @@ static func _create_cave_rat_frame(pose: int, y_offset: float) -> ImageTexture:
 
 static func create_rat_guard_sprite_frames() -> SpriteFrames:
 	"""Create animated sprite frames for Rat Guard (armored rat soldier)"""
+	return _get_cached_sprite("rat_guard", func():
+		return _generate_rat_guard_sprite_frames()
+	)
+
+static func _generate_rat_guard_sprite_frames() -> SpriteFrames:
+	"""Generate Rat Guard sprite frames (internal, called by cache system)."""
 	var frames = SpriteFrames.new()
 
 	# Idle animation

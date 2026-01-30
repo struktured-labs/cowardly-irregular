@@ -74,71 +74,224 @@ func _generate_sprite() -> void:
 	add_child(sprite)
 
 
+func _safe_pixel(image: Image, x: int, y: int, color: Color) -> void:
+	if x >= 0 and x < TILE_SIZE and y >= 0 and y < TILE_SIZE:
+		image.set_pixel(x, y, color)
+
+
 func _draw_npc(image: Image) -> void:
-	# NPC color palette based on type
+	# SNES-quality NPC with proper shading and detail
 	var skin_color = Color(0.95, 0.80, 0.65)
-	var hair_color = Color(0.35, 0.25, 0.15)
+	var skin_dark = Color(0.78, 0.62, 0.48)
+	var skin_light = Color(1.0, 0.88, 0.75)
+	var hair_color = _get_npc_hair_color()
+	var hair_dark = hair_color.darkened(0.25)
+	var hair_light = hair_color.lightened(0.20)
 	var clothes_color = _get_clothes_color()
-	var outline_color = Color(0.1, 0.1, 0.1)
+	var clothes_dark = clothes_color.darkened(0.25)
+	var clothes_light = clothes_color.lightened(0.18)
+	var outline_color = Color(0.08, 0.08, 0.12)
+	var eye_white = Color(0.92, 0.92, 0.95)
+	var eye_color = Color(0.15, 0.15, 0.25)
+	var boot_color = Color(0.25, 0.18, 0.12)
+	var boot_dark = Color(0.18, 0.12, 0.08)
 
 	# Clear
 	image.fill(Color.TRANSPARENT)
 
-	# Body (simple humanoid shape)
-	# Head (8x8 centered at top)
-	for y in range(2, 10):
-		for x in range(12, 20):
-			if y == 2 or y == 9 or x == 12 or x == 19:
-				image.set_pixel(x, y, outline_color)
-			else:
-				image.set_pixel(x, y, skin_color)
+	# Shadow beneath character
+	for x in range(11, 22):
+		var shadow_alpha = 0.18 - abs(x - 16) * 0.015
+		_safe_pixel(image, x, 30, Color(0, 0, 0, shadow_alpha))
+		_safe_pixel(image, x, 31, Color(0, 0, 0, shadow_alpha * 0.5))
 
-	# Hair (top of head)
-	for y in range(2, 5):
-		for x in range(13, 19):
-			if y < 4:
-				image.set_pixel(x, y, hair_color)
+	# ---- HEAD (elliptical for SNES look) ----
+	var head_cx = 16
+	var head_cy = 6
+	var head_rx = 5
+	var head_ry = 5
+	# Outline
+	for y in range(-head_ry - 1, head_ry + 2):
+		for x in range(-head_rx - 1, head_rx + 2):
+			var dist = sqrt(pow(float(x) / (head_rx + 1), 2) + pow(float(y) / (head_ry + 1), 2))
+			if dist >= 0.85 and dist < 1.0:
+				_safe_pixel(image, head_cx + x, head_cy + y, outline_color)
+	# Fill with shading
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var c = skin_color
+				if y < -head_ry * 0.3:
+					c = skin_light
+				elif x > head_rx * 0.4:
+					c = skin_dark
+				elif y > head_ry * 0.3:
+					c = skin_dark
+				_safe_pixel(image, head_cx + x, head_cy + y, c)
 
-	# Eyes
-	image.set_pixel(14, 6, outline_color)
-	image.set_pixel(17, 6, outline_color)
+	# ---- HAIR ----
+	for y in range(head_cy - head_ry - 1, head_cy - 1):
+		for x in range(head_cx - head_rx, head_cx + head_rx + 1):
+			var dist = sqrt(pow(float(x - head_cx) / (head_rx + 1), 2) + pow(float(y - head_cy + head_ry) / (head_ry * 0.5), 2))
+			if dist < 1.2:
+				var c = hair_color
+				if y < head_cy - head_ry:
+					c = hair_light
+				elif x > head_cx + 2:
+					c = hair_dark
+				_safe_pixel(image, x, y, c)
+	# Hair shine
+	_safe_pixel(image, head_cx - 2, head_cy - head_ry, hair_light)
+	_safe_pixel(image, head_cx - 1, head_cy - head_ry, hair_light)
 
-	# Body/clothes (12x14)
-	for y in range(10, 24):
-		for x in range(10, 22):
-			if y == 10 or y == 23 or x == 10 or x == 21:
-				image.set_pixel(x, y, outline_color)
-			else:
-				image.set_pixel(x, y, clothes_color)
+	# ---- EYES with detail ----
+	# Eye whites
+	_safe_pixel(image, 13, 6, eye_white)
+	_safe_pixel(image, 14, 6, eye_white)
+	_safe_pixel(image, 18, 6, eye_white)
+	_safe_pixel(image, 19, 6, eye_white)
+	# Pupils
+	_safe_pixel(image, 14, 6, eye_color)
+	_safe_pixel(image, 18, 6, eye_color)
+	# Catchlights
+	_safe_pixel(image, 13, 5, Color(1, 1, 1, 0.7))
+	_safe_pixel(image, 17, 5, Color(1, 1, 1, 0.7))
+	# Eyebrows
+	_safe_pixel(image, 13, 4, hair_dark)
+	_safe_pixel(image, 14, 4, hair_dark)
+	_safe_pixel(image, 18, 4, hair_dark)
+	_safe_pixel(image, 19, 4, hair_dark)
+	# Mouth
+	_safe_pixel(image, 15, 9, Color(0.65, 0.40, 0.38))
+	_safe_pixel(image, 16, 9, Color(0.65, 0.40, 0.38))
+	_safe_pixel(image, 17, 9, Color(0.55, 0.32, 0.32))
 
-	# Arms
-	for y in range(12, 20):
-		image.set_pixel(8, y, clothes_color)
-		image.set_pixel(9, y, clothes_color)
-		image.set_pixel(22, y, clothes_color)
-		image.set_pixel(23, y, clothes_color)
+	# ---- NECK ----
+	_safe_pixel(image, 15, 11, skin_color)
+	_safe_pixel(image, 16, 11, skin_color)
+	_safe_pixel(image, 17, 11, skin_dark)
 
+	# ---- BODY with 3-tone shading ----
+	for y in range(12, 24):
+		var body_half = 5 if y < 15 else 4
+		for x in range(head_cx - body_half, head_cx + body_half + 1):
+			var c = clothes_color
+			if x < head_cx - body_half + 2:
+				c = clothes_dark
+			elif x > head_cx + body_half - 2:
+				c = clothes_light
+			# Collar detail
+			if y == 12 and abs(x - head_cx) < 3:
+				c = clothes_light
+			_safe_pixel(image, x, y, c)
+		# Outline edges
+		_safe_pixel(image, head_cx - body_half - 1, y, outline_color)
+		_safe_pixel(image, head_cx + body_half + 1, y, outline_color)
+
+	# Belt/sash detail
+	for x in range(11, 22):
+		_safe_pixel(image, x, 20, clothes_dark)
+
+	# ---- ARMS with shading ----
+	for y in range(13, 21):
+		# Left arm
+		_safe_pixel(image, 9, y, clothes_dark)
+		_safe_pixel(image, 10, y, clothes_color)
+		# Right arm
+		_safe_pixel(image, 22, y, clothes_color)
+		_safe_pixel(image, 23, y, clothes_light)
 	# Hands
-	for y in range(18, 21):
-		image.set_pixel(8, y, skin_color)
-		image.set_pixel(9, y, skin_color)
-		image.set_pixel(22, y, skin_color)
-		image.set_pixel(23, y, skin_color)
+	_safe_pixel(image, 9, 21, skin_color)
+	_safe_pixel(image, 10, 21, skin_color)
+	_safe_pixel(image, 22, 21, skin_color)
+	_safe_pixel(image, 23, 21, skin_dark)
 
-	# Legs
-	for y in range(24, 30):
-		for x in range(12, 16):
-			image.set_pixel(x, y, clothes_color if y < 28 else outline_color)
-		for x in range(16, 20):
-			image.set_pixel(x, y, clothes_color if y < 28 else outline_color)
+	# ---- LEGS with proper shading ----
+	for y in range(24, 29):
+		# Left leg
+		_safe_pixel(image, 13, y, clothes_dark)
+		_safe_pixel(image, 14, y, clothes_color)
+		_safe_pixel(image, 15, y, clothes_color)
+		# Right leg
+		_safe_pixel(image, 17, y, clothes_color)
+		_safe_pixel(image, 18, y, clothes_color)
+		_safe_pixel(image, 19, y, clothes_light)
 
-	# Feet
-	for x in range(11, 16):
-		image.set_pixel(x, 30, outline_color)
-		image.set_pixel(x, 31, outline_color)
-	for x in range(16, 21):
-		image.set_pixel(x, 30, outline_color)
-		image.set_pixel(x, 31, outline_color)
+	# ---- BOOTS with highlight ----
+	for x in range(12, 16):
+		_safe_pixel(image, x, 29, boot_color)
+		_safe_pixel(image, x, 30, boot_dark)
+	for x in range(17, 21):
+		_safe_pixel(image, x, 29, boot_color)
+		_safe_pixel(image, x, 30, boot_dark)
+	# Boot highlights
+	_safe_pixel(image, 12, 29, boot_color.lightened(0.15))
+	_safe_pixel(image, 17, 29, boot_color.lightened(0.15))
+
+	# ---- NPC TYPE ACCESSORIES ----
+	_draw_npc_accessory(image, head_cx, head_cy, clothes_color, clothes_dark, clothes_light)
+
+
+func _draw_npc_accessory(image: Image, cx: int, cy: int, clothes: Color, clothes_dark: Color, clothes_light: Color) -> void:
+	"""Draw type-specific accessories for NPC distinction"""
+	match npc_type:
+		"elder":
+			# Long white beard
+			for y in range(9, 16):
+				var w = 3 - (y - 9) / 3
+				for dx in range(-w, w + 1):
+					_safe_pixel(image, cx + dx, y, Color(0.85, 0.85, 0.90))
+			# Walking staff
+			for y in range(8, 29):
+				_safe_pixel(image, 24, y, Color(0.45, 0.30, 0.18))
+			_safe_pixel(image, 24, 7, Color(0.6, 0.5, 0.3))
+		"shopkeeper":
+			# Apron highlight
+			for y in range(16, 23):
+				_safe_pixel(image, cx - 2, y, clothes_light)
+				_safe_pixel(image, cx + 2, y, clothes_light)
+		"guard":
+			# Helmet/visor
+			for x in range(cx - 5, cx + 6):
+				_safe_pixel(image, x, 1, Color(0.55, 0.55, 0.65))
+				_safe_pixel(image, x, 2, Color(0.45, 0.45, 0.55))
+			# Spear
+			for y in range(3, 30):
+				_safe_pixel(image, 25, y, Color(0.45, 0.40, 0.35))
+			_safe_pixel(image, 24, 3, Color(0.6, 0.6, 0.7))
+			_safe_pixel(image, 25, 2, Color(0.7, 0.7, 0.8))
+			_safe_pixel(image, 26, 3, Color(0.6, 0.6, 0.7))
+		"knight":
+			# Armor shoulder pads
+			for side in [-1, 1]:
+				for dy in range(3):
+					_safe_pixel(image, cx + side * 7, 13 + dy, Color(0.6, 0.6, 0.7))
+					_safe_pixel(image, cx + side * 8, 13 + dy, Color(0.5, 0.5, 0.6))
+		"mysterious":
+			# Hood shadow over face
+			for y in range(1, 5):
+				for x in range(cx - 5, cx + 6):
+					_safe_pixel(image, x, y, clothes_dark)
+			# Glowing eyes under hood
+			_safe_pixel(image, 14, 6, Color(0.5, 0.8, 0.5))
+			_safe_pixel(image, 18, 6, Color(0.5, 0.8, 0.5))
+
+
+func _get_npc_hair_color() -> Color:
+	"""Get varied hair color based on NPC name hash"""
+	var hair_colors = [
+		Color(0.15, 0.12, 0.10),  # Black
+		Color(0.45, 0.30, 0.18),  # Brown
+		Color(0.65, 0.50, 0.30),  # Light brown
+		Color(0.85, 0.65, 0.35),  # Blonde
+		Color(0.55, 0.55, 0.60),  # Gray
+		Color(0.65, 0.25, 0.15),  # Red
+	]
+	match npc_type:
+		"elder": return Color(0.75, 0.75, 0.80)  # White/silver
+		"mysterious": return Color(0.15, 0.12, 0.20)  # Very dark
+		_: return hair_colors[hash(npc_name) % hair_colors.size()]
 
 
 func _generate_dance_frames() -> void:

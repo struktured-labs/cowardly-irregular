@@ -81,78 +81,249 @@ func _generate_sprite() -> void:
 func _draw_shop(image: Image) -> void:
 	image.fill(Color.TRANSPARENT)
 
-	# Shop colors based on type
+	# Shop colors based on type (SNES-quality multi-tone palettes)
 	var main_color: Color
+	var main_light: Color
+	var main_dark: Color
 	var accent_color: Color
+	var accent_light: Color
 	match shop_type:
 		ShopType.WEAPON:
-			main_color = Color(0.4, 0.35, 0.45)  # Grayish purple (smithy)
-			accent_color = Color(0.6, 0.55, 0.3)  # Bronze
+			main_color = Color(0.40, 0.35, 0.45)
+			main_light = Color(0.52, 0.48, 0.58)
+			main_dark = Color(0.28, 0.24, 0.32)
+			accent_color = Color(0.60, 0.55, 0.30)
+			accent_light = Color(0.75, 0.68, 0.40)
 		ShopType.ARMOR:
-			main_color = Color(0.35, 0.40, 0.50)  # Steel blue
-			accent_color = Color(0.5, 0.5, 0.55)  # Silver
+			main_color = Color(0.35, 0.40, 0.50)
+			main_light = Color(0.48, 0.52, 0.62)
+			main_dark = Color(0.22, 0.28, 0.38)
+			accent_color = Color(0.50, 0.50, 0.55)
+			accent_light = Color(0.65, 0.65, 0.70)
 		ShopType.ITEM:
-			main_color = Color(0.25, 0.45, 0.35)  # Forest green
-			accent_color = Color(0.7, 0.6, 0.4)  # Tan
+			main_color = Color(0.25, 0.45, 0.35)
+			main_light = Color(0.35, 0.58, 0.45)
+			main_dark = Color(0.15, 0.32, 0.24)
+			accent_color = Color(0.70, 0.60, 0.40)
+			accent_light = Color(0.82, 0.72, 0.52)
 		ShopType.ACCESSORY:
-			main_color = Color(0.45, 0.30, 0.45)  # Purple
-			accent_color = Color(0.8, 0.65, 0.3)  # Gold
+			main_color = Color(0.45, 0.30, 0.45)
+			main_light = Color(0.58, 0.42, 0.58)
+			main_dark = Color(0.32, 0.18, 0.32)
+			accent_color = Color(0.80, 0.65, 0.30)
+			accent_light = Color(0.92, 0.78, 0.42)
+		_:
+			main_color = Color(0.40, 0.35, 0.30)
+			main_light = Color(0.52, 0.48, 0.42)
+			main_dark = Color(0.28, 0.22, 0.18)
+			accent_color = Color(0.65, 0.55, 0.35)
+			accent_light = Color(0.78, 0.68, 0.48)
 
-	var wood = Color(0.45, 0.30, 0.15)
+	var wood = Color(0.48, 0.32, 0.16)
+	var wood_light = Color(0.58, 0.42, 0.22)
 	var wood_dark = Color(0.35, 0.22, 0.10)
-	var window = Color(0.7, 0.8, 0.9)
+	var wood_grain = Color(0.42, 0.28, 0.14)
+	var window = Color(0.72, 0.82, 0.92)
+	var window_light = Color(0.85, 0.90, 0.98)
+	var window_frame = Color(0.25, 0.18, 0.10)
+	var outline = Color(0.12, 0.08, 0.05)
 
-	# Awning at top
+	# Awning with proper stripe shading and scalloped bottom edge
 	for y in range(0, 16):
+		var awning_sag = int(sin(y * 0.4) * 1.5)  # Slight fabric sag
 		for x in range(4, 60):
-			var stripe = ((x + y) / 4) % 2 == 0
-			image.set_pixel(x, y, accent_color if stripe else main_color)
+			var stripe_phase = ((x + y) / 4) % 2 == 0
+			var c = accent_color if stripe_phase else main_color
+			# Top of awning lighter, bottom darker (fabric drape shading)
+			if y < 4:
+				c = (accent_light if stripe_phase else main_light)
+			elif y > 12:
+				c = c.darkened(0.1)
+			# Left-right shading
+			if x < 10:
+				c = c.darkened(0.1)
+			elif x > 54:
+				c = c.darkened(0.1)
+			image.set_pixel(x, y, c)
+	# Scalloped bottom edge of awning
+	for x in range(4, 60):
+		var scallop = int(sin(x * 0.5) * 1.5) + 15
+		if scallop >= 0 and scallop < 64:
+			image.set_pixel(x, scallop, main_dark)
 
-	# Building body
+	# Building body with wood plank texture and shading
 	for y in range(16, 58):
 		for x in range(8, 56):
-			var c = wood if (x + y) % 8 < 4 else wood_dark
+			var c = wood
+			# Horizontal plank lines
+			if (y - 16) % 8 == 0:
+				c = wood_dark
+			# Wood grain texture
+			elif (x + y * 3) % 7 == 0:
+				c = wood_grain
+			# Left wall shadow, right wall highlight
+			elif x < 14:
+				c = wood_dark
+			elif x > 50:
+				c = wood_dark
+			elif x < 18:
+				c = wood
+			elif x > 46:
+				c = wood
+			else:
+				# Alternate light/dark planks for depth
+				c = wood if ((y - 16) / 8) % 2 == 0 else wood_light
 			image.set_pixel(x, y, c)
+	# Building outline
+	for y in range(16, 58):
+		image.set_pixel(8, y, outline)
+		image.set_pixel(55, y, outline)
+	for x in range(8, 56):
+		image.set_pixel(x, 57, outline)
 
-	# Large window/counter at front
+	# Large window/counter with frame and cross-bar
+	# Window frame
+	for y in range(22, 46):
+		for x in range(12, 52):
+			if y == 22 or y == 45 or x == 12 or x == 51:
+				image.set_pixel(x, y, window_frame)
+			elif y == 23 or x == 13:
+				image.set_pixel(x, y, wood_light)  # Inner frame highlight
+	# Window glass with slight gradient
 	for y in range(24, 44):
 		for x in range(14, 50):
-			image.set_pixel(x, y, window)
+			var grad = float(y - 24) / 20.0
+			var c = window_light.lerp(window, grad)
+			# Vertical dividers
+			if x == 25 or x == 38:
+				c = window_frame
+			image.set_pixel(x, y, c)
 
-	# Counter shelf
-	for y in range(42, 46):
-		for x in range(12, 52):
-			image.set_pixel(x, y, wood_dark)
+	# Counter shelf with 3D beveled edge
+	for y in range(42, 47):
+		for x in range(10, 54):
+			var c = wood_dark
+			if y == 42:
+				c = wood_light  # Top highlight
+			elif y == 43:
+				c = wood
+			elif y == 46:
+				c = outline  # Shadow underneath
+			image.set_pixel(x, y, c)
 
-	# Display items on counter based on shop type
+	# Display items on counter based on shop type (SNES quality)
 	match shop_type:
 		ShopType.WEAPON:
-			# Swords
-			for y in range(28, 40):
-				image.set_pixel(20, y, Color(0.6, 0.6, 0.65))
-				image.set_pixel(32, y, Color(0.6, 0.6, 0.65))
-				image.set_pixel(44, y, Color(0.5, 0.4, 0.3))
+			# Detailed sword silhouettes with hilts
+			var sword_colors = [Color(0.65, 0.65, 0.70), Color(0.55, 0.55, 0.60), Color(0.52, 0.42, 0.32)]
+			var sword_x_pos = [20, 32, 44]
+			for i in range(3):
+				var sx = sword_x_pos[i]
+				var sc = sword_colors[i]
+				# Blade
+				for y in range(28, 39):
+					image.set_pixel(sx, y, sc)
+					image.set_pixel(sx + 1, y, sc.darkened(0.1))
+				# Crossguard
+				for x in range(sx - 2, sx + 4):
+					image.set_pixel(x, 39, sc.darkened(0.2))
+				# Grip
+				image.set_pixel(sx, 40, Color(0.4, 0.25, 0.15))
+				image.set_pixel(sx, 41, Color(0.4, 0.25, 0.15))
+				# Blade tip shine
+				image.set_pixel(sx, 28, sc.lightened(0.3))
 		ShopType.ARMOR:
-			# Shields/armor pieces
-			for y in range(30, 40):
-				for x in range(18, 26):
-					image.set_pixel(x, y, Color(0.5, 0.5, 0.55))
-				for x in range(38, 46):
-					image.set_pixel(x, y, Color(0.4, 0.3, 0.2))
+			# Shield and breastplate
+			# Shield (round with emblem)
+			for y in range(28, 40):
+				for x in range(17, 27):
+					var dx = abs(x - 22.0)
+					var dy = abs(y - 34.0)
+					if dx * dx / 25.0 + dy * dy / 36.0 < 1.0:
+						var c = Color(0.52, 0.52, 0.58)
+						if dx + dy < 3:
+							c = Color(0.70, 0.65, 0.30)  # Center emblem
+						elif y < 32:
+							c = Color(0.62, 0.62, 0.68)  # Top highlight
+						image.set_pixel(x, y, c)
+			# Breastplate
+			for y in range(29, 41):
+				for x in range(37, 47):
+					var rel_y = float(y - 29) / 12.0
+					var c = Color(0.45, 0.35, 0.25)
+					if rel_y < 0.3:
+						c = Color(0.55, 0.45, 0.32)
+					elif rel_y > 0.7:
+						c = Color(0.35, 0.25, 0.18)
+					if x == 37 or x == 46:
+						c = c.darkened(0.15)
+					image.set_pixel(x, y, c)
 		ShopType.ITEM:
-			# Potions
-			for y in range(32, 40):
-				image.set_pixel(20, y, Color(0.9, 0.3, 0.3))  # Red potion
-				image.set_pixel(22, y, Color(0.9, 0.3, 0.3))
-				image.set_pixel(32, y, Color(0.3, 0.5, 0.9))  # Blue potion
-				image.set_pixel(34, y, Color(0.3, 0.5, 0.9))
-				image.set_pixel(44, y, Color(0.3, 0.8, 0.3))  # Green potion
-				image.set_pixel(46, y, Color(0.3, 0.8, 0.3))
+			# Detailed potion bottles with cork and liquid
+			var potion_data = [
+				[19, Color(0.92, 0.30, 0.28), Color(1.0, 0.5, 0.45)],   # Red HP
+				[31, Color(0.28, 0.48, 0.92), Color(0.45, 0.65, 1.0)],   # Blue MP
+				[43, Color(0.28, 0.82, 0.32), Color(0.50, 0.95, 0.55)],  # Green antidote
+			]
+			for p in potion_data:
+				var px = p[0]
+				var liquid = p[1]
+				var liquid_light = p[2]
+				# Cork
+				image.set_pixel(px, 30, Color(0.55, 0.42, 0.28))
+				image.set_pixel(px + 1, 30, Color(0.55, 0.42, 0.28))
+				# Bottle neck
+				image.set_pixel(px, 31, Color(0.75, 0.82, 0.88))
+				image.set_pixel(px + 1, 31, Color(0.65, 0.72, 0.78))
+				# Bottle body with liquid
+				for y in range(32, 41):
+					var bottle_w = 2 if y < 34 else 3
+					for dx in range(-bottle_w + 1, bottle_w + 1):
+						var bx = px + dx
+						if bx >= 0 and bx < 64:
+							var c = liquid
+							if y < 34:
+								c = Color(0.70, 0.78, 0.85)  # Empty upper part
+							elif dx == -bottle_w + 1:
+								c = liquid_light  # Left highlight
+							image.set_pixel(bx, y, c)
+		ShopType.ACCESSORY:
+			# Ring and amulet display
+			# Ring on cushion
+			for y in range(34, 40):
+				for x in range(17, 27):
+					image.set_pixel(x, y, Color(0.55, 0.20, 0.25))  # Red cushion
+			# Ring
+			for angle in range(12):
+				var rx = 22 + int(cos(angle * 0.52) * 3)
+				var ry = 33 + int(sin(angle * 0.52) * 2)
+				if rx >= 0 and rx < 64 and ry >= 0 and ry < 64:
+					image.set_pixel(rx, ry, Color(0.85, 0.75, 0.30))
+			# Amulet
+			for y in range(30, 40):
+				for x in range(38, 46):
+					var dx = abs(x - 42.0)
+					var dy = abs(y - 36.0)
+					if dx + dy < 4:
+						image.set_pixel(x, y, Color(0.82, 0.68, 0.28))
+			# Chain
+			for y in range(28, 32):
+				image.set_pixel(42, y, Color(0.75, 0.65, 0.25))
 
-	# Sign
-	for y in range(4, 14):
-		for x in range(24, 40):
-			image.set_pixel(x, y, Color(0.8, 0.75, 0.6))
+	# Shop sign with detailed lettering area
+	var sign_bg = Color(0.78, 0.72, 0.58)
+	var sign_dark = Color(0.58, 0.52, 0.38)
+	for y in range(2, 14):
+		for x in range(22, 42):
+			var c = sign_bg
+			if x == 22 or x == 41 or y == 2 or y == 13:
+				c = sign_dark  # Border
+			elif y == 3 or x == 23:
+				c = Color(0.85, 0.80, 0.65)  # Highlight
+			image.set_pixel(x, y, c)
+	# Hanging hooks
+	image.set_pixel(24, 1, outline)
+	image.set_pixel(39, 1, outline)
 
 
 func _setup_collision() -> void:

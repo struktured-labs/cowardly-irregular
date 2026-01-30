@@ -187,13 +187,12 @@ func _ready() -> void:
 		btn_default.focus_mode = Control.FOCUS_NONE
 		btn_bide.focus_mode = Control.FOCUS_NONE
 
-	# Add autobattle toggle
-	_create_autobattle_toggle()
+	# Defer non-critical UI creation to avoid blocking battle load
+	# Speed indicator and autobattle toggle are not needed until player can interact
+	call_deferred("_create_autobattle_toggle")
+	call_deferred("_create_speed_indicator")
 
-	# Create battle speed indicator
-	_create_speed_indicator()
-
-	# Create dialogue system
+	# Dialogue system must be ready before _start_test_battle (boss intros need it)
 	_create_dialogue_system()
 
 	# Load default autobattle script

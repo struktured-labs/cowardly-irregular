@@ -848,6 +848,33 @@ func _return_to_exploration() -> void:
 	_player_position = Vector2.ZERO
 
 
+func _prewarm_battle_sprites(enemies: Array) -> void:
+	"""Pre-warm BattleAnimator sprite cache during battle transition.
+	This generates and caches sprites while the transition animation plays,
+	so they are ready instantly when BattleScene._create_battle_sprites() runs."""
+	var monster_ids: Array = []
+	for enemy in enemies:
+		if enemy is Dictionary:
+			var eid = enemy.get("id", enemy.get("type", ""))
+			if eid != "" and eid not in monster_ids:
+				monster_ids.append(eid)
+
+	# Build party job data for pre-warming hero sprites
+	var party_jobs: Array = []
+	for member in party:
+		if is_instance_valid(member):
+			var job_id = "fighter"
+			if member.job:
+				job_id = member.job.get("id", "fighter")
+			var weapon_id = member.equipped_weapon if member.equipped_weapon else ""
+			party_jobs.append({"job_id": job_id, "weapon_id": weapon_id})
+
+	if monster_ids.size() > 0 or party_jobs.size() > 0:
+		print("[PREWARM] Pre-warming sprite cache: %d monsters, %d party members" % [monster_ids.size(), party_jobs.size()])
+		BattleAnimator.prewarm_cache(monster_ids, party_jobs)
+		print("[PREWARM] Sprite cache pre-warm complete")
+
+
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
 	# Disable player input during battle transition
@@ -891,6 +918,9 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 
 	# Start battle loading in background (async)
 	ResourceLoader.load_threaded_request("res://src/battle/BattleScene.tscn")
+
+	# Pre-warm sprite cache during transition (runs while animation plays)
+	_prewarm_battle_sprites(enemies)
 
 	# Play transition animation (loads in parallel)
 	if BattleTransition:

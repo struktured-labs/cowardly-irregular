@@ -22,6 +22,10 @@ enum EffectType {
 ## Active effects container
 var _effects_container: Node2D = null
 
+## Texture cache for particle sprites (avoids regenerating identical images)
+## Key: texture type string, Value: ImageTexture
+static var _texture_cache: Dictionary = {}
+
 
 func _ready() -> void:
 	# Create container for effect nodes
@@ -29,6 +33,21 @@ func _ready() -> void:
 	_effects_container.name = "EffectsContainer"
 	_effects_container.z_index = 50  # Render on top of sprites
 	add_child(_effects_container)
+
+
+## Get a cached texture or generate and cache it
+static func _get_cached_texture(cache_key: String, generator: Callable) -> ImageTexture:
+	"""Return cached ImageTexture if available, otherwise generate, cache, and return."""
+	if _texture_cache.has(cache_key):
+		return _texture_cache[cache_key]
+	var texture = generator.call()
+	_texture_cache[cache_key] = texture
+	return texture
+
+
+## Clear the texture cache
+static func clear_texture_cache() -> void:
+	_texture_cache.clear()
 
 
 ## Power scaling constants
@@ -316,13 +335,21 @@ func _trigger_screen_shake(intensity: float, duration: float) -> void:
 
 
 func _create_fire_particle() -> Sprite2D:
-	"""Create a single fire particle sprite"""
+	"""Create a single fire particle sprite (uses cached texture)"""
 	var sprite = Sprite2D.new()
+	sprite.texture = _get_cached_texture("fire_particle", func():
+		return _generate_fire_particle_texture()
+	)
+	sprite.modulate.a = 0.9
+	return sprite
+
+
+static func _generate_fire_particle_texture() -> ImageTexture:
+	"""Generate the fire particle texture (called once, then cached)."""
 	var size = 16
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	# Draw flame shape (12-bit style)
 	var colors = [
 		Color(1.0, 0.9, 0.2),  # Yellow core
 		Color(1.0, 0.5, 0.0),  # Orange
@@ -339,9 +366,7 @@ func _create_fire_particle() -> Sprite2D:
 				color.a = 1.0 - (dist / 6.0) * 0.5
 				img.set_pixel(x, y, color)
 
-	sprite.texture = ImageTexture.create_from_image(img)
-	sprite.modulate.a = 0.9
-	return sprite
+	return ImageTexture.create_from_image(img)
 
 
 func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
@@ -383,32 +408,24 @@ func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> 
 
 
 func _create_ice_particle() -> Sprite2D:
-	"""Create a single ice crystal sprite"""
+	"""Create a single ice crystal sprite (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 20
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Draw ice crystal shard (12-bit style)
-	var colors = [
-		Color(0.9, 0.95, 1.0),  # White highlight
-		Color(0.5, 0.8, 1.0),   # Light blue
-		Color(0.3, 0.5, 0.9),   # Blue
-	]
-
-	# Diamond shape
-	var center = size / 2
-	for y in range(size):
-		for x in range(size):
-			var dx = abs(x - center)
-			var dy = abs(y - center)
-			if dx + dy < 8:
-				var dist = dx + dy
-				var color_idx = int(dist / 3) % colors.size()
-				var color = colors[color_idx]
-				img.set_pixel(x, y, color)
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("ice_particle", func():
+		var size = 20
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var colors = [Color(0.9, 0.95, 1.0), Color(0.5, 0.8, 1.0), Color(0.3, 0.5, 0.9)]
+		var center = size / 2
+		for y in range(size):
+			for x in range(size):
+				var dx = abs(x - center)
+				var dy = abs(y - center)
+				if dx + dy < 8:
+					var dist = dx + dy
+					var color_idx = int(dist / 3) % colors.size()
+					img.set_pixel(x, y, colors[color_idx])
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -491,22 +508,22 @@ func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.
 
 
 func _create_spark() -> Sprite2D:
-	"""Create a small electric spark"""
+	"""Create a small electric spark (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 8
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var colors = [Color(1.0, 1.0, 0.5), Color(0.8, 0.9, 1.0), Color(0.5, 0.7, 1.0)]
-	var center = size / 2
-	for y in range(size):
-		for x in range(size):
-			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
-			if dist < 3:
-				var idx = int(dist) % colors.size()
-				img.set_pixel(x, y, colors[idx])
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("spark", func():
+		var size = 8
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var colors = [Color(1.0, 1.0, 0.5), Color(0.8, 0.9, 1.0), Color(0.5, 0.7, 1.0)]
+		var center = size / 2
+		for y in range(size):
+			for x in range(size):
+				var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+				if dist < 3:
+					var idx = int(dist) % colors.size()
+					img.set_pixel(x, y, colors[idx])
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -662,22 +679,21 @@ func _animate_dark(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 
 
 func _create_dark_particle() -> Sprite2D:
-	"""Create a dark wisp particle"""
+	"""Create a dark wisp particle (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 24
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var center = size / 2
-	for y in range(size):
-		for x in range(size):
-			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
-			if dist < 10:
-				var alpha = 1.0 - (dist / 10.0)
-				var color = Color(0.2, 0.1, 0.3, alpha * 0.8)
-				img.set_pixel(x, y, color)
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("dark_particle", func():
+		var size = 24
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var center = size / 2
+		for y in range(size):
+			for x in range(size):
+				var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+				if dist < 10:
+					var alpha = 1.0 - (dist / 10.0)
+					img.set_pixel(x, y, Color(0.2, 0.1, 0.3, alpha * 0.8))
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -714,32 +730,22 @@ func _animate_heal(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 
 
 func _create_heal_particle() -> Sprite2D:
-	"""Create a heal sparkle particle"""
+	"""Create a heal sparkle particle (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 12
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Cross/sparkle shape
-	var center = size / 2
-	var colors = [
-		Color(0.5, 1.0, 0.5),  # Light green
-		Color(0.8, 1.0, 0.8),  # White-green
-	]
-
-	# Vertical line
-	for y in range(2, size - 2):
-		for x in range(center - 1, center + 2):
-			var color = colors[0] if abs(y - center) > 2 else colors[1]
-			img.set_pixel(x, y, color)
-
-	# Horizontal line
-	for x in range(2, size - 2):
-		for y in range(center - 1, center + 2):
-			var color = colors[0] if abs(x - center) > 2 else colors[1]
-			img.set_pixel(x, y, color)
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("heal_particle", func():
+		var size = 12
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var center = size / 2
+		var colors = [Color(0.5, 1.0, 0.5), Color(0.8, 1.0, 0.8)]
+		for y in range(2, size - 2):
+			for x in range(center - 1, center + 2):
+				img.set_pixel(x, y, colors[0] if abs(y - center) > 2 else colors[1])
+		for x in range(2, size - 2):
+			for y in range(center - 1, center + 2):
+				img.set_pixel(x, y, colors[0] if abs(x - center) > 2 else colors[1])
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -776,27 +782,23 @@ func _animate_buff(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 
 
 func _create_buff_arrow() -> Sprite2D:
-	"""Create an upward arrow for buff effect"""
+	"""Create an upward arrow for buff effect (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 16
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var color = Color(0.3, 0.8, 1.0)  # Cyan
-	var center = size / 2
-
-	# Arrow pointing up
-	for y in range(4, size):
-		for x in range(center - 2, center + 3):
-			img.set_pixel(x, y, color)
-
-	# Arrow head
-	for i in range(4):
-		for x in range(center - i, center + i + 1):
-			if x >= 0 and x < size:
-				img.set_pixel(x, 3 - i + 4, color)
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("buff_arrow", func():
+		var size = 16
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var color = Color(0.3, 0.8, 1.0)
+		var center = size / 2
+		for y in range(4, size):
+			for x in range(center - 2, center + 3):
+				img.set_pixel(x, y, color)
+		for i in range(4):
+			for x in range(center - i, center + i + 1):
+				if x >= 0 and x < size:
+					img.set_pixel(x, 3 - i + 4, color)
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -833,27 +835,23 @@ func _animate_debuff(effect: Node2D, on_complete: Callable, power: float = 1.0) 
 
 
 func _create_debuff_arrow() -> Sprite2D:
-	"""Create a downward arrow for debuff effect"""
+	"""Create a downward arrow for debuff effect (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 16
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var color = Color(0.8, 0.3, 0.8)  # Purple
-	var center = size / 2
-
-	# Arrow pointing down
-	for y in range(0, size - 4):
-		for x in range(center - 2, center + 3):
-			img.set_pixel(x, y, color)
-
-	# Arrow head
-	for i in range(4):
-		for x in range(center - i, center + i + 1):
-			if x >= 0 and x < size:
-				img.set_pixel(x, size - 4 + i, color)
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("debuff_arrow", func():
+		var size = 16
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var color = Color(0.8, 0.3, 0.8)
+		var center = size / 2
+		for y in range(0, size - 4):
+			for x in range(center - 2, center + 3):
+				img.set_pixel(x, y, color)
+		for i in range(4):
+			for x in range(center - i, center + i + 1):
+				if x >= 0 and x < size:
+					img.set_pixel(x, size - 4 + i, color)
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -890,26 +888,22 @@ func _animate_poison(effect: Node2D, on_complete: Callable, power: float = 1.0) 
 
 
 func _create_poison_bubble() -> Sprite2D:
-	"""Create a poison bubble particle"""
+	"""Create a poison bubble particle (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 12
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var center = size / 2
-	var color = Color(0.4, 0.7, 0.2)  # Toxic green
-	var highlight = Color(0.6, 0.9, 0.4)
-
-	for y in range(size):
-		for x in range(size):
-			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
-			if dist < 5:
-				if dist < 2:
-					img.set_pixel(x, y, highlight)
-				else:
-					img.set_pixel(x, y, color)
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("poison_bubble", func():
+		var size = 12
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var center = size / 2
+		var color = Color(0.4, 0.7, 0.2)
+		var highlight = Color(0.6, 0.9, 0.4)
+		for y in range(size):
+			for x in range(size):
+				var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+				if dist < 5:
+					img.set_pixel(x, y, highlight if dist < 2 else color)
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -977,78 +971,72 @@ func _animate_physical(effect: Node2D, on_complete: Callable, power: float = 1.0
 
 
 func _create_impact_burst() -> Sprite2D:
-	"""Create impact burst sprite"""
+	"""Create impact burst sprite (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 48
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var center = size / 2
-	# Starburst pattern
-	for angle_idx in range(8):
-		var angle = (float(angle_idx) / 8) * TAU
-		for dist in range(5, 22):
-			var x = int(center + cos(angle) * dist)
-			var y = int(center + sin(angle) * dist)
-			if x >= 0 and x < size and y >= 0 and y < size:
-				var alpha = 1.0 - (float(dist - 5) / 17.0)
-				img.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("impact_burst", func():
+		var size = 48
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var center = size / 2
+		for angle_idx in range(8):
+			var angle = (float(angle_idx) / 8) * TAU
+			for dist in range(5, 22):
+				var x = int(center + cos(angle) * dist)
+				var y = int(center + sin(angle) * dist)
+				if x >= 0 and x < size and y >= 0 and y < size:
+					var alpha = 1.0 - (float(dist - 5) / 17.0)
+					img.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
 func _create_hit_spark() -> Sprite2D:
-	"""Create a small hit spark"""
+	"""Create a small hit spark (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 6
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var center = size / 2
-	for y in range(size):
-		for x in range(size):
-			var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
-			if dist < 2.5:
-				var alpha = 1.0 - dist / 2.5
-				img.set_pixel(x, y, Color(1.0, 1.0, 0.8, alpha))
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("hit_spark", func():
+		var size = 6
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var center = size / 2
+		for y in range(size):
+			for x in range(size):
+				var dist = sqrt(pow(x - center, 2) + pow(y - center, 2))
+				if dist < 2.5:
+					var alpha = 1.0 - dist / 2.5
+					img.set_pixel(x, y, Color(1.0, 1.0, 0.8, alpha))
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
 func _create_slash_effect() -> Sprite2D:
-	"""Create a slash impact sprite"""
+	"""Create a slash impact sprite (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 48
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var color = Color(1.0, 1.0, 1.0)
-	var center = size / 2
-
-	# Draw diagonal slash lines
-	for i in range(-15, 16):
-		var x1 = center + i
-		var y1 = center - 15 + abs(i) / 2
-		var x2 = center + i
-		var y2 = center + 15 - abs(i) / 2
-
-		if x1 >= 0 and x1 < size and y1 >= 0 and y1 < size:
-			img.set_pixel(x1, y1, color)
-		if x2 >= 0 and x2 < size and y2 >= 0 and y2 < size:
-			img.set_pixel(x2, y2, color)
-
-	# Cross slash
-	for i in range(-12, 13):
-		var px = center + i
-		var py = center
-		if px >= 0 and px < size:
-			img.set_pixel(px, py, color)
-			if py + 1 < size:
-				img.set_pixel(px, py + 1, color)
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("slash_effect", func():
+		var size = 48
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var color = Color(1.0, 1.0, 1.0)
+		var center = size / 2
+		for i in range(-15, 16):
+			var x1 = center + i
+			var y1 = center - 15 + abs(i) / 2
+			var x2 = center + i
+			var y2 = center + 15 - abs(i) / 2
+			if x1 >= 0 and x1 < size and y1 >= 0 and y1 < size:
+				img.set_pixel(x1, y1, color)
+			if x2 >= 0 and x2 < size and y2 >= 0 and y2 < size:
+				img.set_pixel(x2, y2, color)
+		for i in range(-12, 13):
+			var px = center + i
+			var py = center
+			if px >= 0 and px < size:
+				img.set_pixel(px, py, color)
+				if py + 1 < size:
+					img.set_pixel(px, py + 1, color)
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
 
 
@@ -1087,39 +1075,25 @@ func _animate_mp_restore(effect: Node2D, on_complete: Callable, power: float = 1
 
 
 func _create_mp_particle() -> Sprite2D:
-	"""Create a blue MP sparkle particle"""
+	"""Create a blue MP sparkle particle (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var size = 12
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Diamond/star shape with blue tones
-	var center = size / 2
-	var colors = [
-		Color(0.3, 0.6, 1.0),   # Blue core
-		Color(0.5, 0.8, 1.0),   # Light blue
-		Color(0.8, 0.9, 1.0),   # White-blue highlight
-	]
-
-	# Vertical line
-	for y in range(2, size - 2):
-		for x in range(center - 1, center + 2):
-			var color = colors[2] if abs(y - center) <= 1 else colors[0]
-			img.set_pixel(x, y, color)
-
-	# Horizontal line
-	for x in range(2, size - 2):
-		for y in range(center - 1, center + 2):
-			var color = colors[2] if abs(x - center) <= 1 else colors[0]
-			img.set_pixel(x, y, color)
-
-	# Corner sparkles
-	var corner_offsets = [[-2, -2], [2, -2], [-2, 2], [2, 2]]
-	for offset in corner_offsets:
-		var px = center + offset[0]
-		var py = center + offset[1]
-		if px >= 0 and px < size and py >= 0 and py < size:
-			img.set_pixel(px, py, colors[1])
-
-	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.texture = _get_cached_texture("mp_particle", func():
+		var size = 12
+		var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var center = size / 2
+		var colors = [Color(0.3, 0.6, 1.0), Color(0.5, 0.8, 1.0), Color(0.8, 0.9, 1.0)]
+		for y in range(2, size - 2):
+			for x in range(center - 1, center + 2):
+				img.set_pixel(x, y, colors[2] if abs(y - center) <= 1 else colors[0])
+		for x in range(2, size - 2):
+			for y in range(center - 1, center + 2):
+				img.set_pixel(x, y, colors[2] if abs(x - center) <= 1 else colors[0])
+		for offset in [[-2, -2], [2, -2], [-2, 2], [2, 2]]:
+			var px = center + offset[0]
+			var py = center + offset[1]
+			if px >= 0 and px < size and py >= 0 and py < size:
+				img.set_pixel(px, py, colors[1])
+		return ImageTexture.create_from_image(img)
+	)
 	return sprite
