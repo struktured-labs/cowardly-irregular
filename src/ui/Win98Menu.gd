@@ -1108,8 +1108,13 @@ func _input(event: InputEvent) -> void:
 
 		# L button: Track press/release for hold-to-confirm
 		if event.is_action_pressed("battle_defer"):
-			# Start tracking L button hold
 			var root = _get_root_menu()
+			if root._queued_actions.size() == 0:
+				# No queue — immediate defer, no timer needed
+				_handle_defer_input()
+				get_viewport().set_input_as_handled()
+				return
+			# Has queue — start hold timer for undo vs confirm
 			root._l_button_pressed = true
 			root._l_button_press_time = Time.get_ticks_msec() / 1000.0
 			get_viewport().set_input_as_handled()
