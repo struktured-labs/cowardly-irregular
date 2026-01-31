@@ -227,7 +227,7 @@ func _draw_portrait(img: Image) -> void:
 
 
 func _draw_hair_snes(img: Image, cx: int, face_cy: int, face_rx: int, face_ry: int, hair: Color, hair_dark: Color, hair_light: Color, hair_shine: Color, outline: Color) -> void:
-	var skin = customization.skin_color if customization else Color(0.9, 0.75, 0.6)
+	var skin = customization.skin_tone if customization else Color(0.9, 0.75, 0.6)
 	match customization.hair_style:
 		CustomizationScript.HairStyle.SHORT:
 			# Short cropped hair covering top of head
