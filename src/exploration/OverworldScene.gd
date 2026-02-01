@@ -51,6 +51,15 @@ func _setup_scene() -> void:
 	tile_generator = TileGeneratorScript.new()
 	add_child(tile_generator)
 
+	# Background behind tilemap (covers beyond map edges)
+	var bg = ColorRect.new()
+	bg.name = "Background"
+	bg.color = Color(0.12, 0.18, 0.28)  # Dark blue-gray water/void
+	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + 400, MAP_HEIGHT * TILE_SIZE + 400)
+	bg.position = Vector2(-200, -200)
+	bg.z_index = -10
+	add_child(bg)
+
 	# Create TileMapLayer
 	tile_map = TileMapLayer.new()
 	tile_map.name = "TileMap"

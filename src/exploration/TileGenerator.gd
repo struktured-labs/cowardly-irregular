@@ -881,15 +881,21 @@ func _draw_wall(img: Image, palette: Dictionary, variant: int) -> void:
 		var y_start = row * brick_h
 		var offset = (row % 2) * (brick_w / 2)
 
-		for col in range(3):
+		for col in range(-1, 4):
 			var x_start = col * brick_w - offset
+			var x_min = maxi(0, x_start)
+			var x_max = mini(x_start + brick_w - 1, TILE_SIZE)
+			var y_max = mini(y_start + brick_h - 1, TILE_SIZE)
+			if x_min >= TILE_SIZE or x_max <= 0:
+				continue
+
 			# Per-brick color variation
 			var brick_tint = rng.randf_range(-0.06, 0.06)
 			var brick_base = palette["base"].lightened(brick_tint) if brick_tint > 0 else palette["base"].darkened(-brick_tint)
 
 			# Draw brick face with multi-zone shading
-			for y in range(y_start, mini(y_start + brick_h - 1, TILE_SIZE)):
-				for x in range(maxi(0, x_start), mini(x_start + brick_w - 1, TILE_SIZE)):
+			for y in range(y_start, y_max):
+				for x in range(x_min, x_max):
 					var rel_x = float(x - x_start) / float(brick_w - 1)
 					var rel_y = float(y - y_start) / float(brick_h - 1)
 					var shade = brick_base
@@ -913,17 +919,18 @@ func _draw_wall(img: Image, palette: Dictionary, variant: int) -> void:
 						shade = shade.darkened(0.04)
 					img.set_pixel(x, y, shade)
 
-			# Mortar lines (2-tone: dark line with lighter grout)
-			for x in range(maxi(0, x_start), mini(x_start + brick_w, TILE_SIZE)):
-				if y_start + brick_h - 1 < TILE_SIZE:
-					img.set_pixel(x, y_start + brick_h - 1, mortar_color)
-				# Top of next brick is lighter
+			# Mortar lines (horizontal between rows, more visible)
+			var mortar_dark = mortar_color.darkened(0.12)
+			for x in range(x_min, mini(x_start + brick_w, TILE_SIZE)):
+				if y_start + brick_h - 1 >= 0 and y_start + brick_h - 1 < TILE_SIZE:
+					img.set_pixel(x, y_start + brick_h - 1, mortar_dark)
 				if y_start + brick_h < TILE_SIZE:
-					var c = img.get_pixel(x, y_start + brick_h)
-					img.set_pixel(x, y_start + brick_h, c.lightened(0.05))
+					img.set_pixel(x, y_start + brick_h, mortar_color)
+			# Vertical mortar at brick edge
 			for y in range(y_start, mini(y_start + brick_h, TILE_SIZE)):
-				if x_start + brick_w - 1 >= 0 and x_start + brick_w - 1 < TILE_SIZE:
-					img.set_pixel(x_start + brick_w - 1, y, mortar_color)
+				var vx = x_start + brick_w - 1
+				if vx >= 0 and vx < TILE_SIZE:
+					img.set_pixel(vx, y, mortar_dark)
 
 	# Cracks in random bricks (sparse, natural looking)
 	var crack_count = rng.randi_range(1, 3)

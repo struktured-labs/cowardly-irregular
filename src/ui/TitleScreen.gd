@@ -244,6 +244,9 @@ func _build_menu() -> void:
 	# Settings
 	menu_items.append({"id": "settings", "label": "SETTINGS", "enabled": true})
 
+	# Help / Controls
+	menu_items.append({"id": "help", "label": "HELP", "enabled": true})
+
 	# Create menu item labels
 	for i in range(menu_items.size()):
 		var item = menu_items[i]
@@ -322,6 +325,12 @@ func _input(event: InputEvent) -> void:
 	if not _can_input:
 		return
 
+	# Close help overlay with B/Escape
+	if _help_overlay and event.is_action_pressed("ui_cancel"):
+		_close_help_overlay()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Navigation
 	if event.is_action_pressed("ui_up"):
 		_move_selection(-1)
@@ -375,3 +384,92 @@ func _select_item() -> void:
 			continue_selected.emit()
 		"settings":
 			settings_selected.emit()
+		"help":
+			_show_help_overlay()
+
+
+var _help_overlay: Control = null
+
+func _show_help_overlay() -> void:
+	"""Show controls and game concepts help screen"""
+	if _help_overlay:
+		return
+	_can_input = false
+
+	_help_overlay = Control.new()
+	_help_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_help_overlay.z_index = 50
+	add_child(_help_overlay)
+
+	# Dim background
+	var bg = ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.0, 0.0, 0.05, 0.92)
+	bg.mouse_filter = Control.MOUSE_FILTER_STOP
+	_help_overlay.add_child(bg)
+
+	var vp = get_viewport_rect().size
+
+	# Title
+	var title = Label.new()
+	title.text = "HOW TO PLAY"
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", TITLE_COLOR)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(vp.x / 2 - 120, 30)
+	title.size = Vector2(240, 30)
+	_help_overlay.add_child(title)
+
+	# Help content using RichTextLabel for formatting
+	var content = RichTextLabel.new()
+	content.bbcode_enabled = true
+	content.scroll_active = true
+	content.position = Vector2(60, 75)
+	content.size = Vector2(vp.x - 120, vp.y - 120)
+	content.add_theme_font_size_override("normal_font_size", 13)
+	content.add_theme_font_size_override("bold_font_size", 14)
+	content.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
+
+	content.text = """[b][color=yellow]CONTROLS[/color][/b]
+[color=gray]Gamepad          Keyboard[/color]
+D-Pad             Arrow Keys      Navigate
+A Button          Z / Enter       Confirm / Select
+B Button          X / Escape      Cancel / Back
+L Shoulder        L Key           Defer (skip turn, +1 AP)
+R Shoulder        R Key           Advance (queue action, -1 AP)
+Start             F5              Open Autobattle Editor
+Select            F6              Toggle Autobattle
+
+[b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
+Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
+
+[color=white]AP (Action Points)[/color] range from -4 to +4.
+  [color=lime]Defer (L)[/color]: Skip your turn. Gain +1 AP, take less damage.
+  [color=cyan]Advance (R)[/color]: Queue extra actions. Each costs 1 AP.
+    Queue up to 4 actions, then they all execute at once!
+
+[b][color=yellow]AUTOBATTLE[/color][/b]
+This game is designed to be automated!
+Open the [color=lime]Autobattle Editor[/color] (Start/F5) to write rules:
+  IF [condition] THEN [action]
+Rules are checked top-to-bottom. First match wins.
+Toggle autobattle per character with Select/F6.
+
+[b][color=yellow]TIPS[/color][/b]
+- Deferring builds AP for powerful multi-action turns later
+- Queue multiple heals or attacks with Advance for burst plays
+- Autobattle scripts run automatically - master them to win!
+- Different terrains boost/reduce elemental damage
+- Explore the overworld to find the cave and village
+
+[color=gray]Press B / X / Escape to close[/color]"""
+	_help_overlay.add_child(content)
+
+	await get_tree().create_timer(0.3).timeout
+	_can_input = true
+
+
+func _close_help_overlay() -> void:
+	if _help_overlay:
+		_help_overlay.queue_free()
+		_help_overlay = null

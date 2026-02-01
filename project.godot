@@ -34,6 +34,7 @@ SaveSystem="*res://src/save/SaveSystem.gd"
 SoundManager="*res://src/audio/SoundManager.gd"
 EffectSystem="*res://src/battle/EffectSystem.gd"
 DebugLogOverlay="*res://src/ui/DebugLogOverlay.gd"
+VirtualGamepad="*res://src/ui/VirtualGamepad.gd"
 
 [display]
 

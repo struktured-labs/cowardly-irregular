@@ -1006,7 +1006,7 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.position = offset
-	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
@@ -1218,6 +1218,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var char_id = member.combatant_name.to_lower().replace(" ", "_")
 	var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
 	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
+	name_label.add_theme_font_size_override("font_size", 13)
 	if auto_indicator != "":
 		name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -1228,7 +1229,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	# HP bar
 	var hp_bar = ProgressBar.new()
 	hp_bar.name = "HP"
-	hp_bar.custom_minimum_size = Vector2(0, 18)
+	hp_bar.custom_minimum_size = Vector2(0, 22)
 	hp_bar.max_value = member.max_hp
 	hp_bar.value = member.current_hp
 	hp_bar.show_percentage = false
@@ -1238,6 +1239,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var hp_label = Label.new()
 	hp_label.name = "HPLabel"
 	hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
+	hp_label.add_theme_font_size_override("font_size", 12)
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1246,7 +1248,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	# MP bar
 	var mp_bar = ProgressBar.new()
 	mp_bar.name = "MP"
-	mp_bar.custom_minimum_size = Vector2(0, 14)
+	mp_bar.custom_minimum_size = Vector2(0, 18)
 	mp_bar.max_value = member.max_mp
 	mp_bar.value = member.current_mp
 	mp_bar.show_percentage = false
@@ -1256,6 +1258,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var mp_label = Label.new()
 	mp_label.name = "MPLabel"
 	mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
+	mp_label.add_theme_font_size_override("font_size", 11)
 	mp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1266,7 +1269,9 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	ap_label.name = "AP"
 	ap_label.bbcode_enabled = true
 	ap_label.fit_content = true
-	ap_label.custom_minimum_size = Vector2(0, 16)
+	ap_label.custom_minimum_size = Vector2(0, 20)
+	ap_label.add_theme_font_size_override("normal_font_size", 13)
+	ap_label.add_theme_font_size_override("bold_font_size", 13)
 	ap_label.text = "AP: 0"
 	box.add_child(ap_label)
 

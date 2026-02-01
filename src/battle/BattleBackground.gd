@@ -12,6 +12,35 @@ enum TerrainType {
 	BOSS      # Red-tinted dramatic lighting
 }
 
+enum TimeOfDay {
+	DAWN,
+	DAY,
+	DUSK,
+	NIGHT
+}
+
+## 4x4 Bayer dithering matrix for SNES-authentic color transitions
+const BAYER_4X4 = [
+	[ 0.0 / 16.0,  8.0 / 16.0,  2.0 / 16.0, 10.0 / 16.0],
+	[12.0 / 16.0,  4.0 / 16.0, 14.0 / 16.0,  6.0 / 16.0],
+	[ 3.0 / 16.0, 11.0 / 16.0,  1.0 / 16.0,  9.0 / 16.0],
+	[15.0 / 16.0,  7.0 / 16.0, 13.0 / 16.0,  5.0 / 16.0],
+]
+
+## Time-of-day color tint offsets (applied to palette)
+const TIME_TINTS = {
+	TimeOfDay.DAWN: {"r": 0.12, "g": 0.04, "b": -0.06, "brightness": 0.05},
+	TimeOfDay.DAY: {"r": 0.0, "g": 0.0, "b": 0.0, "brightness": 0.0},
+	TimeOfDay.DUSK: {"r": 0.08, "g": -0.04, "b": 0.06, "brightness": -0.04},
+	TimeOfDay.NIGHT: {"r": -0.10, "g": -0.06, "b": 0.10, "brightness": -0.15},
+}
+
+## Parallax constants
+const PARALLAX_RANGE = 30.0
+const PARALLAX_SPEED_FAR = 3.0
+const PARALLAX_SPEED_MID = 8.0
+const PARALLAX_SPEED_NEAR = 15.0
+
 ## SNES-quality terrain color palettes (richer, more saturated)
 const TERRAIN_PALETTES = {
 	TerrainType.PLAINS: {
@@ -70,6 +99,7 @@ const TERRAIN_PALETTES = {
 }
 
 var current_terrain: TerrainType = TerrainType.PLAINS
+var current_time_of_day: TimeOfDay = TimeOfDay.DAY
 var _background_elements: Array[Node] = []
 
 ## Seed-based RNG for reproducible but varied backgrounds
@@ -80,6 +110,9 @@ var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _layer_far: Control = null    # z=-100 (distant elements)
 var _layer_mid: Control = null    # z=-50 (mid-distance elements)
 var _layer_near: Control = null   # z=-10 (close/foreground elements)
+
+## Parallax state
+var _parallax_time: float = 0.0
 
 
 func _ready() -> void:
@@ -108,6 +141,55 @@ func _setup_layers() -> void:
 	_layer_near.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer_near.z_index = -10
 	add_child(_layer_near)
+
+
+func _process(delta: float) -> void:
+	_parallax_time += delta
+	if _layer_far and _layer_mid and _layer_near:
+		_layer_far.position.x = sin(_parallax_time * PARALLAX_SPEED_FAR * 0.1) * PARALLAX_RANGE * 0.3
+		_layer_mid.position.x = sin(_parallax_time * PARALLAX_SPEED_MID * 0.1) * PARALLAX_RANGE * 0.6
+		_layer_near.position.x = sin(_parallax_time * PARALLAX_SPEED_NEAR * 0.1) * PARALLAX_RANGE
+
+
+## Dithering utility
+static func _dither_blend(c1: Color, c2: Color, t: float, px: int, py: int) -> Color:
+	"""Bayer-dithered blend between two colors — SNES-authentic transition"""
+	var threshold = BAYER_4X4[py % 4][px % 4]
+	return c1 if t < threshold else c2
+
+
+## Time-of-day palette tinting
+func _apply_time_tint(palette: Dictionary) -> Dictionary:
+	"""Apply time-of-day color shift to a palette copy"""
+	if current_time_of_day == TimeOfDay.DAY:
+		return palette
+	var tint = TIME_TINTS[current_time_of_day]
+	var tinted = {}
+	for key in palette:
+		var val = palette[key]
+		if val is Color:
+			var c = Color(
+				clamp(val.r + tint["r"], 0.0, 1.0),
+				clamp(val.g + tint["g"], 0.0, 1.0),
+				clamp(val.b + tint["b"], 0.0, 1.0),
+				val.a
+			)
+			if tint["brightness"] > 0:
+				c = c.lightened(tint["brightness"])
+			elif tint["brightness"] < 0:
+				c = c.darkened(-tint["brightness"])
+			tinted[key] = c
+		else:
+			tinted[key] = val
+	return tinted
+
+
+func set_time_of_day(time: TimeOfDay) -> void:
+	"""Set the time of day and redraw background"""
+	current_time_of_day = time
+	if background_seed != 0:
+		_rng.seed = background_seed
+		_draw_background()
 
 
 func set_terrain(terrain: TerrainType) -> void:
@@ -152,6 +234,11 @@ func _draw_background() -> void:
 			element.queue_free()
 	_background_elements.clear()
 
+	# Clear direct children (gradient rects, horizon, stars) but keep layers
+	for child in get_children():
+		if child != _layer_far and child != _layer_mid and child != _layer_near:
+			child.queue_free()
+
 	# Clear layer children (but not the layers themselves)
 	if _layer_far:
 		for child in _layer_far.get_children():
@@ -168,10 +255,15 @@ func _draw_background() -> void:
 		_setup_layers()
 
 	var viewport_size = get_viewport_rect().size
-	var palette = TERRAIN_PALETTES.get(current_terrain, TERRAIN_PALETTES[TerrainType.PLAINS])
+	var base_palette = TERRAIN_PALETTES.get(current_terrain, TERRAIN_PALETTES[TerrainType.PLAINS])
+	var palette = _apply_time_tint(base_palette)
 
 	# Draw gradient background (directly on this control, behind layers)
 	_draw_gradient(viewport_size, palette)
+
+	# Night stars
+	if current_time_of_day == TimeOfDay.NIGHT:
+		_draw_stars(viewport_size, palette)
 
 	# Draw terrain-specific elements into layers
 	match current_terrain:
@@ -186,6 +278,9 @@ func _draw_background() -> void:
 		TerrainType.BOSS:
 			_draw_boss_elements(viewport_size, palette)
 
+	# Ambient particles for all terrains
+	_spawn_ambient_particles(viewport_size, palette)
+
 
 func _add_to_layer(element: Node, layer: Control) -> void:
 	"""Add an element to a specific depth layer"""
@@ -194,82 +289,94 @@ func _add_to_layer(element: Node, layer: Control) -> void:
 
 
 func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
-	"""Draw SNES-quality gradient background with smooth color banding"""
-	# Use more steps for smoother gradient (SNES typically had 16-32 color bands)
-	var gradient_steps = 24
-	var sky_height = viewport_size.y * 0.65
-	var step_height = sky_height / gradient_steps
+	"""Draw SNES-quality dithered gradient background"""
+	var sky_height = int(viewport_size.y * 0.65)
+	var ground_height = int(viewport_size.y) - sky_height
+	var w = int(viewport_size.x)
 
 	var sky_mid = palette.get("sky_mid", palette["sky_top"].lerp(palette["sky_bottom"], 0.5))
 
-	for i in range(gradient_steps):
-		var rect = ColorRect.new()
-		var t = float(i) / (gradient_steps - 1)
-		# Two-phase gradient: top -> mid -> bottom for more color range
-		var color: Color
+	# Render sky as a dithered image texture (authentic SNES banding)
+	var sky_img = Image.create(w, sky_height, false, Image.FORMAT_RGBA8)
+	for y in range(sky_height):
+		var t = float(y) / max(sky_height - 1, 1)
+		var c1: Color
+		var c2: Color
+		var local_t: float
 		if t < 0.5:
-			color = palette["sky_top"].lerp(sky_mid, t * 2.0)
+			c1 = palette["sky_top"]
+			c2 = sky_mid
+			local_t = t * 2.0
 		else:
-			color = sky_mid.lerp(palette["sky_bottom"], (t - 0.5) * 2.0)
-		rect.color = color
-		rect.position = Vector2(0, i * step_height)
-		rect.size = Vector2(viewport_size.x, step_height + 1)
-		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(rect)
+			c1 = sky_mid
+			c2 = palette["sky_bottom"]
+			local_t = (t - 0.5) * 2.0
+		for x in range(w):
+			sky_img.set_pixel(x, y, _dither_blend(c1, c2, local_t, x, y))
 
-	# Horizon glow line (SNES-style bright band at horizon)
+	var sky_tex = ImageTexture.create_from_image(sky_img)
+	var sky_rect = TextureRect.new()
+	sky_rect.texture = sky_tex
+	sky_rect.position = Vector2.ZERO
+	sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sky_rect)
+
+	# Horizon glow line (wider for dawn/dusk)
 	var horizon_color = palette.get("horizon", palette["sky_bottom"].lightened(0.2))
+	var horizon_h = 6
+	var horizon_dim_h = 3
+	if current_time_of_day == TimeOfDay.DAWN or current_time_of_day == TimeOfDay.DUSK:
+		horizon_color = horizon_color.lightened(0.12)
+		horizon_h = 10
+		horizon_dim_h = 5
 	var horizon = ColorRect.new()
 	horizon.color = horizon_color
-	horizon.position = Vector2(0, sky_height - 4)
-	horizon.size = Vector2(viewport_size.x, 6)
+	horizon.position = Vector2(0, sky_height - horizon_h / 2)
+	horizon.size = Vector2(viewport_size.x, horizon_h)
 	horizon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(horizon)
-	# Slightly dimmer horizon edges
 	var horizon_dim = ColorRect.new()
 	horizon_dim.color = horizon_color.darkened(0.15)
-	horizon_dim.position = Vector2(0, sky_height + 2)
-	horizon_dim.size = Vector2(viewport_size.x, 3)
+	horizon_dim.position = Vector2(0, sky_height + horizon_h / 2)
+	horizon_dim.size = Vector2(viewport_size.x, horizon_dim_h)
 	horizon_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(horizon_dim)
 
-	# Ground with multi-tone banding (like FF6 battle backgrounds)
+	# Ground as dithered image texture
 	var ground_dark = palette.get("ground_dark", palette["ground"].darkened(0.2))
 	var ground_light = palette.get("ground_light", palette["ground"].lightened(0.15))
-	var ground_steps = 8
-	var ground_height = viewport_size.y * 0.35
-	var ground_step_h = ground_height / ground_steps
+	var ground_img = Image.create(w, ground_height, false, Image.FORMAT_RGBA8)
+	for y in range(ground_height):
+		var t = float(y) / max(ground_height - 1, 1)
+		for x in range(w):
+			ground_img.set_pixel(x, y, _dither_blend(ground_light, ground_dark, t, x, y))
 
-	for i in range(ground_steps):
-		var rect = ColorRect.new()
-		var t = float(i) / (ground_steps - 1)
-		# Ground gets darker toward bottom, with slight color shift
-		rect.color = ground_light.lerp(ground_dark, t)
-		rect.position = Vector2(0, sky_height + i * ground_step_h)
-		rect.size = Vector2(viewport_size.x, ground_step_h + 1)
-		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(rect)
+	var ground_tex = ImageTexture.create_from_image(ground_img)
+	var ground_rect = TextureRect.new()
+	ground_rect.texture = ground_tex
+	ground_rect.position = Vector2(0, sky_height)
+	ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(ground_rect)
 
 
 func _draw_plains_elements(viewport_size: Vector2, palette: Dictionary) -> void:
 	"""Draw plains background elements - rolling hills, grass, flowers, clouds"""
-	# Far layer: distant hills with seed-based variation
+	# Far layer: distant hills with seed-based variation (extra width for parallax)
 	for i in range(3):
 		var x_offset = _rng.randf_range(-0.05, 0.05)
 		var hill = _create_hill(
 			Vector2(viewport_size.x * (0.2 + i * 0.3 + x_offset), viewport_size.y * 0.6),
-			Vector2(_rng.randf_range(160, 240), _rng.randf_range(60, 100)),
+			Vector2(_rng.randf_range(180, 260), _rng.randf_range(60, 100)),
 			palette["accent"].darkened(0.2 + i * 0.1)
 		)
 		_add_to_layer(hill, _layer_far)
 
-	# Far layer: wispy clouds
+	# Far layer: wispy clouds with drift
 	for i in range(_rng.randi_range(2, 4)):
-		var cloud = _create_cloud(
-			Vector2(_rng.randf_range(30, viewport_size.x - 30), viewport_size.y * _rng.randf_range(0.08, 0.25)),
-			palette["sky_bottom"].lightened(0.15)
-		)
+		var cloud_pos = Vector2(_rng.randf_range(-30, viewport_size.x + 30), viewport_size.y * _rng.randf_range(0.08, 0.25))
+		var cloud = _create_cloud(cloud_pos, palette["sky_bottom"].lightened(0.15))
 		_add_to_layer(cloud, _layer_far)
+		_add_cloud_drift(cloud, cloud_pos, viewport_size)
 
 	# Mid layer: scattered grass tufts
 	for i in range(8):
@@ -511,7 +618,7 @@ func _create_hill(pos: Vector2, hill_size: Vector2, color: Color) -> TextureRect
 	var dark = color.darkened(0.2)
 	var mid = color.darkened(0.08)
 
-	# Draw elliptical hill with multi-zone shading
+	# Draw elliptical hill with dithered shading zones
 	for y in range(h):
 		var t = float(y) / h  # 0 at top, 1 at bottom
 		# Width at this scanline (parabolic arch)
@@ -520,19 +627,19 @@ func _create_hill(pos: Vector2, hill_size: Vector2, color: Color) -> TextureRect
 			var dx = abs(x - cx)
 			if dx < half_width:
 				var rel_x = dx / max(half_width, 1.0)
-				var c = color
-				# Top is lighter (sky reflection)
-				if t < 0.25:
-					c = light
-				elif t < 0.5:
-					c = color
+				# Dithered vertical shading zones
+				var c: Color
+				if t < 0.3:
+					c = _dither_blend(light, color, t / 0.3, x, y)
+				elif t < 0.6:
+					c = _dither_blend(color, mid, (t - 0.3) / 0.3, x, y)
 				else:
 					c = mid
-				# Left side highlight, right side shadow
-				if rel_x > 0.7:
-					c = dark
-				elif rel_x < 0.3 and t < 0.5:
-					c = light
+				# Dithered lateral shading
+				if rel_x > 0.6:
+					c = _dither_blend(c, dark, (rel_x - 0.6) / 0.4, x, y)
+				elif rel_x < 0.35 and t < 0.5:
+					c = _dither_blend(c, light, (0.35 - rel_x) / 0.35, x, y)
 				img.set_pixel(x, y, c)
 			# Soft edge fade
 			elif dx < half_width + 2:
@@ -773,12 +880,13 @@ func _create_tree_silhouette(pos: Vector2, height: float, color: Color) -> Textu
 				var dy = (y - lcy) / max(lry, 1.0)
 				var dist = sqrt(dx * dx + dy * dy)
 				if dist < 0.85:
-					# Canopy shading: top lighter, bottom darker
-					var c = color
-					if dy < -0.3:
-						c = canopy_light
-					elif dy > 0.3:
-						c = canopy_dark
+					# Dithered canopy shading: smooth top-to-bottom
+					var shade_t = (dy + 1.0) / 2.0  # 0=top, 1=bottom
+					var c: Color
+					if shade_t < 0.4:
+						c = _dither_blend(canopy_light, color, shade_t / 0.4, x, y)
+					else:
+						c = _dither_blend(color, canopy_dark, (shade_t - 0.4) / 0.6, x, y)
 					# Leaf cluster texture
 					var leaf = sin(x * 1.8 + y * 2.2) * 0.5
 					if leaf > 0.3:
@@ -837,13 +945,15 @@ func _create_building(pos: Vector2, bld_size: Vector2, color: Color) -> TextureR
 	for y in range(body_top, body_bottom + 1):
 		for x in range(body_x, body_x + int(bld_size.x)):
 			if x >= 0 and x < w:
-				var c = color
 				var rel_x = float(x - body_x) / bld_size.x
-				# Left wall lighter, right wall darker
-				if rel_x < 0.15:
-					c = light
-				elif rel_x > 0.85:
-					c = dark
+				# Dithered wall shading: smooth left-to-right
+				var c: Color
+				if rel_x < 0.3:
+					c = _dither_blend(light, color, rel_x / 0.3, x, y)
+				elif rel_x > 0.7:
+					c = _dither_blend(color, dark, (rel_x - 0.7) / 0.3, x, y)
+				else:
+					c = color
 				# Wall texture (subtle brick lines)
 				if (y - body_top) % 8 == 0:
 					c = c.darkened(0.05)
@@ -1848,6 +1958,159 @@ func _create_debris(pos: Vector2, color: Color) -> TextureRect:
 	rect.position = pos - Vector2(w / 2.0, h)
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
+
+
+## Night stars
+func _draw_stars(viewport_size: Vector2, _palette: Dictionary) -> void:
+	"""Scatter tiny stars in the upper sky for night time"""
+	var star_count = _rng.randi_range(25, 45)
+	var star_area_h = int(viewport_size.y * 0.45)
+	var w = int(viewport_size.x)
+	var img = Image.create(w, star_area_h, true, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	for i in range(star_count):
+		var sx = _rng.randi_range(2, w - 3)
+		var sy = _rng.randi_range(2, star_area_h - 3)
+		var brightness = _rng.randf_range(0.5, 1.0)
+		var star_color = Color(0.85, 0.88, 1.0, brightness)
+		img.set_pixel(sx, sy, star_color)
+		# Some stars get a 3px cross for sparkle
+		if brightness > 0.8:
+			var dim = Color(0.7, 0.75, 0.95, brightness * 0.4)
+			for d in [-1, 1]:
+				if sx + d >= 0 and sx + d < w:
+					img.set_pixel(sx + d, sy, dim)
+				if sy + d >= 0 and sy + d < star_area_h:
+					img.set_pixel(sx, sy + d, dim)
+
+	var tex = ImageTexture.create_from_image(img)
+	var rect = TextureRect.new()
+	rect.texture = tex
+	rect.position = Vector2.ZERO
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(rect)
+
+	# Gentle twinkle animation
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(rect, "modulate:a", 0.7, 2.5)
+	tween.tween_property(rect, "modulate:a", 1.0, 2.5)
+
+
+## Cloud drift animation
+func _add_cloud_drift(cloud: TextureRect, start_pos: Vector2, viewport_size: Vector2) -> void:
+	"""Add slow lateral drift to a cloud element"""
+	var speed = _rng.randf_range(8.0, 20.0)
+	var travel = viewport_size.x + 120.0
+	var duration = travel / speed
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(cloud, "position:x", viewport_size.x + 60, duration)
+	tween.tween_callback(func():
+		cloud.position.x = -60 - cloud.size.x
+	)
+	tween.tween_property(cloud, "position:x", start_pos.x, duration * (start_pos.x + 60 + cloud.size.x) / travel)
+
+
+## Ambient particles
+func _spawn_ambient_particles(viewport_size: Vector2, palette: Dictionary) -> void:
+	"""Spawn terrain-appropriate ambient floating particles"""
+	var count = _rng.randi_range(8, 14)
+
+	match current_terrain:
+		TerrainType.PLAINS:
+			_spawn_particle_type(viewport_size, count, Color(0.95, 0.95, 0.9, 0.6), "drift_up")
+		TerrainType.CAVE:
+			var dust_color = palette.get("crystal", palette["accent"]).lightened(0.2)
+			_spawn_particle_type(viewport_size, count, Color(dust_color.r, dust_color.g, dust_color.b, 0.3), "drift_random")
+		TerrainType.FOREST:
+			_spawn_particle_type(viewport_size, count, Color(0.45, 0.55, 0.2, 0.5), "fall")
+		TerrainType.VILLAGE:
+			_spawn_particle_type(viewport_size, int(count * 0.7), Color(1.0, 0.6, 0.2, 0.5), "rise_fade")
+		TerrainType.BOSS:
+			var spark_color = palette.get("glow", palette["accent"]).lightened(0.2)
+			_spawn_particle_type(viewport_size, count, Color(spark_color.r, spark_color.g, spark_color.b, 0.5), "erratic")
+
+
+func _spawn_particle_type(viewport_size: Vector2, count: int, color: Color, motion: String) -> void:
+	"""Create individual ambient particles with specific motion type"""
+	for i in range(count):
+		var s = _rng.randi_range(2, 5)
+		var img = Image.create(s, s, true, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+
+		# Soft round particle
+		var cx = s / 2.0
+		for y in range(s):
+			for x in range(s):
+				var dist = sqrt(pow(x - cx, 2) + pow(y - cx, 2))
+				if dist < cx:
+					var alpha = color.a * (1.0 - dist / cx)
+					img.set_pixel(x, y, Color(color.r, color.g, color.b, alpha))
+
+		var tex = ImageTexture.create_from_image(img)
+		var rect = TextureRect.new()
+		rect.texture = tex
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		var start_x = _rng.randf_range(20, viewport_size.x - 20)
+		var start_y = _rng.randf_range(viewport_size.y * 0.15, viewport_size.y * 0.9)
+		rect.position = Vector2(start_x, start_y)
+
+		_add_to_layer(rect, _layer_near)
+
+		var dur = _rng.randf_range(2.5, 5.0)
+		var tween = create_tween()
+		tween.set_loops()
+
+		match motion:
+			"drift_up":
+				var dx = _rng.randf_range(-20, 20)
+				tween.tween_property(rect, "position", Vector2(start_x + dx, start_y - 40), dur)
+				tween.parallel().tween_property(rect, "modulate:a", 0.2, dur)
+				tween.tween_callback(func():
+					rect.position = Vector2(
+						_rng.randf_range(20, viewport_size.x - 20),
+						_rng.randf_range(viewport_size.y * 0.6, viewport_size.y * 0.9))
+					rect.modulate.a = 1.0
+				)
+			"drift_random":
+				var dx = _rng.randf_range(-25, 25)
+				var dy = _rng.randf_range(-15, 15)
+				tween.tween_property(rect, "position", Vector2(start_x + dx, start_y + dy), dur)
+				tween.parallel().tween_property(rect, "modulate:a", 0.15, dur * 0.7)
+				tween.tween_property(rect, "position", Vector2(start_x, start_y), dur)
+				tween.parallel().tween_property(rect, "modulate:a", 0.8, dur * 0.3)
+			"fall":
+				var sway = _rng.randf_range(-30, 30)
+				tween.tween_property(rect, "position", Vector2(start_x + sway, viewport_size.y + 10), dur)
+				tween.parallel().tween_property(rect, "modulate:a", 0.3, dur * 0.8)
+				tween.tween_callback(func():
+					rect.position = Vector2(
+						_rng.randf_range(20, viewport_size.x - 20),
+						_rng.randf_range(viewport_size.y * 0.1, viewport_size.y * 0.3))
+					rect.modulate.a = 1.0
+				)
+			"rise_fade":
+				tween.tween_property(rect, "position:y", start_y - 50, dur)
+				tween.parallel().tween_property(rect, "modulate:a", 0.0, dur)
+				tween.tween_callback(func():
+					rect.position = Vector2(
+						_rng.randf_range(20, viewport_size.x - 20),
+						_rng.randf_range(viewport_size.y * 0.6, viewport_size.y * 0.85))
+					rect.modulate.a = 1.0
+				)
+			"erratic":
+				var dx1 = _rng.randf_range(-30, 30)
+				var dy1 = _rng.randf_range(-30, 30)
+				var dx2 = _rng.randf_range(-30, 30)
+				var dy2 = _rng.randf_range(-30, 30)
+				tween.tween_property(rect, "position", Vector2(start_x + dx1, start_y + dy1), dur * 0.4)
+				tween.parallel().tween_property(rect, "modulate:a", 0.3, dur * 0.4)
+				tween.tween_property(rect, "position", Vector2(start_x + dx2, start_y + dy2), dur * 0.3)
+				tween.parallel().tween_property(rect, "modulate:a", 0.9, dur * 0.3)
+				tween.tween_property(rect, "position", Vector2(start_x, start_y), dur * 0.3)
 
 
 ## Terrain modifier data (used by BattleManager)
