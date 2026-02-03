@@ -26,6 +26,9 @@ var time_since_last_auto_save: float = 0.0
 ## One-shot tracking records
 var one_shot_records: Dictionary = {}  # {monster_id: {count: int, best_rank: String, best_setup: int}}
 
+## Autobattle victory tracking records
+var autobattle_records: Dictionary = {}  # {monster_key: {count: int, best_turns: int, best_multiplier: float}}
+
 
 func _ready() -> void:
 	# Create save directory if it doesn't exist
@@ -222,6 +225,30 @@ func get_one_shot_record(monster_id: String) -> Dictionary:
 	return one_shot_records.get(monster_id, {})
 
 
+## Autobattle record management
+func record_autobattle_victory(monster_ids: Array, turns: int, multiplier: float) -> void:
+	"""Record an autobattle victory for the given monster types"""
+	var monster_key = "_".join(monster_ids) if monster_ids.size() > 0 else "unknown"
+	if not autobattle_records.has(monster_key):
+		autobattle_records[monster_key] = {"count": 0, "best_turns": 999, "best_multiplier": 0.0}
+	autobattle_records[monster_key]["count"] += 1
+	if turns < autobattle_records[monster_key]["best_turns"]:
+		autobattle_records[monster_key]["best_turns"] = turns
+	if multiplier > autobattle_records[monster_key]["best_multiplier"]:
+		autobattle_records[monster_key]["best_multiplier"] = multiplier
+	print("[SAVE] Autobattle victory recorded for monsters: %s (turns: %d, multiplier: %.1fx)" % [monster_key, turns, multiplier])
+
+
+func get_autobattle_record(monster_key: String) -> Dictionary:
+	"""Get autobattle record for a specific monster combination"""
+	return autobattle_records.get(monster_key, {})
+
+
+func _get_autobattle_records() -> Dictionary:
+	"""Get all autobattle records"""
+	return autobattle_records
+
+
 ## Save data creation
 func _create_save_data() -> Dictionary:
 	"""Create a dictionary of all save data"""
@@ -263,6 +290,9 @@ func _create_save_data() -> Dictionary:
 
 	# One-shot records
 	data["one_shot_records"] = _get_one_shot_records()
+
+	# Autobattle records
+	data["autobattle_records"] = _get_autobattle_records()
 
 	return data
 
@@ -347,6 +377,10 @@ func _apply_save_data(data: Dictionary) -> void:
 	# Restore one-shot records
 	if data.has("one_shot_records"):
 		one_shot_records = data["one_shot_records"]
+
+	# Restore autobattle records
+	if data.has("autobattle_records"):
+		autobattle_records = data["autobattle_records"]
 
 
 func _deserialize_party(party_data: Array) -> void:

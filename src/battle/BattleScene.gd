@@ -169,6 +169,7 @@ func _ready() -> void:
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
 	BattleManager.one_shot_achieved.connect(_on_one_shot_achieved)
+	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -2156,6 +2157,15 @@ func _on_battle_ended(victory: bool) -> void:
 			var rank = BattleManager.get_one_shot_rank()
 			var exp_mult = BattleManager.get_one_shot_exp_multiplier()
 			log_message("[color=yellow]ONE-SHOT! Rank: %s - EXP x%.1f![/color]" % [rank, exp_mult])
+		# Show autobattle bonus in battle log if achieved
+		if BattleManager.get_autobattle_achieved():
+			var auto_mult = BattleManager.get_autobattle_exp_multiplier()
+			var auto_turns = BattleManager.get_autobattle_turns()
+			log_message("[color=cyan]FULL AUTOBATTLE! %d turns - EXP x%.1f![/color]" % [auto_turns, auto_mult])
+		# Show combined multiplier if both bonuses active
+		if BattleManager.get_one_shot_achieved() and BattleManager.get_autobattle_achieved():
+			var combined = BattleManager.get_one_shot_exp_multiplier() * BattleManager.get_autobattle_exp_multiplier()
+			log_message("[color=magenta]COMBINED BONUS: EXP x%.1f![/color]" % combined)
 		log_message("[color=gray]Press ENTER to continue...[/color]")
 		# Play victory animation for all party members
 		for animator in party_animators:
@@ -3439,6 +3449,109 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	text_tween.tween_property(flash_container, "modulate:a", 0.0, 0.5)
 	# Clean up
 	text_tween.tween_callback(func(): flash_container.queue_free())
+
+
+func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
+	"""Display autobattle victory visual feedback when entire battle was won on autobattle"""
+	print("[AUTOBATTLE UI] Displaying autobattle flash! Turns: %d, EXP x%.1f" % [total_turns, multiplier])
+
+	# Delay if one-shot also triggered (let one-shot animation play first)
+	var delay = 2.5 if BattleManager.get_one_shot_achieved() else 0.0
+
+	# Create the autobattle flash overlay
+	var flash_container = Control.new()
+	flash_container.name = "AutobattleFlash"
+	flash_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.modulate.a = 0.0
+	add_child(flash_container)
+
+	# Screen flash effect (cyan tint)
+	var flash_bg = ColorRect.new()
+	flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash_bg.color = Color(0.4, 0.8, 1.0, 0.5)
+	flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(flash_bg)
+
+	# "AUTO-BATTLE!" text label
+	var auto_label = Label.new()
+	auto_label.text = "AUTO-BATTLE!"
+	auto_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	auto_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	auto_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	auto_label.offset_top = -60
+	auto_label.offset_bottom = 0
+	auto_label.offset_left = -200
+	auto_label.offset_right = 200
+	auto_label.add_theme_font_size_override("font_size", 42)
+	auto_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	auto_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	auto_label.add_theme_constant_override("shadow_offset_x", 3)
+	auto_label.add_theme_constant_override("shadow_offset_y", 3)
+	auto_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(auto_label)
+
+	# Turns label
+	var turns_label = Label.new()
+	turns_label.text = "%d turns automated" % total_turns
+	turns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	turns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	turns_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	turns_label.offset_top = 0
+	turns_label.offset_bottom = 35
+	turns_label.offset_left = -200
+	turns_label.offset_right = 200
+	turns_label.add_theme_font_size_override("font_size", 22)
+	turns_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	turns_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	turns_label.add_theme_constant_override("shadow_offset_x", 2)
+	turns_label.add_theme_constant_override("shadow_offset_y", 2)
+	turns_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(turns_label)
+
+	# EXP bonus label
+	var bonus_label = Label.new()
+	bonus_label.text = "EXP x%.1f!" % multiplier
+	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bonus_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	bonus_label.offset_top = 35
+	bonus_label.offset_bottom = 70
+	bonus_label.offset_left = -200
+	bonus_label.offset_right = 200
+	bonus_label.add_theme_font_size_override("font_size", 22)
+	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	bonus_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	bonus_label.add_theme_constant_override("shadow_offset_x", 2)
+	bonus_label.add_theme_constant_override("shadow_offset_y", 2)
+	bonus_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.add_child(bonus_label)
+
+	# Animate: delay (if stacking with one-shot), scale-in, hold, fade out
+	auto_label.scale = Vector2(0.1, 0.1)
+	auto_label.pivot_offset = auto_label.size / 2
+	turns_label.modulate.a = 0.0
+	bonus_label.modulate.a = 0.0
+
+	var tween = create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	# Fade in container + flash
+	tween.tween_property(flash_container, "modulate:a", 1.0, 0.1)
+	# Flash bg fades out
+	tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
+	# Scale up autobattle text
+	tween.parallel().tween_property(auto_label, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Fade in turns
+	tween.tween_property(turns_label, "modulate:a", 1.0, 0.2)
+	# Fade in bonus
+	tween.tween_property(bonus_label, "modulate:a", 1.0, 0.2)
+	# Hold
+	tween.tween_interval(1.5)
+	# Fade out
+	tween.tween_property(flash_container, "modulate:a", 0.0, 0.5)
+	# Clean up
+	tween.tween_callback(func(): flash_container.queue_free())
 
 
 func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:

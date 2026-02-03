@@ -18,6 +18,7 @@ signal healing_done(target: Combatant, amount: int)
 signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
 signal one_shot_achieved(rank: String, setup_turns: int)
+signal autobattle_victory(multiplier: float, total_turns: int)
 
 enum BattleState {
 	INACTIVE,
@@ -71,6 +72,11 @@ var _execution_phase_count: int = 0  # Number of execution phases so far
 var _one_shot_achieved: bool = false  # Whether all enemies died in same execution phase as first damage
 var _setup_turns_used: int = 0       # Turns before first damage (for rating)
 var _all_enemies_initial_count: int = 0  # Total enemies at battle start
+
+## Autobattle reward tracking
+var _full_autobattle: bool = true          # False if any player turn was manual
+var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
+var _manual_player_turns: int = 0          # Player turns handled manually
 
 ## Adaptive AI - Action logging
 var _battle_action_log: Array[Dictionary] = []  # Log every player action per battle
@@ -143,6 +149,11 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_setup_turns_used = 0
 	_all_enemies_initial_count = enemies.size()
 
+	# Reset autobattle tracking
+	_full_autobattle = true
+	_autobattle_player_turns = 0
+	_manual_player_turns = 0
+
 	# Connect to combatant signals
 	for combatant in all_combatants:
 		if not combatant.died.is_connected(_on_combatant_died):
@@ -174,15 +185,26 @@ func end_battle(victory: bool) -> void:
 			one_shot_exp_bonus = _get_one_shot_exp_multiplier(rank)
 			one_shot_gold_bonus = _get_one_shot_gold_multiplier(rank)
 
+		# Apply autobattle bonus multiplier (stacks with one-shot)
+		var autobattle_exp_bonus = 1.0
+		if _full_autobattle and _autobattle_player_turns > 0:
+			autobattle_exp_bonus = _get_autobattle_exp_multiplier(_autobattle_player_turns)
+			autobattle_victory.emit(autobattle_exp_bonus, _autobattle_player_turns)
+
 		# Award job EXP to player party
 		var base_exp = 50
 		for combatant in player_party:
 			if combatant.is_alive:
-				var exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus)
+				var exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus)
 				combatant.gain_job_exp(exp_gained)
 				var bonus_text = ""
-				if _one_shot_achieved:
+				var total_bonus = one_shot_exp_bonus * autobattle_exp_bonus
+				if _one_shot_achieved and _full_autobattle and _autobattle_player_turns > 0:
+					bonus_text = " (%.1fx one-shot + %.1fx autobattle = %.1fx!)" % [one_shot_exp_bonus, autobattle_exp_bonus, total_bonus]
+				elif _one_shot_achieved:
 					bonus_text = " (%.1fx one-shot bonus!)" % one_shot_exp_bonus
+				elif _full_autobattle and _autobattle_player_turns > 0:
+					bonus_text = " (%.1fx autobattle bonus!)" % autobattle_exp_bonus
 				elif reward_multiplier > 1.0:
 					bonus_text = " (%.1fx bonus!)" % reward_multiplier
 				print("%s gained %d job EXP%s (Level: %d, EXP: %d/%d)" % [
@@ -195,16 +217,23 @@ func end_battle(victory: bool) -> void:
 				])
 
 		# Record one-shot in save system if achieved
+		var monster_ids: Array = []
+		for enemy in enemy_party:
+			var monster_type = enemy.get_meta("monster_type", "")
+			if not monster_type.is_empty() and monster_type not in monster_ids:
+				monster_ids.append(monster_type)
+
 		if _one_shot_achieved:
 			var rank = _get_one_shot_rank(_setup_turns_used)
-			var monster_ids: Array = []
-			for enemy in enemy_party:
-				var monster_type = enemy.get_meta("monster_type", "")
-				if not monster_type.is_empty() and monster_type not in monster_ids:
-					monster_ids.append(monster_type)
 			var save_system = get_node_or_null("/root/SaveSystem")
 			if save_system and save_system.has_method("record_one_shot"):
 				save_system.record_one_shot(monster_ids, rank, _setup_turns_used)
+
+		# Record autobattle victory in save system if achieved
+		if _full_autobattle and _autobattle_player_turns > 0:
+			var save_system = get_node_or_null("/root/SaveSystem")
+			if save_system and save_system.has_method("record_autobattle_victory"):
+				save_system.record_autobattle_victory(monster_ids, _autobattle_player_turns, autobattle_exp_bonus)
 	else:
 		current_state = BattleState.DEFEAT
 
@@ -338,6 +367,14 @@ func _process_next_selection() -> void:
 	# AI selects automatically for enemies and autobattle players
 	var char_id = _get_character_id(current_combatant)
 	var is_char_autobattle = AutobattleSystem.is_autobattle_enabled(char_id)
+
+	# Track autobattle status for player combatants (for autobattle reward)
+	if current_combatant in player_party:
+		if is_char_autobattle or is_autobattle_enabled:
+			_autobattle_player_turns += 1
+		else:
+			_full_autobattle = false
+			_manual_player_turns += 1
 
 	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle:
 		_process_ai_selection(current_combatant)
@@ -1876,3 +1913,34 @@ func get_one_shot_exp_multiplier() -> float:
 	if _one_shot_achieved:
 		return _get_one_shot_exp_multiplier(_get_one_shot_rank(_setup_turns_used))
 	return 1.0
+
+
+## Autobattle Reward System
+
+func _get_autobattle_exp_multiplier(total_turns: int) -> float:
+	"""Get EXP multiplier for full autobattle victory based on total player turns"""
+	if total_turns <= 4:
+		return 1.5   # Quick fight
+	elif total_turns <= 8:
+		return 2.0   # Medium fight
+	elif total_turns <= 16:
+		return 2.5   # Long fight
+	else:
+		return 3.0   # Marathon
+
+
+func get_autobattle_achieved() -> bool:
+	"""Check if full autobattle was achieved in the current/last battle"""
+	return _full_autobattle and _autobattle_player_turns > 0
+
+
+func get_autobattle_exp_multiplier() -> float:
+	"""Get the autobattle EXP multiplier for the current/last battle"""
+	if get_autobattle_achieved():
+		return _get_autobattle_exp_multiplier(_autobattle_player_turns)
+	return 1.0
+
+
+func get_autobattle_turns() -> int:
+	"""Get the number of player turns handled by autobattle"""
+	return _autobattle_player_turns
