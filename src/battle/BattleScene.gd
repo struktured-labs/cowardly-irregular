@@ -3453,25 +3453,29 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 
 func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	"""Display autobattle victory visual feedback when entire battle was won on autobattle"""
-	print("[AUTOBATTLE UI] Displaying autobattle flash! Turns: %d, EXP x%.1f" % [total_turns, multiplier])
+	var has_one_shot = BattleManager.get_one_shot_achieved()
+	print("[AUTOBATTLE UI] Displaying autobattle flash! Turns: %d, EXP x%.1f (stacked: %s)" % [total_turns, multiplier, has_one_shot])
 
-	# Delay if one-shot also triggered (let one-shot animation play first)
-	var delay = 2.5 if BattleManager.get_one_shot_achieved() else 0.0
+	# Offset down when stacking with one-shot overlay (both show simultaneously)
+	var y_offset = 100 if has_one_shot else 0
 
 	# Create the autobattle flash overlay
 	var flash_container = Control.new()
 	flash_container.name = "AutobattleFlash"
 	flash_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	flash_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash_container.modulate.a = 0.0
 	add_child(flash_container)
 
-	# Screen flash effect (cyan tint)
-	var flash_bg = ColorRect.new()
-	flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	flash_bg.color = Color(0.4, 0.8, 1.0, 0.5)
-	flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash_container.add_child(flash_bg)
+	# Screen flash effect (cyan tint) — skip if one-shot already flashing
+	if not has_one_shot:
+		var flash_bg = ColorRect.new()
+		flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		flash_bg.color = Color(0.4, 0.8, 1.0, 0.5)
+		flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flash_container.add_child(flash_bg)
+		var flash_tween = create_tween()
+		flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
+		flash_tween.tween_callback(func(): flash_bg.queue_free())
 
 	# "AUTO-BATTLE!" text label
 	var auto_label = Label.new()
@@ -3479,8 +3483,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	auto_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	auto_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	auto_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	auto_label.offset_top = -60
-	auto_label.offset_bottom = 0
+	auto_label.offset_top = -60 + y_offset
+	auto_label.offset_bottom = 0 + y_offset
 	auto_label.offset_left = -200
 	auto_label.offset_right = 200
 	auto_label.add_theme_font_size_override("font_size", 42)
@@ -3497,8 +3501,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	turns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	turns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	turns_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	turns_label.offset_top = 0
-	turns_label.offset_bottom = 35
+	turns_label.offset_top = 0 + y_offset
+	turns_label.offset_bottom = 35 + y_offset
 	turns_label.offset_left = -200
 	turns_label.offset_right = 200
 	turns_label.add_theme_font_size_override("font_size", 22)
@@ -3515,8 +3519,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bonus_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	bonus_label.offset_top = 35
-	bonus_label.offset_bottom = 70
+	bonus_label.offset_top = 35 + y_offset
+	bonus_label.offset_bottom = 70 + y_offset
 	bonus_label.offset_left = -200
 	bonus_label.offset_right = 200
 	bonus_label.add_theme_font_size_override("font_size", 22)
@@ -3527,21 +3531,15 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	flash_container.add_child(bonus_label)
 
-	# Animate: delay (if stacking with one-shot), scale-in, hold, fade out
+	# Animate: scale-in, hold, fade out (no delay — shows simultaneously with one-shot)
 	auto_label.scale = Vector2(0.1, 0.1)
 	auto_label.pivot_offset = auto_label.size / 2
 	turns_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
 
 	var tween = create_tween()
-	if delay > 0.0:
-		tween.tween_interval(delay)
-	# Fade in container + flash
-	tween.tween_property(flash_container, "modulate:a", 1.0, 0.1)
-	# Flash bg fades out
-	tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
 	# Scale up autobattle text
-	tween.parallel().tween_property(auto_label, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(auto_label, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# Fade in turns
 	tween.tween_property(turns_label, "modulate:a", 1.0, 0.2)
 	# Fade in bonus
