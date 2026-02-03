@@ -43,10 +43,12 @@ func _create_buttons() -> void:
 	_create_dpad_button("ui_left", _dpad_center + Vector2(-DPAD_BUTTON_SIZE, 0))
 	_create_dpad_button("ui_right", _dpad_center + Vector2(DPAD_BUTTON_SIZE, 0))
 
-	# Action buttons (bottom-right) — diamond layout like SNES
+	# Action buttons (bottom-right) — full SNES diamond: Y(left) X(top) A(right) B(bottom)
 	var action_center = Vector2(vp.x - 90, vp.y - 100)
-	_create_action_button("ui_accept", action_center + Vector2(0, -36), "A", Color(0.2, 0.7, 0.3))
-	_create_action_button("ui_cancel", action_center + Vector2(36, 0), "B", Color(0.8, 0.3, 0.3))
+	_create_action_button("ui_accept", action_center + Vector2(36, 0), "A", Color(0.2, 0.7, 0.3))
+	_create_action_button("ui_cancel", action_center + Vector2(0, 36), "B", Color(0.8, 0.3, 0.3))
+	_create_joypad_button(JOY_BUTTON_X, action_center + Vector2(0, -36), "X", Color(0.3, 0.4, 0.8))
+	_create_joypad_button(JOY_BUTTON_Y, action_center + Vector2(-36, 0), "Y", Color(0.6, 0.5, 0.2))
 
 	# L/R shoulder buttons (top corners)
 	_create_action_button("battle_defer", Vector2(60, 50), "L", Color(0.5, 0.5, 0.7))
@@ -60,6 +62,19 @@ func _create_buttons() -> void:
 func _create_dpad_button(action: String, pos: Vector2) -> void:
 	var btn = _make_touch_area(action, pos, Vector2(DPAD_BUTTON_SIZE, DPAD_BUTTON_SIZE))
 	_buttons[action] = {"node": btn, "pos": pos, "radius": DPAD_BUTTON_SIZE / 2, "pressed": false}
+
+
+func _create_joypad_button(button_index: int, pos: Vector2, label_text: String, color: Color) -> void:
+	"""Create a button that sends InputEventJoypadButton (for X/Y that need raw button events)"""
+	var radius = BUTTON_RADIUS
+	var btn = _make_touch_area("joy_%d" % button_index, pos, Vector2(radius * 2, radius * 2))
+
+	var circle = _draw_circle_texture(radius, color, label_text)
+	circle.position = pos - Vector2(radius, radius)
+	add_child(circle)
+
+	var key = "joy_%d" % button_index
+	_buttons[key] = {"node": btn, "pos": pos, "radius": radius, "pressed": false, "visual": circle, "joypad_button": button_index}
 
 
 func _create_action_button(action: String, pos: Vector2, label_text: String, color: Color, small: bool = false) -> void:
@@ -202,6 +217,15 @@ func _press_action(action: String) -> void:
 		_buttons[action]["pressed"] = true
 		if _buttons[action].has("visual"):
 			_buttons[action]["visual"].modulate.a = PRESSED_OPACITY / OPACITY
+
+		# Joypad buttons send InputEventJoypadButton instead of InputEventAction
+		if _buttons[action].has("joypad_button"):
+			var ev = InputEventJoypadButton.new()
+			ev.button_index = _buttons[action]["joypad_button"]
+			ev.pressed = true
+			Input.parse_input_event(ev)
+			return
+
 	var ev = InputEventAction.new()
 	ev.action = action
 	ev.pressed = true
@@ -213,6 +237,14 @@ func _release_action(action: String) -> void:
 		_buttons[action]["pressed"] = false
 		if _buttons[action].has("visual"):
 			_buttons[action]["visual"].modulate.a = 1.0
+
+		if _buttons[action].has("joypad_button"):
+			var ev = InputEventJoypadButton.new()
+			ev.button_index = _buttons[action]["joypad_button"]
+			ev.pressed = false
+			Input.parse_input_event(ev)
+			return
+
 	var ev = InputEventAction.new()
 	ev.action = action
 	ev.pressed = false

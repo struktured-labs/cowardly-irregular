@@ -9,10 +9,14 @@ var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
+var _music_player_b: AudioStreamPlayer  # Second player for crossfade
+var _crossfade_tween: Tween = null
 
 # Music state
 var _music_playing: bool = false
 var _current_music: String = ""
+const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
+var _music_base_db: float = -12.0  # Base volume for music
 
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
@@ -87,9 +91,15 @@ func _setup_audio_players() -> void:
 
 	_music_player = AudioStreamPlayer.new()
 	_music_player.name = "MusicPlayer"
-	_music_player.volume_db = -12.0  # Music quieter than SFX
+	_music_player.volume_db = _music_base_db
 	_music_player.bus = "Master"
 	add_child(_music_player)
+
+	_music_player_b = AudioStreamPlayer.new()
+	_music_player_b.name = "MusicPlayerB"
+	_music_player_b.volume_db = -80.0  # Start silent
+	_music_player_b.bus = "Master"
+	add_child(_music_player_b)
 
 
 func _setup_default_ability_sounds() -> void:
@@ -536,11 +546,28 @@ func _generate_heal(playback: AudioStreamGeneratorPlayback, samples: int, freq: 
 ## music assets are available (e.g., load("res://assets/audio/battle.ogg"))
 
 func play_music(track: String) -> void:
-	"""Play a music track (currently only 'battle' is implemented)"""
+	"""Play a music track with crossfade transition"""
 	if _current_music == track and _music_playing:
 		return  # Already playing
 
-	stop_music()
+	# Kill any existing crossfade
+	if _crossfade_tween and _crossfade_tween.is_valid():
+		_crossfade_tween.kill()
+	_music_player_b.stop()
+
+	# If music is playing, crossfade: move old stream to B player and fade out
+	if _music_playing and _music_player.playing:
+		_music_player_b.stream = _music_player.stream
+		_music_player_b.volume_db = _music_player.volume_db
+		_music_player_b.pitch_scale = _music_player.pitch_scale
+		_music_player_b.play(_music_player.get_playback_position())
+		_music_player.stop()
+
+		# Fade out old track on B
+		_crossfade_tween = create_tween()
+		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, CROSSFADE_DURATION)
+		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
+
 	_current_music = track
 
 	match track:
@@ -602,8 +629,12 @@ func stop_music() -> void:
 	"""Stop currently playing music"""
 	_music_playing = false
 	_current_music = ""
+	if _crossfade_tween and _crossfade_tween.is_valid():
+		_crossfade_tween.kill()
 	if _music_player:
 		_music_player.stop()
+	if _music_player_b:
+		_music_player_b.stop()
 
 
 func is_music_playing() -> bool:
@@ -908,22 +939,20 @@ func _generate_victory_fanfare(rate: int, duration: float) -> PackedVector2Array
 		var t = float(i) / rate
 		var sample = 0.0
 
-		# Arpeggio phase
+		# Arpeggio phase — clean square wave per note
 		if t < chord_start:
 			for j in range(4):
 				if t >= note_times[j]:
 					var note_t = t - note_times[j]
 					var env = pow(max(0, 1.0 - note_t / 0.5), 0.5)
-					sample += _square_wave(note_t * notes[j]) * env * 0.2
-					sample += _triangle_wave(note_t * notes[j] * 0.5) * env * 0.15
+					sample += _square_wave(note_t * notes[j]) * env * 0.25
 
-		# Sustained chord phase
+		# Sustained chord phase — triangle only for smooth sustain
 		else:
 			var chord_t = t - chord_start
 			var env = pow(max(0, 1.0 - chord_t / (duration - chord_start)), 0.3)
 			for note in notes:
-				sample += _triangle_wave(chord_t * note) * env * 0.15
-				sample += _square_wave(chord_t * note) * env * 0.1
+				sample += _triangle_wave(chord_t * note) * env * 0.18
 
 		sample = clamp(sample, -0.9, 0.9)
 		buffer.append(Vector2(sample, sample))
@@ -1657,6 +1686,23 @@ func _soft_square(phase: float) -> float:
 func _sine_wave(phase: float) -> float:
 	"""Pure sine wave (smoothest, least harsh)"""
 	return sin(fmod(phase, 1.0) * TAU)
+
+
+## Volume control
+
+func set_music_volume(normalized: float) -> void:
+	"""Set music volume (0.0 to 1.0)"""
+	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	_music_base_db = db
+	_music_player.volume_db = db
+
+
+func set_sfx_volume(normalized: float) -> void:
+	"""Set SFX volume (0.0 to 1.0) — applies to UI, battle, and ability players"""
+	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	_ui_player.volume_db = db
+	_battle_player.volume_db = db
+	_ability_player.volume_db = db
 
 
 func _warm_wave(phase: float) -> float:

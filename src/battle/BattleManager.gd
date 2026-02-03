@@ -78,6 +78,9 @@ var _full_autobattle: bool = true          # False if any player turn was manual
 var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
 var _manual_player_turns: int = 0          # Player turns handled manually
 
+## Battle results (populated in end_battle before signal, cleared on next battle)
+var _battle_results: Dictionary = {}  # {exp_per_char: int, bonuses: Array, char_results: Array}
+
 ## Adaptive AI - Action logging
 var _battle_action_log: Array[Dictionary] = []  # Log every player action per battle
 signal battle_actions_logged(summary: Dictionary)
@@ -153,6 +156,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_full_autobattle = true
 	_autobattle_player_turns = 0
 	_manual_player_turns = 0
+	_battle_results = {}
 
 	# Connect to combatant signals
 	for combatant in all_combatants:
@@ -191,30 +195,44 @@ func end_battle(victory: bool) -> void:
 			autobattle_exp_bonus = _get_autobattle_exp_multiplier(_autobattle_player_turns)
 			autobattle_victory.emit(autobattle_exp_bonus, _autobattle_player_turns)
 
-		# Award job EXP to player party
+		# Award job EXP to player party and store results
 		var base_exp = 50
+		var char_results: Array = []
 		for combatant in player_party:
+			var exp_gained = 0
+			var old_level = combatant.job_level
 			if combatant.is_alive:
-				var exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus)
+				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus)
 				combatant.gain_job_exp(exp_gained)
-				var bonus_text = ""
-				var total_bonus = one_shot_exp_bonus * autobattle_exp_bonus
-				if _one_shot_achieved and _full_autobattle and _autobattle_player_turns > 0:
-					bonus_text = " (%.1fx one-shot + %.1fx autobattle = %.1fx!)" % [one_shot_exp_bonus, autobattle_exp_bonus, total_bonus]
-				elif _one_shot_achieved:
-					bonus_text = " (%.1fx one-shot bonus!)" % one_shot_exp_bonus
-				elif _full_autobattle and _autobattle_player_turns > 0:
-					bonus_text = " (%.1fx autobattle bonus!)" % autobattle_exp_bonus
-				elif reward_multiplier > 1.0:
-					bonus_text = " (%.1fx bonus!)" % reward_multiplier
-				print("%s gained %d job EXP%s (Level: %d, EXP: %d/%d)" % [
-					combatant.combatant_name,
-					exp_gained,
-					bonus_text,
-					combatant.job_level,
-					combatant.job_exp,
-					combatant.job_level * 100
+			var leveled_up = combatant.job_level > old_level
+			char_results.append({
+				"name": combatant.combatant_name,
+				"exp_gained": exp_gained,
+				"job_level": combatant.job_level,
+				"job_exp": combatant.job_exp,
+				"job_name": combatant.job.get("name", "Fighter") if combatant.job else "Fighter",
+				"leveled_up": leveled_up,
+				"is_alive": combatant.is_alive
+			})
+			if exp_gained > 0:
+				print("%s gained %d job EXP (Level: %d, EXP: %d/%d)%s" % [
+					combatant.combatant_name, exp_gained,
+					combatant.job_level, combatant.job_exp, combatant.job_level * 100,
+					" LEVEL UP!" if leveled_up else ""
 				])
+
+		# Store battle results for victory screen
+		var bonuses: Array = []
+		if _one_shot_achieved:
+			bonuses.append({"type": "one_shot", "multiplier": one_shot_exp_bonus, "rank": _get_one_shot_rank(_setup_turns_used)})
+		if _full_autobattle and _autobattle_player_turns > 0:
+			bonuses.append({"type": "autobattle", "multiplier": autobattle_exp_bonus, "turns": _autobattle_player_turns})
+		_battle_results = {
+			"char_results": char_results,
+			"bonuses": bonuses,
+			"base_exp": base_exp,
+			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus
+		}
 
 		# Record one-shot in save system if achieved
 		var monster_ids: Array = []
@@ -1953,3 +1971,8 @@ func get_autobattle_exp_multiplier() -> float:
 func get_autobattle_turns() -> int:
 	"""Get the number of player turns handled by autobattle"""
 	return _autobattle_player_turns
+
+
+func get_battle_results() -> Dictionary:
+	"""Get battle results (populated after victory, cleared on next battle start)"""
+	return _battle_results

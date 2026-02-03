@@ -691,7 +691,7 @@ func _start_battle() -> void:
 	current_state = LoopState.BATTLE
 
 	# Remove old scene
-	if current_scene:
+	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
@@ -756,7 +756,7 @@ func _show_menu() -> void:
 	current_state = LoopState.MENU
 
 	# Remove battle scene
-	if current_scene:
+	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
@@ -787,7 +787,7 @@ func _start_exploration() -> void:
 	Engine.time_scale = 1.0
 
 	# Remove old scene
-	if current_scene:
+	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
@@ -963,7 +963,7 @@ func _start_battle_async(specific_enemies: Array = []) -> void:
 	current_state = LoopState.BATTLE
 
 	# Remove old scene
-	if current_scene:
+	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
@@ -1279,7 +1279,7 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 func _start_autogrind_battle(enemy_data: Array) -> void:
 	"""Start a battle scene with pre-configured autogrind enemies"""
 	# Remove old scene
-	if current_scene:
+	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
