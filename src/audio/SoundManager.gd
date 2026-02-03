@@ -550,6 +550,9 @@ func play_music(track: String) -> void:
 	if _current_music == track and _music_playing:
 		return  # Already playing
 
+	# Clear area tracking so play_area_music() doesn't skip after battle/victory
+	_current_area = ""
+
 	# Kill any existing crossfade
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
@@ -795,6 +798,22 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 	# Full melody (192 16th notes for 12 bars)
 	var melody_pattern = melody_a + melody_b + melody_c
 
+	# Lead guitar (bars 9-12 only) — finger tapping arpeggios, high register
+	const NOTE_A5 = 880.0
+	const NOTE_G5 = 783.99
+	const NOTE_F5 = 698.46
+	const NOTE_B5 = 987.77
+	var lead_pattern = [
+		NOTE_A4, NOTE_E5, NOTE_A5, NOTE_E5,  NOTE_A4, NOTE_E5, NOTE_A5, NOTE_E5,  # Bar 9: Am tap
+		NOTE_A4, NOTE_C5, NOTE_A5, NOTE_C5,  NOTE_E5, NOTE_A5, NOTE_E5, NOTE_C5,
+		NOTE_C5, NOTE_G5, NOTE_E5, NOTE_G5,  NOTE_C5, NOTE_E5, NOTE_G5, NOTE_E5,  # Bar 10: C→Dm tap
+		NOTE_D5, NOTE_A5, NOTE_F5, NOTE_A5,  NOTE_D5, NOTE_F5, NOTE_A5, NOTE_F5,
+		NOTE_E5, NOTE_B5, NOTE_G5, NOTE_B5,  NOTE_E5, NOTE_G5, NOTE_B5, NOTE_G5,  # Bar 11: Em→Am tap
+		NOTE_A4, NOTE_E5, NOTE_A5, NOTE_E5,  NOTE_A4, NOTE_A5, NOTE_E5, NOTE_A5,
+		NOTE_A4, NOTE_E5, NOTE_A5, NOTE_G5,  NOTE_A4, NOTE_C5, NOTE_A5, NOTE_E5,  # Bar 12: sweep resolve
+		NOTE_A5, NOTE_E5, NOTE_A5, NOTE_G5,  NOTE_A5, 0, NOTE_A5, 0,
+	]
+
 	# Bass patterns for each section (48 quarter notes total)
 	var bass_a = [
 		NOTE_A3, NOTE_A3, NOTE_C4, NOTE_C4,  # Bar 1-2
@@ -832,18 +851,18 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 
 		var sample = 0.0
 
-		# Melody voice (square wave with envelope)
+		# Melody voice (square wave with envelope) — duck during lead section
 		var melody_freq = melody_pattern[sixteenth_idx]
 		if melody_freq > 0:
 			var melody_env = pow(1.0 - t_in_sixteenth, 0.3)  # Quick decay
-			var melody_wave = _square_wave(t * melody_freq) * 0.25
+			var melody_vol = 0.12 if sixteenth_idx >= 128 else 0.25  # Duck for lead
+			var melody_wave = _square_wave(t * melody_freq) * melody_vol
 			sample += melody_wave * melody_env
 
 		# Bass voice (triangle wave, sustained)
 		var bass_freq = bass_pattern[quarter_idx] * 0.5  # Octave down
-		var bass_env = 0.8 + 0.2 * sin(t_in_quarter * PI)  # Slight pulse
-		var bass_wave = _triangle_wave(t * bass_freq) * 0.3
-		sample += bass_wave * bass_env
+		var bass_wave = _triangle_wave(t * bass_freq) * 0.28
+		sample += bass_wave
 
 		# Drums (noise-based kick and hi-hat)
 		var beat_pos = fmod(t, beat_duration)
@@ -868,6 +887,18 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 			var hat = randf_range(-0.15, 0.15) * hat_env
 			sample += hat
 
+		# Lead guitar — finger tapping arpeggios (bars 9-12 only)
+		if sixteenth_idx >= 128:
+			var lead_idx = sixteenth_idx - 128
+			var lead_freq = lead_pattern[lead_idx]
+			if lead_freq > 0:
+				# Tapping: instant attack, sqrt decay for percussive hammer-on feel
+				var lead_env = sqrt(max(1.0 - t_in_sixteenth, 0.0))
+				# Bright screaming tone: pulse wave + octave harmonic + hard clip
+				var lead_raw = _pulse_wave(t * lead_freq, 0.25) * 0.5 + _square_wave(t * lead_freq * 2.0) * 0.3 + _square_wave(t * lead_freq * 1.003) * 0.2
+				var lead_distorted = clamp(lead_raw * 2.5, -1.0, 1.0)
+				sample += lead_distorted * lead_env * 0.35
+
 		# Soft clip for warmth
 		sample = clamp(sample * 1.2, -0.9, 0.9)
 
@@ -888,8 +919,10 @@ func _start_victory_music() -> void:
 	var intro_duration = 2.0
 	var intro_buffer = _generate_victory_fanfare(sample_rate, intro_duration)
 
-	# Rock loop: 8 bars at 140 BPM
-	var bars = 8
+	# Metal loop: 16 bars at 160 BPM — rhythm builds, then tapping lead shreds
+	bpm = 160.0
+	beat_duration = 60.0 / bpm
+	var bars = 16
 	var loop_duration = beat_duration * 4 * bars
 	var loop_buffer = _generate_victory_rock_loop(sample_rate, loop_duration, bpm)
 
@@ -961,125 +994,194 @@ func _generate_victory_fanfare(rate: int, duration: float) -> PackedVector2Array
 
 
 func _generate_victory_rock_loop(rate: int, duration: float, bpm: float) -> PackedVector2Array:
-	"""Generate 80s rock victory loop — power chords, driving drums, synth lead"""
+	"""Generate epic metal victory loop — heavy riffs, double kick, shred lead"""
 	var buffer = PackedVector2Array()
 	var samples = int(rate * duration)
 	var beat_duration = 60.0 / bpm
 	var bar_duration = beat_duration * 4
 
-	# Notes (A major key — triumphant 80s rock)
+	# E minor / E power chord key — classic metal
+	const E2 = 82.41
+	const G2 = 98.0
 	const A2 = 110.0
 	const B2 = 123.47
+	const C3 = 130.81
 	const D3 = 146.83
 	const E3 = 164.81
+	const G3 = 196.0
 	const A3 = 220.0
 	const B3 = 246.94
-	const Cs4 = 277.18
 	const D4 = 293.66
 	const E4 = 329.63
-	const Fs4 = 369.99
+	const G4 = 392.0
 	const A4 = 440.0
 	const B4 = 493.88
-	const Cs5 = 554.37
+	const D5 = 587.33
 	const E5 = 659.25
+	const G5 = 783.99
 
-	# Power chord progression (root + fifth): A - D - E - A | A - D - E - D
-	var chord_roots = [A2, D3, E3, A2, A2, D3, E3, D3]
-	var chord_fifths = [E3, A3, B3, E3, E3, A3, B3, A3]
+	# Galloping power chord progression: E - G - A - B | E - G - A - E (triumphant metal)
+	var chord_roots = [E2, G2, A2, B2, E2, G2, A2, E2]
+	var chord_fifths = [B2, D3, E3, G2 * 1.5, B2, D3, E3, B2]
 
-	# Lead melody over 8 bars (notes per beat, 32 beats total)
-	# Catchy pentatonic riff with 80s synth feel
+	# Melodic lead (bars 1-8): 1 note per beat (32 positions, repeats for bars 9-16 rhythm)
 	var lead_notes = [
-		A4, Cs5, E5, Cs5,   B4, A4, Fs4, E4,   # Bar 1-2: ascending riff
-		A4, B4, Cs5, E5,    Cs5, B4, A4, Fs4,   # Bar 3-4: variation
-		E4, Fs4, A4, B4,    Cs5, B4, A4, E4,    # Bar 5-6: lower register
-		Fs4, A4, B4, Cs5,   E5, Cs5, B4, A4,    # Bar 7-8: build to loop point
+		E5, D5, B4, A4,   G4, A4, B4, D5,   # Bar 1-2: descend then climb
+		E5, G5, E5, D5,   B4, D5, E5, G5,   # Bar 3-4: high register
+		A4, B4, D5, E5,   D5, B4, A4, G4,   # Bar 5-6: run up and down
+		E4, G4, A4, B4,   D5, E5, G5, E5,   # Bar 7-8: build to climax
+	]
+
+	# Tapping arpeggios (bars 9-16): 64 sixteenth notes, wide intervals, E minor
+	# Classic Van Halen-style: low-mid-HIGH-mid groups
+	const A5 = 880.0
+	const B5 = 987.77
+	var tapping = [
+		E4, B4, E5, B4,   E4, B4, E5, B4,   # Bar 9: Em arp tap
+		E4, G4, E5, G4,   E4, G5, E5, G5,
+		G4, D5, G5, D5,   G4, D5, G5, D5,   # Bar 10: G arp tap
+		G4, B4, G5, B4,   G4, B4, G5, B4,
+		A4, E5, A5, E5,   A4, E5, A5, E5,   # Bar 11: Am arp tap
+		A4, D5, A5, D5,   A4, E5, A5, E5,
+		B4, E5, B5, E5,   B4, G5, B5, G5,   # Bar 12: Bm arp tap
+		E4, B4, E5, B4,   E5, G5, A5, B5,
+		E4, B4, E5, B4,   E4, G5, E5, G5,   # Bar 13: Em repeat with variation
+		E4, G4, E5, G4,   G5, E5, G5, E5,
+		A4, E5, A5, E5,   A4, G5, A5, G5,   # Bar 14: Am variation
+		A4, D5, A5, D5,   A4, E5, A5, E5,
+		B4, E5, B5, E5,   B4, G5, B5, G5,   # Bar 15: Bm climax
+		G4, D5, G5, D5,   A4, E5, A5, E5,
+		E4, B4, E5, G5,   E4, G4, E5, B4,   # Bar 16: resolve back to Em
+		E4, B4, E5, B4,   E5, G5, E5, B4,
 	]
 
 	for i in range(samples):
 		var t = float(i) / rate
 		var beat = t / beat_duration
-		var bar = int(t / bar_duration) % 8
+		var bar = int(t / bar_duration) % 16
 		var beat_in_bar = fmod(t, bar_duration) / beat_duration
 		var sample_l = 0.0
 		var sample_r = 0.0
 
-		# === DRUMS ===
+		# === DRUMS (double kick metal) ===
 		var beat_pos = fmod(t, beat_duration)
-		var sixteenth = fmod(t, beat_duration / 4.0)
+		var eighth_pos = fmod(t, beat_duration / 2.0)
 
-		# Kick on beats 1 and 3
-		if (int(beat) % 4 == 0 or int(beat) % 4 == 2) and beat_pos < 0.08:
-			var kick_env = 1.0 - beat_pos / 0.08
-			var kick_freq = 80.0 * (1.0 + kick_env * 2.0)
-			var kick = sin(beat_pos * kick_freq * TAU) * kick_env * 0.35
+		# Double kick: every eighth note (metal gallop)
+		if eighth_pos < 0.06:
+			var kick_env = pow(1.0 - eighth_pos / 0.06, 1.5)
+			var kick_freq = 60.0 * (1.0 + kick_env * 3.0)
+			var kick = sin(eighth_pos * kick_freq * TAU) * kick_env * 0.30
+			# Add low-end punch
+			kick += _triangle_wave(eighth_pos * 40.0) * kick_env * 0.15
 			sample_l += kick
 			sample_r += kick
 
-		# Snare on beats 2 and 4 (80s gated reverb snare!)
-		if (int(beat) % 4 == 1 or int(beat) % 4 == 3) and beat_pos < 0.12:
-			var snare_env = pow(1.0 - beat_pos / 0.12, 0.4)
+		# Snare on 2 and 4 — tight, metallic
+		if (int(beat) % 4 == 1 or int(beat) % 4 == 3) and beat_pos < 0.08:
+			var snare_env = pow(1.0 - beat_pos / 0.08, 0.6)
 			var noise = (randf() * 2.0 - 1.0)
-			var snare_tone = sin(beat_pos * 200.0 * TAU) * 0.3
-			var snare = (noise * 0.3 + snare_tone) * snare_env * 0.28
+			var snare_body = sin(beat_pos * 250.0 * TAU) * 0.25
+			var snare_ring = sin(beat_pos * 400.0 * TAU) * 0.1 * snare_env
+			var snare = (noise * 0.35 + snare_body + snare_ring) * snare_env * 0.25
 			sample_l += snare
 			sample_r += snare
 
-		# Hi-hat on every eighth note
-		if fmod(t, beat_duration / 2.0) < 0.02:
-			var hat_pos = fmod(t, beat_duration / 2.0)
-			var hat_env = 1.0 - hat_pos / 0.02
-			var hat = (randf() * 2.0 - 1.0) * hat_env * 0.1
+		# Crash cymbal on bar 1 and 5 (beat 0)
+		var total_beat = int(beat) % 32
+		if (total_beat == 0 or total_beat == 16) and beat_pos < 0.5:
+			var crash_env = pow(max(0.0, 1.0 - beat_pos / 0.5), 2.0)
+			var crash = (randf() * 2.0 - 1.0) * crash_env * 0.12
+			sample_l += crash
+			sample_r += crash
+
+		# Sixteenth note hi-hat (fast metal hat)
+		var sixteenth_pos = fmod(t, beat_duration / 4.0)
+		if sixteenth_pos < 0.012:
+			var hat_env = 1.0 - sixteenth_pos / 0.012
+			var hat = (randf() * 2.0 - 1.0) * hat_env * 0.07
 			sample_l += hat
 			sample_r += hat
 
-		# === BASS (power chord root, 80s distorted) ===
-		var root = chord_roots[bar]
+		# === BASS (aggressive, distorted) ===
+		var root = chord_roots[bar % 8]
 		var bass_phase = t * root
-		var bass = _square_wave(bass_phase) * 0.12
-		bass += _triangle_wave(bass_phase * 0.5) * 0.08  # Sub octave
-		# Eighth note pulse pattern
-		var eighth_env = 1.0 - fmod(t, beat_duration / 2.0) / (beat_duration / 2.0) * 0.4
-		bass *= eighth_env
+		# Heavy distorted bass: square + clipped triangle
+		var bass_raw = _square_wave(bass_phase) * 0.5 + _triangle_wave(bass_phase) * 0.3
+		var bass = clamp(bass_raw * 2.0, -1.0, 1.0) * 0.14  # Overdrive clipping
+		bass += _triangle_wave(bass_phase * 0.5) * 0.06  # Sub octave rumble
+		# Gallop rhythm: emphasis on 1-and-a pattern
+		var gallop_pos = fmod(t, beat_duration)
+		var gallop_env = 0.7
+		if gallop_pos < beat_duration * 0.15:
+			gallop_env = 1.0  # Downbeat accent
+		elif gallop_pos > beat_duration * 0.5 and gallop_pos < beat_duration * 0.65:
+			gallop_env = 0.9  # "And" accent
+		elif gallop_pos > beat_duration * 0.75 and gallop_pos < beat_duration * 0.9:
+			gallop_env = 0.85  # "A" accent
+		bass *= gallop_env
 		sample_l += bass
 		sample_r += bass
 
-		# === POWER CHORDS (distorted rhythm guitar, panned) ===
-		var fifth = chord_fifths[bar]
-		var chord_env = 0.8
-		# Palm mute pattern: short on off-beats, sustained on downbeats
-		if int(beat_in_bar * 2) % 2 == 0:
-			chord_env = 0.9
+		# === RHYTHM GUITAR (heavy distorted power chords, panned hard L/R) ===
+		var fifth = chord_fifths[bar % 8]
+		# Galloping palm-mute pattern
+		var chord_env = 0.3
+		var gallop_t = fmod(t, beat_duration)
+		if gallop_t < beat_duration * 0.12:
+			chord_env = 1.0  # Down
+		elif gallop_t > beat_duration * 0.5 and gallop_t < beat_duration * 0.62:
+			chord_env = 0.9  # And
+		elif gallop_t > beat_duration * 0.75 and gallop_t < beat_duration * 0.87:
+			chord_env = 0.85  # A
+
+		# Distorted guitar: stack harmonics and clip
+		var gtr_raw_l = _square_wave(t * root * 2) * 0.4
+		gtr_raw_l += _square_wave(t * fifth * 2) * 0.35
+		gtr_raw_l += _pulse_wave(t * root * 4, 0.3) * 0.15  # Octave harmonic
+		gtr_raw_l = clamp(gtr_raw_l * 2.5, -1.0, 1.0)  # Hard clip distortion
+
+		var gtr_raw_r = _square_wave(t * root * 2 + 0.005) * 0.4
+		gtr_raw_r += _square_wave(t * fifth * 2 + 0.005) * 0.35
+		gtr_raw_r += _pulse_wave(t * root * 4 + 0.005, 0.35) * 0.15
+		gtr_raw_r = clamp(gtr_raw_r * 2.5, -1.0, 1.0)
+
+		var gtr_vol = 0.06 if bar >= 8 else 0.10  # Duck rhythm for tapping lead
+		sample_l += gtr_raw_l * chord_env * gtr_vol
+		sample_r += gtr_raw_r * chord_env * gtr_vol
+
+		# === LEAD GUITAR ===
+		if bar < 8:
+			# Bars 1-8: melodic lead (1 note per beat, moderate volume)
+			var lead_beat_idx = int(beat) % 32
+			var lead_note = lead_notes[lead_beat_idx]
+			var lead_t = fmod(t, beat_duration)
+			var lead_env = min(1.0, lead_t * 30.0)
+			lead_env *= max(0.0, 1.0 - max(0.0, lead_t - beat_duration * 0.85) / (beat_duration * 0.15))
+			var lead_phase = t * lead_note
+			var lead_raw = _square_wave(lead_phase) * 0.5 + _pulse_wave(lead_phase, 0.35) * 0.3
+			lead_raw += _square_wave(lead_phase * 2.0) * 0.1
+			var lead = clamp(lead_raw * 2.0, -1.0, 1.0) * lead_env * 0.15
+			sample_l += lead * 0.6
+			sample_r += lead * 1.0
 		else:
-			var off_t = fmod(t, beat_duration / 2.0)
-			chord_env = max(0.0, 0.9 - off_t * 4.0)
-
-		var guitar_l = _pulse_wave(t * root * 2, 0.3) * chord_env * 0.07
-		guitar_l += _pulse_wave(t * fifth * 2, 0.35) * chord_env * 0.06
-		guitar_l += _square_wave(t * root * 4) * chord_env * 0.03  # Octave up
-
-		var guitar_r = _pulse_wave(t * root * 2 + 0.01, 0.35) * chord_env * 0.07
-		guitar_r += _pulse_wave(t * fifth * 2 + 0.01, 0.3) * chord_env * 0.06
-		guitar_r += _square_wave(t * root * 4 + 0.01) * chord_env * 0.03
-
-		sample_l += guitar_l
-		sample_r += guitar_r
-
-		# === SYNTH LEAD (80s saw-style with vibrato) ===
-		var lead_idx = int(beat) % 32
-		var lead_note = lead_notes[lead_idx]
-		var lead_t = fmod(t, beat_duration)
-		# Note envelope: sharp attack, sustain, short release at end of beat
-		var lead_env = min(1.0, lead_t * 20.0)  # Fast attack
-		lead_env *= max(0.0, 1.0 - max(0.0, lead_t - beat_duration * 0.8) / (beat_duration * 0.2))
-		# Vibrato (classic 80s)
-		var vibrato = sin(t * 5.5 * TAU) * 0.008
-		var lead_phase = t * lead_note * (1.0 + vibrato)
-		var lead = _pulse_wave(lead_phase, 0.4) * lead_env * 0.1
-		lead += _triangle_wave(lead_phase) * lead_env * 0.06
-		# Pan lead slightly right
-		sample_l += lead * 0.7
-		sample_r += lead * 1.0
+			# Bars 9-16: TAPPING ARPEGGIOS — screaming, fast, loud
+			var sixteenth_duration = beat_duration / 4.0
+			var tap_sixteenth = int(fmod(t, bar_duration * 8) / sixteenth_duration)
+			var tap_idx = tap_sixteenth % tapping.size()
+			var tap_freq = tapping[tap_idx]
+			if tap_freq > 0:
+				var tap_t = fmod(t, sixteenth_duration) / sixteenth_duration
+				# Tapping: percussive attack, sqrt decay
+				var tap_env = sqrt(max(1.0 - tap_t, 0.0))
+				# Bright screaming tone: pulse + octave harmonic + hard clip
+				var tap_raw = _pulse_wave(t * tap_freq, 0.25) * 0.45
+				tap_raw += _square_wave(t * tap_freq * 2.0) * 0.30  # Octave up harmonic
+				tap_raw += _square_wave(t * tap_freq * 1.003) * 0.15  # Slight detune
+				tap_raw += _sine_wave(t * tap_freq * 3.0) * 0.10  # 12th harmonic shimmer
+				var tap = clamp(tap_raw * 3.0, -1.0, 1.0) * tap_env * 0.22
+				sample_l += tap * 0.7
+				sample_r += tap * 1.0
 
 		# === MIX ===
 		sample_l = clamp(sample_l, -0.95, 0.95)
@@ -1445,9 +1547,8 @@ func _generate_rat_king_music_buffer(rate: int, duration: float, bpm: float) -> 
 				var env = pow(1.0 - note_t / staccato_length, 2.5)
 				# Square wave with slight detuning for sneaky feel
 				var sq = sign(sin(t * melody_note * TAU)) * 0.15 * env
-				# Add slight vibrato for creepiness
-				var vibrato = sin(t * 6.0) * 3.0
-				sq += sign(sin(t * (melody_note + vibrato) * TAU)) * 0.08 * env
+				# Second voice slightly detuned for thickness (not vibrato)
+				sq += sign(sin(t * (melody_note * 1.005) * TAU)) * 0.06 * env
 				sample += sq
 
 		# Sneaky bass - pizzicato style
@@ -1613,15 +1714,13 @@ func _generate_danger_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 
 		var sample = 0.0
 
-		# Melody - harsh square wave with tremolo
+		# Melody - harsh square wave
 		var melody_freq = melody[sixteenth_idx]
 		if melody_freq > 0:
 			var melody_env = pow(1.0 - t_in_sixteenth, 0.5)
-			# Add tremolo for urgency
-			var tremolo = 0.7 + 0.3 * sin(t * 20 * TAU)
-			var melody_wave = _square_wave(t * melody_freq) * 0.22 * tremolo
-			# Detune for unsettling feel
-			melody_wave += _square_wave(t * melody_freq * 1.01) * 0.08
+			var melody_wave = _square_wave(t * melody_freq) * 0.25
+			# Slight detune for thickness
+			melody_wave += _square_wave(t * melody_freq * 1.008) * 0.07
 			sample += melody_wave * melody_env
 
 		# Bass - deep, rumbling
