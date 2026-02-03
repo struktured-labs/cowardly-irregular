@@ -368,14 +368,6 @@ func _process_next_selection() -> void:
 	var char_id = _get_character_id(current_combatant)
 	var is_char_autobattle = AutobattleSystem.is_autobattle_enabled(char_id)
 
-	# Track autobattle status for player combatants (for autobattle reward)
-	if current_combatant in player_party:
-		if is_char_autobattle or is_autobattle_enabled:
-			_autobattle_player_turns += 1
-		else:
-			_full_autobattle = false
-			_manual_player_turns += 1
-
 	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle:
 		_process_ai_selection(current_combatant)
 
@@ -389,11 +381,18 @@ func _end_selection_turn() -> void:
 	_process_next_selection()
 
 
+func _track_manual_player_turn() -> void:
+	"""Track that a player manually selected an action (not autobattle)"""
+	_full_autobattle = false
+	_manual_player_turns += 1
+
+
 ## Player actions (called from UI)
 func player_attack(target: Combatant) -> void:
 	"""Queue a basic attack"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		return
+	_track_manual_player_turn()
 
 	var action = {
 		"type": "attack",
@@ -409,6 +408,7 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 	"""Queue an ability"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		return
+	_track_manual_player_turn()
 
 	var ability = JobSystem.get_ability(ability_id)
 	var action = {
@@ -426,6 +426,7 @@ func player_defer() -> void:
 	"""Queue Defer action (skip turn, gain AP, defend)"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		return
+	_track_manual_player_turn()
 
 	var action = {
 		"type": "defer",
@@ -446,6 +447,7 @@ func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		return
+	_track_manual_player_turn()
 
 	# Mark this as an advance with all actions
 	# Each action will cost 1 AP when executed (first cancels natural gain, rest go to debt)
@@ -517,6 +519,7 @@ func player_item(item_id: String, targets: Array) -> void:
 	"""Queue an item use"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		return
+	_track_manual_player_turn()
 
 	var action = {
 		"type": "item",
@@ -555,6 +558,10 @@ func _compute_action_speed(combatant: Combatant, action_type: String, ability: D
 func _process_ai_selection(combatant: Combatant) -> void:
 	"""AI selects action for a combatant"""
 	var is_player_controlled = combatant in player_party
+
+	# Track autobattle turn for player combatants (for autobattle reward)
+	if is_player_controlled:
+		_autobattle_player_turns += 1
 	var allies = player_party if is_player_controlled else enemy_party
 	var enemies = enemy_party if is_player_controlled else player_party
 
@@ -749,6 +756,8 @@ func _save_previous_actions() -> void:
 
 func repeat_previous_actions() -> bool:
 	"""Queue previous round's actions for all players. Returns true if successful."""
+	_track_manual_player_turn()  # Repeat is a manual action, not autobattle
+
 	if previous_round_actions.is_empty():
 		print("[REPEAT] No previous actions to repeat")
 		return false
