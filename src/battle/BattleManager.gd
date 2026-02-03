@@ -1026,9 +1026,9 @@ func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead:
 
 func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	"""Execute a basic physical attack (costs 1 AP)"""
-	# Auto-retarget if original target is dead
+	# Auto-retarget if original target is dead/invalid
 	var actual_target = _retarget_enemy(attacker, target)
-	if not actual_target:
+	if not actual_target or not is_instance_valid(actual_target):
 		print("%s's attack fizzles - no valid targets!" % attacker.combatant_name)
 		return
 
@@ -1136,7 +1136,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 	var crit_chance = ability.get("crit_chance", 0.0)
 
 	for target in targets:
-		if not target or not target.is_alive:
+		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
 
 		var damage = int(base_damage * multiplier)
@@ -1168,7 +1168,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 	var drain_pct = ability.get("drain_percentage", 0)
 
 	for target in targets:
-		if not target or not target.is_alive:
+		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
 
 		var damage = int(base_damage * multiplier)
@@ -1252,7 +1252,7 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 	heal_amount = int(heal_amount * multiplier)
 
 	for target in targets:
-		if not target or not target.is_alive:
+		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
 
 		var healed = target.heal(heal_amount)
@@ -1266,7 +1266,7 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 	var revive_pct = ability.get("revive_percentage", 50)
 
 	for target in targets:
-		if not target or target.is_alive:
+		if not target or not is_instance_valid(target) or target.is_alive:
 			continue
 
 		var revive_hp = int(target.max_hp * revive_pct / 100.0)
@@ -1283,25 +1283,25 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 	match effect:
 		"taunt":
 			for target in targets:
-				if target and target.is_alive:
+				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("taunted_%s" % caster.combatant_name)
 					print("  → %s is now targeting %s!" % [target.combatant_name, caster.combatant_name])
 		"defense_up":
 			for target in targets:
-				if target and target.is_alive:
+				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Protect", "defense", stat_modifier, duration)
 		"attack_up":
 			for target in targets:
-				if target and target.is_alive:
+				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Berserk", "attack", stat_modifier, duration)
 		"defense_down":
 			for target in targets:
-				if target and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
 		"doom":
 			var countdown = ability.get("countdown", 3)
 			for target in targets:
-				if target and target.is_alive:
+				if target and is_instance_valid(target) and target.is_alive:
 					target.doom_counter = countdown
 					print("  → %s is doomed! %d turns remaining..." % [target.combatant_name, countdown])
 		_:
@@ -1336,7 +1336,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 		"permanent_death":
 			print("  → %s casts PERMAKILL!" % caster.combatant_name)
 			for target in targets:
-				if target and target.is_alive:
+				if target and is_instance_valid(target) and target.is_alive:
 					target.die()
 					target.add_status("permakilled")
 					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)

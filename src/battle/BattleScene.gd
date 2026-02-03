@@ -118,6 +118,9 @@ var _all_autobattle_enabled: bool = false  # True when all players are on autoba
 var _current_terrain: String = "plains"
 var _battle_background: BattleBackgroundClass = null
 
+## Tutorial hints (persists across battles via static-like save)
+static var _hints_shown: Dictionary = {}  # {"hint_id": true}
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -1621,7 +1624,14 @@ func log_message(message: String) -> void:
 
 	if battle_log:
 		battle_log.append_text(message + "\n")
-		battle_log.scroll_to_line(battle_log.get_line_count())
+
+
+func _show_hint(hint_id: String, text: String) -> void:
+	"""Show a one-time tutorial hint in the battle log"""
+	if _hints_shown.has(hint_id):
+		return
+	_hints_shown[hint_id] = true
+	log_message("[color=gray][i]Tip: %s[/i][/color]" % text)
 
 
 ## Button handlers
@@ -2071,6 +2081,8 @@ func _flash_sprite(sprite: Sprite2D, flash_color: Color) -> void:
 func _on_battle_started() -> void:
 	"""Handle battle start"""
 	log_message("[color=yellow]>>> Battle commenced![/color]")
+	_show_hint("autobattle", "Press Select or F6 to enable Autobattle for all characters!")
+	_show_hint("controls", "L = Defer (skip, +1 AP) | R = Advance (queue extra actions)")
 
 	# Apply any pending autobattle cancellation from previous battle
 	if AutobattleSystem.cancel_all_next_turn:
@@ -2336,6 +2348,8 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 	if is_player:
 		# Play da-ding sound for player turn
 		SoundManager.play_ui("player_turn")
+		if combatant.current_ap > 0:
+			_show_hint("advance", "You have %d AP! Press R to queue extra actions." % combatant.current_ap)
 	if use_win98_menus and is_player:
 		_show_win98_command_menu(combatant)
 
