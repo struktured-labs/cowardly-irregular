@@ -94,7 +94,7 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 ## Battle speed settings
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
 const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x"]
-var _battle_speed_index: int = 2  # Default to 1x
+static var _battle_speed_index: int = 2  # Persists across battles
 var _speed_indicator: RichTextLabel = null
 
 ## Autobattle toggle UI
@@ -2083,6 +2083,10 @@ func _on_battle_started() -> void:
 	log_message("[color=yellow]>>> Battle commenced![/color]")
 	_show_hint("autobattle", "Press Select or F6 to enable Autobattle for all characters!")
 	_show_hint("controls", "L = Defer (skip, +1 AP) | R = Advance (queue extra actions)")
+
+	# Restore persisted battle speed
+	Engine.time_scale = BATTLE_SPEEDS[_battle_speed_index]
+	_update_speed_indicator()
 
 	# Apply any pending autobattle cancellation from previous battle
 	if AutobattleSystem.cancel_all_next_turn:
