@@ -728,18 +728,27 @@ func _on_battle_ended(victory: bool) -> void:
 			member.restore_mp(mp_restore)
 			member.current_ap = 0
 
-		# Return to exploration after delay
-		await get_tree().create_timer(1.5).timeout
+		# Wait for player to confirm before leaving victory screen
+		await _wait_for_confirm()
 		_return_to_exploration()
 	else:
-		# Game over - for now restart exploration
-		print("GAME OVER - Restarting...")
-		await get_tree().create_timer(2.0).timeout
+		# Game over - wait for confirm then restart
+		await _wait_for_confirm()
 		_create_party()
 		battles_won = 0
 		_current_map_id = "overworld"
 		_spawn_point = "default"
 		_start_exploration()
+
+
+func _wait_for_confirm() -> void:
+	"""Wait for the player to press confirm (A/Z/Enter) before continuing"""
+	# Small delay so the press that ended the battle doesn't immediately confirm
+	await get_tree().create_timer(0.5).timeout
+	while true:
+		await get_tree().process_frame
+		if Input.is_action_just_pressed("ui_accept"):
+			break
 
 
 func _show_menu() -> void:

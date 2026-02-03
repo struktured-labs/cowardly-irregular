@@ -846,22 +846,37 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 
 
 func _start_victory_music() -> void:
-	"""Play a short victory fanfare (non-looping)"""
+	"""Play victory fanfare intro then loop into 80s rock victory theme"""
 	_music_playing = true
 
 	var sample_rate = 22050
-	var duration = 2.0  # 2 second fanfare
+	var bpm = 140.0
+	var beat_duration = 60.0 / bpm
 
-	var buffer = _generate_victory_fanfare(sample_rate, duration)
+	# Fanfare intro: 2 seconds (non-looping)
+	var intro_duration = 2.0
+	var intro_buffer = _generate_victory_fanfare(sample_rate, intro_duration)
+
+	# Rock loop: 8 bars at 140 BPM
+	var bars = 8
+	var loop_duration = beat_duration * 4 * bars
+	var loop_buffer = _generate_victory_rock_loop(sample_rate, loop_duration, bpm)
+
+	# Combine intro + loop
+	var full_buffer = PackedVector2Array()
+	full_buffer.append_array(intro_buffer)
+	full_buffer.append_array(loop_buffer)
 
 	var wav = AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = sample_rate
 	wav.stereo = true
-	wav.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = intro_buffer.size()  # Loop starts after fanfare
+	wav.loop_end = full_buffer.size()
 
 	var data = PackedByteArray()
-	for frame in buffer:
+	for frame in full_buffer:
 		var left = int(clamp(frame.x, -1.0, 1.0) * 32767)
 		var right = int(clamp(frame.y, -1.0, 1.0) * 32767)
 		data.append(left & 0xFF)
@@ -875,7 +890,7 @@ func _start_victory_music() -> void:
 
 
 func _generate_victory_fanfare(rate: int, duration: float) -> PackedVector2Array:
-	"""Generate classic JRPG victory fanfare"""
+	"""Generate classic JRPG victory fanfare (intro)"""
 	var buffer = PackedVector2Array()
 	var samples = int(rate * duration)
 
@@ -912,6 +927,135 @@ func _generate_victory_fanfare(rate: int, duration: float) -> PackedVector2Array
 
 		sample = clamp(sample, -0.9, 0.9)
 		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _generate_victory_rock_loop(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate 80s rock victory loop — power chords, driving drums, synth lead"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+	var bar_duration = beat_duration * 4
+
+	# Notes (A major key — triumphant 80s rock)
+	const A2 = 110.0
+	const B2 = 123.47
+	const D3 = 146.83
+	const E3 = 164.81
+	const A3 = 220.0
+	const B3 = 246.94
+	const Cs4 = 277.18
+	const D4 = 293.66
+	const E4 = 329.63
+	const Fs4 = 369.99
+	const A4 = 440.0
+	const B4 = 493.88
+	const Cs5 = 554.37
+	const E5 = 659.25
+
+	# Power chord progression (root + fifth): A - D - E - A | A - D - E - D
+	var chord_roots = [A2, D3, E3, A2, A2, D3, E3, D3]
+	var chord_fifths = [E3, A3, B3, E3, E3, A3, B3, A3]
+
+	# Lead melody over 8 bars (notes per beat, 32 beats total)
+	# Catchy pentatonic riff with 80s synth feel
+	var lead_notes = [
+		A4, Cs5, E5, Cs5,   B4, A4, Fs4, E4,   # Bar 1-2: ascending riff
+		A4, B4, Cs5, E5,    Cs5, B4, A4, Fs4,   # Bar 3-4: variation
+		E4, Fs4, A4, B4,    Cs5, B4, A4, E4,    # Bar 5-6: lower register
+		Fs4, A4, B4, Cs5,   E5, Cs5, B4, A4,    # Bar 7-8: build to loop point
+	]
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var beat = t / beat_duration
+		var bar = int(t / bar_duration) % 8
+		var beat_in_bar = fmod(t, bar_duration) / beat_duration
+		var sample_l = 0.0
+		var sample_r = 0.0
+
+		# === DRUMS ===
+		var beat_pos = fmod(t, beat_duration)
+		var sixteenth = fmod(t, beat_duration / 4.0)
+
+		# Kick on beats 1 and 3
+		if (int(beat) % 4 == 0 or int(beat) % 4 == 2) and beat_pos < 0.08:
+			var kick_env = 1.0 - beat_pos / 0.08
+			var kick_freq = 80.0 * (1.0 + kick_env * 2.0)
+			var kick = sin(beat_pos * kick_freq * TAU) * kick_env * 0.35
+			sample_l += kick
+			sample_r += kick
+
+		# Snare on beats 2 and 4 (80s gated reverb snare!)
+		if (int(beat) % 4 == 1 or int(beat) % 4 == 3) and beat_pos < 0.12:
+			var snare_env = pow(1.0 - beat_pos / 0.12, 0.4)
+			var noise = (randf() * 2.0 - 1.0)
+			var snare_tone = sin(beat_pos * 200.0 * TAU) * 0.3
+			var snare = (noise * 0.3 + snare_tone) * snare_env * 0.28
+			sample_l += snare
+			sample_r += snare
+
+		# Hi-hat on every eighth note
+		if fmod(t, beat_duration / 2.0) < 0.02:
+			var hat_pos = fmod(t, beat_duration / 2.0)
+			var hat_env = 1.0 - hat_pos / 0.02
+			var hat = (randf() * 2.0 - 1.0) * hat_env * 0.1
+			sample_l += hat
+			sample_r += hat
+
+		# === BASS (power chord root, 80s distorted) ===
+		var root = chord_roots[bar]
+		var bass_phase = t * root
+		var bass = _square_wave(bass_phase) * 0.12
+		bass += _triangle_wave(bass_phase * 0.5) * 0.08  # Sub octave
+		# Eighth note pulse pattern
+		var eighth_env = 1.0 - fmod(t, beat_duration / 2.0) / (beat_duration / 2.0) * 0.4
+		bass *= eighth_env
+		sample_l += bass
+		sample_r += bass
+
+		# === POWER CHORDS (distorted rhythm guitar, panned) ===
+		var fifth = chord_fifths[bar]
+		var chord_env = 0.8
+		# Palm mute pattern: short on off-beats, sustained on downbeats
+		if int(beat_in_bar * 2) % 2 == 0:
+			chord_env = 0.9
+		else:
+			var off_t = fmod(t, beat_duration / 2.0)
+			chord_env = max(0.0, 0.9 - off_t * 4.0)
+
+		var guitar_l = _pulse_wave(t * root * 2, 0.3) * chord_env * 0.07
+		guitar_l += _pulse_wave(t * fifth * 2, 0.35) * chord_env * 0.06
+		guitar_l += _square_wave(t * root * 4) * chord_env * 0.03  # Octave up
+
+		var guitar_r = _pulse_wave(t * root * 2 + 0.01, 0.35) * chord_env * 0.07
+		guitar_r += _pulse_wave(t * fifth * 2 + 0.01, 0.3) * chord_env * 0.06
+		guitar_r += _square_wave(t * root * 4 + 0.01) * chord_env * 0.03
+
+		sample_l += guitar_l
+		sample_r += guitar_r
+
+		# === SYNTH LEAD (80s saw-style with vibrato) ===
+		var lead_idx = int(beat) % 32
+		var lead_note = lead_notes[lead_idx]
+		var lead_t = fmod(t, beat_duration)
+		# Note envelope: sharp attack, sustain, short release at end of beat
+		var lead_env = min(1.0, lead_t * 20.0)  # Fast attack
+		lead_env *= max(0.0, 1.0 - max(0.0, lead_t - beat_duration * 0.8) / (beat_duration * 0.2))
+		# Vibrato (classic 80s)
+		var vibrato = sin(t * 5.5 * TAU) * 0.008
+		var lead_phase = t * lead_note * (1.0 + vibrato)
+		var lead = _pulse_wave(lead_phase, 0.4) * lead_env * 0.1
+		lead += _triangle_wave(lead_phase) * lead_env * 0.06
+		# Pan lead slightly right
+		sample_l += lead * 0.7
+		sample_r += lead * 1.0
+
+		# === MIX ===
+		sample_l = clamp(sample_l, -0.95, 0.95)
+		sample_r = clamp(sample_r, -0.95, 0.95)
+		buffer.append(Vector2(sample_l, sample_r))
 
 	return buffer
 

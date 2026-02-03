@@ -3457,7 +3457,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	print("[AUTOBATTLE UI] Displaying autobattle flash! Turns: %d, EXP x%.1f (stacked: %s)" % [total_turns, multiplier, has_one_shot])
 
 	# Offset down when stacking with one-shot overlay (both show simultaneously)
-	var y_offset = 100 if has_one_shot else 0
+	# One-shot extends to y=75 from center, add gap so they don't overlap
+	var y_offset = 155 if has_one_shot else 0
 
 	# Create the autobattle flash overlay
 	var flash_container = Control.new()
