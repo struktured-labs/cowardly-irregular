@@ -398,10 +398,10 @@ func interact(player: Node2D) -> void:
 	if _is_showing_menu:
 		_advance_dialogue()
 	else:
-		_show_shop_menu()
+		_show_shop_menu(player)
 
 
-func _show_shop_menu() -> void:
+func _show_shop_menu(player: Node2D) -> void:
 	_is_showing_menu = true
 
 	# Open the ShopScene
@@ -411,7 +411,6 @@ func _show_shop_menu() -> void:
 	shop_scene.setup(_get_shop_type_enum(), shop_name, _get_inventory(), keeper_custom)
 
 	# Disable player movement
-	var player = get_tree().get_first_node_in_group("player")
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
 

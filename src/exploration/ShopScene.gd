@@ -572,8 +572,7 @@ func _on_menu_closed() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	"""Handle shop input"""
-	# Allow escape to close shop
+	"""Handle shop input - consume all input to prevent player movement"""
 	if event.is_action_pressed("ui_cancel") and current_mode == ShopMode.MAIN:
 		_close_shop()
-		get_viewport().set_input_as_handled()
+	get_viewport().set_input_as_handled()
