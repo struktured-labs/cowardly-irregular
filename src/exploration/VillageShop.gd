@@ -406,7 +406,8 @@ func _show_shop_menu() -> void:
 
 	# Open the ShopScene
 	var shop_scene = preload("res://src/exploration/ShopScene.gd").new()
-	var keeper_custom = ShopkeeperData.get_shopkeeper_for_type(shop_type)
+	var ShopkeeperDataScript = preload("res://src/exploration/ShopkeeperData.gd")
+	var keeper_custom = ShopkeeperDataScript.get_shopkeeper_for_type(shop_type)
 	shop_scene.setup(_get_shop_type_enum(), shop_name, _get_inventory(), keeper_custom)
 
 	# Disable player movement
