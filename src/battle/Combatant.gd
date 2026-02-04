@@ -50,6 +50,9 @@ var equipped_passives: Array[String] = []  # Passive IDs
 var max_passive_slots: int = 5
 var learned_passives: Array[String] = []  # All unlocked passives
 
+## Learned abilities (purchased from magic shops, persist across job changes)
+var learned_abilities: Array[String] = []
+
 ## Equipment system
 var equipped_weapon: String = ""  # Weapon ID
 var equipped_armor: String = ""   # Armor ID
@@ -386,7 +389,8 @@ func to_dict() -> Dictionary:
 		"speed": speed,
 		"status_effects": status_effects.duplicate(),
 		"permanent_injuries": permanent_injuries.duplicate(),
-		"is_alive": is_alive
+		"is_alive": is_alive,
+		"learned_abilities": learned_abilities.duplicate()
 	}
 
 
@@ -418,6 +422,22 @@ func from_dict(data: Dictionary) -> void:
 		permanent_injuries = data["permanent_injuries"].duplicate()
 	if data.has("is_alive"):
 		is_alive = data["is_alive"]
+	if data.has("learned_abilities"):
+		learned_abilities.clear()
+		for ability_id in data["learned_abilities"]:
+			learned_abilities.append(ability_id)
+
+
+func learn_ability(ability_id: String) -> void:
+	"""Learn a new ability (from magic shop purchase)"""
+	if not ability_id in learned_abilities:
+		learned_abilities.append(ability_id)
+		print("%s learned ability: %s" % [combatant_name, ability_id])
+
+
+func has_learned_ability(ability_id: String) -> bool:
+	"""Check if this combatant has learned a specific ability"""
+	return ability_id in learned_abilities
 
 
 ## Stat recalculation with modifiers

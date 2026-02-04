@@ -1364,14 +1364,23 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 		print("%s doesn't have item: %s" % [user.combatant_name, item_id])
 		return
 
-	# Auto-retarget dead targets (most items are healing, target allies)
-	# TODO: Check item type for offensive items that should target enemies
+	# Check if this is a revival item (e.g. Phoenix Down)
+	var item_data = ItemSystem.get_item(item_id) if ItemSystem else {}
+	var item_effects = item_data.get("effects", {})
+	var is_revival_item = item_effects.get("revive", false)
+
+	# Auto-retarget: revival items need dead allies, others need alive allies
 	var retargeted: Array[Combatant] = []
 	for t in targets:
 		if t is Combatant:
-			var new_target = _retarget_ally(user, t, false)
-			if new_target:
-				retargeted.append(new_target)
+			if is_revival_item:
+				# Revival items should keep dead targets, not retarget to alive
+				if not t.is_alive:
+					retargeted.append(t)
+			else:
+				var new_target = _retarget_ally(user, t, false)
+				if new_target:
+					retargeted.append(new_target)
 
 	if retargeted.size() == 0 and targets.size() > 0:
 		print("%s's item fizzles - no valid targets!" % user.combatant_name)

@@ -690,6 +690,30 @@ func _draw_job_outfit_snes(img: Image, cx: int, face_cy: int, hair_color: Color)
 				_sp(img, cx + dx, band_y, band)
 				_sp(img, cx + dx, band_y + 1, band_dark)
 
+		"shopkeeper":
+			# Merchant apron straps over shoulders + coin emblem
+			var apron = Color(0.75, 0.65, 0.50)
+			var apron_dark = Color(0.55, 0.45, 0.30)
+			var face_ry = 8  # Approximate face half-height
+			# Apron straps from shoulders downward
+			for y_off in range(0, 12):
+				for dx in [-7, 7]:
+					_sp(img, cx + dx, face_cy + face_ry + y_off, apron)
+					_sp(img, cx + dx + (1 if dx > 0 else -1), face_cy + face_ry + y_off, apron_dark)
+			# Apron body across chest
+			for y_off in range(6, 12):
+				for dx in range(-7, 8):
+					_sp(img, cx + dx, face_cy + face_ry + y_off, apron)
+			# Gold coin emblem at chest center
+			var coin_y = face_cy + face_ry + 8
+			var coin_color = Color(0.85, 0.75, 0.30)
+			var coin_dark = Color(0.65, 0.55, 0.20)
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					var dist = abs(dx) + abs(dy)
+					if dist <= 2:
+						_sp(img, cx + dx, coin_y + dy, coin_color if dist <= 1 else coin_dark)
+
 
 func _get_job_color(job: String) -> Color:
 	match job:
@@ -699,6 +723,7 @@ func _get_job_color(job: String) -> Color:
 		"thief": return Color(0.3, 0.6, 0.3)
 		"red_mage": return Color(0.7, 0.3, 0.5)
 		"monk": return Color(0.6, 0.4, 0.2)
+		"shopkeeper": return Color(0.6, 0.5, 0.3)
 		_: return Color(0.4, 0.4, 0.5)
 
 

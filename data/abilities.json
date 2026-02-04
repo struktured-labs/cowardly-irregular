@@ -38,7 +38,9 @@
 		"mp_cost": 6,
 		"description": "Restore 50 HP to one ally",
 		"heal_amount": 50,
-		"target_type": "single_ally"
+		"target_type": "single_ally",
+		"magic_school": "white",
+		"cost": 200
 	},
 	"cura": {
 		"id": "cura",
@@ -48,7 +50,9 @@
 		"mp_cost": 12,
 		"description": "Restore 120 HP to one ally",
 		"heal_amount": 120,
-		"target_type": "single_ally"
+		"target_type": "single_ally",
+		"magic_school": "white",
+		"cost": 800
 	},
 	"raise": {
 		"id": "raise",
@@ -58,7 +62,9 @@
 		"mp_cost": 20,
 		"description": "Revive a fallen ally with 50% HP",
 		"target_type": "dead_ally",
-		"revive_percentage": 50
+		"revive_percentage": 50,
+		"magic_school": "white",
+		"cost": 1500
 	},
 	"protect": {
 		"id": "protect",
@@ -70,7 +76,9 @@
 		"target_type": "single_ally",
 		"effect": "defense_up",
 		"stat_modifier": 1.5,
-		"duration": 3
+		"duration": 3,
+		"magic_school": "white",
+		"cost": 600
 	},
 	"fire": {
 		"id": "fire",
@@ -81,7 +89,9 @@
 		"description": "Fire magic damage to one enemy",
 		"damage_multiplier": 2.0,
 		"element": "fire",
-		"target_type": "single_enemy"
+		"target_type": "single_enemy",
+		"magic_school": "black",
+		"cost": 300
 	},
 	"fira": {
 		"id": "fira",
@@ -92,7 +102,9 @@
 		"description": "Stronger fire magic damage to one enemy",
 		"damage_multiplier": 3.5,
 		"element": "fire",
-		"target_type": "single_enemy"
+		"target_type": "single_enemy",
+		"magic_school": "black",
+		"cost": 1200
 	},
 	"blizzard": {
 		"id": "blizzard",
@@ -103,7 +115,9 @@
 		"description": "Ice magic damage to one enemy",
 		"damage_multiplier": 2.0,
 		"element": "ice",
-		"target_type": "single_enemy"
+		"target_type": "single_enemy",
+		"magic_school": "black",
+		"cost": 300
 	},
 	"thunder": {
 		"id": "thunder",
@@ -114,7 +128,9 @@
 		"description": "Lightning magic damage to one enemy",
 		"damage_multiplier": 2.0,
 		"element": "lightning",
-		"target_type": "single_enemy"
+		"target_type": "single_enemy",
+		"magic_school": "black",
+		"cost": 300
 	},
 	"steal": {
 		"id": "steal",

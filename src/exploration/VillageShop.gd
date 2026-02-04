@@ -6,7 +6,7 @@ class_name VillageShop
 
 signal item_purchased(item_id: String)
 
-enum ShopType { WEAPON, ARMOR, ITEM, ACCESSORY }
+enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
 @export var shop_name: String = "Shop"
 @export var shop_type: ShopType = ShopType.ITEM
@@ -25,20 +25,7 @@ var _dialogue_state: int = 0
 
 const TILE_SIZE: int = 32
 
-## Shop inventories - expanded with full catalog
-const WEAPON_INVENTORY = [
-	"bronze_sword", "iron_dagger", "wooden_staff", "bone_staff",
-	"iron_sword", "poison_dagger", "oak_staff", "sleep_dagger",
-	"steel_sword", "shadow_rod", "war_axe", "thunder_rod",
-	"mythril_dagger", "ice_blade", "flame_sword", "crystal_staff",
-	"assassin_blade", "mythril_sword", "holy_staff"
-]
-const ARMOR_INVENTORY = [
-	"leather_armor", "cloth_robe", "thief_garb",
-	"bone_armor", "chain_mail", "dark_robe",
-	"iron_armor", "mage_robe", "ninja_garb",
-	"sage_robe", "mythril_vest", "dragon_mail"
-]
+## Shop inventories
 const ITEM_INVENTORY = [
 	"potion", "antidote", "eye_drops", "echo_herbs", "smoke_bomb",
 	"hi_potion", "ether", "phoenix_down", "gold_needle",
@@ -47,11 +34,20 @@ const ITEM_INVENTORY = [
 	"remedy", "repel", "x_potion", "hi_ether",
 	"arctic_wind", "mega_potion", "tent", "mega_ether", "elixir"
 ]
-const ACCESSORY_INVENTORY = [
-	"warriors_belt", "power_ring", "magic_ring", "lucky_charm",
-	"speed_boots", "resist_ring", "barrier_ring",
-	"thiefs_glove", "hp_amulet", "mp_amulet",
-	"elven_cloak", "glass_amulet"
+const BLACK_MAGIC_INVENTORY = ["fire", "blizzard", "thunder", "fira"]
+const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect"]
+const BLACKSMITH_WEAPONS = [
+	"bronze_sword", "iron_dagger", "wooden_staff", "bone_staff",
+	"iron_sword", "poison_dagger", "oak_staff", "sleep_dagger",
+	"steel_sword", "shadow_rod", "war_axe", "thunder_rod",
+	"mythril_dagger", "ice_blade", "flame_sword", "crystal_staff",
+	"assassin_blade", "mythril_sword", "holy_staff"
+]
+const BLACKSMITH_ARMOR = [
+	"leather_armor", "cloth_robe", "thief_garb",
+	"bone_armor", "chain_mail", "dark_robe",
+	"iron_armor", "mage_robe", "ninja_garb",
+	"sage_robe", "mythril_vest", "dragon_mail"
 ]
 
 
@@ -88,30 +84,30 @@ func _draw_shop(image: Image) -> void:
 	var accent_color: Color
 	var accent_light: Color
 	match shop_type:
-		ShopType.WEAPON:
-			main_color = Color(0.40, 0.35, 0.45)
-			main_light = Color(0.52, 0.48, 0.58)
-			main_dark = Color(0.28, 0.24, 0.32)
-			accent_color = Color(0.60, 0.55, 0.30)
-			accent_light = Color(0.75, 0.68, 0.40)
-		ShopType.ARMOR:
-			main_color = Color(0.35, 0.40, 0.50)
-			main_light = Color(0.48, 0.52, 0.62)
-			main_dark = Color(0.22, 0.28, 0.38)
-			accent_color = Color(0.50, 0.50, 0.55)
-			accent_light = Color(0.65, 0.65, 0.70)
 		ShopType.ITEM:
 			main_color = Color(0.25, 0.45, 0.35)
 			main_light = Color(0.35, 0.58, 0.45)
 			main_dark = Color(0.15, 0.32, 0.24)
 			accent_color = Color(0.70, 0.60, 0.40)
 			accent_light = Color(0.82, 0.72, 0.52)
-		ShopType.ACCESSORY:
-			main_color = Color(0.45, 0.30, 0.45)
-			main_light = Color(0.58, 0.42, 0.58)
-			main_dark = Color(0.32, 0.18, 0.32)
-			accent_color = Color(0.80, 0.65, 0.30)
-			accent_light = Color(0.92, 0.78, 0.42)
+		ShopType.BLACK_MAGIC:
+			main_color = Color(0.30, 0.18, 0.40)
+			main_light = Color(0.42, 0.28, 0.55)
+			main_dark = Color(0.18, 0.10, 0.28)
+			accent_color = Color(0.55, 0.30, 0.65)
+			accent_light = Color(0.70, 0.45, 0.80)
+		ShopType.WHITE_MAGIC:
+			main_color = Color(0.85, 0.82, 0.75)
+			main_light = Color(0.95, 0.92, 0.88)
+			main_dark = Color(0.65, 0.60, 0.55)
+			accent_color = Color(0.80, 0.70, 0.35)
+			accent_light = Color(0.92, 0.82, 0.48)
+		ShopType.BLACKSMITH:
+			main_color = Color(0.45, 0.30, 0.18)
+			main_light = Color(0.58, 0.40, 0.25)
+			main_dark = Color(0.32, 0.20, 0.10)
+			accent_color = Color(0.75, 0.45, 0.20)
+			accent_light = Color(0.88, 0.58, 0.30)
 		_:
 			main_color = Color(0.40, 0.35, 0.30)
 			main_light = Color(0.52, 0.48, 0.42)
@@ -213,53 +209,8 @@ func _draw_shop(image: Image) -> void:
 
 	# Display items on counter based on shop type (SNES quality)
 	match shop_type:
-		ShopType.WEAPON:
-			# Detailed sword silhouettes with hilts
-			var sword_colors = [Color(0.65, 0.65, 0.70), Color(0.55, 0.55, 0.60), Color(0.52, 0.42, 0.32)]
-			var sword_x_pos = [20, 32, 44]
-			for i in range(3):
-				var sx = sword_x_pos[i]
-				var sc = sword_colors[i]
-				# Blade
-				for y in range(28, 39):
-					image.set_pixel(sx, y, sc)
-					image.set_pixel(sx + 1, y, sc.darkened(0.1))
-				# Crossguard
-				for x in range(sx - 2, sx + 4):
-					image.set_pixel(x, 39, sc.darkened(0.2))
-				# Grip
-				image.set_pixel(sx, 40, Color(0.4, 0.25, 0.15))
-				image.set_pixel(sx, 41, Color(0.4, 0.25, 0.15))
-				# Blade tip shine
-				image.set_pixel(sx, 28, sc.lightened(0.3))
-		ShopType.ARMOR:
-			# Shield and breastplate
-			# Shield (round with emblem)
-			for y in range(28, 40):
-				for x in range(17, 27):
-					var dx = abs(x - 22.0)
-					var dy = abs(y - 34.0)
-					if dx * dx / 25.0 + dy * dy / 36.0 < 1.0:
-						var c = Color(0.52, 0.52, 0.58)
-						if dx + dy < 3:
-							c = Color(0.70, 0.65, 0.30)  # Center emblem
-						elif y < 32:
-							c = Color(0.62, 0.62, 0.68)  # Top highlight
-						image.set_pixel(x, y, c)
-			# Breastplate
-			for y in range(29, 41):
-				for x in range(37, 47):
-					var rel_y = float(y - 29) / 12.0
-					var c = Color(0.45, 0.35, 0.25)
-					if rel_y < 0.3:
-						c = Color(0.55, 0.45, 0.32)
-					elif rel_y > 0.7:
-						c = Color(0.35, 0.25, 0.18)
-					if x == 37 or x == 46:
-						c = c.darkened(0.15)
-					image.set_pixel(x, y, c)
 		ShopType.ITEM:
-			# Detailed potion bottles with cork and liquid
+			# Potion bottles with cork and liquid
 			var potion_data = [
 				[19, Color(0.92, 0.30, 0.28), Color(1.0, 0.5, 0.45)],   # Red HP
 				[31, Color(0.28, 0.48, 0.92), Color(0.45, 0.65, 1.0)],   # Blue MP
@@ -269,46 +220,81 @@ func _draw_shop(image: Image) -> void:
 				var px = p[0]
 				var liquid = p[1]
 				var liquid_light = p[2]
-				# Cork
 				image.set_pixel(px, 30, Color(0.55, 0.42, 0.28))
 				image.set_pixel(px + 1, 30, Color(0.55, 0.42, 0.28))
-				# Bottle neck
 				image.set_pixel(px, 31, Color(0.75, 0.82, 0.88))
 				image.set_pixel(px + 1, 31, Color(0.65, 0.72, 0.78))
-				# Bottle body with liquid
 				for y in range(32, 41):
 					var bottle_w = 2 if y < 34 else 3
 					for dx in range(-bottle_w + 1, bottle_w + 1):
 						var bx = px + dx
 						if bx >= 0 and bx < 64:
-							var c = liquid
-							if y < 34:
-								c = Color(0.70, 0.78, 0.85)  # Empty upper part
-							elif dx == -bottle_w + 1:
-								c = liquid_light  # Left highlight
+							var c = liquid if y >= 34 else Color(0.70, 0.78, 0.85)
+							if y >= 34 and dx == -bottle_w + 1:
+								c = liquid_light
 							image.set_pixel(bx, y, c)
-		ShopType.ACCESSORY:
-			# Ring and amulet display
-			# Ring on cushion
-			for y in range(34, 40):
-				for x in range(17, 27):
-					image.set_pixel(x, y, Color(0.55, 0.20, 0.25))  # Red cushion
-			# Ring
-			for angle in range(12):
-				var rx = 22 + int(cos(angle * 0.52) * 3)
-				var ry = 33 + int(sin(angle * 0.52) * 2)
-				if rx >= 0 and rx < 64 and ry >= 0 and ry < 64:
-					image.set_pixel(rx, ry, Color(0.85, 0.75, 0.30))
-			# Amulet
+		ShopType.BLACK_MAGIC:
+			# Glowing rune crystal ball on counter
+			for y in range(28, 40):
+				for x in range(26, 38):
+					var dx2 = abs(x - 32.0)
+					var dy2 = abs(y - 34.0)
+					if dx2 * dx2 / 36.0 + dy2 * dy2 / 36.0 < 1.0:
+						var glow = 1.0 - (dx2 + dy2) / 12.0
+						image.set_pixel(x, y, Color(0.4 + glow * 0.3, 0.15, 0.6 + glow * 0.2))
+			# Small flame icons on each side
+			for side_x in [18, 44]:
+				for dy in range(5):
+					var flame_w = 2 if dy > 1 else 1
+					for dx in range(-flame_w, flame_w + 1):
+						var fy = 38 - dy
+						image.set_pixel(side_x + dx, fy, Color(0.6 + dy * 0.08, 0.2 + dy * 0.04, 0.8))
+		ShopType.WHITE_MAGIC:
+			# Star/cross symbol on counter
+			var star_cx = 32
+			var star_cy = 34
+			var star_color = Color(0.95, 0.90, 0.60)
+			var star_glow = Color(0.80, 0.75, 0.45)
+			# Vertical bar
+			for dy in range(-5, 6):
+				image.set_pixel(star_cx, star_cy + dy, star_color)
+				if abs(dy) < 4:
+					image.set_pixel(star_cx + 1, star_cy + dy, star_glow)
+			# Horizontal bar
+			for dx in range(-5, 6):
+				image.set_pixel(star_cx + dx, star_cy, star_color)
+				if abs(dx) < 4:
+					image.set_pixel(star_cx + dx, star_cy + 1, star_glow)
+			# Candles
+			for candle_x in [20, 44]:
+				for dy in range(4):
+					image.set_pixel(candle_x, 37 - dy, Color(0.85, 0.80, 0.70))
+				image.set_pixel(candle_x, 33, Color(1.0, 0.85, 0.30))  # Flame
+				image.set_pixel(candle_x, 32, Color(1.0, 0.70, 0.20))
+		ShopType.BLACKSMITH:
+			# Anvil on counter
+			for y in range(33, 40):
+				var anvil_w = 6 if y > 36 else (4 if y > 34 else 3)
+				for dx in range(-anvil_w, anvil_w + 1):
+					var c = Color(0.45, 0.42, 0.40)
+					if y == 33:
+						c = Color(0.55, 0.52, 0.50)  # Top highlight
+					elif dx == -anvil_w or dx == anvil_w:
+						c = Color(0.35, 0.32, 0.30)
+					image.set_pixel(32 + dx, y, c)
+			# Sword on left
+			for y in range(28, 39):
+				image.set_pixel(20, y, Color(0.65, 0.65, 0.70))
+				image.set_pixel(21, y, Color(0.55, 0.55, 0.60))
+			for x in range(18, 24):
+				image.set_pixel(x, 39, Color(0.50, 0.45, 0.40))
+			# Shield on right
 			for y in range(30, 40):
-				for x in range(38, 46):
-					var dx = abs(x - 42.0)
-					var dy = abs(y - 36.0)
-					if dx + dy < 4:
-						image.set_pixel(x, y, Color(0.82, 0.68, 0.28))
-			# Chain
-			for y in range(28, 32):
-				image.set_pixel(42, y, Color(0.75, 0.65, 0.25))
+				for x in range(40, 48):
+					var sdx = abs(x - 44.0)
+					var sdy = abs(y - 35.0)
+					if sdx * sdx / 16.0 + sdy * sdy / 25.0 < 1.0:
+						image.set_pixel(x, y, Color(0.52, 0.52, 0.58))
 
 	# Shop sign with detailed lettering area
 	var sign_bg = Color(0.78, 0.72, 0.58)
@@ -350,12 +336,14 @@ func _setup_name_label() -> void:
 
 	# Color based on type
 	match shop_type:
-		ShopType.WEAPON:
-			name_label.add_theme_color_override("font_color", Color(0.9, 0.7, 0.4))
-		ShopType.ARMOR:
-			name_label.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
 		ShopType.ITEM:
 			name_label.add_theme_color_override("font_color", Color(0.5, 0.9, 0.5))
+		ShopType.BLACK_MAGIC:
+			name_label.add_theme_color_override("font_color", Color(0.7, 0.4, 0.9))
+		ShopType.WHITE_MAGIC:
+			name_label.add_theme_color_override("font_color", Color(0.95, 0.92, 0.75))
+		ShopType.BLACKSMITH:
+			name_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.3))
 
 	name_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -418,7 +406,8 @@ func _show_shop_menu() -> void:
 
 	# Open the ShopScene
 	var shop_scene = preload("res://src/exploration/ShopScene.gd").new()
-	shop_scene.setup(_get_shop_type_enum(), shop_name, _get_inventory())
+	var keeper_custom = ShopkeeperData.get_shopkeeper_for_type(shop_type)
+	shop_scene.setup(_get_shop_type_enum(), shop_name, _get_inventory(), keeper_custom)
 
 	# Disable player movement
 	var player = get_tree().get_first_node_in_group("player")
@@ -447,16 +436,7 @@ func _on_shop_closed(player: Node) -> void:
 
 func _get_shop_type_enum() -> int:
 	"""Convert ShopType enum to ShopScene.ShopType enum"""
-	match shop_type:
-		ShopType.WEAPON:
-			return 0  # ShopScene.ShopType.WEAPON
-		ShopType.ARMOR:
-			return 1  # ShopScene.ShopType.ARMOR
-		ShopType.ITEM:
-			return 2  # ShopScene.ShopType.ITEM
-		ShopType.ACCESSORY:
-			return 3  # ShopScene.ShopType.ACCESSORY
-	return 2
+	return shop_type
 
 
 func _advance_dialogue() -> void:
@@ -482,27 +462,27 @@ func _update_dialogue() -> void:
 
 func _get_inventory() -> Array:
 	match shop_type:
-		ShopType.WEAPON:
-			return WEAPON_INVENTORY
-		ShopType.ARMOR:
-			return ARMOR_INVENTORY
 		ShopType.ITEM:
 			return ITEM_INVENTORY
-		ShopType.ACCESSORY:
-			return ACCESSORY_INVENTORY
+		ShopType.BLACK_MAGIC:
+			return BLACK_MAGIC_INVENTORY
+		ShopType.WHITE_MAGIC:
+			return WHITE_MAGIC_INVENTORY
+		ShopType.BLACKSMITH:
+			return BLACKSMITH_WEAPONS + BLACKSMITH_ARMOR
 	return []
 
 
 func _get_type_name() -> String:
 	match shop_type:
-		ShopType.WEAPON:
-			return "weapons"
-		ShopType.ARMOR:
-			return "armor"
 		ShopType.ITEM:
 			return "items"
-		ShopType.ACCESSORY:
-			return "accessories"
+		ShopType.BLACK_MAGIC:
+			return "black magic"
+		ShopType.WHITE_MAGIC:
+			return "white magic"
+		ShopType.BLACKSMITH:
+			return "weapons and armor"
 	return "goods"
 
 

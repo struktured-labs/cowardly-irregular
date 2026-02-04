@@ -6,19 +6,22 @@ class_name ShopScene
 
 signal shop_closed()
 
-enum ShopMode { MAIN, BUY, SELL, QUANTITY }
-enum ShopType { WEAPON, ARMOR, ITEM, ACCESSORY }
+enum ShopMode { MAIN, BUY, SELL, QUANTITY, CHAR_SELECT }
+enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
 ## Shop configuration
 var shop_type: ShopType = ShopType.ITEM
 var shop_name: String = "Shop"
 var shop_inventory: Array[String] = []
+var shopkeeper_customization = null  # CharacterCustomization for portrait
 
 ## State
 var current_mode: ShopMode = ShopMode.MAIN
 var selected_item_id: String = ""
 var selected_quantity: int = 1
 var max_quantity: int = 99
+var pending_spell_id: String = ""
+var pending_spell_data: Dictionary = {}
 
 ## UI Components
 var background: ColorRect
@@ -31,6 +34,7 @@ var current_menu: Win98Menu = null
 @onready var game_state = get_node("/root/GameState")
 @onready var equipment_system = get_node("/root/EquipmentSystem")
 @onready var item_system = get_node("/root/ItemSystem")
+@onready var job_system = get_node("/root/JobSystem")
 
 
 func _ready() -> void:
@@ -39,13 +43,14 @@ func _ready() -> void:
 	_open_main_menu()
 
 
-func setup(type: ShopType, name: String, inventory: Array) -> void:
+func setup(type: ShopType, name: String, inventory: Array, keeper_custom = null) -> void:
 	"""Configure shop before opening"""
 	shop_type = type
 	shop_name = name
 	shop_inventory.clear()
 	for item in inventory:
 		shop_inventory.append(item)
+	shopkeeper_customization = keeper_custom
 
 
 func _setup_ui() -> void:
@@ -120,10 +125,19 @@ func _create_description_panel() -> Control:
 	right.size = Vector2(4, panel.size.y - 8)
 	panel.add_child(right)
 
+	# Shopkeeper portrait (left side of panel)
+	var text_x = 16
+	if shopkeeper_customization:
+		var CharacterPortraitScript = load("res://src/ui/CharacterPortrait.gd")
+		var portrait = CharacterPortraitScript.new(shopkeeper_customization, "shopkeeper", CharacterPortraitScript.PortraitSize.LARGE)
+		portrait.position = Vector2(16, 16)
+		panel.add_child(portrait)
+		text_x = 16 + 64 + 12  # After portrait with gap
+
 	# Description text
 	description_label = Label.new()
-	description_label.position = Vector2(16, 16)
-	description_label.size = Vector2(panel.size.x - 32, panel.size.y - 32)
+	description_label.position = Vector2(text_x, 16)
+	description_label.size = Vector2(panel.size.x - text_x - 16, panel.size.y - 32)
 	description_label.add_theme_font_size_override("font_size", 12)
 	description_label.add_theme_color_override("font_color", Color.WHITE)
 	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -146,9 +160,11 @@ func _open_main_menu() -> void:
 
 	var items = [
 		{"id": "buy", "label": "Buy"},
-		{"id": "sell", "label": "Sell"},
-		{"id": "exit", "label": "Exit"}
 	]
+	# Magic shops don't have sell (can't un-learn a spell)
+	if not _is_magic_shop():
+		items.append({"id": "sell", "label": "Sell"})
+	items.append({"id": "exit", "label": "Exit"})
 
 	_show_menu("Shop", items, Vector2(100, 100))
 	description_label.text = "Welcome to %s!\nWhat would you like to do?" % shop_name
@@ -167,7 +183,9 @@ func _open_buy_menu() -> void:
 			var cost = item_data.get("cost", 0)
 			var owned = _get_owned_count(item_id)
 			var label = "%s - %dG" % [item_data.get("name", "???"), cost]
-			if owned > 0:
+			if _is_magic_shop() and owned > 0:
+				label += " [%d learned]" % owned
+			elif owned > 0:
 				label += " (%d)" % owned
 
 			items.append({
@@ -252,11 +270,19 @@ func _on_menu_item_selected(item_id: String, item_data: Variant) -> void:
 
 		ShopMode.BUY:
 			if item_id != "none":
-				_attempt_purchase(item_id, item_data)
+				if _is_magic_shop():
+					var spell_data = item_data if item_data is Dictionary else _get_item_data(item_id)
+					_open_character_select(item_id, spell_data)
+				else:
+					_attempt_purchase(item_id, item_data)
 
 		ShopMode.SELL:
 			if item_id != "none":
 				_attempt_sell(item_id, item_data)
+
+		ShopMode.CHAR_SELECT:
+			if item_id != "none":
+				_attempt_magic_purchase(item_id)
 
 
 func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
@@ -310,26 +336,33 @@ func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 func _get_item_data(item_id: String) -> Dictionary:
 	"""Get item data from appropriate system"""
 	match shop_type:
-		ShopType.WEAPON:
-			return equipment_system.weapons.get(item_id, {})
-		ShopType.ARMOR:
-			return equipment_system.armors.get(item_id, {})
 		ShopType.ITEM:
 			return item_system.items.get(item_id, {})
-		ShopType.ACCESSORY:
-			return equipment_system.accessories.get(item_id, {})
+		ShopType.BLACK_MAGIC, ShopType.WHITE_MAGIC:
+			return job_system.get_ability(item_id)
+		ShopType.BLACKSMITH:
+			var weapon = equipment_system.weapons.get(item_id, {})
+			if not weapon.is_empty():
+				return weapon
+			return equipment_system.armors.get(item_id, {})
 	return {}
 
 
 func _get_owned_count(item_id: String) -> int:
 	"""Get how many of this item the party owns"""
-	# For equipment, check equipment pool (not yet implemented fully)
-	# For items, check first party member's inventory
 	if shop_type == ShopType.ITEM:
 		if game_state.player_party.size() > 0:
 			var party_leader = game_state.player_party[0]
 			var inventory = party_leader.get("inventory", {})
 			return inventory.get(item_id, 0)
+	elif _is_magic_shop():
+		# Count party members who have learned this spell
+		var count = 0
+		for member_data in game_state.player_party:
+			var learned = member_data.get("learned_abilities", [])
+			if item_id in learned:
+				count += 1
+		return count
 	return 0
 
 
@@ -366,10 +399,14 @@ func _add_item_to_inventory(item_id: String) -> void:
 				party_leader["inventory"] = {}
 			var inventory = party_leader["inventory"]
 			inventory[item_id] = inventory.get(item_id, 0) + 1
-	else:
-		# For equipment, would add to equipment pool
-		# This requires GameLoop integration (not implemented yet)
-		print("Equipment purchase: %s" % item_id)
+	elif shop_type == ShopType.BLACKSMITH:
+		# Add equipment to party leader's equipment pool
+		if game_state.player_party.size() > 0:
+			var party_leader = game_state.player_party[0]
+			if not party_leader.has("equipment_inventory"):
+				party_leader["equipment_inventory"] = []
+			party_leader["equipment_inventory"].append(item_id)
+	# Magic purchases handled separately in _attempt_magic_purchase
 
 
 func _remove_item_from_inventory(item_id: String) -> bool:
@@ -398,13 +435,19 @@ func _update_description_for_item(item_id: String) -> void:
 	desc += "%s\n" % item_data.get("name", "???")
 	desc += "%s\n\n" % item_data.get("description", "No description")
 
-	# Show stats for equipment
-	if shop_type in [ShopType.WEAPON, ShopType.ARMOR, ShopType.ACCESSORY]:
-		desc += "Stats:\n"
+	# Show stats for equipment (blacksmith)
+	if shop_type == ShopType.BLACKSMITH:
 		var stat_mods = item_data.get("stat_mods", {})
-		for stat in stat_mods:
-			var value = stat_mods[stat]
-			desc += "  %s: %+d\n" % [stat.capitalize(), value]
+		if not stat_mods.is_empty():
+			desc += "Stats:\n"
+			for stat in stat_mods:
+				var value = stat_mods[stat]
+				desc += "  %s: %+d\n" % [stat.capitalize(), value]
+
+	# Show MP cost for magic
+	if _is_magic_shop():
+		var mp_cost = item_data.get("mp_cost", 0)
+		desc += "MP Cost: %d\n" % mp_cost
 
 	# Show cost
 	var cost = item_data.get("cost", 0)
@@ -424,6 +467,92 @@ func _flash_gold_label() -> void:
 	gold_label.add_theme_color_override("font_color", original_color)
 
 
+func _is_magic_shop() -> bool:
+	"""Check if this is a magic shop"""
+	return shop_type in [ShopType.BLACK_MAGIC, ShopType.WHITE_MAGIC]
+
+
+func _get_eligible_jobs_for_school(school: String) -> Array:
+	"""Get job IDs that can learn spells from a magic school"""
+	match school:
+		"black": return ["black_mage"]
+		"white": return ["white_mage"]
+	return []
+
+
+func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
+	"""Open character selection for magic spell purchase"""
+	current_mode = ShopMode.CHAR_SELECT
+	pending_spell_id = spell_id
+	pending_spell_data = spell_data
+	_close_current_menu()
+
+	var school = spell_data.get("magic_school", "")
+	var eligible_jobs = _get_eligible_jobs_for_school(school)
+
+	var items: Array = []
+	for i in range(game_state.player_party.size()):
+		var member = game_state.player_party[i]
+		var member_name = member.get("name", "???")
+		var member_job = member.get("job", "")
+		var learned = member.get("learned_abilities", [])
+
+		# Only show characters with an eligible job
+		if member_job not in eligible_jobs:
+			continue
+
+		# Check if already knows the spell
+		if spell_id in learned:
+			items.append({
+				"id": str(i),
+				"label": "%s - Already known" % member_name,
+				"disabled": true
+			})
+		else:
+			items.append({
+				"id": str(i),
+				"label": member_name
+			})
+
+	if items.is_empty():
+		items.append({"id": "none", "label": "(No one can learn this!)", "disabled": true})
+
+	_show_menu("Who learns?", items, Vector2(100, 100))
+	description_label.text = "Choose who will learn %s." % spell_data.get("name", "???")
+
+
+func _attempt_magic_purchase(char_index_str: String) -> void:
+	"""Purchase a spell for a specific party member"""
+	var char_index = int(char_index_str)
+	if char_index < 0 or char_index >= game_state.player_party.size():
+		return
+
+	var cost = pending_spell_data.get("cost", 0)
+	var current_gold = game_state.get_gold()
+
+	if current_gold < cost:
+		SoundManager.play_ui("menu_error")
+		_flash_gold_label()
+		description_label.text = "Insufficient gold!\nYou need %d G but only have %d G." % [cost, current_gold]
+		return
+
+	if game_state.spend_gold(cost):
+		var member = game_state.player_party[char_index]
+		if not member.has("learned_abilities"):
+			member["learned_abilities"] = []
+		if pending_spell_id not in member["learned_abilities"]:
+			member["learned_abilities"].append(pending_spell_id)
+
+		SoundManager.play_ui("menu_select")
+		_update_gold_display()
+
+		var member_name = member.get("name", "???")
+		description_label.text = "%s learned %s!" % [member_name, pending_spell_data.get("name", "spell")]
+
+		await get_tree().create_timer(0.5).timeout
+		_open_buy_menu()
+
+
 func _close_shop() -> void:
 	"""Close the shop and return to exploration"""
 	_close_current_menu()
@@ -438,6 +567,8 @@ func _on_menu_closed() -> void:
 			_close_shop()
 		ShopMode.BUY, ShopMode.SELL:
 			_open_main_menu()
+		ShopMode.CHAR_SELECT:
+			_open_buy_menu()
 
 
 func _input(event: InputEvent) -> void:

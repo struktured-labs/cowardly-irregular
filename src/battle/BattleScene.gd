@@ -1920,6 +1920,10 @@ func _on_item_selected(idx: int, item_ids: Array) -> void:
 	var item = ItemSystem.get_item(item_id)
 	var current = BattleManager.current_combatant
 
+	# Check if this is a revival item (e.g. Phoenix Down)
+	var item_effects = item.get("effects", {})
+	var is_revival_item = item_effects.get("revive", false)
+
 	# Determine targets
 	var targets = []
 	var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
@@ -1928,11 +1932,20 @@ func _on_item_selected(idx: int, item_ids: Array) -> void:
 	match target_type:
 		ItemSystem.TargetType.SINGLE_ENEMY:
 			if alive_enemies.size() > 0:
-				targets = [alive_enemies[0]]  # Default to first alive enemy
+				targets = [alive_enemies[0]]
 		ItemSystem.TargetType.ALL_ENEMIES:
 			targets = alive_enemies
 		ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.ALL_ALLIES, ItemSystem.TargetType.SELF:
-			targets = [current if current else party_members[0]]
+			if is_revival_item:
+				# Revival items target fallen allies
+				var dead_allies = party_members.filter(func(m): return m is Combatant and not m.is_alive)
+				if dead_allies.size() > 0:
+					targets = [dead_allies[0]]
+				else:
+					log_message("No fallen allies to revive!")
+					return
+			else:
+				targets = [current if current else party_members[0]]
 
 	if targets.size() > 0:
 		BattleManager.player_item(item_id, targets)
@@ -2775,7 +2788,11 @@ func _build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		})
 
 	# Abilities -> submenu, each ability has enemy targets if offensive
-	var abilities = combatant.job.get("abilities", []) if combatant.job else []
+	var job_abilities = combatant.job.get("abilities", []) if combatant.job else []
+	var abilities = job_abilities.duplicate()
+	for learned_id in combatant.learned_abilities:
+		if learned_id not in abilities:
+			abilities.append(learned_id)
 	if abilities.size() > 0:
 		var ability_items = []
 		for ability_id in abilities:
@@ -2970,7 +2987,11 @@ func _build_command_menu_items(combatant: Combatant) -> Array:
 	})
 
 	# Abilities submenu
-	var abilities = combatant.job.get("abilities", []) if combatant.job else []
+	var job_abilities = combatant.job.get("abilities", []) if combatant.job else []
+	var abilities = job_abilities.duplicate()
+	for learned_id in combatant.learned_abilities:
+		if learned_id not in abilities:
+			abilities.append(learned_id)
 	if abilities.size() > 0:
 		var ability_items = []
 		for ability_id in abilities:

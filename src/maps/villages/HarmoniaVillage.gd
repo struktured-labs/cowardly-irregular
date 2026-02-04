@@ -182,21 +182,21 @@ func _setup_buildings() -> void:
 	inn.position = Vector2(3.5 * TILE_SIZE, 8 * TILE_SIZE)
 	buildings.add_child(inn)
 
-	# === WEAPON SHOP ===
-	var weapon_shop = VillageShopScript.new()
-	weapon_shop.shop_name = "Ironclad Arms"
-	weapon_shop.shop_type = VillageShopScript.ShopType.WEAPON
-	weapon_shop.keeper_name = "Brutus"
-	weapon_shop.position = Vector2(25 * TILE_SIZE, 3.5 * TILE_SIZE)
-	buildings.add_child(weapon_shop)
+	# === BLACKSMITH ===
+	var blacksmith = VillageShopScript.new()
+	blacksmith.shop_name = "Ironclad Arms"
+	blacksmith.shop_type = VillageShopScript.ShopType.BLACKSMITH
+	blacksmith.keeper_name = "Brutus"
+	blacksmith.position = Vector2(25 * TILE_SIZE, 3.5 * TILE_SIZE)
+	buildings.add_child(blacksmith)
 
-	# === ARMOR SHOP ===
-	var armor_shop = VillageShopScript.new()
-	armor_shop.shop_name = "Guardian's Garb"
-	armor_shop.shop_type = VillageShopScript.ShopType.ARMOR
-	armor_shop.keeper_name = "Helga"
-	armor_shop.position = Vector2(16 * TILE_SIZE, 3.5 * TILE_SIZE)
-	buildings.add_child(armor_shop)
+	# === WHITE MAGIC SHOP ===
+	var white_magic_shop = VillageShopScript.new()
+	white_magic_shop.shop_name = "Chapel of Light"
+	white_magic_shop.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
+	white_magic_shop.keeper_name = "Sister Lenora"
+	white_magic_shop.position = Vector2(16 * TILE_SIZE, 3.5 * TILE_SIZE)
+	buildings.add_child(white_magic_shop)
 
 	# === ITEM SHOP ===
 	var item_shop = VillageShopScript.new()
@@ -206,13 +206,13 @@ func _setup_buildings() -> void:
 	item_shop.position = Vector2(22 * TILE_SIZE, 8 * TILE_SIZE)
 	buildings.add_child(item_shop)
 
-	# === ACCESSORY SHOP ===
-	var accessory_shop = VillageShopScript.new()
-	accessory_shop.shop_name = "Glittering Baubles"
-	accessory_shop.shop_type = VillageShopScript.ShopType.ACCESSORY
-	accessory_shop.keeper_name = "Opal"
-	accessory_shop.position = Vector2(10 * TILE_SIZE, 3.5 * TILE_SIZE)
-	buildings.add_child(accessory_shop)
+	# === BLACK MAGIC SHOP ===
+	var black_magic_shop = VillageShopScript.new()
+	black_magic_shop.shop_name = "Mortimer's Arcana"
+	black_magic_shop.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
+	black_magic_shop.keeper_name = "Mortimer"
+	black_magic_shop.position = Vector2(10 * TILE_SIZE, 3.5 * TILE_SIZE)
+	buildings.add_child(black_magic_shop)
 
 	# === BAR ===
 	var bar = VillageBarScript.new()
