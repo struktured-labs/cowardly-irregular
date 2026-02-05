@@ -1,4 +1,4 @@
-extends CanvasLayer
+extends Control
 class_name ShopScene
 
 ## FF5-Style Shop System
@@ -38,7 +38,10 @@ var current_menu: Win98Menu = null
 
 
 func _ready() -> void:
-	layer = 10  # Render above game world
+	# Make fullscreen overlay
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	z_index = 100  # Render above game world
 	_setup_ui()
 	_open_main_menu()
 
@@ -58,14 +61,14 @@ func _setup_ui() -> void:
 	# Fullscreen background
 	background = ColorRect.new()
 	background.color = Color(0.0, 0.0, 0.0, 0.85)
-	background.size = get_viewport().get_visible_rect().size
+	background.size = get_viewport_rect().size
 	background.position = Vector2.ZERO
 	add_child(background)
 
 	# Gold display (top-right)
 	gold_label = Label.new()
 	gold_label.name = "GoldLabel"
-	gold_label.position = Vector2(get_viewport().get_visible_rect().size.x - 200, 20)
+	gold_label.position = Vector2(get_viewport_rect().size.x - 200, 20)
 	gold_label.size = Vector2(180, 30)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_label.add_theme_font_size_override("font_size", 16)
@@ -83,8 +86,8 @@ func _create_description_panel() -> Control:
 	var panel = Control.new()
 	panel.name = "DescriptionPanel"
 	var panel_height = 120
-	panel.position = Vector2(20, get_viewport().get_visible_rect().size.y - panel_height - 20)
-	panel.size = Vector2(get_viewport().get_visible_rect().size.x - 40, panel_height)
+	panel.position = Vector2(20, get_viewport_rect().size.y - panel_height - 20)
+	panel.size = Vector2(get_viewport_rect().size.x - 40, panel_height)
 
 	# Background with Win98 style border
 	var bg = ColorRect.new()
@@ -571,8 +574,3 @@ func _on_menu_closed() -> void:
 			_open_buy_menu()
 
 
-func _input(event: InputEvent) -> void:
-	"""Handle shop-level input (menu handles its own navigation)"""
-	if event.is_action_pressed("ui_cancel") and current_mode == ShopMode.MAIN:
-		_close_shop()
-		get_viewport().set_input_as_handled()
