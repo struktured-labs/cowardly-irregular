@@ -116,6 +116,9 @@ func _ready() -> void:
 	_setup_timers()
 	_setup_audio()
 	_build_menu()
+	# Ensure we can receive input
+	focus_mode = Control.FOCUS_ALL
+	grab_focus()
 
 
 func _process(delta: float) -> void:
