@@ -7,6 +7,10 @@ class_name OverworldMenu
 
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 const SaveScreenClass = preload("res://src/ui/SaveScreen.gd")
+const ItemsMenuClass = preload("res://src/ui/ItemsMenu.gd")
+const EquipmentMenuClass = preload("res://src/ui/EquipmentMenu.gd")
+const AbilitiesMenuClass = preload("res://src/ui/AbilitiesMenu.gd")
+const StatusMenuClass = preload("res://src/ui/StatusMenu.gd")
 
 signal closed()
 signal menu_action(action: String, target: Combatant)
@@ -427,17 +431,13 @@ func _handle_menu_action(action_id: String) -> void:
 
 	match action_id:
 		"items":
-			print("[MENU] Items selected for %s" % (target.combatant_name if target else "party"))
-			# TODO: Open items submenu
+			_open_items_menu()
 		"equipment":
-			print("[MENU] Equipment selected for %s" % (target.combatant_name if target else "party"))
-			# TODO: Open equipment submenu
+			_open_equipment_menu(target)
 		"status":
-			print("[MENU] Status selected for %s" % (target.combatant_name if target else "party"))
-			# TODO: Show detailed status screen
+			_open_status_menu(target)
 		"abilities":
-			print("[MENU] Abilities selected for %s" % (target.combatant_name if target else "party"))
-			# TODO: Show abilities screen
+			_open_abilities_menu(target)
 		"autobattle":
 			print("[MENU] Autobattle editor for %s" % (target.combatant_name if target else "party"))
 			menu_action.emit("autobattle", target)
@@ -513,6 +513,98 @@ func _on_settings_closed() -> void:
 	for child in get_children():
 		child.visible = true
 	_build_ui()  # Refresh UI
+
+
+func _open_items_menu() -> void:
+	"""Open the items submenu"""
+	var items_menu = ItemsMenuClass.new()
+	items_menu.size = size
+
+	# Aggregate inventory from all party members
+	var party_inventory: Dictionary = {}
+	for member in party:
+		if "inventory" in member:
+			for item_id in member.inventory:
+				if party_inventory.has(item_id):
+					party_inventory[item_id] += member.inventory[item_id]
+				else:
+					party_inventory[item_id] = member.inventory[item_id]
+
+	items_menu.setup(party, party_inventory)
+	items_menu.closed.connect(_on_submenu_closed)
+	items_menu.item_used.connect(_on_item_used)
+	add_child(items_menu)
+	_hide_main_ui(items_menu)
+
+
+func _on_item_used(_item_id: String, _target: Combatant) -> void:
+	"""Handle item usage - refresh party display"""
+	pass  # UI will refresh when menu closes
+
+
+func _open_equipment_menu(target: Combatant) -> void:
+	"""Open the equipment submenu for a character"""
+	if not target:
+		return
+
+	var equip_menu = EquipmentMenuClass.new()
+	equip_menu.size = size
+	equip_menu.setup(target)
+	equip_menu.closed.connect(_on_submenu_closed)
+	equip_menu.equipment_changed.connect(_on_equipment_changed)
+	add_child(equip_menu)
+	_hide_main_ui(equip_menu)
+
+
+func _on_equipment_changed(_slot: String, _item_id: String) -> void:
+	"""Handle equipment change"""
+	pass  # UI will refresh when menu closes
+
+
+func _open_status_menu(target: Combatant) -> void:
+	"""Open the status screen for a character"""
+	if not target:
+		return
+
+	var status_menu = StatusMenuClass.new()
+	status_menu.size = size
+	status_menu.setup(target)
+	status_menu.closed.connect(_on_submenu_closed)
+	add_child(status_menu)
+	_hide_main_ui(status_menu)
+
+
+func _open_abilities_menu(target: Combatant) -> void:
+	"""Open the abilities/passives menu for a character"""
+	if not target:
+		return
+
+	var abilities_menu = AbilitiesMenuClass.new()
+	abilities_menu.size = size
+	abilities_menu.setup(target)
+	abilities_menu.closed.connect(_on_submenu_closed)
+	abilities_menu.passive_changed.connect(_on_passive_changed)
+	add_child(abilities_menu)
+	_hide_main_ui(abilities_menu)
+
+
+func _on_passive_changed(_passive_id: String, _equipped: bool) -> void:
+	"""Handle passive equip/unequip"""
+	pass  # UI will refresh when menu closes
+
+
+func _hide_main_ui(except: Control) -> void:
+	"""Hide main menu UI while submenu is open"""
+	for child in get_children():
+		if child != except:
+			child.visible = false
+
+
+func _on_submenu_closed() -> void:
+	"""Generic handler for submenu close - show main menu again"""
+	for child in get_children():
+		child.visible = true
+	_build_ui()  # Refresh UI to show updated stats
 
 
 func _close_menu() -> void:
