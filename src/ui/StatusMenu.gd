@@ -102,7 +102,7 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 	# Job and level
 	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
 	var job_label = Label.new()
-	job_label.text = "%s  Lv %d" % [job_name, character.level]
+	job_label.text = "%s  Lv %d" % [job_name, character.job_level]
 	job_label.position = Vector2(16, 34)
 	job_label.add_theme_font_size_override("font_size", 12)
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)

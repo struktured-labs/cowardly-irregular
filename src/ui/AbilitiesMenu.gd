@@ -239,7 +239,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 
 	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
 	var job_label = Label.new()
-	job_label.text = "Lv %d %s" % [character.level, job_name]
+	job_label.text = "Lv %d %s" % [character.job_level, job_name]
 	job_label.position = Vector2(12, 26)
 	job_label.add_theme_font_size_override("font_size", 10)
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -652,26 +652,26 @@ func _input(event: InputEvent) -> void:
 	# List navigation
 	var list_size = _abilities_list.size() if current_tab == Tab.ABILITIES else _passives_list.size()
 
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		if list_size > 0:
 			selected_index = (selected_index - 1 + list_size) % list_size
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if list_size > 0:
 			selected_index = (selected_index + 1) % list_size
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		if current_tab == Tab.PASSIVES:
 			_toggle_passive()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close_menu()
 		get_viewport().set_input_as_handled()
 

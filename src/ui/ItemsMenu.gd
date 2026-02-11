@@ -551,21 +551,21 @@ func _input(event: InputEvent) -> void:
 
 func _handle_item_list_input(event: InputEvent) -> void:
 	"""Handle input in item list mode"""
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		if _item_list.size() > 0:
 			selected_item_index = (selected_item_index - 1 + _item_list.size()) % _item_list.size()
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if _item_list.size() > 0:
 			selected_item_index = (selected_item_index + 1) % _item_list.size()
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		if _item_list.size() > 0:
 			# Enter target selection mode
 			mode = 1
@@ -576,7 +576,7 @@ func _handle_item_list_input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_error")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
@@ -586,25 +586,25 @@ func _handle_target_selection_input(event: InputEvent) -> void:
 	var item = _item_list[selected_item_index]
 	var target_type = item["data"].get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		if target_type != ItemSystem.TargetType.ALL_ALLIES:
 			selected_target_index = (selected_target_index - 1 + party.size()) % party.size()
 			_update_selection()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if target_type != ItemSystem.TargetType.ALL_ALLIES:
 			selected_target_index = (selected_target_index + 1) % party.size()
 			_update_selection()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_use_selected_item()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		# Back to item list
 		mode = 0
 		_build_ui()
@@ -631,7 +631,7 @@ func _use_selected_item() -> void:
 			targets.append(party[selected_target_index])
 
 	# Check if item can be used (e.g., can't use Phoenix Down on alive character)
-	if item_data["effects"].has("revive"):
+	if item_data.get("effects", {}).has("revive"):
 		var valid_target = false
 		for target in targets:
 			if not target.is_alive:
@@ -642,8 +642,10 @@ func _use_selected_item() -> void:
 			return
 
 	# Use the item
+	if party.is_empty():
+		return
 	var user = party[0]  # Party leader uses items
-	if ItemSystem.use_item(user, item["id"], targets):
+	if ItemSystem and ItemSystem.use_item(user, item.get("id", ""), targets):
 		# Decrement inventory
 		inventory[item["id"]] -= 1
 		if inventory[item["id"]] <= 0:
@@ -658,7 +660,12 @@ func _use_selected_item() -> void:
 				break
 
 		item_used.emit(item["id"], targets[0] if targets.size() > 0 else null)
-		SoundManager.play_ui("menu_select")
+		# Play appropriate sound based on item type
+		var item_effects = item["data"].get("effects", {})
+		if item_effects.has("heal_hp") or item_effects.has("heal_hp_percent") or item_effects.has("heal_mp") or item_effects.has("heal_mp_percent"):
+			SoundManager.play_ui("heal")
+		else:
+			SoundManager.play_ui("menu_select")
 
 		# Rebuild item list
 		_build_item_list()

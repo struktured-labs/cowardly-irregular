@@ -134,7 +134,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 
 	# Level
 	var level_label = Label.new()
-	level_label.text = "Lv %d" % character.level
+	level_label.text = "Lv %d" % character.job_level
 	level_label.position = Vector2(panel_size.x - 50, 8)
 	level_label.add_theme_font_size_override("font_size", 12)
 	level_label.add_theme_color_override("font_color", TEXT_COLOR)

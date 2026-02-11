@@ -39,6 +39,7 @@ var selected_index: int = 0
 var selected_character: int = 0
 var _menu_labels: Array = []
 var _party_panels: Array = []
+var _submenu_open: bool = false
 
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
@@ -378,7 +379,7 @@ func _update_selection() -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
-	if not visible:
+	if not visible or _submenu_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -458,21 +459,20 @@ func _handle_menu_action(action_id: String) -> void:
 
 func _open_save_screen(mode: int) -> void:
 	"""Open the save/load screen"""
+	_submenu_open = true
 	var save_screen = SaveScreenClass.new()
-	save_screen.size = size
+	save_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
 	save_screen.setup(mode, party)
 	save_screen.closed.connect(_on_save_screen_closed)
 	save_screen.save_completed.connect(_on_save_completed)
 	save_screen.load_completed.connect(_on_load_completed)
 	add_child(save_screen)
-	# Hide main menu while save screen is open
-	for child in get_children():
-		if child != save_screen:
-			child.visible = false
+	_hide_main_ui(save_screen)
 
 
 func _on_save_screen_closed() -> void:
 	"""Save screen closed - show main menu again"""
+	_submenu_open = false
 	for child in get_children():
 		child.visible = true
 	_build_ui()
@@ -490,17 +490,15 @@ func _on_load_completed(_slot: int) -> void:
 
 func _open_settings() -> void:
 	"""Open the settings submenu"""
+	_submenu_open = true
 	var SettingsMenuScript = load("res://src/ui/SettingsMenu.gd")
 	if SettingsMenuScript:
 		var settings = SettingsMenuScript.new()
-		settings.size = size
+		settings.set_anchors_preset(Control.PRESET_FULL_RECT)
 		settings.closed.connect(_on_settings_closed)
 		settings.quit_to_title.connect(_on_quit_to_title)
 		add_child(settings)
-		# Hide main menu while settings is open
-		for child in get_children():
-			if child != settings:
-				child.visible = false
+		_hide_main_ui(settings)
 
 
 func _on_quit_to_title() -> void:
@@ -511,6 +509,7 @@ func _on_quit_to_title() -> void:
 
 func _on_settings_closed() -> void:
 	"""Settings menu closed - show main menu again"""
+	_submenu_open = false
 	for child in get_children():
 		child.visible = true
 	_build_ui()  # Refresh UI
@@ -518,8 +517,9 @@ func _on_settings_closed() -> void:
 
 func _open_items_menu() -> void:
 	"""Open the items submenu"""
+	_submenu_open = true
 	var items_menu = ItemsMenuClass.new()
-	items_menu.size = size
+	items_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	# Aggregate inventory from all party members
 	var party_inventory: Dictionary = {}
@@ -548,8 +548,9 @@ func _open_equipment_menu(target: Combatant) -> void:
 	if not target:
 		return
 
+	_submenu_open = true
 	var equip_menu = EquipmentMenuClass.new()
-	equip_menu.size = size
+	equip_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	equip_menu.setup(target)
 	equip_menu.closed.connect(_on_submenu_closed)
 	equip_menu.equipment_changed.connect(_on_equipment_changed)
@@ -567,8 +568,9 @@ func _open_jobs_menu(target: Combatant) -> void:
 	if not target:
 		return
 
+	_submenu_open = true
 	var job_menu = JobMenuClass.new()
-	job_menu.size = size
+	job_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	job_menu.setup(target)
 	job_menu.closed.connect(_on_submenu_closed)
 	job_menu.job_changed.connect(_on_job_changed)
@@ -586,8 +588,9 @@ func _open_status_menu(target: Combatant) -> void:
 	if not target:
 		return
 
+	_submenu_open = true
 	var status_menu = StatusMenuClass.new()
-	status_menu.size = size
+	status_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	status_menu.setup(target)
 	status_menu.closed.connect(_on_submenu_closed)
 	add_child(status_menu)
@@ -599,8 +602,9 @@ func _open_abilities_menu(target: Combatant) -> void:
 	if not target:
 		return
 
+	_submenu_open = true
 	var abilities_menu = AbilitiesMenuClass.new()
-	abilities_menu.size = size
+	abilities_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	abilities_menu.setup(target)
 	abilities_menu.closed.connect(_on_submenu_closed)
 	abilities_menu.passive_changed.connect(_on_passive_changed)
@@ -622,6 +626,7 @@ func _hide_main_ui(except: Control) -> void:
 
 func _on_submenu_closed() -> void:
 	"""Generic handler for submenu close - show main menu again"""
+	_submenu_open = false
 	for child in get_children():
 		child.visible = true
 	_build_ui()  # Refresh UI to show updated stats

@@ -145,7 +145,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 
 	# Level
 	var level_label = Label.new()
-	level_label.text = "Lv %d" % character.level
+	level_label.text = "Lv %d" % character.job_level
 	level_label.position = Vector2(panel_size.x - 50, 8)
 	level_label.add_theme_font_size_override("font_size", 12)
 	level_label.add_theme_color_override("font_color", TEXT_COLOR)
@@ -538,19 +538,19 @@ func _input(event: InputEvent) -> void:
 
 func _handle_slot_input(event: InputEvent) -> void:
 	"""Handle input in slot selection mode"""
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_slot = (selected_slot - 1 + SLOTS.size()) % SLOTS.size()
 		_build_ui()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		selected_slot = (selected_slot + 1) % SLOTS.size()
 		_build_ui()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		var items = _get_available_items_for_slot()
 		if items.size() > 0:
 			mode = Mode.ITEM_SELECT
@@ -561,7 +561,7 @@ func _handle_slot_input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_error")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
@@ -570,25 +570,25 @@ func _handle_item_input(event: InputEvent) -> void:
 	"""Handle input in item selection mode"""
 	var items = _get_available_items_for_slot()
 
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		if items.size() > 0:
 			selected_item_index = (selected_item_index - 1 + items.size()) % items.size()
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if items.size() > 0:
 			selected_item_index = (selected_item_index + 1) % items.size()
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_equip_selected_item()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		mode = Mode.SLOT_SELECT
 		_build_ui()
 		SoundManager.play_ui("menu_close")

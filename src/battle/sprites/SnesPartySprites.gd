@@ -1066,26 +1066,27 @@ static func _draw_weapon(img: Image, ctx: Dictionary, cx: int, by: int, lean: in
 		return
 
 	# Calculate weapon position based on animation
+	# Weapon origin = hand/waist level (by-10), offset to right side (bcx+7)
 	var wx = bcx + 7
-	var wy = by - 14
+	var wy = by - 10
 	var angle = 0
 
 	match anim:
 		"attack":
 			match frame_idx:
-				0: wx = bcx + 8; wy = by - 16; angle = -20
-				1: wx = bcx + 4; wy = by - 20; angle = 30
-				2: wx = bcx - 2; wy = by - 12; angle = 80
-				3: wx = bcx + 7; wy = by - 14; angle = 0
+				0: wx = bcx + 8; wy = by - 12; angle = -20  # Wind up
+				1: wx = bcx + 4; wy = by - 16; angle = 30   # Lunge forward
+				2: wx = bcx - 2; wy = by - 10; angle = 80   # Full swing
+				3: wx = bcx + 7; wy = by - 10; angle = 0    # Return
 		"defend":
-			wx = bcx - 4; wy = by - 16; angle = 90
+			wx = bcx - 4; wy = by - 12; angle = 90  # Shield position
 		"cast":
 			match frame_idx:
-				0: wx = bcx + 8; wy = by - 18; angle = -10
-				1: wx = bcx + 6; wy = by - 22; angle = -30
-				2: wx = bcx + 8; wy = by - 18; angle = -10
+				0: wx = bcx + 8; wy = by - 14; angle = -10
+				1: wx = bcx + 6; wy = by - 16; angle = -30  # Staff raised
+				2: wx = bcx + 8; wy = by - 14; angle = -10
 		"victory":
-			wx = bcx + 2; wy = by - 24; angle = -45
+			wx = bcx + 4; wy = by - 16; angle = -45  # Raised in triumph
 
 	match weapon_type:
 		"sword":
