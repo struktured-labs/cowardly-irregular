@@ -127,7 +127,6 @@ func _input(event: InputEvent) -> void:
 		x_pressed = true
 
 	if x_pressed:
-		print("[MENU] X pressed, state=%s, menu=%s" % [LoopState.keys()[current_state], _overworld_menu != null])
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
 			_open_overworld_menu()
 			get_viewport().set_input_as_handled()
@@ -524,6 +523,10 @@ func _create_party_from_customizations(customizations: Array) -> void:
 		# Assign first job
 		if custom.starting_jobs.size() > 0:
 			JobSystem.assign_job(member, custom.starting_jobs[0])
+
+		# Assign secondary job
+		if custom.starting_jobs.size() > 1:
+			JobSystem.assign_secondary_job(member, custom.starting_jobs[1])
 
 		# Add starting items from personality
 		var starting_items = custom.get_starting_items()
@@ -947,10 +950,6 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	await _start_battle_async(enemies)
 	print("[GAMELOOP] Battle scene started")
 
-	# Small delay to ensure battle scene is fully initialized
-	# (battle_started may have already fired during _ready())
-	await get_tree().create_timer(0.1).timeout
-
 	# Fade out transition to reveal battle
 	if BattleTransition:
 		print("[GAMELOOP] Starting fade out")
@@ -1285,6 +1284,9 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 
 	# Create battle scene
 	var loaded_res = load("res://src/battle/BattleScene.tscn")
+	if not loaded_res:
+		push_error("GameLoop: Failed to load BattleScene.tscn")
+		return
 	var battle_scene = loaded_res.instantiate()
 
 	# Configure for autogrind

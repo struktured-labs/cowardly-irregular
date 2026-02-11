@@ -11,6 +11,7 @@ const ItemsMenuClass = preload("res://src/ui/ItemsMenu.gd")
 const EquipmentMenuClass = preload("res://src/ui/EquipmentMenu.gd")
 const AbilitiesMenuClass = preload("res://src/ui/AbilitiesMenu.gd")
 const StatusMenuClass = preload("res://src/ui/StatusMenu.gd")
+const JobMenuClass = preload("res://src/ui/JobMenu.gd")
 
 signal closed()
 signal menu_action(action: String, target: Combatant)
@@ -20,6 +21,7 @@ signal quit_to_title()
 const MENU_OPTIONS = [
 	{"id": "items", "label": "Items", "enabled": true},
 	{"id": "equipment", "label": "Equipment", "enabled": true},
+	{"id": "jobs", "label": "Jobs", "enabled": true},
 	{"id": "status", "label": "Status", "enabled": true},
 	{"id": "abilities", "label": "Abilities", "enabled": true},
 	{"id": "autobattle", "label": "Autobattle", "enabled": true},
@@ -379,33 +381,33 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	# Navigation
-	if event.is_action_pressed("ui_up"):
+	# Navigation - check echo to prevent rapid-fire when holding keys
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_index = (selected_index - 1 + MENU_OPTIONS.size()) % MENU_OPTIONS.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		selected_index = (selected_index + 1) % MENU_OPTIONS.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left"):
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		selected_character = (selected_character - 1 + party.size()) % party.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") and not event.is_echo():
 		selected_character = (selected_character + 1) % party.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	# Confirm
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		var option = MENU_OPTIONS[selected_index]
 		if option["enabled"]:
 			_handle_menu_action(option["id"])
@@ -415,12 +417,12 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# Close menu
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
 	# X button also closes
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_X:
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_X:
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
@@ -434,16 +436,16 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_items_menu()
 		"equipment":
 			_open_equipment_menu(target)
+		"jobs":
+			_open_jobs_menu(target)
 		"status":
 			_open_status_menu(target)
 		"abilities":
 			_open_abilities_menu(target)
 		"autobattle":
-			print("[MENU] Autobattle editor for %s" % (target.combatant_name if target else "party"))
 			menu_action.emit("autobattle", target)
 			_close_menu()
 		"autogrind":
-			print("[MENU] Autogrind session config")
 			menu_action.emit("autogrind", null)
 			_close_menu()
 		"save":
@@ -478,12 +480,11 @@ func _on_save_screen_closed() -> void:
 
 func _on_save_completed(_slot: int) -> void:
 	"""Save completed successfully"""
-	print("[MENU] Game saved to slot %d" % _slot)
+	pass
 
 
 func _on_load_completed(_slot: int) -> void:
 	"""Load completed - close menu and refresh game state"""
-	print("[MENU] Game loaded from slot %d" % _slot)
 	_close_menu()
 
 
@@ -558,6 +559,25 @@ func _open_equipment_menu(target: Combatant) -> void:
 
 func _on_equipment_changed(_slot: String, _item_id: String) -> void:
 	"""Handle equipment change"""
+	pass  # UI will refresh when menu closes
+
+
+func _open_jobs_menu(target: Combatant) -> void:
+	"""Open the jobs submenu for a character"""
+	if not target:
+		return
+
+	var job_menu = JobMenuClass.new()
+	job_menu.size = size
+	job_menu.setup(target)
+	job_menu.closed.connect(_on_submenu_closed)
+	job_menu.job_changed.connect(_on_job_changed)
+	add_child(job_menu)
+	_hide_main_ui(job_menu)
+
+
+func _on_job_changed(_combatant: Combatant, _job_id: String, _is_secondary: bool) -> void:
+	"""Handle job change"""
 	pass  # UI will refresh when menu closes
 
 

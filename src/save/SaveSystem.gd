@@ -321,6 +321,7 @@ func _get_party_summary() -> Array:
 					"level": member.level if "level" in member else 1,
 					"job": member.job.get("name", "Fighter") if member.job else "Fighter",
 					"job_id": member.job.get("id", "fighter") if member.job else "fighter",
+					"secondary_job_id": member.secondary_job_id if member.secondary_job_id else "",
 					"hp": member.current_hp,
 					"max_hp": member.max_hp,
 					"customization": member.customization.to_dict() if member.customization and member.customization.has_method("to_dict") else null
@@ -426,7 +427,12 @@ func _read_save_file(slot: int) -> Dictionary:
 
 	var json = JSON.new()
 	if json.parse(json_string) != OK:
-		print("Error: Failed to parse save file JSON")
+		print("Error: Failed to parse save file JSON: %s" % json.get_error_message())
+		return {}
+
+	# Validate that parsed data is a Dictionary
+	if not json.data is Dictionary:
+		print("Error: Save file data is not a valid dictionary")
 		return {}
 
 	return json.data

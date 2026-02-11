@@ -4,6 +4,7 @@ extends Node
 ## Jobs define what abilities a combatant can use and their stat modifiers
 
 signal job_changed(combatant: Combatant, old_job: Dictionary, new_job: Dictionary)
+signal secondary_job_changed(combatant: Combatant, job_id: String)
 
 ## Loaded job data
 var jobs: Dictionary = {}
@@ -40,8 +41,12 @@ func _load_job_data() -> void:
 		var parse_result = json.parse(json_string)
 
 		if parse_result == OK:
-			jobs = json.data
-			print("Loaded %d jobs" % jobs.size())
+			if json.data is Dictionary:
+				jobs = json.data
+				print("Loaded %d jobs" % jobs.size())
+			else:
+				print("Error: jobs.json data is not a valid dictionary")
+				_create_default_jobs()
 		else:
 			print("Error parsing jobs.json: ", json.get_error_message())
 			_create_default_jobs()
@@ -67,8 +72,12 @@ func _load_ability_data() -> void:
 		var parse_result = json.parse(json_string)
 
 		if parse_result == OK:
-			abilities = json.data
-			print("Loaded %d abilities" % abilities.size())
+			if json.data is Dictionary:
+				abilities = json.data
+				print("Loaded %d abilities" % abilities.size())
+			else:
+				print("Error: abilities.json data is not a valid dictionary")
+				_create_default_abilities()
 		else:
 			print("Error parsing abilities.json: ", json.get_error_message())
 			_create_default_abilities()
@@ -268,6 +277,17 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 	_apply_job_stats(combatant, job)
 
 	job_changed.emit(combatant, old_job, job)
+	return true
+
+
+func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
+	"""Assign a secondary job to a combatant (visual accents + minor stat boost)."""
+	if not jobs.has(job_id):
+		push_warning("Secondary job '%s' not found" % job_id)
+		return false
+	combatant.secondary_job = jobs[job_id]
+	combatant.secondary_job_id = job_id
+	secondary_job_changed.emit(combatant, job_id)
 	return true
 
 

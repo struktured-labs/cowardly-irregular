@@ -42,6 +42,10 @@ var job = null
 var job_level: int = 1
 var job_exp: int = 0
 
+## Secondary job (accents primary job visuals and provides minor stat bonuses)
+var secondary_job = null
+var secondary_job_id: String = ""
+
 ## Character customization (appearance data)
 var customization = null  # CharacterCustomization reference
 
@@ -203,9 +207,9 @@ func revive(hp_amount: int = 0) -> void:
 	"""Revive with specified HP (or 50% max if not specified)"""
 	is_alive = true
 	if hp_amount > 0:
-		current_hp = min(hp_amount, max_hp)
+		current_hp = min(hp_amount, max(1, max_hp))
 	else:
-		current_hp = max_hp / 2
+		current_hp = max(1, max_hp / 2)  # Ensure minimum 1 HP
 	hp_changed.emit(0, current_hp)
 
 
@@ -367,10 +371,14 @@ func reset_for_new_round() -> void:
 
 ## Utility
 func get_hp_percentage() -> float:
+	if max_hp <= 0:
+		return 0.0
 	return float(current_hp) / float(max_hp) * 100.0
 
 
 func get_mp_percentage() -> float:
+	if max_mp <= 0:
+		return 0.0
 	return float(current_mp) / float(max_mp) * 100.0
 
 

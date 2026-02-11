@@ -12,6 +12,7 @@ const AutobattleToggleUIClass = preload("res://src/ui/autobattle/AutobattleToggl
 const BattleDialogueClass = preload("res://src/ui/BattleDialogue.gd")
 const BattleBackgroundClass = preload("res://src/battle/BattleBackground.gd")
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
+const SnesPartySprites = preload("res://src/battle/sprites/SnesPartySprites.gd")
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -78,6 +79,7 @@ var player_animator: BattleAnimatorClass:
 ## Target selection state
 var pending_action: Dictionary = {}
 var is_selecting_target: bool = false
+var _current_popup: PopupMenu = null  # Store popup reference for cleanup
 
 ## External party flag
 var _has_external_party: bool = false
@@ -205,6 +207,44 @@ func _ready() -> void:
 
 	# Start a test battle
 	_start_test_battle()
+
+
+func _exit_tree() -> void:
+	"""Cleanup signal connections when scene is freed"""
+	# Disconnect from BattleManager signals to prevent memory leaks
+	if BattleManager.battle_started.is_connected(_on_battle_started):
+		BattleManager.battle_started.disconnect(_on_battle_started)
+	if BattleManager.battle_ended.is_connected(_on_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_battle_ended)
+	if BattleManager.selection_phase_started.is_connected(_on_selection_phase_started):
+		BattleManager.selection_phase_started.disconnect(_on_selection_phase_started)
+	if BattleManager.selection_turn_started.is_connected(_on_selection_turn_started):
+		BattleManager.selection_turn_started.disconnect(_on_selection_turn_started)
+	if BattleManager.selection_turn_ended.is_connected(_on_selection_turn_ended):
+		BattleManager.selection_turn_ended.disconnect(_on_selection_turn_ended)
+	if BattleManager.execution_phase_started.is_connected(_on_execution_phase_started):
+		BattleManager.execution_phase_started.disconnect(_on_execution_phase_started)
+	if BattleManager.action_executing.is_connected(_on_action_executing):
+		BattleManager.action_executing.disconnect(_on_action_executing)
+	if BattleManager.action_executed.is_connected(_on_action_executed):
+		BattleManager.action_executed.disconnect(_on_action_executed)
+	if BattleManager.round_ended.is_connected(_on_round_ended):
+		BattleManager.round_ended.disconnect(_on_round_ended)
+	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
+		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
+	if BattleManager.healing_done.is_connected(_on_healing_done):
+		BattleManager.healing_done.disconnect(_on_healing_done)
+	if BattleManager.battle_log_message.is_connected(_on_battle_log_message):
+		BattleManager.battle_log_message.disconnect(_on_battle_log_message)
+	if BattleManager.monster_summoned.is_connected(_on_monster_summoned):
+		BattleManager.monster_summoned.disconnect(_on_monster_summoned)
+	if BattleManager.one_shot_achieved.is_connected(_on_one_shot_achieved):
+		BattleManager.one_shot_achieved.disconnect(_on_one_shot_achieved)
+	if BattleManager.autobattle_victory.is_connected(_on_autobattle_victory):
+		BattleManager.autobattle_victory.disconnect(_on_autobattle_victory)
+
+	# Cleanup popup menu if open
+	_cleanup_popup()
 
 
 func _create_autobattle_toggle() -> void:
@@ -912,26 +952,17 @@ func _create_battle_sprites() -> void:
 		var member = party_members[i]
 		var sprite = AnimatedSprite2D.new()
 
-		# Choose sprite based on job and set scale
-		# Fighter (hero) is already large, others get scaled up
+		# Choose sprite based on job - SNES-style 32x48 sprites for all jobs
 		var job_id = member.job.get("id", "fighter") if member.job else "fighter"
+		var sec_job_id = member.secondary_job_id if member.secondary_job_id else ""
 		var weapon_id = member.equipped_weapon if member.equipped_weapon else ""
-		var sprite_scale = Vector2(1.0, 1.0)  # Default scale
-		match job_id:
-			"white_mage":
-				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.9, 0.9, 1.0), weapon_id)
-				sprite_scale = Vector2(1.4, 1.4)  # Mira bigger
-			"black_mage":
-				sprite.sprite_frames = BattleAnimatorClass.create_mage_sprite_frames(Color(0.15, 0.1, 0.25), weapon_id)
-				sprite_scale = Vector2(1.3, 1.3)  # Vex bigger
-			"thief":
-				sprite.sprite_frames = BattleAnimatorClass.create_thief_sprite_frames(weapon_id)
-				sprite_scale = Vector2(1.35, 1.35)  # Zack bigger
-			_:
-				sprite.sprite_frames = BattleAnimatorClass.create_hero_sprite_frames(weapon_id)
-				sprite_scale = Vector2(1.0, 1.0)  # Hero already large
-
-		sprite.scale = sprite_scale
+		var armor_id = member.equipped_armor if member.equipped_armor else ""
+		var accessory_id = member.equipped_accessory if member.equipped_accessory else ""
+		var custom = member.get("customization") if "customization" in member else null
+		sprite.sprite_frames = SnesPartySprites.create_sprite_frames(
+			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
+		sprite.scale = Vector2(3.0, 3.0)
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.position = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
 		sprite.flip_h = true  # Flip to face left
 		sprite.play("idle")
@@ -1665,23 +1696,37 @@ func _show_target_selection(targets: Array[Combatant]) -> void:
 	"""Show popup menu for target selection"""
 	is_selecting_target = true
 
-	var popup = PopupMenu.new()
-	popup.name = "TargetMenu"
-	add_child(popup)
+	# Clean up any existing popup
+	_cleanup_popup()
+
+	_current_popup = PopupMenu.new()
+	_current_popup.name = "TargetMenu"
+	add_child(_current_popup)
 
 	for i in range(targets.size()):
 		var target = targets[i]
 		var label = "%s (HP: %d/%d)" % [target.combatant_name, target.current_hp, target.max_hp]
-		popup.add_item(label, i)
+		_current_popup.add_item(label, i)
 
-	popup.id_pressed.connect(_on_target_selected.bind(targets))
-	popup.close_requested.connect(func(): is_selecting_target = false)
-	popup.popup_centered()
+	_current_popup.id_pressed.connect(_on_target_selected.bind(targets))
+	_current_popup.close_requested.connect(func():
+		is_selecting_target = false
+		_cleanup_popup()
+	)
+	_current_popup.popup_centered()
+
+
+func _cleanup_popup() -> void:
+	"""Free the current popup menu if it exists"""
+	if _current_popup and is_instance_valid(_current_popup):
+		_current_popup.queue_free()
+		_current_popup = null
 
 
 func _on_target_selected(idx: int, targets: Array[Combatant]) -> void:
 	"""Handle target selection"""
 	is_selecting_target = false
+	_cleanup_popup()
 
 	if idx < 0 or idx >= targets.size():
 		return
@@ -1784,7 +1829,9 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 			else:
 				log_message("No valid targets!")
 		"single_ally", "all_allies", "self":
-			_execute_ability(ability_id, current if current else party_members[0])
+			var ally_target = current if current else (party_members[0] if party_members.size() > 0 else null)
+			if ally_target:
+				_execute_ability(ability_id, ally_target)
 
 
 func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false) -> void:
@@ -1945,7 +1992,9 @@ func _on_item_selected(idx: int, item_ids: Array) -> void:
 					log_message("No fallen allies to revive!")
 					return
 			else:
-				targets = [current if current else party_members[0]]
+				var item_target = current if current else (party_members[0] if party_members.size() > 0 else null)
+				if item_target:
+					targets = [item_target]
 
 	if targets.size() > 0:
 		BattleManager.player_item(item_id, targets)
@@ -2086,7 +2135,9 @@ func _flash_sprite(sprite: Sprite2D, flash_color: Color) -> void:
 
 	# Reset after delay
 	await get_tree().create_timer(0.2).timeout
-	if sprite:
+	if not is_instance_valid(self):
+		return
+	if is_instance_valid(sprite):
 		sprite.modulate = original_modulate
 
 
@@ -2464,11 +2515,15 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 
 	# Play attack animation and hit on target
 	tween.tween_callback(func():
-		if attacker_anim:
+		if not is_instance_valid(self):
+			return
+		if attacker_anim and is_instance_valid(attacker_anim):
 			attacker_anim.play_attack()
 		# Brief delay then play hit
 		get_tree().create_timer(0.1).timeout.connect(func():
-			if target_anim and is_instance_valid(target_sprite):
+			if not is_instance_valid(self):
+				return
+			if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
 				target_anim.play_hit()
 				# Spawn physical hit effect
 				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
@@ -3159,7 +3214,9 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 					else:
 						log_message("No valid targets!")
 				"single_ally", "all_allies", "self":
-					_execute_ability(ability_id, current if current else party_members[0])
+					var ab_target = current if current else (party_members[0] if party_members.size() > 0 else null)
+					if ab_target:
+						_execute_ability(ability_id, ab_target)
 				_:
 					# Fallback for single_enemy if somehow no target submenu
 					if alive_enemies.size() > 0:
@@ -3201,7 +3258,9 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			ItemSystem.TargetType.ALL_ENEMIES:
 				targets = alive_enemies
 			ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.ALL_ALLIES, ItemSystem.TargetType.SELF:
-				targets = [current if current else party_members[0]]
+				var it_target = current if current else (party_members[0] if party_members.size() > 0 else null)
+				if it_target:
+					targets = [it_target]
 
 		if targets.size() > 0:
 			BattleManager.player_item(i_id, targets)
@@ -3828,7 +3887,10 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.15)
 	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
 	# Guarantee final scale in case tween is interrupted
-	tween.finished.connect(func(): sprite.scale = Vector2(1.0, 1.0))
+	tween.finished.connect(func():
+		if is_instance_valid(sprite):
+			sprite.scale = Vector2(1.0, 1.0)
+	)
 
 	# Flash effect at spawn position
 	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, sprite.global_position)
