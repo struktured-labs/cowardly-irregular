@@ -302,6 +302,8 @@ func _update_display() -> void:
 
 	# Update options
 	for i in range(_options_container.get_child_count()):
+		if i >= OPTIONS.size():
+			break  # Bounds check to prevent array out of bounds
 		var row = _options_container.get_child(i)
 		var option = OPTIONS[i]
 		var value_label = row.get_node("Value")
@@ -528,19 +530,20 @@ func _input(event: InputEvent) -> void:
 		_handle_name_input(event)
 		return
 
-	# Navigation
-	if event.is_action_pressed("ui_up"):
+	# Navigation - check echo to prevent rapid-fire when holding keys
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		current_option_index = (current_option_index - 1) if current_option_index > 0 else OPTIONS.size() - 1
 		SoundManager.play_ui("menu_move")
 		_update_display()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		current_option_index = (current_option_index + 1) % OPTIONS.size()
 		SoundManager.play_ui("menu_move")
 		_update_display()
 		get_viewport().set_input_as_handled()
 
+	# Allow echo on left/right for faster option cycling
 	elif event.is_action_pressed("ui_left"):
 		_change_option(-1)
 		get_viewport().set_input_as_handled()
@@ -549,22 +552,22 @@ func _input(event: InputEvent) -> void:
 		_change_option(1)
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		if OPTIONS[current_option_index] == "name":
 			_start_name_editing()
 		else:
 			_next_character()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_previous_character()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_menu"):  # Start button
+	elif event.is_action_pressed("ui_menu") and not event.is_echo():  # Start button
 		_confirm_creation()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB:
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_TAB:
 		_skip_creation()
 		get_viewport().set_input_as_handled()
 
@@ -580,71 +583,81 @@ func _change_option(direction: int) -> void:
 
 		"eye_shape":
 			var shapes = CustomizationScript.EyeShape.values()
-			var idx = shapes.find(current.eye_shape)
-			idx = (idx + direction) % shapes.size()
-			if idx < 0: idx = shapes.size() - 1
-			current.eye_shape = shapes[idx]
+			if shapes.size() > 0:
+				var idx = max(0, shapes.find(current.eye_shape))
+				idx = (idx + direction) % shapes.size()
+				if idx < 0: idx = shapes.size() - 1
+				current.eye_shape = shapes[idx]
 
 		"eyebrow_style":
 			var styles = CustomizationScript.EyebrowStyle.values()
-			var idx = styles.find(current.eyebrow_style)
-			idx = (idx + direction) % styles.size()
-			if idx < 0: idx = styles.size() - 1
-			current.eyebrow_style = styles[idx]
+			if styles.size() > 0:
+				var idx = max(0, styles.find(current.eyebrow_style))
+				idx = (idx + direction) % styles.size()
+				if idx < 0: idx = styles.size() - 1
+				current.eyebrow_style = styles[idx]
 
 		"nose_shape":
 			var shapes = CustomizationScript.NoseShape.values()
-			var idx = shapes.find(current.nose_shape)
-			idx = (idx + direction) % shapes.size()
-			if idx < 0: idx = shapes.size() - 1
-			current.nose_shape = shapes[idx]
+			if shapes.size() > 0:
+				var idx = max(0, shapes.find(current.nose_shape))
+				idx = (idx + direction) % shapes.size()
+				if idx < 0: idx = shapes.size() - 1
+				current.nose_shape = shapes[idx]
 
 		"mouth_style":
 			var styles = CustomizationScript.MouthStyle.values()
-			var idx = styles.find(current.mouth_style)
-			idx = (idx + direction) % styles.size()
-			if idx < 0: idx = styles.size() - 1
-			current.mouth_style = styles[idx]
+			if styles.size() > 0:
+				var idx = max(0, styles.find(current.mouth_style))
+				idx = (idx + direction) % styles.size()
+				if idx < 0: idx = styles.size() - 1
+				current.mouth_style = styles[idx]
 
 		"hair_style":
 			var styles = CustomizationScript.HairStyle.values()
-			var idx = styles.find(current.hair_style)
-			idx = (idx + direction) % styles.size()
-			if idx < 0: idx = styles.size() - 1
-			current.hair_style = styles[idx]
+			if styles.size() > 0:
+				var idx = max(0, styles.find(current.hair_style))
+				idx = (idx + direction) % styles.size()
+				if idx < 0: idx = styles.size() - 1
+				current.hair_style = styles[idx]
 
 		"hair_color":
 			var colors = CustomizationScript.HAIR_COLORS
-			var idx = _find_color_index(current.hair_color, colors)
-			idx = (idx + direction) % colors.size()
-			if idx < 0: idx = colors.size() - 1
-			current.hair_color = colors[idx]
+			if colors.size() > 0:
+				var idx = _find_color_index(current.hair_color, colors)
+				idx = (idx + direction) % colors.size()
+				if idx < 0: idx = colors.size() - 1
+				current.hair_color = colors[idx]
 
 		"skin_tone":
 			var tones = CustomizationScript.SKIN_TONES
-			var idx = _find_color_index(current.skin_tone, tones)
-			idx = (idx + direction) % tones.size()
-			if idx < 0: idx = tones.size() - 1
-			current.skin_tone = tones[idx]
+			if tones.size() > 0:
+				var idx = _find_color_index(current.skin_tone, tones)
+				idx = (idx + direction) % tones.size()
+				if idx < 0: idx = tones.size() - 1
+				current.skin_tone = tones[idx]
 
 		"personality":
 			var types = CustomizationScript.Personality.values()
-			var idx = types.find(current.personality)
-			idx = (idx + direction) % types.size()
-			if idx < 0: idx = types.size() - 1
-			current.personality = types[idx]
+			if types.size() > 0:
+				var idx = max(0, types.find(current.personality))
+				idx = (idx + direction) % types.size()
+				if idx < 0: idx = types.size() - 1
+				current.personality = types[idx]
 
 		"starting_job_1":
-			var idx = AVAILABLE_JOBS.find(current.starting_jobs[0])
-			idx = (idx + direction) % AVAILABLE_JOBS.size()
-			if idx < 0: idx = AVAILABLE_JOBS.size() - 1
-			current.starting_jobs[0] = AVAILABLE_JOBS[idx]
+			if AVAILABLE_JOBS.size() > 0:
+				var idx = max(0, AVAILABLE_JOBS.find(current.starting_jobs[0]))
+				idx = (idx + direction) % AVAILABLE_JOBS.size()
+				if idx < 0: idx = AVAILABLE_JOBS.size() - 1
+				current.starting_jobs[0] = AVAILABLE_JOBS[idx]
 
 		"starting_job_2":
-			var idx = AVAILABLE_JOBS.find(current.starting_jobs[1])
-			idx = (idx + direction) % AVAILABLE_JOBS.size()
-			if idx < 0: idx = AVAILABLE_JOBS.size() - 1
-			current.starting_jobs[1] = AVAILABLE_JOBS[idx]
+			if AVAILABLE_JOBS.size() > 0:
+				var idx = max(0, AVAILABLE_JOBS.find(current.starting_jobs[1]))
+				idx = (idx + direction) % AVAILABLE_JOBS.size()
+				if idx < 0: idx = AVAILABLE_JOBS.size() - 1
+				current.starting_jobs[1] = AVAILABLE_JOBS[idx]
 
 	SoundManager.play_ui("menu_select")
 	_update_display()

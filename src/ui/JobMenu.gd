@@ -24,7 +24,8 @@ const SLOTS = ["Primary Job", "Secondary Job"]
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR = Color(0.1, 0.1, 0.15)
-const BORDER_COLOR = Color(0.4, 0.4, 0.5)
+const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
+const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
@@ -398,9 +399,11 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 
 
 func _get_available_jobs() -> Array:
-	"""Get all available job IDs, excluding the other slot's current job"""
-	var jobs = []
+	"""Get all available job IDs, excluding the other slot's current job.
+	Advanced (type 1) and Meta (type 2) jobs require debug mode."""
+	var jobs_list = []
 	var exclude_id = ""
+	var debug_mode = GameState.debug_log_enabled if GameState else false
 
 	# Don't allow same job in both slots
 	if selected_slot == 0 and character.secondary_job_id != "":
@@ -408,17 +411,29 @@ func _get_available_jobs() -> Array:
 	elif selected_slot == 1 and character.job:
 		exclude_id = character.job.get("id", "")
 
-	for job_id in JobSystem.jobs:
-		if job_id != exclude_id:
-			jobs.append(job_id)
+	# For secondary slot, add "(None)" option to allow unequipping
+	if selected_slot == 1:
+		jobs_list.append("__none__")
 
-	return jobs
+	for job_id in JobSystem.jobs:
+		if job_id == exclude_id:
+			continue
+		var job_data = JobSystem.get_job(job_id)
+		var job_type = job_data.get("type", 0)
+		# Starter jobs (type 0) always available
+		# Advanced (1) and Meta (2) require debug mode or unlock
+		if job_type > 0 and not debug_mode:
+			continue
+		jobs_list.append(job_id)
+
+	return jobs_list
 
 
 func _create_job_row(job_id: String, index: int) -> Control:
 	"""Create a job selection row"""
 	var row = Control.new()
-	var job_data = JobSystem.get_job(job_id)
+	var is_none = job_id == "__none__"
+	var job_data = {} if is_none else JobSystem.get_job(job_id)
 
 	# Highlight
 	var is_selected = index == selected_job_index
@@ -437,13 +452,39 @@ func _create_job_row(job_id: String, index: int) -> Control:
 	cursor.name = "Cursor"
 	row.add_child(cursor)
 
-	# Job name
+	# Handle "(None)" entry for secondary slot
+	if is_none:
+		var none_label = Label.new()
+		none_label.text = "(None)"
+		none_label.position = Vector2(24, 4)
+		none_label.add_theme_font_size_override("font_size", 12)
+		none_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		row.add_child(none_label)
+		var none_desc = Label.new()
+		none_desc.text = "Remove secondary job"
+		none_desc.position = Vector2(24, 22)
+		none_desc.add_theme_font_size_override("font_size", 9)
+		none_desc.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+		row.add_child(none_desc)
+		return row
+
+	# Job name with type tag
+	var job_type = job_data.get("type", 0)
+	var type_tag = ""
+	var tag_color = PRIMARY_COLOR if selected_slot == 0 else SECONDARY_COLOR
+	match job_type:
+		1:
+			type_tag = " [ADV]"
+			tag_color = Color(0.4, 0.9, 0.4)  # Green for advanced
+		2:
+			type_tag = " [META]"
+			tag_color = Color(0.9, 0.4, 0.9)  # Purple for meta
+
 	var name_label = Label.new()
-	name_label.text = job_data.get("name", job_id)
+	name_label.text = job_data.get("name", job_id) + type_tag
 	name_label.position = Vector2(24, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
-	var slot_color = PRIMARY_COLOR if selected_slot == 0 else SECONDARY_COLOR
-	name_label.add_theme_color_override("font_color", slot_color)
+	name_label.add_theme_color_override("font_color", tag_color)
 	row.add_child(name_label)
 
 	# Stat changes preview
@@ -510,18 +551,8 @@ func _get_stat_comparison(new_job: Dictionary) -> String:
 
 
 func _create_border(parent: Control, panel_size: Vector2) -> void:
-	"""Add decorative border"""
-	var border_top = ColorRect.new()
-	border_top.color = BORDER_COLOR
-	border_top.position = Vector2(0, 0)
-	border_top.size = Vector2(panel_size.x, 2)
-	parent.add_child(border_top)
-
-	var border_left = ColorRect.new()
-	border_left.color = BORDER_COLOR
-	border_left.position = Vector2(0, 0)
-	border_left.size = Vector2(2, panel_size.y)
-	parent.add_child(border_left)
+	"""Add beveled retro border"""
+	RetroPanel.add_border(parent, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _input(event: InputEvent) -> void:
@@ -603,12 +634,36 @@ func _assign_selected_job() -> void:
 	var job_id = jobs[selected_job_index]
 	var success = false
 
+	# Save current profile before any job change
+	var old_key = character.get_profile_key()
+	character.save_current_profile()
+
+	# Handle removing secondary job
+	if job_id == "__none__":
+		character.secondary_job = null
+		character.secondary_job_id = ""
+		var new_key = character.get_profile_key()
+		if character.job_profiles.has(new_key):
+			character.load_profile(new_key)
+		else:
+			character.fork_profile(old_key, new_key)
+		job_changed.emit(character, "", true)
+		SoundManager.play_ui("menu_select")
+		mode = Mode.SLOT_SELECT
+		_build_ui()
+		return
+
 	if selected_slot == 0:
 		success = JobSystem.assign_job(character, job_id)
 	else:
 		success = JobSystem.assign_secondary_job(character, job_id)
 
 	if success:
+		var new_key = character.get_profile_key()
+		if character.job_profiles.has(new_key):
+			character.load_profile(new_key)
+		else:
+			character.fork_profile(old_key, new_key)
 		job_changed.emit(character, job_id, selected_slot == 1)
 		SoundManager.play_ui("menu_select")
 		mode = Mode.SLOT_SELECT

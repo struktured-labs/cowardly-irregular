@@ -331,16 +331,16 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Navigation
-	if event.is_action_pressed("ui_up"):
+	# Navigation - check echo to prevent rapid-fire when holding keys
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		_move_selection(-1)
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		_move_selection(1)
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_select_item()
 		get_viewport().set_input_as_handled()
 

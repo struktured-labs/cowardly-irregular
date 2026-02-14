@@ -62,6 +62,10 @@ var equipped_weapon: String = ""  # Weapon ID
 var equipped_armor: String = ""   # Armor ID
 var equipped_accessory: String = ""  # Accessory ID
 
+## Job profiles - saves equipment, passives, and autobattle per job combo
+## Key format: "primary_job_id:secondary_job_id" (e.g. "fighter:", "fighter:thief")
+var job_profiles: Dictionary = {}
+
 ## Inventory system
 var inventory: Dictionary = {}  # {item_id: quantity}
 
@@ -398,7 +402,8 @@ func to_dict() -> Dictionary:
 		"status_effects": status_effects.duplicate(),
 		"permanent_injuries": permanent_injuries.duplicate(),
 		"is_alive": is_alive,
-		"learned_abilities": learned_abilities.duplicate()
+		"learned_abilities": learned_abilities.duplicate(),
+		"job_profiles": job_profiles.duplicate(true)
 	}
 
 
@@ -434,6 +439,8 @@ func from_dict(data: Dictionary) -> void:
 		learned_abilities.clear()
 		for ability_id in data["learned_abilities"]:
 			learned_abilities.append(ability_id)
+	if data.has("job_profiles"):
+		job_profiles = data["job_profiles"].duplicate(true)
 
 
 func learn_ability(ability_id: String) -> void:
@@ -446,6 +453,57 @@ func learn_ability(ability_id: String) -> void:
 func has_learned_ability(ability_id: String) -> bool:
 	"""Check if this combatant has learned a specific ability"""
 	return ability_id in learned_abilities
+
+
+## Job profile management
+func get_profile_key() -> String:
+	"""Get current job profile key as 'primary_id:secondary_id'"""
+	var primary_id = job.get("id", "fighter") if job else "fighter"
+	return "%s:%s" % [primary_id, secondary_job_id]
+
+
+func save_current_profile() -> void:
+	"""Save current equipment, passives, and autobattle to job profile"""
+	var key = get_profile_key()
+	var profile = {
+		"weapon": equipped_weapon,
+		"armor": equipped_armor,
+		"accessory": equipped_accessory,
+		"passives": equipped_passives.duplicate(),
+	}
+	var abs = get_node_or_null("/root/AutobattleSystem")
+	if abs:
+		var char_id = combatant_name.to_lower().replace(" ", "_")
+		profile["autobattle"] = abs.get_character_script(char_id).duplicate(true)
+	job_profiles[key] = profile
+
+
+func load_profile(key: String) -> void:
+	"""Load a saved job profile, equipping items and passives"""
+	if not job_profiles.has(key):
+		return
+	var profile = job_profiles[key]
+
+	equipped_weapon = profile.get("weapon", "")
+	equipped_armor = profile.get("armor", "")
+	equipped_accessory = profile.get("accessory", "")
+
+	equipped_passives.clear()
+	for passive_id in profile.get("passives", []):
+		equipped_passives.append(passive_id)
+
+	var abs = get_node_or_null("/root/AutobattleSystem")
+	if abs and profile.has("autobattle"):
+		var char_id = combatant_name.to_lower().replace(" ", "_")
+		abs.set_character_script(char_id, profile["autobattle"].duplicate(true))
+
+	recalculate_stats()
+
+
+func fork_profile(from_key: String, to_key: String) -> void:
+	"""Copy a profile from one key to another (first time with a new combo)"""
+	if job_profiles.has(from_key):
+		job_profiles[to_key] = job_profiles[from_key].duplicate(true)
 
 
 ## Stat recalculation with modifiers

@@ -338,10 +338,10 @@ static func _draw_body(img: Image, ctx: Dictionary, cx: int, by: int, lean: int,
 				var color = skin[2]  # base
 				if y < -head_ry * 0.3:
 					color = skin[3]  # highlight (forehead)
-				elif y > head_ry * 0.4:
-					color = skin[1]  # dark (chin)
-				elif x > head_rx * 0.5:
-					color = skin[1]  # dark (side shadow)
+				elif y > head_ry * 0.7:
+					color = skin[1]  # dark (chin) - reduced area to avoid five o'clock shadow
+				elif x > head_rx * 0.65:
+					color = skin[1]  # dark (side shadow) - reduced area
 				_SU._pixel(img, head_cx + x, head_cy + y, color)
 
 	# Neck (2px wide, 2px tall)
@@ -1132,61 +1132,93 @@ static func _draw_snes_sword(img: Image, cx: int, cy: int, angle: int, vis: Dict
 
 static func _draw_snes_staff(img: Image, cx: int, cy: int, angle: int, vis: Dictionary) -> void:
 	var wood = vis.get("wood", Color(0.5, 0.3, 0.2))
+	var wood_dark = Color(wood.r * 0.7, wood.g * 0.7, wood.b * 0.7)
 	var gem = vis.get("gem", Color(0.3, 0.8, 1.0))
+	var gem_dark = Color(gem.r * 0.6, gem.g * 0.6, gem.b * 0.6)
 	var angle_rad = deg_to_rad(angle)
 	var length = 12
+	var perp_x = int(sin(angle_rad))
+	var perp_y = -int(cos(angle_rad))
 
-	# Shaft
+	# Shaft (2px wide)
 	for i in range(length):
 		var px = cx + int(cos(angle_rad) * i)
 		var py = cy + int(sin(angle_rad) * i)
 		_SU._pixel(img, px, py, wood)
+		_SU._pixel(img, px + perp_x, py + perp_y, wood_dark)
 
-	# Gem at top (2x2)
+	# Ring/band near gem
+	var ring_pos = length - 3
+	var rx = cx + int(cos(angle_rad) * ring_pos)
+	var ry = cy + int(sin(angle_rad) * ring_pos)
+	for g in range(-1, 2):
+		_SU._pixel(img, rx + int(sin(angle_rad) * g), ry - int(cos(angle_rad) * g), Color(0.7, 0.6, 0.2))
+
+	# Orb at top (3x3 circle)
 	var gx = cx + int(cos(angle_rad) * (length - 1))
 	var gy = cy + int(sin(angle_rad) * (length - 1))
-	_SU._pixel(img, gx, gy, gem)
-	_SU._pixel(img, gx + 1, gy, gem)
-	_SU._pixel(img, gx, gy - 1, gem)
-	# Shine
-	_SU._pixel(img, gx, gy - 1, Color(1.0, 1.0, 1.0))
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			if abs(dx) + abs(dy) <= 2:  # diamond/circle shape
+				var orb_color = gem if dy <= 0 else gem_dark
+				_SU._pixel(img, gx + dx, gy + dy, orb_color)
+	# Shine pixel
+	_SU._pixel(img, gx - 1, gy - 1, Color(1.0, 1.0, 1.0))
 
 
 static func _draw_snes_dagger(img: Image, cx: int, cy: int, angle: int, vis: Dictionary) -> void:
 	var blade = vis.get("blade", Color(0.8, 0.8, 0.9))
 	var blade_light = vis.get("blade_light", Color(1.0, 1.0, 1.0))
+	var handle_color = Color(0.35, 0.25, 0.15)
 	var angle_rad = deg_to_rad(angle)
-	var length = 6
+	var length = 7
+	var perp_x = int(sin(angle_rad))
+	var perp_y = -int(cos(angle_rad))
 
+	# Handle wrap (2px before crossguard, darker)
+	for i in range(-2, 0):
+		var px = cx + int(cos(angle_rad) * i)
+		var py = cy + int(sin(angle_rad) * i)
+		_SU._pixel(img, px, py, handle_color)
+
+	# Blade (2px wide for first 4px, then taper to 1px)
 	for i in range(length):
 		var px = cx + int(cos(angle_rad) * i)
 		var py = cy + int(sin(angle_rad) * i)
-		_SU._pixel(img, px, py, blade_light if i < 2 else blade)
+		var color = blade_light if i < 2 else blade
+		_SU._pixel(img, px, py, color)
+		if i < 4:
+			_SU._pixel(img, px + perp_x, py + perp_y, blade)
 
-	# Crossguard
-	var gx = cx + int(cos(angle_rad) * 1)
-	var gy = cy + int(sin(angle_rad) * 1)
-	_SU._pixel(img, gx + int(sin(angle_rad)), gy - int(cos(angle_rad)), Color(0.4, 0.3, 0.2))
-	_SU._pixel(img, gx - int(sin(angle_rad)), gy + int(cos(angle_rad)), Color(0.4, 0.3, 0.2))
+	# Crossguard (wider)
+	var gx = cx + int(cos(angle_rad) * 0)
+	var gy = cy + int(sin(angle_rad) * 0)
+	for g in range(-2, 3):
+		_SU._pixel(img, gx + int(sin(angle_rad) * g), gy - int(cos(angle_rad) * g), Color(0.5, 0.4, 0.25))
 
 
 static func _draw_snes_axe(img: Image, cx: int, cy: int, angle: int, vis: Dictionary) -> void:
 	var metal = vis.get("metal", Color(0.6, 0.6, 0.7))
 	var metal_light = vis.get("metal_light", Color(0.85, 0.85, 0.95))
 	var angle_rad = deg_to_rad(angle)
+	var wood = Color(0.45, 0.28, 0.18)
+	var wood_dark = Color(0.35, 0.2, 0.12)
+	var perp_x = int(sin(angle_rad))
+	var perp_y = -int(cos(angle_rad))
 
-	# Shaft
+	# Shaft (2px wide)
 	for i in range(8):
 		var px = cx + int(cos(angle_rad) * i)
 		var py = cy + int(sin(angle_rad) * i)
-		_SU._pixel(img, px, py, Color(0.45, 0.28, 0.18))
+		_SU._pixel(img, px, py, wood)
+		_SU._pixel(img, px + perp_x, py + perp_y, wood_dark)
 
-	# Axe head (triangle at end)
+	# Axe head (larger triangle at end)
 	var hx = cx + int(cos(angle_rad) * 7)
 	var hy = cy + int(sin(angle_rad) * 7)
-	for dy in range(-3, 4):
-		var w = 3 - abs(dy)
+	for dy in range(-4, 5):
+		var w = 4 - abs(dy)
 		for dx in range(0, w + 1):
-			var perp_x = int(sin(angle_rad) * dy) + int(cos(angle_rad) * dx)
-			var perp_y = int(-cos(angle_rad) * dy) + int(sin(angle_rad) * dx)
-			_SU._pixel(img, hx + perp_x, hy + perp_y, metal_light if dy < 0 else metal)
+			var px = int(sin(angle_rad) * dy) + int(cos(angle_rad) * dx)
+			var py = int(-cos(angle_rad) * dy) + int(sin(angle_rad) * dx)
+			_SU._pixel(img, hx + px, hy + py, metal_light if dy < 0 else metal)

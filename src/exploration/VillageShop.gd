@@ -22,6 +22,7 @@ var dialogue_label: Label
 var _player_nearby: bool = false
 var _is_showing_menu: bool = false
 var _dialogue_state: int = 0
+var _shop_layer: CanvasLayer = null  # CanvasLayer to render shop above camera
 
 const TILE_SIZE: int = 32
 
@@ -414,8 +415,12 @@ func _show_shop_menu(player: Node2D) -> void:
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
 
-	# Add shop to scene
-	get_tree().root.add_child(shop_scene)
+	# Add shop in CanvasLayer to render above camera (like all other overlays)
+	_shop_layer = CanvasLayer.new()
+	_shop_layer.layer = 50  # Same layer as overworld menu
+	get_tree().root.add_child(_shop_layer)
+	shop_scene.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_shop_layer.add_child(shop_scene)
 	shop_scene.shop_closed.connect(_on_shop_closed.bind(player))
 
 	if SoundManager:
@@ -426,8 +431,13 @@ func _on_shop_closed(player: Node) -> void:
 	"""Handle shop closing"""
 	_is_showing_menu = false
 
-	# Re-enable player movement
-	if player and player.has_method("set_can_move"):
+	# Clean up CanvasLayer
+	if _shop_layer and is_instance_valid(_shop_layer):
+		_shop_layer.queue_free()
+		_shop_layer = null
+
+	# Re-enable player movement (with validity check)
+	if is_instance_valid(player) and player.has_method("set_can_move"):
 		player.set_can_move(true)
 
 	if SoundManager:

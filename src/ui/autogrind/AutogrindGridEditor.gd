@@ -884,40 +884,40 @@ func _input(event: InputEvent) -> void:
 	if is_editing:
 		return
 
-	# D-Pad navigation
-	if event.is_action_pressed("ui_up"):
+	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		cursor_row = max(0, cursor_row - 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		cursor_row = min(rules.size() - 1, cursor_row + 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left"):
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		cursor_col = max(0, cursor_col - 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") and not event.is_echo():
 		cursor_col = min(_get_max_col_for_row(cursor_row), cursor_col + 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	# A button - Edit cell
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_edit_current_cell()
 		get_viewport().set_input_as_handled()
 
 	# B button - Delete cell
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 

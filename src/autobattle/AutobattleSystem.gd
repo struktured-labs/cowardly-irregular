@@ -247,6 +247,8 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 		"always":
 			return true
 
+	# Unknown condition type - log warning for debugging
+	push_warning("AutobattleSystem: Unknown condition type '%s'" % cond_type)
 	return false
 
 
@@ -327,8 +329,12 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 				"target": _get_target_by_type(combatant, "lowest_hp_enemy"),
 				"force_advance": true  # Signal to queue max actions
 			}
-
-	return {}
+		_:
+			push_warning("AutobattleSystem: Unknown action type '%s', defaulting to attack" % action_type)
+			return {
+				"type": "attack",
+				"target": _get_target_by_type(combatant, "lowest_hp_enemy")
+			}
 
 
 func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant:

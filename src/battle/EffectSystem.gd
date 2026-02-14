@@ -35,6 +35,17 @@ func _ready() -> void:
 	add_child(_effects_container)
 
 
+func _exit_tree() -> void:
+	"""Cleanup effects container when node is freed"""
+	if _effects_container and is_instance_valid(_effects_container):
+		# Free all child effects
+		for child in _effects_container.get_children():
+			if is_instance_valid(child):
+				child.queue_free()
+		_effects_container.queue_free()
+	_effects_container = null
+
+
 ## Get a cached texture or generate and cache it
 static func _get_cached_texture(cache_key: String, generator: Callable) -> ImageTexture:
 	"""Return cached ImageTexture if available, otherwise generate, cache, and return."""

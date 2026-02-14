@@ -226,6 +226,8 @@ func _create_default_passives() -> void:
 ## Passive management
 func equip_passive(combatant: Combatant, passive_id: String) -> bool:
 	"""Equip a passive to a combatant"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not passives.has(passive_id):
 		print("Error: Passive '%s' not found" % passive_id)
 		return false
@@ -248,6 +250,8 @@ func equip_passive(combatant: Combatant, passive_id: String) -> bool:
 
 func unequip_passive(combatant: Combatant, passive_id: String) -> bool:
 	"""Unequip a passive from a combatant"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not passive_id in combatant.equipped_passives:
 		print("Error: Passive not equipped")
 		return false
@@ -267,6 +271,8 @@ func get_passive(passive_id: String) -> Dictionary:
 
 func get_passive_mods(combatant: Combatant) -> Dictionary:
 	"""Calculate total passive modifiers for a combatant"""
+	if not combatant or not is_instance_valid(combatant):
+		return {}
 	var total_mods = {
 		"attack_multiplier": 1.0,
 		"defense_multiplier": 1.0,
@@ -322,6 +328,8 @@ func get_passives_by_category(category: PassiveCategory) -> Array:
 
 func can_equip_passive(combatant: Combatant, passive_id: String) -> bool:
 	"""Check if combatant can equip this passive"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	var passive = get_passive(passive_id)
 	if passive.is_empty():
 		return false

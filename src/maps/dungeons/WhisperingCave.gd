@@ -265,19 +265,20 @@ func _generate_map_for_floor(floor_num: int) -> void:
 
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"M": return TileGeneratorScript.TileType.MOUNTAIN
-		".": return TileGeneratorScript.TileType.FLOOR
-		"T": return TileGeneratorScript.TileType.FLOOR  # Treasure (floor)
-		"B": return TileGeneratorScript.TileType.FLOOR  # Boss (floor)
-		"U": return TileGeneratorScript.TileType.FLOOR  # Stairs up (floor)
-		"D": return TileGeneratorScript.TileType.FLOOR  # Stairs down (floor)
-		"X": return TileGeneratorScript.TileType.FLOOR  # Exit (floor)
-		_: return TileGeneratorScript.TileType.FLOOR
+		"M": return TileGeneratorScript.TileType.CAVE_WALL  # Cave walls (rocky, atmospheric)
+		".": return TileGeneratorScript.TileType.CAVE_FLOOR  # Cave floor (dark stone)
+		"T": return TileGeneratorScript.TileType.CAVE_FLOOR  # Treasure (floor)
+		"B": return TileGeneratorScript.TileType.CAVE_FLOOR  # Boss (floor)
+		"U": return TileGeneratorScript.TileType.CAVE_FLOOR  # Stairs up (floor)
+		"D": return TileGeneratorScript.TileType.CAVE_FLOOR  # Stairs down (floor)
+		"X": return TileGeneratorScript.TileType.CAVE_FLOOR  # Exit (floor)
+		_: return TileGeneratorScript.TileType.CAVE_FLOOR
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
+	# Map tile types to atlas coordinates (5-column layout)
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 4, tile_id / 4)
+	return Vector2i(tile_id % 5, tile_id / 5)
 
 
 func _setup_transitions_for_floor(floor_num: int) -> void:

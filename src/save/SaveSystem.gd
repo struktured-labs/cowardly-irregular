@@ -318,7 +318,7 @@ func _get_party_summary() -> Array:
 			if member is Combatant:
 				summary.append({
 					"name": member.combatant_name,
-					"level": member.level if "level" in member else 1,
+					"level": member.job_level if "job_level" in member else 1,
 					"job": member.job.get("name", "Fighter") if member.job else "Fighter",
 					"job_id": member.job.get("id", "fighter") if member.job else "fighter",
 					"secondary_job_id": member.secondary_job_id if member.secondary_job_id else "",

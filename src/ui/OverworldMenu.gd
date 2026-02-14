@@ -44,7 +44,8 @@ var _submenu_open: bool = false
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR = Color(0.1, 0.1, 0.15)
-const BORDER_COLOR = Color(0.4, 0.4, 0.5)
+const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
+const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
@@ -135,6 +136,10 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 		var card = _create_character_card(member, i)
 		card.position = Vector2(4, y_offset + i * (card_height + 8))
 		card.size = Vector2(panel_size.x - 8, card_height)
+		# Beveled border using job color
+		var job_color = _get_job_color(member).lightened(0.5)
+		var job_shadow = _get_job_color(member).darkened(0.3)
+		RetroPanel.add_border(card, card.size, job_color, job_shadow)
 		panel.add_child(card)
 		_party_panels.append(card)
 
@@ -324,18 +329,8 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 
 
 func _create_border(parent: Control) -> void:
-	"""Add a decorative border to a panel"""
-	var border_top = ColorRect.new()
-	border_top.color = BORDER_COLOR
-	border_top.position = Vector2(0, 0)
-	border_top.size = Vector2(parent.size.x, 2)
-	parent.add_child(border_top)
-
-	var border_left = ColorRect.new()
-	border_left.color = BORDER_COLOR
-	border_left.position = Vector2(0, 0)
-	border_left.size = Vector2(2, parent.size.y)
-	parent.add_child(border_left)
+	"""Add beveled retro border to a panel"""
+	RetroPanel.add_border(parent, parent.size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _get_job_color(member: Combatant) -> Color:

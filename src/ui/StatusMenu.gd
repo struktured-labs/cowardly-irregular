@@ -12,7 +12,8 @@ var character: Combatant = null
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR = Color(0.1, 0.1, 0.15)
-const BORDER_COLOR = Color(0.4, 0.4, 0.5)
+const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
+const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const STAT_COLOR = Color(0.8, 0.9, 1.0)
@@ -152,7 +153,7 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 
 	# EXP (if applicable)
 	var exp_label = Label.new()
-	exp_label.text = "EXP: %d" % character.exp
+	exp_label.text = "EXP: %d" % character.job_exp
 	exp_label.position = Vector2(panel_size.x - 100, 8)
 	exp_label.add_theme_font_size_override("font_size", 11)
 	exp_label.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -205,7 +206,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	# Divider
 	y_offset += 8
 	var divider = ColorRect.new()
-	divider.color = BORDER_COLOR
+	divider.color = BORDER_SHADOW
 	divider.position = Vector2(8, y_offset)
 	divider.size = Vector2(panel_size.x - 16, 1)
 	panel.add_child(divider)
@@ -334,7 +335,7 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 
 	# Divider
 	var divider = ColorRect.new()
-	divider.color = BORDER_COLOR
+	divider.color = BORDER_SHADOW
 	divider.position = Vector2(8, y_offset)
 	divider.size = Vector2(panel_size.x - 16, 1)
 	panel.add_child(divider)
@@ -443,18 +444,8 @@ func _create_equip_row(slot_name: String, item_name: String, color: Color, y_pos
 
 
 func _create_border(parent: Control, panel_size: Vector2) -> void:
-	"""Add decorative border"""
-	var border_top = ColorRect.new()
-	border_top.color = BORDER_COLOR
-	border_top.position = Vector2(0, 0)
-	border_top.size = Vector2(panel_size.x, 2)
-	parent.add_child(border_top)
-
-	var border_left = ColorRect.new()
-	border_left.color = BORDER_COLOR
-	border_left.position = Vector2(0, 0)
-	border_left.size = Vector2(2, panel_size.y)
-	parent.add_child(border_left)
+	"""Add beveled retro border"""
+	RetroPanel.add_border(parent, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _input(event: InputEvent) -> void:

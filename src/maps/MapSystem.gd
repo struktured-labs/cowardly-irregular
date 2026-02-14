@@ -54,6 +54,9 @@ func load_map(map_id: String, spawn_point: String = "default") -> void:
 			return
 
 		var map_scene = load(map_path)
+		if not map_scene:
+			push_error("MapSystem: Failed to load map scene at %s" % map_path)
+			return
 		current_map = map_scene.instantiate()
 		loaded_maps[map_id] = current_map
 

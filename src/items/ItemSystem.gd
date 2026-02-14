@@ -49,8 +49,12 @@ func _load_item_data() -> void:
 		var parse_result = json.parse(json_string)
 
 		if parse_result == OK:
-			items = json.data
-			print("Loaded %d items" % items.size())
+			if json.data is Dictionary:
+				items = json.data
+				print("Loaded %d items" % items.size())
+			else:
+				print("Error: items.json data is not a valid dictionary")
+				_create_default_items()
 		else:
 			print("Error parsing items.json: ", json.get_error_message())
 			_create_default_items()
@@ -253,6 +257,8 @@ func use_item(user: Combatant, item_id: String, targets: Array[Combatant]) -> bo
 
 	# Apply item effects to each target
 	for target in targets:
+		if not target or not is_instance_valid(target):
+			continue
 		_apply_item_effects(user, target, item)
 
 	item_used.emit(user, item_id, targets)
@@ -349,6 +355,10 @@ func can_use_item(user: Combatant, item_id: String, target: Combatant) -> bool:
 	"""Check if item can be used on target"""
 	var item = get_item(item_id)
 	if item.is_empty():
+		return false
+
+	# Validate BattleManager is available for party checks
+	if not BattleManager:
 		return false
 
 	var target_type = item.get("target_type", TargetType.SINGLE_ALLY)

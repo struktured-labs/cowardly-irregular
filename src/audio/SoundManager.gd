@@ -69,6 +69,16 @@ func _ready() -> void:
 	_setup_default_ability_sounds()
 
 
+func _exit_tree() -> void:
+	# Cleanup tweens to prevent callbacks on freed nodes
+	if _crossfade_tween and _crossfade_tween.is_valid():
+		_crossfade_tween.kill()
+	_crossfade_tween = null
+	if _danger_tween and _danger_tween.is_valid():
+		_danger_tween.kill()
+	_danger_tween = null
+
+
 func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
@@ -155,6 +165,8 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
 	if not SOUNDS.has(sound_key):
 		return
+	# Validate pitch scale to prevent invalid frequencies
+	pitch_scale = clamp(pitch_scale, 0.1, 10.0)
 	var params = SOUNDS[sound_key].duplicate()
 	# Apply volume scaling
 	params["volume_db"] = volume_db

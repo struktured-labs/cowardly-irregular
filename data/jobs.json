@@ -19,7 +19,12 @@
 		],
 		"passive_abilities": [
 			"weapon_mastery"
-		]
+		],
+		"visual": {
+			"sprite_type": "armored",
+			"outfit_color": [0.2, 0.4, 0.8],
+			"headgear": "helmet_open"
+		}
 	},
 	"white_mage": {
 		"id": "white_mage",
@@ -42,7 +47,12 @@
 		],
 		"passive_abilities": [
 			"healing_boost"
-		]
+		],
+		"visual": {
+			"sprite_type": "robed",
+			"outfit_color": [0.92, 0.9, 0.96],
+			"headgear": "hood"
+		}
 	},
 	"black_mage": {
 		"id": "black_mage",
@@ -65,7 +75,12 @@
 		],
 		"passive_abilities": [
 			"magic_boost"
-		]
+		],
+		"visual": {
+			"sprite_type": "dark_robed",
+			"outfit_color": [0.12, 0.1, 0.25],
+			"headgear": "pointed_hat"
+		}
 	},
 	"thief": {
 		"id": "thief",
@@ -88,7 +103,12 @@
 		"passive_abilities": [
 			"steal_boost",
 			"evasion_up"
-		]
+		],
+		"visual": {
+			"sprite_type": "cloaked",
+			"outfit_color": [0.35, 0.28, 0.45],
+			"headgear": "bandana"
+		}
 	},
 	"scriptweaver": {
 		"id": "scriptweaver",
@@ -119,6 +139,11 @@
 			"can_modify_exp_rates": true,
 			"can_view_game_constants": true,
 			"unlocks_advanced_autobattle": true
+		},
+		"visual": {
+			"sprite_type": "tech",
+			"outfit_color": [0.2, 0.5, 0.45],
+			"headgear": "goggles"
 		}
 	},
 	"time_mage": {
@@ -151,6 +176,11 @@
 			"can_create_restore_points": true,
 			"can_undo_permadeath": true,
 			"unlocks_save_evolution": true
+		},
+		"visual": {
+			"sprite_type": "time",
+			"outfit_color": [0.25, 0.2, 0.55],
+			"headgear": "astral_circlet"
 		}
 	},
 	"necromancer": {
@@ -181,6 +211,11 @@
 			"can_corrupt_saves": true,
 			"can_inflict_permadeath": true,
 			"extremely_high_risk": true
+		},
+		"visual": {
+			"sprite_type": "dark_robed",
+			"outfit_color": [0.25, 0.08, 0.18],
+			"headgear": "skull_hood"
 		}
 	},
 	"guardian": {
@@ -201,7 +236,7 @@
 			"brave",
 			"shield_bash",
 			"guardian_wall",
-			"last_stand"
+			"last_stand_ability"
 		],
 		"passive_abilities": [
 			"bp_recovery",
@@ -217,6 +252,11 @@
 			"type": "brave_default",
 			"max_bp": 4,
 			"bp_per_turn": 1
+		},
+		"visual": {
+			"sprite_type": "armored",
+			"outfit_color": [0.6, 0.55, 0.4],
+			"headgear": "full_helmet"
 		}
 	},
 	"ninja": {
@@ -254,6 +294,11 @@
 			"movement_speed_bonus": 1.5,
 			"can_skip_cutscenes": true,
 			"reduced_encounter_rate": 0.5
+		},
+		"visual": {
+			"sprite_type": "cloaked",
+			"outfit_color": [0.15, 0.15, 0.22],
+			"headgear": "mask"
 		}
 	},
 	"summoner": {
@@ -290,6 +335,11 @@
 			"recursive_depth": 3,
 			"summon_duration": 3,
 			"can_summon_summoners": true
+		},
+		"visual": {
+			"sprite_type": "robed",
+			"outfit_color": [0.3, 0.7, 0.5],
+			"headgear": "circlet"
 		}
 	},
 	"bossbinder": {
@@ -326,6 +376,11 @@
 			"can_control_bosses": true,
 			"boss_victory_corrupts_save": true,
 			"learns_boss_patterns": true
+		},
+		"visual": {
+			"sprite_type": "tech",
+			"outfit_color": [0.55, 0.2, 0.2],
+			"headgear": "visor"
 		}
 	},
 	"skiptrotter": {
@@ -363,6 +418,11 @@
 			"can_skip_dungeons": true,
 			"missed_content_penalty": true,
 			"unlocks_sequence_breaks": true
+		},
+		"visual": {
+			"sprite_type": "tech",
+			"outfit_color": [0.5, 0.4, 0.15],
+			"headgear": "cap"
 		}
 	}
 }

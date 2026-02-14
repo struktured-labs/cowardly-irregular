@@ -685,13 +685,13 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	# Check if should heal (30% chance if ally below 40% HP)
 	var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 40.0)
 	if low_hp_allies.size() > 0 and randf() < 0.3:
-		var healing_abilities = available_abilities.filter(func(a): return a["type"] == "healing")
+		var healing_abilities = available_abilities.filter(func(a): return a.get("type", "") == "healing")
 		if healing_abilities.size() > 0:
 			var heal = healing_abilities[randi() % healing_abilities.size()]
 			return {
 				"type": "ability",
 				"combatant": combatant,
-				"ability_id": heal["id"],
+				"ability_id": heal.get("id", ""),
 				"targets": [low_hp_allies[0]],
 				"speed": _compute_action_speed(combatant, "ability", heal)
 			}
@@ -699,7 +699,7 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	# Check if should use offensive ability (40% chance)
 	if randf() < 0.4 and combatant.current_mp >= 10:
 		var offensive_abilities = available_abilities.filter(
-			func(a): return a["type"] in ["physical", "magic"]
+			func(a): return a.get("type", "") in ["physical", "magic"]
 		)
 		if offensive_abilities.size() > 0:
 			var spell = offensive_abilities[randi() % offensive_abilities.size()]
@@ -707,7 +707,7 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 			return {
 				"type": "ability",
 				"combatant": combatant,
-				"ability_id": spell["id"],
+				"ability_id": spell.get("id", ""),
 				"targets": [spell_target],
 				"speed": _compute_action_speed(combatant, "ability", spell)
 			}
@@ -799,7 +799,7 @@ func repeat_previous_actions() -> bool:
 				"combatant": combatant,
 				"type": "attack",
 				"target": _get_alive_enemies()[0] if _get_alive_enemies().size() > 0 else null,
-				"speed": ACTION_SPEEDS["attack"] + combatant.stats.speed
+				"speed": ACTION_SPEEDS["attack"] + combatant.speed
 			})
 			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
 			repeated_any = true
@@ -866,9 +866,9 @@ func _execute_next_action() -> void:
 		return
 
 	var action = execution_order.pop_front()
-	var combatant = action["combatant"] as Combatant
+	var combatant = action.get("combatant") as Combatant
 
-	# Skip if combatant died
+	# Skip if combatant died or action is invalid
 	if not combatant or not combatant.is_alive:
 		_execute_next_action()
 		return
@@ -877,13 +877,13 @@ func _execute_next_action() -> void:
 	current_state = BattleState.PROCESSING_ACTION
 
 	# Execute based on action type
-	match action["type"]:
+	match action.get("type", ""):
 		"attack":
-			_execute_attack(combatant, action["target"])
+			_execute_attack(combatant, action.get("target"))
 		"ability":
-			_execute_ability(combatant, action["ability_id"], action.get("targets", []))
+			_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
 		"item":
-			_execute_item(combatant, action["item_id"], action.get("targets", []))
+			_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
 		"defer":
 			_execute_defer(combatant)
 		"summon":
@@ -891,6 +891,8 @@ func _execute_next_action() -> void:
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
+		_:
+			push_warning("BattleManager: Unknown action type '%s'" % action.get("type", ""))
 
 	# Log player action for adaptive AI pattern detection
 	_log_player_action(combatant, action)
@@ -898,6 +900,8 @@ func _execute_next_action() -> void:
 
 	# Delay between actions - long enough for animations to complete
 	await get_tree().create_timer(0.7).timeout
+	if not is_instance_valid(self):
+		return
 	_execute_next_action()
 
 
@@ -952,7 +956,9 @@ func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 
 func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	"""Execute advance action - all queued actions in sequence (each costs 1 AP)"""
-	var actions = advance_action["actions"] as Array
+	var actions = advance_action.get("actions", []) as Array
+	if actions.is_empty():
+		return
 
 	# Note: Each action costs 1 AP during execution
 	# The first action would normally cost 1 AP anyway (canceling natural gain)
@@ -967,21 +973,25 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		if _check_victory_conditions():
 			return
 
-		match action["type"]:
+		match action.get("type", ""):
 			"attack":
-				_execute_attack(combatant, action["target"])
+				_execute_attack(combatant, action.get("target"))
 			"ability":
-				_execute_ability(combatant, action["ability_id"], action.get("targets", []))
+				_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
 			"item":
-				_execute_item(combatant, action["item_id"], action.get("targets", []))
+				_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
 
 		# Log player action for adaptive AI pattern detection
 		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 		await get_tree().create_timer(0.5).timeout  # Time for animation
+		if not is_instance_valid(self):
+			return
 
 	# Continue to next action
 	await get_tree().create_timer(0.5).timeout
+	if not is_instance_valid(self):
+		return
 	_execute_next_action()
 
 
@@ -1391,7 +1401,7 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 
 	action_executing.emit(user, {"type": "item", "item_id": item_id, "targets": retargeted})
 
-	if ItemSystem.use_item(user, item_id, retargeted):
+	if ItemSystem and ItemSystem.use_item(user, item_id, retargeted):
 		user.remove_item(item_id, 1)
 	else:
 		print("Failed to use item: %s" % item_id)
@@ -1622,14 +1632,15 @@ func _get_counter_action(combatant: Combatant, strategy: String, allies: Array, 
 					"speed": _compute_action_speed(combatant, "ability", def_abilities[0])
 				}
 		"rotate_aggro":
-			return {
-				"type": "attack",
-				"combatant": combatant,
-				"target": enemies[randi() % enemies.size()],
-				"speed": _compute_action_speed(combatant, "attack")
-			}
+			if enemies.size() > 0:
+				return {
+					"type": "attack",
+					"combatant": combatant,
+					"target": enemies[randi() % enemies.size()],
+					"speed": _compute_action_speed(combatant, "attack")
+				}
 		"generic_counter":
-			if abilities.size() > 0:
+			if abilities.size() > 0 and enemies.size() > 0:
 				var strongest = abilities[0]
 				for a in abilities:
 					if a.get("power", 0) > strongest.get("power", 0):

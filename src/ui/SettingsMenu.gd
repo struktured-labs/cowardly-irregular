@@ -43,7 +43,8 @@ var _settings_items: Array = []
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR = Color(0.1, 0.1, 0.15)
-const BORDER_COLOR = Color(0.4, 0.4, 0.5)
+const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
+const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
@@ -134,6 +135,9 @@ func _build_ui() -> void:
 	panel_bg.color = PANEL_COLOR
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
+
+	# Beveled retro border
+	RetroPanel.add_border(panel, panel.size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -587,22 +591,22 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	# Navigation
-	if event.is_action_pressed("ui_up"):
+	# Navigation - check echo to prevent rapid-fire when holding keys
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_index = max(0, selected_index - 1)
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		selected_index = min(_settings_items.size() - 1, selected_index + 1)
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	# Adjust value
+	# Adjust value - allow echo for left/right to make adjusting sliders easier
 	elif event.is_action_pressed("ui_left"):
 		_adjust_setting(-1)
 		get_viewport().set_input_as_handled()
@@ -612,12 +616,12 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# Confirm/Activate
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_activate_setting()
 		get_viewport().set_input_as_handled()
 
 	# Close
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close_settings()
 		get_viewport().set_input_as_handled()
 

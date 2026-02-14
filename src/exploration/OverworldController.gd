@@ -27,6 +27,17 @@ func _ready() -> void:
 		player.interaction_requested.connect(_on_interaction_requested)
 
 
+func _exit_tree() -> void:
+	"""Disconnect from player signals when freed"""
+	if player and is_instance_valid(player):
+		if player.moved.is_connected(_on_player_moved):
+			player.moved.disconnect(_on_player_moved)
+		if player.menu_requested.is_connected(_on_menu_requested):
+			player.menu_requested.disconnect(_on_menu_requested)
+		if player.interaction_requested.is_connected(_on_interaction_requested):
+			player.interaction_requested.disconnect(_on_interaction_requested)
+
+
 func _on_player_moved(steps: int) -> void:
 	if not encounter_enabled or _is_safe_zone:
 		return

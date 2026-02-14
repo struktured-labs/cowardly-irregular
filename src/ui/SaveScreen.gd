@@ -325,29 +325,31 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_slot = (selected_slot - 1 + _slot_panels.size()) % _slot_panels.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		selected_slot = (selected_slot + 1) % _slot_panels.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_handle_confirm()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close()
 		get_viewport().set_input_as_handled()
 
 
 func _handle_confirm() -> void:
 	"""Handle slot selection"""
+	if selected_slot >= _slot_panels.size():
+		return
 	var panel = _slot_panels[selected_slot]
 	var slot = panel.get_meta("slot")
 

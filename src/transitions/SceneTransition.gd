@@ -24,6 +24,14 @@ func _ready() -> void:
 		EncounterSystem.encounter_triggered.connect(_on_encounter_triggered)
 
 
+func _exit_tree() -> void:
+	"""Cleanup signal connections when freed"""
+	if EncounterSystem and EncounterSystem.encounter_triggered.is_connected(_on_encounter_triggered):
+		EncounterSystem.encounter_triggered.disconnect(_on_encounter_triggered)
+	if BattleManager and BattleManager.battle_ended.is_connected(_on_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_battle_ended)
+
+
 func _create_fade_overlay() -> void:
 	"""Create black fade overlay"""
 	fade_rect = ColorRect.new()
@@ -137,6 +145,9 @@ func _start_battle(enemy_data: Array) -> void:
 	# Load battle scene
 	var battle_scene_path = "res://src/battle/BattleScene.tscn"
 	var battle_scene_resource = load(battle_scene_path)
+	if not battle_scene_resource:
+		push_error("SceneTransition: Failed to load battle scene at %s" % battle_scene_path)
+		return
 	var battle_scene = battle_scene_resource.instantiate()
 
 	# Add to scene tree
@@ -167,6 +178,8 @@ func _start_battle(enemy_data: Array) -> void:
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle ending"""
 	await get_tree().create_timer(1.0).timeout  # Wait a moment
+	if not is_instance_valid(self):
+		return
 	transition_from_battle(victory)
 
 

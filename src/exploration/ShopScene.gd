@@ -42,6 +42,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 100  # Render above game world
+	# Ensure this processes input
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_ui()
 	_open_main_menu()
 
@@ -61,14 +63,14 @@ func _setup_ui() -> void:
 	# Fullscreen background
 	background = ColorRect.new()
 	background.color = Color(0.0, 0.0, 0.0, 0.85)
-	background.size = get_viewport_rect().size
+	background.size = get_viewport().get_visible_rect().size
 	background.position = Vector2.ZERO
 	add_child(background)
 
 	# Gold display (top-right)
 	gold_label = Label.new()
 	gold_label.name = "GoldLabel"
-	gold_label.position = Vector2(get_viewport_rect().size.x - 200, 20)
+	gold_label.position = Vector2(get_viewport().get_visible_rect().size.x - 200, 20)
 	gold_label.size = Vector2(180, 30)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_label.add_theme_font_size_override("font_size", 16)
@@ -86,8 +88,8 @@ func _create_description_panel() -> Control:
 	var panel = Control.new()
 	panel.name = "DescriptionPanel"
 	var panel_height = 120
-	panel.position = Vector2(20, get_viewport_rect().size.y - panel_height - 20)
-	panel.size = Vector2(get_viewport_rect().size.x - 40, panel_height)
+	panel.position = Vector2(20, get_viewport().get_visible_rect().size.y - panel_height - 20)
+	panel.size = Vector2(get_viewport().get_visible_rect().size.x - 40, panel_height)
 
 	# Background with Win98 style border
 	var bg = ColorRect.new()
@@ -251,10 +253,18 @@ func _show_menu(title: String, items: Array, pos: Vector2) -> void:
 	current_menu.item_selected.connect(_on_menu_item_selected)
 	current_menu.menu_closed.connect(_on_menu_closed)
 
+	# Ensure menu has focus for input
+	current_menu.grab_focus()
+
 
 func _close_current_menu() -> void:
 	"""Close the current menu"""
 	if current_menu and is_instance_valid(current_menu):
+		# Disconnect signals before freeing to prevent callbacks on freed objects
+		if current_menu.item_selected.is_connected(_on_menu_item_selected):
+			current_menu.item_selected.disconnect(_on_menu_item_selected)
+		if current_menu.menu_closed.is_connected(_on_menu_closed):
+			current_menu.menu_closed.disconnect(_on_menu_closed)
 		current_menu.queue_free()
 		current_menu = null
 
@@ -310,6 +320,8 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 
 		# Refresh buy menu to show updated owned count
 		await get_tree().create_timer(0.5).timeout
+		if not is_instance_valid(self):
+			return
 		_open_buy_menu()
 
 
@@ -333,6 +345,8 @@ func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 
 	# Refresh sell menu
 	await get_tree().create_timer(0.5).timeout
+	if not is_instance_valid(self):
+		return
 	_open_sell_menu()
 
 
@@ -464,9 +478,13 @@ func _update_description_for_item(item_id: String) -> void:
 
 func _flash_gold_label() -> void:
 	"""Flash the gold label red to indicate error"""
+	if not is_instance_valid(gold_label):
+		return
 	var original_color = gold_label.get_theme_color("font_color")
 	gold_label.add_theme_color_override("font_color", Color.RED)
 	await get_tree().create_timer(0.2).timeout
+	if not is_instance_valid(self) or not is_instance_valid(gold_label):
+		return
 	gold_label.add_theme_color_override("font_color", original_color)
 
 
@@ -553,6 +571,8 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		description_label.text = "%s learned %s!" % [member_name, pending_spell_data.get("name", "spell")]
 
 		await get_tree().create_timer(0.5).timeout
+		if not is_instance_valid(self):
+			return
 		_open_buy_menu()
 
 

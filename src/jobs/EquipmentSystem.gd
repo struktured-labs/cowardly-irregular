@@ -42,10 +42,14 @@ func _load_equipment_data() -> void:
 
 		if parse_result == OK:
 			var data = json.data
-			weapons = data.get("weapons", {})
-			armors = data.get("armors", {})
-			accessories = data.get("accessories", {})
-			print("Loaded equipment: %d weapons, %d armors, %d accessories" % [weapons.size(), armors.size(), accessories.size()])
+			if data is Dictionary:
+				weapons = data.get("weapons", {})
+				armors = data.get("armors", {})
+				accessories = data.get("accessories", {})
+				print("Loaded equipment: %d weapons, %d armors, %d accessories" % [weapons.size(), armors.size(), accessories.size()])
+			else:
+				print("Error: equipment.json data is not a valid dictionary")
+				_create_default_equipment()
 		else:
 			print("Error parsing equipment.json: ", json.get_error_message())
 			_create_default_equipment()
@@ -277,21 +281,24 @@ func get_equipment_mods(combatant: Combatant) -> Dictionary:
 		var weapon = weapons[combatant.equipped_weapon]
 		if weapon.has("stat_mods"):
 			for stat in weapon["stat_mods"]:
-				total_mods[stat] += weapon["stat_mods"][stat]
+				if total_mods.has(stat):
+					total_mods[stat] += weapon["stat_mods"][stat]
 
 	# Add armor mods
 	if not combatant.equipped_armor.is_empty() and armors.has(combatant.equipped_armor):
 		var armor = armors[combatant.equipped_armor]
 		if armor.has("stat_mods"):
 			for stat in armor["stat_mods"]:
-				total_mods[stat] += armor["stat_mods"][stat]
+				if total_mods.has(stat):
+					total_mods[stat] += armor["stat_mods"][stat]
 
 	# Add accessory mods
 	if not combatant.equipped_accessory.is_empty() and accessories.has(combatant.equipped_accessory):
 		var accessory = accessories[combatant.equipped_accessory]
 		if accessory.has("stat_mods"):
 			for stat in accessory["stat_mods"]:
-				total_mods[stat] += accessory["stat_mods"][stat]
+				if total_mods.has(stat):
+					total_mods[stat] += accessory["stat_mods"][stat]
 
 	return total_mods
 

@@ -514,5 +514,281 @@
 		"summon_id": "rat_guard",
 		"summon_count": 1,
 		"summon_message": "The Rat King SQUEAKS imperiously! A Rat Guard answers the call!"
+	},
+
+	"default": {
+		"id": "default",
+		"name": "Default",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 0,
+		"description": "Take a defensive stance, halving damage and banking 1 BP",
+		"target_type": "self",
+		"effect": "default_stance",
+		"damage_reduction": 0.5,
+		"bp_gain": 1
+	},
+	"brave": {
+		"id": "brave",
+		"name": "Brave",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 0,
+		"description": "Spend stored BP to take extra actions this turn",
+		"target_type": "self",
+		"effect": "brave_actions",
+		"bp_cost": 1
+	},
+	"guardian_wall": {
+		"id": "guardian_wall",
+		"name": "Guardian Wall",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 15,
+		"description": "Create a barrier that absorbs damage for all allies for 2 turns",
+		"target_type": "all_allies",
+		"effect": "barrier",
+		"absorb_amount": 80,
+		"duration": 2
+	},
+	"last_stand_ability": {
+		"id": "last_stand_ability",
+		"name": "Last Stand",
+		"type": "physical",
+		"animation": "skill",
+		"mp_cost": 20,
+		"description": "Massive attack that deals more damage the lower your HP",
+		"damage_multiplier": 1.0,
+		"scales_with": "missing_hp",
+		"max_multiplier": 5.0,
+		"target_type": "single_enemy"
+	},
+
+	"smoke_bomb": {
+		"id": "smoke_bomb",
+		"name": "Smoke Bomb",
+		"type": "support",
+		"animation": "special",
+		"mp_cost": 6,
+		"description": "Throw a smoke bomb to guarantee escape or blind enemies for 2 turns",
+		"target_type": "all_enemies",
+		"effect": "blind",
+		"duration": 2,
+		"guaranteed_escape": true
+	},
+	"shadow_step": {
+		"id": "shadow_step",
+		"name": "Shadow Step",
+		"type": "support",
+		"animation": "special",
+		"mp_cost": 8,
+		"description": "Vanish into shadows, gaining evasion and guaranteeing next attack crits",
+		"target_type": "self",
+		"effect": "shadow_step",
+		"evasion_bonus": 1.0,
+		"next_crit": true,
+		"duration": 1
+	},
+	"quick_strike": {
+		"id": "quick_strike",
+		"name": "Quick Strike",
+		"type": "physical",
+		"animation": "backstab",
+		"mp_cost": 5,
+		"description": "Lightning-fast attack that always goes first",
+		"damage_multiplier": 1.2,
+		"target_type": "single_enemy",
+		"priority": true
+	},
+	"throw_shuriken": {
+		"id": "throw_shuriken",
+		"name": "Throw Shuriken",
+		"type": "physical",
+		"animation": "special",
+		"mp_cost": 8,
+		"description": "Throw shurikens at all enemies for speed-scaled damage",
+		"damage_multiplier": 0.7,
+		"scales_with": "speed",
+		"target_type": "all_enemies"
+	},
+	"vanish": {
+		"id": "vanish",
+		"name": "Vanish",
+		"type": "support",
+		"animation": "special",
+		"mp_cost": 12,
+		"description": "Become completely invisible for 2 turns - cannot be targeted",
+		"target_type": "self",
+		"effect": "invisible",
+		"duration": 2
+	},
+
+	"summon_ifrit": {
+		"id": "summon_ifrit",
+		"name": "Summon Ifrit",
+		"type": "summon",
+		"animation": "cast_fire",
+		"mp_cost": 30,
+		"description": "Summon the fire eidolon Ifrit to engulf all enemies in flames",
+		"damage_multiplier": 3.0,
+		"element": "fire",
+		"target_type": "all_enemies",
+		"summon_duration": 3
+	},
+	"summon_shiva": {
+		"id": "summon_shiva",
+		"name": "Summon Shiva",
+		"type": "summon",
+		"animation": "cast_ice",
+		"mp_cost": 30,
+		"description": "Summon the ice queen Shiva to freeze all enemies",
+		"damage_multiplier": 3.0,
+		"element": "ice",
+		"target_type": "all_enemies",
+		"summon_duration": 3
+	},
+	"summon_ramuh": {
+		"id": "summon_ramuh",
+		"name": "Summon Ramuh",
+		"type": "summon",
+		"animation": "cast_lightning",
+		"mp_cost": 30,
+		"description": "Summon the storm elder Ramuh to strike all enemies with Judgment Bolt",
+		"damage_multiplier": 3.0,
+		"element": "lightning",
+		"target_type": "all_enemies",
+		"summon_duration": 3
+	},
+	"summon_bahamut": {
+		"id": "summon_bahamut",
+		"name": "Summon Bahamut",
+		"type": "summon",
+		"animation": "cast_meta",
+		"mp_cost": 60,
+		"description": "Summon the dragon king Bahamut for devastating Mega Flare",
+		"damage_multiplier": 5.0,
+		"target_type": "all_enemies",
+		"summon_duration": 1
+	},
+	"recursive_summon": {
+		"id": "recursive_summon",
+		"name": "Recursive Summon",
+		"type": "meta",
+		"animation": "cast_meta",
+		"mp_cost": 45,
+		"description": "Summon another Summoner who summons another... (up to 3 deep). Exponential power!",
+		"target_type": "self",
+		"meta_effect": "recursive_summon",
+		"max_depth": 3,
+		"damage_multiplier": 2.0
+	},
+
+	"mind_swap": {
+		"id": "mind_swap",
+		"name": "Mind Swap",
+		"type": "meta",
+		"animation": "cast_meta",
+		"mp_cost": 35,
+		"description": "Swap control with target boss - you control it, AI controls you. If the boss wins, your save corrupts!",
+		"target_type": "single_enemy",
+		"meta_effect": "boss_control_swap",
+		"corruption_risk": 0.3
+	},
+	"boss_puppet": {
+		"id": "boss_puppet",
+		"name": "Boss Puppet",
+		"type": "meta",
+		"animation": "cast_meta",
+		"mp_cost": 25,
+		"description": "Force boss to use its weakest attack this turn",
+		"target_type": "single_enemy",
+		"meta_effect": "force_weak_attack",
+		"duration": 1
+	},
+	"control_override": {
+		"id": "control_override",
+		"name": "Control Override",
+		"type": "meta",
+		"animation": "cast_meta",
+		"mp_cost": 40,
+		"description": "Take full control of boss for 1 turn - choose its action",
+		"target_type": "single_enemy",
+		"meta_effect": "full_boss_control",
+		"duration": 1,
+		"corruption_risk": 0.15
+	},
+	"release_binding": {
+		"id": "release_binding",
+		"name": "Release Binding",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 10,
+		"description": "Break free from Mind Swap early, returning to normal control",
+		"target_type": "self",
+		"effect": "break_mind_swap"
+	},
+	"mutual_destruction": {
+		"id": "mutual_destruction",
+		"name": "Mutual Destruction",
+		"type": "meta",
+		"animation": "cast_dark",
+		"mp_cost": 99,
+		"description": "Kill both you and the bound boss instantly. Permanent. No takebacks.",
+		"target_type": "single_enemy",
+		"meta_effect": "mutual_permadeath",
+		"corruption_risk": 0.5
+	},
+
+	"warp_to_boss": {
+		"id": "warp_to_boss",
+		"name": "Warp to Boss",
+		"type": "meta",
+		"animation": "cast_time",
+		"mp_cost": 30,
+		"description": "Skip the dungeon and warp directly to the boss room. Missed loot!",
+		"target_type": "self",
+		"meta_effect": "dungeon_skip",
+		"penalty": "no_dungeon_loot"
+	},
+	"skip_cutscene": {
+		"id": "skip_cutscene",
+		"name": "Skip Cutscene",
+		"type": "meta",
+		"animation": "cast_time",
+		"mp_cost": 5,
+		"description": "Skip any cutscene or dialogue. Miss the story, save the time.",
+		"target_type": "self",
+		"meta_effect": "skip_dialogue"
+	},
+	"bypass_puzzle": {
+		"id": "bypass_puzzle",
+		"name": "Bypass Puzzle",
+		"type": "meta",
+		"animation": "cast_time",
+		"mp_cost": 15,
+		"description": "Auto-solve any puzzle or environmental challenge",
+		"target_type": "self",
+		"meta_effect": "auto_solve_puzzle"
+	},
+	"sequence_break": {
+		"id": "sequence_break",
+		"name": "Sequence Break",
+		"type": "meta",
+		"animation": "cast_meta",
+		"mp_cost": 50,
+		"description": "Break intended game sequence to access later content early. May cause glitches!",
+		"target_type": "self",
+		"meta_effect": "sequence_break",
+		"corruption_risk": 0.2
+	},
+	"new_game_plus_warp": {
+		"id": "new_game_plus_warp",
+		"name": "NG+ Warp",
+		"type": "meta",
+		"animation": "cast_meta",
+		"mp_cost": 80,
+		"description": "Warp to any previously completed area with current stats and gear",
+		"target_type": "self",
+		"meta_effect": "ng_plus_warp"
 	}
 }

@@ -174,5 +174,231 @@
 		"meta_effects": {
 			"show_formulas": true
 		}
+	},
+	"steal_boost": {
+		"id": "steal_boost",
+		"name": "Steal Boost",
+		"category": 2,
+		"description": "+30% steal success rate",
+		"stat_mods": {
+			"steal_chance": 0.3
+		}
+	},
+	"debug_mode": {
+		"id": "debug_mode",
+		"name": "Debug Mode",
+		"category": 4,
+		"description": "See internal game variables and error logs in battle",
+		"meta_effects": {
+			"show_debug_info": true,
+			"show_error_log": true
+		}
+	},
+	"autosave": {
+		"id": "autosave",
+		"name": "Autosave",
+		"category": 4,
+		"description": "Automatically save before boss fights and dangerous encounters",
+		"meta_effects": {
+			"auto_save_before_boss": true,
+			"auto_save_interval": 300
+		}
+	},
+	"save_protection": {
+		"id": "save_protection",
+		"name": "Save Protection",
+		"category": 4,
+		"description": "Reduces save corruption from meta abilities by 50%",
+		"meta_effects": {
+			"corruption_resistance": 0.5
+		}
+	},
+	"time_sense": {
+		"id": "time_sense",
+		"name": "Time Sense",
+		"category": 4,
+		"description": "Preview enemy actions 1 turn ahead",
+		"meta_effects": {
+			"preview_enemy_actions": true,
+			"preview_turns": 1
+		}
+	},
+	"undead_affinity": {
+		"id": "undead_affinity",
+		"name": "Undead Affinity",
+		"category": 0,
+		"description": "+40% dark damage, heal from dark attacks",
+		"stat_mods": {
+			"magic_multiplier": 1.4
+		},
+		"meta_effects": {
+			"dark_absorb": true
+		}
+	},
+	"death_resistance": {
+		"id": "death_resistance",
+		"name": "Death Resistance",
+		"category": 1,
+		"description": "50% chance to survive a killing blow with 1 HP",
+		"meta_effects": {
+			"death_resist_chance": 0.5
+		}
+	},
+	"bp_recovery": {
+		"id": "bp_recovery",
+		"name": "BP Recovery",
+		"category": 2,
+		"description": "Recover 1 extra BP per turn when Defaulting",
+		"stat_mods": {},
+		"meta_effects": {
+			"bp_regen_bonus": 1
+		}
+	},
+	"damage_reduction": {
+		"id": "damage_reduction",
+		"name": "Damage Reduction",
+		"category": 1,
+		"description": "Take 15% less damage from all sources",
+		"stat_mods": {
+			"defense_multiplier": 1.15
+		}
+	},
+	"cover_ally": {
+		"id": "cover_ally",
+		"name": "Cover Ally",
+		"category": 1,
+		"description": "Automatically take hits for allies below 25% HP",
+		"meta_effects": {
+			"auto_cover_threshold": 0.25
+		}
+	},
+	"speedrun_mode": {
+		"id": "speedrun_mode",
+		"name": "Speedrun Mode",
+		"category": 4,
+		"description": "Show speedrun timer, +50% movement speed on overworld",
+		"meta_effects": {
+			"show_timer": true,
+			"movement_speed_bonus": 1.5
+		}
+	},
+	"encounter_skip": {
+		"id": "encounter_skip",
+		"name": "Encounter Skip",
+		"category": 4,
+		"description": "25% chance to skip random encounters entirely",
+		"meta_effects": {
+			"encounter_skip_chance": 0.25
+		}
+	},
+	"double_jump": {
+		"id": "double_jump",
+		"name": "Double Jump",
+		"category": 2,
+		"description": "Jump over gaps and obstacles on the overworld",
+		"meta_effects": {
+			"overworld_double_jump": true
+		}
+	},
+	"wall_climb": {
+		"id": "wall_climb",
+		"name": "Wall Climb",
+		"category": 2,
+		"description": "Scale walls to reach hidden shortcuts",
+		"meta_effects": {
+			"overworld_wall_climb": true
+		}
+	},
+	"summon_boost": {
+		"id": "summon_boost",
+		"name": "Summon Boost",
+		"category": 0,
+		"description": "+35% summon damage and duration",
+		"stat_mods": {
+			"magic_multiplier": 1.35
+		},
+		"meta_effects": {
+			"summon_duration_bonus": 1
+		}
+	},
+	"mp_recovery": {
+		"id": "mp_recovery",
+		"name": "MP Recovery",
+		"category": 2,
+		"description": "Recover 5% MP at end of each turn",
+		"meta_effects": {
+			"mp_regen_percent": 0.05
+		}
+	},
+	"elemental_affinity": {
+		"id": "elemental_affinity",
+		"name": "Elemental Affinity",
+		"category": 0,
+		"description": "Elemental spells cost 25% less MP",
+		"stat_mods": {
+			"mp_cost_multiplier": 0.75
+		}
+	},
+	"boss_insight": {
+		"id": "boss_insight",
+		"name": "Boss Insight",
+		"category": 4,
+		"description": "See boss HP, weaknesses, and next action",
+		"meta_effects": {
+			"show_boss_hp": true,
+			"show_boss_weakness": true,
+			"show_boss_intent": true
+		}
+	},
+	"shared_damage": {
+		"id": "shared_damage",
+		"name": "Shared Damage",
+		"category": 3,
+		"description": "When controlling a boss, damage is split 50/50 between you and the boss",
+		"meta_effects": {
+			"boss_damage_share": 0.5
+		}
+	},
+	"pattern_recognition": {
+		"id": "pattern_recognition",
+		"name": "Pattern Recognition",
+		"category": 2,
+		"description": "Learn boss attack patterns faster, +20% damage vs previously fought bosses",
+		"stat_mods": {
+			"attack_multiplier": 1.2
+		},
+		"meta_effects": {
+			"boss_pattern_memory": true
+		}
+	},
+	"content_radar": {
+		"id": "content_radar",
+		"name": "Content Radar",
+		"category": 4,
+		"description": "Show nearby treasure, secrets, and optional content on the map",
+		"meta_effects": {
+			"show_secrets": true,
+			"show_treasure": true
+		}
+	},
+	"optional_detector": {
+		"id": "optional_detector",
+		"name": "Optional Detector",
+		"category": 4,
+		"description": "Highlights skippable vs required content",
+		"meta_effects": {
+			"show_optional_markers": true,
+			"show_critical_path": true
+		}
+	},
+	"speedrun_timer": {
+		"id": "speedrun_timer",
+		"name": "Speedrun Timer",
+		"category": 4,
+		"description": "Persistent timer with split tracking per dungeon/boss",
+		"meta_effects": {
+			"show_splits": true,
+			"track_personal_best": true
+		}
 	}
 }

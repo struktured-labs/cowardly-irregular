@@ -101,23 +101,75 @@ func _sp(img: Image, x: int, y: int, color: Color) -> void:
 		img.set_pixel(x, y, color)
 
 
-## Draw a filled ellipse with gradient shading
+## Draw a filled ellipse with gradient shading and optional dithering
 func _draw_ellipse_shaded(img: Image, cx: int, cy: int, rx: int, ry: int, base: Color, dark: Color, light: Color) -> void:
 	for y in range(-ry, ry + 1):
 		for x in range(-rx, rx + 1):
 			var dist = sqrt(pow(float(x) / max(rx, 1), 2) + pow(float(y) / max(ry, 1), 2))
 			if dist <= 1.0:
 				var color = base
-				# Top-left is highlight, bottom-right is shadow (SNES standard lighting)
-				if y < -ry * 0.3 and x < rx * 0.2:
+				var v_pos = float(y) / max(ry, 1)
+				var h_pos = float(x) / max(rx, 1)
+				var px = cx + x
+				var py = cy + y
+
+				# SNES-style 4-zone shading with dithered transitions
+				# Top-left is highlight, bottom-right is shadow
+				if v_pos < -0.4 and h_pos < 0.3:
 					color = light
-				elif y > ry * 0.3 or x > rx * 0.5:
+				elif v_pos < -0.2 and h_pos < 0.4:
+					# Dithered transition zone
+					color = light if ((px + py) % 2 == 0) else base
+				elif v_pos > 0.4 or h_pos > 0.6:
 					color = dark
-				_sp(img, cx + x, cy + y, color)
+				elif v_pos > 0.2 or h_pos > 0.4:
+					# Dithered transition zone
+					color = dark if ((px + py) % 2 == 0) else base
+
+				_sp(img, px, py, color)
+
+
+## Generate a 4-shade palette from base color (SNES style)
+func _make_4shade_palette(base: Color) -> Array:
+	var highlight = base.lightened(0.32)
+	var shadow = base.darkened(0.22)
+	var deep_shadow = base.darkened(0.42)
+	# Slight hue shift for more interesting shading
+	highlight = Color(
+		min(1.0, highlight.r * 1.04),
+		highlight.g,
+		highlight.b * 0.96,
+		highlight.a
+	)
+	deep_shadow = Color(
+		deep_shadow.r * 0.92,
+		deep_shadow.g * 0.96,
+		min(1.0, deep_shadow.b * 1.08),
+		deep_shadow.a
+	)
+	return [deep_shadow, shadow, base, highlight]
+
+
+## Draw specular highlight with soft falloff
+func _draw_specular(img: Image, cx: int, cy: int, color: Color) -> void:
+	_sp(img, cx, cy, color)
+	var soft = color
+	soft.a = 0.5
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx != 0 or dy != 0:
+				var px = cx + dx
+				var py = cy + dy
+				if px >= 0 and px < img.get_width() and py >= 0 and py < img.get_height():
+					var existing = img.get_pixel(px, py)
+					if existing.a > 0:
+						_sp(img, px, py, existing.blend(soft))
 
 
 ## Draw the complete portrait into the image
 func _draw_portrait(img: Image) -> void:
+	if not customization:
+		return  # Can't draw portrait without customization data
 	var job_color = _get_job_color(job_id)
 
 	# Background gradient (job-themed, like FF6 portraits)
@@ -133,15 +185,22 @@ func _draw_portrait(img: Image) -> void:
 			var c = bg_color.lerp(bg_light, diag * 0.3)
 			_sp(img, x, y, c)
 
-	var skin = customization.skin_tone
-	var skin_dark = skin.darkened(0.18)
-	var skin_light = skin.lightened(0.12)
-	var skin_shadow = skin.darkened(0.30)
-	var hair = customization.hair_color
-	var hair_dark = hair.darkened(0.25)
-	var hair_light = hair.lightened(0.18)
-	var hair_shine = hair.lightened(0.35)
-	var outline = Color(0.08, 0.08, 0.12)
+	# Generate proper 4-shade palettes for skin and hair
+	var skin_palette = _make_4shade_palette(customization.skin_tone)
+	var skin_deep = skin_palette[0]
+	var skin_shadow = skin_palette[1]
+	var skin = skin_palette[2]
+	var skin_light = skin_palette[3]
+	var skin_dark = skin_shadow  # Alias for compatibility
+
+	var hair_palette = _make_4shade_palette(customization.hair_color)
+	var hair_deep = hair_palette[0]
+	var hair_dark = hair_palette[1]
+	var hair = hair_palette[2]
+	var hair_light = hair_palette[3]
+	var hair_shine = customization.hair_color.lightened(0.45)
+
+	var outline = Color(0.06, 0.06, 0.10)
 
 	var cx = 24  # Center X
 	var face_top = 6
@@ -170,27 +229,54 @@ func _draw_portrait(img: Image) -> void:
 			if dist >= 0.92 and dist < 1.0:
 				_sp(img, face_cx + x, face_cy + y, outline)
 
-	# Face fill with shading
+	# Face fill with SNES-style 4-zone shading and dithered transitions
 	for y in range(-face_ry, face_ry + 1):
 		for x in range(-face_rx, face_rx + 1):
 			var dist = sqrt(pow(float(x) / face_rx, 2) + pow(float(y) / face_ry, 2))
 			if dist < 1.0:
+				var px = face_cx + x
+				var py = face_cy + y
+				var v_pos = float(y) / face_ry
+				var h_pos = float(x) / face_rx
 				var color = skin
-				# Cheek shading - bottom and sides darker
-				if y > face_ry * 0.4:
-					color = skin_dark
-				elif y > face_ry * 0.2 and abs(x) > face_rx * 0.5:
-					color = skin_dark
-				# Top forehead lighter
-				if y < -face_ry * 0.3:
+
+				# 4-zone shading with proper transitions
+				# Top zone: forehead highlight
+				if v_pos < -0.4:
 					color = skin_light
-				# Left side shadow
-				if x > face_rx * 0.6 and y > -face_ry * 0.2:
+				elif v_pos < -0.2:
+					# Dithered transition: highlight to base
+					color = skin_light if ((px + py) % 2 == 0) else skin
+
+				# Bottom zone: chin/jaw shadow
+				elif v_pos > 0.5:
+					color = skin_deep
+				elif v_pos > 0.35:
+					# Dithered transition: shadow to deep
+					color = skin_shadow if ((px + py) % 2 == 0) else skin_deep
+				elif v_pos > 0.2:
 					color = skin_shadow
-				# Cheek blush (subtle)
-				if y > 0 and y < face_ry * 0.5 and abs(x) > face_rx * 0.3 and abs(x) < face_rx * 0.7:
-					color = skin.lerp(Color(0.85, 0.55, 0.50), 0.15)
-				_sp(img, face_cx + x, face_cy + y, color)
+
+				# Side shading (right side in shadow from standard SNES lighting)
+				if h_pos > 0.55 and v_pos > -0.3:
+					if v_pos > 0.3:
+						color = skin_deep
+					elif h_pos > 0.7:
+						color = skin_shadow
+					elif (px + py) % 2 == 0:
+						color = skin_shadow
+
+				# Cheek blush (subtle warm tone on cheeks)
+				if v_pos > -0.1 and v_pos < 0.4 and abs(h_pos) > 0.25 and abs(h_pos) < 0.65:
+					var blush = Color(0.88, 0.58, 0.52)
+					color = color.lerp(blush, 0.12)
+
+				# Nose bridge highlight (subtle)
+				if abs(h_pos) < 0.15 and v_pos > -0.1 and v_pos < 0.3:
+					if (px + py) % 3 == 0:
+						color = color.lerp(skin_light, 0.3)
+
+				_sp(img, px, py, color)
 
 	# ---- HAIR ----
 	_draw_hair_snes(img, cx, face_cy, face_rx, face_ry, hair, hair_dark, hair_light, hair_shine, outline)
@@ -228,6 +314,8 @@ func _draw_portrait(img: Image) -> void:
 
 func _draw_hair_snes(img: Image, cx: int, face_cy: int, face_rx: int, face_ry: int, hair: Color, hair_dark: Color, hair_light: Color, hair_shine: Color, outline: Color) -> void:
 	var skin = customization.skin_tone if customization else Color(0.9, 0.75, 0.6)
+	if not customization:
+		return  # Can't draw hair without customization data
 	match customization.hair_style:
 		CustomizationScript.HairStyle.SHORT:
 			# Short cropped hair covering top of head
@@ -358,11 +446,15 @@ func _draw_hair_snes(img: Image, cx: int, face_cy: int, face_rx: int, face_ry: i
 
 
 func _draw_eyes_snes(img: Image, cx: int, face_cy: int) -> void:
-	var eye_white = Color(0.95, 0.95, 1.0)
-	var eye_iris = Color(0.2, 0.35, 0.6)  # Blue-ish iris
-	var eye_pupil = Color(0.08, 0.08, 0.12)
+	var eye_white = Color(0.96, 0.96, 1.0)
+	var eye_white_shadow = Color(0.82, 0.82, 0.9)  # Shadow on eye white
+	var eye_iris = Color(0.22, 0.38, 0.65)  # Blue-ish iris
+	var eye_iris_light = eye_iris.lightened(0.25)
+	var eye_iris_dark = eye_iris.darkened(0.2)
+	var eye_pupil = Color(0.06, 0.06, 0.10)
 	var eye_highlight = Color(1.0, 1.0, 1.0)
-	var eye_shadow = Color(0.15, 0.12, 0.18)
+	var eye_shadow = Color(0.12, 0.10, 0.16)
+	var eyelash = Color(0.08, 0.06, 0.10)
 
 	var eye_y = face_cy - 2
 	var eye_spacing = 7
@@ -380,47 +472,90 @@ func _draw_eyes_snes(img: Image, cx: int, face_cy: int) -> void:
 		CustomizationScript.EyeShape.WIDE:
 			ew = 5; eh = 4; iris_r = 2
 		CustomizationScript.EyeShape.CLOSED:
-			# Draw closed eyes as curved lines
+			# Draw closed eyes as curved lines with lashes
 			for side in [-1, 1]:
 				var ex = cx + side * eye_spacing
 				for dx in range(-3, 4):
 					var dy = abs(dx) / 2
 					_sp(img, ex + dx, eye_y + dy, eye_shadow)
+					# Lashes at ends
+					if abs(dx) >= 2:
+						_sp(img, ex + dx, eye_y + dy - 1, eyelash)
 			return
 
 	for side in [-1, 1]:
 		var ex = cx + side * eye_spacing
+		var is_left = (side == -1)
 
-		# Eye white (elliptical)
+		# Eye white (elliptical) with proper shading
 		for y in range(-eh, eh + 1):
 			for x in range(-ew, ew + 1):
 				var dist = sqrt(pow(float(x) / ew, 2) + pow(float(y) / eh, 2))
 				if dist < 1.0:
-					_sp(img, ex + x, eye_y + y, eye_white)
+					var color = eye_white
+					# Upper portion in shadow (eyelid casts shadow)
+					if y < -eh * 0.4:
+						color = eye_white_shadow
+					elif y < 0 and ((ex + x + eye_y + y) % 2 == 0):
+						color = eye_white_shadow  # Dithered transition
+					_sp(img, ex + x, eye_y + y, color)
 
-		# Upper eyelid shadow
-		for x in range(-ew + 1, ew):
+		# Upper eyelid line (thicker, more defined)
+		for x in range(-ew, ew + 1):
 			_sp(img, ex + x, eye_y - eh, eye_shadow)
+			if abs(x) < ew - 1:
+				_sp(img, ex + x, eye_y - eh - 1, eyelash)
 
-		# Iris (colored circle)
+		# Eyelashes at corners (SNES-style emphasis)
+		_sp(img, ex + ew, eye_y - eh + 1, eyelash)
+		_sp(img, ex - ew, eye_y - eh + 1, eyelash)
+
+		# Iris with proper shading (3-zone: light top, base, dark bottom)
 		for y in range(-iris_r, iris_r + 1):
 			for x in range(-iris_r, iris_r + 1):
 				if x * x + y * y <= iris_r * iris_r:
-					var c = eye_iris
+					var px = ex + x
+					var py = eye_y + y
+					var color = eye_iris
 					if y < 0:
-						c = eye_iris.lightened(0.15)
-					_sp(img, ex + x, eye_y + y, c)
+						color = eye_iris_light
+					elif y > 0:
+						color = eye_iris_dark
+					# Dithered transition
+					elif (px + py) % 2 == 0:
+						color = eye_iris_light
+					_sp(img, px, py, color)
 
-		# Pupil
+		# Pupil (slightly larger, more prominent)
 		_sp(img, ex, eye_y, eye_pupil)
 		if iris_r >= 2:
 			_sp(img, ex, eye_y + 1, eye_pupil)
+			_sp(img, ex - 1, eye_y, eye_pupil)  # Slight horizontal expansion
 
-		# Catchlight (white reflection dot, upper-left)
+		# Primary catchlight (bright white, positioned for light source)
 		_sp(img, ex - 1, eye_y - 1, eye_highlight)
 
-		# Lower eyelash for emphasis
-		_sp(img, ex + ew - 1, eye_y + eh - 1, eye_shadow)
+		# Secondary catchlight (smaller, dimmer - classic SNES double highlight)
+		if iris_r >= 2:
+			var secondary = eye_highlight
+			secondary.a = 0.6
+			var sec_x = ex + 1
+			var sec_y = eye_y + 1
+			if sec_x >= 0 and sec_x < img.get_width() and sec_y >= 0 and sec_y < img.get_height():
+				var existing = img.get_pixel(sec_x, sec_y)
+				if existing.a > 0:
+					_sp(img, sec_x, sec_y, existing.blend(secondary))
+
+		# Lower eyelid subtle line
+		for x in range(-ew + 2, ew - 1):
+			var lower_y = eye_y + eh
+			var lid_color = eye_shadow
+			lid_color.a = 0.4
+			var px = ex + x
+			if px >= 0 and px < img.get_width() and lower_y >= 0 and lower_y < img.get_height():
+				var existing = img.get_pixel(px, lower_y)
+				if existing.a > 0:
+					_sp(img, px, lower_y, existing.blend(lid_color))
 
 
 func _draw_eyebrows_snes(img: Image, cx: int, face_cy: int) -> void:
@@ -721,6 +856,14 @@ func _get_job_color(job: String) -> Color:
 		"white_mage": return Color(0.9, 0.9, 0.95)
 		"black_mage": return Color(0.3, 0.3, 0.6)
 		"thief": return Color(0.3, 0.6, 0.3)
+		"guardian": return Color(0.6, 0.55, 0.4)
+		"ninja": return Color(0.25, 0.25, 0.35)
+		"summoner": return Color(0.3, 0.7, 0.5)
+		"time_mage": return Color(0.4, 0.3, 0.7)
+		"necromancer": return Color(0.4, 0.15, 0.3)
+		"scriptweaver": return Color(0.3, 0.6, 0.55)
+		"bossbinder": return Color(0.6, 0.25, 0.25)
+		"skiptrotter": return Color(0.6, 0.5, 0.2)
 		"red_mage": return Color(0.7, 0.3, 0.5)
 		"monk": return Color(0.6, 0.4, 0.2)
 		"shopkeeper": return Color(0.6, 0.5, 0.3)

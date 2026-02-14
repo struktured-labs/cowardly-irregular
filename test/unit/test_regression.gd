@@ -15,6 +15,7 @@ func before_each() -> void:
 	_combatant.combatant_name = "Test Enemy"
 	_combatant.max_hp = 100
 	_combatant.current_hp = 100
+	_combatant.defense = 0  # Zero defense for predictable damage calculations
 	add_child_autofree(_combatant)
 
 
@@ -129,9 +130,9 @@ func test_shop_scene_uses_canvas_layer() -> void:
 	# Create instance
 	var shop_scene = ShopSceneScript.new()
 
-	# Verify it extends CanvasLayer (not Control)
-	assert_true(shop_scene is CanvasLayer,
-		"ShopScene should extend CanvasLayer for proper screen-space positioning")
+	# Verify it extends Control (for proper input propagation - changed from CanvasLayer)
+	assert_true(shop_scene is Control,
+		"ShopScene should extend Control for proper input handling")
 
 	# Cleanup
 	shop_scene.free()

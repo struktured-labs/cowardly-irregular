@@ -107,6 +107,12 @@ func _ready() -> void:
 	visible = false
 
 
+func _exit_tree() -> void:
+	"""Cleanup timer when node is freed"""
+	if _typing_timer and is_instance_valid(_typing_timer):
+		_typing_timer.stop()
+
+
 func _setup_typing_timer() -> void:
 	_typing_timer = Timer.new()
 	_typing_timer.one_shot = false
@@ -356,6 +362,10 @@ func _show_current_line() -> void:
 
 func _on_typing_tick() -> void:
 	"""Add next character to displayed text"""
+	# Safety check in case timer fires after node is freed
+	if not is_instance_valid(self) or not is_instance_valid(_text_label):
+		return
+
 	if _displayed_chars < _current_text.length():
 		_displayed_chars += 1
 		_text_label.text = _current_text.substr(0, _displayed_chars)
@@ -369,10 +379,13 @@ func _on_typing_tick() -> void:
 
 func _finish_typing() -> void:
 	"""Complete the typing effect"""
-	_typing_timer.stop()
+	if _typing_timer and is_instance_valid(_typing_timer):
+		_typing_timer.stop()
 	_is_typing = false
-	_text_label.text = _current_text
-	_advance_hint.visible = true
+	if _text_label and is_instance_valid(_text_label):
+		_text_label.text = _current_text
+	if _advance_hint and is_instance_valid(_advance_hint):
+		_advance_hint.visible = true
 
 
 func _advance_dialogue() -> void:

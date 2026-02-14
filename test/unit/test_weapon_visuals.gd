@@ -4,6 +4,7 @@ extends GutTest
 ## Tests equipment data loading, weapon visual parameters, and sprite generation
 
 const BattleAnimator = preload("res://src/battle/BattleAnimator.gd")
+const SpriteUtils = preload("res://src/battle/sprites/SpriteUtils.gd")
 
 
 # =============================================================================
@@ -175,7 +176,7 @@ func test_invalid_weapon_returns_default() -> void:
 
 
 func test_default_sword_visual() -> void:
-	var visual = BattleAnimator._get_default_weapon_visual("sword")
+	var visual = SpriteUtils._get_default_weapon_visual("sword")
 
 	assert_eq(visual.get("type"), "sword")
 	assert_true(visual.has("metal"))
@@ -185,7 +186,7 @@ func test_default_sword_visual() -> void:
 
 
 func test_default_staff_visual() -> void:
-	var visual = BattleAnimator._get_default_weapon_visual("staff")
+	var visual = SpriteUtils._get_default_weapon_visual("staff")
 
 	assert_eq(visual.get("type"), "staff")
 	assert_true(visual.has("wood"))
@@ -194,7 +195,7 @@ func test_default_staff_visual() -> void:
 
 
 func test_default_dagger_visual() -> void:
-	var visual = BattleAnimator._get_default_weapon_visual("dagger")
+	var visual = SpriteUtils._get_default_weapon_visual("dagger")
 
 	assert_eq(visual.get("type"), "dagger")
 	assert_true(visual.has("blade"))
@@ -202,7 +203,7 @@ func test_default_dagger_visual() -> void:
 
 
 func test_unknown_type_returns_sword_default() -> void:
-	var visual = BattleAnimator._get_default_weapon_visual("unknown_type")
+	var visual = SpriteUtils._get_default_weapon_visual("unknown_type")
 
 	assert_eq(visual.get("type"), "sword", "Unknown type should default to sword")
 

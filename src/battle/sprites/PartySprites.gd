@@ -136,95 +136,184 @@ static func _create_hero_frame(pose: int, y_offset: float, weapon_visual: Dictio
 
 
 static func _draw_hero_body_enhanced(img: Image, cx: int, cy: int, lean: int, armor: Color, armor_dark: Color, armor_mid: Color, armor_light: Color, armor_shine: Color, skin: Color, skin_dark: Color, hair: Color, outline: Color) -> void:
-	"""Draw enhanced SNES-style hero body (knight/fighter)"""
-	# Head outline
+	"""Draw enhanced SNES-style hero body (knight/fighter) - FF4/5/6 inspired"""
+
+	# Generate proper skin palette for face shading
+	var skin_palette = _SU.make_4shade_palette(skin)
+	var skin_shadow = skin_palette[1]
+	var skin_highlight = skin_palette[3]
+
+	# Head - slightly larger proportions for JRPG style (chibi-adjacent)
 	var head_x = cx + lean/4
-	var head_y = cy - _SU._s(28)
-	var head_rx = _SU._s(6)
-	var head_ry = _SU._s(7)
+	var head_y = cy - _SU._s(26)  # Moved up slightly for better proportions
+	var head_rx = _SU._s(7)       # Slightly larger head
+	var head_ry = _SU._s(8)
 
-	for y in range(-head_ry - 1, head_ry + 2):
+	# Anti-aliased head outline
+	_SU._draw_aa_ellipse_outline(img, head_x, head_y, head_rx, head_ry, outline)
+
+	# Hair with proper shading (SNES style - distinct hair shape)
+	var hair_palette = _SU.make_4shade_palette(hair)
+	var hair_dark = hair_palette[1]
+	var hair_highlight = hair_palette[3]
+	for y in range(-head_ry - _SU._s(3), -head_ry/3):
 		for x in range(-head_rx - 1, head_rx + 2):
-			var dist = sqrt(pow(float(x) / (head_rx + 1), 2) + pow(float(y) / (head_ry + 1), 2))
-			if dist >= 0.85 and dist < 1.0:
-				_SU._safe_pixel(img, head_x + x, head_y + y, outline)
+			var hair_dist = sqrt(pow(float(x) / (head_rx + 1), 2) + pow(float(y + head_ry) / (head_ry * 0.6), 2))
+			if hair_dist < 1.15:
+				var px = head_x + x
+				var py = head_y + y
+				var color = hair
+				# 4-zone hair shading
+				if y < -head_ry - _SU._s(1):
+					color = hair_highlight
+				elif x > head_rx * 0.3:
+					color = hair_dark
+				# Dithered transitions
+				elif y > -head_ry and ((px + py) % 2 == 0):
+					color = hair_dark
+				_SU._safe_pixel(img, px, py, color)
+	# Hair shine (iconic JRPG highlight)
+	_SU._draw_specular(img, head_x - _SU._s(2), head_y - head_ry, 1, hair_highlight)
 
-	# Hair (top of head)
-	for y in range(-head_ry - _SU._s(2), -head_ry/2):
-		for x in range(-head_rx, head_rx + 1):
-			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y + head_ry) / (head_ry/2), 2))
-			if dist < 1.2:
-				_SU._safe_pixel(img, head_x + x, head_y + y, hair)
-
-	# Head fill (face)
-	for y in range(-head_ry, head_ry + 1):
-		for x in range(-head_rx, head_rx + 1):
+	# Face fill with proper skin shading
+	for y in range(-head_ry + _SU._s(2), head_ry + 1):
+		for x in range(-head_rx + 1, head_rx):
 			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
-			if dist < 1.0:
+			if dist < 0.95:
+				var px = head_x + x
+				var py = head_y + y
 				var color = skin
-				if y < -head_ry * 0.3:
-					continue  # Hair covers this
-				elif x < -head_rx * 0.4:
-					color = skin_dark
-				_SU._safe_pixel(img, head_x + x, head_y + y, color)
+				var v_pos = float(y) / head_ry
+				var h_pos = float(x) / head_rx
 
-	# Eyes
+				# Face shading zones
+				if v_pos < -0.2 and h_pos < 0.2:
+					color = skin_highlight  # Forehead highlight
+				elif v_pos > 0.3:
+					color = skin_shadow  # Chin shadow
+				elif h_pos > 0.4:
+					color = skin_dark    # Side shadow
+				# Cheek blush (subtle)
+				if v_pos > 0.0 and v_pos < 0.4 and abs(h_pos) > 0.3 and abs(h_pos) < 0.7:
+					color = skin.lerp(Color(0.9, 0.6, 0.55), 0.12)
+				_SU._safe_pixel(img, px, py, color)
+
+	# SNES-style eyes with full detail
 	for eye_side in [-1, 1]:
 		var eye_x = head_x + eye_side * _SU._s(3)
-		var eye_y = head_y
-		_SU._safe_pixel(img, eye_x, eye_y, Color(0.3, 0.4, 0.6))
-		_SU._safe_pixel(img, eye_x, eye_y - 1, Color(0.2, 0.2, 0.3))
+		var eye_y = head_y + _SU._s(1)
+		_SU._draw_snes_eye(img, eye_x, eye_y, _SU._s(2), Color(0.3, 0.45, 0.7), eye_side == -1)
 
-	# Helmet (visor piece)
+	# Helmet/headband piece (fighter's iconic headgear)
+	var helm_y = head_y - _SU._s(3)
 	for hx in range(-head_rx, head_rx + 1):
-		_SU._safe_pixel(img, head_x + hx, head_y - _SU._s(4), armor_light)
+		var helm_color = armor_light if hx < 0 else armor_mid
+		_SU._safe_pixel(img, head_x + hx, helm_y, helm_color)
+		_SU._safe_pixel(img, head_x + hx, helm_y + 1, armor_mid if hx < 0 else armor_dark)
+	# Helmet gem/ornament
+	_SU._safe_pixel(img, head_x, helm_y, Color(0.9, 0.2, 0.2))
+	_SU._safe_pixel(img, head_x - 1, helm_y, Color(0.7, 0.15, 0.15))
 
-	# Body armor outline
-	var body_width = _SU._s(9)
-	var body_height = _SU._s(18)
+	# Body armor with proper SNES 4-zone shading
+	var body_width = _SU._s(10)
+	var body_height = _SU._s(16)
+	var body_y = cy - _SU._s(6)
 
+	# Armor outline
 	for y in range(-body_height/2, body_height/2 + 2):
-		var width = body_width - abs(y) / 5
+		var width = body_width - abs(y) / 4
 		for x in range(-width - 1, width + 2):
 			var inside = abs(x) - width
 			if inside >= 0 and inside < 2:
-				_SU._safe_pixel(img, cx + x + lean/4, cy + y - _SU._s(8), outline)
+				_SU._safe_pixel(img, cx + x + lean/4, body_y + y, outline)
 
-	# Body armor fill
+	# Armor fill with dithered transitions
 	for y in range(-body_height/2, body_height/2 + 1):
-		var width = body_width - abs(y) / 5
-		for x in range(-width, width + 1):
+		var width = body_width - abs(y) / 4
+		for raw_x in range(-width, width + 1):
+			var x = raw_x + lean/4
+			var px = cx + x
+			var py = body_y + y
 			var color = armor
-			if y < -body_height/4:
+			var v_pos = float(y) / (body_height/2)
+			var h_pos = float(raw_x) / width
+
+			# 4-zone shading
+			if v_pos < -0.4:
 				color = armor_light
-			elif y > body_height/4:
+			elif v_pos < -0.2:
+				color = armor_light if ((px + py) % 2 == 0) else armor
+			elif v_pos > 0.4:
 				color = armor_dark
-			if abs(x) > width * 0.6:
-				color = armor_mid
-			_SU._safe_pixel(img, cx + x + lean/4, cy + y - _SU._s(8), color)
+			elif v_pos > 0.2:
+				color = armor_mid if ((px + py) % 2 == 0) else armor_dark
 
-	# Armor shine spot
-	_SU._safe_pixel(img, cx - _SU._s(3) + lean/4, cy - _SU._s(12), armor_shine)
-	_SU._safe_pixel(img, cx - _SU._s(2) + lean/4, cy - _SU._s(12), armor_shine)
+			# Side shading
+			if h_pos > 0.5:
+				if v_pos > 0.2:
+					color = armor_dark
+				else:
+					color = armor_mid
+			elif h_pos < -0.5 and v_pos < 0:
+				# Rim light on left edge
+				if h_pos < -0.7 and ((px + py) % 3 == 0):
+					color = armor_shine
 
-	# Shoulder pauldrons
+			_SU._safe_pixel(img, px, py, color)
+
+	# Armor specular highlight
+	_SU._draw_specular(img, cx - _SU._s(3) + lean/4, body_y - _SU._s(4), 2, armor_shine)
+
+	# Shoulder pauldrons with proper round shading
 	for shoulder_side in [-1, 1]:
-		var shoulder_x = cx + shoulder_side * _SU._s(10) + lean/5
-		var shoulder_y = cy - _SU._s(14)
-		for sy in range(_SU._s(-4), _SU._s(5)):
-			var sw = _SU._s(5) - abs(sy) / 2
-			for sx in range(-sw, sw + 1):
-				var color = armor_mid if sy > 0 else armor_light
-				_SU._safe_pixel(img, shoulder_x + sx, shoulder_y + sy, color)
+		var shoulder_x = cx + shoulder_side * _SU._s(11) + lean/5
+		var shoulder_y = cy - _SU._s(12)
+		var shoulder_r = _SU._s(5)
 
-	# Legs
+		# Pauldron outline
+		_SU._draw_aa_ellipse_outline(img, shoulder_x, shoulder_y, shoulder_r, shoulder_r - 1, outline)
+
+		# Pauldron fill
+		for sy in range(-shoulder_r + 1, shoulder_r):
+			for sx in range(-shoulder_r, shoulder_r + 1):
+				var dist = sqrt(pow(float(sx) / shoulder_r, 2) + pow(float(sy) / (shoulder_r - 1), 2))
+				if dist < 0.9:
+					var color = armor
+					if sy < -shoulder_r * 0.3:
+						color = armor_light
+					elif sy > shoulder_r * 0.3:
+						color = armor_dark
+					elif sx * shoulder_side > shoulder_r * 0.3:
+						color = armor_mid
+					_SU._safe_pixel(img, shoulder_x + sx, shoulder_y + sy, color)
+
+		# Pauldron specular
+		_SU._safe_pixel(img, shoulder_x - _SU._s(1), shoulder_y - _SU._s(2), armor_shine)
+
+	# Legs with boots
 	for leg_side in [-1, 1]:
 		var leg_x = cx + leg_side * _SU._s(4) + lean/6
-		for y in range(_SU._s(8), _SU._s(18)):
-			var leg_width = _SU._s(4) - (y - _SU._s(8)) / 10
+		# Upper leg (armor)
+		for y in range(_SU._s(8), _SU._s(14)):
+			var leg_width = _SU._s(4) - (y - _SU._s(8)) / 8
 			for lx in range(-leg_width, leg_width + 1):
 				var color = armor_mid if lx * leg_side < 0 else armor_dark
 				_SU._safe_pixel(img, leg_x + lx, cy + y, color)
+			# Outline
+			_SU._safe_pixel(img, leg_x - leg_width - 1, cy + y, outline)
+			_SU._safe_pixel(img, leg_x + leg_width + 1, cy + y, outline)
+
+		# Boots (darker, distinct)
+		var boot_color = armor_dark.darkened(0.15)
+		var boot_highlight = armor_dark
+		for y in range(_SU._s(14), _SU._s(18)):
+			var boot_width = _SU._s(4) - (y - _SU._s(14)) / 6
+			for bx in range(-boot_width, boot_width + 1):
+				var color = boot_highlight if bx * leg_side < 0 else boot_color
+				_SU._safe_pixel(img, leg_x + bx, cy + y, color)
+		# Boot sole
+		for bx in range(_SU._s(-4), _SU._s(3)):
+			_SU._safe_pixel(img, leg_x + bx, cy + _SU._s(18), outline)
 
 
 static func _draw_sword_enhanced(img: Image, cx: int, cy: int, angle: int, metal: Color, metal_light: Color, metal_dark: Color, outline: Color) -> void:
@@ -406,15 +495,22 @@ static func _create_mage_frame(pose: int, y_offset: float, robe_color: Color, we
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	# SNES-quality 6-color robe palette
-	var color_robe = robe_color
-	var color_robe_dark = robe_color.darkened(0.35)
-	var color_robe_mid = robe_color.darkened(0.18)
-	var color_robe_light = robe_color.lightened(0.2)
-	var color_robe_shine = robe_color.lightened(0.4)
-	var color_skin = Color(0.9, 0.7, 0.6)
-	var color_skin_dark = Color(0.7, 0.5, 0.4)
-	var color_outline = Color(0.08, 0.08, 0.15)
+	# Generate proper SNES-style 5-shade robe palette
+	var robe_palette = _SU.make_5shade_palette(robe_color)
+	var color_robe_deep = robe_palette[0]
+	var color_robe_dark = robe_palette[1]
+	var color_robe = robe_palette[2]
+	var color_robe_light = robe_palette[3]
+	var color_robe_shine = robe_palette[4]
+	var color_robe_mid = robe_color.darkened(0.15)
+
+	# Skin palette with proper warm tones
+	var skin_palette = _SU.make_4shade_palette(Color(0.92, 0.72, 0.62))
+	var color_skin_shadow = skin_palette[1]
+	var color_skin = skin_palette[2]
+	var color_skin_highlight = skin_palette[3]
+	var color_skin_dark = color_skin_shadow
+	var color_outline = Color(0.06, 0.06, 0.12)
 
 	var color_staff = weapon_visual.get("wood", Color(0.5, 0.3, 0.2))
 	var color_staff_dark = Color(0.35, 0.2, 0.12)

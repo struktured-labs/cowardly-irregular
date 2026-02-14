@@ -128,6 +128,16 @@ func _ready() -> void:
 	# _refresh_grid() will be called in setup() after rules are loaded
 
 
+func _exit_tree() -> void:
+	# Cleanup modal and keyboard if they exist
+	if _edit_modal and is_instance_valid(_edit_modal):
+		_edit_modal.queue_free()
+	_edit_modal = null
+	if _keyboard and is_instance_valid(_keyboard):
+		_keyboard.queue_free()
+	_keyboard = null
+
+
 func setup(char_id: String, char_name: String, char_combatant: Combatant = null, char_party: Array = []) -> void:
 	"""Setup editor for a specific character"""
 	character_id = char_id
@@ -1408,25 +1418,25 @@ func _input(event: InputEvent) -> void:
 
 	# Portrait panel focus mode (character selection via D-pad)
 	if _portrait_focused:
-		if event.is_action_pressed("ui_up"):
+		if event.is_action_pressed("ui_up") and not event.is_echo():
 			_cycle_character(-1)
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_down"):
+		elif event.is_action_pressed("ui_down") and not event.is_echo():
 			_cycle_character(1)
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_accept"):
+		elif (event.is_action_pressed("ui_right") or event.is_action_pressed("ui_accept")) and not event.is_echo():
 			_portrait_focused = false
 			_update_cursor()
 			SoundManager.play_ui("menu_move")
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_left"):
+		elif event.is_action_pressed("ui_left") and not event.is_echo():
 			SoundManager.play_ui("menu_error")
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_cancel"):
+		elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 			_portrait_focused = false
 			_update_cursor()
 			SoundManager.play_ui("menu_move")
@@ -1434,22 +1444,22 @@ func _input(event: InputEvent) -> void:
 			return
 		# Fall through for other inputs (save, toggle, etc.)
 
-	# D-Pad navigation
-	if event.is_action_pressed("ui_up"):
+	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		cursor_row = max(0, cursor_row - 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		cursor_row = min(rules.size() - 1, cursor_row + 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left"):
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		if cursor_col == 0:
 			# Enter portrait panel focus mode for character switching
 			_portrait_focused = true
@@ -1460,19 +1470,19 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") and not event.is_echo():
 		cursor_col = min(_get_max_col_for_row(cursor_row), cursor_col + 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	# A button - Edit cell
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_edit_current_cell()
 		get_viewport().set_input_as_handled()
 
 	# B button - Delete current cell
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
@@ -1702,8 +1712,11 @@ func _open_action_editor() -> void:
 
 	if group_idx < action_groups.size():
 		var group = action_groups[group_idx]
-		var action_idx = group["start_idx"]
-		var group_count = group["count"]
+		var action_idx = group.get("start_idx", 0)
+		var group_count = group.get("count", 1)
+		# Validate action_idx is within bounds
+		if action_idx < 0 or action_idx >= actions.size():
+			return
 		var action = actions[action_idx]
 		var current_type = action.get("type", "attack")
 		var current_ability_id = action.get("id", "")

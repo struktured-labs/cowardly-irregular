@@ -55,6 +55,21 @@ func _ready() -> void:
 	visible = false
 
 
+func _exit_tree() -> void:
+	"""Disconnect from singleton signals when freed"""
+	if BattleManager:
+		if BattleManager.battle_started.is_connected(_on_battle_started):
+			BattleManager.battle_started.disconnect(_on_battle_started)
+		if BattleManager.battle_ended.is_connected(_on_battle_ended):
+			BattleManager.battle_ended.disconnect(_on_battle_ended)
+		if BattleManager.selection_turn_started.is_connected(_on_selection_turn_started):
+			BattleManager.selection_turn_started.disconnect(_on_selection_turn_started)
+
+	if AutobattleSystem:
+		if AutobattleSystem.character_script_changed.is_connected(_on_character_script_changed):
+			AutobattleSystem.character_script_changed.disconnect(_on_character_script_changed)
+
+
 func _input(event: InputEvent) -> void:
 	# Only process during battle selection phase
 	if not BattleManager or not BattleManager.is_selecting():

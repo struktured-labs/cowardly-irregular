@@ -61,106 +61,131 @@ static func _create_slime_frame(pose: int, y_offset: float, scale_y: float) -> I
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	var color_slime = Color(0.3, 0.8, 0.3)
-	var color_slime_dark = Color(0.15, 0.4, 0.15)
-	var color_slime_mid = Color(0.25, 0.65, 0.25)
-	var color_slime_light = Color(0.5, 0.95, 0.5)
-	var color_slime_shine = Color(0.7, 1.0, 0.7)
-	var color_outline = Color(0.1, 0.25, 0.1, 0.9)
-	var color_core = Color(0.2, 0.6, 0.9, 0.4)
+	# SNES-style 5-shade palette for slime (more vibrant green)
+	var base_green = Color(0.25, 0.75, 0.35)
+	var palette = _SU.make_5shade_palette(base_green)
+	var color_deep_shadow = palette[0]   # Dark green-blue
+	var color_shadow = palette[1]         # Medium shadow
+	var color_slime = palette[2]          # Base green
+	var color_highlight = palette[3]      # Bright green
+	var color_rim = palette[4]            # Rim light (almost white-green)
+	var color_outline = Color(0.08, 0.22, 0.12, 0.95)
+	var color_core = Color(0.3, 0.7, 0.95, 0.35)  # Blue inner glow
+	var color_specular = Color(0.85, 1.0, 0.9)     # White-green specular
 
 	var center_x = size / 2
 	var base_y = int(size * 0.65 + _sf(y_offset))
 	var radius = _s(18)
 
-	# Outline
+	# Anti-aliased outline with proper edge smoothing
 	var outline_radius = radius + _s(2)
-	for y in range(-int(outline_radius * scale_y), int(outline_radius * scale_y) + 1):
-		for x in range(-outline_radius, outline_radius + 1):
-			var dist = sqrt(pow(float(x) / outline_radius, 2) + pow(float(y) / (outline_radius * scale_y), 2))
-			if dist >= 0.85 and dist < 1.0:
-				_sp(img, center_x + x, base_y + y, color_outline)
+	_SU._draw_aa_ellipse_outline(img, center_x, base_y, int(outline_radius), int(outline_radius * scale_y), color_outline)
 
-	# Body with gradient shading
+	# Body with 4-zone SNES shading + dithered transitions
 	for y in range(-int(radius * scale_y), int(radius * scale_y) + 1):
 		for x in range(-radius, radius + 1):
 			var dist = sqrt(pow(float(x) / radius, 2) + pow(float(y) / (radius * scale_y), 2))
 			if dist < 1.0:
+				var px = center_x + x
+				var py = base_y + y
 				var color = color_slime
 				var v_pos = float(y) / (radius * scale_y)
 				var h_pos = float(x) / radius
-				if v_pos < -0.5: color = color_slime_light
-				elif v_pos < -0.2: color = color_slime
-				elif v_pos > 0.5: color = color_slime_dark
-				elif v_pos > 0.2: color = color_slime_mid
-				if h_pos < -0.5 and v_pos > -0.3: color = color.darkened(0.15)
-				elif h_pos > 0.5 and v_pos < 0.3: color = color.lightened(0.1)
-				_sp(img, center_x + x, base_y + y, color)
 
-	# Inner glow/core
+				# 4-zone shading with dithered transitions
+				if v_pos < -0.45:
+					color = color_highlight
+				elif v_pos < -0.25:
+					# Dithered transition: highlight to base
+					color = color_highlight if ((px + py) % 2 == 0) else color_slime
+				elif v_pos > 0.55:
+					color = color_deep_shadow
+				elif v_pos > 0.35:
+					# Dithered transition: shadow to deep shadow
+					color = color_shadow if ((px + py) % 2 == 0) else color_deep_shadow
+				elif v_pos > 0.15:
+					color = color_shadow
+				# Horizontal shading (left side slightly darker for 3D effect)
+				if h_pos > 0.5 and v_pos > -0.3:
+					if v_pos > 0.35:
+						color = color_deep_shadow
+					elif (px + py) % 2 == 0:
+						color = color_shadow
+				# Rim lighting on left edge
+				if h_pos < -0.7 and v_pos < 0.2 and v_pos > -0.4:
+					if (px + py) % 3 == 0:
+						color = color_rim
+				_sp(img, px, py, color)
+
+	# Inner glow/core (translucent blue center)
 	var core_radius = _s(8)
 	for y in range(-int(core_radius * scale_y), int(core_radius * scale_y) + 1):
 		for x in range(-core_radius, core_radius + 1):
 			var dist = sqrt(pow(float(x) / core_radius, 2) + pow(float(y) / (core_radius * scale_y), 2))
 			if dist < 0.7:
 				var px = center_x + x + _s(2)
-				var py = base_y + y - _s(2)
+				var py = base_y + y - _s(3)
 				if px >= 0 and px < size and py >= 0 and py < size:
 					var existing = img.get_pixel(px, py)
 					if existing.a > 0:
-						_sp(img, px, py, existing.blend(color_core))
+						var intensity = (0.7 - dist) / 0.7
+						var core = color_core
+						core.a = intensity * 0.4
+						_sp(img, px, py, existing.blend(core))
 
-	# Eyes
+	# SNES-style eyes with proper detail
 	var eye_y = base_y - _s(int(6 * scale_y))
 	var eye_spacing = _s(8)
-	var eye_size = _s(3)
 	if pose != 4:
 		for eye_side in [-1, 1]:
 			var eye_x = center_x + eye_side * eye_spacing
-			for ey in range(-eye_size, eye_size + 1):
-				for ex in range(-eye_size, eye_size + 1):
-					if ex * ex + ey * ey <= eye_size * eye_size:
-						_sp(img, eye_x + ex, eye_y + ey, Color(0.1, 0.1, 0.1))
-			var pupil_size = _s(1)
-			for ey in range(-pupil_size, pupil_size + 1):
-				for ex in range(-pupil_size, pupil_size + 1):
-					_sp(img, eye_x + ex, eye_y + ey, Color.BLACK)
-			_sp(img, eye_x - _s(1), eye_y - _s(1), Color.WHITE)
+			# Eye socket (darker indent)
+			for ey in range(_s(-4), _s(4)):
+				for ex in range(_s(-4), _s(4)):
+					if ex * ex + ey * ey <= _s(4) * _s(4):
+						var socket_color = color_shadow
+						socket_color.a = 0.6
+						var spx = eye_x + ex
+						var spy = eye_y + ey
+						if spx >= 0 and spx < size and spy >= 0 and spy < size:
+							var existing = img.get_pixel(spx, spy)
+							if existing.a > 0:
+								_sp(img, spx, spy, existing.blend(socket_color))
+			# Eye white/iris
+			_SU._draw_snes_eye(img, eye_x, eye_y, _s(3), Color(0.15, 0.15, 0.2), eye_side == -1)
 
-	# Shine spots
+	# Primary specular highlight (top-left, classic SNES placement)
 	if pose != 4:
-		var shine_y = base_y - _s(int(14 * scale_y))
-		var shine_x = center_x - _s(6)
-		for sy in range(_s(-4), _s(1)):
-			for sx in range(_s(-3), _s(4)):
-				var dist = sqrt(sx * sx + sy * sy)
-				if dist < _sf(4):
-					var alpha = 1.0 - dist / _sf(4)
-					var shine_color = color_slime_shine
-					shine_color.a = alpha * 0.8
-					var spx = shine_x + sx
-					var spy = shine_y + sy
-					if spx >= 0 and spx < size and spy >= 0 and spy < size:
-						var existing = img.get_pixel(spx, spy)
-						if existing.a > 0:
-							_sp(img, spx, spy, existing.blend(shine_color))
-		var shine2_y = base_y - _s(int(8 * scale_y))
-		var shine2_x = center_x + _s(8)
-		for sy in range(_s(-2), _s(1)):
-			for sx in range(_s(-2), _s(2)):
-				if abs(sx) + abs(sy) < _s(3):
-					_sp(img, shine2_x + sx, shine2_y + sy, color_slime_light)
+		var spec_x = center_x - _s(6)
+		var spec_y = base_y - _s(int(12 * scale_y))
+		_SU._draw_specular(img, spec_x, spec_y, 2, color_specular)
 
-	# Drip details
+		# Secondary smaller highlight
+		var spec2_x = center_x + _s(7)
+		var spec2_y = base_y - _s(int(8 * scale_y))
+		_sp(img, spec2_x, spec2_y, color_rim)
+
+	# Drip details with better shading
 	if pose != 4 and scale_y >= 0.9:
 		var drip_y = base_y + int(radius * scale_y) - _s(2)
-		for drip in [_s(-8), _s(0), _s(6)]:
-			var drip_x = center_x + drip
-			for dy in range(_s(3)):
-				var drip_alpha = 1.0 - float(dy) / _sf(3)
-				var drip_color = color_slime_mid
-				drip_color.a = drip_alpha * 0.7
-				_sp(img, drip_x, drip_y + dy, drip_color)
+		var drip_positions = [_s(-9), _s(-2), _s(5)]
+		var drip_lengths = [_s(4), _s(6), _s(3)]
+		for i in range(3):
+			var drip_x = center_x + drip_positions[i]
+			var drip_len = drip_lengths[i]
+			for dy in range(drip_len):
+				var t = float(dy) / float(drip_len)
+				var drip_width = max(1, _s(2) - dy / 2)
+				for dx in range(-drip_width, drip_width + 1):
+					var drip_color = color_shadow if dx > 0 else color_slime
+					drip_color.a = 1.0 - t * 0.6
+					_sp(img, drip_x + dx, drip_y + dy, drip_color)
+				# Highlight on left side of drip
+				if dy < drip_len - 1:
+					_sp(img, drip_x - drip_width, drip_y + dy, color_highlight)
+
+	# Add rim lighting on the left edge for depth
+	_SU._draw_rim_light(img, center_x, base_y, radius, int(radius * scale_y), color_rim, -0.6)
 
 	return ImageTexture.create_from_image(img)
 
@@ -247,76 +272,145 @@ static func _create_skeleton_frame(pose: int, y_offset: float) -> ImageTexture:
 
 
 static func _draw_skeleton_body_enhanced(img: Image, cx: int, cy: int, lean: int, bone: Color, bone_dark: Color, bone_mid: Color, bone_light: Color, bone_shine: Color, eye: Color, eye_glow: Color, outline: Color) -> void:
-	"""Draw SNES-quality skeleton body with outline, shading, shine"""
+	"""Draw SNES-quality skeleton body with outline, shading, shine, and proper bone detail"""
 
-	# Skull with outline
+	# Skull with anti-aliased outline and 4-zone shading
 	var skull_x = cx + lean/4
 	var skull_y = cy - _s(20)
 	var skull_rx = _s(7)
 	var skull_ry = _s(8)
 
-	_SU._draw_ellipse_outline(img, skull_x, skull_y, skull_rx, skull_ry, outline)
+	# Draw AA outline for smoother edges
+	_SU._draw_aa_ellipse_outline(img, skull_x, skull_y, skull_rx, skull_ry, outline)
 
+	# Skull fill with proper 4-zone shading and dithered transitions
 	for y in range(-skull_ry, skull_ry + 1):
 		for x in range(-skull_rx, skull_rx + 1):
 			var dist = sqrt(pow(float(x) / skull_rx, 2) + pow(float(y) / skull_ry, 2))
-			if dist < 0.95:
+			if dist < 0.92:
+				var px = skull_x + x
+				var py = skull_y + y
 				var color = bone
-				if y < -skull_ry * 0.3: color = bone_light
-				elif y > skull_ry * 0.3: color = bone_dark
-				elif x < -skull_rx * 0.4: color = bone_mid
-				_sp(img, skull_x + x, skull_y + y, color)
+				var v_pos = float(y) / skull_ry
+				var h_pos = float(x) / skull_rx
 
-	# Skull shine
-	_sp(img, skull_x - _s(2), skull_y - _s(3), bone_shine)
+				# 4-zone shading with dithering
+				if v_pos < -0.4:
+					color = bone_light
+				elif v_pos < -0.2:
+					# Dither transition
+					color = bone_light if ((px + py) % 2 == 0) else bone
+				elif v_pos > 0.4:
+					color = bone_dark
+				elif v_pos > 0.2:
+					color = bone_mid if ((px + py) % 2 == 0) else bone_dark
+				# Side shading
+				if h_pos > 0.5 and v_pos > -0.3:
+					color = bone_dark if v_pos > 0.2 else bone_mid
+				_sp(img, px, py, color)
 
-	# Eye sockets with glow
+	# Skull specular highlight (classic placement)
+	_SU._draw_specular(img, skull_x - _s(2), skull_y - _s(3), 1, bone_shine)
+
+	# Eye sockets with glowing red eyes (iconic skeleton look)
 	for eye_side in [-1, 1]:
 		var ex = skull_x + eye_side * _s(3)
 		var ey = skull_y
-		for oy in range(_s(-2), _s(2)):
-			for ox in range(_s(-2), _s(2)):
+		# Dark socket
+		for oy in range(_s(-2), _s(3)):
+			for ox in range(_s(-2), _s(3)):
 				if ox * ox + oy * oy <= _s(2) * _s(2):
-					_sp(img, ex + ox, ey + oy, Color(0.05, 0.02, 0.02))
+					_sp(img, ex + ox, ey + oy, Color(0.03, 0.01, 0.01))
+		# Glowing eye core
 		_sp(img, ex, ey, eye)
+		# Eye glow effect (spreads slightly)
+		for gy in range(-1, 2):
+			for gx in range(-1, 2):
+				if gx == 0 or gy == 0:
+					var glow = eye_glow
+					glow.a = 0.4
+					var gpx = ex + gx
+					var gpy = ey + gy
+					if gpx >= 0 and gpx < img.get_width() and gpy >= 0 and gpy < img.get_height():
+						var existing = img.get_pixel(gpx, gpy)
+						if existing.a > 0:
+							_sp(img, gpx, gpy, existing.blend(glow))
+		# Bright catchlight
 		_sp(img, ex - 1, ey - 1, eye_glow)
 
-	# Jaw
+	# Jaw with teeth detail
 	for jx in range(_s(-4), _s(5)):
 		_sp(img, skull_x + jx, skull_y + _s(5), bone_dark)
-		if jx % _s(2) == 0:
-			_sp(img, skull_x + jx, skull_y + _s(6), bone)  # Teeth
+		# Individual teeth with highlights
+		if abs(jx) <= _s(3) and jx % _s(2) == 0:
+			_sp(img, skull_x + jx, skull_y + _s(6), bone_light)
+			_sp(img, skull_x + jx, skull_y + _s(7), bone)
 
-	# Spine with outline and shading
-	for y in range(_s(-12), _s(6)):
+	# Spine with proper bone segment detail
+	for seg in range(6):
+		var seg_y = cy - _s(12) + seg * _s(3)
 		var spine_x = cx + lean/8
-		_sp(img, spine_x - 1, cy + y, outline)
-		_sp(img, spine_x, cy + y, bone)
-		_sp(img, spine_x + 1, cy + y, bone_mid)
-		_sp(img, spine_x + 2, cy + y, outline)
+		# Vertebra shape (slightly wider in middle)
+		var seg_width = 2 if seg == 2 or seg == 3 else 1
+		for sw in range(-seg_width, seg_width + 1):
+			_sp(img, spine_x + sw, seg_y, bone if sw == 0 else bone_mid)
+			_sp(img, spine_x + sw, seg_y + 1, bone_mid if sw == 0 else bone_dark)
+		# Outline
+		_sp(img, spine_x - seg_width - 1, seg_y, outline)
+		_sp(img, spine_x + seg_width + 1, seg_y, outline)
 
-	# Ribcage with more detail
+	# Ribcage with curved ribs and proper shading
 	for rib in range(4):
 		var rib_y = cy - _s(10) + rib * _s(4)
-		for x in range(_s(-6), _s(7)):
-			if abs(x) > _s(1):
-				var rib_px = cx + x + lean/6
-				_sp(img, rib_px, rib_y, outline)
-				_sp(img, rib_px, rib_y + 1, bone if x < 0 else bone_mid)
+		for rib_side in [-1, 1]:
+			for rx in range(_s(2), _s(7)):
+				var curve_y = int(float(rx - _s(2)) * 0.3)
+				var rib_px = cx + rx * rib_side + lean/6
+				var rib_py = rib_y + curve_y
+				# Rib with shading (top light, bottom dark)
+				_sp(img, rib_px, rib_py, bone_light if rib_side < 0 else bone)
+				_sp(img, rib_px, rib_py + 1, bone if rib_side < 0 else bone_mid)
+				# Outline on edges
+				if rx == _s(6):
+					_sp(img, rib_px, rib_py - 1, outline)
+					_sp(img, rib_px, rib_py + 2, outline)
 
-	# Pelvis
+	# Pelvis with proper bone shape
 	for y in range(_s(5), _s(10)):
 		for x in range(_s(-5), _s(6)):
-			if abs(x) + (y - _s(5)) < _s(8):
-				_sp(img, cx + x + lean/8, cy + y, bone_dark if y > _s(7) else bone_mid)
+			var pelvis_dist = abs(x) + (y - _s(5))
+			if pelvis_dist < _s(8):
+				var color = bone
+				if y > _s(7):
+					color = bone_dark
+				elif abs(x) > _s(3):
+					color = bone_mid
+				# Dithered edges
+				if pelvis_dist > _s(6) and ((cx + x + cy + y) % 2 == 0):
+					color = bone_dark
+				_sp(img, cx + x + lean/8, cy + y, color)
 
-	# Leg bones with thickness
-	for y in range(_s(10), _s(20)):
-		for leg_side in [-1, 1]:
-			var lx = cx + leg_side * _s(4) + lean/10
+	# Leg bones (femur and tibia) with proper joint bulges
+	for leg_side in [-1, 1]:
+		var lx = cx + leg_side * _s(4) + lean/10
+		# Femur (thigh bone)
+		for y in range(_s(10), _s(15)):
+			var width = 1 if y != _s(10) and y != _s(14) else 2
+			for w in range(-width, width + 1):
+				_sp(img, lx + w, cy + y, bone if w <= 0 else bone_dark)
+			_sp(img, lx - width - 1, cy + y, outline)
+			_sp(img, lx + width + 1, cy + y, outline)
+		# Knee joint (bulge)
+		for ky in range(_s(-1), _s(2)):
+			for kx in range(_s(-2), _s(3)):
+				if abs(kx) + abs(ky) <= _s(2):
+					_sp(img, lx + kx, cy + _s(15) + ky, bone_mid)
+		# Tibia (shin bone)
+		for y in range(_s(16), _s(20)):
 			_sp(img, lx - 1, cy + y, outline)
 			_sp(img, lx, cy + y, bone)
 			_sp(img, lx + 1, cy + y, bone_dark)
+			_sp(img, lx + 2, cy + y, outline)
 
 
 static func _draw_bone_sword_enhanced(img: Image, cx: int, cy: int, angle: int, bone: Color, bone_light: Color, bone_dark: Color, outline: Color) -> void:
@@ -1358,22 +1452,36 @@ static func _create_goblin_frame(pose: int, y_offset: float) -> ImageTexture:
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	var color_skin = Color(0.45, 0.55, 0.3)
-	var color_skin_dark = Color(0.25, 0.35, 0.15)
-	var color_skin_mid = Color(0.35, 0.45, 0.22)
-	var color_skin_light = Color(0.58, 0.68, 0.42)
-	var color_cloth = Color(0.5, 0.35, 0.25)
-	var color_cloth_dark = Color(0.35, 0.22, 0.15)
-	var color_eye = Color(0.95, 0.75, 0.1)
-	var color_eye_glow = Color(1.0, 0.9, 0.3)
-	var color_club = Color(0.45, 0.32, 0.2)
-	var color_club_dark = Color(0.3, 0.2, 0.12)
-	var color_outline = Color(0.15, 0.2, 0.1)
+	# Generate SNES-style 5-shade palette for goblin skin (more vibrant green)
+	var base_green = Color(0.42, 0.55, 0.32)
+	var skin_palette = _SU.make_5shade_palette(base_green)
+	var color_skin_deep = skin_palette[0]
+	var color_skin_dark = skin_palette[1]
+	var color_skin = skin_palette[2]
+	var color_skin_light = skin_palette[3]
+	var color_skin_rim = skin_palette[4]
+
+	# Cloth palette
+	var cloth_palette = _SU.make_4shade_palette(Color(0.5, 0.35, 0.25))
+	var color_cloth_deep = cloth_palette[0]
+	var color_cloth_dark = cloth_palette[1]
+	var color_cloth = cloth_palette[2]
+	var color_cloth_light = cloth_palette[3]
+
+	var color_eye = Color(0.95, 0.78, 0.15)
+	var color_eye_glow = Color(1.0, 0.92, 0.35)
+	var color_club = Color(0.48, 0.35, 0.22)
+	var color_club_dark = Color(0.32, 0.22, 0.14)
+	var color_outline = Color(0.12, 0.18, 0.08)
 
 	var center_x = size / 2
 	var base_y = int(size * 0.72 + _sf(y_offset))
 
-	_draw_goblin_body_enhanced(img, center_x, base_y, pose, color_skin, color_skin_dark, color_skin_mid, color_skin_light, color_cloth, color_cloth_dark, color_eye, color_eye_glow, color_club, color_club_dark, color_outline)
+	_draw_goblin_body_enhanced(img, center_x, base_y, pose, color_skin, color_skin_dark, color_skin_deep, color_skin_light, color_cloth, color_cloth_dark, color_eye, color_eye_glow, color_club, color_club_dark, color_outline)
+
+	# Add rim lighting for depth
+	if pose < 6:
+		_SU._draw_rim_light(img, center_x + int(float(pose) * 2), base_y - _s(24), _s(10), _s(12), color_skin_rim, -0.7)
 
 	return ImageTexture.create_from_image(img)
 

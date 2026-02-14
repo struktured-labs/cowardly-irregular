@@ -267,40 +267,42 @@ func _input(event: InputEvent) -> void:
 		return
 
 	var layout = _get_current_layout()
+	if layout.is_empty() or layout[0].is_empty():
+		return
 	var max_row = layout.size() - 1
 	var max_col = layout[0].size() - 1
 
-	# Navigation
-	if event.is_action_pressed("ui_up"):
+	# Navigation - check echo to prevent rapid-fire when holding keys
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		cursor_row = (cursor_row - 1 + layout.size()) % layout.size()
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		cursor_row = (cursor_row + 1) % layout.size()
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left"):
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		cursor_col = (cursor_col - 1 + layout[0].size()) % layout[0].size()
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") and not event.is_echo():
 		cursor_col = (cursor_col + 1) % layout[0].size()
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	# Press key (A button)
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_press_key()
 		get_viewport().set_input_as_handled()
 
-	# Backspace / Cancel (B button)
+	# Backspace / Cancel (B button) - allow echo for backspace-like behavior
 	elif event.is_action_pressed("ui_cancel"):
 		if input_text.length() > 0:
 			input_text = input_text.substr(0, input_text.length() - 1)

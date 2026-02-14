@@ -145,8 +145,9 @@ func _char_to_tile_type(char: String) -> int:
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
+	# Map tile types to atlas coordinates (5-column layout)
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 4, tile_id / 4)
+	return Vector2i(tile_id % 5, tile_id / 5)
 
 
 func _setup_transitions() -> void:

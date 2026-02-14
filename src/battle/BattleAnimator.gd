@@ -98,6 +98,9 @@ var on_animation_complete: Callable
 ## Reference to the sprite node
 var sprite: AnimatedSprite2D
 
+## Current animation tween (stored for cleanup/cancellation)
+var _current_tween: Tween = null
+
 ## Animation callbacks
 signal animation_started(state: AnimState)
 signal animation_finished(state: AnimState)
@@ -113,6 +116,19 @@ func setup(animated_sprite: AnimatedSprite2D) -> void:
 	sprite = animated_sprite
 	if sprite:
 		sprite.animation_finished.connect(_on_sprite_animation_finished)
+
+
+func _exit_tree() -> void:
+	"""Cleanup when animator is freed"""
+	# Kill any running tween
+	if _current_tween and _current_tween.is_valid():
+		_current_tween.kill()
+	_current_tween = null
+
+	# Disconnect signal if sprite still valid
+	if sprite and is_instance_valid(sprite):
+		if sprite.animation_finished.is_connected(_on_sprite_animation_finished):
+			sprite.animation_finished.disconnect(_on_sprite_animation_finished)
 
 
 func play_animation(state: AnimState, loop: bool = false, on_complete: Callable = Callable()) -> void:
@@ -192,11 +208,16 @@ func play_backstab(on_complete: Callable = Callable()) -> void:
 			on_complete.call()
 		return
 
+	# Kill any existing animation tween
+	if _current_tween and _current_tween.is_valid():
+		_current_tween.kill()
+
 	# Store original position
 	var original_pos = sprite.position
 
 	# Quick diagonal dash forward-left
-	var tween = create_tween()
+	_current_tween = create_tween()
+	var tween = _current_tween
 	tween.set_trans(Tween.TRANS_EXPO)
 	tween.tween_property(sprite, "position", original_pos + Vector2(-30, -15), 0.1)
 
@@ -228,6 +249,10 @@ func play_steal(on_complete: Callable = Callable()) -> void:
 			on_complete.call()
 		return
 
+	# Kill any existing animation tween
+	if _current_tween and _current_tween.is_valid():
+		_current_tween.kill()
+
 	var original_pos = sprite.position
 
 	# Play attack animation
@@ -235,7 +260,8 @@ func play_steal(on_complete: Callable = Callable()) -> void:
 		sprite.play("attack")
 
 	# Quick dash forward
-	var tween = create_tween()
+	_current_tween = create_tween()
+	var tween = _current_tween
 	tween.set_trans(Tween.TRANS_BACK)
 	tween.tween_property(sprite, "position", original_pos + Vector2(-50, 0), 0.12)
 
@@ -263,10 +289,15 @@ func play_skill(on_complete: Callable = Callable()) -> void:
 			on_complete.call()
 		return
 
+	# Kill any existing animation tween
+	if _current_tween and _current_tween.is_valid():
+		_current_tween.kill()
+
 	var original_pos = sprite.position
 
 	# Play attack animation with a slight forward lean
-	var tween = create_tween()
+	_current_tween = create_tween()
+	var tween = _current_tween
 
 	# Prep pose - lean back
 	tween.tween_property(sprite, "position", original_pos + Vector2(10, 0), 0.1)
@@ -300,6 +331,10 @@ func play_mug(on_complete: Callable = Callable()) -> void:
 			on_complete.call()
 		return
 
+	# Kill any existing animation tween
+	if _current_tween and _current_tween.is_valid():
+		_current_tween.kill()
+
 	var original_pos = sprite.position
 
 	# Play attack animation
@@ -307,7 +342,8 @@ func play_mug(on_complete: Callable = Callable()) -> void:
 		sprite.play("attack")
 
 	# Aggressive dash forward with spin effect
-	var tween = create_tween()
+	_current_tween = create_tween()
+	var tween = _current_tween
 	tween.set_trans(Tween.TRANS_EXPO)
 	tween.tween_property(sprite, "position", original_pos + Vector2(-45, 0), 0.1)
 	tween.parallel().tween_property(sprite, "rotation", 0.3, 0.1)

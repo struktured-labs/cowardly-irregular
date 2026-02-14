@@ -230,8 +230,9 @@ func _apply_corruption_to_save(save_data: Dictionary) -> Dictionary:
 					corrupted_data["corruption_effects"] = []
 				corrupted_data["corruption_effects"].append("data_integrity_compromised")
 			4:  # Corrupt game constants
-				if corrupted_data.has("game_constants"):
-					var constant = game_constants.keys()[randi() % game_constants.size()]
+				if corrupted_data.has("game_constants") and game_constants.size() > 0:
+					var keys = game_constants.keys()
+					var constant = keys[randi() % keys.size()]
 					corrupted_data["game_constants"][constant] *= randf_range(0.7, 1.3)
 
 	return corrupted_data

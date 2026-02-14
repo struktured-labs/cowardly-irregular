@@ -315,6 +315,8 @@ func interact(player: Node2D) -> void:
 		dialogue_box.visible = true
 		dialogue_label.text = "The chest is empty."
 		await get_tree().create_timer(1.0).timeout
+		if not is_instance_valid(self) or not is_instance_valid(dialogue_box):
+			return
 		dialogue_box.visible = false
 		return
 
@@ -374,4 +376,6 @@ func _open_chest(player: Node2D) -> void:
 
 	# Hide after delay
 	await get_tree().create_timer(2.0).timeout
+	if not is_instance_valid(self) or not is_instance_valid(dialogue_box):
+		return
 	dialogue_box.visible = false

@@ -115,13 +115,17 @@ func _init() -> void:
 func _ready() -> void:
 	_setup_timers()
 	_setup_audio()
-	_build_menu()
+	# Don't call _build_menu() here - setup() will call it with proper data
+	# This prevents a race condition when setup() is called immediately after add_child()
 	# Ensure we can receive input
 	focus_mode = Control.FOCUS_ALL
 	grab_focus()
 
 
 func _process(delta: float) -> void:
+	# Guard against running on freed node
+	if not is_instance_valid(self) or _is_closing:
+		return
 	# Check for L button hold-to-confirm
 	if _l_button_pressed and battle_mode:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - _l_button_press_time
@@ -132,6 +136,11 @@ func _process(delta: float) -> void:
 
 func _exit_tree() -> void:
 	"""Cleanup when removed from tree"""
+	# Stop timers to prevent pending callbacks
+	if _submenu_timer and is_instance_valid(_submenu_timer):
+		_submenu_timer.stop()
+	if _cursor_blink_timer and is_instance_valid(_cursor_blink_timer):
+		_cursor_blink_timer.stop()
 	_cleanup_target_highlight()
 	if submenu and is_instance_valid(submenu):
 		submenu.queue_free()
@@ -182,7 +191,7 @@ func _update_target_highlight() -> void:
 		return
 
 	# Get current item data
-	if selected_index >= menu_items.size():
+	if selected_index < 0 or selected_index >= menu_items.size():
 		_target_highlight.visible = false
 		return
 
@@ -364,7 +373,7 @@ func _update_cursor_visibility() -> void:
 
 func _on_submenu_timer_timeout() -> void:
 	"""Called when submenu delay timer fires"""
-	if selected_index >= menu_items.size():
+	if selected_index < 0 or selected_index >= menu_items.size():
 		return
 
 	var item = menu_items[selected_index]
@@ -397,8 +406,18 @@ func _build_menu() -> void:
 	if menu_items.size() == 0:
 		return
 
-	# Calculate menu size (add space for AP label if root menu in battle mode)
-	var menu_width = 140
+	# Calculate menu width dynamically based on item label lengths
+	var content_padding = MENU_PADDING * 2 + TILE_SIZE * 2 + 20  # borders + cursor + gap
+	var max_label_width = 0
+	var font = ThemeDB.fallback_font
+	for item in menu_items:
+		var label_text = item.get("label", "Item")
+		if item.has("submenu"):
+			label_text += " >"
+		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		max_label_width = max(max_label_width, text_width)
+	var menu_width = max(140, int(max_label_width) + content_padding)
+
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
 
@@ -417,6 +436,9 @@ func _build_menu() -> void:
 		_update_ap_label()
 		menu_panel.add_child(_ap_label)
 
+	# Store content width for item rows
+	var item_content_width = menu_width - MENU_PADDING * 2 - TILE_SIZE * 2
+
 	# Items container (offset by AP label if present)
 	var items_container = VBoxContainer.new()
 	items_container.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
@@ -426,7 +448,7 @@ func _build_menu() -> void:
 	# Create menu items
 	for i in range(menu_items.size()):
 		var item = menu_items[i]
-		var item_row = _create_menu_item(i, item)
+		var item_row = _create_menu_item(i, item, item_content_width)
 		items_container.add_child(item_row)
 
 	# Set size and position
@@ -436,6 +458,8 @@ func _build_menu() -> void:
 
 	# Ensure menu stays on screen
 	await get_tree().process_frame
+	if not is_instance_valid(self):
+		return
 	_clamp_to_screen()
 
 	# Highlight first item and auto-expand if it has submenu
@@ -449,8 +473,12 @@ func _build_menu() -> void:
 	# Allow input after a short delay to prevent stray key presses
 	# Use ignore_time_scale=true to keep consistent regardless of battle speed
 	await get_tree().create_timer(0.08, true, false, true).timeout  # Reduced from 0.15 for faster response
+	if not is_instance_valid(self):
+		return
 	_can_accept_input = true
 	await get_tree().create_timer(0.05, true, false, true).timeout  # Reduced from 0.1 for faster response
+	if not is_instance_valid(self):
+		return
 	_can_close_on_click = true
 
 
@@ -524,10 +552,10 @@ func _create_retro_panel(w: int, h: int) -> Control:
 	return panel
 
 
-func _create_menu_item(index: int, item: Dictionary) -> Control:
+func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -> Control:
 	"""Create a single menu item row"""
 	var row = Control.new()
-	row.custom_minimum_size = Vector2(120, ITEM_HEIGHT)
+	row.custom_minimum_size = Vector2(content_width, ITEM_HEIGHT)
 	row.name = "Item%d" % index
 
 	# Selection highlight border (top line)
@@ -535,7 +563,7 @@ func _create_menu_item(index: int, item: Dictionary) -> Control:
 	highlight_top.name = "HighlightTop"
 	highlight_top.color = style.cursor.lightened(0.3)
 	highlight_top.position = Vector2(-4, 0)
-	highlight_top.size = Vector2(128, 1)
+	highlight_top.size = Vector2(content_width + 8, 1)
 	highlight_top.visible = false
 	row.add_child(highlight_top)
 
@@ -544,7 +572,7 @@ func _create_menu_item(index: int, item: Dictionary) -> Control:
 	highlight.name = "Highlight"
 	highlight.color = style.highlight_bg.lightened(0.1)
 	highlight.position = Vector2(-4, 1)
-	highlight.size = Vector2(128, ITEM_HEIGHT - 2)
+	highlight.size = Vector2(content_width + 8, ITEM_HEIGHT - 2)
 	highlight.visible = false
 	row.add_child(highlight)
 
@@ -553,7 +581,7 @@ func _create_menu_item(index: int, item: Dictionary) -> Control:
 	highlight_bottom.name = "HighlightBottom"
 	highlight_bottom.color = style.cursor.darkened(0.2)
 	highlight_bottom.position = Vector2(-4, ITEM_HEIGHT - 1)
-	highlight_bottom.size = Vector2(128, 1)
+	highlight_bottom.size = Vector2(content_width + 8, 1)
 	highlight_bottom.visible = false
 	row.add_child(highlight_bottom)
 
@@ -592,7 +620,7 @@ func _create_menu_item(index: int, item: Dictionary) -> Control:
 	var button = Button.new()
 	button.flat = true
 	button.position = Vector2(0, 0)
-	button.size = Vector2(120, ITEM_HEIGHT)
+	button.size = Vector2(content_width, ITEM_HEIGHT)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(_on_item_pressed.bind(index))
 	button.mouse_entered.connect(_on_item_hover.bind(index))
@@ -686,7 +714,7 @@ func _on_item_hover(index: int) -> void:
 func _auto_expand_submenu() -> void:
 	"""Auto-expand submenu for current selection if it has one (with delay)"""
 	# Stop any pending submenu timer
-	if _submenu_timer:
+	if _submenu_timer and is_instance_valid(_submenu_timer):
 		_submenu_timer.stop()
 
 	# Close existing submenu first
@@ -694,7 +722,7 @@ func _auto_expand_submenu() -> void:
 		submenu.queue_free()
 		submenu = null
 
-	if selected_index >= menu_items.size():
+	if selected_index < 0 or selected_index >= menu_items.size():
 		return
 
 	var item = menu_items[selected_index]
@@ -735,7 +763,7 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	var item_y = parent_index * ITEM_HEIGHT + TILE_SIZE + MENU_PADDING
 	if expand_left:
 		# Position to the left of current menu
-		submenu_pos.x = global_position.x - 140 - 4  # Menu width + gap
+		submenu_pos.x = global_position.x - size.x - 4  # Menu width + gap
 	else:
 		submenu_pos.x = global_position.x + size.x + 4
 
@@ -827,6 +855,9 @@ func force_close() -> void:
 		return
 	_is_closing = true
 
+	# Reset L button state to prevent stale state
+	_l_button_pressed = false
+
 	# Hide immediately (queue_free happens at end of frame)
 	hide()
 
@@ -857,7 +888,7 @@ func _cleanup_target_highlight() -> void:
 
 func _handle_advance_input() -> void:
 	"""Handle R button / Shift+Enter - queue current action or confirm if at limit"""
-	var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.has("submenu"):
 		# Has submenu - expand it to select target
@@ -981,7 +1012,7 @@ func _cancel_all_queued() -> void:
 
 func _submit_actions() -> void:
 	"""Submit all queued actions + current selection"""
-	var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.get("disabled", false):
 		return
@@ -1158,7 +1189,7 @@ func _input(event: InputEvent) -> void:
 				_auto_expand_submenu()
 				get_viewport().set_input_as_handled()
 			KEY_Z, KEY_ENTER, KEY_SPACE:
-				var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+				var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 				if current_item.has("submenu"):
 					# Has submenu - expand it immediately
 					_play_expand_sound()
@@ -1189,8 +1220,12 @@ func _input(event: InputEvent) -> void:
 					# At root with no queue - go back to previous player
 					_play_cancel_sound()
 					go_back_requested.emit()
-					# Close this menu immediately
 					force_close()
+				elif is_root_menu and not battle_mode:
+					# Non-battle root menu (shops, etc) - close on cancel
+					_play_cancel_sound()
+					force_close()
+				# In battle mode at root with no queue and can't go back: B is a no-op
 				get_viewport().set_input_as_handled()
 			KEY_RIGHT:
 				# For left-expanding: RIGHT goes back to parent
@@ -1199,6 +1234,10 @@ func _input(event: InputEvent) -> void:
 					if parent_menu:
 						_play_move_sound()
 						queue_free()
+					elif is_root_menu and not battle_mode:
+						# Non-battle root menu - close on back
+						_play_cancel_sound()
+						force_close()
 				else:
 					if submenu:
 						_play_move_sound()
@@ -1208,7 +1247,7 @@ func _input(event: InputEvent) -> void:
 				# For left-expanding: LEFT confirms selection or enters submenu
 				# For right-expanding: LEFT goes back to parent
 				if expand_left:
-					var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+					var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 					if current_item.has("submenu"):
 						# Item has submenu - let auto-expand handle it
 						_play_move_sound()
@@ -1224,20 +1263,21 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 
 	# Handle gamepad navigation via input actions
-	if event.is_action_pressed("ui_up"):
+	# Note: Check echo to prevent rapid-fire when holding d-pad
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_index = (selected_index - 1) if selected_index > 0 else menu_items.size() - 1
 		_play_move_sound()
 		_update_selection()
 		_auto_expand_submenu()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		selected_index = (selected_index + 1) % menu_items.size()
 		_play_move_sound()
 		_update_selection()
 		_auto_expand_submenu()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_accept"):
-		var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
+		var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 		if current_item.has("submenu"):
 			_play_expand_sound()
 			if not submenu:
@@ -1246,7 +1286,7 @@ func _input(event: InputEvent) -> void:
 			_play_select_sound()
 			_submit_actions()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		# Priority: close submenu first, then unadvance (undo one, battle mode only), then go back
 		var root = _get_root_menu()
 		if parent_menu:
@@ -1266,14 +1306,18 @@ func _input(event: InputEvent) -> void:
 			# At root with no queue - go back to previous player
 			_play_cancel_sound()
 			go_back_requested.emit()
-			# Close this menu immediately
 			force_close()
+		elif is_root_menu and not battle_mode:
+			# Non-battle root menu (shops, etc) - close on cancel
+			_play_cancel_sound()
+			force_close()
+		# In battle mode at root with no queue and can't go back: B is a no-op
 		get_viewport().set_input_as_handled()
 
 	# D-pad LEFT = confirm/accept (for left-expanding menus), back (for right-expanding)
-	elif event.is_action_pressed("ui_left"):
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		if expand_left:
-			var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 			if current_item.has("submenu"):
 				# Item has submenu - expand it
 				_play_expand_sound()
@@ -1292,7 +1336,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# D-pad RIGHT = back/cancel (for left-expanding menus), confirm (for right-expanding)
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") and not event.is_echo():
 		if expand_left:
 			# RIGHT = back for left-expanding menus
 			if parent_menu:
@@ -1312,9 +1356,13 @@ func _input(event: InputEvent) -> void:
 					_play_cancel_sound()
 					go_back_requested.emit()
 					force_close()
+				elif not battle_mode:
+					# Non-battle root menu - close on back
+					_play_cancel_sound()
+					force_close()
 		else:
 			# RIGHT = confirm for right-expanding menus
-			var current_item = menu_items[selected_index] if selected_index < menu_items.size() else {}
+			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 			if current_item.has("submenu"):
 				_play_expand_sound()
 				if not submenu:

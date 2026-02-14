@@ -1323,7 +1323,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		return
 
 	# Update name with autobattle indicator
-	var name_label = box.get_node_or_null("Name")
+	var name_label = box.get_node_or_null("Header/Name")
 	if name_label:
 		var job_name = member.job.get("name", "None") if member.job else "None"
 		var level_text = " Lv.%d" % member.job_level if member.job_level > 1 else ""

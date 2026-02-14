@@ -486,6 +486,8 @@ func _show_equipment_selection(slot: String) -> void:
 	_clear_content()
 	_content_focus_active = false
 
+	if selected_member_index >= party.size():
+		return
 	var member = party[selected_member_index]
 	var game_loop = get_parent()
 
@@ -573,6 +575,8 @@ func _on_equipment_keep_pressed() -> void:
 
 func _on_equipment_selected(item_id: String) -> void:
 	"""Equip selected item"""
+	if selected_member_index >= party.size():
+		return
 	var member = party[selected_member_index]
 	var game_loop = get_parent()
 	game_loop.equip_from_pool(member, editing_slot, item_id)
@@ -582,6 +586,8 @@ func _on_equipment_selected(item_id: String) -> void:
 
 func _on_equipment_unequip_pressed() -> void:
 	"""Unequip current item"""
+	if selected_member_index >= party.size():
+		return
 	var member = party[selected_member_index]
 	var game_loop = get_parent()
 	game_loop.unequip_to_pool(member, editing_slot)
@@ -722,6 +728,8 @@ func _show_ability_target_selection(ability_id: String) -> void:
 	_clear_content()
 	_content_focus_active = false
 
+	if selected_member_index >= party.size():
+		return
 	var caster = party[selected_member_index]
 	var ability = JobSystem.get_ability(ability_id)
 	if not ability:
@@ -763,6 +771,8 @@ func _show_ability_target_selection(ability_id: String) -> void:
 
 func _on_ability_target_selected(ability_id: String, target_index: int) -> void:
 	"""Cast the ability on the selected target"""
+	if selected_member_index >= party.size() or target_index >= party.size():
+		return
 	var caster = party[selected_member_index]
 	var target = party[target_index]
 	var ability = JobSystem.get_ability(ability_id)
@@ -902,6 +912,8 @@ func _show_passives_view() -> void:
 
 func _on_passive_unequip_pressed(slot_index: int) -> void:
 	"""Unequip a passive from slot"""
+	if selected_member_index >= party.size():
+		return
 	var member = party[selected_member_index]
 	if slot_index < member.equipped_passives.size():
 		var passive_id = member.equipped_passives[slot_index]
@@ -911,6 +923,8 @@ func _on_passive_unequip_pressed(slot_index: int) -> void:
 
 func _on_passive_equip_pressed(passive_id: String) -> void:
 	"""Equip a passive to an empty slot"""
+	if selected_member_index >= party.size():
+		return
 	var member = party[selected_member_index]
 	PassiveSystem.equip_passive(member, passive_id)
 	_show_passives_view()
@@ -998,6 +1012,8 @@ func _show_items_view() -> void:
 
 func _on_item_use_pressed(item_id: String) -> void:
 	"""Use an item on selected party member"""
+	if selected_member_index >= party.size():
+		return
 	var member = party[selected_member_index]
 
 	# Find which party member has the item

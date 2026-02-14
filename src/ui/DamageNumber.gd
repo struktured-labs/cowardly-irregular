@@ -12,6 +12,7 @@ var _lifetime: float = 1.2
 var _elapsed: float = 0.0
 var _start_pos: Vector2
 var _velocity: Vector2
+var _flash_tween: Tween = null
 
 
 func _ready() -> void:
@@ -75,9 +76,17 @@ func _create_label() -> void:
 
 func _flash_effect() -> void:
 	"""Flash the number for emphasis"""
-	var tween = create_tween()
-	tween.tween_property(_label, "scale", Vector2(1.3, 1.3), 0.1)
-	tween.tween_property(_label, "scale", Vector2(1.0, 1.0), 0.1)
+	if _flash_tween and _flash_tween.is_valid():
+		_flash_tween.kill()
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(_label, "scale", Vector2(1.3, 1.3), 0.1)
+	_flash_tween.tween_property(_label, "scale", Vector2(1.0, 1.0), 0.1)
+
+
+func _exit_tree() -> void:
+	if _flash_tween and _flash_tween.is_valid():
+		_flash_tween.kill()
+	_flash_tween = null
 
 
 func _process(delta: float) -> void:

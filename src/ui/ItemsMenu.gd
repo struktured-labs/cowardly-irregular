@@ -24,7 +24,8 @@ var _target_labels: Array = []
 ## Style (match SettingsMenu)
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR = Color(0.1, 0.1, 0.15)
-const BORDER_COLOR = Color(0.4, 0.4, 0.5)
+const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
+const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
@@ -500,18 +501,8 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 
 
 func _create_border(parent: Control, panel_size: Vector2) -> void:
-	"""Add decorative border"""
-	var border_top = ColorRect.new()
-	border_top.color = BORDER_COLOR
-	border_top.position = Vector2(0, 0)
-	border_top.size = Vector2(panel_size.x, 2)
-	parent.add_child(border_top)
-
-	var border_left = ColorRect.new()
-	border_left.color = BORDER_COLOR
-	border_left.position = Vector2(0, 0)
-	border_left.size = Vector2(2, panel_size.y)
-	parent.add_child(border_left)
+	"""Add beveled retro border"""
+	RetroPanel.add_border(parent, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _update_selection() -> void:
