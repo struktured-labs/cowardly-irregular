@@ -71,6 +71,10 @@ static func prewarm_cache(monster_ids: Array = [], party_jobs: Array = []) -> vo
 			"shadow_knight": _MonsterSprites.create_shadow_knight_sprite_frames()
 			"cave_troll": _MonsterSprites.create_cave_troll_sprite_frames()
 			"cave_rat_king": _MonsterSprites.create_cave_rat_king_sprite_frames()
+			"fire_dragon": _MonsterSprites.create_fire_dragon_sprite_frames()
+			"ice_dragon": _MonsterSprites.create_ice_dragon_sprite_frames()
+			"lightning_dragon": _MonsterSprites.create_lightning_dragon_sprite_frames()
+			"shadow_dragon": _MonsterSprites.create_shadow_dragon_sprite_frames()
 	# Pre-warm party jobs
 	for job_data in party_jobs:
 		var job_id = job_data.get("job_id", "fighter")
@@ -480,3 +484,15 @@ static func create_cave_rat_sprite_frames() -> SpriteFrames:
 
 static func create_rat_guard_sprite_frames() -> SpriteFrames:
 	return _MonsterSprites.create_rat_guard_sprite_frames()
+
+static func create_fire_dragon_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_fire_dragon_sprite_frames()
+
+static func create_ice_dragon_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_ice_dragon_sprite_frames()
+
+static func create_lightning_dragon_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_lightning_dragon_sprite_frames()
+
+static func create_shadow_dragon_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_shadow_dragon_sprite_frames()

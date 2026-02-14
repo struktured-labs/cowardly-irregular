@@ -806,6 +806,26 @@ func _start_exploration() -> void:
 			exploration_scene = _create_cave_scene()
 		"tavern_interior":
 			exploration_scene = _create_tavern_scene()
+		"frosthold_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/FrostholdVillage.gd")
+		"eldertree_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/EldertreeVillage.gd")
+		"grimhollow_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/GrimhollowVillage.gd")
+		"sandrift_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/SandriftVillage.gd")
+		"ironhaven_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/IronhavenVillage.gd")
+		"ice_dragon_cave":
+			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/IceDragonCave.gd")
+		"shadow_dragon_cave":
+			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/ShadowDragonCave.gd")
+		"lightning_dragon_cave":
+			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/LightningDragonCave.gd")
+		"fire_dragon_cave":
+			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/FireDragonCave.gd")
+		"steampunk_overworld":
+			exploration_scene = _create_script_scene("res://src/exploration/SteampunkOverworld.gd")
 		_:
 			exploration_scene = OverworldSceneRes.instantiate()
 
@@ -837,6 +857,9 @@ func _start_exploration() -> void:
 		exploration_scene.battle_triggered.connect(_on_exploration_battle_triggered)
 	if exploration_scene.has_signal("area_transition"):
 		exploration_scene.area_transition.connect(_on_area_transition)
+
+	# Pre-warm common area sprites in background (deferred to not block scene setup)
+	call_deferred("_prewarm_area_sprites")
 
 
 func _return_to_exploration() -> void:
@@ -887,6 +910,38 @@ func _prewarm_battle_sprites(enemies: Array) -> void:
 		print("[PREWARM] Sprite cache pre-warm complete")
 
 
+func _prewarm_area_sprites() -> void:
+	"""Pre-warm common area enemy sprites on scene load for faster first battle."""
+	var common_enemies: Array = []
+	match _current_map_id:
+		"overworld":
+			common_enemies = ["slime", "bat", "goblin"]
+		"whispering_cave":
+			common_enemies = ["bat", "goblin", "skeleton"]
+		"ice_dragon_cave":
+			common_enemies = ["bat", "skeleton", "ice_dragon"]
+		"shadow_dragon_cave":
+			common_enemies = ["specter", "skeleton", "shadow_dragon"]
+		"lightning_dragon_cave":
+			common_enemies = ["goblin", "bat", "lightning_dragon"]
+		"fire_dragon_cave":
+			common_enemies = ["imp", "skeleton", "fire_dragon"]
+		"steampunk_overworld":
+			common_enemies = ["slime", "imp", "skeleton"]
+		_:
+			if "cave" in _current_map_id:
+				common_enemies = ["bat", "skeleton", "imp"]
+			elif "village" in _current_map_id:
+				common_enemies = []  # Villages are safe zones
+			else:
+				common_enemies = ["slime", "bat"]
+	if common_enemies.size() > 0:
+		var enemy_data: Array = []
+		for eid in common_enemies:
+			enemy_data.append({"id": eid, "type": eid})
+		_prewarm_battle_sprites(enemy_data)
+
+
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
 	# Disable player input during battle transition
@@ -911,8 +966,8 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 			if player.has_method("set_can_move"):
 				player.set_can_move(false)
 
-		# Save current floor if in cave
-		if _current_map_id == "whispering_cave" and "current_floor" in _exploration_scene:
+		# Save current floor if in cave (any multi-floor dungeon)
+		if "current_floor" in _exploration_scene:
 			_current_cave_floor = _exploration_scene.current_floor
 			print("[CAVE] Saved floor: %d" % _current_cave_floor)
 
@@ -931,8 +986,8 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	# Start battle loading in background (async)
 	ResourceLoader.load_threaded_request("res://src/battle/BattleScene.tscn")
 
-	# Pre-warm sprite cache during transition (runs while animation plays)
-	_prewarm_battle_sprites(enemies)
+	# Pre-warm sprite cache during transition (deferred so it runs during animation)
+	call_deferred("_prewarm_battle_sprites", enemies)
 
 	# Play transition animation (loads in parallel)
 	if BattleTransition:
@@ -1023,8 +1078,27 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "cave"
 		"harmonia_village", "tavern_interior":
 			return "village"
+		"frosthold_village":
+			return "ice"
+		"eldertree_village":
+			return "forest"
+		"grimhollow_village":
+			return "swamp"
+		"sandrift_village":
+			return "desert"
+		"ironhaven_village":
+			return "volcanic"
+		"ice_dragon_cave":
+			return "ice_cave"
+		"shadow_dragon_cave":
+			return "dark_cave"
+		"lightning_dragon_cave":
+			return "storm_cave"
+		"fire_dragon_cave":
+			return "lava_cave"
+		"steampunk_overworld":
+			return "urban"
 		_:
-			# Default to plains for unknown maps
 			if "cave" in map_id or "dungeon" in map_id:
 				return "cave"
 			elif "village" in map_id or "town" in map_id:
@@ -1057,6 +1131,29 @@ func _create_cave_scene() -> Node:
 		return cave_scene
 	# Fallback to overworld if scene doesn't exist
 	push_warning("WhisperingCave.tscn not found, using overworld")
+	return OverworldSceneRes.instantiate()
+
+
+func _create_script_scene(script_path: String) -> Node:
+	"""Create a scene from a GDScript that self-constructs in _ready()"""
+	var ScriptRes = load(script_path)
+	if ScriptRes:
+		return ScriptRes.new()
+	push_warning("%s not found, falling back to overworld" % script_path)
+	return OverworldSceneRes.instantiate()
+
+
+func _create_dragon_cave(script_path: String) -> Node:
+	"""Create a dragon cave scene and restore floor state"""
+	var ScriptRes = load(script_path)
+	if ScriptRes:
+		var cave_scene = ScriptRes.new()
+		# Restore the floor we were on before battle
+		if _current_cave_floor > 1 and "current_floor" in cave_scene:
+			cave_scene.current_floor = _current_cave_floor
+			print("[CAVE] Restoring to floor %d" % _current_cave_floor)
+		return cave_scene
+	push_warning("%s not found, falling back to overworld" % script_path)
 	return OverworldSceneRes.instantiate()
 
 

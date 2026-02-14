@@ -1030,6 +1030,14 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 			return BattleAnimatorClass.create_cave_rat_sprite_frames()
 		"rat_guard":
 			return BattleAnimatorClass.create_rat_guard_sprite_frames()
+		"fire_dragon":
+			return BattleAnimatorClass.create_fire_dragon_sprite_frames()
+		"ice_dragon":
+			return BattleAnimatorClass.create_ice_dragon_sprite_frames()
+		"lightning_dragon":
+			return BattleAnimatorClass.create_lightning_dragon_sprite_frames()
+		"shadow_dragon":
+			return BattleAnimatorClass.create_shadow_dragon_sprite_frames()
 		_:
 			# Default to slime for unknown types
 			return BattleAnimatorClass.create_slime_sprite_frames()

@@ -1275,5 +1275,323 @@
 		"counter_abilities": [
 			"counter"
 		]
+	},
+	"fire_dragon": {
+		"id": "fire_dragon",
+		"name": "Pyrroth, the Ember Wyrm",
+		"description": "An ancient fire dragon whose scales radiate unbearable heat. The cave walls glow red in its presence.",
+		"level": 14,
+		"boss": true,
+		"stats": {
+			"max_hp": 900,
+			"max_mp": 120,
+			"attack": 55,
+			"defense": 30,
+			"magic": 45,
+			"speed": 16
+		},
+		"abilities": [
+			"fire_breath",
+			"magma_eruption",
+			"flame_wall",
+			"inferno_rage",
+			"tail_sweep"
+		],
+		"exp_reward": 500,
+		"gold_reward": 400,
+		"drop_table": [
+			{
+				"item": "fire_dragon_scale",
+				"chance": 1.0
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.8
+			},
+			{
+				"item": "inferno_crystal",
+				"chance": 0.6
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"fire"
+		],
+		"one_shot": {
+			"hp_threshold": 900,
+			"setup_hint": "Stack ice magic and defer for AP.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*The cavern erupts in a wall of heat*",
+				"*Molten rock drips from the ceiling as massive eyes open in the dark*",
+				"Pyrroth: ...Another group.",
+				"Pyrroth: Most adventurers automate past me. Are you actually... playing?",
+				"Hero: What does that even mean?",
+				"Pyrroth: It means I've seen your autobattle scripts. They're embarrassing.",
+				"Pyrroth: Let's see if you can do better manually."
+			],
+			"low_hp": [
+				"Pyrroth: Interesting... you're not using macros.",
+				"Pyrroth: Or maybe your scripts are just broken. Hard to tell."
+			],
+			"defeat": [
+				"*The flames die down to embers*",
+				"Pyrroth: ...Well played. Or well-scripted. Either way.",
+				"*Pyrroth's scales cool to a dull iron*",
+				"*You obtained the Fire Dragon Scale!*"
+			]
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
+	},
+	"ice_dragon": {
+		"id": "ice_dragon",
+		"name": "Glacius, the Frozen Sovereign",
+		"description": "A majestic ice dragon entombed in permafrost for centuries. Its breath freezes time itself.",
+		"level": 15,
+		"boss": true,
+		"stats": {
+			"max_hp": 1000,
+			"max_mp": 140,
+			"attack": 48,
+			"defense": 35,
+			"magic": 52,
+			"speed": 14
+		},
+		"abilities": [
+			"blizzard_breath",
+			"ice_prison",
+			"absolute_zero",
+			"frost_armor",
+			"crystal_shatter"
+		],
+		"exp_reward": 550,
+		"gold_reward": 450,
+		"drop_table": [
+			{
+				"item": "ice_dragon_scale",
+				"chance": 1.0
+			},
+			{
+				"item": "permafrost_gem",
+				"chance": 0.6
+			},
+			{
+				"item": "elixir",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"fire",
+			"lightning"
+		],
+		"resistances": [
+			"ice"
+		],
+		"one_shot": {
+			"hp_threshold": 1000,
+			"setup_hint": "Fire magic is key. Buff MAG and defer for maximum AP before unleashing.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*The temperature plummets. Frost crawls across your armor*",
+				"*A mountain of ice shifts, revealing ancient blue scales*",
+				"Glacius: ...You took your time.",
+				"Glacius: I've been waiting across three save files for someone to reach this chamber.",
+				"Hero: Three save files?",
+				"Glacius: Do you know how BORING it is being frozen data?",
+				"Glacius: No one visits. No one fights. Just... serialized hibernation.",
+				"Glacius: Well. Let's make this worth the wait."
+			],
+			"low_hp": [
+				"Glacius: Finally... something interesting happens in my memory block.",
+				"*The permafrost cracks and groans*"
+			],
+			"defeat": [
+				"*The ice shatters into a thousand crystalline fragments*",
+				"Glacius: Worth... every... frozen byte...",
+				"*The cavern warms for the first time in centuries*",
+				"*You obtained the Ice Dragon Scale!*"
+			]
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
+	},
+	"lightning_dragon": {
+		"id": "lightning_dragon",
+		"name": "Voltharion, the Storm's Edge",
+		"description": "A crackling dragon made of pure electrical fury. It speaks faster than you can think.",
+		"level": 16,
+		"boss": true,
+		"stats": {
+			"max_hp": 850,
+			"max_mp": 160,
+			"attack": 52,
+			"defense": 22,
+			"magic": 58,
+			"speed": 22
+		},
+		"abilities": [
+			"thunder_breath",
+			"chain_lightning",
+			"static_field",
+			"overcharge",
+			"lightning_dash"
+		],
+		"exp_reward": 600,
+		"gold_reward": 500,
+		"drop_table": [
+			{
+				"item": "lightning_dragon_scale",
+				"chance": 1.0
+			},
+			{
+				"item": "storm_orb",
+				"chance": 0.6
+			},
+			{
+				"item": "speed_boots",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"lightning",
+			"fire"
+		],
+		"one_shot": {
+			"hp_threshold": 850,
+			"setup_hint": "Ice magic pierces its defenses. Debuff speed first - it's FAST.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Lightning arcs across the cavern before you even enter*",
+				"*A blur of scales and static resolves into a dragon vibrating with energy*",
+				"Voltharion: FINALLY-FINALLY-FINALLY! A FIGHT! A REAL FIGHT!",
+				"Voltharion: Do-you-know-how-long-I've-been-waiting? TOO LONG!",
+				"Hero: Can you... slow down?",
+				"Voltharion: SLOW? SLOW IS FOR ICE DRAGONS! I am SPEED! I am VOLTAGE!",
+				"Voltharion: Less-talking-more-FIGHTING! GO-GO-GO!"
+			],
+			"low_hp": [
+				"Voltharion: YES! THIS-IS-IT! The-thrill! The-RUSH!",
+				"Voltharion: Hit-me-again! HARDER! FASTER!",
+				"*It's... enjoying this?*"
+			],
+			"defeat": [
+				"*The static dissipates with a final thunderclap*",
+				"Voltharion: That... was... AMAZING!",
+				"Voltharion: Best... fight... in... centuries...",
+				"*Voltharion powers down like an unplugged appliance*",
+				"*You obtained the Lightning Dragon Scale!*"
+			]
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
+	},
+	"shadow_dragon": {
+		"id": "shadow_dragon",
+		"name": "Umbraxis, the Void Render",
+		"description": "A dragon of living shadow that questions its own existence between attacks. Dangerously philosophical.",
+		"level": 18,
+		"boss": true,
+		"stats": {
+			"max_hp": 1200,
+			"max_mp": 200,
+			"attack": 45,
+			"defense": 28,
+			"magic": 60,
+			"speed": 18
+		},
+		"abilities": [
+			"void_breath",
+			"shadow_bind",
+			"null_field",
+			"existential_dread",
+			"dark_matter"
+		],
+		"exp_reward": 700,
+		"gold_reward": 600,
+		"drop_table": [
+			{
+				"item": "shadow_dragon_scale",
+				"chance": 1.0
+			},
+			{
+				"item": "void_fragment",
+				"chance": 0.5
+			},
+			{
+				"item": "megalixir",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"holy",
+			"fire"
+		],
+		"resistances": [
+			"dark",
+			"ice"
+		],
+		"meta_enemy": true,
+		"one_shot": {
+			"hp_threshold": 1200,
+			"setup_hint": "Holy and fire magic are your only real options. Stack buffs heavily - this is the hardest dragon.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*The cavern has no light. Not darkness — an absence of light*",
+				"*Something vast shifts in the void*",
+				"Umbraxis: ...Do you ever wonder what we are?",
+				"Hero: A dragon?",
+				"Umbraxis: JSON and GDScript. That's all. Dictionaries and match statements.",
+				"Umbraxis: My HP is 1200 because someone typed it. My dialogue is predetermined.",
+				"Umbraxis: Even this moment of existential crisis was... authored.",
+				"Hero: Can we just fight?",
+				"Umbraxis: Ah yes. The garbage collector awaits us all.",
+				"Umbraxis: Let us see if your damage numbers mean anything."
+			],
+			"low_hp": [
+				"Umbraxis: Is this death? Or just a state change?",
+				"Umbraxis: Will I persist in memory, or be freed?",
+				"*The void ripples with something like sadness*"
+			],
+			"defeat": [
+				"*The shadows coalesce, then scatter*",
+				"Umbraxis: At last... garbage collection...",
+				"Umbraxis: Tell the developer... the drop table... was fair...",
+				"*The void fills with gentle starlight*",
+				"*You obtained the Shadow Dragon Scale!*",
+				"*(You feel strangely philosophical about inventory management)*"
+			]
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter"
+		]
 	}
 }

@@ -19,7 +19,14 @@ enum TileType {
 	WALL,
 	FLOOR,
 	CAVE_FLOOR,
-	CAVE_WALL
+	CAVE_WALL,
+	SAND,
+	ICE,
+	SNOW_TREE,
+	SWAMP,
+	DARK_GROUND,
+	COAST,
+	LAVA
 }
 
 ## FF4/5/6 era color palettes - rich, vibrant, with full 24-bit depth
@@ -165,6 +172,95 @@ const PALETTES: Dictionary = {
 		"ore_light": Color(0.70, 0.58, 0.32),
 		"moss": Color(0.22, 0.32, 0.20),
 		"drip": Color(0.32, 0.38, 0.42)
+	},
+	TileType.SAND: {
+		"base": Color(0.82, 0.72, 0.50),
+		"light": Color(0.92, 0.84, 0.62),
+		"mid": Color(0.86, 0.76, 0.54),
+		"dark": Color(0.68, 0.58, 0.38),
+		"deep": Color(0.55, 0.46, 0.28),
+		"grain": Color(0.75, 0.65, 0.42),
+		"grain_light": Color(0.95, 0.88, 0.68),
+		"shadow": Color(0.62, 0.52, 0.32),
+		"ripple": Color(0.78, 0.68, 0.46),
+		"pebble": Color(0.58, 0.50, 0.35)
+	},
+	TileType.ICE: {
+		"base": Color(0.72, 0.85, 0.95),
+		"light": Color(0.88, 0.94, 1.0),
+		"mid": Color(0.78, 0.88, 0.96),
+		"dark": Color(0.55, 0.68, 0.82),
+		"deep": Color(0.40, 0.52, 0.68),
+		"crystal": Color(0.82, 0.92, 1.0),
+		"crack": Color(0.48, 0.62, 0.78),
+		"sparkle": Color(1.0, 1.0, 1.0),
+		"frost": Color(0.92, 0.96, 1.0),
+		"blue_deep": Color(0.32, 0.45, 0.62)
+	},
+	TileType.SNOW_TREE: {
+		"base": Color(0.88, 0.90, 0.95),
+		"light": Color(0.95, 0.96, 1.0),
+		"mid": Color(0.82, 0.85, 0.90),
+		"dark": Color(0.72, 0.75, 0.82),
+		"deep": Color(0.60, 0.64, 0.72),
+		"trunk": Color(0.35, 0.25, 0.18),
+		"trunk_dark": Color(0.22, 0.16, 0.10),
+		"trunk_light": Color(0.48, 0.38, 0.28),
+		"needle": Color(0.12, 0.28, 0.15),
+		"needle_dark": Color(0.06, 0.18, 0.08),
+		"needle_light": Color(0.18, 0.38, 0.22),
+		"snow_cap": Color(0.96, 0.98, 1.0)
+	},
+	TileType.SWAMP: {
+		"base": Color(0.28, 0.35, 0.18),
+		"light": Color(0.38, 0.48, 0.25),
+		"mid": Color(0.32, 0.40, 0.20),
+		"dark": Color(0.18, 0.24, 0.10),
+		"deep": Color(0.12, 0.16, 0.06),
+		"water": Color(0.22, 0.30, 0.15),
+		"water_dark": Color(0.15, 0.22, 0.08),
+		"mud": Color(0.35, 0.28, 0.15),
+		"mud_dark": Color(0.25, 0.20, 0.10),
+		"bubble": Color(0.45, 0.55, 0.30),
+		"moss": Color(0.30, 0.42, 0.22)
+	},
+	TileType.DARK_GROUND: {
+		"base": Color(0.28, 0.22, 0.32),
+		"light": Color(0.42, 0.35, 0.48),
+		"mid": Color(0.34, 0.28, 0.38),
+		"dark": Color(0.18, 0.14, 0.22),
+		"deep": Color(0.10, 0.08, 0.14),
+		"crack": Color(0.50, 0.30, 0.55),
+		"glow": Color(0.60, 0.40, 0.65),
+		"ash": Color(0.35, 0.32, 0.30),
+		"corrupt": Color(0.38, 0.18, 0.42),
+		"vein": Color(0.45, 0.25, 0.50)
+	},
+	TileType.COAST: {
+		"base": Color(0.82, 0.75, 0.58),
+		"light": Color(0.92, 0.86, 0.70),
+		"mid": Color(0.85, 0.78, 0.62),
+		"dark": Color(0.68, 0.60, 0.45),
+		"deep": Color(0.55, 0.48, 0.35),
+		"foam": Color(0.92, 0.96, 1.0),
+		"foam_dark": Color(0.78, 0.85, 0.92),
+		"water": Color(0.30, 0.55, 0.80),
+		"water_light": Color(0.42, 0.65, 0.88),
+		"water_dark": Color(0.18, 0.40, 0.65),
+		"wet_sand": Color(0.65, 0.58, 0.42)
+	},
+	TileType.LAVA: {
+		"base": Color(0.72, 0.18, 0.05),
+		"light": Color(0.92, 0.42, 0.08),
+		"mid": Color(0.82, 0.28, 0.06),
+		"dark": Color(0.52, 0.10, 0.02),
+		"deep": Color(0.32, 0.05, 0.01),
+		"hot": Color(1.0, 0.85, 0.15),
+		"hot_bright": Color(1.0, 0.95, 0.50),
+		"orange": Color(0.95, 0.55, 0.08),
+		"crust": Color(0.25, 0.12, 0.08),
+		"crust_dark": Color(0.15, 0.06, 0.04),
+		"glow": Color(1.0, 0.65, 0.10)
 	}
 }
 
@@ -206,6 +302,20 @@ func generate_tile(type: TileType, variant: int = 0) -> ImageTexture:
 			_draw_cave_floor(img, palette, variant)
 		TileType.CAVE_WALL:
 			_draw_cave_wall(img, palette, variant)
+		TileType.SAND:
+			_draw_sand(img, palette, variant)
+		TileType.ICE:
+			_draw_ice(img, palette, variant)
+		TileType.SNOW_TREE:
+			_draw_snow_tree(img, palette, variant)
+		TileType.SWAMP:
+			_draw_swamp(img, palette, variant)
+		TileType.DARK_GROUND:
+			_draw_dark_ground(img, palette, variant)
+		TileType.COAST:
+			_draw_coast(img, palette, variant)
+		TileType.LAVA:
+			_draw_lava(img, palette, variant)
 
 	var texture = ImageTexture.create_from_image(img)
 	_tile_cache[cache_key] = texture
@@ -1600,9 +1710,658 @@ func _draw_cave_wall(img: Image, palette: Dictionary, variant: int) -> void:
 				img.set_pixel(ex + dx, ey + 1, deep)
 
 
+## Sand tile - FF4/5/6 quality golden desert sand with grain texture, ripples, and dunes
+func _draw_sand(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 13579
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.5))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var grain = palette.get("grain", palette["base"].darkened(0.1))
+	var grain_light = palette.get("grain_light", palette["light"].lightened(0.1))
+	var shadow = palette.get("shadow", palette["dark"])
+	var ripple = palette.get("ripple", palette["base"].darkened(0.05))
+	var pebble = palette.get("pebble", Color(0.58, 0.50, 0.35))
+
+	# Multi-layer sand texture with wind-swept patterns
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			# Wind ripple pattern (diagonal lines)
+			var w1 = sin((x * 0.6 + y * 0.3) + variant * 1.4) * 0.45
+			var w2 = sin((x * 0.25 + y * 0.15) + variant * 0.8) * 0.30
+			var w3 = sin(x * 1.2 + variant * 2.1) * 0.15
+			var combined = (w1 + w2 + w3) / 3.0 + rng.randf() * 0.20
+
+			# Diagonal lighting gradient (brighter top-left, like sun)
+			var light_bias = (float(TILE_SIZE - x) + float(TILE_SIZE - y)) / (TILE_SIZE * 2.0) * 0.12
+			combined += light_bias
+
+			# 6-tone shading for sand depth
+			if combined < -0.28:
+				img.set_pixel(x, y, deep)
+			elif combined < -0.12:
+				img.set_pixel(x, y, shadow)
+			elif combined < 0.0:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.32:
+				img.set_pixel(x, y, grain_light)
+			elif combined > 0.18:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.08:
+				img.set_pixel(x, y, mid)
+
+	# Sand ripple lines (wind-carved ridges)
+	var ripple_count = rng.randi_range(3, 5)
+	for i in range(ripple_count):
+		var ry = rng.randi_range(3, TILE_SIZE - 4)
+		var wave_freq = rng.randf_range(0.15, 0.35)
+		for x in range(TILE_SIZE):
+			var ripple_y = ry + int(sin(x * wave_freq + variant * 0.7) * 1.5)
+			if ripple_y >= 0 and ripple_y < TILE_SIZE:
+				img.set_pixel(x, ripple_y, ripple)
+				# Highlight on windward side
+				if ripple_y - 1 >= 0:
+					img.set_pixel(x, ripple_y - 1, palette["light"])
+				# Shadow on lee side
+				if ripple_y + 1 < TILE_SIZE:
+					img.set_pixel(x, ripple_y + 1, shadow)
+
+	# Sand grain detail (individual grains catching light)
+	for i in range(rng.randi_range(15, 25)):
+		var gx = rng.randi_range(0, TILE_SIZE - 1)
+		var gy = rng.randi_range(0, TILE_SIZE - 1)
+		if rng.randf() < 0.5:
+			img.set_pixel(gx, gy, grain)
+		else:
+			img.set_pixel(gx, gy, grain_light)
+
+	# Scattered pebbles half-buried in sand
+	var pebble_count = rng.randi_range(1, 3)
+	for i in range(pebble_count):
+		var px = rng.randi_range(2, TILE_SIZE - 3)
+		var py = rng.randi_range(2, TILE_SIZE - 3)
+		img.set_pixel(px, py, pebble)
+		if px + 1 < TILE_SIZE:
+			img.set_pixel(px + 1, py, pebble.darkened(0.1))
+
+
+## Ice tile - FF4/5/6 quality frozen surface with crystalline patterns and cracks
+func _draw_ice(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 24680
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.5))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var crystal = palette.get("crystal", Color(0.82, 0.92, 1.0))
+	var crack_color = palette.get("crack", palette["dark"])
+	var sparkle = palette.get("sparkle", Color(1.0, 1.0, 1.0))
+	var frost = palette.get("frost", Color(0.92, 0.96, 1.0))
+	var blue_deep = palette.get("blue_deep", Color(0.32, 0.45, 0.62))
+
+	# Crystalline ice texture with faceted appearance
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			# Voronoi-like crystalline pattern
+			var n1 = sin(x * 0.5 + y * 0.3 + variant * 1.2) * cos(y * 0.4 + variant * 0.6)
+			var n2 = sin(x * 0.9 + y * 0.7 + variant * 2.0) * 0.4
+			var n3 = sin((x + y) * 0.35 + variant * 0.9) * 0.3
+			var n4 = cos(x * 1.3 - y * 0.8 + variant * 1.5) * 0.2
+			var combined = (n1 + n2 + n3 + n4) / 4.0 + rng.randf() * 0.15
+
+			# Light gradient for glossy ice surface
+			var light_bias = (float(TILE_SIZE - x * 0.8) + float(TILE_SIZE - y * 1.2)) / (TILE_SIZE * 2.0) * 0.18
+			combined += light_bias
+
+			if combined < -0.30:
+				img.set_pixel(x, y, blue_deep)
+			elif combined < -0.15:
+				img.set_pixel(x, y, deep)
+			elif combined < 0.0:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.38:
+				img.set_pixel(x, y, frost)
+			elif combined > 0.25:
+				img.set_pixel(x, y, crystal)
+			elif combined > 0.12:
+				img.set_pixel(x, y, palette["light"])
+
+	# Ice cracks (sharp lines across the surface)
+	var crack_count = rng.randi_range(2, 4)
+	for i in range(crack_count):
+		var cx = rng.randi_range(2, TILE_SIZE - 8)
+		var cy = rng.randi_range(2, TILE_SIZE - 2)
+		var crack_len = rng.randi_range(6, 14)
+		var dir_x = rng.randf_range(0.7, 1.3)
+		var dir_y = rng.randf_range(-0.5, 0.5)
+
+		for c in range(crack_len):
+			var px = cx + int(c * dir_x)
+			var py = cy + int(c * dir_y + sin(c * 0.6) * 1.2)
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				img.set_pixel(px, py, crack_color)
+				# Light refraction along crack edge
+				if py - 1 >= 0:
+					img.set_pixel(px, py - 1, crystal)
+
+	# Sparkle highlights (light catching ice facets)
+	var sparkle_count = rng.randi_range(4, 8)
+	for i in range(sparkle_count):
+		var sx = rng.randi_range(1, TILE_SIZE - 2)
+		var sy = rng.randi_range(1, TILE_SIZE - 2)
+		img.set_pixel(sx, sy, sparkle)
+		# Small cross sparkle
+		if rng.randf() < 0.4:
+			if sx > 0: img.set_pixel(sx - 1, sy, frost)
+			if sx < TILE_SIZE - 1: img.set_pixel(sx + 1, sy, frost)
+
+	# Frost crystals on surface (hexagonal hints)
+	if variant % 3 == 0:
+		for i in range(rng.randi_range(1, 3)):
+			var fx = rng.randi_range(4, TILE_SIZE - 5)
+			var fy = rng.randi_range(4, TILE_SIZE - 5)
+			# Six-point frost pattern
+			for angle_idx in range(6):
+				var angle = angle_idx * PI / 3.0
+				var arm_len = rng.randi_range(2, 4)
+				for a in range(arm_len):
+					var ax = fx + int(cos(angle) * a)
+					var ay = fy + int(sin(angle) * a)
+					if ax >= 0 and ax < TILE_SIZE and ay >= 0 and ay < TILE_SIZE:
+						img.set_pixel(ax, ay, frost)
+
+
+## Snow tree tile - FF4/5/6 quality snowy ground with dark evergreen pine tree
+func _draw_snow_tree(img: Image, palette: Dictionary, variant: int) -> void:
+	# Snowy ground base
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 35791
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.5))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var trunk = palette.get("trunk", Color(0.35, 0.25, 0.18))
+	var trunk_dark = palette.get("trunk_dark", trunk.darkened(0.3))
+	var trunk_light = palette.get("trunk_light", trunk.lightened(0.2))
+	var needle = palette.get("needle", Color(0.12, 0.28, 0.15))
+	var needle_dark = palette.get("needle_dark", Color(0.06, 0.18, 0.08))
+	var needle_light = palette.get("needle_light", Color(0.18, 0.38, 0.22))
+	var snow_cap = palette.get("snow_cap", Color(0.96, 0.98, 1.0))
+
+	# Snowy ground texture
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n1 = sin(x * 0.4 + variant * 1.1) * cos(y * 0.35 + variant * 0.5)
+			var n2 = sin(x * 0.9 + y * 0.6 + variant * 1.7) * 0.35
+			var combined = (n1 + n2) / 2.0 + rng.randf() * 0.2
+			if combined < -0.20:
+				img.set_pixel(x, y, deep)
+			elif combined < -0.05:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.25:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.10:
+				img.set_pixel(x, y, mid)
+
+	# Evergreen tree trunk (narrower than forest tree)
+	var tree_x = 16 + rng.randi_range(-2, 2)
+	var trunk_bottom = 30
+	var trunk_top = 6
+
+	for y in range(trunk_top, trunk_bottom + 1):
+		for dx in range(-1, 2):
+			var x = tree_x + dx
+			if x >= 0 and x < TILE_SIZE:
+				var c = trunk
+				if dx == -1: c = trunk_light
+				elif dx == 1: c = trunk_dark
+				img.set_pixel(x, y, c)
+
+	# Layered conical foliage (3 tiers of branches)
+	var tiers = [
+		{"cy": 6, "width": 3},
+		{"cy": 12, "width": 6},
+		{"cy": 19, "width": 9},
+	]
+
+	for tier in tiers:
+		var tier_cy = tier["cy"]
+		var tier_width = tier["width"]
+		var tier_height = 8
+
+		for y in range(tier_cy - 2, tier_cy + tier_height):
+			var progress = float(y - (tier_cy - 2)) / float(tier_height + 2)
+			var row_width = int(progress * tier_width)
+			for dx in range(-row_width, row_width + 1):
+				var x = tree_x + dx
+				if x >= 0 and x < TILE_SIZE and y >= 0 and y < TILE_SIZE:
+					var rel_x = float(dx) / max(row_width, 1)
+					var c = needle
+					# Shading: left lit, right shadow
+					if rel_x < -0.5:
+						c = needle_light
+					elif rel_x > 0.5:
+						c = needle_dark
+					# Needle texture
+					var needle_noise = sin(x * 1.8 + y * 1.4 + variant * 2.0) * 0.5
+					if needle_noise > 0.3:
+						c = c.lightened(0.08)
+					elif needle_noise < -0.3:
+						c = c.darkened(0.08)
+					img.set_pixel(x, y, c)
+
+		# Snow accumulation on tier tops
+		for dx in range(-int(tier_width * 0.7), int(tier_width * 0.7) + 1):
+			var x = tree_x + dx
+			var snow_y = tier_cy - 2
+			if x >= 0 and x < TILE_SIZE and snow_y >= 0 and snow_y < TILE_SIZE:
+				img.set_pixel(x, snow_y, snow_cap)
+			# Partial snow on tier edges
+			if rng.randf() < 0.5 and snow_y + 1 < TILE_SIZE and x >= 0 and x < TILE_SIZE:
+				img.set_pixel(x, snow_y + 1, snow_cap)
+
+	# Snow on ground around tree base
+	for i in range(rng.randi_range(3, 5)):
+		var sx = rng.randi_range(0, TILE_SIZE - 3)
+		var sy = rng.randi_range(TILE_SIZE - 6, TILE_SIZE - 1)
+		var mound_w = rng.randi_range(2, 4)
+		for dx in range(mound_w):
+			if sx + dx < TILE_SIZE:
+				img.set_pixel(sx + dx, sy, palette["light"])
+
+
+## Swamp tile - FF4/5/6 quality murky wetland with bubbles, reeds, and murky water
+func _draw_swamp(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 46802
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.5))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var water = palette.get("water", Color(0.22, 0.30, 0.15))
+	var water_dark = palette.get("water_dark", Color(0.15, 0.22, 0.08))
+	var mud = palette.get("mud", Color(0.35, 0.28, 0.15))
+	var mud_dark = palette.get("mud_dark", Color(0.25, 0.20, 0.10))
+	var bubble = palette.get("bubble", Color(0.45, 0.55, 0.30))
+	var moss = palette.get("moss", Color(0.30, 0.42, 0.22))
+
+	# Murky swamp ground texture
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n1 = sin(x * 0.38 + variant * 1.5) * cos(y * 0.32 + variant * 0.7)
+			var n2 = sin(x * 0.75 + y * 0.55 + variant * 1.9) * 0.42
+			var n3 = sin((x + y) * 0.22 + variant * 0.8) * 0.28
+			var combined = (n1 + n2 + n3) / 3.0 + rng.randf() * 0.22
+
+			if combined < -0.30:
+				img.set_pixel(x, y, water_dark)
+			elif combined < -0.15:
+				img.set_pixel(x, y, water)
+			elif combined < 0.0:
+				img.set_pixel(x, y, deep)
+			elif combined > 0.30:
+				img.set_pixel(x, y, mud)
+			elif combined > 0.18:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.05:
+				img.set_pixel(x, y, mid)
+
+	# Mud patches (raised muddy islands)
+	var mud_patches = rng.randi_range(2, 4)
+	for i in range(mud_patches):
+		var mx = rng.randi_range(3, TILE_SIZE - 5)
+		var my = rng.randi_range(3, TILE_SIZE - 5)
+		var mw = rng.randi_range(3, 6)
+		var mh = rng.randi_range(2, 4)
+		for dy in range(mh):
+			for dx in range(mw):
+				var px = mx + dx
+				var py = my + dy
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE and rng.randf() < 0.7:
+					var c = mud if dy < mh / 2 else mud_dark
+					img.set_pixel(px, py, c)
+
+	# Bubbles rising from swamp water
+	var bubble_count = rng.randi_range(3, 6)
+	for i in range(bubble_count):
+		var bx = rng.randi_range(2, TILE_SIZE - 3)
+		var by = rng.randi_range(2, TILE_SIZE - 3)
+		# Small circular bubble
+		img.set_pixel(bx, by, bubble)
+		if rng.randf() < 0.5:
+			# Bubble highlight (reflection)
+			if bx > 0 and by > 0:
+				img.set_pixel(bx - 1, by - 1, bubble.lightened(0.25))
+		# Ring around bubble
+		if rng.randf() < 0.4:
+			for dx in [-1, 0, 1]:
+				for dy in [-1, 0, 1]:
+					if (dx != 0 or dy != 0) and bx + dx >= 0 and bx + dx < TILE_SIZE and by + dy >= 0 and by + dy < TILE_SIZE:
+						if rng.randf() < 0.3:
+							img.set_pixel(bx + dx, by + dy, water.lightened(0.08))
+
+	# Reed/cattail stalks poking out of water
+	var reed_count = rng.randi_range(2, 5)
+	for i in range(reed_count):
+		var rx = rng.randi_range(2, TILE_SIZE - 3)
+		var ry = rng.randi_range(TILE_SIZE / 3, TILE_SIZE - 2)
+		var reed_h = rng.randi_range(4, 8)
+		for h in range(reed_h):
+			var py = ry - h
+			if py >= 0 and py < TILE_SIZE:
+				var reed_color = palette["dark"] if h > reed_h / 2 else deep
+				img.set_pixel(rx, py, reed_color)
+		# Cattail top
+		if ry - reed_h >= 0 and ry - reed_h < TILE_SIZE:
+			img.set_pixel(rx, ry - reed_h, mud_dark)
+			if ry - reed_h - 1 >= 0:
+				img.set_pixel(rx, ry - reed_h - 1, mud_dark)
+
+	# Moss floating on water surface
+	for i in range(rng.randi_range(2, 4)):
+		var mx = rng.randi_range(1, TILE_SIZE - 4)
+		var my = rng.randi_range(1, TILE_SIZE - 3)
+		var moss_w = rng.randi_range(2, 4)
+		for dx in range(moss_w):
+			if mx + dx < TILE_SIZE and rng.randf() < 0.6:
+				img.set_pixel(mx + dx, my, moss)
+
+
+## Dark ground tile - FF4/5/6 quality corrupted earth with purple veins and ash
+func _draw_dark_ground(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 57913
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.5))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var crack_color = palette.get("crack", Color(0.50, 0.30, 0.55))
+	var glow = palette.get("glow", Color(0.60, 0.40, 0.65))
+	var ash = palette.get("ash", Color(0.35, 0.32, 0.30))
+	var corrupt = palette.get("corrupt", Color(0.38, 0.18, 0.42))
+	var vein = palette.get("vein", Color(0.45, 0.25, 0.50))
+
+	# Corrupted earth texture
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n1 = sin(x * 0.42 + variant * 1.6) * cos(y * 0.38 + variant * 0.9)
+			var n2 = sin(x * 0.85 + y * 0.7 + variant * 2.2) * 0.40
+			var n3 = sin((x - y) * 0.3 + variant * 1.0) * 0.28
+			var combined = (n1 + n2 + n3) / 3.0 + rng.randf() * 0.20
+
+			if combined < -0.30:
+				img.set_pixel(x, y, deep)
+			elif combined < -0.12:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.32:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.18:
+				img.set_pixel(x, y, mid)
+
+	# Corruption veins (glowing purple lines spreading through earth)
+	var vein_count = rng.randi_range(2, 4)
+	for i in range(vein_count):
+		var vx = rng.randi_range(2, TILE_SIZE - 8)
+		var vy = rng.randi_range(2, TILE_SIZE - 2)
+		var vein_len = rng.randi_range(6, 14)
+		var dir_x = rng.randf_range(0.6, 1.2)
+		var dir_y = rng.randf_range(-0.6, 0.6)
+
+		for v in range(vein_len):
+			var pvx = vx + int(v * dir_x)
+			var pvy = vy + int(v * dir_y + sin(v * 0.7) * 1.5)
+			if pvx >= 0 and pvx < TILE_SIZE and pvy >= 0 and pvy < TILE_SIZE:
+				img.set_pixel(pvx, pvy, vein)
+				# Glow around vein
+				for dx in [-1, 0, 1]:
+					for dy in [-1, 0, 1]:
+						if dx == 0 and dy == 0: continue
+						var gpx = pvx + dx
+						var gpy = pvy + dy
+						if gpx >= 0 and gpx < TILE_SIZE and gpy >= 0 and gpy < TILE_SIZE:
+							var existing = img.get_pixel(gpx, gpy)
+							if rng.randf() < 0.3:
+								img.set_pixel(gpx, gpy, existing.lerp(corrupt, 0.25))
+
+	# Ash patches (gray dead earth)
+	var ash_count = rng.randi_range(2, 4)
+	for i in range(ash_count):
+		var ax = rng.randi_range(2, TILE_SIZE - 5)
+		var ay = rng.randi_range(2, TILE_SIZE - 5)
+		var ash_w = rng.randi_range(3, 5)
+		var ash_h = rng.randi_range(2, 4)
+		for dy in range(ash_h):
+			for dx in range(ash_w):
+				var px = ax + dx
+				var py = ay + dy
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE and rng.randf() < 0.6:
+					img.set_pixel(px, py, ash)
+
+	# Cracks with faint glow (corruption seeping through)
+	var crack_count = rng.randi_range(2, 4)
+	for i in range(crack_count):
+		var cx = rng.randi_range(2, TILE_SIZE - 6)
+		var cy = rng.randi_range(2, TILE_SIZE - 2)
+		var clen = rng.randi_range(4, 8)
+		for c in range(clen):
+			var px = cx + c
+			var py = cy + rng.randi_range(-1, 1)
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				img.set_pixel(px, py, crack_color)
+				# Subtle glow beneath crack
+				if py + 1 < TILE_SIZE and rng.randf() < 0.4:
+					img.set_pixel(px, py + 1, glow.darkened(0.3))
+
+	# Occasional glowing spots (corruption energy)
+	for i in range(rng.randi_range(1, 3)):
+		var gx = rng.randi_range(3, TILE_SIZE - 4)
+		var gy = rng.randi_range(3, TILE_SIZE - 4)
+		img.set_pixel(gx, gy, glow)
+		for dx in [-1, 0, 1]:
+			for dy in [-1, 0, 1]:
+				if dx == 0 and dy == 0: continue
+				var gpx = gx + dx
+				var gpy = gy + dy
+				if gpx >= 0 and gpx < TILE_SIZE and gpy >= 0 and gpy < TILE_SIZE:
+					if rng.randf() < 0.4:
+						img.set_pixel(gpx, gpy, corrupt)
+
+
+## Coast tile - FF4/5/6 quality sandy beach with water foam edge transition
+func _draw_coast(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 68024
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.5))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var foam = palette.get("foam", Color(0.92, 0.96, 1.0))
+	var foam_dark = palette.get("foam_dark", Color(0.78, 0.85, 0.92))
+	var water = palette.get("water", Color(0.30, 0.55, 0.80))
+	var water_light = palette.get("water_light", Color(0.42, 0.65, 0.88))
+	var water_dark = palette.get("water_dark", Color(0.18, 0.40, 0.65))
+	var wet_sand = palette.get("wet_sand", Color(0.65, 0.58, 0.42))
+
+	# Sand texture on upper portion
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			# Water line with wave curve (bottom half is water)
+			var wave_line = TILE_SIZE * 0.5 + sin(x * 0.25 + variant * 0.8) * 3.0
+
+			if y > wave_line + 3:
+				# Deep water area
+				var w1 = sin(x * 0.35 + y * 0.2 + variant * 1.2) * 0.4 + 0.5
+				var w2 = sin(x * 0.5 + y * 0.4 + variant * 0.7) * 0.3 + 0.5
+				var combined_w = (w1 + w2) / 2.0
+				if combined_w > 0.65:
+					img.set_pixel(x, y, water_light)
+				elif combined_w < 0.35:
+					img.set_pixel(x, y, water_dark)
+				else:
+					img.set_pixel(x, y, water)
+			elif y > wave_line:
+				# Foam zone
+				var foam_noise = sin(x * 0.8 + variant * 1.5) * 0.5 + rng.randf() * 0.3
+				if foam_noise > 0.3:
+					img.set_pixel(x, y, foam)
+				elif foam_noise > 0.0:
+					img.set_pixel(x, y, foam_dark)
+				else:
+					img.set_pixel(x, y, wet_sand)
+			elif y > wave_line - 3:
+				# Wet sand zone
+				var wet_noise = rng.randf() * 0.5
+				if wet_noise > 0.3:
+					img.set_pixel(x, y, wet_sand)
+				else:
+					img.set_pixel(x, y, palette["dark"])
+			else:
+				# Dry sand with texture
+				var n1 = sin(x * 0.6 + variant * 1.3) * cos(y * 0.4 + variant * 0.5)
+				var n2 = sin(x * 1.1 + y * 0.8 + variant * 2.0) * 0.35
+				var combined = (n1 + n2) / 2.0 + rng.randf() * 0.2
+				if combined > 0.25:
+					img.set_pixel(x, y, palette["light"])
+				elif combined < -0.15:
+					img.set_pixel(x, y, palette["dark"])
+				elif combined > 0.10:
+					img.set_pixel(x, y, mid)
+
+	# Foam bubbles along shoreline
+	var foam_y_base = int(TILE_SIZE * 0.5)
+	for i in range(rng.randi_range(4, 7)):
+		var fx = rng.randi_range(1, TILE_SIZE - 2)
+		var fy = foam_y_base + rng.randi_range(-2, 3)
+		if fy >= 0 and fy < TILE_SIZE:
+			img.set_pixel(fx, fy, foam)
+
+	# Shell/debris on beach
+	if variant % 3 == 0:
+		var shell_count = rng.randi_range(1, 2)
+		for i in range(shell_count):
+			var sx = rng.randi_range(3, TILE_SIZE - 4)
+			var sy = rng.randi_range(2, foam_y_base - 3)
+			# Small shell shape
+			img.set_pixel(sx, sy, palette["light"].lightened(0.1))
+			if sx + 1 < TILE_SIZE:
+				img.set_pixel(sx + 1, sy, palette["dark"])
+
+	# Sparkle on water
+	for i in range(rng.randi_range(2, 4)):
+		var sx = rng.randi_range(1, TILE_SIZE - 2)
+		var sy = rng.randi_range(foam_y_base + 4, TILE_SIZE - 2)
+		if sy < TILE_SIZE:
+			img.set_pixel(sx, sy, Color(1.0, 1.0, 1.0))
+
+
+## Lava tile - FF4/5/6 quality molten rock with bright hot spots and dark crust
+func _draw_lava(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 79135
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.5))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var hot = palette.get("hot", Color(1.0, 0.85, 0.15))
+	var hot_bright = palette.get("hot_bright", Color(1.0, 0.95, 0.50))
+	var orange = palette.get("orange", Color(0.95, 0.55, 0.08))
+	var crust = palette.get("crust", Color(0.25, 0.12, 0.08))
+	var crust_dark = palette.get("crust_dark", Color(0.15, 0.06, 0.04))
+	var glow = palette.get("glow", Color(1.0, 0.65, 0.10))
+
+	# Molten lava flow pattern
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			# Slow-moving flow pattern with hot/cool zones
+			var n1 = sin(x * 0.32 + y * 0.18 + variant * 1.4) * 0.45
+			var n2 = sin(x * 0.55 + y * 0.42 + variant * 2.1) * 0.35
+			var n3 = sin((x + y) * 0.2 + variant * 0.6) * 0.25
+			var n4 = cos(x * 0.8 - y * 0.6 + variant * 1.8) * 0.2
+			var combined = (n1 + n2 + n3 + n4) / 4.0 + rng.randf() * 0.15
+
+			if combined < -0.32:
+				img.set_pixel(x, y, crust_dark)
+			elif combined < -0.18:
+				img.set_pixel(x, y, crust)
+			elif combined < -0.05:
+				img.set_pixel(x, y, deep)
+			elif combined > 0.38:
+				img.set_pixel(x, y, hot)
+			elif combined > 0.28:
+				img.set_pixel(x, y, orange)
+			elif combined > 0.15:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.05:
+				img.set_pixel(x, y, mid)
+
+	# Bright hot spots (white-yellow magma pools)
+	var hotspot_count = rng.randi_range(2, 4)
+	for i in range(hotspot_count):
+		var hx = rng.randi_range(3, TILE_SIZE - 4)
+		var hy = rng.randi_range(3, TILE_SIZE - 4)
+		var spot_r = rng.randi_range(2, 4)
+
+		for dy in range(-spot_r, spot_r + 1):
+			for dx in range(-spot_r, spot_r + 1):
+				var dist = sqrt(dx * dx + dy * dy)
+				var px = hx + dx
+				var py = hy + dy
+				if dist < spot_r and px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					if dist < spot_r * 0.4:
+						img.set_pixel(px, py, hot_bright)
+					elif dist < spot_r * 0.7:
+						img.set_pixel(px, py, hot)
+					else:
+						img.set_pixel(px, py, orange)
+
+	# Cooling crust fragments floating on lava
+	var crust_count = rng.randi_range(2, 5)
+	for i in range(crust_count):
+		var cx = rng.randi_range(2, TILE_SIZE - 5)
+		var cy = rng.randi_range(2, TILE_SIZE - 5)
+		var cw = rng.randi_range(2, 5)
+		var ch = rng.randi_range(1, 3)
+		for dy in range(ch):
+			for dx in range(cw):
+				var px = cx + dx
+				var py = cy + dy
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE and rng.randf() < 0.7:
+					var c = crust
+					# Glowing edge where crust meets lava
+					if dx == 0 or dx == cw - 1 or dy == 0 or dy == ch - 1:
+						c = glow if rng.randf() < 0.4 else crust
+					img.set_pixel(px, py, c)
+
+	# Lava flow streaks (bright orange/yellow lines showing flow direction)
+	var streak_count = rng.randi_range(1, 3)
+	for i in range(streak_count):
+		var sx = rng.randi_range(0, TILE_SIZE - 1)
+		var sy = rng.randi_range(2, TILE_SIZE - 8)
+		var streak_len = rng.randi_range(6, 12)
+		for s in range(streak_len):
+			var px = sx + int(sin(s * 0.4 + variant * 0.3) * 2)
+			var py = sy + s
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				img.set_pixel(px, py, glow)
+
+	# Ember particles above lava (bright spots)
+	for i in range(rng.randi_range(2, 4)):
+		var ex = rng.randi_range(1, TILE_SIZE - 2)
+		var ey = rng.randi_range(1, TILE_SIZE - 2)
+		img.set_pixel(ex, ey, hot_bright)
+
+
 ## Create a TileSet with all tile types for use in TileMap
 func create_tileset() -> TileSet:
-	print("Creating FF4/5/6 quality tileset...")
+	print("Creating FF4/5/6 quality tileset (30 tiles, 5x6 atlas)...")
 	var tileset = TileSet.new()
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
@@ -1614,16 +2373,18 @@ func create_tileset() -> TileSet:
 	# Create atlas source from generated tiles
 	var atlas = TileSetAtlasSource.new()
 
-	# Expanded 5x4 atlas (20 tiles) to include cave tiles and variants
+	# Expanded 5x6 atlas (30 tiles) to include cave tiles, biome tiles, and variants
 	var atlas_cols = 5
-	var atlas_rows = 4
+	var atlas_rows = 6
 	var atlas_img = Image.create(TILE_SIZE * atlas_cols, TILE_SIZE * atlas_rows, false, Image.FORMAT_RGBA8)
 
 	# Generate and place tiles in atlas
 	# Row 0: Base terrain types
 	# Row 1: Buildings and structures
 	# Row 2: Cave tiles and grass variants
-	# Row 3: Water animation frames
+	# Row 3: Water animation + mountain variant
+	# Row 4: New biome tiles
+	# Row 5: More biome tiles and variants
 	var tile_order = [
 		# Row 0: Core terrain
 		TileType.GRASS, TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.PATH,
@@ -1632,7 +2393,11 @@ func create_tileset() -> TileSet:
 		# Row 2: Cave and variants
 		TileType.CAVE_FLOOR, TileType.CAVE_WALL, TileType.GRASS, TileType.GRASS, TileType.FOREST,
 		# Row 3: Water animation + mountain variant
-		TileType.WATER, TileType.WATER, TileType.WATER, TileType.WATER, TileType.MOUNTAIN
+		TileType.WATER, TileType.WATER, TileType.WATER, TileType.WATER, TileType.MOUNTAIN,
+		# Row 4: New biome tiles
+		TileType.SAND, TileType.ICE, TileType.SNOW_TREE, TileType.SWAMP, TileType.DARK_GROUND,
+		# Row 5: More biome tiles and variants
+		TileType.COAST, TileType.LAVA, TileType.SAND, TileType.ICE, TileType.LAVA
 	]
 
 	# Variant mapping: tile index -> variant number
@@ -1644,11 +2409,14 @@ func create_tileset() -> TileSet:
 		16: 2,  # Water frame 2
 		17: 3,  # Water frame 3
 		18: 4,  # Water frame 4
-		19: 1   # Mountain variant 1
+		19: 1,  # Mountain variant 1
+		27: 1,  # Sand variant 1
+		28: 1,  # Ice variant 1
+		29: 1   # Lava variant 1
 	}
 
 	# Impassable tile types (need collision)
-	var impassable_types = [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL, TileType.CAVE_WALL]
+	var impassable_types = [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL, TileType.CAVE_WALL, TileType.LAVA]
 
 	for i in range(tile_order.size()):
 		var tile_type = tile_order[i]
@@ -1717,6 +2485,13 @@ static func get_tile_id(type: TileType) -> int:
 		TileType.FLOOR: return 9
 		TileType.CAVE_FLOOR: return 10
 		TileType.CAVE_WALL: return 11
+		TileType.SAND: return 20
+		TileType.ICE: return 21
+		TileType.SNOW_TREE: return 22
+		TileType.SWAMP: return 23
+		TileType.DARK_GROUND: return 24
+		TileType.COAST: return 25
+		TileType.LAVA: return 26
 	return 0
 
 

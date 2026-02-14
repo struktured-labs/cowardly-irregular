@@ -103,6 +103,29 @@ func _get_map_path(map_id: String) -> String:
 			return "res://src/maps/villages/StarterVillage.tscn"
 		"dungeon_cave":
 			return "res://src/maps/dungeons/Cave.tscn"
+		# New villages
+		"frosthold_village":
+			return "res://src/maps/villages/FrostholdVillage.gd"
+		"eldertree_village":
+			return "res://src/maps/villages/EldertreeVillage.gd"
+		"grimhollow_village":
+			return "res://src/maps/villages/GrimhollowVillage.gd"
+		"sandrift_village":
+			return "res://src/maps/villages/SandriftVillage.gd"
+		"ironhaven_village":
+			return "res://src/maps/villages/IronhavenVillage.gd"
+		# Dragon caves
+		"ice_dragon_cave":
+			return "res://src/maps/dungeons/IceDragonCave.gd"
+		"shadow_dragon_cave":
+			return "res://src/maps/dungeons/ShadowDragonCave.gd"
+		"lightning_dragon_cave":
+			return "res://src/maps/dungeons/LightningDragonCave.gd"
+		"fire_dragon_cave":
+			return "res://src/maps/dungeons/FireDragonCave.gd"
+		# Steampunk overworld
+		"steampunk_overworld":
+			return "res://src/exploration/SteampunkOverworld.gd"
 		_:
 			return "res://src/maps/%s.tscn" % map_id
 
@@ -254,6 +277,104 @@ func _create_default_locations() -> void:
 			"enemy_types": ["wolf", "corrupted_sprite"],
 			"corruption_level": 1.0,
 			"recommended_level": 5
+		},
+
+		# New villages
+		"frosthold_village": {
+			"id": "frosthold_village",
+			"name": "Frosthold",
+			"type": "village",
+			"description": "A hardy Nordic outpost in the frozen northwest",
+			"map_id": "frosthold_village",
+			"has_shop": true,
+			"has_inn": true,
+			"has_save_point": true
+		},
+		"eldertree_village": {
+			"id": "eldertree_village",
+			"name": "Eldertree",
+			"type": "village",
+			"description": "An ancient forest settlement among towering trees",
+			"map_id": "eldertree_village",
+			"has_shop": true,
+			"has_inn": true,
+			"has_save_point": true
+		},
+		"grimhollow_village": {
+			"id": "grimhollow_village",
+			"name": "Grimhollow",
+			"type": "village",
+			"description": "A spooky swamp village shrouded in mist",
+			"map_id": "grimhollow_village",
+			"has_shop": true,
+			"has_inn": true,
+			"has_save_point": true
+		},
+		"sandrift_village": {
+			"id": "sandrift_village",
+			"name": "Sandrift",
+			"type": "village",
+			"description": "A desert trading post battered by sandstorms",
+			"map_id": "sandrift_village",
+			"has_shop": true,
+			"has_inn": true,
+			"has_save_point": true
+		},
+		"ironhaven_village": {
+			"id": "ironhaven_village",
+			"name": "Ironhaven",
+			"type": "village",
+			"description": "An industrial volcanic settlement on the edge of progress",
+			"map_id": "ironhaven_village",
+			"has_shop": true,
+			"has_inn": true,
+			"has_save_point": true
+		},
+
+		# Dragon caves
+		"ice_dragon_cave": {
+			"id": "ice_dragon_cave",
+			"name": "Glacial Sanctum",
+			"type": "dungeon",
+			"description": "Frozen tunnels where Glacius the ice dragon waits",
+			"map_id": "ice_dragon_cave",
+			"encounter_rate": 0.06,
+			"enemy_types": ["bat", "skeleton"],
+			"boss": "ice_dragon",
+			"recommended_level": 15
+		},
+		"shadow_dragon_cave": {
+			"id": "shadow_dragon_cave",
+			"name": "Void Depths",
+			"type": "dungeon",
+			"description": "Dark corridors where Umbraxis the shadow dragon lurks",
+			"map_id": "shadow_dragon_cave",
+			"encounter_rate": 0.07,
+			"enemy_types": ["specter", "skeleton", "imp"],
+			"boss": "shadow_dragon",
+			"recommended_level": 18
+		},
+		"lightning_dragon_cave": {
+			"id": "lightning_dragon_cave",
+			"name": "Storm Spire",
+			"type": "dungeon",
+			"description": "Storm-carved halls where Voltharion crackles with lightning",
+			"map_id": "lightning_dragon_cave",
+			"encounter_rate": 0.06,
+			"enemy_types": ["goblin", "bat", "skeleton"],
+			"boss": "lightning_dragon",
+			"recommended_level": 16
+		},
+		"fire_dragon_cave": {
+			"id": "fire_dragon_cave",
+			"name": "Molten Core",
+			"type": "dungeon",
+			"description": "Volcanic lava tubes where Pyrroth the fire dragon rages",
+			"map_id": "fire_dragon_cave",
+			"encounter_rate": 0.07,
+			"enemy_types": ["imp", "skeleton", "goblin"],
+			"boss": "fire_dragon",
+			"recommended_level": 14
 		}
 	}
 

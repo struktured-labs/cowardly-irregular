@@ -24,15 +24,16 @@ static var _sprite_cache_enabled: bool = true
 
 
 ## Get cached sprite frames or generate and cache them
+## Multiple AnimatedSprite2D nodes can safely share the same SpriteFrames object
+## since they only read from it (animation state is on the node, not the frames)
 static func _get_cached_sprite(cache_key: String, generator: Callable) -> SpriteFrames:
 	"""Return cached SpriteFrames if available, otherwise generate, cache, and return."""
 	if _sprite_cache_enabled and _sprite_cache.has(cache_key):
-		# Return a duplicate to avoid shared mutation issues with AnimatedSprite2D
-		return _sprite_cache[cache_key].duplicate()
+		return _sprite_cache[cache_key]
 	var frames = generator.call()
 	if _sprite_cache_enabled:
 		_sprite_cache[cache_key] = frames
-	return frames.duplicate() if _sprite_cache_enabled else frames
+	return frames
 
 
 ## Clear the sprite cache (call when equipment changes or on memory pressure)

@@ -2803,3 +2803,960 @@ static func _create_rat_guard_frame(pose: int, y_offset: float) -> ImageTexture:
 			_sp(img, leg_x + _s(3), leg_y + ly, outline)
 
 	return ImageTexture.create_from_image(img)
+
+
+## =================
+## FIRE DRAGON (Boss - Tier A: large dragon with flame effects)
+## =================
+
+static func create_fire_dragon_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("fire_dragon", func(): return _generate_fire_dragon_sprite_frames())
+
+static func _generate_fire_dragon_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.5)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_fire_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_fire_dragon_frame(0, -1.5))
+	frames.add_frame("idle", _create_fire_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_fire_dragon_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_fire_dragon_frame(1, 0.0))
+	frames.add_frame("attack", _create_fire_dragon_frame(2, -2.0))
+	frames.add_frame("attack", _create_fire_dragon_frame(3, 0.0))
+	frames.add_frame("attack", _create_fire_dragon_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_fire_dragon_frame(4, 2.0))
+	frames.add_frame("hit", _create_fire_dragon_frame(4, 0.0))
+	frames.add_frame("hit", _create_fire_dragon_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_fire_dragon_frame(5, 0.0))
+	frames.add_frame("defeat", _create_fire_dragon_frame(6, 3.0))
+	frames.add_frame("defeat", _create_fire_dragon_frame(7, 6.0))
+	frames.add_frame("defeat", _create_fire_dragon_frame(8, 10.0))
+	return frames
+
+
+static func _create_fire_dragon_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Fire dragon palette - deep reds/oranges with golden highlights
+	var body_c = Color(0.85, 0.35, 0.15)
+	var body_dark = Color(0.55, 0.2, 0.1)
+	var body_mid = Color(0.7, 0.28, 0.12)
+	var body_light = Color(0.95, 0.5, 0.2)
+	var belly_c = Color(1.0, 0.8, 0.3)
+	var belly_dark = Color(0.85, 0.6, 0.15)
+	var horn_c = Color(0.3, 0.15, 0.1)
+	var horn_light = Color(0.5, 0.3, 0.2)
+	var eye_c = Color(1.0, 0.9, 0.2)
+	var eye_glow = Color(1.0, 1.0, 0.6)
+	var flame = Color(1.0, 0.6, 0.1)
+	var flame_hot = Color(1.0, 0.95, 0.5)
+	var outline = Color(0.2, 0.08, 0.04)
+
+	var cx = size / 2
+	var cy = int(size * 0.65 + _sf(y_offset))
+
+	var lean = 0
+	var mouth_open = false
+	var wing_up = false
+
+	match pose:
+		1: lean = _s(-3); wing_up = true
+		2: mouth_open = true; lean = _s(5)
+		3: mouth_open = true; lean = _s(8)
+		4: lean = _s(-8)
+		5: lean = _s(-12)
+		6: lean = _s(-20)
+		7: lean = _s(-30)
+		8: lean = _s(-40)
+
+	# Defeated collapse
+	if pose >= 7:
+		for y in range(_s(-8), _s(8)):
+			for x in range(_s(-28), _s(28)):
+				var dist = sqrt(pow(float(x) / _sf(28), 2) + pow(float(y) / _sf(6), 2))
+				if dist < 1.0:
+					var color = body_dark if dist > 0.5 else body_mid
+					_sp(img, cx + x, cy + y + _s(8), color)
+		return ImageTexture.create_from_image(img)
+
+	# Tail (behind body)
+	var tail_x = cx - _s(16) + lean / 3
+	var tail_y = cy + _s(4)
+	for i in range(_s(28)):
+		var t = float(i) / _sf(28)
+		var curve = sin(t * PI * 1.2) * _sf(10)
+		var tx = tail_x - i
+		var ty = tail_y + int(curve)
+		var thickness = _s(5) - int(t * _sf(4))
+		for tw in range(-thickness, thickness + 1):
+			var color = body_c if abs(tw) < thickness / 2 else body_dark
+			_sp(img, tx, ty + tw, color)
+		# Tail tip flame
+		if t > 0.8:
+			for fw in range(-_s(2), _s(3)):
+				_sp(img, tx, ty + fw - thickness, flame)
+
+	# Wings (behind body)
+	var wing_y_base = cy - _s(10)
+	var wing_ext = _s(22) if wing_up else _s(16)
+	for wing_side in [-1, 1]:
+		var wx = cx + wing_side * _s(12) + lean / 4
+		for wi in range(wing_ext):
+			var t = float(wi) / float(wing_ext)
+			var wy = wing_y_base - int(t * _sf(15)) if wing_up else wing_y_base - int(t * _sf(8))
+			var membrane_h = _s(8) - int(t * _sf(6))
+			# Wing bone
+			_sp(img, wx + wing_side * wi, wy, body_dark)
+			_sp(img, wx + wing_side * wi, wy + 1, body_dark)
+			# Wing membrane
+			for my in range(membrane_h):
+				var alpha = 1.0 - float(my) / membrane_h * 0.4
+				var mem_color = Color(body_c.r, body_c.g, body_c.b, alpha) if my < membrane_h / 2 else Color(body_dark.r, body_dark.g, body_dark.b, alpha)
+				_sp(img, wx + wing_side * wi, wy + 2 + my, mem_color)
+
+	# Body (large oval)
+	var body_rx = _s(16)
+	var body_ry = _s(14)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy, body_rx + 1, body_ry + 1, outline)
+	for y in range(-body_ry, body_ry + 1):
+		for x in range(-body_rx, body_rx + 1):
+			var dist = sqrt(pow(float(x) / body_rx, 2) + pow(float(y) / body_ry, 2))
+			if dist < 1.0:
+				var color = body_c
+				if y > body_ry * 0.2 and abs(x) < body_rx * 0.6:
+					color = belly_c if y > body_ry * 0.4 else belly_dark
+				elif y < -body_ry * 0.3:
+					color = body_light
+				elif dist > 0.7:
+					color = body_dark
+				# Scale pattern
+				if (x + y) % _s(6) < _s(2) and dist > 0.3 and dist < 0.85:
+					color = color.darkened(0.15)
+				_sp(img, cx + x + lean / 4, cy + y, color)
+
+	# Neck and head
+	var head_x = cx + _s(14) + lean / 2
+	var head_y = cy - _s(16)
+	var head_rx = _s(10)
+	var head_ry = _s(8)
+
+	# Neck
+	for ny in range(_s(10)):
+		var nw = _s(6) - ny / 4
+		for nx in range(-nw, nw + 1):
+			var color = body_c if nx > 0 else body_dark
+			_sp(img, cx + _s(8) + nx + lean / 3, cy - _s(6) - ny, color)
+
+	# Head
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = body_c if y < 0 else body_mid
+				if dist > 0.7:
+					color = body_dark
+				_sp(img, head_x + x, head_y + y, color)
+
+	# Horns
+	for horn_side in [-1, 1]:
+		var hx = head_x + horn_side * _s(5)
+		var hy = head_y - _s(8)
+		for hi in range(_s(10)):
+			var hw = _s(3) - hi / 4
+			for hpx in range(-hw, hw + 1):
+				_sp(img, hx + hpx, hy - hi + horn_side * hi / 3, horn_c if hi < _s(6) else horn_light)
+
+	# Eye
+	for ey in range(_s(-2), _s(3)):
+		for ex in range(_s(-2), _s(3)):
+			if ex * ex + ey * ey <= _s(2) * _s(2):
+				_sp(img, head_x + _s(5) + ex, head_y - _s(1) + ey, eye_c)
+	_sp(img, head_x + _s(4), head_y - _s(2), eye_glow)
+
+	# Snout
+	for sy in range(_s(-3), _s(4)):
+		for sx in range(_s(8)):
+			var sdist = sqrt(pow(float(sx) / _sf(8), 2) + pow(float(sy) / _sf(3), 2))
+			if sdist < 1.0:
+				_sp(img, head_x + _s(8) + sx, head_y + _s(1) + sy, body_light if sy < 0 else body_mid)
+	# Nostril
+	_sp(img, head_x + _s(15), head_y, outline)
+	_sp(img, head_x + _s(15), head_y + 1, outline)
+
+	# Fire breath
+	if mouth_open:
+		var mouth_x = head_x + _s(12)
+		var mouth_y = head_y + _s(3)
+		for my in range(_s(5)):
+			for mx in range(_s(-3), _s(4)):
+				_sp(img, mouth_x + mx, mouth_y + my, Color(0.3, 0.05, 0.05))
+		# Flame projectile
+		for fi in range(_s(18)):
+			var fw = _s(2) + fi / 3
+			for fy in range(-fw, fw + 1):
+				var fc = flame_hot if abs(fy) < fw / 3 else flame
+				_sp(img, mouth_x + _s(3) + fi, mouth_y + _s(2) + fy, fc)
+
+	# Legs
+	for leg in range(2):
+		var lx = cx - _s(6) + leg * _s(12) + lean / 4
+		var ly = cy + _s(10)
+		for liy in range(_s(10)):
+			var lw = _s(4) - liy / 5
+			for lix in range(-lw, lw + 1):
+				_sp(img, lx + lix, ly + liy, body_dark if lix < 0 else body_mid)
+		# Claws
+		for claw in range(3):
+			var claw_x = lx - _s(2) + claw * _s(2)
+			for cl in range(_s(3)):
+				_sp(img, claw_x, ly + _s(10) + cl, horn_c)
+
+	# Ambient flame particles
+	if pose < 5:
+		var rng_seed = pose * 137
+		for p in range(5):
+			var px = cx + ((rng_seed + p * 47) % _s(30)) - _s(15)
+			var py = cy - _s(10) - ((rng_seed + p * 31) % _s(12))
+			for fs in range(_s(-2), _s(3)):
+				for fs2 in range(_s(-2), _s(3)):
+					if abs(fs) + abs(fs2) < _s(3):
+						_sp(img, px + fs, py + fs2, flame if (fs + fs2) % 2 == 0 else flame_hot)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## ICE DRAGON (Boss - Tier A: crystalline dragon with frost effects)
+## =================
+
+static func create_ice_dragon_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("ice_dragon", func(): return _generate_ice_dragon_sprite_frames())
+
+static func _generate_ice_dragon_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_ice_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_ice_dragon_frame(0, -1.0))
+	frames.add_frame("idle", _create_ice_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_ice_dragon_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 3.5)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_ice_dragon_frame(1, 0.0))
+	frames.add_frame("attack", _create_ice_dragon_frame(2, -1.5))
+	frames.add_frame("attack", _create_ice_dragon_frame(3, 0.0))
+	frames.add_frame("attack", _create_ice_dragon_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_ice_dragon_frame(4, 2.0))
+	frames.add_frame("hit", _create_ice_dragon_frame(4, 0.0))
+	frames.add_frame("hit", _create_ice_dragon_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_ice_dragon_frame(5, 0.0))
+	frames.add_frame("defeat", _create_ice_dragon_frame(6, 3.0))
+	frames.add_frame("defeat", _create_ice_dragon_frame(7, 6.0))
+	frames.add_frame("defeat", _create_ice_dragon_frame(8, 10.0))
+	return frames
+
+
+static func _create_ice_dragon_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Ice dragon palette - cool blues with white crystalline highlights
+	var body_c = Color(0.4, 0.7, 0.95)
+	var body_dark = Color(0.2, 0.4, 0.7)
+	var body_mid = Color(0.3, 0.55, 0.85)
+	var body_light = Color(0.6, 0.85, 1.0)
+	var belly_c = Color(0.9, 0.95, 1.0)
+	var belly_dark = Color(0.7, 0.82, 0.95)
+	var horn_c = Color(0.75, 0.9, 1.0)
+	var horn_light = Color(0.95, 0.98, 1.0)
+	var eye_c = Color(0.15, 0.3, 0.9)
+	var eye_glow = Color(0.5, 0.7, 1.0)
+	var ice = Color(0.7, 0.9, 1.0)
+	var ice_bright = Color(0.95, 0.98, 1.0)
+	var outline = Color(0.08, 0.15, 0.3)
+
+	var cx = size / 2
+	var cy = int(size * 0.65 + _sf(y_offset))
+
+	var lean = 0
+	var mouth_open = false
+	var wing_up = false
+
+	match pose:
+		1: lean = _s(-3); wing_up = true
+		2: mouth_open = true; lean = _s(4)
+		3: mouth_open = true; lean = _s(7)
+		4: lean = _s(-8)
+		5: lean = _s(-12)
+		6: lean = _s(-20)
+		7: lean = _s(-30)
+		8: lean = _s(-40)
+
+	# Defeated collapse
+	if pose >= 7:
+		for y in range(_s(-8), _s(8)):
+			for x in range(_s(-28), _s(28)):
+				var dist = sqrt(pow(float(x) / _sf(28), 2) + pow(float(y) / _sf(6), 2))
+				if dist < 1.0:
+					var color = body_dark if dist > 0.5 else body_mid
+					_sp(img, cx + x, cy + y + _s(8), color)
+		# Shattered ice crystals
+		for ci in range(4):
+			var ccx = cx - _s(20) + ci * _s(14)
+			var ccy = cy + _s(4) + (ci % 2) * _s(3)
+			for ciy in range(_s(-4), _s(2)):
+				for cix in range(_s(-2), _s(3)):
+					if abs(cix) + abs(ciy) < _s(4):
+						_sp(img, ccx + cix, ccy + ciy, ice_bright)
+		return ImageTexture.create_from_image(img)
+
+	# Tail (crystalline, segmented)
+	var tail_x = cx - _s(16) + lean / 3
+	var tail_y = cy + _s(3)
+	for i in range(_s(25)):
+		var t = float(i) / _sf(25)
+		var curve = sin(t * PI * 1.5) * _sf(8)
+		var tx = tail_x - i
+		var ty = tail_y + int(curve)
+		var thickness = _s(5) - int(t * _sf(4))
+		for tw in range(-thickness, thickness + 1):
+			var color = body_c if abs(tw) < thickness / 2 else body_dark
+			_sp(img, tx, ty + tw, color)
+		# Ice crystal at tail tip
+		if t > 0.85:
+			for cw in range(_s(-3), _s(4)):
+				_sp(img, tx + cw, ty - thickness - _s(1), ice_bright)
+
+	# Wings (crystalline membranes)
+	var wing_y_base = cy - _s(10)
+	var wing_ext = _s(24) if wing_up else _s(17)
+	for wing_side in [-1, 1]:
+		var wx = cx + wing_side * _s(12) + lean / 4
+		for wi in range(wing_ext):
+			var t = float(wi) / float(wing_ext)
+			var wy = wing_y_base - int(t * _sf(16)) if wing_up else wing_y_base - int(t * _sf(9))
+			var membrane_h = _s(9) - int(t * _sf(7))
+			# Wing bone (icy)
+			_sp(img, wx + wing_side * wi, wy, horn_c)
+			_sp(img, wx + wing_side * wi, wy + 1, horn_c)
+			# Translucent ice membrane
+			for my in range(membrane_h):
+				var alpha = 0.8 - float(my) / membrane_h * 0.5
+				var mem_color = Color(body_light.r, body_light.g, body_light.b, alpha)
+				_sp(img, wx + wing_side * wi, wy + 2 + my, mem_color)
+
+	# Body
+	var body_rx = _s(17)
+	var body_ry = _s(15)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy, body_rx + 1, body_ry + 1, outline)
+	for y in range(-body_ry, body_ry + 1):
+		for x in range(-body_rx, body_rx + 1):
+			var dist = sqrt(pow(float(x) / body_rx, 2) + pow(float(y) / body_ry, 2))
+			if dist < 1.0:
+				var color = body_c
+				if y > body_ry * 0.2 and abs(x) < body_rx * 0.6:
+					color = belly_c if y > body_ry * 0.4 else belly_dark
+				elif y < -body_ry * 0.3:
+					color = body_light
+				elif dist > 0.7:
+					color = body_dark
+				# Crystalline scale shimmer
+				if (x * 3 + y * 2) % _s(8) < _s(2) and dist > 0.3 and dist < 0.85:
+					color = ice
+				_sp(img, cx + x + lean / 4, cy + y, color)
+
+	# Frost armor shine
+	_SU._draw_shine_spot(img, cx - _s(4) + lean / 4, cy - _s(4), _s(3), ice_bright, 0.6)
+
+	# Neck and head
+	var head_x = cx + _s(14) + lean / 2
+	var head_y = cy - _s(17)
+	var head_rx = _s(10)
+	var head_ry = _s(8)
+
+	# Neck
+	for ny in range(_s(11)):
+		var nw = _s(6) - ny / 4
+		for nx in range(-nw, nw + 1):
+			_sp(img, cx + _s(8) + nx + lean / 3, cy - _s(6) - ny, body_c if nx > 0 else body_dark)
+
+	# Head
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = body_light if y < 0 else body_mid
+				if dist > 0.7:
+					color = body_dark
+				_sp(img, head_x + x, head_y + y, color)
+
+	# Ice crown/crest (crystalline spikes)
+	for spike in range(5):
+		var spx = head_x - _s(6) + spike * _s(3)
+		var spike_h = _s(8) - abs(spike - 2) * _s(2)
+		for si in range(spike_h):
+			var sw = _s(2) - si / 4
+			for spw in range(-sw, sw + 1):
+				_sp(img, spx + spw, head_y - _s(8) - si, horn_c if si < spike_h / 2 else horn_light)
+
+	# Eye
+	for ey in range(_s(-2), _s(3)):
+		for ex in range(_s(-2), _s(3)):
+			if ex * ex + ey * ey <= _s(2) * _s(2):
+				_sp(img, head_x + _s(5) + ex, head_y - _s(1) + ey, eye_c)
+	_sp(img, head_x + _s(4), head_y - _s(2), eye_glow)
+
+	# Snout
+	for sy in range(_s(-3), _s(4)):
+		for sx in range(_s(8)):
+			var sdist = sqrt(pow(float(sx) / _sf(8), 2) + pow(float(sy) / _sf(3), 2))
+			if sdist < 1.0:
+				_sp(img, head_x + _s(8) + sx, head_y + _s(1) + sy, body_light)
+
+	# Ice breath
+	if mouth_open:
+		var mouth_x = head_x + _s(12)
+		var mouth_y = head_y + _s(3)
+		for my in range(_s(4)):
+			for mx in range(_s(-3), _s(3)):
+				_sp(img, mouth_x + mx, mouth_y + my, Color(0.1, 0.15, 0.3))
+		# Ice beam
+		for fi in range(_s(20)):
+			var fw = _s(1) + fi / 5
+			for fy in range(-fw, fw + 1):
+				var fc = ice_bright if abs(fy) < fw / 3 else ice
+				_sp(img, mouth_x + _s(2) + fi, mouth_y + _s(1) + fy, fc)
+
+	# Legs
+	for leg in range(2):
+		var lx = cx - _s(6) + leg * _s(12) + lean / 4
+		var ly = cy + _s(10)
+		for liy in range(_s(10)):
+			var lw = _s(4) - liy / 5
+			for lix in range(-lw, lw + 1):
+				_sp(img, lx + lix, ly + liy, body_dark if lix < 0 else body_mid)
+		# Ice claws
+		for claw in range(3):
+			var claw_x = lx - _s(2) + claw * _s(2)
+			for cl in range(_s(3)):
+				_sp(img, claw_x, ly + _s(10) + cl, horn_c)
+
+	# Floating ice crystal particles
+	if pose < 5:
+		var rng_seed = pose * 113
+		for p in range(6):
+			var px = cx + ((rng_seed + p * 53) % _s(34)) - _s(17)
+			var py = cy - _s(8) - ((rng_seed + p * 29) % _s(14))
+			# Diamond-shaped ice crystal
+			for dy in range(_s(-2), _s(3)):
+				for dx in range(_s(-2), _s(3)):
+					if abs(dx) + abs(dy) <= _s(2):
+						_sp(img, px + dx, py + dy, ice if (dx + dy) % 2 == 0 else ice_bright)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## LIGHTNING DRAGON (Boss - Tier A: electric dragon with arc effects)
+## =================
+
+static func create_lightning_dragon_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("lightning_dragon", func(): return _generate_lightning_dragon_sprite_frames())
+
+static func _generate_lightning_dragon_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 3.0)  # Faster idle - it's hyper
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_lightning_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_lightning_dragon_frame(0, -2.0))
+	frames.add_frame("idle", _create_lightning_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_lightning_dragon_frame(0, 1.5))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 5.0)  # Very fast attacks
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_lightning_dragon_frame(1, 0.0))
+	frames.add_frame("attack", _create_lightning_dragon_frame(2, -3.0))
+	frames.add_frame("attack", _create_lightning_dragon_frame(3, 0.0))
+	frames.add_frame("attack", _create_lightning_dragon_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_lightning_dragon_frame(4, 2.0))
+	frames.add_frame("hit", _create_lightning_dragon_frame(4, 0.0))
+	frames.add_frame("hit", _create_lightning_dragon_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_lightning_dragon_frame(5, 0.0))
+	frames.add_frame("defeat", _create_lightning_dragon_frame(6, 3.0))
+	frames.add_frame("defeat", _create_lightning_dragon_frame(7, 6.0))
+	frames.add_frame("defeat", _create_lightning_dragon_frame(8, 10.0))
+	return frames
+
+
+static func _create_lightning_dragon_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Lightning dragon palette - electric yellows with blue-white accents
+	var body_c = Color(0.85, 0.85, 0.3)
+	var body_dark = Color(0.55, 0.5, 0.15)
+	var body_mid = Color(0.7, 0.68, 0.22)
+	var body_light = Color(0.95, 0.92, 0.5)
+	var belly_c = Color(0.95, 0.95, 0.7)
+	var belly_dark = Color(0.8, 0.78, 0.4)
+	var horn_c = Color(0.5, 0.7, 1.0)
+	var horn_light = Color(0.7, 0.85, 1.0)
+	var eye_c = Color(0.3, 0.5, 1.0)
+	var eye_glow = Color(0.6, 0.8, 1.0)
+	var spark = Color(0.9, 0.95, 1.0)
+	var spark_core = Color(1.0, 1.0, 1.0)
+	var bolt = Color(0.5, 0.7, 1.0)
+	var outline = Color(0.25, 0.22, 0.05)
+
+	var cx = size / 2
+	var cy = int(size * 0.65 + _sf(y_offset))
+
+	var lean = 0
+	var mouth_open = false
+	var wing_up = false
+
+	match pose:
+		1: lean = _s(-4); wing_up = true
+		2: mouth_open = true; lean = _s(6)
+		3: mouth_open = true; lean = _s(10)
+		4: lean = _s(-9)
+		5: lean = _s(-14)
+		6: lean = _s(-22)
+		7: lean = _s(-32)
+		8: lean = _s(-42)
+
+	# Defeated collapse
+	if pose >= 7:
+		for y in range(_s(-7), _s(7)):
+			for x in range(_s(-26), _s(26)):
+				var dist = sqrt(pow(float(x) / _sf(26), 2) + pow(float(y) / _sf(5), 2))
+				if dist < 1.0:
+					var color = body_dark if dist > 0.5 else body_mid
+					_sp(img, cx + x, cy + y + _s(8), color)
+		return ImageTexture.create_from_image(img)
+
+	# Tail (jagged, lightning-bolt shaped)
+	var tail_x = cx - _s(14) + lean / 3
+	var tail_y = cy + _s(3)
+	for i in range(_s(24)):
+		var t = float(i) / _sf(24)
+		var jag = _sf(4) * (1 if (i / _s(3)) % 2 == 0 else -1)  # Zigzag
+		var tx = tail_x - i
+		var ty = tail_y + int(jag)
+		var thickness = _s(4) - int(t * _sf(3))
+		for tw in range(-thickness, thickness + 1):
+			_sp(img, tx, ty + tw, body_c if abs(tw) < thickness / 2 else body_dark)
+		# Sparks at tail end
+		if t > 0.8:
+			_sp(img, tx - 1, ty - thickness - 1, spark)
+			_sp(img, tx + 1, ty + thickness + 1, spark)
+
+	# Wings (angular, with lightning veins)
+	var wing_y_base = cy - _s(10)
+	var wing_ext = _s(20) if wing_up else _s(15)
+	for wing_side in [-1, 1]:
+		var wx = cx + wing_side * _s(11) + lean / 4
+		for wi in range(wing_ext):
+			var t = float(wi) / float(wing_ext)
+			var wy = wing_y_base - int(t * _sf(14)) if wing_up else wing_y_base - int(t * _sf(7))
+			var membrane_h = _s(7) - int(t * _sf(5))
+			# Wing bone
+			_sp(img, wx + wing_side * wi, wy, body_dark)
+			_sp(img, wx + wing_side * wi, wy + 1, body_dark)
+			# Wing membrane with lightning veins
+			for my in range(membrane_h):
+				var color = body_light if my == membrane_h / 2 else body_c
+				if wi % _s(4) == 0:
+					color = spark  # Lightning vein
+				_sp(img, wx + wing_side * wi, wy + 2 + my, color)
+
+	# Body (slightly sleeker - built for speed)
+	var body_rx = _s(14)
+	var body_ry = _s(13)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy, body_rx + 1, body_ry + 1, outline)
+	for y in range(-body_ry, body_ry + 1):
+		for x in range(-body_rx, body_rx + 1):
+			var dist = sqrt(pow(float(x) / body_rx, 2) + pow(float(y) / body_ry, 2))
+			if dist < 1.0:
+				var color = body_c
+				if y > body_ry * 0.2 and abs(x) < body_rx * 0.6:
+					color = belly_c if y > body_ry * 0.4 else belly_dark
+				elif y < -body_ry * 0.3:
+					color = body_light
+				elif dist > 0.7:
+					color = body_dark
+				# Jagged scale pattern
+				if (x + y * 2) % _s(7) < _s(2) and dist > 0.35 and dist < 0.8:
+					color = color.lightened(0.2)
+				_sp(img, cx + x + lean / 4, cy + y, color)
+
+	# Neck and head
+	var head_x = cx + _s(12) + lean / 2
+	var head_y = cy - _s(15)
+	var head_rx = _s(9)
+	var head_ry = _s(7)
+
+	# Neck
+	for ny in range(_s(9)):
+		var nw = _s(5) - ny / 4
+		for nx in range(-nw, nw + 1):
+			_sp(img, cx + _s(7) + nx + lean / 3, cy - _s(5) - ny, body_c if nx > 0 else body_dark)
+
+	# Head
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = body_light if y < 0 else body_mid
+				if dist > 0.7:
+					color = body_dark
+				_sp(img, head_x + x, head_y + y, color)
+
+	# Lightning rod horns (straight, metallic blue)
+	for horn_side in [-1, 1]:
+		var hx = head_x + horn_side * _s(4)
+		for hi in range(_s(12)):
+			_sp(img, hx, head_y - _s(7) - hi, horn_c if hi < _s(8) else horn_light)
+			_sp(img, hx + 1, head_y - _s(7) - hi, horn_c)
+		# Spark at tip
+		_sp(img, hx - 1, head_y - _s(19), spark_core)
+		_sp(img, hx + 2, head_y - _s(19), spark_core)
+		_sp(img, hx, head_y - _s(20), spark_core)
+
+	# Eye
+	for ey in range(_s(-2), _s(3)):
+		for ex in range(_s(-2), _s(3)):
+			if ex * ex + ey * ey <= _s(2) * _s(2):
+				_sp(img, head_x + _s(4) + ex, head_y - _s(1) + ey, eye_c)
+	_sp(img, head_x + _s(3), head_y - _s(2), eye_glow)
+
+	# Snout
+	for sy in range(_s(-3), _s(3)):
+		for sx in range(_s(7)):
+			var sdist = sqrt(pow(float(sx) / _sf(7), 2) + pow(float(sy) / _sf(3), 2))
+			if sdist < 1.0:
+				_sp(img, head_x + _s(7) + sx, head_y + _s(1) + sy, body_light)
+
+	# Thunder breath
+	if mouth_open:
+		var mouth_x = head_x + _s(11)
+		var mouth_y = head_y + _s(2)
+		for my in range(_s(4)):
+			for mx in range(_s(-2), _s(3)):
+				_sp(img, mouth_x + mx, mouth_y + my, Color(0.15, 0.1, 0.25))
+		# Lightning bolt beam
+		for fi in range(_s(16)):
+			var jag_y = _s(2) * (1 if (fi / _s(2)) % 2 == 0 else -1)
+			for fy in range(-_s(1), _s(2)):
+				_sp(img, mouth_x + _s(2) + fi, mouth_y + _s(1) + fy + jag_y, bolt if fy == 0 else spark)
+
+	# Legs
+	for leg in range(2):
+		var lx = cx - _s(5) + leg * _s(10) + lean / 4
+		var ly = cy + _s(9)
+		for liy in range(_s(9)):
+			var lw = _s(3) - liy / 5
+			for lix in range(-lw, lw + 1):
+				_sp(img, lx + lix, ly + liy, body_dark if lix < 0 else body_mid)
+		for claw in range(3):
+			var claw_x = lx - _s(2) + claw * _s(2)
+			for cl in range(_s(3)):
+				_sp(img, claw_x, ly + _s(9) + cl, horn_c)
+
+	# Arc lightning particles
+	if pose < 5:
+		var rng_seed = pose * 197
+		for p in range(7):
+			var px = cx + ((rng_seed + p * 41) % _s(32)) - _s(16)
+			var py = cy - _s(6) - ((rng_seed + p * 37) % _s(16))
+			# Small lightning bolt
+			for bi in range(_s(4)):
+				var by = bi if (bi / _s(1)) % 2 == 0 else bi + 1
+				_sp(img, px + bi, py + by, spark if bi % 2 == 0 else spark_core)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## SHADOW DRAGON (Boss - Tier A: void dragon with wisp effects)
+## =================
+
+static func create_shadow_dragon_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("shadow_dragon", func(): return _generate_shadow_dragon_sprite_frames())
+
+static func _generate_shadow_dragon_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_shadow_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_shadow_dragon_frame(0, -1.0))
+	frames.add_frame("idle", _create_shadow_dragon_frame(0, 0.0))
+	frames.add_frame("idle", _create_shadow_dragon_frame(0, 1.5))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 3.5)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_shadow_dragon_frame(1, 0.0))
+	frames.add_frame("attack", _create_shadow_dragon_frame(2, -2.0))
+	frames.add_frame("attack", _create_shadow_dragon_frame(3, 0.0))
+	frames.add_frame("attack", _create_shadow_dragon_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_shadow_dragon_frame(4, 1.5))
+	frames.add_frame("hit", _create_shadow_dragon_frame(4, 0.0))
+	frames.add_frame("hit", _create_shadow_dragon_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_shadow_dragon_frame(5, 0.0))
+	frames.add_frame("defeat", _create_shadow_dragon_frame(6, 3.0))
+	frames.add_frame("defeat", _create_shadow_dragon_frame(7, 6.0))
+	frames.add_frame("defeat", _create_shadow_dragon_frame(8, 10.0))
+	return frames
+
+
+static func _create_shadow_dragon_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Shadow dragon palette - deep purples with ethereal violet accents
+	var body_c = Color(0.25, 0.15, 0.35)
+	var body_dark = Color(0.12, 0.07, 0.2)
+	var body_mid = Color(0.18, 0.1, 0.28)
+	var body_light = Color(0.35, 0.22, 0.5)
+	var belly_c = Color(0.2, 0.12, 0.3)
+	var belly_dark = Color(0.15, 0.08, 0.22)
+	var horn_c = Color(0.4, 0.2, 0.6)
+	var horn_light = Color(0.6, 0.3, 0.8)
+	var eye_c = Color(0.8, 0.2, 0.9)
+	var eye_glow = Color(1.0, 0.5, 1.0)
+	var wisp = Color(0.6, 0.3, 0.8)
+	var wisp_bright = Color(0.8, 0.5, 1.0)
+	var void_c = Color(0.05, 0.02, 0.1)
+	var outline = Color(0.05, 0.02, 0.08)
+
+	var cx = size / 2
+	var cy = int(size * 0.65 + _sf(y_offset))
+
+	var lean = 0
+	var mouth_open = false
+	var wing_up = false
+
+	match pose:
+		1: lean = _s(-3); wing_up = true
+		2: mouth_open = true; lean = _s(5)
+		3: mouth_open = true; lean = _s(8)
+		4: lean = _s(-7)
+		5: lean = _s(-12)
+		6: lean = _s(-20)
+		7: lean = _s(-30)
+		8: lean = _s(-42)
+
+	# Defeated dissolution
+	if pose >= 7:
+		for y in range(_s(-10), _s(10)):
+			for x in range(_s(-30), _s(30)):
+				var dist = sqrt(pow(float(x) / _sf(30), 2) + pow(float(y) / _sf(8), 2))
+				if dist < 1.0:
+					var alpha = 0.6 - dist * 0.4
+					var color = Color(body_dark.r, body_dark.g, body_dark.b, alpha)
+					_sp(img, cx + x, cy + y + _s(6), color)
+		# Void wisps dispersing
+		for wis in range(6):
+			var wpx = cx - _s(24) + wis * _s(10)
+			var wpy = cy + _s(2) - (wis % 3) * _s(4)
+			for wy in range(_s(-3), _s(4)):
+				for wwx in range(_s(-2), _s(3)):
+					if abs(wwx) + abs(wy) < _s(3):
+						_sp(img, wpx + wwx, wpy + wy, Color(wisp.r, wisp.g, wisp.b, 0.5))
+		return ImageTexture.create_from_image(img)
+
+	# Shadow wisps trailing from tail
+	var tail_x = cx - _s(16) + lean / 3
+	var tail_y = cy + _s(4)
+	for i in range(_s(26)):
+		var t = float(i) / _sf(26)
+		var curve = sin(t * PI * 1.3) * _sf(9)
+		var tx = tail_x - i
+		var ty = tail_y + int(curve)
+		var thickness = _s(5) - int(t * _sf(4))
+		for tw in range(-thickness, thickness + 1):
+			var alpha = 1.0 - t * 0.3
+			var color = Color(body_c.r, body_c.g, body_c.b, alpha) if abs(tw) < thickness / 2 else Color(body_dark.r, body_dark.g, body_dark.b, alpha)
+			_sp(img, tx, ty + tw, color)
+		# Void wisps trailing off tail
+		if t > 0.5 and i % _s(3) == 0:
+			for ws in range(_s(-2), _s(3)):
+				_sp(img, tx + ws, ty - thickness - _s(2), Color(wisp.r, wisp.g, wisp.b, 0.4))
+
+	# Wings (ethereal, semi-transparent shadow membrane)
+	var wing_y_base = cy - _s(11)
+	var wing_ext = _s(24) if wing_up else _s(18)
+	for wing_side in [-1, 1]:
+		var wx = cx + wing_side * _s(13) + lean / 4
+		for wi in range(wing_ext):
+			var t = float(wi) / float(wing_ext)
+			var wy = wing_y_base - int(t * _sf(16)) if wing_up else wing_y_base - int(t * _sf(9))
+			var membrane_h = _s(10) - int(t * _sf(8))
+			# Wing bone (dark)
+			_sp(img, wx + wing_side * wi, wy, body_dark)
+			_sp(img, wx + wing_side * wi, wy + 1, body_dark)
+			# Shadow membrane (semi-transparent)
+			for my in range(membrane_h):
+				var alpha = 0.7 - float(my) / membrane_h * 0.4 - t * 0.2
+				var mem_color = Color(body_mid.r, body_mid.g, body_mid.b, alpha)
+				if wi % _s(5) == 0:
+					mem_color = Color(wisp.r, wisp.g, wisp.b, alpha * 0.8)  # Void veins
+				_sp(img, wx + wing_side * wi, wy + 2 + my, mem_color)
+
+	# Body (larger than other dragons - the strongest)
+	var body_rx = _s(18)
+	var body_ry = _s(16)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy, body_rx + 1, body_ry + 1, outline)
+	for y in range(-body_ry, body_ry + 1):
+		for x in range(-body_rx, body_rx + 1):
+			var dist = sqrt(pow(float(x) / body_rx, 2) + pow(float(y) / body_ry, 2))
+			if dist < 1.0:
+				var color = body_c
+				if y > body_ry * 0.2 and abs(x) < body_rx * 0.5:
+					color = belly_c if y > body_ry * 0.4 else belly_dark
+				elif y < -body_ry * 0.3:
+					color = body_light
+				elif dist > 0.7:
+					color = body_dark
+				# Void pattern (darker patches)
+				if (x * 2 + y * 3) % _s(9) < _s(2) and dist > 0.25 and dist < 0.9:
+					color = void_c
+				_sp(img, cx + x + lean / 4, cy + y, color)
+
+	# Neck and head
+	var head_x = cx + _s(14) + lean / 2
+	var head_y = cy - _s(18)
+	var head_rx = _s(11)
+	var head_ry = _s(9)
+
+	# Neck
+	for ny in range(_s(12)):
+		var nw = _s(7) - ny / 4
+		for nx in range(-nw, nw + 1):
+			_sp(img, cx + _s(8) + nx + lean / 3, cy - _s(6) - ny, body_c if nx > 0 else body_dark)
+
+	# Head
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = body_light if y < -head_ry * 0.2 else body_mid
+				if dist > 0.7:
+					color = body_dark
+				_sp(img, head_x + x, head_y + y, color)
+
+	# Curved void horns
+	for horn_side in [-1, 1]:
+		var hx = head_x + horn_side * _s(6)
+		for hi in range(_s(12)):
+			var curve_x = int(horn_side * hi * 0.3)
+			var hw = _s(3) - hi / 5
+			for hpx in range(-hw, hw + 1):
+				_sp(img, hx + hpx + curve_x, head_y - _s(9) - hi, horn_c if hi < _s(7) else horn_light)
+
+	# Eyes (glowing purple, piercing)
+	for ey in range(_s(-3), _s(4)):
+		for ex in range(_s(-3), _s(4)):
+			if ex * ex + ey * ey <= _s(3) * _s(3):
+				_sp(img, head_x + _s(5) + ex, head_y - _s(1) + ey, eye_c)
+	# Glow aura around eye
+	for ey in range(_s(-4), _s(5)):
+		for ex in range(_s(-4), _s(5)):
+			if ex * ex + ey * ey <= _s(4) * _s(4) and ex * ex + ey * ey > _s(3) * _s(3):
+				_sp(img, head_x + _s(5) + ex, head_y - _s(1) + ey, Color(eye_glow.r, eye_glow.g, eye_glow.b, 0.3))
+	_sp(img, head_x + _s(4), head_y - _s(2), eye_glow)
+
+	# Snout
+	for sy in range(_s(-3), _s(4)):
+		for sx in range(_s(9)):
+			var sdist = sqrt(pow(float(sx) / _sf(9), 2) + pow(float(sy) / _sf(3), 2))
+			if sdist < 1.0:
+				_sp(img, head_x + _s(9) + sx, head_y + _s(1) + sy, body_light if sy < 0 else body_mid)
+
+	# Void breath
+	if mouth_open:
+		var mouth_x = head_x + _s(14)
+		var mouth_y = head_y + _s(3)
+		for my in range(_s(5)):
+			for mx in range(_s(-3), _s(4)):
+				_sp(img, mouth_x + mx, mouth_y + my, void_c)
+		# Void beam (dark with purple edges)
+		for fi in range(_s(18)):
+			var fw = _s(2) + fi / 4
+			for fy in range(-fw, fw + 1):
+				var fc = void_c if abs(fy) < fw / 2 else wisp
+				if abs(fy) == fw:
+					fc = wisp_bright
+				_sp(img, mouth_x + _s(3) + fi, mouth_y + _s(2) + fy, fc)
+
+	# Legs
+	for leg in range(2):
+		var lx = cx - _s(7) + leg * _s(14) + lean / 4
+		var ly = cy + _s(12)
+		for liy in range(_s(10)):
+			var lw = _s(4) - liy / 5
+			for lix in range(-lw, lw + 1):
+				_sp(img, lx + lix, ly + liy, body_dark if lix < 0 else body_mid)
+		for claw in range(3):
+			var claw_x = lx - _s(2) + claw * _s(2)
+			for cl in range(_s(4)):
+				_sp(img, claw_x, ly + _s(10) + cl, horn_c)
+
+	# Floating void wisps
+	if pose < 5:
+		var rng_seed = pose * 163
+		for p in range(8):
+			var px = cx + ((rng_seed + p * 43) % _s(36)) - _s(18)
+			var py = cy - _s(8) - ((rng_seed + p * 31) % _s(16))
+			# Wisp (small glowing orb with trail)
+			for wy in range(_s(-2), _s(3)):
+				for wwx in range(_s(-2), _s(3)):
+					var wdist = abs(wwx) + abs(wy)
+					if wdist < _s(2):
+						_sp(img, px + wwx, py + wy, wisp_bright if wdist < _s(1) else wisp)
+			# Wisp trail
+			for trail in range(_s(3)):
+				_sp(img, px - trail, py + trail, Color(wisp.r, wisp.g, wisp.b, 0.4))
+
+	return ImageTexture.create_from_image(img)
