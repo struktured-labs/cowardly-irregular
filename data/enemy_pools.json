@@ -15,5 +15,6 @@
 	"dark_forest": ["wolf", "imp", "specter", "mushroom"],
 	"miniboss_cave": ["cave_troll", "treasure_mimic", "cursed_armor", "crystal_golem"],
 	"miniboss_forest": ["blood_wolf_alpha", "ironback_beetle", "elder_mushroom"],
-	"miniboss_corrupted": ["rogue_automaton", "shadow_knight"]
+	"miniboss_corrupted": ["rogue_automaton", "shadow_knight"],
+	"suburban_overworld": ["new_age_retro_hippie", "spiteful_crow", "skate_punk", "unassuming_dog", "cranky_lady"]
 }

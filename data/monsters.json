@@ -1593,5 +1593,191 @@
 		"counter_abilities": [
 			"counter"
 		]
+	},
+	"new_age_retro_hippie": {
+		"id": "new_age_retro_hippie",
+		"name": "New Age Retro Hippie",
+		"description": "A tie-dye wearing pacifist who attacks with bad vibes and crystal healing. Peace, man.",
+		"level": 4,
+		"stats": {
+			"max_hp": 120,
+			"max_mp": 60,
+			"attack": 15,
+			"defense": 10,
+			"magic": 30,
+			"speed": 10
+		},
+		"abilities": [
+			"bad_vibes",
+			"crystal_heal",
+			"peace_sign"
+		],
+		"exp_reward": 30,
+		"gold_reward": 25,
+		"drop_table": [
+			{
+				"item": "crystal",
+				"chance": 0.4
+			},
+			{
+				"item": "incense",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"physical"
+		],
+		"resistances": [
+			"magic"
+		]
+	},
+	"spiteful_crow": {
+		"id": "spiteful_crow",
+		"name": "Spiteful Crow",
+		"description": "A mean-spirited crow that steals your items. Extremely fast and annoying.",
+		"level": 3,
+		"stats": {
+			"max_hp": 60,
+			"max_mp": 20,
+			"attack": 20,
+			"defense": 6,
+			"magic": 10,
+			"speed": 22
+		},
+		"abilities": [
+			"peck",
+			"steal",
+			"taunt"
+		],
+		"exp_reward": 22,
+		"gold_reward": 18,
+		"drop_table": [
+			{
+				"item": "crow_feather",
+				"chance": 0.5
+			},
+			{
+				"item": "shiny_coin",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": []
+	},
+	"skate_punk": {
+		"id": "skate_punk",
+		"name": "Skate Punk",
+		"description": "A rebellious skateboarder who attacks with sick tricks. Radical, dude.",
+		"level": 4,
+		"stats": {
+			"max_hp": 100,
+			"max_mp": 25,
+			"attack": 35,
+			"defense": 12,
+			"magic": 8,
+			"speed": 16
+		},
+		"abilities": [
+			"kickflip",
+			"grind_rail",
+			"ollie_slam"
+		],
+		"exp_reward": 32,
+		"gold_reward": 28,
+		"drop_table": [
+			{
+				"item": "skateboard_wheel",
+				"chance": 0.4
+			},
+			{
+				"item": "energy_drink",
+				"chance": 0.25
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"physical"
+		]
+	},
+	"unassuming_dog": {
+		"id": "unassuming_dog",
+		"name": "Unassuming Local Dog",
+		"description": "Just a regular neighborhood dog. Definitely nothing suspicious about its enormous attack stat.",
+		"level": 5,
+		"stats": {
+			"max_hp": 180,
+			"max_mp": 30,
+			"attack": 42,
+			"defense": 15,
+			"magic": 12,
+			"speed": 14
+		},
+		"abilities": [
+			"bite",
+			"bark",
+			"puppy_eyes"
+		],
+		"exp_reward": 45,
+		"gold_reward": 20,
+		"drop_table": [
+			{
+				"item": "dog_collar",
+				"chance": 0.3
+			},
+			{
+				"item": "tennis_ball",
+				"chance": 0.5
+			}
+		],
+		"weaknesses": [],
+		"resistances": [
+			"dark"
+		],
+		"dialogue": {
+			"intro": [
+				"*A dog trots up to the party*",
+				"*It looks... normal?*",
+				"*Something about its eyes says otherwise.*"
+			]
+		}
+	},
+	"cranky_lady": {
+		"id": "cranky_lady",
+		"name": "Cranky Lady",
+		"description": "An irate suburban resident who attacks with complaints and thrown objects. Wants to speak to your manager.",
+		"level": 4,
+		"stats": {
+			"max_hp": 110,
+			"max_mp": 45,
+			"attack": 22,
+			"defense": 14,
+			"magic": 25,
+			"speed": 11
+		},
+		"abilities": [
+			"complaint",
+			"thrown_newspaper",
+			"call_manager"
+		],
+		"exp_reward": 35,
+		"gold_reward": 40,
+		"drop_table": [
+			{
+				"item": "expired_coupon",
+				"chance": 0.5
+			},
+			{
+				"item": "newspaper",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": []
 	}
 }

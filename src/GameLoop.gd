@@ -826,6 +826,8 @@ func _start_exploration() -> void:
 			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/FireDragonCave.gd")
 		"steampunk_overworld":
 			exploration_scene = _create_script_scene("res://src/exploration/SteampunkOverworld.gd")
+		"suburban_overworld":
+			exploration_scene = _create_script_scene("res://src/exploration/SuburbanOverworld.gd")
 		_:
 			exploration_scene = OverworldSceneRes.instantiate()
 
@@ -928,6 +930,8 @@ func _prewarm_area_sprites() -> void:
 			common_enemies = ["imp", "skeleton", "fire_dragon"]
 		"steampunk_overworld":
 			common_enemies = ["slime", "imp", "skeleton"]
+		"suburban_overworld":
+			common_enemies = ["new_age_retro_hippie", "spiteful_crow", "skate_punk"]
 		_:
 			if "cave" in _current_map_id:
 				common_enemies = ["bat", "skeleton", "imp"]
@@ -1098,6 +1102,8 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "lava_cave"
 		"steampunk_overworld":
 			return "urban"
+		"suburban_overworld":
+			return "suburban"
 		_:
 			if "cave" in map_id or "dungeon" in map_id:
 				return "cave"

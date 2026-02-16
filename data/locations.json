@@ -49,5 +49,15 @@
 		"has_save_point": true,
 		"has_guild": true,
 		"npcs": ["king", "guild_master", "shopkeeper", "innkeeper"]
+	},
+
+	"suburban_overworld": {
+		"id": "suburban_overworld",
+		"name": "Suburbia",
+		"type": "overworld",
+		"description": "A cheerful 90s suburban town. Something feels... off.",
+		"encounter_rate": 0.05,
+		"enemy_pool_id": "suburban_overworld",
+		"recommended_level": 4
 	}
 }

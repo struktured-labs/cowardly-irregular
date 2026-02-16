@@ -162,6 +162,18 @@ func _setup_transitions() -> void:
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
 
+	# Suburban portal - mysterious glowing teleporter pad
+	var suburban_portal = AreaTransitionScript.new()
+	suburban_portal.name = "SuburbanPortal"
+	suburban_portal.target_map = "suburban_overworld"
+	suburban_portal.target_spawn = "entrance"
+	suburban_portal.require_interaction = true
+	suburban_portal.indicator_text = "Strange Device (90s???)"
+	suburban_portal.position = Vector2(20 * TILE_SIZE, 11 * TILE_SIZE)
+	_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	suburban_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(suburban_portal)
+
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	trans.collision_layer = 4
@@ -383,6 +395,17 @@ func _setup_npcs() -> void:
 		"Take care of yourself out there."
 	])
 	npcs.add_child(flower)
+
+	# === PORTAL GUIDE ===
+
+	# Dr. Temporal (near suburban portal)
+	var temporal = _create_npc("Dr. Temporal", "mysterious", Vector2(18 * TILE_SIZE, 11 * TILE_SIZE), [
+		"This device materialized overnight... it hums with a '16-bit' frequency.",
+		"My instruments detect suburban housing developments on the other side.",
+		"Strip malls. Parking lots. The horror.",
+		"Step on the pad and press A to activate. If you dare."
+	])
+	npcs.add_child(temporal)
 
 
 func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
