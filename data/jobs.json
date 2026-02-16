@@ -424,5 +424,41 @@
 			"outfit_color": [0.5, 0.4, 0.15],
 			"headgear": "cap"
 		}
+	},
+	"speculator": {
+		"id": "speculator",
+		"name": "Speculator",
+		"type": 1,
+		"description": "A volatility-based combat manipulator who reshapes probability distributions. Profits from chaos, thrives in instability.",
+		"stat_modifiers": {
+			"max_hp": 95,
+			"max_mp": 65,
+			"attack": 12,
+			"defense": 9,
+			"magic": 14,
+			"speed": 14
+		},
+		"abilities": [
+			"leverage_position",
+			"overexpose",
+			"hedge_position",
+			"press_the_edge",
+			"forecast",
+			"circuit_breaker"
+		],
+		"passive_abilities": [
+			"market_sense"
+		],
+		"unlock_condition": {
+			"type": "story",
+			"chapter": 2,
+			"quest": "market_crash"
+		},
+		"volatility_access": true,
+		"visual": {
+			"sprite_type": "tech",
+			"outfit_color": [0.22, 0.22, 0.25],
+			"headgear": "glasses"
+		}
 	}
 }

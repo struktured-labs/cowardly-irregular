@@ -21,6 +21,7 @@ const OUTFIT_MAP: Dictionary = {
 	"scriptweaver": "tech",
 	"bossbinder": "tech",
 	"skiptrotter": "tech",
+	"speculator": "tech",
 	"time_mage": "time",
 }
 
@@ -37,6 +38,7 @@ const HEADGEAR_MAP: Dictionary = {
 	"scriptweaver": "goggles",
 	"bossbinder": "visor",
 	"skiptrotter": "cap",
+	"speculator": "glasses",
 	"time_mage": "astral_circlet",
 }
 
@@ -53,6 +55,7 @@ const JOB_COLORS: Dictionary = {
 	"scriptweaver": Color(0.2, 0.5, 0.45),
 	"bossbinder": Color(0.55, 0.2, 0.2),
 	"skiptrotter": Color(0.5, 0.4, 0.15),
+	"speculator": Color(0.22, 0.22, 0.25),
 	"time_mage": Color(0.25, 0.2, 0.55),
 }
 

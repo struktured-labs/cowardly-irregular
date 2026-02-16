@@ -35,6 +35,9 @@ enum BattleState {
 var current_state: BattleState = BattleState.INACTIVE
 var current_round: int = 0
 
+## Volatility system (instantiated per battle)
+var volatility: VolatilitySystem = null
+
 ## Battle participants
 var player_party: Array[Combatant] = []
 var enemy_party: Array[Combatant] = []
@@ -166,6 +169,10 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Clear action log for adaptive AI
 	_battle_action_log.clear()
 
+	# Initialize volatility system
+	volatility = VolatilitySystem.new()
+	volatility.reset_battle()
+
 	battle_started.emit()
 	_start_new_round()
 
@@ -290,6 +297,7 @@ func _cleanup_battle() -> void:
 	execution_order.clear()
 	selection_index = 0
 	current_combatant = null
+	volatility = null
 
 
 ## Round management
@@ -566,8 +574,9 @@ func _compute_action_speed(combatant: Combatant, action_type: String, ability: D
 	# Subtract combatant speed (higher speed = lower value = faster)
 	var speed_value = base_speed - (combatant.speed * 0.5)
 
-	# Add small random variance
-	speed_value += randf_range(-1.0, 1.0)
+	# Add random variance (scaled by volatility)
+	var jitter = volatility.get_ctb_jitter() if volatility else 1.0
+	speed_value += randf_range(-jitter, jitter)
 
 	return speed_value
 
@@ -1048,7 +1057,8 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
 
 	var base_damage = attacker.attack
-	var variance = randf_range(0.85, 1.15)
+	var vrange = volatility.get_variance_range(attacker) if volatility else Vector2(0.85, 1.15)
+	var variance = randf_range(vrange.x, vrange.y)
 	var damage = int(base_damage * variance)
 
 	# Critical hit calculation (physical attacks can crit)
@@ -1058,6 +1068,18 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		is_crit = true
 		var crit_multiplier = _get_crit_multiplier(attacker)
 		damage = int(damage * crit_multiplier)
+
+	# Market Sense passive: scaling damage bonus based on volatility band
+	damage = _apply_market_sense(attacker, damage)
+
+	# Tail event check
+	if volatility and volatility.check_tail_event():
+		if randf() < 0.5:
+			damage *= 2
+			battle_log_message.emit("[color=magenta]TAIL EVENT: Critical surge![/color]")
+		else:
+			damage = max(1, damage / 2)
+			battle_log_message.emit("[color=cyan]TAIL EVENT: Market correction![/color]")
 
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit)
@@ -1157,7 +1179,9 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			is_crit = true
 			print("Critical hit!")
 
-		damage = int(damage * randf_range(0.9, 1.1))
+		var phys_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
+		damage = int(damage * randf_range(phys_vrange.x, phys_vrange.y))
+		damage = _apply_market_sense(caster, damage)
 		var actual_damage = target.take_damage(damage, false)
 		damage_dealt.emit(target, actual_damage, is_crit)
 
@@ -1182,7 +1206,9 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			continue
 
 		var damage = int(base_damage * multiplier)
-		damage = int(damage * randf_range(0.9, 1.1))
+		var mag_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
+		damage = int(damage * randf_range(mag_vrange.x, mag_vrange.y))
+		damage = _apply_market_sense(caster, damage)
 
 		# Apply terrain modifier for elemental damage
 		var terrain_mod = 1.0
@@ -1256,6 +1282,24 @@ func _get_crit_multiplier(attacker: Combatant) -> float:
 	return base_mult
 
 
+## Market Sense passive: scaling damage bonus based on volatility band
+func _apply_market_sense(combatant: Combatant, damage: int) -> int:
+	"""Apply Market Sense passive bonus if equipped."""
+	if not volatility or not "market_sense" in combatant.equipped_passives:
+		return damage
+	# Stable: +5%, Shifting: +15%, Unstable: +25%, Fractured: +40%
+	var band_bonuses = [0.05, 0.15, 0.25, 0.40]
+	var bonus = band_bonuses[volatility.global_band]
+	return int(damage * (1.0 + bonus))
+
+
+func _nudge_macro_volatility(amount: float) -> void:
+	"""Slightly increase macro volatility when speculator abilities are used."""
+	var game_state = get_node_or_null("/root/GameState")
+	if game_state and "macro_volatility" in game_state:
+		game_state.macro_volatility = clampf(game_state.macro_volatility + amount, 0.0, 1.0)
+
+
 func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var heal_amount = ability.get("heal_amount", 0)
 	var multiplier = GameState.get_constant("healing_multiplier")
@@ -1314,6 +1358,49 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					target.doom_counter = countdown
 					print("  → %s is doomed! %d turns remaining..." % [target.combatant_name, countdown])
+		"volatility_up_self":
+			if volatility:
+				caster.add_buff("Leveraged", "volatility", stat_modifier, duration)
+				var recoil_pct = ability.get("recoil_pct", 0.1)
+				var recoil_dmg = int(caster.max_hp * recoil_pct)
+				caster.take_damage(recoil_dmg, false)
+				battle_log_message.emit("[color=gold]%s leverages their position![/color] (-%d HP recoil)" % [caster.combatant_name, recoil_dmg])
+				_nudge_macro_volatility(0.02)
+		"volatility_up_enemy":
+			if volatility:
+				for target in targets:
+					if target and is_instance_valid(target) and target.is_alive:
+						target.add_debuff("Overexposed", "volatility", stat_modifier, duration)
+						battle_log_message.emit("[color=gold]%s is overexposed![/color]" % target.combatant_name)
+				_nudge_macro_volatility(0.02)
+		"volatility_down":
+			if volatility:
+				for target in targets:
+					if target and is_instance_valid(target) and target.is_alive:
+						target.add_buff("Hedged", "volatility", stat_modifier, duration)
+						battle_log_message.emit("[color=green]%s is hedged![/color]" % target.combatant_name)
+		"press_the_edge":
+			if volatility:
+				var band = volatility.global_band
+				var multipliers = [1.5, 2.5, 4.0, 6.0]
+				var press_damage = int(caster.get_buffed_stat("magic", caster.magic) * multipliers[band])
+				volatility.shift_band(-1)
+				for target in targets:
+					if target and is_instance_valid(target) and target.is_alive:
+						var actual_damage = target.take_damage(press_damage, true)
+						damage_dealt.emit(target, actual_damage, false)
+						battle_log_message.emit("[color=magenta]PRESS THE EDGE![/color] %s takes [color=yellow]%d[/color] damage! (Band consumed: %s)" % [target.combatant_name, actual_damage, VolatilitySystem.BAND_NAMES[band]])
+				_nudge_macro_volatility(0.03)
+		"forecast":
+			if volatility:
+				var band_name = volatility.get_band_name()
+				var tail_pct = volatility.get_tail_event_pct()
+				battle_log_message.emit("[color=gold]FORECAST: Band=%s, Tail=%.0f%%, Jitter=±%.1f[/color]" % [band_name, tail_pct, volatility.get_ctb_jitter()])
+		"circuit_breaker":
+			if volatility:
+				volatility.shift_band(-1)
+				caster.gain_ap(1)
+				battle_log_message.emit("[color=green]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % caster.combatant_name)
 		_:
 			print("  → Unknown support effect: %s" % effect)
 

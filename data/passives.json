@@ -400,5 +400,15 @@
 			"show_splits": true,
 			"track_personal_best": true
 		}
+	},
+	"market_sense": {
+		"id": "market_sense",
+		"name": "Market Sense",
+		"category": 0,
+		"description": "Scaling bonuses based on global volatility band: more chaos = more power.",
+		"stat_mods": {},
+		"meta_effects": {
+			"volatility_scaling": true
+		}
 	}
 }

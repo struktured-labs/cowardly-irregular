@@ -219,6 +219,18 @@ func _create_default_passives() -> void:
 			"meta_effects": {
 				"show_formulas": true
 			}
+		},
+
+		# Speculator passives
+		"market_sense": {
+			"id": "market_sense",
+			"name": "Market Sense",
+			"category": PassiveCategory.OFFENSIVE,
+			"description": "Scaling bonuses based on global volatility band: more chaos = more power",
+			"stat_mods": {},
+			"meta_effects": {
+				"volatility_scaling": true
+			}
 		}
 	}
 

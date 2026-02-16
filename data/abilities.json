@@ -790,5 +790,73 @@
 		"description": "Warp to any previously completed area with current stats and gear",
 		"target_type": "self",
 		"meta_effect": "ng_plus_warp"
+	},
+
+	"leverage_position": {
+		"id": "leverage_position",
+		"name": "Leverage Position",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 10,
+		"description": "Set self local volatility to 2.0 for 3 turns. Recoil: take 10% max HP.",
+		"target_type": "self",
+		"effect": "volatility_up_self",
+		"stat_modifier": 2.0,
+		"duration": 3,
+		"recoil_pct": 0.1
+	},
+	"overexpose": {
+		"id": "overexpose",
+		"name": "Overexpose",
+		"type": "support",
+		"animation": "cast_meta",
+		"mp_cost": 12,
+		"description": "Set target local volatility to 2.0 for 3 turns, widening their damage variance.",
+		"target_type": "single_enemy",
+		"effect": "volatility_up_enemy",
+		"stat_modifier": 2.0,
+		"duration": 3
+	},
+	"hedge_position": {
+		"id": "hedge_position",
+		"name": "Hedge Position",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 8,
+		"description": "Set target local volatility to 0.5 for 3 turns, narrowing their damage variance.",
+		"target_type": "single_ally",
+		"effect": "volatility_down",
+		"stat_modifier": 0.5,
+		"duration": 3
+	},
+	"press_the_edge": {
+		"id": "press_the_edge",
+		"name": "Press the Edge",
+		"type": "support",
+		"animation": "cast_meta",
+		"mp_cost": 15,
+		"description": "Consume 1 global band level for scaling damage. Higher band = more damage.",
+		"target_type": "single_enemy",
+		"effect": "press_the_edge"
+	},
+	"forecast": {
+		"id": "forecast",
+		"name": "Forecast",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 5,
+		"description": "Reveal volatility band status and tail event probability.",
+		"target_type": "self",
+		"effect": "forecast"
+	},
+	"circuit_breaker": {
+		"id": "circuit_breaker",
+		"name": "Circuit Breaker",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 10,
+		"description": "Reduce global volatility band by 1, gain +1 AP.",
+		"target_type": "self",
+		"effect": "circuit_breaker"
 	}
 }

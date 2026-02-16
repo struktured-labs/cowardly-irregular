@@ -16,6 +16,9 @@ var current_save_name: String = ""
 var playtime_seconds: float = 0.0
 var corruption_level: float = 0.0  # 0.0 to 1.0, affects save stability
 
+## Macro volatility - persistent across battles, drifts up with Speculator use
+var macro_volatility: float = 0.0  # 0.0-1.0, soft cap
+
 ## Player party state (references to Combatant nodes)
 var player_party: Array[Dictionary] = []
 
