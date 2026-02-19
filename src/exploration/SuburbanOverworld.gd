@@ -205,7 +205,7 @@ func _generate_map() -> void:
 	print("Suburban tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["suburban_portal"] = spawn_points["entrance"]
 
@@ -267,7 +267,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _setup_npcs() -> void:
 	# === Brad the Skateboarder - park area ===
-	var brad = _create_npc("Brad the Skateboarder", "villager", Vector2(20 * TILE_SIZE, 27 * TILE_SIZE), [
+	var brad = _create_npc("Brad the Skateboarder", "villager", Vector2(8 * TILE_SIZE, 28 * TILE_SIZE), [
 		"Dude... have you checked behind the school?",
 		"There's supposed to be some hidden debug menu or something.",
 		"My friend's cousin's roommate unlocked like... secret jobs.",
@@ -276,7 +276,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(brad)
 
 	# === Karen - strip mall ===
-	var karen = _create_npc("Karen", "villager", Vector2(8 * TILE_SIZE, 17 * TILE_SIZE), [
+	var karen = _create_npc("Karen", "villager", Vector2(8 * TILE_SIZE, 15 * TILE_SIZE), [
 		"I want to speak to whoever designed this town.",
 		"The encounter rate is UNACCEPTABLE.",
 		"I've been complaining to NPCs for HOURS.",
@@ -285,7 +285,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(karen)
 
 	# === Mall Rat Mike - near arcade store ===
-	var mike = _create_npc("Mall Rat Mike", "villager", Vector2(12 * TILE_SIZE, 17 * TILE_SIZE), [
+	var mike = _create_npc("Mall Rat Mike", "villager", Vector2(12 * TILE_SIZE, 15 * TILE_SIZE), [
 		"Yo, you know about autobattle? Press F5, dude.",
 		"I set up my scripts to farm crows all day.",
 		"The XP isn't great but the drops are SICK.",
@@ -294,7 +294,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(mike)
 
 	# === Coach Thompson - basketball court ===
-	var coach = _create_npc("Coach Thompson", "guard", Vector2(16 * TILE_SIZE, 25 * TILE_SIZE), [
+	var coach = _create_npc("Coach Thompson", "guard", Vector2(10 * TILE_SIZE, 24 * TILE_SIZE), [
 		"Listen up! Combat is like basketball.",
 		"Sometimes you gotta DEFER - pass the ball, wait for an opening.",
 		"Build up that AP, then ADVANCE with everything you got!",
@@ -303,7 +303,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(coach)
 
 	# === Suspicious Dave - behind houses, east lawn ===
-	var dave = _create_npc("Suspicious Dave", "villager", Vector2(38 * TILE_SIZE, 3 * TILE_SIZE), [
+	var dave = _create_npc("Suspicious Dave", "villager", Vector2(40 * TILE_SIZE, 5 * TILE_SIZE), [
 		"Psst... don't tell anyone I told you this...",
 		"The monsters? They're stored in JSON files.",
 		"abilities.json... passives.json... it's all RIGHT THERE.",
@@ -312,7 +312,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(dave)
 
 	# === Pizza Delivery Pete - near pizza store ===
-	var pete = _create_npc("Pizza Delivery Pete", "villager", Vector2(3 * TILE_SIZE, 18 * TILE_SIZE), [
+	var pete = _create_npc("Pizza Delivery Pete", "villager", Vector2(3 * TILE_SIZE, 20 * TILE_SIZE), [
 		"30 minutes or it's free! That's my motto.",
 		"My Speed stat is maxed out. Gotta go fast!",
 		"You know what ruins a delivery? Random encounters.",
@@ -321,7 +321,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(pete)
 
 	# === Principal Sinclair - near school store ===
-	var principal = _create_npc("Principal Sinclair", "elder", Vector2(38 * TILE_SIZE, 18 * TILE_SIZE), [
+	var principal = _create_npc("Principal Sinclair", "elder", Vector2(38 * TILE_SIZE, 20 * TILE_SIZE), [
 		"Welcome to Suburbia Public School... sort of.",
 		"This entire neighborhood appeared overnight.",
 		"One day, medieval village. Next day, parking lots.",

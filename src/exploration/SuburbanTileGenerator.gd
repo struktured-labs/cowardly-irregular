@@ -354,51 +354,78 @@ func _draw_road(img: Image, palette: Dictionary, variant: int) -> void:
 			img.set_pixel(TILE_SIZE - 3, y, palette["edge_white"])
 
 
-## Pastel house siding - 4 color variants (baby blue, pink, mint, buttercup)
+## Pastel house siding - 4 color variants with clapboard detail and corner trim
 func _draw_house_wall(img: Image, palette: Dictionary, variant: int) -> void:
 	# Pick wall color based on variant
 	var wall_colors = [
-		Color(0.65, 0.78, 0.92),  # baby blue
-		Color(0.92, 0.72, 0.72),  # pink
-		Color(0.72, 0.90, 0.75),  # mint
-		Color(0.95, 0.90, 0.65)   # buttercup
+		Color(0.65, 0.80, 0.95),  # baby blue (brighter)
+		Color(0.95, 0.72, 0.75),  # pink (more saturated)
+		Color(0.72, 0.92, 0.78),  # mint (brighter)
+		Color(0.98, 0.92, 0.62)   # buttercup (more vivid)
 	]
 	var wall_color = wall_colors[variant % 4]
 	img.fill(wall_color)
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 33333
 
-	# Subtle texture variation
-	for y in range(TILE_SIZE):
-		for x in range(TILE_SIZE):
-			var n = sin(x * 0.3 + y * 0.15 + variant * 1.4) * 0.12 + rng.randf() * 0.06
-			if n > 0.1:
-				img.set_pixel(x, y, wall_color.lightened(0.06))
-			elif n < -0.1:
-				img.set_pixel(x, y, wall_color.darkened(0.06))
+	# Individual clapboard siding rows (4px tall each)
+	var board_h = 4
+	for row in range(TILE_SIZE / board_h):
+		var by = row * board_h
+		var board_shift = rng.randf_range(-0.04, 0.04)
+		var board_col = wall_color.lightened(board_shift) if board_shift > 0 else wall_color.darkened(-board_shift)
 
-	# Horizontal siding lines every 4 pixels
-	for y in range(TILE_SIZE):
-		if y % 4 == 0:
+		for dy in range(board_h):
 			for x in range(TILE_SIZE):
-				img.set_pixel(x, y, wall_color.darkened(0.12))
-			# Shadow line below siding edge
-			if y + 1 < TILE_SIZE:
-				for x in range(TILE_SIZE):
-					img.set_pixel(x, y + 1, wall_color.lightened(0.04))
+				var py = by + dy
+				if py >= TILE_SIZE:
+					continue
+				var shade = board_col
+				if dy == 0:
+					shade = board_col.lightened(0.10)
+				elif dy == 1:
+					shade = board_col
+				elif dy == 2:
+					shade = board_col.darkened(0.03)
+				elif dy == board_h - 1:
+					shade = board_col.darkened(0.14)
+				var grain = sin(x * 0.25 + py * 0.8 + variant * 0.7) * 0.06
+				if grain > 0.03:
+					shade = shade.lightened(0.03)
+				elif grain < -0.03:
+					shade = shade.darkened(0.03)
+				img.set_pixel(x, py, shade)
+
+	# Nail dots on every other board
+	for row in range(0, TILE_SIZE / board_h, 2):
+		var nail_y = row * board_h + 1
+		if nail_y < TILE_SIZE:
+			for nx in range(4, TILE_SIZE - 2, 8):
+				img.set_pixel(nx, nail_y, wall_color.darkened(0.22))
+				if nail_y > 0:
+					img.set_pixel(nx, nail_y - 1, wall_color.lightened(0.05))
 
 	# White trim at top
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, 0, palette["trim_white"])
-		img.set_pixel(x, 1, palette["trim_white"].darkened(0.05))
+		img.set_pixel(x, 1, palette["trim_white"])
+		img.set_pixel(x, 2, palette["trim_white"].darkened(0.08))
+		img.set_pixel(x, 3, palette["trim_white"].darkened(0.15))
 
 	# White trim at bottom
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, TILE_SIZE - 1, palette["trim_white"])
-		img.set_pixel(x, TILE_SIZE - 2, palette["trim_white"].darkened(0.05))
+		img.set_pixel(x, TILE_SIZE - 2, palette["trim_white"].darkened(0.06))
+
+	# Corner trim on left and right edges
+	for y in range(4, TILE_SIZE - 2):
+		img.set_pixel(0, y, palette["trim_white"].darkened(0.04))
+		img.set_pixel(1, y, palette["trim_white"].darkened(0.10))
+		img.set_pixel(TILE_SIZE - 1, y, palette["trim_white"].darkened(0.04))
+		img.set_pixel(TILE_SIZE - 2, y, palette["trim_white"].darkened(0.10))
 
 
-## Bright green lawn with mower stripes, occasional clover and dandelion
+## Bright green lawn with mower stripes, blade tufts, clover patches, and dandelions
 func _draw_lawn(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
@@ -419,7 +446,7 @@ func _draw_lawn(img: Image, palette: Dictionary, variant: int) -> void:
 			elif combined > 0.15:
 				img.set_pixel(x, y, palette["light"])
 
-	# Mower stripe pattern - alternating lighter/darker bands every 8 pixels
+	# Mower stripe pattern
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var band = (y / 8) % 2
@@ -429,35 +456,64 @@ func _draw_lawn(img: Image, palette: Dictionary, variant: int) -> void:
 			else:
 				img.set_pixel(x, y, current.darkened(0.06))
 
-	# Occasional clover patches
+	# Grass blade tufts
+	for _i in range(4 + variant % 3):
+		var tx = rng.randi_range(2, TILE_SIZE - 3)
+		var ty = rng.randi_range(8, TILE_SIZE - 2)
+		for blade in range(rng.randi_range(2, 4)):
+			var bx = tx + blade - 1
+			var blade_h = rng.randi_range(2, 4)
+			for h in range(blade_h):
+				var px = bx + rng.randi_range(-1, 0)
+				var py = ty - h
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					var shade = palette["lime"] if h == blade_h - 1 else palette["light"]
+					img.set_pixel(px, py, shade)
+
+	# Clover patches (bigger, 3-leaf shape)
 	if variant % 3 == 0:
-		for _i in range(rng.randi_range(1, 3)):
-			var cx = rng.randi_range(4, TILE_SIZE - 5)
-			var cy = rng.randi_range(4, TILE_SIZE - 5)
-			img.set_pixel(cx, cy, palette["clover"])
+		for _i in range(rng.randi_range(1, 2)):
+			var cx = rng.randi_range(5, TILE_SIZE - 6)
+			var cy = rng.randi_range(5, TILE_SIZE - 6)
+			img.set_pixel(cx, cy - 1, palette["clover"])
+			img.set_pixel(cx - 1, cy, palette["clover"])
 			img.set_pixel(cx + 1, cy, palette["clover"])
-			img.set_pixel(cx, cy + 1, palette["clover"])
+			img.set_pixel(cx, cy, palette["clover"].lightened(0.08))
+			if cy + 1 < TILE_SIZE:
+				img.set_pixel(cx, cy + 1, palette["dark"])
+			if cy + 2 < TILE_SIZE:
+				img.set_pixel(cx, cy + 2, palette["dark"])
 
-	# Occasional dandelion
-	if variant % 5 == 0:
-		var dx = rng.randi_range(3, TILE_SIZE - 4)
-		var dy = rng.randi_range(3, TILE_SIZE - 4)
-		img.set_pixel(dx, dy, palette["dandelion"])
-		img.set_pixel(dx + 1, dy, palette["dandelion"])
-		# Stem below
-		if dy + 1 < TILE_SIZE:
-			img.set_pixel(dx, dy + 1, palette["dark"])
-		if dy + 2 < TILE_SIZE:
-			img.set_pixel(dx, dy + 2, palette["dark"])
+	# Dandelions (bigger, with puffy head)
+	if variant % 4 == 0:
+		for _d in range(rng.randi_range(1, 2)):
+			var dx = rng.randi_range(4, TILE_SIZE - 5)
+			var dy = rng.randi_range(4, TILE_SIZE - 7)
+			img.set_pixel(dx, dy, palette["dandelion"])
+			if dx + 1 < TILE_SIZE:
+				img.set_pixel(dx + 1, dy, palette["dandelion"])
+			if dy > 0:
+				img.set_pixel(dx, dy - 1, palette["dandelion"].lightened(0.1))
+				if dx + 1 < TILE_SIZE:
+					img.set_pixel(dx + 1, dy - 1, palette["dandelion"].lightened(0.05))
+			if dx > 0:
+				img.set_pixel(dx - 1, dy, palette["dandelion"].darkened(0.15))
+			if dx + 2 < TILE_SIZE:
+				img.set_pixel(dx + 2, dy, palette["dandelion"].darkened(0.15))
+			for s in range(3):
+				if dy + s + 1 < TILE_SIZE:
+					img.set_pixel(dx, dy + s + 1, palette["dark"])
+			if dx + 1 < TILE_SIZE and dy + 2 < TILE_SIZE:
+				img.set_pixel(dx + 1, dy + 2, palette["clover"])
 
 
-## Strip mall facade with red/white awning and sign
+## Strip mall facade with scalloped awning, display window, sign, and doorway
 func _draw_store_front(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 55555
 
-	# Subtle wall texture
+	# Subtle stucco wall texture
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.4 + y * 0.2 + variant * 1.2) * 0.15 + rng.randf() * 0.08
@@ -466,162 +522,314 @@ func _draw_store_front(img: Image, palette: Dictionary, variant: int) -> void:
 			elif n < -0.1:
 				img.set_pixel(x, y, palette["dark"])
 
-	# Red/white striped awning at top (6 rows)
-	for y in range(6):
+	# Red/white striped awning (rows 0-4)
+	for y in range(5):
 		for x in range(TILE_SIZE):
 			var stripe = (x / 4) % 2
 			if stripe == 0:
 				img.set_pixel(x, y, palette["awning_red"])
 			else:
 				img.set_pixel(x, y, palette["awning_white"])
-		# Awning shadow on bottom row
-		if y == 5:
-			for x in range(TILE_SIZE):
-				img.set_pixel(x, y, palette["deep"])
 
-	# Sign rectangle in middle
-	var sign_top = 10
-	var sign_bot = 18
-	var sign_left = 4
-	var sign_right = TILE_SIZE - 4
+	# Scalloped awning fringe
+	for x in range(TILE_SIZE):
+		var scallop = (x % 4)
+		if scallop < 2:
+			img.set_pixel(x, 5, palette["awning_red"].darkened(0.15))
+		else:
+			img.set_pixel(x, 5, palette["deep"])
+	for x in range(TILE_SIZE):
+		img.set_pixel(x, 6, palette["base"].darkened(0.12))
+
+	# Sign rectangle (rows 8-13)
+	var sign_top = 8
+	var sign_bot = 14
+	var sign_left = 3
+	var sign_right = TILE_SIZE - 3
 	for y in range(sign_top, sign_bot):
 		for x in range(sign_left, sign_right):
 			img.set_pixel(x, y, palette["sign_bg"])
-	# Sign border highlight
 	for x in range(sign_left, sign_right):
 		img.set_pixel(x, sign_top, palette["sign_text"])
 		img.set_pixel(x, sign_bot - 1, palette["sign_text"])
-	# Fake text dots on sign
-	for _t in range(rng.randi_range(3, 6)):
-		var tx = rng.randi_range(sign_left + 2, sign_right - 3)
-		var ty = rng.randi_range(sign_top + 2, sign_bot - 3)
-		img.set_pixel(tx, ty, palette["sign_text"])
+	for y in range(sign_top, sign_bot):
+		img.set_pixel(sign_left, y, palette["sign_text"])
+		img.set_pixel(sign_right - 1, y, palette["sign_text"])
+	var text_y = sign_top + 2
+	var text_start = sign_left + 3
+	for _w in range(rng.randi_range(2, 4)):
+		var word_len = rng.randi_range(3, 6)
+		for i in range(word_len):
+			if text_start + i < sign_right - 2:
+				img.set_pixel(text_start + i, text_y, palette["sign_text"])
+				img.set_pixel(text_start + i, text_y + 1, palette["sign_text"].darkened(0.1))
+		text_start += word_len + 2
 
-	# Bottom base/doorstep
+	# Display window (rows 15-25)
+	var win_top = 15
+	var win_bot = 26
+	var win_left = 3
+	var win_right = TILE_SIZE - 8
+	for y in range(win_top, win_bot):
+		for x in range(win_left, win_right):
+			var rel_y = float(y - win_top) / float(win_bot - win_top)
+			var shade: Color
+			if rel_y < 0.25:
+				shade = Color(0.55, 0.72, 0.88)
+			elif rel_y > 0.75:
+				shade = Color(0.38, 0.52, 0.68)
+			else:
+				shade = Color(0.48, 0.62, 0.78)
+			img.set_pixel(x, y, shade)
+	for x in range(win_left, win_right):
+		img.set_pixel(x, win_top, Color(0.85, 0.85, 0.82))
+		img.set_pixel(x, win_bot - 1, Color(0.85, 0.85, 0.82))
+	for y in range(win_top, win_bot):
+		img.set_pixel(win_left, y, Color(0.85, 0.85, 0.82))
+		img.set_pixel(win_right - 1, y, Color(0.85, 0.85, 0.82))
+	for i in range(4):
+		var gx = win_left + 2 + i
+		var gy = win_top + 2 + i
+		if gx < win_right - 1 and gy < win_bot - 1:
+			img.set_pixel(gx, gy, Color(0.92, 0.96, 1.0, 0.85))
+
+	# Doorway on right side
+	var door_left = TILE_SIZE - 7
+	var door_right = TILE_SIZE - 1
+	for y in range(win_top, TILE_SIZE - 1):
+		for x in range(door_left, door_right):
+			var shade = Color(0.48, 0.30, 0.16)
+			var grain = sin(y * 0.8 + x * 0.15) * 0.08
+			shade = shade.lightened(grain) if grain > 0 else shade.darkened(-grain)
+			img.set_pixel(x, y, shade)
+	for y in range(win_top, TILE_SIZE - 1):
+		img.set_pixel(door_left, y, Color(0.85, 0.85, 0.82))
+	img.set_pixel(door_left + 2, 22, Color(0.78, 0.68, 0.28))
+	img.set_pixel(door_left + 2, 23, Color(0.78, 0.68, 0.28))
+
+	# Bottom base/step
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, TILE_SIZE - 1, palette["deep"])
 		img.set_pixel(x, TILE_SIZE - 2, palette["dark"])
 
 
-## House entrance with white frame, wooden door, brass handle, and welcome mat
+## House entrance with white frame, wooden door, peephole, panels, and patterned welcome mat
 func _draw_house_door(img: Image, palette: Dictionary) -> void:
 	# White frame background
 	img.fill(palette["frame_white"])
 
-	# Door frame borders
+	# Door frame borders with molding profile
 	for y in range(TILE_SIZE):
 		img.set_pixel(0, y, palette["frame_white"])
 		img.set_pixel(1, y, palette["frame_white"])
-		img.set_pixel(2, y, palette["frame_white"].darkened(0.06))
-		img.set_pixel(TILE_SIZE - 3, y, palette["frame_white"].darkened(0.06))
+		img.set_pixel(2, y, palette["frame_white"].darkened(0.05))
+		img.set_pixel(3, y, palette["frame_white"].darkened(0.10))
+		img.set_pixel(TILE_SIZE - 4, y, palette["frame_white"].darkened(0.10))
+		img.set_pixel(TILE_SIZE - 3, y, palette["frame_white"].darkened(0.05))
 		img.set_pixel(TILE_SIZE - 2, y, palette["frame_white"])
 		img.set_pixel(TILE_SIZE - 1, y, palette["frame_white"])
-	# Top frame
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, 0, palette["frame_white"])
 		img.set_pixel(x, 1, palette["frame_white"])
-		img.set_pixel(x, 2, palette["frame_white"].darkened(0.06))
+		img.set_pixel(x, 2, palette["frame_white"].darkened(0.05))
+		img.set_pixel(x, 3, palette["frame_white"].darkened(0.10))
 
-	# Wooden door panel
-	for y in range(3, TILE_SIZE - 5):
-		for x in range(3, TILE_SIZE - 3):
-			var rel_y = float(y - 3) / float(TILE_SIZE - 8)
+	# Wooden door panel with richer grain
+	for y in range(4, TILE_SIZE - 6):
+		for x in range(4, TILE_SIZE - 4):
+			var rel_y = float(y - 4) / float(TILE_SIZE - 10)
 			var shade = palette["base"]
-			if rel_y < 0.1:
+			if rel_y < 0.08:
 				shade = palette["light"]
-			elif rel_y > 0.9:
+			elif rel_y > 0.92:
 				shade = palette["dark"]
-			# Wood grain
-			var grain = sin(y * 0.9 + x * 0.12) * 0.3
-			if grain > 0.15:
-				shade = shade.lightened(0.06)
-			elif grain < -0.15:
-				shade = shade.darkened(0.06)
+			var grain1 = sin(y * 1.2 + x * 0.08) * 0.15
+			var grain2 = sin(y * 0.4 + x * 0.25 + 1.5) * 0.08
+			var grain = grain1 + grain2
+			if grain > 0.12:
+				shade = shade.lightened(0.07)
+			elif grain > 0.04:
+				shade = shade.lightened(0.03)
+			elif grain < -0.12:
+				shade = shade.darkened(0.07)
+			elif grain < -0.04:
+				shade = shade.darkened(0.03)
 			img.set_pixel(x, y, shade)
 
-	# Panel insets (decorative rectangles on door)
-	for y in range(6, 13):
-		for x in range(6, TILE_SIZE - 6):
+	# Upper panel inset with highlight/shadow borders
+	var panel_left = 7
+	var panel_right = TILE_SIZE - 7
+	for y in range(7, 13):
+		for x in range(panel_left, panel_right):
 			img.set_pixel(x, y, palette["mid"])
-	for y in range(16, 23):
-		for x in range(6, TILE_SIZE - 6):
+	for x in range(panel_left, panel_right):
+		img.set_pixel(x, 7, palette["dark"].darkened(0.05))
+	for y in range(7, 13):
+		img.set_pixel(panel_left, y, palette["dark"].darkened(0.05))
+	for x in range(panel_left, panel_right):
+		img.set_pixel(x, 12, palette["light"].lightened(0.05))
+	for y in range(7, 13):
+		img.set_pixel(panel_right - 1, y, palette["light"].lightened(0.05))
+
+	# Lower panel inset
+	for y in range(16, 22):
+		for x in range(panel_left, panel_right):
 			img.set_pixel(x, y, palette["mid"])
+	for x in range(panel_left, panel_right):
+		img.set_pixel(x, 16, palette["dark"].darkened(0.05))
+	for y in range(16, 22):
+		img.set_pixel(panel_left, y, palette["dark"].darkened(0.05))
+	for x in range(panel_left, panel_right):
+		img.set_pixel(x, 21, palette["light"].lightened(0.05))
+	for y in range(16, 22):
+		img.set_pixel(panel_right - 1, y, palette["light"].lightened(0.05))
 
-	# Brass door handle
-	img.set_pixel(TILE_SIZE - 8, TILE_SIZE / 2, palette["handle_brass"])
-	img.set_pixel(TILE_SIZE - 8, TILE_SIZE / 2 + 1, palette["handle_brass"])
-	img.set_pixel(TILE_SIZE - 7, TILE_SIZE / 2, palette["handle_brass"].lightened(0.2))
+	# Peephole
+	img.set_pixel(TILE_SIZE / 2, 9, palette["deep"])
+	img.set_pixel(TILE_SIZE / 2 + 1, 9, palette["deep"])
+	img.set_pixel(TILE_SIZE / 2, 10, palette["deep"])
+	img.set_pixel(TILE_SIZE / 2 + 1, 10, palette["deep"])
+	if TILE_SIZE / 2 - 1 >= 0:
+		img.set_pixel(TILE_SIZE / 2 - 1, 9, palette["handle_brass"].darkened(0.2))
+	img.set_pixel(TILE_SIZE / 2 + 2, 9, palette["handle_brass"].darkened(0.2))
 
-	# Welcome mat at bottom (red/brown)
-	for y in range(TILE_SIZE - 5, TILE_SIZE):
+	# Brass door handle with backplate
+	var hx = TILE_SIZE - 9
+	var hy = TILE_SIZE / 2
+	for dy in range(-1, 4):
+		if hy + dy >= 0 and hy + dy < TILE_SIZE:
+			img.set_pixel(hx, hy + dy, palette["handle_brass"].darkened(0.15))
+	img.set_pixel(hx + 1, hy, palette["handle_brass"])
+	img.set_pixel(hx + 1, hy + 1, palette["handle_brass"])
+	img.set_pixel(hx + 2, hy, palette["handle_brass"].lightened(0.2))
+	img.set_pixel(hx + 2, hy + 1, palette["handle_brass"].lightened(0.1))
+	img.set_pixel(hx + 1, hy + 2, palette["deep"])
+
+	# Patterned welcome mat (diamond pattern)
+	for y in range(TILE_SIZE - 6, TILE_SIZE):
 		for x in range(4, TILE_SIZE - 4):
-			var mat_col = palette["mat_red"] if (x + y) % 3 != 0 else palette["mat_brown"]
+			var rel_x = (x - 4) % 4
+			var rel_y = (y - (TILE_SIZE - 6)) % 3
+			var is_diamond = (rel_x + rel_y) % 2 == 0
+			var mat_col = palette["mat_red"] if is_diamond else palette["mat_brown"]
 			img.set_pixel(x, y, mat_col)
+	for x in range(4, TILE_SIZE - 4):
+		img.set_pixel(x, TILE_SIZE - 6, palette["mat_brown"].darkened(0.2))
 
 
-## Window with white frame, sky blue glass, glare, and flower box with flowers
+## Window with white frame, glass pane, curtains, sill, and flower box with lush flowers
 func _draw_house_window(img: Image, palette: Dictionary) -> void:
-	# Wall background (use house wall baby blue as default)
-	img.fill(Color(0.65, 0.78, 0.92))
+	# Wall background with siding lines
+	var wall_col = Color(0.65, 0.80, 0.95)
+	img.fill(wall_col)
+	for y in range(TILE_SIZE):
+		if y % 4 == 0:
+			for x in range(TILE_SIZE):
+				img.set_pixel(x, y, wall_col.darkened(0.10))
 
 	# White window frame outer
-	for x in range(4, TILE_SIZE - 4):
-		img.set_pixel(x, 3, palette["frame_white"])
-		img.set_pixel(x, 4, palette["frame_white"])
-		img.set_pixel(x, TILE_SIZE - 10, palette["frame_white"])
-		img.set_pixel(x, TILE_SIZE - 9, palette["frame_white"])
-	for y in range(3, TILE_SIZE - 9):
-		img.set_pixel(4, y, palette["frame_white"])
-		img.set_pixel(5, y, palette["frame_white"])
-		img.set_pixel(TILE_SIZE - 5, y, palette["frame_white"])
-		img.set_pixel(TILE_SIZE - 6, y, palette["frame_white"])
+	var frame_top = 2
+	var frame_bot = TILE_SIZE - 9
+	var frame_left = 3
+	var frame_right = TILE_SIZE - 3
+	for x in range(frame_left, frame_right):
+		img.set_pixel(x, frame_top, palette["frame_white"])
+		img.set_pixel(x, frame_top + 1, palette["frame_white"])
+		img.set_pixel(x, frame_bot, palette["frame_white"])
+		img.set_pixel(x, frame_bot + 1, palette["frame_white"])
+	for y in range(frame_top, frame_bot + 2):
+		img.set_pixel(frame_left, y, palette["frame_white"])
+		img.set_pixel(frame_left + 1, y, palette["frame_white"])
+		img.set_pixel(frame_right - 1, y, palette["frame_white"])
+		img.set_pixel(frame_right - 2, y, palette["frame_white"])
 
-	# Sky blue glass pane
-	for y in range(5, TILE_SIZE - 10):
-		for x in range(6, TILE_SIZE - 6):
-			var rel_y = float(y - 5) / float(TILE_SIZE - 15)
-			var shade = palette["base"]
-			if rel_y < 0.3:
+	# Glass pane with gradient
+	var glass_top = frame_top + 2
+	var glass_bot = frame_bot
+	var glass_left = frame_left + 2
+	var glass_right = frame_right - 2
+	for y in range(glass_top, glass_bot):
+		for x in range(glass_left, glass_right):
+			var rel_y = float(y - glass_top) / float(glass_bot - glass_top)
+			var shade: Color
+			if rel_y < 0.25:
 				shade = palette["light"]
-			elif rel_y > 0.7:
-				shade = palette["dark"]
-			else:
+			elif rel_y < 0.5:
 				shade = palette["mid"]
+			elif rel_y < 0.75:
+				shade = palette["base"]
+			else:
+				shade = palette["dark"]
 			img.set_pixel(x, y, shade)
 
-	# Cross pane divider (white)
-	var mid_x = TILE_SIZE / 2
-	var mid_y = (5 + TILE_SIZE - 10) / 2
-	for x in range(6, TILE_SIZE - 6):
+	# Cross pane divider
+	var mid_x = (glass_left + glass_right) / 2
+	var mid_y = (glass_top + glass_bot) / 2
+	for x in range(glass_left, glass_right):
 		img.set_pixel(x, mid_y, palette["frame_white"])
-	for y in range(5, TILE_SIZE - 10):
+	for y in range(glass_top, glass_bot):
 		img.set_pixel(mid_x, y, palette["frame_white"])
 
-	# Glare reflection (top-left pane)
-	img.set_pixel(9, 7, palette["glare"])
-	img.set_pixel(10, 7, palette["glare"])
-	img.set_pixel(9, 8, palette["glare"].darkened(0.08))
+	# Glare reflection
+	for i in range(3):
+		var gx = glass_left + 2 + i
+		var gy = glass_top + 1 + i
+		if gx < mid_x and gy < mid_y:
+			img.set_pixel(gx, gy, palette["glare"])
 
-	# Flower box below window
-	for y in range(TILE_SIZE - 8, TILE_SIZE - 5):
-		for x in range(5, TILE_SIZE - 5):
-			img.set_pixel(x, y, Color(0.48, 0.32, 0.18))  # brown box
+	# Curtain on right pane
+	var curtain_col = Color(0.88, 0.45, 0.42)
+	for y in range(glass_top + 1, mid_y):
+		img.set_pixel(glass_right - 2, y, curtain_col)
+		img.set_pixel(glass_right - 3, y, curtain_col.darkened(0.08))
+		if y % 3 == 0:
+			img.set_pixel(glass_right - 4, y, curtain_col.darkened(0.15))
 
-	# Flowers in the box
-	var flower_colors = [palette["flower_red"], palette["flower_pink"], palette["flower_red"], palette["flower_pink"]]
+	# Window sill
+	var sill_y = frame_bot + 2
+	for x in range(frame_left - 1, frame_right + 1):
+		if x >= 0 and x < TILE_SIZE:
+			img.set_pixel(x, sill_y, palette["frame_white"])
+			if sill_y + 1 < TILE_SIZE:
+				img.set_pixel(x, sill_y + 1, palette["frame_white"].darkened(0.12))
+
+	# Flower box below sill
+	var box_top = sill_y + 2
+	var box_bot = box_top + 3
+	for y in range(box_top, box_bot):
+		if y >= TILE_SIZE:
+			break
+		for x in range(frame_left, frame_right):
+			var box_shade = Color(0.52, 0.34, 0.18)
+			if y == box_top:
+				box_shade = Color(0.58, 0.40, 0.22)
+			img.set_pixel(x, y, box_shade)
+
+	# Lush flowers
+	var flower_colors = [palette["flower_red"], Color(0.95, 0.60, 0.65), palette["flower_red"], Color(0.92, 0.50, 0.55)]
 	for i in range(4):
-		var fx = 8 + i * 5
-		if fx < TILE_SIZE - 5:
-			img.set_pixel(fx, TILE_SIZE - 9, flower_colors[i])
-			if fx + 1 < TILE_SIZE - 5:
-				img.set_pixel(fx + 1, TILE_SIZE - 9, flower_colors[i].darkened(0.1))
-			# Green stem
-			img.set_pixel(fx, TILE_SIZE - 8, Color(0.30, 0.58, 0.25))
+		var fx = frame_left + 3 + i * 5
+		var fy = box_top - 1
+		if fx >= TILE_SIZE - 3 or fy < 0:
+			continue
+		img.set_pixel(fx, fy, flower_colors[i])
+		if fx > 0:
+			img.set_pixel(fx - 1, fy, flower_colors[i].darkened(0.10))
+		if fx + 1 < TILE_SIZE:
+			img.set_pixel(fx + 1, fy, flower_colors[i].darkened(0.10))
+		if fy > 0:
+			img.set_pixel(fx, fy - 1, flower_colors[i].lightened(0.12))
+		img.set_pixel(fx, fy + 1, Color(0.30, 0.58, 0.25))
+		if fx + 1 < TILE_SIZE and fy + 1 < TILE_SIZE:
+			img.set_pixel(fx + 1, fy + 1, Color(0.38, 0.65, 0.30))
 
-	# Bottom of tile - wall continues
-	for y in range(TILE_SIZE - 4, TILE_SIZE):
+	# Bottom wall with siding
+	for y in range(box_bot, TILE_SIZE):
 		for x in range(TILE_SIZE):
-			img.set_pixel(x, y, Color(0.65, 0.78, 0.92))
+			if y < TILE_SIZE:
+				img.set_pixel(x, y, wall_col)
+				if y % 4 == 0:
+					img.set_pixel(x, y, wall_col.darkened(0.10))
 
 
 ## White picket fence on grass background
@@ -672,62 +880,107 @@ func _draw_picket_fence(img: Image, palette: Dictionary, variant: int) -> void:
 				img.set_pixel(px + dx, TILE_SIZE - 4, palette["deep"])
 
 
-## Blue USPS mailbox on concrete sidewalk
+## Blue USPS mailbox on concrete sidewalk with text detail and brighter colors
 func _draw_mailbox(img: Image, palette: Dictionary) -> void:
 	# Sidewalk background
 	img.fill(palette["concrete"])
+	for x in range(TILE_SIZE):
+		img.set_pixel(x, TILE_SIZE / 2, palette["concrete"].darkened(0.06))
 
-	# Gray post (center bottom)
+	# Gray post with shading
 	var post_x = TILE_SIZE / 2
 	for y in range(18, TILE_SIZE - 2):
-		img.set_pixel(post_x - 1, y, palette["post_gray"].darkened(0.1))
+		img.set_pixel(post_x - 1, y, palette["post_gray"].darkened(0.12))
 		img.set_pixel(post_x, y, palette["post_gray"])
-		img.set_pixel(post_x + 1, y, palette["post_gray"].lightened(0.1))
+		img.set_pixel(post_x + 1, y, palette["post_gray"].lightened(0.10))
+
+	# Post brace
+	for i in range(4):
+		var bx = post_x + 2 + i
+		var by = TILE_SIZE - 5 - i
+		if bx < TILE_SIZE and by >= 0 and by < TILE_SIZE:
+			img.set_pixel(bx, by, palette["post_gray"].darkened(0.05))
 
 	# Post base
 	for dx in range(-2, 3):
 		var bx = post_x + dx
 		if bx >= 0 and bx < TILE_SIZE:
 			img.set_pixel(bx, TILE_SIZE - 2, palette["post_gray"].darkened(0.15))
-			img.set_pixel(bx, TILE_SIZE - 1, palette["post_gray"].darkened(0.2))
+			img.set_pixel(bx, TILE_SIZE - 1, palette["post_gray"].darkened(0.22))
 
-	# Blue mailbox body (upper portion, rounded top)
-	var box_left = 6
-	var box_right = TILE_SIZE - 6
-	var box_top = 4
+	# Blue mailbox body
+	var box_left = 5
+	var box_right = TILE_SIZE - 5
+	var box_top = 3
 	var box_bottom = 18
 
-	for y in range(box_top + 2, box_bottom):
+	# Rounded top
+	for x in range(box_left + 3, box_right - 3):
+		img.set_pixel(x, box_top, palette["light"])
+	for x in range(box_left + 2, box_right - 2):
+		img.set_pixel(x, box_top + 1, palette["light"])
+	for x in range(box_left + 1, box_right - 1):
+		img.set_pixel(x, box_top + 2, palette["mid"])
+
+	# Main body with cylindrical shading
+	for y in range(box_top + 3, box_bottom):
 		for x in range(box_left, box_right):
 			var rel_x = float(x - box_left) / float(box_right - box_left)
-			var shade = palette["base"]
-			if rel_x < 0.15:
+			var shade: Color
+			if rel_x < 0.12:
+				shade = palette["deep"]
+			elif rel_x < 0.25:
 				shade = palette["dark"]
-			elif rel_x > 0.85:
-				shade = palette["dark"]
-			elif rel_x < 0.35:
+			elif rel_x < 0.40:
 				shade = palette["mid"]
-			elif rel_x > 0.6:
-				shade = palette["mid"]
-			else:
+			elif rel_x < 0.65:
 				shade = palette["light"]
+			elif rel_x < 0.80:
+				shade = palette["mid"]
+			elif rel_x < 0.90:
+				shade = palette["dark"]
+			else:
+				shade = palette["deep"]
 			img.set_pixel(x, y, shade)
-
-	# Rounded top of mailbox
-	for x in range(box_left + 1, box_right - 1):
-		img.set_pixel(x, box_top + 1, palette["mid"])
-	for x in range(box_left + 2, box_right - 2):
-		img.set_pixel(x, box_top, palette["light"])
 
 	# Mail slot
 	for x in range(box_left + 3, box_right - 3):
-		img.set_pixel(x, box_top + 4, palette["slot"])
+		img.set_pixel(x, box_top + 5, palette["slot"])
 
-	# Red flag on right side
-	img.set_pixel(box_right, box_top + 3, palette["flag_red"])
-	img.set_pixel(box_right, box_top + 4, palette["flag_red"])
-	img.set_pixel(box_right + 1, box_top + 3, palette["flag_red"])
-	img.set_pixel(box_right, box_top + 5, palette["flag_red"].darkened(0.15))
+	# "US MAIL" text dots
+	var text_y_pos = box_top + 8
+	var text_dots = [
+		Vector2i(9, 0), Vector2i(9, 1), Vector2i(9, 2), Vector2i(10, 2), Vector2i(11, 0), Vector2i(11, 1), Vector2i(11, 2),
+		Vector2i(13, 0), Vector2i(14, 0), Vector2i(13, 1), Vector2i(14, 2), Vector2i(13, 2),
+		Vector2i(17, 0), Vector2i(17, 1), Vector2i(17, 2), Vector2i(18, 0), Vector2i(19, 1), Vector2i(20, 0), Vector2i(20, 1), Vector2i(20, 2),
+	]
+	for dot in text_dots:
+		var tx = dot.x
+		var ty = text_y_pos + dot.y
+		if tx >= 0 and tx < TILE_SIZE and ty >= 0 and ty < TILE_SIZE:
+			img.set_pixel(tx, ty, Color(0.85, 0.85, 0.90))
+
+	# Highlight streak
+	for y in range(box_top + 4, box_bottom - 2):
+		img.set_pixel(box_left + 3, y, palette["light"].lightened(0.12))
+
+	# Red flag
+	var flag_x = box_right
+	var flag_y = box_top + 4
+	img.set_pixel(flag_x, flag_y, palette["flag_red"].darkened(0.2))
+	img.set_pixel(flag_x, flag_y + 1, palette["flag_red"].darkened(0.2))
+	img.set_pixel(flag_x, flag_y + 2, palette["flag_red"].darkened(0.2))
+	if flag_x + 1 < TILE_SIZE:
+		img.set_pixel(flag_x + 1, flag_y, palette["flag_red"])
+		img.set_pixel(flag_x + 1, flag_y + 1, palette["flag_red"])
+	if flag_x + 2 < TILE_SIZE:
+		img.set_pixel(flag_x + 2, flag_y, palette["flag_red"])
+		img.set_pixel(flag_x + 2, flag_y + 1, palette["flag_red"].lightened(0.1))
+	if flag_x + 3 < TILE_SIZE:
+		img.set_pixel(flag_x + 3, flag_y, palette["flag_red"].lightened(0.08))
+
+	for x in range(box_left, box_right):
+		img.set_pixel(x, box_bottom - 1, palette["deep"])
 
 
 ## Red fire hydrant on sidewalk
@@ -794,13 +1047,13 @@ func _draw_fire_hydrant(img: Image, palette: Dictionary) -> void:
 	img.set_pixel(cx - 1, body_top + 3, palette["highlight"])
 
 
-## Sand base playground with colored equipment (slide, swing, dots)
+## Sand base playground with recognizable slide, swing set, and monkey bar details
 func _draw_playground(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 77777
 
-	# Sand texture noise
+	# Sand texture
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.8 + y * 0.6 + variant * 1.4) * 0.25 + rng.randf() * 0.2
@@ -811,38 +1064,70 @@ func _draw_playground(img: Image, palette: Dictionary, variant: int) -> void:
 			elif n > 0.05:
 				img.set_pixel(x, y, palette["mid"])
 
-	# Red slide (diagonal line from top-right to bottom-left)
-	for i in range(TILE_SIZE - 8):
-		var sx = TILE_SIZE - 6 - i
-		var sy = 4 + int(i * 0.8)
+	# Red slide (platform + diagonal chute)
+	for x in range(22, 28):
+		for y in range(3, 7):
+			img.set_pixel(x, y, palette["slide_red"].darkened(0.1))
+	for y in range(7, TILE_SIZE - 3):
+		img.set_pixel(22, y, palette["chain_gray"])
+		img.set_pixel(27, y, palette["chain_gray"])
+	for i in range(18):
+		var sx = 21 - i
+		var sy = 6 + int(i * 1.2)
 		if sx >= 0 and sx < TILE_SIZE and sy >= 0 and sy < TILE_SIZE:
 			img.set_pixel(sx, sy, palette["slide_red"])
 			if sx + 1 < TILE_SIZE:
-				img.set_pixel(sx + 1, sy, palette["slide_red"].darkened(0.15))
+				img.set_pixel(sx + 1, sy, palette["slide_red"].lightened(0.12))
+			if sy - 1 >= 0:
+				img.set_pixel(sx, sy - 1, palette["slide_red"].darkened(0.18))
 
-	# Blue swing frame (two vertical poles + top bar)
-	var frame_left = 4
-	var frame_right = 12
-	for y in range(4, TILE_SIZE - 4):
-		img.set_pixel(frame_left, y, palette["swing_blue"])
-		img.set_pixel(frame_right, y, palette["swing_blue"])
-	for x in range(frame_left, frame_right + 1):
-		img.set_pixel(x, 4, palette["swing_blue"])
+	# Blue swing set (A-frame + chains + seats)
+	var sw_left = 2
+	var sw_right = 14
+	var sw_top = 3
+	for x in range(sw_left, sw_right + 1):
+		img.set_pixel(x, sw_top, palette["swing_blue"])
+		img.set_pixel(x, sw_top + 1, palette["swing_blue"].darkened(0.1))
+	for y in range(sw_top + 2, TILE_SIZE - 3):
+		img.set_pixel(sw_left, y, palette["swing_blue"])
+		img.set_pixel(sw_left + 1, y, palette["swing_blue"].darkened(0.12))
+	for y in range(sw_top + 2, TILE_SIZE - 3):
+		img.set_pixel(sw_right - 1, y, palette["swing_blue"])
+		img.set_pixel(sw_right, y, palette["swing_blue"].darkened(0.12))
+	var seat1_x = sw_left + 3
+	for y in range(sw_top + 2, 18):
+		img.set_pixel(seat1_x, y, palette["chain_gray"])
+	for dx in range(-1, 3):
+		if seat1_x + dx >= 0 and seat1_x + dx < TILE_SIZE:
+			img.set_pixel(seat1_x + dx, 18, palette["swing_blue"].darkened(0.25))
+	var seat2_x = sw_right - 3
+	for y in range(sw_top + 2, 16):
+		img.set_pixel(seat2_x, y, palette["chain_gray"])
+	for dx in range(-1, 3):
+		if seat2_x + dx >= 0 and seat2_x + dx < TILE_SIZE:
+			img.set_pixel(seat2_x + dx, 16, palette["swing_blue"].darkened(0.25))
 
-	# Swing chains and seat
-	var seat_x = (frame_left + frame_right) / 2
-	for y in range(5, 18):
-		img.set_pixel(seat_x, y, palette["chain_gray"])
-	for dx in range(-1, 2):
-		if seat_x + dx >= 0 and seat_x + dx < TILE_SIZE:
-			img.set_pixel(seat_x + dx, 18, palette["swing_blue"].darkened(0.2))
+	# Yellow monkey bars (bottom area)
+	var mb_left = 16
+	var mb_right = 30
+	var mb_y = TILE_SIZE - 10
+	for y in range(mb_y, TILE_SIZE - 3):
+		img.set_pixel(mb_left, y, palette["bar_yellow"])
+		img.set_pixel(mb_right, y, palette["bar_yellow"])
+	for x in range(mb_left, mb_right + 1):
+		img.set_pixel(x, mb_y, palette["bar_yellow"])
+	for x in range(mb_left + 2, mb_right, 3):
+		img.set_pixel(x, mb_y + 1, palette["bar_yellow"].darkened(0.1))
 
-	# Yellow dots (equipment details)
-	for _i in range(rng.randi_range(3, 5)):
-		var dx = rng.randi_range(16, TILE_SIZE - 4)
-		var dy = rng.randi_range(TILE_SIZE - 12, TILE_SIZE - 4)
-		if dx < TILE_SIZE and dy < TILE_SIZE:
-			img.set_pixel(dx, dy, palette["bar_yellow"])
+	# Footprints in sand
+	if variant % 3 == 0:
+		for _f in range(2):
+			var fx = rng.randi_range(4, TILE_SIZE - 6)
+			var fy = rng.randi_range(TILE_SIZE - 6, TILE_SIZE - 2)
+			if fx < TILE_SIZE and fy < TILE_SIZE:
+				img.set_pixel(fx, fy, palette["dark"].darkened(0.05))
+				if fx + 1 < TILE_SIZE:
+					img.set_pixel(fx + 1, fy, palette["dark"].darkened(0.05))
 
 
 ## Gray parking lot with yellow lines and oil stains
@@ -954,12 +1239,11 @@ func _draw_shade_tree(img: Image, palette: Dictionary) -> void:
 			img.set_pixel(x, TILE_SIZE - 2, palette["grass_dark"])
 
 
-## Brown park bench with iron arm supports on grass
+## Brown park bench with wood-grain slats, iron arm supports, and grass detail
 func _draw_park_bench(img: Image, palette: Dictionary) -> void:
 	# Grass background
 	img.fill(palette["grass"])
 
-	# Grass texture
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 13013
 	for y in range(TILE_SIZE):
@@ -967,51 +1251,88 @@ func _draw_park_bench(img: Image, palette: Dictionary) -> void:
 			var n = sin(x * 0.6 + y * 0.3) * 0.25 + rng.randf() * 0.12
 			if n < -0.1:
 				img.set_pixel(x, y, palette["grass_dark"])
+			elif n > 0.2:
+				img.set_pixel(x, y, palette["grass"].lightened(0.08))
 
-	# Gray iron arm supports (left and right)
-	var bench_left = 4
-	var bench_right = TILE_SIZE - 5
-	var bench_top = 12
-	var bench_bottom = TILE_SIZE - 6
+	# Grass blade tufts
+	for _i in range(4):
+		var tx = rng.randi_range(1, TILE_SIZE - 2)
+		var ty = rng.randi_range(TILE_SIZE - 4, TILE_SIZE - 1)
+		for h in range(rng.randi_range(1, 3)):
+			if ty - h >= 0:
+				img.set_pixel(tx, ty - h, palette["grass"].lightened(0.1))
 
-	# Left iron support
-	for y in range(bench_top, bench_bottom + 4):
+	var bench_left = 3
+	var bench_right = TILE_SIZE - 4
+	var seat_y = 14
+
+	# Iron supports
+	for y in range(8, TILE_SIZE - 4):
 		img.set_pixel(bench_left, y, palette["iron_gray"])
 		img.set_pixel(bench_left + 1, y, palette["iron_light"])
-	# Right iron support
-	for y in range(bench_top, bench_bottom + 4):
+	for y in range(8, TILE_SIZE - 4):
 		img.set_pixel(bench_right, y, palette["iron_gray"])
 		img.set_pixel(bench_right + 1, y, palette["iron_light"])
+	img.set_pixel(bench_left + 2, 8, palette["iron_gray"])
+	img.set_pixel(bench_left + 2, 9, palette["iron_gray"])
+	img.set_pixel(bench_right - 1, 8, palette["iron_gray"])
+	img.set_pixel(bench_right - 1, 9, palette["iron_gray"])
 
 	# Iron feet
-	for dx in range(-1, 3):
-		var lx = bench_left + dx
-		var rx = bench_right + dx
-		if lx >= 0 and lx < TILE_SIZE:
-			img.set_pixel(lx, bench_bottom + 4, palette["iron_gray"].darkened(0.15))
-		if rx >= 0 and rx < TILE_SIZE:
-			img.set_pixel(rx, bench_bottom + 4, palette["iron_gray"].darkened(0.15))
+	for pos_x in [bench_left, bench_right]:
+		for dx in range(-1, 3):
+			var lx = pos_x + dx
+			if lx >= 0 and lx < TILE_SIZE:
+				img.set_pixel(lx, TILE_SIZE - 4, palette["iron_gray"].darkened(0.10))
+				img.set_pixel(lx, TILE_SIZE - 3, palette["iron_gray"].darkened(0.18))
 
-	# Brown horizontal slats (3 lines)
-	var slat_ys = [bench_top, bench_top + 3, bench_top + 6]
-	for sy in slat_ys:
+	# Seat slats with wood grain
+	var slat_ys = [seat_y, seat_y + 3, seat_y + 6]
+	for si in range(slat_ys.size()):
+		var sy = slat_ys[si]
 		for x in range(bench_left, bench_right + 2):
-			if x >= 0 and x < TILE_SIZE and sy >= 0 and sy < TILE_SIZE:
-				img.set_pixel(x, sy, palette["base"])
-				if sy + 1 < TILE_SIZE:
-					img.set_pixel(x, sy + 1, palette["light"])
-				if sy + 2 < TILE_SIZE:
-					img.set_pixel(x, sy + 2, palette["dark"])
+			if x < 0 or x >= TILE_SIZE:
+				continue
+			for dy in range(2):
+				var py = sy + dy
+				if py < 0 or py >= TILE_SIZE:
+					continue
+				var shade = palette["base"]
+				var grain = sin(x * 0.3 + si * 2.0) * 0.1
+				if grain > 0.05:
+					shade = shade.lightened(0.06)
+				elif grain < -0.05:
+					shade = shade.darkened(0.06)
+				if dy == 0:
+					shade = shade.lightened(0.08)
+				img.set_pixel(x, py, shade)
+			if sy + 2 < TILE_SIZE:
+				img.set_pixel(x, sy + 2, palette["dark"])
 
-	# Backrest slats (upper area, two horizontal lines)
-	var back_y1 = bench_top - 4
-	var back_y2 = bench_top - 2
-	for x in range(bench_left, bench_right + 2):
+	# Backrest
+	var back_ys = [8, 11]
+	for bi in range(back_ys.size()):
+		var by = back_ys[bi]
+		for x in range(bench_left + 2, bench_right):
+			if x < 0 or x >= TILE_SIZE:
+				continue
+			var shade = palette["mid"]
+			var grain = sin(x * 0.35 + bi * 1.5) * 0.08
+			if grain > 0.04:
+				shade = shade.lightened(0.05)
+			elif grain < -0.04:
+				shade = shade.darkened(0.05)
+			if by >= 0 and by < TILE_SIZE:
+				img.set_pixel(x, by, shade.lightened(0.06))
+			if by + 1 < TILE_SIZE:
+				img.set_pixel(x, by + 1, shade)
+			if by + 2 < TILE_SIZE:
+				img.set_pixel(x, by + 2, palette["dark"])
+
+	# Shadow beneath bench
+	for x in range(bench_left - 1, bench_right + 3):
 		if x >= 0 and x < TILE_SIZE:
-			if back_y1 >= 0:
-				img.set_pixel(x, back_y1, palette["mid"])
-			if back_y2 >= 0:
-				img.set_pixel(x, back_y2, palette["mid"])
+			img.set_pixel(x, TILE_SIZE - 2, palette["grass_dark"])
 
 
 ## Orange basketball court surface with white lines
@@ -1071,13 +1392,13 @@ func _draw_basketball_court(img: Image, palette: Dictionary, variant: int) -> vo
 			img.set_pixel(rx, ry, palette["line_white"])
 
 
-## Dark soil base with multicolor flower dots and green stems
+## Dark soil base with lush multicolor flowers, leaf pairs, and stone border edging
 func _draw_flower_bed(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 10101
 
-	# Soil texture noise
+	# Rich soil texture
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.9 + y * 0.7 + variant * 1.5) * 0.3 + rng.randf() * 0.2
@@ -1090,39 +1411,63 @@ func _draw_flower_bed(img: Image, palette: Dictionary, variant: int) -> void:
 			elif n > 0.1:
 				img.set_pixel(x, y, palette["mid"])
 
-	# Multicolor flowers with stems
+	# Stone border edging
+	var border_col = Color(0.62, 0.60, 0.56)
+	var border_dark = Color(0.48, 0.46, 0.42)
+	for x in range(TILE_SIZE):
+		img.set_pixel(x, 0, border_col)
+		img.set_pixel(x, 1, border_dark)
+		img.set_pixel(x, TILE_SIZE - 2, border_dark)
+		img.set_pixel(x, TILE_SIZE - 1, border_col)
+		if x % 6 == 0:
+			img.set_pixel(x, 0, border_dark.darkened(0.1))
+			img.set_pixel(x, 1, border_dark.darkened(0.1))
+			img.set_pixel(x, TILE_SIZE - 2, border_dark.darkened(0.1))
+			img.set_pixel(x, TILE_SIZE - 1, border_dark.darkened(0.1))
+
+	# Multicolor flowers with fuller petals
 	var flower_colors = [
 		palette["flower_red"], palette["flower_pink"],
-		palette["flower_yellow"], palette["flower_purple"]
+		palette["flower_yellow"], palette["flower_purple"],
+		Color(0.98, 0.65, 0.20),
+		Color(0.55, 0.65, 0.95)
 	]
-	var num_flowers = rng.randi_range(6, 10)
+	var num_flowers = rng.randi_range(7, 12)
 	for _f in range(num_flowers):
-		var fx = rng.randi_range(2, TILE_SIZE - 3)
-		var fy = rng.randi_range(3, TILE_SIZE - 5)
+		var fx = rng.randi_range(3, TILE_SIZE - 4)
+		var fy = rng.randi_range(5, TILE_SIZE - 7)
 		var fc = flower_colors[rng.randi() % flower_colors.size()]
 
-		# Green stem (2-3 pixels tall below flower)
-		var stem_h = rng.randi_range(2, 3)
+		var stem_h = rng.randi_range(3, 4)
+		var stem_col = Color(0.28, 0.55, 0.22)
 		for s in range(stem_h):
-			if fy + s + 1 < TILE_SIZE:
-				img.set_pixel(fx, fy + s + 1, Color(0.30, 0.58, 0.25))
+			if fy + s + 1 < TILE_SIZE - 2:
+				img.set_pixel(fx, fy + s + 1, stem_col)
 
-		# Flower head (cross pattern)
-		img.set_pixel(fx, fy, fc)
+		if fy + 2 < TILE_SIZE - 2:
+			if fx - 1 >= 0:
+				img.set_pixel(fx - 1, fy + 2, Color(0.35, 0.62, 0.28))
+			if fx + 1 < TILE_SIZE:
+				img.set_pixel(fx + 1, fy + 3 if fy + 3 < TILE_SIZE - 2 else fy + 2, Color(0.35, 0.62, 0.28))
+
+		img.set_pixel(fx, fy, fc.lightened(0.15))
 		if fx > 0:
-			img.set_pixel(fx - 1, fy, fc.darkened(0.12))
+			img.set_pixel(fx - 1, fy, fc)
 		if fx + 1 < TILE_SIZE:
-			img.set_pixel(fx + 1, fy, fc.darkened(0.12))
-		if fy > 0:
-			img.set_pixel(fx, fy - 1, fc.lightened(0.1))
+			img.set_pixel(fx + 1, fy, fc)
+		if fy > 2:
+			img.set_pixel(fx, fy - 1, fc)
+		img.set_pixel(fx, fy + 1, fc.darkened(0.08))
+		if rng.randf() < 0.5:
+			if fx - 1 >= 0 and fy > 2:
+				img.set_pixel(fx - 1, fy - 1, fc.darkened(0.12))
+			if fx + 1 < TILE_SIZE and fy > 2:
+				img.set_pixel(fx + 1, fy - 1, fc.darkened(0.12))
 
-		# Small leaf
-		if fx + 1 < TILE_SIZE and fy + 2 < TILE_SIZE:
-			img.set_pixel(fx + 1, fy + 2, Color(0.35, 0.62, 0.28))
-
-	# Soil edge border at bottom
-	for x in range(TILE_SIZE):
-		img.set_pixel(x, TILE_SIZE - 1, palette["deep"])
+	for _m in range(rng.randi_range(3, 6)):
+		var mx = rng.randi_range(2, TILE_SIZE - 3)
+		var my = rng.randi_range(TILE_SIZE - 6, TILE_SIZE - 3)
+		img.set_pixel(mx, my, palette["light"])
 
 
 ## Create tileset with all suburban tiles
