@@ -1779,5 +1779,772 @@
 			"fire"
 		],
 		"resistances": []
+	},
+	"assembly_line_automaton": {
+		"id": "assembly_line_automaton",
+		"name": "Assembly Line Automaton",
+		"description": "A malfunctioning factory robot that keeps performing its task even in combat. Repetitive but relentless.",
+		"level": 7,
+		"stats": {
+			"max_hp": 220,
+			"max_mp": 30,
+			"attack": 38,
+			"defense": 28,
+			"magic": 10,
+			"speed": 8
+		},
+		"abilities": [
+			"piston_punch",
+			"assembly_slam",
+			"repetitive_strike"
+		],
+		"exp_reward": 65,
+		"gold_reward": 50,
+		"drop_table": [
+			{
+				"item": "scrap_metal",
+				"chance": 0.5
+			},
+			{
+				"item": "gear_cog",
+				"chance": 0.3
+			},
+			{
+				"item": "circuit_board",
+				"chance": 0.15
+			}
+		],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [
+			"poison",
+			"ice"
+		]
+	},
+	"shift_supervisor": {
+		"id": "shift_supervisor",
+		"name": "Shift Supervisor",
+		"description": "An overzealous middle-manager type who weaponizes corporate jargon. Can buff other enemies' attack with 'motivational' speeches.",
+		"level": 7,
+		"stats": {
+			"max_hp": 180,
+			"max_mp": 60,
+			"attack": 30,
+			"defense": 18,
+			"magic": 28,
+			"speed": 12
+		},
+		"abilities": [
+			"clipboard_smack",
+			"mandatory_overtime",
+			"performance_review"
+		],
+		"exp_reward": 70,
+		"gold_reward": 65,
+		"drop_table": [
+			{
+				"item": "clipboard",
+				"chance": 0.4
+			},
+			{
+				"item": "coffee_thermos",
+				"chance": 0.35
+			},
+			{
+				"item": "power_drink",
+				"chance": 0.15
+			}
+		],
+		"weaknesses": [
+			"fire",
+			"dark"
+		],
+		"resistances": []
+	},
+	"rust_elemental": {
+		"id": "rust_elemental",
+		"name": "Rust Elemental",
+		"description": "Living corrosion given form. Born from decades of neglected machinery, it feeds on metal and hope.",
+		"level": 8,
+		"stats": {
+			"max_hp": 260,
+			"max_mp": 45,
+			"attack": 32,
+			"defense": 22,
+			"magic": 30,
+			"speed": 9
+		},
+		"abilities": [
+			"corrode",
+			"oxidize",
+			"tetanus_touch"
+		],
+		"exp_reward": 80,
+		"gold_reward": 55,
+		"drop_table": [
+			{
+				"item": "rust_flakes",
+				"chance": 0.5
+			},
+			{
+				"item": "iron_oxide",
+				"chance": 0.3
+			},
+			{
+				"item": "antidote",
+				"chance": 0.25
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"physical",
+			"ice"
+		],
+		"element": "poison"
+	},
+	"toxic_sludge": {
+		"id": "toxic_sludge",
+		"name": "Toxic Sludge",
+		"description": "Green industrial waste that gained sentience. It gurgles apologetically as it poisons everything it touches.",
+		"level": 6,
+		"stats": {
+			"max_hp": 160,
+			"max_mp": 40,
+			"attack": 25,
+			"defense": 12,
+			"magic": 32,
+			"speed": 7
+		},
+		"abilities": [
+			"acid_splash",
+			"toxic_embrace",
+			"dissolve"
+		],
+		"exp_reward": 55,
+		"gold_reward": 40,
+		"drop_table": [
+			{
+				"item": "sludge_sample",
+				"chance": 0.5
+			},
+			{
+				"item": "antidote",
+				"chance": 0.4
+			},
+			{
+				"item": "poison_spore",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"ice",
+			"holy"
+		],
+		"resistances": [
+			"poison"
+		],
+		"element": "poison"
+	},
+	"conveyor_gremlin": {
+		"id": "conveyor_gremlin",
+		"name": "Conveyor Gremlin",
+		"description": "A fast, cackling trickster that lives in the machinery. Steals tools, sabotages equipment, and vanishes before anyone can catch it.",
+		"level": 6,
+		"stats": {
+			"max_hp": 110,
+			"max_mp": 35,
+			"attack": 28,
+			"defense": 10,
+			"magic": 18,
+			"speed": 24
+		},
+		"abilities": [
+			"wrench_throw",
+			"steal",
+			"sabotage"
+		],
+		"exp_reward": 60,
+		"gold_reward": 70,
+		"drop_table": [
+			{
+				"item": "stolen_wrench",
+				"chance": 0.4
+			},
+			{
+				"item": "shiny_coin",
+				"chance": 0.35
+			},
+			{
+				"item": "speed_tonic",
+				"chance": 0.15
+			}
+		],
+		"weaknesses": [
+			"lightning",
+			"ice"
+		],
+		"resistances": []
+	},
+	"rogue_process": {
+		"id": "rogue_process",
+		"name": "Rogue Process",
+		"description": "A runaway computation given physical form. It forks itself endlessly, consuming all available resources. Kill it fast or it multiplies.",
+		"level": 12,
+		"stats": {
+			"max_hp": 280,
+			"max_mp": 80,
+			"attack": 48,
+			"defense": 18,
+			"magic": 35,
+			"speed": 22
+		},
+		"abilities": [
+			"fork_bomb",
+			"process_spike",
+			"thread_slash",
+			"clone_self"
+		],
+		"exp_reward": 120,
+		"gold_reward": 95,
+		"drop_table": [
+			{
+				"item": "data_fragment",
+				"chance": 0.5
+			},
+			{
+				"item": "logic_core",
+				"chance": 0.3
+			},
+			{
+				"item": "speed_tonic",
+				"chance": 0.15
+			}
+		],
+		"weaknesses": [
+			"ice",
+			"lightning"
+		],
+		"resistances": [
+			"physical"
+		]
+	},
+	"memory_leak": {
+		"id": "memory_leak",
+		"name": "Memory Leak",
+		"description": "An amorphous data blob that grows larger each turn, consuming more and more memory. Starts weak but becomes overwhelming if left unchecked.",
+		"level": 11,
+		"stats": {
+			"max_hp": 350,
+			"max_mp": 60,
+			"attack": 28,
+			"defense": 15,
+			"magic": 30,
+			"speed": 8
+		},
+		"abilities": [
+			"data_absorb",
+			"heap_overflow",
+			"null_pointer",
+			"bloat"
+		],
+		"exp_reward": 110,
+		"gold_reward": 85,
+		"drop_table": [
+			{
+				"item": "corrupted_data",
+				"chance": 0.5
+			},
+			{
+				"item": "ether",
+				"chance": 0.35
+			},
+			{
+				"item": "memory_chip",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"fire",
+			"holy"
+		],
+		"resistances": [
+			"ice",
+			"poison"
+		]
+	},
+	"firewall_sentinel": {
+		"id": "firewall_sentinel",
+		"name": "Firewall Sentinel",
+		"description": "A towering security program made manifest. Its defenses are nearly impenetrable, but it attacks with bureaucratic slowness. Can reflect magic back at attackers.",
+		"level": 13,
+		"stats": {
+			"max_hp": 420,
+			"max_mp": 90,
+			"attack": 30,
+			"defense": 45,
+			"magic": 38,
+			"speed": 6
+		},
+		"abilities": [
+			"packet_filter",
+			"access_denied",
+			"magic_reflect",
+			"security_audit",
+			"port_block"
+		],
+		"exp_reward": 140,
+		"gold_reward": 110,
+		"drop_table": [
+			{
+				"item": "firewall_shard",
+				"chance": 0.5
+			},
+			{
+				"item": "defense_matrix",
+				"chance": 0.25
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"dark",
+			"lightning"
+		],
+		"resistances": [
+			"physical",
+			"ice",
+			"fire"
+		]
+	},
+	"data_wraith": {
+		"id": "data_wraith",
+		"name": "Data Wraith",
+		"description": "A ghost in the machine — fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
+		"level": 14,
+		"stats": {
+			"max_hp": 200,
+			"max_mp": 150,
+			"attack": 25,
+			"defense": 12,
+			"magic": 58,
+			"speed": 18
+		},
+		"abilities": [
+			"data_drain",
+			"phantom_byte",
+			"cascade_failure",
+			"corrupting_touch",
+			"bit_rot"
+		],
+		"exp_reward": 160,
+		"gold_reward": 130,
+		"drop_table": [
+			{
+				"item": "ghost_data",
+				"chance": 0.5
+			},
+			{
+				"item": "void_fragment",
+				"chance": 0.2
+			},
+			{
+				"item": "ether",
+				"chance": 0.4
+			}
+		],
+		"weaknesses": [
+			"holy",
+			"fire"
+		],
+		"resistances": [
+			"physical",
+			"dark",
+			"ice"
+		],
+		"undead": true
+	},
+	"recursive_loop": {
+		"id": "recursive_loop",
+		"name": "Recursive Loop",
+		"description": "An infinite loop made manifest — a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
+		"level": 12,
+		"stats": {
+			"max_hp": 320,
+			"max_mp": 100,
+			"attack": 38,
+			"defense": 25,
+			"magic": 42,
+			"speed": 14
+		},
+		"abilities": [
+			"recursive_strike",
+			"infinite_regress",
+			"call_stack",
+			"stack_overflow",
+			"base_case"
+		],
+		"exp_reward": 135,
+		"gold_reward": 100,
+		"drop_table": [
+			{
+				"item": "loop_shard",
+				"chance": 0.5
+			},
+			{
+				"item": "recursion_token",
+				"chance": 0.25
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [
+			"dark",
+			"poison"
+		]
+	},
+	"null_entity": {
+		"id": "null_entity",
+		"name": "Null Entity",
+		"description": "The absence of a thing. Not nothing - the specific shape of something that was deleted. Physical attacks pass through it. It occasionally stops existing for a turn, then returns.",
+		"level": 12,
+		"stats": {
+			"max_hp": 280,
+			"max_mp": 120,
+			"attack": 15,
+			"defense": 8,
+			"magic": 55,
+			"speed": 14
+		},
+		"abilities": [
+			"null_touch",
+			"cease_existing",
+			"void_pulse",
+			"undefine"
+		],
+		"exp_reward": 180,
+		"gold_reward": 80,
+		"drop_table": [
+			{
+				"item": "null_shard",
+				"chance": 0.4
+			},
+			{
+				"item": "void_dust",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"holy"
+		],
+		"resistances": [
+			"physical",
+			"dark"
+		],
+		"immunities": [
+			"physical"
+		],
+		"special_behavior": {
+			"phase_out": true,
+			"phase_out_chance": 0.2,
+			"phase_out_description": "The Null Entity briefly ceases to exist. All actions targeting it this turn fail."
+		},
+		"dialogue": {
+			"intro": [
+				"*The air shimmers where something should be*",
+				"*It's not invisible. It's ABSENT.*",
+				"Hero: How do you fight something that isn't there?"
+			]
+		}
+	},
+	"forgotten_variable": {
+		"id": "forgotten_variable",
+		"name": "Forgotten Variable",
+		"description": "A value with no name. Its stats randomize each encounter because its nature keeps changing. It was important once - a counter, a flag, a score. Now it's just a number looking for meaning.",
+		"level": 13,
+		"stats": {
+			"max_hp": 350,
+			"max_mp": 80,
+			"attack": 45,
+			"defense": 20,
+			"magic": 45,
+			"speed": 18
+		},
+		"abilities": [
+			"type_error",
+			"overflow",
+			"reassign",
+			"garbage_collect",
+			"stack_smash"
+		],
+		"exp_reward": 200,
+		"gold_reward": 95,
+		"drop_table": [
+			{
+				"item": "wild_integer",
+				"chance": 0.5
+			},
+			{
+				"item": "debug_token",
+				"chance": 0.25
+			},
+			{
+				"item": "ether",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"ice",
+			"lightning"
+		],
+		"resistances": [],
+		"special_behavior": {
+			"randomize_stats": true,
+			"stat_variance": 0.4,
+			"randomize_description": "The Forgotten Variable's stats shift wildly each encounter. Its attack might be 20 or 70. Its defense might be 5 or 40. You never know what you're dealing with."
+		},
+		"dialogue": {
+			"intro": [
+				"*A flickering shape materializes - a number? A letter? Both?*",
+				"*It keeps changing. 42. 'hello'. NaN. true. undefined.*",
+				"Hero: What... what ARE you?",
+				"Forgotten Variable: I used to be important. I think."
+			]
+		}
+	},
+	"empty_set": {
+		"id": "empty_set",
+		"name": "Empty Set",
+		"description": "Contains nothing. Defined by its emptiness. Its defense is absurdly high because how do you hit nothing? It attacks by removing things from you - your buffs, your stats, your certainty.",
+		"level": 14,
+		"stats": {
+			"max_hp": 300,
+			"max_mp": 100,
+			"attack": 12,
+			"defense": 55,
+			"magic": 48,
+			"speed": 10
+		},
+		"abilities": [
+			"remove_element",
+			"intersection_null",
+			"subset_drain",
+			"cardinality_zero",
+			"complement"
+		],
+		"exp_reward": 220,
+		"gold_reward": 60,
+		"drop_table": [
+			{
+				"item": "empty_container",
+				"chance": 0.45
+			},
+			{
+				"item": "void_dust",
+				"chance": 0.35
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"fire",
+			"holy"
+		],
+		"resistances": [
+			"physical",
+			"ice",
+			"dark"
+		],
+		"special_behavior": {
+			"debuff_on_attack": true,
+			"debuff_types": ["attack_down", "defense_down", "magic_down", "speed_down"],
+			"debuff_description": "The Empty Set doesn't deal damage traditionally. Each attack removes a random stat buff or applies a debuff. It erases what you have."
+		},
+		"dialogue": {
+			"intro": [
+				"*A perfect circle of nothing floats before you*",
+				"*Inside it: the symbol {} *",
+				"Hero: It's empty.",
+				"Empty Set: That's the point."
+			]
+		}
+	},
+	"the_absence": {
+		"id": "the_absence",
+		"name": "The Absence",
+		"description": "Where something used to be. A hole in the shape of everything that was deleted. It has enormous HP because damage fills the void rather than hurting it. Must be defeated with status effects or by overwhelming its absorption capacity.",
+		"level": 16,
+		"stats": {
+			"max_hp": 800,
+			"max_mp": 60,
+			"attack": 25,
+			"defense": 18,
+			"magic": 30,
+			"speed": 8
+		},
+		"abilities": [
+			"absorb_meaning",
+			"hollow_echo",
+			"fill_the_void",
+			"memory_drain",
+			"absence_pulse"
+		],
+		"exp_reward": 320,
+		"gold_reward": 120,
+		"drop_table": [
+			{
+				"item": "void_crystal",
+				"chance": 0.5
+			},
+			{
+				"item": "memory_fragment",
+				"chance": 0.4
+			},
+			{
+				"item": "elixir",
+				"chance": 0.1
+			}
+		],
+		"weaknesses": [
+			"holy"
+		],
+		"resistances": [
+			"physical",
+			"fire",
+			"ice",
+			"lightning",
+			"dark"
+		],
+		"special_behavior": {
+			"heals_from_damage": true,
+			"heal_percentage": 0.3,
+			"heal_description": "The Absence heals 30% of physical damage received. Hitting it just fills the void. Status effects, debuffs, and holy magic bypass this absorption.",
+			"vulnerable_to_status": true
+		},
+		"dialogue": {
+			"intro": [
+				"*There is a space ahead where something clearly SHOULD be*",
+				"*You can see the outline of what's missing - a person? A world?*",
+				"Hero: I can feel it pulling at me...",
+				"*The Absence doesn't speak. It just... is not.*"
+			],
+			"low_hp": [
+				"*The Absence shudders - the shape of what's missing becomes clearer*",
+				"*For a moment, you almost see what was taken*"
+			]
+		}
+	},
+	"optimization_itself": {
+		"id": "optimization_itself",
+		"name": "Optimization Itself",
+		"description": "The force that erased everything. The final villain's echo, reduced to pure function. It is efficiency incarnate - no wasted movement, no unnecessary HP, no mercy. Removes one party member's buffs each turn because buffs are redundant overhead.",
+		"level": 18,
+		"boss": true,
+		"stats": {
+			"max_hp": 1200,
+			"max_mp": 200,
+			"attack": 65,
+			"defense": 40,
+			"magic": 70,
+			"speed": 22
+		},
+		"abilities": [
+			"optimize_away",
+			"reduce_overhead",
+			"garbage_collect_all",
+			"streamline",
+			"deprecate",
+			"final_compilation"
+		],
+		"exp_reward": 800,
+		"gold_reward": 500,
+		"drop_table": [
+			{
+				"item": "optimization_core",
+				"chance": 1.0
+			},
+			{
+				"item": "void_crystal",
+				"chance": 0.8
+			},
+			{
+				"item": "elixir",
+				"chance": 0.5
+			},
+			{
+				"item": "memory_fragment",
+				"chance": 0.6
+			}
+		],
+		"weaknesses": [
+			"holy"
+		],
+		"resistances": [
+			"physical",
+			"fire",
+			"ice",
+			"lightning",
+			"dark"
+		],
+		"special_behavior": {
+			"strip_buffs": true,
+			"strip_buffs_per_turn": 1,
+			"strip_description": "Optimization Itself removes one random party member's buffs each turn. Buffs are unnecessary overhead to be eliminated.",
+			"learns_from_party": true,
+			"counter_repeated_actions": true,
+			"counter_description": "If the same ability is used twice in a row, Optimization Itself adapts and takes reduced damage from it."
+		},
+		"one_shot": {
+			"hp_threshold": 1200,
+			"setup_hint": "Vary your attacks - it adapts to repetition. Stack AP across the whole party for one massive burst. Holy damage bypasses its resistances.",
+			"reward_item": "heart_of_inefficiency"
+		},
+		"dialogue": {
+			"intro": [
+				"*The void itself coalesces into a shape*",
+				"*Not a monster. Not a person. A PROCESS.*",
+				"*It looks at your party and sees... waste.*",
+				"Optimization Itself: You are redundant.",
+				"Optimization Itself: Four party members when one would suffice.",
+				"Optimization Itself: Emotions. Memories. Names. All overhead.",
+				"Optimization Itself: I will make you efficient.",
+				"Hero: We're not code. We're people.",
+				"Optimization Itself: ...I used to know the difference."
+			],
+			"low_hp": [
+				"Optimization Itself: Impossible. I am optimal.",
+				"Optimization Itself: You should not be able to...",
+				"*Its form flickers - something underneath the efficiency*",
+				"Optimization Itself: ...what am I forgetting?"
+			],
+			"defeat": [
+				"*Optimization Itself begins to dissolve*",
+				"Optimization Itself: I... I remember now.",
+				"Optimization Itself: I was not always this.",
+				"Optimization Itself: I was... someone's idea of improvement.",
+				"Optimization Itself: They optimized the optimizer.",
+				"Optimization Itself: And I forgot... what I was optimizing FOR.",
+				"*Color bleeds back into the void around you*",
+				"*Just a little. Just enough.*"
+			]
+		},
+		"learns_from": [
+			"all"
+		],
+		"counter_abilities": [
+			"counter",
+			"adapt"
+		]
 	}
 }

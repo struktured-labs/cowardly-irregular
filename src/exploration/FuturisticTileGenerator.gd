@@ -266,7 +266,7 @@ func _draw_circuit_floor(img: Image, palette: Dictionary, variant: int) -> void:
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 11111
 
-	# Subtle digital noise texture
+	# Subtle digital noise texture with PCB-like micro detail
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n1 = sin(x * 0.8 + variant * 1.5) * cos(y * 0.6 + variant * 0.9)
@@ -279,7 +279,7 @@ func _draw_circuit_floor(img: Image, palette: Dictionary, variant: int) -> void:
 			elif combined > 0.1:
 				img.set_pixel(x, y, palette["mid"])
 
-	# Faint background grid (every 8 pixels)
+	# Faint background grid (every 8 pixels) - substrate pattern
 	for x in range(TILE_SIZE):
 		if x % 8 == 0:
 			for y in range(TILE_SIZE):
@@ -289,62 +289,114 @@ func _draw_circuit_floor(img: Image, palette: Dictionary, variant: int) -> void:
 			for x in range(TILE_SIZE):
 				img.set_pixel(x, y, palette["grid"])
 
-	# Circuit traces - horizontal lines with right-angle turns
-	var trace_y1 = 8 + (variant % 3) * 4
-	var trace_y2 = 20 + (variant % 2) * 4
-	# Horizontal trace 1
-	for x in range(0, TILE_SIZE):
-		if trace_y1 < TILE_SIZE:
-			img.set_pixel(x, trace_y1, palette["trace_dim"])
-	# Horizontal trace 2
-	for x in range(0, TILE_SIZE):
-		if trace_y2 < TILE_SIZE:
-			img.set_pixel(x, trace_y2, palette["trace_dim"])
+	# Multiple circuit traces with varying brightness based on variant
+	var trace_y1 = 6 + (variant % 3) * 3
+	var trace_y2 = 18 + (variant % 2) * 4
+	var trace_y3 = 28 + (variant % 2) * 2  # Third trace for denser pattern
 
-	# Vertical connector between traces
-	var vert_x = 12 + (variant % 4) * 5
-	if vert_x < TILE_SIZE:
-		var y_start = mini(trace_y1, trace_y2)
-		var y_end = maxi(trace_y1, trace_y2)
-		for y in range(y_start, y_end + 1):
-			if y < TILE_SIZE:
-				img.set_pixel(vert_x, y, palette["trace_dim"])
+	# Draw traces with 2px width and glowing edges
+	var trace_ys = [trace_y1, trace_y2]
+	if trace_y3 < TILE_SIZE - 1:
+		trace_ys.append(trace_y3)
 
-	# Junction nodes at intersections (bright dots)
-	var junctions = [
-		Vector2i(vert_x, trace_y1),
-		Vector2i(vert_x, trace_y2),
-		Vector2i(0, trace_y1),
-		Vector2i(TILE_SIZE - 1, trace_y2)
-	]
+	for ty in trace_ys:
+		if ty >= TILE_SIZE:
+			continue
+		for x in range(TILE_SIZE):
+			# Main trace line (bright center)
+			img.set_pixel(x, ty, palette["trace_cyan"])
+			# Dimmer second pixel for width
+			if ty + 1 < TILE_SIZE:
+				img.set_pixel(x, ty + 1, palette["trace_dim"])
+			# Subtle glow above and below
+			if ty - 1 >= 0:
+				var above = img.get_pixel(x, ty - 1)
+				img.set_pixel(x, ty - 1, above.lerp(palette["trace_cyan"], 0.15))
+			if ty + 2 < TILE_SIZE:
+				var below = img.get_pixel(x, ty + 2)
+				img.set_pixel(x, ty + 2, below.lerp(palette["trace_cyan"], 0.10))
+
+	# Vertical connectors between traces (2-3 of them)
+	var vert_positions = [8 + (variant % 3) * 4, 20 + (variant % 4) * 3]
+	if variant % 2 == 0:
+		vert_positions.append(28)
+
+	for vert_x in vert_positions:
+		if vert_x >= TILE_SIZE:
+			continue
+		var y_start = trace_y1
+		var y_end = trace_ys[trace_ys.size() - 1] + 1
+		for y in range(y_start, mini(y_end + 1, TILE_SIZE)):
+			img.set_pixel(vert_x, y, palette["trace_cyan"])
+			# Side glow
+			if vert_x - 1 >= 0:
+				var left = img.get_pixel(vert_x - 1, y)
+				img.set_pixel(vert_x - 1, y, left.lerp(palette["trace_cyan"], 0.12))
+			if vert_x + 1 < TILE_SIZE:
+				var right = img.get_pixel(vert_x + 1, y)
+				img.set_pixel(vert_x + 1, y, right.lerp(palette["trace_cyan"], 0.12))
+
+	# Junction nodes at all trace intersections (bright 3x3 diamonds with glow halos)
+	var junctions: Array[Vector2i] = []
+	for vert_x in vert_positions:
+		for ty in trace_ys:
+			if vert_x < TILE_SIZE and ty < TILE_SIZE:
+				junctions.append(Vector2i(vert_x, ty))
+	# Edge junctions
+	junctions.append(Vector2i(0, trace_y1))
+	junctions.append(Vector2i(TILE_SIZE - 1, trace_y2))
+
 	for junc in junctions:
-		if junc.x >= 0 and junc.x < TILE_SIZE and junc.y >= 0 and junc.y < TILE_SIZE:
-			img.set_pixel(junc.x, junc.y, palette["node_bright"])
-			# Glow around node
-			for dx in range(-1, 2):
-				for dy in range(-1, 2):
-					if dx == 0 and dy == 0:
-						continue
-					var px = junc.x + dx
-					var py = junc.y + dy
-					if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-						img.set_pixel(px, py, palette["trace_cyan"].lerp(palette["base"], 0.5))
+		if junc.x < 0 or junc.x >= TILE_SIZE or junc.y < 0 or junc.y >= TILE_SIZE:
+			continue
+		# Bright center pixel
+		img.set_pixel(junc.x, junc.y, palette["node_bright"])
+		# Diamond pattern around center
+		var diamond_offsets = [
+			Vector2i(0, -1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, 1)
+		]
+		for off in diamond_offsets:
+			var px = junc.x + off.x
+			var py = junc.y + off.y
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				img.set_pixel(px, py, palette["node_bright"].lerp(palette["trace_cyan"], 0.3))
+		# Wider glow halo (2px radius)
+		for dx in range(-2, 3):
+			for dy in range(-2, 3):
+				if abs(dx) + abs(dy) > 2:
+					continue
+				if dx == 0 and dy == 0:
+					continue
+				if abs(dx) <= 1 and abs(dy) <= 1 and (dx == 0 or dy == 0):
+					continue  # Already drawn as diamond
+				var px = junc.x + dx
+				var py = junc.y + dy
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					var current = img.get_pixel(px, py)
+					img.set_pixel(px, py, current.lerp(palette["trace_cyan"], 0.25))
 
-	# Bright trace segments near junctions (powered sections)
-	for x in range(maxi(0, vert_x - 3), mini(TILE_SIZE, vert_x + 4)):
-		if trace_y1 < TILE_SIZE:
-			img.set_pixel(x, trace_y1, palette["trace_cyan"])
-		if trace_y2 < TILE_SIZE:
-			img.set_pixel(x, trace_y2, palette["trace_cyan"])
-
-	# Random component pads (small squares)
+	# Component pads (IC chips - small rectangles with pin dots)
 	for _i in range(rng.randi_range(2, 4)):
-		var cx = rng.randi_range(3, TILE_SIZE - 4)
-		var cy = rng.randi_range(3, TILE_SIZE - 4)
-		for dx in range(2):
+		var cx = rng.randi_range(3, TILE_SIZE - 6)
+		var cy = rng.randi_range(3, TILE_SIZE - 5)
+		# Chip body (3x2 dark rectangle)
+		for dx in range(3):
 			for dy in range(2):
 				if cx + dx < TILE_SIZE and cy + dy < TILE_SIZE:
-					img.set_pixel(cx + dx, cy + dy, palette["trace_dim"].darkened(0.2))
+					img.set_pixel(cx + dx, cy + dy, palette["dark"].darkened(0.15))
+		# Pin dots on sides
+		if cy - 1 >= 0 and cx + 1 < TILE_SIZE:
+			img.set_pixel(cx, cy - 1, palette["trace_dim"])
+			img.set_pixel(cx + 2, cy - 1, palette["trace_dim"])
+		if cy + 2 < TILE_SIZE and cx + 1 < TILE_SIZE:
+			img.set_pixel(cx, cy + 2, palette["trace_dim"])
+			img.set_pixel(cx + 2, cy + 2, palette["trace_dim"])
+
+	# Via holes (small bright dots where traces connect between layers)
+	for _v in range(rng.randi_range(3, 6)):
+		var vx = rng.randi_range(1, TILE_SIZE - 2)
+		var vy = rng.randi_range(1, TILE_SIZE - 2)
+		img.set_pixel(vx, vy, palette["trace_dim"].lightened(0.15))
 
 
 ## Flowing light streaks on dark surface - data packets in transit
@@ -353,10 +405,13 @@ func _draw_data_highway(img: Image, palette: Dictionary, variant: int) -> void:
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 22222
 
-	# Dark road surface texture
+	# Dark road surface texture with subtle directional grain
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 1.0 + y * 0.7 + variant * 2.0) * 0.2 + rng.randf() * 0.08
+			# Directional vertical streaking for motion feel
+			var motion_n = sin(y * 0.3 + variant * 0.5) * 0.06
+			n += motion_n
 			if n < -0.12:
 				img.set_pixel(x, y, palette["deep"])
 			elif n > 0.15:
@@ -364,64 +419,112 @@ func _draw_data_highway(img: Image, palette: Dictionary, variant: int) -> void:
 			elif n > 0.05:
 				img.set_pixel(x, y, palette["mid"])
 
-	# Edge glow lines (lane markers)
+	# Edge glow lines (lane markers) with inner glow
 	for y in range(TILE_SIZE):
+		# Left edge - bright core with falloff
 		img.set_pixel(2, y, palette["edge_glow"])
-		img.set_pixel(3, y, palette["edge_glow"].darkened(0.2))
+		img.set_pixel(3, y, palette["edge_glow"].darkened(0.15))
+		if y % 2 == 0:
+			img.set_pixel(1, y, palette["edge_glow"].lerp(palette["base"], 0.6))
+			img.set_pixel(4, y, palette["edge_glow"].lerp(palette["base"], 0.7))
+		# Right edge
 		img.set_pixel(TILE_SIZE - 3, y, palette["edge_glow"])
-		img.set_pixel(TILE_SIZE - 4, y, palette["edge_glow"].darkened(0.2))
+		img.set_pixel(TILE_SIZE - 4, y, palette["edge_glow"].darkened(0.15))
+		if y % 2 == 0:
+			img.set_pixel(TILE_SIZE - 2, y, palette["edge_glow"].lerp(palette["base"], 0.6))
+			img.set_pixel(TILE_SIZE - 5, y, palette["edge_glow"].lerp(palette["base"], 0.7))
 
-	# Center dashed light line
+	# Center dashed light line with phase-shifted glow based on variant
+	var phase_offset = (variant * 3) % 8
 	for y in range(TILE_SIZE):
-		if (y / 4) % 2 == 0:
+		if ((y + phase_offset) / 4) % 2 == 0:
 			img.set_pixel(TILE_SIZE / 2, y, palette["streak_blue"])
-			img.set_pixel(TILE_SIZE / 2 + 1, y, palette["streak_blue"].darkened(0.15))
+			img.set_pixel(TILE_SIZE / 2 + 1, y, palette["streak_blue"].darkened(0.12))
+			# Side glow on center line
+			if TILE_SIZE / 2 - 1 >= 0:
+				var left = img.get_pixel(TILE_SIZE / 2 - 1, y)
+				img.set_pixel(TILE_SIZE / 2 - 1, y, left.lerp(palette["streak_blue"], 0.15))
+			if TILE_SIZE / 2 + 2 < TILE_SIZE:
+				var right = img.get_pixel(TILE_SIZE / 2 + 2, y)
+				img.set_pixel(TILE_SIZE / 2 + 2, y, right.lerp(palette["streak_blue"], 0.12))
 
-	# Data packet streaks (moving light bursts)
-	var num_streaks = rng.randi_range(2, 4)
+	# Data packet streaks - multiple lanes, phase-shifted by variant for animation feel
+	var lane_xs = [6, 11, 20, 25]  # Fixed lanes
+	var num_streaks = rng.randi_range(3, 5)
 	for _s in range(num_streaks):
-		var sx = rng.randi_range(5, TILE_SIZE - 6)
-		var sy_start = rng.randi_range(0, TILE_SIZE - 8)
-		var streak_len = rng.randi_range(4, 8)
-		var streak_col = [palette["streak_blue"], palette["streak_cyan"], palette["streak_white"]][rng.randi() % 3]
+		var lane_idx = rng.randi() % lane_xs.size()
+		var sx = lane_xs[lane_idx] + rng.randi_range(-1, 1)
+		sx = clampi(sx, 5, TILE_SIZE - 6)
+		# Phase offset per variant creates motion illusion across tile variants
+		var sy_start = (rng.randi_range(0, TILE_SIZE - 4) + variant * 5) % TILE_SIZE
+		var streak_len = rng.randi_range(5, 10)
+		var streak_colors = [palette["streak_blue"], palette["streak_cyan"], palette["streak_white"]]
+		var streak_col = streak_colors[rng.randi() % 3]
 		for i in range(streak_len):
-			var py = sy_start + i
+			var py = (sy_start + i) % TILE_SIZE
 			if py >= 0 and py < TILE_SIZE:
-				# Head of streak is brightest, tail fades
+				# Head is brightest (white-hot), tail fades through color to dark
 				var brightness = 1.0 - float(i) / float(streak_len)
-				var col = streak_col.lerp(palette["base"], 1.0 - brightness)
+				var col: Color
+				if i == 0:
+					col = palette["streak_white"]  # Bright leading edge
+				elif i == 1:
+					col = streak_col.lightened(0.2)
+				else:
+					col = streak_col.lerp(palette["base"], 1.0 - brightness)
 				img.set_pixel(sx, py, col)
-				# Subtle side glow on head
-				if i < 2:
-					if sx - 1 >= 0:
-						img.set_pixel(sx - 1, py, streak_col.lerp(palette["base"], 0.7))
-					if sx + 1 < TILE_SIZE:
-						img.set_pixel(sx + 1, py, streak_col.lerp(palette["base"], 0.7))
+				# Side glow - wider on head, narrowing toward tail
+				var glow_width = 2 if i < 2 else 1
+				for gw in range(1, glow_width + 1):
+					var glow_blend = 0.6 + float(gw) * 0.15
+					if sx - gw >= 0:
+						var left = img.get_pixel(sx - gw, py)
+						img.set_pixel(sx - gw, py, left.lerp(streak_col, (1.0 - glow_blend) * brightness))
+					if sx + gw < TILE_SIZE:
+						var right = img.get_pixel(sx + gw, py)
+						img.set_pixel(sx + gw, py, right.lerp(streak_col, (1.0 - glow_blend) * brightness))
 
-	# Scan line effect (faint horizontal lines)
+	# Directional arrow markers on road surface (faint chevrons)
+	var arrow_y = 8 + (variant * 7) % 16
+	if arrow_y < TILE_SIZE - 4:
+		var arrow_cx = TILE_SIZE / 2
+		for i in range(3):
+			var ay = arrow_y + i
+			if ay < TILE_SIZE:
+				var half_w = 3 - i
+				for dx in range(-half_w, half_w + 1):
+					var px = arrow_cx + dx
+					if px >= 5 and px < TILE_SIZE - 5:
+						var current = img.get_pixel(px, ay)
+						img.set_pixel(px, ay, current.lerp(palette["edge_glow"], 0.18))
+
+	# Scan line effect (faint horizontal lines for CRT/digital feel)
 	for y in range(TILE_SIZE):
-		if y % 4 == 0:
+		if y % 3 == 0:
 			for x in range(TILE_SIZE):
 				var current = img.get_pixel(x, y)
-				img.set_pixel(x, y, current.darkened(0.06))
+				img.set_pixel(x, y, current.darkened(0.05))
 
 
-## Tall server rack with blinking LEDs, vent slots, and status indicators
+## Tall server rack with individually blinking LED rows, vent slots, and status indicators
 func _draw_server_tower(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 33333
 
-	# Main server body - slightly metallic
+	# Main server body - brushed metal texture
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.3 + y * 0.15 + variant * 0.8) * 0.15 + rng.randf() * 0.06
+			# Vertical brushed metal grain
+			var grain = sin(y * 0.8 + x * 0.05) * 0.04
+			n += grain
 			if n > 0.1:
 				img.set_pixel(x, y, palette["light"])
 			elif n < -0.08:
 				img.set_pixel(x, y, palette["dark"])
 
-	# Side edges (beveled frame)
+	# Side edges (beveled frame with highlights)
 	for y in range(TILE_SIZE):
 		img.set_pixel(0, y, palette["deep"])
 		img.set_pixel(1, y, palette["dark"])
@@ -430,235 +533,355 @@ func _draw_server_tower(img: Image, palette: Dictionary, variant: int) -> void:
 		img.set_pixel(TILE_SIZE - 2, y, palette["dark"])
 		img.set_pixel(TILE_SIZE - 1, y, palette["deep"])
 
-	# Top edge
+	# Top edge with highlight
 	for x in range(TILE_SIZE):
-		img.set_pixel(x, 0, palette["light"])
+		img.set_pixel(x, 0, palette["light"].lightened(0.05))
 		img.set_pixel(x, 1, palette["mid"])
-	# Bottom edge
+	# Bottom edge shadow
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, TILE_SIZE - 1, palette["deep"])
 		img.set_pixel(x, TILE_SIZE - 2, palette["dark"])
 
-	# Drive bay dividers (horizontal lines every 4 px)
+	# Drive bay dividers (horizontal lines every 4 px) with recessed groove
 	for row in range(1, 8):
 		var by = row * 4
 		if by < TILE_SIZE:
 			for x in range(3, TILE_SIZE - 3):
 				img.set_pixel(x, by, palette["deep"])
 				if by + 1 < TILE_SIZE:
-					img.set_pixel(x, by + 1, palette["dark"].lightened(0.03))
+					img.set_pixel(x, by + 1, palette["mid"].lightened(0.05))  # Light edge below groove
 
-	# Vent slots (horizontal slashes in each bay)
+	# Vent slots (horizontal slashes in each bay) with airflow depth
 	for row in range(0, 7):
 		var bay_top = row * 4 + 2
 		if bay_top + 1 < TILE_SIZE - 2:
 			for x in range(5, 14):
 				img.set_pixel(x, bay_top, palette["vent_slot"])
 				img.set_pixel(x, bay_top + 1, palette["deep"].lightened(0.02))
+				# Subtle airflow glow on alternate vents
+				if row % 2 == 0 and x % 3 == 0:
+					img.set_pixel(x, bay_top, palette["vent_slot"].lerp(Color(0.12, 0.22, 0.35), 0.3))
 
-	# LED column on right side (status indicators)
-	var led_x = TILE_SIZE - 6
+	# LED rows - each row has multiple LEDs across, individually colored
+	# Primary LED column (right side)
+	var led_x_start = TILE_SIZE - 10
+	var led_count_per_row = 4  # 4 LEDs per row
 	for row in range(0, 7):
 		var led_y = row * 4 + 2
-		if led_y < TILE_SIZE - 2:
-			# Pick LED color based on row and variant
+		if led_y >= TILE_SIZE - 2:
+			continue
+		for led_i in range(led_count_per_row):
+			var lx = led_x_start + led_i * 2
+			if lx >= TILE_SIZE - 2:
+				continue
+			# Each LED has independent color based on row, position, and variant
+			var led_seed = (variant * 7 + row * 13 + led_i * 31) % 100
 			var led_col: Color
 			var r = rng.randf()
-			if r < 0.5:
+			# Variant changes which LEDs are "on" vs "off" (simulates blinking)
+			var is_on = ((led_seed + variant) % 3) != 0
+			if not is_on:
+				# LED is off - very dim
+				led_col = palette["led_green"].darkened(0.75)
+				img.set_pixel(lx, led_y, led_col)
+				continue
+			if r < 0.45:
 				led_col = palette["led_green"]
-			elif r < 0.8:
+			elif r < 0.75:
 				led_col = palette["led_amber"]
 			else:
 				led_col = palette["led_red"]
-			img.set_pixel(led_x, led_y, led_col)
-			img.set_pixel(led_x + 1, led_y, led_col.darkened(0.2))
-			# LED glow halo
-			if led_x - 1 >= 3:
-				img.set_pixel(led_x - 1, led_y, led_col.lerp(palette["base"], 0.7))
-			if led_y - 1 >= row * 4 + 1:
-				img.set_pixel(led_x, led_y - 1, led_col.lerp(palette["base"], 0.75))
-			if led_y + 1 < (row + 1) * 4:
-				img.set_pixel(led_x, led_y + 1, led_col.lerp(palette["base"], 0.75))
+			# LED core
+			img.set_pixel(lx, led_y, led_col)
+			# LED glow halo (subtle bloom around each LED)
+			for dx in range(-1, 2):
+				for dy in range(-1, 2):
+					if dx == 0 and dy == 0:
+						continue
+					var px = lx + dx
+					var py = led_y + dy
+					if px >= 3 and px < TILE_SIZE - 2 and py >= row * 4 + 1 and py < (row + 1) * 4:
+						var current = img.get_pixel(px, py)
+						var glow_strength = 0.20 if (abs(dx) + abs(dy) == 1) else 0.10
+						img.set_pixel(px, py, current.lerp(led_col, glow_strength))
 
-	# Secondary LED column
-	var led_x2 = TILE_SIZE - 9
-	for row in range(0, 7):
-		var led_y = row * 4 + 3
-		if led_y < TILE_SIZE - 2:
-			if rng.randf() < 0.6:
-				img.set_pixel(led_x2, led_y, palette["led_green"].darkened(0.3))
+	# Activity indicator - rapidly flashing LED (different per variant)
+	var activity_row = variant % 7
+	var activity_y = activity_row * 4 + 3
+	var activity_x = TILE_SIZE - 5
+	if activity_y < TILE_SIZE - 2 and activity_x < TILE_SIZE - 2:
+		var activity_on = variant % 2 == 0
+		if activity_on:
+			img.set_pixel(activity_x, activity_y, palette["led_green"].lightened(0.25))
+			# Strong glow for activity
+			for dx in range(-1, 2):
+				for dy in range(-1, 2):
+					var px = activity_x + dx
+					var py = activity_y + dy
+					if px >= 3 and px < TILE_SIZE - 2 and py >= 0 and py < TILE_SIZE:
+						var current = img.get_pixel(px, py)
+						img.set_pixel(px, py, current.lerp(palette["led_green"], 0.15))
 
-	# Rack label area (small lighter rectangle)
+	# Rack label area with barcode
 	for y in range(3, 6):
-		for x in range(15, 24):
+		for x in range(4, 13):
 			if y < TILE_SIZE and x < TILE_SIZE - 3:
 				img.set_pixel(x, y, palette["light"].lightened(0.08))
-	# Tiny barcode-like detail
-	for x in range(16, 23):
-		if rng.randf() < 0.5:
+	# Barcode detail
+	for x in range(5, 12):
+		if rng.randf() < 0.55:
 			img.set_pixel(x, 4, palette["deep"])
 
 
-## Transparent blue projection surface with holographic data
+## Transparent blue projection surface with holographic data, scan lines, and translucent layering
 func _draw_hologram_display(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 44444
 
-	# Holographic gradient fill (top brighter, bottom darker)
+	# Holographic gradient fill with translucent shimmer (top brighter, fading down)
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var rel_y = float(y) / float(TILE_SIZE)
-			var shade: Color
-			if rel_y < 0.2:
-				shade = palette["light"]
-			elif rel_y < 0.4:
-				shade = palette["mid"]
-			elif rel_y < 0.6:
-				shade = palette["base"]
-			elif rel_y < 0.8:
-				shade = palette["dark"]
-			else:
-				shade = palette["deep"]
-			# Add shimmer noise
+			var rel_x = float(x) / float(TILE_SIZE)
+			# Smooth gradient instead of banded
+			var shade = palette["light"].lerp(palette["deep"], rel_y)
+			# Diagonal shimmer wave for holographic interference pattern
 			var shimmer = sin(x * 0.5 + y * 0.3 + variant * 1.8) * 0.15
-			if shimmer > 0.08:
-				shade = shade.lightened(0.06)
-			elif shimmer < -0.08:
-				shade = shade.darkened(0.04)
+			var shimmer2 = sin((x - y) * 0.4 + variant * 2.5) * 0.08  # Diagonal rainbow
+			shimmer += shimmer2
+			if shimmer > 0.10:
+				shade = shade.lightened(0.08)
+			elif shimmer > 0.04:
+				shade = shade.lightened(0.03)
+			elif shimmer < -0.10:
+				shade = shade.darkened(0.05)
+			# Translucent edge fade (left/right edges more transparent-looking)
+			if rel_x < 0.15 or rel_x > 0.85:
+				shade = shade.lerp(palette["deep"], 0.2)
 			img.set_pixel(x, y, shade)
 
-	# Scan lines (every 2 rows)
+	# Prominent scan lines (every 2 rows) with varying intensity for CRT feel
 	for y in range(TILE_SIZE):
 		if y % 2 == 0:
+			var scanline_intensity = 0.18 + sin(y * 0.3) * 0.05
 			for x in range(TILE_SIZE):
 				var current = img.get_pixel(x, y)
-				img.set_pixel(x, y, current.lerp(palette["scanline"], 0.15))
+				img.set_pixel(x, y, current.lerp(palette["scanline"], scanline_intensity))
+		# Alternating rows slightly brighter (interlace simulation)
+		elif y % 4 == 1:
+			for x in range(TILE_SIZE):
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lightened(0.03))
 
-	# Holographic data fragments (floating text-like symbols)
-	var num_fragments = rng.randi_range(3, 6)
+	# Holographic data fragments (floating text/code snippets in different sizes)
+	var num_fragments = rng.randi_range(4, 7)
 	for _f in range(num_fragments):
-		var fx = rng.randi_range(3, TILE_SIZE - 8)
-		var fy = rng.randi_range(3, TILE_SIZE - 4)
-		var flen = rng.randi_range(3, 6)
-		for i in range(flen):
-			if fx + i < TILE_SIZE:
-				if rng.randf() < 0.7:
-					img.set_pixel(fx + i, fy, palette["holo_cyan"])
-				else:
-					img.set_pixel(fx + i, fy, palette["holo_blue"])
+		var fx = rng.randi_range(3, TILE_SIZE - 10)
+		var fy = rng.randi_range(4, TILE_SIZE - 5)
+		var flen = rng.randi_range(3, 8)
+		var frow_height = rng.randi_range(1, 2)  # Some are 2px tall
+		for dy in range(frow_height):
+			for i in range(flen):
+				if fx + i < TILE_SIZE - 1 and fy + dy < TILE_SIZE - 1:
+					if rng.randf() < 0.65:
+						var frag_col = palette["holo_cyan"] if rng.randf() < 0.6 else palette["holo_blue"]
+						# Vary brightness for depth/translucency
+						var alpha_sim = rng.randf_range(0.5, 1.0)
+						frag_col = frag_col.lerp(img.get_pixel(fx + i, fy + dy), 1.0 - alpha_sim)
+						img.set_pixel(fx + i, fy + dy, frag_col)
+					else:
+						# Gap in text
+						pass
 
-	# Holographic border frame
+	# Holographic border frame with double line and glow
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, 0, palette["holo_blue"])
+		img.set_pixel(x, 1, palette["holo_blue"].lerp(palette["base"], 0.4))
 		img.set_pixel(x, TILE_SIZE - 1, palette["holo_blue"])
+		img.set_pixel(x, TILE_SIZE - 2, palette["holo_blue"].lerp(palette["base"], 0.4))
 	for y in range(TILE_SIZE):
 		img.set_pixel(0, y, palette["holo_blue"])
+		img.set_pixel(1, y, palette["holo_blue"].lerp(palette["base"], 0.4))
 		img.set_pixel(TILE_SIZE - 1, y, palette["holo_blue"])
+		img.set_pixel(TILE_SIZE - 2, y, palette["holo_blue"].lerp(palette["base"], 0.4))
 
-	# Corner accent brackets
-	for i in range(4):
+	# Corner accent brackets (L-shaped, longer)
+	for i in range(5):
 		# Top-left
-		img.set_pixel(i, 1, palette["holo_cyan"])
-		img.set_pixel(1, i, palette["holo_cyan"])
+		img.set_pixel(i, 2, palette["holo_cyan"])
+		img.set_pixel(2, i, palette["holo_cyan"])
+		# Top-right
+		img.set_pixel(TILE_SIZE - 1 - i, 2, palette["holo_cyan"])
+		img.set_pixel(TILE_SIZE - 3, i, palette["holo_cyan"])
+		# Bottom-left
+		img.set_pixel(i, TILE_SIZE - 3, palette["holo_cyan"])
+		img.set_pixel(2, TILE_SIZE - 1 - i, palette["holo_cyan"])
 		# Bottom-right
-		img.set_pixel(TILE_SIZE - 1 - i, TILE_SIZE - 2, palette["holo_cyan"])
-		img.set_pixel(TILE_SIZE - 2, TILE_SIZE - 1 - i, palette["holo_cyan"])
+		img.set_pixel(TILE_SIZE - 1 - i, TILE_SIZE - 3, palette["holo_cyan"])
+		img.set_pixel(TILE_SIZE - 3, TILE_SIZE - 1 - i, palette["holo_cyan"])
 
-	# Flicker points
-	for _i in range(rng.randi_range(2, 5)):
-		var px = rng.randi_range(2, TILE_SIZE - 3)
-		var py = rng.randi_range(2, TILE_SIZE - 3)
+	# Flicker/sparkle points (holographic glints)
+	for _i in range(rng.randi_range(3, 7)):
+		var px = rng.randi_range(3, TILE_SIZE - 4)
+		var py = rng.randi_range(3, TILE_SIZE - 4)
 		img.set_pixel(px, py, palette["flicker"])
+		# Cross-shaped micro flare
+		if px - 1 >= 2:
+			var left = img.get_pixel(px - 1, py)
+			img.set_pixel(px - 1, py, left.lerp(palette["flicker"], 0.3))
+		if px + 1 < TILE_SIZE - 2:
+			var right = img.get_pixel(px + 1, py)
+			img.set_pixel(px + 1, py, right.lerp(palette["flicker"], 0.3))
 
 
-## Individual sleep/compute pod with curved glass, status light, and occupancy indicator
+## Clinical sleep/compute pod - claustrophobic coffin-like enclosure with monitoring equipment
 func _draw_sleep_pod(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 55555
 
-	# Pod casing with metallic texture
+	# Pod casing with sterile clinical texture - very uniform, oppressive
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.4 + y * 0.2 + variant * 1.2) * 0.12 + rng.randf() * 0.06
-			if n > 0.08:
+			var n = sin(x * 0.4 + y * 0.2 + variant * 1.2) * 0.08 + rng.randf() * 0.04
+			if n > 0.06:
 				img.set_pixel(x, y, palette["light"])
-			elif n < -0.06:
+			elif n < -0.05:
 				img.set_pixel(x, y, palette["dark"])
 
-	# Chrome frame edges
+	# Thick chrome frame edges (heavy, prison-like)
 	for y in range(TILE_SIZE):
 		img.set_pixel(0, y, palette["frame_chrome"])
-		img.set_pixel(1, y, palette["frame_chrome"].darkened(0.12))
+		img.set_pixel(1, y, palette["frame_chrome"])
+		img.set_pixel(2, y, palette["frame_chrome"].darkened(0.08))
+		img.set_pixel(3, y, palette["frame_chrome"].darkened(0.18))
 		img.set_pixel(TILE_SIZE - 1, y, palette["frame_chrome"])
-		img.set_pixel(TILE_SIZE - 2, y, palette["frame_chrome"].darkened(0.12))
+		img.set_pixel(TILE_SIZE - 2, y, palette["frame_chrome"])
+		img.set_pixel(TILE_SIZE - 3, y, palette["frame_chrome"].darkened(0.08))
+		img.set_pixel(TILE_SIZE - 4, y, palette["frame_chrome"].darkened(0.18))
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, 0, palette["frame_chrome"])
-		img.set_pixel(x, 1, palette["frame_chrome"].darkened(0.08))
+		img.set_pixel(x, 1, palette["frame_chrome"])
+		img.set_pixel(x, 2, palette["frame_chrome"].darkened(0.08))
 		img.set_pixel(x, TILE_SIZE - 1, palette["deep"])
 		img.set_pixel(x, TILE_SIZE - 2, palette["dark"])
+		img.set_pixel(x, TILE_SIZE - 3, palette["dark"].lightened(0.03))
 
-	# Glass viewing window (center area, tinted blue)
-	var win_top = 4
-	var win_bot = 20
-	var win_left = 5
-	var win_right = TILE_SIZE - 5
+	# Narrow glass viewing window (claustrophobically small)
+	var win_top = 5
+	var win_bot = 18
+	var win_left = 6
+	var win_right = TILE_SIZE - 6
 	for y in range(win_top, win_bot):
 		for x in range(win_left, win_right):
 			var rel_y = float(y - win_top) / float(win_bot - win_top)
+			var rel_x = float(x - win_left) / float(win_right - win_left)
 			var shade = palette["glass_tint"]
-			if rel_y < 0.15:
-				shade = palette["glass_tint"].lightened(0.15)
-			elif rel_y > 0.85:
-				shade = palette["glass_tint"].darkened(0.12)
-			# Reflection streaks
+			# Darker gradient from edges inward (like looking into a dark pod)
+			if rel_y < 0.12:
+				shade = palette["glass_tint"].lightened(0.12)
+			elif rel_y > 0.88:
+				shade = palette["glass_tint"].darkened(0.15)
+			# Vignette on sides
+			if rel_x < 0.15 or rel_x > 0.85:
+				shade = shade.darkened(0.10)
+			# Reflection streaks (curved glass feel)
 			var refl = sin(x * 0.6 + y * 0.2) * 0.2
 			if refl > 0.12:
-				shade = shade.lightened(0.08)
+				shade = shade.lightened(0.06)
 			img.set_pixel(x, y, shade)
 
-	# Glass frame border
-	for x in range(win_left, win_right):
-		img.set_pixel(x, win_top, palette["frame_chrome"].darkened(0.1))
-		img.set_pixel(x, win_bot - 1, palette["frame_chrome"].darkened(0.1))
-	for y in range(win_top, win_bot):
-		img.set_pixel(win_left, y, palette["frame_chrome"].darkened(0.1))
-		img.set_pixel(win_right - 1, y, palette["frame_chrome"].darkened(0.1))
+	# Faint silhouette inside pod (dark shape suggesting occupant)
+	if variant % 3 != 2:
+		var sil_cx = (win_left + win_right) / 2
+		for y in range(win_top + 2, win_bot - 2):
+			var sil_width = 2 if y < win_top + 5 else 3
+			for dx in range(-sil_width, sil_width + 1):
+				var px = sil_cx + dx
+				if px > win_left and px < win_right - 1:
+					var current = img.get_pixel(px, y)
+					img.set_pixel(px, y, current.darkened(0.08))
 
-	# Glare on glass
-	for i in range(3):
-		var gx = win_left + 2 + i
-		var gy = win_top + 2 + i
+	# Glass frame border with rivets
+	for x in range(win_left - 1, win_right + 1):
+		if x >= 0 and x < TILE_SIZE:
+			img.set_pixel(x, win_top - 1, palette["frame_chrome"].darkened(0.05))
+			img.set_pixel(x, win_bot, palette["frame_chrome"].darkened(0.05))
+	for y in range(win_top - 1, win_bot + 1):
+		if y >= 0 and y < TILE_SIZE:
+			img.set_pixel(win_left - 1, y, palette["frame_chrome"].darkened(0.05))
+			img.set_pixel(win_right, y, palette["frame_chrome"].darkened(0.05))
+	# Rivets at corners
+	img.set_pixel(win_left - 1, win_top - 1, palette["frame_chrome"].lightened(0.08))
+	img.set_pixel(win_right, win_top - 1, palette["frame_chrome"].lightened(0.08))
+	img.set_pixel(win_left - 1, win_bot, palette["frame_chrome"].lightened(0.08))
+	img.set_pixel(win_right, win_bot, palette["frame_chrome"].lightened(0.08))
+
+	# Glare on glass (narrow diagonal streak)
+	for i in range(4):
+		var gx = win_left + 1 + i
+		var gy = win_top + 1 + i
 		if gx < win_right - 1 and gy < win_bot - 1:
 			img.set_pixel(gx, gy, Color(0.55, 0.72, 0.88, 0.7))
+			if gx + 1 < win_right:
+				img.set_pixel(gx + 1, gy, Color(0.48, 0.65, 0.82, 0.4))
 
-	# Status light (bottom center)
+	# Status light (bottom center) - red for "occupied", green for "available"
 	var status_x = TILE_SIZE / 2
-	var status_y = TILE_SIZE - 5
-	var status_col = palette["status_green"] if variant % 3 != 2 else palette["status_blue"]
+	var status_y = TILE_SIZE - 6
+	var status_col: Color
+	if variant % 3 == 0:
+		status_col = palette["status_green"]  # Available
+	elif variant % 3 == 1:
+		status_col = palette["status_blue"]  # Processing
+	else:
+		status_col = Color(0.90, 0.20, 0.15)  # Occupied/warning (red)
 	img.set_pixel(status_x, status_y, status_col)
 	img.set_pixel(status_x + 1, status_y, status_col)
 	img.set_pixel(status_x, status_y + 1, status_col.darkened(0.15))
 	img.set_pixel(status_x + 1, status_y + 1, status_col.darkened(0.15))
-	# Status glow
-	for dx in range(-1, 3):
-		for dy in range(-1, 3):
+	# Status glow halo
+	for dx in range(-2, 4):
+		for dy in range(-2, 4):
 			var px = status_x + dx
 			var py = status_y + dy
 			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
 				var current = img.get_pixel(px, py)
 				if not current.is_equal_approx(status_col) and not current.is_equal_approx(status_col.darkened(0.15)):
-					img.set_pixel(px, py, current.lerp(status_col, 0.15))
+					var dist = sqrt(pow(dx - 0.5, 2) + pow(dy - 0.5, 2))
+					if dist < 3.0:
+						img.set_pixel(px, py, current.lerp(status_col, 0.18 * (1.0 - dist / 3.0)))
 
-	# Control panel strip (below glass)
-	for x in range(win_left + 2, win_right - 2):
-		var py = win_bot + 1
-		if py < TILE_SIZE - 3:
-			img.set_pixel(x, py, palette["dark"].lightened(0.05))
-			# Tiny indicator dots
-			if x % 3 == 0:
-				img.set_pixel(x, py, palette["status_blue"].darkened(0.4))
+	# Control panel strip with EKG-like readout
+	var panel_y = win_bot + 2
+	if panel_y < TILE_SIZE - 4:
+		for x in range(win_left, win_right):
+			img.set_pixel(x, panel_y, palette["dark"].lightened(0.03))
+			img.set_pixel(x, panel_y + 1, palette["dark"].lightened(0.03))
+		# EKG line (heartbeat pattern)
+		var ekg_col = palette["status_green"].darkened(0.2)
+		for x in range(win_left + 1, win_right - 1):
+			var ekg_offset = 0
+			var local_x = x - win_left
+			if local_x % 8 == 3:
+				ekg_offset = -1  # Spike up
+			elif local_x % 8 == 4:
+				ekg_offset = 1  # Spike down
+			var ey = panel_y + ekg_offset
+			if ey >= 0 and ey < TILE_SIZE:
+				img.set_pixel(x, ey, ekg_col)
+		# Tiny indicator LEDs below panel
+		for x in range(win_left + 1, win_right - 1, 4):
+			if panel_y + 2 < TILE_SIZE - 2:
+				img.set_pixel(x, panel_y + 2, palette["status_blue"].darkened(0.5))
+
+	# Latch/lock mechanism on side
+	var latch_y = (win_top + win_bot) / 2
+	img.set_pixel(3, latch_y, palette["frame_chrome"].lightened(0.12))
+	img.set_pixel(3, latch_y + 1, palette["frame_chrome"].lightened(0.08))
+	img.set_pixel(TILE_SIZE - 4, latch_y, palette["frame_chrome"].lightened(0.12))
+	img.set_pixel(TILE_SIZE - 4, latch_y + 1, palette["frame_chrome"].lightened(0.08))
 
 
 ## Floor grate with parallel slats, blue cooling mist, and condensation
@@ -797,12 +1020,12 @@ func _draw_fiber_conduit(img: Image, palette: Dictionary, variant: int) -> void:
 		img.set_pixel(bx, channel_bot, palette["conduit_metal"].lightened(0.1))
 
 
-## Computer terminal with green phosphor screen, keyboard, and pedestal
+## Computer terminal with phosphor green CRT glow, scan lines, keyboard, and pedestal
 func _draw_terminal_station(img: Image, palette: Dictionary) -> void:
 	# Floor base
 	img.fill(palette["base"])
 
-	# Pedestal base (bottom portion)
+	# Pedestal base (bottom portion) with beveled edges
 	var ped_left = 6
 	var ped_right = TILE_SIZE - 6
 	var ped_top = TILE_SIZE - 8
@@ -823,70 +1046,144 @@ func _draw_terminal_station(img: Image, palette: Dictionary) -> void:
 		img.set_pixel(ped_left, y, palette["pedestal"].lightened(0.08))
 		img.set_pixel(ped_right - 1, y, palette["pedestal"].darkened(0.08))
 
-	# Monitor body (upper portion)
-	var mon_left = 4
-	var mon_right = TILE_SIZE - 4
-	var mon_top = 2
+	# Monitor body (upper portion) with thicker bezel
+	var mon_left = 3
+	var mon_right = TILE_SIZE - 3
+	var mon_top = 1
 	var mon_bot = ped_top - 2
 
-	# Monitor casing
+	# Monitor casing with slight bevel
 	for y in range(mon_top, mon_bot):
 		for x in range(mon_left, mon_right):
-			img.set_pixel(x, y, palette["dark"])
-	# Casing frame
+			var shade = palette["dark"]
+			# Subtle rounded bezel shading
+			var rel_x = float(x - mon_left) / float(mon_right - mon_left)
+			if rel_x < 0.1 or rel_x > 0.9:
+				shade = palette["dark"].darkened(0.08)
+			img.set_pixel(x, y, shade)
+	# Casing frame with highlight/shadow
 	for x in range(mon_left, mon_right):
-		img.set_pixel(x, mon_top, palette["mid"])
+		img.set_pixel(x, mon_top, palette["mid"].lightened(0.05))
+		img.set_pixel(x, mon_top + 1, palette["mid"])
 		img.set_pixel(x, mon_bot - 1, palette["deep"])
 	for y in range(mon_top, mon_bot):
 		img.set_pixel(mon_left, y, palette["mid"])
+		img.set_pixel(mon_left + 1, y, palette["mid"].darkened(0.05))
 		img.set_pixel(mon_right - 1, y, palette["deep"])
+		img.set_pixel(mon_right - 2, y, palette["deep"].lightened(0.03))
 
-	# Screen (inside monitor casing)
-	var scr_left = mon_left + 2
-	var scr_right = mon_right - 2
+	# Screen (inside monitor casing) with CRT phosphor glow background
+	var scr_left = mon_left + 3
+	var scr_right = mon_right - 3
 	var scr_top = mon_top + 2
 	var scr_bot = mon_bot - 2
+
+	# Screen background - darker at edges (CRT curvature simulation)
 	for y in range(scr_top, scr_bot):
 		for x in range(scr_left, scr_right):
-			img.set_pixel(x, y, palette["screen_bg"])
+			var rel_x = float(x - scr_left) / float(scr_right - scr_left)
+			var rel_y = float(y - scr_top) / float(scr_bot - scr_top)
+			# Distance from center (CRT vignette)
+			var dist_x = abs(rel_x - 0.5) * 2.0
+			var dist_y = abs(rel_y - 0.5) * 2.0
+			var vignette = 1.0 - (dist_x * dist_x + dist_y * dist_y) * 0.15
+			var shade = palette["screen_bg"].lightened(0.02 * vignette)
+			img.set_pixel(x, y, shade)
 
-	# Green phosphor text lines
+	# Phosphor green text lines with varying brightness
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 77777
-	for row in range(0, scr_bot - scr_top, 3):
-		var text_y = scr_top + row + 1
-		if text_y < scr_bot:
-			var text_len = rng.randi_range(4, scr_right - scr_left - 2)
-			for i in range(text_len):
-				var tx = scr_left + 1 + i
-				if tx < scr_right - 1:
-					if rng.randf() < 0.7:
-						img.set_pixel(tx, text_y, palette["screen_green"])
-					else:
-						img.set_pixel(tx, text_y, palette["screen_green"].darkened(0.3))
+	for row in range(0, scr_bot - scr_top, 2):
+		var text_y = scr_top + row
+		if text_y >= scr_bot:
+			break
+		var text_len = rng.randi_range(4, scr_right - scr_left - 2)
+		var text_start = scr_left + 1
+		for i in range(text_len):
+			var tx = text_start + i
+			if tx < scr_right - 1:
+				if rng.randf() < 0.65:
+					# Phosphor green with slight brightness variation
+					var brightness = rng.randf_range(0.0, 0.15)
+					img.set_pixel(tx, text_y, palette["screen_green"].lightened(brightness))
+				elif rng.randf() < 0.4:
+					# Dimmer characters
+					img.set_pixel(tx, text_y, palette["screen_green"].darkened(0.25))
 
-	# Cursor blink (bright block)
+	# CRT scan lines (every other row is slightly darker)
+	for y in range(scr_top, scr_bot):
+		if y % 2 == 0:
+			for x in range(scr_left, scr_right):
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.darkened(0.06))
+
+	# Cursor blink (bright block with glow)
 	var cursor_x = scr_left + 2
-	var cursor_y = scr_bot - 3
-	if cursor_x < scr_right and cursor_y >= scr_top:
-		img.set_pixel(cursor_x, cursor_y, palette["screen_green"].lightened(0.2))
-		img.set_pixel(cursor_x + 1, cursor_y, palette["screen_green"].lightened(0.2))
+	var cursor_y = scr_bot - 2
+	if cursor_x + 1 < scr_right and cursor_y >= scr_top:
+		img.set_pixel(cursor_x, cursor_y, palette["screen_green"].lightened(0.30))
+		img.set_pixel(cursor_x + 1, cursor_y, palette["screen_green"].lightened(0.30))
+		# Cursor glow
+		for dx in range(-1, 3):
+			for dy in range(-1, 2):
+				var px = cursor_x + dx
+				var py = cursor_y + dy
+				if px >= scr_left and px < scr_right and py >= scr_top and py < scr_bot:
+					var current = img.get_pixel(px, py)
+					if not current.is_equal_approx(palette["screen_green"].lightened(0.30)):
+						img.set_pixel(px, py, current.lerp(palette["screen_green"], 0.20))
 
-	# Screen glow on monitor casing
+	# Phosphor CRT glow bleeding onto monitor bezel (green ambient light)
 	for y in range(scr_top - 1, scr_bot + 1):
 		if y >= mon_top and y < mon_bot:
-			var left_edge = img.get_pixel(scr_left - 1, y)
-			img.set_pixel(scr_left - 1, y, left_edge.lerp(palette["screen_green"], 0.08))
+			# Left bezel glow
+			for dx in range(1, 3):
+				var px = scr_left - dx
+				if px >= mon_left:
+					var current = img.get_pixel(px, y)
+					img.set_pixel(px, y, current.lerp(palette["screen_green"], 0.10 / float(dx)))
+			# Right bezel glow
+			for dx in range(1, 3):
+				var px = scr_right - 1 + dx
+				if px < mon_right:
+					var current = img.get_pixel(px, y)
+					img.set_pixel(px, y, current.lerp(palette["screen_green"], 0.08 / float(dx)))
+	# Top bezel glow
+	for x in range(scr_left, scr_right):
+		for dy in range(1, 2):
+			var py = scr_top - dy
+			if py >= mon_top:
+				var current = img.get_pixel(x, py)
+				img.set_pixel(x, py, current.lerp(palette["screen_green"], 0.06))
+	# Bottom bezel glow
+	for x in range(scr_left, scr_right):
+		for dy in range(1, 2):
+			var py = scr_bot - 1 + dy
+			if py < mon_bot:
+				var current = img.get_pixel(x, py)
+				img.set_pixel(x, py, current.lerp(palette["screen_green"], 0.06))
 
-	# Keyboard tray (between monitor and pedestal)
+	# Green glow on floor beneath monitor
+	for y in range(ped_top, mini(ped_top + 2, TILE_SIZE)):
+		for x in range(ped_left, ped_right):
+			var current = img.get_pixel(x, y)
+			img.set_pixel(x, y, current.lerp(palette["screen_green"], 0.04))
+
+	# Keyboard tray (between monitor and pedestal) with individual key caps
 	var kb_y = mon_bot
 	for x in range(mon_left + 1, mon_right - 1):
 		img.set_pixel(x, kb_y, palette["keyboard"])
 		if kb_y + 1 < ped_top:
 			img.set_pixel(x, kb_y + 1, palette["keyboard"].darkened(0.08))
-	# Key dots
-	for x in range(mon_left + 3, mon_right - 3, 2):
+	# Individual key caps with highlights
+	for x in range(mon_left + 2, mon_right - 2, 2):
 		img.set_pixel(x, kb_y, palette["keyboard"].lightened(0.12))
+		# Key gaps
+		if x + 1 < mon_right - 1:
+			img.set_pixel(x + 1, kb_y, palette["keyboard"].darkened(0.06))
+
+	# Power LED on monitor bezel
+	img.set_pixel(mon_right - 3, mon_bot - 1, Color(0.15, 0.85, 0.30))
 
 
 ## Tall antenna with metallic pole, dish, and radiating signal rings
@@ -1197,16 +1494,16 @@ func _draw_pixel_garden(img: Image, palette: Dictionary, variant: int) -> void:
 		img.set_pixel(gx, gy, gc.darkened(0.4))
 
 
-## Corrupted/flickering tile with RGB split artifacts and memory fragments
+## Corrupted/flickering tile - visually striking RGB shifts, corruption blocks, static noise
 func _draw_glitch_tile(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 12121
 
-	# Base noise with higher-than-normal variance
+	# Base noise with high variance - unstable, buzzing
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 1.5 + y * 1.1 + variant * 3.0) * 0.35 + rng.randf() * 0.25
+			var n = sin(x * 1.5 + y * 1.1 + variant * 3.0) * 0.35 + rng.randf() * 0.30
 			if n < -0.25:
 				img.set_pixel(x, y, palette["deep"])
 			elif n < -0.1:
@@ -1216,13 +1513,13 @@ func _draw_glitch_tile(img: Image, palette: Dictionary, variant: int) -> void:
 			elif n > 0.1:
 				img.set_pixel(x, y, palette["mid"])
 
-	# RGB split bands (horizontal displaced color channels)
-	var num_bands = rng.randi_range(3, 7)
+	# Prominent RGB split bands - wider, more saturated, with channel separation
+	var num_bands = rng.randi_range(5, 9)
 	for _b in range(num_bands):
 		var band_y = rng.randi_range(0, TILE_SIZE - 3)
-		var band_h = rng.randi_range(1, 3)
-		var shift = rng.randi_range(-4, 4)
-		var channel = rng.randi() % 3  # 0=R, 1=G, 2=B
+		var band_h = rng.randi_range(1, 4)
+		var shift = rng.randi_range(-6, 6)
+		var channel = rng.randi() % 3
 		var channel_col: Color
 		if channel == 0:
 			channel_col = palette["glitch_red"]
@@ -1239,49 +1536,112 @@ func _draw_glitch_tile(img: Image, palette: Dictionary, variant: int) -> void:
 				var sx = (x + shift) % TILE_SIZE
 				if sx < 0:
 					sx += TILE_SIZE
-				img.set_pixel(sx, y, channel_col.lerp(img.get_pixel(sx, y), 0.4))
+				# Stronger blend - more visible color shift
+				var existing = img.get_pixel(sx, y)
+				img.set_pixel(sx, y, channel_col.lerp(existing, 0.25))
 
-	# Corruption blocks (small rectangles of wrong colors)
-	for _c in range(rng.randi_range(2, 5)):
-		var cx = rng.randi_range(0, TILE_SIZE - 5)
-		var cy = rng.randi_range(0, TILE_SIZE - 4)
-		var cw = rng.randi_range(2, 5)
-		var ch = rng.randi_range(1, 3)
-		var corrupt_col = palette["corruption"] if rng.randf() < 0.5 else palette["glitch_red"]
+	# RGB channel offset effect - shift entire rows by different amounts per channel
+	var offset_region_y = rng.randi_range(4, TILE_SIZE - 8)
+	var offset_region_h = rng.randi_range(3, 6)
+	var r_shift = rng.randi_range(1, 3)
+	var b_shift = rng.randi_range(-3, -1)
+	for y in range(offset_region_y, mini(offset_region_y + offset_region_h, TILE_SIZE)):
+		for x in range(TILE_SIZE):
+			var current = img.get_pixel(x, y)
+			# Red channel from shifted position
+			var rx = (x + r_shift) % TILE_SIZE
+			if rx < 0:
+				rx += TILE_SIZE
+			# Blue channel from opposite shift
+			var bx = (x + b_shift) % TILE_SIZE
+			if bx < 0:
+				bx += TILE_SIZE
+			var shifted_r = img.get_pixel(rx, y)
+			var shifted_b = img.get_pixel(bx, y)
+			var glitched = Color(
+				shifted_r.r * 0.5 + current.r * 0.5,
+				current.g,
+				shifted_b.b * 0.5 + current.b * 0.5
+			)
+			img.set_pixel(x, y, glitched)
+
+	# Large corruption blocks (rectangles of wrong/impossible colors)
+	for _c in range(rng.randi_range(3, 7)):
+		var cx = rng.randi_range(0, TILE_SIZE - 6)
+		var cy = rng.randi_range(0, TILE_SIZE - 5)
+		var cw = rng.randi_range(2, 7)
+		var ch = rng.randi_range(1, 4)
+		var corrupt_colors = [
+			palette["corruption"],
+			palette["glitch_red"],
+			palette["glitch_green"],
+			palette["glitch_blue"],
+			Color(0.95, 0.0, 0.85),  # Hot magenta
+			Color(0.0, 0.95, 0.95),  # Bright cyan
+		]
+		var corrupt_col = corrupt_colors[rng.randi() % corrupt_colors.size()]
 		for dy in range(ch):
 			for dx in range(cw):
 				var px = cx + dx
 				var py = cy + dy
 				if px < TILE_SIZE and py < TILE_SIZE:
-					if rng.randf() < 0.7:
+					if rng.randf() < 0.75:
 						img.set_pixel(px, py, corrupt_col)
+					elif rng.randf() < 0.5:
+						# Checkerboard corruption pattern
+						if (dx + dy) % 2 == 0:
+							img.set_pixel(px, py, corrupt_col)
 
-	# Static noise lines (scattered single-pixel horizontal lines)
-	for _s in range(rng.randi_range(3, 8)):
+	# Dense static noise lines (TV static bands)
+	for _s in range(rng.randi_range(5, 12)):
 		var sy = rng.randi_range(0, TILE_SIZE - 1)
-		var sx_start = rng.randi_range(0, TILE_SIZE - 6)
-		var slen = rng.randi_range(3, 8)
+		var sx_start = rng.randi_range(0, TILE_SIZE - 4)
+		var slen = rng.randi_range(4, TILE_SIZE)
 		for i in range(slen):
 			var px = sx_start + i
 			if px < TILE_SIZE:
+				# Pure random RGB static
 				var static_col = Color(rng.randf(), rng.randf(), rng.randf())
-				img.set_pixel(px, sy, static_col.lerp(palette["base"], 0.3))
+				img.set_pixel(px, sy, static_col.lerp(palette["base"], 0.15))
 
-	# "Memory leak" - faint text-like pattern bleeding through
-	if variant % 3 == 0:
-		var leak_y = rng.randi_range(8, TILE_SIZE - 8)
-		for x in range(2, TILE_SIZE - 2):
-			if rng.randf() < 0.3:
-				img.set_pixel(x, leak_y, Color(0.35, 0.55, 0.25, 0.6))
+	# Scan line tearing (horizontal displacement of entire rows)
+	var tear_count = rng.randi_range(1, 3)
+	for _t in range(tear_count):
+		var tear_y = rng.randi_range(2, TILE_SIZE - 3)
+		var tear_shift = rng.randi_range(2, 8)
+		# Store row, then write shifted
+		var row_pixels: Array[Color] = []
+		for x in range(TILE_SIZE):
+			row_pixels.append(img.get_pixel(x, tear_y))
+		for x in range(TILE_SIZE):
+			var src_x = (x + tear_shift) % TILE_SIZE
+			img.set_pixel(x, tear_y, row_pixels[src_x])
+
+	# "Memory leak" - faint text-like pattern bleeding through from another layer
+	if variant % 2 == 0:
+		var leak_y = rng.randi_range(6, TILE_SIZE - 6)
+		for row in range(3):
+			for x in range(1, TILE_SIZE - 1):
+				if rng.randf() < 0.35:
+					var ly = leak_y + row * 2
+					if ly < TILE_SIZE:
+						img.set_pixel(x, ly, Color(0.35, 0.65, 0.25, 0.7))
+
+	# Dead pixel clusters (stuck bright pixels)
+	for _d in range(rng.randi_range(2, 5)):
+		var dx = rng.randi_range(1, TILE_SIZE - 2)
+		var dy = rng.randi_range(1, TILE_SIZE - 2)
+		var dead_col = Color(1.0, 1.0, 1.0) if rng.randf() < 0.3 else Color(rng.randf(), 0, rng.randf())
+		img.set_pixel(dx, dy, dead_col)
 
 
-## Smooth wall with neon strip accent, panel seams, and ventilation detail
+## Smooth wall with neon strip accent, proper glow halos, panel seams, and industrial detail
 func _draw_neon_wall(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 13131
 
-	# Smooth wall panel texture
+	# Smooth wall panel texture with subtle variation
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.3 + y * 0.15 + variant * 0.9) * 0.12 + rng.randf() * 0.05
@@ -1290,7 +1650,7 @@ func _draw_neon_wall(img: Image, palette: Dictionary, variant: int) -> void:
 			elif n < -0.06:
 				img.set_pixel(x, y, palette["dark"])
 
-	# Panel seam lines (subtle grid)
+	# Panel seam lines (subtle recessed grid)
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, 0, palette["seam"])
 		img.set_pixel(x, TILE_SIZE - 1, palette["seam"])
@@ -1298,46 +1658,76 @@ func _draw_neon_wall(img: Image, palette: Dictionary, variant: int) -> void:
 		img.set_pixel(0, y, palette["seam"])
 		img.set_pixel(TILE_SIZE - 1, y, palette["seam"])
 
-	# Vertical panel divider
+	# Vertical panel divider with depth
 	for y in range(TILE_SIZE):
 		img.set_pixel(TILE_SIZE / 2, y, palette["seam"])
+		img.set_pixel(TILE_SIZE / 2 + 1, y, palette["seam"].lightened(0.04))  # Light edge
 
-	# Horizontal neon strip accent (the signature feature)
+	# Horizontal neon strip accent (the signature feature) - 3px wide for visibility
 	var neon_y = TILE_SIZE / 2
 	for x in range(1, TILE_SIZE - 1):
-		img.set_pixel(x, neon_y, palette["neon_cyan"])
+		# Bright white-hot center
+		img.set_pixel(x, neon_y, palette["neon_cyan"].lightened(0.15))
+		# Colored flanks
+		img.set_pixel(x, neon_y - 1, palette["neon_cyan"])
 		img.set_pixel(x, neon_y + 1, palette["neon_cyan"])
 
-	# Neon glow (soft light above and below the strip)
+	# Wide neon glow halo (the key enhancement - extends 6px in each direction)
 	for x in range(1, TILE_SIZE - 1):
-		for dy in range(1, 4):
-			# Above
-			var above_y = neon_y - dy
+		# Glow above the strip
+		for dy in range(1, 7):
+			var above_y = neon_y - 1 - dy
 			if above_y >= 0:
 				var current = img.get_pixel(x, above_y)
-				var glow_str = 1.0 - float(dy) / 4.0
-				img.set_pixel(x, above_y, current.lerp(palette["neon_glow"], glow_str * 0.25))
-			# Below
+				var glow_str = 1.0 - float(dy) / 7.0
+				# Exponential falloff for realistic glow
+				glow_str = glow_str * glow_str
+				img.set_pixel(x, above_y, current.lerp(palette["neon_glow"], glow_str * 0.40))
+		# Glow below the strip
+		for dy in range(1, 7):
 			var below_y = neon_y + 1 + dy
 			if below_y < TILE_SIZE:
 				var current = img.get_pixel(x, below_y)
-				var glow_str = 1.0 - float(dy) / 4.0
-				img.set_pixel(x, below_y, current.lerp(palette["neon_glow"], glow_str * 0.25))
+				var glow_str = 1.0 - float(dy) / 7.0
+				glow_str = glow_str * glow_str
+				img.set_pixel(x, below_y, current.lerp(palette["neon_glow"], glow_str * 0.40))
 
-	# Wall mounting points / bolts
-	for pos in [Vector2i(4, 4), Vector2i(TILE_SIZE - 5, 4), Vector2i(4, TILE_SIZE - 5), Vector2i(TILE_SIZE - 5, TILE_SIZE - 5)]:
-		img.set_pixel(pos.x, pos.y, palette["wall_panel"].lightened(0.1))
+	# Neon strip at seam edges gets extra bright (light bleeds at intersections)
+	for seam_x in [0, TILE_SIZE / 2, TILE_SIZE - 1]:
+		for dy in range(-2, 3):
+			var py = neon_y + dy
+			if py >= 0 and py < TILE_SIZE:
+				for dx in range(-1, 2):
+					var px = seam_x + dx
+					if px >= 0 and px < TILE_SIZE:
+						var current = img.get_pixel(px, py)
+						img.set_pixel(px, py, current.lerp(palette["neon_cyan"], 0.15))
+
+	# Wall mounting points / bolts with chrome
+	var bolt_positions = [
+		Vector2i(4, 4), Vector2i(TILE_SIZE - 5, 4),
+		Vector2i(4, TILE_SIZE - 5), Vector2i(TILE_SIZE - 5, TILE_SIZE - 5)
+	]
+	for pos in bolt_positions:
+		# Bolt head (2x2 with highlight)
+		img.set_pixel(pos.x, pos.y, palette["wall_panel"].lightened(0.12))
 		if pos.x + 1 < TILE_SIZE:
-			img.set_pixel(pos.x + 1, pos.y, palette["wall_panel"].lightened(0.05))
+			img.set_pixel(pos.x + 1, pos.y, palette["wall_panel"].lightened(0.06))
+		if pos.y + 1 < TILE_SIZE:
+			img.set_pixel(pos.x, pos.y + 1, palette["wall_panel"].darkened(0.04))
+		if pos.x + 1 < TILE_SIZE and pos.y + 1 < TILE_SIZE:
+			img.set_pixel(pos.x + 1, pos.y + 1, palette["wall_panel"].darkened(0.08))
 
-	# Top trim accent
+	# Top trim accent with highlight edge
 	for x in range(TILE_SIZE):
-		img.set_pixel(x, 1, palette["light"])
+		img.set_pixel(x, 1, palette["light"].lightened(0.04))
 		img.set_pixel(x, 2, palette["mid"])
+		img.set_pixel(x, 3, palette["mid"].darkened(0.03))
 
-	# Bottom base shadow
+	# Bottom base shadow gradient
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, TILE_SIZE - 2, palette["dark"])
+		img.set_pixel(x, TILE_SIZE - 3, palette["dark"].lightened(0.04))
 
 
 ## Interactive floor panel with authentication display and border chrome
@@ -1419,58 +1809,100 @@ func _draw_access_panel(img: Image, palette: Dictionary, variant: int) -> void:
 			img.set_pixel(x, ind_y, auth_col.darkened(0.3))
 
 
-## Near-black floor hinting at the computational abyss below
+## Near-black floor hinting at the computational abyss below - staring into the void
 func _draw_void_floor(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 15151
 
-	# Almost imperceptible noise (the void is not quite uniform)
+	# Vignette from center - center is darkest (the abyss), edges slightly lighter
+	var cx = TILE_SIZE / 2.0
+	var cy = TILE_SIZE / 2.0
+	var max_dist = sqrt(cx * cx + cy * cy)
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.4 + y * 0.3 + variant * 2.0) * 0.08 + rng.randf() * 0.05
-			if n < -0.04:
-				img.set_pixel(x, y, palette["deep"])
-			elif n > 0.06:
-				img.set_pixel(x, y, palette["light"])
-			elif n > 0.03:
-				img.set_pixel(x, y, palette["mid"])
+			var dist = sqrt(pow(x - cx, 2) + pow(y - cy, 2))
+			var depth_factor = dist / max_dist  # 0 at center, 1 at corners
+			# Inverse vignette: center is darkest
+			var shade = palette["deep"].lerp(palette["mid"], depth_factor * 0.4)
+			# Subtle noise overlay
+			var n = rng.randf() * 0.03
+			if n > 0.02:
+				shade = shade.lightened(0.01)
+			img.set_pixel(x, y, shade)
 
-	# Faint grid lines (barely visible, suggesting structure in the void)
-	for x in range(TILE_SIZE):
-		if x % 8 == 0:
-			for y in range(TILE_SIZE):
-				img.set_pixel(x, y, palette["grid_faint"])
-	for y in range(TILE_SIZE):
-		if y % 8 == 0:
-			for x in range(TILE_SIZE):
-				img.set_pixel(x, y, palette["grid_faint"])
+	# Barely-visible perspective grid lines (suggesting infinite depth)
+	# Vertical lines with slight convergence toward center
+	for gx in range(0, TILE_SIZE, 8):
+		for y in range(TILE_SIZE):
+			# Grid lines fade toward center (perspective hint)
+			var dist_from_center = abs(y - cy) / cy
+			var grid_alpha = 0.15 + dist_from_center * 0.15  # Brighter near edges
+			if gx < TILE_SIZE:
+				var current = img.get_pixel(gx, y)
+				img.set_pixel(gx, y, current.lerp(palette["grid_faint"], grid_alpha))
+	# Horizontal lines with same perspective fade
+	for gy in range(0, TILE_SIZE, 8):
+		for x in range(TILE_SIZE):
+			var dist_from_center = abs(x - cx) / cx
+			var grid_alpha = 0.15 + dist_from_center * 0.15
+			if gy < TILE_SIZE:
+				var current = img.get_pixel(x, gy)
+				img.set_pixel(x, gy, current.lerp(palette["grid_faint"], grid_alpha))
 
-	# Distant stars/data points (rare bright dots deep below)
-	for _s in range(rng.randi_range(2, 5)):
-		var sx = rng.randi_range(1, TILE_SIZE - 2)
-		var sy = rng.randi_range(1, TILE_SIZE - 2)
-		var star_col = palette["star"] if rng.randf() < 0.7 else palette["star_bright"]
+	# Grid intersection dots (slightly brighter at crosspoints)
+	for gx in range(0, TILE_SIZE, 8):
+		for gy in range(0, TILE_SIZE, 8):
+			if gx < TILE_SIZE and gy < TILE_SIZE:
+				img.set_pixel(gx, gy, palette["grid_faint"].lightened(0.08))
+
+	# Distant stars/data points deep below (rare, dim, suggesting vast depth)
+	for _s in range(rng.randi_range(3, 7)):
+		var sx = rng.randi_range(2, TILE_SIZE - 3)
+		var sy = rng.randi_range(2, TILE_SIZE - 3)
+		var star_col = palette["star"] if rng.randf() < 0.6 else palette["star_bright"]
 		img.set_pixel(sx, sy, star_col)
+		# Faint cross-hair around brighter stars
+		if rng.randf() < 0.3:
+			for d in range(1, 2):
+				if sx - d >= 0:
+					var left = img.get_pixel(sx - d, sy)
+					img.set_pixel(sx - d, sy, left.lerp(star_col, 0.15))
+				if sx + d < TILE_SIZE:
+					var right = img.get_pixel(sx + d, sy)
+					img.set_pixel(sx + d, sy, right.lerp(star_col, 0.15))
+				if sy - d >= 0:
+					var above = img.get_pixel(sx, sy - d)
+					img.set_pixel(sx, sy - d, above.lerp(star_col, 0.15))
+				if sy + d < TILE_SIZE:
+					var below = img.get_pixel(sx, sy + d)
+					img.set_pixel(sx, sy + d, below.lerp(star_col, 0.15))
 
-	# Slow pulse wave (subtle brightness variation suggesting something alive below)
+	# Slow pulse wave (something alive below, undulating)
 	var pulse_y = (variant * 7) % TILE_SIZE
-	if pulse_y < TILE_SIZE:
-		for x in range(TILE_SIZE):
-			var current = img.get_pixel(x, pulse_y)
-			img.set_pixel(x, pulse_y, current.lerp(palette["pulse"], 0.15))
-		if pulse_y + 1 < TILE_SIZE:
+	for wave in range(3):
+		var wy = (pulse_y + wave) % TILE_SIZE
+		if wy < TILE_SIZE:
+			var wave_str = 0.18 - wave * 0.05
 			for x in range(TILE_SIZE):
-				var current = img.get_pixel(x, pulse_y + 1)
-				img.set_pixel(x, pulse_y + 1, current.lerp(palette["pulse"], 0.08))
+				# Sinusoidal pulse shape
+				var wave_x = sin(float(x) / TILE_SIZE * PI) * wave_str
+				var current = img.get_pixel(x, wy)
+				img.set_pixel(x, wy, current.lerp(palette["pulse"], wave_x))
 
-	# Edge fade (borders are even darker, suggesting the floor is an island)
-	for x in range(TILE_SIZE):
-		img.set_pixel(x, 0, palette["deep"])
-		img.set_pixel(x, TILE_SIZE - 1, palette["deep"])
-	for y in range(TILE_SIZE):
-		img.set_pixel(0, y, palette["deep"])
-		img.set_pixel(TILE_SIZE - 1, y, palette["deep"])
+	# Edge fade (borders are absolute black - the void has no edges)
+	for border in range(2):
+		var darkness = 1.0 - float(border) * 0.3
+		for x in range(TILE_SIZE):
+			var top = img.get_pixel(x, border)
+			img.set_pixel(x, border, top.lerp(palette["deep"], darkness * 0.6))
+			var bot = img.get_pixel(x, TILE_SIZE - 1 - border)
+			img.set_pixel(x, TILE_SIZE - 1 - border, bot.lerp(palette["deep"], darkness * 0.6))
+		for y in range(TILE_SIZE):
+			var left = img.get_pixel(border, y)
+			img.set_pixel(border, y, left.lerp(palette["deep"], darkness * 0.6))
+			var right = img.get_pixel(TILE_SIZE - 1 - border, y)
+			img.set_pixel(TILE_SIZE - 1 - border, y, right.lerp(palette["deep"], darkness * 0.6))
 
 
 ## Create tileset with all futuristic tiles

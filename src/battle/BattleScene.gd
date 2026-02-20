@@ -2184,8 +2184,13 @@ func _on_battle_started() -> void:
 			SoundManager.play_music("battle_" + dominant_monster)
 			print("[MUSIC] Playing %s battle theme" % dominant_monster)
 		else:
-			_base_music_track = "battle"
-			SoundManager.play_music("battle")
+			# Use terrain-specific battle music for areas that have one,
+			# otherwise fall back to generic battle music
+			var terrain_track = _get_terrain_battle_track()
+			_base_music_track = terrain_track
+			SoundManager.play_music(terrain_track)
+			if terrain_track != "battle":
+				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
 
 
@@ -2229,6 +2234,20 @@ func _get_boss_type() -> String:
 			if enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss"):
 				return enemy.get_meta("monster_type", "")
 	return ""
+
+
+func _get_terrain_battle_track() -> String:
+	"""Get terrain-specific battle music track, or 'battle' for generic.
+	   Areas with unique battle themes return 'battle_<terrain>'."""
+	match _current_terrain:
+		"industrial":
+			return "battle_industrial"
+		"digital":
+			return "battle_digital"
+		"void":
+			return "battle_void"
+		_:
+			return "battle"
 
 
 func _on_battle_ended(victory: bool) -> void:

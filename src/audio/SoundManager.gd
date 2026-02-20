@@ -619,6 +619,13 @@ func play_music(track: String) -> void:
 			_start_monster_music("ghost")
 		"battle_snake":
 			_start_monster_music("snake")
+		# Terrain-specific battle themes
+		"battle_industrial":
+			_start_industrial_battle_music()
+		"battle_digital":
+			_start_digital_battle_music()
+		"battle_void":
+			_start_void_battle_music()
 		_:
 			# Fallback: unknown battle tracks use generic battle music
 			if track.begins_with("battle_"):
@@ -2791,6 +2798,14 @@ func play_area_music(area_type: String) -> void:
 	match area_type:
 		"overworld":
 			_start_overworld_music()
+		"overworld_suburban":
+			_start_overworld_music()
+		"overworld_industrial":
+			_start_industrial_music()
+		"overworld_futuristic":
+			_start_futuristic_music()
+		"overworld_abstract":
+			_start_abstract_music()
 		"village", "harmonia_village":
 			_start_village_music()
 		"cave", "dungeon", "whispering_cave":
@@ -3197,6 +3212,257 @@ func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVecto
 	return buffer
 
 
+func _start_industrial_music() -> void:
+	"""Generate heavy industrial factory theme - D minor, rhythmic machinery"""
+	_music_playing = true
+	print("[MUSIC] Playing industrial theme")
+
+	var sample_rate = 22050
+	var bpm = 110.0  # Steady, relentless machine tempo
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_industrial_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_industrial_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate heavy industrial theme - D minor, mechanical rhythm, oppressive
+	   Features: pounding bass, metallic percussion, minor key melody, machine-like repetition"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# D minor / Dm pentatonic - dark, oppressive
+	const NOTE_D2 = 73.42
+	const NOTE_A2 = 110.0
+	const NOTE_D3 = 146.83
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_Bb4 = 466.16
+
+	# Melody - sparse, mechanical, repetitive (like an alarm or machine signal)
+	# 128 sixteenth notes = 8 bars of 4/4
+	var melody = [
+		NOTE_D4, 0, 0, 0, NOTE_F4, 0, 0, 0, NOTE_D4, 0, NOTE_E4, 0, NOTE_D4, 0, 0, 0,
+		NOTE_A3, 0, 0, 0, NOTE_Bb3, 0, NOTE_A3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		NOTE_D4, 0, 0, 0, NOTE_F4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, 0, 0,
+		NOTE_A3, 0, 0, 0, NOTE_C4, 0, NOTE_Bb3, 0, NOTE_A3, 0, 0, 0, 0, 0, 0, 0,
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, 0, 0, NOTE_E4, 0, NOTE_D4, 0, 0, 0, 0, 0,
+		NOTE_Bb4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, 0, 0, 0, 0,
+		NOTE_D4, 0, NOTE_D4, 0, NOTE_F4, 0, NOTE_D4, 0, NOTE_A3, 0, 0, 0, NOTE_D4, 0, 0, 0,
+		0, 0, 0, 0, NOTE_A3, 0, NOTE_D4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	# Bass - heavy, pounding, machine-like repetition
+	# 32 quarter notes = 8 bars
+	var bass = [
+		NOTE_D2, NOTE_D2, NOTE_D2, NOTE_A2, NOTE_D2, NOTE_D2, NOTE_D3, NOTE_A2,
+		NOTE_D2, NOTE_D2, NOTE_D2, NOTE_A2, NOTE_D2, NOTE_D2, NOTE_D3, NOTE_A2,
+		NOTE_F3, NOTE_F3, NOTE_D2, NOTE_D2, NOTE_G3, NOTE_G3, NOTE_A2, NOTE_A2,
+		NOTE_D2, NOTE_D2, NOTE_D2, NOTE_A2, NOTE_D2, NOTE_D2, NOTE_D2, NOTE_D2,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 128
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var t_in_quarter = fmod(t, quarter_dur) / quarter_dur
+
+		var sample = 0.0
+
+		# Melody - harsh pulse wave for industrial/metallic tone
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.35)
+			# Pulse wave with narrow duty cycle for harsh, nasal sound
+			sample += _pulse_wave(t * melody_freq, 0.3) * 0.15 * melody_env
+			# Slight detune for gritty texture
+			sample += _pulse_wave(t * melody_freq * 1.005, 0.25) * 0.07 * melody_env
+
+		# Bass - heavy square wave, almost subsonic rumble
+		var bass_freq = bass[quarter_idx] * 0.5
+		var bass_env = pow(1.0 - t_in_quarter * 0.6, 0.8)
+		sample += _square_wave(t * bass_freq) * 0.18 * bass_env
+		# Sub bass rumble
+		sample += sin(t * bass_freq * 0.5 * TAU) * 0.12
+
+		# Machine percussion - pounding kick on every beat
+		var beat_pos = fmod(t, quarter_dur)
+		if beat_pos < 0.04:
+			var kick_env = pow(1.0 - beat_pos / 0.04, 2.5)
+			sample += sin(beat_pos * 45 * TAU) * kick_env * 0.22
+
+		# Anvil/clang on offbeats (metallic percussion)
+		var half_beat = fmod(t + quarter_dur * 0.5, quarter_dur)
+		if half_beat < 0.02:
+			var clang_env = pow(1.0 - half_beat / 0.02, 3.0)
+			sample += sin(half_beat * 3200 * TAU) * clang_env * 0.08
+			sample += sin(half_beat * 4700 * TAU) * clang_env * 0.04
+
+		# Hissing steam noise on beat 3 of each bar
+		var bar_pos = fmod(t, quarter_dur * 4)
+		var beat3_start = quarter_dur * 2
+		var steam_pos = bar_pos - beat3_start
+		if steam_pos > 0 and steam_pos < 0.08:
+			var steam_env = pow(1.0 - steam_pos / 0.08, 1.5)
+			sample += randf_range(-0.06, 0.06) * steam_env
+
+		# Subtle grinding noise floor (factory ambience)
+		sample += randf_range(-0.015, 0.015)
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _start_futuristic_music() -> void:
+	"""Generate cold digital ambient theme - B minor/diminished, synth pads, arpeggiated sequences"""
+	_music_playing = true
+	print("[MUSIC] Playing futuristic digital theme")
+
+	var sample_rate = 22050
+	var bpm = 85.0  # Measured, clinical tempo
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_futuristic_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_futuristic_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate cold digital ambient theme - B minor/diminished, clinical
+	   Features: detuned synth pads, arpeggiated sequences, cold tonality, digital artifacts"""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# B minor / B diminished - cold, clinical, digital
+	const NOTE_B1 = 61.74
+	const NOTE_Fs2 = 92.50
+	const NOTE_B2 = 123.47
+	const NOTE_D3 = 146.83
+	const NOTE_E3 = 164.81
+	const NOTE_Fs3 = 185.0
+	const NOTE_A3 = 220.0
+	const NOTE_B3 = 246.94
+	const NOTE_Cs4 = 277.18
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_Fs4 = 369.99
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+	const NOTE_Cs5 = 554.37
+	const NOTE_D5 = 587.33
+
+	# Arpeggio pattern - cold, precise, sequencer-like
+	# 64 sixteenth notes = 4 bars, repeated twice = 8 bars
+	var arpeggio = [
+		NOTE_B3, NOTE_D4, NOTE_Fs4, NOTE_B4, NOTE_Fs4, NOTE_D4, NOTE_B3, 0,
+		NOTE_E4, NOTE_A4, NOTE_Cs5, NOTE_A4, NOTE_E4, 0, NOTE_D4, 0,
+		NOTE_B3, NOTE_D4, NOTE_Fs4, NOTE_B4, NOTE_D5, NOTE_B4, NOTE_Fs4, 0,
+		NOTE_Cs4, NOTE_E4, NOTE_A4, NOTE_E4, NOTE_Cs4, 0, NOTE_B3, 0,
+		NOTE_B3, NOTE_Fs4, NOTE_D4, NOTE_B4, NOTE_Fs4, NOTE_D4, NOTE_B3, 0,
+		NOTE_E4, NOTE_Cs5, NOTE_A4, NOTE_E4, 0, NOTE_D4, NOTE_E4, 0,
+		NOTE_Fs4, NOTE_B4, NOTE_D5, NOTE_B4, NOTE_Fs4, NOTE_D4, NOTE_B3, 0,
+		NOTE_A4, NOTE_E4, NOTE_Cs4, NOTE_E4, 0, 0, 0, 0,
+	]
+
+	# Pad chords - long, sustained, detuned for digital shimmer
+	var pad_chords = [
+		[NOTE_B2, NOTE_D3, NOTE_Fs3],      # Bm
+		[NOTE_E3, NOTE_A3, NOTE_Cs4],       # A/E
+		[NOTE_D3, NOTE_Fs3, NOTE_A3],       # D
+		[NOTE_Fs3, NOTE_B3, NOTE_D4],       # Bm/F#
+	]
+
+	# Bass drone - sub-bass pulse
+	var bass = [
+		NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_Fs2, NOTE_Fs2,
+		NOTE_E3, NOTE_E3, NOTE_E3, NOTE_E3, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1,
+		NOTE_D3, NOTE_D3, NOTE_D3, NOTE_D3, NOTE_Fs2, NOTE_Fs2, NOTE_Fs2, NOTE_Fs2,
+		NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1, NOTE_B1,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+	var half_bar_dur = quarter_dur * 2
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 64
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var chord_idx = int(t / (half_bar_dur * 4)) % 4
+
+		var sample = 0.0
+
+		# Arpeggiated sequence (triangle wave - cold, precise)
+		var arp_freq = arpeggio[sixteenth_idx]
+		if arp_freq > 0:
+			var arp_env = pow(1.0 - t_in_sixteenth, 0.5)
+			sample += _triangle_wave(t * arp_freq) * 0.14 * arp_env
+			sample += sin(t * arp_freq * 2.0 * TAU) * 0.04 * arp_env * arp_env
+
+		# Synth pad (detuned oscillators for shimmer)
+		var chord = pad_chords[chord_idx]
+		for note_freq in chord:
+			var detune_amount = 0.003
+			var pad_freq1 = note_freq * (1.0 + detune_amount)
+			var pad_freq2 = note_freq * (1.0 - detune_amount)
+			sample += _triangle_wave(t * pad_freq1) * 0.04
+			sample += _triangle_wave(t * pad_freq2) * 0.04
+			sample += sin(t * note_freq * TAU) * 0.03
+
+		# Sub-bass drone (sine wave)
+		var bass_freq = bass[quarter_idx] * 0.5
+		var bass_env = 0.8 + sin(t * 0.3) * 0.2
+		sample += sin(t * bass_freq * TAU) * 0.10 * bass_env
+
+		# Digital percussion (minimal cold clicks)
+		var beat_pos = fmod(t, quarter_dur)
+		if beat_pos < 0.008:
+			var click_env = pow(1.0 - beat_pos / 0.008, 4.0)
+			sample += sin(beat_pos * 6000 * TAU) * click_env * 0.06
+
+		# Hi-hat style digital noise on offbeats
+		var half_beat = fmod(t + quarter_dur * 0.5, quarter_dur)
+		if half_beat < 0.012:
+			var hat_env = pow(1.0 - half_beat / 0.012, 3.0)
+			var noise_phase = sin(t * 12345.6789) * cos(t * 9876.5432)
+			sample += noise_phase * hat_env * 0.04
+
+		# Digital artifacts (occasional glitch blips every 4th bar)
+		var bar_time = fmod(t, quarter_dur * 16)
+		if bar_time > quarter_dur * 12 and bar_time < quarter_dur * 12 + 0.03:
+			var glitch_t = bar_time - quarter_dur * 12
+			var glitch_env = pow(1.0 - glitch_t / 0.03, 2.0)
+			sample += sin(glitch_t * 8000 * TAU) * glitch_env * 0.05
+
+		# Ambient hum (subtle high-frequency carrier for "digital air")
+		sample += sin(t * 4000 * TAU) * 0.005 * (0.5 + sin(t * 0.7) * 0.5)
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
 ## Piano melody for tavern interaction
 func play_piano_melody() -> void:
 	"""Play a procedural piano melody for the tavern piano"""
@@ -3312,6 +3578,703 @@ func _generate_piano_melody(rate: int, duration: float) -> PackedVector2Array:
 		# Note: For a real implementation, you'd use a proper reverb
 
 		sample = clamp(sample, -0.95, 0.95)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## ============================================================================
+## TERRAIN-SPECIFIC BATTLE MUSIC
+## ============================================================================
+## Each terrain area has its own battle theme with unique instrumentation
+## and mood to match the world's aesthetic.
+
+func _start_industrial_battle_music() -> void:
+	"""Generate heavy mechanical industrial battle music.
+	   Clanking metal, steam hisses, driving machinery tempo."""
+	_music_playing = true
+	print("[MUSIC] Playing industrial battle theme")
+
+	var sample_rate = 22050
+	var bpm = 150.0  # Driving, relentless machine tempo
+	var bars = 12
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_industrial_battle_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_industrial_battle_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate heavy industrial battle theme - clanking metal, driving rhythm.
+	   Key: D minor (dark, oppressive). Distorted bass, metallic percussion,
+	   steam hiss accents. Think factory floor during a fight."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# D minor / Phrygian scale for dark industrial feel
+	const NOTE_D3 = 146.83
+	const NOTE_Eb3 = 155.56
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_Eb4 = 311.13
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_Bb4 = 466.16
+	const NOTE_D5 = 587.33
+
+	# Aggressive riff pattern - 16th notes, lots of repetition like hammering
+	# Section A: Pounding riff (bars 1-4)
+	var melody_a = [
+		NOTE_D4, NOTE_D4, 0, NOTE_D4, NOTE_F4, 0, NOTE_D4, 0,  # Bar 1 - hammering D
+		NOTE_Eb4, 0, NOTE_D4, 0, NOTE_D4, NOTE_D4, 0, 0,
+		NOTE_D4, NOTE_D4, 0, NOTE_D4, NOTE_G4, 0, NOTE_F4, 0,  # Bar 2
+		NOTE_Eb4, NOTE_D4, 0, 0, NOTE_D4, 0, NOTE_A3, 0,
+		NOTE_D4, NOTE_D4, 0, NOTE_F4, NOTE_D4, 0, NOTE_D4, NOTE_D4,  # Bar 3
+		0, NOTE_Eb4, NOTE_D4, 0, NOTE_Bb3, 0, NOTE_A3, 0,
+		NOTE_D4, 0, NOTE_F4, NOTE_G4, NOTE_F4, NOTE_Eb4, NOTE_D4, 0,  # Bar 4
+		NOTE_D4, NOTE_D4, NOTE_D4, 0, NOTE_A3, 0, NOTE_D4, 0,
+	]
+
+	# Section B: Rising tension, piston-like (bars 5-8)
+	var melody_b = [
+		NOTE_A3, 0, NOTE_A3, NOTE_D4, 0, NOTE_A3, NOTE_D4, 0,  # Bar 5 - pistons
+		NOTE_F4, 0, NOTE_Eb4, 0, NOTE_D4, 0, NOTE_A3, 0,
+		NOTE_Bb3, 0, NOTE_Bb3, NOTE_Eb4, 0, NOTE_Bb3, NOTE_Eb4, 0,  # Bar 6
+		NOTE_F4, 0, NOTE_Eb4, 0, NOTE_D4, 0, NOTE_Bb3, 0,
+		NOTE_G4, 0, NOTE_F4, 0, NOTE_Eb4, 0, NOTE_D4, 0,  # Bar 7 - descending
+		NOTE_G4, NOTE_F4, NOTE_Eb4, NOTE_D4, NOTE_Eb4, NOTE_F4, NOTE_G4, 0,
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, NOTE_Eb4, NOTE_D4, 0,  # Bar 8
+		NOTE_D4, NOTE_D4, NOTE_D4, NOTE_D4, 0, 0, 0, 0,
+	]
+
+	# Section C: Mechanical climax (bars 9-12)
+	var melody_c = [
+		NOTE_D5, 0, NOTE_D4, 0, NOTE_D5, 0, NOTE_D4, 0,  # Bar 9 - octave jumps
+		NOTE_Bb4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0,
+		NOTE_D5, NOTE_D5, 0, NOTE_Bb4, NOTE_A4, 0, NOTE_G4, 0,  # Bar 10
+		NOTE_F4, NOTE_Eb4, NOTE_D4, 0, NOTE_D4, NOTE_F4, NOTE_A4, 0,
+		NOTE_D4, NOTE_F4, NOTE_D4, NOTE_F4, NOTE_G4, NOTE_F4, NOTE_G4, NOTE_A4,  # Bar 11
+		NOTE_Bb4, NOTE_A4, NOTE_G4, NOTE_F4, NOTE_Eb4, NOTE_D4, NOTE_Eb4, NOTE_F4,
+		NOTE_D4, 0, NOTE_D4, 0, NOTE_F4, NOTE_D4, 0, NOTE_D4,  # Bar 12
+		0, NOTE_D4, 0, NOTE_D4, NOTE_D4, NOTE_D4, NOTE_D4, 0,
+	]
+
+	var melody_pattern = melody_a + melody_b + melody_c
+
+	# Heavy distorted bass - power chord roots
+	var bass_pattern = [
+		NOTE_D3, NOTE_D3, NOTE_D3, NOTE_D3,  # Bars 1-4
+		NOTE_F3, NOTE_F3, NOTE_Eb3, NOTE_Eb3,
+		NOTE_D3, NOTE_D3, NOTE_D3, NOTE_D3,
+		NOTE_D3, NOTE_F3, NOTE_G3, NOTE_D3,
+		NOTE_A3, NOTE_A3, NOTE_Bb3, NOTE_Bb3,  # Bars 5-8
+		NOTE_G3, NOTE_G3, NOTE_F3, NOTE_F3,
+		NOTE_D3, NOTE_D3, NOTE_Eb3, NOTE_Eb3,
+		NOTE_D3, NOTE_D3, NOTE_D3, NOTE_D3,
+		NOTE_D3, NOTE_D3, NOTE_F3, NOTE_F3,  # Bars 9-12
+		NOTE_G3, NOTE_G3, NOTE_Bb3, NOTE_A3,
+		NOTE_D3, NOTE_D3, NOTE_Eb3, NOTE_Eb3,
+		NOTE_D3, NOTE_D3, NOTE_D3, NOTE_D3,
+	]
+
+	var sixteenth_duration = beat_duration / 4.0
+	var quarter_duration = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_duration) % 192
+		var quarter_idx = int(t / quarter_duration) % 48
+		var t_in_sixteenth = fmod(t, sixteenth_duration) / sixteenth_duration
+		var t_in_quarter = fmod(t, quarter_duration) / quarter_duration
+
+		var sample = 0.0
+
+		# Melody - distorted square wave for harsh metallic tone
+		var melody_freq = melody_pattern[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.2)  # Very sharp attack
+			# Distorted: clipped square + detuned square for thickness
+			var raw = _square_wave(t * melody_freq) * 0.6 + _square_wave(t * melody_freq * 1.01) * 0.4
+			var distorted = clamp(raw * 2.0, -1.0, 1.0)
+			sample += distorted * melody_env * 0.2
+
+		# Bass - heavily distorted triangle for grinding low end
+		var bass_freq = bass_pattern[quarter_idx] * 0.5
+		var bass_raw = _triangle_wave(t * bass_freq) + _square_wave(t * bass_freq * 0.998) * 0.4
+		var bass_distorted = clamp(bass_raw * 1.8, -1.0, 1.0)
+		sample += bass_distorted * 0.22
+
+		# Industrial drums - heavy kick, metallic snare, clanking 16ths
+		var beat_pos = fmod(t, beat_duration)
+		var beat_in_bar = int(t / beat_duration) % 4
+
+		# Heavy kick on every beat (relentless machine)
+		if beat_pos < 0.06:
+			var kick_env = pow(1.0 - beat_pos / 0.06, 2)
+			var kick = sin(beat_pos * 60 * TAU) * kick_env * 0.5
+			kick += sin(beat_pos * 30 * TAU) * kick_env * 0.3  # Sub bass thump
+			sample += kick
+
+		# Metallic snare on 2 and 4
+		if beat_in_bar in [1, 3] and beat_pos < 0.1:
+			var snare_env = pow(1.0 - beat_pos / 0.1, 1.5)
+			# Metal clang + noise
+			var snare = randf_range(-0.4, 0.4) * snare_env
+			snare += sin(beat_pos * 800 * TAU) * snare_env * 0.2  # Metallic ring
+			sample += snare
+
+		# Clanking 16th notes - metallic hi-hat with occasional steam hiss
+		var sixteenth_pos = fmod(t, sixteenth_duration)
+		if sixteenth_pos < 0.015:
+			var clank_env = pow(1.0 - sixteenth_pos / 0.015, 4)
+			# Metallic clank (noise + high sine)
+			var clank = randf_range(-0.15, 0.15) * clank_env
+			clank += sin(sixteenth_pos * 2400 * TAU) * clank_env * 0.08
+			sample += clank
+
+		# Steam hiss accent on beat 4's "and" (every 2 bars)
+		var bar_num = int(t / (beat_duration * 4)) % 12
+		var bar_pos = fmod(t, beat_duration * 4)
+		var hiss_start = beat_duration * 3.5
+		if bar_num % 2 == 1 and bar_pos >= hiss_start and bar_pos < hiss_start + 0.12:
+			var hiss_t = bar_pos - hiss_start
+			var hiss_env = pow(1.0 - hiss_t / 0.12, 0.8)
+			# Filtered noise = steam hiss
+			var hiss = randf_range(-0.2, 0.2) * hiss_env
+			sample += hiss
+
+		# Hard clip for industrial crunch
+		sample = clamp(sample * 1.3, -0.85, 0.85)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _start_digital_battle_music() -> void:
+	"""Generate electronic/glitchy digital battle music.
+	   Fast arpeggios, digital distortion, Tron/Matrix vibes."""
+	_music_playing = true
+	print("[MUSIC] Playing digital battle theme")
+
+	var sample_rate = 22050
+	var bpm = 160.0  # Fast electronic tempo
+	var bars = 12
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_digital_battle_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_digital_battle_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate electronic/digital battle theme - fast arpeggios, glitchy textures.
+	   Key: E minor with chromatic accents. Pulse wave arpeggios, bitcrushed bass,
+	   chip-tune leads. Fighting inside a computer - Tron/Matrix vibes."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# E minor / chromatic for digital, cyber feel
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_Fs4 = 369.99  # F#4 - digital sharpness
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+	const NOTE_C5 = 523.25
+	const NOTE_D5 = 587.33
+	const NOTE_E5 = 659.25
+	const NOTE_G5 = 783.99
+	const NOTE_B5 = 987.77
+
+	# Section A: Rapid arpeggios (bars 1-4) - quintessential digital
+	var melody_a = [
+		NOTE_E4, NOTE_G4, NOTE_B4, NOTE_E5, NOTE_B4, NOTE_G4, NOTE_E4, NOTE_G4,  # Bar 1 - Em arp
+		NOTE_B4, NOTE_E5, NOTE_G5, NOTE_E5, NOTE_B4, NOTE_G4, NOTE_E4, 0,
+		NOTE_C4, NOTE_E4, NOTE_G4, NOTE_C5, NOTE_G4, NOTE_E4, NOTE_C4, NOTE_E4,  # Bar 2 - C arp
+		NOTE_G4, NOTE_C5, NOTE_E5, NOTE_C5, NOTE_G4, NOTE_E4, NOTE_C4, 0,
+		NOTE_D4, NOTE_Fs4, NOTE_A4, NOTE_D5, NOTE_A4, NOTE_Fs4, NOTE_D4, NOTE_Fs4,  # Bar 3 - D arp
+		NOTE_A4, NOTE_D5, NOTE_Fs4, NOTE_D5, NOTE_A4, NOTE_Fs4, NOTE_D4, 0,
+		NOTE_E4, NOTE_B4, NOTE_E5, NOTE_B5, NOTE_E5, NOTE_B4, NOTE_E4, 0,  # Bar 4 - Em octave sweep
+		NOTE_E5, NOTE_B4, NOTE_E4, NOTE_B3, NOTE_E4, NOTE_B4, NOTE_E5, 0,
+	]
+
+	# Section B: Glitch stutter (bars 5-8) - broken signal effect
+	var melody_b = [
+		NOTE_E5, NOTE_E5, 0, 0, NOTE_E5, 0, NOTE_D5, 0,  # Bar 5 - stutter
+		0, NOTE_E5, 0, NOTE_D5, 0, 0, NOTE_B4, 0,
+		NOTE_G4, NOTE_G4, 0, 0, NOTE_A4, 0, NOTE_B4, 0,  # Bar 6
+		0, NOTE_C5, 0, 0, NOTE_B4, NOTE_A4, 0, 0,
+		NOTE_E4, 0, NOTE_E4, 0, NOTE_G4, 0, NOTE_G4, 0,  # Bar 7 - bit pattern
+		NOTE_B4, 0, NOTE_B4, 0, NOTE_E5, 0, NOTE_E5, 0,
+		NOTE_D5, 0, NOTE_C5, 0, NOTE_B4, 0, NOTE_A4, 0,  # Bar 8 - descending
+		NOTE_G4, 0, NOTE_Fs4, 0, NOTE_E4, 0, 0, 0,
+	]
+
+	# Section C: Full digital assault (bars 9-12)
+	var melody_c = [
+		NOTE_E5, NOTE_G5, NOTE_E5, NOTE_B4, NOTE_E5, NOTE_G5, NOTE_E5, NOTE_B4,  # Bar 9
+		NOTE_E5, NOTE_D5, NOTE_B4, NOTE_G4, NOTE_E4, NOTE_G4, NOTE_B4, NOTE_D5,
+		NOTE_C5, NOTE_E5, NOTE_C5, NOTE_G4, NOTE_C5, NOTE_E5, NOTE_C5, NOTE_G4,  # Bar 10
+		NOTE_B4, NOTE_D5, NOTE_B4, NOTE_G4, NOTE_A4, NOTE_B4, NOTE_D5, NOTE_E5,
+		NOTE_E5, NOTE_B5, NOTE_E5, NOTE_B5, NOTE_G5, NOTE_E5, NOTE_G5, NOTE_B5,  # Bar 11
+		NOTE_E5, NOTE_B4, NOTE_E5, NOTE_B4, NOTE_G4, NOTE_E4, NOTE_G4, NOTE_B4,
+		NOTE_E5, 0, NOTE_E5, 0, NOTE_E5, NOTE_E5, NOTE_E5, NOTE_E5,  # Bar 12 - data burst
+		NOTE_G5, NOTE_E5, NOTE_B4, NOTE_E5, NOTE_G5, 0, NOTE_E5, 0,
+	]
+
+	var melody_pattern = melody_a + melody_b + melody_c
+
+	# Bass - heavy bitcrushed low synth
+	var bass_pattern = [
+		NOTE_E3, NOTE_E3, NOTE_C4, NOTE_C4,  # Bars 1-4
+		NOTE_D4, NOTE_D4, NOTE_E3, NOTE_E3,
+		NOTE_E3, NOTE_E3, NOTE_C4, NOTE_C4,
+		NOTE_B3, NOTE_B3, NOTE_E3, NOTE_E3,
+		NOTE_E3, NOTE_E3, NOTE_G3, NOTE_G3,  # Bars 5-8
+		NOTE_A3, NOTE_A3, NOTE_B3, NOTE_B3,
+		NOTE_E3, NOTE_E3, NOTE_E3, NOTE_E3,
+		NOTE_G3, NOTE_A3, NOTE_B3, NOTE_E3,
+		NOTE_E3, NOTE_E3, NOTE_C4, NOTE_C4,  # Bars 9-12
+		NOTE_D4, NOTE_D4, NOTE_B3, NOTE_B3,
+		NOTE_E3, NOTE_E3, NOTE_G3, NOTE_G3,
+		NOTE_E3, NOTE_E3, NOTE_E3, NOTE_E3,
+	]
+
+	var sixteenth_duration = beat_duration / 4.0
+	var quarter_duration = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_duration) % 192
+		var quarter_idx = int(t / quarter_duration) % 48
+		var t_in_sixteenth = fmod(t, sixteenth_duration) / sixteenth_duration
+		var t_in_quarter = fmod(t, quarter_duration) / quarter_duration
+
+		var sample = 0.0
+
+		# Melody - pulse wave arpeggios (classic chiptune digital sound)
+		var melody_freq = melody_pattern[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.5)
+			# Pulse wave with shifting duty cycle for digital shimmer
+			var duty = 0.25 + sin(t * 3.0) * 0.1  # Wobbling duty cycle
+			var melody_wave = _pulse_wave(t * melody_freq, duty) * 0.18
+			# Add slight detuned copy for width
+			melody_wave += _pulse_wave(t * melody_freq * 1.005, 0.5 - duty) * 0.08
+			sample += melody_wave * melody_env
+
+		# Bass - bitcrushed effect (quantize to fewer levels)
+		var bass_freq = bass_pattern[quarter_idx] * 0.5
+		var bass_raw = _square_wave(t * bass_freq) * 0.25
+		# Bitcrush: quantize to 16 levels for digital grit
+		bass_raw = round(bass_raw * 8.0) / 8.0
+		var bass_env = 1.0 - t_in_quarter * 0.3  # Slight decay
+		sample += bass_raw * bass_env
+
+		# Electronic drums
+		var beat_pos = fmod(t, beat_duration)
+		var beat_in_bar = int(t / beat_duration) % 4
+
+		# Kick - punchy electronic (sine sweep down)
+		if beat_pos < 0.04:
+			var kick_env = pow(1.0 - beat_pos / 0.04, 2.5)
+			var kick_freq = 150 - beat_pos * 2000  # Pitch sweep down
+			var kick = sin(beat_pos * kick_freq * TAU) * kick_env * 0.45
+			sample += kick
+
+		# Clap/snare on 2 and 4 (electronic clap = short noise burst)
+		if beat_in_bar in [1, 3] and beat_pos < 0.06:
+			var clap_env = pow(1.0 - beat_pos / 0.06, 2)
+			var clap = randf_range(-0.35, 0.35) * clap_env
+			# Add a tonal ping for electronic flavor
+			clap += sin(beat_pos * 1200 * TAU) * clap_env * 0.1
+			sample += clap
+
+		# Fast hi-hat (every 16th note for driving electronic rhythm)
+		var sixteenth_pos = fmod(t, sixteenth_duration)
+		if sixteenth_pos < 0.008:
+			var hat_env = pow(1.0 - sixteenth_pos / 0.008, 5)
+			var hat = randf_range(-0.12, 0.12) * hat_env
+			sample += hat
+
+		# Digital glitch accents - random pitch blips at section transitions
+		var bar_num = int(t / (beat_duration * 4)) % 12
+		if bar_num in [3, 7, 11]:  # Last bar of each section
+			var bar_pos = fmod(t, beat_duration * 4)
+			var glitch_beat = beat_duration * 3.0  # Beat 4
+			if bar_pos >= glitch_beat and bar_pos < glitch_beat + beat_duration:
+				var glitch_t = bar_pos - glitch_beat
+				# Rapid random frequency glitch
+				var glitch_freq = 800 + sin(glitch_t * 50) * 400
+				var glitch_env = pow(1.0 - glitch_t / beat_duration, 0.5)
+				sample += _square_wave(t * glitch_freq) * glitch_env * 0.08
+
+		# Soft clip
+		sample = clamp(sample * 1.2, -0.85, 0.85)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _start_void_battle_music() -> void:
+	"""Generate minimal, unsettling void battle music.
+	   Sparse hits, deep reverb, silence between notes.
+	   The quietest, most uncomfortable battle music."""
+	_music_playing = true
+	print("[MUSIC] Playing void battle theme")
+
+	var sample_rate = 22050
+	var bpm = 80.0  # Slow, deliberate, uncomfortable
+	var bars = 16  # Longer loop for more variation in sparse arrangement
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_void_battle_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_void_battle_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate minimal void battle theme - sparse, unsettling, uncomfortable.
+	   Key: Atonal / chromatic clusters. Mostly silence with isolated hits,
+	   dissonant intervals, deep sub-bass drones. Like fighting in a vacuum.
+	   The quietest battle music - the absence of sound IS the music."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# Sparse, dissonant note choices - tritones and minor 2nds
+	const NOTE_E2 = 82.41   # Sub bass drone
+	const NOTE_F2 = 87.31
+	const NOTE_B2 = 123.47  # Tritone from F
+	const NOTE_C3 = 130.81
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_B3 = 246.94  # Tritone
+	const NOTE_C4 = 261.63
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_Gb4 = 369.99  # Minor 2nd above F
+	const NOTE_B4 = 493.88
+	const NOTE_C5 = 523.25
+	const NOTE_E5 = 659.25
+	const NOTE_F5 = 698.46
+
+	# Melody is EXTREMELY sparse - mostly silence (0), occasional isolated notes
+	# Each beat gets a 16th note slot; 0 = silence
+	# 16 bars * 16 sixteenths = 256 slots
+	var melody_pattern = [
+		# Bar 1: silence... then a single note
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NOTE_B4, 0, 0, 0, 0, 0,
+		# Bar 2: silence
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 3: two dissonant notes far apart
+		0, 0, 0, 0, NOTE_F4, 0, 0, 0, 0, 0, 0, 0, 0, NOTE_E4, 0, 0,
+		# Bar 4: silence
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 5: high isolated ping
+		0, 0, 0, 0, 0, 0, 0, 0, NOTE_E5, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 6: chromatic cluster (unsettling)
+		0, 0, 0, NOTE_F4, 0, NOTE_Gb4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 7: silence with low thud
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NOTE_C4, 0, 0, 0,
+		# Bar 8: tritone
+		0, 0, 0, 0, 0, NOTE_F4, 0, 0, 0, 0, 0, NOTE_B4, 0, 0, 0, 0,
+		# Bar 9: single high note, very exposed
+		0, 0, 0, 0, 0, 0, NOTE_C5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 10: silence
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 11: descending tritones
+		0, 0, NOTE_B4, 0, 0, 0, NOTE_F4, 0, 0, 0, NOTE_B3, 0, 0, 0, NOTE_F3, 0,
+		# Bar 12: silence
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 13: sudden cluster
+		0, 0, 0, 0, 0, 0, 0, 0, 0, NOTE_E4, NOTE_F4, 0, 0, 0, 0, 0,
+		# Bar 14: isolated high
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NOTE_F5, 0, 0, 0,
+		# Bar 15: building tension
+		0, 0, 0, NOTE_E4, 0, 0, 0, NOTE_F4, 0, 0, 0, NOTE_B4, 0, 0, NOTE_C5, 0,
+		# Bar 16: fade to nothing
+		NOTE_E5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	# Sub-bass drone pattern (per bar, very quiet background)
+	# Some bars have drone, some don't - the absence is part of the composition
+	var drone_bars = [
+		NOTE_E2,  # Bar 1
+		0,        # Bar 2 - no drone (pure silence)
+		NOTE_F2,  # Bar 3
+		0,        # Bar 4
+		NOTE_E2,  # Bar 5
+		NOTE_F2,  # Bar 6
+		0,        # Bar 7
+		NOTE_B2,  # Bar 8 - tritone bass
+		0,        # Bar 9
+		0,        # Bar 10 - extended silence
+		NOTE_E2,  # Bar 11
+		0,        # Bar 12
+		NOTE_F2,  # Bar 13
+		0,        # Bar 14
+		NOTE_E2,  # Bar 15
+		0,        # Bar 16 - ends in void
+	]
+
+	var sixteenth_duration = beat_duration / 4.0
+	var bar_duration = beat_duration * 4.0
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_duration) % 256  # 16 bars * 16
+		var bar_idx = int(t / bar_duration) % 16
+		var t_in_sixteenth = fmod(t, sixteenth_duration) / sixteenth_duration
+
+		var sample = 0.0
+
+		# Melody notes - sine wave with long reverb tail (exposed, pure)
+		var melody_freq = melody_pattern[sixteenth_idx]
+		if melody_freq > 0:
+			# Sharp attack, very long natural decay (like striking glass in silence)
+			var note_time = fmod(t, sixteenth_duration)
+			var attack = min(note_time * 200.0, 1.0)  # Instant attack
+			var decay = pow(0.3, note_time * 2.0)  # Long resonant decay
+			var env = attack * decay
+			# Pure sine with slight detuned 2nd for ghostly quality
+			var tone = sin(t * melody_freq * TAU) * 0.7
+			tone += sin(t * melody_freq * 1.002 * TAU) * 0.3  # Slight beating
+			sample += tone * env * 0.18
+
+		# Sub-bass drone (barely audible, felt more than heard)
+		var drone_freq = drone_bars[bar_idx]
+		if drone_freq > 0:
+			# Slow amplitude modulation for unease
+			var mod = 0.5 + sin(t * 0.3 * TAU) * 0.3  # Very slow wobble
+			var drone = sin(t * drone_freq * TAU) * mod * 0.08
+			sample += drone
+
+		# Sparse percussion - irregular, unsettling
+		var beat_pos = fmod(t, beat_duration)
+		var beat_in_bar = int(t / beat_duration) % 4
+		var absolute_beat = int(t / beat_duration) % 64
+
+		# Occasional deep thud (not on every beat - random-feeling pattern)
+		# Only on specific beats for rhythmic unease
+		if absolute_beat in [2, 11, 19, 28, 37, 45, 53, 61]:
+			if beat_pos < 0.08:
+				var thud_env = pow(1.0 - beat_pos / 0.08, 3)
+				# Very low frequency thud
+				var thud = sin(beat_pos * 40 * TAU) * thud_env * 0.3
+				sample += thud
+
+		# Occasional metallic ping (wind chime in the void)
+		if absolute_beat in [7, 23, 41, 55]:
+			if beat_pos < 0.15:
+				var ping_env = pow(1.0 - beat_pos / 0.15, 1.0)
+				var ping = sin(beat_pos * 3200 * TAU) * ping_env * 0.04
+				ping += sin(beat_pos * 4100 * TAU) * ping_env * 0.02  # Inharmonic
+				sample += ping
+
+		# Breath-like noise swell (every 8 bars)
+		if bar_idx in [3, 11]:
+			var bar_pos = fmod(t, bar_duration) / bar_duration
+			if bar_pos > 0.5:
+				var breath_vol = sin((bar_pos - 0.5) * 2.0 * PI) * 0.03
+				sample += randf_range(-breath_vol, breath_vol)
+
+		# Very subtle - do NOT hard clip, let it be quiet
+		sample = clamp(sample, -0.5, 0.5)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _start_abstract_music() -> void:
+	"""Generate minimal abstract void theme - the most sparse music in the game.
+	   Long sustained tones, occasional single piano notes, vast silence between.
+	   Almost like the music itself has been optimized down to nearly nothing.
+	   Haunting and beautiful."""
+	_music_playing = true
+	print("[MUSIC] Playing abstract void theme")
+
+	var sample_rate = 22050
+	var bpm = 40.0  # Extremely slow - glacial, contemplative
+	var bars = 32  # Longer loop for more variation in the silence
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_abstract_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_abstract_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate minimal abstract void music - the sound of optimized nothing.
+	   Features: long sustained sine tones, single piano-like notes with vast gaps,
+	   subharmonic drones, the occasional high harmonic like a glass singing bowl.
+	   Most of the music is silence. The silence IS the music."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+	var bar_duration = beat_duration * 4
+
+	# Notes chosen for their overtone purity and emotional weight
+	# Mostly perfect fifths, octaves, and the occasional suspended note
+	const NOTE_C2 = 65.41    # Deep foundation
+	const NOTE_G2 = 98.00    # Perfect fifth
+	const NOTE_C3 = 130.81   # Octave
+	const NOTE_G3 = 196.0    # Perfect fifth
+	const NOTE_C4 = 261.63   # Middle C - the "piano" note
+	const NOTE_E4 = 329.63   # Sweetness
+	const NOTE_G4 = 392.0    # Clarity
+	const NOTE_C5 = 523.25   # High octave
+	const NOTE_E5 = 659.25   # High sweetness
+
+	# Sparse piano melody - most beats are silence (0)
+	# Only ~12 notes across 32 bars. Each one precious.
+	var piano_events: Array = [
+		# [bar, beat_in_bar, note_freq, velocity(0-1)]
+		[1, 0.0, NOTE_C4, 0.35],      # First note after long silence
+		[3, 2.5, NOTE_E4, 0.25],      # Gentle answer
+		[6, 1.0, NOTE_G4, 0.30],      # Rising
+		[8, 0.0, NOTE_C5, 0.20],      # Peak - barely there
+		[10, 3.0, NOTE_E4, 0.28],     # Falling back
+		[13, 1.5, NOTE_C4, 0.32],     # Return
+		[16, 0.0, NOTE_G3, 0.22],     # Deeper
+		[19, 2.0, NOTE_E5, 0.15],     # Highest - like a star
+		[22, 1.0, NOTE_C4, 0.30],     # Home again
+		[25, 3.5, NOTE_E4, 0.20],     # Low warmth
+		[28, 0.0, NOTE_G4, 0.25],     # Gentle rise
+		[30, 2.0, NOTE_C4, 0.18],     # Final whisper before loop
+	]
+
+	# Drone events - long sustained tones that swell and fade
+	# [start_bar, end_bar, frequency, max_volume]
+	var drone_events: Array = [
+		[0, 8, NOTE_C2, 0.12],        # Opening drone
+		[4, 14, NOTE_G2, 0.08],       # Fifth enters
+		[12, 22, NOTE_C3, 0.10],      # Octave up
+		[18, 28, NOTE_G2, 0.07],      # Fifth returns
+		[24, 32, NOTE_C2, 0.11],      # Closing drone
+	]
+
+	# Harmonic events - glass singing bowl tones, very high, very quiet
+	# [bar, beat, frequency, duration_beats]
+	var harmonic_events: Array = [
+		[2, 0.0, NOTE_C5 * 2.0, 4.0],   # 2 octaves above middle C
+		[9, 2.0, NOTE_G4 * 2.0, 3.0],
+		[17, 1.0, NOTE_E5 * 2.0, 5.0],
+		[26, 3.0, NOTE_C5 * 2.0, 4.0],
+	]
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var bar_float = t / bar_duration
+		var bar_idx = int(bar_float) % 32
+		var beat_in_bar = fmod(t, bar_duration) / beat_duration
+
+		var sample = 0.0
+
+		# === Drone layer - long, sustained, pure sine tones ===
+		# These are the breath of the void. Slow swells.
+		for drone in drone_events:
+			var d_start: float = float(drone[0])
+			var d_end: float = float(drone[1])
+			var d_freq: float = float(drone[2])
+			var d_vol: float = float(drone[3])
+
+			if bar_float >= d_start and bar_float < d_end:
+				var drone_progress = (bar_float - d_start) / (d_end - d_start)
+				# Slow swell: fade in over first quarter, sustain, fade out over last quarter
+				var drone_env: float
+				if drone_progress < 0.25:
+					drone_env = drone_progress / 0.25
+				elif drone_progress > 0.75:
+					drone_env = (1.0 - drone_progress) / 0.25
+				else:
+					drone_env = 1.0
+				drone_env = drone_env * drone_env  # Smooth curve
+
+				# Pure sine with very slight vibrato (like a bowed string)
+				var vibrato = sin(t * 0.3) * 0.002
+				var drone_wave = sin(t * d_freq * (1.0 + vibrato) * TAU)
+				# Add a very quiet octave harmonic
+				drone_wave += sin(t * d_freq * 2.0 * TAU) * 0.15
+				sample += drone_wave * d_vol * drone_env
+
+		# === Piano layer - single notes with natural decay ===
+		for event in piano_events:
+			var e_bar: float = float(event[0])
+			var e_beat: float = float(event[1])
+			var e_freq: float = float(event[2])
+			var e_vel: float = float(event[3])
+
+			var note_time = e_bar * bar_duration + e_beat * beat_duration
+			var time_since_note = t - note_time
+
+			# Piano notes ring for about 4 seconds with natural decay
+			if time_since_note >= 0 and time_since_note < 4.0:
+				# Piano envelope: sharp attack, exponential decay
+				var attack = min(time_since_note * 80.0, 1.0)
+				var decay = pow(0.35, time_since_note)  # Slower decay = longer ring
+				var env = attack * decay
+
+				# Piano timbre: fundamental + harmonics with different decay rates
+				var piano = sin(t * e_freq * TAU) * 1.0
+				piano += sin(t * e_freq * 2.0 * TAU) * 0.5 * pow(0.5, time_since_note)
+				piano += sin(t * e_freq * 3.0 * TAU) * 0.25 * pow(0.7, time_since_note)
+				piano += sin(t * e_freq * 4.0 * TAU) * 0.12 * pow(0.9, time_since_note)
+				# Slight detuning for warmth
+				piano += sin(t * e_freq * 1.002 * TAU) * 0.3 * decay
+
+				sample += piano * e_vel * env
+
+		# === Harmonic layer - glass singing bowls ===
+		for harm in harmonic_events:
+			var h_bar: float = float(harm[0])
+			var h_beat: float = float(harm[1])
+			var h_freq: float = float(harm[2])
+			var h_dur_beats: float = float(harm[3])
+
+			var harm_time = h_bar * bar_duration + h_beat * beat_duration
+			var harm_duration = h_dur_beats * beat_duration
+			var time_since_harm = t - harm_time
+
+			if time_since_harm >= 0 and time_since_harm < harm_duration:
+				var h_progress = time_since_harm / harm_duration
+				# Very gentle swell and fade
+				var h_env = sin(h_progress * PI)
+				h_env = h_env * h_env  # Smoother
+				# Pure high sine - like striking a crystal
+				var harm_wave = sin(t * h_freq * TAU)
+				harm_wave += sin(t * h_freq * 1.5 * TAU) * 0.3  # Inharmonic partial
+				sample += harm_wave * 0.025 * h_env
+
+		# === Silence texture - the faintest possible noise floor ===
+		# Even in silence, the void has a sound - like blood in your ears
+		sample += randf_range(-0.003, 0.003)
+
+		# === Very occasional sub-bass pulse - felt more than heard ===
+		# Like a heartbeat in the void, very rare
+		var absolute_beat = int(t / beat_duration)
+		if absolute_beat in [0, 32, 64, 96]:
+			var beat_pos = fmod(t, beat_duration * 8) / (beat_duration * 8)
+			if beat_pos < 0.02:
+				var pulse = sin(beat_pos * 30 * TAU) * pow(1.0 - beat_pos / 0.02, 3)
+				sample += pulse * 0.08
+
+		# Gentle limiting - this music should be QUIET
+		sample = clamp(sample, -0.6, 0.6)
 		buffer.append(Vector2(sample, sample))
 
 	return buffer

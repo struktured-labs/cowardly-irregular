@@ -263,157 +263,264 @@ func generate_tile(type: TileType, variant: int = 0) -> ImageTexture:
 
 ## VOID_WHITE - Pure white with barely perceptible texture
 ## The default state of total optimization. Nothing unnecessary remains.
-## Look closely and you might see the faintest grain - or is that your eyes?
+## Stare long enough and your eyes invent patterns - phantom grain, ghostly Moire,
+## the visual equivalent of silence so deep you hear your own blood.
 func _draw_void_white(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 10001
 
-	# Extremely subtle texture noise - barely perceptible
+	# Layer 1: Perlin-ish noise field - so subtle it might be your imagination
+	# Multiple overlapping sine waves at different frequencies create organic grain
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n1 = sin(x * 0.15 + variant * 0.7) * cos(y * 0.12 + variant * 0.4)
-			var n2 = sin(x * 0.4 + y * 0.3 + variant * 1.1) * 0.15
-			var combined = (n1 + n2) / 2.0 + rng.randf() * 0.04
-			if combined < -0.15:
+			# Three octaves of noise, each barely visible
+			var n1 = sin(x * 0.15 + variant * 0.7) * cos(y * 0.12 + variant * 0.4) * 0.35
+			var n2 = sin(x * 0.4 + y * 0.3 + variant * 1.1) * 0.2
+			var n3 = sin(x * 0.8 + y * 0.7 - variant * 0.3) * cos(x * 0.2 - y * 0.5) * 0.1
+			# Micro-dithering: individual pixel noise, barely above threshold
+			var dither = (rng.randf() - 0.5) * 0.06
+			var combined = n1 + n2 + n3 + dither
+
+			if combined < -0.25:
 				img.set_pixel(x, y, palette["grain1"])
-			elif combined > 0.18:
+			elif combined < -0.12:
+				# Ghostly pattern - your eyes create shapes that aren't there
+				img.set_pixel(x, y, palette["absence"])
+			elif combined > 0.22:
 				img.set_pixel(x, y, palette["breath"])
-			elif combined > 0.08:
+			elif combined > 0.10:
 				img.set_pixel(x, y, palette["grain2"])
+			elif combined > 0.05:
+				img.set_pixel(x, y, palette["nothing"])
 
-	# Occasional warm or cool drift across the void
-	if variant % 5 == 0:
-		var drift_y = rng.randi_range(8, 24)
+	# Layer 2: Phantom Moire pattern - concentric circles so faint they
+	# appear and disappear as your eyes move. The void breathes.
+	var center_x = TILE_SIZE / 2 + int(sin(variant * 1.7) * 6)
+	var center_y = TILE_SIZE / 2 + int(cos(variant * 2.3) * 6)
+	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var fade = sin(x * 0.1 + variant * 0.5) * 0.5 + 0.5
-			if fade > 0.6:
-				img.set_pixel(x, drift_y, palette["warm"])
-	elif variant % 5 == 2:
-		var drift_x = rng.randi_range(8, 24)
-		for y in range(TILE_SIZE):
-			var fade = sin(y * 0.1 + variant * 0.3) * 0.5 + 0.5
-			if fade > 0.65:
-				img.set_pixel(drift_x, y, palette["cool"])
+			var dist = sqrt(pow(x - center_x, 2) + pow(y - center_y, 2))
+			var ring = sin(dist * 0.6 + variant * 0.9) * 0.5 + 0.5
+			if ring > 0.92 and rng.randf() < 0.15:
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lerp(palette["grain1"], 0.25))
 
-	# Very rare single dust mote
-	if variant % 7 == 0:
-		var dx = rng.randi_range(4, TILE_SIZE - 5)
-		var dy = rng.randi_range(4, TILE_SIZE - 5)
-		img.set_pixel(dx, dy, palette["dust"])
+	# Layer 3: Temperature drift - warm or cool currents barely perceptible,
+	# like air moving in an empty room
+	var drift_angle = variant * 0.618  # Golden ratio for non-repeating drift
+	var drift_dx = cos(drift_angle)
+	var drift_dy = sin(drift_angle)
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var projected = x * drift_dx + y * drift_dy
+			var wave = sin(projected * 0.12 + variant * 0.4) * 0.5 + 0.5
+			if wave > 0.88 and rng.randf() < 0.08:
+				var current = img.get_pixel(x, y)
+				var drift_col = palette["warm"] if variant % 3 == 0 else palette["cool"]
+				img.set_pixel(x, y, current.lerp(drift_col, 0.12))
+
+	# Layer 4: Rare dust motes - single pixels that suggest particles
+	# floating in the void, visible only because the void is so empty
+	if variant % 5 == 0:
+		var mote_count = rng.randi_range(1, 2)
+		for _m in range(mote_count):
+			var mx = rng.randi_range(3, TILE_SIZE - 4)
+			var my = rng.randi_range(3, TILE_SIZE - 4)
+			img.set_pixel(mx, my, palette["dust"])
+			# Mote has the faintest halo
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var hx = mx + d.x
+				var hy = my + d.y
+				if hx >= 0 and hx < TILE_SIZE and hy >= 0 and hy < TILE_SIZE:
+					var current = img.get_pixel(hx, hy)
+					img.set_pixel(hx, hy, current.lerp(palette["dust"], 0.06))
 
 
 ## VOID_GRAY - Slightly darker void suggesting depth beneath the white
-## Like looking into fog - there's something underneath the nothing.
+## Like looking down into fog from a great height. There are layers below -
+## gray within gray within gray, each one slightly darker, receding forever.
+## You could fall into this. You might already be falling.
 func _draw_void_gray(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 20002
 
-	# Subtle depth variation - like fog layers
+	# Layer 1: Deep fog turbulence - billowing clouds of gray suggesting
+	# massive depth below the surface. Each pixel is a window into the abyss.
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var depth = sin(x * 0.2 + y * 0.15 + variant * 0.9) * 0.3
-			var turbulence = sin(x * 0.7 + y * 0.5 + variant * 1.6) * 0.12
-			var combined = depth + turbulence + rng.randf() * 0.06
-			if combined < -0.18:
+			# Multiple fog layers at different "depths"
+			var shallow = sin(x * 0.2 + y * 0.15 + variant * 0.9) * 0.25
+			var mid_depth = sin(x * 0.35 + y * 0.28 + variant * 1.6) * 0.18
+			var deep_layer = sin(x * 0.55 + y * 0.45 + variant * 2.3) * 0.12
+			var turbulence = sin(x * 0.7 + y * 0.5 + variant * 1.6) * 0.08
+			var combined = shallow + mid_depth + deep_layer + turbulence + rng.randf() * 0.05
+
+			if combined < -0.30:
 				img.set_pixel(x, y, palette["deep"])
-			elif combined < -0.08:
+			elif combined < -0.18:
 				img.set_pixel(x, y, palette["dark"])
-			elif combined > 0.15:
+			elif combined < -0.06:
+				img.set_pixel(x, y, palette["edge"])
+			elif combined > 0.20:
 				img.set_pixel(x, y, palette["light"])
-			elif combined > 0.06:
+			elif combined > 0.08:
 				img.set_pixel(x, y, palette["mid"])
 
-	# Warm/cool temperature shift
-	var temp_shift = sin(variant * 2.3) * 0.5 + 0.5
-	if temp_shift > 0.7:
-		for y in range(TILE_SIZE):
-			for x in range(TILE_SIZE):
-				if rng.randf() < 0.03:
-					img.set_pixel(x, y, palette["warm"])
-	elif temp_shift < 0.3:
-		for y in range(TILE_SIZE):
-			for x in range(TILE_SIZE):
-				if rng.randf() < 0.03:
-					img.set_pixel(x, y, palette["cool"])
+	# Layer 2: Vertical depth gradient - darker toward the center,
+	# as if the tile is a well you're peering into
+	var well_cx = TILE_SIZE / 2 + int(sin(variant * 1.1) * 4)
+	var well_cy = TILE_SIZE / 2 + int(cos(variant * 0.7) * 4)
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var dist_from_center = sqrt(pow(x - well_cx, 2) + pow(y - well_cy, 2))
+			var depth_factor = 1.0 - clamp(dist_from_center / 18.0, 0.0, 1.0)
+			if depth_factor > 0.1:
+				var current = img.get_pixel(x, y)
+				var deeper = current.lerp(palette["dark"], depth_factor * 0.15)
+				img.set_pixel(x, y, deeper)
 
-	# Soft edge fade toward white at borders
-	for x in range(TILE_SIZE):
-		var edge_fade = min(x, TILE_SIZE - 1 - x) / 6.0
-		if edge_fade < 1.0:
-			var current = img.get_pixel(x, 0)
-			img.set_pixel(x, 0, current.lerp(palette["fade"], 1.0 - edge_fade))
-		edge_fade = min(x, TILE_SIZE - 1 - x) / 6.0
-		if edge_fade < 1.0:
-			var current = img.get_pixel(x, TILE_SIZE - 1)
-			img.set_pixel(x, TILE_SIZE - 1, current.lerp(palette["fade"], 1.0 - edge_fade))
+	# Layer 3: Fog wisps - thin streaks that suggest movement in the depths
+	var wisp_count = rng.randi_range(2, 4)
+	for _w in range(wisp_count):
+		var wy = rng.randi_range(4, TILE_SIZE - 5)
+		var wx_start = rng.randi_range(0, TILE_SIZE / 3)
+		var wx_end = rng.randi_range(TILE_SIZE * 2 / 3, TILE_SIZE)
+		for wx in range(wx_start, wx_end):
+			if wx >= 0 and wx < TILE_SIZE:
+				var wisp_y = wy + int(sin(wx * 0.3 + variant * 0.5) * 1.5)
+				if wisp_y >= 0 and wisp_y < TILE_SIZE:
+					var fade = sin(float(wx - wx_start) / float(wx_end - wx_start) * PI)
+					var current = img.get_pixel(wx, wisp_y)
+					img.set_pixel(wx, wisp_y, current.lerp(palette["light"], fade * 0.12))
+
+	# Layer 4: Temperature - the fog has warm and cool pockets
+	var temp_shift = sin(variant * 2.3) * 0.5 + 0.5
+	var temp_col = palette["warm"] if temp_shift > 0.5 else palette["cool"]
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var temp_noise = sin(x * 0.25 + y * 0.2 + variant * 3.1) * 0.5 + 0.5
+			if temp_noise > 0.85 and rng.randf() < 0.06:
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lerp(temp_col, 0.08))
+
+	# Layer 5: Edge dissolution - the gray fades to white at borders,
+	# suggesting the fog recedes where it meets the void
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var edge_dist = min(min(x, TILE_SIZE - 1 - x), min(y, TILE_SIZE - 1 - y))
+			if edge_dist < 4:
+				var fade_amount = (4.0 - edge_dist) / 4.0
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lerp(palette["fade"], fade_amount * 0.3))
 
 
 ## VOID_BLACK - Deep absence, the REAL void (impassable)
 ## Not just darkness - the complete absence of everything. Even absence is absent here.
+## Stare into it and you feel it staring back. Occasionally a star flickers -
+## impossibly distant, from a universe that was also optimized away.
 func _draw_void_black(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 30003
 
-	# Deep, unsettling texture - like staring into nothing
+	# Layer 1: The base void - not flat black but unsettlingly varied,
+	# like the darkness behind your eyelids that shifts and churns
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.3 + y * 0.25 + variant * 1.4) * 0.2 + rng.randf() * 0.08
-			if n < -0.12:
+			var n1 = sin(x * 0.3 + y * 0.25 + variant * 1.4) * 0.18
+			var n2 = sin(x * 0.6 - y * 0.4 + variant * 2.7) * 0.10
+			var n3 = cos(x * 0.15 + y * 0.35 + variant * 0.6) * 0.08
+			var noise = rng.randf() * 0.06
+			var combined = n1 + n2 + n3 + noise
+
+			if combined < -0.20:
 				img.set_pixel(x, y, palette["abyss"])
-			elif n > 0.14:
+			elif combined < -0.08:
+				img.set_pixel(x, y, palette["deep"])
+			elif combined > 0.18:
 				img.set_pixel(x, y, palette["surface"])
-			elif n > 0.05:
+			elif combined > 0.06:
 				img.set_pixel(x, y, palette["grain"])
 
-	# Occasional deep color shifts - void is not just black
-	var color_seed = variant % 4
-	if color_seed == 0:
-		for _i in range(rng.randi_range(2, 5)):
-			var px = rng.randi_range(0, TILE_SIZE - 1)
-			var py = rng.randi_range(0, TILE_SIZE - 1)
-			img.set_pixel(px, py, palette["void_purple"])
-	elif color_seed == 1:
-		for _i in range(rng.randi_range(2, 5)):
-			var px = rng.randi_range(0, TILE_SIZE - 1)
-			var py = rng.randi_range(0, TILE_SIZE - 1)
-			img.set_pixel(px, py, palette["void_blue"])
-
-	# Faint shimmer along edges - boundary between void and world
-	for x in range(TILE_SIZE):
-		if rng.randf() < 0.15:
-			img.set_pixel(x, 0, palette["shimmer"])
-		if rng.randf() < 0.15:
-			img.set_pixel(x, TILE_SIZE - 1, palette["shimmer"])
+	# Layer 2: Deep color veins - the void is not just black, it shifts
+	# between impossible dark purples and blues, like bruises in reality
 	for y in range(TILE_SIZE):
-		if rng.randf() < 0.15:
-			img.set_pixel(0, y, palette["shimmer"])
-		if rng.randf() < 0.15:
-			img.set_pixel(TILE_SIZE - 1, y, palette["shimmer"])
+		for x in range(TILE_SIZE):
+			var vein = sin(x * 0.18 + y * 0.12 + variant * 3.1) * cos(x * 0.08 - y * 0.2)
+			if vein > 0.35 and rng.randf() < 0.12:
+				var current = img.get_pixel(x, y)
+				var vein_col = palette["void_purple"] if variant % 3 != 2 else palette["void_blue"]
+				img.set_pixel(x, y, current.lerp(vein_col, 0.3))
+			elif vein < -0.35 and rng.randf() < 0.10:
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lerp(palette["void_blue"], 0.25))
 
-	# Rare edge glow - things dissolve at the boundary
-	if variant % 3 == 0:
-		var glow_side = rng.randi_range(0, 3)
-		for i in range(TILE_SIZE):
-			var intensity = sin(i * 0.2 + variant * 0.8) * 0.5 + 0.5
-			if intensity > 0.6:
-				match glow_side:
-					0: img.set_pixel(i, 0, palette["edge_glow"])
-					1: img.set_pixel(i, TILE_SIZE - 1, palette["edge_glow"])
-					2: img.set_pixel(0, i, palette["edge_glow"])
-					3: img.set_pixel(TILE_SIZE - 1, i, palette["edge_glow"])
+	# Layer 3: Barely-visible stars - impossibly distant pinpricks of light
+	# from a universe that was also optimized away. 1-3 per tile.
+	var star_count = rng.randi_range(0, 3)
+	for _s in range(star_count):
+		var sx = rng.randi_range(2, TILE_SIZE - 3)
+		var sy = rng.randi_range(2, TILE_SIZE - 3)
+		# Star brightness varies - some are barely visible, one might twinkle
+		var brightness = rng.randf_range(0.08, 0.18)
+		var star_col = Color(brightness, brightness, brightness + 0.02)
+		img.set_pixel(sx, sy, star_col)
+		# Faintest possible diffraction spike on brightest stars
+		if brightness > 0.14:
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var dx = sx + d.x
+				var dy = sy + d.y
+				if dx >= 0 and dx < TILE_SIZE and dy >= 0 and dy < TILE_SIZE:
+					var spike_col = Color(brightness * 0.3, brightness * 0.3, brightness * 0.35)
+					var current = img.get_pixel(dx, dy)
+					img.set_pixel(dx, dy, current.lerp(spike_col, 0.4))
+
+	# Layer 4: Edge shimmer - the boundary between void and world is unstable,
+	# as if reality is being pulled apart at the seams
+	for x in range(TILE_SIZE):
+		for border_y in [0, TILE_SIZE - 1]:
+			if rng.randf() < 0.18:
+				img.set_pixel(x, border_y, palette["shimmer"])
+			elif rng.randf() < 0.06:
+				img.set_pixel(x, border_y, palette["edge_glow"])
+	for y in range(1, TILE_SIZE - 1):
+		for border_x in [0, TILE_SIZE - 1]:
+			if rng.randf() < 0.18:
+				img.set_pixel(border_x, y, palette["shimmer"])
+			elif rng.randf() < 0.06:
+				img.set_pixel(border_x, y, palette["edge_glow"])
+
+	# Layer 5: The deepest abyss pocket - one spot per tile that is
+	# somehow DARKER than black. A hole in the hole.
+	if variant % 2 == 0:
+		var ax = rng.randi_range(6, TILE_SIZE - 7)
+		var ay = rng.randi_range(6, TILE_SIZE - 7)
+		var abyss_r = rng.randi_range(2, 4)
+		for dy in range(-abyss_r, abyss_r + 1):
+			for dx in range(-abyss_r, abyss_r + 1):
+				var dist = sqrt(dx * dx + dy * dy)
+				if dist < abyss_r:
+					var px = ax + dx
+					var py = ay + dy
+					if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+						var depth = 1.0 - (dist / abyss_r)
+						var current = img.get_pixel(px, py)
+						img.set_pixel(px, py, current.lerp(palette["abyss"], depth * 0.5))
 
 
 ## GRID_LINE - The world's skeleton, faint geometric grid on white
 ## When everything else is stripped away, only structure remains.
+## This is what reality looks like under the skin - pure coordinate space,
+## the wireframe model of existence. Some lines pulse faintly, still alive.
 func _draw_grid_line(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 40004
 
-	# Main grid lines every 8 pixels - the skeleton of reality
+	# Layer 1: Primary grid structure - major lines every 16px, minor every 8px
+	# The lines themselves have varying opacity, as if some are fading out of existence
 	for x in range(TILE_SIZE):
 		for y in range(TILE_SIZE):
 			var on_major_x = (x % 16 == 0)
@@ -422,100 +529,166 @@ func _draw_grid_line(img: Image, palette: Dictionary, variant: int) -> void:
 			var on_minor_y = (y % 8 == 0)
 
 			if on_major_x and on_major_y:
-				# Grid intersection nodes
+				# Grid intersection nodes - brighter, like synapses
 				img.set_pixel(x, y, palette["node"])
+				# Node glow bleeds one pixel in each direction
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nx = x + d.x
+					var ny = y + d.y
+					if nx >= 0 and nx < TILE_SIZE and ny >= 0 and ny < TILE_SIZE:
+						if not ((nx % 8 == 0) or (ny % 8 == 0)):
+							img.set_pixel(nx, ny, palette["glow"])
 			elif on_major_x or on_major_y:
-				# Major grid lines
-				var fade = rng.randf() * 0.15
-				if fade < 0.08:
-					img.set_pixel(x, y, palette["line"])
+				# Major lines - broken in places, as if the structure is decaying
+				var line_fade = sin(float(y if on_major_x else x) * 0.3 + variant * 0.8) * 0.5 + 0.5
+				if line_fade > 0.2:
+					img.set_pixel(x, y, palette["line"] if line_fade > 0.5 else palette["line_faint"])
 				else:
-					img.set_pixel(x, y, palette["line_faint"])
+					# Broken segment - the line disappears briefly
+					if rng.randf() < 0.15:
+						img.set_pixel(x, y, palette["ghost"])
 			elif on_minor_x or on_minor_y:
-				# Minor grid lines - even fainter
-				if rng.randf() < 0.4:
+				# Minor lines - much fainter, dotted, flickering
+				var minor_phase = sin(float(y if on_minor_x else x) * 0.5 + variant * 1.2)
+				if minor_phase > 0.0 and rng.randf() < 0.45:
 					img.set_pixel(x, y, palette["ghost"])
 
-	# Occasional grid "pulse" - a slightly brighter segment
-	if variant % 3 == 0:
-		var pulse_y = 0
-		for x in range(rng.randi_range(4, 12), rng.randi_range(20, 28)):
-			if x < TILE_SIZE:
-				img.set_pixel(x, pulse_y, palette["pulse"])
-	elif variant % 3 == 1:
-		var pulse_x = 0
-		for y in range(rng.randi_range(4, 12), rng.randi_range(20, 28)):
-			if y < TILE_SIZE:
-				img.set_pixel(pulse_x, y, palette["pulse"])
+	# Layer 2: Grid pulse - data still flows through certain lines,
+	# a pulse of light traveling along a line like a signal in a circuit
+	var pulse_count = rng.randi_range(1, 2)
+	for _p in range(pulse_count):
+		var is_horizontal = rng.randf() < 0.5
+		var line_pos = rng.randi_range(0, 1) * 16  # On a major line (0 or 16)
+		var pulse_start = rng.randi_range(2, 10)
+		var pulse_end = rng.randi_range(18, 30)
+		var pulse_center = (pulse_start + pulse_end) / 2
 
-	# Warmth bleeding through at random spots
-	if variant % 4 == 0:
-		var wx = rng.randi_range(2, TILE_SIZE - 3)
-		var wy = rng.randi_range(2, TILE_SIZE - 3)
-		img.set_pixel(wx, wy, palette["warmth"])
-		if wx + 1 < TILE_SIZE:
-			img.set_pixel(wx + 1, wy, palette["warmth"])
+		for i in range(pulse_start, min(pulse_end, TILE_SIZE)):
+			var dist_from_center = abs(i - pulse_center)
+			var pulse_intensity = 1.0 - (float(dist_from_center) / float(pulse_end - pulse_start) * 2.0)
+			if pulse_intensity > 0:
+				var px = i if is_horizontal else line_pos
+				var py = line_pos if is_horizontal else i
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					var current = img.get_pixel(px, py)
+					img.set_pixel(px, py, current.lerp(palette["pulse"], pulse_intensity * 0.4))
+
+	# Layer 3: Perspective distortion - the grid subtly warps near edges,
+	# as if we're seeing it from an angle, giving a 3D quality
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var warp = sin(x * 0.08 + y * 0.06 + variant * 0.3) * 0.003
+			if warp > 0.002:
+				var current = img.get_pixel(x, y)
+				if current != palette["base"]:
+					img.set_pixel(x, y, current.lerp(palette["skeleton"], 0.08))
+
+	# Layer 4: Warmth spots - traces of humanity that bled into the grid
+	if variant % 3 == 0:
+		var warm_count = rng.randi_range(1, 3)
+		for _w in range(warm_count):
+			var wx = rng.randi_range(3, TILE_SIZE - 4)
+			var wy = rng.randi_range(3, TILE_SIZE - 4)
+			var current = img.get_pixel(wx, wy)
+			img.set_pixel(wx, wy, current.lerp(palette["warmth"], 0.15))
+			if wx + 1 < TILE_SIZE:
+				var neighbor = img.get_pixel(wx + 1, wy)
+				img.set_pixel(wx + 1, wy, neighbor.lerp(palette["warmth"], 0.08))
 
 
 ## FRAGMENT_GRASS - A single tuft of green on white (memory of nature)
-## Everything green was optimized away. This single blade refused to leave.
+## Everything green was optimized away. This single tuft refused to leave.
+## In a world of white, this tiny splash of green is heartbreaking -
+## a memory of meadows, forests, life. It sways slightly in a wind that
+## no longer exists. The soil beneath it shouldn't be here either.
 func _draw_fragment_grass(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 50005
 
-	# Subtle white-on-white background texture
+	# Subtle white-on-white background with the faintest texture
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.15 + y * 0.12 + variant * 0.8) * 0.1 + rng.randf() * 0.03
-			if n > 0.08:
+			var n = sin(x * 0.15 + y * 0.12 + variant * 0.8) * 0.08 + rng.randf() * 0.02
+			if n > 0.06:
 				img.set_pixel(x, y, palette["dust"])
 
-	# The precious grass fragment - centered, small, vivid
+	# The precious grass fragment - centered, small, achingly vivid
 	var cx = TILE_SIZE / 2 + rng.randi_range(-3, 3)
-	var cy = TILE_SIZE / 2 + rng.randi_range(-2, 4)
+	var cy = TILE_SIZE / 2 + rng.randi_range(-1, 3)
 
-	# Tiny soil patch beneath the grass
-	for dx in range(-2, 3):
-		for dy in range(0, 2):
+	# Tiny irregular soil patch - the last earth that hasn't been optimized away
+	for dy in range(-1, 3):
+		for dx in range(-3, 4):
 			var px = cx + dx
-			var py = cy + dy + 2
+			var py = cy + dy + 3
 			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-				if abs(dx) < 2 or rng.randf() < 0.4:
-					img.set_pixel(px, py, palette["soil"])
+				var soil_dist = sqrt(dx * dx + dy * dy * 2)
+				if soil_dist < 3.0:
+					var soil_shade = palette["soil"]
+					if dy == -1 or abs(dx) == 3:
+						# Crumbling edges - the soil is fragmenting
+						if rng.randf() < 0.5:
+							soil_shade = palette["soil"].lerp(palette["base"], 0.4)
+						else:
+							continue
+					img.set_pixel(px, py, soil_shade)
 
-	# Three or four grass blades reaching upward
-	var blade_count = rng.randi_range(3, 5)
+	# Grass blades - each one lovingly detailed, reaching upward
+	# like tiny green prayers. Varying heights, subtle sway.
+	var blade_count = rng.randi_range(4, 6)
 	for b in range(blade_count):
 		var bx = cx + rng.randi_range(-2, 2)
-		var blade_height = rng.randi_range(4, 8)
-		var sway = rng.randf_range(-0.3, 0.3)
+		var blade_height = rng.randi_range(5, 9)
+		var sway = rng.randf_range(-0.35, 0.35)
+		var thickness = 1 if b < 2 else 0  # First two blades are thicker
+
 		for h in range(blade_height):
-			var px = bx + int(sin(h * 0.4 + sway * 2.0) * (h * 0.15))
-			var py = cy + 1 - h
+			var sway_amount = sin(h * 0.45 + sway * 2.5) * (h * 0.18)
+			var px = bx + int(sway_amount)
+			var py = cy + 2 - h
 			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-				var shade = palette["grass_green"]
-				if h == blade_height - 1:
-					shade = palette["grass_light"]
-				elif h < 2:
+				# Color gradient: dark at base, vivid in middle, bright at tip
+				var shade: Color
+				var t = float(h) / float(blade_height)
+				if t < 0.2:
 					shade = palette["grass_dark"]
+				elif t < 0.7:
+					shade = palette["grass_green"]
+				else:
+					shade = palette["grass_light"]
 				img.set_pixel(px, py, shade)
 
-	# Memory glow - faint color bleeding into the white around the fragment
-	for angle in range(0, 360, 30):
-		var rad = deg_to_rad(angle)
-		var dist = rng.randf_range(5.0, 8.0)
-		var gx = cx + int(cos(rad) * dist)
-		var gy = cy + int(sin(rad) * dist)
-		if gx >= 0 and gx < TILE_SIZE and gy >= 0 and gy < TILE_SIZE:
-			var current = img.get_pixel(gx, gy)
-			if current.r > 0.93:  # Only bleed into white areas
-				var bleed = current.lerp(palette["memory_glow"], 0.12)
-				img.set_pixel(gx, gy, Color(bleed.r, bleed.g, bleed.b, 1.0))
+				# Thicker blades have a highlight edge
+				if thickness > 0 and px + 1 < TILE_SIZE:
+					var highlight = shade.lightened(0.12)
+					img.set_pixel(px + 1, py, highlight)
+
+		# Tip of tallest blades has the brightest green - catching light
+		# from a sun that was deleted
+		if blade_height >= 7:
+			var tip_px = bx + int(sin(blade_height * 0.45 + sway * 2.5) * (blade_height * 0.18))
+			var tip_py = cy + 2 - blade_height
+			if tip_px >= 0 and tip_px < TILE_SIZE and tip_py >= 0 and tip_py < TILE_SIZE:
+				img.set_pixel(tip_px, tip_py, palette["grass_light"].lightened(0.1))
+
+	# Memory glow - the green bleeds into the surrounding white
+	# as if the grass is radiating life outward. Circular gradient halo.
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var dist = sqrt(pow(x - cx, 2) + pow(y - cy, 2))
+			if dist > 4 and dist < 10:
+				var current = img.get_pixel(x, y)
+				if current.r > 0.92 and current.g > 0.92:  # Only bleed into white
+					var intensity = (10.0 - dist) / 6.0
+					img.set_pixel(x, y, current.lerp(palette["memory_glow"], intensity * 0.08))
 
 
 ## FRAGMENT_BRICK - A single brick floating in white (memory of civilization)
 ## One brick from a wall that no longer exists. It remembers being part of something.
+## You can almost see the ghost of mortar where its neighbors used to be.
+## It is impossibly sad - this one brick, in all this white, holding the memory
+## of every building that ever was.
 func _draw_fragment_brick(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
@@ -524,159 +697,241 @@ func _draw_fragment_brick(img: Image, palette: Dictionary, variant: int) -> void
 	# Subtle background texture
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.12 + y * 0.1 + variant * 0.6) * 0.08 + rng.randf() * 0.02
-			if n > 0.06:
+			var n = sin(x * 0.12 + y * 0.1 + variant * 0.6) * 0.06 + rng.randf() * 0.02
+			if n > 0.05:
 				img.set_pixel(x, y, palette["dust"])
 
-	# The lone brick - slightly off-center, floating
+	# The lone brick - slightly off-center, floating in the void
 	var brick_x = TILE_SIZE / 2 - 5 + rng.randi_range(-2, 2)
 	var brick_y = TILE_SIZE / 2 - 3 + rng.randi_range(-2, 2)
 	var brick_w = 10
 	var brick_h = 6
 
-	# Faint shadow beneath (the brick floats slightly)
+	# Faint shadow beneath - the brick levitates slightly, as if
+	# gravity itself is uncertain here
 	for dx in range(-1, brick_w + 2):
-		for dy in range(1, 3):
+		for dy in range(1, 4):
 			var px = brick_x + dx
 			var py = brick_y + brick_h + dy
 			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-				var shadow_fade = 1.0 - (dy / 3.0)
+				var shadow_fade = 1.0 - (float(dy) / 4.0)
+				var x_fade = 1.0 - abs(float(dx - brick_w / 2) / float(brick_w / 2 + 2))
 				var current = img.get_pixel(px, py)
-				img.set_pixel(px, py, current.lerp(palette["shadow"], shadow_fade * 0.25))
+				img.set_pixel(px, py, current.lerp(palette["shadow"], shadow_fade * x_fade * 0.22))
 
-	# The brick itself with proper texture
+	# The brick itself - richly textured, lovingly detailed
+	# because this is the LAST BRICK. It deserves to be beautiful.
 	for dy in range(brick_h):
 		for dx in range(brick_w):
 			var px = brick_x + dx
 			var py = brick_y + dy
 			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
 				var shade = palette["brick_red"]
-				# Top edge highlight
+				# 3D beveling: top-left highlight, bottom-right shadow
 				if dy == 0:
 					shade = palette["brick_light"]
-				# Bottom edge dark
 				elif dy == brick_h - 1:
 					shade = palette["brick_dark"]
-				# Left edge light
 				elif dx == 0:
 					shade = palette["brick_light"]
-				# Right edge dark
 				elif dx == brick_w - 1:
 					shade = palette["brick_dark"]
-				# Internal grain texture
+				elif dy == 1 and dx > 0 and dx < brick_w - 1:
+					shade = shade.lightened(0.04)
+				elif dy == brick_h - 2:
+					shade = shade.darkened(0.03)
 				else:
-					var grain = sin(dx * 0.8 + dy * 1.2 + variant * 0.5) * 0.12
-					if grain > 0.06:
-						shade = shade.lightened(0.06)
-					elif grain < -0.06:
-						shade = shade.darkened(0.06)
+					# Internal grain - fired clay texture with micro-variation
+					var grain1 = sin(dx * 0.8 + dy * 1.2 + variant * 0.5) * 0.10
+					var grain2 = sin(dx * 1.5 + dy * 0.6 + variant * 1.2) * 0.05
+					var grain = grain1 + grain2
+					if grain > 0.08:
+						shade = shade.lightened(0.07)
+					elif grain > 0.03:
+						shade = shade.lightened(0.03)
+					elif grain < -0.08:
+						shade = shade.darkened(0.07)
+					elif grain < -0.03:
+						shade = shade.darkened(0.03)
 				img.set_pixel(px, py, shade)
 
-	# Mortar traces - remnants of the wall it belonged to
-	if variant % 3 == 0:
-		# Mortar line at top (memory of the brick above)
-		for dx in range(-1, brick_w + 1):
-			var px = brick_x + dx
-			var py = brick_y - 1
-			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-				if rng.randf() < 0.5:
-					img.set_pixel(px, py, palette["mortar"])
-
-	# Memory glow around the brick
-	for dy in range(-2, brick_h + 3):
-		for dx in range(-2, brick_w + 3):
-			var px = brick_x + dx
-			var py = brick_y + dy
-			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+	# Ghost mortar lines - traces of where neighboring bricks used to be
+	# These extend outward from the brick, fading into nothing
+	# Top mortar ghost (the brick above is gone)
+	for dx in range(-2, brick_w + 2):
+		var px = brick_x + dx
+		var py = brick_y - 1
+		if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+			var fade = 1.0 - abs(float(dx - brick_w / 2) / float(brick_w / 2 + 3))
+			if rng.randf() < 0.5 * fade:
 				var current = img.get_pixel(px, py)
-				if current.r > 0.93 and current.g > 0.93:  # Only white pixels
-					var dist_to_brick = max(0, max(-dx, dx - brick_w + 1, -dy, dy - brick_h + 1))
-					if dist_to_brick > 0 and dist_to_brick < 3:
-						var intensity = 0.08 * (1.0 - dist_to_brick / 3.0)
-						img.set_pixel(px, py, current.lerp(palette["memory_glow"], intensity))
+				img.set_pixel(px, py, current.lerp(palette["mortar"], 0.25 * fade))
+	# Side mortar ghosts (where neighboring bricks connected)
+	for dy in range(-1, brick_h + 1):
+		# Left neighbor ghost
+		var left_px = brick_x - 1
+		var py = brick_y + dy
+		if left_px >= 0 and py >= 0 and py < TILE_SIZE and rng.randf() < 0.35:
+			var current = img.get_pixel(left_px, py)
+			img.set_pixel(left_px, py, current.lerp(palette["mortar"], 0.18))
+		# Right neighbor ghost
+		var right_px = brick_x + brick_w
+		if right_px < TILE_SIZE and py >= 0 and py < TILE_SIZE and rng.randf() < 0.35:
+			var current = img.get_pixel(right_px, py)
+			img.set_pixel(right_px, py, current.lerp(palette["mortar"], 0.18))
+
+	# Phantom neighbor - the very faintest outline of where the adjacent
+	# brick used to be, like a watermark. Almost invisible.
+	if variant % 3 == 0:
+		var ghost_x = brick_x + brick_w + 1
+		for dy in range(brick_h):
+			for dx in range(min(brick_w, TILE_SIZE - ghost_x)):
+				var px = ghost_x + dx
+				var py = brick_y + dy
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					var current = img.get_pixel(px, py)
+					if current.r > 0.93:
+						img.set_pixel(px, py, current.lerp(palette["memory_glow"], 0.04))
+
+	# Memory glow - warm aura around the brick, the residual heat
+	# of all the hearths this wall once sheltered
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var current = img.get_pixel(x, y)
+			if current.r > 0.92 and current.g > 0.92:
+				var dist_x = 0.0
+				if x < brick_x:
+					dist_x = brick_x - x
+				elif x >= brick_x + brick_w:
+					dist_x = x - (brick_x + brick_w - 1)
+				var dist_y = 0.0
+				if y < brick_y:
+					dist_y = brick_y - y
+				elif y >= brick_y + brick_h:
+					dist_y = y - (brick_y + brick_h - 1)
+				var dist = sqrt(dist_x * dist_x + dist_y * dist_y)
+				if dist > 0 and dist < 5:
+					var intensity = (5.0 - dist) / 5.0
+					img.set_pixel(x, y, current.lerp(palette["memory_glow"], intensity * 0.10))
 
 
 ## FRAGMENT_CIRCUIT - A single circuit trace on white (memory of technology)
-## A fragment of logic. It still tries to carry a signal, but there is nothing left to power.
+## A fragment of logic. It still tries to carry a signal, but there is nothing
+## left to power. The trace fades at both ends - disconnected from whatever
+## circuit it once belonged to. A copper solder point gleams. The last computation.
 func _draw_fragment_circuit(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 70007
 
-	# Background texture
+	# Subtle background - cleaner than other fragments, this was precision-made
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.14 + y * 0.11 + variant * 0.7) * 0.08 + rng.randf() * 0.02
-			if n > 0.06:
+			var n = sin(x * 0.14 + y * 0.11 + variant * 0.7) * 0.06 + rng.randf() * 0.015
+			if n > 0.05:
 				img.set_pixel(x, y, palette["dust"])
 
-	# Circuit trace - a path that goes somewhere specific
-	var start_x = rng.randi_range(4, 10)
+	# Generate a believable circuit path with proper right-angle routing
+	var start_x = rng.randi_range(3, 8)
 	var start_y = TILE_SIZE / 2 + rng.randi_range(-4, 4)
 	var trace_segments: Array[Vector2i] = []
+	var turn_points: Array[Vector2i] = []
 
-	# Generate a believable circuit path
 	var cx = start_x
 	var cy = start_y
 	var direction = 0  # 0=right, 1=down, 2=up
-	for _seg in range(rng.randi_range(4, 7)):
-		var seg_len = rng.randi_range(3, 8)
+	turn_points.append(Vector2i(cx, cy))
+
+	for _seg in range(rng.randi_range(5, 8)):
+		var seg_len = rng.randi_range(3, 7)
 		for _s in range(seg_len):
-			if cx >= 0 and cx < TILE_SIZE and cy >= 0 and cy < TILE_SIZE:
+			if cx >= 1 and cx < TILE_SIZE - 1 and cy >= 1 and cy < TILE_SIZE - 1:
 				trace_segments.append(Vector2i(cx, cy))
 			match direction:
 				0: cx += 1
 				1: cy += 1
 				2: cy -= 1
-		# Turn
-		direction = rng.randi_range(0, 2)
+		if cx >= 1 and cx < TILE_SIZE - 1 and cy >= 1 and cy < TILE_SIZE - 1:
+			turn_points.append(Vector2i(cx, cy))
+		# Always turn at right angles (proper PCB routing)
+		if direction == 0:
+			direction = 1 if rng.randf() < 0.5 else 2
+		else:
+			direction = 0
 
-	# Draw the trace
-	for pos in trace_segments:
+	# Draw the trace with fading at both ends (disconnected)
+	var total_len = trace_segments.size()
+	for idx in range(total_len):
+		var pos = trace_segments[idx]
 		if pos.x >= 0 and pos.x < TILE_SIZE and pos.y >= 0 and pos.y < TILE_SIZE:
-			img.set_pixel(pos.x, pos.y, palette["trace_green"])
-			# Trace has width
-			if pos.x + 1 < TILE_SIZE:
-				img.set_pixel(pos.x + 1, pos.y, palette["trace_dark"])
-			if pos.y + 1 < TILE_SIZE:
-				img.set_pixel(pos.x, pos.y + 1, palette["trace_dark"])
+			# Fade factor: full in middle, fading at ends
+			var fade_in = min(float(idx) / 4.0, 1.0)
+			var fade_out = min(float(total_len - 1 - idx) / 4.0, 1.0)
+			var fade = fade_in * fade_out
 
-	# Solder points at trace turns/endpoints
-	if trace_segments.size() > 0:
-		var first = trace_segments[0]
-		var last = trace_segments[trace_segments.size() - 1]
-		for point in [first, last]:
+			# Main trace pixel
+			var trace_col = palette["base"].lerp(palette["trace_green"], fade)
+			img.set_pixel(pos.x, pos.y, trace_col)
+
+			# Trace width (2px wide for most of it)
+			if fade > 0.3:
+				if pos.x + 1 < TILE_SIZE:
+					img.set_pixel(pos.x + 1, pos.y, palette["base"].lerp(palette["trace_dark"], fade * 0.8))
+				if pos.y + 1 < TILE_SIZE:
+					img.set_pixel(pos.x, pos.y + 1, palette["base"].lerp(palette["trace_dark"], fade * 0.6))
+
+	# Solder points at turns - round copper pads with sheen
+	for point in turn_points:
+		if point.x >= 2 and point.x < TILE_SIZE - 2 and point.y >= 2 and point.y < TILE_SIZE - 2:
+			# 3x3 solder pad
 			for dy in range(-1, 2):
 				for dx in range(-1, 2):
 					var px = point.x + dx
 					var py = point.y + dy
 					if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-						img.set_pixel(px, py, palette["solder"])
+						var dist = sqrt(dx * dx + dy * dy)
+						if dist < 1.6:
+							var solder_shade = palette["solder"]
+							# Highlight on top-left for 3D effect
+							if dx <= 0 and dy <= 0:
+								solder_shade = solder_shade.lightened(0.08)
+							img.set_pixel(px, py, solder_shade)
+			# Bright center
 			img.set_pixel(point.x, point.y, palette["trace_bright"])
 
-	# A single tiny component - resistor or capacitor shape
-	if variant % 2 == 0 and trace_segments.size() > 3:
+	# A single component - tiny resistor or capacitor, lovingly detailed
+	if trace_segments.size() > 5:
 		var mid_idx = trace_segments.size() / 2
 		var comp = trace_segments[mid_idx]
-		for dx in range(-1, 2):
-			for dy in range(-1, 2):
-				var px = comp.x + dx
-				var py = comp.y + dy
-				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-					if dx == 0 or dy == 0:
-						img.set_pixel(px, py, palette["copper"])
+		if comp.x >= 2 and comp.x < TILE_SIZE - 2 and comp.y >= 2 and comp.y < TILE_SIZE - 2:
+			# Resistor body (horizontal stripe pattern)
+			for dx in range(-2, 3):
+				for dy in range(-1, 2):
+					var px = comp.x + dx
+					var py = comp.y + dy
+					if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+						if abs(dx) == 2:
+							img.set_pixel(px, py, palette["copper"])
+						elif dy == 0:
+							var band_col = palette["trace_dark"] if abs(dx) == 1 else palette["copper"]
+							img.set_pixel(px, py, band_col)
+						else:
+							img.set_pixel(px, py, palette["solder"])
 
-	# Memory glow along the trace
+	# Memory glow - the trace still wants to carry current. A faint
+	# green phosphorescence surrounds it, like residual charge.
 	for pos in trace_segments:
-		for r in range(2, 4):
-			for angle in range(0, 360, 90):
-				var rad = deg_to_rad(angle)
-				var gx = pos.x + int(cos(rad) * r)
-				var gy = pos.y + int(sin(rad) * r)
+		for dy in range(-2, 3):
+			for dx in range(-2, 3):
+				var gx = pos.x + dx
+				var gy = pos.y + dy
 				if gx >= 0 and gx < TILE_SIZE and gy >= 0 and gy < TILE_SIZE:
-					var current = img.get_pixel(gx, gy)
-					if current.r > 0.93:
-						img.set_pixel(gx, gy, current.lerp(palette["memory_glow"], 0.06))
+					var dist = sqrt(dx * dx + dy * dy)
+					if dist > 1.0 and dist < 3.0:
+						var current = img.get_pixel(gx, gy)
+						if current.r > 0.92:
+							var glow_intensity = (3.0 - dist) / 2.0
+							img.set_pixel(gx, gy, current.lerp(palette["memory_glow"], glow_intensity * 0.05))
 
 
 ## SHELF_UNIT - Minimalist container where removed things are stored (impassable)
@@ -747,72 +1002,109 @@ func _draw_shelf_unit(img: Image, palette: Dictionary, variant: int) -> void:
 
 ## ECHO_WALL - Barely-visible wall outline (impassable)
 ## A wall that used to be here. Or will be here. Or is here in a different timeline.
+## Multiple concentric rectangles fade inward, each one a different echo -
+## a wall from a deleted castle, a boundary from a removed level, the edge of
+## a room that exists in a save file that was corrupted. They overlap and interfere.
 func _draw_echo_wall(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 90009
 
-	# Multiple echoing wall outlines, each fainter than the last
-	var echo_count = 3
-	for echo in range(echo_count):
-		var offset = echo * 2
-		var echo_palette_key = "echo%d" % (echo + 1)
-		var col = palette.get(echo_palette_key, palette["outline_faint"])
+	# Interior fill - slightly different shade to distinguish from void
+	for y in range(1, TILE_SIZE - 1):
+		for x in range(1, TILE_SIZE - 1):
+			img.set_pixel(x, y, palette["inner"])
 
-		# Wall outline rectangle, slightly offset each echo
-		var left = 3 + offset
-		var right = TILE_SIZE - 4 - offset
-		var top = 2 + offset
-		var bot = TILE_SIZE - 3 - offset
+	# Multiple concentric echo rectangles, each from a different "timeline"
+	# Outermost is darkest (most "present"), inner ones fade to nothing
+	var echo_count = 5
+	for echo in range(echo_count):
+		var inset = echo * 3
+		var left = 1 + inset
+		var right = TILE_SIZE - 2 - inset
+		var top = 1 + inset
+		var bot = TILE_SIZE - 2 - inset
 
 		if left >= right or top >= bot:
 			continue
 
+		# Fade factor: outermost echoes are strongest
+		var echo_strength = 1.0 - (float(echo) / float(echo_count))
+		echo_strength = echo_strength * echo_strength  # Quadratic fade
+		var echo_col: Color
+		match echo:
+			0: echo_col = palette["outline"]
+			1: echo_col = palette["outline_faint"]
+			2: echo_col = palette["echo1"]
+			3: echo_col = palette["echo2"]
+			_: echo_col = palette["echo3"]
+
+		# Slightly offset each echo to suggest parallax/different timelines
+		var offset_x = int(sin(echo * 1.7 + variant * 0.5) * 1.2)
+		var offset_y = int(cos(echo * 2.3 + variant * 0.3) * 1.0)
+
+		# Draw echo rectangle with breaks (the wall is incomplete)
 		# Top edge
 		for x in range(left, right + 1):
-			if x < TILE_SIZE:
-				img.set_pixel(x, top, col)
+			var px = x + offset_x
+			if px >= 0 and px < TILE_SIZE and top + offset_y >= 0 and top + offset_y < TILE_SIZE:
+				var break_chance = 0.05 + echo * 0.08  # More breaks in fainter echoes
+				if rng.randf() > break_chance:
+					var current = img.get_pixel(px, top + offset_y)
+					img.set_pixel(px, top + offset_y, current.lerp(echo_col, echo_strength * 0.8))
 		# Bottom edge
 		for x in range(left, right + 1):
-			if x < TILE_SIZE and bot < TILE_SIZE:
-				img.set_pixel(x, bot, col)
+			var px = x + offset_x
+			var py = bot + offset_y
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				if rng.randf() > 0.05 + echo * 0.08:
+					var current = img.get_pixel(px, py)
+					img.set_pixel(px, py, current.lerp(echo_col, echo_strength * 0.8))
 		# Left edge
 		for y in range(top, bot + 1):
-			if y < TILE_SIZE:
-				img.set_pixel(left, y, col)
+			var px = left + offset_x
+			var py = y + offset_y
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				if rng.randf() > 0.05 + echo * 0.08:
+					var current = img.get_pixel(px, py)
+					img.set_pixel(px, py, current.lerp(echo_col, echo_strength * 0.8))
 		# Right edge
 		for y in range(top, bot + 1):
-			if right < TILE_SIZE and y < TILE_SIZE:
-				img.set_pixel(right, y, col)
+			var px = right + offset_x
+			var py = y + offset_y
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				if rng.randf() > 0.05 + echo * 0.08:
+					var current = img.get_pixel(px, py)
+					img.set_pixel(px, py, current.lerp(echo_col, echo_strength * 0.8))
 
-	# Primary wall outline (darkest)
-	for x in range(1, TILE_SIZE - 1):
+	# Primary solid wall outline at edges (this is the "real" wall)
+	for x in range(TILE_SIZE):
 		img.set_pixel(x, 0, palette["outline"])
 		img.set_pixel(x, TILE_SIZE - 1, palette["outline"])
-	for y in range(1, TILE_SIZE - 1):
+	for y in range(TILE_SIZE):
 		img.set_pixel(0, y, palette["outline"])
 		img.set_pixel(TILE_SIZE - 1, y, palette["outline"])
 
-	# Corner reinforcements
+	# Corner reinforcements - stronger at corners where walls intersect
 	for d in range(3):
-		img.set_pixel(d, d, palette["corner"])
-		img.set_pixel(TILE_SIZE - 1 - d, d, palette["corner"])
-		img.set_pixel(d, TILE_SIZE - 1 - d, palette["corner"])
-		img.set_pixel(TILE_SIZE - 1 - d, TILE_SIZE - 1 - d, palette["corner"])
+		var corner_col = palette["corner"] if d < 2 else palette["outline"]
+		img.set_pixel(d, d, corner_col)
+		img.set_pixel(TILE_SIZE - 1 - d, d, corner_col)
+		img.set_pixel(d, TILE_SIZE - 1 - d, corner_col)
+		img.set_pixel(TILE_SIZE - 1 - d, TILE_SIZE - 1 - d, corner_col)
 
-	# Interior is slightly different from pure void
-	for y in range(1, TILE_SIZE - 1):
-		for x in range(1, TILE_SIZE - 1):
-			var current = img.get_pixel(x, y)
-			if current == palette["base"]:
-				img.set_pixel(x, y, palette["inner"])
-
-	# Occasional "flicker" - the wall briefly becomes more solid
-	if variant % 5 == 0:
-		var flicker_row = rng.randi_range(4, TILE_SIZE - 5)
-		for x in range(2, TILE_SIZE - 2):
-			if rng.randf() < 0.3:
-				img.set_pixel(x, flicker_row, palette["shadow"])
+	# Flicker effect - some echoes briefly become more solid,
+	# as if the timelines are overlapping
+	if variant % 4 == 0:
+		var flicker_y = rng.randi_range(4, TILE_SIZE - 5)
+		for x in range(3, TILE_SIZE - 3):
+			if rng.randf() < 0.35:
+				img.set_pixel(x, flicker_y, palette["shadow"])
+	elif variant % 4 == 1:
+		var flicker_x = rng.randi_range(4, TILE_SIZE - 5)
+		for y in range(3, TILE_SIZE - 3):
+			if rng.randf() < 0.35:
+				img.set_pixel(flicker_x, y, palette["shadow"])
 
 
 ## THRESHOLD_FADE - Gradient from white to lighter white (transition zone)
@@ -866,226 +1158,439 @@ func _draw_threshold_fade(img: Image, palette: Dictionary, variant: int) -> void
 
 ## COLOR_SPOT - A single spot of vivid color on white (meaning persists)
 ## In a world where everything unnecessary was removed, this color REFUSED to go.
-## It is the most important tile in the game.
+## It is the most important tile in the game. The most BEAUTIFUL tile.
+## Pure vivid defiance against the optimized nothing. A rainbow compressed
+## into a single point, radiating outward, staining the void with purpose.
+## This tile should make you feel something. That's the point.
 func _draw_color_spot(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 12012
 
-	# Subtle background
+	# The void background - slightly warmer here, as if the color
+	# has been warming this patch of nothing for a long time
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.12 + y * 0.1 + variant * 0.5) * 0.06 + rng.randf() * 0.02
-			if n > 0.05:
-				img.set_pixel(x, y, palette["bleed"])
+			var dist = sqrt(pow(x - TILE_SIZE / 2, 2) + pow(y - TILE_SIZE / 2, 2))
+			if dist > 10:
+				var n = sin(x * 0.12 + y * 0.1 + variant * 0.5) * 0.04 + rng.randf() * 0.015
+				if n > 0.03:
+					img.set_pixel(x, y, palette["bleed"])
 
-	# Choose which color this spot represents
+	# Choose base color - each variant gets a different primary
 	var color_options = [
 		palette["color_core"],   # Red - passion, anger, love
 		palette["color_warm"],   # Orange - warmth, memory, fire
 		palette["color_cool"],   # Blue - sadness, sky, depth
 		palette["color_life"],   # Green - life, growth, hope
 	]
-	var chosen_color = color_options[variant % color_options.size()]
+	var primary = color_options[variant % color_options.size()]
 
-	# The color spot itself - radial gradient, vivid at center
+	# Secondary and tertiary colors for the rainbow bleed
+	var secondary = color_options[(variant + 1) % color_options.size()]
+	var tertiary = color_options[(variant + 2) % color_options.size()]
+
 	var cx = TILE_SIZE / 2
 	var cy = TILE_SIZE / 2
-	var max_radius = 6.0
+	var max_radius = 8.0
 
+	# Layer 1: Outer rainbow halo - multiple colors bleeding outward
+	# This is the color reaching out, trying to paint the void
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var dist = sqrt(pow(x - cx, 2) + pow(y - cy, 2))
+			if dist > max_radius - 2 and dist < max_radius + 5:
+				var angle = atan2(y - cy, x - cx)
+				var ring_pos = (angle + PI) / (2.0 * PI)  # 0 to 1 around the circle
+				# Rainbow: cycle through colors around the ring
+				var ring_col: Color
+				if ring_pos < 0.33:
+					ring_col = primary.lerp(secondary, ring_pos / 0.33)
+				elif ring_pos < 0.66:
+					ring_col = secondary.lerp(tertiary, (ring_pos - 0.33) / 0.33)
+				else:
+					ring_col = tertiary.lerp(primary, (ring_pos - 0.66) / 0.34)
+
+				var ring_fade = 1.0 - abs(dist - max_radius) / 5.0
+				ring_fade = clamp(ring_fade, 0.0, 1.0)
+				ring_fade *= ring_fade  # Soft edges
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lerp(ring_col, ring_fade * 0.20))
+
+	# Layer 2: Main color body - radial gradient with rich saturation
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var dist = sqrt(pow(x - cx, 2) + pow(y - cy, 2))
 			if dist < max_radius:
 				var intensity = 1.0 - (dist / max_radius)
-				intensity = intensity * intensity  # Quadratic falloff
-				var pixel_col = palette["base"].lerp(chosen_color, intensity)
+				# Cubic falloff for rich, saturated center with soft edge
+				intensity = intensity * intensity * intensity
+				var angle = atan2(y - cy, x - cx)
+				# Slight color shift across the spot - it's not monochrome
+				var shift = sin(angle * 2.0 + variant * 0.7) * 0.15
+				var spot_col = primary
+				if shift > 0.05:
+					spot_col = spot_col.lerp(secondary, shift)
+				elif shift < -0.05:
+					spot_col = spot_col.lerp(tertiary, -shift)
+
+				var pixel_col = palette["base"].lerp(spot_col, intensity)
 				img.set_pixel(x, y, pixel_col)
 
-	# Inner core - pure, undiluted color
-	for dy in range(-1, 2):
-		for dx in range(-1, 2):
+	# Layer 3: Inner core - pure, undiluted, MAXIMUM saturation color
+	# This is the beating heart. 3x3 cross of pure defiance.
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
 			var px = cx + dx
 			var py = cy + dy
 			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-				if abs(dx) + abs(dy) <= 1:
-					img.set_pixel(px, py, chosen_color)
+				var dist = sqrt(dx * dx + dy * dy)
+				if dist < 2.2:
+					var core_intensity = 1.0 - (dist / 2.2)
+					var core_col = primary.lerp(palette["glow_inner"], core_intensity * 0.4)
+					img.set_pixel(px, py, core_col)
 
-	# Glow ring - color bleeding outward into the white
-	for angle in range(0, 360, 5):
-		var rad = deg_to_rad(angle)
-		for r in range(int(max_radius), int(max_radius) + 4):
-			var gx = cx + int(cos(rad) * r)
-			var gy = cy + int(sin(rad) * r)
-			if gx >= 0 and gx < TILE_SIZE and gy >= 0 and gy < TILE_SIZE:
-				var current = img.get_pixel(gx, gy)
-				var bleed_strength = 0.05 * (1.0 - float(r - int(max_radius)) / 4.0)
-				img.set_pixel(gx, gy, current.lerp(palette["glow_outer"], bleed_strength))
+	# Layer 4: Sparkle highlights - tiny bright spots that catch the eye,
+	# like a gemstone refracting light
+	var sparkle_count = rng.randi_range(3, 5)
+	for _s in range(sparkle_count):
+		var angle = rng.randf() * TAU
+		var r = rng.randf_range(1.5, max_radius - 1)
+		var sx = cx + int(cos(angle) * r)
+		var sy = cy + int(sin(angle) * r)
+		if sx >= 0 and sx < TILE_SIZE and sy >= 0 and sy < TILE_SIZE:
+			var current = img.get_pixel(sx, sy)
+			img.set_pixel(sx, sy, current.lerp(Color.WHITE, 0.35))
 
-	# Sparkle at the very center
-	img.set_pixel(cx, cy, palette["glow_inner"])
+	# Layer 5: Center sparkle - the absolute brightest pixel in the game
+	img.set_pixel(cx, cy, palette["glow_inner"].lightened(0.15))
+	# Cross-shaped specular highlight
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var hx = cx + d.x
+		var hy = cy + d.y
+		if hx >= 0 and hx < TILE_SIZE and hy >= 0 and hy < TILE_SIZE:
+			var current = img.get_pixel(hx, hy)
+			img.set_pixel(hx, hy, current.lerp(Color.WHITE, 0.20))
+
+	# Layer 6: Color bleeding rays - like a tiny sun, rays of color
+	# extend outward in random directions, staining the void
+	var ray_count = rng.randi_range(3, 6)
+	for _r in range(ray_count):
+		var angle = rng.randf() * TAU
+		var ray_len = rng.randf_range(5.0, 12.0)
+		var ray_col = [primary, secondary, tertiary][rng.randi() % 3]
+		for step in range(int(ray_len)):
+			var rx = cx + int(cos(angle) * step)
+			var ry = cy + int(sin(angle) * step)
+			if rx >= 0 and rx < TILE_SIZE and ry >= 0 and ry < TILE_SIZE:
+				var ray_fade = 1.0 - (float(step) / ray_len)
+				var current = img.get_pixel(rx, ry)
+				img.set_pixel(rx, ry, current.lerp(ray_col, ray_fade * 0.08))
 
 
 ## STATIC_TILE - TV static/noise pattern (corruption/memory loss)
 ## When data is lost, this is what remains. Not silence - noise.
+## Reality itself is breaking down here. Between the static, fleeting fragments
+## of color signals try to push through - ghosts of images from deleted channels,
+## a single pixel of blue sky, half a scanline of someone's face.
 func _draw_static_tile(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 13013
 
-	# Random noise - every pixel gets a random gray value
+	# Layer 1: Base static noise - every pixel randomized, but with
+	# a subtle bias toward lighter grays (CRT phosphor persistence)
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var noise_val = rng.randf()
+			# Weight distribution toward mid-grays for authentic CRT look
 			var col: Color
-			if noise_val < 0.12:
+			if noise_val < 0.08:
 				col = palette["noise_dark"]
-			elif noise_val < 0.30:
+			elif noise_val < 0.22:
 				col = palette["dark"]
-			elif noise_val < 0.50:
+			elif noise_val < 0.42:
 				col = palette["mid"]
-			elif noise_val < 0.70:
+			elif noise_val < 0.62:
 				col = palette["noise_gray"]
-			elif noise_val < 0.88:
+			elif noise_val < 0.80:
 				col = palette["light"]
-			else:
+			elif noise_val < 0.92:
 				col = palette["noise_white"]
+			else:
+				# Hot pixels - pure white sparks
+				col = Color(0.99, 0.99, 1.0)
 			img.set_pixel(x, y, col)
 
-	# Horizontal scanlines (CRT effect) - every 4th row is darker
-	for y in range(0, TILE_SIZE, 4):
-		for x in range(TILE_SIZE):
-			var current = img.get_pixel(x, y)
-			img.set_pixel(x, y, current.darkened(0.08))
+	# Layer 2: Scanlines - alternating dark/light rows for CRT authenticity
+	for y in range(TILE_SIZE):
+		if y % 2 == 0:
+			for x in range(TILE_SIZE):
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.darkened(0.06))
+		# Every 8th line is a stronger scanline
+		if y % 8 == 0:
+			for x in range(TILE_SIZE):
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.darkened(0.10))
 
-	# Occasional "signal" trying to come through - horizontal bands of coherent color
-	if variant % 3 == 0:
-		var band_y = rng.randi_range(8, TILE_SIZE - 12)
-		var band_h = rng.randi_range(2, 4)
+	# Layer 3: Horizontal coherence bands - brief moments where the static
+	# briefly organizes, as if a signal is trying to break through
+	var band_count = rng.randi_range(1, 3)
+	for _b in range(band_count):
+		var band_y = rng.randi_range(4, TILE_SIZE - 6)
+		var band_h = rng.randi_range(1, 3)
+		var band_brightness = rng.randf_range(0.6, 0.9)
 		for y in range(band_y, min(band_y + band_h, TILE_SIZE)):
 			for x in range(TILE_SIZE):
-				img.set_pixel(x, y, palette["scanline"])
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lerp(palette["scanline"], band_brightness * 0.4))
 
-	# Very rare: a single recognizable pixel of color (data trying to persist)
-	if variant % 6 == 0:
-		var signal_x = rng.randi_range(4, TILE_SIZE - 5)
-		var signal_y = rng.randi_range(4, TILE_SIZE - 5)
-		img.set_pixel(signal_x, signal_y, Color(0.85, 0.22, 0.28))
+	# Layer 4: Color signal ghosts - fragments of color trying to persist
+	# through the noise. A pixel of blue sky. A flash of red. A hint of green.
+	var color_signals = [
+		Color(0.85, 0.22, 0.28),  # Red signal
+		Color(0.22, 0.55, 0.85),  # Blue signal
+		Color(0.30, 0.75, 0.35),  # Green signal
+		Color(0.90, 0.80, 0.20),  # Yellow signal
+	]
+	var signal_count = rng.randi_range(2, 6)
+	for _s in range(signal_count):
+		var sx = rng.randi_range(2, TILE_SIZE - 3)
+		var sy = rng.randi_range(2, TILE_SIZE - 3)
+		var sig_col = color_signals[rng.randi() % color_signals.size()]
+		# Single pixel or short horizontal run (like a partial image scanline)
+		var run_len = rng.randi_range(1, 4)
+		for i in range(run_len):
+			if sx + i < TILE_SIZE:
+				var fade = 1.0 - float(i) / float(run_len)
+				var current = img.get_pixel(sx + i, sy)
+				img.set_pixel(sx + i, sy, current.lerp(sig_col, fade * 0.5))
 
-	# Vertical tear/roll (tracking error)
-	if variant % 4 == 1:
+	# Layer 5: Vertical tear/roll - the tracking is off, image shears
+	if variant % 3 != 2:
 		var tear_x = rng.randi_range(6, TILE_SIZE - 6)
+		var tear_width = rng.randi_range(1, 2)
 		for y in range(TILE_SIZE):
-			var offset = rng.randi_range(-1, 1)
-			var px = tear_x + offset
-			if px >= 0 and px < TILE_SIZE:
-				img.set_pixel(px, y, palette["noise_white"])
+			var wobble = rng.randi_range(-1, 1)
+			for tw in range(tear_width):
+				var px = tear_x + wobble + tw
+				if px >= 0 and px < TILE_SIZE:
+					# Tear line is brighter on one side, darker on the other
+					if tw == 0:
+						img.set_pixel(px, y, palette["noise_white"])
+					else:
+						img.set_pixel(px, y, palette["noise_dark"])
+
+	# Layer 6: Interference pattern - diagonal stripes suggesting
+	# electromagnetic interference, very faint
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var interference = sin((x + y) * 0.5 + variant * 2.1) * 0.5 + 0.5
+			if interference > 0.85:
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lightened(0.04))
 
 
 ## SHADOW_TILE - A shadow with no object casting it
-## Something was here. Something that cast a shadow. The object is gone but its shadow stayed.
+## Something was here. Something that cast a shadow. The object is gone but
+## its shadow stayed. You can recognize the shapes: a person standing, a tree
+## in bloom, a house, scattered fragments. The shadows remember what the void forgot.
 func _draw_shadow_tile(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 14014
 
-	# Clean white background with minimal noise
+	# Clean white background - slightly warmer where the shadow falls,
+	# as if the shadow retains heat from the deleted sun
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
-			var n = sin(x * 0.1 + y * 0.08 + variant * 0.4) * 0.04 + rng.randf() * 0.01
-			if n > 0.03:
+			var n = sin(x * 0.1 + y * 0.08 + variant * 0.4) * 0.03 + rng.randf() * 0.01
+			if n > 0.02:
 				img.set_pixel(x, y, palette["ground"])
 
-	# The shadow shape - varies by variant
+	# The shadow shape - varies by variant, each tells a story
 	var shadow_type = variant % 4
 	match shadow_type:
 		0:
-			# Humanoid shadow (someone was standing here)
+			# Humanoid shadow - someone was standing here, looking up.
+			# Head, body, arms slightly raised (waving? reaching?)
 			var cx = TILE_SIZE / 2
-			# Head shadow (oval)
-			for dy in range(-3, 3):
+			# Head shadow (oval, slightly tilted)
+			for dy in range(-3, 4):
 				for dx in range(-2, 3):
-					var dist = sqrt(pow(dx / 2.0, 2) + pow(dy / 2.5, 2))
+					var dist = sqrt(pow(dx / 2.2, 2) + pow(dy / 2.8, 2))
 					if dist < 1.2:
 						var px = cx + dx
-						var py = 6 + dy
+						var py = 5 + dy
 						if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
-							img.set_pixel(px, py, palette["shadow_mid"])
-			# Body shadow (rectangle with soft edges)
-			for dy in range(9, 26):
-				var width = 4 if dy < 20 else 3
-				for dx in range(-width, width + 1):
+							var shade = palette["shadow_mid"].lerp(palette["shadow_core"], (1.2 - dist) / 1.2)
+							img.set_pixel(px, py, shade)
+			# Body shadow with shoulders and slight arm raise
+			for dy in range(8, 26):
+				var base_width: int
+				if dy < 10:
+					base_width = 4  # Shoulders
+				elif dy < 12:
+					base_width = 5  # Arms extending
+				elif dy < 20:
+					base_width = 4  # Torso
+				else:
+					base_width = 3  # Legs narrowing
+
+				for dx in range(-base_width, base_width + 1):
 					var px = cx + dx
 					if px >= 0 and px < TILE_SIZE and dy < TILE_SIZE:
-						var edge_fade = 1.0 - (abs(dx) / float(width + 1))
-						var shade = palette["shadow_light"].lerp(palette["shadow_dark"], edge_fade * 0.6)
+						var edge_fade = 1.0 - (abs(dx) / float(base_width + 1))
+						var vert_fade = 1.0 - abs(float(dy - 14) / 12.0)
+						var intensity = edge_fade * vert_fade
+						var shade = palette["shadow_light"].lerp(palette["shadow_dark"], intensity * 0.65)
 						img.set_pixel(px, dy, shade)
-			# Shadow core
-			for dy in range(10, 24):
+
+			# Raised arms (reaching upward or waving goodbye)
+			for arm_side in [-1, 1]:
+				var arm_start_y = 10
+				for i in range(5):
+					var ax = cx + arm_side * (5 + i)
+					var ay = arm_start_y - i
+					if ax >= 0 and ax < TILE_SIZE and ay >= 0 and ay < TILE_SIZE:
+						img.set_pixel(ax, ay, palette["shadow_light"])
+						if ay + 1 < TILE_SIZE:
+							img.set_pixel(ax, ay + 1, palette["shadow_light"])
+
+			# Shadow core - darkest along center line
+			for dy in range(9, 24):
 				for dx in range(-1, 2):
 					var px = cx + dx
 					if px >= 0 and px < TILE_SIZE and dy < TILE_SIZE:
 						img.set_pixel(px, dy, palette["shadow_core"])
 		1:
-			# Tree shadow (something organic, branching)
-			var trunk_x = TILE_SIZE / 2 - 1
-			# Trunk shadow
-			for y in range(14, TILE_SIZE - 2):
-				for dx in range(2):
+			# Tree shadow - organic, branching, full canopy.
+			# A tree that must have been beautiful.
+			var trunk_x = TILE_SIZE / 2
+			# Trunk shadow with bark texture
+			for y in range(16, TILE_SIZE - 2):
+				for dx in range(-1, 2):
 					var px = trunk_x + dx
-					if px < TILE_SIZE:
-						img.set_pixel(px, y, palette["shadow_mid"])
-			# Canopy shadow (irregular blob)
-			for y in range(4, 16):
-				for x in range(4, TILE_SIZE - 4):
-					var dist = sqrt(pow(x - TILE_SIZE / 2, 2) + pow(y - 10, 2))
-					var wobble = sin(x * 0.5 + y * 0.3 + variant * 0.7) * 2.0
-					if dist + wobble < 9:
-						var fade = dist / 9.0
-						var shade = palette["shadow_light"].lerp(palette["shadow_dark"], 1.0 - fade)
+					if px >= 0 and px < TILE_SIZE:
+						var bark_var = sin(y * 0.8 + dx * 2.0) * 0.03
+						var shade = palette["shadow_mid"]
+						if bark_var > 0.01:
+							shade = shade.lightened(0.03)
+						img.set_pixel(px, y, shade)
+			# Roots spreading at base
+			for root_dir in [-1, 1]:
+				for i in range(4):
+					var rx = trunk_x + root_dir * (1 + i)
+					var ry = TILE_SIZE - 3 + (i / 2)
+					if rx >= 0 and rx < TILE_SIZE and ry < TILE_SIZE:
+						img.set_pixel(rx, ry, palette["shadow_light"])
+			# Canopy - irregular organic blob with leaf texture
+			for y in range(2, 18):
+				for x in range(3, TILE_SIZE - 3):
+					var dist = sqrt(pow(x - trunk_x, 2) + pow(y - 9, 2))
+					var wobble = sin(x * 0.6 + y * 0.4 + variant * 0.7) * 2.5
+					wobble += sin(x * 1.2 + y * 0.8) * 1.0  # Finer leaf detail
+					if dist + wobble < 10:
+						var fade = (dist + wobble * 0.3) / 10.0
+						var shade = palette["shadow_light"].lerp(palette["shadow_dark"], clamp(1.0 - fade, 0.0, 1.0))
 						img.set_pixel(x, y, shade)
+			# Branch shadows extending from canopy
+			for _b in range(3):
+				var bx = trunk_x + rng.randi_range(-6, 6)
+				var by = rng.randi_range(6, 14)
+				var branch_len = rng.randi_range(3, 6)
+				var branch_dir = 1 if bx < trunk_x else -1
+				for i in range(branch_len):
+					var px = bx + i * branch_dir
+					if px >= 0 and px < TILE_SIZE and by < TILE_SIZE:
+						img.set_pixel(px, by, palette["shadow_light"])
 		2:
-			# Geometric shadow (a cube or structure that no longer exists)
-			var ox = 8
-			var oy = 8
-			# Main rectangle shadow
-			for dy in range(16):
-				for dx in range(14):
+			# Building shadow - a house or structure with windows and a roof
+			var ox = 6
+			var oy = 4
+			var bw = 20
+			var bh = 22
+			# Main building shadow
+			for dy in range(bh):
+				for dx in range(bw):
 					var px = ox + dx
 					var py = oy + dy
 					if px < TILE_SIZE and py < TILE_SIZE:
-						var edge_dist = min(dx, 13 - dx, dy, 15 - dy)
-						var shade = palette["shadow_light"]
-						if edge_dist > 4:
+						var edge_dist = min(dx, bw - 1 - dx, dy, bh - 1 - dy)
+						var shade: Color
+						if edge_dist > 5:
 							shade = palette["shadow_dark"]
-						elif edge_dist > 2:
+						elif edge_dist > 3:
 							shade = palette["shadow_mid"]
+						elif edge_dist > 1:
+							shade = palette["shadow_light"]
+						else:
+							shade = palette["shadow_light"].lerp(palette["base"], 0.3)
 						img.set_pixel(px, py, shade)
+			# Window shadows (lighter rectangles where light came through)
+			for win_y in [oy + 5, oy + 13]:
+				for win_x in [ox + 3, ox + 11]:
+					for dy in range(4):
+						for dx in range(5):
+							var px = win_x + dx
+							var py = win_y + dy
+							if px < TILE_SIZE and py < TILE_SIZE:
+								img.set_pixel(px, py, palette["shadow_light"])
+			# Roof peak shadow (triangle)
+			for i in range(bw / 2 + 2):
+				var left_x = ox - 1 + i
+				var right_x = ox + bw - i
+				if left_x >= 0 and left_x < TILE_SIZE and oy - 1 - i / 2 >= 0:
+					img.set_pixel(left_x, oy - 1 - i / 2, palette["shadow_light"])
+				if right_x < TILE_SIZE and oy - 1 - i / 2 >= 0:
+					img.set_pixel(right_x, oy - 1 - i / 2, palette["shadow_light"])
 		3:
-			# Scattered/broken shadow (something that shattered)
-			for _fragment in range(rng.randi_range(5, 9)):
-				var fx = rng.randi_range(4, TILE_SIZE - 8)
-				var fy = rng.randi_range(4, TILE_SIZE - 8)
+			# Scattered/broken shadow - something that shattered and the
+			# fragments drifted apart. Each piece casting its own tiny shadow.
+			var fragment_count = rng.randi_range(6, 10)
+			for _f in range(fragment_count):
+				var fx = rng.randi_range(3, TILE_SIZE - 7)
+				var fy = rng.randi_range(3, TILE_SIZE - 7)
 				var fw = rng.randi_range(2, 5)
 				var fh = rng.randi_range(2, 4)
+				# Rotation simulation via skew
+				var skew = rng.randf_range(-0.3, 0.3)
 				for dy in range(fh):
 					for dx in range(fw):
-						var px = fx + dx
+						var px = fx + dx + int(dy * skew)
 						var py = fy + dy
-						if px < TILE_SIZE and py < TILE_SIZE:
-							var shade = palette["shadow_mid"] if rng.randf() < 0.6 else palette["shadow_light"]
+						if px >= 0 and px < TILE_SIZE and py < TILE_SIZE:
+							var dist_center = sqrt(pow(dx - fw / 2.0, 2) + pow(dy - fh / 2.0, 2))
+							var shade = palette["shadow_mid"] if dist_center < 1.5 else palette["shadow_light"]
 							img.set_pixel(px, py, shade)
 
-	# Edge softening - shadows fade at borders
+	# Edge softening - all shadows fade gently at their borders
 	for x in range(TILE_SIZE):
 		for y in range(TILE_SIZE):
 			var current = img.get_pixel(x, y)
 			if current != palette["base"] and current != palette["ground"]:
-				var edge_x = min(x, TILE_SIZE - 1 - x)
-				var edge_y = min(y, TILE_SIZE - 1 - y)
-				var edge_min = min(edge_x, edge_y)
-				if edge_min < 2:
-					img.set_pixel(x, y, current.lerp(palette["base"], 0.4 * (2.0 - edge_min) / 2.0))
+				# Check if near a non-shadow pixel (edge detection)
+				var is_edge = false
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nx = x + d.x
+					var ny = y + d.y
+					if nx >= 0 and nx < TILE_SIZE and ny >= 0 and ny < TILE_SIZE:
+						var neighbor = img.get_pixel(nx, ny)
+						if neighbor == palette["base"] or neighbor == palette["ground"]:
+							is_edge = true
+							break
+				if is_edge:
+					img.set_pixel(x, y, current.lerp(palette["base"], 0.25))
+
+	# Warmth trace - shadows remember the heat of what cast them
+	if variant % 3 == 0:
+		for y in range(TILE_SIZE):
+			for x in range(TILE_SIZE):
+				var current = img.get_pixel(x, y)
+				if current == palette["shadow_core"] or current == palette["shadow_dark"]:
+					if rng.randf() < 0.06:
+						img.set_pixel(x, y, current.lerp(palette["warmth"], 0.12))
 
 
 ## QUESTION_MARK - A subtle ? shape embedded in the floor

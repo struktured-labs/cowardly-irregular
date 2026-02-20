@@ -259,18 +259,19 @@ func generate_tile(type: TileType, variant: int = 0) -> ImageTexture:
 	return texture
 
 
-## Gray concrete factory floor with oil stains, bolt patterns, and tire marks
+## Gray concrete factory floor with oil stains, bolt patterns, tire marks, footprints, worn paths
 func _draw_factory_floor(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 11111
 
-	# Base concrete texture noise - rougher than suburban sidewalk
+	# Base concrete texture noise - rougher than suburban sidewalk with aggregate flecks
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n1 = sin(x * 0.7 + variant * 1.4) * cos(y * 0.5 + variant * 0.9)
 			var n2 = sin(x * 1.3 + y * 0.8 + variant * 2.2) * 0.35
-			var combined = (n1 + n2) / 2.0 + rng.randf() * 0.16
+			var n3 = sin(x * 2.8 + y * 1.9 + variant * 3.7) * 0.12  # Fine grain detail
+			var combined = (n1 + n2 + n3) / 2.5 + rng.randf() * 0.16
 			if combined < -0.22:
 				img.set_pixel(x, y, palette["deep"])
 			elif combined < -0.08:
@@ -279,6 +280,9 @@ func _draw_factory_floor(img: Image, palette: Dictionary, variant: int) -> void:
 				img.set_pixel(x, y, palette["light"])
 			elif combined > 0.10:
 				img.set_pixel(x, y, palette["mid"])
+			# Aggregate flecks in concrete
+			if rng.randf() < 0.03:
+				img.set_pixel(x, y, palette["base"].lightened(0.12))
 
 	# Concrete expansion joints - wider, more industrial (every 16 pixels)
 	for x in range(TILE_SIZE):
@@ -296,7 +300,7 @@ func _draw_factory_floor(img: Image, palette: Dictionary, variant: int) -> void:
 			for x in range(TILE_SIZE):
 				img.set_pixel(x, y, palette["deep"].lightened(0.05))
 
-	# Floor bolt pattern (4 bolts in corners of each 16x16 section)
+	# Floor bolt pattern (4 bolts in corners of each 16x16 section) with slot detail
 	var bolt_offsets = [Vector2i(3, 3), Vector2i(12, 3), Vector2i(3, 12), Vector2i(12, 12)]
 	for section_x in range(0, TILE_SIZE, 16):
 		for section_y in range(0, TILE_SIZE, 16):
@@ -306,35 +310,99 @@ func _draw_factory_floor(img: Image, palette: Dictionary, variant: int) -> void:
 				if bx >= 0 and bx < TILE_SIZE and by >= 0 and by < TILE_SIZE:
 					img.set_pixel(bx, by, palette["bolt"])
 					if bx + 1 < TILE_SIZE:
-						img.set_pixel(bx + 1, by, palette["bolt_shadow"])
+						img.set_pixel(bx + 1, by, palette["bolt"])
 					if by + 1 < TILE_SIZE:
 						img.set_pixel(bx, by + 1, palette["bolt_shadow"])
+					if bx + 1 < TILE_SIZE and by + 1 < TILE_SIZE:
+						img.set_pixel(bx + 1, by + 1, palette["bolt_shadow"])
+					# Bolt slot line (horizontal scratch across bolt head)
+					if bx + 1 < TILE_SIZE:
+						img.set_pixel(bx, by, palette["bolt_shadow"].darkened(0.1))
+						img.set_pixel(bx + 1, by, palette["bolt_shadow"].darkened(0.1))
 
-	# Oil stains - dark blotchy patches
+	# Oil stains - dark blotchy patches with iridescent sheen
 	if variant % 2 == 0:
 		var num_stains = rng.randi_range(1, 3)
 		for _s in range(num_stains):
 			var ox = rng.randi_range(4, TILE_SIZE - 6)
 			var oy = rng.randi_range(4, TILE_SIZE - 6)
-			var stain_size = rng.randi_range(3, 6)
+			var stain_size = rng.randi_range(3, 7)
 			for dy in range(stain_size):
 				for dx in range(stain_size):
 					var px = ox + dx
 					var py = oy + dy
 					if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
 						var dist = sqrt(pow(dx - stain_size / 2.0, 2) + pow(dy - stain_size / 2.0, 2))
-						if dist < stain_size / 2.0 and rng.randf() < 0.7:
-							var stain_col = palette["oil"] if rng.randf() > 0.25 else palette["oil_sheen"]
+						if dist < stain_size / 2.0 and rng.randf() < 0.75:
+							var stain_col: Color
+							var sheen_r = rng.randf()
+							if sheen_r < 0.15:
+								stain_col = palette["oil_sheen"]
+							elif sheen_r < 0.30:
+								stain_col = palette["oil_sheen"].lerp(Color(0.20, 0.28, 0.22), 0.4)
+							else:
+								stain_col = palette["oil"]
+							# Edge of stain is thinner
+							if dist > stain_size / 2.0 - 1.0:
+								stain_col = stain_col.lerp(palette["base"], 0.5)
 							img.set_pixel(px, py, stain_col)
 
 	# Tire scuff marks on some variants
 	if variant % 5 == 0:
 		var scuff_y = rng.randi_range(8, TILE_SIZE - 8)
-		for x in range(rng.randi_range(4, 10), rng.randi_range(18, 28)):
+		var scuff_start = rng.randi_range(4, 10)
+		var scuff_end = rng.randi_range(18, 28)
+		for x in range(scuff_start, scuff_end):
 			if x < TILE_SIZE and scuff_y < TILE_SIZE:
 				img.set_pixel(x, scuff_y, palette["deep"])
 				if scuff_y + 1 < TILE_SIZE:
 					img.set_pixel(x, scuff_y + 1, palette["dark"])
+				# Tire tread pattern (gaps every 3 pixels)
+				if x % 3 == 0 and scuff_y - 1 >= 0:
+					img.set_pixel(x, scuff_y - 1, palette["dark"].lightened(0.05))
+
+	# Worn path - lighter strip where foot traffic erodes concrete
+	if variant % 3 == 0:
+		var path_center_y = TILE_SIZE / 2 + rng.randi_range(-4, 4)
+		for x in range(TILE_SIZE):
+			for dy in range(-2, 3):
+				var py = path_center_y + dy
+				if py >= 0 and py < TILE_SIZE:
+					var wear_strength = 1.0 - abs(dy) / 3.0
+					var current = img.get_pixel(x, py)
+					img.set_pixel(x, py, current.lightened(0.06 * wear_strength))
+
+	# Boot print marks (partial shoe shapes)
+	if variant % 4 == 0:
+		for _f in range(rng.randi_range(1, 2)):
+			var fx = rng.randi_range(4, TILE_SIZE - 8)
+			var fy = rng.randi_range(8, TILE_SIZE - 6)
+			# Boot sole outline - simplified 3x5 print
+			var boot_col = palette["dark"].darkened(0.05)
+			if fx + 3 < TILE_SIZE and fy + 5 < TILE_SIZE:
+				# Heel
+				img.set_pixel(fx, fy + 3, boot_col)
+				img.set_pixel(fx + 1, fy + 3, boot_col)
+				img.set_pixel(fx + 2, fy + 3, boot_col)
+				img.set_pixel(fx, fy + 4, boot_col)
+				img.set_pixel(fx + 1, fy + 4, boot_col)
+				img.set_pixel(fx + 2, fy + 4, boot_col)
+				# Toe
+				img.set_pixel(fx, fy, boot_col)
+				img.set_pixel(fx + 1, fy, boot_col)
+				img.set_pixel(fx + 2, fy, boot_col)
+				img.set_pixel(fx + 1, fy + 1, boot_col)
+
+	# Dust/grit accumulation in corners near joints
+	for section_x in range(0, TILE_SIZE, 16):
+		for section_y in range(0, TILE_SIZE, 16):
+			for dx in range(2, 5):
+				for dy in range(2, 5):
+					var px = section_x + dx
+					var py = section_y + dy
+					if px < TILE_SIZE and py < TILE_SIZE and rng.randf() < 0.3:
+						var current = img.get_pixel(px, py)
+						img.set_pixel(px, py, current.darkened(0.04))
 
 
 ## Metal grate with gaps showing darkness below - diamond plate pattern
@@ -414,7 +482,7 @@ func _draw_iron_grating(img: Image, palette: Dictionary, variant: int) -> void:
 				img.set_pixel(rx, ry, palette["rust"])
 
 
-## Dark red/brown industrial brick - soot-stained, heavier than suburban
+## Dark red/brown industrial brick - soot-stained, heavier than suburban, with cracks and grime
 func _draw_brick_wall(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["mortar"])
 	var rng = RandomNumberGenerator.new()
@@ -432,16 +500,19 @@ func _draw_brick_wall(img: Image, palette: Dictionary, variant: int) -> void:
 			# Pick brick color - darker and more varied than suburban
 			var brick_col = palette["base"]
 			var r = rng.randf()
-			if r < 0.15:
+			if r < 0.12:
 				brick_col = palette["light"]
-			elif r < 0.30:
+			elif r < 0.28:
 				brick_col = palette["dark"]
-			elif r < 0.42:
+			elif r < 0.40:
 				brick_col = palette["deep"]
-			elif r < 0.50:
+			elif r < 0.52:
 				brick_col = palette["mid"]
+			elif r < 0.58:
+				# Scorched brick - darker than usual
+				brick_col = palette["deep"].darkened(0.1)
 
-			# Draw brick body with highlight/shadow edges
+			# Draw brick body with highlight/shadow edges and surface texture
 			for dy in range(1, brick_h):
 				for dx in range(1, brick_w):
 					var px = bx + dx
@@ -458,53 +529,113 @@ func _draw_brick_wall(img: Image, palette: Dictionary, variant: int) -> void:
 							shade = brick_col.darkened(0.12)
 						elif dx == brick_w - 1:
 							shade = brick_col.darkened(0.06)
-						# Subtle surface variation
+						# Richer surface variation - clay texture
 						var grain = sin(px * 0.4 + py * 0.6 + variant * 0.8) * 0.05
-						if grain > 0.02:
-							shade = shade.lightened(0.02)
-						elif grain < -0.02:
-							shade = shade.darkened(0.02)
+						var grain2 = sin(px * 1.2 + py * 0.3 + variant * 1.6) * 0.03
+						grain += grain2
+						if grain > 0.03:
+							shade = shade.lightened(0.03)
+						elif grain < -0.03:
+							shade = shade.darkened(0.03)
+						# Speckled clay inclusions
+						if rng.randf() < 0.04:
+							shade = shade.lightened(0.06)
 						img.set_pixel(px, py, shade)
 
-	# Mortar lines are darker - industrial grout
+	# Mortar lines with variation - some crumbling, some intact
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			if img.get_pixel(x, y).is_equal_approx(palette["mortar"]):
-				var mortar_n = rng.randf() * 0.2
-				if mortar_n < 0.06:
+				var mortar_n = rng.randf()
+				if mortar_n < 0.15:
 					img.set_pixel(x, y, palette["mortar_dark"])
+				elif mortar_n < 0.25:
+					img.set_pixel(x, y, palette["mortar"].darkened(0.06))
+				elif mortar_n < 0.30:
+					# Crumbling mortar - lighter gap
+					img.set_pixel(x, y, palette["mortar"].lightened(0.08))
 
-	# Soot staining from top (gradient darkening)
-	for y in range(min(8, TILE_SIZE)):
+	# Soot staining from top (gradient darkening) - heavier than before
+	for y in range(min(12, TILE_SIZE)):
 		for x in range(TILE_SIZE):
-			var soot_strength = (8.0 - y) / 8.0 * 0.25
-			if rng.randf() < 0.6:
+			var soot_strength = (12.0 - y) / 12.0 * 0.35
+			# Streaky soot pattern
+			var streak = sin(x * 0.3 + variant * 2.0) * 0.15
+			soot_strength += streak
+			if rng.randf() < 0.65:
 				var current = img.get_pixel(x, y)
-				img.set_pixel(x, y, current.lerp(palette["soot"], soot_strength))
+				img.set_pixel(x, y, current.lerp(palette["soot"], clamp(soot_strength, 0.0, 0.4)))
+
+	# Soot streaks dripping down from top (vertical dark lines)
+	if variant % 3 != 2:
+		for _streak in range(rng.randi_range(1, 3)):
+			var sx = rng.randi_range(2, TILE_SIZE - 3)
+			var streak_len = rng.randi_range(8, 18)
+			for sy in range(streak_len):
+				if sy < TILE_SIZE:
+					var fade = float(sy) / float(streak_len)
+					var current = img.get_pixel(sx, sy)
+					img.set_pixel(sx, sy, current.lerp(palette["soot"], (1.0 - fade) * 0.2))
+
+	# Cracks in bricks (diagonal lines through individual bricks)
+	if variant % 3 == 0:
+		var crack_x = rng.randi_range(4, TILE_SIZE - 6)
+		var crack_y = rng.randi_range(4, TILE_SIZE - 8)
+		var crack_len = rng.randi_range(4, 8)
+		for i in range(crack_len):
+			var cx = crack_x + i + rng.randi_range(-1, 0)
+			var cy = crack_y + i
+			if cx >= 0 and cx < TILE_SIZE and cy >= 0 and cy < TILE_SIZE:
+				img.set_pixel(cx, cy, palette["deep"].darkened(0.1))
+				if cx + 1 < TILE_SIZE:
+					img.set_pixel(cx + 1, cy, palette["dark"].darkened(0.05))
+
+	# Chipped brick edges
+	if variant % 2 == 0:
+		for _chip in range(rng.randi_range(1, 3)):
+			var cx = rng.randi_range(1, TILE_SIZE - 3)
+			var cy = rng.randi_range(1, TILE_SIZE - 3)
+			img.set_pixel(cx, cy, palette["mortar_dark"])
+			if cx + 1 < TILE_SIZE:
+				img.set_pixel(cx + 1, cy, palette["mortar"])
 
 	# Occasional moss in mortar joints (bottom rows only)
 	if variant % 4 == 0:
-		for _i in range(rng.randi_range(2, 5)):
+		for _i in range(rng.randi_range(3, 7)):
 			var mx = rng.randi_range(0, TILE_SIZE - 1)
 			var my = rng.randi_range(TILE_SIZE - 12, TILE_SIZE - 1)
 			if my >= 0 and my < TILE_SIZE:
 				var current = img.get_pixel(mx, my)
 				if current.is_equal_approx(palette["mortar"]) or current.is_equal_approx(palette["mortar_dark"]):
 					img.set_pixel(mx, my, palette["moss"])
+					# Spread moss slightly
+					if mx + 1 < TILE_SIZE and rng.randf() < 0.4:
+						img.set_pixel(mx + 1, my, palette["moss"].darkened(0.1))
+
+	# Water stain from drainage (darker wet area at bottom)
+	if variant % 5 == 0:
+		for y in range(TILE_SIZE - 6, TILE_SIZE):
+			for x in range(TILE_SIZE):
+				if rng.randf() < 0.4:
+					var current = img.get_pixel(x, y)
+					img.set_pixel(x, y, current.darkened(0.08))
 
 
-## Smokestack base - cylindrical chimney with soot gradient and ember glow
+## Smokestack base - imposing cylindrical chimney with soot gradient, rivets, and heat shimmer
 func _draw_smokestack(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["deep"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 44444
 
-	# Dark factory background fill
+	# Dark factory background fill with smoke haze
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = rng.randf() * 0.15
 			if n < 0.04:
 				img.set_pixel(x, y, Color(0.10, 0.08, 0.06))
+			# Smoke haze near top
+			if y < 6 and rng.randf() < 0.15:
+				img.set_pixel(x, y, Color(0.18, 0.16, 0.15))
 
 	# Cylindrical smokestack body (centered, 20px wide)
 	var stack_left = 6
@@ -532,55 +663,94 @@ func _draw_smokestack(img: Image, palette: Dictionary, variant: int) -> void:
 			else:
 				shade = palette["deep"]
 
-			# Soot gradient from top
-			var soot_factor = (1.0 - float(y) / float(TILE_SIZE)) * 0.45
+			# Soot gradient from top (heavier)
+			var soot_factor = (1.0 - float(y) / float(TILE_SIZE)) * 0.50
 			shade = shade.lerp(palette["soot_top"], soot_factor)
 
-			# Surface texture
+			# Surface texture - brick/plate lines
 			var n = sin(x * 0.3 + y * 0.8 + variant * 1.5) * 0.08
-			if n > 0.04:
+			var plate_n = sin(y * 0.4 + variant * 0.9) * 0.04
+			if n + plate_n > 0.06:
 				shade = shade.lightened(0.03)
-			elif n < -0.04:
+			elif n + plate_n < -0.06:
 				shade = shade.darkened(0.03)
+
+			# Horizontal plate seams every 8 pixels
+			if y % 8 == 0 and y > 2 and y < TILE_SIZE - 3:
+				shade = shade.darkened(0.08)
+			elif y % 8 == 1 and y > 3 and y < TILE_SIZE - 2:
+				shade = shade.lightened(0.03)
 
 			img.set_pixel(x, y, shade)
 
-	# Rim at top
-	for x in range(stack_left - 1, stack_right + 1):
-		if x >= 0 and x < TILE_SIZE:
-			img.set_pixel(x, 0, palette["rim"])
-			img.set_pixel(x, 1, palette["rim"].darkened(0.1))
-			img.set_pixel(x, 2, palette["soot_mid"])
-
-	# Rim at bottom (base flange)
+	# Rim at top - thick lip with overhang shadow
 	for x in range(stack_left - 2, stack_right + 2):
 		if x >= 0 and x < TILE_SIZE:
-			img.set_pixel(x, TILE_SIZE - 1, palette["rim"].darkened(0.15))
-			img.set_pixel(x, TILE_SIZE - 2, palette["rim"])
-			img.set_pixel(x, TILE_SIZE - 3, palette["mid"])
+			img.set_pixel(x, 0, palette["rim"].lightened(0.05))
+			img.set_pixel(x, 1, palette["rim"])
+			img.set_pixel(x, 2, palette["rim"].darkened(0.08))
+			img.set_pixel(x, 3, palette["soot_mid"])
 
-	# Rivet line around middle
-	var rivet_y = TILE_SIZE / 2
-	for x in range(stack_left + 2, stack_right - 2, 3):
-		if x < TILE_SIZE:
-			img.set_pixel(x, rivet_y, palette["rim"].lightened(0.1))
-			if rivet_y + 1 < TILE_SIZE:
-				img.set_pixel(x, rivet_y + 1, palette["dark"])
+	# Heat shimmer effect at top (wavy distortion pattern above opening)
+	for x in range(stack_left + 1, stack_right - 1):
+		var shimmer_offset = sin(x * 0.8 + variant * 3.0) * 1.5
+		if abs(shimmer_offset) > 0.5:
+			# Faint heat haze pixels above the stack
+			var haze_col = Color(0.22, 0.18, 0.14, 0.6)
+			if x >= 0 and x < TILE_SIZE:
+				img.set_pixel(x, 0, palette["rim"].lerp(haze_col, 0.3))
+		# Inner glow at the opening
+		if x > stack_left + 2 and x < stack_right - 2:
+			var glow_strength = 0.3 + sin(x * 0.5 + variant * 1.2) * 0.2
+			img.set_pixel(x, 1, palette["ember"].lerp(palette["soot_top"], 1.0 - glow_strength))
 
-	# Ember glow at top opening on some variants
-	if variant % 3 == 0:
-		for x in range(stack_left + 3, stack_right - 3):
-			var glow_strength = rng.randf() * 0.5
-			img.set_pixel(x, 0, palette["ember"].lerp(palette["soot_top"], glow_strength))
+	# Rim at bottom (base flange) - wider, more imposing
+	for x in range(stack_left - 3, stack_right + 3):
+		if x >= 0 and x < TILE_SIZE:
+			img.set_pixel(x, TILE_SIZE - 1, palette["rim"].darkened(0.18))
+			img.set_pixel(x, TILE_SIZE - 2, palette["rim"].darkened(0.08))
+			img.set_pixel(x, TILE_SIZE - 3, palette["rim"])
+			img.set_pixel(x, TILE_SIZE - 4, palette["mid"])
+
+	# Rivet lines - two rows for industrial look
+	for rivet_y in [TILE_SIZE / 3, TILE_SIZE * 2 / 3]:
+		for x in range(stack_left + 2, stack_right - 2, 3):
+			if x < TILE_SIZE and rivet_y >= 0 and rivet_y < TILE_SIZE:
+				img.set_pixel(x, rivet_y, palette["rim"].lightened(0.12))
+				if rivet_y + 1 < TILE_SIZE:
+					img.set_pixel(x, rivet_y + 1, palette["dark"].darkened(0.05))
+				# Rivet shadow
+				if x + 1 < TILE_SIZE:
+					img.set_pixel(x + 1, rivet_y, palette["dark"])
+
+	# Ember glow at top opening - always present, intensity varies
+	for x in range(stack_left + 3, stack_right - 3):
+		var glow_strength = rng.randf() * 0.6 + 0.2
+		if variant % 3 == 0:
+			glow_strength += 0.2  # Extra glow on some variants
+		glow_strength = clamp(glow_strength, 0.0, 1.0)
+		img.set_pixel(x, 2, palette["ember"].lerp(palette["soot_top"], 1.0 - glow_strength * 0.7))
+
+	# Soot drip stains running down the sides
+	for _drip in range(rng.randi_range(1, 3)):
+		var drip_x = rng.randi_range(stack_left + 1, stack_right - 2)
+		var drip_start = rng.randi_range(4, 10)
+		var drip_len = rng.randi_range(6, 14)
+		for dy in range(drip_len):
+			var py = drip_start + dy
+			if py < TILE_SIZE - 3 and drip_x < TILE_SIZE:
+				var fade = float(dy) / float(drip_len)
+				var current = img.get_pixel(drip_x, py)
+				img.set_pixel(drip_x, py, current.lerp(palette["soot_top"], (1.0 - fade) * 0.25))
 
 
-## Conveyor belt with yellow/black hazard stripes and roller texture
+## Conveyor belt with yellow/black hazard stripes, visible rollers, tread marks, and wear
 func _draw_conveyor_belt(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 55555
 
-	# Belt surface texture (rubber)
+	# Belt surface texture (rubber) with detailed tread pattern
 	for y in range(6, TILE_SIZE - 6):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.5 + y * 1.8 + variant * 2.0) * 0.2 + rng.randf() * 0.1
@@ -589,54 +759,101 @@ func _draw_conveyor_belt(img: Image, palette: Dictionary, variant: int) -> void:
 				shade = shade.lightened(0.06)
 			elif n < -0.1:
 				shade = shade.darkened(0.04)
-			# Belt tread pattern (horizontal ridges every 4 pixels)
+			# Belt tread pattern - chevron ridges (V-pattern like real conveyor belts)
+			var tread_v = ((x + y) % 6 == 0) or ((x - y + 100) % 6 == 0)
 			if y % 4 == 0:
-				shade = shade.lightened(0.04)
+				shade = shade.lightened(0.05)
 			elif y % 4 == 2:
-				shade = shade.darkened(0.03)
+				shade = shade.darkened(0.04)
+			if tread_v and y % 2 == 0:
+				shade = shade.lightened(0.03)
+			# Rubber grain texture
+			if rng.randf() < 0.04:
+				shade = shade.darkened(0.06)
 			img.set_pixel(x, y, shade)
 
-	# Yellow/black hazard stripes on edges (top and bottom rails)
+	# Belt side edges - slightly raised rubber lip
+	for x in range(TILE_SIZE):
+		if 6 < TILE_SIZE and 5 < TILE_SIZE:
+			img.set_pixel(x, 6, palette["rubber"].lightened(0.08))
+		if TILE_SIZE - 7 >= 0:
+			img.set_pixel(x, TILE_SIZE - 7, palette["rubber"].darkened(0.06))
+
+	# Yellow/black hazard stripes on edges (top and bottom rails) with worn paint
 	for x in range(TILE_SIZE):
 		for y_band in [range(0, 6), range(TILE_SIZE - 6, TILE_SIZE)]:
 			for y in y_band:
 				# Diagonal stripe pattern
 				var stripe_pos = (x + y) % 8
 				if stripe_pos < 4:
-					img.set_pixel(x, y, palette["hazard_yellow"])
+					var yellow = palette["hazard_yellow"]
+					# Paint wear variation
+					if rng.randf() < 0.08:
+						yellow = yellow.darkened(0.12)
+					img.set_pixel(x, y, yellow)
 				else:
-					img.set_pixel(x, y, palette["hazard_black"])
+					var black = palette["hazard_black"]
+					# Scuff marks on black stripes
+					if rng.randf() < 0.06:
+						black = black.lightened(0.08)
+					img.set_pixel(x, y, black)
 
-	# Roller pins visible at edges of belt
-	for x in range(0, TILE_SIZE, 8):
-		for dy in [5, TILE_SIZE - 7]:
-			if x + 1 < TILE_SIZE and dy >= 0 and dy < TILE_SIZE:
-				img.set_pixel(x, dy, palette["roller"])
-				img.set_pixel(x + 1, dy, palette["roller"].darkened(0.1))
-				if dy + 1 < TILE_SIZE:
-					img.set_pixel(x, dy + 1, palette["roller"].darkened(0.15))
+	# Visible roller drums at edges (cylindrical cross-sections)
+	for rx in range(0, TILE_SIZE, 6):
+		for rail_y in [5, TILE_SIZE - 7]:
+			if rail_y >= 0 and rail_y < TILE_SIZE:
+				for dx in range(4):
+					var px = rx + dx
+					if px < TILE_SIZE:
+						var rel = float(dx) / 3.0
+						var roller_shade = palette["roller"]
+						# Cylindrical shading across roller
+						if rel < 0.25:
+							roller_shade = roller_shade.darkened(0.12)
+						elif rel < 0.5:
+							roller_shade = roller_shade
+						elif rel < 0.75:
+							roller_shade = roller_shade.lightened(0.08)
+						else:
+							roller_shade = roller_shade.darkened(0.06)
+						img.set_pixel(px, rail_y, roller_shade)
+						# Roller axle shadow beneath
+						if rail_y + 1 < TILE_SIZE:
+							img.set_pixel(px, rail_y + 1, palette["dark"])
 
-	# Movement indicator arrows on belt surface
+	# Movement indicator arrows on belt surface (painted arrows)
 	if variant % 3 == 0:
 		var arrow_cx = TILE_SIZE / 2
 		var arrow_cy = TILE_SIZE / 2
-		# Simple chevron pointing right
-		for i in range(4):
-			var ax = arrow_cx - 2 + i
-			var ay1 = arrow_cy - i
-			var ay2 = arrow_cy + i
-			if ax >= 0 and ax < TILE_SIZE:
-				if ay1 >= 6 and ay1 < TILE_SIZE - 6:
-					img.set_pixel(ax, ay1, palette["mid"])
-				if ay2 >= 6 and ay2 < TILE_SIZE - 6:
-					img.set_pixel(ax, ay2, palette["mid"])
+		var arrow_col = palette["mid"].lightened(0.06)
+		# Double chevron pointing right
+		for offset in [0, 5]:
+			for i in range(4):
+				var ax = arrow_cx - 2 + i + offset
+				var ay1 = arrow_cy - i
+				var ay2 = arrow_cy + i
+				if ax >= 0 and ax < TILE_SIZE:
+					if ay1 >= 6 and ay1 < TILE_SIZE - 6:
+						img.set_pixel(ax, ay1, arrow_col)
+					if ay2 >= 6 and ay2 < TILE_SIZE - 6:
+						img.set_pixel(ax, ay2, arrow_col)
 
-	# Wear marks on belt
-	for _i in range(rng.randi_range(1, 3)):
+	# Wear marks and scuffs on belt surface
+	for _i in range(rng.randi_range(2, 5)):
 		var wx = rng.randi_range(2, TILE_SIZE - 4)
 		var wy = rng.randi_range(8, TILE_SIZE - 10)
 		if wy < TILE_SIZE - 6:
 			img.set_pixel(wx, wy, palette["dark"])
+			if wx + 1 < TILE_SIZE:
+				img.set_pixel(wx + 1, wy, palette["dark"].lightened(0.04))
+
+	# Grease drip from rollers
+	if variant % 4 == 0:
+		var drip_x = rng.randi_range(2, TILE_SIZE - 4)
+		for dy in range(rng.randi_range(2, 4)):
+			var py = 7 + dy
+			if py < TILE_SIZE - 6 and drip_x < TILE_SIZE:
+				img.set_pixel(drip_x, py, palette["dark"].darkened(0.08))
 
 
 ## Rail tracks on gravel bed with wooden ties and steel rails
@@ -788,7 +1005,7 @@ func _draw_cargo_container(img: Image, palette: Dictionary, variant: int) -> voi
 					img.set_pixel(dx + ddx, dy + ddy, dark_col.lightened(0.05))
 
 
-## Floor vent with steam wisps rising - circular grate pattern
+## Floor vent with steam wisps, visible condensation, and moisture staining
 func _draw_steam_vent(img: Image, palette: Dictionary, variant: int) -> void:
 	# Factory floor base
 	img.fill(palette["base"])
@@ -806,57 +1023,104 @@ func _draw_steam_vent(img: Image, palette: Dictionary, variant: int) -> void:
 			elif n > 0.06:
 				img.set_pixel(x, y, palette["mid"])
 
-	# Vent grate (rectangular, centered)
+	# Moisture ring around vent area (darkened wet concrete)
+	var vent_cx = (6 + 26) / 2
+	var vent_cy = (8 + 24) / 2
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var dist = sqrt(pow(x - vent_cx, 2) + pow(y - vent_cy, 2))
+			if dist > 10 and dist < 14 and rng.randf() < 0.35:
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.darkened(0.06))
+
+	# Vent grate (rectangular, centered) with bolted frame
 	var vent_left = 6
 	var vent_right = 26
 	var vent_top = 8
 	var vent_bot = 24
 
-	# Vent frame
+	# Vent frame - thicker with bolt detail
 	for x in range(vent_left, vent_right):
 		img.set_pixel(x, vent_top, palette["grate_edge"])
+		img.set_pixel(x, vent_top - 1, palette["grate_edge"].darkened(0.08))
 		img.set_pixel(x, vent_bot, palette["grate_edge"])
-	for y in range(vent_top, vent_bot + 1):
-		img.set_pixel(vent_left, y, palette["grate_edge"])
-		img.set_pixel(vent_right - 1, y, palette["grate_edge"])
+		img.set_pixel(x, vent_bot + 1, palette["grate_edge"].darkened(0.08))
+	for y in range(vent_top - 1, vent_bot + 2):
+		if y >= 0 and y < TILE_SIZE:
+			img.set_pixel(vent_left, y, palette["grate_edge"])
+			img.set_pixel(vent_left - 1, y, palette["grate_edge"].darkened(0.08)) if vent_left - 1 >= 0 else null
+			img.set_pixel(vent_right - 1, y, palette["grate_edge"])
+			img.set_pixel(vent_right, y, palette["grate_edge"].darkened(0.08)) if vent_right < TILE_SIZE else null
 
-	# Vent slots (dark horizontal lines with gaps)
+	# Frame corner bolts
+	for corner in [Vector2i(vent_left, vent_top), Vector2i(vent_right - 1, vent_top),
+					Vector2i(vent_left, vent_bot), Vector2i(vent_right - 1, vent_bot)]:
+		img.set_pixel(corner.x, corner.y, palette["grate_edge"].lightened(0.12))
+
+	# Vent slots with depth and louver angle
 	for y in range(vent_top + 1, vent_bot):
 		for x in range(vent_left + 1, vent_right - 1):
 			if y % 3 == 0:
 				img.set_pixel(x, y, palette["vent_slot"])
+			elif y % 3 == 1:
+				# Louver top edge (bright)
+				img.set_pixel(x, y, palette["dark"].lightened(0.08))
 			else:
-				img.set_pixel(x, y, palette["dark"].lightened(0.05))
+				# Louver body
+				img.set_pixel(x, y, palette["dark"].lightened(0.03))
 
-	# Steam wisps rising above vent
-	for _w in range(rng.randi_range(3, 6)):
+	# Steam wisps rising above vent - more volumetric
+	for _w in range(rng.randi_range(4, 8)):
 		var sx = rng.randi_range(vent_left + 2, vent_right - 3)
-		var sy = rng.randi_range(1, vent_top - 1)
+		var sy = rng.randi_range(0, vent_top - 1)
 		if sx < TILE_SIZE and sy >= 0 and sy < TILE_SIZE:
-			img.set_pixel(sx, sy, palette["steam_white"])
-			# Fading steam
-			if sy > 0:
-				img.set_pixel(sx, sy - 1, palette["steam_fade"])
+			var steam_alpha = 1.0 - float(vent_top - 1 - sy) / float(vent_top)
+			img.set_pixel(sx, sy, palette["steam_white"].lerp(palette["base"], 1.0 - steam_alpha * 0.7))
+			# Steam spread (wider as it rises)
 			if sx + 1 < TILE_SIZE:
-				img.set_pixel(sx + 1, sy, palette["steam_fade"])
-			if sx - 1 >= 0 and sy > 0:
-				img.set_pixel(sx - 1, sy - 1, palette["steam_fade"].lerp(palette["base"], 0.5))
+				img.set_pixel(sx + 1, sy, palette["steam_fade"].lerp(palette["base"], 1.0 - steam_alpha * 0.4))
+			if sx - 1 >= 0:
+				img.set_pixel(sx - 1, sy, palette["steam_fade"].lerp(palette["base"], 1.0 - steam_alpha * 0.4))
+			# Wispy tendrils
+			if sy > 0 and rng.randf() < 0.5:
+				var drift = rng.randi_range(-1, 1)
+				if sx + drift >= 0 and sx + drift < TILE_SIZE:
+					img.set_pixel(sx + drift, sy - 1, palette["steam_fade"].lerp(palette["base"], 0.6))
 
-	# Steam below vent too
-	for _w in range(rng.randi_range(1, 3)):
+	# Condensation droplets on floor near vent
+	for _d in range(rng.randi_range(4, 8)):
+		var dx = rng.randi_range(vent_left - 3, vent_right + 2)
+		var dy = rng.randi_range(vent_bot + 1, TILE_SIZE - 1)
+		if dx >= 0 and dx < TILE_SIZE and dy >= 0 and dy < TILE_SIZE:
+			var current = img.get_pixel(dx, dy)
+			img.set_pixel(dx, dy, current.lerp(palette["steam_fade"], 0.25))
+
+	# Steam below vent too (escaping through floor)
+	for _w in range(rng.randi_range(2, 4)):
 		var sx = rng.randi_range(vent_left + 2, vent_right - 3)
 		var sy = rng.randi_range(vent_bot + 1, TILE_SIZE - 1)
 		if sx < TILE_SIZE and sy < TILE_SIZE:
-			img.set_pixel(sx, sy, palette["steam_fade"].lerp(palette["base"], 0.4))
+			img.set_pixel(sx, sy, palette["steam_fade"].lerp(palette["base"], 0.35))
+			if sx + 1 < TILE_SIZE:
+				img.set_pixel(sx + 1, sy, palette["steam_fade"].lerp(palette["base"], 0.55))
+
+	# Rust staining on vent frame from moisture
+	if variant % 2 == 0:
+		for _r in range(rng.randi_range(2, 4)):
+			var rx = rng.randi_range(vent_left, vent_right - 1)
+			var ry = vent_bot
+			if rx < TILE_SIZE and ry + 1 < TILE_SIZE:
+				img.set_pixel(rx, ry, Color(0.50, 0.30, 0.16))
+				img.set_pixel(rx, ry + 1, Color(0.48, 0.28, 0.14).lerp(palette["base"], 0.5))
 
 
-## Cramped identical worker housing facade - gray, lifeless, mass-produced
+## Cramped identical worker housing facade - gray, lifeless, mass-produced, bleak but detailed
 func _draw_worker_housing(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 99999
 
-	# Wall texture - flat, featureless concrete panels
+	# Wall texture - flat, featureless concrete panels with subtle staining
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.25 + y * 0.15 + variant * 0.8) * 0.12 + rng.randf() * 0.06
@@ -864,43 +1128,74 @@ func _draw_worker_housing(img: Image, palette: Dictionary, variant: int) -> void
 				img.set_pixel(x, y, palette["light"])
 			elif n < -0.06:
 				img.set_pixel(x, y, palette["dark"])
+			# Water stain streaks running down wall
+			if x % 11 == (variant % 5) and y > 4 and rng.randf() < 0.25:
+				img.set_pixel(x, y, palette["dark"].darkened(0.04))
 
-	# Horizontal panel seams (prefab concrete look)
+	# Horizontal panel seams (prefab concrete look) with gap detail
 	for y_seam in [8, 16, 24]:
 		if y_seam < TILE_SIZE:
 			for x in range(TILE_SIZE):
 				img.set_pixel(x, y_seam, palette["deep"])
 				if y_seam + 1 < TILE_SIZE:
 					img.set_pixel(x, y_seam + 1, palette["dark"])
+				# Seal/caulk between panels - slightly different color
+				if y_seam - 1 >= 0 and rng.randf() < 0.4:
+					img.set_pixel(x, y_seam - 1, palette["base"].darkened(0.03))
 
-	# Small dark windows (identical, soulless)
+	# Small dark windows (identical, soulless) - with more detail
 	var window_positions = [
 		Vector2i(4, 3), Vector2i(14, 3), Vector2i(24, 3),
 		Vector2i(4, 11), Vector2i(14, 11), Vector2i(24, 11),
 		Vector2i(4, 19), Vector2i(14, 19), Vector2i(24, 19)
 	]
-	for wpos in window_positions:
+	for wi in range(window_positions.size()):
+		var wpos = window_positions[wi]
 		if wpos.x + 5 < TILE_SIZE and wpos.y + 4 < TILE_SIZE:
+			# Window glass - dark with slight depth gradient
 			for wy in range(wpos.y, wpos.y + 4):
 				for wx in range(wpos.x, wpos.x + 5):
-					img.set_pixel(wx, wy, palette["window_dark"])
-			# Window frame
+					var rel_y = float(wy - wpos.y) / 3.0
+					var glass_col = palette["window_dark"]
+					if rel_y < 0.3:
+						glass_col = glass_col.lightened(0.04)
+					img.set_pixel(wx, wy, glass_col)
+			# Window frame - concrete surround
 			for wx in range(wpos.x, wpos.x + 5):
 				img.set_pixel(wx, wpos.y, palette["dark"])
 				img.set_pixel(wx, wpos.y + 3, palette["dark"])
 			for wy in range(wpos.y, wpos.y + 4):
 				img.set_pixel(wpos.x, wy, palette["dark"])
 				img.set_pixel(wpos.x + 4, wy, palette["dark"])
-			# Occasional dim light
-			if rng.randf() < 0.3:
-				img.set_pixel(wpos.x + 2, wpos.y + 1, palette["window_glint"])
+			# Cross pane divider (every window has a cross)
+			img.set_pixel(wpos.x + 2, wpos.y + 1, palette["dark"].lightened(0.06))
+			img.set_pixel(wpos.x + 2, wpos.y + 2, palette["dark"].lightened(0.06))
+			# Occasional dim light in window
+			if rng.randf() < 0.25:
+				img.set_pixel(wpos.x + 1, wpos.y + 1, palette["window_glint"])
+				img.set_pixel(wpos.x + 3, wpos.y + 1, palette["window_glint"].darkened(0.08))
+			# Occasional closed curtain (darker half)
+			elif rng.randf() < 0.3:
+				for wy in range(wpos.y + 1, wpos.y + 3):
+					img.set_pixel(wpos.x + 3, wy, palette["window_dark"].darkened(0.08))
+					if wpos.x + 4 < TILE_SIZE:
+						img.set_pixel(wpos.x + 4 - 1, wy, palette["window_dark"].darkened(0.05))
+			# Window ledge shadow beneath
+			if wpos.y + 4 < TILE_SIZE:
+				for wx in range(wpos.x, wpos.x + 5):
+					img.set_pixel(wx, wpos.y + 4 - 1, palette["dark"].darkened(0.04))
 
-	# Door at bottom center
+	# Door at bottom center - with more detail
 	var door_left = 12
 	var door_right = 19
 	for y in range(TILE_SIZE - 8, TILE_SIZE):
 		for x in range(door_left, door_right):
-			img.set_pixel(x, y, palette["door_gray"])
+			var door_shade = palette["door_gray"]
+			# Slight panel variation
+			if (y - (TILE_SIZE - 8)) % 4 == 0:
+				door_shade = door_shade.darkened(0.04)
+			img.set_pixel(x, y, door_shade)
+	# Door frame
 	for y in range(TILE_SIZE - 8, TILE_SIZE):
 		img.set_pixel(door_left, y, palette["deep"])
 		img.set_pixel(door_right - 1, y, palette["deep"])
@@ -908,19 +1203,51 @@ func _draw_worker_housing(img: Image, palette: Dictionary, variant: int) -> void
 		img.set_pixel(x, TILE_SIZE - 8, palette["deep"])
 	# Door handle
 	img.set_pixel(door_right - 3, TILE_SIZE - 5, palette["light"])
+	img.set_pixel(door_right - 3, TILE_SIZE - 4, palette["light"].darkened(0.1))
+	# Door number plate
+	img.set_pixel(door_left + 2, TILE_SIZE - 7, palette["light"].lightened(0.1))
+	img.set_pixel(door_left + 3, TILE_SIZE - 7, palette["light"].lightened(0.1))
 
-	# Roof line at very top
+	# Roof line at very top with gutter/drip edge
 	for x in range(TILE_SIZE):
 		img.set_pixel(x, 0, palette["roof"])
 		img.set_pixel(x, 1, palette["roof"].lightened(0.05))
+		# Gutter edge
+		img.set_pixel(x, 2, palette["roof"].darkened(0.08))
 
-	# Unit number stencil (a few dots)
+	# Unit number stencil - more readable, variant-based number
+	var unit_num = (variant % 9) + 1
 	var num_x = 22
 	var num_y = TILE_SIZE - 6
-	if num_x + 2 < TILE_SIZE and num_y < TILE_SIZE:
-		img.set_pixel(num_x, num_y, palette["light"])
-		img.set_pixel(num_x + 1, num_y, palette["light"])
-		img.set_pixel(num_x + 2, num_y, palette["light"])
+	var num_col = palette["light"].lightened(0.05)
+	if num_x + 3 < TILE_SIZE and num_y + 2 < TILE_SIZE:
+		# Stenciled number plate background
+		for dx in range(5):
+			for dy in range(3):
+				if num_x + dx < TILE_SIZE and num_y + dy < TILE_SIZE:
+					img.set_pixel(num_x + dx, num_y + dy, palette["dark"].lightened(0.02))
+		# Simple dot-matrix number
+		img.set_pixel(num_x + 1, num_y, num_col)
+		img.set_pixel(num_x + 2, num_y, num_col)
+		img.set_pixel(num_x + 1, num_y + 1, num_col)
+		img.set_pixel(num_x + 3, num_y + 1, num_col)
+
+	# Grime/dirt accumulation at base of wall
+	for x in range(TILE_SIZE):
+		for dy in range(3):
+			var py = TILE_SIZE - 1 - dy
+			if py >= 0 and py < TILE_SIZE and rng.randf() < 0.35:
+				var current = img.get_pixel(x, py)
+				img.set_pixel(x, py, current.darkened(0.05 * (3 - dy)))
+
+	# Pipe/conduit running along one edge
+	if variant % 3 == 0:
+		var pipe_x = TILE_SIZE - 3
+		for y in range(3, TILE_SIZE - 2):
+			if pipe_x < TILE_SIZE:
+				img.set_pixel(pipe_x, y, palette["dark"].darkened(0.05))
+				if pipe_x + 1 < TILE_SIZE:
+					img.set_pixel(pipe_x + 1, y, palette["dark"])
 
 
 ## Guard post / checkpoint booth with red/white barrier stripe and window
@@ -1061,7 +1388,7 @@ func _draw_drainage_channel(img: Image, palette: Dictionary, variant: int) -> vo
 						img.set_pixel(foam_x + dx, foam_y + dy, palette["foam"])
 
 
-## Hazmat barrel on concrete - yellow/black with dripping chemicals
+## Hazmat barrel on concrete - yellow/black with hazmat symbols, drip stains, corrosion
 func _draw_chemical_barrel(img: Image, palette: Dictionary) -> void:
 	# Concrete background
 	img.fill(palette["concrete"])
@@ -1069,7 +1396,7 @@ func _draw_chemical_barrel(img: Image, palette: Dictionary) -> void:
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 54321
 
-	# Concrete texture
+	# Concrete texture with chemical staining
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n = sin(x * 0.5 + y * 0.4) * 0.15 + rng.randf() * 0.08
@@ -1078,7 +1405,7 @@ func _draw_chemical_barrel(img: Image, palette: Dictionary) -> void:
 			elif n < -0.08:
 				img.set_pixel(x, y, palette["concrete"].darkened(0.05))
 
-	# Barrel body (center, cylindrical)
+	# Barrel body (center, cylindrical) with dents and wear
 	var barrel_left = 8
 	var barrel_right = 24
 	var barrel_top = 4
@@ -1104,20 +1431,33 @@ func _draw_chemical_barrel(img: Image, palette: Dictionary) -> void:
 				shade = palette["dark"]
 			else:
 				shade = palette["deep"]
+			# Surface wear
+			if rng.randf() < 0.03:
+				shade = shade.darkened(0.06)
 			img.set_pixel(x, y, shade)
 
-	# Barrel rings (top and bottom bands + middle)
+	# Barrel rings (top and bottom bands + middle) with rivet detail
 	for ring_y in [barrel_top, barrel_top + 1, (barrel_top + barrel_bot) / 2, barrel_bot - 2, barrel_bot - 1]:
 		if ring_y >= 0 and ring_y < TILE_SIZE:
 			for x in range(barrel_left, barrel_right):
 				var current = img.get_pixel(x, ring_y)
 				img.set_pixel(x, ring_y, current.darkened(0.15))
+			# Rivets on rings
+			if ring_y == (barrel_top + barrel_bot) / 2:
+				for rx in range(barrel_left + 2, barrel_right - 2, 4):
+					img.set_pixel(rx, ring_y, palette["skull_white"].darkened(0.3))
 
-	# Top cap
+	# Top cap with bung hole
 	for x in range(barrel_left + 2, barrel_right - 2):
 		img.set_pixel(x, barrel_top, palette["dark"].darkened(0.1))
+	# Bung hole (small dark circle on top cap)
+	var bung_x = (barrel_left + barrel_right) / 2 + 2
+	if bung_x < barrel_right and barrel_top >= 0:
+		img.set_pixel(bung_x, barrel_top, palette["hazard_black"])
+		if bung_x + 1 < barrel_right:
+			img.set_pixel(bung_x + 1, barrel_top, palette["hazard_black"])
 
-	# Hazard symbol area (skull crossbones simplified)
+	# Hazard symbol - trefoil/radiation style (3 triangular segments around center)
 	var sym_cx = (barrel_left + barrel_right) / 2
 	var sym_cy = (barrel_top + barrel_bot) / 2
 	# Black diamond background
@@ -1128,26 +1468,67 @@ func _draw_chemical_barrel(img: Image, palette: Dictionary) -> void:
 				var py = sym_cy + dy
 				if px >= barrel_left and px < barrel_right and py >= barrel_top and py < barrel_bot:
 					img.set_pixel(px, py, palette["hazard_black"])
-	# Skull dots (simplified)
-	img.set_pixel(sym_cx - 1, sym_cy - 1, palette["skull_white"])
-	img.set_pixel(sym_cx + 1, sym_cy - 1, palette["skull_white"])
-	img.set_pixel(sym_cx, sym_cy, palette["skull_white"])
+	# Skull face (more detailed - eyes, nose, jaw)
+	# Eyes
+	img.set_pixel(sym_cx - 1, sym_cy - 2, palette["skull_white"])
+	img.set_pixel(sym_cx + 1, sym_cy - 2, palette["skull_white"])
+	# Nose
+	img.set_pixel(sym_cx, sym_cy - 1, palette["skull_white"])
+	# Jaw/teeth row
+	img.set_pixel(sym_cx - 2, sym_cy + 1, palette["skull_white"])
 	img.set_pixel(sym_cx - 1, sym_cy + 1, palette["skull_white"])
+	img.set_pixel(sym_cx, sym_cy + 1, palette["skull_white"])
 	img.set_pixel(sym_cx + 1, sym_cy + 1, palette["skull_white"])
+	img.set_pixel(sym_cx + 2, sym_cy + 1, palette["skull_white"])
+	# Crossbones below skull
+	img.set_pixel(sym_cx - 2, sym_cy + 2, palette["skull_white"])
+	img.set_pixel(sym_cx + 2, sym_cy + 2, palette["skull_white"])
+	img.set_pixel(sym_cx - 1, sym_cy + 3, palette["skull_white"])
+	img.set_pixel(sym_cx + 1, sym_cy + 3, palette["skull_white"])
+	img.set_pixel(sym_cx, sym_cy + 2, palette["skull_white"])
 
-	# Chemical drip from barrel
-	var drip_x = barrel_right - 2
-	for dy in range(barrel_bot, TILE_SIZE):
-		if dy < TILE_SIZE and drip_x < TILE_SIZE:
-			var drip_fade = float(dy - barrel_bot) / float(TILE_SIZE - barrel_bot)
-			img.set_pixel(drip_x, dy, palette["drip_green"].lerp(palette["concrete"], drip_fade * 0.7))
-	# Puddle under drip
-	if TILE_SIZE - 1 >= 0:
-		for dx in range(-2, 3):
-			var px = drip_x + dx
-			if px >= 0 and px < TILE_SIZE:
-				img.set_pixel(px, TILE_SIZE - 1, palette["drip_green"].darkened(0.15))
-				img.set_pixel(px, TILE_SIZE - 2, palette["drip_green"].lerp(palette["concrete"], 0.4))
+	# Chemical drip from barrel - multiple drip paths
+	var drip_x1 = barrel_right - 2
+	var drip_x2 = barrel_left + 1
+	for drip_x in [drip_x1, drip_x2]:
+		var drip_active = (drip_x == drip_x1) or (rng.randf() < 0.5)
+		if drip_active:
+			for dy in range(barrel_bot, TILE_SIZE):
+				if dy < TILE_SIZE and drip_x < TILE_SIZE and drip_x >= 0:
+					var drip_fade = float(dy - barrel_bot) / float(TILE_SIZE - barrel_bot)
+					var drip_col = palette["drip_green"].lerp(palette["concrete"], drip_fade * 0.7)
+					# Drip wobble
+					var wobble = 0
+					if dy > barrel_bot + 2:
+						wobble = rng.randi_range(-1, 0)
+					if drip_x + wobble >= 0 and drip_x + wobble < TILE_SIZE:
+						img.set_pixel(drip_x + wobble, dy, drip_col)
+
+	# Puddle under barrel - larger and more detailed
+	for dx in range(-3, 4):
+		for dy in range(-1, 2):
+			var px = drip_x1 + dx
+			var py = TILE_SIZE - 1 + dy - 1
+			if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+				var dist = abs(dx) / 4.0
+				if rng.randf() < 0.7 - dist * 0.3:
+					img.set_pixel(px, py, palette["drip_green"].darkened(0.10 + dist * 0.1))
+
+	# Chemical stain on concrete around base
+	for dx in range(-2, barrel_width + 3):
+		var px = barrel_left + dx
+		if px >= 0 and px < TILE_SIZE:
+			var py = barrel_bot
+			if py < TILE_SIZE and rng.randf() < 0.3:
+				img.set_pixel(px, py, palette["concrete"].lerp(palette["drip_green"], 0.15))
+
+	# Dent in barrel side
+	var dent_x = barrel_left + 3
+	var dent_y = barrel_top + 6
+	if dent_x + 2 < barrel_right and dent_y + 2 < barrel_bot:
+		img.set_pixel(dent_x, dent_y, palette["dark"].lightened(0.04))
+		img.set_pixel(dent_x + 1, dent_y, palette["dark"].lightened(0.02))
+		img.set_pixel(dent_x, dent_y + 1, palette["mid"].darkened(0.02))
 
 
 ## Exposed industrial pipes (multiple parallel, impassable)
@@ -1366,13 +1747,13 @@ func _draw_chain_link_fence(img: Image, palette: Dictionary, variant: int) -> vo
 					img.set_pixel(x + 2, 2, palette["mid"])
 
 
-## Slightly warmer concrete with coffee stains - the one room where humanity persists
+## Warmer linoleum floor with coffee stains, crumbs, scuff marks - humanity persists here
 func _draw_break_room_floor(img: Image, palette: Dictionary, variant: int) -> void:
 	img.fill(palette["base"])
 	var rng = RandomNumberGenerator.new()
 	rng.seed = variant * 14141
 
-	# Warmer concrete texture (slightly different noise pattern - softer)
+	# Warmer concrete/linoleum texture - noticeably different from factory floor
 	for y in range(TILE_SIZE):
 		for x in range(TILE_SIZE):
 			var n1 = sin(x * 0.4 + variant * 1.0) * cos(y * 0.35 + variant * 0.6)
@@ -1388,20 +1769,37 @@ func _draw_break_room_floor(img: Image, palette: Dictionary, variant: int) -> vo
 				img.set_pixel(x, y, palette["light"])
 			elif combined > 0.02:
 				img.set_pixel(x, y, palette["warmth"])
+			# Overall warm tint compared to factory
+			if rng.randf() < 0.08:
+				var current = img.get_pixel(x, y)
+				img.set_pixel(x, y, current.lerp(palette["warmth"], 0.15))
 
-	# Linoleum tile pattern (faint grid, 8x8 squares)
+	# Linoleum tile pattern (faint grid, 8x8 squares) with alternating shade
+	for ty in range(0, TILE_SIZE, 8):
+		for tx in range(0, TILE_SIZE, 8):
+			var checker = ((tx / 8) + (ty / 8)) % 2
+			if checker == 1:
+				for dy in range(8):
+					for dx in range(8):
+						var px = tx + dx
+						var py = ty + dy
+						if px < TILE_SIZE and py < TILE_SIZE:
+							var current = img.get_pixel(px, py)
+							img.set_pixel(px, py, current.lerp(palette["warmth"], 0.08))
+
+	# Tile grid lines
 	for x in range(TILE_SIZE):
 		if x % 8 == 0:
 			for y in range(TILE_SIZE):
 				var current = img.get_pixel(x, y)
-				img.set_pixel(x, y, current.darkened(0.04))
+				img.set_pixel(x, y, current.darkened(0.05))
 	for y in range(TILE_SIZE):
 		if y % 8 == 0:
 			for x in range(TILE_SIZE):
 				var current = img.get_pixel(x, y)
-				img.set_pixel(x, y, current.darkened(0.04))
+				img.set_pixel(x, y, current.darkened(0.05))
 
-	# Coffee ring stain (circular, warm brown)
+	# Coffee ring stain (circular, warm brown) - more detailed
 	if variant % 2 == 0:
 		var ring_cx = rng.randi_range(10, TILE_SIZE - 10)
 		var ring_cy = rng.randi_range(10, TILE_SIZE - 10)
@@ -1409,17 +1807,21 @@ func _draw_break_room_floor(img: Image, palette: Dictionary, variant: int) -> vo
 		for y in range(TILE_SIZE):
 			for x in range(TILE_SIZE):
 				var dist = sqrt(pow(x - ring_cx, 2) + pow(y - ring_cy, 2))
-				# Ring (not filled circle)
-				if dist > ring_r - 1.0 and dist < ring_r + 0.8:
-					if rng.randf() < 0.75:
-						img.set_pixel(x, y, palette["coffee_ring"])
+				# Ring (not filled circle) - thicker, more visible
+				if dist > ring_r - 1.2 and dist < ring_r + 1.0:
+					if rng.randf() < 0.78:
+						var ring_shade = palette["coffee_ring"]
+						# Ring is darker at bottom (gravity)
+						if y > ring_cy:
+							ring_shade = ring_shade.darkened(0.06)
+						img.set_pixel(x, y, ring_shade)
 				# Faint fill inside
-				elif dist < ring_r - 1.0:
-					if rng.randf() < 0.2:
+				elif dist < ring_r - 1.2:
+					if rng.randf() < 0.25:
 						var current = img.get_pixel(x, y)
-						img.set_pixel(x, y, current.lerp(palette["coffee"], 0.15))
+						img.set_pixel(x, y, current.lerp(palette["coffee"], 0.18))
 
-	# Spilled coffee spot (separate from ring)
+	# Spilled coffee spot (separate from ring) with drip trail
 	if variant % 3 == 0:
 		var sx = rng.randi_range(4, TILE_SIZE - 8)
 		var sy = rng.randi_range(4, TILE_SIZE - 8)
@@ -1431,15 +1833,52 @@ func _draw_break_room_floor(img: Image, palette: Dictionary, variant: int) -> vo
 					var dist = sqrt(pow(dx - 2.5, 2) + pow(dy - 2.0, 2))
 					if dist < 2.5 and rng.randf() < 0.65:
 						img.set_pixel(px, py, palette["coffee"])
+		# Drip trail from spill
+		for trail in range(3):
+			var tx = sx + 2 + rng.randi_range(-1, 1)
+			var ty = sy + 4 + trail
+			if tx >= 0 and tx < TILE_SIZE and ty >= 0 and ty < TILE_SIZE:
+				img.set_pixel(tx, ty, palette["coffee"].lerp(palette["base"], float(trail) / 3.0))
 
-	# Scuff marks from chair legs
+	# Scuff marks from chair legs (arc-shaped scratches)
 	if variant % 4 == 0:
 		for _i in range(rng.randi_range(1, 3)):
 			var scuff_x = rng.randi_range(4, TILE_SIZE - 8)
 			var scuff_y = rng.randi_range(4, TILE_SIZE - 4)
+			# Curved scuff arc
+			for dx in range(4):
+				var dy_offset = 0 if dx < 2 else 1
+				if scuff_x + dx < TILE_SIZE and scuff_y + dy_offset < TILE_SIZE:
+					img.set_pixel(scuff_x + dx, scuff_y + dy_offset, palette["dark"])
+
+	# Crumb trail (tiny bright specks - someone was eating)
+	if variant % 2 == 0:
+		for _c in range(rng.randi_range(3, 6)):
+			var cx = rng.randi_range(2, TILE_SIZE - 3)
+			var cy = rng.randi_range(2, TILE_SIZE - 3)
+			img.set_pixel(cx, cy, palette["linoleum_light"].lightened(0.08))
+
+	# Sugar packet or wrapper corner (tiny colored rectangle)
+	if variant % 5 == 0:
+		var wx = rng.randi_range(4, TILE_SIZE - 6)
+		var wy = rng.randi_range(4, TILE_SIZE - 6)
+		var wrapper_col = Color(0.85, 0.85, 0.82)  # White wrapper
+		for dx in range(3):
+			for dy in range(2):
+				if wx + dx < TILE_SIZE and wy + dy < TILE_SIZE:
+					img.set_pixel(wx + dx, wy + dy, wrapper_col)
+		# Brand stripe on wrapper
+		if wx + 1 < TILE_SIZE and wy < TILE_SIZE:
+			img.set_pixel(wx + 1, wy, Color(0.75, 0.25, 0.20))
+
+	# Slightly worn path to door (lighter strip at edge)
+	if variant % 3 == 0:
+		for y in range(TILE_SIZE):
 			for dx in range(3):
-				if scuff_x + dx < TILE_SIZE and scuff_y < TILE_SIZE:
-					img.set_pixel(scuff_x + dx, scuff_y, palette["dark"])
+				var px = dx
+				if px < TILE_SIZE:
+					var current = img.get_pixel(px, y)
+					img.set_pixel(px, y, current.lightened(0.03))
 
 
 ## Create tileset with all industrial tiles
