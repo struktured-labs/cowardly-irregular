@@ -267,6 +267,8 @@ func _open_overworld_menu() -> void:
 	_overworld_menu.closed.connect(_on_overworld_menu_closed)
 	_overworld_menu.menu_action.connect(_on_overworld_menu_action)
 	_overworld_menu.quit_to_title.connect(_on_quit_to_title)
+	if _overworld_menu.has_signal("teleport_requested"):
+		_overworld_menu.teleport_requested.connect(_on_teleport_requested)
 	SoundManager.play_ui("menu_open")
 	print("Overworld menu opened")
 
@@ -828,6 +830,12 @@ func _start_exploration() -> void:
 			exploration_scene = _create_script_scene("res://src/exploration/SteampunkOverworld.gd")
 		"suburban_overworld":
 			exploration_scene = _create_script_scene("res://src/exploration/SuburbanOverworld.gd")
+		"industrial_overworld":
+			exploration_scene = _create_script_scene("res://src/exploration/IndustrialOverworld.gd")
+		"futuristic_overworld":
+			exploration_scene = _create_script_scene("res://src/exploration/FuturisticOverworld.gd")
+		"abstract_overworld":
+			exploration_scene = _create_script_scene("res://src/exploration/AbstractOverworld.gd")
 		_:
 			exploration_scene = OverworldSceneRes.instantiate()
 
@@ -932,6 +940,12 @@ func _prewarm_area_sprites() -> void:
 			common_enemies = ["slime", "imp", "skeleton"]
 		"suburban_overworld":
 			common_enemies = ["new_age_retro_hippie", "spiteful_crow", "skate_punk"]
+		"industrial_overworld":
+			common_enemies = ["assembly_line_automaton", "rust_elemental", "toxic_sludge"]
+		"futuristic_overworld":
+			common_enemies = ["rogue_process", "memory_leak", "firewall_sentinel"]
+		"abstract_overworld":
+			common_enemies = ["null_entity", "forgotten_variable", "empty_set"]
 		_:
 			if "cave" in _current_map_id:
 				common_enemies = ["bat", "skeleton", "imp"]
@@ -1064,6 +1078,14 @@ func _start_battle_async(specific_enemies: Array = []) -> void:
 	BattleManager.battle_ended.connect(_on_battle_ended, CONNECT_ONE_SHOT)
 
 
+func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
+	"""Handle debug teleport from overworld menu"""
+	# Close the overworld menu first
+	_on_overworld_menu_closed()
+	# Then transition
+	_on_area_transition(target_map, spawn_point)
+
+
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	"""Handle transitioning between areas"""
 	_current_map_id = target_map
@@ -1104,6 +1126,12 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "urban"
 		"suburban_overworld":
 			return "suburban"
+		"industrial_overworld":
+			return "industrial"
+		"futuristic_overworld":
+			return "digital"
+		"abstract_overworld":
+			return "void"
 		_:
 			if "cave" in map_id or "dungeon" in map_id:
 				return "cave"

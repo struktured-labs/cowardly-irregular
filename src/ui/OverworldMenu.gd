@@ -16,9 +16,12 @@ const JobMenuClass = preload("res://src/ui/JobMenu.gd")
 signal closed()
 signal menu_action(action: String, target: Combatant)
 signal quit_to_title()
+signal teleport_requested(target_map: String, spawn_point: String)
 
-## Menu options
-const MENU_OPTIONS = [
+## Menu options (built dynamically in setup to include debug options)
+var _menu_options: Array = []
+
+const BASE_MENU_OPTIONS = [
 	{"id": "items", "label": "Items", "enabled": true},
 	{"id": "equipment", "label": "Equipment", "enabled": true},
 	{"id": "jobs", "label": "Jobs", "enabled": true},
@@ -59,6 +62,10 @@ func _ready() -> void:
 func setup(game_party: Array) -> void:
 	"""Initialize menu with party data"""
 	party = game_party
+	# Build menu options (add debug teleport if enabled)
+	_menu_options = BASE_MENU_OPTIONS.duplicate(true)
+	if GameState and GameState.debug_log_enabled:
+		_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
 	# Defer rebuild to ensure size is set
 	call_deferred("_build_ui")
 
@@ -269,15 +276,15 @@ func _create_menu_panel(_panel_size: Vector2) -> Control:
 	var y_offset = 32
 	var item_height = 28
 
-	for i in range(MENU_OPTIONS.size()):
-		var option = MENU_OPTIONS[i]
+	for i in range(_menu_options.size()):
+		var option = _menu_options[i]
 		var item = _create_menu_item(option, i)
 		item.position = Vector2(8, y_offset + i * item_height)
 		panel.add_child(item)
 		_menu_labels.append(item)
 
 	# Game info at bottom
-	var info_y = y_offset + MENU_OPTIONS.size() * item_height + 16
+	var info_y = y_offset + _menu_options.size() * item_height + 16
 	var play_time = Label.new()
 	play_time.text = "Play Time: %s" % _format_play_time()
 	play_time.position = Vector2(8, info_y)
@@ -374,18 +381,26 @@ func _update_selection() -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
-	if not visible or _submenu_open:
+	if not visible:
+		return
+
+	# Handle teleport submenu input separately
+	if _submenu_open and _teleport_labels.size() > 0:
+		_handle_teleport_input(event)
+		return
+
+	if _submenu_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
 	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_index = (selected_index - 1 + MENU_OPTIONS.size()) % MENU_OPTIONS.size()
+		selected_index = (selected_index - 1 + _menu_options.size()) % _menu_options.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_index = (selected_index + 1) % MENU_OPTIONS.size()
+		selected_index = (selected_index + 1) % _menu_options.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
@@ -404,7 +419,7 @@ func _input(event: InputEvent) -> void:
 
 	# Confirm
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
-		var option = MENU_OPTIONS[selected_index]
+		var option = _menu_options[selected_index]
 		if option["enabled"]:
 			_handle_menu_action(option["id"])
 			SoundManager.play_ui("menu_select")
@@ -450,6 +465,8 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_save_screen(SaveScreenClass.Mode.LOAD)
 		"settings":
 			_open_settings()
+		"teleport":
+			_open_teleport_menu()
 
 
 func _open_save_screen(mode: int) -> void:
@@ -625,6 +642,148 @@ func _on_submenu_closed() -> void:
 	for child in get_children():
 		child.visible = true
 	_build_ui()  # Refresh UI to show updated stats
+
+
+## Teleport Menu (debug only)
+
+const TELEPORT_DESTINATIONS = [
+	{"id": "overworld", "label": "Medieval Overworld", "spawn": "default"},
+	{"id": "suburban_overworld", "label": "Suburban (Area 2)", "spawn": "entrance"},
+	{"id": "industrial_overworld", "label": "Industrial (Area 3)", "spawn": "entrance"},
+	{"id": "futuristic_overworld", "label": "Futuristic (Area 4)", "spawn": "entrance"},
+	{"id": "abstract_overworld", "label": "Abstract (Area 5)", "spawn": "entrance"},
+	{"id": "steampunk_overworld", "label": "Steampunk Region", "spawn": "default"},
+	{"id": "harmonia_village", "label": "Harmonia Village", "spawn": "default"},
+]
+
+var _teleport_selected: int = 0
+var _teleport_labels: Array = []
+
+func _open_teleport_menu() -> void:
+	"""Open the teleport destination picker"""
+	_submenu_open = true
+	_teleport_selected = 0
+	_teleport_labels.clear()
+
+	var teleport_panel = Control.new()
+	teleport_panel.name = "TeleportMenu"
+	teleport_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	# Background
+	var bg = ColorRect.new()
+	bg.color = BG_COLOR
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	teleport_panel.add_child(bg)
+
+	# Title
+	var title = Label.new()
+	title.text = "DEBUG TELEPORT"
+	title.position = Vector2(24, 16)
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color.YELLOW)
+	teleport_panel.add_child(title)
+
+	var subtitle = Label.new()
+	subtitle.text = "Select destination:"
+	subtitle.position = Vector2(24, 38)
+	subtitle.add_theme_font_size_override("font_size", 12)
+	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
+	teleport_panel.add_child(subtitle)
+
+	# Destination list
+	var y_offset = 64
+	for i in range(TELEPORT_DESTINATIONS.size()):
+		var dest = TELEPORT_DESTINATIONS[i]
+		var item = Control.new()
+		item.position = Vector2(24, y_offset + i * 32)
+		item.size = Vector2(300, 28)
+
+		var highlight = ColorRect.new()
+		highlight.color = SELECTED_COLOR if i == 0 else Color.TRANSPARENT
+		highlight.size = Vector2(300, 28)
+		highlight.name = "Highlight"
+		item.add_child(highlight)
+
+		var cursor = Label.new()
+		cursor.text = "▶" if i == 0 else " "
+		cursor.position = Vector2(4, 4)
+		cursor.add_theme_font_size_override("font_size", 14)
+		cursor.add_theme_color_override("font_color", Color.YELLOW)
+		cursor.name = "Cursor"
+		item.add_child(cursor)
+
+		var label = Label.new()
+		label.text = dest["label"]
+		label.position = Vector2(28, 4)
+		label.add_theme_font_size_override("font_size", 14)
+		label.add_theme_color_override("font_color", TEXT_COLOR)
+		label.name = "Label"
+		item.add_child(label)
+
+		teleport_panel.add_child(item)
+		_teleport_labels.append(item)
+
+	# Footer
+	var footer = Label.new()
+	footer.text = "↑↓: Select  A: Teleport  B: Back"
+	footer.position = Vector2(24, y_offset + TELEPORT_DESTINATIONS.size() * 32 + 16)
+	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_color_override("font_color", DISABLED_COLOR)
+	teleport_panel.add_child(footer)
+
+	add_child(teleport_panel)
+	_hide_main_ui(teleport_panel)
+
+	# Use a deferred input handler for the teleport submenu
+	teleport_panel.set_meta("input_handler", true)
+
+
+func _handle_teleport_input(event: InputEvent) -> void:
+	"""Handle input for the teleport submenu"""
+	if event.is_action_pressed("ui_up") and not event.is_echo():
+		_teleport_selected = (_teleport_selected - 1 + TELEPORT_DESTINATIONS.size()) % TELEPORT_DESTINATIONS.size()
+		_update_teleport_selection()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
+		_teleport_selected = (_teleport_selected + 1) % TELEPORT_DESTINATIONS.size()
+		_update_teleport_selection()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
+		var dest = TELEPORT_DESTINATIONS[_teleport_selected]
+		print("[TELEPORT] Warping to: %s" % dest["label"])
+		SoundManager.play_ui("menu_select")
+		teleport_requested.emit(dest["id"], dest["spawn"])
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
+		# Close teleport submenu, return to main menu
+		_teleport_labels.clear()
+		_submenu_open = false
+		for child in get_children():
+			child.visible = true
+		# Remove teleport panel
+		var tp = get_node_or_null("TeleportMenu")
+		if tp:
+			tp.queue_free()
+		_build_ui()
+		SoundManager.play_ui("menu_cancel")
+		get_viewport().set_input_as_handled()
+
+
+func _update_teleport_selection() -> void:
+	"""Update teleport menu visual selection"""
+	for i in range(_teleport_labels.size()):
+		var item = _teleport_labels[i]
+		var highlight = item.get_node_or_null("Highlight")
+		var cursor = item.get_node_or_null("Cursor")
+		if highlight:
+			highlight.color = SELECTED_COLOR if i == _teleport_selected else Color.TRANSPARENT
+		if cursor:
+			cursor.text = "▶" if i == _teleport_selected else " "
 
 
 func _close_menu() -> void:
