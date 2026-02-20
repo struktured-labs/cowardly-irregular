@@ -196,6 +196,10 @@ func _generate_map() -> void:
 	spawn_points["plaza"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["server_farm"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 4 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["glitch_sector"] = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for arriving from industrial world (south access port)
+	spawn_points["from_industrial"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 40 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for returning from abstract world (north server farm)
+	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -227,17 +231,29 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Return portal at south area (row 42, center)
-	var portal_trans = AreaTransitionScript.new()
-	portal_trans.name = "OverworldPortal"
-	portal_trans.target_map = "overworld"
-	portal_trans.target_spawn = "futuristic_portal"
-	portal_trans.require_interaction = true
-	portal_trans.indicator_text = "Return to Overworld"
-	portal_trans.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 42 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(portal_trans, Vector2(TILE_SIZE, TILE_SIZE))
-	portal_trans.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(portal_trans)
+	# Back portal to Industrial world (south access port)
+	var industrial_portal = AreaTransitionScript.new()
+	industrial_portal.name = "IndustrialPortal"
+	industrial_portal.target_map = "industrial_overworld"
+	industrial_portal.target_spawn = "from_futuristic"
+	industrial_portal.require_interaction = true
+	industrial_portal.indicator_text = "Return to Efficiency District"
+	industrial_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 42 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(industrial_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	industrial_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(industrial_portal)
+
+	# Forward portal to Abstract world (north server farm - data degrades into void)
+	var abstract_portal = AreaTransitionScript.new()
+	abstract_portal.name = "AbstractPortal"
+	abstract_portal.target_map = "abstract_overworld"
+	abstract_portal.target_spawn = "from_futuristic"
+	abstract_portal.require_interaction = true
+	abstract_portal.indicator_text = "The Remainder"
+	abstract_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(abstract_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	abstract_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(abstract_portal)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

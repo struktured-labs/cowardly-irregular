@@ -59,5 +59,35 @@
 		"encounter_rate": 0.05,
 		"enemy_pool_id": "suburban_overworld",
 		"recommended_level": 4
+	},
+
+	"industrial_overworld": {
+		"id": "industrial_overworld",
+		"name": "The Efficiency District",
+		"type": "overworld",
+		"description": "A factory complex where everything has been optimized for production. Workers are numbered, breaks are scheduled, and individuality is inefficient.",
+		"encounter_rate": 0.05,
+		"enemy_pool_id": "industrial_overworld",
+		"recommended_level": 7
+	},
+
+	"futuristic_overworld": {
+		"id": "futuristic_overworld",
+		"name": "The Network",
+		"type": "overworld",
+		"description": "A digital cityscape optimized for computation. Buildings are server farms. Streets are data highways. People are I/O terminals.",
+		"encounter_rate": 0.04,
+		"enemy_pool_id": "futuristic_overworld",
+		"recommended_level": 11
+	},
+
+	"abstract_overworld": {
+		"id": "abstract_overworld",
+		"name": "The Remainder",
+		"type": "overworld",
+		"description": "Everything unnecessary has been removed. Color, detail, names — all optimized away. What remains is pure geometry, pure function, pure... nothing.",
+		"encounter_rate": 0.03,
+		"enemy_pool_id": "abstract_overworld",
+		"recommended_level": 14
 	}
 }

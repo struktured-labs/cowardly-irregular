@@ -195,6 +195,8 @@ func _generate_map() -> void:
 	spawn_points["the_question"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["catalog"] = Vector2(4 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["echo_chamber"] = Vector2(34 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for arriving from futuristic world (south origin point)
+	spawn_points["from_futuristic"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -225,17 +227,17 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Return portal at Origin Point (row 32, center)
-	var portal_trans = AreaTransitionScript.new()
-	portal_trans.name = "OverworldPortal"
-	portal_trans.target_map = "overworld"
-	portal_trans.target_spawn = "abstract_portal"
-	portal_trans.require_interaction = true
-	portal_trans.indicator_text = "Return to Overworld"
-	portal_trans.position = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(portal_trans, Vector2(TILE_SIZE * 2, TILE_SIZE))
-	portal_trans.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(portal_trans)
+	# Back portal to Futuristic world (Origin Point, south edge)
+	var futuristic_portal = AreaTransitionScript.new()
+	futuristic_portal.name = "FuturisticPortal"
+	futuristic_portal.target_map = "futuristic_overworld"
+	futuristic_portal.target_spawn = "from_abstract"
+	futuristic_portal.require_interaction = true
+	futuristic_portal.indicator_text = "Return to The Network"
+	futuristic_portal.position = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 33 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
+	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(futuristic_portal)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

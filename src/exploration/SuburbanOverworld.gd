@@ -208,6 +208,8 @@ func _generate_map() -> void:
 	spawn_points["entrance"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["suburban_portal"] = spawn_points["entrance"]
+	# Spawn point for returning from industrial world (east side of map)
+	spawn_points["from_industrial"] = Vector2(46 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -249,6 +251,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(portal_trans, Vector2(TILE_SIZE, TILE_SIZE))
 	portal_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(portal_trans)
+
+	# Forward portal to Industrial District (east edge, row 20)
+	var industrial_portal = AreaTransitionScript.new()
+	industrial_portal.name = "IndustrialPortal"
+	industrial_portal.target_map = "industrial_overworld"
+	industrial_portal.target_spawn = "from_suburban"
+	industrial_portal.require_interaction = true
+	industrial_portal.indicator_text = "The Efficiency District"
+	industrial_portal.position = Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(industrial_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	industrial_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(industrial_portal)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

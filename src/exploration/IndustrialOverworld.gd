@@ -252,6 +252,10 @@ func _generate_map() -> void:
 	spawn_points["break_room"] = Vector2(36 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["chemical_zone"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["housing"] = Vector2(52 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for arriving from suburban world (south gate)
+	spawn_points["from_suburban"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 38 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for returning from futuristic world (north rail yard)
+	spawn_points["from_futuristic"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -282,17 +286,29 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Return portal at south area (row 41, center - marked by smokestacks)
-	var portal_trans = AreaTransitionScript.new()
-	portal_trans.name = "OverworldPortal"
-	portal_trans.target_map = "overworld"
-	portal_trans.target_spawn = "industrial_portal"
-	portal_trans.require_interaction = true
-	portal_trans.indicator_text = "Return to Overworld"
-	portal_trans.position = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 41 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(portal_trans, Vector2(TILE_SIZE * 2, TILE_SIZE))
-	portal_trans.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(portal_trans)
+	# Back portal to Suburban world (south gate area)
+	var suburban_portal = AreaTransitionScript.new()
+	suburban_portal.name = "SuburbanPortal"
+	suburban_portal.target_map = "suburban_overworld"
+	suburban_portal.target_spawn = "from_industrial"
+	suburban_portal.require_interaction = true
+	suburban_portal.indicator_text = "Return to Suburbia"
+	suburban_portal.position = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 41 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
+	suburban_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(suburban_portal)
+
+	# Forward portal to Futuristic world (north rail yard - the tracks lead forward)
+	var futuristic_portal = AreaTransitionScript.new()
+	futuristic_portal.name = "FuturisticPortal"
+	futuristic_portal.target_map = "futuristic_overworld"
+	futuristic_portal.target_spawn = "from_industrial"
+	futuristic_portal.require_interaction = true
+	futuristic_portal.indicator_text = "The Network"
+	futuristic_portal.position = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
+	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(futuristic_portal)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
