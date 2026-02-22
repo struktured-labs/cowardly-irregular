@@ -620,6 +620,10 @@ func play_music(track: String) -> void:
 		"battle_snake":
 			_start_monster_music("snake")
 		# Terrain-specific battle themes
+		"battle_suburban":
+			_start_suburban_battle_music()
+		"battle_urban":
+			_start_urban_battle_music()
 		"battle_industrial":
 			_start_industrial_battle_music()
 		"battle_digital":
@@ -2799,7 +2803,9 @@ func play_area_music(area_type: String) -> void:
 		"overworld":
 			_start_overworld_music()
 		"overworld_suburban":
-			_start_overworld_music()
+			_start_suburban_music()
+		"overworld_steampunk":
+			_start_steampunk_music()
 		"overworld_industrial":
 			_start_industrial_music()
 		"overworld_futuristic":
@@ -3207,6 +3213,581 @@ func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVecto
 
 		sample += randf_range(-0.02, 0.02)
 		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## ============================================================
+## SUBURBAN MUSIC - EarthBound-inspired 90s suburban themes
+## ============================================================
+
+func _start_suburban_music() -> void:
+	"""Generate EarthBound-inspired suburban overworld theme - cheerful with eerie undercurrent"""
+	_music_playing = true
+	print("[MUSIC] Playing suburban overworld theme")
+
+	var sample_rate = 22050
+	var bpm = 120.0  # Upbeat walking-around-town pace
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_suburban_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_suburban_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate EarthBound-style suburban overworld theme - G major, bright and bouncy.
+	   Features: bouncy bass, mellow triangle lead, light percussion, slightly 'off' undercurrent.
+	   Think Onett theme - happy on the surface, subtly eerie underneath."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# G major with occasional blue notes for that EarthBound "off" feeling
+	const NOTE_G2 = 98.0
+	const NOTE_A2 = 110.0
+	const NOTE_B2 = 123.47
+	const NOTE_C3 = 130.81
+	const NOTE_D3 = 146.83
+	const NOTE_E3 = 164.81
+	const NOTE_Fs3 = 185.0
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_Fs4 = 369.99
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+	const NOTE_Bb3 = 233.08  # Blue note - slightly eerie
+	const NOTE_Eb4 = 311.13  # Blue note
+
+	# Melody - bouncy, cheerful, with occasional unexpected notes
+	# 128 sixteenth notes = 8 bars of 4/4
+	var melody = [
+		# Bar 1 - Bright opening phrase
+		NOTE_G4, 0, NOTE_B4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_E4, 0, 0, 0,
+		# Bar 2 - Playful bounce
+		NOTE_D4, 0, NOTE_E4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_B4, 0, 0, 0, NOTE_A4, 0, 0, 0,
+		# Bar 3 - Slightly off (blue note snuck in)
+		NOTE_G4, 0, NOTE_Fs4, 0, NOTE_E4, 0, NOTE_Eb4, 0, NOTE_D4, 0, 0, 0, NOTE_E4, 0, NOTE_G4, 0,
+		# Bar 4 - Resolution
+		NOTE_A4, 0, 0, 0, NOTE_G4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 5 - Second phrase, higher energy
+		NOTE_B4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_E4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_B4, 0, 0, 0,
+		# Bar 6 - Syncopated bounce
+		0, 0, NOTE_A4, 0, 0, 0, NOTE_G4, 0, NOTE_E4, 0, NOTE_D4, 0, NOTE_E4, 0, NOTE_G4, 0,
+		# Bar 7 - Eerie detour (more blue notes)
+		NOTE_Bb3, 0, NOTE_C4, 0, NOTE_D4, 0, NOTE_Eb4, 0, NOTE_D4, 0, NOTE_C4, 0, NOTE_B3, 0, 0, 0,
+		# Bar 8 - Return to bright
+		NOTE_D4, 0, NOTE_G4, 0, NOTE_Fs4, 0, NOTE_G4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	# Bass - bouncy, walking bassline (EarthBound style)
+	# 32 quarter notes = 8 bars
+	var bass = [
+		NOTE_G2, NOTE_B2, NOTE_D3, NOTE_B2, NOTE_G2, NOTE_A2, NOTE_B2, NOTE_D3,
+		NOTE_C3, NOTE_E3, NOTE_G3, NOTE_E3, NOTE_C3, NOTE_D3, NOTE_E3, NOTE_G3,
+		NOTE_G2, NOTE_B2, NOTE_D3, NOTE_G3, NOTE_Fs3, NOTE_E3, NOTE_D3, NOTE_B2,
+		NOTE_C3, NOTE_D3, NOTE_G2, NOTE_A2, NOTE_B2, NOTE_D3, NOTE_G2, NOTE_G2,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 128
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var t_in_quarter = fmod(t, quarter_dur) / quarter_dur
+
+		var sample = 0.0
+
+		# Melody - mellow triangle wave with slight chorus for warmth
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.6)
+			# Main voice: triangle for mellow SNES-like tone
+			sample += _triangle_wave(t * melody_freq) * 0.16 * melody_env
+			# Slight chorus detune for warmth
+			sample += _triangle_wave(t * melody_freq * 1.005) * 0.06 * melody_env
+			# Subtle pulse layer for character
+			sample += _pulse_wave(t * melody_freq * 0.5, 0.4) * 0.03 * melody_env
+
+		# Bass - bouncy with quick decay (that EarthBound funk)
+		var bass_freq = bass[quarter_idx]
+		var bass_env = pow(1.0 - t_in_quarter * 0.7, 1.2)
+		# Square wave bass with round sub
+		sample += _square_wave(t * bass_freq * 0.5) * 0.12 * bass_env
+		sample += sin(t * bass_freq * 0.5 * TAU) * 0.1 * bass_env
+
+		# Light percussion - snappy, like a drum machine
+		var beat_pos = fmod(t, quarter_dur)
+		var beat_in_bar = int(t / quarter_dur) % 4
+
+		# Kick on 1 and 3 (lighter than battle music)
+		if beat_in_bar in [0, 2] and beat_pos < 0.025:
+			var kick_env = pow(1.0 - beat_pos / 0.025, 2.0)
+			sample += sin(beat_pos * 55 * TAU) * kick_env * 0.12
+
+		# Snappy snare on 2 and 4
+		if beat_in_bar in [1, 3] and beat_pos < 0.02:
+			var snare_env = pow(1.0 - beat_pos / 0.02, 2.5)
+			sample += randf_range(-0.1, 0.1) * snare_env
+			sample += sin(beat_pos * 400 * TAU) * snare_env * 0.05
+
+		# Shaker/hi-hat on eighth notes
+		var eighth_pos = fmod(t, quarter_dur * 0.5)
+		if eighth_pos < 0.008:
+			var hat_env = pow(1.0 - eighth_pos / 0.008, 3.0)
+			sample += randf_range(-0.04, 0.04) * hat_env
+
+		# Eerie undercurrent - very quiet detuned sine that drifts in and out
+		var eerie_freq = 82.0 + sin(t * 0.3) * 5.0  # Slightly wandering pitch
+		sample += sin(t * eerie_freq * TAU) * 0.015 * (0.5 + 0.5 * sin(t * 0.7))
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _start_suburban_battle_music() -> void:
+	"""Generate EarthBound-style funky/psychedelic suburban battle theme"""
+	_music_playing = true
+	print("[MUSIC] Playing suburban battle theme")
+
+	var sample_rate = 22050
+	var bpm = 140.0  # Urgent, energetic
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_suburban_battle_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_suburban_battle_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate EarthBound-style suburban battle theme - E minor, funky and psychedelic.
+	   Features: syncopated bassline, quirky lead, driving drums, chromatic runs.
+	   Think fighting a Cranky Lady or Skate Punk - quirky and intense."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# E minor with chromatic/blues accents for funky psychedelic feel
+	const NOTE_E2 = 82.41
+	const NOTE_G2 = 98.0
+	const NOTE_A2 = 110.0
+	const NOTE_B2 = 123.47
+	const NOTE_D3 = 146.83
+	const NOTE_E3 = 164.81
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_Ds4 = 311.13  # Blue note
+	const NOTE_E4 = 329.63
+	const NOTE_Fs4 = 369.99
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+	const NOTE_C5 = 523.25
+	const NOTE_D5 = 587.33
+	const NOTE_E5 = 659.26
+
+	# Melody - quirky, syncopated, chromatic runs
+	# 128 sixteenth notes = 8 bars of 4/4
+	var melody = [
+		# Bar 1 - Punchy opening riff
+		NOTE_E4, 0, NOTE_E4, NOTE_G4, 0, NOTE_A4, 0, NOTE_B4, NOTE_A4, 0, NOTE_G4, 0, NOTE_E4, 0, 0, 0,
+		# Bar 2 - Funky syncopation
+		0, NOTE_D4, 0, NOTE_E4, 0, 0, NOTE_G4, 0, NOTE_Fs4, 0, NOTE_E4, 0, NOTE_Ds4, 0, NOTE_E4, 0,
+		# Bar 3 - Chromatic ascending run
+		NOTE_E4, NOTE_Fs4, NOTE_G4, NOTE_A4, NOTE_B4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_E4, 0, NOTE_D4, 0, 0, 0,
+		# Bar 4 - Call and response
+		NOTE_B4, 0, NOTE_C5, 0, NOTE_B4, 0, NOTE_A4, 0, 0, 0, NOTE_G4, 0, NOTE_E4, 0, 0, 0,
+		# Bar 5 - Higher energy second phrase
+		NOTE_E5, 0, NOTE_D5, 0, NOTE_B4, 0, 0, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_B4, 0,
+		# Bar 6 - Psychedelic bend feel (chromatic descent)
+		NOTE_D5, 0, NOTE_C5, 0, NOTE_B4, 0, NOTE_Bb3, 0, NOTE_A3, 0, NOTE_B3, 0, NOTE_E4, 0, 0, 0,
+		# Bar 7 - Driving repeated notes
+		NOTE_E4, NOTE_E4, 0, NOTE_G4, NOTE_G4, 0, NOTE_A4, NOTE_A4, 0, NOTE_B4, 0, NOTE_A4, NOTE_G4, 0, NOTE_E4, 0,
+		# Bar 8 - Resolution with attitude
+		NOTE_B4, 0, NOTE_A4, NOTE_G4, NOTE_E4, 0, NOTE_D4, 0, NOTE_E4, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	# Bass - funky, syncopated, EarthBound-style walking/slapping
+	# 32 quarter notes = 8 bars
+	var bass = [
+		NOTE_E2, NOTE_E2, NOTE_G2, NOTE_A2, NOTE_E2, NOTE_B2, NOTE_A2, NOTE_G2,
+		NOTE_E2, NOTE_E2, NOTE_D3, NOTE_E3, NOTE_D3, NOTE_B2, NOTE_A2, NOTE_G2,
+		NOTE_A2, NOTE_A2, NOTE_B2, NOTE_D3, NOTE_E3, NOTE_E3, NOTE_D3, NOTE_B2,
+		NOTE_E2, NOTE_G2, NOTE_A2, NOTE_B2, NOTE_E2, NOTE_E2, NOTE_E2, NOTE_E2,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 128
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var t_in_quarter = fmod(t, quarter_dur) / quarter_dur
+
+		var sample = 0.0
+
+		# Melody - pulse wave for that nasal EarthBound battle lead
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.35)
+			# Narrow pulse for nasal, quirky tone
+			sample += _pulse_wave(t * melody_freq, 0.3) * 0.16 * melody_env
+			# Detuned square for thickness
+			sample += _square_wave(t * melody_freq * 1.008) * 0.06 * melody_env
+
+		# Bass - punchy square wave with tight decay
+		var bass_freq = bass[quarter_idx] * 0.5
+		var bass_env = pow(1.0 - t_in_quarter * 0.5, 1.0)
+		sample += _square_wave(t * bass_freq) * 0.16 * bass_env
+		# Sub layer
+		sample += sin(t * bass_freq * 0.5 * TAU) * 0.1
+
+		# Drums - driving, funky
+		var beat_pos = fmod(t, quarter_dur)
+		var beat_in_bar = int(t / quarter_dur) % 4
+
+		# Kick on 1 and 3
+		if beat_in_bar in [0, 2] and beat_pos < 0.04:
+			var kick_env = pow(1.0 - beat_pos / 0.04, 2.5)
+			sample += sin(beat_pos * 50 * TAU) * kick_env * 0.2
+
+		# Snare on 2 and 4 (crispy)
+		if beat_in_bar in [1, 3] and beat_pos < 0.03:
+			var snare_env = pow(1.0 - beat_pos / 0.03, 2.0)
+			sample += randf_range(-0.2, 0.2) * snare_env
+			sample += sin(beat_pos * 600 * TAU) * snare_env * 0.08
+
+		# Funky 16th note hi-hat pattern (accented on off-beats)
+		var sixteenth_pos = fmod(t, sixteenth_dur)
+		var local_sixteenth = int(t / sixteenth_dur) % 4
+		if sixteenth_pos < 0.01:
+			var hat_vol = 0.06 if local_sixteenth % 2 == 0 else 0.1  # Louder off-beats
+			var hat_env = pow(1.0 - sixteenth_pos / 0.01, 3.0)
+			sample += randf_range(-hat_vol, hat_vol) * hat_env
+
+		# Psychedelic warble - subtle pitch-modulated background tone
+		var warble_freq = 330.0 + sin(t * 3.0) * 30.0
+		sample += sin(t * warble_freq * TAU) * 0.02 * (0.5 + 0.5 * sin(t * 1.5))
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+## ============================================================
+## STEAMPUNK MUSIC - Victorian clockwork adventure themes
+## ============================================================
+
+func _start_steampunk_music() -> void:
+	"""Generate Victorian steampunk overworld theme - brass-like, march-like, clockwork"""
+	_music_playing = true
+	print("[MUSIC] Playing steampunk overworld theme")
+
+	var sample_rate = 22050
+	var bpm = 105.0  # March-like, dignified pace
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_steampunk_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_steampunk_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate Victorian steampunk overworld theme - Bb major, brass and clockwork.
+	   Features: brass-like square waves, ticking clock percussion, pipe organ undertones,
+	   march rhythm. Like exploring a clockwork city full of gears and steam."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# Bb major / F mixolydian - adventurous, brass-band feel
+	const NOTE_Bb1 = 58.27
+	const NOTE_F2 = 87.31
+	const NOTE_Bb2 = 116.54
+	const NOTE_C3 = 130.81
+	const NOTE_D3 = 146.83
+	const NOTE_Eb3 = 155.56
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_Eb4 = 311.13
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_Bb4 = 466.16
+	const NOTE_C5 = 523.25
+	const NOTE_D5 = 587.33
+
+	# Melody - stately brass fanfare, march-like
+	# 128 sixteenth notes = 8 bars of 4/4
+	var melody = [
+		# Bar 1 - Brass fanfare opening
+		NOTE_Bb4, 0, 0, 0, NOTE_D5, 0, 0, 0, NOTE_C5, 0, NOTE_Bb4, 0, NOTE_A4, 0, 0, 0,
+		# Bar 2 - March-like dotted rhythm
+		NOTE_Bb4, 0, 0, NOTE_A4, 0, 0, NOTE_G4, 0, 0, 0, NOTE_F4, 0, 0, 0, 0, 0,
+		# Bar 3 - Ascending brass line
+		NOTE_F4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_Bb4, 0, NOTE_C5, 0, 0, 0, NOTE_D5, 0, 0, 0,
+		# Bar 4 - Resolution with trill feel
+		NOTE_C5, 0, NOTE_Bb4, 0, NOTE_C5, 0, NOTE_Bb4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		# Bar 5 - Second phrase, more adventurous
+		NOTE_D5, 0, 0, 0, NOTE_C5, 0, NOTE_Bb4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, 0, 0,
+		# Bar 6 - Clockwork-like mechanical repetition
+		NOTE_G4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_A4, 0, NOTE_Bb4, 0, NOTE_C5, 0, NOTE_Bb4, 0, 0, 0,
+		# Bar 7 - Low brass countermelody
+		NOTE_D4, 0, NOTE_F4, 0, NOTE_Bb4, 0, 0, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_Eb4, 0,
+		# Bar 8 - Grand cadence
+		NOTE_F4, 0, 0, 0, NOTE_Bb4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	# Bass - steady march bass, oom-pah style
+	# 32 quarter notes = 8 bars
+	var bass = [
+		NOTE_Bb2, NOTE_F2, NOTE_Bb2, NOTE_F2, NOTE_Bb2, NOTE_F2, NOTE_C3, NOTE_F2,
+		NOTE_Eb3, NOTE_Bb1, NOTE_Eb3, NOTE_Bb1, NOTE_F3, NOTE_C3, NOTE_F3, NOTE_C3,
+		NOTE_Bb2, NOTE_F2, NOTE_Bb2, NOTE_F2, NOTE_G3, NOTE_D3, NOTE_Eb3, NOTE_Bb1,
+		NOTE_F3, NOTE_C3, NOTE_Bb2, NOTE_F2, NOTE_Bb2, NOTE_Bb2, NOTE_Bb1, NOTE_Bb1,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 128
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var t_in_quarter = fmod(t, quarter_dur) / quarter_dur
+
+		var sample = 0.0
+
+		# Melody - brass-like: square + pulse layered for rich harmonic content
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.5)
+			# Bright square for brass attack
+			sample += _square_wave(t * melody_freq) * 0.12 * melody_env
+			# Pulse wave for nasal brass body
+			sample += _pulse_wave(t * melody_freq, 0.35) * 0.08 * melody_env
+			# Octave-below for fullness (organ-like)
+			sample += _triangle_wave(t * melody_freq * 0.5) * 0.04 * melody_env
+
+		# Bass - deep, stately, oom-pah march feel
+		var bass_freq = bass[quarter_idx] * 0.5
+		var bass_env = pow(1.0 - t_in_quarter * 0.5, 0.8)
+		sample += _square_wave(t * bass_freq) * 0.14 * bass_env
+		# Pipe organ sub-bass
+		sample += sin(t * bass_freq * TAU) * 0.1
+
+		# Clock tick percussion - the signature steampunk element
+		var beat_pos = fmod(t, quarter_dur)
+		var beat_in_bar = int(t / quarter_dur) % 4
+
+		# Clock tick on every beat (high metallic click)
+		if beat_pos < 0.005:
+			var tick_env = pow(1.0 - beat_pos / 0.005, 4.0)
+			sample += sin(beat_pos * 4000 * TAU) * tick_env * 0.06
+			sample += sin(beat_pos * 6000 * TAU) * tick_env * 0.03
+
+		# Tock (lower) on offbeats
+		var half_beat = fmod(t + quarter_dur * 0.5, quarter_dur)
+		if half_beat < 0.005:
+			var tock_env = pow(1.0 - half_beat / 0.005, 4.0)
+			sample += sin(half_beat * 2000 * TAU) * tock_env * 0.04
+
+		# March snare on 2 and 4
+		if beat_in_bar in [1, 3] and beat_pos < 0.025:
+			var snare_env = pow(1.0 - beat_pos / 0.025, 2.0)
+			sample += randf_range(-0.1, 0.1) * snare_env
+			sample += sin(beat_pos * 500 * TAU) * snare_env * 0.04
+
+		# Bass drum on 1 and 3
+		if beat_in_bar in [0, 2] and beat_pos < 0.03:
+			var kick_env = pow(1.0 - beat_pos / 0.03, 2.0)
+			sample += sin(beat_pos * 50 * TAU) * kick_env * 0.12
+
+		# Subtle gear/mechanism ambience - very quiet ticking pattern
+		var gear_rate = 8.0  # Ticks per second
+		var gear_pos = fmod(t * gear_rate, 1.0)
+		if gear_pos < 0.01:
+			var gear_env = pow(1.0 - gear_pos / 0.01, 3.0)
+			sample += sin(gear_pos * 3000 * TAU) * gear_env * 0.015
+
+		# Gentle steam whistle every 4 bars (atmospheric)
+		var four_bar = fmod(t, quarter_dur * 16)
+		var whistle_start = quarter_dur * 15.5
+		if four_bar >= whistle_start and four_bar < whistle_start + 0.15:
+			var whistle_t = four_bar - whistle_start
+			var whistle_env = sin(whistle_t / 0.15 * PI) * 0.03
+			sample += sin(whistle_t * 1200 * TAU) * whistle_env
+
+		sample = clamp(sample, -0.9, 0.9)
+		buffer.append(Vector2(sample, sample))
+
+	return buffer
+
+
+func _start_urban_battle_music() -> void:
+	"""Generate aggressive steampunk/urban battle theme - steam-powered urgency"""
+	_music_playing = true
+	print("[MUSIC] Playing urban battle theme")
+
+	var sample_rate = 22050
+	var bpm = 135.0  # Driving, steam-powered urgency
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_urban_battle_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate)
+
+
+func _generate_urban_battle_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Generate aggressive steampunk battle theme - D minor, brass fanfares and clanking metal.
+	   Features: driving brass riffs, pounding machinery drums, steam hiss accents,
+	   metallic percussion. Steam-powered urgency, like a fight in a clockwork arena."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_duration = 60.0 / bpm
+
+	# D minor - dark, aggressive, with brass-like harmonics
+	const NOTE_D2 = 73.42
+	const NOTE_A2 = 110.0
+	const NOTE_D3 = 146.83
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_G3 = 196.0
+	const NOTE_A3 = 220.0
+	const NOTE_Bb3 = 233.08
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_Bb4 = 466.16
+	const NOTE_C5 = 523.25
+	const NOTE_D5 = 587.33
+
+	# Melody - aggressive brass riffs, fanfare-like battle calls
+	# 128 sixteenth notes = 8 bars of 4/4
+	var melody = [
+		# Bar 1 - Battle fanfare opening
+		NOTE_D4, 0, NOTE_D4, 0, NOTE_F4, 0, NOTE_A4, 0, NOTE_D5, 0, 0, 0, NOTE_C5, 0, NOTE_Bb4, 0,
+		# Bar 2 - Descending brass run
+		NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0, 0, 0, 0, 0, NOTE_F4, 0,
+		# Bar 3 - Syncopated brass stabs
+		NOTE_A4, 0, 0, NOTE_A4, 0, 0, NOTE_Bb4, 0, 0, NOTE_A4, 0, 0, NOTE_G4, 0, NOTE_F4, 0,
+		# Bar 4 - Clanking rhythm
+		NOTE_D4, NOTE_D4, 0, NOTE_F4, NOTE_F4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_D4, 0, 0, 0,
+		# Bar 5 - Rising tension
+		NOTE_Bb4, 0, NOTE_A4, 0, NOTE_Bb4, 0, NOTE_C5, 0, NOTE_D5, 0, 0, 0, NOTE_C5, 0, 0, 0,
+		# Bar 6 - Machine-gun brass
+		NOTE_A4, NOTE_A4, NOTE_A4, 0, NOTE_G4, NOTE_G4, NOTE_G4, 0, NOTE_F4, NOTE_F4, NOTE_F4, 0, NOTE_E4, 0, 0, 0,
+		# Bar 7 - Climactic phrase
+		NOTE_D5, 0, NOTE_C5, 0, NOTE_Bb4, 0, NOTE_A4, 0, NOTE_G4, 0, NOTE_F4, 0, NOTE_E4, 0, NOTE_D4, 0,
+		# Bar 8 - Resolving power chords
+		NOTE_D4, 0, NOTE_F4, 0, NOTE_A4, 0, NOTE_D4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	]
+
+	# Bass - heavy, piston-like pumping
+	# 32 quarter notes = 8 bars
+	var bass = [
+		NOTE_D2, NOTE_D2, NOTE_D2, NOTE_A2, NOTE_D2, NOTE_D2, NOTE_F3, NOTE_A2,
+		NOTE_D3, NOTE_D3, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_A3, NOTE_A2, NOTE_A2,
+		NOTE_Bb3, NOTE_Bb3, NOTE_A3, NOTE_A3, NOTE_G3, NOTE_G3, NOTE_F3, NOTE_F3,
+		NOTE_D2, NOTE_A2, NOTE_D3, NOTE_A2, NOTE_D2, NOTE_D2, NOTE_D2, NOTE_D2,
+	]
+
+	var sixteenth_dur = beat_duration / 4.0
+	var quarter_dur = beat_duration
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sixteenth_idx = int(t / sixteenth_dur) % 128
+		var quarter_idx = int(t / quarter_dur) % 32
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var t_in_quarter = fmod(t, quarter_dur) / quarter_dur
+
+		var sample = 0.0
+
+		# Melody - layered square waves for aggressive brass tone
+		var melody_freq = melody[sixteenth_idx]
+		if melody_freq > 0:
+			var melody_env = pow(1.0 - t_in_sixteenth, 0.3)
+			# Primary brass voice: bright square
+			sample += _square_wave(t * melody_freq) * 0.14 * melody_env
+			# Secondary: pulse for nasal brass edge
+			sample += _pulse_wave(t * melody_freq, 0.3) * 0.08 * melody_env
+			# Octave doubling for power
+			sample += _square_wave(t * melody_freq * 0.5) * 0.05 * melody_env
+
+		# Bass - heavy, grinding, piston-like
+		var bass_freq = bass[quarter_idx] * 0.5
+		var bass_env = pow(1.0 - t_in_quarter * 0.4, 0.8)
+		sample += _square_wave(t * bass_freq) * 0.16 * bass_env
+		# Deep sub for rumble
+		sample += sin(t * bass_freq * 0.5 * TAU) * 0.12
+
+		# Percussion - heavy machinery battle drums
+		var beat_pos = fmod(t, quarter_dur)
+		var beat_in_bar = int(t / quarter_dur) % 4
+
+		# Pounding kick on every beat (relentless piston)
+		if beat_pos < 0.05:
+			var kick_env = pow(1.0 - beat_pos / 0.05, 2.5)
+			sample += sin(beat_pos * 55 * TAU) * kick_env * 0.25
+			sample += sin(beat_pos * 28 * TAU) * kick_env * 0.15  # Sub thump
+
+		# Metal clang snare on 2 and 4
+		if beat_in_bar in [1, 3] and beat_pos < 0.04:
+			var snare_env = pow(1.0 - beat_pos / 0.04, 1.8)
+			sample += randf_range(-0.25, 0.25) * snare_env
+			sample += sin(beat_pos * 900 * TAU) * snare_env * 0.1  # Metallic ring
+			sample += sin(beat_pos * 1300 * TAU) * snare_env * 0.05
+
+		# Clanking 16th-note hi-hats (gear teeth)
+		var sixteenth_pos = fmod(t, sixteenth_dur)
+		if sixteenth_pos < 0.012:
+			var clank_env = pow(1.0 - sixteenth_pos / 0.012, 3.5)
+			sample += randf_range(-0.06, 0.06) * clank_env
+			sample += sin(sixteenth_pos * 3500 * TAU) * clank_env * 0.04
+
+		# Steam hiss accent every 2 beats (pressure release)
+		var two_beat = fmod(t, quarter_dur * 2)
+		var hiss_start = quarter_dur * 1.75
+		if two_beat >= hiss_start and two_beat < hiss_start + 0.06:
+			var hiss_t = two_beat - hiss_start
+			var hiss_env = pow(1.0 - hiss_t / 0.06, 1.2)
+			sample += randf_range(-0.08, 0.08) * hiss_env
+
+		# Grinding industrial noise floor
+		sample += randf_range(-0.012, 0.012)
+
+		sample = clamp(sample * 1.1, -0.9, 0.9)
 		buffer.append(Vector2(sample, sample))
 
 	return buffer

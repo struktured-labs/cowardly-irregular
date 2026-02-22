@@ -265,7 +265,7 @@ func _setup_controller() -> void:
 	controller.current_area_id = "steampunk_overworld"
 
 	# Encounters in industrial outskirts, safe in central plaza
-	controller.set_area_config("steampunk_overworld", false, 0.04, ["slime", "imp", "skeleton"])
+	controller.set_area_config("steampunk_overworld", false, 0.04, ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)

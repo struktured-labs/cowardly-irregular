@@ -937,7 +937,7 @@ func _prewarm_area_sprites() -> void:
 		"fire_dragon_cave":
 			common_enemies = ["imp", "skeleton", "fire_dragon"]
 		"steampunk_overworld":
-			common_enemies = ["slime", "imp", "skeleton"]
+			common_enemies = ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"]
 		"suburban_overworld":
 			common_enemies = ["new_age_retro_hippie", "spiteful_crow", "skate_punk"]
 		"industrial_overworld":

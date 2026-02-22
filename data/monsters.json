@@ -1780,6 +1780,208 @@
 		],
 		"resistances": []
 	},
+	"clockwork_sentinel": {
+		"id": "clockwork_sentinel",
+		"name": "Clockwork Sentinel",
+		"description": "A brass-plated mechanical guard that patrols the steampunk district. Its gears grind ominously as it raises a riveted shield.",
+		"level": 5,
+		"stats": {
+			"max_hp": 160,
+			"max_mp": 20,
+			"attack": 32,
+			"defense": 22,
+			"magic": 10,
+			"speed": 10
+		},
+		"abilities": [
+			"gear_slam",
+			"shield_bash",
+			"defensive_stance"
+		],
+		"exp_reward": 42,
+		"gold_reward": 35,
+		"drop_table": [
+			{
+				"item": "gear_cog",
+				"chance": 0.5
+			},
+			{
+				"item": "scrap_metal",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [
+			"poison",
+			"ice"
+		]
+	},
+	"steam_rat": {
+		"id": "steam_rat",
+		"name": "Steam Rat",
+		"description": "A mangy sewer rat augmented with crude pneumatic pistons. It scurries through the pipe networks at alarming speed, venting scalding steam from its back.",
+		"level": 5,
+		"stats": {
+			"max_hp": 90,
+			"max_mp": 15,
+			"attack": 28,
+			"defense": 8,
+			"magic": 12,
+			"speed": 20
+		},
+		"abilities": [
+			"bite",
+			"steam_vent",
+			"scratch"
+		],
+		"exp_reward": 38,
+		"gold_reward": 28,
+		"drop_table": [
+			{
+				"item": "rat_tail",
+				"chance": 0.4
+			},
+			{
+				"item": "copper_pipe",
+				"chance": 0.25
+			}
+		],
+		"weaknesses": [
+			"ice",
+			"lightning"
+		],
+		"resistances": [
+			"fire"
+		]
+	},
+	"brass_golem": {
+		"id": "brass_golem",
+		"name": "Brass Golem",
+		"description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
+		"level": 6,
+		"stats": {
+			"max_hp": 240,
+			"max_mp": 10,
+			"attack": 36,
+			"defense": 30,
+			"magic": 5,
+			"speed": 5
+		},
+		"abilities": [
+			"smash",
+			"boiler_burst",
+			"iron_guard"
+		],
+		"exp_reward": 55,
+		"gold_reward": 45,
+		"drop_table": [
+			{
+				"item": "brass_plate",
+				"chance": 0.5
+			},
+			{
+				"item": "coal_chunk",
+				"chance": 0.35
+			},
+			{
+				"item": "scrap_metal",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"lightning",
+			"ice"
+		],
+		"resistances": [
+			"physical",
+			"fire",
+			"poison"
+		]
+	},
+	"cog_swarm": {
+		"id": "cog_swarm",
+		"name": "Cog Swarm",
+		"description": "A whirling cloud of loose gears, springs, and razor-edged cogs that escaped the factory floor. They move as one, shredding anything in their path with a thousand tiny cuts.",
+		"level": 5,
+		"stats": {
+			"max_hp": 100,
+			"max_mp": 25,
+			"attack": 35,
+			"defense": 10,
+			"magic": 15,
+			"speed": 16
+		},
+		"abilities": [
+			"gear_barrage",
+			"shrapnel_burst",
+			"whirlwind"
+		],
+		"exp_reward": 40,
+		"gold_reward": 32,
+		"drop_table": [
+			{
+				"item": "gear_cog",
+				"chance": 0.6
+			},
+			{
+				"item": "spring_coil",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"fire",
+			"lightning"
+		],
+		"resistances": [
+			"poison"
+		]
+	},
+	"pipe_phantom": {
+		"id": "pipe_phantom",
+		"name": "Pipe Phantom",
+		"description": "A spectral entity formed from superheated steam and industrial sorrow. It drifts through the pipe networks, wailing with the voice of every boiler that ever exploded.",
+		"level": 6,
+		"stats": {
+			"max_hp": 130,
+			"max_mp": 70,
+			"attack": 18,
+			"defense": 10,
+			"magic": 38,
+			"speed": 14
+		},
+		"abilities": [
+			"scalding_mist",
+			"soul_drain",
+			"phantom_wail"
+		],
+		"exp_reward": 50,
+		"gold_reward": 38,
+		"drop_table": [
+			{
+				"item": "ectoplasm",
+				"chance": 0.45
+			},
+			{
+				"item": "ether",
+				"chance": 0.25
+			},
+			{
+				"item": "pressure_valve",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"holy",
+			"ice"
+		],
+		"resistances": [
+			"physical",
+			"fire"
+		],
+		"undead": true
+	},
 	"assembly_line_automaton": {
 		"id": "assembly_line_automaton",
 		"name": "Assembly Line Automaton",

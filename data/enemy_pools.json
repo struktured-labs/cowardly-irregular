@@ -17,6 +17,7 @@
 	"miniboss_forest": ["blood_wolf_alpha", "ironback_beetle", "elder_mushroom"],
 	"miniboss_corrupted": ["rogue_automaton", "shadow_knight"],
 	"suburban_overworld": ["new_age_retro_hippie", "spiteful_crow", "skate_punk", "unassuming_dog", "cranky_lady"],
+	"steampunk_overworld": ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"],
 	"industrial_overworld": ["assembly_line_automaton", "shift_supervisor", "rust_elemental", "toxic_sludge", "conveyor_gremlin"],
 	"futuristic_overworld": ["rogue_process", "memory_leak", "firewall_sentinel", "data_wraith", "recursive_loop"],
 	"abstract_overworld": ["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"]

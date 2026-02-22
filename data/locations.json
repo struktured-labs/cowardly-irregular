@@ -61,6 +61,16 @@
 		"recommended_level": 4
 	},
 
+	"steampunk_overworld": {
+		"id": "steampunk_overworld",
+		"name": "Cogsworth Junction",
+		"type": "overworld",
+		"description": "A Victorian-era clockwork city at the boundary between medieval and suburban. Brass pipes hiss, gas lamps flicker, and mechanical sentinels patrol the cobblestone streets.",
+		"encounter_rate": 0.04,
+		"enemy_pool_id": "steampunk_overworld",
+		"recommended_level": 5
+	},
+
 	"industrial_overworld": {
 		"id": "industrial_overworld",
 		"name": "The Efficiency District",

@@ -2240,6 +2240,10 @@ func _get_terrain_battle_track() -> String:
 	"""Get terrain-specific battle music track, or 'battle' for generic.
 	   Areas with unique battle themes return 'battle_<terrain>'."""
 	match _current_terrain:
+		"suburban":
+			return "battle_suburban"
+		"urban":
+			return "battle_urban"
 		"industrial":
 			return "battle_industrial"
 		"digital":
