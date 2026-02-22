@@ -169,6 +169,341 @@
 		],
 		"resistances": []
 	},
+	"wolf": {
+		"id": "wolf",
+		"name": "Wolf",
+		"description": "A forest predator. Hunts in packs and strikes with surprising ferocity.",
+		"level": 3,
+		"stats": {
+			"max_hp": 110,
+			"max_mp": 10,
+			"attack": 35,
+			"defense": 12,
+			"magic": 8,
+			"speed": 16
+		},
+		"abilities": [
+			"bite",
+			"howl"
+		],
+		"exp_reward": 28,
+		"gold_reward": 12,
+		"drop_table": [
+			{
+				"item": "potion",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": []
+	},
+	"spider": {
+		"id": "spider",
+		"name": "Giant Spider",
+		"description": "A venomous arachnid that lurks in forests and caves. Its webs slow movement.",
+		"level": 3,
+		"stats": {
+			"max_hp": 85,
+			"max_mp": 25,
+			"attack": 28,
+			"defense": 8,
+			"magic": 20,
+			"speed": 14
+		},
+		"abilities": [
+			"bite",
+			"web_shot"
+		],
+		"exp_reward": 22,
+		"gold_reward": 15,
+		"drop_table": [
+			{
+				"item": "antidote",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"dark"
+		]
+	},
+	"fungoid": {
+		"id": "fungoid",
+		"name": "Fungoid",
+		"description": "A shambling mushroom creature. Releases toxic spores when threatened.",
+		"level": 3,
+		"stats": {
+			"max_hp": 100,
+			"max_mp": 35,
+			"attack": 22,
+			"defense": 15,
+			"magic": 25,
+			"speed": 6
+		},
+		"abilities": [
+			"spore_cloud",
+			"tackle"
+		],
+		"exp_reward": 24,
+		"gold_reward": 14,
+		"drop_table": [
+			{
+				"item": "antidote",
+				"chance": 0.25
+			}
+		],
+		"weaknesses": [
+			"fire",
+			"ice"
+		],
+		"resistances": [
+			"earth"
+		]
+	},
+	"snake": {
+		"id": "snake",
+		"name": "Swamp Viper",
+		"description": "A venomous serpent that thrives in wetlands. Quick to strike, quick to flee.",
+		"level": 4,
+		"stats": {
+			"max_hp": 75,
+			"max_mp": 20,
+			"attack": 30,
+			"defense": 6,
+			"magic": 18,
+			"speed": 20
+		},
+		"abilities": [
+			"venomous_bite",
+			"coil"
+		],
+		"exp_reward": 26,
+		"gold_reward": 16,
+		"drop_table": [
+			{
+				"item": "antidote",
+				"chance": 0.35
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"earth"
+		]
+	},
+	"ghost": {
+		"id": "ghost",
+		"name": "Wandering Spirit",
+		"description": "A translucent apparition. Physical attacks pass right through it.",
+		"level": 4,
+		"stats": {
+			"max_hp": 70,
+			"max_mp": 40,
+			"attack": 18,
+			"defense": 3,
+			"magic": 35,
+			"speed": 12
+		},
+		"abilities": [
+			"spectral_touch",
+			"chill"
+		],
+		"exp_reward": 30,
+		"gold_reward": 20,
+		"drop_table": [
+			{
+				"item": "ether",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"holy",
+			"fire"
+		],
+		"resistances": [
+			"physical",
+			"dark"
+		]
+	},
+	"viper": {
+		"id": "viper",
+		"name": "Desert Viper",
+		"description": "A sand-colored serpent that buries itself and strikes from below. Extremely fast.",
+		"level": 5,
+		"stats": {
+			"max_hp": 90,
+			"max_mp": 15,
+			"attack": 38,
+			"defense": 8,
+			"magic": 12,
+			"speed": 22
+		},
+		"abilities": [
+			"venomous_bite",
+			"sand_strike"
+		],
+		"exp_reward": 32,
+		"gold_reward": 18,
+		"drop_table": [
+			{
+				"item": "antidote",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"ice",
+			"water"
+		],
+		"resistances": [
+			"fire",
+			"earth"
+		]
+	},
+	"elemental": {
+		"id": "elemental",
+		"name": "Sand Elemental",
+		"description": "A whirling column of desert sand animated by ancient magic. Resistant to physical blows.",
+		"level": 5,
+		"stats": {
+			"max_hp": 130,
+			"max_mp": 40,
+			"attack": 30,
+			"defense": 20,
+			"magic": 30,
+			"speed": 10
+		},
+		"abilities": [
+			"sandstorm",
+			"slam"
+		],
+		"exp_reward": 38,
+		"gold_reward": 25,
+		"drop_table": [
+			{
+				"item": "ether",
+				"chance": 0.15
+			}
+		],
+		"weaknesses": [
+			"water",
+			"ice"
+		],
+		"resistances": [
+			"physical",
+			"fire",
+			"earth"
+		]
+	},
+	"troll": {
+		"id": "troll",
+		"name": "Volcanic Troll",
+		"description": "A brutish creature hardened by volcanic heat. Slow but devastating.",
+		"level": 6,
+		"stats": {
+			"max_hp": 200,
+			"max_mp": 15,
+			"attack": 45,
+			"defense": 25,
+			"magic": 10,
+			"speed": 5
+		},
+		"abilities": [
+			"slam",
+			"ground_pound"
+		],
+		"exp_reward": 45,
+		"gold_reward": 30,
+		"drop_table": [
+			{
+				"item": "hi_potion",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"ice",
+			"water"
+		],
+		"resistances": [
+			"fire",
+			"physical"
+		]
+	},
+	"corrupted_sprite": {
+		"id": "corrupted_sprite",
+		"name": "Corrupted Sprite",
+		"description": "Once a benign forest spirit, now twisted by meta-corruption. Erratic and dangerous.",
+		"level": 4,
+		"stats": {
+			"max_hp": 65,
+			"max_mp": 50,
+			"attack": 15,
+			"defense": 5,
+			"magic": 38,
+			"speed": 18
+		},
+		"abilities": [
+			"glitch_bolt",
+			"static_field"
+		],
+		"exp_reward": 35,
+		"gold_reward": 22,
+		"drop_table": [
+			{
+				"item": "ether",
+				"chance": 0.25
+			}
+		],
+		"weaknesses": [
+			"holy"
+		],
+		"resistances": [
+			"dark"
+		]
+	},
+	"glitch_entity": {
+		"id": "glitch_entity",
+		"name": "Glitch Entity",
+		"description": "A fragment of corrupted game data given form. Its appearance shifts constantly.",
+		"level": 5,
+		"stats": {
+			"max_hp": 95,
+			"max_mp": 60,
+			"attack": 25,
+			"defense": 10,
+			"magic": 40,
+			"speed": 15
+		},
+		"abilities": [
+			"data_corruption",
+			"pixel_storm",
+			"null_pointer"
+		],
+		"exp_reward": 42,
+		"gold_reward": 28,
+		"drop_table": [
+			{
+				"item": "ether",
+				"chance": 0.2
+			},
+			{
+				"item": "debug_log",
+				"chance": 0.05
+			}
+		],
+		"weaknesses": [
+			"holy",
+			"physical"
+		],
+		"resistances": [
+			"dark",
+			"lightning"
+		]
+	},
 	"cave_rat": {
 		"id": "cave_rat",
 		"name": "Cave Rat",
