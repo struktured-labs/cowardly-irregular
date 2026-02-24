@@ -78,7 +78,7 @@ func test_assign_invalid_job_returns_false() -> void:
 
 
 func test_assign_all_starter_jobs() -> void:
-	for job_id in ["fighter", "white_mage", "black_mage", "thief"]:
+	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
 		var c = CombatantScript.new()
 		add_child_autofree(c)
 		var result = _assign_job_manually(c, job_id)
@@ -106,18 +106,18 @@ func test_assign_all_meta_jobs() -> void:
 
 func test_assign_secondary_job() -> void:
 	_assign_job_manually(_combatant, "fighter")
-	_combatant.secondary_job_id = "thief"
-	_combatant.secondary_job = _jobs.get("thief", null)
+	_combatant.secondary_job_id = "rogue"
+	_combatant.secondary_job = _jobs.get("rogue", null)
 
-	assert_eq(_combatant.secondary_job_id, "thief", "Secondary job ID should be thief")
+	assert_eq(_combatant.secondary_job_id, "rogue", "Secondary job ID should be rogue")
 	assert_not_null(_combatant.secondary_job, "Secondary job data should exist")
 
 
 func test_clear_secondary_job() -> void:
 	"""Regression: clearing secondary job should work via __none__ sentinel"""
 	_assign_job_manually(_combatant, "fighter")
-	_combatant.secondary_job_id = "thief"
-	_combatant.secondary_job = _jobs.get("thief", null)
+	_combatant.secondary_job_id = "rogue"
+	_combatant.secondary_job = _jobs.get("rogue", null)
 
 	# Simulate what JobMenu does for __none__
 	_combatant.secondary_job = null
@@ -133,24 +133,24 @@ func test_secondary_job_profile_key_changes() -> void:
 	_combatant.secondary_job_id = ""
 	var key1 = _combatant.get_profile_key()
 
-	_combatant.secondary_job_id = "thief"
-	_combatant.secondary_job = _jobs.get("thief", null)
+	_combatant.secondary_job_id = "rogue"
+	_combatant.secondary_job = _jobs.get("rogue", null)
 	var key2 = _combatant.get_profile_key()
 
 	assert_eq(key1, "fighter:", "Key without secondary should be fighter:")
-	assert_eq(key2, "fighter:thief", "Key with secondary should be fighter:thief")
+	assert_eq(key2, "fighter:rogue", "Key with secondary should be fighter:rogue")
 
 
 func test_switch_secondary_changes_profile_key() -> void:
 	_assign_job_manually(_combatant, "fighter")
-	_combatant.secondary_job_id = "thief"
+	_combatant.secondary_job_id = "rogue"
 	var key1 = _combatant.get_profile_key()
 
-	_combatant.secondary_job_id = "white_mage"
+	_combatant.secondary_job_id = "cleric"
 	var key2 = _combatant.get_profile_key()
 
 	assert_ne(key1, key2, "Switching secondary should produce different key")
-	assert_eq(key2, "fighter:white_mage")
+	assert_eq(key2, "fighter:cleric")
 
 
 ## ---- Job Stats ----
@@ -170,34 +170,34 @@ func test_job_change_updates_stats() -> void:
 	_assign_job_manually(_combatant, "fighter")
 	var fighter_attack = _combatant.attack
 
-	_assign_job_manually(_combatant, "white_mage")
+	_assign_job_manually(_combatant, "cleric")
 	var wm_attack = _combatant.attack
 
 	assert_ne(fighter_attack, wm_attack,
-		"Stats should change on job switch (fighter atk=%d, white_mage atk=%d)" % [fighter_attack, wm_attack])
+		"Stats should change on job switch (fighter atk=%d, cleric atk=%d)" % [fighter_attack, wm_attack])
 
 
-func test_fighter_has_higher_attack_than_white_mage() -> void:
+func test_fighter_has_higher_attack_than_cleric() -> void:
 	var fighter_atk = int(_jobs.get("fighter", {}).get("stat_modifiers", {}).get("attack", 0))
-	var wm_atk = int(_jobs.get("white_mage", {}).get("stat_modifiers", {}).get("attack", 0))
-	assert_gt(fighter_atk, wm_atk,
-		"Fighter should have higher attack than White Mage (%d vs %d)" % [fighter_atk, wm_atk])
+	var cleric_atk = int(_jobs.get("cleric", {}).get("stat_modifiers", {}).get("attack", 0))
+	assert_gt(fighter_atk, cleric_atk,
+		"Fighter should have higher attack than Cleric (%d vs %d)" % [fighter_atk, cleric_atk])
 
 
-func test_white_mage_has_higher_magic_than_fighter() -> void:
+func test_cleric_has_higher_magic_than_fighter() -> void:
 	var fighter_mag = int(_jobs.get("fighter", {}).get("stat_modifiers", {}).get("magic", 0))
-	var wm_mag = int(_jobs.get("white_mage", {}).get("stat_modifiers", {}).get("magic", 0))
-	assert_gt(wm_mag, fighter_mag,
-		"White Mage should have higher magic than Fighter (%d vs %d)" % [wm_mag, fighter_mag])
+	var cleric_mag = int(_jobs.get("cleric", {}).get("stat_modifiers", {}).get("magic", 0))
+	assert_gt(cleric_mag, fighter_mag,
+		"Cleric should have higher magic than Fighter (%d vs %d)" % [cleric_mag, fighter_mag])
 
 
 ## ---- Data Integrity (loaded from JSON) ----
 
 func test_all_jobs_exist_in_data() -> void:
-	"""Ensure all 12 expected jobs are loaded"""
+	"""Ensure all 14 expected jobs are loaded"""
 	var expected_jobs = [
-		"fighter", "white_mage", "black_mage", "thief",
-		"guardian", "ninja", "summoner",
+		"fighter", "cleric", "mage", "rogue", "bard",
+		"guardian", "ninja", "summoner", "speculator",
 		"scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter"
 	]
 	for job_id in expected_jobs:
@@ -226,7 +226,7 @@ func test_job_types_are_valid() -> void:
 
 
 func test_starter_jobs_have_type_zero() -> void:
-	for job_id in ["fighter", "white_mage", "black_mage", "thief"]:
+	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
 		if _jobs.has(job_id):
 			assert_eq(int(_jobs[job_id]["type"]), 0,
 				"%s should be type 0 (starter)" % job_id)
@@ -270,7 +270,7 @@ func test_profile_preserved_on_job_switch() -> void:
 	_combatant.equipped_weapon = "iron_sword"
 	_combatant.save_current_profile()
 
-	_assign_job_manually(_combatant, "white_mage")
+	_assign_job_manually(_combatant, "cleric")
 	_combatant.secondary_job_id = ""
 	_combatant.equipped_weapon = "wooden_staff"
 	_combatant.save_current_profile()

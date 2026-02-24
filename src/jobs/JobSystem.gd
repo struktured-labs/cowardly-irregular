@@ -9,18 +9,44 @@ signal secondary_job_changed(combatant: Combatant, job_id: String)
 ## Loaded job data
 var jobs: Dictionary = {}
 var abilities: Dictionary = {}
+var job_aliases: Dictionary = {}
 
 ## Job categories
 enum JobType {
-	STARTER,      # Basic jobs (Fighter, White Mage, etc.)
+	STARTER,      # Basic jobs (Fighter, Cleric, Mage, Rogue, Bard)
 	ADVANCED,     # Unlockable jobs
 	META          # Meta jobs (Scriptweaver, Time Mage, etc.)
 }
 
 
 func _ready() -> void:
+	_load_job_aliases()
 	_load_job_data()
 	_load_ability_data()
+
+
+func _load_job_aliases() -> void:
+	"""Load job ID aliases from data/job_aliases.json for backward compatibility"""
+	var file_path = "res://data/job_aliases.json"
+	if not FileAccess.file_exists(file_path):
+		return
+
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+
+		var json = JSON.new()
+		var parse_result = json.parse(json_string)
+
+		if parse_result == OK and json.data is Dictionary:
+			job_aliases = json.data
+			print("Loaded %d job aliases" % job_aliases.size())
+
+
+func resolve_job_id(raw_id: String) -> String:
+	"""Resolve an old job ID to its current name via aliases. Identity passthrough for non-aliased IDs."""
+	return job_aliases.get(raw_id, raw_id)
 
 
 func _load_job_data() -> void:
@@ -103,9 +129,9 @@ func _create_default_jobs() -> void:
 			"abilities": ["power_strike", "provoke"],
 			"passive_abilities": ["weapon_mastery"]
 		},
-		"white_mage": {
-			"id": "white_mage",
-			"name": "White Mage",
+		"cleric": {
+			"id": "cleric",
+			"name": "Cleric",
 			"type": JobType.STARTER,
 			"description": "A healer who uses restorative magic",
 			"stat_modifiers": {
@@ -118,9 +144,9 @@ func _create_default_jobs() -> void:
 			"abilities": ["cure", "cura", "raise"],
 			"passive_abilities": ["healing_boost"]
 		},
-		"black_mage": {
-			"id": "black_mage",
-			"name": "Black Mage",
+		"mage": {
+			"id": "mage",
+			"name": "Mage",
 			"type": JobType.STARTER,
 			"description": "A mage who wields destructive magic",
 			"stat_modifiers": {
@@ -132,6 +158,21 @@ func _create_default_jobs() -> void:
 			},
 			"abilities": ["fire", "blizzard", "thunder"],
 			"passive_abilities": ["magic_boost"]
+		},
+		"bard": {
+			"id": "bard",
+			"name": "Bard",
+			"type": JobType.STARTER,
+			"description": "A performer who uses songs to buff allies and debuff enemies",
+			"stat_modifiers": {
+				"max_hp": 85,
+				"attack": 8,
+				"defense": 7,
+				"magic": 16,
+				"speed": 14
+			},
+			"abilities": ["battle_hymn", "lullaby", "discord", "inspiring_melody"],
+			"passive_abilities": ["encore"]
 		},
 		"scriptweaver": {
 			"id": "scriptweaver",
@@ -266,6 +307,7 @@ func _create_default_abilities() -> void:
 ## Job management
 func assign_job(combatant: Combatant, job_id: String) -> bool:
 	"""Assign a job to a combatant"""
+	job_id = resolve_job_id(job_id)
 	if not jobs.has(job_id):
 		print("Error: Job '%s' not found" % job_id)
 		return false
@@ -282,6 +324,7 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 
 func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
 	"""Assign a secondary job to a combatant (visual accents + minor stat boost)."""
+	job_id = resolve_job_id(job_id)
 	if not jobs.has(job_id):
 		push_warning("Secondary job '%s' not found" % job_id)
 		return false
@@ -313,11 +356,13 @@ func _apply_job_stats(combatant: Combatant, job: Dictionary) -> void:
 
 func get_job(job_id: String) -> Dictionary:
 	"""Get job data by ID"""
+	job_id = resolve_job_id(job_id)
 	return jobs.get(job_id, {})
 
 
 func get_job_abilities(job_id: String) -> Array:
 	"""Get all abilities for a job"""
+	job_id = resolve_job_id(job_id)
 	var job = get_job(job_id)
 	if not job.has("abilities"):
 		return []
@@ -330,7 +375,7 @@ func get_ability(ability_id: String) -> Dictionary:
 
 
 func can_use_ability(combatant: Combatant, ability_id: String) -> bool:
-	"""Check if combatant can use an ability"""
+	"""Check if combatant can use an ability (ability_id is an ability, not a job)"""
 	var ability = get_ability(ability_id)
 	if ability.is_empty():
 		return false

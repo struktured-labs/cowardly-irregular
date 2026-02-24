@@ -40,7 +40,7 @@ const NAME_CHARS: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxy
 const NAME_GRID_COLS: int = 13
 
 ## Job options
-const AVAILABLE_JOBS: Array[String] = ["fighter", "white_mage", "black_mage", "thief"]
+const AVAILABLE_JOBS: Array[String] = ["fighter", "cleric", "mage", "bard", "rogue"]
 
 ## UI elements
 var _panel: Control = null

@@ -72,7 +72,7 @@ const CHARACTER_STYLES = {
 		"condition_bg": Color(0.2, 0.25, 0.45),
 		"action_bg": Color(0.25, 0.35, 0.55)
 	},
-	"mira": {  # White Mage - purple/pink
+	"mira": {  # Cleric - purple/pink
 		"bg": Color(0.15, 0.1, 0.2),
 		"border": Color(1.0, 0.8, 0.9),
 		"border_shadow": Color(0.4, 0.2, 0.3),
@@ -82,7 +82,7 @@ const CHARACTER_STYLES = {
 		"condition_bg": Color(0.35, 0.2, 0.35),
 		"action_bg": Color(0.45, 0.25, 0.45)
 	},
-	"zack": {  # Thief - dark/muted purple-green
+	"zack": {  # Rogue - dark/muted purple-green
 		"bg": Color(0.1, 0.1, 0.1),
 		"border": Color(0.6, 0.5, 0.7),
 		"border_shadow": Color(0.2, 0.15, 0.25),
@@ -92,7 +92,7 @@ const CHARACTER_STYLES = {
 		"condition_bg": Color(0.2, 0.2, 0.25),
 		"action_bg": Color(0.2, 0.28, 0.2)
 	},
-	"vex": {  # Black Mage - deep purple/red
+	"vex": {  # Mage - deep purple/red
 		"bg": Color(0.05, 0.0, 0.1),
 		"border": Color(0.5, 0.3, 0.7),
 		"border_shadow": Color(0.15, 0.1, 0.2),
@@ -386,9 +386,9 @@ func _get_job_name() -> String:
 		return combatant.job.get("name", "Fighter")
 	match character_id:
 		"hero": return "Fighter"
-		"mira": return "White Mage"
-		"zack": return "Thief"
-		"vex": return "Black Mage"
+		"mira": return "Cleric"
+		"zack": return "Rogue"
+		"vex": return "Mage"
 		_: return "Fighter"
 
 
@@ -398,9 +398,9 @@ func _get_job_id() -> String:
 		return combatant.job.get("id", "fighter")
 	match character_id:
 		"hero": return "fighter"
-		"mira": return "white_mage"
-		"zack": return "thief"
-		"vex": return "black_mage"
+		"mira": return "cleric"
+		"zack": return "rogue"
+		"vex": return "mage"
 		_: return "fighter"
 
 

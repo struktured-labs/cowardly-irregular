@@ -169,9 +169,10 @@ func test_win98_menu_character_styles_exist() -> void:
 	var menu = Win98MenuScript.new()
 
 	assert_true(menu.CHARACTER_STYLES.has("fighter"), "Should have fighter style")
-	assert_true(menu.CHARACTER_STYLES.has("white_mage"), "Should have white_mage style")
-	assert_true(menu.CHARACTER_STYLES.has("thief"), "Should have thief style")
-	assert_true(menu.CHARACTER_STYLES.has("black_mage"), "Should have black_mage style")
+	assert_true(menu.CHARACTER_STYLES.has("cleric"), "Should have cleric style")
+	assert_true(menu.CHARACTER_STYLES.has("rogue"), "Should have rogue style")
+	assert_true(menu.CHARACTER_STYLES.has("mage"), "Should have mage style")
+	assert_true(menu.CHARACTER_STYLES.has("bard"), "Should have bard style")
 
 	menu.queue_free()
 

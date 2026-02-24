@@ -713,7 +713,7 @@ func _draw_job_outfit_snes(img: Image, cx: int, face_cy: int, hair_color: Color)
 			_sp(img, cx + 14, band_y + 2, band_color)
 			_sp(img, cx + 13, band_y + 2, band_dark)
 
-		"white_mage":
+		"cleric":
 			# White cowl/hood framing the face
 			var hood_color = Color(0.95, 0.93, 0.98)
 			var hood_dark = Color(0.78, 0.76, 0.85)
@@ -738,7 +738,7 @@ func _draw_job_outfit_snes(img: Image, cx: int, face_cy: int, hair_color: Color)
 				for ddx in range(-dy, dy + 1):
 					_sp(img, cx + ddx, face_cy - 17 + dy, Color(0.75, 0.20, 0.20))
 
-		"black_mage":
+		"mage":
 			# Tall pointed hat covering upper face
 			var hat_color = Color(0.12, 0.12, 0.28)
 			var hat_dark = Color(0.06, 0.06, 0.18)
@@ -761,7 +761,7 @@ func _draw_job_outfit_snes(img: Image, cx: int, face_cy: int, hair_color: Color)
 			# Hat tip curves
 			_sp(img, cx + 3, face_cy - 24, hat_color)
 			_sp(img, cx + 4, face_cy - 23, hat_color)
-			# Glowing yellow eyes (iconic black mage look)
+			# Glowing yellow eyes (iconic mage look)
 			var glow = Color(1.0, 0.9, 0.3)
 			var glow_dim = Color(0.8, 0.7, 0.2)
 			for side in [-1, 1]:
@@ -785,7 +785,7 @@ func _draw_job_outfit_snes(img: Image, cx: int, face_cy: int, hair_color: Color)
 				_sp(img, ex + 1, face_cy - 4, glow)
 				_sp(img, ex, face_cy - 3, glow)
 
-		"thief":
+		"rogue":
 			# Green bandana with mask
 			var bandana = Color(0.22, 0.52, 0.22)
 			var bandana_dark = Color(0.15, 0.38, 0.15)
@@ -801,6 +801,26 @@ func _draw_job_outfit_snes(img: Image, cx: int, face_cy: int, hair_color: Color)
 			_sp(img, cx - 14, band_y + 1, bandana)
 			_sp(img, cx - 15, band_y + 2, bandana)
 			_sp(img, cx - 14, band_y + 3, bandana_dark)
+
+		"bard":
+			# Feathered cap with gold trim
+			var cap_color = Color(0.85, 0.72, 0.2)
+			var cap_dark = Color(0.65, 0.55, 0.15)
+			var cap_light = Color(0.95, 0.82, 0.35)
+			# Beret-style cap
+			for y in range(face_cy - 16, face_cy - 10):
+				var w = 10 + (y - (face_cy - 16)) / 2
+				for dx in range(-w, w + 1):
+					var c = cap_color
+					if y == face_cy - 16:
+						c = cap_light
+					elif dx > w - 3:
+						c = cap_dark
+					_sp(img, cx + dx, y, c)
+			# Feather plume
+			for dy in range(8):
+				_sp(img, cx + 10 + dy / 3, face_cy - 15 + dy, cap_light)
+				_sp(img, cx + 11 + dy / 3, face_cy - 15 + dy, Color(1.0, 0.95, 0.7))
 
 		"red_mage":
 			# Feathered hat
@@ -853,9 +873,10 @@ func _draw_job_outfit_snes(img: Image, cx: int, face_cy: int, hair_color: Color)
 func _get_job_color(job: String) -> Color:
 	match job:
 		"fighter": return Color(0.7, 0.3, 0.3)
-		"white_mage": return Color(0.9, 0.9, 0.95)
-		"black_mage": return Color(0.3, 0.3, 0.6)
-		"thief": return Color(0.3, 0.6, 0.3)
+		"cleric": return Color(0.9, 0.9, 0.95)
+		"mage": return Color(0.3, 0.3, 0.6)
+		"bard": return Color(0.85, 0.72, 0.2)
+		"rogue": return Color(0.3, 0.6, 0.3)
 		"guardian": return Color(0.6, 0.55, 0.4)
 		"ninja": return Color(0.25, 0.25, 0.35)
 		"summoner": return Color(0.3, 0.7, 0.5)

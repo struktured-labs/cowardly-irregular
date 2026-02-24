@@ -1,0 +1,201 @@
+{
+	"jobs": {
+		"fighter": {
+			"origin": "Trained in the militia halls of Harmonia, Fighters learn that strength alone wins nothing -- discipline does.",
+			"personality_traits": ["disciplined", "stubborn", "loyal", "competitive"],
+			"worldview": "The world is a battlefield. Every problem has a direct solution if you hit it hard enough.",
+			"flavor_quotes": [
+				"My sword arm is my argument.",
+				"I don't retreat. I advance in a different direction.",
+				"The best defense is an overwhelming offense."
+			]
+		},
+		"cleric": {
+			"origin": "Clerics study in the Ivory Sanctum, learning that healing is not kindness -- it is strategy. A living ally deals more damage than a dead one.",
+			"personality_traits": ["compassionate", "judgmental", "patient", "quietly ruthless"],
+			"worldview": "Everyone deserves healing. Not everyone deserves it first.",
+			"flavor_quotes": [
+				"I heal because the alternative is paperwork.",
+				"The light guides me. Mostly toward people making poor decisions.",
+				"Raise is not a reward. It is a second chance you should not need."
+			]
+		},
+		"mage": {
+			"origin": "Mages emerge from the Obsidian Academy, where knowledge is the only currency and fire is the preferred negotiation tactic.",
+			"personality_traits": ["intellectual", "arrogant", "curious", "impatient"],
+			"worldview": "Everything is a formula. Once you understand the variables, the universe bends.",
+			"flavor_quotes": [
+				"I didn't set that on fire. Physics did. I merely suggested it.",
+				"Intelligence is knowing a tomato is a fruit. Wisdom is not putting it in a Fira.",
+				"My spellbook has more pages than your life expectancy."
+			]
+		},
+		"rogue": {
+			"origin": "Rogues learn their trade in the Undercity, where the first lesson is: if they saw you, you already failed.",
+			"personality_traits": ["cunning", "paranoid", "resourceful", "morally flexible"],
+			"worldview": "Rules are suggestions written by people too slow to break them.",
+			"flavor_quotes": [
+				"I didn't steal it. I liberated it from poor security.",
+				"The fastest path between two points is behind everyone else.",
+				"Locks are just puzzles that protect disappointed people."
+			]
+		},
+		"bard": {
+			"origin": "Bards train at the Wandering Stage, a traveling troupe that believes the pen (and lute) are mightier than any sword.",
+			"personality_traits": ["charismatic", "dramatic", "empathetic", "unreliable"],
+			"worldview": "Every battle is a story. Every story needs a narrator. That narrator should be charming.",
+			"flavor_quotes": [
+				"I once talked a dragon into a nap. True story.",
+				"My music doesn't kill. It just makes dying more atmospheric.",
+				"A well-timed song is worth a thousand swords. I counted."
+			]
+		},
+		"guardian": {
+			"origin": "Guardians take the Oath of Iron at the Shield Wall, swearing to stand between harm and those who cannot protect themselves.",
+			"personality_traits": ["protective", "stoic", "self-sacrificing", "inflexible"],
+			"worldview": "If everyone I protect survives, I have succeeded. My own survival is optional.",
+			"flavor_quotes": [
+				"Behind me.",
+				"I do not dodge. I endure.",
+				"The wall does not ask why. The wall holds."
+			]
+		},
+		"ninja": {
+			"origin": "Ninjas train in the Shadow Dojo, where speed is philosophy and shortcuts are sacred.",
+			"personality_traits": ["efficient", "detached", "perfectionist", "impatient"],
+			"worldview": "The fastest solution is the correct one. Everything else is wasted motion.",
+			"flavor_quotes": [
+				"You blinked. I finished.",
+				"I skip cutscenes in real life too.",
+				"Stealth is just aggressive politeness."
+			]
+		},
+		"summoner": {
+			"origin": "Summoners bind eidolons at the Convergence Stones, forming pacts that blur the line between ally and weapon.",
+			"personality_traits": ["mystical", "codependent", "commanding", "lonely"],
+			"worldview": "Why fight alone when you can fight with the embodiment of elemental fury?",
+			"flavor_quotes": [
+				"Bahamut and I have an understanding. I ask, and he obliges.",
+				"Summoning is just very aggressive networking.",
+				"I contain multitudes. Literally."
+			]
+		},
+		"speculator": {
+			"origin": "Speculators emerge from the Probability Exchange, where chaos is currency and predictability is bankruptcy.",
+			"personality_traits": ["calculating", "risk-seeking", "analytical", "addicted to variance"],
+			"worldview": "Stability is stagnation. The market rewards those who embrace volatility.",
+			"flavor_quotes": [
+				"I don't gamble. I calculate favorable variance.",
+				"Buy the dip. Sell the rip. Hedge the apocalypse.",
+				"Chaos isn't the enemy. Predictability is."
+			]
+		},
+		"scriptweaver": {
+			"origin": "Scriptweavers awaken when they first see the Source -- the underlying code of reality itself.",
+			"personality_traits": ["meta-aware", "obsessive", "god-complex", "glitch-prone"],
+			"worldview": "Reality is software. I am the developer. Everything else is a feature request.",
+			"flavor_quotes": [
+				"I don't break the game. I optimize it aggressively.",
+				"That's not a bug. That's an undocumented feature I added.",
+				"The damage formula is just a suggestion."
+			]
+		},
+		"time_mage": {
+			"origin": "Time Mages discover their power when they first experience deja vu and realize it was a failed quickload.",
+			"personality_traits": ["nostalgic", "anxious", "meticulous", "haunted by alternate timelines"],
+			"worldview": "Every mistake is reversible. The question is the cost.",
+			"flavor_quotes": [
+				"I have died 47 times today. You just don't remember.",
+				"Save early, save often, save your friends.",
+				"Time heals all wounds. I just speed up the process."
+			]
+		},
+		"necromancer": {
+			"origin": "Necromancers touch the Void Between Saves and return changed, carrying death as both weapon and consequence.",
+			"personality_traits": ["morbid", "pragmatic", "fatalistic", "secretly afraid"],
+			"worldview": "Death is just another state to manipulate. But it bites back.",
+			"flavor_quotes": [
+				"I raise the dead. The living are someone else's problem.",
+				"My save file corruption rate is only 30%. Acceptable.",
+				"Death is a door. I have the key. And the door is on fire."
+			]
+		},
+		"bossbinder": {
+			"origin": "Bossbinders learn their art by staring into a boss's eyes and refusing to look away until the roles reverse.",
+			"personality_traits": ["domineering", "reckless", "empathetic toward bosses", "boundary-challenged"],
+			"worldview": "Every boss is a misunderstood ally waiting to be controlled.",
+			"flavor_quotes": [
+				"I don't fight bosses. I become them.",
+				"Mind Swap has a 30% corruption rate. So does my personality.",
+				"The real boss fight is the save files we corrupted along the way."
+			]
+		},
+		"skiptrotter": {
+			"origin": "Skiptrotters simply... skip. One day they walked past a dungeon entrance and ended up at the boss. Nobody knows how.",
+			"personality_traits": ["impatient", "efficient", "FOMO-immune", "occasionally lost"],
+			"worldview": "Content is optional. Credits are the goal.",
+			"flavor_quotes": [
+				"I've beaten this game 12 times and never seen the tutorial.",
+				"Skip. Skip. Skip. Boss. Win. Next.",
+				"The journey of a thousand miles begins with a single warp."
+			]
+		}
+	},
+	"world_phases": [
+		{
+			"id": "medieval",
+			"name": "The Pixel Kingdoms",
+			"era": "8-bit",
+			"description": "A traditional fantasy realm rendered in chunky pixels. Castles, forests, and caves -- the foundations of every adventure.",
+			"visual_style": "8-bit pixel art, limited palette, tile-based maps",
+			"tone": "Classic JRPG earnestness with subtle cracks"
+		},
+		{
+			"id": "suburban",
+			"name": "The Mundane Sprawl",
+			"era": "16-bit",
+			"description": "Reality intrudes. Strip malls, suburban houses, and enemies that look suspiciously like everyday annoyances. EarthBound vibes.",
+			"visual_style": "16-bit SNES-era, warmer palette, quirky enemy designs",
+			"tone": "Satirical, absurdist humor, meta-commentary begins"
+		},
+		{
+			"id": "steampunk",
+			"name": "The Clockwork Dominion",
+			"era": "32-bit",
+			"description": "Industry and magic collide. Gears, steam, and brass replace swords and sorcery. The world is being optimized.",
+			"visual_style": "32-bit era, detailed sprites, industrial color palette",
+			"tone": "Increasingly cynical, automation themes front and center"
+		},
+		{
+			"id": "industrial",
+			"name": "The Assembly Line",
+			"era": "modern",
+			"description": "Pure efficiency. The world has been reduced to systems and processes. Beauty is a metric. Joy is a KPI.",
+			"visual_style": "Clean, corporate aesthetic, muted tones, UI-heavy",
+			"tone": "Corporate dystopia meets game design criticism"
+		},
+		{
+			"id": "digital",
+			"name": "The Source Layer",
+			"era": "digital",
+			"description": "The game's code becomes the world. Enemies are bugs, dungeons are functions, and the Scriptweaver is home.",
+			"visual_style": "Terminal green, wireframe, glitch art",
+			"tone": "Full meta-awareness, fourth wall demolished"
+		},
+		{
+			"id": "abstract",
+			"name": "The Void Beyond",
+			"era": "minimalist",
+			"description": "What remains when you strip away everything? Pure meaning. Pure gameplay. Or perhaps nothing at all.",
+			"visual_style": "Minimalist, geometric, vast empty spaces",
+			"tone": "Philosophical, existential, quietly beautiful"
+		}
+	],
+	"villain": {
+		"title": "The Architect",
+		"description": "Not a person but a system -- the entity that designs difficulty curves, manufactures grinding, and ensures no player ever feels truly powerful for too long.",
+		"philosophy": "Balance is control. Fun is a variable to be tuned. The player's agency is an illusion we permit.",
+		"meta_awareness": "The Architect knows it is in a game. It knows the player exists. It considers this a design flaw to be patched.",
+		"motivation": "To create the perfect game -- one where the player can never break the rules, exploit the systems, or find shortcuts. The antithesis of everything the player represents."
+	}
+}

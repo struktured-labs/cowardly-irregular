@@ -410,5 +410,15 @@
 		"meta_effects": {
 			"volatility_scaling": true
 		}
+	},
+	"encore": {
+		"id": "encore",
+		"name": "Encore",
+		"category": 2,
+		"description": "Song buffs and debuffs last 1 extra turn",
+		"stat_mods": {},
+		"meta_effects": {
+			"song_duration_bonus": 1
+		}
 	}
 }

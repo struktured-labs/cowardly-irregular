@@ -100,8 +100,28 @@ Risk/reward automation with escalating stakes:
 - Optional permadeath staking for extreme rewards
 - "System collapse" events punish perfect optimization
 
-## Meta Jobs
+## Job System
 
+**14 jobs total: 5 Starter, 4 Advanced, 5 Meta**
+
+### Starter Jobs (type 0)
+| Job | Role |
+|-----|------|
+| Fighter | Physical damage dealer |
+| Cleric | Healer/support (renamed from White Mage) |
+| Mage | Offensive magic (renamed from Black Mage) |
+| Rogue | Speed/crits/utility (renamed from Thief) |
+| Bard | Party buffs, debuffs, morale |
+
+### Advanced Jobs (type 1, gated behind debug mode)
+| Job | Function |
+|-----|----------|
+| Guardian | Tank, brave/default mechanics |
+| Ninja | Speedrun functions, overworld shortcuts |
+| Summoner | Recursive summoning (summon other summoners) |
+| Speculator | Market/risk-based abilities |
+
+### Meta Jobs (type 2, gated behind debug mode)
 | Job | Function |
 |-----|----------|
 | Scriptweaver | Edit damage formulas, EXP rates, game constants via debug console |
@@ -109,8 +129,14 @@ Risk/reward automation with escalating stakes:
 | Necromancer | Dual-edged spells that can wipe saves |
 | Bossbinder | Swap control with boss mid-battle; boss victory corrupts saves |
 | Skiptrotter | Warp to next quest/boss, bypass dungeons |
-| Ninja | Speedrun functions, overworld shortcuts |
-| Summoner | Recursive summoning (summon other summoners) |
+
+### Job ID Migration
+Old IDs (white_mage, black_mage, thief) are aliased to new IDs (cleric, mage, rogue) via `data/job_aliases.json` for save compatibility.
+
+### Sprite System
+- **HybridSpriteLoader**: Checks `data/sprite_manifest.json` for artist sprite sheets, falls back to procedural SnesPartySprites
+- **SnesPartySprites**: Procedural 32x48 SNES-style sprites with composable layers (body→hair→face→outfit→headgear→weapon)
+- Each job maps to an outfit type and headgear type via OUTFIT_MAP/HEADGEAR_MAP
 
 ## Stakes & Consequences
 

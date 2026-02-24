@@ -594,7 +594,7 @@ func _create_party() -> void:
 	# Get default customizations
 	var default_customs = CustomizationScript.create_default_party_with_script(CustomizationScript)
 
-	# Create Hero (Fighter)
+	# Create Hero (Fighter / secondary: Rogue)
 	var hero = Combatant.new()
 	hero.initialize({
 		"name": "Hero",
@@ -608,6 +608,7 @@ func _create_party() -> void:
 	add_child(hero)
 	hero.customization = default_customs[0] if default_customs.size() > 0 else null
 	JobSystem.assign_job(hero, "fighter")
+	JobSystem.assign_secondary_job(hero, "rogue")
 	EquipmentSystem.equip_weapon(hero, "iron_sword")
 	EquipmentSystem.equip_armor(hero, "leather_armor")
 	EquipmentSystem.equip_accessory(hero, "power_ring")
@@ -621,7 +622,7 @@ func _create_party() -> void:
 	hero.add_item("phoenix_down", 1)
 	party.append(hero)
 
-	# Create Mira (White Mage)
+	# Create Mira (Cleric / secondary: Bard)
 	var mira = Combatant.new()
 	mira.initialize({
 		"name": "Mira",
@@ -634,7 +635,8 @@ func _create_party() -> void:
 	})
 	add_child(mira)
 	mira.customization = default_customs[1] if default_customs.size() > 1 else null
-	JobSystem.assign_job(mira, "white_mage")
+	JobSystem.assign_job(mira, "cleric")
+	JobSystem.assign_secondary_job(mira, "bard")
 	EquipmentSystem.equip_weapon(mira, "oak_staff")
 	EquipmentSystem.equip_armor(mira, "cloth_robe")
 	EquipmentSystem.equip_accessory(mira, "magic_ring")
@@ -644,7 +646,7 @@ func _create_party() -> void:
 	PassiveSystem.equip_passive(mira, "mp_boost")
 	party.append(mira)
 
-	# Create Zack (Thief)
+	# Create Zack (Rogue / secondary: Fighter)
 	var zack = Combatant.new()
 	zack.initialize({
 		"name": "Zack",
@@ -657,9 +659,10 @@ func _create_party() -> void:
 	})
 	add_child(zack)
 	zack.customization = default_customs[2] if default_customs.size() > 2 else null
-	JobSystem.assign_job(zack, "thief")
+	JobSystem.assign_job(zack, "rogue")
+	JobSystem.assign_secondary_job(zack, "fighter")
 	EquipmentSystem.equip_weapon(zack, "iron_dagger")
-	EquipmentSystem.equip_armor(zack, "thief_garb")
+	EquipmentSystem.equip_armor(zack, "rogue_garb")
 	EquipmentSystem.equip_accessory(zack, "speed_boots")
 	zack.learn_passive("critical_strike")
 	zack.learn_passive("speed_boost")
@@ -667,7 +670,7 @@ func _create_party() -> void:
 	PassiveSystem.equip_passive(zack, "speed_boost")
 	party.append(zack)
 
-	# Create Vex (Black Mage)
+	# Create Vex (Mage / secondary: Cleric)
 	var vex = Combatant.new()
 	vex.initialize({
 		"name": "Vex",
@@ -680,7 +683,8 @@ func _create_party() -> void:
 	})
 	add_child(vex)
 	vex.customization = default_customs[3] if default_customs.size() > 3 else null
-	JobSystem.assign_job(vex, "black_mage")
+	JobSystem.assign_job(vex, "mage")
+	JobSystem.assign_secondary_job(vex, "cleric")
 	EquipmentSystem.equip_weapon(vex, "shadow_rod")
 	EquipmentSystem.equip_armor(vex, "dark_robe")
 	EquipmentSystem.equip_accessory(vex, "mp_amulet")
@@ -962,9 +966,18 @@ func _prewarm_area_sprites() -> void:
 
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
+	# Guard against reentrant battle triggers during transition
+	if current_state == LoopState.BATTLE:
+		return
+
 	# Disable player input during battle transition
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
+
+	# Hide exploration scene immediately to prevent visual bleed-through
+	# (the overlay should cover it, but this is a belt-and-suspenders safeguard)
+	if _exploration_scene and is_instance_valid(_exploration_scene):
+		_exploration_scene.visible = false
 
 	# Save terrain for battle background
 	if terrain != "":
@@ -1038,6 +1051,16 @@ func _start_battle_async(specific_enemies: Array = []) -> void:
 	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()
 		await current_scene.tree_exited
+
+	# Clear stale exploration reference (scene is freed)
+	_exploration_scene = null
+
+	# Reset viewport camera to prevent exploration zoom from contaminating battle
+	var viewport = get_viewport()
+	if viewport:
+		var cam = viewport.get_camera_2d()
+		if cam and is_instance_valid(cam):
+			cam.zoom = Vector2(1.0, 1.0)
 
 	# Check if specific enemies were provided (e.g., boss battles)
 	var has_forced_enemies = specific_enemies.size() > 0 and specific_enemies[0] is String

@@ -18,6 +18,7 @@ signal menu_requested()
 var _is_safe_zone: bool = false
 var _encounter_rate: float = 0.05
 var _enemy_pool: Array = ["slime", "bat"]
+var _paused: bool = false
 
 
 func _ready() -> void:
@@ -39,7 +40,7 @@ func _exit_tree() -> void:
 
 
 func _on_player_moved(steps: int) -> void:
-	if not encounter_enabled or _is_safe_zone:
+	if not encounter_enabled or _is_safe_zone or _paused:
 		return
 
 	# Check for random encounter
@@ -202,11 +203,13 @@ func _load_enemy_pools() -> Dictionary:
 
 ## Resume player control after battle or menu
 func resume_exploration() -> void:
+	_paused = false
 	if player:
 		player.set_can_move(true)
 
 
 ## Pause player control
 func pause_exploration() -> void:
+	_paused = true
 	if player:
 		player.set_can_move(false)

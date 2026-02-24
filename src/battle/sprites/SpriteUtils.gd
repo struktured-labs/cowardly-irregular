@@ -659,4 +659,10 @@ static func _load_job_visuals() -> void:
 						"headgear": vis.get("headgear", "none")
 					}
 		file.close()
+	# Backward-compat aliases: old job IDs point to new visual data
+	var _aliases = {"white_mage": "cleric", "black_mage": "mage", "thief": "rogue"}
+	for old_id in _aliases:
+		var new_id = _aliases[old_id]
+		if _job_visuals.has(new_id) and not _job_visuals.has(old_id):
+			_job_visuals[old_id] = _job_visuals[new_id]
 	_job_visuals_loaded = true

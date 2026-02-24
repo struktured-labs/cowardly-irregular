@@ -13,6 +13,7 @@ const BattleDialogueClass = preload("res://src/ui/BattleDialogue.gd")
 const BattleBackgroundClass = preload("res://src/battle/BattleBackground.gd")
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 const SnesPartySprites = preload("res://src/battle/sprites/SnesPartySprites.gd")
+const HybridSpriteLoaderClass = preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -433,7 +434,7 @@ func _create_default_party() -> void:
 	hero.add_item("phoenix_down", 1)
 	party_members.append(hero)
 
-	# Create Mira (White Mage)
+	# Create Mira (Cleric)
 	var mira = Combatant.new()
 	mira.initialize({
 		"name": "Mira",
@@ -445,7 +446,7 @@ func _create_default_party() -> void:
 		"speed": 14
 	})
 	add_child(mira)
-	JobSystem.assign_job(mira, "white_mage")
+	JobSystem.assign_job(mira, "cleric")
 	EquipmentSystem.equip_weapon(mira, "oak_staff")
 	EquipmentSystem.equip_armor(mira, "cloth_robe")
 	EquipmentSystem.equip_accessory(mira, "magic_ring")
@@ -455,7 +456,7 @@ func _create_default_party() -> void:
 	PassiveSystem.equip_passive(mira, "mp_boost")
 	party_members.append(mira)
 
-	# Create Zack (Thief)
+	# Create Zack (Rogue)
 	var zack = Combatant.new()
 	zack.initialize({
 		"name": "Zack",
@@ -467,7 +468,7 @@ func _create_default_party() -> void:
 		"speed": 22
 	})
 	add_child(zack)
-	JobSystem.assign_job(zack, "thief")
+	JobSystem.assign_job(zack, "rogue")
 	EquipmentSystem.equip_weapon(zack, "iron_dagger")
 	EquipmentSystem.equip_armor(zack, "thief_garb")
 	EquipmentSystem.equip_accessory(zack, "speed_boots")
@@ -477,7 +478,7 @@ func _create_default_party() -> void:
 	PassiveSystem.equip_passive(zack, "speed_boost")
 	party_members.append(zack)
 
-	# Create Vex (Black Mage)
+	# Create Vex (Mage)
 	var vex = Combatant.new()
 	vex.initialize({
 		"name": "Vex",
@@ -489,7 +490,7 @@ func _create_default_party() -> void:
 		"speed": 12
 	})
 	add_child(vex)
-	JobSystem.assign_job(vex, "black_mage")
+	JobSystem.assign_job(vex, "mage")
 	EquipmentSystem.equip_weapon(vex, "shadow_rod")
 	EquipmentSystem.equip_armor(vex, "dark_robe")
 	EquipmentSystem.equip_accessory(vex, "mp_amulet")
@@ -959,7 +960,7 @@ func _create_battle_sprites() -> void:
 		var armor_id = member.equipped_armor if member.equipped_armor else ""
 		var accessory_id = member.equipped_accessory if member.equipped_accessory else ""
 		var custom = member.get("customization") if "customization" in member else null
-		sprite.sprite_frames = SnesPartySprites.create_sprite_frames(
+		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		sprite.scale = Vector2(3.0, 3.0)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

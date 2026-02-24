@@ -81,9 +81,10 @@ static func prewarm_cache(monster_ids: Array = [], party_jobs: Array = []) -> vo
 		var weapon_id = job_data.get("weapon_id", "")
 		match job_id:
 			"fighter": _PartySprites.create_hero_sprite_frames(weapon_id)
-			"white_mage": _PartySprites.create_mage_sprite_frames(Color(0.9, 0.9, 1.0), weapon_id)
-			"black_mage": _PartySprites.create_mage_sprite_frames(Color(0.15, 0.1, 0.25), weapon_id)
-			"thief": _PartySprites.create_thief_sprite_frames(weapon_id)
+			"cleric": _PartySprites.create_mage_sprite_frames(Color(0.9, 0.9, 1.0), weapon_id)
+			"mage": _PartySprites.create_mage_sprite_frames(Color(0.15, 0.1, 0.25), weapon_id)
+			"rogue": _PartySprites.create_thief_sprite_frames(weapon_id)
+			"bard": _PartySprites.create_hero_sprite_frames(weapon_id)
 			"speculator": _PartySprites.create_hero_sprite_frames(weapon_id)
 
 ## Helper aliases delegating to SpriteUtils (backward compatibility)

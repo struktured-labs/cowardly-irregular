@@ -346,9 +346,10 @@ func _get_job_color(member: Combatant) -> Color:
 		return Color(0.3, 0.3, 0.5)
 	match member.job.get("id", ""):
 		"fighter": return Color(0.4, 0.2, 0.2)
-		"white_mage": return Color(0.4, 0.4, 0.2)
-		"thief": return Color(0.2, 0.4, 0.2)
-		"black_mage": return Color(0.3, 0.2, 0.4)
+		"cleric": return Color(0.4, 0.4, 0.2)
+		"rogue": return Color(0.2, 0.4, 0.2)
+		"mage": return Color(0.3, 0.2, 0.4)
+		"bard": return Color(0.42, 0.36, 0.1)
 		_: return Color(0.3, 0.3, 0.5)
 
 

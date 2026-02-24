@@ -36,7 +36,7 @@ const CHARACTER_STYLES = {
 		"highlight_text": Color(1.0, 1.0, 0.5),  # Yellow highlight
 		"cursor": Color(1.0, 1.0, 1.0)
 	},
-	"white_mage": {
+	"cleric": {
 		"bg": Color(0.15, 0.1, 0.2),             # Dark purple-pink
 		"border": Color(1.0, 0.8, 0.9),          # Pink-white
 		"border_shadow": Color(0.4, 0.2, 0.3),
@@ -45,7 +45,7 @@ const CHARACTER_STYLES = {
 		"highlight_text": Color(1.0, 0.8, 1.0),
 		"cursor": Color(1.0, 0.8, 0.9)
 	},
-	"thief": {
+	"rogue": {
 		"bg": Color(0.1, 0.1, 0.1),              # Near black
 		"border": Color(0.6, 0.5, 0.7),          # Muted purple
 		"border_shadow": Color(0.2, 0.15, 0.25),
@@ -54,7 +54,7 @@ const CHARACTER_STYLES = {
 		"highlight_text": Color(0.8, 1.0, 0.6),  # Green-ish
 		"cursor": Color(0.6, 0.5, 0.7)
 	},
-	"black_mage": {
+	"mage": {
 		"bg": Color(0.05, 0.0, 0.1),             # Deep purple-black
 		"border": Color(0.5, 0.3, 0.7),          # Purple
 		"border_shadow": Color(0.15, 0.1, 0.2),
@@ -62,6 +62,15 @@ const CHARACTER_STYLES = {
 		"highlight_bg": Color(0.2, 0.1, 0.3),
 		"highlight_text": Color(1.0, 0.5, 0.5),  # Red-ish
 		"cursor": Color(0.7, 0.4, 0.9)
+	},
+	"bard": {
+		"bg": Color(0.12, 0.1, 0.02),            # Dark gold-brown
+		"border": Color(0.85, 0.72, 0.2),        # Gold
+		"border_shadow": Color(0.35, 0.28, 0.08),
+		"text": Color(1.0, 0.95, 0.85),
+		"highlight_bg": Color(0.4, 0.32, 0.1),
+		"highlight_text": Color(1.0, 0.9, 0.4),  # Bright gold
+		"cursor": Color(0.85, 0.72, 0.2)
 	}
 }
 

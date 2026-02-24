@@ -63,7 +63,7 @@ var equipped_armor: String = ""   # Armor ID
 var equipped_accessory: String = ""  # Accessory ID
 
 ## Job profiles - saves equipment, passives, and autobattle per job combo
-## Key format: "primary_job_id:secondary_job_id" (e.g. "fighter:", "fighter:thief")
+## Key format: "primary_job_id:secondary_job_id" (e.g. "fighter:", "fighter:rogue")
 var job_profiles: Dictionary = {}
 
 ## Inventory system
@@ -441,6 +441,29 @@ func from_dict(data: Dictionary) -> void:
 			learned_abilities.append(ability_id)
 	if data.has("job_profiles"):
 		job_profiles = data["job_profiles"].duplicate(true)
+
+	# Resolve legacy job aliases in loaded data
+	var job_system = get_node_or_null("/root/JobSystem")
+	if job_system:
+		# Resolve job ID in current job dict
+		if job and job is Dictionary and job.has("id"):
+			job["id"] = job_system.resolve_job_id(job["id"])
+		# Resolve secondary job ID
+		if secondary_job_id != "":
+			secondary_job_id = job_system.resolve_job_id(secondary_job_id)
+		if secondary_job and secondary_job is Dictionary and secondary_job.has("id"):
+			secondary_job["id"] = job_system.resolve_job_id(secondary_job["id"])
+		# Resolve job profile keys (e.g. "fighter:thief" -> "fighter:rogue")
+		var resolved_profiles: Dictionary = {}
+		for key in job_profiles:
+			var parts = key.split(":")
+			var resolved_key = job_system.resolve_job_id(parts[0])
+			if parts.size() > 1 and parts[1] != "":
+				resolved_key += ":" + job_system.resolve_job_id(parts[1])
+			else:
+				resolved_key += ":" + (parts[1] if parts.size() > 1 else "")
+			resolved_profiles[resolved_key] = job_profiles[key]
+		job_profiles = resolved_profiles
 
 
 func learn_ability(ability_id: String) -> void:

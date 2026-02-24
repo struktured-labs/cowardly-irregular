@@ -92,7 +92,7 @@ func test_minimum_armor_count() -> void:
 
 
 func test_minimum_job_count() -> void:
-	assert_gte(_jobs.size(), 12, "Should have at least 12 jobs (got %d)" % _jobs.size())
+	assert_gte(_jobs.size(), 14, "Should have at least 14 jobs (got %d)" % _jobs.size())
 
 
 func test_minimum_ability_count() -> void:
@@ -292,8 +292,8 @@ func test_all_passives_have_required_fields() -> void:
 
 func test_all_expected_jobs_exist() -> void:
 	var expected_jobs = [
-		"fighter", "white_mage", "black_mage", "thief",
-		"guardian", "ninja", "summoner",
+		"fighter", "cleric", "mage", "rogue", "bard",
+		"guardian", "ninja", "summoner", "speculator",
 		"scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter"
 	]
 	for job_id in expected_jobs:
@@ -322,7 +322,7 @@ func test_job_types_are_valid() -> void:
 
 
 func test_starter_jobs_have_type_zero() -> void:
-	for job_id in ["fighter", "white_mage", "black_mage", "thief"]:
+	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
 		if _jobs.has(job_id):
 			assert_eq(int(_jobs[job_id]["type"]), 0,
 				"%s should be type 0 (starter)" % job_id)

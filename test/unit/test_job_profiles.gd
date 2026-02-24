@@ -45,16 +45,16 @@ func test_profile_key_with_primary_only() -> void:
 
 func test_profile_key_with_primary_and_secondary() -> void:
 	_combatant.job = {"id": "fighter", "name": "Fighter"}
-	_combatant.secondary_job_id = "thief"
+	_combatant.secondary_job_id = "rogue"
 	var key = _combatant.get_profile_key()
-	assert_eq(key, "fighter:thief", "Profile key should be 'fighter:thief'")
+	assert_eq(key, "fighter:rogue", "Profile key should be 'fighter:rogue'")
 
 
 func test_profile_key_with_different_primary() -> void:
-	_combatant.job = {"id": "white_mage", "name": "White Mage"}
-	_combatant.secondary_job_id = "black_mage"
+	_combatant.job = {"id": "cleric", "name": "Cleric"}
+	_combatant.secondary_job_id = "mage"
 	var key = _combatant.get_profile_key()
-	assert_eq(key, "white_mage:black_mage", "Profile key should reflect actual jobs")
+	assert_eq(key, "cleric:mage", "Profile key should reflect actual jobs")
 
 
 func test_profile_key_defaults_to_fighter_when_no_job() -> void:
@@ -69,11 +69,11 @@ func test_profile_key_changes_after_job_change() -> void:
 	_combatant.secondary_job_id = ""
 	var key1 = _combatant.get_profile_key()
 
-	_combatant.job = {"id": "thief", "name": "Thief"}
+	_combatant.job = {"id": "rogue", "name": "Rogue"}
 	var key2 = _combatant.get_profile_key()
 
 	assert_ne(key1, key2, "Key should change when primary job changes")
-	assert_eq(key2, "thief:", "New key should reflect thief")
+	assert_eq(key2, "rogue:", "New key should reflect rogue")
 
 
 func test_profile_key_changes_after_secondary_change() -> void:
@@ -81,11 +81,11 @@ func test_profile_key_changes_after_secondary_change() -> void:
 	_combatant.secondary_job_id = ""
 	var key1 = _combatant.get_profile_key()
 
-	_combatant.secondary_job_id = "white_mage"
+	_combatant.secondary_job_id = "cleric"
 	var key2 = _combatant.get_profile_key()
 
 	assert_ne(key1, key2, "Key should change when secondary job changes")
-	assert_eq(key2, "fighter:white_mage", "New key should include secondary")
+	assert_eq(key2, "fighter:cleric", "New key should include secondary")
 
 
 ## ---- Save Profile ----
@@ -154,14 +154,14 @@ func test_save_multiple_profiles() -> void:
 	_combatant.secondary_job_id = ""
 	_combatant.save_current_profile()
 
-	_combatant.secondary_job_id = "thief"
+	_combatant.secondary_job_id = "rogue"
 	_combatant.equipped_weapon = "poison_dagger"
 	_combatant.save_current_profile()
 
 	assert_true(_combatant.job_profiles.has("fighter:"), "First profile should exist")
-	assert_true(_combatant.job_profiles.has("fighter:thief"), "Second profile should exist")
+	assert_true(_combatant.job_profiles.has("fighter:rogue"), "Second profile should exist")
 	assert_eq(_combatant.job_profiles["fighter:"]["weapon"], "iron_sword")
-	assert_eq(_combatant.job_profiles["fighter:thief"]["weapon"], "poison_dagger")
+	assert_eq(_combatant.job_profiles["fighter:rogue"]["weapon"], "poison_dagger")
 
 
 ## ---- Load Profile ----
@@ -210,7 +210,7 @@ func test_load_nonexistent_profile_does_nothing() -> void:
 
 
 func test_load_profile_with_empty_equipment() -> void:
-	_combatant.job = {"id": "white_mage", "name": "White Mage"}
+	_combatant.job = {"id": "cleric", "name": "Cleric"}
 	_combatant.secondary_job_id = ""
 	_combatant.equipped_weapon = ""
 	_combatant.equipped_armor = ""
@@ -223,7 +223,7 @@ func test_load_profile_with_empty_equipment() -> void:
 	_set_passives(_combatant, ["healing_boost"])
 
 	# Load empty profile
-	_combatant.load_profile("white_mage:")
+	_combatant.load_profile("cleric:")
 
 	assert_eq(_combatant.equipped_weapon, "", "Should restore empty weapon")
 	assert_eq(_combatant.equipped_passives.size(), 0, "Should restore empty passives")
@@ -236,12 +236,12 @@ func test_fork_profile_copies_data() -> void:
 	_combatant.secondary_job_id = ""
 	_combatant.save_current_profile()
 
-	_combatant.fork_profile("fighter:", "fighter:thief")
+	_combatant.fork_profile("fighter:", "fighter:rogue")
 
-	assert_true(_combatant.job_profiles.has("fighter:thief"), "Forked profile should exist")
-	assert_eq(_combatant.job_profiles["fighter:thief"]["weapon"], "iron_sword",
+	assert_true(_combatant.job_profiles.has("fighter:rogue"), "Forked profile should exist")
+	assert_eq(_combatant.job_profiles["fighter:rogue"]["weapon"], "iron_sword",
 		"Forked profile should have same weapon")
-	assert_eq(_combatant.job_profiles["fighter:thief"]["armor"], "leather_armor",
+	assert_eq(_combatant.job_profiles["fighter:rogue"]["armor"], "leather_armor",
 		"Forked profile should have same armor")
 
 
@@ -251,13 +251,13 @@ func test_fork_profile_is_deep_copy() -> void:
 	_combatant.secondary_job_id = ""
 	_combatant.save_current_profile()
 
-	_combatant.fork_profile("fighter:", "fighter:thief")
+	_combatant.fork_profile("fighter:", "fighter:rogue")
 
 	# Modify the original profile
 	_combatant.job_profiles["fighter:"]["weapon"] = "mythril_sword"
 
 	# Forked profile should not be affected
-	assert_eq(_combatant.job_profiles["fighter:thief"]["weapon"], "iron_sword",
+	assert_eq(_combatant.job_profiles["fighter:rogue"]["weapon"], "iron_sword",
 		"Forked profile should be independent from source")
 
 
@@ -275,9 +275,9 @@ func test_fork_preserves_passives_array() -> void:
 	_set_passives(_combatant, ["weapon_mastery", "critical_strike"])
 	_combatant.save_current_profile()
 
-	_combatant.fork_profile("fighter:", "fighter:black_mage")
+	_combatant.fork_profile("fighter:", "fighter:mage")
 
-	var forked_passives = _combatant.job_profiles["fighter:black_mage"]["passives"]
+	var forked_passives = _combatant.job_profiles["fighter:mage"]["passives"]
 	assert_eq(forked_passives.size(), 2, "Forked passives should have 2 entries")
 	assert_true("weapon_mastery" in forked_passives, "Should contain weapon_mastery")
 	assert_true("critical_strike" in forked_passives, "Should contain critical_strike")
@@ -303,16 +303,16 @@ func test_job_switch_saves_and_loads_profiles() -> void:
 	_combatant.save_current_profile()
 	assert_eq(old_key, "fighter:")
 
-	# Switch to thief
-	job_system.assign_job(_combatant, "thief")
+	# Switch to rogue
+	job_system.assign_job(_combatant, "rogue")
 	var new_key = _combatant.get_profile_key()
-	assert_eq(new_key, "thief:")
+	assert_eq(new_key, "rogue:")
 
-	# No thief profile yet, so fork
+	# No rogue profile yet, so fork
 	if not _combatant.job_profiles.has(new_key):
 		_combatant.fork_profile(old_key, new_key)
 
-	# Modify equipment for thief
+	# Modify equipment for rogue
 	_combatant.equipped_weapon = "iron_dagger"
 	_set_passives(_combatant, ["steal_boost"])
 	_combatant.save_current_profile()
@@ -347,9 +347,9 @@ func test_secondary_job_add_forks_profile() -> void:
 	_combatant.save_current_profile()
 
 	# Add secondary job
-	job_system.assign_secondary_job(_combatant, "thief")
+	job_system.assign_secondary_job(_combatant, "rogue")
 	var new_key = _combatant.get_profile_key()
-	assert_eq(new_key, "fighter:thief")
+	assert_eq(new_key, "fighter:rogue")
 
 	# Fork (not reset!) - this is the key behavior
 	_combatant.fork_profile(old_key, new_key)
@@ -376,7 +376,7 @@ func test_secondary_job_remove_restores_primary_only_profile() -> void:
 	_combatant.save_current_profile()
 
 	# Add secondary, change equipment
-	job_system.assign_secondary_job(_combatant, "thief")
+	job_system.assign_secondary_job(_combatant, "rogue")
 	_combatant.equipped_weapon = "poison_dagger"
 	_combatant.save_current_profile()
 
@@ -470,19 +470,19 @@ func test_empty_job_profiles_dict() -> void:
 
 func test_profile_key_with_special_characters_in_job_id() -> void:
 	_combatant.job = {"id": "time_mage", "name": "Time Mage"}
-	_combatant.secondary_job_id = "black_mage"
+	_combatant.secondary_job_id = "mage"
 	var key = _combatant.get_profile_key()
-	assert_eq(key, "time_mage:black_mage", "Underscores in job IDs should work")
+	assert_eq(key, "time_mage:mage", "Underscores in job IDs should work")
 
 
 func test_all_job_combos_produce_unique_keys() -> void:
 	"""Verify that primary:secondary keys are unique for different combos"""
 	var combos = [
 		["fighter", ""],
-		["fighter", "thief"],
-		["thief", "fighter"],  # Reversed should be different
-		["white_mage", "black_mage"],
-		["black_mage", "white_mage"],
+		["fighter", "rogue"],
+		["rogue", "fighter"],  # Reversed should be different
+		["cleric", "mage"],
+		["mage", "cleric"],
 	]
 
 	var keys = {}

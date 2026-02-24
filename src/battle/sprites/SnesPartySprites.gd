@@ -8,16 +8,17 @@ class_name SnesPartySprites
 
 const _SU = preload("res://src/battle/sprites/SpriteUtils.gd")
 
-## Outfit type mapping for all 11 jobs
+## Outfit type mapping for all jobs
 const OUTFIT_MAP: Dictionary = {
 	"fighter": "armored",
 	"guardian": "armored",
-	"white_mage": "robed",
+	"cleric": "robed",
 	"summoner": "robed",
-	"thief": "cloaked",
+	"rogue": "cloaked",
 	"ninja": "cloaked",
-	"black_mage": "dark_robed",
+	"mage": "dark_robed",
 	"necromancer": "dark_robed",
+	"bard": "performer",
 	"scriptweaver": "tech",
 	"bossbinder": "tech",
 	"skiptrotter": "tech",
@@ -29,12 +30,13 @@ const OUTFIT_MAP: Dictionary = {
 const HEADGEAR_MAP: Dictionary = {
 	"fighter": "helmet_open",
 	"guardian": "full_helmet",
-	"white_mage": "hood",
+	"cleric": "hood",
 	"summoner": "circlet",
-	"thief": "bandana",
+	"rogue": "bandana",
 	"ninja": "mask",
-	"black_mage": "pointed_hat",
+	"mage": "pointed_hat",
 	"necromancer": "skull_hood",
+	"bard": "feathered_cap",
 	"scriptweaver": "goggles",
 	"bossbinder": "visor",
 	"skiptrotter": "cap",
@@ -46,12 +48,13 @@ const HEADGEAR_MAP: Dictionary = {
 const JOB_COLORS: Dictionary = {
 	"fighter": Color(0.2, 0.4, 0.8),
 	"guardian": Color(0.6, 0.55, 0.4),
-	"white_mage": Color(0.92, 0.9, 0.96),
+	"cleric": Color(0.92, 0.9, 0.96),
 	"summoner": Color(0.3, 0.7, 0.5),
-	"thief": Color(0.35, 0.28, 0.45),
+	"rogue": Color(0.35, 0.28, 0.45),
 	"ninja": Color(0.15, 0.15, 0.22),
-	"black_mage": Color(0.12, 0.1, 0.25),
+	"mage": Color(0.12, 0.1, 0.25),
 	"necromancer": Color(0.25, 0.08, 0.18),
+	"bard": Color(0.85, 0.72, 0.2),
 	"scriptweaver": Color(0.2, 0.5, 0.45),
 	"bossbinder": Color(0.55, 0.2, 0.2),
 	"skiptrotter": Color(0.5, 0.4, 0.15),
@@ -504,6 +507,8 @@ static func _draw_outfit(img: Image, ctx: Dictionary, cx: int, by: int, lean: in
 			_draw_tech_outfit(img, pal, cx, by, lean)
 		"time":
 			_draw_time_outfit(img, pal, cx, by, lean)
+		"performer":
+			_draw_performer_outfit(img, pal, cx, by, lean)
 		_:
 			_draw_armored_outfit(img, pal, cx, by, lean)
 
@@ -728,6 +733,57 @@ static func _draw_time_outfit(img: Image, pal: Array, cx: int, by: int, lean: in
 		_SU._pixel(img, bcx + x, by, pal[0])
 
 
+static func _draw_performer_outfit(img: Image, pal: Array, cx: int, by: int, lean: int) -> void:
+	"""Short doublet/vest with lute strap and half-cape (Bard)."""
+	var bcx = cx + lean / 4
+	# Fitted doublet/vest (shorter than robe, longer than armored)
+	for y in range(by - 19, by - 10):
+		var w = 5
+		_SU._pixel(img, bcx - w - 1, y, pal[0])
+		_SU._pixel(img, bcx + w + 1, y, pal[0])
+		for x in range(-w, w + 1):
+			var c = pal[2]
+			if y < by - 17:
+				c = pal[3]  # Highlight at shoulders
+			elif x > w - 2:
+				c = pal[1]  # Shadow on right
+			# V-neckline accent
+			if y == by - 18 and abs(x) <= 1:
+				c = pal[3]
+			_SU._pixel(img, bcx + x, y, c)
+	# Bottom of doublet
+	for x in range(-5, 6):
+		_SU._pixel(img, bcx + x, by - 10, pal[0])
+
+	# Lute strap across chest (diagonal, dark leather)
+	var strap_color = Color(0.45, 0.3, 0.2)
+	for i in range(8):
+		_SU._pixel(img, bcx - 4 + i, by - 18 + i, strap_color)
+
+	# Half-cape (left side only, shorter than full cape)
+	for y in range(by - 17, by - 6):
+		var cape_x = bcx - 7
+		_SU._pixel(img, cape_x, y, pal[1])
+		_SU._pixel(img, cape_x + 1, y, pal[0])
+
+	# Belt with buckle
+	for x in range(-5, 6):
+		_SU._pixel(img, bcx + x, by - 10, Color(0.45, 0.3, 0.2))
+	_SU._pixel(img, bcx, by - 10, Color(0.8, 0.7, 0.3))  # Gold buckle
+
+	# Legs (slim, performer style)
+	for leg_side in [-1, 1]:
+		var lx = bcx + leg_side * 3
+		for y in range(by - 9, by + 1):
+			_SU._pixel(img, lx - 1, y, pal[1])
+			_SU._pixel(img, lx, y, pal[2])
+		# Light boots
+		_SU._pixel(img, lx - 1, by, pal[0])
+		_SU._pixel(img, lx, by, pal[0])
+		_SU._pixel(img, lx - 2, by, pal[1])
+		_SU._pixel(img, lx + 1, by, pal[1])
+
+
 ## =====================
 ## LAYER: SECONDARY JOB ACCENTS
 ## =====================
@@ -802,6 +858,10 @@ static func _draw_accent_piece(img: Image, sec_pal: Array, sec_outfit: String, c
 			# Hourglass pip on belt
 			_SU._pixel(img, cx, by - 9, sec_pal[3])
 			_SU._pixel(img, cx, by - 8, sec_pal[2])
+		"performer":
+			# Musical note accent on shoulder
+			_SU._pixel(img, cx + 6, by - 17, sec_pal[3])
+			_SU._pixel(img, cx + 6, by - 16, sec_pal[2])
 
 
 static func _draw_trim(img: Image, sec_pal: Array, cx: int, by: int) -> void:
@@ -1044,6 +1104,25 @@ static func _draw_headgear(img: Image, ctx: Dictionary, cx: int, by: int, lean: 
 			# Bill
 			for x in range(-1, 7):
 				_SU._pixel(img, head_cx + x, head_cy - 4, pal[1])
+
+		"feathered_cap":
+			# Bard tilted beret with feather plume
+			# Beret body (tilted to right)
+			for y in range(head_cy - 7, head_cy - 3):
+				var w = 5 + (head_cy - 3 - y) / 2
+				for x in range(-w + 1, w + 2):
+					var c = pal[2] if y > head_cy - 6 else pal[3]
+					_SU._pixel(img, head_cx + x, y, c)
+			# Beret brim (slight droop on left)
+			for x in range(-5, 7):
+				_SU._pixel(img, head_cx + x, head_cy - 3, pal[1])
+			# Feather plume (arcing upward from right side)
+			var feather_color = Color(0.9, 0.3, 0.2)  # Red feather
+			var feather_highlight = Color(1.0, 0.5, 0.3)
+			for i in range(6):
+				_SU._pixel(img, head_cx + 5 + i / 2, head_cy - 7 - i, feather_color)
+				if i > 0 and i < 5:
+					_SU._pixel(img, head_cx + 4 + i / 2, head_cy - 7 - i, feather_highlight)
 
 		"astral_circlet":
 			# Time Mage circlet with hourglass motif

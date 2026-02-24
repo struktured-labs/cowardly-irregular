@@ -125,7 +125,7 @@ func test_round_trip_preserves_job_profiles() -> void:
 	c.equipped_passives.append("weapon_mastery")
 	c.save_current_profile()
 
-	c.secondary_job_id = "thief"
+	c.secondary_job_id = "rogue"
 	c.equipped_weapon = "iron_dagger"
 	c.equipped_passives.clear()
 	c.equipped_passives.append("steal_boost")
@@ -138,9 +138,9 @@ func test_round_trip_preserves_job_profiles() -> void:
 
 	assert_eq(restored.job_profiles.size(), 2, "Should restore 2 profiles")
 	assert_true(restored.job_profiles.has("fighter:"), "Should have fighter: profile")
-	assert_true(restored.job_profiles.has("fighter:thief"), "Should have fighter:thief profile")
+	assert_true(restored.job_profiles.has("fighter:rogue"), "Should have fighter:rogue profile")
 	assert_eq(restored.job_profiles["fighter:"]["weapon"], "iron_sword")
-	assert_eq(restored.job_profiles["fighter:thief"]["weapon"], "iron_dagger")
+	assert_eq(restored.job_profiles["fighter:rogue"]["weapon"], "iron_dagger")
 
 
 ## ---- Edge Cases ----

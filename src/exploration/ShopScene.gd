@@ -496,8 +496,8 @@ func _is_magic_shop() -> bool:
 func _get_eligible_jobs_for_school(school: String) -> Array:
 	"""Get job IDs that can learn spells from a magic school"""
 	match school:
-		"black": return ["black_mage"]
-		"white": return ["white_mage"]
+		"black": return ["mage"]
+		"white": return ["cleric"]
 	return []
 
 

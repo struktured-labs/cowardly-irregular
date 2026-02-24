@@ -47,10 +47,11 @@ enum HairStyle {
 
 ## Personality options (affects starting stats and item)
 enum Personality {
-	BRAVE,     # +2 ATK, starts with power_drink
-	CAUTIOUS,  # +2 DEF, starts with extra potions
-	SCHOLARLY, # +2 MAG, starts with ether
-	QUICK      # +2 SPD, starts with speed_tonic
+	BRAVE,       # +2 ATK, starts with power_drink
+	CAUTIOUS,    # +2 DEF, starts with extra potions
+	SCHOLARLY,   # +2 MAG, starts with ether
+	QUICK,       # +2 SPD, starts with speed_tonic
+	CHARISMATIC  # +2 MAG +1 SPD, starts with party_bell
 }
 
 ## Skin tone presets
@@ -84,7 +85,7 @@ var hair_style: HairStyle = HairStyle.SHORT
 var hair_color: Color = HAIR_COLORS[1]  # Brown
 var skin_tone: Color = SKIN_TONES[1]    # Fair
 var personality: Personality = Personality.BRAVE
-var starting_jobs: Array = ["fighter", "white_mage"]  # Array of job IDs
+var starting_jobs: Array = ["fighter", "cleric"]  # Array of job IDs
 
 
 func _init(char_name: String = "Hero") -> void:
@@ -145,6 +146,7 @@ static func get_personality_name(p: Personality) -> String:
 		Personality.CAUTIOUS: return "Cautious"
 		Personality.SCHOLARLY: return "Scholarly"
 		Personality.QUICK: return "Quick"
+		Personality.CHARISMATIC: return "Charismatic"
 	return "Unknown"
 
 
@@ -154,6 +156,7 @@ static func get_personality_description(p: Personality) -> String:
 		Personality.CAUTIOUS: return "+2 DEF, Extra Potions"
 		Personality.SCHOLARLY: return "+2 MAG, Ether"
 		Personality.QUICK: return "+2 SPD, Speed Tonic"
+		Personality.CHARISMATIC: return "+2 MAG +1 SPD, Party Bell"
 	return ""
 
 
@@ -168,6 +171,9 @@ func apply_stat_bonus(combatant: Combatant) -> void:
 			combatant.base_stats["magic"] = combatant.base_stats.get("magic", 10) + 2
 		Personality.QUICK:
 			combatant.base_stats["speed"] = combatant.base_stats.get("speed", 10) + 2
+		Personality.CHARISMATIC:
+			combatant.base_stats["magic"] = combatant.base_stats.get("magic", 10) + 2
+			combatant.base_stats["speed"] = combatant.base_stats.get("speed", 10) + 1
 	combatant.recalculate_stats()
 
 
@@ -182,6 +188,8 @@ func get_starting_items() -> Dictionary:
 			return {"ether": 3, "potion": 3}
 		Personality.QUICK:
 			return {"speed_tonic": 2, "potion": 3}
+		Personality.CHARISMATIC:
+			return {"party_bell": 1, "potion": 3, "ether": 1}
 	return {"potion": 3}
 
 
@@ -214,7 +222,7 @@ static func from_dict_with_script(data: Dictionary, script: GDScript):
 	var skin_arr = data.get("skin_tone", [0.91, 0.78, 0.65])
 	custom.skin_tone = Color(skin_arr[0], skin_arr[1], skin_arr[2])
 	custom.personality = data.get("personality", Personality.BRAVE)
-	custom.starting_jobs = data.get("starting_jobs", ["fighter", "white_mage"])
+	custom.starting_jobs = data.get("starting_jobs", ["fighter", "cleric"])
 	return custom
 
 
@@ -222,7 +230,7 @@ static func from_dict_with_script(data: Dictionary, script: GDScript):
 static func create_default_party_with_script(script: GDScript) -> Array:
 	var party: Array = []
 
-	# Hero - Fighter/Brave (determined look)
+	# Hero - Fighter/Rogue/Brave (determined look)
 	var hero = script.new("Hero")
 	hero.eye_shape = EyeShape.NORMAL
 	hero.eyebrow_style = EyebrowStyle.THICK
@@ -232,10 +240,10 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	hero.hair_color = HAIR_COLORS[1]  # Brown
 	hero.skin_tone = SKIN_TONES[1]
 	hero.personality = Personality.BRAVE
-	hero.starting_jobs = ["fighter", "thief"]
+	hero.starting_jobs = ["fighter", "rogue"]
 	party.append(hero)
 
-	# Mira - White Mage/Cautious (cheerful look)
+	# Mira - Cleric/Bard/Cautious (cheerful look)
 	var mira = script.new("Mira")
 	mira.eye_shape = EyeShape.WIDE
 	mira.eyebrow_style = EyebrowStyle.ARCHED
@@ -245,10 +253,10 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	mira.hair_color = HAIR_COLORS[3]  # Red
 	mira.skin_tone = SKIN_TONES[0]
 	mira.personality = Personality.CAUTIOUS
-	mira.starting_jobs = ["white_mage", "black_mage"]
+	mira.starting_jobs = ["cleric", "bard"]
 	party.append(mira)
 
-	# Zack - Thief/Quick (mysterious look)
+	# Zack - Rogue/Fighter/Quick (mysterious look)
 	var zack = script.new("Zack")
 	zack.eye_shape = EyeShape.NARROW
 	zack.eyebrow_style = EyebrowStyle.THIN
@@ -258,10 +266,10 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	zack.hair_color = HAIR_COLORS[0]  # Black
 	zack.skin_tone = SKIN_TONES[2]
 	zack.personality = Personality.QUICK
-	zack.starting_jobs = ["thief", "fighter"]
+	zack.starting_jobs = ["rogue", "fighter"]
 	party.append(zack)
 
-	# Vex - Black Mage/Scholarly (serious look)
+	# Vex - Mage/Cleric/Scholarly (serious look)
 	var vex = script.new("Vex")
 	vex.eye_shape = EyeShape.CLOSED
 	vex.eyebrow_style = EyebrowStyle.NORMAL
@@ -271,7 +279,7 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	vex.hair_color = HAIR_COLORS[4]  # Silver
 	vex.skin_tone = SKIN_TONES[3]
 	vex.personality = Personality.SCHOLARLY
-	vex.starting_jobs = ["black_mage", "white_mage"]
+	vex.starting_jobs = ["mage", "cleric"]
 	party.append(vex)
 
 	return party

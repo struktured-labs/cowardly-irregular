@@ -24,13 +24,18 @@
 			"sprite_type": "armored",
 			"outfit_color": [0.2, 0.4, 0.8],
 			"headgear": "helmet_open"
+		},
+		"evolution": {
+			"target": "guardian",
+			"level_required": 5,
+			"description": "Master the art of defense to become a Guardian"
 		}
 	},
-	"white_mage": {
-		"id": "white_mage",
-		"name": "White Mage",
+	"cleric": {
+		"id": "cleric",
+		"name": "Cleric",
 		"type": 0,
-		"description": "A healer who uses restorative magic. Low HP but high magic, keeps the party alive.",
+		"description": "A devoted healer who channels restorative light. Low HP but high magic, keeps the party alive through faith and prayer.",
 		"stat_modifiers": {
 			"max_hp": 80,
 			"max_mp": 70,
@@ -50,15 +55,20 @@
 		],
 		"visual": {
 			"sprite_type": "robed",
-			"outfit_color": [0.92, 0.9, 0.96],
+			"outfit_color": [0.95, 0.92, 0.85],
 			"headgear": "hood"
+		},
+		"evolution": {
+			"target": null,
+			"future_targets": ["high_priestess", "paladin"],
+			"description": "Evolution paths coming in a future update"
 		}
 	},
-	"black_mage": {
-		"id": "black_mage",
-		"name": "Black Mage",
+	"mage": {
+		"id": "mage",
+		"name": "Mage",
 		"type": 0,
-		"description": "A mage who wields destructive magic. Low HP but devastating magical damage.",
+		"description": "A scholar of the arcane arts who wields destructive elemental magic. Low HP but devastating magical damage.",
 		"stat_modifiers": {
 			"max_hp": 70,
 			"max_mp": 80,
@@ -80,13 +90,18 @@
 			"sprite_type": "dark_robed",
 			"outfit_color": [0.12, 0.1, 0.25],
 			"headgear": "pointed_hat"
+		},
+		"evolution": {
+			"target": null,
+			"future_targets": ["wizard", "dark_mage"],
+			"description": "Evolution paths coming in a future update"
 		}
 	},
-	"thief": {
-		"id": "thief",
-		"name": "Thief",
+	"rogue": {
+		"id": "rogue",
+		"name": "Rogue",
 		"type": 0,
-		"description": "A quick rogue who steals and evades. High speed, can steal items and gold from enemies.",
+		"description": "A cunning operative who strikes from the shadows. High speed, can steal items and gold from enemies.",
 		"stat_modifiers": {
 			"max_hp": 90,
 			"max_mp": 40,
@@ -108,6 +123,44 @@
 			"sprite_type": "cloaked",
 			"outfit_color": [0.35, 0.28, 0.45],
 			"headgear": "bandana"
+		},
+		"evolution": {
+			"target": "ninja",
+			"level_required": 5,
+			"description": "Embrace the shadows to become a Ninja"
+		}
+	},
+	"bard": {
+		"id": "bard",
+		"name": "Bard",
+		"type": 0,
+		"description": "A charismatic performer whose songs bolster allies and bewilder foes. Versatile support with party-wide buffs.",
+		"stat_modifiers": {
+			"max_hp": 85,
+			"max_mp": 65,
+			"attack": 9,
+			"defense": 8,
+			"magic": 14,
+			"speed": 14
+		},
+		"abilities": [
+			"battle_hymn",
+			"lullaby",
+			"discord",
+			"inspiring_melody"
+		],
+		"passive_abilities": [
+			"encore"
+		],
+		"visual": {
+			"sprite_type": "performer",
+			"outfit_color": [0.85, 0.72, 0.2],
+			"headgear": "feathered_cap"
+		},
+		"evolution": {
+			"target": null,
+			"future_targets": ["troubadour", "cantor"],
+			"description": "Evolution paths coming in a future update"
 		}
 	},
 	"scriptweaver": {
@@ -248,6 +301,7 @@
 			"chapter": 2,
 			"quest": "protectors_oath"
 		},
+		"evolves_from": "fighter",
 		"combat_mode": {
 			"type": "brave_default",
 			"max_bp": 4,
@@ -290,6 +344,7 @@
 			"id": "speed_demon",
 			"description": "Complete a dungeon in under 5 minutes"
 		},
+		"evolves_from": "rogue",
 		"overworld_abilities": {
 			"movement_speed_bonus": 1.5,
 			"can_skip_cutscenes": true,

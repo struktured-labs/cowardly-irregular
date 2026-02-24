@@ -1697,9 +1697,9 @@ func _get_counter_action(combatant: Combatant, strategy: String, allies: Array, 
 					"speed": _compute_action_speed(combatant, "ability", resist_abilities[0])
 				}
 		"focus_healer":
-			# Target the healer (usually Mira/white mage)
+			# Target the healer (usually Mira/cleric)
 			var healers = enemies.filter(func(e):
-				return e.job and e.job.get("id", "") in ["white_mage", "healer"]
+				return e.job and e.job.get("id", "") in ["cleric", "healer"]
 			)
 			if healers.size() > 0:
 				return {

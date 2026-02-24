@@ -71,7 +71,7 @@ const JOB_PALETTES: Dictionary = {
 		"boots_light": Color(0.35, 0.20, 0.42),
 		"outline": Color(0.12, 0.06, 0.15)
 	},
-	"thief": {
+	"rogue": {
 		"hair": Color(0.20, 0.18, 0.15),
 		"hair_light": Color(0.30, 0.28, 0.24),
 		"hair_dark": Color(0.12, 0.10, 0.08),
@@ -88,6 +88,42 @@ const JOB_PALETTES: Dictionary = {
 		"boots": Color(0.18, 0.18, 0.15),
 		"boots_light": Color(0.28, 0.28, 0.24),
 		"outline": Color(0.06, 0.06, 0.05)
+	},
+	"cleric": {
+		"hair": Color(0.45, 0.38, 0.30),
+		"hair_light": Color(0.58, 0.50, 0.42),
+		"hair_dark": Color(0.32, 0.26, 0.20),
+		"skin": Color(0.90, 0.80, 0.70),
+		"skin_light": Color(0.95, 0.88, 0.78),
+		"skin_shadow": Color(0.78, 0.68, 0.58),
+		"armor": Color(0.90, 0.88, 0.82),
+		"armor_light": Color(0.96, 0.94, 0.90),
+		"armor_mid": Color(0.92, 0.90, 0.85),
+		"armor_dark": Color(0.75, 0.72, 0.65),
+		"armor_shine": Color(1.0, 0.98, 0.95),
+		"pants": Color(0.80, 0.76, 0.68),
+		"pants_dark": Color(0.65, 0.62, 0.55),
+		"boots": Color(0.55, 0.50, 0.42),
+		"boots_light": Color(0.65, 0.60, 0.52),
+		"outline": Color(0.12, 0.10, 0.08)
+	},
+	"bard": {
+		"hair": Color(0.40, 0.30, 0.20),
+		"hair_light": Color(0.52, 0.42, 0.30),
+		"hair_dark": Color(0.28, 0.20, 0.12),
+		"skin": Color(0.85, 0.72, 0.58),
+		"skin_light": Color(0.92, 0.80, 0.66),
+		"skin_shadow": Color(0.72, 0.60, 0.48),
+		"armor": Color(0.85, 0.72, 0.20),
+		"armor_light": Color(0.95, 0.82, 0.35),
+		"armor_mid": Color(0.88, 0.75, 0.25),
+		"armor_dark": Color(0.65, 0.55, 0.15),
+		"armor_shine": Color(1.0, 0.90, 0.45),
+		"pants": Color(0.55, 0.45, 0.15),
+		"pants_dark": Color(0.40, 0.32, 0.10),
+		"boots": Color(0.45, 0.35, 0.15),
+		"boots_light": Color(0.58, 0.48, 0.22),
+		"outline": Color(0.10, 0.08, 0.04)
 	},
 	"dark_mage": {
 		"hair": Color(0.15, 0.12, 0.20),

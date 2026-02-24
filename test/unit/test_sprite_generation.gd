@@ -5,10 +5,10 @@ extends GutTest
 const SnesPartySpritesClass = preload("res://src/battle/sprites/SnesPartySprites.gd")
 const SpriteUtilsClass = preload("res://src/battle/sprites/SpriteUtils.gd")
 
-## All 11 job IDs from jobs.json
+## All 14 job IDs from jobs.json (includes speculator + bard)
 var ALL_JOBS: Array = [
-	"fighter", "white_mage", "black_mage", "thief",
-	"guardian", "ninja", "summoner",
+	"fighter", "cleric", "mage", "rogue", "bard",
+	"guardian", "ninja", "summoner", "speculator",
 	"time_mage", "necromancer", "scriptweaver", "bossbinder", "skiptrotter"
 ]
 
@@ -83,21 +83,21 @@ func test_customization_affects_sprite() -> void:
 
 
 func test_outfit_map_covers_all_jobs() -> void:
-	"""All 11 jobs should have outfit type mappings."""
+	"""All 14 jobs should have outfit type mappings."""
 	for job_id in ALL_JOBS:
 		assert_true(SnesPartySpritesClass.OUTFIT_MAP.has(job_id),
 			"OUTFIT_MAP should contain %s" % job_id)
 
 
 func test_headgear_map_covers_all_jobs() -> void:
-	"""All 11 jobs should have headgear mappings."""
+	"""All 14 jobs should have headgear mappings."""
 	for job_id in ALL_JOBS:
 		assert_true(SnesPartySpritesClass.HEADGEAR_MAP.has(job_id),
 			"HEADGEAR_MAP should contain %s" % job_id)
 
 
 func test_job_colors_map_covers_all_jobs() -> void:
-	"""All 11 jobs should have default color entries."""
+	"""All 14 jobs should have default color entries."""
 	for job_id in ALL_JOBS:
 		assert_true(SnesPartySpritesClass.JOB_COLORS.has(job_id),
 			"JOB_COLORS should contain %s" % job_id)
