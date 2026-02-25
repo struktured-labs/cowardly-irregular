@@ -903,7 +903,10 @@ func _prewarm_battle_sprites(enemies: Array) -> void:
 	so they are ready instantly when BattleScene._create_battle_sprites() runs."""
 	var monster_ids: Array = []
 	for enemy in enemies:
-		if enemy is Dictionary:
+		if enemy is String:
+			if enemy not in monster_ids:
+				monster_ids.append(enemy)
+		elif enemy is Dictionary:
 			var eid = enemy.get("id", enemy.get("type", ""))
 			if eid != "" and eid not in monster_ids:
 				monster_ids.append(eid)
@@ -1033,7 +1036,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	print("[GAMELOOP] Battle scene loaded")
 
 	# Start battle with pre-loaded scene, passing specific enemies if provided
-	await _start_battle_async(enemies)
+	await _start_battle_async(enemies, true)
 	print("[GAMELOOP] Battle scene started")
 
 	# Fade out transition to reveal battle
@@ -1043,7 +1046,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		print("[GAMELOOP] Fade out complete - battle should be visible")
 
 
-func _start_battle_async(specific_enemies: Array = []) -> void:
+func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
 
@@ -1062,11 +1065,18 @@ func _start_battle_async(specific_enemies: Array = []) -> void:
 		if cam and is_instance_valid(cam):
 			cam.zoom = Vector2(1.0, 1.0)
 
-	# Check if specific enemies were provided (e.g., boss battles)
-	var has_forced_enemies = specific_enemies.size() > 0 and specific_enemies[0] is String
+	# Extract enemy IDs from mixed formats (String or Dict)
+	var enemy_ids: Array = []
+	for entry in specific_enemies:
+		if entry is String:
+			enemy_ids.append(entry)
+		elif entry is Dictionary:
+			enemy_ids.append(entry.get("type", entry.get("id", "slime")))
+
+	var has_enemies = enemy_ids.size() > 0
 
 	# Check if this is a miniboss battle (every 3rd battle), but not if forced enemies
-	var is_miniboss_battle = not has_forced_enemies and (battles_won + 1) % 3 == 0 and battles_won > 0
+	var is_miniboss_battle = not has_enemies and (battles_won + 1) % 3 == 0 and battles_won > 0
 
 	# Get pre-loaded battle scene
 	var loaded_res = ResourceLoader.load_threaded_get("res://src/battle/BattleScene.tscn")
@@ -1076,11 +1086,16 @@ func _start_battle_async(specific_enemies: Array = []) -> void:
 	battle_scene.managed_by_game_loop = true
 	battle_scene.set_party(party)
 
-	# Handle forced enemies (boss battles)
-	if has_forced_enemies:
-		battle_scene.forced_enemies = specific_enemies
-		print("[BOSS] Forcing specific enemies: %s" % [specific_enemies])
-		# Boss battles use boss terrain
+	# Route enemies to the correct BattleScene property
+	if has_enemies and is_encounter:
+		# Random encounter from exploration — use encounter_enemies path
+		battle_scene.encounter_enemies = enemy_ids
+		print("[ENCOUNTER] Spawning encounter enemies: %s" % [enemy_ids])
+		battle_scene.set_terrain(_current_terrain)
+	elif has_enemies:
+		# Boss/scripted battle — use forced_enemies path
+		battle_scene.forced_enemies = enemy_ids
+		print("[BOSS] Forcing specific enemies: %s" % [enemy_ids])
 		battle_scene.set_terrain("boss")
 	elif is_miniboss_battle:
 		battle_scene.force_miniboss = true

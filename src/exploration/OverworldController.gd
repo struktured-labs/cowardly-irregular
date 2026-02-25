@@ -95,7 +95,7 @@ func _generate_enemies() -> Array:
 	var enemies = []
 	for i in range(count):
 		var enemy_type = _enemy_pool[randi() % _enemy_pool.size()]
-		enemies.append({"type": enemy_type})
+		enemies.append(enemy_type)
 	return enemies
 
 

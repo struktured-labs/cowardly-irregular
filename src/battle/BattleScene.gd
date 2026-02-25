@@ -92,6 +92,7 @@ var managed_by_game_loop: bool = false  # When true, don't handle restart intern
 var command_memory_enabled: bool = true  # Remember last command per character
 var force_miniboss: bool = false  # When true, spawn a miniboss instead of regular enemies
 var forced_enemies: Array = []  # When set, spawn these specific enemies (e.g., ["cave_rat_king"])
+var encounter_enemies: Array = []  # When set, spawn these encounter enemies from exploration (e.g., ["clockwork_sentinel", "steam_rat"])
 var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies from autogrind system
 
 ## Battle speed settings
@@ -607,6 +608,11 @@ func _spawn_enemies() -> void:
 		_spawn_from_data(autogrind_enemy_data)
 		return
 
+	# Check for encounter enemies from exploration (world-specific monsters)
+	if encounter_enemies.size() > 0:
+		_spawn_encounter_enemies()
+		return
+
 	# Check for forced specific enemies (e.g., boss battles)
 	if forced_enemies.size() > 0:
 		_spawn_forced_enemies()
@@ -862,6 +868,92 @@ func _spawn_forced_enemies() -> void:
 	else:
 		for enemy_name in enemy_names:
 			log_message("[color=yellow]%s appeared![/color]" % enemy_name)
+
+	_update_ui()
+
+
+func _spawn_encounter_enemies() -> void:
+	"""Spawn enemies from encounter_enemies IDs (world-specific random encounters)"""
+	var monsters_data = _load_monsters_data()
+
+	var valid_ids: Array = []
+	for eid in encounter_enemies:
+		if monsters_data.has(eid):
+			valid_ids.append(eid)
+		else:
+			push_warning("Unknown encounter enemy ID: %s — skipping" % eid)
+
+	# Fall back to hardcoded MONSTER_TYPES if no valid IDs found
+	if valid_ids.is_empty():
+		push_warning("No valid encounter enemies found, falling back to defaults")
+		encounter_enemies.clear()
+		_spawn_enemies()
+		return
+
+	var max_enemies = mini(valid_ids.size(), enemy_positions.size())
+	var enemy_names: Dictionary = {}
+
+	for i in range(max_enemies):
+		var enemy_id = valid_ids[i]
+		var monster_data = monsters_data[enemy_id]
+		var enemy = Combatant.new()
+
+		var stats = {
+			"name": monster_data.get("name", enemy_id),
+			"max_hp": monster_data["stats"].get("max_hp", 100),
+			"max_mp": monster_data["stats"].get("max_mp", 0),
+			"attack": monster_data["stats"].get("attack", 10),
+			"defense": monster_data["stats"].get("defense", 5),
+			"magic": monster_data["stats"].get("magic", 5),
+			"speed": monster_data["stats"].get("speed", 10)
+		}
+
+		# Count duplicates for suffixing (e.g., Clockwork Sentinel A, B, C)
+		var same_type_count = 0
+		for j in range(i):
+			if valid_ids[j] == enemy_id:
+				same_type_count += 1
+		var total_same = valid_ids.count(enemy_id)
+		if total_same > 1:
+			stats["name"] = stats["name"] + " " + ["A", "B", "C"][same_type_count % 3]
+
+		# Slight speed variation for turn order variety
+		stats["speed"] = stats["speed"] + i
+
+		enemy.initialize(stats)
+		add_child(enemy)
+
+		# Store monster type ID for sprite selection
+		enemy.set_meta("monster_type", enemy_id)
+
+		# Add weaknesses/resistances from monster data
+		for weakness in monster_data.get("weaknesses", []):
+			enemy.elemental_weaknesses.append(weakness)
+		for resistance in monster_data.get("resistances", []):
+			enemy.elemental_resistances.append(resistance)
+
+		# Connect signals
+		enemy.hp_changed.connect(_on_enemy_hp_changed.bind(i))
+		enemy.died.connect(_on_enemy_died.bind(i))
+
+		test_enemies.append(enemy)
+
+		# Track for encounter message
+		var display_name = monster_data.get("name", enemy_id)
+		if display_name in enemy_names:
+			enemy_names[display_name] += 1
+		else:
+			enemy_names[display_name] = 1
+
+	# Build encounter message
+	var msg_parts: Array = []
+	for enemy_name in enemy_names:
+		var count = enemy_names[enemy_name]
+		if count > 1:
+			msg_parts.append("%d %s" % [count, enemy_name + "s"])
+		else:
+			msg_parts.append("1 %s" % enemy_name)
+	log_message("[color=gray]%s appeared![/color]" % " and ".join(msg_parts))
 
 	_update_ui()
 
