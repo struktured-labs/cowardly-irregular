@@ -959,18 +959,18 @@ func _spawn_encounter_enemies() -> void:
 
 
 func _load_monsters_data() -> Dictionary:
-	"""Load monster definitions from data file"""
+	"""Get monster definitions from EncounterSystem autoload (cached at startup)"""
+	if EncounterSystem and not EncounterSystem.monster_database.is_empty():
+		return EncounterSystem.monster_database
+	# Fallback: load from disk if autoload unavailable (e.g., tests)
 	var file_path = "res://data/monsters.json"
 	if not FileAccess.file_exists(file_path):
 		return {}
-
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
 		return {}
-
 	var json_string = file.get_as_text()
 	file.close()
-
 	var json = JSON.new()
 	if json.parse(json_string) == OK:
 		return json.data

@@ -1525,8 +1525,9 @@ func create_tileset() -> TileSet:
 	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	# Debug: Save atlas to disk
-	atlas_img.save_png("user://debug_suburban_atlas.png")
-	print("Suburban atlas saved (size: %dx%d, %d tiles)" % [atlas_img.get_width(), atlas_img.get_height(), tile_order.size()])
+	if OS.is_debug_build():
+		atlas_img.save_png("user://debug_suburban_atlas.png")
+		print("Suburban atlas saved (size: %dx%d, %d tiles)" % [atlas_img.get_width(), atlas_img.get_height(), tile_order.size()])
 
 	# Create all tiles in atlas
 	for i in range(tile_order.size()):

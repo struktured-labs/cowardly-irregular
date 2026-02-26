@@ -41,10 +41,26 @@ static func clear_sprite_cache() -> void:
 	_sprite_cache.clear()
 
 
-## Load equipment data from JSON
+## Load equipment data - delegates to EquipmentSystem autoload when available
 static func _load_equipment_data() -> void:
 	if _equipment_loaded:
 		return
+	# Prefer EquipmentSystem autoload (already cached at startup)
+	var equip_sys = Engine.get_singleton("EquipmentSystem") if Engine.has_singleton("EquipmentSystem") else null
+	if equip_sys == null:
+		# Try autoload tree access
+		var tree = Engine.get_main_loop()
+		if tree and tree is SceneTree and tree.root.has_node("EquipmentSystem"):
+			equip_sys = tree.root.get_node("EquipmentSystem")
+	if equip_sys and not equip_sys.weapons.is_empty():
+		_equipment_data = {
+			"weapons": equip_sys.weapons,
+			"armors": equip_sys.armors,
+			"accessories": equip_sys.accessories
+		}
+		_equipment_loaded = true
+		return
+	# Fallback: load from disk (tests or early init)
 	var file = FileAccess.open("res://data/equipment.json", FileAccess.READ)
 	if file:
 		var json = JSON.new()

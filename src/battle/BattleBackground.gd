@@ -35,6 +35,11 @@ const TIME_TINTS = {
 	TimeOfDay.NIGHT: {"r": -0.10, "g": -0.06, "b": 0.10, "brightness": -0.15},
 }
 
+## Gradient texture cache: keyed on (terrain, time_of_day, viewport_w, viewport_h)
+## Max 20 entries (5 terrains x 4 times), avoids ~1.8M set_pixel() calls per draw
+static var _gradient_cache: Dictionary = {}
+const _GRADIENT_CACHE_MAX: int = 20
+
 ## Parallax constants
 const PARALLAX_RANGE = 30.0
 const PARALLAX_SPEED_FAR = 3.0
@@ -289,37 +294,75 @@ func _add_to_layer(element: Node, layer: Control) -> void:
 
 
 func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
-	"""Draw SNES-quality dithered gradient background"""
+	"""Draw SNES-quality dithered gradient background (cached)"""
+	var cache_key = "%d_%d_%d_%d" % [current_terrain, current_time_of_day, int(viewport_size.x), int(viewport_size.y)]
+
 	var sky_height = int(viewport_size.y * 0.65)
-	var ground_height = int(viewport_size.y) - sky_height
 	var w = int(viewport_size.x)
 
-	var sky_mid = palette.get("sky_mid", palette["sky_top"].lerp(palette["sky_bottom"], 0.5))
+	# Check cache for pre-rendered sky+ground textures
+	if _gradient_cache.has(cache_key):
+		var cached = _gradient_cache[cache_key]
+		var sky_rect = TextureRect.new()
+		sky_rect.texture = cached["sky_tex"]
+		sky_rect.position = Vector2.ZERO
+		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sky_rect)
 
-	# Render sky as a dithered image texture (authentic SNES banding)
-	var sky_img = Image.create(w, sky_height, false, Image.FORMAT_RGBA8)
-	for y in range(sky_height):
-		var t = float(y) / max(sky_height - 1, 1)
-		var c1: Color
-		var c2: Color
-		var local_t: float
-		if t < 0.5:
-			c1 = palette["sky_top"]
-			c2 = sky_mid
-			local_t = t * 2.0
-		else:
-			c1 = sky_mid
-			c2 = palette["sky_bottom"]
-			local_t = (t - 0.5) * 2.0
-		for x in range(w):
-			sky_img.set_pixel(x, y, _dither_blend(c1, c2, local_t, x, y))
+		var ground_rect = TextureRect.new()
+		ground_rect.texture = cached["ground_tex"]
+		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(ground_rect)
+	else:
+		var ground_height = int(viewport_size.y) - sky_height
+		var sky_mid = palette.get("sky_mid", palette["sky_top"].lerp(palette["sky_bottom"], 0.5))
 
-	var sky_tex = ImageTexture.create_from_image(sky_img)
-	var sky_rect = TextureRect.new()
-	sky_rect.texture = sky_tex
-	sky_rect.position = Vector2.ZERO
-	sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(sky_rect)
+		# Render sky as a dithered image texture (authentic SNES banding)
+		var sky_img = Image.create(w, sky_height, false, Image.FORMAT_RGBA8)
+		for y in range(sky_height):
+			var t = float(y) / max(sky_height - 1, 1)
+			var c1: Color
+			var c2: Color
+			var local_t: float
+			if t < 0.5:
+				c1 = palette["sky_top"]
+				c2 = sky_mid
+				local_t = t * 2.0
+			else:
+				c1 = sky_mid
+				c2 = palette["sky_bottom"]
+				local_t = (t - 0.5) * 2.0
+			for x in range(w):
+				sky_img.set_pixel(x, y, _dither_blend(c1, c2, local_t, x, y))
+
+		var sky_tex = ImageTexture.create_from_image(sky_img)
+		var sky_rect = TextureRect.new()
+		sky_rect.texture = sky_tex
+		sky_rect.position = Vector2.ZERO
+		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sky_rect)
+
+		# Ground as dithered image texture
+		var ground_dark = palette.get("ground_dark", palette["ground"].darkened(0.2))
+		var ground_light = palette.get("ground_light", palette["ground"].lightened(0.15))
+		var ground_img = Image.create(w, ground_height, false, Image.FORMAT_RGBA8)
+		for y in range(ground_height):
+			var t = float(y) / max(ground_height - 1, 1)
+			for x in range(w):
+				ground_img.set_pixel(x, y, _dither_blend(ground_light, ground_dark, t, x, y))
+
+		var ground_tex = ImageTexture.create_from_image(ground_img)
+		var ground_rect = TextureRect.new()
+		ground_rect.texture = ground_tex
+		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(ground_rect)
+
+		# Store in cache (evict oldest if full)
+		if _gradient_cache.size() >= _GRADIENT_CACHE_MAX:
+			_gradient_cache.erase(_gradient_cache.keys()[0])
+		_gradient_cache[cache_key] = {"sky_tex": sky_tex, "ground_tex": ground_tex}
 
 	# Horizon glow line (wider for dawn/dusk)
 	var horizon_color = palette.get("horizon", palette["sky_bottom"].lightened(0.2))
@@ -341,22 +384,6 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 	horizon_dim.size = Vector2(viewport_size.x, horizon_dim_h)
 	horizon_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(horizon_dim)
-
-	# Ground as dithered image texture
-	var ground_dark = palette.get("ground_dark", palette["ground"].darkened(0.2))
-	var ground_light = palette.get("ground_light", palette["ground"].lightened(0.15))
-	var ground_img = Image.create(w, ground_height, false, Image.FORMAT_RGBA8)
-	for y in range(ground_height):
-		var t = float(y) / max(ground_height - 1, 1)
-		for x in range(w):
-			ground_img.set_pixel(x, y, _dither_blend(ground_light, ground_dark, t, x, y))
-
-	var ground_tex = ImageTexture.create_from_image(ground_img)
-	var ground_rect = TextureRect.new()
-	ground_rect.texture = ground_tex
-	ground_rect.position = Vector2(0, sky_height)
-	ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(ground_rect)
 
 
 func _draw_plains_elements(viewport_size: Vector2, palette: Dictionary) -> void:
