@@ -225,7 +225,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	if not character:
 		return panel
@@ -267,7 +267,7 @@ func _create_abilities_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -366,7 +366,7 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -435,7 +435,7 @@ func _create_passives_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -520,7 +520,7 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -609,11 +609,6 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 			y_offset += 14
 
 	return panel
-
-
-func _create_border(parent: Control, panel_size: Vector2) -> void:
-	"""Add beveled retro border"""
-	RetroPanel.add_border(parent, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _input(event: InputEvent) -> void:

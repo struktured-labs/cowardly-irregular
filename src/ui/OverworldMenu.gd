@@ -124,7 +124,7 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	panel.add_child(panel_bg)
 
 	# Border
-	_create_border(panel)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -252,7 +252,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	return container
 
 
-func _create_menu_panel(_panel_size: Vector2) -> Control:
+func _create_menu_panel(panel_size: Vector2) -> Control:
 	"""Create the menu options panel"""
 	var panel = Control.new()
 
@@ -262,7 +262,7 @@ func _create_menu_panel(_panel_size: Vector2) -> Control:
 	panel.add_child(panel_bg)
 
 	# Border
-	_create_border(panel)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -333,11 +333,6 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	item.add_child(label)
 
 	return item
-
-
-func _create_border(parent: Control) -> void:
-	"""Add beveled retro border to a panel"""
-	RetroPanel.add_border(parent, parent.size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _get_job_color(member: Combatant) -> Color:
