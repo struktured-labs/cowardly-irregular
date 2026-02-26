@@ -1,4 +1,6 @@
 {
-	"_comment": "Hybrid sprite manifest - maps job IDs to external sprite sheet paths. Populated when artist sheets are ready.",
-	"sheets": {}
+	"_comment": "Hybrid sprite manifest - maps IDs to external sprite sheet paths. Populated when artist sheets are ready.",
+	"sheets": {},
+	"party_sheets": {},
+	"monster_sheets": {}
 }
