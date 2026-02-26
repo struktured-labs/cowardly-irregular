@@ -1,11 +1,9 @@
-extends Node
+extends BaseTileGenerator
 class_name IndustrialTileGenerator
 
 ## IndustrialTileGenerator - Procedurally generates 32x32 industrial/factory tiles
 ## 32-bit era aesthetic (PS1/Saturn) - darker saturated palette with rust, steel, soot
 ## Area 3: "Optimization as Entropy" - optimized for PRODUCTION at the cost of individuality
-
-const TILE_SIZE: int = 32
 
 ## Tile types for Area 3 (Industrial Factory District)
 enum TileType {
@@ -208,19 +206,38 @@ const PALETTES: Dictionary = {
 }
 
 ## Cached tiles to avoid regenerating
-var _tile_cache: Dictionary = {}
+## --- BaseTileGenerator virtual method overrides ---
 
+func _get_palettes() -> Dictionary:
+	return PALETTES
 
-## Generate a tile texture for the given type
-func generate_tile(type: TileType, variant: int = 0) -> ImageTexture:
-	var cache_key = "%d_%d" % [type, variant]
-	if _tile_cache.has(cache_key):
-		return _tile_cache[cache_key]
+func _get_default_tile_type() -> int:
+	return TileType.FACTORY_FLOOR
 
-	var img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	var palette = PALETTES.get(type, PALETTES[TileType.FACTORY_FLOOR])
+func _get_tile_order() -> Array:
+	return [
+		# Row 0: Ground/structure
+		TileType.FACTORY_FLOOR, TileType.IRON_GRATING, TileType.BRICK_WALL, TileType.SMOKESTACK,
+		# Row 1: Mechanical/transport
+		TileType.CONVEYOR_BELT, TileType.RAIL_TRACK, TileType.CARGO_CONTAINER, TileType.STEAM_VENT,
+		# Row 2: Buildings/hazards
+		TileType.WORKER_HOUSING, TileType.GUARD_POST, TileType.DRAINAGE_CHANNEL, TileType.CHEMICAL_BARREL,
+		# Row 3: Infrastructure/misc
+		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE, TileType.BREAK_ROOM_FLOOR
+	]
 
-	match type:
+func _get_impassable_types() -> Array:
+	return [
+		TileType.BRICK_WALL, TileType.SMOKESTACK, TileType.CARGO_CONTAINER,
+		TileType.WORKER_HOUSING, TileType.GUARD_POST, TileType.CHEMICAL_BARREL,
+		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE
+	]
+
+func _get_debug_atlas_name() -> String:
+	return "debug_industrial_atlas"
+
+func _draw_tile(img: Image, tile_type: int, palette: Dictionary, variant: int) -> void:
+	match tile_type:
 		TileType.FACTORY_FLOOR:
 			_draw_factory_floor(img, palette, variant)
 		TileType.IRON_GRATING:
@@ -253,10 +270,6 @@ func generate_tile(type: TileType, variant: int = 0) -> ImageTexture:
 			_draw_chain_link_fence(img, palette, variant)
 		TileType.BREAK_ROOM_FLOOR:
 			_draw_break_room_floor(img, palette, variant)
-
-	var texture = ImageTexture.create_from_image(img)
-	_tile_cache[cache_key] = texture
-	return texture
 
 
 ## Gray concrete factory floor with oil stains, bolt patterns, tire marks, footprints, worn paths
@@ -1879,93 +1892,6 @@ func _draw_break_room_floor(img: Image, palette: Dictionary, variant: int) -> vo
 				if px < TILE_SIZE:
 					var current = img.get_pixel(px, y)
 					img.set_pixel(px, y, current.lightened(0.03))
-
-
-## Create tileset with all industrial tiles
-func create_tileset() -> TileSet:
-	print("Creating industrial factory tileset...")
-	var tileset = TileSet.new()
-	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
-
-	# Add physics layer for collision
-	tileset.add_physics_layer()
-	tileset.set_physics_layer_collision_layer(0, 1)
-	tileset.set_physics_layer_collision_mask(0, 1)
-
-	# Create atlas source from generated tiles
-	var atlas = TileSetAtlasSource.new()
-
-	# 4x4 atlas (16 tiles)
-	var atlas_cols = 4
-	var atlas_rows = 4
-	var atlas_img = Image.create(TILE_SIZE * atlas_cols, TILE_SIZE * atlas_rows, false, Image.FORMAT_RGBA8)
-
-	# Tile order matching enum
-	var tile_order = [
-		# Row 0: Ground/structure
-		TileType.FACTORY_FLOOR, TileType.IRON_GRATING, TileType.BRICK_WALL, TileType.SMOKESTACK,
-		# Row 1: Mechanical/transport
-		TileType.CONVEYOR_BELT, TileType.RAIL_TRACK, TileType.CARGO_CONTAINER, TileType.STEAM_VENT,
-		# Row 2: Buildings/hazards
-		TileType.WORKER_HOUSING, TileType.GUARD_POST, TileType.DRAINAGE_CHANNEL, TileType.CHEMICAL_BARREL,
-		# Row 3: Infrastructure/misc
-		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE, TileType.BREAK_ROOM_FLOOR
-	]
-
-	# Impassable tile types (need collision)
-	var impassable_types = [
-		TileType.BRICK_WALL, TileType.SMOKESTACK, TileType.CARGO_CONTAINER,
-		TileType.WORKER_HOUSING, TileType.GUARD_POST, TileType.CHEMICAL_BARREL,
-		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE
-	]
-
-	for i in range(tile_order.size()):
-		var tile_type = tile_order[i]
-		var tile_tex = generate_tile(tile_type, 0)
-		var tile_img = tile_tex.get_image()
-
-		var atlas_x = (i % atlas_cols) * TILE_SIZE
-		var atlas_y = (i / atlas_cols) * TILE_SIZE
-
-		for y in range(TILE_SIZE):
-			for x in range(TILE_SIZE):
-				atlas_img.set_pixel(atlas_x + x, atlas_y + y, tile_img.get_pixel(x, y))
-
-	var atlas_texture = ImageTexture.create_from_image(atlas_img)
-	atlas.texture = atlas_texture
-	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-
-	# Debug: Save atlas to disk
-	if OS.is_debug_build():
-		atlas_img.save_png("user://debug_industrial_atlas.png")
-		print("Industrial atlas saved (size: %dx%d, %d tiles)" % [atlas_img.get_width(), atlas_img.get_height(), tile_order.size()])
-
-	# Create all tiles in atlas
-	for i in range(tile_order.size()):
-		var coords = Vector2i(i % atlas_cols, i / atlas_cols)
-		atlas.create_tile(coords)
-
-	# Add atlas source to tileset
-	tileset.add_source(atlas)
-
-	# Add collision for impassable tiles
-	for i in range(tile_order.size()):
-		var tile_type = tile_order[i]
-		if tile_type in impassable_types:
-			var coords = Vector2i(i % atlas_cols, i / atlas_cols)
-			var tile_data = atlas.get_tile_data(coords, 0)
-			if tile_data:
-				var half = TILE_SIZE / 2.0
-				var polygon = PackedVector2Array([
-					Vector2(-half, -half),
-					Vector2(half, -half),
-					Vector2(half, half),
-					Vector2(-half, half)
-				])
-				tile_data.add_collision_polygon(0)
-				tile_data.set_collision_polygon_points(0, 0, polygon)
-
-	return tileset
 
 
 ## Helper to get tile ID for a given type (for painting in TileMap)
