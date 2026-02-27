@@ -31,6 +31,7 @@ const BASE_MENU_OPTIONS = [
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
+	{"id": "help", "label": "Help", "enabled": true},
 	{"id": "settings", "label": "Settings", "enabled": true},
 ]
 
@@ -464,6 +465,8 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_save_screen(SaveScreenClass.Mode.SAVE)
 		"load":
 			_open_save_screen(SaveScreenClass.Mode.LOAD)
+		"help":
+			_open_help_menu()
 		"settings":
 			_open_settings()
 		"teleport":
@@ -499,6 +502,16 @@ func _on_save_completed(_slot: int) -> void:
 func _on_load_completed(_slot: int) -> void:
 	"""Load completed - close menu and refresh game state"""
 	_close_menu()
+
+
+func _open_help_menu() -> void:
+	"""Open the tutorial/help menu"""
+	_submenu_open = true
+	var help_menu = TutorialHelpMenu.new()
+	help_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	help_menu.closed.connect(_on_submenu_closed)
+	add_child(help_menu)
+	_hide_main_ui(help_menu)
 
 
 func _open_settings() -> void:

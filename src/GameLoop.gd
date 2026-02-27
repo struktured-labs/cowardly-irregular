@@ -37,6 +37,10 @@ var equipment_pool: Dictionary = {
 var _autobattle_editor: Control = null
 var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 
+## Help menu overlay
+var _help_menu: Control = null
+var _help_menu_layer: CanvasLayer = null
+
 
 ## Exploration state
 var _current_map_id: String = "overworld"
@@ -92,6 +96,12 @@ func _input(event: InputEvent) -> void:
 		if event.is_action_pressed("ui_cancel"):
 			_stop_autogrind("Manual stop")
 			get_viewport().set_input_as_handled()
+		return
+
+	# F1 = Open help/tutorial menu (available in all states)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F1:
+		_toggle_help_menu()
+		get_viewport().set_input_as_handled()
 		return
 
 	# F5 = Open autobattle editor for current/first player
@@ -241,6 +251,49 @@ func _on_autobattle_editor_closed() -> void:
 	# Show battle menu again
 	_set_battle_menu_visible(true)
 	# Resume exploration if we were in exploration mode
+	if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("resume"):
+		_exploration_scene.resume()
+
+
+func _toggle_help_menu() -> void:
+	"""Toggle the help/tutorial menu overlay"""
+	if _help_menu and is_instance_valid(_help_menu):
+		_help_menu.queue_free()
+		_help_menu = null
+		if _help_menu_layer and is_instance_valid(_help_menu_layer):
+			_help_menu_layer.queue_free()
+			_help_menu_layer = null
+		# Resume exploration if needed
+		if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("resume"):
+			_exploration_scene.resume()
+		return
+
+	# Pause exploration while help is open
+	if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
+	# Create CanvasLayer for the help menu
+	_help_menu_layer = CanvasLayer.new()
+	_help_menu_layer.layer = 50
+	add_child(_help_menu_layer)
+
+	_help_menu = TutorialHelpMenu.new()
+	_help_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_help_menu_layer.add_child(_help_menu)
+	_help_menu.closed.connect(_on_help_menu_closed)
+	SoundManager.play_ui("menu_open")
+	print("[HELP] Tutorial & Help menu opened (F1 to close)")
+
+
+func _on_help_menu_closed() -> void:
+	"""Handle help menu close"""
+	if _help_menu and is_instance_valid(_help_menu):
+		_help_menu.queue_free()
+		_help_menu = null
+	if _help_menu_layer and is_instance_valid(_help_menu_layer):
+		_help_menu_layer.queue_free()
+		_help_menu_layer = null
+	# Resume exploration if needed
 	if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 
