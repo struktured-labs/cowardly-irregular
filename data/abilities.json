@@ -136,6 +136,7 @@
 		"id": "steal",
 		"name": "Steal",
 		"type": "support",
+		"effect": "steal",
 		"animation": "steal",
 		"mp_cost": 4,
 		"description": "Attempt to steal an item or gold from enemy",

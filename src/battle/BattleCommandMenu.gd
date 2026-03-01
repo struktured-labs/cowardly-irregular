@@ -99,7 +99,13 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 		if combatant.last_attack_selection != "":
 			submenu_memory["attack_menu"] = combatant.last_attack_selection
 		if combatant.last_ability_selection != "":
-			submenu_memory["ability_menu"] = combatant.last_ability_selection
+			# Validate the remembered ability is available to this character
+			var remembered_ability_id = combatant.last_ability_selection.replace("ability_menu_", "")
+			if JobSystem.can_use_ability(combatant, remembered_ability_id):
+				submenu_memory["ability_menu"] = combatant.last_ability_selection
+			else:
+				print("[CMD MEM] Skipping invalid ability memory '%s' for %s" % [remembered_ability_id, combatant.combatant_name])
+				combatant.last_ability_selection = ""
 		if combatant.last_item_selection != "":
 			submenu_memory["item_menu"] = combatant.last_item_selection
 		print("[CMD MEM] Submenu memory: %s" % str(submenu_memory))

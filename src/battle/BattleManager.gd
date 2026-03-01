@@ -1401,6 +1401,17 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				volatility.shift_band(-1)
 				caster.gain_ap(1)
 				battle_log_message.emit("[color=green]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % caster.combatant_name)
+		"steal":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					if randf() < success_rate:
+						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / 50.0))
+						GameState.add_gold(gold_amount)
+						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
+						battle_log_message.emit("[color=yellow]%s stole %d gold from %s![/color]" % [caster.combatant_name, gold_amount, target.combatant_name])
+					else:
+						print("  → %s failed to steal from %s!" % [caster.combatant_name, target.combatant_name])
+						battle_log_message.emit("[color=gray]%s couldn't steal anything from %s.[/color]" % [caster.combatant_name, target.combatant_name])
 		_:
 			print("  → Unknown support effect: %s" % effect)
 

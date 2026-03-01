@@ -662,7 +662,7 @@ func _create_party() -> void:
 	JobSystem.assign_job(zack, "rogue")
 	JobSystem.assign_secondary_job(zack, "fighter")
 	EquipmentSystem.equip_weapon(zack, "iron_dagger")
-	EquipmentSystem.equip_armor(zack, "rogue_garb")
+	EquipmentSystem.equip_armor(zack, "thief_garb")
 	EquipmentSystem.equip_accessory(zack, "speed_boots")
 	zack.learn_passive("critical_strike")
 	zack.learn_passive("speed_boost")
