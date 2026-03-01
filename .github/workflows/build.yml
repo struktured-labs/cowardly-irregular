@@ -1,0 +1,49 @@
+name: Build & Export
+
+on:
+  push:
+    branches: [main, perf-improvements]
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.3"
+  EXPORT_NAME: cowardly-irregular
+
+jobs:
+  export-linux:
+    name: Linux Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p /github/home/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* \
+             /github/home/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ 2>/dev/null || true
+
+      - name: Import project assets
+        run: |
+          godot --headless --import 2>&1 | tail -5 || true
+
+      - name: Export Linux build
+        run: |
+          mkdir -p build/linux
+          godot --headless --export-release "Linux" build/linux/${EXPORT_NAME}.x86_64
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-${{ github.sha }}
+          path: build/linux/
+          retention-days: 14
+
+      - name: Create release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/linux/*
+          generate_release_notes: true
