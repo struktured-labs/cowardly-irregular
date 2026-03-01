@@ -2,7 +2,6 @@
 .godot/
 .import/
 export.cfg
-export_presets.cfg
 
 # Mono-specific ignores
 .mono/
@@ -25,6 +24,7 @@ $RECYCLE.BIN/
 .directory
 
 # Build artifacts
+build/
 builds/
 *.x86_64
 *.exe
@@ -48,3 +48,6 @@ addons/gut/.gut_editor_*
 *.gd.uid
 
 tmp/
+setenv.sh
+.last_fetched_run
+.last_synced_sha
