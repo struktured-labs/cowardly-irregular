@@ -3083,5 +3083,1198 @@
 			"counter",
 			"adapt"
 		]
+	},
+	"masterite_warden_medieval": {
+		"id": "masterite_warden_medieval",
+		"name": "Warden of the Old Guard",
+		"description": "An ancient knight who has guarded the world's balance since its creation. Its armor is scarred from a thousand tests of strength.",
+		"level": 7,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "warden",
+		"masterite_phase": 1,
+		"stats": {
+			"max_hp": 550,
+			"max_mp": 60,
+			"attack": 38,
+			"defense": 32,
+			"magic": 20,
+			"speed": 12
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_iron_guard",
+			"masterite_crushing_blow",
+			"masterite_endurance_test",
+			"power_strike"
+		],
+		"exp_reward": 200,
+		"gold_reward": 150,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.6
+			}
+		],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [
+			"physical"
+		],
+		"one_shot": {
+			"hp_threshold": 550,
+			"setup_hint": "High defense - debuff it first, then stack attack buffs and advance.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A towering knight blocks the path, its ancient armor scarred and dented from countless battles*",
+				"Warden of the Old Guard: I am the Warden.",
+				"Warden of the Old Guard: The Master placed me here to test your resolve.",
+				"Warden of the Old Guard: Show me your strength... or perish."
+			]
+		}
+	},
+	"masterite_arbiter_medieval": {
+		"id": "masterite_arbiter_medieval",
+		"name": "Arbiter of Steel",
+		"description": "A dual-wielding swordmaster who measures every blow with mathematical precision. It seeks the perfect strike.",
+		"level": 8,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "arbiter",
+		"masterite_phase": 1,
+		"stats": {
+			"max_hp": 480,
+			"max_mp": 50,
+			"attack": 48,
+			"defense": 22,
+			"magic": 22,
+			"speed": 16
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_precise_strike",
+			"masterite_measured_blow",
+			"masterite_counter_stance",
+			"cleave"
+		],
+		"exp_reward": 220,
+		"gold_reward": 160,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "speed_boots",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [],
+		"one_shot": {
+			"hp_threshold": 480,
+			"setup_hint": "Low defense but high damage. Race it down before its counter stance activates.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A figure steps forward, twin blades drawn with mechanical precision*",
+				"Arbiter of Steel: The Master demands precision.",
+				"Arbiter of Steel: Show me your sharpest edge...",
+				"Arbiter of Steel: ...or be found wanting."
+			]
+		}
+	},
+	"masterite_tempo_medieval": {
+		"id": "masterite_tempo_medieval",
+		"name": "Tempo of the Hunt",
+		"description": "A swift ranger who appears and vanishes like the wind. It tests whether you can match its relentless pace.",
+		"level": 7,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "tempo",
+		"masterite_phase": 1,
+		"stats": {
+			"max_hp": 420,
+			"max_mp": 70,
+			"attack": 35,
+			"defense": 18,
+			"magic": 28,
+			"speed": 22
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_haste",
+			"masterite_slow",
+			"masterite_quick_strike",
+			"masterite_time_tax"
+		],
+		"exp_reward": 200,
+		"gold_reward": 140,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "bat_wing",
+				"chance": 0.5
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"wind"
+		],
+		"one_shot": {
+			"hp_threshold": 420,
+			"setup_hint": "Very fast - use speed debuffs or time your advance carefully.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A blur of motion resolves into a lithe ranger, bow already drawn*",
+				"Tempo of the Hunt: Speed is mastery. The Master taught me this.",
+				"Tempo of the Hunt: Can you keep pace...",
+				"Tempo of the Hunt: ...or will time leave you behind?"
+			]
+		}
+	},
+	"masterite_curator_medieval": {
+		"id": "masterite_curator_medieval",
+		"name": "Curator of the Flame",
+		"description": "A robed figure wreathed in controlled flame. It judges how wisely you spend your power.",
+		"level": 8,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "curator",
+		"masterite_phase": 1,
+		"stats": {
+			"max_hp": 500,
+			"max_mp": 100,
+			"attack": 28,
+			"defense": 24,
+			"magic": 40,
+			"speed": 14
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_mana_drain",
+			"masterite_dispel",
+			"masterite_audit",
+			"fire"
+		],
+		"exp_reward": 220,
+		"gold_reward": 170,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "ether",
+				"chance": 0.5
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"fire"
+		],
+		"one_shot": {
+			"hp_threshold": 500,
+			"setup_hint": "It drains MP - go physical or burst it down before your casters run dry.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Flames swirl into a controlled spiral, forming a robed figure*",
+				"Curator of the Flame: Resources are finite. The Master knows this truth.",
+				"Curator of the Flame: Do you waste what you're given...",
+				"Curator of the Flame: ...or wield it with purpose?"
+			]
+		}
+	},
+	"masterite_warden_suburban": {
+		"id": "masterite_warden_suburban",
+		"name": "Warden of Routine",
+		"description": "An imposing hall monitor who has maintained order in this suburban purgatory for decades. Rules are rules.",
+		"level": 10,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "warden",
+		"masterite_phase": 2,
+		"stats": {
+			"max_hp": 700,
+			"max_mp": 70,
+			"attack": 42,
+			"defense": 38,
+			"magic": 25,
+			"speed": 13
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_iron_guard",
+			"masterite_crushing_blow",
+			"masterite_endurance_test",
+			"masterite_judgment"
+		],
+		"exp_reward": 350,
+		"gold_reward": 250,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_badge",
+				"chance": 0.4
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.6
+			}
+		],
+		"weaknesses": [
+			"dark"
+		],
+		"resistances": [
+			"physical",
+			"holy"
+		],
+		"one_shot": {
+			"hp_threshold": 700,
+			"setup_hint": "Extremely tanky. Use magic attacks and dark-element abilities.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A massive figure in a hall monitor's vest blocks the corridor, clipboard in hand*",
+				"Warden of Routine: No running in the halls. No exceptions.",
+				"Warden of Routine: The Master's rules are absolute.",
+				"Warden of Routine: And I enforce them absolutely."
+			]
+		}
+	},
+	"masterite_arbiter_suburban": {
+		"id": "masterite_arbiter_suburban",
+		"name": "Arbiter of the Grade",
+		"description": "A perfectionist teacher who grades your combat performance in real-time. Anything less than an A+ is failure.",
+		"level": 11,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "arbiter",
+		"masterite_phase": 2,
+		"stats": {
+			"max_hp": 620,
+			"max_mp": 60,
+			"attack": 55,
+			"defense": 26,
+			"magic": 28,
+			"speed": 17
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_precise_strike",
+			"masterite_measured_blow",
+			"masterite_counter_stance",
+			"masterite_execution"
+		],
+		"exp_reward": 380,
+		"gold_reward": 270,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_badge",
+				"chance": 0.4
+			}
+		],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [],
+		"one_shot": {
+			"hp_threshold": 620,
+			"setup_hint": "Its execution ability is devastating on low HP targets. Keep everyone topped up and burst it down.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A stern figure adjusts their glasses, red pen poised menacingly*",
+				"Arbiter of the Grade: Pop quiz. Subject: survival.",
+				"Arbiter of the Grade: You have one attempt.",
+				"Arbiter of the Grade: The Master does not grade on a curve."
+			]
+		}
+	},
+	"masterite_tempo_suburban": {
+		"id": "masterite_tempo_suburban",
+		"name": "Tempo of the Rush Hour",
+		"description": "A frantic figure perpetually late to everything. Its panic is weaponized into blinding speed.",
+		"level": 10,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "tempo",
+		"masterite_phase": 2,
+		"stats": {
+			"max_hp": 550,
+			"max_mp": 80,
+			"attack": 40,
+			"defense": 22,
+			"magic": 32,
+			"speed": 24
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_haste",
+			"masterite_slow",
+			"masterite_quick_strike",
+			"masterite_time_tax"
+		],
+		"exp_reward": 350,
+		"gold_reward": 240,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "speed_boots",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"wind",
+			"lightning"
+		],
+		"one_shot": {
+			"hp_threshold": 550,
+			"setup_hint": "Will debuff your entire party's speed. Cleanse or power through quickly.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A disheveled figure sprints into view, checking a watch on each wrist*",
+				"Tempo of the Rush Hour: Late late late!",
+				"Tempo of the Rush Hour: The Master's schedule waits for no one!",
+				"Tempo of the Rush Hour: You're slowing me DOWN!"
+			]
+		}
+	},
+	"masterite_curator_suburban": {
+		"id": "masterite_curator_suburban",
+		"name": "Curator of the Budget",
+		"description": "A fastidious accountant who sees your MP pool as a ledger to be balanced. Every spell is a taxable event.",
+		"level": 11,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "curator",
+		"masterite_phase": 2,
+		"stats": {
+			"max_hp": 650,
+			"max_mp": 120,
+			"attack": 32,
+			"defense": 28,
+			"magic": 48,
+			"speed": 15
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_mana_drain",
+			"masterite_dispel",
+			"masterite_audit",
+			"masterite_resource_cut"
+		],
+		"exp_reward": 380,
+		"gold_reward": 300,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "ether",
+				"chance": 0.5
+			},
+			{
+				"item": "masterite_badge",
+				"chance": 0.4
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"lightning",
+			"dark"
+		],
+		"one_shot": {
+			"hp_threshold": 650,
+			"setup_hint": "Heavy MP drain. Physical attackers shine here. Save ethers for emergencies.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A figure in a pinstripe suit materializes, adjusting a green visor*",
+				"Curator of the Budget: Let's review your expenses.",
+				"Curator of the Budget: Healing: frivolous. Buffs: unnecessary overhead.",
+				"Curator of the Budget: The Master demands austerity."
+			]
+		}
+	},
+	"masterite_warden_industrial": {
+		"id": "masterite_warden_industrial",
+		"name": "Warden of the Assembly Line",
+		"description": "A massive industrial enforcer built from factory parts. It tests structural integrity by applying overwhelming force.",
+		"level": 13,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "warden",
+		"masterite_phase": 3,
+		"stats": {
+			"max_hp": 900,
+			"max_mp": 80,
+			"attack": 50,
+			"defense": 42,
+			"magic": 30,
+			"speed": 14
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_iron_guard",
+			"masterite_crushing_blow",
+			"masterite_endurance_test",
+			"masterite_judgment"
+		],
+		"exp_reward": 500,
+		"gold_reward": 380,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.3
+			},
+			{
+				"item": "hi_potion",
+				"chance": 0.8
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"physical",
+			"lightning"
+		],
+		"one_shot": {
+			"hp_threshold": 900,
+			"setup_hint": "900 HP with high defense. Stack fire damage and debuff its defense hard.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Hydraulic pistons hiss as a massive construct rises from the factory floor*",
+				"Warden of the Assembly Line: UNIT OPERATIONAL.",
+				"Warden of the Assembly Line: The Master's quality control demands perfection.",
+				"Warden of the Assembly Line: COMMENCING STRESS TEST."
+			]
+		}
+	},
+	"masterite_arbiter_industrial": {
+		"id": "masterite_arbiter_industrial",
+		"name": "Arbiter of Efficiency",
+		"description": "A production optimizer that has eliminated every inefficiency from its own combat routine. Zero wasted motion.",
+		"level": 14,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "arbiter",
+		"masterite_phase": 3,
+		"stats": {
+			"max_hp": 780,
+			"max_mp": 70,
+			"attack": 62,
+			"defense": 30,
+			"magic": 32,
+			"speed": 18
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_precise_strike",
+			"masterite_measured_blow",
+			"masterite_counter_stance",
+			"masterite_execution"
+		],
+		"exp_reward": 530,
+		"gold_reward": 400,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"fire"
+		],
+		"one_shot": {
+			"hp_threshold": 780,
+			"setup_hint": "Extremely high attack. Its execution can one-shot weakened targets. Don't let anyone drop low.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Precision servos whir as a sleek automaton calibrates its targeting systems*",
+				"Arbiter of Efficiency: Production metrics show your party operates at 34% efficiency.",
+				"Arbiter of Efficiency: The Master finds this...",
+				"Arbiter of Efficiency: ...unacceptable."
+			]
+		}
+	},
+	"masterite_tempo_industrial": {
+		"id": "masterite_tempo_industrial",
+		"name": "Tempo of the Shift",
+		"description": "A time-clock manipulator who treats every turn as a work shift. Overtime is mandatory.",
+		"level": 13,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "tempo",
+		"masterite_phase": 3,
+		"stats": {
+			"max_hp": 700,
+			"max_mp": 90,
+			"attack": 45,
+			"defense": 26,
+			"magic": 38,
+			"speed": 26
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_haste",
+			"masterite_slow",
+			"masterite_quick_strike",
+			"masterite_time_tax"
+		],
+		"exp_reward": 500,
+		"gold_reward": 360,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "speed_boots",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"lightning"
+		],
+		"resistances": [
+			"ice"
+		],
+		"one_shot": {
+			"hp_threshold": 700,
+			"setup_hint": "Speed 26 is brutal. Counter with your own haste buffs or overwhelm with raw damage.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A factory whistle screams as a figure punches a massive time clock*",
+				"Tempo of the Shift: SHIFT CHANGE. Your break is over.",
+				"Tempo of the Shift: The Master's clock doesn't stop.",
+				"Tempo of the Shift: And neither do I."
+			]
+		}
+	},
+	"masterite_curator_industrial": {
+		"id": "masterite_curator_industrial",
+		"name": "Curator of the Pipeline",
+		"description": "A supply chain controller that monitors and restricts the flow of all resources. Nothing moves without its approval.",
+		"level": 14,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "curator",
+		"masterite_phase": 3,
+		"stats": {
+			"max_hp": 820,
+			"max_mp": 140,
+			"attack": 38,
+			"defense": 32,
+			"magic": 55,
+			"speed": 16
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_mana_drain",
+			"masterite_dispel",
+			"masterite_audit",
+			"masterite_resource_cut"
+		],
+		"exp_reward": 530,
+		"gold_reward": 420,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.3
+			},
+			{
+				"item": "ether",
+				"chance": 0.6
+			}
+		],
+		"weaknesses": [
+			"holy"
+		],
+		"resistances": [
+			"dark",
+			"lightning"
+		],
+		"one_shot": {
+			"hp_threshold": 820,
+			"setup_hint": "Dispels your buffs and drains MP. Go all-physical or burst with everything turn one.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Conveyor belts grind to a halt as a figure in overalls raises a manifest*",
+				"Curator of the Pipeline: Supply chain analysis complete.",
+				"Curator of the Pipeline: Your resource allocation is... wasteful.",
+				"Curator of the Pipeline: The Master demands optimization."
+			]
+		}
+	},
+	"masterite_warden_futuristic": {
+		"id": "masterite_warden_futuristic",
+		"name": "Warden of the Firewall",
+		"description": "An advanced security AI that blocks all unauthorized access. Its defensive protocols adapt in real time.",
+		"level": 16,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "warden",
+		"masterite_phase": 4,
+		"stats": {
+			"max_hp": 1100,
+			"max_mp": 90,
+			"attack": 55,
+			"defense": 48,
+			"magic": 35,
+			"speed": 15
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_iron_guard",
+			"masterite_crushing_blow",
+			"masterite_endurance_test",
+			"masterite_judgment"
+		],
+		"exp_reward": 680,
+		"gold_reward": 500,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.5
+			},
+			{
+				"item": "masterite_circuit",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"dark"
+		],
+		"resistances": [
+			"physical",
+			"lightning",
+			"holy"
+		],
+		"one_shot": {
+			"hp_threshold": 1100,
+			"setup_hint": "1100 HP and 48 defense. You need maximum debuffs and party-wide buffs to burst through.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A holographic barrier materializes, pulsing with defensive subroutines*",
+				"Warden of the Firewall: ACCESS DENIED.",
+				"Warden of the Firewall: The Master's firewall does not yield.",
+				"Warden of the Firewall: Prove your authorization through force."
+			]
+		}
+	},
+	"masterite_arbiter_futuristic": {
+		"id": "masterite_arbiter_futuristic",
+		"name": "Arbiter of the Benchmark",
+		"description": "A performance-testing AI that pushes systems to their breaking point. It has benchmarked thousands of adventurers.",
+		"level": 17,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "arbiter",
+		"masterite_phase": 4,
+		"stats": {
+			"max_hp": 950,
+			"max_mp": 80,
+			"attack": 68,
+			"defense": 32,
+			"magic": 38,
+			"speed": 20
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_precise_strike",
+			"masterite_measured_blow",
+			"masterite_counter_stance",
+			"masterite_execution"
+		],
+		"exp_reward": 720,
+		"gold_reward": 540,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.5
+			},
+			{
+				"item": "masterite_circuit",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"ice"
+		],
+		"resistances": [
+			"fire",
+			"lightning"
+		],
+		"one_shot": {
+			"hp_threshold": 950,
+			"setup_hint": "68 attack is terrifying. Buff defense aggressively and burst with ice magic.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Diagnostic readouts flood the air as a testing construct powers up*",
+				"Arbiter of the Benchmark: BENCHMARK INITIATED. Performance metrics will be recorded.",
+				"Arbiter of the Benchmark: The Master expects you to surpass all previous results.",
+				"Arbiter of the Benchmark: Begin."
+			]
+		}
+	},
+	"masterite_tempo_futuristic": {
+		"id": "masterite_tempo_futuristic",
+		"name": "Tempo of the Clock Cycle",
+		"description": "A CPU scheduler that allocates clock cycles with ruthless efficiency. It acts twice before you act once.",
+		"level": 16,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "tempo",
+		"masterite_phase": 4,
+		"stats": {
+			"max_hp": 850,
+			"max_mp": 100,
+			"attack": 50,
+			"defense": 28,
+			"magic": 42,
+			"speed": 28
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_haste",
+			"masterite_slow",
+			"masterite_quick_strike",
+			"masterite_time_tax"
+		],
+		"exp_reward": 680,
+		"gold_reward": 480,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_circuit",
+				"chance": 0.3
+			},
+			{
+				"item": "speed_boots",
+				"chance": 0.4
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"ice",
+			"lightning"
+		],
+		"one_shot": {
+			"hp_threshold": 850,
+			"setup_hint": "Speed 28 means it outspeeds almost everything. Use defer to build AP then burst.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Binary cascades through the air as a processor entity materializes*",
+				"Tempo of the Clock Cycle: CLOCK_CYCLE_ALLOCATION: priority=MAXIMUM.",
+				"Tempo of the Clock Cycle: The Master's scheduler gives you...",
+				"Tempo of the Clock Cycle: ...lowest priority."
+			]
+		}
+	},
+	"masterite_curator_futuristic": {
+		"id": "masterite_curator_futuristic",
+		"name": "Curator of the Memory Pool",
+		"description": "A memory management AI that garbage-collects your magical reserves. It frees what it deems unnecessary.",
+		"level": 17,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "curator",
+		"masterite_phase": 4,
+		"stats": {
+			"max_hp": 1000,
+			"max_mp": 160,
+			"attack": 42,
+			"defense": 36,
+			"magic": 62,
+			"speed": 17
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_mana_drain",
+			"masterite_dispel",
+			"masterite_audit",
+			"masterite_resource_cut"
+		],
+		"exp_reward": 720,
+		"gold_reward": 560,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.5
+			},
+			{
+				"item": "masterite_circuit",
+				"chance": 0.3
+			},
+			{
+				"item": "elixir",
+				"chance": 0.2
+			}
+		],
+		"weaknesses": [
+			"physical"
+		],
+		"resistances": [
+			"magic",
+			"dark",
+			"lightning"
+		],
+		"one_shot": {
+			"hp_threshold": 1000,
+			"setup_hint": "Resists magic but weak to physical. Stack attack buffs and go all melee.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Memory addresses scroll across a translucent form as it initializes*",
+				"Curator of the Memory Pool: MEMORY ALLOCATION ERROR: party.mp exceeds authorized limits.",
+				"Curator of the Memory Pool: Initiating garbage collection.",
+				"Curator of the Memory Pool: The Master's memory pool has no room for waste."
+			]
+		}
+	},
+	"masterite_warden_abstract": {
+		"id": "masterite_warden_abstract",
+		"name": "Warden of Form",
+		"description": "Pure geometric defense given consciousness. It is the shape of immovability, the form of endurance made manifest.",
+		"level": 19,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "warden",
+		"masterite_phase": 5,
+		"stats": {
+			"max_hp": 1400,
+			"max_mp": 100,
+			"attack": 62,
+			"defense": 52,
+			"magic": 40,
+			"speed": 16
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_iron_guard",
+			"masterite_crushing_blow",
+			"masterite_endurance_test",
+			"masterite_judgment"
+		],
+		"exp_reward": 900,
+		"gold_reward": 650,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.8
+			},
+			{
+				"item": "masterite_prism",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [],
+		"resistances": [
+			"physical",
+			"magic"
+		],
+		"one_shot": {
+			"hp_threshold": 1400,
+			"setup_hint": "Resists everything. Stack every debuff possible, full AP advance with your strongest abilities.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Reality fractures into perfect geometric shapes, coalescing into a figure of pure form*",
+				"Warden of Form: I am Form. The Master's final shape.",
+				"Warden of Form: To pass, you must break what cannot be broken.",
+				"Warden of Form: Begin."
+			]
+		}
+	},
+	"masterite_arbiter_abstract": {
+		"id": "masterite_arbiter_abstract",
+		"name": "Arbiter of Function",
+		"description": "The reduction of combat to its simplest function: damage. No elegance, no waste, just the mathematically optimal strike.",
+		"level": 20,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "arbiter",
+		"masterite_phase": 5,
+		"stats": {
+			"max_hp": 1200,
+			"max_mp": 90,
+			"attack": 75,
+			"defense": 35,
+			"magic": 42,
+			"speed": 22
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_precise_strike",
+			"masterite_measured_blow",
+			"masterite_counter_stance",
+			"masterite_execution"
+		],
+		"exp_reward": 950,
+		"gold_reward": 700,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.8
+			},
+			{
+				"item": "masterite_prism",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"holy"
+		],
+		"resistances": [
+			"dark",
+			"physical"
+		],
+		"one_shot": {
+			"hp_threshold": 1200,
+			"setup_hint": "75 attack. Execution at 3.0x. If anyone drops below 30% HP, heal immediately. Holy damage bypasses its resistances.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*A single point of light expands into a figure of pure mathematical function*",
+				"Arbiter of Function: I am Function. f(x) = defeat.",
+				"Arbiter of Function: The Master reduced me to this.",
+				"Arbiter of Function: Your variables will not save you."
+			]
+		}
+	},
+	"masterite_tempo_abstract": {
+		"id": "masterite_tempo_abstract",
+		"name": "Tempo of Sequence",
+		"description": "The order of all things made manifest. It controls sequence itself - what comes first, what comes last, what comes never.",
+		"level": 19,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "tempo",
+		"masterite_phase": 5,
+		"stats": {
+			"max_hp": 1100,
+			"max_mp": 120,
+			"attack": 55,
+			"defense": 30,
+			"magic": 48,
+			"speed": 30
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_haste",
+			"masterite_slow",
+			"masterite_quick_strike",
+			"masterite_time_tax"
+		],
+		"exp_reward": 900,
+		"gold_reward": 620,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.8
+			},
+			{
+				"item": "masterite_prism",
+				"chance": 0.3
+			},
+			{
+				"item": "speed_boots",
+				"chance": 0.5
+			}
+		],
+		"weaknesses": [
+			"fire"
+		],
+		"resistances": [
+			"ice",
+			"wind"
+		],
+		"one_shot": {
+			"hp_threshold": 1100,
+			"setup_hint": "Speed 30 is nearly insurmountable. Full party speed buffs and fire damage are your best bet.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*Time stutters and loops as a figure emerges from between the ticks of reality*",
+				"Tempo of Sequence: I am Sequence. First, second, third... last.",
+				"Tempo of Sequence: The Master arranged all things in order.",
+				"Tempo of Sequence: You are last."
+			]
+		}
+	},
+	"masterite_curator_abstract": {
+		"id": "masterite_curator_abstract",
+		"name": "Curator of Entropy",
+		"description": "Resource decay incarnate. It is the heat death of your MP pool, the inevitable exhaustion of all reserves. The Master's final accountant.",
+		"level": 20,
+		"boss": true,
+		"masterite": true,
+		"masterite_type": "curator",
+		"masterite_phase": 5,
+		"stats": {
+			"max_hp": 1300,
+			"max_mp": 180,
+			"attack": 48,
+			"defense": 38,
+			"magic": 70,
+			"speed": 18
+		},
+		"abilities": [
+			"masterite_proclamation",
+			"masterite_mana_drain",
+			"masterite_dispel",
+			"masterite_audit",
+			"masterite_resource_cut"
+		],
+		"exp_reward": 950,
+		"gold_reward": 750,
+		"drop_table": [
+			{
+				"item": "masterite_shard",
+				"chance": 1.0
+			},
+			{
+				"item": "masterite_core",
+				"chance": 0.8
+			},
+			{
+				"item": "masterite_prism",
+				"chance": 0.3
+			},
+			{
+				"item": "elixir",
+				"chance": 0.3
+			}
+		],
+		"weaknesses": [
+			"holy"
+		],
+		"resistances": [
+			"physical",
+			"fire",
+			"ice",
+			"lightning",
+			"dark",
+			"wind"
+		],
+		"one_shot": {
+			"hp_threshold": 1300,
+			"setup_hint": "Resists almost everything. Holy damage is your only weakness to exploit. Physical with full buffs can work.",
+			"reward_item": "boss_trophy"
+		},
+		"dialogue": {
+			"intro": [
+				"*The air itself seems to decay as a figure of pure entropy manifests*",
+				"Curator of Entropy: I am Entropy. All resources tend toward zero.",
+				"Curator of Entropy: The Master's final lesson: everything runs out.",
+				"Curator of Entropy: Even you."
+			]
+		}
 	}
 }

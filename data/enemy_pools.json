@@ -26,5 +26,10 @@
 	"steampunk_overworld": ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"],
 	"industrial_overworld": ["assembly_line_automaton", "shift_supervisor", "rust_elemental", "toxic_sludge", "conveyor_gremlin"],
 	"futuristic_overworld": ["rogue_process", "memory_leak", "firewall_sentinel", "data_wraith", "recursive_loop"],
-	"abstract_overworld": ["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"]
+	"abstract_overworld": ["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"],
+	"masterite_medieval": ["masterite_warden_medieval", "masterite_arbiter_medieval", "masterite_tempo_medieval", "masterite_curator_medieval"],
+	"masterite_suburban": ["masterite_warden_suburban", "masterite_arbiter_suburban", "masterite_tempo_suburban", "masterite_curator_suburban"],
+	"masterite_industrial": ["masterite_warden_industrial", "masterite_arbiter_industrial", "masterite_tempo_industrial", "masterite_curator_industrial"],
+	"masterite_futuristic": ["masterite_warden_futuristic", "masterite_arbiter_futuristic", "masterite_tempo_futuristic", "masterite_curator_futuristic"],
+	"masterite_abstract": ["masterite_warden_abstract", "masterite_arbiter_abstract", "masterite_tempo_abstract", "masterite_curator_abstract"]
 }

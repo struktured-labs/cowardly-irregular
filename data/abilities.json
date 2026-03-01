@@ -908,5 +908,204 @@
 		"effect": "mp_restore_and_ap",
 		"mp_restore_percent": 0.05,
 		"ap_gain": 1
+	},
+
+	"masterite_proclamation": {
+		"id": "masterite_proclamation",
+		"name": "Masterite Proclamation",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 0,
+		"description": "The Masterite announces its purpose, steeling itself for the trial ahead.",
+		"target_type": "single_ally",
+		"effect": "buff",
+		"stat": "defense",
+		"modifier": 1.3,
+		"duration": 3
+	},
+
+	"masterite_iron_guard": {
+		"id": "masterite_iron_guard",
+		"name": "Masterite Iron Guard",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 8,
+		"description": "Raises an impenetrable guard",
+		"target_type": "single_ally",
+		"effect": "buff",
+		"stat": "defense",
+		"modifier": 1.5,
+		"duration": 2
+	},
+	"masterite_crushing_blow": {
+		"id": "masterite_crushing_blow",
+		"name": "Masterite Crushing Blow",
+		"type": "physical",
+		"animation": "skill",
+		"mp_cost": 15,
+		"description": "A devastating overhead strike",
+		"damage_multiplier": 2.0,
+		"target_type": "single_enemy"
+	},
+	"masterite_endurance_test": {
+		"id": "masterite_endurance_test",
+		"name": "Masterite Endurance Test",
+		"type": "physical",
+		"animation": "skill",
+		"mp_cost": 12,
+		"description": "Tests the party's ability to endure sustained pressure",
+		"damage_multiplier": 0.7,
+		"target_type": "all_enemies"
+	},
+	"masterite_judgment": {
+		"id": "masterite_judgment",
+		"name": "Masterite Judgment",
+		"type": "magic",
+		"animation": "cast",
+		"mp_cost": 18,
+		"description": "Passes judgment on the unworthy",
+		"damage_multiplier": 1.8,
+		"target_type": "single_enemy",
+		"element": "holy"
+	},
+
+	"masterite_precise_strike": {
+		"id": "masterite_precise_strike",
+		"name": "Masterite Precise Strike",
+		"type": "physical",
+		"animation": "skill",
+		"mp_cost": 20,
+		"description": "A precisely measured strike targeting the weakest point",
+		"damage_multiplier": 2.5,
+		"target_type": "single_enemy"
+	},
+	"masterite_measured_blow": {
+		"id": "masterite_measured_blow",
+		"name": "Masterite Measured Blow",
+		"type": "physical",
+		"animation": "skill",
+		"mp_cost": 14,
+		"description": "Each strike is calibrated to test party coordination",
+		"damage_multiplier": 0.8,
+		"target_type": "all_enemies"
+	},
+	"masterite_counter_stance": {
+		"id": "masterite_counter_stance",
+		"name": "Masterite Counter Stance",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 10,
+		"description": "Assumes a counter-ready stance, building power",
+		"target_type": "single_ally",
+		"effect": "buff",
+		"stat": "attack",
+		"modifier": 1.4,
+		"duration": 2
+	},
+	"masterite_execution": {
+		"id": "masterite_execution",
+		"name": "Masterite Execution",
+		"type": "physical",
+		"animation": "skill",
+		"mp_cost": 25,
+		"description": "A final verdict delivered in a single devastating blow",
+		"damage_multiplier": 3.0,
+		"target_type": "single_enemy"
+	},
+
+	"masterite_haste": {
+		"id": "masterite_haste",
+		"name": "Masterite Haste",
+		"type": "support",
+		"animation": "buff",
+		"mp_cost": 10,
+		"description": "Accelerates to blinding speed",
+		"target_type": "single_ally",
+		"effect": "buff",
+		"stat": "speed",
+		"modifier": 1.5,
+		"duration": 3
+	},
+	"masterite_slow": {
+		"id": "masterite_slow",
+		"name": "Masterite Slow",
+		"type": "support",
+		"animation": "debuff",
+		"mp_cost": 12,
+		"description": "Warps time around the target, slowing them to a crawl",
+		"target_type": "single_enemy",
+		"effect": "debuff",
+		"stat": "speed",
+		"modifier": 0.6,
+		"duration": 2
+	},
+	"masterite_quick_strike": {
+		"id": "masterite_quick_strike",
+		"name": "Masterite Quick Strike",
+		"type": "physical",
+		"animation": "skill",
+		"mp_cost": 6,
+		"description": "A rapid strike that lands before the opponent can react",
+		"damage_multiplier": 1.3,
+		"target_type": "single_enemy"
+	},
+	"masterite_time_tax": {
+		"id": "masterite_time_tax",
+		"name": "Masterite Time Tax",
+		"type": "support",
+		"animation": "debuff",
+		"mp_cost": 15,
+		"description": "Steals moments from every opponent",
+		"target_type": "all_enemies",
+		"effect": "debuff",
+		"stat": "speed",
+		"modifier": 0.7,
+		"duration": 3
+	},
+
+	"masterite_mana_drain": {
+		"id": "masterite_mana_drain",
+		"name": "Masterite Mana Drain",
+		"type": "magic",
+		"animation": "cast",
+		"mp_cost": 8,
+		"description": "Drains magical energy from the target",
+		"damage_multiplier": 1.2,
+		"target_type": "single_enemy",
+		"element": "dark"
+	},
+	"masterite_dispel": {
+		"id": "masterite_dispel",
+		"name": "Masterite Dispel",
+		"type": "support",
+		"animation": "debuff",
+		"mp_cost": 10,
+		"description": "Strips away all magical enhancements",
+		"target_type": "single_enemy",
+		"effect": "dispel"
+	},
+	"masterite_audit": {
+		"id": "masterite_audit",
+		"name": "Masterite Audit",
+		"type": "magic",
+		"animation": "cast",
+		"mp_cost": 16,
+		"description": "Analyzes and exploits resource inefficiencies",
+		"damage_multiplier": 1.5,
+		"target_type": "single_enemy",
+		"element": "lightning"
+	},
+	"masterite_resource_cut": {
+		"id": "masterite_resource_cut",
+		"name": "Masterite Resource Cut",
+		"type": "support",
+		"animation": "debuff",
+		"mp_cost": 14,
+		"description": "Reduces the target's magical output through systematic cuts",
+		"target_type": "single_enemy",
+		"effect": "debuff",
+		"stat": "magic",
+		"modifier": 0.7,
+		"duration": 3
 	}
 }

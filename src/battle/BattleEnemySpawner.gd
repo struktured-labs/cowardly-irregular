@@ -356,6 +356,16 @@ func spawn_forced_enemies() -> void:
 			if monster_data.has("dialogue"):
 				_scene._boss_dialogue_data = monster_data["dialogue"]
 
+		# Set abilities from monster data so AI can use them
+		if monster_data.has("abilities"):
+			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id)}
+
+		# Store Masterite metadata for specialized AI
+		if monster_data.get("masterite", false):
+			enemy.set_meta("masterite", true)
+			enemy.set_meta("masterite_type", monster_data.get("masterite_type", ""))
+			enemy.set_meta("masterite_phase", monster_data.get("masterite_phase", 1))
+
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
@@ -432,6 +442,15 @@ func spawn_encounter_enemies() -> void:
 
 		# Store monster type ID for sprite selection
 		enemy.set_meta("monster_type", enemy_id)
+
+		# Set abilities from monster data so AI can use them
+		if monster_data.has("abilities"):
+			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id)}
+
+		# Store Masterite metadata for specialized AI
+		if monster_data.get("masterite", false):
+			enemy.set_meta("masterite", true)
+			enemy.set_meta("masterite_type", monster_data.get("masterite_type", ""))
 
 		# Add weaknesses/resistances from monster data
 		for weakness in monster_data.get("weaknesses", []):
