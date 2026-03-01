@@ -149,7 +149,7 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -249,7 +249,7 @@ func _create_details_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	if mode == 0:
 		# Show item details
@@ -498,11 +498,6 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 		row.add_child(ko_label)
 
 	return row
-
-
-func _create_border(parent: Control, panel_size: Vector2) -> void:
-	"""Add beveled retro border"""
-	RetroPanel.add_border(parent, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _update_selection() -> void:

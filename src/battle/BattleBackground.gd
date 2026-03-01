@@ -35,6 +35,16 @@ const TIME_TINTS = {
 	TimeOfDay.NIGHT: {"r": -0.10, "g": -0.06, "b": 0.10, "brightness": -0.15},
 }
 
+## Gradient texture cache: keyed on (terrain, time_of_day, viewport_w, viewport_h)
+## Max 20 entries (5 terrains x 4 times), avoids ~1.8M set_pixel() calls per draw
+static var _gradient_cache: Dictionary = {}
+const _GRADIENT_CACHE_MAX: int = 20
+
+## Element texture cache: keyed on "element_WxH_Color" string
+## Caches expensive pixel-art element ImageTextures (hill, tree, building, pillar)
+static var _element_texture_cache: Dictionary = {}
+const _ELEMENT_CACHE_MAX: int = 64
+
 ## Parallax constants
 const PARALLAX_RANGE = 30.0
 const PARALLAX_SPEED_FAR = 3.0
@@ -289,37 +299,86 @@ func _add_to_layer(element: Node, layer: Control) -> void:
 
 
 func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
-	"""Draw SNES-quality dithered gradient background"""
+	"""Draw SNES-quality dithered gradient background (cached)"""
+	var cache_key = "%d_%d_%d_%d" % [current_terrain, current_time_of_day, int(viewport_size.x), int(viewport_size.y)]
+
 	var sky_height = int(viewport_size.y * 0.65)
-	var ground_height = int(viewport_size.y) - sky_height
 	var w = int(viewport_size.x)
 
-	var sky_mid = palette.get("sky_mid", palette["sky_top"].lerp(palette["sky_bottom"], 0.5))
+	# Check cache for pre-rendered sky+ground textures
+	if _gradient_cache.has(cache_key):
+		var cached = _gradient_cache[cache_key]
+		var sky_rect = TextureRect.new()
+		sky_rect.texture = cached["sky_tex"]
+		sky_rect.position = Vector2.ZERO
+		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sky_rect)
 
-	# Render sky as a dithered image texture (authentic SNES banding)
-	var sky_img = Image.create(w, sky_height, false, Image.FORMAT_RGBA8)
-	for y in range(sky_height):
-		var t = float(y) / max(sky_height - 1, 1)
-		var c1: Color
-		var c2: Color
-		var local_t: float
-		if t < 0.5:
-			c1 = palette["sky_top"]
-			c2 = sky_mid
-			local_t = t * 2.0
-		else:
-			c1 = sky_mid
-			c2 = palette["sky_bottom"]
-			local_t = (t - 0.5) * 2.0
-		for x in range(w):
-			sky_img.set_pixel(x, y, _dither_blend(c1, c2, local_t, x, y))
+		var ground_rect = TextureRect.new()
+		ground_rect.texture = cached["ground_tex"]
+		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(ground_rect)
+	else:
+		var ground_height = int(viewport_size.y) - sky_height
+		var sky_mid = palette.get("sky_mid", palette["sky_top"].lerp(palette["sky_bottom"], 0.5))
 
-	var sky_tex = ImageTexture.create_from_image(sky_img)
-	var sky_rect = TextureRect.new()
-	sky_rect.texture = sky_tex
-	sky_rect.position = Vector2.ZERO
-	sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(sky_rect)
+		# Render sky as a dithered image texture (authentic SNES banding)
+		# Optimization: Bayer dither repeats every 4px in X, so generate a 4px-wide
+		# strip per row and tile it across with blit_rect (reduces inner loop from w*h to 4*h)
+		var sky_img = Image.create(w, sky_height, false, Image.FORMAT_RGBA8)
+		var tile_strip = Image.create(4, 1, false, Image.FORMAT_RGBA8)
+		for y in range(sky_height):
+			var t = float(y) / max(sky_height - 1, 1)
+			var c1: Color
+			var c2: Color
+			var local_t: float
+			if t < 0.5:
+				c1 = palette["sky_top"]
+				c2 = sky_mid
+				local_t = t * 2.0
+			else:
+				c1 = sky_mid
+				c2 = palette["sky_bottom"]
+				local_t = (t - 0.5) * 2.0
+			# Generate the 4-pixel repeating strip for this row
+			for x in range(4):
+				tile_strip.set_pixel(x, 0, _dither_blend(c1, c2, local_t, x, y))
+			# Tile across the full width
+			for bx in range(0, w, 4):
+				var copy_w = mini(4, w - bx)
+				sky_img.blit_rect(tile_strip, Rect2i(0, 0, copy_w, 1), Vector2i(bx, y))
+
+		var sky_tex = ImageTexture.create_from_image(sky_img)
+		var sky_rect = TextureRect.new()
+		sky_rect.texture = sky_tex
+		sky_rect.position = Vector2.ZERO
+		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sky_rect)
+
+		# Ground as dithered image texture (same 4px tiling optimization)
+		var ground_dark = palette.get("ground_dark", palette["ground"].darkened(0.2))
+		var ground_light = palette.get("ground_light", palette["ground"].lightened(0.15))
+		var ground_img = Image.create(w, ground_height, false, Image.FORMAT_RGBA8)
+		for y in range(ground_height):
+			var t = float(y) / max(ground_height - 1, 1)
+			for x in range(4):
+				tile_strip.set_pixel(x, 0, _dither_blend(ground_light, ground_dark, t, x, y))
+			for bx in range(0, w, 4):
+				var copy_w = mini(4, w - bx)
+				ground_img.blit_rect(tile_strip, Rect2i(0, 0, copy_w, 1), Vector2i(bx, y))
+
+		var ground_tex = ImageTexture.create_from_image(ground_img)
+		var ground_rect = TextureRect.new()
+		ground_rect.texture = ground_tex
+		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(ground_rect)
+
+		# Store in cache (evict oldest if full)
+		if _gradient_cache.size() >= _GRADIENT_CACHE_MAX:
+			_gradient_cache.erase(_gradient_cache.keys()[0])
+		_gradient_cache[cache_key] = {"sky_tex": sky_tex, "ground_tex": ground_tex}
 
 	# Horizon glow line (wider for dawn/dusk)
 	var horizon_color = palette.get("horizon", palette["sky_bottom"].lightened(0.2))
@@ -341,22 +400,6 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 	horizon_dim.size = Vector2(viewport_size.x, horizon_dim_h)
 	horizon_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(horizon_dim)
-
-	# Ground as dithered image texture
-	var ground_dark = palette.get("ground_dark", palette["ground"].darkened(0.2))
-	var ground_light = palette.get("ground_light", palette["ground"].lightened(0.15))
-	var ground_img = Image.create(w, ground_height, false, Image.FORMAT_RGBA8)
-	for y in range(ground_height):
-		var t = float(y) / max(ground_height - 1, 1)
-		for x in range(w):
-			ground_img.set_pixel(x, y, _dither_blend(ground_light, ground_dark, t, x, y))
-
-	var ground_tex = ImageTexture.create_from_image(ground_img)
-	var ground_rect = TextureRect.new()
-	ground_rect.texture = ground_tex
-	ground_rect.position = Vector2(0, sky_height)
-	ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(ground_rect)
 
 
 func _draw_plains_elements(viewport_size: Vector2, palette: Dictionary) -> void:
@@ -610,42 +653,52 @@ func _create_hill(pos: Vector2, hill_size: Vector2, color: Color) -> TextureRect
 	"""Create a rounded hill with gradient shading (pixel-art rendered)"""
 	var w = int(hill_size.x)
 	var h = int(hill_size.y)
-	var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
+	var cache_key = "hill_%dx%d_%s" % [w, h, color.to_html()]
 
-	var cx = w / 2.0
-	var light = color.lightened(0.15)
-	var dark = color.darkened(0.2)
-	var mid = color.darkened(0.08)
+	var tex: ImageTexture
+	if _element_texture_cache.has(cache_key):
+		tex = _element_texture_cache[cache_key]
+	else:
+		var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
 
-	# Draw elliptical hill with dithered shading zones
-	for y in range(h):
-		var t = float(y) / h  # 0 at top, 1 at bottom
-		# Width at this scanline (parabolic arch)
-		var half_width = cx * (1.0 - pow(1.0 - t, 2.0)) if t > 0.1 else cx * t * 5.0
-		for x in range(w):
-			var dx = abs(x - cx)
-			if dx < half_width:
-				var rel_x = dx / max(half_width, 1.0)
-				# Dithered vertical shading zones
-				var c: Color
-				if t < 0.3:
-					c = _dither_blend(light, color, t / 0.3, x, y)
-				elif t < 0.6:
-					c = _dither_blend(color, mid, (t - 0.3) / 0.3, x, y)
-				else:
-					c = mid
-				# Dithered lateral shading
-				if rel_x > 0.6:
-					c = _dither_blend(c, dark, (rel_x - 0.6) / 0.4, x, y)
-				elif rel_x < 0.35 and t < 0.5:
-					c = _dither_blend(c, light, (0.35 - rel_x) / 0.35, x, y)
-				img.set_pixel(x, y, c)
-			# Soft edge fade
-			elif dx < half_width + 2:
-				img.set_pixel(x, y, Color(dark.r, dark.g, dark.b, 0.3))
+		var cx = w / 2.0
+		var light = color.lightened(0.15)
+		var dark = color.darkened(0.2)
+		var mid = color.darkened(0.08)
 
-	var tex = ImageTexture.create_from_image(img)
+		# Draw elliptical hill with dithered shading zones
+		for y in range(h):
+			var t = float(y) / h  # 0 at top, 1 at bottom
+			# Width at this scanline (parabolic arch)
+			var half_width = cx * (1.0 - pow(1.0 - t, 2.0)) if t > 0.1 else cx * t * 5.0
+			for x in range(w):
+				var dx = abs(x - cx)
+				if dx < half_width:
+					var rel_x = dx / max(half_width, 1.0)
+					# Dithered vertical shading zones
+					var c: Color
+					if t < 0.3:
+						c = _dither_blend(light, color, t / 0.3, x, y)
+					elif t < 0.6:
+						c = _dither_blend(color, mid, (t - 0.3) / 0.3, x, y)
+					else:
+						c = mid
+					# Dithered lateral shading
+					if rel_x > 0.6:
+						c = _dither_blend(c, dark, (rel_x - 0.6) / 0.4, x, y)
+					elif rel_x < 0.35 and t < 0.5:
+						c = _dither_blend(c, light, (0.35 - rel_x) / 0.35, x, y)
+					img.set_pixel(x, y, c)
+				# Soft edge fade
+				elif dx < half_width + 2:
+					img.set_pixel(x, y, Color(dark.r, dark.g, dark.b, 0.3))
+
+		tex = ImageTexture.create_from_image(img)
+		if _element_texture_cache.size() >= _ELEMENT_CACHE_MAX:
+			_element_texture_cache.erase(_element_texture_cache.keys()[0])
+		_element_texture_cache[cache_key] = tex
+
 	var rect = TextureRect.new()
 	rect.texture = tex
 	rect.position = pos - Vector2(hill_size.x / 2, 0)
@@ -834,70 +887,80 @@ func _create_tree_silhouette(pos: Vector2, height: float, color: Color) -> Textu
 	"""Create a pixel-art tree silhouette with layered canopy and trunk"""
 	var w = int(height * 0.7)
 	var h = int(height)
-	var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
+	var cache_key = "tree_%dx%d_%s" % [w, h, color.to_html()]
 
-	var cx = w / 2.0
-	var trunk_color = color.darkened(0.25)
-	var trunk_light = color.darkened(0.15)
-	var canopy_light = color.lightened(0.08)
-	var canopy_dark = color.darkened(0.15)
-	var outline = color.darkened(0.35)
+	var tex: ImageTexture
+	if _element_texture_cache.has(cache_key):
+		tex = _element_texture_cache[cache_key]
+	else:
+		var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
 
-	# Trunk (centered, tapers upward)
-	var trunk_bottom = h - 1
-	var trunk_top = int(h * 0.55)
-	var trunk_half_w = int(height * 0.04) + 1
-	for y in range(trunk_top, trunk_bottom + 1):
-		var taper = float(y - trunk_top) / float(trunk_bottom - trunk_top)
-		var tw = int(trunk_half_w * (0.7 + taper * 0.3))
-		for dx in range(-tw - 1, tw + 2):
-			var x = int(cx) + dx
-			if x >= 0 and x < w:
-				if abs(dx) == tw + 1:
-					img.set_pixel(x, y, outline)
-				elif dx < 0:
-					img.set_pixel(x, y, trunk_light)
-				else:
-					img.set_pixel(x, y, trunk_color)
+		var cx = w / 2.0
+		var trunk_color = color.darkened(0.25)
+		var trunk_light = color.darkened(0.15)
+		var canopy_light = color.lightened(0.08)
+		var canopy_dark = color.darkened(0.15)
+		var outline = color.darkened(0.35)
 
-	# Canopy - 3 overlapping ellipses for layered look
-	var canopy_layers = [
-		[cx, h * 0.25, w * 0.45, h * 0.28],  # Top (smallest)
-		[cx - 2, h * 0.38, w * 0.42, h * 0.25],  # Middle-left
-		[cx + 2, h * 0.42, w * 0.40, h * 0.22],  # Middle-right
-	]
-	for layer in canopy_layers:
-		var lcx = layer[0]
-		var lcy = layer[1]
-		var lrx = layer[2]
-		var lry = layer[3]
-		for y in range(int(lcy - lry), int(lcy + lry)):
-			for x in range(int(lcx - lrx), int(lcx + lrx)):
-				if x < 0 or x >= w or y < 0 or y >= h:
-					continue
-				var dx = (x - lcx) / max(lrx, 1.0)
-				var dy = (y - lcy) / max(lry, 1.0)
-				var dist = sqrt(dx * dx + dy * dy)
-				if dist < 0.85:
-					# Dithered canopy shading: smooth top-to-bottom
-					var shade_t = (dy + 1.0) / 2.0  # 0=top, 1=bottom
-					var c: Color
-					if shade_t < 0.4:
-						c = _dither_blend(canopy_light, color, shade_t / 0.4, x, y)
+		# Trunk (centered, tapers upward)
+		var trunk_bottom = h - 1
+		var trunk_top = int(h * 0.55)
+		var trunk_half_w = int(height * 0.04) + 1
+		for y in range(trunk_top, trunk_bottom + 1):
+			var taper = float(y - trunk_top) / float(trunk_bottom - trunk_top)
+			var tw = int(trunk_half_w * (0.7 + taper * 0.3))
+			for dx in range(-tw - 1, tw + 2):
+				var x = int(cx) + dx
+				if x >= 0 and x < w:
+					if abs(dx) == tw + 1:
+						img.set_pixel(x, y, outline)
+					elif dx < 0:
+						img.set_pixel(x, y, trunk_light)
 					else:
-						c = _dither_blend(color, canopy_dark, (shade_t - 0.4) / 0.6, x, y)
-					# Leaf cluster texture
-					var leaf = sin(x * 1.8 + y * 2.2) * 0.5
-					if leaf > 0.3:
-						c = c.lightened(0.04)
-					elif leaf < -0.3:
-						c = c.darkened(0.04)
-					img.set_pixel(x, y, c)
-				elif dist < 1.0:
-					img.set_pixel(x, y, outline)
+						img.set_pixel(x, y, trunk_color)
 
-	var tex = ImageTexture.create_from_image(img)
+		# Canopy - 3 overlapping ellipses for layered look
+		var canopy_layers = [
+			[cx, h * 0.25, w * 0.45, h * 0.28],  # Top (smallest)
+			[cx - 2, h * 0.38, w * 0.42, h * 0.25],  # Middle-left
+			[cx + 2, h * 0.42, w * 0.40, h * 0.22],  # Middle-right
+		]
+		for layer in canopy_layers:
+			var lcx = layer[0]
+			var lcy = layer[1]
+			var lrx = layer[2]
+			var lry = layer[3]
+			for y in range(int(lcy - lry), int(lcy + lry)):
+				for x in range(int(lcx - lrx), int(lcx + lrx)):
+					if x < 0 or x >= w or y < 0 or y >= h:
+						continue
+					var dx = (x - lcx) / max(lrx, 1.0)
+					var dy = (y - lcy) / max(lry, 1.0)
+					var dist = sqrt(dx * dx + dy * dy)
+					if dist < 0.85:
+						# Dithered canopy shading: smooth top-to-bottom
+						var shade_t = (dy + 1.0) / 2.0  # 0=top, 1=bottom
+						var c: Color
+						if shade_t < 0.4:
+							c = _dither_blend(canopy_light, color, shade_t / 0.4, x, y)
+						else:
+							c = _dither_blend(color, canopy_dark, (shade_t - 0.4) / 0.6, x, y)
+						# Leaf cluster texture
+						var leaf = sin(x * 1.8 + y * 2.2) * 0.5
+						if leaf > 0.3:
+							c = c.lightened(0.04)
+						elif leaf < -0.3:
+							c = c.darkened(0.04)
+						img.set_pixel(x, y, c)
+					elif dist < 1.0:
+						img.set_pixel(x, y, outline)
+
+		tex = ImageTexture.create_from_image(img)
+		if _element_texture_cache.size() >= _ELEMENT_CACHE_MAX:
+			_element_texture_cache.erase(_element_texture_cache.keys()[0])
+		_element_texture_cache[cache_key] = tex
+
 	var rect = TextureRect.new()
 	rect.texture = tex
 	rect.position = pos - Vector2(w / 2.0, h)
@@ -909,104 +972,114 @@ func _create_building(pos: Vector2, bld_size: Vector2, color: Color) -> TextureR
 	"""Create a pixel-art building silhouette with roof, windows, and door"""
 	var w = int(bld_size.x * 1.3)  # Extra for roof overhang
 	var h = int(bld_size.y + bld_size.y * 0.3)  # Extra for roof
-	var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
+	var cache_key = "bld_%dx%d_%s" % [w, h, color.to_html()]
 
-	var light = color.lightened(0.12)
-	var dark = color.darkened(0.2)
-	var outline = color.darkened(0.4)
-	var roof_color = color.darkened(0.25)
-	var roof_light = color.darkened(0.1)
-	var window_color = Color(0.9, 0.8, 0.4, 0.8)
-	var window_bright = Color(1.0, 0.95, 0.7, 0.9)
-	var door_color = color.darkened(0.35)
+	var tex: ImageTexture
+	if _element_texture_cache.has(cache_key):
+		tex = _element_texture_cache[cache_key]
+	else:
+		var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
 
-	var body_x = int((w - bld_size.x) / 2)
-	var roof_h = int(bld_size.y * 0.3)
-	var body_top = roof_h
-	var body_bottom = h - 1
+		var light = color.lightened(0.12)
+		var dark = color.darkened(0.2)
+		var outline = color.darkened(0.4)
+		var roof_color = color.darkened(0.25)
+		var roof_light = color.darkened(0.1)
+		var window_color = Color(0.9, 0.8, 0.4, 0.8)
+		var window_bright = Color(1.0, 0.95, 0.7, 0.9)
+		var door_color = color.darkened(0.35)
 
-	# Roof (triangular / pitched)
-	var roof_cx = w / 2.0
-	for y in range(roof_h):
-		var t = float(y) / roof_h
-		var half_width = (w / 2.0) * t
-		for x in range(w):
-			var dx = abs(x - roof_cx)
-			if dx <= half_width:
-				var c = roof_color
-				if x < roof_cx:
-					c = roof_light  # Left side lit
-				if y == 0 or abs(dx - half_width) < 1:
-					c = outline
-				img.set_pixel(x, y, c)
+		var body_x = int((w - bld_size.x) / 2)
+		var roof_h = int(bld_size.y * 0.3)
+		var body_top = roof_h
+		var body_bottom = h - 1
 
-	# Building body with shading
-	for y in range(body_top, body_bottom + 1):
-		for x in range(body_x, body_x + int(bld_size.x)):
-			if x >= 0 and x < w:
-				var rel_x = float(x - body_x) / bld_size.x
-				# Dithered wall shading: smooth left-to-right
-				var c: Color
-				if rel_x < 0.3:
-					c = _dither_blend(light, color, rel_x / 0.3, x, y)
-				elif rel_x > 0.7:
-					c = _dither_blend(color, dark, (rel_x - 0.7) / 0.3, x, y)
-				else:
-					c = color
-				# Wall texture (subtle brick lines)
-				if (y - body_top) % 8 == 0:
-					c = c.darkened(0.05)
-				# Outline
-				if x == body_x or x == body_x + int(bld_size.x) - 1:
-					c = outline
-				if y == body_bottom:
-					c = outline
-				img.set_pixel(x, y, c)
+		# Roof (triangular / pitched)
+		var roof_cx = w / 2.0
+		for y in range(roof_h):
+			var t = float(y) / roof_h
+			var half_width = (w / 2.0) * t
+			for x in range(w):
+				var dx = abs(x - roof_cx)
+				if dx <= half_width:
+					var c = roof_color
+					if x < roof_cx:
+						c = roof_light  # Left side lit
+					if y == 0 or abs(dx - half_width) < 1:
+						c = outline
+					img.set_pixel(x, y, c)
 
-	# Windows (2x2 grid with frame and glow)
-	var win_w = 8
-	var win_h = 10
-	for row in range(2):
-		for col in range(2):
-			var wx = body_x + int(bld_size.x * 0.2) + col * int(bld_size.x * 0.45)
-			var wy = body_top + int(bld_size.y * 0.15) + row * int(bld_size.y * 0.35)
-			for dy in range(win_h):
-				for dx in range(win_w):
-					var px = wx + dx
-					var py = wy + dy
-					if px >= 0 and px < w and py >= 0 and py < h:
-						if dx == 0 or dx == win_w - 1 or dy == 0 or dy == win_h - 1:
-							img.set_pixel(px, py, outline)  # Frame
-						elif dx == win_w / 2 or dy == win_h / 2:
-							img.set_pixel(px, py, outline)  # Cross-bar
-						else:
-							# Window glow (brighter near center)
-							var wdist = abs(dx - win_w / 2.0) + abs(dy - win_h / 2.0)
-							var c = window_color if wdist > 3 else window_bright
-							img.set_pixel(px, py, c)
+		# Building body with shading
+		for y in range(body_top, body_bottom + 1):
+			for x in range(body_x, body_x + int(bld_size.x)):
+				if x >= 0 and x < w:
+					var rel_x = float(x - body_x) / bld_size.x
+					# Dithered wall shading: smooth left-to-right
+					var c: Color
+					if rel_x < 0.3:
+						c = _dither_blend(light, color, rel_x / 0.3, x, y)
+					elif rel_x > 0.7:
+						c = _dither_blend(color, dark, (rel_x - 0.7) / 0.3, x, y)
+					else:
+						c = color
+					# Wall texture (subtle brick lines)
+					if (y - body_top) % 8 == 0:
+						c = c.darkened(0.05)
+					# Outline
+					if x == body_x or x == body_x + int(bld_size.x) - 1:
+						c = outline
+					if y == body_bottom:
+						c = outline
+					img.set_pixel(x, y, c)
 
-	# Door at bottom center
-	var door_w = int(bld_size.x * 0.2)
-	var door_h = int(bld_size.y * 0.25)
-	var door_x = body_x + int(bld_size.x / 2) - door_w / 2
-	var door_y = body_bottom - door_h
-	for dy in range(door_h):
-		for dx in range(door_w):
-			var px = door_x + dx
-			var py = door_y + dy
-			if px >= 0 and px < w and py >= 0 and py < h:
-				if dx == 0 or dx == door_w - 1 or dy == 0:
-					img.set_pixel(px, py, outline)
-				else:
-					img.set_pixel(px, py, door_color)
-	# Door knob
-	var knob_x = door_x + door_w - 3
-	var knob_y = door_y + door_h / 2
-	if knob_x >= 0 and knob_x < w and knob_y >= 0 and knob_y < h:
-		img.set_pixel(knob_x, knob_y, Color(0.7, 0.65, 0.4))
+		# Windows (2x2 grid with frame and glow)
+		var win_w = 8
+		var win_h = 10
+		for row in range(2):
+			for col in range(2):
+				var wx = body_x + int(bld_size.x * 0.2) + col * int(bld_size.x * 0.45)
+				var wy = body_top + int(bld_size.y * 0.15) + row * int(bld_size.y * 0.35)
+				for dy in range(win_h):
+					for dx in range(win_w):
+						var px = wx + dx
+						var py = wy + dy
+						if px >= 0 and px < w and py >= 0 and py < h:
+							if dx == 0 or dx == win_w - 1 or dy == 0 or dy == win_h - 1:
+								img.set_pixel(px, py, outline)  # Frame
+							elif dx == win_w / 2 or dy == win_h / 2:
+								img.set_pixel(px, py, outline)  # Cross-bar
+							else:
+								# Window glow (brighter near center)
+								var wdist = abs(dx - win_w / 2.0) + abs(dy - win_h / 2.0)
+								var c = window_color if wdist > 3 else window_bright
+								img.set_pixel(px, py, c)
 
-	var tex = ImageTexture.create_from_image(img)
+		# Door at bottom center
+		var door_w = int(bld_size.x * 0.2)
+		var door_h = int(bld_size.y * 0.25)
+		var door_x = body_x + int(bld_size.x / 2) - door_w / 2
+		var door_y = body_bottom - door_h
+		for dy in range(door_h):
+			for dx in range(door_w):
+				var px = door_x + dx
+				var py = door_y + dy
+				if px >= 0 and px < w and py >= 0 and py < h:
+					if dx == 0 or dx == door_w - 1 or dy == 0:
+						img.set_pixel(px, py, outline)
+					else:
+						img.set_pixel(px, py, door_color)
+		# Door knob
+		var knob_x = door_x + door_w - 3
+		var knob_y = door_y + door_h / 2
+		if knob_x >= 0 and knob_x < w and knob_y >= 0 and knob_y < h:
+			img.set_pixel(knob_x, knob_y, Color(0.7, 0.65, 0.4))
+
+		tex = ImageTexture.create_from_image(img)
+		if _element_texture_cache.size() >= _ELEMENT_CACHE_MAX:
+			_element_texture_cache.erase(_element_texture_cache.keys()[0])
+		_element_texture_cache[cache_key] = tex
+
 	var rect = TextureRect.new()
 	rect.texture = tex
 	rect.position = pos - Vector2(w / 2.0, h)
@@ -1086,78 +1159,88 @@ func _create_pillar(pos: Vector2, pillar_size: Vector2, color: Color) -> Texture
 	"""Create a pixel-art dramatic pillar with shading and runes"""
 	var w = int(pillar_size.x) + 10  # Extra for capital/base
 	var h = int(pillar_size.y)
-	var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
+	var cache_key = "pillar_%dx%d_%s" % [w, h, color.to_html()]
 
-	var cx = w / 2.0
-	var light = color.lightened(0.15)
-	var dark = color.darkened(0.25)
-	var outline = color.darkened(0.4)
-	var rune_color = color.lightened(0.35)
+	var tex: ImageTexture
+	if _element_texture_cache.has(cache_key):
+		tex = _element_texture_cache[cache_key]
+	else:
+		var img = Image.create(w, h, true, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
 
-	# Pillar shaft with cylindrical shading
-	var shaft_half_w = int(pillar_size.x / 2)
-	for y in range(int(h * 0.08), int(h * 0.92)):
-		for dx in range(-shaft_half_w, shaft_half_w + 1):
-			var x = int(cx) + dx
-			if x >= 0 and x < w:
-				var rel = float(dx + shaft_half_w) / float(shaft_half_w * 2)
-				var c = color
-				# Cylindrical shading (highlight left-center, shadow right)
-				if rel < 0.2:
-					c = dark
-				elif rel < 0.4:
-					c = color
-				elif rel < 0.6:
-					c = light  # Center highlight
-				elif rel < 0.8:
-					c = color
-				else:
-					c = dark
-				# Fluting texture (vertical grooves)
-				if int(dx) % 4 == 0 and abs(dx) > 2:
-					c = c.darkened(0.08)
-				img.set_pixel(x, y, c)
-		# Outline
-		if int(cx) - shaft_half_w - 1 >= 0:
-			img.set_pixel(int(cx) - shaft_half_w - 1, y, outline)
-		if int(cx) + shaft_half_w + 1 < w:
-			img.set_pixel(int(cx) + shaft_half_w + 1, y, outline)
+		var cx = w / 2.0
+		var light = color.lightened(0.15)
+		var dark = color.darkened(0.25)
+		var outline = color.darkened(0.4)
+		var rune_color = color.lightened(0.35)
 
-	# Capital (wider top)
-	var cap_half_w = shaft_half_w + 3
-	for y in range(0, int(h * 0.08)):
-		for dx in range(-cap_half_w, cap_half_w + 1):
-			var x = int(cx) + dx
-			if x >= 0 and x < w:
-				if abs(dx) == cap_half_w or y == 0:
-					img.set_pixel(x, y, outline)
-				elif dx < 0:
-					img.set_pixel(x, y, light)
-				else:
-					img.set_pixel(x, y, color)
+		# Pillar shaft with cylindrical shading
+		var shaft_half_w = int(pillar_size.x / 2)
+		for y in range(int(h * 0.08), int(h * 0.92)):
+			for dx in range(-shaft_half_w, shaft_half_w + 1):
+				var x = int(cx) + dx
+				if x >= 0 and x < w:
+					var rel = float(dx + shaft_half_w) / float(shaft_half_w * 2)
+					var c = color
+					# Cylindrical shading (highlight left-center, shadow right)
+					if rel < 0.2:
+						c = dark
+					elif rel < 0.4:
+						c = color
+					elif rel < 0.6:
+						c = light  # Center highlight
+					elif rel < 0.8:
+						c = color
+					else:
+						c = dark
+					# Fluting texture (vertical grooves)
+					if int(dx) % 4 == 0 and abs(dx) > 2:
+						c = c.darkened(0.08)
+					img.set_pixel(x, y, c)
+			# Outline
+			if int(cx) - shaft_half_w - 1 >= 0:
+				img.set_pixel(int(cx) - shaft_half_w - 1, y, outline)
+			if int(cx) + shaft_half_w + 1 < w:
+				img.set_pixel(int(cx) + shaft_half_w + 1, y, outline)
 
-	# Base (wider bottom)
-	for y in range(int(h * 0.92), h):
-		for dx in range(-cap_half_w, cap_half_w + 1):
-			var x = int(cx) + dx
-			if x >= 0 and x < w:
-				if abs(dx) == cap_half_w or y == h - 1:
-					img.set_pixel(x, y, outline)
-				else:
-					img.set_pixel(x, y, dark)
+		# Capital (wider top)
+		var cap_half_w = shaft_half_w + 3
+		for y in range(0, int(h * 0.08)):
+			for dx in range(-cap_half_w, cap_half_w + 1):
+				var x = int(cx) + dx
+				if x >= 0 and x < w:
+					if abs(dx) == cap_half_w or y == 0:
+						img.set_pixel(x, y, outline)
+					elif dx < 0:
+						img.set_pixel(x, y, light)
+					else:
+						img.set_pixel(x, y, color)
 
-	# Rune markings (glowing symbols scattered along shaft)
-	for i in range(3):
-		var ry = int(h * 0.2 + i * h * 0.25)
-		for dx in range(-2, 3):
-			var x = int(cx) + dx
-			if x >= 0 and x < w and ry >= 0 and ry < h:
-				if abs(dx) < 2:
-					img.set_pixel(x, ry, rune_color)
-				img.set_pixel(x, ry + 1, rune_color.darkened(0.15))
+		# Base (wider bottom)
+		for y in range(int(h * 0.92), h):
+			for dx in range(-cap_half_w, cap_half_w + 1):
+				var x = int(cx) + dx
+				if x >= 0 and x < w:
+					if abs(dx) == cap_half_w or y == h - 1:
+						img.set_pixel(x, y, outline)
+					else:
+						img.set_pixel(x, y, dark)
 
-	var tex = ImageTexture.create_from_image(img)
+		# Rune markings (glowing symbols scattered along shaft)
+		for i in range(3):
+			var ry = int(h * 0.2 + i * h * 0.25)
+			for dx in range(-2, 3):
+				var x = int(cx) + dx
+				if x >= 0 and x < w and ry >= 0 and ry < h:
+					if abs(dx) < 2:
+						img.set_pixel(x, ry, rune_color)
+					img.set_pixel(x, ry + 1, rune_color.darkened(0.15))
+
+		tex = ImageTexture.create_from_image(img)
+		if _element_texture_cache.size() >= _ELEMENT_CACHE_MAX:
+			_element_texture_cache.erase(_element_texture_cache.keys()[0])
+		_element_texture_cache[cache_key] = tex
+
 	var rect = TextureRect.new()
 	rect.texture = tex
 	rect.position = pos - Vector2(w / 2.0, 0)

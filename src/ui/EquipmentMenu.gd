@@ -122,7 +122,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	if not character:
 		return panel
@@ -173,7 +173,7 @@ func _create_equipment_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -286,7 +286,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -361,7 +361,7 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -509,11 +509,6 @@ func _get_current_equipped_mods() -> Dictionary:
 			item_data = EquipmentSystem.get_accessory(character.equipped_accessory)
 
 	return item_data.get("stat_mods", {})
-
-
-func _create_border(parent: Control, panel_size: Vector2) -> void:
-	"""Add beveled retro border"""
-	RetroPanel.add_border(parent, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _input(event: InputEvent) -> void:

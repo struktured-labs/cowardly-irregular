@@ -43,6 +43,12 @@ var selected_character: int = 0
 var _menu_labels: Array = []
 var _party_panels: Array = []
 var _submenu_open: bool = false
+var _ui_built: bool = false
+
+## Cached node references for fast updates
+var _highlight_refs: Array = []
+var _cursor_refs: Array = []
+var _card_bg_refs: Array = []
 
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
@@ -66,17 +72,26 @@ func setup(game_party: Array) -> void:
 	_menu_options = BASE_MENU_OPTIONS.duplicate(true)
 	if GameState and GameState.debug_log_enabled:
 		_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
-	# Defer rebuild to ensure size is set
+	# Force full rebuild with new party data
+	_ui_built = false
 	call_deferred("_build_ui")
 
 
 func _build_ui() -> void:
-	"""Build the menu UI"""
+	"""Build the menu UI (build once, update in place on subsequent calls)"""
+	if _ui_built:
+		_update_party_stats()
+		_update_selection()
+		return
+
 	# Clear existing
 	for child in get_children():
 		child.queue_free()
 	_menu_labels.clear()
 	_party_panels.clear()
+	_highlight_refs.clear()
+	_cursor_refs.clear()
+	_card_bg_refs.clear()
 
 	# Get viewport size for layout calculations
 	var viewport_size = get_viewport().get_visible_rect().size
@@ -111,6 +126,14 @@ func _build_ui() -> void:
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
 
+	# Cache node references for fast updates
+	for item in _menu_labels:
+		_highlight_refs.append(item.get_node("Highlight"))
+		_cursor_refs.append(item.get_node("Cursor"))
+	for card in _party_panels:
+		_card_bg_refs.append(card.get_node("Background"))
+
+	_ui_built = true
 	_update_selection()
 
 
@@ -124,7 +147,7 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	panel.add_child(panel_bg)
 
 	# Border
-	_create_border(panel)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -173,6 +196,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 
 	# Name and job
 	var name_label = Label.new()
+	name_label.name = "NameLabel"
 	name_label.text = member.combatant_name
 	name_label.position = Vector2(58, 4)
 	name_label.add_theme_font_size_override("font_size", 14)
@@ -180,6 +204,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	card.add_child(name_label)
 
 	var job_label = Label.new()
+	job_label.name = "JobLabel"
 	job_label.text = member.job.get("name", "Fighter") if member.job else "Fighter"
 	job_label.position = Vector2(58, 20)
 	job_label.add_theme_font_size_override("font_size", 10)
@@ -188,11 +213,13 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 
 	# HP Bar
 	var hp_bar = _create_stat_bar("HP", member.current_hp, member.max_hp, Color.LIME, Color.RED)
+	hp_bar.name = "HPBar"
 	hp_bar.position = Vector2(58, 36)
 	card.add_child(hp_bar)
 
 	# MP Bar
 	var mp_bar = _create_stat_bar("MP", member.current_mp, member.max_mp, Color.CYAN, Color.DARK_CYAN)
+	mp_bar.name = "MPBar"
 	mp_bar.position = Vector2(58, 52)
 	card.add_child(mp_bar)
 
@@ -236,6 +263,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	# Bar fill
 	var fill_pct = float(current) / float(maximum) if maximum > 0 else 0.0
 	var bar_fill = ColorRect.new()
+	bar_fill.name = "Fill"
 	bar_fill.color = color_full if fill_pct > 0.3 else color_low
 	bar_fill.position = Vector2(24, 2)
 	bar_fill.size = Vector2(60 * fill_pct, 10)
@@ -243,6 +271,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 
 	# Value text
 	var value = Label.new()
+	value.name = "Value"
 	value.text = "%d/%d" % [current, maximum]
 	value.position = Vector2(88, 0)
 	value.add_theme_font_size_override("font_size", 10)
@@ -252,7 +281,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	return container
 
 
-func _create_menu_panel(_panel_size: Vector2) -> Control:
+func _create_menu_panel(panel_size: Vector2) -> Control:
 	"""Create the menu options panel"""
 	var panel = Control.new()
 
@@ -262,7 +291,7 @@ func _create_menu_panel(_panel_size: Vector2) -> Control:
 	panel.add_child(panel_bg)
 
 	# Border
-	_create_border(panel)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -335,11 +364,6 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	return item
 
 
-func _create_border(parent: Control) -> void:
-	"""Add beveled retro border to a panel"""
-	RetroPanel.add_border(parent, parent.size, BORDER_LIGHT, BORDER_SHADOW)
-
-
 func _get_job_color(member: Combatant) -> Color:
 	"""Get color based on job"""
 	if not member.job:
@@ -360,24 +384,51 @@ func _format_play_time() -> String:
 	return "00:00:00"
 
 
-func _update_selection() -> void:
-	"""Update visual selection state"""
-	# Update menu items
-	for i in range(_menu_labels.size()):
-		var item = _menu_labels[i]
-		var highlight = item.get_node_or_null("Highlight")
-		var cursor = item.get_node_or_null("Cursor")
-		if highlight:
-			highlight.color = SELECTED_COLOR if i == selected_index else Color.TRANSPARENT
-		if cursor:
-			cursor.text = "▶" if i == selected_index else " "
-
-	# Update party cards
-	for i in range(_party_panels.size()):
+func _update_party_stats() -> void:
+	"""Update dynamic content in party cards without rebuilding the tree"""
+	for i in range(min(party.size(), _party_panels.size())):
+		var member = party[i]
 		var card = _party_panels[i]
-		var bg = card.get_node_or_null("Background")
-		if bg:
-			bg.color = SELECTED_COLOR if i == selected_character else Color(0.08, 0.08, 0.12)
+
+		var name_lbl = card.get_node_or_null("NameLabel")
+		if name_lbl:
+			name_lbl.text = member.combatant_name
+
+		var job_lbl = card.get_node_or_null("JobLabel")
+		if job_lbl:
+			job_lbl.text = member.job.get("name", "Fighter") if member.job else "Fighter"
+
+		var hp_bar = card.get_node_or_null("HPBar")
+		if hp_bar:
+			var hp_fill = hp_bar.get_node_or_null("Fill")
+			var hp_value = hp_bar.get_node_or_null("Value")
+			var hp_pct = float(member.current_hp) / float(member.max_hp) if member.max_hp > 0 else 0.0
+			if hp_fill:
+				hp_fill.size.x = 60 * hp_pct
+				hp_fill.color = Color.LIME if hp_pct > 0.3 else Color.RED
+			if hp_value:
+				hp_value.text = "%d/%d" % [member.current_hp, member.max_hp]
+
+		var mp_bar = card.get_node_or_null("MPBar")
+		if mp_bar:
+			var mp_fill = mp_bar.get_node_or_null("Fill")
+			var mp_value = mp_bar.get_node_or_null("Value")
+			var mp_pct = float(member.current_mp) / float(member.max_mp) if member.max_mp > 0 else 0.0
+			if mp_fill:
+				mp_fill.size.x = 60 * mp_pct
+				mp_fill.color = Color.CYAN if mp_pct > 0.3 else Color.DARK_CYAN
+			if mp_value:
+				mp_value.text = "%d/%d" % [member.current_mp, member.max_mp]
+
+
+func _update_selection() -> void:
+	"""Update visual selection state using cached references"""
+	for i in range(_highlight_refs.size()):
+		_highlight_refs[i].color = SELECTED_COLOR if i == selected_index else Color.TRANSPARENT
+		_cursor_refs[i].text = "▶" if i == selected_index else " "
+
+	for i in range(_card_bg_refs.size()):
+		_card_bg_refs[i].color = SELECTED_COLOR if i == selected_character else Color(0.08, 0.08, 0.12)
 
 
 func _input(event: InputEvent) -> void:
@@ -659,12 +710,16 @@ const TELEPORT_DESTINATIONS = [
 
 var _teleport_selected: int = 0
 var _teleport_labels: Array = []
+var _tp_highlight_refs: Array = []
+var _tp_cursor_refs: Array = []
 
 func _open_teleport_menu() -> void:
 	"""Open the teleport destination picker"""
 	_submenu_open = true
 	_teleport_selected = 0
 	_teleport_labels.clear()
+	_tp_highlight_refs.clear()
+	_tp_cursor_refs.clear()
 
 	var teleport_panel = Control.new()
 	teleport_panel.name = "TeleportMenu"
@@ -723,6 +778,8 @@ func _open_teleport_menu() -> void:
 
 		teleport_panel.add_child(item)
 		_teleport_labels.append(item)
+		_tp_highlight_refs.append(highlight)
+		_tp_cursor_refs.append(cursor)
 
 	# Footer
 	var footer = Label.new()
@@ -763,6 +820,8 @@ func _handle_teleport_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		# Close teleport submenu, return to main menu
 		_teleport_labels.clear()
+		_tp_highlight_refs.clear()
+		_tp_cursor_refs.clear()
 		_submenu_open = false
 		for child in get_children():
 			child.visible = true
@@ -776,15 +835,10 @@ func _handle_teleport_input(event: InputEvent) -> void:
 
 
 func _update_teleport_selection() -> void:
-	"""Update teleport menu visual selection"""
-	for i in range(_teleport_labels.size()):
-		var item = _teleport_labels[i]
-		var highlight = item.get_node_or_null("Highlight")
-		var cursor = item.get_node_or_null("Cursor")
-		if highlight:
-			highlight.color = SELECTED_COLOR if i == _teleport_selected else Color.TRANSPARENT
-		if cursor:
-			cursor.text = "▶" if i == _teleport_selected else " "
+	"""Update teleport menu visual selection using cached references"""
+	for i in range(_tp_highlight_refs.size()):
+		_tp_highlight_refs[i].color = SELECTED_COLOR if i == _teleport_selected else Color.TRANSPARENT
+		_tp_cursor_refs[i].text = "▶" if i == _teleport_selected else " "
 
 
 func _close_menu() -> void:

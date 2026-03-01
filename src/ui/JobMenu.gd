@@ -101,7 +101,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	if not character:
 		return panel
@@ -162,7 +162,7 @@ func _create_jobs_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -283,7 +283,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var title = Label.new()
@@ -356,7 +356,7 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 	# Title
 	var slot_name = "PRIMARY JOB" if selected_slot == 0 else "SECONDARY JOB"
@@ -548,11 +548,6 @@ func _get_stat_comparison(new_job: Dictionary) -> String:
 			parts.append("%s%d %s" % ["+" if diff > 0 else "", diff, short_name])
 
 	return "  ".join(parts)
-
-
-func _create_border(parent: Control, panel_size: Vector2) -> void:
-	"""Add beveled retro border"""
-	RetroPanel.add_border(parent, panel_size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 func _input(event: InputEvent) -> void:
