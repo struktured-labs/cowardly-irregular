@@ -205,7 +205,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 
 	# Advance hint
 	_advance_hint = Label.new()
-	_advance_hint.text = "Z / A to continue..."
+	_advance_hint.text = "Z / A / Click to continue..."
 	_advance_hint.position = Vector2(box_width - 150, box_height - 20)
 	_advance_hint.add_theme_font_size_override("font_size", 10)
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
@@ -416,6 +416,11 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):
+		_advance_dialogue()
+		get_viewport().set_input_as_handled()
+
+	# Left-click to advance dialogue
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_advance_dialogue()
 		get_viewport().set_input_as_handled()
 

@@ -22,6 +22,10 @@ var input_direction: Vector2 = Vector2.ZERO
 var is_moving: bool = false
 var target_position: Vector2 = Vector2.ZERO
 
+## Click-to-move
+var _click_target: Vector2 = Vector2.ZERO
+var _moving_to_click: bool = false
+
 ## Interaction
 var nearby_interactables: Array[Node2D] = []
 
@@ -72,13 +76,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		_open_menu()
 		get_viewport().set_input_as_handled()
 
+	# Click-to-move (left click)
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT and can_move and not is_in_menu:
+			_click_target = get_global_mouse_position()
+			_moving_to_click = true
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			_open_menu()
+			get_viewport().set_input_as_handled()
+
 
 ## Free movement (smooth 8-direction)
 func _handle_free_movement(delta: float) -> void:
 	"""Handle smooth free movement"""
 	var direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 
+	# Keyboard/gamepad input cancels click-to-move
 	if direction != Vector2.ZERO:
+		_moving_to_click = false
 		velocity = direction * move_speed
 
 		# Update sprite direction
@@ -92,6 +108,24 @@ func _handle_free_movement(delta: float) -> void:
 		if moved_distance > grid_size:
 			step_count += 1
 			moved.emit(step_count)
+	elif _moving_to_click:
+		# Click-to-move: move toward click target
+		var to_target = _click_target - global_position
+		var distance = to_target.length()
+		if distance < 4.0:
+			_moving_to_click = false
+			velocity = Vector2.ZERO
+			move_and_slide()
+		else:
+			var click_dir = to_target.normalized()
+			velocity = click_dir * move_speed
+			_update_sprite_direction(click_dir)
+			var old_pos = position
+			move_and_slide()
+			var moved_distance = position.distance_to(old_pos)
+			if moved_distance > grid_size:
+				step_count += 1
+				moved.emit(step_count)
 	else:
 		velocity = Vector2.ZERO
 		move_and_slide()

@@ -158,6 +158,8 @@ func _build_ui() -> void:
 	encounter_item.position = Vector2(16, 48)
 	panel.add_child(encounter_item)
 	_settings_items.append({"control": encounter_item, "type": "option", "id": "encounter_rate"})
+	MenuMouseHelper.make_clickable(encounter_item, 0, 400, 80,
+		_on_setting_click.bind(0), _on_setting_hover.bind(0))
 
 	# Debug Log toggle
 	var debug_item = _create_toggle_setting(
@@ -169,6 +171,8 @@ func _build_ui() -> void:
 	debug_item.position = Vector2(16, 128)
 	panel.add_child(debug_item)
 	_settings_items.append({"control": debug_item, "type": "toggle", "id": "debug_log"})
+	MenuMouseHelper.make_clickable(debug_item, 1, 400, 60,
+		_on_setting_click.bind(1), _on_setting_hover.bind(1))
 
 	# Music Volume
 	var music_item = _create_volume_setting(
@@ -181,6 +185,8 @@ func _build_ui() -> void:
 	music_item.position = Vector2(16, 188)
 	panel.add_child(music_item)
 	_settings_items.append({"control": music_item, "type": "volume", "id": "music_volume"})
+	MenuMouseHelper.make_clickable(music_item, 2, 400, 60,
+		_on_setting_click.bind(2), _on_setting_hover.bind(2))
 
 	# SFX Volume
 	var sfx_item = _create_volume_setting(
@@ -193,6 +199,8 @@ func _build_ui() -> void:
 	sfx_item.position = Vector2(16, 248)
 	panel.add_child(sfx_item)
 	_settings_items.append({"control": sfx_item, "type": "volume", "id": "sfx_volume"})
+	MenuMouseHelper.make_clickable(sfx_item, 3, 400, 60,
+		_on_setting_click.bind(3), _on_setting_hover.bind(3))
 
 	# Battle Speed Default
 	var speed_item = _create_option_setting_small(
@@ -205,6 +213,8 @@ func _build_ui() -> void:
 	speed_item.position = Vector2(16, 308)
 	panel.add_child(speed_item)
 	_settings_items.append({"control": speed_item, "type": "battle_speed", "id": "battle_speed"})
+	MenuMouseHelper.make_clickable(speed_item, 4, 400, 60,
+		_on_setting_click.bind(4), _on_setting_hover.bind(4))
 
 	# Text Speed
 	var text_item = _create_option_setting_small(
@@ -217,6 +227,8 @@ func _build_ui() -> void:
 	text_item.position = Vector2(16, 368)
 	panel.add_child(text_item)
 	_settings_items.append({"control": text_item, "type": "text_speed", "id": "text_speed"})
+	MenuMouseHelper.make_clickable(text_item, 5, 400, 60,
+		_on_setting_click.bind(5), _on_setting_hover.bind(5))
 
 	# Quit to Title button
 	var quit_item = _create_action_button(
@@ -227,10 +239,15 @@ func _build_ui() -> void:
 	quit_item.position = Vector2(16, 428)
 	panel.add_child(quit_item)
 	_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
+	MenuMouseHelper.make_clickable(quit_item, 6, 400, 50,
+		_on_setting_click.bind(6), _on_setting_hover.bind(6))
+
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, _close_settings)
 
 	# Footer
 	var footer = Label.new()
-	footer.text = "←→: Adjust  A: Select  B: Back"
+	footer.text = "←→: Adjust  A/Click: Select  B/RClick: Back"
 	footer.position = Vector2(16, panel.size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -778,6 +795,22 @@ func _activate_setting() -> void:
 	elif item["type"] == "toggle":
 		# A button also toggles for convenience
 		_adjust_setting(1)
+
+
+func _on_setting_click(index: int) -> void:
+	"""Handle mouse click on a setting"""
+	selected_index = index
+	_update_selection()
+	_activate_setting()
+
+
+func _on_setting_hover(index: int) -> void:
+	"""Handle mouse hover on a setting"""
+	if index != selected_index:
+		selected_index = index
+		_update_selection()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 
 
 func _close_settings() -> void:

@@ -81,8 +81,18 @@ func _build_ui() -> void:
 	right_panel.position = Vector2(viewport_size.x * 0.35 + 8, 16)
 	add_child(right_panel)
 
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, func() -> void:
+		if mode == Mode.JOB_SELECT:
+			mode = Mode.SLOT_SELECT
+			_build_ui()
+			SoundManager.play_ui("menu_close")
+		else:
+			_close_menu()
+	)
+
 	# Footer
-	var footer_text = "up/dn: Select Slot  A: Change  B: Back" if mode == Mode.SLOT_SELECT else "up/dn: Select  A: Assign  B: Cancel"
+	var footer_text = "up/dn: Select Slot  A/Click: Change  B/RClick: Back" if mode == Mode.SLOT_SELECT else "up/dn: Select  A/Click: Assign  B/RClick: Cancel"
 	var footer = Label.new()
 	footer.text = footer_text
 	footer.position = Vector2(16, viewport_size.y - 32)
@@ -237,6 +247,10 @@ func _create_slot_row(slot_index: int) -> Control:
 		desc_label.add_theme_font_size_override("font_size", 9)
 		desc_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		row.add_child(desc_label)
+
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, slot_index, 200, 56,
+		_on_job_slot_click.bind(slot_index), _on_job_slot_hover.bind(slot_index))
 
 	return row
 
@@ -525,6 +539,10 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		desc_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 		row.add_child(desc_label)
 
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, index, 300, 66,
+		_on_job_click.bind(index), _on_job_hover.bind(index))
+
 	return row
 
 
@@ -665,6 +683,49 @@ func _assign_selected_job() -> void:
 		_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
+
+
+func _on_job_slot_click(slot_index: int) -> void:
+	"""Handle mouse click on a job slot"""
+	if mode != Mode.SLOT_SELECT:
+		return
+	selected_slot = slot_index
+	var jobs = _get_available_jobs()
+	if jobs.size() > 0:
+		mode = Mode.JOB_SELECT
+		selected_job_index = 0
+		_build_ui()
+		SoundManager.play_ui("menu_select")
+	else:
+		SoundManager.play_ui("menu_error")
+
+
+func _on_job_slot_hover(slot_index: int) -> void:
+	"""Handle mouse hover on a job slot"""
+	if mode != Mode.SLOT_SELECT:
+		return
+	if slot_index != selected_slot:
+		selected_slot = slot_index
+		_build_ui()
+		SoundManager.play_ui("menu_move")
+
+
+func _on_job_click(index: int) -> void:
+	"""Handle mouse click on a job"""
+	if mode != Mode.JOB_SELECT:
+		return
+	selected_job_index = index
+	_assign_selected_job()
+
+
+func _on_job_hover(index: int) -> void:
+	"""Handle mouse hover on a job"""
+	if mode != Mode.JOB_SELECT:
+		return
+	if index != selected_job_index:
+		selected_job_index = index
+		_build_ui()
+		SoundManager.play_ui("menu_move")
 
 
 func _close_menu() -> void:

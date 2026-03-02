@@ -93,9 +93,12 @@ func _build_ui() -> void:
 	add_child(quick_panel)
 	_slot_panels.append(quick_panel)
 
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, _close)
+
 	# Footer help
 	var footer = Label.new()
-	footer.text = "Up/Dn:Select  A:Confirm  B:Cancel"
+	footer.text = "Up/Dn:Select  A/Click:Confirm  B/RClick:Cancel"
 	footer.position = Vector2(32, vp_size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -130,6 +133,11 @@ func _create_slot_panel(slot: int, panel_size: Vector2) -> Control:
 	else:
 		# Filled slot
 		_build_filled_slot(panel, panel_size, slot, save_info)
+
+	# Mouse click overlay (use _slot_panels.size() as index since we append right after)
+	var slot_idx = _slot_panels.size()
+	MenuMouseHelper.make_clickable(panel, slot_idx, panel_size.x, panel_size.y,
+		_on_save_slot_click.bind(slot_idx), _on_save_slot_hover.bind(slot_idx))
 
 	return panel
 
@@ -374,6 +382,21 @@ func _handle_confirm() -> void:
 		else:
 			# Can't load empty slot
 			SoundManager.play_ui("menu_error")
+
+
+func _on_save_slot_click(index: int) -> void:
+	"""Handle mouse click on a save slot"""
+	selected_slot = index
+	_update_selection()
+	_handle_confirm()
+
+
+func _on_save_slot_hover(index: int) -> void:
+	"""Handle mouse hover on a save slot"""
+	if index != selected_slot:
+		selected_slot = index
+		_update_selection()
+		SoundManager.play_ui("menu_move")
 
 
 func _close() -> void:

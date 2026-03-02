@@ -118,9 +118,12 @@ func _build_ui() -> void:
 	menu_panel.size = menu_panel_size
 	add_child(menu_panel)
 
+	# Right-click to close menu
+	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
+
 	# Footer help text
 	var footer = Label.new()
-	footer.text = "↑↓: Select  A: Confirm  B/X: Close  ←→: Character"
+	footer.text = "↑↓: Select  A/Click: Confirm  B/RClick: Close  ←→: Character"
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -360,6 +363,10 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	label.add_theme_color_override("font_color", TEXT_COLOR if option["enabled"] else DISABLED_COLOR)
 	label.name = "Label"
 	item.add_child(label)
+
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(item, index, 180, 24,
+		_on_menu_click.bind(index), _on_menu_hover.bind(index))
 
 	return item
 
@@ -839,6 +846,30 @@ func _update_teleport_selection() -> void:
 	for i in range(_tp_highlight_refs.size()):
 		_tp_highlight_refs[i].color = SELECTED_COLOR if i == _teleport_selected else Color.TRANSPARENT
 		_tp_cursor_refs[i].text = "▶" if i == _teleport_selected else " "
+
+
+func _on_menu_click(index: int) -> void:
+	"""Handle mouse click on a menu item"""
+	if _submenu_open:
+		return
+	selected_index = index
+	_update_selection()
+	var option = _menu_options[selected_index]
+	if option["enabled"]:
+		_handle_menu_action(option["id"])
+		SoundManager.play_ui("menu_select")
+	else:
+		SoundManager.play_ui("menu_error")
+
+
+func _on_menu_hover(index: int) -> void:
+	"""Handle mouse hover on a menu item"""
+	if _submenu_open:
+		return
+	if index != selected_index:
+		selected_index = index
+		_update_selection()
+		SoundManager.play_ui("menu_move")
 
 
 func _close_menu() -> void:

@@ -127,9 +127,19 @@ func _build_ui() -> void:
 	details_panel.position = Vector2(viewport_size.x * 0.5 + 8, 16)
 	add_child(details_panel)
 
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, func() -> void:
+		if mode == 1:
+			mode = 0
+			_build_ui()
+			SoundManager.play_ui("menu_close")
+		else:
+			_close_menu()
+	)
+
 	# Footer
 	var footer = Label.new()
-	footer.text = "↑↓: Select  A: Use  B: Back" if mode == 0 else "↑↓: Select Target  A: Confirm  B: Cancel"
+	footer.text = "↑↓: Select  A/Click: Use  B/RClick: Back" if mode == 0 else "↑↓: Select Target  A/Click: Confirm  B/RClick: Cancel"
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -220,6 +230,10 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	qty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	qty_label.name = "Quantity"
 	row.add_child(qty_label)
+
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, index, 220, 24,
+		_on_item_click.bind(index), _on_item_hover.bind(index))
 
 	return row
 
@@ -497,6 +511,10 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 		ko_label.add_theme_color_override("font_color", Color.RED)
 		row.add_child(ko_label)
 
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, index, 280, 48,
+		_on_target_click.bind(index), _on_target_hover.bind(index))
+
 	return row
 
 
@@ -537,6 +555,15 @@ func _input(event: InputEvent) -> void:
 
 func _handle_item_list_input(event: InputEvent) -> void:
 	"""Handle input in item list mode"""
+	# Mouse wheel scrolling
+	var wheel_idx = MenuMouseHelper.handle_scroll_wheel(event, selected_item_index, _item_list.size())
+	if wheel_idx >= 0:
+		selected_item_index = wheel_idx
+		_build_ui()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("ui_up") and not event.is_echo():
 		if _item_list.size() > 0:
 			selected_item_index = (selected_item_index - 1 + _item_list.size()) % _item_list.size()
@@ -660,6 +687,47 @@ func _use_selected_item() -> void:
 		_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
+
+
+func _on_item_click(index: int) -> void:
+	"""Handle mouse click on an item"""
+	if mode != 0:
+		return
+	selected_item_index = index
+	if _item_list.size() > 0:
+		mode = 1
+		selected_target_index = 0
+		_build_ui()
+		SoundManager.play_ui("menu_select")
+
+
+func _on_item_hover(index: int) -> void:
+	"""Handle mouse hover on an item"""
+	if mode != 0:
+		return
+	if index != selected_item_index:
+		selected_item_index = index
+		_build_ui()
+		SoundManager.play_ui("menu_move")
+
+
+func _on_target_click(index: int) -> void:
+	"""Handle mouse click on a target"""
+	if mode != 1:
+		return
+	selected_target_index = index
+	_update_selection()
+	_use_selected_item()
+
+
+func _on_target_hover(index: int) -> void:
+	"""Handle mouse hover on a target"""
+	if mode != 1:
+		return
+	if index != selected_target_index:
+		selected_target_index = index
+		_update_selection()
+		SoundManager.play_ui("menu_move")
 
 
 func _close_menu() -> void:

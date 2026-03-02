@@ -102,8 +102,18 @@ func _build_ui() -> void:
 	right_panel.position = Vector2(viewport_size.x * 0.35 + 8, 16)
 	add_child(right_panel)
 
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, func() -> void:
+		if mode == Mode.ITEM_SELECT:
+			mode = Mode.SLOT_SELECT
+			_build_ui()
+			SoundManager.play_ui("menu_close")
+		else:
+			_close_menu()
+	)
+
 	# Footer
-	var footer_text = "↑↓: Select Slot  A: Change  B: Back" if mode == Mode.SLOT_SELECT else "↑↓: Select  A: Equip  B: Cancel  X: Unequip"
+	var footer_text = "↑↓: Select Slot  A/Click: Change  B/RClick: Back" if mode == Mode.SLOT_SELECT else "↑↓: Select  A/Click: Equip  B/RClick: Cancel  X: Unequip"
 	var footer = Label.new()
 	footer.text = footer_text
 	footer.position = Vector2(16, viewport_size.y - 32)
@@ -238,6 +248,10 @@ func _create_slot_row(slot_index: int) -> Control:
 	equip_label.add_theme_font_size_override("font_size", 12)
 	equip_label.add_theme_color_override("font_color", equip_color if equip_name != "(empty)" else DISABLED_COLOR)
 	row.add_child(equip_label)
+
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, slot_index, 200, 46,
+		_on_slot_click.bind(slot_index), _on_slot_hover.bind(slot_index))
 
 	return row
 
@@ -485,6 +499,10 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	desc_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	row.add_child(desc_label)
 
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, index, 300, 56,
+		_on_equip_item_click.bind(index), _on_equip_item_hover.bind(index))
+
 	return row
 
 
@@ -630,6 +648,49 @@ func _unequip_slot() -> void:
 		_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
+
+
+func _on_slot_click(slot_index: int) -> void:
+	"""Handle mouse click on an equipment slot"""
+	if mode != Mode.SLOT_SELECT:
+		return
+	selected_slot = slot_index
+	var items = _get_available_items_for_slot()
+	if items.size() > 0:
+		mode = Mode.ITEM_SELECT
+		selected_item_index = 0
+		_build_ui()
+		SoundManager.play_ui("menu_select")
+	else:
+		SoundManager.play_ui("menu_error")
+
+
+func _on_slot_hover(slot_index: int) -> void:
+	"""Handle mouse hover on an equipment slot"""
+	if mode != Mode.SLOT_SELECT:
+		return
+	if slot_index != selected_slot:
+		selected_slot = slot_index
+		_build_ui()
+		SoundManager.play_ui("menu_move")
+
+
+func _on_equip_item_click(index: int) -> void:
+	"""Handle mouse click on an equipment item"""
+	if mode != Mode.ITEM_SELECT:
+		return
+	selected_item_index = index
+	_equip_selected_item()
+
+
+func _on_equip_item_hover(index: int) -> void:
+	"""Handle mouse hover on an equipment item"""
+	if mode != Mode.ITEM_SELECT:
+		return
+	if index != selected_item_index:
+		selected_item_index = index
+		_build_ui()
+		SoundManager.play_ui("menu_move")
 
 
 func _close_menu() -> void:

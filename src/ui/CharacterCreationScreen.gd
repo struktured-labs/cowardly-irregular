@@ -113,12 +113,22 @@ func _build_ui() -> void:
 	_panel.add_child(_character_tabs)
 
 	for i in range(4):
+		var tab_container = Control.new()
+		tab_container.custom_minimum_size = Vector2(100, 24)
+
 		var tab = Label.new()
+		tab.name = "TabLabel"
 		tab.text = party_customizations[i].name if i < party_customizations.size() else "Char %d" % (i + 1)
 		tab.custom_minimum_size = Vector2(100, 24)
 		tab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tab.add_theme_font_size_override("font_size", 12)
-		_character_tabs.add_child(tab)
+		tab_container.add_child(tab)
+
+		# Tab click overlay
+		MenuMouseHelper.make_clickable(tab_container, i, 100, 24,
+			_on_char_tab_click.bind(i), func() -> void: pass)
+
+		_character_tabs.add_child(tab_container)
 
 	# Options container
 	_options_container = VBoxContainer.new()
@@ -127,9 +137,11 @@ func _build_ui() -> void:
 	_panel.add_child(_options_container)
 
 	# Create option rows
-	for option in OPTIONS:
-		var row = _create_option_row(option)
+	for i in range(OPTIONS.size()):
+		var row = _create_option_row(OPTIONS[i])
 		_options_container.add_child(row)
+		MenuMouseHelper.make_clickable(row, i, 360, OPTION_HEIGHT,
+			_on_option_click.bind(i), _on_option_hover.bind(i))
 
 	# Preview area
 	var preview_bg = ColorRect.new()
@@ -167,6 +179,14 @@ func _build_ui() -> void:
 	_confirm_button.add_theme_color_override("font_color", Color(0.4, 0.8, 0.4))
 	_panel.add_child(_confirm_button)
 
+	# Confirm button click overlay
+	var confirm_container = Control.new()
+	confirm_container.position = Vector2(20, PANEL_HEIGHT - 35)
+	confirm_container.size = Vector2(200, 20)
+	_panel.add_child(confirm_container)
+	MenuMouseHelper.make_clickable(confirm_container, 0, 200, 20,
+		_confirm_creation, func() -> void: pass)
+
 	# Skip button
 	_skip_button = Label.new()
 	_skip_button.text = "[ SKIP - Use Defaults ]"
@@ -174,6 +194,14 @@ func _build_ui() -> void:
 	_skip_button.add_theme_font_size_override("font_size", 12)
 	_skip_button.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
 	_panel.add_child(_skip_button)
+
+	# Skip button click overlay
+	var skip_container = Control.new()
+	skip_container.position = Vector2(300, PANEL_HEIGHT - 35)
+	skip_container.size = Vector2(200, 20)
+	_panel.add_child(skip_container)
+	MenuMouseHelper.make_clickable(skip_container, 0, 200, 20,
+		_skip_creation, func() -> void: pass)
 
 
 func _add_border(parent: Control, size: Vector2) -> void:
@@ -292,7 +320,10 @@ func _update_display() -> void:
 
 	# Update tabs
 	for i in range(_character_tabs.get_child_count()):
-		var tab = _character_tabs.get_child(i)
+		var tab_container = _character_tabs.get_child(i)
+		var tab = tab_container.get_node_or_null("TabLabel")
+		if not tab:
+			continue
 		var char_name = party_customizations[i].name if i < party_customizations.size() else "Char %d" % (i + 1)
 		tab.text = char_name
 		if i == current_character_index:
@@ -900,6 +931,39 @@ func _previous_character() -> void:
 		current_character_index -= 1
 		current_option_index = 0
 		SoundManager.play_ui("menu_cancel")
+		_update_display()
+
+
+func _on_char_tab_click(index: int) -> void:
+	"""Handle mouse click on a character tab"""
+	if _name_editing:
+		return
+	if index != current_character_index and index < party_customizations.size():
+		current_character_index = index
+		current_option_index = 0
+		SoundManager.play_ui("menu_expand")
+		_update_display()
+
+
+func _on_option_click(index: int) -> void:
+	"""Handle mouse click on an option row"""
+	if _name_editing or _input_blocked:
+		return
+	current_option_index = index
+	if OPTIONS[index] == "name":
+		_start_name_editing()
+	else:
+		_change_option(1)
+	_update_display()
+
+
+func _on_option_hover(index: int) -> void:
+	"""Handle mouse hover on an option row"""
+	if _name_editing or _input_blocked:
+		return
+	if index != current_option_index:
+		current_option_index = index
+		SoundManager.play_ui("menu_move")
 		_update_display()
 
 

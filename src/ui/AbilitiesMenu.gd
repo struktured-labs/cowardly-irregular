@@ -178,10 +178,13 @@ func _build_ui() -> void:
 		details_panel.position = Vector2(viewport_size.x * 0.5 + 8, 132)
 		add_child(details_panel)
 
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
+
 	# Footer
-	var footer_text = "←→: Tab  ↑↓: Select  B: Back"
+	var footer_text = "←→/Click: Tab  ↑↓: Select  B/RClick: Back"
 	if current_tab == Tab.PASSIVES:
-		footer_text = "←→: Tab  ↑↓: Select  A: Equip/Unequip  B: Back"
+		footer_text = "←→/Click: Tab  ↑↓: Select  A/Click: Equip/Unequip  B/RClick: Back"
 	var footer = Label.new()
 	footer.text = footer_text
 	footer.position = Vector2(16, viewport_size.y - 32)
@@ -211,6 +214,10 @@ func _create_tabs_panel(panel_size: Vector2) -> Control:
 		tab_label.add_theme_font_size_override("font_size", 12)
 		tab_label.add_theme_color_override("font_color", Color.YELLOW if i == current_tab else DISABLED_COLOR)
 		panel.add_child(tab_label)
+
+		# Tab click overlay
+		MenuMouseHelper.make_clickable(tab, i, tab_width, 32,
+			_on_tab_click.bind(i), func() -> void: pass)
 
 	return panel
 
@@ -340,6 +347,10 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 		mp_label.add_theme_font_size_override("font_size", 10)
 		mp_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		row.add_child(mp_label)
+
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, index, 220, 24,
+		_on_ability_click.bind(index), _on_ability_hover.bind(index))
 
 	return row
 
@@ -506,6 +517,10 @@ func _create_passive_row(passive: Dictionary, index: int) -> Control:
 	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else PASSIVE_AVAILABLE)
 	row.add_child(name_label)
+
+	# Mouse click overlay
+	MenuMouseHelper.make_clickable(row, index, 220, 26,
+		_on_passive_click.bind(index), _on_passive_hover.bind(index))
 
 	return row
 
@@ -692,6 +707,52 @@ func _toggle_passive() -> void:
 			_build_ui()
 		else:
 			SoundManager.play_ui("menu_error")
+
+
+func _on_tab_click(tab_index: int) -> void:
+	"""Handle mouse click on a tab"""
+	if tab_index != current_tab:
+		current_tab = tab_index
+		selected_index = 0
+		_build_ui()
+		SoundManager.play_ui("menu_move")
+
+
+func _on_ability_click(index: int) -> void:
+	"""Handle mouse click on an ability"""
+	if current_tab != Tab.ABILITIES:
+		return
+	selected_index = index
+	_build_ui()
+
+
+func _on_ability_hover(index: int) -> void:
+	"""Handle mouse hover on an ability"""
+	if current_tab != Tab.ABILITIES:
+		return
+	if index != selected_index:
+		selected_index = index
+		_build_ui()
+		SoundManager.play_ui("menu_move")
+
+
+func _on_passive_click(index: int) -> void:
+	"""Handle mouse click on a passive"""
+	if current_tab != Tab.PASSIVES:
+		return
+	selected_index = index
+	_build_ui()
+	_toggle_passive()
+
+
+func _on_passive_hover(index: int) -> void:
+	"""Handle mouse hover on a passive"""
+	if current_tab != Tab.PASSIVES:
+		return
+	if index != selected_index:
+		selected_index = index
+		_build_ui()
+		SoundManager.play_ui("menu_move")
 
 
 func _close_menu() -> void:
