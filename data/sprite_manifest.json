@@ -1,6 +1,42 @@
 {
-	"_comment": "Hybrid sprite manifest - maps IDs to external sprite sheet paths. Populated when artist sheets are ready.",
-	"sheets": {},
+	"_comment": "Hybrid sprite manifest - maps IDs to external sprite sheet paths. HybridSpriteLoader reads from 'sheets' key.",
+	"sheets": {
+		"fighter": {
+			"path": "res://assets/sprites/jobs/fighter",
+			"frame_width": 80,
+			"frame_height": 100,
+			"fps": 8,
+			"animations": ["idle", "walk", "attack", "hit", "dead"]
+		},
+		"mage": {
+			"path": "res://assets/sprites/jobs/mage",
+			"frame_width": 80,
+			"frame_height": 100,
+			"fps": 8,
+			"animations": ["idle", "walk", "attack", "hit", "dead"]
+		},
+		"cleric": {
+			"path": "res://assets/sprites/jobs/cleric",
+			"frame_width": 80,
+			"frame_height": 100,
+			"fps": 8,
+			"animations": ["idle", "walk", "attack", "hit", "dead"]
+		},
+		"rogue": {
+			"path": "res://assets/sprites/jobs/rogue",
+			"frame_width": 80,
+			"frame_height": 100,
+			"fps": 8,
+			"animations": ["idle", "walk", "attack", "hit", "dead"]
+		},
+		"bard": {
+			"path": "res://assets/sprites/jobs/bard",
+			"frame_width": 80,
+			"frame_height": 100,
+			"fps": 8,
+			"animations": ["idle", "walk", "attack", "hit", "dead"]
+		}
+	},
 	"party_sheets": {},
 	"monster_sheets": {}
 }

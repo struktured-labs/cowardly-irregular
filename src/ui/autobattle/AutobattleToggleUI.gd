@@ -27,15 +27,17 @@ var _font: Font = null
 
 
 func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
 	# Position at top-right of screen
 	anchor_left = 1.0
 	anchor_right = 1.0
 	anchor_top = 0.0
 	anchor_bottom = 0.0
-	offset_left = -200
-	offset_right = 0
+	offset_left = -210
+	offset_right = -8
 	offset_top = 10
-	offset_bottom = 100
+	offset_bottom = 120
 
 	# Connect to BattleManager signals
 	if BattleManager:
@@ -79,6 +81,39 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_focus_prev"):
 		_toggle_current_character_autobattle()
 		get_viewport().set_input_as_handled()
+
+
+func _gui_input(event: InputEvent) -> void:
+	"""Handle mouse clicks on autobattle indicators"""
+	if not visible or character_indicators.size() == 0:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var local_pos = event.position
+		var panel_rect = _get_panel_rect()
+
+		# Check header area click = toggle all
+		var header_rect = Rect2(panel_rect.position, Vector2(panel_rect.size.x, 24))
+		if header_rect.has_point(local_pos):
+			_toggle_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
+
+		# Check individual character indicators
+		var y_offset = 24
+		var char_ids = character_indicators.keys()
+		char_ids.sort()
+		for char_id in char_ids:
+			var indicator_rect = Rect2(
+				panel_rect.position.x + PANEL_MARGIN,
+				panel_rect.position.y + y_offset,
+				INDICATOR_SIZE.x,
+				INDICATOR_SIZE.y
+			)
+			if indicator_rect.has_point(local_pos):
+				_toggle_character_autobattle(char_id)
+				get_viewport().set_input_as_handled()
+				return
+			y_offset += INDICATOR_SIZE.y + CHAR_SPACING
 
 
 func _draw() -> void:
@@ -159,16 +194,38 @@ func _toggle_current_character_autobattle() -> void:
 		return
 
 	var char_id = BattleManager.current_combatant.combatant_name.to_lower().replace(" ", "_")
+	_toggle_character_autobattle(char_id)
+
+
+func _toggle_character_autobattle(char_id: String) -> void:
+	"""Toggle autobattle for a specific character by ID"""
 	var new_state = AutobattleSystem.toggle_autobattle(char_id)
 
-	# Update indicator
 	if character_indicators.has(char_id):
 		character_indicators[char_id]["enabled"] = new_state
 
 	autobattle_toggled.emit(char_id, new_state)
 	queue_redraw()
-
 	print("Autobattle for %s: %s" % [char_id, "ON" if new_state else "OFF"])
+
+
+func _toggle_all_autobattle() -> void:
+	"""Toggle autobattle for all party members"""
+	# If any are on, turn all off; otherwise turn all on
+	var any_on = false
+	for char_id in character_indicators:
+		if character_indicators[char_id].get("enabled", false):
+			any_on = true
+			break
+
+	var new_state = not any_on
+	for char_id in character_indicators:
+		AutobattleSystem.set_autobattle_enabled(char_id, new_state)
+		character_indicators[char_id]["enabled"] = new_state
+		autobattle_toggled.emit(char_id, new_state)
+
+	queue_redraw()
+	print("Autobattle ALL: %s" % ("ON" if new_state else "OFF"))
 
 
 func setup_for_party(party: Array[Combatant]) -> void:

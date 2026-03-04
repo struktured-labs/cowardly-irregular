@@ -125,6 +125,8 @@ func _input(event: InputEvent) -> void:
 		x_pressed = true
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		x_pressed = true
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		x_pressed = true
 
 	if x_pressed:
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
@@ -751,12 +753,14 @@ func _on_battle_ended(victory: bool) -> void:
 
 
 func _wait_for_confirm() -> void:
-	"""Wait for the player to press confirm (A/Z/Enter) before continuing"""
+	"""Wait for the player to press confirm (A/Z/Enter/mouse click) before continuing"""
 	# Small delay so the press that ended the battle doesn't immediately confirm
 	await get_tree().create_timer(0.5).timeout
 	while true:
 		await get_tree().process_frame
 		if Input.is_action_just_pressed("ui_accept"):
+			break
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
 
 

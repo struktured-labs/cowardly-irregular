@@ -72,19 +72,19 @@ func _generate_bar_sprite() -> void:
 func _draw_bar(image: Image) -> void:
 	image.fill(Color.TRANSPARENT)
 
-	var wood = Color(0.38, 0.24, 0.13)
-	var wood_light = Color(0.48, 0.34, 0.20)
-	var wood_dark = Color(0.28, 0.16, 0.08)
-	var brick = Color(0.58, 0.38, 0.26)
-	var brick_light = Color(0.68, 0.48, 0.34)
-	var brick_dark = Color(0.45, 0.28, 0.18)
-	var mortar = Color(0.38, 0.32, 0.26)
-	var window = Color(0.92, 0.82, 0.52, 0.85)
-	var window_bright = Color(1.0, 0.92, 0.65, 0.92)
-	var window_frame = Color(0.22, 0.15, 0.08)
-	var stage = Color(0.52, 0.42, 0.28)
-	var stage_light = Color(0.62, 0.52, 0.35)
-	var outline = Color(0.12, 0.08, 0.04)
+	var wood = Color(0.45, 0.30, 0.16)
+	var wood_light = Color(0.58, 0.42, 0.24)
+	var wood_dark = Color(0.32, 0.20, 0.10)
+	var brick = Color(0.64, 0.44, 0.28)
+	var brick_light = Color(0.76, 0.54, 0.36)
+	var brick_dark = Color(0.50, 0.32, 0.20)
+	var mortar = Color(0.42, 0.36, 0.28)
+	var window = Color(0.95, 0.86, 0.52, 0.85)
+	var window_bright = Color(1.0, 0.94, 0.65, 0.92)
+	var window_frame = Color(0.26, 0.18, 0.10)
+	var stage = Color(0.58, 0.46, 0.30)
+	var stage_light = Color(0.68, 0.56, 0.38)
+	var outline = Color(0.14, 0.10, 0.05)
 
 	# Roof with shingle detail and proper 3D shading
 	for y in range(0, 12):

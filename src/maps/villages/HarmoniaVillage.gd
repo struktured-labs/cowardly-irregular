@@ -86,36 +86,43 @@ func _setup_scene() -> void:
 
 
 func _generate_map() -> void:
-	# Expanded village layout:
-	# W = wall, . = floor, H = house, F = fountain area
-	# I = inn, A = armor shop, P = weapon shop, G = general store, B = bar
-	# X = exit
+	# Rich village layout with multiple terrain types:
+	# W = stone wall (perimeter), H = house walls (impassable building)
+	# I = inn, A = armor/magic shop, P = weapon shop, G = general store, B = bar
+	# g = village grass (warm, sun-dappled)
+	# p = cobblestone path (walkways between buildings)
+	# d = bare dirt (worn areas, market square)
+	# f = flower bed (decorative patches)
+	# e = hedge (impassable decorative border)
+	# F = fountain water
+	# X = exit path (cobblestone leading out)
+	# Each row is exactly MAP_WIDTH (30) characters
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-		"W............................W",
-		"W..HHH..........AAA..........W",
-		"W..HHH..........AAA....PPP...W",
-		"W..HHH..........AAA....PPP...W",
-		"W............................W",
-		"W........FFFFFF..............W",
-		"W..III...FFFFFF....GGG.......W",
-		"W..III...FFFFFF....GGG.......W",
-		"W..III...FFFFFF....GGG.......W",
-		"W........FFFFFF..............W",
-		"W............................W",
-		"W............................W",
-		"W..HHH...................BBB.W",
-		"W..HHH...................BBB.W",
-		"W..HHH...................BBB.W",
-		"W............................W",
-		"W....HHH.....................W",
-		"W....HHH.....................W",
-		"W....HHH.....................W",
-		"W............................W",
-		"W..........XXXXXX............W",
-		"W..........XXXXXX............W",
-		"W............................W",
-		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+		"WgfgpppppggggggggggpppgfgfgggW",
+		"WggHHHgdppgfgAAAgddppgggfgfggW",
+		"WgfHHHgdppgggAAAggdppgPPPgfggW",
+		"WggHHHgdppggfAAAggdppgPPPgfggW",
+		"WgggggddpppppppppppppppggfgggW",
+		"WgfgggddppFFFFFFggdppggfgfgggW",
+		"WggIIIgdppFFFFFFggdppGGGgfgggW",
+		"WggIIIgdppFFFFFFggdppGGGggfggW",
+		"WgfIIIgdppFFFFFFggdppGGGgfgfgW",
+		"WgggggddppFFFFFFggdppgggggfggW",
+		"WgfgggddpppppppppppppppgfgfggW",
+		"WggggggdppggggfggggggdppggfggW",
+		"WgfHHHgdppgfgfggfggdppgBBBfggW",
+		"WggHHHgdppggggggggfgdppBBBfggW",
+		"WggHHHgdppgfgggggggdppgBBBfggW",
+		"WgfggggdpppppppppppppppggfgggW",
+		"WgggHHHgdppggfggfgggggggfgfggW",
+		"WgfgHHHgdppggggggfggfggfgfgfgW",
+		"WgggHHHgdppgfggggggggggfggfggW",
+		"WggfggggddpppppppppggfgggfgggW",
+		"WgggfgggddppXXXXXXdppggggfgggW",
+		"WggggfggddppXXXXXXdppgfgfggggW",
+		"WgfgggggdddddddddddppgggfggggW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -140,8 +147,15 @@ func _generate_map() -> void:
 func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
-		"F": return TileGeneratorScript.TileType.WATER  # Fountain water effect
-		_: return TileGeneratorScript.TileType.FLOOR
+		"H", "I", "A", "P", "G", "B": return TileGeneratorScript.TileType.WALL  # Building walls
+		"g": return TileGeneratorScript.TileType.VILLAGE_GRASS
+		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
+		"d": return TileGeneratorScript.TileType.VILLAGE_DIRT
+		"f": return TileGeneratorScript.TileType.VILLAGE_FLOWER
+		"e": return TileGeneratorScript.TileType.VILLAGE_HEDGE
+		"F": return TileGeneratorScript.TileType.WATER
+		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # Exit is also cobblestone
+		_: return TileGeneratorScript.TileType.VILLAGE_GRASS
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:

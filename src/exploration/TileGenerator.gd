@@ -24,7 +24,12 @@ enum TileType {
 	SWAMP,
 	DARK_GROUND,
 	COAST,
-	LAVA
+	LAVA,
+	VILLAGE_GRASS,
+	VILLAGE_PATH,
+	VILLAGE_DIRT,
+	VILLAGE_FLOWER,
+	VILLAGE_HEDGE
 }
 
 ## FF4/5/6 era color palettes - rich, vibrant, with full 24-bit depth
@@ -126,26 +131,26 @@ const PALETTES: Dictionary = {
 		"gold_light": Color(0.95, 0.85, 0.45)
 	},
 	TileType.WALL: {
-		"base": Color(0.55, 0.52, 0.48),
-		"light": Color(0.70, 0.66, 0.60),
-		"mid": Color(0.60, 0.58, 0.54),
-		"dark": Color(0.42, 0.40, 0.36),
-		"deep": Color(0.32, 0.30, 0.28),
-		"mortar": Color(0.48, 0.46, 0.42),
-		"mortar_dark": Color(0.38, 0.36, 0.34),
+		"base": Color(0.58, 0.52, 0.42),
+		"light": Color(0.74, 0.68, 0.56),
+		"mid": Color(0.64, 0.58, 0.48),
+		"dark": Color(0.44, 0.38, 0.30),
+		"deep": Color(0.34, 0.28, 0.22),
+		"mortar": Color(0.50, 0.44, 0.36),
+		"mortar_dark": Color(0.40, 0.34, 0.28),
 		"moss": Color(0.32, 0.48, 0.28),
-		"crack": Color(0.35, 0.32, 0.30),
-		"stain": Color(0.48, 0.44, 0.40)
+		"crack": Color(0.38, 0.32, 0.26),
+		"stain": Color(0.50, 0.44, 0.36)
 	},
 	TileType.FLOOR: {
-		"base": Color(0.62, 0.56, 0.48),
-		"light": Color(0.72, 0.66, 0.58),
-		"mid": Color(0.65, 0.60, 0.52),
-		"dark": Color(0.48, 0.44, 0.38),
-		"deep": Color(0.38, 0.35, 0.30),
-		"accent": Color(0.55, 0.52, 0.46),
-		"grout": Color(0.42, 0.40, 0.36),
-		"polish": Color(0.78, 0.72, 0.65)
+		"base": Color(0.65, 0.56, 0.42),
+		"light": Color(0.78, 0.68, 0.52),
+		"mid": Color(0.70, 0.60, 0.46),
+		"dark": Color(0.50, 0.42, 0.32),
+		"deep": Color(0.40, 0.34, 0.26),
+		"accent": Color(0.58, 0.50, 0.38),
+		"grout": Color(0.44, 0.38, 0.30),
+		"polish": Color(0.82, 0.74, 0.58)
 	},
 	TileType.CAVE_FLOOR: {
 		"base": Color(0.28, 0.26, 0.24),
@@ -259,6 +264,77 @@ const PALETTES: Dictionary = {
 		"crust": Color(0.25, 0.12, 0.08),
 		"crust_dark": Color(0.15, 0.06, 0.04),
 		"glow": Color(1.0, 0.65, 0.10)
+	},
+	TileType.VILLAGE_GRASS: {
+		"base": Color(0.32, 0.56, 0.22),
+		"light": Color(0.48, 0.72, 0.35),
+		"mid_light": Color(0.40, 0.64, 0.28),
+		"dark": Color(0.22, 0.42, 0.14),
+		"deep": Color(0.15, 0.32, 0.10),
+		"accent": Color(0.38, 0.60, 0.26),
+		"highlight": Color(0.58, 0.80, 0.42),
+		"yellow_tip": Color(0.68, 0.75, 0.35),
+		"warm_tint": Color(0.55, 0.65, 0.28),
+		"soil": Color(0.50, 0.38, 0.24),
+		"soil_dark": Color(0.38, 0.28, 0.16),
+		"clover": Color(0.28, 0.52, 0.22),
+		"sunlit": Color(0.62, 0.78, 0.38)
+	},
+	TileType.VILLAGE_PATH: {
+		"base": Color(0.68, 0.58, 0.44),
+		"light": Color(0.82, 0.72, 0.56),
+		"mid": Color(0.74, 0.64, 0.50),
+		"dark": Color(0.52, 0.44, 0.32),
+		"deep": Color(0.42, 0.35, 0.24),
+		"stone": Color(0.72, 0.68, 0.62),
+		"stone_light": Color(0.84, 0.80, 0.74),
+		"stone_dark": Color(0.56, 0.52, 0.46),
+		"stone_warm": Color(0.76, 0.66, 0.52),
+		"grout": Color(0.48, 0.42, 0.34),
+		"grout_dark": Color(0.38, 0.32, 0.24),
+		"moss": Color(0.38, 0.50, 0.28),
+		"pebble": Color(0.60, 0.56, 0.48)
+	},
+	TileType.VILLAGE_DIRT: {
+		"base": Color(0.58, 0.46, 0.30),
+		"light": Color(0.72, 0.60, 0.42),
+		"mid": Color(0.64, 0.52, 0.36),
+		"dark": Color(0.44, 0.34, 0.22),
+		"deep": Color(0.34, 0.26, 0.16),
+		"grass_edge": Color(0.38, 0.54, 0.26),
+		"grass_light": Color(0.48, 0.65, 0.32),
+		"pebble": Color(0.56, 0.52, 0.44),
+		"pebble_dark": Color(0.44, 0.40, 0.34),
+		"footprint": Color(0.48, 0.38, 0.24),
+		"warm": Color(0.62, 0.50, 0.34)
+	},
+	TileType.VILLAGE_FLOWER: {
+		"base": Color(0.34, 0.58, 0.24),
+		"light": Color(0.50, 0.74, 0.38),
+		"dark": Color(0.22, 0.44, 0.16),
+		"deep": Color(0.16, 0.34, 0.12),
+		"red_petal": Color(0.88, 0.28, 0.22),
+		"red_light": Color(0.95, 0.45, 0.38),
+		"yellow_petal": Color(0.92, 0.82, 0.28),
+		"yellow_light": Color(0.98, 0.92, 0.45),
+		"blue_petal": Color(0.35, 0.42, 0.82),
+		"blue_light": Color(0.52, 0.58, 0.92),
+		"white_petal": Color(0.95, 0.94, 0.90),
+		"pink_petal": Color(0.92, 0.58, 0.65),
+		"center": Color(0.82, 0.72, 0.22),
+		"stem": Color(0.28, 0.48, 0.18)
+	},
+	TileType.VILLAGE_HEDGE: {
+		"base": Color(0.18, 0.40, 0.14),
+		"light": Color(0.28, 0.52, 0.22),
+		"mid": Color(0.22, 0.46, 0.18),
+		"dark": Color(0.12, 0.30, 0.08),
+		"deep": Color(0.06, 0.20, 0.04),
+		"highlight": Color(0.38, 0.62, 0.30),
+		"shadow": Color(0.08, 0.22, 0.06),
+		"berry": Color(0.72, 0.18, 0.15),
+		"berry_light": Color(0.85, 0.28, 0.22),
+		"trunk": Color(0.38, 0.26, 0.14)
 	}
 }
 
@@ -283,14 +359,18 @@ func _get_tile_order() -> Array:
 		# Row 4: New biome tiles
 		TileType.SAND, TileType.ICE, TileType.SNOW_TREE, TileType.SWAMP, TileType.DARK_GROUND,
 		# Row 5: More biome tiles and variants
-		TileType.COAST, TileType.LAVA, TileType.SAND, TileType.ICE, TileType.LAVA
+		TileType.COAST, TileType.LAVA, TileType.SAND, TileType.ICE, TileType.LAVA,
+		# Row 6: Village tiles (warm, cozy starting village)
+		TileType.VILLAGE_GRASS, TileType.VILLAGE_PATH, TileType.VILLAGE_DIRT, TileType.VILLAGE_FLOWER, TileType.VILLAGE_HEDGE,
+		# Row 7: Village tile variants
+		TileType.VILLAGE_GRASS, TileType.VILLAGE_PATH, TileType.VILLAGE_DIRT, TileType.VILLAGE_FLOWER, TileType.VILLAGE_GRASS
 	]
 
 func _get_impassable_types() -> Array:
-	return [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL, TileType.CAVE_WALL, TileType.LAVA]
+	return [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.VILLAGE_HEDGE]
 
 func _get_atlas_dimensions() -> Vector2i:
-	return Vector2i(5, 6)
+	return Vector2i(5, 8)
 
 func _get_tile_variants() -> Dictionary:
 	return {
@@ -304,7 +384,12 @@ func _get_tile_variants() -> Dictionary:
 		19: 1,  # Mountain variant 1
 		27: 1,  # Sand variant 1
 		28: 1,  # Ice variant 1
-		29: 1   # Lava variant 1
+		29: 1,  # Lava variant 1
+		35: 1,  # Village grass variant 1
+		36: 1,  # Village path variant 1
+		37: 1,  # Village dirt variant 1
+		38: 1,  # Village flower variant 1
+		39: 2   # Village grass variant 2
 	}
 
 func _get_debug_atlas_name() -> String:
@@ -350,6 +435,16 @@ func _draw_tile(img: Image, tile_type: int, palette: Dictionary, variant: int) -
 			_draw_coast(img, palette, variant)
 		TileType.LAVA:
 			_draw_lava(img, palette, variant)
+		TileType.VILLAGE_GRASS:
+			_draw_village_grass(img, palette, variant)
+		TileType.VILLAGE_PATH:
+			_draw_village_path(img, palette, variant)
+		TileType.VILLAGE_DIRT:
+			_draw_village_dirt(img, palette, variant)
+		TileType.VILLAGE_FLOWER:
+			_draw_village_flower(img, palette, variant)
+		TileType.VILLAGE_HEDGE:
+			_draw_village_hedge(img, palette, variant)
 
 
 ## Grass tile - FF4/5/6 quality with detailed blades, shading, and seamless tiling
@@ -2389,6 +2484,492 @@ func _draw_lava(img: Image, palette: Dictionary, variant: int) -> void:
 		img.set_pixel(ex, ey, hot_bright)
 
 
+## Village grass - warm, sun-dappled lawn with golden-hour tinting (FF6/Chrono Trigger village style)
+func _draw_village_grass(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 77777
+
+	var mid_light = palette.get("mid_light", palette["base"].lerp(palette["light"], 0.5))
+	var highlight = palette.get("highlight", palette["light"].lightened(0.15))
+	var deep = palette.get("deep", palette["dark"].darkened(0.2))
+	var yellow_tip = palette.get("yellow_tip", Color(0.68, 0.75, 0.35))
+	var warm_tint = palette.get("warm_tint", Color(0.55, 0.65, 0.28))
+	var sunlit = palette.get("sunlit", Color(0.62, 0.78, 0.38))
+	var clover = palette.get("clover", Color(0.28, 0.52, 0.22))
+	var soil = palette.get("soil", Color(0.50, 0.38, 0.24))
+
+	# Multi-layer warm grass with golden-hour diagonal lighting (top-left sun)
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			# Organic noise at multiple frequencies
+			var n1 = sin(x * 0.5 + variant * 2.1) * cos(y * 0.4 + variant * 0.5)
+			var n2 = sin(x * 1.2 + y * 0.8 + variant * 1.7) * 0.42
+			var n3 = sin((x + y) * 0.3 + variant * 0.9) * 0.25
+			var n4 = sin((x - y) * 0.45 + variant * 1.4) * 0.18
+			var combined = (n1 + n2 + n3 + n4) / 4.0 + rng.randf() * 0.22
+
+			# Strong diagonal light gradient (warm golden hour from top-left)
+			var light_bias = (float(TILE_SIZE - x) + float(TILE_SIZE - y)) / (TILE_SIZE * 2.0) * 0.22
+			combined += light_bias
+
+			# 8-tone shading for rich warm depth
+			if combined < -0.32:
+				img.set_pixel(x, y, deep)
+			elif combined < -0.18:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined < -0.05:
+				img.set_pixel(x, y, clover)
+			elif combined > 0.42:
+				img.set_pixel(x, y, sunlit)
+			elif combined > 0.32:
+				img.set_pixel(x, y, highlight)
+			elif combined > 0.22:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.12:
+				img.set_pixel(x, y, mid_light)
+			elif combined > 0.02:
+				img.set_pixel(x, y, warm_tint)
+
+	# Detailed grass blade tufts with warm sun-tips
+	var tuft_count = 10 + (variant % 5)
+	for i in range(tuft_count):
+		var tx = rng.randi_range(1, TILE_SIZE - 3)
+		var ty = rng.randi_range(3, TILE_SIZE - 2)
+		var blade_height = rng.randi_range(2, 5)
+		var blade_color = [palette["light"], yellow_tip, warm_tint, sunlit][rng.randi() % 4]
+		var shadow_color = palette["dark"]
+
+		# Shadow at base
+		if ty < TILE_SIZE - 1:
+			img.set_pixel(tx, ty, shadow_color)
+
+		# Blade going up with slight curve
+		for b in range(blade_height):
+			var bx = tx + (1 if b > 2 and rng.randf() > 0.5 else 0)
+			var by = ty - b
+			if bx >= 0 and bx < TILE_SIZE and by >= 0 and by < TILE_SIZE:
+				if b == blade_height - 1:
+					img.set_pixel(bx, by, yellow_tip)  # Golden sun-tip
+				else:
+					img.set_pixel(bx, by, blade_color)
+
+	# Clover patches (small dark-green clusters)
+	var clover_count = rng.randi_range(1, 3)
+	for i in range(clover_count):
+		var cx = rng.randi_range(2, TILE_SIZE - 4)
+		var cy = rng.randi_range(2, TILE_SIZE - 4)
+		for dy in range(3):
+			for dx in range(3):
+				if rng.randf() < 0.5:
+					var px = cx + dx
+					var py = cy + dy
+					if px < TILE_SIZE and py < TILE_SIZE:
+						img.set_pixel(px, py, clover.lightened(rng.randf_range(-0.05, 0.08)))
+
+	# Tiny soil peeks (very sparse)
+	for i in range(rng.randi_range(0, 2)):
+		var sx = rng.randi_range(1, TILE_SIZE - 2)
+		var sy = rng.randi_range(1, TILE_SIZE - 2)
+		img.set_pixel(sx, sy, soil)
+
+
+## Village cobblestone path - warm flagstone with moss in cracks (Chrono Trigger / Secret of Mana style)
+func _draw_village_path(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 88888
+
+	var stone = palette.get("stone", Color(0.72, 0.68, 0.62))
+	var stone_light = palette.get("stone_light", Color(0.84, 0.80, 0.74))
+	var stone_dark = palette.get("stone_dark", Color(0.56, 0.52, 0.46))
+	var stone_warm = palette.get("stone_warm", Color(0.76, 0.66, 0.52))
+	var grout = palette.get("grout", Color(0.48, 0.42, 0.34))
+	var grout_dark = palette.get("grout_dark", Color(0.38, 0.32, 0.24))
+	var moss = palette.get("moss", Color(0.38, 0.50, 0.28))
+	var pebble = palette.get("pebble", Color(0.60, 0.56, 0.48))
+
+	# Irregular flagstone pattern (not a uniform grid - more organic)
+	# Define stone shapes as rectangles with slight variation
+	var stones: Array = []
+	var stone_rng = RandomNumberGenerator.new()
+	stone_rng.seed = variant * 12321
+
+	# Generate irregular stone layout
+	var grid_y = 0
+	while grid_y < TILE_SIZE:
+		var row_height = stone_rng.randi_range(6, 10)
+		var grid_x = 0
+		var row_offset = stone_rng.randi_range(-2, 2)
+		while grid_x < TILE_SIZE:
+			var stone_width = stone_rng.randi_range(7, 13)
+			stones.append({
+				"x": grid_x + row_offset,
+				"y": grid_y,
+				"w": stone_width,
+				"h": row_height,
+				"tint": stone_rng.randf_range(-0.08, 0.08)
+			})
+			grid_x += stone_width + 1  # +1 for grout gap
+		grid_y += row_height + 1
+
+	# Draw grout base layer
+	img.fill(grout)
+
+	# Draw each stone with shading
+	for s in stones:
+		var base_tint = s["tint"]
+		var s_base = stone.lightened(base_tint) if base_tint > 0 else stone.darkened(-base_tint)
+		# Alternate warm/cool stones
+		if rng.randf() < 0.35:
+			s_base = stone_warm.lightened(base_tint) if base_tint > 0 else stone_warm.darkened(-base_tint)
+
+		for dy in range(s["h"]):
+			for dx in range(s["w"]):
+				var px = s["x"] + dx
+				var py = s["y"] + dy
+				if px < 0 or px >= TILE_SIZE or py < 0 or py >= TILE_SIZE:
+					continue
+
+				var rel_x = float(dx) / float(maxi(s["w"] - 1, 1))
+				var rel_y = float(dy) / float(maxi(s["h"] - 1, 1))
+				var shade = s_base
+
+				# Edge beveling (SNES-style 3D depth)
+				if dy == 0:
+					shade = stone_light  # Top lit edge
+				elif dy == s["h"] - 1:
+					shade = stone_dark  # Bottom shadow edge
+				elif dx == 0:
+					shade = stone_light.darkened(0.04)  # Left lit edge
+				elif dx == s["w"] - 1:
+					shade = stone_dark.lightened(0.04)  # Right shadow edge
+				else:
+					# Interior surface texture noise
+					var noise = sin(px * 2.0 + py * 1.5 + variant * 1.2) * 0.5
+					if noise > 0.3:
+						shade = shade.lightened(0.05)
+					elif noise < -0.3:
+						shade = shade.darkened(0.05)
+
+				# Diagonal sunlight bias (top-left lighter)
+				if rel_x < 0.3 and rel_y < 0.3:
+					shade = shade.lightened(0.06)
+				elif rel_x > 0.7 and rel_y > 0.7:
+					shade = shade.darkened(0.06)
+
+				img.set_pixel(px, py, shade)
+
+	# Moss in grout lines (warm green accents)
+	for i in range(rng.randi_range(3, 8)):
+		var mx = rng.randi_range(0, TILE_SIZE - 1)
+		var my = rng.randi_range(0, TILE_SIZE - 1)
+		var existing = img.get_pixel(mx, my)
+		# Only place moss on grout-colored pixels
+		if existing.r < 0.55 and existing.g < 0.50:
+			var spread = rng.randi_range(1, 3)
+			for d in range(spread):
+				var px = mx + rng.randi_range(-1, 1)
+				var py = my + rng.randi_range(-1, 1)
+				if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
+					img.set_pixel(px, py, moss.lightened(rng.randf_range(-0.04, 0.06)))
+
+	# Grout darkening in shadow areas (bottom-right)
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var existing = img.get_pixel(x, y)
+			if existing.r < 0.55 and existing.g < 0.50:  # Is grout
+				if x > TILE_SIZE * 0.6 and y > TILE_SIZE * 0.6:
+					img.set_pixel(x, y, grout_dark)
+
+
+## Village dirt - worn earth with grass edging and footprints (lived-in ground)
+func _draw_village_dirt(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 99999
+
+	var mid = palette.get("mid", palette["base"].lerp(palette["light"], 0.4))
+	var deep = palette.get("deep", palette["dark"].darkened(0.15))
+	var grass_edge = palette.get("grass_edge", Color(0.38, 0.54, 0.26))
+	var grass_light = palette.get("grass_light", Color(0.48, 0.65, 0.32))
+	var pebble_color = palette.get("pebble", Color(0.56, 0.52, 0.44))
+	var pebble_dark = palette.get("pebble_dark", Color(0.44, 0.40, 0.34))
+	var footprint = palette.get("footprint", Color(0.48, 0.38, 0.24))
+	var warm = palette.get("warm", Color(0.62, 0.50, 0.34))
+
+	# Multi-frequency dirt texture with warm tone
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n1 = sin(x * 0.6 + variant * 1.5) * cos(y * 0.45 + variant * 0.8)
+			var n2 = sin(x * 1.3 + y * 0.9 + variant * 2.0) * 0.40
+			var n3 = sin((x + y) * 0.35 + variant * 1.1) * 0.25
+			var combined = (n1 + n2 + n3) / 3.0 + rng.randf() * 0.25
+
+			# Diagonal warm sunlight
+			var light_bias = (float(TILE_SIZE - x) + float(TILE_SIZE - y)) / (TILE_SIZE * 2.0) * 0.15
+			combined += light_bias
+
+			if combined < -0.25:
+				img.set_pixel(x, y, deep)
+			elif combined < -0.10:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.35:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.22:
+				img.set_pixel(x, y, warm)
+			elif combined > 0.10:
+				img.set_pixel(x, y, mid)
+
+	# Grass tufts around edges (suggests transition from grass to dirt)
+	for edge in range(4):  # top, right, bottom, left
+		var tuft_count = rng.randi_range(2, 5)
+		for i in range(tuft_count):
+			var tx: int
+			var ty: int
+			match edge:
+				0: # top
+					tx = rng.randi_range(0, TILE_SIZE - 1)
+					ty = rng.randi_range(0, 3)
+				1: # right
+					tx = rng.randi_range(TILE_SIZE - 4, TILE_SIZE - 1)
+					ty = rng.randi_range(0, TILE_SIZE - 1)
+				2: # bottom
+					tx = rng.randi_range(0, TILE_SIZE - 1)
+					ty = rng.randi_range(TILE_SIZE - 4, TILE_SIZE - 1)
+				_: # left
+					tx = rng.randi_range(0, 3)
+					ty = rng.randi_range(0, TILE_SIZE - 1)
+
+			if tx >= 0 and tx < TILE_SIZE and ty >= 0 and ty < TILE_SIZE:
+				var gc = grass_edge if rng.randf() < 0.6 else grass_light
+				img.set_pixel(tx, ty, gc)
+				# Small blade above
+				if ty > 0 and rng.randf() < 0.5:
+					img.set_pixel(tx, ty - 1, grass_light)
+
+	# Scattered pebbles
+	for i in range(rng.randi_range(4, 8)):
+		var px = rng.randi_range(2, TILE_SIZE - 3)
+		var py = rng.randi_range(2, TILE_SIZE - 3)
+		var pc = pebble_color if rng.randf() > 0.5 else pebble_dark
+		img.set_pixel(px, py, pc)
+		# Highlight on top
+		if py > 0:
+			img.set_pixel(px, py - 1, pc.lightened(0.12))
+
+	# Footprint impressions (subtle darker indentations)
+	if variant % 3 != 2:
+		for i in range(rng.randi_range(1, 2)):
+			var fx = rng.randi_range(4, TILE_SIZE - 8)
+			var fy = rng.randi_range(4, TILE_SIZE - 8)
+			# Simple oval footprint
+			for dy in range(4):
+				for dx in range(3):
+					var px = fx + dx
+					var py = fy + dy
+					if px < TILE_SIZE and py < TILE_SIZE:
+						var dist = sqrt(pow((dx - 1.0), 2) + pow((dy - 1.5) / 1.5, 2))
+						if dist < 1.2 and rng.randf() < 0.6:
+							img.set_pixel(px, py, footprint)
+
+
+## Village flower bed - lush grass with colorful wildflowers (Secret of Mana style)
+func _draw_village_flower(img: Image, palette: Dictionary, variant: int) -> void:
+	# Start with grass base
+	img.fill(palette["base"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 11111 + 7
+
+	var red_petal = palette.get("red_petal", Color(0.88, 0.28, 0.22))
+	var red_light = palette.get("red_light", Color(0.95, 0.45, 0.38))
+	var yellow_petal = palette.get("yellow_petal", Color(0.92, 0.82, 0.28))
+	var yellow_light = palette.get("yellow_light", Color(0.98, 0.92, 0.45))
+	var blue_petal = palette.get("blue_petal", Color(0.35, 0.42, 0.82))
+	var blue_light = palette.get("blue_light", Color(0.52, 0.58, 0.92))
+	var white_petal = palette.get("white_petal", Color(0.95, 0.94, 0.90))
+	var pink_petal = palette.get("pink_petal", Color(0.92, 0.58, 0.65))
+	var center_color = palette.get("center", Color(0.82, 0.72, 0.22))
+	var stem = palette.get("stem", Color(0.28, 0.48, 0.18))
+
+	# Lush grass underlayer with warm tones
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n1 = sin(x * 0.55 + variant * 1.9) * cos(y * 0.4 + variant * 0.6)
+			var n2 = sin(x * 1.1 + y * 0.75 + variant * 2.3) * 0.40
+			var combined = (n1 + n2) / 2.0 + rng.randf() * 0.2
+			var light_bias = (float(TILE_SIZE - x) + float(TILE_SIZE - y)) / (TILE_SIZE * 2.0) * 0.18
+			combined += light_bias
+
+			if combined < -0.20:
+				img.set_pixel(x, y, palette["deep"])
+			elif combined < -0.05:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.30:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.15:
+				img.set_pixel(x, y, palette["base"].lightened(0.06))
+
+	# Flower types based on variant for variety
+	var flower_colors: Array = []
+	match variant % 4:
+		0:  # Red and yellow garden
+			flower_colors = [
+				{"petal": red_petal, "light": red_light},
+				{"petal": yellow_petal, "light": yellow_light},
+				{"petal": red_petal, "light": red_light}
+			]
+		1:  # Blue and white garden
+			flower_colors = [
+				{"petal": blue_petal, "light": blue_light},
+				{"petal": white_petal, "light": white_petal.lightened(0.05)},
+				{"petal": blue_petal, "light": blue_light}
+			]
+		2:  # Pink and yellow garden
+			flower_colors = [
+				{"petal": pink_petal, "light": pink_petal.lightened(0.12)},
+				{"petal": yellow_petal, "light": yellow_light},
+				{"petal": pink_petal, "light": pink_petal.lightened(0.12)}
+			]
+		_:  # Mixed wildflowers
+			flower_colors = [
+				{"petal": red_petal, "light": red_light},
+				{"petal": blue_petal, "light": blue_light},
+				{"petal": yellow_petal, "light": yellow_light},
+				{"petal": pink_petal, "light": pink_petal.lightened(0.12)},
+				{"petal": white_petal, "light": white_petal.lightened(0.05)}
+			]
+
+	# Draw flowers (5-8 per tile for good density)
+	var flower_count = rng.randi_range(5, 8)
+	for i in range(flower_count):
+		var fx = rng.randi_range(2, TILE_SIZE - 4)
+		var fy = rng.randi_range(3, TILE_SIZE - 3)
+		var fc = flower_colors[rng.randi() % flower_colors.size()]
+		var petal = fc["petal"]
+		var petal_light = fc["light"]
+
+		# Stem (1-2 pixels below flower)
+		var stem_h = rng.randi_range(1, 2)
+		for s in range(stem_h):
+			if fy + 1 + s < TILE_SIZE:
+				img.set_pixel(fx, fy + 1 + s, stem)
+
+		# 4-petal cross pattern (classic SNES flower)
+		img.set_pixel(fx, fy, center_color)  # Center
+		if fx > 0:
+			img.set_pixel(fx - 1, fy, petal)  # Left petal
+		if fx < TILE_SIZE - 1:
+			img.set_pixel(fx + 1, fy, petal_light)  # Right petal (lit)
+		if fy > 0:
+			img.set_pixel(fx, fy - 1, petal_light)  # Top petal (lit)
+		if fy < TILE_SIZE - 1 and stem_h == 0:
+			img.set_pixel(fx, fy + 1, petal)  # Bottom petal
+
+		# Shadow dot below flower
+		if fy + stem_h + 1 < TILE_SIZE:
+			var existing = img.get_pixel(fx, fy + stem_h + 1)
+			img.set_pixel(fx, fy + stem_h + 1, existing.darkened(0.12))
+
+
+## Village hedge - thick decorative bush (impassable border element)
+func _draw_village_hedge(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["dark"])
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 22222
+
+	var highlight = palette.get("highlight", palette["light"].lightened(0.12))
+	var shadow = palette.get("shadow", palette["deep"].darkened(0.15))
+	var berry = palette.get("berry", Color(0.72, 0.18, 0.15))
+	var berry_light = palette.get("berry_light", Color(0.85, 0.28, 0.22))
+	var trunk = palette.get("trunk", Color(0.38, 0.26, 0.14))
+
+	# Rounded hedge shape with natural leaf texture
+	var center_x = TILE_SIZE / 2.0
+	var center_y = TILE_SIZE / 2.0 - 2  # Slightly above center (ground visible at bottom)
+
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			# Elliptical hedge shape
+			var dx = (x - center_x) / (TILE_SIZE / 2.2)
+			var dy = (y - center_y) / (TILE_SIZE / 2.8)
+			var dist = dx * dx + dy * dy
+
+			if dist > 1.0:
+				# Outside hedge - draw soil/ground beneath
+				if y > TILE_SIZE - 5:
+					var soil_noise = sin(x * 0.8 + variant) * 0.3
+					if soil_noise > 0:
+						img.set_pixel(x, y, trunk.lightened(0.12))
+					else:
+						img.set_pixel(x, y, trunk.darkened(0.08))
+				else:
+					img.set_pixel(x, y, Color.TRANSPARENT)
+				continue
+
+			# Leaf texture with multi-frequency noise
+			var n1 = sin(x * 0.8 + variant * 1.5) * cos(y * 0.7 + variant * 0.9)
+			var n2 = sin(x * 1.8 + y * 1.5 + variant * 2.2) * 0.5
+			var n3 = sin((x + y) * 0.4 + variant * 1.1) * 0.3
+			var combined = (n1 + n2 + n3) / 3.0
+
+			# Spherical shading (lit from top-left)
+			var shade_x = (x - center_x) / (TILE_SIZE / 2.0) * 0.35
+			var shade_y = (y - center_y) / (TILE_SIZE / 2.0) * 0.35
+			combined -= shade_x + shade_y  # Brighten top-left, darken bottom-right
+
+			# Edge darkening (silhouette)
+			if dist > 0.75:
+				combined -= (dist - 0.75) * 2.0
+
+			# 6-tone leaf shading
+			if combined < -0.40:
+				img.set_pixel(x, y, shadow)
+			elif combined < -0.20:
+				img.set_pixel(x, y, palette["deep"])
+			elif combined < -0.05:
+				img.set_pixel(x, y, palette["dark"])
+			elif combined > 0.35:
+				img.set_pixel(x, y, highlight)
+			elif combined > 0.18:
+				img.set_pixel(x, y, palette["light"])
+			elif combined > 0.05:
+				img.set_pixel(x, y, palette["mid"])
+			else:
+				img.set_pixel(x, y, palette["base"])
+
+	# Berry clusters (small red dots)
+	var berry_count = rng.randi_range(2, 5)
+	for i in range(berry_count):
+		var bx = rng.randi_range(4, TILE_SIZE - 5)
+		var by = rng.randi_range(4, TILE_SIZE - 8)
+		# Check we're inside the hedge shape
+		var bdx = (bx - center_x) / (TILE_SIZE / 2.2)
+		var bdy = (by - center_y) / (TILE_SIZE / 2.8)
+		if bdx * bdx + bdy * bdy < 0.7:
+			img.set_pixel(bx, by, berry)
+			if bx < TILE_SIZE - 1:
+				img.set_pixel(bx + 1, by, berry_light)  # Highlight side
+			if by > 0:
+				var existing = img.get_pixel(bx, by - 1)
+				if existing.a > 0.5:
+					img.set_pixel(bx, by - 1, existing.darkened(0.08))  # Shadow above
+
+	# Top highlight rim (sunlit edge)
+	for x in range(4, TILE_SIZE - 4):
+		var rim_dx = (x - center_x) / (TILE_SIZE / 2.2)
+		var rim_dist = rim_dx * rim_dx
+		if rim_dist < 0.8:
+			var ry = int(center_y - (TILE_SIZE / 2.8) * sqrt(1.0 - rim_dist)) + 1
+			if ry >= 0 and ry < TILE_SIZE:
+				img.set_pixel(x, ry, highlight)
+
+
 ## Helper to get tile ID for a given type (for painting in TileMap)
 static func get_tile_id(type: TileType) -> int:
 	# Mapping based on tile_order in create_tileset (5-column layout)
@@ -2412,6 +2993,11 @@ static func get_tile_id(type: TileType) -> int:
 		TileType.DARK_GROUND: return 24
 		TileType.COAST: return 25
 		TileType.LAVA: return 26
+		TileType.VILLAGE_GRASS: return 30
+		TileType.VILLAGE_PATH: return 31
+		TileType.VILLAGE_DIRT: return 32
+		TileType.VILLAGE_FLOWER: return 33
+		TileType.VILLAGE_HEDGE: return 34
 	return 0
 
 

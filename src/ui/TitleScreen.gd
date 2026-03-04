@@ -261,6 +261,11 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	var row = Control.new()
 	row.custom_minimum_size = Vector2(200, 28)
 	row.name = "MenuItem_%d" % index
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# Mouse hover/click support
+	row.mouse_entered.connect(_on_menu_hover.bind(index))
+	row.gui_input.connect(_on_menu_click.bind(index))
 
 	# Cursor
 	var cursor = Label.new()
@@ -270,6 +275,7 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	cursor.add_theme_font_size_override("font_size", 18)
 	cursor.add_theme_color_override("font_color", CURSOR_COLOR)
 	cursor.visible = (index == selected_index)
+	cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(cursor)
 
 	# Label
@@ -278,6 +284,7 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	label.text = item["label"]
 	label.position = Vector2(24, 2)
 	label.add_theme_font_size_override("font_size", 18)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if item["enabled"]:
 		label.add_theme_color_override("font_color", MENU_COLOR if index != selected_index else MENU_SELECTED)
 	else:
@@ -285,6 +292,28 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	row.add_child(label)
 
 	return row
+
+
+func _on_menu_hover(index: int) -> void:
+	"""Handle mouse hover on menu item"""
+	if not _can_input or index >= menu_items.size():
+		return
+	if menu_items[index]["enabled"] and index != selected_index:
+		selected_index = index
+		_update_selection()
+		SoundManager.play_ui("menu_move")
+
+
+func _on_menu_click(event: InputEvent, index: int) -> void:
+	"""Handle mouse click on menu item"""
+	if not _can_input or index >= menu_items.size():
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if menu_items[index]["enabled"]:
+			selected_index = index
+			_update_selection()
+			_select_item()
+			get_viewport().set_input_as_handled()
 
 
 func _update_selection() -> void:

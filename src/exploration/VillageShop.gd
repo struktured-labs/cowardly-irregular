@@ -104,11 +104,11 @@ func _draw_shop(image: Image) -> void:
 			accent_color = Color(0.80, 0.70, 0.35)
 			accent_light = Color(0.92, 0.82, 0.48)
 		ShopType.BLACKSMITH:
-			main_color = Color(0.45, 0.30, 0.18)
-			main_light = Color(0.58, 0.40, 0.25)
-			main_dark = Color(0.32, 0.20, 0.10)
-			accent_color = Color(0.75, 0.45, 0.20)
-			accent_light = Color(0.88, 0.58, 0.30)
+			main_color = Color(0.50, 0.34, 0.20)
+			main_light = Color(0.64, 0.46, 0.28)
+			main_dark = Color(0.36, 0.24, 0.12)
+			accent_color = Color(0.80, 0.52, 0.22)
+			accent_light = Color(0.92, 0.64, 0.32)
 		_:
 			main_color = Color(0.40, 0.35, 0.30)
 			main_light = Color(0.52, 0.48, 0.42)
@@ -116,14 +116,14 @@ func _draw_shop(image: Image) -> void:
 			accent_color = Color(0.65, 0.55, 0.35)
 			accent_light = Color(0.78, 0.68, 0.48)
 
-	var wood = Color(0.48, 0.32, 0.16)
-	var wood_light = Color(0.58, 0.42, 0.22)
-	var wood_dark = Color(0.35, 0.22, 0.10)
-	var wood_grain = Color(0.42, 0.28, 0.14)
-	var window = Color(0.72, 0.82, 0.92)
-	var window_light = Color(0.85, 0.90, 0.98)
-	var window_frame = Color(0.25, 0.18, 0.10)
-	var outline = Color(0.12, 0.08, 0.05)
+	var wood = Color(0.56, 0.40, 0.22)
+	var wood_light = Color(0.68, 0.50, 0.30)
+	var wood_dark = Color(0.40, 0.26, 0.14)
+	var wood_grain = Color(0.48, 0.34, 0.18)
+	var window = Color(0.78, 0.84, 0.90)
+	var window_light = Color(0.90, 0.94, 0.98)
+	var window_frame = Color(0.28, 0.20, 0.12)
+	var outline = Color(0.14, 0.10, 0.06)
 
 	# Awning with proper stripe shading and scalloped bottom edge
 	for y in range(0, 16):

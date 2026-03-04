@@ -49,19 +49,19 @@ func _generate_sprite() -> void:
 func _draw_inn(image: Image) -> void:
 	image.fill(Color.TRANSPARENT)
 
-	var wood = Color(0.48, 0.32, 0.16)
-	var wood_light = Color(0.58, 0.42, 0.22)
-	var wood_dark = Color(0.35, 0.22, 0.10)
-	var wood_grain = Color(0.42, 0.28, 0.14)
-	var roof = Color(0.68, 0.26, 0.16)
-	var roof_light = Color(0.78, 0.35, 0.22)
-	var roof_dark = Color(0.50, 0.18, 0.10)
-	var roof_shadow = Color(0.42, 0.14, 0.08)
-	var window = Color(0.82, 0.85, 0.50)
-	var window_bright = Color(0.95, 0.92, 0.65)
-	var sign_color = Color(0.72, 0.62, 0.42)
-	var sign_light = Color(0.82, 0.72, 0.52)
-	var outline = Color(0.15, 0.10, 0.05)
+	var wood = Color(0.55, 0.38, 0.20)
+	var wood_light = Color(0.68, 0.50, 0.28)
+	var wood_dark = Color(0.40, 0.26, 0.12)
+	var wood_grain = Color(0.48, 0.34, 0.18)
+	var roof = Color(0.72, 0.30, 0.14)
+	var roof_light = Color(0.85, 0.42, 0.22)
+	var roof_dark = Color(0.55, 0.22, 0.10)
+	var roof_shadow = Color(0.45, 0.16, 0.08)
+	var window = Color(0.88, 0.82, 0.48)
+	var window_bright = Color(0.98, 0.94, 0.62)
+	var sign_color = Color(0.78, 0.66, 0.40)
+	var sign_light = Color(0.88, 0.76, 0.50)
+	var outline = Color(0.18, 0.12, 0.06)
 
 	# Roof with proper triangular shading and tile texture
 	for y in range(0, 20):

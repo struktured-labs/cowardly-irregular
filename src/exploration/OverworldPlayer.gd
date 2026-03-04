@@ -33,6 +33,13 @@ const WALK_FRAMES: int = 4  # 4-frame walk cycle for smoother animation
 ## Sprite cache (direction -> frame -> texture)
 var _sprite_cache: Dictionary = {}
 
+## Click-to-move
+var _click_target: Vector2 = Vector2.ZERO
+var _moving_to_click: bool = false
+var _interact_on_arrival: bool = false
+const CLICK_ARRIVE_DIST: float = 8.0
+const INTERACT_ARRIVE_DIST: float = 40.0  # Close enough for 48px interaction range
+
 ## SNES-quality job color palettes with extended shading tones
 const JOB_PALETTES: Dictionary = {
 	"fighter": {
@@ -195,6 +202,22 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("ui_down"):
 		input_dir.y += 1
 
+	# Keyboard/gamepad cancels click-to-move
+	if input_dir != Vector2.ZERO:
+		_moving_to_click = false
+
+	# Click-to-move fallback when no keyboard input
+	if input_dir == Vector2.ZERO and _moving_to_click:
+		var to_target = _click_target - global_position
+		var arrive_dist = INTERACT_ARRIVE_DIST if _interact_on_arrival else CLICK_ARRIVE_DIST
+		if to_target.length() < arrive_dist:
+			_moving_to_click = false
+			if _interact_on_arrival:
+				_interact_on_arrival = false
+				interaction_requested.emit()
+		else:
+			input_dir = to_target.normalized()
+
 	if input_dir != Vector2.ZERO:
 		input_dir = input_dir.normalized()
 		velocity = input_dir * move_speed
@@ -236,6 +259,26 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		menu_requested.emit()
 		get_viewport().set_input_as_handled()
+
+	# Left-click: interact with NPC if clicked near one, otherwise click-to-move
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var click_pos = get_global_mouse_position()
+		var target_npc = _find_clicked_interactable(click_pos)
+		if target_npc:
+			var dist_to_npc = global_position.distance_to(target_npc.global_position)
+			if dist_to_npc < INTERACT_ARRIVE_DIST:
+				# Already close enough — interact immediately
+				interaction_requested.emit()
+			else:
+				# Walk to the NPC, then interact on arrival
+				_click_target = target_npc.global_position
+				_moving_to_click = true
+				_interact_on_arrival = true
+		else:
+			_click_target = click_pos
+			_moving_to_click = true
+			_interact_on_arrival = false
+	# Right-click menu is handled by GameLoop — don't consume the event here
 
 
 func _update_animation(delta: float) -> void:
@@ -1064,3 +1107,17 @@ func teleport(new_position: Vector2) -> void:
 func reset_step_count() -> void:
 	step_count = 0
 	distance_walked = 0.0
+
+
+## Find an interactable (NPC, sign, chest, etc.) near the click position
+func _find_clicked_interactable(click_pos: Vector2) -> Node2D:
+	var interactables = get_tree().get_nodes_in_group("interactables")
+	var closest: Node2D = null
+	var closest_dist: float = 32.0  # Max click distance to count as clicking on an interactable
+	for interactable in interactables:
+		if interactable is Node2D and interactable.has_method("interact"):
+			var dist = click_pos.distance_to(interactable.global_position)
+			if dist < closest_dist:
+				closest = interactable
+				closest_dist = dist
+	return closest
