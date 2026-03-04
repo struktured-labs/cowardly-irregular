@@ -192,6 +192,13 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	# Mouse: right-click to save and close
+	MenuMouseHelper.add_right_click_cancel(bg, func() -> void:
+		_save_script()
+		closed.emit()
+		SoundManager.play_ui("menu_select")
+	)
+
 	# Title with profile name
 	_title_label = Label.new()
 	var profile_name = AutobattleSystem.get_active_profile_name(character_id)
@@ -233,7 +240,7 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  \u25c0:Switch Char"
+	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  \u25c0:Switch Char  Click:Edit  RClick:Close"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -598,6 +605,11 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	cell.add_child(label)
 
+	# Mouse: click to edit, hover to highlight
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -648,6 +660,11 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 		badge.add_theme_font_size_override("font_size", 12)
 		badge.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 		cell.add_child(badge)
+
+	# Mouse: click to edit, hover to highlight
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
 
 	return cell
 
@@ -722,6 +739,11 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
+	# Mouse: click to add action, hover to highlight
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -750,6 +772,11 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+
+	# Mouse: click to insert row, hover to highlight
+	MenuMouseHelper.make_clickable(cell, row_idx, 40, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
 
 	return cell
 
@@ -808,6 +835,11 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
+	# Mouse: click to toggle, hover to highlight
+	MenuMouseHelper.make_clickable(cell, row_idx, 50, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -836,6 +868,11 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+
+	# Mouse: click to add condition, hover to highlight
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH / 2, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
 
 	return cell
 
@@ -1298,6 +1335,97 @@ func _split_action_group() -> void:
 
 	_refresh_grid()
 	SoundManager.play_ui("menu_select")
+
+
+func _get_condition_slots_for_row(row_idx: int) -> int:
+	"""Get the number of condition columns (including empty AND slot) for a row"""
+	if row_idx >= rules.size():
+		return 0
+	var rule = rules[row_idx]
+	var conditions = rule.get("conditions", [])
+	var has_always = false
+	for c in conditions:
+		if c.get("type", "") == "always":
+			has_always = true
+			break
+	var slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		slots += 1
+	return slots
+
+
+func _on_grid_cell_clicked(cell: Control) -> void:
+	"""Handle mouse click on a grid cell"""
+	var cell_type = cell.get_meta("cell_type")
+	var row_idx = cell.get_meta("row")
+
+	cursor_row = row_idx
+
+	# Determine cursor_col from cell metadata
+	match cell_type:
+		"condition":
+			cursor_col = cell.get_meta("index")
+		"empty_condition":
+			cursor_col = cell.get_meta("index")
+		"action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + _get_action_group_index(row_idx, act_idx)
+		"empty_action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + _group_actions(rules[row_idx].get("actions", [])).size()
+		"row_toggle":
+			cursor_col = _get_max_col_for_row(row_idx)
+		"row_insert":
+			# row_insert is one before toggle
+			cursor_col = _get_max_col_for_row(row_idx) - 1
+
+	_update_cursor()
+
+	# Activate the cell
+	match cell_type:
+		"condition", "action", "empty_condition", "empty_action":
+			_edit_current_cell()
+		"row_toggle":
+			_toggle_row_enabled()
+			SoundManager.play_ui("menu_select")
+		"row_insert":
+			_insert_row_after(row_idx)
+
+
+func _get_action_group_index(row_idx: int, act_start_idx: int) -> int:
+	"""Get the group index for an action at a given start index"""
+	if row_idx >= rules.size():
+		return 0
+	var action_groups = _group_actions(rules[row_idx].get("actions", []))
+	for i in range(action_groups.size()):
+		if action_groups[i]["start_idx"] == act_start_idx:
+			return i
+	return 0
+
+
+func _on_grid_cell_hover(cell: Control) -> void:
+	"""Handle mouse hover on a grid cell - move cursor highlight"""
+	var cell_type = cell.get_meta("cell_type")
+	var row_idx = cell.get_meta("row")
+
+	cursor_row = row_idx
+
+	match cell_type:
+		"condition":
+			cursor_col = cell.get_meta("index")
+		"empty_condition":
+			cursor_col = cell.get_meta("index")
+		"action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + _get_action_group_index(row_idx, act_idx)
+		"empty_action":
+			cursor_col = _get_condition_slots_for_row(row_idx) + _group_actions(rules[row_idx].get("actions", [])).size()
+		"row_toggle":
+			cursor_col = _get_max_col_for_row(row_idx)
+		"row_insert":
+			cursor_col = _get_max_col_for_row(row_idx) - 1
+
+	_update_cursor()
 
 
 func _create_default_rule() -> Dictionary:

@@ -151,6 +151,9 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	# Mouse: right-click to close
+	MenuMouseHelper.add_right_click_cancel(bg, _close_ui)
+
 	# Header
 	_build_header(vp_size)
 
@@ -276,6 +279,11 @@ func _create_start_stop_button(panel_size: Vector2) -> Control:
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	btn.add_child(label)
 
+	# Mouse: click to toggle grinding
+	MenuMouseHelper.make_clickable(btn, 0, btn.size.x, btn.size.y,
+		func() -> void: _toggle_grinding(),
+		func() -> void: pass)
+
 	return btn
 
 
@@ -370,7 +378,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help"""
 	var footer = Label.new()
-	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Save  Select:Start/Stop"
+	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Save  Select:Start/Stop  Click:Edit  RClick:Close"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -496,6 +504,11 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	cell.add_child(label)
 
+	# Mouse: click to edit, hover to highlight
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -524,6 +537,11 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary) -> Cont
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
+	# Mouse: click to edit, hover to highlight
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -550,6 +568,11 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
+	# Mouse: click to add condition, hover to highlight
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH / 2, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -575,6 +598,11 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	label.add_theme_color_override("font_color", DISABLED_COLOR)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+
+	# Mouse: click to add action, hover to highlight
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH / 2, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
 
 	return cell
 
@@ -613,6 +641,11 @@ func _create_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
+	# Mouse: click to toggle, hover to highlight
+	MenuMouseHelper.make_clickable(cell, row_idx, 50, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -638,6 +671,11 @@ func _create_add_rule_button(row_idx: int) -> Control:
 	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+
+	# Mouse: click to add rule, hover to highlight
+	MenuMouseHelper.make_clickable(cell, row_idx, 100, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
 
 	return cell
 
@@ -1161,6 +1199,83 @@ func _get_grind_config() -> Dictionary:
 		"rules": rules.duplicate(true),
 		"permadeath_staking": false
 	}
+
+
+func _get_condition_slots_for_row(row_idx: int) -> int:
+	"""Get the number of condition columns (including empty AND slot) for a row"""
+	if row_idx >= rules.size():
+		return 0
+	var rule = rules[row_idx]
+	var conditions = rule.get("conditions", [])
+	var has_always = false
+	for c in conditions:
+		if c.get("type", "") == "always":
+			has_always = true
+			break
+	var slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		slots += 1
+	return slots
+
+
+func _on_grid_cell_clicked(cell: Control) -> void:
+	"""Handle mouse click on a grid cell"""
+	var cell_type = cell.get_meta("cell_type")
+	var row_idx = cell.get_meta("row")
+
+	cursor_row = row_idx
+
+	match cell_type:
+		"condition":
+			cursor_col = cell.get_meta("index")
+		"empty_condition":
+			cursor_col = cell.get_meta("index")
+		"action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"empty_action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"toggle":
+			cursor_col = _get_max_col_for_row(row_idx)
+		"add_rule":
+			cursor_row = rules.size()
+			cursor_col = 0
+
+	_update_cursor()
+
+	match cell_type:
+		"condition", "action", "empty_condition", "empty_action", "add_rule":
+			_edit_current_cell()
+		"toggle":
+			_toggle_current_row()
+
+
+func _on_grid_cell_hover(cell: Control) -> void:
+	"""Handle mouse hover on a grid cell - move cursor highlight"""
+	var cell_type = cell.get_meta("cell_type")
+	var row_idx = cell.get_meta("row")
+
+	cursor_row = row_idx
+
+	match cell_type:
+		"condition":
+			cursor_col = cell.get_meta("index")
+		"empty_condition":
+			cursor_col = cell.get_meta("index")
+		"action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"empty_action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"toggle":
+			cursor_col = _get_max_col_for_row(row_idx)
+		"add_rule":
+			cursor_row = rules.size()
+			cursor_col = 0
+
+	_update_cursor()
 
 
 func _close_ui() -> void:

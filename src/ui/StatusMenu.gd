@@ -49,6 +49,9 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	# Mouse: right-click to close
+	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
+
 	var viewport_size = get_viewport().get_visible_rect().size
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
@@ -70,7 +73,7 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer = Label.new()
-	footer.text = "B: Back"
+	footer.text = "B/RClick: Back"
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)

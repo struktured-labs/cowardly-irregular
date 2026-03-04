@@ -120,6 +120,13 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	# Mouse: right-click to save and close
+	MenuMouseHelper.add_right_click_cancel(bg, func() -> void:
+		_save_rules()
+		closed.emit()
+		SoundManager.play_ui("menu_select")
+	)
+
 	# Title
 	_title_label = Label.new()
 	var profile_name = AutogrindSystem.get_active_autogrind_profile_name()
@@ -162,7 +169,7 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help1 = Label.new()
-	help1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:+AND  R:+Action"
+	help1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:+AND  R:+Action  Click:Edit  RClick:Close"
 	help1.position = Vector2(16, size.y - 44)
 	help1.add_theme_font_size_override("font_size", 10)
 	help1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -404,6 +411,11 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	cell.add_child(label)
 
+	# Mouse: click to edit, hover to highlight
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -437,6 +449,11 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary) -> Cont
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	cell.add_child(label)
 
+	# Mouse: click to edit, hover to highlight
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -464,6 +481,11 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
+	# Mouse: click to add condition, hover to highlight
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH / 2, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
+
 	return cell
 
 
@@ -490,6 +512,11 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+
+	# Mouse: click to add action, hover to highlight
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
 
 	return cell
 
@@ -523,6 +550,11 @@ func _create_row_toggle(row_idx: int, is_enabled: bool) -> Control:
 		xmark.add_theme_color_override("font_color", Color.RED)
 		toggle.add_child(xmark)
 
+	# Mouse: click to toggle, hover to highlight
+	MenuMouseHelper.make_clickable(toggle, row_idx, 20, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(toggle),
+		func() -> void: _on_grid_cell_hover(toggle))
+
 	return toggle
 
 
@@ -549,6 +581,11 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+
+	# Mouse: click to insert row, hover to highlight
+	MenuMouseHelper.make_clickable(cell, row_idx, 40, CELL_HEIGHT,
+		func() -> void: _on_grid_cell_clicked(cell),
+		func() -> void: _on_grid_cell_hover(cell))
 
 	return cell
 
@@ -1357,6 +1394,85 @@ func _delete_current_cell() -> void:
 			cursor_col = min(cursor_col, condition_slots + actions.size() - 1)
 			_refresh_grid()
 			SoundManager.play_ui("menu_cancel")
+
+
+func _get_condition_slots_for_row(row_idx: int) -> int:
+	"""Get the number of condition columns (including empty AND slot) for a row"""
+	if row_idx >= rules.size():
+		return 0
+	var rule = rules[row_idx]
+	var conditions = rule.get("conditions", [])
+	var has_always = false
+	for c in conditions:
+		if c.get("type", "") == "always":
+			has_always = true
+			break
+	var slots = conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		slots += 1
+	return slots
+
+
+func _on_grid_cell_clicked(cell: Control) -> void:
+	"""Handle mouse click on a grid cell"""
+	var cell_type = cell.get_meta("cell_type")
+	var row_idx = cell.get_meta("row")
+
+	cursor_row = row_idx
+
+	match cell_type:
+		"condition":
+			cursor_col = cell.get_meta("index")
+		"empty_condition":
+			cursor_col = cell.get_meta("index")
+		"action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"empty_action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"toggle":
+			# Toggle is not in cursor column mapping - just set row
+			pass
+		"row_insert":
+			cursor_col = _get_max_col_for_row(row_idx)
+
+	_update_cursor()
+
+	match cell_type:
+		"condition", "action", "empty_condition", "empty_action":
+			_edit_current_cell()
+		"toggle":
+			_toggle_row_enabled()
+			SoundManager.play_ui("menu_select")
+		"row_insert":
+			_insert_row_after(row_idx)
+
+
+func _on_grid_cell_hover(cell: Control) -> void:
+	"""Handle mouse hover on a grid cell - move cursor highlight"""
+	var cell_type = cell.get_meta("cell_type")
+	var row_idx = cell.get_meta("row")
+
+	cursor_row = row_idx
+
+	match cell_type:
+		"condition":
+			cursor_col = cell.get_meta("index")
+		"empty_condition":
+			cursor_col = cell.get_meta("index")
+		"action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"empty_action":
+			var act_idx = cell.get_meta("index")
+			cursor_col = _get_condition_slots_for_row(row_idx) + act_idx
+		"toggle":
+			pass  # Toggle not in cursor column mapping
+		"row_insert":
+			cursor_col = _get_max_col_for_row(row_idx)
+
+	_update_cursor()
 
 
 func _create_default_rule() -> Dictionary:
