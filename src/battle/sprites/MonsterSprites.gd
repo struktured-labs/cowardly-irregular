@@ -3760,3 +3760,1974 @@ static func _create_shadow_dragon_frame(pose: int, y_offset: float) -> ImageText
 				_sp(img, px - trail, py + trail, Color(wisp.r, wisp.g, wisp.b, 0.4))
 
 	return ImageTexture.create_from_image(img)
+
+
+## =================
+## CLOCKWORK SENTINEL (Steampunk - tall brass humanoid with gear joints, glowing eyes)
+## =================
+
+static func create_clockwork_sentinel_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("clockwork_sentinel", func(): return _generate_clockwork_sentinel_sprite_frames())
+
+static func _generate_clockwork_sentinel_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_clockwork_sentinel_frame(0, 0.0))
+	frames.add_frame("idle", _create_clockwork_sentinel_frame(0, -1.0))
+	frames.add_frame("idle", _create_clockwork_sentinel_frame(0, 0.0))
+	frames.add_frame("idle", _create_clockwork_sentinel_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_clockwork_sentinel_frame(1, 0.0))
+	frames.add_frame("attack", _create_clockwork_sentinel_frame(2, -1.0))
+	frames.add_frame("attack", _create_clockwork_sentinel_frame(3, 0.0))
+	frames.add_frame("attack", _create_clockwork_sentinel_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_clockwork_sentinel_frame(4, 2.0))
+	frames.add_frame("hit", _create_clockwork_sentinel_frame(4, 1.0))
+	frames.add_frame("hit", _create_clockwork_sentinel_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.5)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_clockwork_sentinel_frame(5, 0.0))
+	frames.add_frame("defeat", _create_clockwork_sentinel_frame(5, 3.0))
+	frames.add_frame("defeat", _create_clockwork_sentinel_frame(6, 6.0))
+	return frames
+
+
+static func _create_clockwork_sentinel_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Steampunk palette
+	var brass = Color(0.72, 0.58, 0.28)
+	var brass_dark = Color(0.55, 0.42, 0.18)
+	var brass_light = Color(0.85, 0.72, 0.38)
+	var brass_shine = Color(0.95, 0.85, 0.55)
+	var copper = Color(0.72, 0.45, 0.20)
+	var copper_dark = Color(0.50, 0.30, 0.12)
+	var iron = Color(0.42, 0.42, 0.45)
+	var iron_dark = Color(0.28, 0.28, 0.32)
+	var eye_glow = Color(0.3, 0.9, 0.95)
+	var eye_bright = Color(0.6, 1.0, 1.0)
+	var steam_c = Color(0.85, 0.85, 0.90, 0.5)
+	var outline = Color(0.15, 0.12, 0.08)
+
+	var cx = size / 2
+	var cy = int(size * 0.70 + _sf(y_offset))
+
+	var lean = 0
+	var arm_raise = 0
+	match pose:
+		1: lean = _s(-3); arm_raise = _s(-5)
+		2: lean = _s(6); arm_raise = _s(-12)
+		3: lean = _s(8); arm_raise = _s(-8)
+		4: lean = _s(-8)
+		5: lean = _s(-15)
+		6: lean = _s(-28)
+
+	# Defeated pose - collapsed heap of parts
+	if pose >= 6:
+		for y in range(_s(-6), _s(7)):
+			for x in range(_s(-18), _s(19)):
+				var dist = sqrt(pow(float(x) / _sf(18), 2) + pow(float(y) / _sf(6), 2))
+				if dist < 1.0:
+					var color = brass_dark if (x + y) % 3 == 0 else iron_dark
+					_sp(img, cx + x, cy + y + _s(8), color)
+				elif dist < 1.1:
+					_sp(img, cx + x, cy + y + _s(8), outline)
+		# Scattered gears
+		for g in range(3):
+			var gx = cx - _s(10) + g * _s(10)
+			var gy = cy + _s(6)
+			_draw_gear(img, gx, gy, _s(3), copper, copper_dark, outline)
+		return ImageTexture.create_from_image(img)
+
+	# Legs (tall, thin, piston-like)
+	for leg_side in [-1, 1]:
+		var leg_x = cx + leg_side * _s(5) + lean / 4
+		var leg_y = cy + _s(4)
+		# Upper leg (brass tube)
+		for ly in range(_s(12)):
+			for lx in range(_s(-3), _s(4)):
+				var px = leg_x + lx
+				var py = leg_y + ly
+				var color = brass if lx > 0 else brass_dark
+				if abs(lx) == _s(3):
+					color = outline
+				_sp(img, px, py, color)
+		# Knee gear joint
+		_draw_gear(img, leg_x, leg_y + _s(5), _s(4), copper, copper_dark, outline)
+		# Foot plate
+		for fx in range(_s(-4), _s(5)):
+			for fy in range(_s(2)):
+				_sp(img, leg_x + fx, leg_y + _s(12) + fy, iron if fx < _s(2) else iron_dark)
+			_sp(img, leg_x + fx, leg_y + _s(12) - 1, outline)
+
+	# Torso (barrel-shaped brass chest)
+	var torso_rx = _s(10)
+	var torso_ry = _s(14)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy - _s(8), torso_rx + 1, torso_ry + 1, outline)
+	for y in range(-torso_ry, torso_ry + 1):
+		for x in range(-torso_rx, torso_rx + 1):
+			var dist = sqrt(pow(float(x) / torso_rx, 2) + pow(float(y) / torso_ry, 2))
+			if dist < 1.0:
+				var color = brass
+				if y < -torso_ry * 0.4:
+					color = brass_light
+				elif y > torso_ry * 0.3:
+					color = brass_dark
+				elif x < -torso_rx * 0.4:
+					color = brass_dark
+				elif x > torso_rx * 0.3:
+					color = brass_light if y < 0 else brass
+				# Rivet line down center
+				if abs(x) < _s(1) and y % _s(5) < _s(2):
+					color = iron
+				_sp(img, cx + x + lean / 4, cy - _s(8) + y, color)
+	# Torso shine
+	_SU._draw_shine_spot(img, cx - _s(4) + lean / 4, cy - _s(14), _s(3), brass_shine, 0.6)
+
+	# Rivets along torso edges
+	for rv in range(-3, 4):
+		var rivet_y = cy - _s(8) + rv * _s(4)
+		_sp(img, cx - torso_rx + _s(2) + lean / 4, rivet_y, iron)
+		_sp(img, cx + torso_rx - _s(2) + lean / 4, rivet_y, iron)
+
+	# Arms (piston tubes with gear shoulders)
+	for arm_side in [-1, 1]:
+		var arm_x = cx + arm_side * _s(12) + lean / 3
+		var arm_y = cy - _s(12) + arm_raise
+		# Shoulder gear
+		_draw_gear(img, arm_x, cy - _s(16), _s(5), copper, copper_dark, outline)
+		# Upper arm tube
+		for ay in range(_s(14)):
+			for ax in range(_s(-2), _s(3)):
+				var color = brass if ax > 0 else brass_dark
+				if abs(ax) == _s(2):
+					color = outline
+				_sp(img, arm_x + ax, arm_y + ay, color)
+		# Elbow gear
+		_draw_gear(img, arm_x, arm_y + _s(7), _s(3), iron, iron_dark, outline)
+		# Hand/claw (3 fingers)
+		var hand_y = arm_y + _s(14)
+		for finger in range(3):
+			var fx = arm_x - _s(2) + finger * _s(2)
+			for fy in range(_s(4)):
+				_sp(img, fx, hand_y + fy, iron if fy < _s(2) else iron_dark)
+
+	# Head (rectangular with dome top)
+	var head_x = cx + lean / 5
+	var head_y = cy - _s(28)
+	var head_w = _s(8)
+	var head_h = _s(10)
+	# Head outline
+	for y in range(-head_h, head_h + 1):
+		for x in range(-head_w, head_w + 1):
+			var inside = abs(x) < head_w and abs(y) < head_h
+			var border = abs(x) >= head_w - 1 or abs(y) >= head_h - 1
+			if inside:
+				if border:
+					_sp(img, head_x + x, head_y + y, outline)
+				else:
+					var color = brass if y < 0 else brass_dark
+					if x < -head_w / 2:
+						color = brass_dark if y < 0 else copper_dark
+					_sp(img, head_x + x, head_y + y, color)
+	# Dome top
+	for y in range(_s(-5), 1):
+		for x in range(-head_w + _s(2), head_w - _s(1)):
+			var dist = sqrt(pow(float(x) / (head_w - _s(1)), 2) + pow(float(y) / _sf(5), 2))
+			if dist < 1.0:
+				_sp(img, head_x + x, head_y - head_h + y, brass_light if dist < 0.5 else brass)
+			elif dist < 1.15:
+				_sp(img, head_x + x, head_y - head_h + y, outline)
+
+	# Glowing eyes (two rectangular slits)
+	if pose < 5:
+		for eye_side in [-1, 1]:
+			var eye_x = head_x + eye_side * _s(4)
+			var eye_y = head_y - _s(2)
+			for ey in range(_s(-1), _s(2)):
+				for ex in range(_s(-2), _s(3)):
+					_sp(img, eye_x + ex, eye_y + ey, eye_glow)
+			_sp(img, eye_x, eye_y, eye_bright)
+			# Glow halo
+			for ey in range(_s(-2), _s(3)):
+				for ex in range(_s(-3), _s(4)):
+					var gpx = eye_x + ex
+					var gpy = eye_y + ey
+					if gpx >= 0 and gpx < size and gpy >= 0 and gpy < size:
+						var existing = img.get_pixel(gpx, gpy)
+						if existing.a > 0 and existing != eye_glow and existing != eye_bright:
+							var glow_c = Color(eye_glow.r, eye_glow.g, eye_glow.b, 0.2)
+							_sp(img, gpx, gpy, existing.blend(glow_c))
+
+	# Steam vents on shoulders (idle animation detail)
+	if pose == 0:
+		for vent_side in [-1, 1]:
+			var vx = cx + vent_side * _s(14) + lean / 3
+			var vy = cy - _s(20)
+			for s in range(4):
+				var sx = vx + (s % 2) * vent_side
+				var sy = vy - s * _s(2)
+				var sc = Color(steam_c.r, steam_c.g, steam_c.b, steam_c.a - float(s) * 0.1)
+				_sp(img, sx, sy, sc)
+				_sp(img, sx + 1, sy, sc)
+
+	return ImageTexture.create_from_image(img)
+
+
+## Helper: Draw a gear/cog at position
+static func _draw_gear(img: Image, gcx: int, gcy: int, radius: int, color: Color, color_dark: Color, outline_c: Color) -> void:
+	# Gear body (circle)
+	for y in range(-radius, radius + 1):
+		for x in range(-radius, radius + 1):
+			var dist = sqrt(pow(float(x) / radius, 2) + pow(float(y) / radius, 2))
+			if dist < 0.85:
+				var c = color if y < 0 else color_dark
+				_sp(img, gcx + x, gcy + y, c)
+			elif dist < 1.0:
+				_sp(img, gcx + x, gcy + y, outline_c)
+	# Gear teeth (8 teeth around perimeter)
+	var tooth_size = max(1, radius / 3)
+	for t in range(8):
+		var angle = t * PI / 4.0
+		var tx = gcx + int(cos(angle) * (radius + tooth_size / 2))
+		var ty = gcy + int(sin(angle) * (radius + tooth_size / 2))
+		for dy in range(-tooth_size, tooth_size + 1):
+			for dx in range(-tooth_size, tooth_size + 1):
+				if abs(dx) + abs(dy) <= tooth_size:
+					_sp(img, tx + dx, ty + dy, color_dark)
+	# Center axle hole
+	_sp(img, gcx, gcy, outline_c)
+	if radius > _s(2):
+		_sp(img, gcx + 1, gcy, outline_c)
+		_sp(img, gcx, gcy + 1, outline_c)
+
+
+## =================
+## STEAM RAT (Steampunk - mechanical rat with pipes and steam venting)
+## =================
+
+static func create_steam_rat_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("steam_rat", func(): return _generate_steam_rat_sprite_frames())
+
+static func _generate_steam_rat_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 3.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_steam_rat_frame(0, 0.0))
+	frames.add_frame("idle", _create_steam_rat_frame(0, -1.0))
+	frames.add_frame("idle", _create_steam_rat_frame(0, 0.0))
+	frames.add_frame("idle", _create_steam_rat_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 5.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_steam_rat_frame(1, 0.0))
+	frames.add_frame("attack", _create_steam_rat_frame(2, -1.0))
+	frames.add_frame("attack", _create_steam_rat_frame(3, 0.0))
+	frames.add_frame("attack", _create_steam_rat_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_steam_rat_frame(4, 1.0))
+	frames.add_frame("hit", _create_steam_rat_frame(4, 0.0))
+	frames.add_frame("hit", _create_steam_rat_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_steam_rat_frame(5, 2.0))
+	frames.add_frame("defeat", _create_steam_rat_frame(6, 5.0))
+	frames.add_frame("defeat", _create_steam_rat_frame(6, 8.0))
+	return frames
+
+
+static func _create_steam_rat_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Steampunk rat palette
+	var brass = Color(0.72, 0.58, 0.28)
+	var brass_dark = Color(0.55, 0.42, 0.18)
+	var brass_light = Color(0.85, 0.72, 0.38)
+	var copper = Color(0.72, 0.45, 0.20)
+	var copper_dark = Color(0.50, 0.30, 0.12)
+	var iron = Color(0.42, 0.42, 0.45)
+	var iron_dark = Color(0.28, 0.28, 0.32)
+	var eye_red = Color(0.9, 0.2, 0.15)
+	var eye_bright = Color(1.0, 0.4, 0.3)
+	var steam_c = Color(0.85, 0.85, 0.90, 0.5)
+	var pipe_c = Color(0.50, 0.35, 0.18)
+	var outline = Color(0.15, 0.12, 0.08)
+
+	var cx = size / 2
+	var cy = int(size * 0.72 + _sf(y_offset))
+
+	var lean = 0
+	var mouth_open = false
+	match pose:
+		1: lean = _s(-3)
+		2: lean = _s(8); mouth_open = true
+		3: lean = _s(5)
+		4: lean = _s(-8)
+		5: lean = _s(-15)
+		6: lean = _s(-25)
+
+	# Defeated - collapsed mechanical rat
+	if pose >= 5:
+		for y in range(_s(-5), _s(6)):
+			for x in range(_s(-16), _s(17)):
+				var dist = sqrt(pow(float(x) / _sf(16), 2) + pow(float(y) / _sf(5), 2))
+				if dist < 1.0:
+					var color = brass_dark if (x + y) % 2 == 0 else iron_dark
+					_sp(img, cx + x, cy + y + _s(6), color)
+				elif dist < 1.12:
+					_sp(img, cx + x, cy + y + _s(6), outline)
+		# Sparks
+		for sp_i in range(3):
+			var spx = cx - _s(6) + sp_i * _s(6)
+			_sp(img, spx, cy + _s(3), Color(1.0, 0.8, 0.2))
+			_sp(img, spx + 1, cy + _s(2), Color(1.0, 0.6, 0.1))
+		return ImageTexture.create_from_image(img)
+
+	# Tail (segmented copper pipe)
+	var tail_x = cx - _s(12) + lean / 4
+	var tail_y = cy + _s(2)
+	for i in range(_s(18)):
+		var t = float(i) / _sf(18)
+		var ty = tail_y + int(sin(t * PI) * _sf(5))
+		var segment_color = copper if i % _s(4) < _s(2) else copper_dark
+		for tw in range(-2, 3):
+			if abs(tw) == 2:
+				_sp(img, tail_x - i, ty + tw, outline)
+			else:
+				_sp(img, tail_x - i, ty + tw, segment_color)
+		# Pipe joint rings
+		if i % _s(4) == 0:
+			for tw in range(-3, 4):
+				_sp(img, tail_x - i, ty + tw, brass)
+
+	# Body (oval brass hull with rivets)
+	var body_rx = _s(12)
+	var body_ry = _s(8)
+	_SU._draw_ellipse_outline(img, cx + lean / 3, cy, body_rx + 1, body_ry + 1, outline)
+	for y in range(-body_ry, body_ry + 1):
+		for x in range(-body_rx, body_rx + 1):
+			var dist = sqrt(pow(float(x) / body_rx, 2) + pow(float(y) / body_ry, 2))
+			if dist < 1.0:
+				var color = brass
+				if dist > 0.7:
+					color = brass_dark
+				elif dist < 0.4:
+					color = brass_light
+				elif y < -body_ry * 0.3:
+					color = brass_light
+				elif x < -body_rx * 0.4:
+					color = brass_dark
+				_sp(img, cx + x + lean / 3, cy + y, color)
+	# Rivet line along body
+	for rv in range(-body_rx + _s(3), body_rx - _s(2), _s(3)):
+		_sp(img, cx + rv + lean / 3, cy, iron)
+	# Body shine
+	_SU._draw_shine_spot(img, cx - _s(3) + lean / 3, cy - _s(3), _s(3), Color(0.95, 0.85, 0.55), 0.5)
+
+	# Pipes on back (2 exhaust pipes)
+	for pipe_i in range(2):
+		var ppx = cx - _s(4) + pipe_i * _s(6) + lean / 3
+		var ppy = cy - _s(6)
+		for ph in range(_s(8)):
+			_sp(img, ppx - 1, ppy - ph, outline)
+			_sp(img, ppx, ppy - ph, pipe_c)
+			_sp(img, ppx + 1, ppy - ph, pipe_c if ph < _s(4) else copper_dark)
+			_sp(img, ppx + 2, ppy - ph, outline)
+		# Pipe top ring
+		for prx in range(-2, 4):
+			_sp(img, ppx + prx, ppy - _s(8), brass)
+		# Steam from pipes (varies by frame)
+		if pose <= 1:
+			for s in range(4):
+				var sy = ppy - _s(8) - s * _s(2) - pipe_i * _s(1)
+				var sc = Color(steam_c.r, steam_c.g, steam_c.b, steam_c.a - float(s) * 0.12)
+				_sp(img, ppx + (s % 2), sy, sc)
+				_sp(img, ppx + 1 + (s % 2), sy, sc)
+
+	# Head (angular, mechanical)
+	var head_x = cx + _s(8) + lean / 2
+	var head_y = cy - _s(2)
+	var head_rx = _s(8)
+	var head_ry = _s(6)
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = brass
+				if dist < 0.5:
+					color = brass_light
+				elif y < -head_ry * 0.3:
+					color = brass_light
+				elif x > head_rx * 0.3:
+					color = brass_dark
+				_sp(img, head_x + x, head_y + y, color)
+
+	# Mechanical ears (antenna-like)
+	for ear_side in [-1, 1]:
+		var ear_x = head_x - _s(2)
+		var ear_y = head_y - _s(7) + ear_side * _s(3)
+		for ey in range(_s(-5), 0):
+			_sp(img, ear_x, ear_y + ey, iron)
+			_sp(img, ear_x + 1, ear_y + ey, iron_dark)
+		# Antenna tip
+		_sp(img, ear_x, ear_y - _s(5), eye_red)
+
+	# Eye (single red lens)
+	var eye_x = head_x + _s(3)
+	var eye_y = head_y - _s(1)
+	for ey in range(_s(-2), _s(3)):
+		for ex in range(_s(-2), _s(3)):
+			if ex * ex + ey * ey <= _s(2) * _s(2):
+				_sp(img, eye_x + ex, eye_y + ey, eye_red)
+	_sp(img, eye_x - 1, eye_y - 1, eye_bright)
+
+	# Snout (pointed brass cone)
+	for sx in range(_s(8)):
+		var snout_width = _s(3) - sx / 3
+		for sy in range(-snout_width, snout_width + 1):
+			var color = brass if sy < 0 else brass_dark
+			if abs(sy) == snout_width:
+				color = outline
+			_sp(img, head_x + _s(5) + sx, head_y + _s(1) + sy, color)
+	# Nose rivet
+	_sp(img, head_x + _s(12), head_y + _s(1), iron)
+
+	# Mouth/jaw
+	if mouth_open:
+		for my in range(_s(3)):
+			for mx in range(_s(-2), _s(4)):
+				_sp(img, head_x + _s(6) + mx, head_y + _s(3) + my, Color(0.15, 0.08, 0.05))
+		# Metal teeth
+		for fang in range(3):
+			_sp(img, head_x + _s(5) + fang * _s(2), head_y + _s(3), iron)
+
+	# Legs (4 mechanical piston legs)
+	for leg in range(4):
+		var leg_x = cx - _s(6) + leg * _s(5) + lean / 4
+		var leg_y = cy + _s(6)
+		for ly in range(_s(5)):
+			_sp(img, leg_x - 1, leg_y + ly, outline)
+			_sp(img, leg_x, leg_y + ly, iron if ly % _s(3) < _s(2) else brass_dark)
+			_sp(img, leg_x + 1, leg_y + ly, iron_dark)
+			_sp(img, leg_x + 2, leg_y + ly, outline)
+		# Claw foot
+		_sp(img, leg_x - 1, leg_y + _s(5), copper)
+		_sp(img, leg_x, leg_y + _s(5), copper)
+		_sp(img, leg_x + 1, leg_y + _s(5), copper_dark)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## BRASS GOLEM (Steampunk - hulking brass construct, riveted plates)
+## =================
+
+static func create_brass_golem_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("brass_golem", func(): return _generate_brass_golem_sprite_frames())
+
+static func _generate_brass_golem_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 1.5)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_brass_golem_frame(0, 0.0))
+	frames.add_frame("idle", _create_brass_golem_frame(0, -1.0))
+	frames.add_frame("idle", _create_brass_golem_frame(0, 0.0))
+	frames.add_frame("idle", _create_brass_golem_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 3.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_brass_golem_frame(1, 0.0))
+	frames.add_frame("attack", _create_brass_golem_frame(2, -2.0))
+	frames.add_frame("attack", _create_brass_golem_frame(3, 0.0))
+	frames.add_frame("attack", _create_brass_golem_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_brass_golem_frame(4, 2.0))
+	frames.add_frame("hit", _create_brass_golem_frame(4, 1.0))
+	frames.add_frame("hit", _create_brass_golem_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_brass_golem_frame(5, 0.0))
+	frames.add_frame("defeat", _create_brass_golem_frame(5, 3.0))
+	frames.add_frame("defeat", _create_brass_golem_frame(6, 6.0))
+	return frames
+
+
+static func _create_brass_golem_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Brass golem palette - heavy brass and bronze
+	var brass = Color(0.72, 0.58, 0.28)
+	var brass_dark = Color(0.55, 0.42, 0.18)
+	var brass_light = Color(0.85, 0.72, 0.38)
+	var brass_shine = Color(0.95, 0.85, 0.55)
+	var bronze = Color(0.55, 0.42, 0.22)
+	var bronze_dark = Color(0.38, 0.28, 0.14)
+	var iron = Color(0.42, 0.42, 0.45)
+	var iron_dark = Color(0.28, 0.28, 0.32)
+	var eye_glow = Color(0.95, 0.55, 0.1)
+	var eye_bright = Color(1.0, 0.8, 0.3)
+	var steam_c = Color(0.85, 0.85, 0.90, 0.4)
+	var outline = Color(0.15, 0.12, 0.08)
+
+	var cx = size / 2
+	var cy = int(size * 0.68 + _sf(y_offset))
+
+	var lean = 0
+	var fist_smash = false
+	match pose:
+		1: lean = _s(-3)
+		2: lean = _s(5); fist_smash = true
+		3: lean = _s(8); fist_smash = true
+		4: lean = _s(-6)
+		5: lean = _s(-12)
+		6: lean = _s(-25)
+
+	# Defeated - crumbled golem
+	if pose >= 6:
+		for y in range(_s(-8), _s(8)):
+			for x in range(_s(-20), _s(21)):
+				var dist = sqrt(pow(float(x) / _sf(20), 2) + pow(float(y) / _sf(7), 2))
+				if dist < 1.0:
+					var color = brass_dark
+					if (x * 7 + y * 13) % 5 == 0:
+						color = iron_dark
+					elif (x * 3 + y * 11) % 7 == 0:
+						color = bronze_dark
+					_sp(img, cx + x, cy + y + _s(6), color)
+				elif dist < 1.1:
+					_sp(img, cx + x, cy + y + _s(6), outline)
+		# Dimming eye
+		_sp(img, cx - _s(3), cy + _s(4), Color(eye_glow.r, eye_glow.g, eye_glow.b, 0.3))
+		return ImageTexture.create_from_image(img)
+
+	# Legs (thick, column-like)
+	for leg_side in [-1, 1]:
+		var leg_x = cx + leg_side * _s(7) + lean / 4
+		var leg_y = cy + _s(6)
+		for ly in range(_s(14)):
+			var leg_w = _s(5) - ly / _s(6)
+			for lx in range(-leg_w, leg_w + 1):
+				var color = bronze if lx < 0 else bronze_dark
+				if ly % _s(5) < _s(1):
+					color = iron
+				if abs(lx) >= leg_w:
+					color = outline
+				_sp(img, leg_x + lx, leg_y + ly, color)
+		# Foot (heavy rectangular)
+		for fx in range(_s(-6), _s(7)):
+			for fy in range(_s(3)):
+				var color = iron if fy == 0 else iron_dark
+				_sp(img, leg_x + fx, leg_y + _s(14) + fy, color)
+			_sp(img, leg_x + fx, leg_y + _s(14) + _s(3), outline)
+
+	# Torso (massive barrel chest with riveted plates)
+	var torso_rx = _s(14)
+	var torso_ry = _s(16)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy - _s(6), torso_rx + 1, torso_ry + 1, outline)
+	for y in range(-torso_ry, torso_ry + 1):
+		for x in range(-torso_rx, torso_rx + 1):
+			var dist = sqrt(pow(float(x) / torso_rx, 2) + pow(float(y) / torso_ry, 2))
+			if dist < 1.0:
+				var color = brass
+				if y < -torso_ry * 0.4:
+					color = brass_light
+				elif y > torso_ry * 0.3:
+					color = brass_dark
+				elif x < -torso_rx * 0.4:
+					color = brass_dark
+				if abs(y) % _s(6) < _s(1) and dist < 0.85:
+					color = iron_dark
+				if abs(x) < _s(1) and dist < 0.85:
+					color = iron_dark
+				_sp(img, cx + x + lean / 4, cy - _s(6) + y, color)
+	# Rivets in grid pattern
+	for rvy in range(-2, 3):
+		for rvx in range(-2, 3):
+			if abs(rvx) + abs(rvy) <= 2:
+				var rivet_x = cx + rvx * _s(5) + lean / 4
+				var rivet_y = cy - _s(6) + rvy * _s(5)
+				_sp(img, rivet_x, rivet_y, iron)
+				_sp(img, rivet_x + 1, rivet_y, Color(0.55, 0.55, 0.6))
+	# Chest plate shine
+	_SU._draw_shine_spot(img, cx - _s(5) + lean / 4, cy - _s(14), _s(4), brass_shine, 0.7)
+
+	# Furnace glow in chest
+	var furnace_y = cy - _s(4)
+	for fy in range(_s(-3), _s(4)):
+		for fx in range(_s(-2), _s(3)):
+			if abs(fx) + abs(fy) < _s(4):
+				var intensity = 1.0 - (abs(fx) + abs(fy)) / float(_s(4))
+				var glow_c = Color(eye_glow.r, eye_glow.g, eye_glow.b, intensity * 0.6)
+				var gpx = cx + fx + lean / 4
+				var gpy = furnace_y + fy
+				if gpx >= 0 and gpx < size and gpy >= 0 and gpy < size:
+					var existing = img.get_pixel(gpx, gpy)
+					if existing.a > 0:
+						_sp(img, gpx, gpy, existing.blend(glow_c))
+
+	# Arms (massive, hanging low)
+	for arm_side in [-1, 1]:
+		var arm_x = cx + arm_side * _s(16) + lean / 3
+		var arm_start_y = cy - _s(12)
+		var arm_end_y = cy + _s(10)
+		if fist_smash and arm_side == 1:
+			arm_end_y = cy + _s(16)
+		# Shoulder plate
+		for sy in range(_s(-4), _s(5)):
+			for sx in range(_s(-6), _s(7)):
+				var sdist = sqrt(pow(float(sx) / _sf(6), 2) + pow(float(sy) / _sf(4), 2))
+				if sdist < 1.0:
+					_sp(img, arm_x + sx, arm_start_y + sy, bronze if sy < 0 else bronze_dark)
+				elif sdist < 1.15:
+					_sp(img, arm_x + sx, arm_start_y + sy, outline)
+		# Upper arm tube
+		for ay in range(_s(6), arm_end_y - arm_start_y):
+			var arm_w = _s(4)
+			for ax in range(-arm_w, arm_w + 1):
+				var color = brass if ax < 0 else brass_dark
+				if abs(ax) >= arm_w:
+					color = outline
+				_sp(img, arm_x + ax, arm_start_y + ay, color)
+		# Fist (large block)
+		var fist_y = arm_end_y
+		var fist_r = _s(6)
+		for fy in range(-fist_r, fist_r + 1):
+			for fx in range(-fist_r, fist_r + 1):
+				var fdist = sqrt(pow(float(fx) / fist_r, 2) + pow(float(fy) / fist_r, 2))
+				if fdist < 1.0:
+					_sp(img, arm_x + fx, fist_y + fy, bronze if fy < 0 else bronze_dark)
+				elif fdist < 1.15:
+					_sp(img, arm_x + fx, fist_y + fy, outline)
+		# Fist rivets
+		_sp(img, arm_x - _s(2), fist_y, iron)
+		_sp(img, arm_x + _s(2), fist_y, iron)
+
+	# Head (small relative to body, sunken into shoulders)
+	var head_x = cx + lean / 5
+	var head_y = cy - _s(22)
+	var head_rx = _s(7)
+	var head_ry = _s(6)
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = brass if y < 0 else brass_dark
+				if x < -head_rx * 0.3:
+					color = brass_dark
+				_sp(img, head_x + x, head_y + y, color)
+
+	# Eye slit (single visor-like opening)
+	if pose < 5:
+		for ex in range(_s(-5), _s(6)):
+			for ey in range(_s(-1), _s(2)):
+				_sp(img, head_x + ex, head_y + ey, eye_glow)
+		_sp(img, head_x - _s(2), head_y, eye_bright)
+		_sp(img, head_x + _s(2), head_y, eye_bright)
+
+	# Steam vents on back
+	if pose <= 1:
+		for vy in range(5):
+			var vx = cx + lean / 4
+			var vent_y = cy - _s(18) - vy * _s(2)
+			var sc = Color(steam_c.r, steam_c.g, steam_c.b, steam_c.a - float(vy) * 0.08)
+			_sp(img, vx - 1, vent_y, sc)
+			_sp(img, vx, vent_y, sc)
+			_sp(img, vx + 1, vent_y, sc)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## COG SWARM (Steampunk - cluster of spinning gears and cogs)
+## =================
+
+static func create_cog_swarm_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("cog_swarm", func(): return _generate_cog_swarm_sprite_frames())
+
+static func _generate_cog_swarm_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 3.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_cog_swarm_frame(0, 0.0))
+	frames.add_frame("idle", _create_cog_swarm_frame(0, -1.0))
+	frames.add_frame("idle", _create_cog_swarm_frame(0, 0.0))
+	frames.add_frame("idle", _create_cog_swarm_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 5.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_cog_swarm_frame(1, 0.0))
+	frames.add_frame("attack", _create_cog_swarm_frame(2, -2.0))
+	frames.add_frame("attack", _create_cog_swarm_frame(3, 0.0))
+	frames.add_frame("attack", _create_cog_swarm_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_cog_swarm_frame(4, 1.0))
+	frames.add_frame("hit", _create_cog_swarm_frame(4, 0.0))
+	frames.add_frame("hit", _create_cog_swarm_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.5)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_cog_swarm_frame(5, 2.0))
+	frames.add_frame("defeat", _create_cog_swarm_frame(6, 5.0))
+	frames.add_frame("defeat", _create_cog_swarm_frame(6, 8.0))
+	return frames
+
+
+static func _create_cog_swarm_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var brass = Color(0.72, 0.58, 0.28)
+	var brass_dark = Color(0.55, 0.42, 0.18)
+	var brass_light = Color(0.85, 0.72, 0.38)
+	var copper = Color(0.72, 0.45, 0.20)
+	var copper_dark = Color(0.50, 0.30, 0.12)
+	var iron = Color(0.42, 0.42, 0.45)
+	var iron_dark = Color(0.28, 0.28, 0.32)
+	var spark = Color(1.0, 0.85, 0.3)
+	var spark_bright = Color(1.0, 1.0, 0.6)
+	var outline = Color(0.15, 0.12, 0.08)
+
+	var cx = size / 2
+	var cy = int(size * 0.55 + _sf(y_offset))
+
+	# Gear positions - arranged in a swirling cluster
+	# Each gear: [offset_x, offset_y, radius, color, color_dark]
+	var gear_data = [
+		[0, 0, _s(8), brass, brass_dark],           # Center large gear
+		[_s(-10), _s(-6), _s(6), copper, copper_dark],  # Upper left
+		[_s(10), _s(-4), _s(5), iron, iron_dark],       # Upper right
+		[_s(-8), _s(8), _s(5), brass_light, brass],     # Lower left
+		[_s(8), _s(10), _s(6), copper, copper_dark],    # Lower right
+		[_s(0), _s(-12), _s(4), iron, iron_dark],       # Top
+		[_s(-14), _s(2), _s(4), brass, brass_dark],     # Far left
+		[_s(14), _s(4), _s(3), copper, copper_dark],    # Far right
+	]
+
+	# Animation offsets based on pose
+	var spread = 0.0
+	var rotation_offset = 0
+	match pose:
+		1: spread = -0.2
+		2: spread = 0.5; rotation_offset = 2
+		3: spread = 0.3; rotation_offset = 1
+		4: spread = -0.3
+
+	# Defeated - gears scattered and fallen
+	if pose >= 5:
+		var fall_amount = 1.0 if pose >= 6 else 0.5
+		for gd in gear_data:
+			var gx = cx + int(gd[0] * (1.0 + fall_amount * 0.5))
+			var gy = cy + _s(10) + int(abs(gd[0]) * fall_amount * 0.3)
+			var gr = int(gd[2] * (1.0 - fall_amount * 0.3))
+			if gr > 1:
+				_draw_gear(img, gx, gy, gr, gd[3], gd[4], outline)
+		# Scattered sparks
+		if pose == 5:
+			for sp_i in range(4):
+				var spx = cx - _s(8) + sp_i * _s(5)
+				_sp(img, spx, cy + _s(6), spark)
+		return ImageTexture.create_from_image(img)
+
+	# Draw all gears with slight position variation per pose
+	for gd in gear_data:
+		var gx = cx + int(gd[0] * (1.0 + spread))
+		var gy = cy + int(gd[1] * (1.0 + spread))
+		_draw_gear(img, gx, gy, gd[2], gd[3], gd[4], outline)
+
+	# Connecting sparks between gears (energy holding them together)
+	if pose < 4:
+		for i in range(gear_data.size() - 1):
+			var g1 = gear_data[i]
+			var g2 = gear_data[i + 1]
+			var x1 = cx + int(g1[0] * (1.0 + spread))
+			var y1 = cy + int(g1[1] * (1.0 + spread))
+			var x2 = cx + int(g2[0] * (1.0 + spread))
+			var y2 = cy + int(g2[1] * (1.0 + spread))
+			# Draw a few spark points along the line
+			for t_step in range(3):
+				var t_val = float(t_step + 1) / 4.0
+				var lx = x1 + int((x2 - x1) * t_val) + ((pose + t_step) % 2)
+				var ly = y1 + int((y2 - y1) * t_val) + ((pose + t_step + 1) % 2)
+				_sp(img, lx, ly, spark_bright if t_step == 1 else spark)
+
+	# Central energy core (glowing center)
+	if pose < 5:
+		for ey in range(_s(-3), _s(4)):
+			for ex in range(_s(-3), _s(4)):
+				var edist = sqrt(pow(float(ex) / _sf(3), 2) + pow(float(ey) / _sf(3), 2))
+				if edist < 0.6:
+					_sp(img, cx + ex, cy + ey, spark_bright)
+				elif edist < 1.0:
+					_sp(img, cx + ex, cy + ey, spark)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## PIPE PHANTOM (Steampunk - ghostly figure made of twisted pipes)
+## =================
+
+static func create_pipe_phantom_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("pipe_phantom", func(): return _generate_pipe_phantom_sprite_frames())
+
+static func _generate_pipe_phantom_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_pipe_phantom_frame(0, 0.0))
+	frames.add_frame("idle", _create_pipe_phantom_frame(0, -2.0))
+	frames.add_frame("idle", _create_pipe_phantom_frame(0, 0.0))
+	frames.add_frame("idle", _create_pipe_phantom_frame(0, 2.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_pipe_phantom_frame(1, 0.0))
+	frames.add_frame("attack", _create_pipe_phantom_frame(2, -2.0))
+	frames.add_frame("attack", _create_pipe_phantom_frame(3, 0.0))
+	frames.add_frame("attack", _create_pipe_phantom_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_pipe_phantom_frame(4, 2.0))
+	frames.add_frame("hit", _create_pipe_phantom_frame(4, 0.0))
+	frames.add_frame("hit", _create_pipe_phantom_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_pipe_phantom_frame(5, 0.0))
+	frames.add_frame("defeat", _create_pipe_phantom_frame(5, 3.0))
+	frames.add_frame("defeat", _create_pipe_phantom_frame(6, 6.0))
+	return frames
+
+
+static func _create_pipe_phantom_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Ghostly pipe palette
+	var pipe_main = Color(0.45, 0.38, 0.30, 0.85)
+	var pipe_dark = Color(0.30, 0.25, 0.18, 0.85)
+	var pipe_light = Color(0.60, 0.52, 0.40, 0.85)
+	var rust = Color(0.60, 0.30, 0.15, 0.75)
+	var rust_dark = Color(0.45, 0.20, 0.10, 0.75)
+	var ghost_glow = Color(0.4, 0.7, 0.5, 0.4)
+	var ghost_bright = Color(0.5, 0.9, 0.6, 0.6)
+	var eye_c = Color(0.2, 0.95, 0.4)
+	var eye_bright = Color(0.5, 1.0, 0.7)
+	var steam_c = Color(0.7, 0.8, 0.7, 0.35)
+	var outline = Color(0.18, 0.15, 0.10, 0.9)
+
+	var cx = size / 2
+	var cy = int(size * 0.60 + _sf(y_offset))
+
+	var lean = 0
+	var alpha_mod = 1.0
+	match pose:
+		1: lean = _s(-4)
+		2: lean = _s(8)
+		3: lean = _s(5)
+		4: lean = _s(-6); alpha_mod = 0.7
+		5: alpha_mod = 0.5
+		6: alpha_mod = 0.2
+
+	# Defeated - pipes collapse and ghost fades
+	if pose >= 5:
+		for y in range(_s(-4), _s(8)):
+			for x in range(_s(-14), _s(15)):
+				var dist = sqrt(pow(float(x) / _sf(14), 2) + pow(float(y) / _sf(5), 2))
+				if dist < 1.0:
+					var color = Color(pipe_dark.r, pipe_dark.g, pipe_dark.b, alpha_mod * 0.7)
+					if (x + y) % 3 == 0:
+						color = Color(rust_dark.r, rust_dark.g, rust_dark.b, alpha_mod * 0.5)
+					_sp(img, cx + x, cy + y + _s(8), color)
+		# Fading ghost wisps
+		for w in range(3):
+			var wx = cx - _s(6) + w * _s(6)
+			var wy = cy + _s(4) - w * _s(2)
+			var wc = Color(ghost_glow.r, ghost_glow.g, ghost_glow.b, alpha_mod * 0.3)
+			_sp(img, wx, wy, wc)
+			_sp(img, wx + 1, wy - 1, wc)
+		return ImageTexture.create_from_image(img)
+
+	# Ghostly aura (drawn first, behind pipes)
+	for y in range(_s(-20), _s(16)):
+		for x in range(_s(-12), _s(13)):
+			var dist = sqrt(pow(float(x) / _sf(12), 2) + pow(float(y + _s(4)) / _sf(18), 2))
+			if dist < 1.0 and dist > 0.5:
+				var gc = Color(ghost_glow.r, ghost_glow.g, ghost_glow.b, ghost_glow.a * (1.0 - dist) * alpha_mod)
+				if (x + y + pose) % 3 == 0:
+					_sp(img, cx + x + lean / 4, cy + y, gc)
+
+	# Main body - twisted vertical pipes forming a humanoid torso shape
+	# Central pipe column
+	for py in range(_s(-18), _s(12)):
+		var sway = int(sin(float(py) / _sf(6)) * _sf(2)) + lean / 6
+		var pipe_w = _s(3) if abs(py) < _s(10) else _s(2)
+		for px_off in range(-pipe_w, pipe_w + 1):
+			var color = pipe_main if px_off < 0 else pipe_dark
+			if abs(px_off) == pipe_w:
+				color = outline
+			# Rust patches
+			if (px_off * 7 + py * 3) % 11 == 0:
+				color = rust
+			color.a *= alpha_mod
+			_sp(img, cx + px_off + sway + lean / 4, cy + py, color)
+		# Pipe joint rings every few pixels
+		if py % _s(6) == 0:
+			for jx in range(-pipe_w - 1, pipe_w + 2):
+				var jc = Color(pipe_light.r, pipe_light.g, pipe_light.b, pipe_light.a * alpha_mod)
+				_sp(img, cx + jx + sway + lean / 4, cy + py, jc)
+
+	# Side pipe "arms" curving outward
+	for arm_side in [-1, 1]:
+		var arm_start_y = cy - _s(8)
+		for seg in range(_s(14)):
+			var curve = int(pow(float(seg) / _sf(8), 1.5) * _sf(10)) * arm_side
+			var arm_px = cx + _s(3) * arm_side + curve + lean / 3
+			var arm_py = arm_start_y + seg
+			for aw in range(-1, 2):
+				var color = pipe_main if aw * arm_side < 0 else pipe_dark
+				if (seg * 5 + aw * 3) % 9 == 0:
+					color = rust
+				color.a *= alpha_mod
+				_sp(img, arm_px + aw, arm_py, color)
+			# Joint rings
+			if seg % _s(4) == 0:
+				for jw in range(-2, 3):
+					var jc = Color(pipe_light.r, pipe_light.g, pipe_light.b, pipe_light.a * alpha_mod)
+					_sp(img, arm_px + jw, arm_py, jc)
+		# Pipe end openings (steam vents)
+		var end_x = cx + _s(3) * arm_side + int(pow(_sf(14) / _sf(8), 1.5) * _sf(10)) * arm_side + lean / 3
+		var end_y = arm_start_y + _s(14)
+		if pose <= 1:
+			for s in range(3):
+				var sc = Color(steam_c.r, steam_c.g, steam_c.b, steam_c.a - float(s) * 0.1)
+				sc.a *= alpha_mod
+				_sp(img, end_x + arm_side * s, end_y + s, sc)
+
+	# Head - pipe junction forming a face-like shape
+	var head_y = cy - _s(20)
+	var head_x = cx + lean / 5
+	# T-junction pipe head
+	for hx in range(_s(-6), _s(7)):
+		for hy in range(_s(-4), _s(5)):
+			var in_horizontal = abs(hy) < _s(2)
+			var in_vertical = abs(hx) < _s(2) and hy > _s(-2)
+			if in_horizontal or in_vertical:
+				var color = pipe_main
+				if hy < 0:
+					color = pipe_light
+				elif hx > _s(2):
+					color = pipe_dark
+				if (hx * 3 + hy * 7) % 8 == 0:
+					color = rust
+				color.a *= alpha_mod
+				_sp(img, head_x + hx, head_y + hy, color)
+
+	# Eyes (eerie green glow in pipe openings)
+	if pose < 5:
+		for eye_side in [-1, 1]:
+			var eye_ex = head_x + eye_side * _s(3)
+			var eye_ey = head_y
+			for ey in range(_s(-1), _s(2)):
+				for ex in range(_s(-1), _s(2)):
+					if abs(ex) + abs(ey) <= _s(1):
+						_sp(img, eye_ex + ex, eye_ey + ey, eye_c)
+			_sp(img, eye_ex, eye_ey, eye_bright)
+			# Eye glow effect
+			for ey in range(_s(-2), _s(3)):
+				for ex in range(_s(-2), _s(3)):
+					var gpx = eye_ex + ex
+					var gpy = eye_ey + ey
+					if gpx >= 0 and gpx < size and gpy >= 0 and gpy < size:
+						var existing = img.get_pixel(gpx, gpy)
+						if existing.a > 0 and existing != eye_c and existing != eye_bright:
+							var gc = Color(eye_c.r, eye_c.g, eye_c.b, 0.15 * alpha_mod)
+							_sp(img, gpx, gpy, existing.blend(gc))
+
+	# Bottom wisps (ghostly trailing effect)
+	if pose < 5:
+		for w in range(5):
+			var wx = cx - _s(6) + w * _s(3) + lean / 4
+			var wy_start = cy + _s(10)
+			for wy_off in range(_s(6)):
+				var wc = Color(ghost_glow.r, ghost_glow.g, ghost_glow.b, (0.3 - float(wy_off) / _sf(20)) * alpha_mod)
+				if wc.a > 0:
+					_sp(img, wx + (wy_off % 2), wy_start + wy_off, wc)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## ASSEMBLY LINE AUTOMATON (Steampunk - robotic factory worker)
+## =================
+
+static func create_assembly_line_automaton_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("assembly_line_automaton", func(): return _generate_assembly_line_automaton_sprite_frames())
+
+static func _generate_assembly_line_automaton_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_assembly_line_automaton_frame(0, 0.0))
+	frames.add_frame("idle", _create_assembly_line_automaton_frame(0, -1.0))
+	frames.add_frame("idle", _create_assembly_line_automaton_frame(0, 0.0))
+	frames.add_frame("idle", _create_assembly_line_automaton_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_assembly_line_automaton_frame(1, 0.0))
+	frames.add_frame("attack", _create_assembly_line_automaton_frame(2, -1.0))
+	frames.add_frame("attack", _create_assembly_line_automaton_frame(3, 0.0))
+	frames.add_frame("attack", _create_assembly_line_automaton_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_assembly_line_automaton_frame(4, 2.0))
+	frames.add_frame("hit", _create_assembly_line_automaton_frame(4, 1.0))
+	frames.add_frame("hit", _create_assembly_line_automaton_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_assembly_line_automaton_frame(5, 0.0))
+	frames.add_frame("defeat", _create_assembly_line_automaton_frame(5, 3.0))
+	frames.add_frame("defeat", _create_assembly_line_automaton_frame(6, 6.0))
+	return frames
+
+
+static func _create_assembly_line_automaton_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Factory automaton palette
+	var iron = Color(0.42, 0.42, 0.45)
+	var iron_dark = Color(0.28, 0.28, 0.32)
+	var iron_light = Color(0.55, 0.55, 0.60)
+	var iron_shine = Color(0.70, 0.70, 0.75)
+	var brass = Color(0.72, 0.58, 0.28)
+	var brass_dark = Color(0.55, 0.42, 0.18)
+	var copper = Color(0.72, 0.45, 0.20)
+	var copper_dark = Color(0.50, 0.30, 0.12)
+	var eye_amber = Color(0.95, 0.70, 0.15)
+	var eye_bright = Color(1.0, 0.9, 0.4)
+	var rivet_c = Color(0.50, 0.50, 0.55)
+	var outline = Color(0.12, 0.12, 0.15)
+
+	var cx = size / 2
+	var cy = int(size * 0.70 + _sf(y_offset))
+
+	var lean = 0
+	var tool_extend = 0
+	match pose:
+		1: lean = _s(-3); tool_extend = _s(4)
+		2: lean = _s(6); tool_extend = _s(10)
+		3: lean = _s(4); tool_extend = _s(6)
+		4: lean = _s(-8)
+		5: lean = _s(-15)
+		6: lean = _s(-25)
+
+	# Defeated - collapsed automaton
+	if pose >= 6:
+		for y in range(_s(-6), _s(7)):
+			for x in range(_s(-16), _s(17)):
+				var dist = sqrt(pow(float(x) / _sf(16), 2) + pow(float(y) / _sf(6), 2))
+				if dist < 1.0:
+					var color = iron_dark if (x + y) % 2 == 0 else iron
+					_sp(img, cx + x, cy + y + _s(8), color)
+				elif dist < 1.1:
+					_sp(img, cx + x, cy + y + _s(8), outline)
+		# Disconnected tool arm
+		for tx in range(_s(8)):
+			_sp(img, cx + _s(12) + tx, cy + _s(6), copper_dark)
+		return ImageTexture.create_from_image(img)
+
+	# Legs (boxy, industrial)
+	for leg_side in [-1, 1]:
+		var leg_x = cx + leg_side * _s(5) + lean / 4
+		var leg_y = cy + _s(4)
+		for ly in range(_s(10)):
+			for lx in range(_s(-3), _s(4)):
+				var color = iron if lx < _s(1) else iron_dark
+				if ly % _s(4) < _s(1):
+					color = brass_dark  # Plate segment lines
+				if abs(lx) >= _s(3):
+					color = outline
+				_sp(img, leg_x + lx, leg_y + ly, color)
+		# Foot clamp
+		for fx in range(_s(-4), _s(5)):
+			_sp(img, leg_x + fx, leg_y + _s(10), iron_dark)
+			_sp(img, leg_x + fx, leg_y + _s(11), outline)
+
+	# Torso (boxy industrial body)
+	var torso_w = _s(10)
+	var torso_h = _s(14)
+	# Outline
+	for y in range(-torso_h, torso_h + 1):
+		for x in range(-torso_w, torso_w + 1):
+			var is_edge = abs(x) >= torso_w - 1 or abs(y) >= torso_h - 1
+			if abs(x) < torso_w and abs(y) < torso_h:
+				if is_edge:
+					_sp(img, cx + x + lean / 4, cy - _s(6) + y, outline)
+				else:
+					var color = iron
+					if y < -torso_h / 2:
+						color = iron_light
+					elif y > torso_h / 3:
+						color = iron_dark
+					elif x < -torso_w / 2:
+						color = iron_dark
+					# Panel lines
+					if abs(x) % _s(6) < _s(1):
+						color = iron_dark
+					_sp(img, cx + x + lean / 4, cy - _s(6) + y, color)
+	# Chest plate with factory number
+	_SU._draw_shine_spot(img, cx - _s(3) + lean / 4, cy - _s(12), _s(2), iron_shine, 0.5)
+	# Rivets on corners
+	for corner_x in [-torso_w + _s(3), torso_w - _s(3)]:
+		for corner_y in [-torso_h + _s(3), torso_h - _s(3)]:
+			_sp(img, cx + corner_x + lean / 4, cy - _s(6) + corner_y, rivet_c)
+
+	# Arms
+	for arm_side in [-1, 1]:
+		var arm_x = cx + arm_side * _s(12) + lean / 3
+		var arm_y = cy - _s(10)
+		# Shoulder joint (brass cylinder)
+		for sy in range(_s(-3), _s(4)):
+			for sx in range(_s(-3), _s(4)):
+				if abs(sx) + abs(sy) <= _s(4):
+					_sp(img, arm_x + sx, arm_y + sy, brass if sy < 0 else brass_dark)
+		# Arm segment
+		for ay in range(_s(4), _s(14)):
+			for ax in range(_s(-2), _s(3)):
+				var color = iron if ax < 0 else iron_dark
+				if abs(ax) >= _s(2):
+					color = outline
+				_sp(img, arm_x + ax, arm_y + ay, color)
+		# Tool end (right arm = wrench/claw, left arm = hammer)
+		var tool_y = arm_y + _s(14) + (tool_extend if arm_side == 1 else 0)
+		if arm_side == 1:
+			# Wrench tool
+			for ty in range(_s(-3), _s(4)):
+				for tx in range(_s(-2), _s(5)):
+					if abs(ty) < _s(2) or tx > _s(2):
+						_sp(img, arm_x + tx, tool_y + ty, copper if ty < 0 else copper_dark)
+		else:
+			# Hammer tool
+			for ty in range(_s(-4), _s(5)):
+				for tx in range(_s(-4), _s(2)):
+					if abs(ty) < _s(3) and abs(tx) < _s(3):
+						_sp(img, arm_x + tx, tool_y + ty, iron_light if ty < 0 else iron)
+
+	# Head (cylindrical with visor)
+	var head_x = cx + lean / 5
+	var head_y = cy - _s(24)
+	var head_r = _s(7)
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_r + 1, head_r + 1, outline)
+	for y in range(-head_r, head_r + 1):
+		for x in range(-head_r, head_r + 1):
+			var dist = sqrt(pow(float(x) / head_r, 2) + pow(float(y) / head_r, 2))
+			if dist < 1.0:
+				var color = iron if y < 0 else iron_dark
+				if x < -head_r * 0.3:
+					color = iron_dark
+				_sp(img, head_x + x, head_y + y, color)
+	# Head shine
+	_SU._draw_shine_spot(img, head_x - _s(2), head_y - _s(3), _s(2), iron_shine, 0.4)
+
+	# Visor eye (amber slit)
+	if pose < 5:
+		for ex in range(_s(-4), _s(5)):
+			for ey in range(_s(-1), _s(2)):
+				_sp(img, head_x + ex, head_y + ey, eye_amber)
+		_sp(img, head_x, head_y, eye_bright)
+
+	# Antenna on top
+	_sp(img, head_x, head_y - head_r - _s(1), iron)
+	_sp(img, head_x, head_y - head_r - _s(2), iron)
+	_sp(img, head_x, head_y - head_r - _s(3), eye_amber)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## SHIFT SUPERVISOR (Steampunk - larger steampunk boss-type)
+## =================
+
+static func create_shift_supervisor_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("shift_supervisor", func(): return _generate_shift_supervisor_sprite_frames())
+
+static func _generate_shift_supervisor_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 1.5)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_shift_supervisor_frame(0, 0.0))
+	frames.add_frame("idle", _create_shift_supervisor_frame(0, -1.0))
+	frames.add_frame("idle", _create_shift_supervisor_frame(0, 0.0))
+	frames.add_frame("idle", _create_shift_supervisor_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 3.5)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_shift_supervisor_frame(1, 0.0))
+	frames.add_frame("attack", _create_shift_supervisor_frame(2, -2.0))
+	frames.add_frame("attack", _create_shift_supervisor_frame(3, 0.0))
+	frames.add_frame("attack", _create_shift_supervisor_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 4.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_shift_supervisor_frame(4, 2.0))
+	frames.add_frame("hit", _create_shift_supervisor_frame(4, 1.0))
+	frames.add_frame("hit", _create_shift_supervisor_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_shift_supervisor_frame(5, 0.0))
+	frames.add_frame("defeat", _create_shift_supervisor_frame(5, 3.0))
+	frames.add_frame("defeat", _create_shift_supervisor_frame(6, 6.0))
+	return frames
+
+
+static func _create_shift_supervisor_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Boss-type palette - darker iron with red accents
+	var iron = Color(0.35, 0.35, 0.40)
+	var iron_dark = Color(0.22, 0.22, 0.28)
+	var iron_light = Color(0.50, 0.50, 0.55)
+	var iron_shine = Color(0.65, 0.65, 0.72)
+	var brass = Color(0.72, 0.58, 0.28)
+	var brass_dark = Color(0.55, 0.42, 0.18)
+	var red_accent = Color(0.75, 0.18, 0.12)
+	var red_dark = Color(0.55, 0.12, 0.08)
+	var copper = Color(0.72, 0.45, 0.20)
+	var eye_red = Color(0.95, 0.15, 0.10)
+	var eye_bright = Color(1.0, 0.5, 0.3)
+	var steam_c = Color(0.80, 0.80, 0.85, 0.45)
+	var outline = Color(0.10, 0.10, 0.12)
+
+	var cx = size / 2
+	var cy = int(size * 0.65 + _sf(y_offset))
+
+	var lean = 0
+	var whip_extend = false
+	match pose:
+		1: lean = _s(-3)
+		2: lean = _s(6); whip_extend = true
+		3: lean = _s(8); whip_extend = true
+		4: lean = _s(-8)
+		5: lean = _s(-14)
+		6: lean = _s(-26)
+
+	# Defeated
+	if pose >= 6:
+		for y in range(_s(-8), _s(8)):
+			for x in range(_s(-20), _s(21)):
+				var dist = sqrt(pow(float(x) / _sf(20), 2) + pow(float(y) / _sf(7), 2))
+				if dist < 1.0:
+					var color = iron_dark
+					if (x * 5 + y * 9) % 4 == 0:
+						color = red_dark
+					_sp(img, cx + x, cy + y + _s(8), color)
+				elif dist < 1.1:
+					_sp(img, cx + x, cy + y + _s(8), outline)
+		return ImageTexture.create_from_image(img)
+
+	# Legs (thick armored)
+	for leg_side in [-1, 1]:
+		var leg_x = cx + leg_side * _s(6) + lean / 4
+		var leg_y = cy + _s(6)
+		for ly in range(_s(14)):
+			var leg_w = _s(5)
+			for lx in range(-leg_w, leg_w + 1):
+				var color = iron if lx * leg_side < 0 else iron_dark
+				if ly < _s(2):
+					color = red_accent if abs(lx) < _s(3) else color  # Red stripe at top
+				if abs(lx) >= leg_w:
+					color = outline
+				_sp(img, leg_x + lx, leg_y + ly, color)
+		# Heavy boots
+		for fx in range(_s(-6), _s(7)):
+			for fy in range(_s(3)):
+				_sp(img, leg_x + fx, leg_y + _s(14) + fy, iron_dark)
+
+	# Torso (large, imposing with red chest plate)
+	var torso_rx = _s(14)
+	var torso_ry = _s(16)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy - _s(6), torso_rx + 1, torso_ry + 1, outline)
+	for y in range(-torso_ry, torso_ry + 1):
+		for x in range(-torso_rx, torso_rx + 1):
+			var dist = sqrt(pow(float(x) / torso_rx, 2) + pow(float(y) / torso_ry, 2))
+			if dist < 1.0:
+				var color = iron
+				if y < -torso_ry * 0.3:
+					color = iron_light
+				elif y > torso_ry * 0.3:
+					color = iron_dark
+				# Red chest plate (diamond shape)
+				if abs(x) + abs(y) < _s(8) and y < _s(2):
+					color = red_accent if y < 0 else red_dark
+				# Panel seams
+				if abs(y) % _s(7) < _s(1) and dist < 0.85:
+					color = outline
+				_sp(img, cx + x + lean / 4, cy - _s(6) + y, color)
+	# Epaulettes (shoulder plates with brass trim)
+	for ep_side in [-1, 1]:
+		var ep_x = cx + ep_side * _s(14) + lean / 3
+		var ep_y = cy - _s(16)
+		for sy in range(_s(-4), _s(3)):
+			for sx in range(_s(-5), _s(6)):
+				var sdist = sqrt(pow(float(sx) / _sf(5), 2) + pow(float(sy) / _sf(3), 2))
+				if sdist < 1.0:
+					var color = brass if sy < 0 else brass_dark
+					_sp(img, ep_x + sx, ep_y + sy, color)
+				elif sdist < 1.2:
+					_sp(img, ep_x + sx, ep_y + sy, outline)
+		# Red stripe on epaulette
+		_sp(img, ep_x, ep_y, red_accent)
+		_sp(img, ep_x + 1, ep_y, red_accent)
+	_SU._draw_shine_spot(img, cx - _s(4) + lean / 4, cy - _s(14), _s(3), iron_shine, 0.6)
+
+	# Arms
+	for arm_side in [-1, 1]:
+		var arm_x = cx + arm_side * _s(16) + lean / 3
+		var arm_y = cy - _s(12)
+		for ay in range(_s(16)):
+			for ax in range(_s(-3), _s(4)):
+				var color = iron if ax < 0 else iron_dark
+				if abs(ax) >= _s(3):
+					color = outline
+				_sp(img, arm_x + ax, arm_y + ay, color)
+		# Right arm: steam whip
+		if arm_side == 1 and whip_extend:
+			var whip_x = arm_x + _s(4)
+			var whip_y = arm_y + _s(12)
+			for wl in range(_s(16)):
+				var wy = whip_y + int(sin(float(wl) / _sf(4)) * _sf(3))
+				_sp(img, whip_x + wl, wy, copper)
+				_sp(img, whip_x + wl, wy + 1, Color(copper.r, copper.g, copper.b, 0.7))
+			# Whip spark at tip
+			_sp(img, whip_x + _s(16), whip_y, Color(1.0, 0.8, 0.2))
+		# Left arm: fist
+		if arm_side == -1:
+			var fist_y = arm_y + _s(16)
+			for fy in range(_s(-4), _s(5)):
+				for fx in range(_s(-4), _s(5)):
+					var fdist = sqrt(pow(float(fx) / _sf(4), 2) + pow(float(fy) / _sf(4), 2))
+					if fdist < 1.0:
+						_sp(img, arm_x + fx, fist_y + fy, iron if fy < 0 else iron_dark)
+
+	# Head (helmet with red crest)
+	var head_x = cx + lean / 5
+	var head_y = cy - _s(24)
+	var head_rx = _s(8)
+	var head_ry = _s(8)
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y) / head_ry, 2))
+			if dist < 1.0:
+				var color = iron if y < 0 else iron_dark
+				if x < -head_rx * 0.3:
+					color = iron_dark
+				_sp(img, head_x + x, head_y + y, color)
+	# Red crest/mohawk on top
+	for cr_y in range(_s(-6), 0):
+		for cr_x in range(_s(-1), _s(2)):
+			_sp(img, head_x + cr_x, head_y - head_ry + cr_y, red_accent if cr_y > _s(-4) else red_dark)
+
+	# Eyes (menacing red visor)
+	if pose < 5:
+		for ex in range(_s(-5), _s(6)):
+			for ey in range(_s(-1), _s(2)):
+				_sp(img, head_x + ex, head_y + ey, eye_red)
+			_sp(img, head_x + ex, head_y + _s(2), outline)  # Visor bottom edge
+		_sp(img, head_x - _s(2), head_y, eye_bright)
+		_sp(img, head_x + _s(2), head_y, eye_bright)
+
+	# Steam from back vents
+	if pose <= 1:
+		for vent in range(2):
+			var vx = cx + (_s(-4) + vent * _s(8)) + lean / 4
+			for vs in range(4):
+				var vy = cy - _s(20) - vs * _s(2)
+				var sc = Color(steam_c.r, steam_c.g, steam_c.b, steam_c.a - float(vs) * 0.1)
+				_sp(img, vx, vy, sc)
+				_sp(img, vx + 1, vy, sc)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## RUST ELEMENTAL (Steampunk - amorphous rust/corroded metal form)
+## =================
+
+static func create_rust_elemental_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("rust_elemental", func(): return _generate_rust_elemental_sprite_frames())
+
+static func _generate_rust_elemental_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.5)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_rust_elemental_frame(0, 0.0, 1.0))
+	frames.add_frame("idle", _create_rust_elemental_frame(0, -2.0, 1.05))
+	frames.add_frame("idle", _create_rust_elemental_frame(0, 0.0, 1.0))
+	frames.add_frame("idle", _create_rust_elemental_frame(0, 1.0, 0.95))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_rust_elemental_frame(1, 0.0, 1.0))
+	frames.add_frame("attack", _create_rust_elemental_frame(2, -3.0, 1.2))
+	frames.add_frame("attack", _create_rust_elemental_frame(3, 0.0, 1.0))
+	frames.add_frame("attack", _create_rust_elemental_frame(0, 0.0, 1.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_rust_elemental_frame(4, 0.0, 0.9))
+	frames.add_frame("hit", _create_rust_elemental_frame(0, 0.0, 1.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.0)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_rust_elemental_frame(0, 0.0, 1.0))
+	frames.add_frame("defeat", _create_rust_elemental_frame(5, 2.0, 0.7))
+	frames.add_frame("defeat", _create_rust_elemental_frame(5, 4.0, 0.4))
+	frames.add_frame("defeat", _create_rust_elemental_frame(5, 6.0, 0.2))
+	return frames
+
+
+static func _create_rust_elemental_frame(pose: int, y_offset: float, scale_y: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Rust elemental palette
+	var rust = Color(0.60, 0.30, 0.15)
+	var rust_dark = Color(0.45, 0.20, 0.10)
+	var rust_deep = Color(0.30, 0.12, 0.06)
+	var rust_light = Color(0.75, 0.42, 0.22)
+	var rust_orange = Color(0.80, 0.48, 0.15)
+	var iron_flake = Color(0.42, 0.42, 0.45)
+	var corroded = Color(0.35, 0.32, 0.22)
+	var green_patina = Color(0.25, 0.45, 0.30)
+	var eye_orange = Color(0.95, 0.50, 0.10)
+	var eye_bright = Color(1.0, 0.75, 0.3)
+	var outline = Color(0.20, 0.10, 0.06)
+
+	var center_x = size / 2
+	var base_y = int(size * 0.65 + _sf(y_offset))
+	var radius = _s(18)
+
+	# Amorphous body (blob-like, similar to slime but rusty)
+	# Outline first
+	var outline_radius = radius + _s(2)
+	_SU._draw_aa_ellipse_outline(img, center_x, base_y, int(outline_radius), int(outline_radius * scale_y), outline)
+
+	# Main body with rust texture
+	for y in range(-int(radius * scale_y), int(radius * scale_y) + 1):
+		for x in range(-radius, radius + 1):
+			var dist = sqrt(pow(float(x) / radius, 2) + pow(float(y) / (radius * scale_y), 2))
+			if dist < 1.0:
+				var px = center_x + x
+				var py = base_y + y
+				var color = rust
+				var v_pos = float(y) / (radius * scale_y)
+				var h_pos = float(x) / radius
+				# Rust shading zones
+				if v_pos < -0.4:
+					color = rust_light
+				elif v_pos > 0.5:
+					color = rust_deep
+				elif v_pos > 0.2:
+					color = rust_dark
+				# Patchy texture (rust is irregular)
+				var hash_val = (px * 7 + py * 13) % 17
+				if hash_val < 2:
+					color = iron_flake
+				elif hash_val < 4:
+					color = corroded
+				elif hash_val == 5 and v_pos > -0.2:
+					color = green_patina
+				# Horizontal shading
+				if h_pos > 0.5 and v_pos > -0.2:
+					if v_pos > 0.3:
+						color = rust_deep
+					elif (px + py) % 2 == 0:
+						color = rust_dark
+				_sp(img, px, py, color)
+
+	# Metal shards protruding from surface
+	if pose != 5:
+		var shard_positions = [
+			[_s(-12), _s(-10), _s(6)],
+			[_s(8), _s(-8), _s(8)],
+			[_s(-6), _s(-14), _s(5)],
+			[_s(14), _s(-4), _s(4)],
+		]
+		for shard in shard_positions:
+			var sx = center_x + shard[0]
+			var sy = base_y + int(shard[1] * scale_y)
+			var slen = shard[2]
+			for sl in range(slen):
+				var sw = max(1, _s(2) - sl / 2)
+				for sw_off in range(-sw, sw + 1):
+					var color = iron_flake if sl < slen / 2 else corroded
+					_sp(img, sx + sw_off, sy - sl, color)
+
+	# Eyes (burning orange, set into the rust)
+	if pose != 5:
+		for eye_side in [-1, 1]:
+			var eye_x = center_x + eye_side * _s(7)
+			var eye_y = base_y - _s(int(6 * scale_y))
+			for ey in range(_s(-2), _s(3)):
+				for ex in range(_s(-2), _s(3)):
+					if ex * ex + ey * ey <= _s(2) * _s(2):
+						_sp(img, eye_x + ex, eye_y + ey, eye_orange)
+			_sp(img, eye_x, eye_y, eye_bright)
+
+	# Dripping rust at bottom
+	if pose != 5 and scale_y >= 0.8:
+		var drip_base_y = base_y + int(radius * scale_y) - _s(2)
+		var drip_positions_arr = [_s(-10), _s(-3), _s(4), _s(9)]
+		var drip_lengths = [_s(5), _s(7), _s(4), _s(6)]
+		for i in range(4):
+			var drip_x = center_x + drip_positions_arr[i]
+			var drip_len = drip_lengths[i]
+			for dy in range(drip_len):
+				var t = float(dy) / float(drip_len)
+				var drip_width = max(1, _s(2) - dy / 3)
+				for dx in range(-drip_width, drip_width + 1):
+					var drip_color = rust_dark if dx > 0 else rust
+					drip_color.a = 1.0 - t * 0.5
+					_sp(img, drip_x + dx, drip_base_y + dy, drip_color)
+
+	# Rim light
+	if pose != 5:
+		_SU._draw_rim_light(img, center_x, base_y, radius, int(radius * scale_y), rust_orange, -0.6)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## TOXIC SLUDGE (Steampunk - industrial waste puddle, green/brown)
+## =================
+
+static func create_toxic_sludge_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("toxic_sludge", func(): return _generate_toxic_sludge_sprite_frames())
+
+static func _generate_toxic_sludge_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 2.5)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_toxic_sludge_frame(0, 0.0, 1.0))
+	frames.add_frame("idle", _create_toxic_sludge_frame(0, -1.5, 1.08))
+	frames.add_frame("idle", _create_toxic_sludge_frame(0, 0.0, 1.0))
+	frames.add_frame("idle", _create_toxic_sludge_frame(0, 1.0, 0.93))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 4.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_toxic_sludge_frame(1, 0.0, 1.0))
+	frames.add_frame("attack", _create_toxic_sludge_frame(2, -4.0, 1.3))
+	frames.add_frame("attack", _create_toxic_sludge_frame(0, 0.0, 1.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_toxic_sludge_frame(3, 0.0, 0.85))
+	frames.add_frame("hit", _create_toxic_sludge_frame(0, 0.0, 1.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.5)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_toxic_sludge_frame(0, 0.0, 1.0))
+	frames.add_frame("defeat", _create_toxic_sludge_frame(4, 2.0, 0.7))
+	frames.add_frame("defeat", _create_toxic_sludge_frame(4, 4.0, 0.4))
+	frames.add_frame("defeat", _create_toxic_sludge_frame(4, 6.0, 0.15))
+	return frames
+
+
+static func _create_toxic_sludge_frame(pose: int, y_offset: float, scale_y: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Toxic sludge palette
+	var sludge_green = Color(0.30, 0.50, 0.15)
+	var sludge_dark = Color(0.18, 0.32, 0.08)
+	var sludge_deep = Color(0.12, 0.20, 0.05)
+	var sludge_light = Color(0.42, 0.62, 0.22)
+	var sludge_bright = Color(0.55, 0.75, 0.30)
+	var brown_mud = Color(0.35, 0.25, 0.12)
+	var brown_dark = Color(0.22, 0.15, 0.08)
+	var toxic_glow = Color(0.5, 0.9, 0.2, 0.6)
+	var bubble_c = Color(0.45, 0.70, 0.25, 0.7)
+	var eye_yellow = Color(0.90, 0.85, 0.15)
+	var eye_bright = Color(1.0, 1.0, 0.5)
+	var outline = Color(0.10, 0.15, 0.05)
+
+	var center_x = size / 2
+	var base_y = int(size * 0.68 + _sf(y_offset))
+	var radius = _s(18)
+
+	# Puddle base (wider, flatter than the blob)
+	var puddle_rx = radius + _s(4)
+	var puddle_ry = _s(4)
+	for y in range(-puddle_ry, puddle_ry + 1):
+		for x in range(-puddle_rx, puddle_rx + 1):
+			var dist = sqrt(pow(float(x) / puddle_rx, 2) + pow(float(y) / puddle_ry, 2))
+			if dist < 1.0:
+				var color = brown_dark if dist > 0.7 else brown_mud
+				_sp(img, center_x + x, base_y + int(radius * scale_y * 0.5) + y, color)
+
+	# Main sludge body (amorphous blob)
+	_SU._draw_aa_ellipse_outline(img, center_x, base_y, int(radius + _s(1)), int((radius - _s(4)) * scale_y + _s(1)), outline)
+	for y in range(-int((radius - _s(4)) * scale_y), int((radius - _s(4)) * scale_y) + 1):
+		for x in range(-radius, radius + 1):
+			var dist = sqrt(pow(float(x) / radius, 2) + pow(float(y) / ((radius - _s(4)) * scale_y), 2))
+			if dist < 1.0:
+				var px = center_x + x
+				var py = base_y + y
+				var color = sludge_green
+				var v_pos = float(y) / ((radius - _s(4)) * scale_y)
+				# Sludge shading
+				if v_pos < -0.4:
+					color = sludge_light
+				elif v_pos > 0.5:
+					color = sludge_deep
+				elif v_pos > 0.2:
+					color = sludge_dark
+				# Patchy brown contamination
+				var hash_val = (px * 11 + py * 7) % 13
+				if hash_val < 2:
+					color = brown_mud
+				elif hash_val == 3:
+					color = sludge_bright
+				# Dithered transitions
+				if v_pos > -0.2 and v_pos < 0.0 and (px + py) % 2 == 0:
+					color = sludge_dark
+				_sp(img, px, py, color)
+
+	# Bubbles (toxic gas bubbles on surface)
+	if pose != 4:
+		var bubble_positions = [
+			[_s(-8), _s(-6), _s(3)],
+			[_s(5), _s(-8), _s(2)],
+			[_s(-3), _s(-10), _s(2)],
+			[_s(10), _s(-4), _s(2)],
+		]
+		for bp in bubble_positions:
+			var bx = center_x + bp[0]
+			var by = base_y + int(bp[1] * scale_y) - (pose % 2) * _s(1)
+			var br = bp[2]
+			for by_off in range(-br, br + 1):
+				for bx_off in range(-br, br + 1):
+					var bdist = sqrt(pow(float(bx_off) / br, 2) + pow(float(by_off) / br, 2))
+					if bdist < 0.8:
+						_sp(img, bx + bx_off, by + by_off, bubble_c)
+					elif bdist < 1.0:
+						_sp(img, bx + bx_off, by + by_off, outline)
+			# Bubble highlight
+			_sp(img, bx - 1, by - 1, sludge_bright)
+
+	# Eyes (two jaundiced yellow eyes)
+	if pose != 4:
+		for eye_side in [-1, 1]:
+			var eye_x = center_x + eye_side * _s(7)
+			var eye_y = base_y - _s(int(5 * scale_y))
+			for ey in range(_s(-2), _s(3)):
+				for ex in range(_s(-2), _s(3)):
+					if ex * ex + ey * ey <= _s(2) * _s(2):
+						_sp(img, eye_x + ex, eye_y + ey, eye_yellow)
+			# Slit pupil
+			for ey in range(_s(-1), _s(2)):
+				_sp(img, eye_x, eye_y + ey, Color(0.1, 0.1, 0.0))
+			_sp(img, eye_x - 1, eye_y - 1, eye_bright)
+
+	# Toxic glow effect around base
+	if pose != 4:
+		for gx in range(-puddle_rx - _s(2), puddle_rx + _s(3)):
+			var gy = base_y + int(radius * scale_y * 0.5) + puddle_ry
+			if (gx + pose) % 3 == 0:
+				var gc = Color(toxic_glow.r, toxic_glow.g, toxic_glow.b, toxic_glow.a * (0.5 + 0.3 * sin(float(gx) / _sf(4))))
+				_sp(img, center_x + gx, gy + 1, gc)
+				_sp(img, center_x + gx, gy + 2, Color(gc.r, gc.g, gc.b, gc.a * 0.5))
+
+	# Dripping sludge
+	if pose != 4 and scale_y >= 0.8:
+		var drip_base_y = base_y + int((radius - _s(4)) * scale_y) - _s(2)
+		for di in range(3):
+			var drip_x = center_x + _s(-8) + di * _s(7)
+			var drip_len = _s(3) + di * _s(2)
+			for dy in range(drip_len):
+				var t = float(dy) / float(drip_len)
+				var dc = sludge_dark
+				dc.a = 1.0 - t * 0.6
+				_sp(img, drip_x, drip_base_y + dy, dc)
+
+	return ImageTexture.create_from_image(img)
+
+
+## =================
+## CONVEYOR GREMLIN (Steampunk - small mischievous creature with wrench)
+## =================
+
+static func create_conveyor_gremlin_sprite_frames() -> SpriteFrames:
+	return _SU._get_cached_sprite("conveyor_gremlin", func(): return _generate_conveyor_gremlin_sprite_frames())
+
+static func _generate_conveyor_gremlin_sprite_frames() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 3.0)
+	frames.set_animation_loop("idle", true)
+	frames.add_frame("idle", _create_conveyor_gremlin_frame(0, 0.0))
+	frames.add_frame("idle", _create_conveyor_gremlin_frame(0, -1.5))
+	frames.add_frame("idle", _create_conveyor_gremlin_frame(0, 0.0))
+	frames.add_frame("idle", _create_conveyor_gremlin_frame(0, 1.0))
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 5.0)
+	frames.set_animation_loop("attack", false)
+	frames.add_frame("attack", _create_conveyor_gremlin_frame(1, 0.0))
+	frames.add_frame("attack", _create_conveyor_gremlin_frame(2, -1.0))
+	frames.add_frame("attack", _create_conveyor_gremlin_frame(3, 0.0))
+	frames.add_frame("attack", _create_conveyor_gremlin_frame(0, 0.0))
+	frames.add_animation("hit")
+	frames.set_animation_speed("hit", 5.0)
+	frames.set_animation_loop("hit", false)
+	frames.add_frame("hit", _create_conveyor_gremlin_frame(4, 2.0))
+	frames.add_frame("hit", _create_conveyor_gremlin_frame(4, 1.0))
+	frames.add_frame("hit", _create_conveyor_gremlin_frame(0, 0.0))
+	frames.add_animation("defeat")
+	frames.set_animation_speed("defeat", 2.5)
+	frames.set_animation_loop("defeat", false)
+	frames.add_frame("defeat", _create_conveyor_gremlin_frame(5, 0.0))
+	frames.add_frame("defeat", _create_conveyor_gremlin_frame(5, 3.0))
+	frames.add_frame("defeat", _create_conveyor_gremlin_frame(6, 6.0))
+	return frames
+
+
+static func _create_conveyor_gremlin_frame(pose: int, y_offset: float) -> ImageTexture:
+	var size = _SU.SPRITE_SIZE
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Gremlin palette (small, green-gray creature with goggles)
+	var skin = Color(0.40, 0.48, 0.32)
+	var skin_dark = Color(0.28, 0.35, 0.20)
+	var skin_light = Color(0.52, 0.60, 0.42)
+	var skin_rim = Color(0.62, 0.70, 0.50)
+	var goggle_brass = Color(0.72, 0.58, 0.28)
+	var goggle_lens = Color(0.3, 0.7, 0.9)
+	var goggle_lens_bright = Color(0.5, 0.9, 1.0)
+	var wrench_iron = Color(0.42, 0.42, 0.45)
+	var wrench_dark = Color(0.28, 0.28, 0.32)
+	var cloth = Color(0.45, 0.32, 0.20)
+	var cloth_dark = Color(0.30, 0.20, 0.12)
+	var teeth = Color(0.90, 0.85, 0.65)
+	var outline = Color(0.12, 0.15, 0.08)
+
+	var cx = size / 2
+	var cy = int(size * 0.75 + _sf(y_offset))
+
+	var lean = 0
+	var wrench_angle = 30
+	match pose:
+		1: lean = _s(-4); wrench_angle = -20
+		2: lean = _s(8); wrench_angle = 80
+		3: lean = _s(6); wrench_angle = 60
+		4: lean = _s(-10)
+		5: lean = _s(-18)
+		6: lean = _s(-28)
+
+	# Defeated - face down
+	if pose >= 6:
+		for y in range(_s(-5), _s(5)):
+			for x in range(_s(-14), _s(15)):
+				var dist = sqrt(pow(float(x) / _sf(14), 2) + pow(float(y) / _sf(4), 2))
+				if dist < 1.0:
+					_sp(img, cx + x, cy + y + _s(6), skin_dark if dist > 0.5 else skin)
+				elif dist < 1.12:
+					_sp(img, cx + x, cy + y + _s(6), outline)
+		# Dropped wrench
+		for wx in range(_s(10)):
+			_sp(img, cx + _s(10) + wx, cy + _s(5), wrench_iron)
+		return ImageTexture.create_from_image(img)
+
+	# Wrench (behind in some poses, in front for attack)
+	var wrench_behind = pose < 1 or pose >= 4
+	if not wrench_behind and pose < 5:
+		_draw_wrench(img, cx + _s(10) + lean / 3, cy - _s(8), wrench_angle, wrench_iron, wrench_dark, outline)
+
+	# Body (small, hunched)
+	var body_rx = _s(8)
+	var body_ry = _s(10)
+	_SU._draw_ellipse_outline(img, cx + lean / 4, cy, body_rx + 1, body_ry + 1, outline)
+	for y in range(-body_ry, body_ry + 1):
+		for x in range(-body_rx, body_rx + 1):
+			var dist = sqrt(pow(float(x) / body_rx, 2) + pow(float(y + _s(2)) / body_ry, 2))
+			if dist < 1.0:
+				# Overalls on lower body
+				if y > _s(-2):
+					var color = cloth if x < 0 else cloth_dark
+					_sp(img, cx + x + lean / 4, cy + y, color)
+				else:
+					var color = skin if x > -body_rx * 0.3 else skin_dark
+					if y < -body_ry * 0.4:
+						color = skin_light
+					_sp(img, cx + x + lean / 4, cy + y, color)
+	# Overall straps
+	for strap_side in [-1, 1]:
+		for sy in range(_s(-6), _s(-1)):
+			_sp(img, cx + strap_side * _s(3) + lean / 4, cy + sy, cloth_dark)
+
+	# Head (large relative to body - big-headed gremlin)
+	var head_x = cx + lean / 5
+	var head_y = cy - _s(16)
+	var head_rx = _s(10)
+	var head_ry = _s(10)
+	_SU._draw_ellipse_outline(img, head_x, head_y, head_rx + 1, head_ry + 1, outline)
+	for y in range(-head_ry, head_ry + 1):
+		for x in range(-head_rx, head_rx + 1):
+			var dist = sqrt(pow(float(x) / head_rx, 2) + pow(float(y + _s(2)) / head_ry, 2))
+			if dist < 1.0:
+				var color = skin
+				if y < -head_ry * 0.3:
+					color = skin_light
+				elif y > head_ry * 0.4:
+					color = skin_dark
+				elif x < -head_rx * 0.4:
+					color = skin_dark
+				_sp(img, head_x + x, head_y + y, color)
+
+	# Large pointy ears
+	for ear_side in [-1, 1]:
+		var ear_x = head_x + ear_side * _s(10)
+		var ear_y = head_y - _s(4)
+		for ey in range(_s(-6), _s(3)):
+			var ear_width = _s(3) - abs(ey) / 2
+			for ex in range(-ear_width, ear_width + 1):
+				var color = skin if ex * ear_side > 0 else skin_dark
+				# Inner ear pink
+				if abs(ex) < ear_width - 1 and ey > _s(-3):
+					color = Color(0.60, 0.42, 0.38)
+				_sp(img, ear_x + ex * ear_side, ear_y + ey, color)
+			# Ear outline on tip
+			_sp(img, ear_x + ear_width * ear_side, ear_y + ey, outline)
+
+	# Goggles (big brass goggles over eyes)
+	if pose < 5:
+		for goggle_side in [-1, 1]:
+			var gog_x = head_x + goggle_side * _s(4)
+			var gog_y = head_y - _s(1)
+			# Goggle rim (brass circle)
+			for gy in range(_s(-4), _s(5)):
+				for gx in range(_s(-4), _s(5)):
+					var gdist = sqrt(pow(float(gx) / _sf(4), 2) + pow(float(gy) / _sf(4), 2))
+					if gdist < 1.0 and gdist > 0.6:
+						_sp(img, gog_x + gx, gog_y + gy, goggle_brass)
+					elif gdist <= 0.6:
+						_sp(img, gog_x + gx, gog_y + gy, goggle_lens)
+			# Lens highlight
+			_sp(img, gog_x - _s(1), gog_y - _s(1), goggle_lens_bright)
+		# Goggle strap across head
+		for sx in range(_s(-10), _s(11)):
+			if abs(sx) > _s(7):
+				_sp(img, head_x + sx, head_y - _s(1), cloth_dark)
+
+	# Wide grin with teeth
+	var mouth_y = head_y + _s(5)
+	for mx in range(_s(-6), _s(7)):
+		_sp(img, head_x + mx, mouth_y, skin_dark)
+		# Teeth
+		if abs(mx) % _s(2) == 0 and abs(mx) < _s(5):
+			_sp(img, head_x + mx, mouth_y + 1, teeth)
+
+	# Arms (thin, long)
+	for arm_side in [-1, 1]:
+		var arm_x = cx + arm_side * _s(9) + lean / 3
+		var arm_y = cy - _s(6)
+		for ay in range(_s(10)):
+			_sp(img, arm_x, arm_y + ay, skin if ay < _s(5) else skin_dark)
+			_sp(img, arm_x + 1, arm_y + ay, skin_dark)
+		# Fingers
+		for f in range(3):
+			_sp(img, arm_x + f - 1, arm_y + _s(10), skin)
+
+	# Wrench in front for idle
+	if wrench_behind and pose < 5:
+		_draw_wrench(img, cx + _s(10) + lean / 3, cy - _s(8), wrench_angle, wrench_iron, wrench_dark, outline)
+
+	# Legs (short, stubby)
+	for leg_side in [-1, 1]:
+		var leg_x = cx + leg_side * _s(4) + lean / 5
+		var leg_y = cy + _s(8)
+		for ly in range(_s(6)):
+			for lx in range(_s(-2), _s(3)):
+				var color = skin_dark if lx < 0 else skin
+				if abs(lx) >= _s(2):
+					color = outline
+				_sp(img, leg_x + lx, leg_y + ly, color)
+		# Boot
+		for bx in range(_s(-3), _s(4)):
+			_sp(img, leg_x + bx, leg_y + _s(6), cloth_dark)
+			_sp(img, leg_x + bx, leg_y + _s(7), cloth_dark)
+
+	# Rim light
+	if pose < 5:
+		_SU._draw_rim_light(img, head_x, head_y, head_rx, head_ry, skin_rim, -0.7)
+
+	return ImageTexture.create_from_image(img)
+
+
+## Helper: Draw a wrench tool
+static func _draw_wrench(img: Image, wx: int, wy: int, angle_deg: int, metal: Color, metal_dark: Color, outline_c: Color) -> void:
+	var angle = deg_to_rad(angle_deg)
+	var handle_len = _s(14)
+	var head_size = _s(4)
+	# Handle
+	for i in range(handle_len):
+		var hx = wx + int(cos(angle) * i)
+		var hy = wy + int(sin(angle) * i)
+		for t in range(-1, 2):
+			var px = hx + int(sin(angle) * t)
+			var py = hy - int(cos(angle) * t)
+			_sp(img, px, py, metal if t <= 0 else metal_dark)
+	# Wrench head (open jaw)
+	var jaw_x = wx + int(cos(angle) * handle_len)
+	var jaw_y = wy + int(sin(angle) * handle_len)
+	for jy in range(-head_size, head_size + 1):
+		for jx in range(-head_size, head_size + 1):
+			var jdist = abs(jx) + abs(jy)
+			if jdist < head_size and not (abs(jx) < head_size / 2 and jy > 0):
+				_sp(img, jaw_x + jx, jaw_y + jy, metal if jy < 0 else metal_dark)

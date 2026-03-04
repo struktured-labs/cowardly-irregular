@@ -657,6 +657,60 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 			return BattleAnimatorClass.create_lightning_dragon_sprite_frames()
 		"shadow_dragon":
 			return BattleAnimatorClass.create_shadow_dragon_sprite_frames()
+		"clockwork_sentinel":
+			return BattleAnimatorClass.create_clockwork_sentinel_sprite_frames()
+		"steam_rat":
+			return BattleAnimatorClass.create_steam_rat_sprite_frames()
+		"brass_golem":
+			return BattleAnimatorClass.create_brass_golem_sprite_frames()
+		"cog_swarm":
+			return BattleAnimatorClass.create_cog_swarm_sprite_frames()
+		"pipe_phantom":
+			return BattleAnimatorClass.create_pipe_phantom_sprite_frames()
+		"assembly_line_automaton":
+			return BattleAnimatorClass.create_assembly_line_automaton_sprite_frames()
+		"shift_supervisor":
+			return BattleAnimatorClass.create_shift_supervisor_sprite_frames()
+		"rust_elemental":
+			return BattleAnimatorClass.create_rust_elemental_sprite_frames()
+		"toxic_sludge":
+			return BattleAnimatorClass.create_toxic_sludge_sprite_frames()
+		"conveyor_gremlin":
+			return BattleAnimatorClass.create_conveyor_gremlin_sprite_frames()
+		# Suburban monsters (MonsterSpritesExtra)
+		"new_age_retro_hippie":
+			return MonsterSpritesExtra.create_new_age_retro_hippie_sprite_frames()
+		"spiteful_crow":
+			return MonsterSpritesExtra.create_spiteful_crow_sprite_frames()
+		"skate_punk":
+			return MonsterSpritesExtra.create_skate_punk_sprite_frames()
+		"unassuming_dog":
+			return MonsterSpritesExtra.create_unassuming_dog_sprite_frames()
+		"cranky_lady":
+			return MonsterSpritesExtra.create_cranky_lady_sprite_frames()
+		"abstract_art":
+			return MonsterSpritesExtra.create_abstract_art_sprite_frames()
+		"runaway_dog":
+			return MonsterSpritesExtra.create_runaway_dog_sprite_frames()
+		"couch_potato":
+			return MonsterSpritesExtra.create_couch_potato_sprite_frames()
+		"mall_cop":
+			return MonsterSpritesExtra.create_mall_cop_sprite_frames()
+		"prank_caller":
+			return MonsterSpritesExtra.create_prank_caller_sprite_frames()
+		# Meta/Glitch monsters (MonsterSpritesExtra)
+		"corrupted_sprite":
+			return MonsterSpritesExtra.create_corrupted_sprite_sprite_frames()
+		"glitch_entity":
+			return MonsterSpritesExtra.create_glitch_entity_sprite_frames()
+		"script_error":
+			return MonsterSpritesExtra.create_script_error_sprite_frames()
+		"null_entity":
+			return MonsterSpritesExtra.create_null_entity_sprite_frames()
+		"rogue_process":
+			return MonsterSpritesExtra.create_rogue_process_sprite_frames()
+		"memory_leak":
+			return MonsterSpritesExtra.create_memory_leak_sprite_frames()
 		_:
 			# Default to slime for unknown types
 			return BattleAnimatorClass.create_slime_sprite_frames()

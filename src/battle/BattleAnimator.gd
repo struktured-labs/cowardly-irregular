@@ -75,6 +75,16 @@ static func prewarm_cache(monster_ids: Array = [], party_jobs: Array = []) -> vo
 			"ice_dragon": _MonsterSprites.create_ice_dragon_sprite_frames()
 			"lightning_dragon": _MonsterSprites.create_lightning_dragon_sprite_frames()
 			"shadow_dragon": _MonsterSprites.create_shadow_dragon_sprite_frames()
+			"clockwork_sentinel": _MonsterSprites.create_clockwork_sentinel_sprite_frames()
+			"steam_rat": _MonsterSprites.create_steam_rat_sprite_frames()
+			"brass_golem": _MonsterSprites.create_brass_golem_sprite_frames()
+			"cog_swarm": _MonsterSprites.create_cog_swarm_sprite_frames()
+			"pipe_phantom": _MonsterSprites.create_pipe_phantom_sprite_frames()
+			"assembly_line_automaton": _MonsterSprites.create_assembly_line_automaton_sprite_frames()
+			"shift_supervisor": _MonsterSprites.create_shift_supervisor_sprite_frames()
+			"rust_elemental": _MonsterSprites.create_rust_elemental_sprite_frames()
+			"toxic_sludge": _MonsterSprites.create_toxic_sludge_sprite_frames()
+			"conveyor_gremlin": _MonsterSprites.create_conveyor_gremlin_sprite_frames()
 	# Pre-warm party jobs
 	for job_data in party_jobs:
 		var job_id = job_data.get("job_id", "fighter")
@@ -498,3 +508,33 @@ static func create_lightning_dragon_sprite_frames() -> SpriteFrames:
 
 static func create_shadow_dragon_sprite_frames() -> SpriteFrames:
 	return _MonsterSprites.create_shadow_dragon_sprite_frames()
+
+static func create_clockwork_sentinel_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_clockwork_sentinel_sprite_frames()
+
+static func create_steam_rat_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_steam_rat_sprite_frames()
+
+static func create_brass_golem_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_brass_golem_sprite_frames()
+
+static func create_cog_swarm_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_cog_swarm_sprite_frames()
+
+static func create_pipe_phantom_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_pipe_phantom_sprite_frames()
+
+static func create_assembly_line_automaton_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_assembly_line_automaton_sprite_frames()
+
+static func create_shift_supervisor_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_shift_supervisor_sprite_frames()
+
+static func create_rust_elemental_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_rust_elemental_sprite_frames()
+
+static func create_toxic_sludge_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_toxic_sludge_sprite_frames()
+
+static func create_conveyor_gremlin_sprite_frames() -> SpriteFrames:
+	return _MonsterSprites.create_conveyor_gremlin_sprite_frames()

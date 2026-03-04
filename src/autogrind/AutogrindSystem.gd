@@ -72,6 +72,36 @@ var grind_enemy_template: Dictionary = {}
 var grind_party: Array[Combatant] = []
 
 ## ═══════════════════════════════════════════════════════════════════════
+## COMBAT SATURATION INDEX (CSI) - Diminishing returns per region
+## ═══════════════════════════════════════════════════════════════════════
+
+## CSI constants
+const CSI_BASE_GROWTH: float = 0.0025   # Base CSI growth per encounter
+const CSI_DECAY_RATE: float = 0.01      # CSI decay per hour away from region
+const YIELD_MIN: float = 0.35           # Minimum yield multiplier (never fully zero)
+const YIELD_K: float = 2.0              # Yield decay steepness
+const AA_ALPHA: float = 0.002           # Automation affinity EMA smoothing factor
+
+## Per-region CSI values {region_id: float 0.0-1.0}
+var _region_csi: Dictionary = {}
+
+## Timestamps of last visit per region for decay calculation {region_id: float (unix time)}
+var _csi_timestamps: Dictionary = {}
+
+## Automation Affinity - meta tracking of how much the player automates (0.0-1.0)
+var _automation_affinity: float = 0.0
+
+## Grind session statistics for per-minute rate tracking
+var _grind_stats: Dictionary = {
+	"start_time": 0.0,
+	"total_exp": 0,
+	"total_gold": 0,
+	"total_jp": 0,
+	"total_encounters": 0,
+	"elapsed_seconds": 0.0
+}
+
+## ═══════════════════════════════════════════════════════════════════════
 ## ADAPTIVE AI - Pattern Learning & Counter Strategy
 ## ═══════════════════════════════════════════════════════════════════════
 
@@ -174,6 +204,230 @@ func get_learned_patterns_for_region(region_id: String) -> Dictionary:
 
 
 ## ═══════════════════════════════════════════════════════════════════════
+## COMBAT SATURATION INDEX (CSI) - Diminishing Returns Per Region
+## ═══════════════════════════════════════════════════════════════════════
+
+func update_csi(region_id: String, encounter_type: String = "normal") -> void:
+	"""Update CSI for a region after an encounter.
+	DCSI = base_growth * encounter_weight * mode_weight * level_weight
+	CSI is clamped to [0.0, 1.0]."""
+	if not _region_csi.has(region_id):
+		_region_csi[region_id] = 0.0
+
+	# Encounter weight: normal=1.0, elite=2.0
+	var encounter_weight: float = 1.0
+	if encounter_type == "elite":
+		encounter_weight = 2.0
+
+	# Mode weight: autogrind=1.08, manual=1.0
+	var mode_weight: float = 1.08 if is_grinding else 1.0
+
+	# Level weight: scale by adaptation level (higher adaptation = faster saturation)
+	var level_weight: float = 1.0 + monster_adaptation_level * 0.1
+
+	var delta_csi: float = CSI_BASE_GROWTH * encounter_weight * mode_weight * level_weight
+	_region_csi[region_id] = clampf(_region_csi[region_id] + delta_csi, 0.0, 1.0)
+
+	# Record timestamp for this region
+	_csi_timestamps[region_id] = Time.get_unix_time_from_system()
+
+
+func get_yield_multiplier(region_id: String) -> float:
+	"""Compute yield multiplier from CSI using exponential decay.
+	Y(csi) = Y_min + (1 - Y_min) * exp(-k * csi)
+	Returns a value in [Y_min, 1.0] -- higher CSI means lower yield."""
+	var csi: float = get_csi(region_id)
+	return YIELD_MIN + (1.0 - YIELD_MIN) * exp(-YIELD_K * csi)
+
+
+func decay_all_csi(hours_elapsed: float) -> void:
+	"""Decay CSI for all regions based on time away.
+	CSI = max(0, CSI - decay_rate * hours_away)
+	Called when loading a save or returning to a region."""
+	if hours_elapsed <= 0.0:
+		return
+	for region_id in _region_csi.keys():
+		var decay_amount: float = CSI_DECAY_RATE * hours_elapsed
+		_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - decay_amount)
+
+
+func get_csi(region_id: String) -> float:
+	"""Get current CSI for a region (0.0 if never visited)."""
+	return _region_csi.get(region_id, 0.0)
+
+
+func update_automation_affinity(signal_type: String) -> void:
+	"""Update automation affinity using exponential moving average.
+	AA = (1 - alpha) * AA + alpha * S
+	signal_type: "manual" (S=0), "autobattle" (S=0.3), "autogrind" (S=1.0)"""
+	var s: float = 0.0
+	match signal_type:
+		"manual":
+			s = 0.0
+		"autobattle":
+			s = 0.3
+		"autogrind":
+			s = 1.0
+	_automation_affinity = (1.0 - AA_ALPHA) * _automation_affinity + AA_ALPHA * s
+
+
+func get_automation_affinity() -> float:
+	"""Get current automation affinity (0.0-1.0). Higher = more automated playstyle."""
+	return _automation_affinity
+
+
+func get_grind_stats() -> Dictionary:
+	"""Get grind session statistics with per-minute rates.
+	Returns {exp_per_min, gold_per_min, jp_per_min, encounters_per_min,
+	         total_exp, total_gold, total_encounters, elapsed_seconds}"""
+	var elapsed: float = _grind_stats["elapsed_seconds"]
+	if is_grinding and _grind_stats["start_time"] > 0.0:
+		elapsed = Time.get_unix_time_from_system() - _grind_stats["start_time"]
+
+	var minutes: float = maxf(elapsed / 60.0, 0.0001)  # Avoid division by zero
+
+	return {
+		"exp_per_min": _grind_stats["total_exp"] / minutes,
+		"gold_per_min": _grind_stats["total_gold"] / minutes,
+		"jp_per_min": _grind_stats["total_jp"] / minutes,
+		"encounters_per_min": _grind_stats["total_encounters"] / minutes,
+		"total_exp": _grind_stats["total_exp"],
+		"total_gold": _grind_stats["total_gold"],
+		"total_encounters": _grind_stats["total_encounters"],
+		"elapsed_seconds": elapsed
+	}
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## CONTROLLER INTERFACE - Methods called by AutogrindController
+## ═══════════════════════════════════════════════════════════════════════
+
+func pre_battle_check() -> String:
+	"""Check interrupt conditions before starting a battle.
+	Returns empty string if OK to fight, or a reason string to stop."""
+	return _check_interrupt_conditions()
+
+
+func should_spawn_meta_boss() -> bool:
+	"""Check if a meta-boss should spawn based on corruption level.
+	Uses meta_boss_spawn_chance which scales with meta_corruption_level."""
+	if not meta_bosses_enabled:
+		return false
+	return randf() < meta_boss_spawn_chance
+
+
+func create_scaled_enemy_data(base_data: Dictionary) -> Dictionary:
+	"""Scale a single enemy's stats by monster_adaptation_level.
+	Returns a new dictionary with scaled stats."""
+	var scaled: Dictionary = base_data.duplicate(true)
+	var adaptation_bonus: float = monster_adaptation_level * 0.15  # +15% stats per level
+
+	# Scale stats dictionary if present
+	if scaled.has("stats"):
+		var stats: Dictionary = scaled["stats"]
+		for stat_key in stats.keys():
+			if stats[stat_key] is int or stats[stat_key] is float:
+				stats[stat_key] = int(stats[stat_key] * (1.0 + adaptation_bonus))
+
+	# Also scale top-level stats (for backward compatibility with _create_adapted_enemy)
+	for key in ["max_hp", "attack", "defense", "magic"]:
+		if scaled.has(key):
+			scaled[key] = int(scaled[key] * (1.0 + adaptation_bonus))
+
+	# Apply meta-corruption effects
+	if meta_corruption_level >= 2.0:
+		scaled["corruption_effects"] = _get_corruption_effects()
+
+	# Apply learned counter strategies for current region
+	if not current_region_id.is_empty():
+		var counter = get_counter_strategy(current_region_id)
+		if counter != "":
+			scaled["counter_strategy"] = counter
+
+	return scaled
+
+
+func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
+	"""Handle a battle victory during autogrind.
+	Updates stats, CSI, efficiency, checks thresholds."""
+	battles_completed += 1
+	consecutive_wins += 1
+
+	# Apply yield multiplier from CSI
+	var yield_mult: float = 1.0
+	if not current_region_id.is_empty():
+		yield_mult = get_yield_multiplier(current_region_id)
+
+	# Apply region crack penalty
+	var crack_penalty: float = _get_region_crack_penalty()
+
+	# Combined reward scaling
+	var reward_scale: float = yield_mult * (1.0 - crack_penalty)
+	var adjusted_exp: int = int(exp_gained * reward_scale)
+
+	total_exp_gained += adjusted_exp
+
+	# Track items
+	for item_id in items_gained:
+		var quantity = items_gained[item_id]
+		if total_items_gained.has(item_id):
+			total_items_gained[item_id] += quantity
+		else:
+			total_items_gained[item_id] = quantity
+
+	# Award EXP to party
+	for member in grind_party:
+		if member is Combatant and member.is_alive:
+			member.gain_job_exp(adjusted_exp)
+
+	# Update grind stats tracking
+	_grind_stats["total_exp"] += adjusted_exp
+	_grind_stats["total_gold"] += int(items_gained.get("gold", 0) * reward_scale)
+	_grind_stats["total_encounters"] += 1
+
+	# Update CSI for current region
+	if not current_region_id.is_empty():
+		update_csi(current_region_id)
+
+	# Update automation affinity
+	update_automation_affinity("autogrind")
+
+	# Check region crack
+	_check_region_crack()
+
+	# Increase efficiency and danger
+	_increase_efficiency()
+
+	# Log if yield is significantly reduced
+	if yield_mult < 0.7 or crack_penalty > 0:
+		print("[AUTOGRIND] Yield: %.0f%% (CSI: %.2f, Crack: -%.0f%%)" % [
+			reward_scale * 100.0, get_csi(current_region_id), crack_penalty * 100.0
+		])
+
+	battle_completed.emit(battles_completed, {
+		"victory": true,
+		"exp_gained": adjusted_exp,
+		"items_gained": items_gained,
+		"yield_multiplier": yield_mult
+	})
+
+
+func on_battle_defeat() -> void:
+	"""Handle a battle defeat during autogrind.
+	Resets consecutive wins, checks permadeath, stops grind."""
+	consecutive_wins = 0
+	_grind_stats["total_encounters"] += 1
+
+	# Update automation affinity (still autogrinding even on defeat)
+	update_automation_affinity("autogrind")
+
+	if permadeath_staking_enabled:
+		_trigger_permadeath()
+
+	stop_autogrind("Party defeated")
+
+
+## ═══════════════════════════════════════════════════════════════════════
 ## AUTOGRIND PROFILES - Party-level rule management
 ## ═══════════════════════════════════════════════════════════════════════
 
@@ -228,6 +482,7 @@ const DEFAULT_AUTOGRIND_TEMPLATES = ["Standard Grind", "Safe Grind", "Aggressive
 func _ready() -> void:
 	_load_autogrind_profiles()
 	_load_learned_patterns()
+	_load_csi_data()
 
 
 ## Autogrind control
@@ -249,6 +504,24 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	grind_party = party.duplicate()
 	grind_enemy_template = enemy_template.duplicate()
 
+	# Initialize grind stats tracking
+	_grind_stats = {
+		"start_time": Time.get_unix_time_from_system(),
+		"total_exp": 0,
+		"total_gold": 0,
+		"total_jp": 0,
+		"total_encounters": 0,
+		"elapsed_seconds": 0.0
+	}
+
+	# Decay CSI for regions based on time since last visit
+	if not current_region_id.is_empty() and _csi_timestamps.has(current_region_id):
+		var now: float = Time.get_unix_time_from_system()
+		var last_visit: float = _csi_timestamps[current_region_id]
+		var hours_away: float = (now - last_visit) / 3600.0
+		if hours_away > 0.0:
+			decay_all_csi(hours_away)
+
 	# Apply custom config
 	if config.has("interrupt_rules"):
 		for key in config["interrupt_rules"]:
@@ -259,7 +532,10 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 
 	grind_started.emit()
 	print("=== AUTOGRIND STARTED ===")
-	print("Efficiency: %.1fx | Corruption: %.2f" % [efficiency_multiplier, meta_corruption_level])
+	print("Efficiency: %.1fx | Corruption: %.2f | CSI: %.3f" % [
+		efficiency_multiplier, meta_corruption_level,
+		get_csi(current_region_id) if not current_region_id.is_empty() else 0.0
+	])
 
 	_process_grind_loop()
 
@@ -271,13 +547,22 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 
 	is_grinding = false
 
+	# Finalize grind stats elapsed time
+	if _grind_stats["start_time"] > 0.0:
+		_grind_stats["elapsed_seconds"] = Time.get_unix_time_from_system() - _grind_stats["start_time"]
+
+	var stats: Dictionary = get_grind_stats()
 	var results = {
 		"battles_completed": battles_completed,
 		"total_exp_gained": total_exp_gained,
 		"total_items_gained": total_items_gained.duplicate(),
 		"final_efficiency": efficiency_multiplier,
 		"corruption_level": meta_corruption_level,
-		"stop_reason": reason
+		"stop_reason": reason,
+		"automation_affinity": _automation_affinity,
+		"csi": get_csi(current_region_id) if not current_region_id.is_empty() else 0.0,
+		"yield_multiplier": get_yield_multiplier(current_region_id) if not current_region_id.is_empty() else 1.0,
+		"grind_stats": stats
 	}
 
 	grind_stopped.emit(results)
@@ -285,6 +570,9 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 	print("Reason: %s" % reason)
 	print("Battles: %d | EXP: %d | Efficiency: %.1fx" % [
 		battles_completed, total_exp_gained, efficiency_multiplier
+	])
+	print("Yield: %.0f%% | AA: %.3f | EXP/min: %.1f" % [
+		results["yield_multiplier"] * 100.0, _automation_affinity, stats["exp_per_min"]
 	])
 
 
@@ -1018,8 +1306,9 @@ func _save_autogrind_profiles() -> void:
 		file.store_string(json_string)
 		file.close()
 
-	# Also save learned patterns
+	# Also save learned patterns and CSI data
 	_save_learned_patterns()
+	_save_csi_data()
 
 
 func _save_learned_patterns() -> void:
@@ -1056,3 +1345,120 @@ func _load_learned_patterns() -> void:
 
 	# No saved patterns
 	learned_patterns = {}
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## CSI / AUTOMATION AFFINITY SAVE/LOAD
+## ═══════════════════════════════════════════════════════════════════════
+
+func _save_csi_data() -> void:
+	"""Save CSI and automation affinity data to file"""
+	var save_path = "user://autogrind/csi_data.json"
+
+	var dir = DirAccess.open("user://")
+	if dir and not dir.dir_exists("autogrind"):
+		dir.make_dir("autogrind")
+
+	var data = {
+		"region_csi": _region_csi,
+		"csi_timestamps": _csi_timestamps,
+		"automation_affinity": _automation_affinity
+	}
+
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		var json_string = JSON.stringify(data, "\t")
+		file.store_string(json_string)
+		file.close()
+
+
+func _load_csi_data() -> void:
+	"""Load CSI and automation affinity data from file"""
+	var save_path = "user://autogrind/csi_data.json"
+
+	if FileAccess.file_exists(save_path):
+		var file = FileAccess.open(save_path, FileAccess.READ)
+		if file:
+			var json_string = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(json_string) == OK:
+				var data = json.data
+				if data is Dictionary:
+					_region_csi = data.get("region_csi", {})
+					_csi_timestamps = data.get("csi_timestamps", {})
+					_automation_affinity = data.get("automation_affinity", 0.0)
+
+					# Apply time-based decay since last save
+					var now: float = Time.get_unix_time_from_system()
+					for region_id in _csi_timestamps.keys():
+						var last_time: float = _csi_timestamps[region_id]
+						var hours_away: float = (now - last_time) / 3600.0
+						if hours_away > 0.0 and _region_csi.has(region_id):
+							_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - CSI_DECAY_RATE * hours_away)
+
+					print("Loaded CSI data (AA: %.3f, regions: %d)" % [
+						_automation_affinity, _region_csi.size()
+					])
+					return
+
+	# No saved CSI data
+	_region_csi = {}
+	_csi_timestamps = {}
+	_automation_affinity = 0.0
+
+
+func save_data() -> Dictionary:
+	"""Serialize all persistent autogrind state for save files.
+	Returns a dictionary suitable for JSON serialization."""
+	# Save profiles and patterns to their own files
+	_save_autogrind_profiles()
+
+	return {
+		"region_csi": _region_csi.duplicate(),
+		"csi_timestamps": _csi_timestamps.duplicate(),
+		"automation_affinity": _automation_affinity,
+		"region_crack_levels": region_crack_levels.duplicate(),
+		"current_region_id": current_region_id,
+		"learned_patterns": learned_patterns.duplicate(true),
+		"grind_stats": _grind_stats.duplicate()
+	}
+
+
+func load_data(data: Dictionary) -> void:
+	"""Restore persistent autogrind state from a save file dictionary.
+	Applies CSI decay based on time since last save."""
+	if not data is Dictionary:
+		return
+
+	# Restore CSI data
+	_region_csi = data.get("region_csi", {}).duplicate()
+	_csi_timestamps = data.get("csi_timestamps", {}).duplicate()
+	_automation_affinity = data.get("automation_affinity", 0.0)
+	region_crack_levels = data.get("region_crack_levels", {}).duplicate()
+	current_region_id = data.get("current_region_id", "")
+	_grind_stats = data.get("grind_stats", {
+		"start_time": 0.0,
+		"total_exp": 0,
+		"total_gold": 0,
+		"total_jp": 0,
+		"total_encounters": 0,
+		"elapsed_seconds": 0.0
+	}).duplicate()
+
+	# Restore learned patterns
+	var saved_patterns = data.get("learned_patterns", {})
+	if saved_patterns is Dictionary and not saved_patterns.is_empty():
+		learned_patterns = saved_patterns.duplicate(true)
+
+	# Apply time-based CSI decay since last save
+	var now: float = Time.get_unix_time_from_system()
+	for region_id in _csi_timestamps.keys():
+		var last_time: float = _csi_timestamps[region_id]
+		var hours_away: float = (now - last_time) / 3600.0
+		if hours_away > 0.0 and _region_csi.has(region_id):
+			_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - CSI_DECAY_RATE * hours_away)
+
+	print("Loaded autogrind data (AA: %.3f, CSI regions: %d)" % [
+		_automation_affinity, _region_csi.size()
+	])

@@ -78,6 +78,13 @@ var _cursor: Control
 var _status_panel: Control
 var _battle_log: RichTextLabel
 var _start_button: Control
+var _monitor: AutogrindMonitor
+
+## Region ID for CSI lookups (derived from _region_name)
+var _region_id: String = ""
+
+## Rule trigger counts for monitor display
+var _rule_trigger_counts: Dictionary = {}
 
 
 func _ready() -> void:
@@ -88,6 +95,8 @@ func setup(party: Array, region_name: String = "") -> void:
 	_party = party
 	if region_name != "":
 		_region_name = region_name
+	# Derive region_id from display name (reverse of capitalize/replace in GameLoop)
+	_region_id = _region_name.to_lower().replace(" ", "_")
 	_load_rules()
 	_connect_autogrind_signals()
 	call_deferred("_build_ui")
@@ -1182,11 +1191,13 @@ func _toggle_grinding() -> void:
 		_is_grinding = false
 		grind_stop_requested.emit()
 		_log_message("[color=yellow]Autogrind stopped.[/color]")
+		_hide_monitor()
 	else:
 		_is_grinding = true
 		var config = _get_grind_config()
 		grind_requested.emit(config)
 		_log_message("[color=lime]Autogrind started![/color]")
+		_show_monitor()
 
 	_build_ui()
 	SoundManager.play_ui("menu_select")
@@ -1281,6 +1292,7 @@ func _on_grid_cell_hover(cell: Control) -> void:
 func _close_ui() -> void:
 	"""Close the UI"""
 	_disconnect_autogrind_signals()
+	_hide_monitor()
 	SoundManager.play_ui("menu_close")
 	closed.emit()
 
@@ -1303,6 +1315,185 @@ func _get_corruption_color(val: float) -> Color:
 		return DANGER_COLOR
 
 
+## ═══════════════════════════════════════════════════════════════════════
+## MONITOR MANAGEMENT - Show/hide the real-time grinding dashboard
+## ═══════════════════════════════════════════════════════════════════════
+
+func _show_monitor() -> void:
+	"""Create and show the autogrind monitor overlay during active grinding"""
+	if _monitor and is_instance_valid(_monitor):
+		_monitor.visible = true
+		return
+
+	_monitor = AutogrindMonitor.new()
+	_monitor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_monitor)
+
+	# Connect monitor signals
+	_monitor.pause_requested.connect(_on_monitor_pause)
+	_monitor.adjust_rules_requested.connect(_on_monitor_adjust_rules)
+	_monitor.exit_requested.connect(_on_monitor_exit)
+
+	# Send initial highlight
+	_monitor.add_highlight("Autogrind session started", "success")
+
+
+func _hide_monitor() -> void:
+	"""Hide and clean up the monitor"""
+	if _monitor and is_instance_valid(_monitor):
+		_monitor.queue_free()
+		_monitor = null
+
+
+func _on_monitor_pause() -> void:
+	"""Handle pause request from monitor"""
+	_toggle_grinding()
+
+
+func _on_monitor_adjust_rules() -> void:
+	"""Handle adjust rules request - hide monitor, show rule editor"""
+	if _monitor and is_instance_valid(_monitor):
+		_monitor.visible = false
+
+
+func _on_monitor_exit() -> void:
+	"""Handle exit request from monitor"""
+	if _is_grinding:
+		_toggle_grinding()
+	_close_ui()
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## UPDATE METHODS - Called by GameLoop during active grinding
+## ═══════════════════════════════════════════════════════════════════════
+
+func update_stats(stats: Dictionary) -> void:
+	"""Update the monitor with latest grind stats from AutogrindController.
+	Called by GameLoop after each battle completes."""
+	# Update local state
+	_battles_won = stats.get("battles_won", _battles_won)
+	_efficiency = stats.get("efficiency", _efficiency)
+	_corruption = stats.get("corruption", _corruption)
+	_total_exp = stats.get("total_exp", _total_exp)
+
+	# Forward to monitor for real-time dashboard display
+	if _monitor and is_instance_valid(_monitor) and _monitor.visible:
+		_monitor.refresh(stats, _region_id)
+
+		# Track rule triggers and forward to monitor
+		if not _rule_trigger_counts.is_empty():
+			_monitor.update_rule_triggers(_rule_trigger_counts)
+
+		# Auto-generate highlights for notable events
+		_check_and_emit_highlights(stats)
+
+
+func update_party_status() -> void:
+	"""Update party member status display during grinding.
+	Called by GameLoop after each battle completes."""
+	# Rebuild the status panel if it exists
+	if _status_panel and is_instance_valid(_status_panel):
+		# Rebuild party rows in the status panel
+		_rebuild_party_rows()
+
+
+func _rebuild_party_rows() -> void:
+	"""Rebuild party status rows in the status panel without full UI rebuild"""
+	if not _status_panel or not is_instance_valid(_status_panel):
+		return
+
+	# Remove existing party rows (children between title and log header)
+	var children_to_remove: Array = []
+	for child in _status_panel.get_children():
+		if child is Control and child != _battle_log:
+			# Check if it's a party row (has a specific position range)
+			if child.position.y >= 28 and child.position.y < 120:
+				children_to_remove.append(child)
+
+	for child in children_to_remove:
+		child.queue_free()
+
+	# Re-add party rows
+	var y = 28
+	for i in range(min(_party.size(), 4)):
+		var member = _party[i]
+		if member is Combatant:
+			var row = _create_party_status_row(member, _status_panel.size.x - 16)
+			row.position = Vector2(8, y)
+			_status_panel.add_child(row)
+			y += 24
+
+
+func _check_and_emit_highlights(stats: Dictionary) -> void:
+	"""Check stats for notable events and emit highlight entries to monitor."""
+	if not _monitor or not is_instance_valid(_monitor):
+		return
+
+	var corruption = stats.get("corruption", 0.0)
+	var efficiency = stats.get("efficiency", 1.0)
+	var adaptation = stats.get("adaptation", 0.0)
+	var battles = stats.get("battles_won", 0)
+	var crack = stats.get("region_crack", 0)
+
+	# Corruption milestones
+	if corruption >= 4.0 and (_prev_corruption_milestone < 4.0 or _prev_corruption_milestone == 0.0):
+		_monitor.add_highlight("Corruption CRITICAL: %.1f" % corruption, "danger")
+		_prev_corruption_milestone = corruption
+	elif corruption >= 3.0 and _prev_corruption_milestone < 3.0:
+		_monitor.add_highlight("Corruption rising: %.1f" % corruption, "warning")
+		_prev_corruption_milestone = corruption
+	elif corruption >= 2.0 and _prev_corruption_milestone < 2.0:
+		_monitor.add_highlight("Corruption detected: %.1f" % corruption, "warning")
+		_prev_corruption_milestone = corruption
+
+	# Efficiency milestones
+	if efficiency >= 5.0 and _prev_efficiency_milestone < 5.0:
+		_monitor.add_highlight("Efficiency 5x reached", "success")
+		_prev_efficiency_milestone = efficiency
+	elif efficiency >= 3.0 and _prev_efficiency_milestone < 3.0:
+		_monitor.add_highlight("Efficiency 3x reached", "success")
+		_prev_efficiency_milestone = efficiency
+
+	# Battle count milestones
+	if battles > 0 and battles % 25 == 0 and battles != _prev_battle_milestone:
+		_monitor.add_highlight("%d battles completed" % battles, "info")
+		_prev_battle_milestone = battles
+
+	# Region crack
+	if crack > _prev_crack_level:
+		_monitor.add_highlight("Region cracked! Level %d" % crack, "danger")
+		_prev_crack_level = crack
+
+	# Adaptation warnings
+	if adaptation >= 3.0 and _prev_adaptation_milestone < 3.0:
+		_monitor.add_highlight("Monsters fully adapted!", "danger")
+		_prev_adaptation_milestone = adaptation
+	elif adaptation >= 1.0 and _prev_adaptation_milestone < 1.0:
+		_monitor.add_highlight("Monsters adapting to strategies", "warning")
+		_prev_adaptation_milestone = adaptation
+
+	# Yield degradation check
+	var yield_mult = AutogrindSystem.get_yield_multiplier(_region_id)
+	if yield_mult < 0.5 and not _warned_low_yield:
+		_monitor.add_highlight("Yield below 50% - consider moving regions", "warning")
+		_warned_low_yield = true
+
+
+## Highlight milestone tracking
+var _prev_corruption_milestone: float = 0.0
+var _prev_efficiency_milestone: float = 0.0
+var _prev_battle_milestone: int = 0
+var _prev_crack_level: int = 0
+var _prev_adaptation_milestone: float = 0.0
+var _warned_low_yield: bool = false
+
+
+func record_rule_trigger(rule_desc: String) -> void:
+	"""Record a rule trigger for monitor display.
+	Called externally when an autogrind rule fires."""
+	_rule_trigger_counts[rule_desc] = _rule_trigger_counts.get(rule_desc, 0) + 1
+
+
 ## Signal handlers
 func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 	_battles_won = battle_num
@@ -1312,8 +1503,20 @@ func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 	var victory = results.get("victory", true)
 	if victory:
 		_log_message("[color=lime]Battle #%d: +%d EXP[/color]" % [battle_num, exp_gained])
+		# Forward victory to monitor highlight
+		if _monitor and is_instance_valid(_monitor):
+			var yield_mult = results.get("yield_multiplier", 1.0)
+			if yield_mult < 0.7:
+				_monitor.add_highlight("Battle #%d: +%d EXP (yield: %.0f%%)" % [battle_num, exp_gained, yield_mult * 100.0], "warning")
+			# Items
+			var items = results.get("items_gained", {})
+			for item_id in items:
+				if item_id != "gold":
+					_monitor.add_highlight("Drop: %s x%d" % [item_id, items[item_id]], "success")
 	else:
 		_log_message("[color=red]Battle #%d: Defeat![/color]" % battle_num)
+		if _monitor and is_instance_valid(_monitor):
+			_monitor.add_highlight("DEFEAT at battle #%d!" % battle_num, "danger")
 
 
 func _on_efficiency_increased(new_multiplier: float) -> void:
@@ -1328,11 +1531,16 @@ func _on_corruption_increased(level: float) -> void:
 
 func _on_interrupt_triggered(reason: String) -> void:
 	_log_message("[color=yellow]INTERRUPT: %s[/color]" % reason)
+	if _monitor and is_instance_valid(_monitor):
+		_monitor.add_highlight("INTERRUPT: %s" % reason, "danger")
 	_is_grinding = false
+	_hide_monitor()
 	_build_ui()
 
 
 func set_grinding(active: bool) -> void:
 	"""Set grinding state externally"""
 	_is_grinding = active
+	if not active:
+		_hide_monitor()
 	_build_ui()
