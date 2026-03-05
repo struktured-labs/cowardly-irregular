@@ -48,8 +48,8 @@ const MONSTER_TRANSITIONS: Dictionary = {
 	"shadow_dragon": TransitionType.CURTAIN,
 }
 
-## Transition duration (faster = snappier feel, optimized for mobile)
-@export var transition_duration: float = 0.12
+## Transition duration (0.3s gives players time to see the effect)
+@export var transition_duration: float = 0.3
 
 ## Visual elements
 var _overlay: ColorRect
@@ -136,7 +136,7 @@ func play_battle_transition(enemy_types: Array) -> void:
 func fade_out() -> void:
 	print("[TRANSITION] fade_out() called - overlay alpha: %s, color: %s" % [_overlay.modulate.a, _overlay.color])
 	var tween = create_tween()
-	tween.tween_property(_overlay, "modulate:a", 0.0, 0.08).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
+	tween.tween_property(_overlay, "modulate:a", 0.0, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
 	await tween.finished
 
 	# Check if we're still valid after the async tween
@@ -398,26 +398,26 @@ func _play_shatter() -> void:
 
 	for i in range(_fragments.size()):
 		var fragment = _fragments[i]
-		var delay = randf_range(0, 0.04)
+		var delay = randf_range(0, 0.1)
 		var target_pos = fragment.position
 		var start_pos = target_pos + Vector2(randf_range(-200, 200), -400)
 		fragment.position = start_pos
 
-		tween.tween_property(fragment, "position", target_pos, 0.08).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
-		tween.tween_property(fragment, "modulate:a", 1.0, 0.03).set_delay(delay)
-		tween.tween_property(fragment, "rotation", fragment.rotation + randf_range(-0.4, 0.4), 0.08).set_delay(delay)
+		tween.tween_property(fragment, "position", target_pos, 0.2).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
+		tween.tween_property(fragment, "modulate:a", 1.0, 0.07).set_delay(delay)
+		tween.tween_property(fragment, "rotation", fragment.rotation + randf_range(-0.4, 0.4), 0.2).set_delay(delay)
 
 	await tween.finished
 
 	# Flash for impact
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.012).timeout
+	await get_tree().create_timer(0.03).timeout
 	_overlay.color = Color.BLACK
 
 	# Quick fade fragments to black
 	var fade_tween = create_tween()
-	fade_tween.tween_property(_effect_container, "modulate", Color.BLACK, 0.04).set_trans(Tween.TRANS_EXPO)
+	fade_tween.tween_property(_effect_container, "modulate", Color.BLACK, 0.1).set_trans(Tween.TRANS_EXPO)
 	await fade_tween.finished
 
 
@@ -453,9 +453,9 @@ func _play_spiral() -> void:
 	for i in range(_fragments.size()):
 		var fragment = _fragments[i]
 		var ring = i / segments_per_ring
-		var delay = ring * 0.008
+		var delay = ring * 0.02
 
-		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.03).set_delay(delay)
+		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.07).set_delay(delay)
 		tween.parallel().tween_property(fragment, "rotation", fragment.rotation + TAU * 3, total_duration).set_delay(delay).set_trans(Tween.TRANS_EXPO)
 		tween.parallel().tween_property(fragment, "position", center - fragment.size / 2, total_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 		tween.parallel().tween_property(fragment, "scale", Vector2(0.05, 0.05), total_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
@@ -465,7 +465,7 @@ func _play_spiral() -> void:
 	# Implosion flash
 	_overlay.color = Color(0.6, 0.4, 0.9)
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.01).timeout
+	await get_tree().create_timer(0.025).timeout
 	_overlay.color = Color.BLACK
 
 
@@ -498,15 +498,15 @@ func _play_zoom_burst() -> void:
 
 	for i in range(_fragments.size()):
 		var fragment = _fragments[i]
-		var delay = randf_range(0, 0.01)
-		tween.tween_property(fragment, "modulate:a", 1.0, 0.01).set_delay(delay)
-		tween.tween_property(fragment, "scale:y", 1.8, 0.06).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
+		var delay = randf_range(0, 0.025)
+		tween.tween_property(fragment, "modulate:a", 1.0, 0.025).set_delay(delay)
+		tween.tween_property(fragment, "scale:y", 1.8, 0.15).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
 
-	# Rapid flash
-	await get_tree().create_timer(0.02).timeout
+	# Flash
+	await get_tree().create_timer(0.05).timeout
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.01).timeout
+	await get_tree().create_timer(0.025).timeout
 	_overlay.color = Color.BLACK
 
 	await tween.finished
@@ -536,14 +536,14 @@ func _play_shake_flash() -> void:
 				_overlay.color = Color(1.0, 0.5, 0.1)
 				_overlay.modulate.a = 0.8
 
-		await get_tree().create_timer(0.015).timeout
+		await get_tree().create_timer(0.037).timeout
 		shake_intensity *= 1.6
 
 	# Final slam to black
 	_effect_container.position = original_offset
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.01).timeout
+	await get_tree().create_timer(0.025).timeout
 	_overlay.color = Color.BLACK
 
 
@@ -571,8 +571,8 @@ func _play_drip() -> void:
 
 	for i in range(_fragments.size()):
 		var column = _fragments[i]
-		var wave_delay = sin(i * 0.4) * 0.03 + 0.015
-		var speed = randf_range(0.06, 0.10)
+		var wave_delay = sin(i * 0.4) * 0.075 + 0.037
+		var speed = randf_range(0.15, 0.25)
 
 		tween.tween_property(column, "position:y", 0, speed).set_delay(wave_delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 
@@ -614,8 +614,8 @@ func _play_curtain() -> void:
 	# Curtains slam shut with bounce
 	var tween = create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(left_curtain, "position:x", 0, 0.08).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(right_curtain, "position:x", _viewport_size.x / 2, 0.08).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(left_curtain, "position:x", 0, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(right_curtain, "position:x", _viewport_size.x / 2, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 	await tween.finished
 	_overlay.modulate.a = 1.0
@@ -652,15 +652,15 @@ func _play_pixelate() -> void:
 		var grid_y = i / grid_size
 		# Distance from center determines delay
 		var dist = Vector2(grid_x, grid_y).distance_to(center)
-		var delay = dist * 0.004
-		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.02).set_delay(delay)
+		var delay = dist * 0.01
+		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.05).set_delay(delay)
 
 	await tween.finished
 
 	# Ethereal flash
 	_overlay.color = Color(0.7, 0.8, 1.0, 0.8)
 	_overlay.modulate.a = 0.8
-	await get_tree().create_timer(0.01).timeout
+	await get_tree().create_timer(0.025).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
 
@@ -694,15 +694,15 @@ func _play_slice() -> void:
 		var start_x = direction * (_viewport_size.x * 1.2)
 		slice_frag.position.x = start_x
 
-		var delay = i * 0.006
-		tween.tween_property(slice_frag, "modulate:a", 1.0, 0.01).set_delay(delay)
-		tween.tween_property(slice_frag, "position:x", 0.0, 0.05).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
+		var delay = i * 0.015
+		tween.tween_property(slice_frag, "modulate:a", 1.0, 0.025).set_delay(delay)
+		tween.tween_property(slice_frag, "position:x", 0.0, 0.125).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
 
-	# Quick venom-green flash
-	await get_tree().create_timer(0.03).timeout
+	# Venom-green flash
+	await get_tree().create_timer(0.075).timeout
 	_overlay.color = Color(0.3, 0.8, 0.2)
 	_overlay.modulate.a = 0.4
-	await get_tree().create_timer(0.01).timeout
+	await get_tree().create_timer(0.025).timeout
 	_overlay.modulate.a = 0.0
 
 	await tween.finished
@@ -739,12 +739,12 @@ func _play_radial_wipe() -> void:
 		_effect_container.add_child(segment)
 		_fragments.append(segment)
 
-	# Rapid clockwise reveal
+	# Clockwise reveal
 	var tween = create_tween()
 	for i in range(_fragments.size()):
 		var fragment = _fragments[i]
-		var delay = float(i) / _fragments.size() * 0.06
-		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.02).set_delay(delay)
+		var delay = float(i) / _fragments.size() * 0.25
+		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.05).set_delay(delay)
 
 	await tween.finished
 	_overlay.modulate.a = 1.0
@@ -774,19 +774,19 @@ func _play_shockwave() -> void:
 
 	for i in range(_fragments.size()):
 		var ring = _fragments[i]
-		var delay = i * 0.008
+		var delay = i * 0.02
 		var target_scale = 5.0 + i * 0.6
 
-		tween.tween_property(ring, "modulate:a", 1.0, 0.01).set_delay(delay)
-		tween.tween_property(ring, "scale", Vector2(target_scale, target_scale), 0.06).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
-		tween.tween_property(ring, "modulate:a", 0.3, 0.04).set_delay(delay + 0.03)
+		tween.tween_property(ring, "modulate:a", 1.0, 0.025).set_delay(delay)
+		tween.tween_property(ring, "scale", Vector2(target_scale, target_scale), 0.15).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
+		tween.tween_property(ring, "modulate:a", 0.3, 0.1).set_delay(delay + 0.075)
 
-	await get_tree().create_timer(0.04).timeout
+	await get_tree().create_timer(0.1).timeout
 
 	# Bright energy flash
 	_overlay.color = Color(0.9, 0.7, 1.0)
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.01).timeout
+	await get_tree().create_timer(0.025).timeout
 	_overlay.color = Color.BLACK
 
 

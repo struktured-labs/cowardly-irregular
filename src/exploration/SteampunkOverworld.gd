@@ -92,7 +92,7 @@ func _generate_map() -> void:
 
 	print("Generating steampunk overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-		var map_data: Array[String] = [
+	var map_data: Array[String] = [
 		"bbbbbbbbbbbbccccccccccccccchccccccccccccccccbbbbbbbbbbbbbbbb",
 		"bwwwwwwwwwbcccccccccccccccccccccccccccccccccbwwwwwwwwwwwwcbc",
 		"bwdwiwdwiwbcclcccccclcccccccccclcccccccclcccbwiwdwiwdwiwwcbc",

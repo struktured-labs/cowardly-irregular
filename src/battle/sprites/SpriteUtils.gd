@@ -32,6 +32,10 @@ static func _get_cached_sprite(cache_key: String, generator: Callable) -> Sprite
 		return _sprite_cache[cache_key]
 	var frames = generator.call()
 	if _sprite_cache_enabled:
+		if _sprite_cache.size() >= 200:
+			var keys = _sprite_cache.keys()
+			for i in range(keys.size() / 2):
+				_sprite_cache.erase(keys[i])
 		_sprite_cache[cache_key] = frames
 	return frames
 

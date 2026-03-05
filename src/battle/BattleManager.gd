@@ -14,6 +14,7 @@ signal action_executed(combatant: Combatant, action: Dictionary, targets: Array)
 signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool)
+signal attack_missed(target: Combatant)
 signal healing_done(target: Combatant, amount: int)
 signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
@@ -1183,6 +1184,17 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	attacker.spend_ap(1)
 
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
+
+	# Miss check: base 10% miss rate, reduced by attacker speed vs target speed
+	var base_miss_rate = 0.10
+	var speed_diff = float(attacker.speed - actual_target.speed) / max(actual_target.speed, 1)
+	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.25)
+	if randf() < miss_rate:
+		attack_missed.emit(actual_target)
+		var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, actual_target.combatant_name]
+		battle_log_message.emit(log_msg)
+		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
+		return
 
 	var base_damage = attacker.attack
 	var vrange = volatility.get_variance_range(attacker) if volatility else Vector2(0.85, 1.15)

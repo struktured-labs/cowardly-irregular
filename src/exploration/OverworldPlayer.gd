@@ -22,11 +22,15 @@ var step_count: int = 0
 var distance_walked: float = 0.0
 const STEP_DISTANCE: float = 32.0  # One tile = one step
 
+## Movement physics
+const ACCELERATION: float = 800.0
+const DECELERATION: float = 600.0
+
 ## Animation
 var _sprite: Sprite2D
 var _anim_frame: int = 0
 var _anim_timer: float = 0.0
-const ANIM_SPEED: float = 0.12  # Seconds per frame (slightly faster for 4-frame cycle)
+const ANIM_SPEED: float = 0.08  # Seconds per frame (slightly faster for 4-frame cycle)
 const SPRITE_SIZE: int = 32
 const WALK_FRAMES: int = 4  # 4-frame walk cycle for smoother animation
 
@@ -220,7 +224,7 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		input_dir = input_dir.normalized()
-		velocity = input_dir * move_speed
+		velocity = velocity.move_toward(input_dir * move_speed, ACCELERATION * delta)
 		is_moving = true
 
 		# Update facing direction (prioritize horizontal for diagonal)
@@ -228,21 +232,21 @@ func _physics_process(delta: float) -> void:
 			current_direction = Direction.LEFT if input_dir.x < 0 else Direction.RIGHT
 		else:
 			current_direction = Direction.UP if input_dir.y < 0 else Direction.DOWN
-
-		# Track distance for step counting
-		var old_pos = position
-		move_and_slide()
-		var moved_dist = position.distance_to(old_pos)
-		distance_walked += moved_dist
-
-		# Emit step signal every STEP_DISTANCE pixels
-		while distance_walked >= STEP_DISTANCE:
-			distance_walked -= STEP_DISTANCE
-			step_count += 1
-			moved.emit(step_count)
 	else:
-		velocity = Vector2.ZERO
-		is_moving = false
+		velocity = velocity.move_toward(Vector2.ZERO, DECELERATION * delta)
+		is_moving = velocity.length() > 10.0
+
+	# Track distance for step counting
+	var old_pos = position
+	move_and_slide()
+	var moved_dist = position.distance_to(old_pos)
+	distance_walked += moved_dist
+
+	# Emit step signal every STEP_DISTANCE pixels
+	while distance_walked >= STEP_DISTANCE:
+		distance_walked -= STEP_DISTANCE
+		step_count += 1
+		moved.emit(step_count)
 
 	# Update animation
 	_update_animation(delta)
@@ -282,16 +286,20 @@ func _input(event: InputEvent) -> void:
 
 
 func _update_animation(delta: float) -> void:
-	if is_moving:
+	var speed = velocity.length()
+	if speed > 10.0:
+		var speed_factor = speed / move_speed
+		var effective_frame_time = ANIM_SPEED / max(speed_factor, 0.3)
 		_anim_timer += delta
-		if _anim_timer >= ANIM_SPEED:
-			_anim_timer -= ANIM_SPEED
+		if _anim_timer >= effective_frame_time:
+			_anim_timer -= effective_frame_time
 			_anim_frame = (_anim_frame + 1) % WALK_FRAMES
 			_update_sprite()
 	else:
-		_anim_frame = 0
-		_anim_timer = 0.0
-		_update_sprite()
+		if _anim_frame != 0:
+			_anim_frame = 0
+			_anim_timer = 0.0
+			_update_sprite()
 
 
 func _update_sprite() -> void:

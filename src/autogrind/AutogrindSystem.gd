@@ -125,17 +125,25 @@ func update_learned_patterns(region_id: String, battle_summary: Dictionary) -> v
 		}
 
 	var patterns = learned_patterns[region_id]
+
+	if patterns["battles_analyzed"] >= 100:
+		return
+
 	patterns["battles_analyzed"] += 1
 
-	# Merge ability frequencies
+	# Merge ability frequencies — cap at 50 unique entries
+	var ability_freq = patterns["ability_frequency"]
 	for ability_id in battle_summary.get("ability_frequency", {}):
 		var count = battle_summary["ability_frequency"][ability_id]
-		patterns["ability_frequency"][ability_id] = patterns["ability_frequency"].get(ability_id, 0) + count
+		if ability_freq.has(ability_id) or ability_freq.size() < 50:
+			ability_freq[ability_id] = ability_freq.get(ability_id, 0) + count
 
-	# Merge target priorities
+	# Merge target priorities — cap at 50 unique entries
+	var target_prio = patterns["target_priority"]
 	for ttype in battle_summary.get("target_priority", {}):
 		var count = battle_summary["target_priority"][ttype]
-		patterns["target_priority"][ttype] = patterns["target_priority"].get(ttype, 0) + count
+		if target_prio.has(ttype) or target_prio.size() < 50:
+			target_prio[ttype] = target_prio.get(ttype, 0) + count
 
 	# Track most common opener
 	var opener = battle_summary.get("common_opener", "")

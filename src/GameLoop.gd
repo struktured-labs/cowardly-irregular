@@ -10,6 +10,29 @@ const CharacterCreationScreenClass = preload("res://src/ui/CharacterCreationScre
 const CustomizationScript = preload("res://src/character/CharacterCustomization.gd")
 const TitleScreenClass = preload("res://src/ui/TitleScreen.gd")
 
+const HarmoniaVillageRes = preload("res://src/maps/villages/HarmoniaVillage.tscn")
+const WhisperingCaveRes = preload("res://src/maps/dungeons/WhisperingCave.tscn")
+const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd")
+const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
+const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
+const GrimhollowVillageScript = preload("res://src/maps/villages/GrimhollowVillage.gd")
+const SandriftVillageScript = preload("res://src/maps/villages/SandriftVillage.gd")
+const IronhavenVillageScript = preload("res://src/maps/villages/IronhavenVillage.gd")
+const MapleHeightsVillageScript = preload("res://src/maps/villages/MapleHeightsVillage.gd")
+const BrasstonVillageScript = preload("res://src/maps/villages/BrasstonVillage.gd")
+const RivetRowVillageScript = preload("res://src/maps/villages/RivetRowVillage.gd")
+const NodePrimeVillageScript = preload("res://src/maps/villages/NodePrimeVillage.gd")
+const VertexVillageScript = preload("res://src/maps/villages/VertexVillage.gd")
+const IceDragonCaveScript = preload("res://src/maps/dungeons/IceDragonCave.gd")
+const ShadowDragonCaveScript = preload("res://src/maps/dungeons/ShadowDragonCave.gd")
+const LightningDragonCaveScript = preload("res://src/maps/dungeons/LightningDragonCave.gd")
+const FireDragonCaveScript = preload("res://src/maps/dungeons/FireDragonCave.gd")
+const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
+const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
+const IndustrialOverworldScript = preload("res://src/exploration/IndustrialOverworld.gd")
+const FuturisticOverworldScript = preload("res://src/exploration/FuturisticOverworld.gd")
+const AbstractOverworldScript = preload("res://src/exploration/AbstractOverworld.gd")
+
 enum LoopState {
 	TITLE,
 	BATTLE,
@@ -817,43 +840,43 @@ func _start_exploration() -> void:
 		"tavern_interior":
 			exploration_scene = _create_tavern_scene()
 		"frosthold_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/FrostholdVillage.gd")
+			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/EldertreeVillage.gd")
+			exploration_scene = EldertreeVillageScript.new()
 		"grimhollow_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/GrimhollowVillage.gd")
+			exploration_scene = GrimhollowVillageScript.new()
 		"sandrift_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/SandriftVillage.gd")
+			exploration_scene = SandriftVillageScript.new()
 		"ironhaven_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/IronhavenVillage.gd")
+			exploration_scene = IronhavenVillageScript.new()
 		"ice_dragon_cave":
-			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/IceDragonCave.gd")
+			exploration_scene = _create_dragon_cave_from_script(IceDragonCaveScript)
 		"shadow_dragon_cave":
-			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/ShadowDragonCave.gd")
+			exploration_scene = _create_dragon_cave_from_script(ShadowDragonCaveScript)
 		"lightning_dragon_cave":
-			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/LightningDragonCave.gd")
+			exploration_scene = _create_dragon_cave_from_script(LightningDragonCaveScript)
 		"fire_dragon_cave":
-			exploration_scene = _create_dragon_cave("res://src/maps/dungeons/FireDragonCave.gd")
+			exploration_scene = _create_dragon_cave_from_script(FireDragonCaveScript)
 		"steampunk_overworld":
-			exploration_scene = _create_script_scene("res://src/exploration/SteampunkOverworld.gd")
+			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":
-			exploration_scene = _create_script_scene("res://src/exploration/SuburbanOverworld.gd")
+			exploration_scene = SuburbanOverworldScript.new()
 		"industrial_overworld":
-			exploration_scene = _create_script_scene("res://src/exploration/IndustrialOverworld.gd")
+			exploration_scene = IndustrialOverworldScript.new()
 		"futuristic_overworld":
-			exploration_scene = _create_script_scene("res://src/exploration/FuturisticOverworld.gd")
+			exploration_scene = FuturisticOverworldScript.new()
 		"abstract_overworld":
-			exploration_scene = _create_script_scene("res://src/exploration/AbstractOverworld.gd")
+			exploration_scene = AbstractOverworldScript.new()
 		"maple_heights_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/MapleHeightsVillage.gd")
+			exploration_scene = MapleHeightsVillageScript.new()
 		"brasston_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/BrasstonVillage.gd")
+			exploration_scene = BrasstonVillageScript.new()
 		"rivet_row_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/RivetRowVillage.gd")
+			exploration_scene = RivetRowVillageScript.new()
 		"node_prime_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/NodePrimeVillage.gd")
+			exploration_scene = NodePrimeVillageScript.new()
 		"vertex_village":
-			exploration_scene = _create_script_scene("res://src/maps/villages/VertexVillage.gd")
+			exploration_scene = VertexVillageScript.new()
 		_:
 			exploration_scene = OverworldSceneRes.instantiate()
 
@@ -1206,28 +1229,16 @@ func _get_terrain_for_map(map_id: String) -> String:
 
 func _create_village_scene() -> Node:
 	"""Create Harmonia Village scene (placeholder until scene file exists)"""
-	# For now, just return overworld - village scene will be created later
-	var VillageSceneRes = load("res://src/maps/villages/HarmoniaVillage.tscn")
-	if VillageSceneRes:
-		return VillageSceneRes.instantiate()
-	# Fallback to overworld if scene doesn't exist
-	push_warning("HarmoniaVillage.tscn not found, using overworld")
-	return OverworldSceneRes.instantiate()
+	return HarmoniaVillageRes.instantiate()
 
 
 func _create_cave_scene() -> Node:
 	"""Create Whispering Cave scene and restore floor state"""
-	var CaveSceneRes = load("res://src/maps/dungeons/WhisperingCave.tscn")
-	if CaveSceneRes:
-		var cave_scene = CaveSceneRes.instantiate()
-		# Restore the floor we were on before battle
-		if _current_cave_floor > 1 and "current_floor" in cave_scene:
-			cave_scene.current_floor = _current_cave_floor
-			print("[CAVE] Restoring to floor %d" % _current_cave_floor)
-		return cave_scene
-	# Fallback to overworld if scene doesn't exist
-	push_warning("WhisperingCave.tscn not found, using overworld")
-	return OverworldSceneRes.instantiate()
+	var cave_scene = WhisperingCaveRes.instantiate()
+	if _current_cave_floor > 1 and "current_floor" in cave_scene:
+		cave_scene.current_floor = _current_cave_floor
+		print("[CAVE] Restoring to floor %d" % _current_cave_floor)
+	return cave_scene
 
 
 func _create_script_scene(script_path: String) -> Node:
@@ -1253,17 +1264,18 @@ func _create_dragon_cave(script_path: String) -> Node:
 	return OverworldSceneRes.instantiate()
 
 
+func _create_dragon_cave_from_script(script_res: GDScript) -> Node:
+	"""Create a dragon cave scene from a preloaded script and restore floor state"""
+	var cave_scene = script_res.new()
+	if _current_cave_floor > 1 and "current_floor" in cave_scene:
+		cave_scene.current_floor = _current_cave_floor
+		print("[CAVE] Restoring to floor %d" % _current_cave_floor)
+	return cave_scene
+
+
 func _create_tavern_scene() -> Node:
 	"""Create The Dancing Tonberry tavern interior scene"""
-	var TavernScript = load("res://src/maps/interiors/TavernInterior.gd")
-	if TavernScript:
-		var tavern_scene = TavernScript.new()
-		return tavern_scene
-	# Fallback to village if script doesn't exist
-	push_warning("TavernInterior.gd not found, returning to village")
-	_current_map_id = "harmonia_village"
-	_spawn_point = "bar_exit"
-	return _create_village_scene()
+	return TavernInteriorScript.new()
 
 
 ## Equipment Pool Management

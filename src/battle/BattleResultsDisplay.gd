@@ -14,12 +14,17 @@ func _init(scene) -> void:
 
 
 func on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
-	"""Show floating damage number near target"""
+	"""Show floating damage number near target and trigger screen shake"""
 	var pos = _get_combatant_sprite_position(target)
 	if pos != Vector2.ZERO:
 		spawn_damage_number(pos, amount, false, is_crit)
 	else:
 		print("[DMG NUM] Could not find sprite position for %s" % target.combatant_name)
+
+	if is_crit:
+		EffectSystem._trigger_screen_shake(9.0, 0.2)
+	else:
+		EffectSystem._trigger_screen_shake(3.5, 0.1)
 
 
 func on_healing_done(target: Combatant, amount: int) -> void:
@@ -29,11 +34,26 @@ func on_healing_done(target: Combatant, amount: int) -> void:
 		spawn_damage_number(pos, amount, true, false)
 
 
+func on_attack_missed(target: Combatant) -> void:
+	"""Show floating MISS text near target"""
+	var pos = _get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		spawn_miss_number(pos)
+
+
 func spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool) -> void:
 	"""Spawn a floating damage/heal number"""
 	var dmg_num = DamageNumber.new()
 	dmg_num.setup(amount, is_heal, is_crit)
 	# Offset slightly upward from sprite center
+	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
+	_scene.add_child(dmg_num)
+
+
+func spawn_miss_number(pos: Vector2) -> void:
+	"""Spawn a floating MISS text"""
+	var dmg_num = DamageNumber.new()
+	dmg_num.setup_miss()
 	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
 	_scene.add_child(dmg_num)
 

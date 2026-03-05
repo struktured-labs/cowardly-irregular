@@ -186,6 +186,7 @@ func _ready() -> void:
 	BattleManager.action_executed.connect(_on_action_executed)
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
+	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
@@ -248,6 +249,8 @@ func _exit_tree() -> void:
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
+	if BattleManager.attack_missed.is_connected(_on_attack_missed):
+		BattleManager.attack_missed.disconnect(_on_attack_missed)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
 		BattleManager.healing_done.disconnect(_on_healing_done)
 	if BattleManager.battle_log_message.is_connected(_on_battle_log_message):
@@ -1744,6 +1747,10 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 				target_anim.play_hit()
 				# Spawn physical hit effect
 				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
+				# Knockback: enemies knocked left (-1), party members knocked right (+1)
+				var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
+				_apply_hit_knockback(target_sprite, kb_dir)
+				_apply_hit_flash(target_sprite)
 		)
 	)
 
@@ -1754,6 +1761,24 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(attacker_sprite, "position", home_pos, 0.2)
+
+
+func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
+	if not is_instance_valid(sprite):
+		return
+	var original_x = sprite.position.x
+	var knockback_x = original_x + (6.0 * direction)
+	var tween = create_tween()
+	tween.tween_property(sprite, "position:x", knockback_x, 0.05)
+	tween.tween_property(sprite, "position:x", original_x, 0.15).set_ease(Tween.EASE_OUT)
+
+
+func _apply_hit_flash(sprite: Node2D) -> void:
+	if not is_instance_valid(sprite):
+		return
+	sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)
+	var tween = create_tween()
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
 
 
 func _get_combatant_sprite(combatant: Combatant) -> Node2D:
@@ -1956,6 +1981,10 @@ func _close_win98_menu() -> void:
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
+
+
+func _on_attack_missed(target: Combatant) -> void:
+	_results_display.on_attack_missed(target)
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:

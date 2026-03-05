@@ -6,6 +6,7 @@ class_name DamageNumber
 var value: int = 0
 var is_heal: bool = false
 var is_critical: bool = false
+var is_miss: bool = false
 
 var _label: Label = null
 var _lifetime: float = 1.2
@@ -28,35 +29,47 @@ func setup(amount: int, heal: bool = false, crit: bool = false) -> void:
 	is_critical = crit
 
 
+func setup_miss() -> void:
+	is_miss = true
+	value = 0
+
+
 func _create_label() -> void:
 	_label = Label.new()
-	_label.text = str(value)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-	# Size based on damage amount
 	var base_size = 16
-	if value >= 100:
-		base_size = 24
-	elif value >= 50:
-		base_size = 20
-	elif value >= 25:
-		base_size = 18
+	var color: Color
 
-	if is_critical:
-		base_size += 6
+	if is_miss:
+		_label.text = "MISS"
+		base_size = 18
+		color = Color(0.65, 0.65, 0.65)
+		_lifetime = 0.9
+	else:
+		_label.text = str(value)
+
+		# Size based on damage amount
+		if value >= 100:
+			base_size = 24
+		elif value >= 50:
+			base_size = 20
+		elif value >= 25:
+			base_size = 18
+
+		if is_critical:
+			base_size += 6
+
+		# Color: green for heal, orange for crit, white for normal
+		if is_heal:
+			color = Color.LIME_GREEN
+		elif is_critical:
+			color = Color.ORANGE
+		else:
+			color = Color.WHITE
 
 	_label.add_theme_font_size_override("font_size", base_size)
-
-	# Color: green for heal, red/orange for damage
-	var color: Color
-	if is_heal:
-		color = Color.LIME_GREEN
-	elif is_critical:
-		color = Color.ORANGE
-	else:
-		color = Color.WHITE
-
 	_label.add_theme_color_override("font_color", color)
 
 	# Outline for visibility

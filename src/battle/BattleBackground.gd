@@ -124,6 +124,14 @@ var _layer_near: Control = null   # z=-10 (close/foreground elements)
 ## Parallax state
 var _parallax_time: float = 0.0
 
+## Sky color cycling state
+var _sky_rect: TextureRect = null
+var _sky_base_modulate: Color = Color.WHITE
+
+## Transition state
+var _transition_tween: Tween = null
+var _has_drawn: bool = false
+
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -159,6 +167,16 @@ func _process(delta: float) -> void:
 		_layer_far.position.x = sin(_parallax_time * PARALLAX_SPEED_FAR * 0.1) * PARALLAX_RANGE * 0.3
 		_layer_mid.position.x = sin(_parallax_time * PARALLAX_SPEED_MID * 0.1) * PARALLAX_RANGE * 0.6
 		_layer_near.position.x = sin(_parallax_time * PARALLAX_SPEED_NEAR * 0.1) * PARALLAX_RANGE
+
+	if _sky_rect and is_instance_valid(_sky_rect):
+		var pulse = sin(_parallax_time * 0.4) * 0.025
+		var brightness = 1.0 + pulse
+		_sky_rect.modulate = Color(
+			_sky_base_modulate.r * brightness,
+			_sky_base_modulate.g * brightness,
+			_sky_base_modulate.b * brightness,
+			_sky_base_modulate.a
+		)
 
 
 ## Dithering utility
@@ -238,6 +256,28 @@ func set_terrain_from_string(terrain_name: String) -> void:
 
 func _draw_background() -> void:
 	"""Draw the background based on current terrain"""
+	if _has_drawn:
+		_crossfade_to_new_background()
+		return
+	_has_drawn = true
+	_draw_background_immediate()
+
+
+func _crossfade_to_new_background() -> void:
+	"""Fade out existing background, redraw, then fade back in"""
+	if _transition_tween and _transition_tween.is_valid():
+		_transition_tween.kill()
+	_transition_tween = create_tween()
+	_transition_tween.tween_property(self, "modulate:a", 0.0, 0.18)
+	_transition_tween.tween_callback(_draw_background_immediate)
+	_transition_tween.tween_property(self, "modulate:a", 1.0, 0.22)
+
+
+func _draw_background_immediate() -> void:
+	"""Immediately clear and redraw the background without any transition"""
+	_sky_rect = null
+	_sky_base_modulate = Color.WHITE
+
 	# Clear existing elements
 	for element in _background_elements:
 		if is_instance_valid(element):
@@ -313,6 +353,8 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		sky_rect.position = Vector2.ZERO
 		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(sky_rect)
+		_sky_rect = sky_rect
+		_sky_base_modulate = Color.WHITE
 
 		var ground_rect = TextureRect.new()
 		ground_rect.texture = cached["ground_tex"]
@@ -355,6 +397,8 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		sky_rect.position = Vector2.ZERO
 		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(sky_rect)
+		_sky_rect = sky_rect
+		_sky_base_modulate = Color.WHITE
 
 		# Ground as dithered image texture (same 4px tiling optimization)
 		var ground_dark = palette.get("ground_dark", palette["ground"].darkened(0.2))
