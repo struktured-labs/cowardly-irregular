@@ -51,3 +51,11 @@ tmp/
 setenv.sh
 .last_fetched_run
 .last_synced_sha
+
+# Claude Code (keep agents/, ignore session-specific files)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Butler / itch.io deploy binary
+butler-bin/
+butler.zip
