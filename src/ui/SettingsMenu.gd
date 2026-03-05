@@ -39,6 +39,7 @@ var text_speed_index: int = 1
 ## UI State
 var selected_index: int = 0
 var _settings_items: Array = []
+var _controls_submenu_open: bool = false
 
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
@@ -127,8 +128,8 @@ func _build_ui() -> void:
 
 	# Main panel
 	var panel = Control.new()
-	panel.position = Vector2(size.x * 0.2, size.y * 0.15)
-	panel.size = Vector2(size.x * 0.6, size.y * 0.7)
+	panel.position = Vector2(size.x * 0.2, size.y * 0.08)
+	panel.size = Vector2(size.x * 0.6, size.y * 0.84)
 	add_child(panel)
 
 	var panel_bg = ColorRect.new()
@@ -230,17 +231,29 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(text_item, 5, 400, 60,
 		_on_setting_click.bind(5), _on_setting_hover.bind(5))
 
+	# Controls button
+	var controls_item = _create_action_button_neutral(
+		"Controls",
+		"Remap gamepad buttons",
+		6
+	)
+	controls_item.position = Vector2(16, 428)
+	panel.add_child(controls_item)
+	_settings_items.append({"control": controls_item, "type": "action", "id": "controls"})
+	MenuMouseHelper.make_clickable(controls_item, 6, 400, 50,
+		_on_setting_click.bind(6), _on_setting_hover.bind(6))
+
 	# Quit to Title button
 	var quit_item = _create_action_button(
 		"Quit to Title",
 		"Return to the title screen",
-		6
+		7
 	)
-	quit_item.position = Vector2(16, 428)
+	quit_item.position = Vector2(16, 488)
 	panel.add_child(quit_item)
 	_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
-	MenuMouseHelper.make_clickable(quit_item, 6, 400, 50,
-		_on_setting_click.bind(6), _on_setting_hover.bind(6))
+	MenuMouseHelper.make_clickable(quit_item, 7, 400, 50,
+		_on_setting_click.bind(7), _on_setting_hover.bind(7))
 
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_settings)
@@ -511,6 +524,42 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	return container
 
 
+func _create_action_button_neutral(label_text: String, description: String, index: int) -> Control:
+	"""Create a neutral action button (non-destructive, like Controls)"""
+	var container = Control.new()
+	container.size = Vector2(400, 50)
+
+	var highlight = ColorRect.new()
+	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
+	highlight.size = Vector2(400, 50)
+	highlight.name = "Highlight"
+	container.add_child(highlight)
+
+	var label = Label.new()
+	label.text = label_text
+	label.position = Vector2(8, 4)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	container.add_child(label)
+
+	var desc = Label.new()
+	desc.text = description
+	desc.position = Vector2(8, 22)
+	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	container.add_child(desc)
+
+	var hint = Label.new()
+	hint.text = "[Press A]"
+	hint.position = Vector2(8, 36)
+	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_color_override("font_color", Color.YELLOW)
+	hint.name = "ActionHint"
+	container.add_child(hint)
+
+	return container
+
+
 func _create_action_button(label_text: String, description: String, index: int) -> Control:
 	"""Create an action button setting (press A to activate)"""
 	var container = Control.new()
@@ -606,6 +655,8 @@ func _update_option_display(index: int, option_index: int) -> void:
 func _input(event: InputEvent) -> void:
 	"""Handle settings input"""
 	if not visible:
+		return
+	if _controls_submenu_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -787,7 +838,9 @@ func _activate_setting() -> void:
 
 	var item = _settings_items[selected_index]
 	if item["type"] == "action":
-		if item["id"] == "quit_to_title":
+		if item["id"] == "controls":
+			_open_controls_menu()
+		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
 			quit_to_title.emit()
@@ -811,6 +864,24 @@ func _on_setting_hover(index: int) -> void:
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+
+
+func _open_controls_menu() -> void:
+	"""Open the controls remapping submenu"""
+	_controls_submenu_open = true
+	var ControlsMenuScript = load("res://src/ui/ControlsMenu.gd")
+	if ControlsMenuScript:
+		var controls = ControlsMenuScript.new()
+		controls.set_anchors_preset(Control.PRESET_FULL_RECT)
+		controls.closed.connect(_on_controls_closed)
+		add_child(controls)
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
+
+
+func _on_controls_closed() -> void:
+	"""Controls menu closed"""
+	_controls_submenu_open = false
 
 
 func _close_settings() -> void:
