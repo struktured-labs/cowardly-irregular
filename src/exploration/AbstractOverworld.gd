@@ -197,6 +197,8 @@ func _generate_map() -> void:
 	spawn_points["echo_chamber"] = Vector2(34 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from futuristic world (south origin point)
 	spawn_points["from_futuristic"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for returning from The Vertex village (center, near The Question)
+	spawn_points["vertex_entrance"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -238,6 +240,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
 	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(futuristic_portal)
+
+	# The Vertex village entrance (center remnant area, near The Question)
+	var vertex_trans = AreaTransitionScript.new()
+	vertex_trans.name = "VertexEntrance"
+	vertex_trans.target_map = "vertex_village"
+	vertex_trans.target_spawn = "entrance"
+	vertex_trans.require_interaction = true
+	vertex_trans.indicator_text = "Enter The Vertex"
+	vertex_trans.position = spawn_points.get("vertex_entrance", Vector2(624, 528))
+	_setup_transition_collision(vertex_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	vertex_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(vertex_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

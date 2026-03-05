@@ -210,6 +210,8 @@ func _generate_map() -> void:
 	spawn_points["suburban_portal"] = spawn_points["entrance"]
 	# Spawn point for returning from industrial world (east side of map)
 	spawn_points["from_industrial"] = Vector2(46 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for returning from Maple Heights village (north residential area)
+	spawn_points["maple_heights_entrance"] = Vector2(38 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -263,6 +265,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(industrial_portal, Vector2(TILE_SIZE, TILE_SIZE))
 	industrial_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(industrial_portal)
+
+	# Maple Heights village entrance (northeast residential corner, row 3)
+	var maple_heights_trans = AreaTransitionScript.new()
+	maple_heights_trans.name = "MapleHeightsEntrance"
+	maple_heights_trans.target_map = "maple_heights_village"
+	maple_heights_trans.target_spawn = "entrance"
+	maple_heights_trans.require_interaction = true
+	maple_heights_trans.indicator_text = "Enter Maple Heights"
+	maple_heights_trans.position = spawn_points.get("maple_heights_entrance", Vector2(1232, 112))
+	_setup_transition_collision(maple_heights_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	maple_heights_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(maple_heights_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

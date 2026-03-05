@@ -713,6 +713,11 @@ const TELEPORT_DESTINATIONS = [
 	{"id": "abstract_overworld", "label": "Abstract (Area 5)", "spawn": "entrance"},
 	{"id": "steampunk_overworld", "label": "Steampunk Region", "spawn": "default"},
 	{"id": "harmonia_village", "label": "Harmonia Village", "spawn": "default"},
+	{"id": "maple_heights_village", "label": "Maple Heights", "spawn": "default"},
+	{"id": "brasston_village", "label": "Brasston", "spawn": "default"},
+	{"id": "rivet_row_village", "label": "Rivet Row", "spawn": "default"},
+	{"id": "node_prime_village", "label": "Node Prime", "spawn": "default"},
+	{"id": "vertex_village", "label": "The Vertex", "spawn": "default"},
 ]
 
 var _teleport_selected: int = 0

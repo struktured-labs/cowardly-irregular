@@ -580,7 +580,14 @@ func _create_battle_sprites() -> void:
 		var custom = member.get("customization") if "customization" in member else null
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
-		sprite.scale = Vector2(3.0, 3.0)
+		# Auto-scale: target 144px display height (48px procedural * 3x)
+		var _sprite_scale = 3.0
+		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
+			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
+				var _ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+				if _ftex and _ftex.get_height() > 48:
+					_sprite_scale = 144.0 / float(_ftex.get_height())
+		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.position = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
 		sprite.flip_h = true  # Flip to face left

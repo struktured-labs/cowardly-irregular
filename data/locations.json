@@ -99,5 +99,65 @@
 		"encounter_rate": 0.03,
 		"enemy_pool_id": "abstract_overworld",
 		"recommended_level": 14
+	},
+
+	"maple_heights_village": {
+		"id": "maple_heights_village",
+		"name": "Maple Heights",
+		"type": "village",
+		"description": "A quiet suburban neighborhood. Picket fences, mowed lawns, and an unsettling sense that everything is a little too perfect.",
+		"map_id": "maple_heights_village",
+		"has_shop": true,
+		"has_inn": true,
+		"has_save_point": true,
+		"npcs": ["neighborhood_dad", "mail_carrier", "kid_on_bike", "retired_teacher"]
+	},
+
+	"brasston_village": {
+		"id": "brasston_village",
+		"name": "Brasston",
+		"type": "village",
+		"description": "A clockwork market town where brass is currency and every citizen runs on schedule.",
+		"map_id": "brasston_village",
+		"has_shop": true,
+		"has_inn": true,
+		"has_save_point": true,
+		"npcs": ["clockmaker", "gear_merchant", "punctual_guard", "steam_courier"]
+	},
+
+	"rivet_row_village": {
+		"id": "rivet_row_village",
+		"name": "Rivet Row",
+		"type": "village",
+		"description": "A workers' settlement on the factory outskirts. The company provides everything. The company owns everything.",
+		"map_id": "rivet_row_village",
+		"has_shop": true,
+		"has_inn": true,
+		"has_save_point": true,
+		"npcs": ["union_rep", "company_store_clerk", "exhausted_shift_worker", "foreman_off_duty"]
+	},
+
+	"node_prime_village": {
+		"id": "node_prime_village",
+		"name": "Node Prime",
+		"type": "village",
+		"description": "A digital rest stop in the network. Data flows like water and programs walk like people.",
+		"map_id": "node_prime_village",
+		"has_shop": true,
+		"has_inn": true,
+		"has_save_point": true,
+		"npcs": ["packet_vendor", "firewall_attendant", "cached_memory", "latency_traveler"]
+	},
+
+	"vertex_village": {
+		"id": "vertex_village",
+		"name": "The Vertex",
+		"type": "village",
+		"description": "A point of convergence in the void. Simple. Quiet. Almost nothing.",
+		"map_id": "vertex_village",
+		"has_shop": true,
+		"has_inn": true,
+		"has_save_point": true,
+		"npcs": ["the_last_shopkeeper", "a_traveler", "someone", "no_one"]
 	}
 }

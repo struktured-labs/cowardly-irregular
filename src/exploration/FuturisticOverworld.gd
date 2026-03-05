@@ -200,6 +200,8 @@ func _generate_map() -> void:
 	spawn_points["from_industrial"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 40 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from abstract world (north server farm)
 	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for returning from Node Prime village (east residential pods, row 20)
+	spawn_points["node_prime_entrance"] = Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -254,6 +256,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(abstract_portal, Vector2(TILE_SIZE, TILE_SIZE))
 	abstract_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(abstract_portal)
+
+	# Node Prime village entrance (east residential pods, row 20)
+	var node_prime_trans = AreaTransitionScript.new()
+	node_prime_trans.name = "NodePrimeEntrance"
+	node_prime_trans.target_map = "node_prime_village"
+	node_prime_trans.target_spawn = "entrance"
+	node_prime_trans.require_interaction = true
+	node_prime_trans.indicator_text = "Enter Node Prime"
+	node_prime_trans.position = spawn_points.get("node_prime_entrance", Vector2(1616, 656))
+	_setup_transition_collision(node_prime_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	node_prime_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(node_prime_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

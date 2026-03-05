@@ -63,6 +63,14 @@ var permadeath_multiplier: float = 3.0  # 3x rewards but permanent death on wipe
 var meta_bosses_enabled: bool = true
 var meta_boss_spawn_chance: float = 0.0  # Increases with corruption
 
+## System collapse tracking
+var collapse_count: int = 0                    # How many times collapse has occurred
+var post_collapse_debuff_battles: int = 0      # Remaining battles with reduced max_efficiency
+
+## Permadeath persistence — names of permanently dead characters (loaded/saved via user://autogrind/)
+var permadead_characters: Array[String] = []
+var permadeath_enabled: bool = false  # Alias for permadeath_staking_enabled (for UI binding)
+
 ## Adaptive AI pattern database
 ## {region_id: {ability_frequency: {}, target_priority: {}, common_opener: "", counter_strategy: "", battles_analyzed: int}}
 var learned_patterns: Dictionary = {}
@@ -352,6 +360,7 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	Updates stats, CSI, efficiency, checks thresholds."""
 	battles_completed += 1
 	consecutive_wins += 1
+	tick_post_collapse_debuff()
 
 	# Apply yield multiplier from CSI
 	var yield_mult: float = 1.0
@@ -380,9 +389,13 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 		if member is Combatant and member.is_alive:
 			member.gain_job_exp(adjusted_exp)
 
+	# Derive JP: 1 base JP per battle, scaled by yield and efficiency
+	var jp_gained: int = maxi(1, int(1.0 * reward_scale * efficiency_multiplier))
+
 	# Update grind stats tracking
 	_grind_stats["total_exp"] += adjusted_exp
 	_grind_stats["total_gold"] += int(items_gained.get("gold", 0) * reward_scale)
+	_grind_stats["total_jp"] += jp_gained
 	_grind_stats["total_encounters"] += 1
 
 	# Update CSI for current region
@@ -417,12 +430,14 @@ func on_battle_defeat() -> void:
 	Resets consecutive wins, checks permadeath, stops grind."""
 	consecutive_wins = 0
 	_grind_stats["total_encounters"] += 1
+	tick_post_collapse_debuff()
 
 	# Update automation affinity (still autogrinding even on defeat)
 	update_automation_affinity("autogrind")
 
-	if permadeath_staking_enabled:
+	if permadeath_staking_enabled or permadeath_enabled:
 		_trigger_permadeath()
+		return  # _trigger_permadeath calls stop_autogrind
 
 	stop_autogrind("Party defeated")
 
@@ -483,6 +498,7 @@ func _ready() -> void:
 	_load_autogrind_profiles()
 	_load_learned_patterns()
 	_load_csi_data()
+	_load_permadead_characters()
 
 
 ## Autogrind control
@@ -528,7 +544,11 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 			interrupt_rules[key] = config["interrupt_rules"][key]
 
 	if config.has("permadeath_staking"):
-		permadeath_staking_enabled = config["permadeath_staking"]
+		var pd_enabled: bool = config["permadeath_staking"]
+		permadeath_staking_enabled = pd_enabled
+		permadeath_enabled = pd_enabled
+		if pd_enabled:
+			efficiency_growth_rate = 0.15  # 50% boost for permadeath staking
 
 	grind_started.emit()
 	print("=== AUTOGRIND STARTED ===")
@@ -784,55 +804,299 @@ func _check_interrupt_conditions() -> String:
 	return ""
 
 
-func _spawn_meta_boss() -> void:
-	"""Spawn a meta-boss due to corruption"""
-	var boss_name = _generate_meta_boss_name()
-	meta_boss_spawned.emit(boss_name)
-	print("[color=red]⚠ META-BOSS SPAWNED: %s ⚠[/color]" % boss_name)
+func build_meta_boss_enemy_data(is_collapse_boss: bool = false) -> Dictionary:
+	"""Load autogrind-spawnable monsters from monsters.json and build scaled enemy data.
+	If is_collapse_boss, prefer null_entity/corrupted_sprite monsters; otherwise pick
+	from the pool of autogrind_spawned monsters weighted by corruption level."""
+	var monsters_path := "res://data/monsters.json"
+	var file := FileAccess.open(monsters_path, FileAccess.READ)
+	if not file:
+		push_warning("[AUTOGRIND] Could not open monsters.json — falling back to generated boss data")
+		return _build_fallback_meta_boss(is_collapse_boss)
 
-	# In full implementation, this would create an actual boss fight
-	# For now, just increase corruption and stop grinding
-	meta_corruption_level += 1.0
-	stop_autogrind("Meta-boss appeared: %s" % boss_name)
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	file.close()
+	if err != OK:
+		push_warning("[AUTOGRIND] Failed to parse monsters.json")
+		return _build_fallback_meta_boss(is_collapse_boss)
+
+	var all_monsters: Dictionary = json.data if json.data is Dictionary else {}
+
+	# Separate collapse-candidate bosses from regular meta-boss pool
+	var collapse_pool: Array = []
+	var regular_pool: Array = []
+	for monster_id in all_monsters:
+		var m: Dictionary = all_monsters[monster_id]
+		if not m.get("autogrind_spawned", false):
+			continue
+		var is_glitch: bool = m.get("glitch_enemy", false) or m.get("meta_enemy", false)
+		if is_glitch:
+			collapse_pool.append(m)
+		else:
+			regular_pool.append(m)
+
+	var chosen: Dictionary
+	if is_collapse_boss and not collapse_pool.is_empty():
+		chosen = collapse_pool[randi() % collapse_pool.size()]
+	elif not regular_pool.is_empty():
+		chosen = regular_pool[randi() % regular_pool.size()]
+	elif not collapse_pool.is_empty():
+		chosen = collapse_pool[randi() % collapse_pool.size()]
+	else:
+		return _build_fallback_meta_boss(is_collapse_boss)
+
+	# Build standardised enemy data dict from monsters.json entry
+	var stats: Dictionary = chosen.get("stats", {})
+	var enemy_data := {
+		"id": chosen.get("id", "meta_boss"),
+		"name": chosen.get("name", "Meta-Boss"),
+		"color": Color(0.8, 0.2, 0.8),  # Purple tint for meta enemies
+		"stats": stats.duplicate(true),
+		"max_hp": stats.get("max_hp", 400),
+		"attack": stats.get("attack", 30),
+		"defense": stats.get("defense", 20),
+		"magic": stats.get("magic", 25),
+		"speed": stats.get("speed", 14),
+		"exp_reward": chosen.get("exp_reward", 250),
+		"gold_reward": chosen.get("gold_reward", 200),
+		"abilities": chosen.get("abilities", []),
+		"weaknesses": chosen.get("weaknesses", []),
+		"resistances": chosen.get("resistances", []),
+		"is_meta_boss": true,
+		"is_collapse_boss": is_collapse_boss,
+		"can_cause_permadeath": chosen.get("can_cause_permadeath", false),
+		"drop_table": chosen.get("drop_table", [])
+	}
+
+	# Scale by corruption level (collapse bosses get extra scaling)
+	var scale_factor := 1.0 + (meta_corruption_level * 0.2)
+	if is_collapse_boss:
+		scale_factor *= 1.5
+	for stat_key in ["max_hp", "attack", "defense", "magic", "speed"]:
+		if enemy_data.has(stat_key):
+			enemy_data[stat_key] = int(enemy_data[stat_key] * scale_factor)
+
+	# Collapse boss gets corruption effects automatically
+	if is_collapse_boss:
+		enemy_data["corruption_effects"] = _get_corruption_effects()
+
+	return enemy_data
+
+
+func _build_fallback_meta_boss(is_collapse_boss: bool) -> Dictionary:
+	"""Fallback boss when monsters.json cannot be read"""
+	var name_str := "NULL::ENTITY" if is_collapse_boss else _generate_meta_boss_name()
+	var hp := int(600 * (1.0 + meta_corruption_level * 0.2))
+	if is_collapse_boss:
+		hp = int(hp * 1.5)
+	return {
+		"id": "null_entity" if is_collapse_boss else "meta_boss_generated",
+		"name": name_str,
+		"color": Color(0.5, 0.0, 0.8),
+		"stats": {"max_hp": hp, "max_mp": 100, "attack": 40, "defense": 30, "magic": 35, "speed": 16},
+		"max_hp": hp,
+		"attack": 40,
+		"defense": 30,
+		"magic": 35,
+		"speed": 16,
+		"exp_reward": 500,
+		"gold_reward": 300,
+		"abilities": [],
+		"weaknesses": [],
+		"resistances": [],
+		"is_meta_boss": true,
+		"is_collapse_boss": is_collapse_boss,
+		"can_cause_permadeath": is_collapse_boss,
+		"drop_table": []
+	}
+
+
+func _spawn_meta_boss() -> Dictionary:
+	"""Spawn a meta-boss due to corruption.
+	Returns the enemy data dictionary so AutogrindController can launch a real battle.
+	Does NOT stop the grind — the caller decides what to do with the result."""
+	var boss_data := build_meta_boss_enemy_data(false)
+	meta_boss_spawned.emit(boss_data.get("name", "Meta-Boss"))
+	print("[AUTOGRIND] META-BOSS SPAWNED: %s (HP: %d)" % [boss_data["name"], boss_data["max_hp"]])
+	return boss_data
 
 
 func _generate_meta_boss_name() -> String:
 	"""Generate creepy meta-boss name based on corruption"""
-	var prefixes = ["Glitch", "Corrupted", "Fragmented", "Recursive", "Null"]
-	var suffixes = ["Witness", "Observer", "Process", "Handler", "Exception"]
-
+	var prefixes := ["Glitch", "Corrupted", "Fragmented", "Recursive", "Null"]
+	var suffixes := ["Witness", "Observer", "Process", "Handler", "Exception"]
 	return "%s %s" % [
 		prefixes[randi() % prefixes.size()],
 		suffixes[randi() % suffixes.size()]
 	]
 
 
+func on_meta_boss_victory(boss_data: Dictionary) -> void:
+	"""Called by AutogrindController after the party defeats a meta-boss.
+	Reduces corruption and awards bonus rewards."""
+	var corruption_reduction := 0.5 + meta_corruption_level * 0.1
+	meta_corruption_level = maxf(0.0, meta_corruption_level - corruption_reduction)
+	print("[AUTOGRIND] Meta-boss defeated! Corruption reduced by %.2f (now %.2f)" % [
+		corruption_reduction, meta_corruption_level
+	])
+	# Bonus EXP from meta-boss
+	var bonus_exp: int = boss_data.get("exp_reward", 250)
+	for member in grind_party:
+		if member is Combatant and member.is_alive:
+			member.gain_job_exp(bonus_exp)
+	total_exp_gained += bonus_exp
+	_grind_stats["total_exp"] += bonus_exp
+	battle_completed.emit(battles_completed, {
+		"victory": true,
+		"exp_gained": bonus_exp,
+		"items_gained": {},
+		"meta_boss_defeated": true,
+		"boss_name": boss_data.get("name", "Meta-Boss")
+	})
+
+
+func on_meta_boss_defeat(boss_data: Dictionary) -> void:
+	"""Called by AutogrindController after the party loses to a meta-boss.
+	Significantly increases corruption."""
+	var corruption_increase := 1.5
+	meta_corruption_level += corruption_increase
+	consecutive_wins = 0
+	print("[AUTOGRIND] Meta-boss defeated the party! Corruption increased by %.1f (now %.2f)" % [
+		corruption_increase, meta_corruption_level
+	])
+	# Check if this now triggers system collapse
+	if meta_corruption_level >= corruption_threshold:
+		_trigger_system_collapse()
+
+
 func _trigger_system_collapse() -> void:
-	"""Trigger system collapse event (max corruption reached)"""
+	"""Trigger system collapse event (max corruption reached).
+	Spawns a collapse boss. After the fight (win or lose), applies lasting penalties."""
 	system_collapse.emit()
-	print("[color=purple]=== SYSTEM COLLAPSE ===[/color]")
-	print("Meta-corruption has reached critical levels!")
-	print("Reality is fragmenting...")
+	collapse_count += 1
 
-	# Spawn multiple meta-bosses
-	for i in range(3):
-		_spawn_meta_boss()
+	# Lower corruption_threshold for every collapse (min 2.0)
+	corruption_threshold = maxf(2.0, corruption_threshold - 0.5)
 
-	stop_autogrind("SYSTEM COLLAPSE")
+	print("[AUTOGRIND] === SYSTEM COLLAPSE (count: %d) ===" % collapse_count)
+	print("[AUTOGRIND] Threshold lowered to %.1f" % corruption_threshold)
+	print("[AUTOGRIND] Reality is fragmenting...")
+
+
+func apply_post_collapse_penalty() -> void:
+	"""Apply lasting post-collapse penalty: reduced max_efficiency for 10 battles.
+	Called by AutogrindController after a collapse boss battle concludes."""
+	# Reset corruption to 0 regardless of win/lose
+	meta_corruption_level = 0.0
+	meta_boss_spawn_chance = 0.0
+
+	# Apply efficiency debuff for next 10 battles
+	post_collapse_debuff_battles = 10
+	var debuffed_max := maxf(2.0, max_efficiency * 0.5)
+	max_efficiency = debuffed_max
+	efficiency_multiplier = minf(efficiency_multiplier, max_efficiency)
+	print("[AUTOGRIND] Post-collapse penalty: max_efficiency capped at %.1f for %d battles" % [
+		max_efficiency, post_collapse_debuff_battles
+	])
+
+
+func tick_post_collapse_debuff() -> void:
+	"""Decrement the post-collapse debuff counter after each battle.
+	Called from on_battle_victory / on_battle_defeat."""
+	if post_collapse_debuff_battles <= 0:
+		return
+	post_collapse_debuff_battles -= 1
+	if post_collapse_debuff_battles == 0:
+		# Restore original max_efficiency
+		max_efficiency = 10.0
+		print("[AUTOGRIND] Post-collapse debuff expired — max_efficiency restored to %.1f" % max_efficiency)
 
 
 func _trigger_permadeath() -> void:
-	"""Handle permadeath when staking is enabled"""
-	print("[color=red]=== PERMADEATH TRIGGERED ===[/color]")
-	print("Your party has been permanently lost to the grind...")
+	"""Handle permadeath when staking is enabled.
+	Kills the lowest-HP alive party member permanently and persists the death."""
+	print("[AUTOGRIND] === PERMADEATH TRIGGERED ===")
+	print("[AUTOGRIND] The grind claims a soul...")
 
-	# Mark all party members as permanently dead
+	# Find the alive member with the lowest current HP
+	var victim: Combatant = null
+	var lowest_hp := INF
 	for member in grind_party:
-		if member is Combatant:
-			member.is_alive = false
-			# In full implementation, would save this to persistent data
+		if member is Combatant and member.is_alive:
+			var hp := float(member.current_hp)
+			if hp < lowest_hp:
+				lowest_hp = hp
+				victim = member
 
-	stop_autogrind("PERMADEATH - Party wiped with staking enabled")
+	if victim == null:
+		# Full wipe — mark everyone permanently dead
+		for member in grind_party:
+			if member is Combatant:
+				member.is_alive = false
+				_persist_permadeath(member.combatant_name)
+		stop_autogrind("PERMADEATH - Full party wipe with staking enabled")
+		return
+
+	# Kill only the lowest-HP member
+	victim.is_alive = false
+	victim.current_hp = 0
+	_persist_permadeath(victim.combatant_name)
+	print("[AUTOGRIND] %s has been permanently lost!" % victim.combatant_name)
+	stop_autogrind("PERMADEATH - %s fell during staked autogrind" % victim.combatant_name)
+
+
+func _persist_permadeath(character_name: String) -> void:
+	"""Record a permanent character death in the permadead list and save to disk."""
+	if character_name in permadead_characters:
+		return
+	permadead_characters.append(character_name)
+	_save_permadead_characters()
+
+	# Also record in GameState player_party data if the character exists there
+	var game_state = get_node_or_null("/root/GameState")
+	if game_state and "player_party" in game_state:
+		for entry in game_state.player_party:
+			if entry is Dictionary and entry.get("name", "") == character_name:
+				entry["permadead"] = true
+				break
+
+	print("[AUTOGRIND] Persisted permadeath for: %s" % character_name)
+
+
+func is_character_permadead(character_name: String) -> bool:
+	"""Check if a character is permanently dead."""
+	return character_name in permadead_characters
+
+
+func _save_permadead_characters() -> void:
+	"""Write the permadead list to user://autogrind/permadead.json"""
+	var dir := DirAccess.open("user://")
+	if dir and not dir.dir_exists("autogrind"):
+		dir.make_dir("autogrind")
+
+	var file := FileAccess.open("user://autogrind/permadead.json", FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify({"permadead": permadead_characters}, "\t"))
+		file.close()
+
+
+func _load_permadead_characters() -> void:
+	"""Load the permadead list from user://autogrind/permadead.json"""
+	var save_path := "user://autogrind/permadead.json"
+	if not FileAccess.file_exists(save_path):
+		return
+	var file := FileAccess.open(save_path, FileAccess.READ)
+	if not file:
+		return
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) == OK and json.data is Dictionary:
+		var names: Array = json.data.get("permadead", [])
+		for n in names:
+			if n is String and not n in permadead_characters:
+				permadead_characters.append(n)
+		print("[AUTOGRIND] Loaded %d permadead characters" % permadead_characters.size())
+	file.close()
 
 
 ## Configuration
@@ -845,8 +1109,15 @@ func set_interrupt_rule(rule_name: String, value: Variant) -> void:
 func enable_permadeath_staking(enabled: bool) -> void:
 	"""Enable/disable permadeath staking"""
 	permadeath_staking_enabled = enabled
-	print("Permadeath staking: %s (%.1fx rewards)" % [
+	permadeath_enabled = enabled
+	if enabled:
+		# 50% efficiency bonus while permadeath staking is active
+		efficiency_growth_rate = 0.15
+	else:
+		efficiency_growth_rate = 0.1
+	print("[AUTOGRIND] Permadeath staking: %s (growth rate: %.2f, %.1fx rewards)" % [
 		"ENABLED" if enabled else "disabled",
+		efficiency_growth_rate,
 		permadeath_multiplier if enabled else 1.0
 	])
 
@@ -1245,7 +1516,7 @@ func _get_alive_count(party: Array) -> int:
 
 
 func apply_autogrind_actions(actions: Array) -> void:
-	"""Apply autogrind rule actions (switch profiles, stop grinding, etc.)"""
+	"""Apply autogrind rule actions (switch profiles, stop grinding, heal party, flee, etc.)"""
 	for action in actions:
 		var action_type = action.get("type", "")
 
@@ -1261,6 +1532,24 @@ func apply_autogrind_actions(actions: Array) -> void:
 
 			"stop_grinding":
 				stop_autogrind("Autogrind rule triggered stop")
+
+			"heal_party":
+				# Restore 30% of max HP and MP for each living party member
+				var heal_pct: float = action.get("value", 30.0) / 100.0
+				for member in grind_party:
+					if member is Combatant and member.is_alive:
+						var hp_restore: int = int(member.max_hp * heal_pct)
+						var mp_restore: int = int(member.max_mp * heal_pct)
+						member.current_hp = min(member.current_hp + hp_restore, member.max_hp)
+						member.current_mp = min(member.current_mp + mp_restore, member.max_mp)
+				print("[AUTOGRIND] heal_party: restored %.0f%% HP/MP to living party members" % (heal_pct * 100.0))
+
+			"flee_battle":
+				# flee_battle is handled by AutogrindController (_skip_next_battle flag).
+				# If apply_autogrind_actions is called directly (e.g. from old code paths),
+				# fall back to stopping the grind so the action is never silently ignored.
+				print("[AUTOGRIND] flee_battle action reached AutogrindSystem directly — stopping grind as fallback")
+				stop_autogrind("Flee triggered by autogrind rule")
 
 
 ## ═══════════════════════════════════════════════════════════════════════

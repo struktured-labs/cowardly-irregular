@@ -313,11 +313,50 @@ func _start_new_round() -> void:
 		if combatant.is_alive:
 			combatant.reset_for_new_round()
 
+	# Apply corruption effects from enemies that carry them
+	_apply_corruption_effects_on_round_start()
+
 	# Calculate selection order (players first, then enemies, sorted by speed)
 	_calculate_selection_order()
 
 	round_started.emit(current_round)
 	_start_selection_phase()
+
+
+func _apply_corruption_effects_on_round_start() -> void:
+	"""Apply per-round corruption effects from enemies that carry them.
+	time_distortion: randomize a corruption enemy's speed modifier each round.
+	stat_drain: reduce all alive player stats by 1% per round (permanent within battle)."""
+	# Collect all active corruption effects across the live enemy party
+	var active_effects: Array = []
+	for enemy in enemy_party:
+		if enemy.is_alive and enemy.has_meta("corruption_effects"):
+			var effects = enemy.get_meta("corruption_effects", [])
+			for eff in effects:
+				if eff not in active_effects:
+					active_effects.append(eff)
+
+	if active_effects.is_empty():
+		return
+
+	# time_distortion: enemy speed shifts ±30% each round
+	if "time_distortion" in active_effects:
+		for enemy in enemy_party:
+			if enemy.is_alive and enemy.has_meta("corruption_effects") and \
+					"time_distortion" in enemy.get_meta("corruption_effects", []):
+				var base_speed = enemy.speed
+				var shift = randf_range(-0.3, 0.3)
+				enemy.speed = maxi(1, int(base_speed * (1.0 + shift)))
+		battle_log_message.emit("[color=cyan]Time distorts — enemy speeds fluctuate![/color]")
+
+	# stat_drain: all living party members lose 1% of each stat per round (min 1)
+	if "stat_drain" in active_effects:
+		for member in player_party:
+			if member.is_alive:
+				member.attack = maxi(1, member.attack - maxi(1, int(member.attack * 0.01)))
+				member.defense = maxi(1, member.defense - maxi(1, int(member.defense * 0.01)))
+				member.magic = maxi(1, member.magic - maxi(1, int(member.magic * 0.01)))
+		battle_log_message.emit("[color=purple]Corruption seeps in — party stats erode![/color]")
 
 
 func _calculate_selection_order() -> void:
@@ -1168,6 +1207,14 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		else:
 			damage = max(1, damage / 2)
 			battle_log_message.emit("[color=cyan]TAIL EVENT: Market correction![/color]")
+
+	# Corruption effect: reality_bending - attacker ignores target defense on hit
+	var reality_bending = attacker.has_meta("corruption_effects") and \
+		"reality_bending" in attacker.get_meta("corruption_effects", [])
+	if reality_bending:
+		# Bypass defense: add target's defense directly to damage (nullifying reduction)
+		damage += actual_target.defense
+		battle_log_message.emit("[color=purple]Reality bends — %s's defenses shatter![/color]" % actual_target.combatant_name)
 
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit)

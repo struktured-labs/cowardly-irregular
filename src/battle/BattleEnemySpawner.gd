@@ -288,6 +288,10 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 		if data.has("corruption_effects"):
 			enemy.set_meta("corruption_effects", data["corruption_effects"])
 
+		# Store counter strategy if present (set by AutogrindSystem.create_scaled_enemy_data)
+		if data.has("counter_strategy") and not data["counter_strategy"].is_empty():
+			enemy.set_meta("counter_strategy", data["counter_strategy"])
+
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))

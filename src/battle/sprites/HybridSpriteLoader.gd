@@ -21,8 +21,16 @@ static func _load_manifest() -> void:
 			if json.parse(file.get_as_text()) == OK and json.data is Dictionary:
 				_manifest = json.data.get("sheets", {})
 				_monster_manifest = json.data.get("monster_sheets", {})
+				print("[SPRITES] Loaded sprite manifest: %d sheets" % _manifest.size())
 			file.close()
 	_manifest_loaded = true
+
+
+static func reload_manifest() -> void:
+	"""Force reload the manifest (call after adding new sprite sheets)"""
+	_manifest_loaded = false
+	_manifest = {}
+	_load_manifest()
 
 
 static func load_sprite_frames(customization, primary_job_id: String, secondary_job_id: String = "", weapon_id: String = "", armor_id: String = "", accessory_id: String = "") -> SpriteFrames:
@@ -33,7 +41,12 @@ static func load_sprite_frames(customization, primary_job_id: String, secondary_
 		var sheet_data = _manifest[primary_job_id]
 		var frames = _load_external_sheet(sheet_data, primary_job_id)
 		if frames:
+			print("[SPRITES] Using artist sheet for '%s'" % primary_job_id)
 			return frames
+		else:
+			print("[SPRITES] Artist sheet for '%s' failed to load, using procedural" % primary_job_id)
+	else:
+		print("[SPRITES] No manifest entry for '%s', using procedural" % primary_job_id)
 
 	# Fall back to procedural generation
 	return _SnesPartySprites.create_sprite_frames(customization, primary_job_id, secondary_job_id, weapon_id, armor_id, accessory_id)

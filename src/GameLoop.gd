@@ -844,6 +844,16 @@ func _start_exploration() -> void:
 			exploration_scene = _create_script_scene("res://src/exploration/FuturisticOverworld.gd")
 		"abstract_overworld":
 			exploration_scene = _create_script_scene("res://src/exploration/AbstractOverworld.gd")
+		"maple_heights_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/MapleHeightsVillage.gd")
+		"brasston_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/BrasstonVillage.gd")
+		"rivet_row_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/RivetRowVillage.gd")
+		"node_prime_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/NodePrimeVillage.gd")
+		"vertex_village":
+			exploration_scene = _create_script_scene("res://src/maps/villages/VertexVillage.gd")
 		_:
 			exploration_scene = OverworldSceneRes.instantiate()
 
@@ -1174,6 +1184,16 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "digital"
 		"abstract_overworld":
 			return "void"
+		"maple_heights_village":
+			return "village"
+		"brasston_village":
+			return "village"
+		"rivet_row_village":
+			return "village"
+		"node_prime_village":
+			return "village"
+		"vertex_village":
+			return "village"
 		_:
 			if "cave" in map_id or "dungeon" in map_id:
 				return "cave"
@@ -1494,6 +1514,12 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		for enemy in BattleManager.enemy_party:
 			if enemy is Combatant:
 				exp_gained += int(enemy.max_hp * 0.5 + enemy.attack * 2)
+
+		# Feed battle action summary into adaptive AI pattern learning
+		var region_id = AutogrindSystem.current_region_id
+		if not region_id.is_empty():
+			var battle_summary = BattleManager._summarize_battle_actions()
+			AutogrindSystem.update_learned_patterns(region_id, battle_summary)
 
 		# Heal party between battles (rest bonus)
 		for member in party:

@@ -256,6 +256,8 @@ func _generate_map() -> void:
 	spawn_points["from_suburban"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 38 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from futuristic world (north rail yard)
 	spawn_points["from_futuristic"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
+	# Spawn point for returning from Rivet Row village (east worker housing area, row 17)
+	spawn_points["rivet_row_entrance"] = Vector2(55 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -309,6 +311,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
 	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(futuristic_portal)
+
+	# Rivet Row village entrance (east worker housing block, row 17)
+	var rivet_row_trans = AreaTransitionScript.new()
+	rivet_row_trans.name = "RivetRowEntrance"
+	rivet_row_trans.target_map = "rivet_row_village"
+	rivet_row_trans.target_spawn = "entrance"
+	rivet_row_trans.require_interaction = true
+	rivet_row_trans.indicator_text = "Enter Rivet Row"
+	rivet_row_trans.position = spawn_points.get("rivet_row_entrance", Vector2(1776, 560))
+	_setup_transition_collision(rivet_row_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	rivet_row_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(rivet_row_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

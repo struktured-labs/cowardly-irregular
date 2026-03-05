@@ -20,6 +20,12 @@ var _config: Dictionary = {}
 var _saved_autobattle_states: Dictionary = {}
 var _terrain: String = "plains"
 var _between_battle_timer: float = 0.0
+var _skip_next_battle: bool = false
+
+## Tracks whether the current running battle is a meta-boss or collapse-boss fight
+var _current_battle_is_meta_boss: bool = false
+var _current_battle_is_collapse_boss: bool = false
+var _current_meta_boss_data: Dictionary = {}
 
 const BETWEEN_BATTLE_DELAY: float = 1.0
 
@@ -28,6 +34,7 @@ func _process(delta: float) -> void:
 	if _state == State.BETWEEN_BATTLES:
 		_between_battle_timer -= delta
 		if _between_battle_timer <= 0:
+			_evaluate_and_apply_rules()
 			_state = State.PRE_BATTLE
 			_request_next_battle()
 
@@ -67,29 +74,104 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	_request_next_battle()
 
 
+## Evaluate autogrind rules between battles and apply any triggered actions
+func _evaluate_and_apply_rules() -> void:
+	var matched_rule = AutogrindSystem.evaluate_autogrind_rules(_party)
+	if matched_rule.is_empty():
+		return
+
+	var actions = matched_rule.get("actions", [])
+	if actions.is_empty():
+		return
+
+	# Intercept flee_battle before passing to AutogrindSystem so the controller
+	# can set its own skip flag, then remove it from the list to avoid confusion.
+	var filtered_actions: Array = []
+	for action in actions:
+		if action.get("type", "") == "flee_battle":
+			_skip_next_battle = true
+			print("[AUTOGRIND] Rule triggered: flee_battle -- next battle will be skipped")
+		else:
+			filtered_actions.append(action)
+
+	if not filtered_actions.is_empty():
+		AutogrindSystem.apply_autogrind_actions(filtered_actions)
+
+	# Log which rule fired (for UI rule-trigger display)
+	var rule_conditions = matched_rule.get("conditions", [])
+	if not rule_conditions.is_empty():
+		var desc = "Rule fired: "
+		for cond in rule_conditions:
+			desc += "%s %s %s " % [cond.get("type", "?"), cond.get("op", ""), str(cond.get("value", ""))]
+		print("[AUTOGRIND] %s" % desc.strip_edges())
+
+
 ## Request the next battle in the chain
 func _request_next_battle() -> void:
 	if _state != State.PRE_BATTLE:
 		return
 
-	# Check interrupt conditions
+	# If a flee_battle rule fired, skip one battle
+	if _skip_next_battle:
+		_skip_next_battle = false
+		print("[AUTOGRIND] Skipping battle due to flee_battle rule")
+		_state = State.BETWEEN_BATTLES
+		_between_battle_timer = BETWEEN_BATTLE_DELAY
+		return
+
+	# Check interrupt conditions first
 	var interrupt_reason = AutogrindSystem.pre_battle_check()
 	if interrupt_reason != "":
 		stop_grind(interrupt_reason)
 		return
 
-	# Check for meta-boss spawn
-	if AutogrindSystem.should_spawn_meta_boss():
-		# For now, meta-boss stops the grind (as in original behavior)
-		AutogrindSystem._spawn_meta_boss()
-		stop_grind("Meta-boss appeared")
+	# Check for system collapse — takes priority over regular meta-boss
+	if AutogrindSystem.meta_corruption_level >= AutogrindSystem.corruption_threshold:
+		_launch_collapse_boss_battle()
 		return
 
-	# Generate scaled enemies
-	var enemies = _generate_scaled_enemies()
+	# Check for regular meta-boss spawn
+	if AutogrindSystem.should_spawn_meta_boss():
+		_launch_meta_boss_battle()
+		return
 
+	# Normal battle — generate scaled enemies
+	_current_battle_is_meta_boss = false
+	_current_battle_is_collapse_boss = false
+	_current_meta_boss_data = {}
+	var enemies = _generate_scaled_enemies()
 	_state = State.BATTLE_RUNNING
 	grind_battle_requested.emit(enemies, _terrain)
+
+
+## Launch a regular meta-boss battle
+func _launch_meta_boss_battle() -> void:
+	var boss_data := AutogrindSystem._spawn_meta_boss()
+	if boss_data.is_empty():
+		stop_grind("Meta-boss data unavailable")
+		return
+
+	_current_battle_is_meta_boss = true
+	_current_battle_is_collapse_boss = false
+	_current_meta_boss_data = boss_data
+
+	print("[AUTOGRIND] Launching meta-boss battle: %s" % boss_data.get("name", "Meta-Boss"))
+	_state = State.BATTLE_RUNNING
+	grind_battle_requested.emit([boss_data], _terrain)
+
+
+## Launch a system collapse boss battle
+func _launch_collapse_boss_battle() -> void:
+	AutogrindSystem._trigger_system_collapse()
+	var boss_data := AutogrindSystem.build_meta_boss_enemy_data(true)
+
+	_current_battle_is_meta_boss = true
+	_current_battle_is_collapse_boss = true
+	_current_meta_boss_data = boss_data
+
+	print("[AUTOGRIND] SYSTEM COLLAPSE -- launching collapse boss: %s" % boss_data.get("name", "NULL::ENTITY"))
+	_state = State.BATTLE_RUNNING
+	grind_battle_requested.emit([boss_data], _terrain)
 
 
 ## Generate enemies with adaptation scaling
@@ -126,14 +208,55 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 
 	_state = State.POST_BATTLE
 
+	if _current_battle_is_collapse_boss:
+		# Win or lose: apply post-collapse penalty then continue grinding
+		AutogrindSystem.apply_post_collapse_penalty()
+		if victory:
+			print("[AUTOGRIND] Collapse boss defeated! Corruption reset, efficiency debuffed for 10 battles.")
+			AutogrindSystem.on_meta_boss_victory(_current_meta_boss_data)
+		else:
+			print("[AUTOGRIND] Collapse boss won. Corruption reset, penalty still applied.")
+		# Reset boss tracking
+		_current_battle_is_meta_boss = false
+		_current_battle_is_collapse_boss = false
+		_current_meta_boss_data = {}
+		# Continue grinding after a longer delay
+		_state = State.BETWEEN_BATTLES
+		_between_battle_timer = BETWEEN_BATTLE_DELAY * 2.0
+		return
+
+	if _current_battle_is_meta_boss:
+		if victory:
+			print("[AUTOGRIND] Meta-boss defeated! Bonus rewards and corruption reduced.")
+			AutogrindSystem.on_meta_boss_victory(_current_meta_boss_data)
+		else:
+			print("[AUTOGRIND] Party lost to meta-boss! Corruption increased significantly.")
+			AutogrindSystem.on_meta_boss_defeat(_current_meta_boss_data)
+			# Check if the defeat pushed us into collapse territory
+			if AutogrindSystem.meta_corruption_level >= AutogrindSystem.corruption_threshold:
+				# Collapse will be handled next _request_next_battle call
+				pass
+			else:
+				stop_grind("Defeated by meta-boss")
+				return
+		# Reset boss tracking
+		_current_battle_is_meta_boss = false
+		_current_battle_is_collapse_boss = false
+		_current_meta_boss_data = {}
+		_state = State.BETWEEN_BATTLES
+		_between_battle_timer = BETWEEN_BATTLE_DELAY
+		return
+
+	# Normal battle resolution
 	if victory:
 		AutogrindSystem.on_battle_victory(exp_gained, items_gained)
-		# Transition to between-battles delay
 		_state = State.BETWEEN_BATTLES
 		_between_battle_timer = BETWEEN_BATTLE_DELAY
 	else:
 		AutogrindSystem.on_battle_defeat()
-		stop_grind("Party defeated")
+		if AutogrindSystem.is_grinding:
+			# on_battle_defeat may have triggered permadeath and already stopped things
+			stop_grind("Party defeated")
 
 
 ## Stop the grind session
@@ -142,6 +265,9 @@ func stop_grind(reason: String = "Manual stop") -> void:
 		return
 
 	_state = State.IDLE
+	_current_battle_is_meta_boss = false
+	_current_battle_is_collapse_boss = false
+	_current_meta_boss_data = {}
 
 	# Restore autobattle states
 	_restore_autobattle_states()
@@ -193,7 +319,10 @@ func get_grind_stats() -> Dictionary:
 		"consecutive_wins": AutogrindSystem.consecutive_wins,
 		"battles_won": AutogrindSystem.battles_completed,
 		"total_exp": AutogrindSystem.total_exp_gained,
-		"total_items": _count_total_items()
+		"total_items": _count_total_items(),
+		"collapse_count": AutogrindSystem.collapse_count,
+		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,
+		"permadead": AutogrindSystem.permadead_characters.duplicate()
 	}
 
 

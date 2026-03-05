@@ -72,6 +72,9 @@ var _total_exp: int = 0
 var _efficiency: float = 1.0
 var _corruption: float = 0.0
 
+## Permadeath staking toggle state
+var _permadeath_staking_enabled: bool = false
+
 ## UI nodes
 var _grid_container: Control
 var _cursor: Control
@@ -79,6 +82,7 @@ var _status_panel: Control
 var _battle_log: RichTextLabel
 var _start_button: Control
 var _monitor: AutogrindMonitor
+var _permadeath_toggle_label: Label
 
 ## Region ID for CSI lookups (derived from _region_name)
 var _region_id: String = ""
@@ -103,9 +107,12 @@ func setup(party: Array, region_name: String = "") -> void:
 
 
 func _load_rules() -> void:
-	"""Load autogrind rules from AutogrindSystem or create defaults"""
-	# TODO: Load from AutogrindSystem when implemented
-	if rules.is_empty():
+	"""Load autogrind rules from AutogrindSystem (active profile)"""
+	var system_rules = AutogrindSystem.get_autogrind_rules()
+	if system_rules.size() > 0:
+		rules = system_rules.duplicate(true)
+	elif rules.is_empty():
+		# Fallback defaults if AutogrindSystem has no profiles yet
 		rules = [
 			{
 				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}],
@@ -132,6 +139,8 @@ func _connect_autogrind_signals() -> void:
 	AutogrindSystem.efficiency_increased.connect(_on_efficiency_increased)
 	AutogrindSystem.corruption_increased.connect(_on_corruption_increased)
 	AutogrindSystem.interrupt_triggered.connect(_on_interrupt_triggered)
+	AutogrindSystem.meta_boss_spawned.connect(_on_meta_boss_spawned)
+	AutogrindSystem.system_collapse.connect(_on_system_collapse)
 
 
 func _disconnect_autogrind_signals() -> void:
@@ -143,6 +152,10 @@ func _disconnect_autogrind_signals() -> void:
 		AutogrindSystem.corruption_increased.disconnect(_on_corruption_increased)
 	if AutogrindSystem.interrupt_triggered.is_connected(_on_interrupt_triggered):
 		AutogrindSystem.interrupt_triggered.disconnect(_on_interrupt_triggered)
+	if AutogrindSystem.meta_boss_spawned.is_connected(_on_meta_boss_spawned):
+		AutogrindSystem.meta_boss_spawned.disconnect(_on_meta_boss_spawned)
+	if AutogrindSystem.system_collapse.is_connected(_on_system_collapse):
+		AutogrindSystem.system_collapse.disconnect(_on_system_collapse)
 
 
 func _build_ui() -> void:
@@ -385,13 +398,40 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 
 
 func _build_footer(vp_size: Vector2) -> void:
-	"""Build footer with controls help"""
+	"""Build footer with controls help and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Save  Select:Start/Stop  Click:Edit  RClick:Close"
+	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Save  Select:Start/Stop  P:Permadeath"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
+
+	# Permadeath staking toggle button
+	var pd_btn := Control.new()
+	pd_btn.size = Vector2(200, 28)
+	pd_btn.position = Vector2(vp_size.x - 208, vp_size.y - 32)
+
+	var pd_bg := ColorRect.new()
+	pd_bg.size = pd_btn.size
+	pd_bg.color = DANGER_COLOR if _permadeath_staking_enabled else Color(0.15, 0.1, 0.1)
+	pd_btn.add_child(pd_bg)
+
+	_add_pixel_border(pd_btn, pd_btn.size)
+
+	_permadeath_toggle_label = Label.new()
+	_permadeath_toggle_label.text = "[P] PERMADEATH: %s" % ("ON" if _permadeath_staking_enabled else "OFF")
+	_permadeath_toggle_label.position = Vector2(8, 6)
+	_permadeath_toggle_label.add_theme_font_size_override("font_size", 11)
+	_permadeath_toggle_label.add_theme_color_override(
+		"font_color",
+		Color.WHITE if _permadeath_staking_enabled else DISABLED_COLOR
+	)
+	pd_btn.add_child(_permadeath_toggle_label)
+
+	MenuMouseHelper.make_clickable(pd_btn, 0, pd_btn.size.x, pd_btn.size.y,
+		func() -> void: _toggle_permadeath_staking(),
+		func() -> void: pass)
+	add_child(pd_btn)
 
 
 func _refresh_grid() -> void:
@@ -963,6 +1003,10 @@ func _input(event: InputEvent) -> void:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
+		_toggle_permadeath_staking()
+		get_viewport().set_input_as_handled()
+
 
 func _edit_current_cell() -> void:
 	"""Edit/activate current cell"""
@@ -1193,6 +1237,8 @@ func _toggle_grinding() -> void:
 		_log_message("[color=yellow]Autogrind stopped.[/color]")
 		_hide_monitor()
 	else:
+		# Persist current rules to AutogrindSystem so the controller evaluates them
+		AutogrindSystem.set_autogrind_rules(rules.duplicate(true))
 		_is_grinding = true
 		var config = _get_grind_config()
 		grind_requested.emit(config)
@@ -1208,8 +1254,121 @@ func _get_grind_config() -> Dictionary:
 	return {
 		"region": _region_name,
 		"rules": rules.duplicate(true),
-		"permadeath_staking": false
+		"permadeath_staking": _permadeath_staking_enabled
 	}
+
+
+func _toggle_permadeath_staking() -> void:
+	"""Toggle permadeath staking with a confirmation step when enabling."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change permadeath stakes while grinding.[/color]")
+		return
+
+	if _permadeath_staking_enabled:
+		# Disable immediately — no confirmation needed to turn it off
+		_permadeath_staking_enabled = false
+		AutogrindSystem.enable_permadeath_staking(false)
+		_log_message("[color=lime]Permadeath staking disabled.[/color]")
+		_build_ui()
+		SoundManager.play_ui("menu_select")
+		return
+
+	# Enabling — show confirmation dialog
+	_show_permadeath_confirmation()
+
+
+func _show_permadeath_confirmation() -> void:
+	"""Show a Win98-style confirmation dialog warning about permanent death risk."""
+	# Create overlay
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.7)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 100
+	add_child(overlay)
+
+	var dialog := Control.new()
+	dialog.size = Vector2(420, 200)
+	var vp_size := get_viewport().get_visible_rect().size
+	if vp_size.x == 0 or vp_size.y == 0:
+		vp_size = Vector2(1280, 720)
+	dialog.position = (vp_size - dialog.size) / 2.0
+	dialog.z_index = 101
+	overlay.add_child(dialog)
+
+	var dlg_bg := ColorRect.new()
+	dlg_bg.color = PANEL_COLOR
+	dlg_bg.size = dialog.size
+	dialog.add_child(dlg_bg)
+	_add_pixel_border(dialog, dialog.size)
+
+	var title_lbl := Label.new()
+	title_lbl.text = "PERMADEATH STAKES"
+	title_lbl.position = Vector2(12, 10)
+	title_lbl.add_theme_font_size_override("font_size", 14)
+	title_lbl.add_theme_color_override("font_color", DANGER_COLOR)
+	dialog.add_child(title_lbl)
+
+	var warn_lbl := RichTextLabel.new()
+	warn_lbl.bbcode_enabled = true
+	warn_lbl.text = "[color=white]Enabling [color=red]PERMADEATH STAKES[/color] means:\n\n- If your party is wiped, the lowest-HP member [color=red]DIES PERMANENTLY[/color]\n- Their death is saved to disk and cannot be undone\n- Rewards grow 50% faster as compensation\n\n[color=yellow]Are you sure?[/color][/color]"
+	warn_lbl.position = Vector2(12, 36)
+	warn_lbl.size = Vector2(dialog.size.x - 24, 108)
+	warn_lbl.add_theme_font_size_override("normal_font_size", 11)
+	dialog.add_child(warn_lbl)
+
+	# Confirm button
+	var confirm_btn := Control.new()
+	confirm_btn.size = Vector2(180, 32)
+	confirm_btn.position = Vector2(16, dialog.size.y - 44)
+
+	var c_bg := ColorRect.new()
+	c_bg.color = DANGER_COLOR
+	c_bg.size = confirm_btn.size
+	confirm_btn.add_child(c_bg)
+	_add_pixel_border(confirm_btn, confirm_btn.size)
+
+	var c_lbl := Label.new()
+	c_lbl.text = "YES, ENABLE STAKES"
+	c_lbl.position = Vector2(12, 8)
+	c_lbl.add_theme_font_size_override("font_size", 11)
+	c_lbl.add_theme_color_override("font_color", Color.WHITE)
+	confirm_btn.add_child(c_lbl)
+
+	MenuMouseHelper.make_clickable(confirm_btn, 0, confirm_btn.size.x, confirm_btn.size.y,
+		func() -> void:
+			_permadeath_staking_enabled = true
+			AutogrindSystem.enable_permadeath_staking(true)
+			_log_message("[color=red]PERMADEATH STAKES ENABLED! +50% efficiency growth.[/color]")
+			overlay.queue_free()
+			_build_ui()
+			SoundManager.play_ui("menu_select"),
+		func() -> void: pass)
+	dialog.add_child(confirm_btn)
+
+	# Cancel button
+	var cancel_btn := Control.new()
+	cancel_btn.size = Vector2(180, 32)
+	cancel_btn.position = Vector2(dialog.size.x - 196, dialog.size.y - 44)
+
+	var ca_bg := ColorRect.new()
+	ca_bg.color = Color(0.2, 0.2, 0.2)
+	ca_bg.size = cancel_btn.size
+	cancel_btn.add_child(ca_bg)
+	_add_pixel_border(cancel_btn, cancel_btn.size)
+
+	var ca_lbl := Label.new()
+	ca_lbl.text = "NO, STAY SAFE"
+	ca_lbl.position = Vector2(28, 8)
+	ca_lbl.add_theme_font_size_override("font_size", 11)
+	ca_lbl.add_theme_color_override("font_color", Color.WHITE)
+	cancel_btn.add_child(ca_lbl)
+
+	MenuMouseHelper.make_clickable(cancel_btn, 0, cancel_btn.size.x, cancel_btn.size.y,
+		func() -> void:
+			overlay.queue_free()
+			SoundManager.play_ui("menu_cancel"),
+		func() -> void: pass)
+	dialog.add_child(cancel_btn)
 
 
 func _get_condition_slots_for_row(row_idx: int) -> int:
@@ -1351,9 +1510,31 @@ func _on_monitor_pause() -> void:
 
 
 func _on_monitor_adjust_rules() -> void:
-	"""Handle adjust rules request - hide monitor, show rule editor"""
+	"""Handle adjust rules request - hide monitor, open AutogrindGridEditor"""
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.visible = false
+
+	# Open the full AutogrindGridEditor so the player can edit rules mid-grind
+	var editor = AutogrindGridEditor.new()
+	editor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(editor)
+	editor.setup(_party)
+
+	# When the editor closes, sync its saved rules back into our local rules array
+	# and restore the monitor
+	editor.closed.connect(func() -> void:
+		rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
+		editor.queue_free()
+		if _is_grinding and _monitor and is_instance_valid(_monitor):
+			_monitor.visible = true
+		elif _is_grinding:
+			_show_monitor()
+	)
+
+	# Forward saved rules signal so we stay in sync even if the editor emits it
+	editor.rules_saved.connect(func(saved_rules: Array) -> void:
+		rules = saved_rules.duplicate(true)
+	)
 
 
 func _on_monitor_exit() -> void:
@@ -1501,7 +1682,14 @@ func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 	_total_exp += exp_gained
 
 	var victory = results.get("victory", true)
-	if victory:
+	var is_meta_boss = results.get("meta_boss_defeated", false)
+
+	if is_meta_boss and victory:
+		var boss_name = results.get("boss_name", "Meta-Boss")
+		_log_message("[color=orange]META-BOSS DEFEATED: %s! +%d EXP. Corruption reduced.[/color]" % [boss_name, exp_gained])
+		if _monitor and is_instance_valid(_monitor):
+			_monitor.add_highlight("META-BOSS DEFEATED: %s! Corruption -" % boss_name, "success")
+	elif victory:
 		_log_message("[color=lime]Battle #%d: +%d EXP[/color]" % [battle_num, exp_gained])
 		# Forward victory to monitor highlight
 		if _monitor and is_instance_valid(_monitor):
@@ -1536,6 +1724,18 @@ func _on_interrupt_triggered(reason: String) -> void:
 	_is_grinding = false
 	_hide_monitor()
 	_build_ui()
+
+
+func _on_meta_boss_spawned(boss_name: String) -> void:
+	_log_message("[color=orange]META-BOSS APPEARS: %s[/color]" % boss_name)
+	if _monitor and is_instance_valid(_monitor):
+		_monitor.add_highlight("META-BOSS: %s" % boss_name, "danger")
+
+
+func _on_system_collapse() -> void:
+	_log_message("[color=red]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]")
+	if _monitor and is_instance_valid(_monitor):
+		_monitor.add_highlight("SYSTEM COLLAPSE (#%d)!" % AutogrindSystem.collapse_count, "danger")
 
 
 func set_grinding(active: bool) -> void:
