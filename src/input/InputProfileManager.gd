@@ -250,7 +250,7 @@ func load_config() -> void:
 		push_warning("[InputProfileManager] Failed to parse config: %s" % json.get_error_message())
 		return
 
-	var data = json.get_data()
+	var data = json.data
 	if not data is Dictionary:
 		return
 

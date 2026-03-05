@@ -119,6 +119,8 @@ func can_quick_save() -> bool:
 		return false
 
 	# Cannot save during battle
+	if not BattleManager:
+		return false
 	if BattleManager.is_battle_active():
 		return false
 
@@ -299,13 +301,9 @@ func _create_save_data() -> Dictionary:
 
 func _serialize_party() -> Array:
 	"""Serialize party members"""
-	var party_data = []
-
-	# For now, using test player from battle scene
-	# In full game, would get from GameState party roster
-	# This is a placeholder
-
-	return party_data
+	if GameState and "player_party" in GameState:
+		return GameState.player_party.duplicate(true)
+	return []
 
 
 func _get_party_summary() -> Array:
@@ -313,18 +311,18 @@ func _get_party_summary() -> Array:
 	var summary = []
 
 	# Get party from GameState if available
-	if GameState and "party" in GameState:
-		for member in GameState.party:
-			if member is Combatant:
+	if GameState and "player_party" in GameState:
+		for member in GameState.player_party:
+			if member is Dictionary:
 				summary.append({
-					"name": member.combatant_name,
-					"level": member.job_level if "job_level" in member else 1,
-					"job": member.job.get("name", "Fighter") if member.job else "Fighter",
-					"job_id": member.job.get("id", "fighter") if member.job else "fighter",
-					"secondary_job_id": member.secondary_job_id if member.secondary_job_id else "",
-					"hp": member.current_hp,
-					"max_hp": member.max_hp,
-					"customization": member.customization.to_dict() if member.customization and member.customization.has_method("to_dict") else null
+					"name": member.get("name", "Unknown"),
+					"level": member.get("job_level", 1),
+					"job": member.get("job", {}).get("name", "Fighter") if member.get("job") is Dictionary else "Fighter",
+					"job_id": member.get("job", {}).get("id", "fighter") if member.get("job") is Dictionary else "fighter",
+					"secondary_job_id": member.get("secondary_job_id", ""),
+					"hp": member.get("current_hp", 0),
+					"max_hp": member.get("max_hp", 1),
+					"customization": member.get("customization", null)
 				})
 
 	return summary
@@ -386,8 +384,8 @@ func _apply_save_data(data: Dictionary) -> void:
 
 func _deserialize_party(party_data: Array) -> void:
 	"""Deserialize party members"""
-	# Placeholder
-	pass
+	if GameState and "player_party" in GameState:
+		GameState.player_party = party_data.duplicate(true)
 
 
 func _deserialize_inventory(inventory_data: Dictionary) -> void:

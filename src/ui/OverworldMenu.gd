@@ -451,6 +451,9 @@ func _input(event: InputEvent) -> void:
 	if _submenu_open:
 		return
 
+	if party.is_empty():
+		return
+
 	# Navigation - check echo to prevent rapid-fire when holding keys
 	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_index = (selected_index - 1 + _menu_options.size()) % _menu_options.size()

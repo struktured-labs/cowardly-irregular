@@ -54,13 +54,16 @@ var max_history_size: int = 10
 ## Corruption effects
 var corruption_effects: Array[String] = []
 
+var playtime_paused: bool = false
+
 
 func _ready() -> void:
 	_ensure_save_directory()
 
 
 func _process(delta: float) -> void:
-	playtime_seconds += delta
+	if not playtime_paused:
+		playtime_seconds += delta
 
 
 ## Save/Load system

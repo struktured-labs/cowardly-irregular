@@ -34,6 +34,9 @@ func _process(delta: float) -> void:
 	if _state == State.BETWEEN_BATTLES:
 		_between_battle_timer -= delta
 		if _between_battle_timer <= 0:
+			if _party.is_empty() or _party.all(func(m): return m is Combatant and not m.is_alive):
+				stop_grind("No party available")
+				return
 			_evaluate_and_apply_rules()
 			_state = State.PRE_BATTLE
 			_request_next_battle()

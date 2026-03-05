@@ -367,10 +367,14 @@ func can_use_item(user: Combatant, item_id: String, target: Combatant) -> bool:
 	match target_type:
 		TargetType.SINGLE_ALLY, TargetType.ALL_ALLIES, TargetType.SELF:
 			# Check if target is an ally
+			if not "player_party" in BattleManager:
+				return false
 			if not BattleManager.player_party.has(target):
 				return false
 		TargetType.SINGLE_ENEMY, TargetType.ALL_ENEMIES:
 			# Check if target is an enemy
+			if not "enemy_party" in BattleManager:
+				return false
 			if not BattleManager.enemy_party.has(target):
 				return false
 

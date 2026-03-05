@@ -1560,3 +1560,22 @@ func _on_grind_complete(reason: String) -> void:
 		_return_to_exploration()
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
+
+
+func _exit_tree() -> void:
+	"""Disconnect signals on cleanup to prevent dangling connections"""
+	if _exploration_scene and is_instance_valid(_exploration_scene):
+		if _exploration_scene.has_signal("battle_triggered") and _exploration_scene.is_connected("battle_triggered", _on_exploration_battle_triggered):
+			_exploration_scene.disconnect("battle_triggered", _on_exploration_battle_triggered)
+		if _exploration_scene.has_signal("area_transition") and _exploration_scene.is_connected("area_transition", _on_area_transition):
+			_exploration_scene.disconnect("area_transition", _on_area_transition)
+		_exploration_scene.queue_free()
+		_exploration_scene = null
+
+	if _title_screen and is_instance_valid(_title_screen):
+		if _title_screen.is_connected("new_game_selected", _on_title_new_game):
+			_title_screen.disconnect("new_game_selected", _on_title_new_game)
+		if _title_screen.is_connected("continue_selected", _on_title_continue):
+			_title_screen.disconnect("continue_selected", _on_title_continue)
+		if _title_screen.is_connected("settings_selected", _on_title_settings):
+			_title_screen.disconnect("settings_selected", _on_title_settings)

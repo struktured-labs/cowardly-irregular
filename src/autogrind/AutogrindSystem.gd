@@ -557,8 +557,6 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 		get_csi(current_region_id) if not current_region_id.is_empty() else 0.0
 	])
 
-	_process_grind_loop()
-
 
 func stop_autogrind(reason: String = "Manual stop") -> void:
 	"""Stop autogrind and return results"""
@@ -595,26 +593,6 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 		results["yield_multiplier"] * 100.0, _automation_affinity, stats["exp_per_min"]
 	])
 
-
-func _process_grind_loop() -> void:
-	"""Main autogrind loop - runs battles automatically"""
-	while is_grinding:
-		# Check interrupt conditions before battle
-		var interrupt_reason = _check_interrupt_conditions()
-		if interrupt_reason != "":
-			interrupt_triggered.emit(interrupt_reason)
-			stop_autogrind(interrupt_reason)
-			return
-
-		# Check for meta-boss spawn
-		if meta_bosses_enabled and randf() < meta_boss_spawn_chance:
-			_spawn_meta_boss()
-
-		# Start automated battle
-		_run_automated_battle()
-
-		# Wait for battle to complete (in real implementation, this would be async)
-		await get_tree().create_timer(0.1).timeout
 
 
 func _run_automated_battle() -> void:

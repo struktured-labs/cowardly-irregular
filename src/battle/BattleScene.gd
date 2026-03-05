@@ -263,13 +263,6 @@ func _exit_tree() -> void:
 	_cleanup_popup()
 
 
-func _create_autobattle_toggle() -> void:
-	"""Setup autobattle indicators - shown inline in party status panel"""
-	# Removed overlapping UI - autobattle indicators now shown next to character names
-	# The "Auto" command in battle menu enables autobattle for individual characters
-	pass
-
-
 func _create_battle_background() -> void:
 	"""Create the dynamic battle background based on terrain"""
 	_battle_background = BattleBackgroundClass.new()

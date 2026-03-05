@@ -364,6 +364,8 @@ func _generate_monster_sound(profile: Dictionary, transition_type: TransitionTyp
 		data[i] = int(clamp((sample * 0.4 + 0.5) * 255, 0, 255))
 
 	audio.data = data
+	if _sound_cache.size() >= 50:
+		_sound_cache.clear()
 	_sound_cache[cache_key] = audio
 	return audio
 

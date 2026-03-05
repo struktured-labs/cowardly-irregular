@@ -1029,6 +1029,7 @@ func _execute_next_action() -> void:
 			return  # Advance handles its own continuation
 		_:
 			push_warning("BattleManager: Unknown action type '%s'" % action.get("type", ""))
+			return
 
 	# Log player action for adaptive AI pattern detection
 	_log_player_action(combatant, action)
@@ -1391,7 +1392,7 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 	var base_crit = 0.05
 
 	# Speed adds to crit chance (each 10 speed = +1% crit)
-	var speed_bonus = attacker.speed * 0.001
+	var speed_bonus = attacker.speed * 0.01
 
 	# Check for crit-boosting passives
 	var passive_bonus = 0.0
@@ -1424,8 +1425,10 @@ func _apply_market_sense(combatant: Combatant, damage: int) -> int:
 		return damage
 	# Stable: +5%, Shifting: +15%, Unstable: +25%, Fractured: +40%
 	var band_bonuses = [0.05, 0.15, 0.25, 0.40]
-	var bonus = band_bonuses[volatility.global_band]
-	return int(damage * (1.0 + bonus))
+	if volatility.global_band >= 0 and volatility.global_band < band_bonuses.size():
+		var bonus = band_bonuses[volatility.global_band]
+		return int(damage * (1.0 + bonus))
+	return damage
 
 
 func _nudge_macro_volatility(amount: float) -> void:
@@ -1811,28 +1814,8 @@ func _get_current_counter_strategy() -> String:
 func _get_counter_action(combatant: Combatant, strategy: String, allies: Array, enemies: Array, abilities: Array) -> Dictionary:
 	"""Generate a counter action based on learned strategy"""
 	match strategy:
-		"fire_resist":
-			# Use fire resistance buff if available
-			var resist_abilities = abilities.filter(func(a): return "resist" in a.get("id", "") or "shield" in a.get("id", ""))
-			if resist_abilities.size() > 0:
-				return {
-					"type": "ability",
-					"combatant": combatant,
-					"ability_id": resist_abilities[0]["id"],
-					"targets": [combatant],
-					"speed": _compute_action_speed(combatant, "ability", resist_abilities[0])
-				}
-		"ice_resist":
-			var resist_abilities = abilities.filter(func(a): return "resist" in a.get("id", "") or "shield" in a.get("id", ""))
-			if resist_abilities.size() > 0:
-				return {
-					"type": "ability",
-					"combatant": combatant,
-					"ability_id": resist_abilities[0]["id"],
-					"targets": [combatant],
-					"speed": _compute_action_speed(combatant, "ability", resist_abilities[0])
-				}
-		"lightning_resist":
+		"fire_resist", "ice_resist", "lightning_resist":
+			# Use fire/ice/lightning resistance buff if available
 			var resist_abilities = abilities.filter(func(a): return "resist" in a.get("id", "") or "shield" in a.get("id", ""))
 			if resist_abilities.size() > 0:
 				return {

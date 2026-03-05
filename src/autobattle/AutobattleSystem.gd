@@ -156,17 +156,13 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	# Evaluate rules in order (first match wins)
 	var rule_idx = 0
 	for rule in script["rules"]:
-		var enabled = rule.get("enabled", true)
-		print("[AUTOBATTLE DEBUG] %s rule %d: enabled=%s" % [character_id, rule_idx, enabled])
 		if _evaluate_grid_rule(combatant, rule):
 			var actions = _rule_to_actions(combatant, rule)
-			print("[AUTOBATTLE DEBUG] %s matched rule %d, actions: %s" % [character_id, rule_idx, actions])
 			script_executed.emit(combatant, rule, actions)
 			return actions
 		rule_idx += 1
 
 	# No rule matched, use default
-	print("[AUTOBATTLE DEBUG] %s no rule matched, using default" % character_id)
 	return [_get_default_action(combatant)]
 
 
@@ -922,8 +918,8 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 			return true
 
 		ConditionType.CUSTOM:
-			# TODO: Implement custom expression parsing
-			return true
+			push_warning("AutobattleSystem: CUSTOM conditions not yet implemented")
+			return false
 
 	return false
 
@@ -971,7 +967,7 @@ func _rule_to_action(combatant: Combatant, rule: Dictionary) -> Dictionary:
 			pass  # Default action needs no extra data
 
 		ActionType.BRAVE:
-			# TODO: Implement brave action queuing
+			push_warning("AutobattleSystem: BRAVE action queuing not yet implemented")
 			var actions = rule.get("brave_actions", [])
 			action["actions"] = actions
 
