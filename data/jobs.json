@@ -37,7 +37,7 @@
 		"type": 0,
 		"description": "A devoted healer who channels restorative light. Low HP but high magic, keeps the party alive through faith and prayer.",
 		"stat_modifiers": {
-			"max_hp": 80,
+			"max_hp": 95,
 			"max_mp": 70,
 			"attack": 5,
 			"defense": 8,
@@ -70,7 +70,7 @@
 		"type": 0,
 		"description": "A scholar of the arcane arts who wields destructive elemental magic. Low HP but devastating magical damage.",
 		"stat_modifiers": {
-			"max_hp": 70,
+			"max_hp": 85,
 			"max_mp": 80,
 			"attack": 5,
 			"defense": 6,
@@ -280,9 +280,9 @@
 			"max_hp": 140,
 			"max_mp": 35,
 			"attack": 13,
-			"defense": 18,
+			"defense": 15,
 			"magic": 6,
-			"speed": 6
+			"speed": 8
 		},
 		"abilities": [
 			"default",
@@ -324,7 +324,7 @@
 			"attack": 14,
 			"defense": 8,
 			"magic": 8,
-			"speed": 20
+			"speed": 18
 		},
 		"abilities": [
 			"smoke_bomb",
@@ -362,7 +362,7 @@
 		"type": 1,
 		"description": "Calls forth powerful beings. Can recursively summon other summoners for exponential power.",
 		"stat_modifiers": {
-			"max_hp": 80,
+			"max_hp": 90,
 			"max_mp": 100,
 			"attack": 6,
 			"defense": 7,

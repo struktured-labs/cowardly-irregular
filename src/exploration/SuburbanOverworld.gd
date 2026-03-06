@@ -35,6 +35,12 @@ var npcs: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
+## Rain effect state
+var _rain_particles: CPUParticles2D
+var _rain_timer: float = 0.0
+var _rain_interval: float = 0.0
+var _rain_active: bool = false
+
 
 func _ready() -> void:
 	_setup_scene()
@@ -49,7 +55,43 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music("overworld_suburban")
 
+	_setup_effects()
 	exploration_ready.emit()
+
+
+func _setup_effects() -> void:
+	_rain_particles = CPUParticles2D.new()
+	_rain_particles.name = "RainEffect"
+	_rain_particles.z_index = 5
+	_rain_particles.emitting = false
+	_rain_particles.amount = 120
+	_rain_particles.lifetime = 1.2
+	_rain_particles.one_shot = false
+	_rain_particles.explosiveness = 0.0
+	_rain_particles.randomness = 0.2
+	_rain_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_rain_particles.emission_rect_extents = Vector2(MAP_WIDTH * TILE_SIZE / 2.0, 8.0)
+	_rain_particles.position = Vector2(MAP_WIDTH * TILE_SIZE / 2.0, -20.0)
+	_rain_particles.gravity = Vector2(20.0, 600.0)
+	_rain_particles.initial_velocity_min = 5.0
+	_rain_particles.initial_velocity_max = 12.0
+	_rain_particles.scale_amount_min = 0.5
+	_rain_particles.scale_amount_max = 1.0
+	_rain_particles.color = Color(0.75, 0.85, 1.0, 0.55)
+	add_child(_rain_particles)
+	_rain_interval = randf_range(30.0, 60.0)
+
+
+func _process(delta: float) -> void:
+	_rain_timer += delta
+	if _rain_timer >= _rain_interval:
+		_rain_timer = 0.0
+		_rain_active = !_rain_active
+		_rain_particles.emitting = _rain_active
+		if _rain_active:
+			_rain_interval = randf_range(20.0, 40.0)
+		else:
+			_rain_interval = randf_range(30.0, 60.0)
 
 
 func _setup_scene() -> void:

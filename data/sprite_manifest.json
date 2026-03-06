@@ -3,10 +3,10 @@
 	"sheets": {
 		"fighter": {
 			"path": "res://assets/sprites/jobs/fighter",
-			"frame_width": 80,
-			"frame_height": 100,
+			"frame_width": 256,
+			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		},
 		"mage": {
 			"path": "res://assets/sprites/jobs/mage",

@@ -14,6 +14,7 @@ var _elapsed: float = 0.0
 var _start_pos: Vector2
 var _velocity: Vector2
 var _flash_tween: Tween = null
+var _polish_tween: Tween = null
 
 
 func _ready() -> void:
@@ -86,6 +87,15 @@ func _create_label() -> void:
 	if value >= 50 or is_critical:
 		_flash_effect()
 
+	# Polish animations based on type
+	if is_critical:
+		_crit_wobble_effect()
+	elif is_heal:
+		_heal_bounce_effect()
+
+	if not is_heal and not is_miss and value > 50:
+		_high_damage_pulse_effect()
+
 
 func _flash_effect() -> void:
 	"""Flash the number for emphasis"""
@@ -96,17 +106,57 @@ func _flash_effect() -> void:
 	_flash_tween.tween_property(_label, "scale", Vector2(1.0, 1.0), 0.1)
 
 
+func _crit_wobble_effect() -> void:
+	"""Crit numbers get a rotation wobble of ±10 degrees"""
+	if _polish_tween and _polish_tween.is_valid():
+		_polish_tween.kill()
+	_polish_tween = create_tween()
+	var wobble_deg = deg_to_rad(10.0)
+	# Quick wobble: 0 -> +10 -> -10 -> +6 -> -6 -> 0 over lifetime
+	_polish_tween.tween_property(_label, "rotation", wobble_deg, 0.08)
+	_polish_tween.tween_property(_label, "rotation", -wobble_deg, 0.12)
+	_polish_tween.tween_property(_label, "rotation", deg_to_rad(6.0), 0.1)
+	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-6.0), 0.1)
+	_polish_tween.tween_property(_label, "rotation", 0.0, 0.12)
+
+
+func _heal_bounce_effect() -> void:
+	"""Heal numbers bounce upward with EASE_OUT for a satisfying arc"""
+	# Override velocity to move straight up faster with a bounce feel
+	_velocity = Vector2(randf_range(-15.0, 15.0), -90.0)
+	# Scale bounce: pop up then settle
+	if _polish_tween and _polish_tween.is_valid():
+		_polish_tween.kill()
+	_polish_tween = create_tween()
+	_polish_tween.tween_property(_label, "scale", Vector2(1.25, 1.25), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_polish_tween.tween_property(_label, "scale", Vector2(1.0, 1.0), 0.18).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+
+
+func _high_damage_pulse_effect() -> void:
+	"""High damage (>50): scale pulse 1.0 -> 1.2 -> 1.0 over lifetime"""
+	if _polish_tween and _polish_tween.is_valid():
+		_polish_tween.kill()
+	_polish_tween = create_tween()
+	_polish_tween.tween_property(_label, "scale", Vector2(1.2, 1.2), _lifetime * 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_polish_tween.tween_property(_label, "scale", Vector2(1.0, 1.0), _lifetime * 0.65).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+
 func _exit_tree() -> void:
 	if _flash_tween and _flash_tween.is_valid():
 		_flash_tween.kill()
 	_flash_tween = null
+	if _polish_tween and _polish_tween.is_valid():
+		_polish_tween.kill()
+	_polish_tween = null
 
 
 func _process(delta: float) -> void:
 	_elapsed += delta
 
 	# Float upward with deceleration
-	_velocity.y += 80 * delta  # Gravity
+	# Heals use lighter gravity for a floatier bounce feel
+	var gravity = 45.0 if is_heal else 80.0
+	_velocity.y += gravity * delta
 	position += _velocity * delta
 
 	# Fade out near end

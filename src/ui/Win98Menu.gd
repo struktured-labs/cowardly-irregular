@@ -104,6 +104,7 @@ var _submenu_memory: Dictionary = {}  # {menu_id: submenu_item_id} for command m
 var _l_button_pressed: bool = false  # Track if L button is held
 var _l_button_press_time: float = 0.0  # When L was pressed
 const L_HOLD_CONFIRM_TIME: float = 0.15  # Seconds to hold L for confirm (reduced for snappier response)
+var _tooltip_label: Label = null  # Ability tooltip shown below menu
 
 ## Signals for target selection with position
 signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
@@ -151,6 +152,7 @@ func _exit_tree() -> void:
 	if _cursor_blink_timer and is_instance_valid(_cursor_blink_timer):
 		_cursor_blink_timer.stop()
 	_cleanup_target_highlight()
+	_cleanup_tooltip()
 	if submenu and is_instance_valid(submenu):
 		submenu.queue_free()
 		submenu = null
@@ -294,6 +296,39 @@ func _build_target_highlight_box(target_pos: Vector2) -> void:
 	pointer.add_theme_color_override("font_color", border_color)
 	pointer.add_theme_font_size_override("font_size", 16)
 	_target_highlight.add_child(pointer)
+
+
+func _update_tooltip() -> void:
+	"""Show or hide ability tooltip below the menu for the selected item"""
+	var tooltip_text = ""
+	if selected_index >= 0 and selected_index < menu_items.size():
+		tooltip_text = menu_items[selected_index].get("tooltip", "")
+
+	if tooltip_text == "":
+		if _tooltip_label and is_instance_valid(_tooltip_label):
+			_tooltip_label.visible = false
+		return
+
+	if not _tooltip_label or not is_instance_valid(_tooltip_label):
+		_tooltip_label = Label.new()
+		_tooltip_label.name = "TooltipLabel"
+		_tooltip_label.add_theme_font_size_override("font_size", 9)
+		_tooltip_label.add_theme_color_override("font_color", style.get("text", Color.WHITE).lightened(0.2))
+		_tooltip_label.z_index = z_index + 2
+		_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_tooltip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		call_deferred("_add_tooltip_to_parent")
+
+	_tooltip_label.text = tooltip_text
+	_tooltip_label.visible = true
+	_tooltip_label.position = Vector2(position.x, position.y + size.y + 4)
+	_tooltip_label.size = Vector2(maxi(int(size.x), 160), 36)
+
+
+func _add_tooltip_to_parent() -> void:
+	"""Add tooltip as sibling for correct rendering"""
+	if _tooltip_label and is_instance_valid(_tooltip_label) and get_parent():
+		get_parent().add_child(_tooltip_label)
 
 
 func _fade_target_highlight(on_complete: Callable = Callable()) -> void:
@@ -677,6 +712,9 @@ func _update_selection() -> void:
 	# Update target highlight to show selected enemy/ally
 	_update_target_highlight()
 
+	# Update tooltip for ability items
+	_update_tooltip()
+
 
 func _on_item_pressed(index: int) -> void:
 	"""Handle menu item selection (mouse click)"""
@@ -891,6 +929,13 @@ func _cleanup_target_highlight() -> void:
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.queue_free()
 		_target_highlight = null
+
+
+func _cleanup_tooltip() -> void:
+	"""Remove tooltip label from scene"""
+	if _tooltip_label and is_instance_valid(_tooltip_label):
+		_tooltip_label.queue_free()
+		_tooltip_label = null
 
 
 ## Advance Mode Functions

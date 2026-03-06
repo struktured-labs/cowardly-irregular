@@ -63,6 +63,9 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 func _ready() -> void:
 	# Defer UI build to ensure size is set
 	call_deferred("_build_ui")
+	modulate.a = 0.0
+	var tween = create_tween()
+	tween.tween_property(self, "modulate:a", 1.0, 0.15).set_ease(Tween.EASE_OUT)
 
 
 func setup(game_party: Array) -> void:
@@ -161,7 +164,7 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	panel.add_child(title)
 
 	# Party member cards
-	var card_height = 80
+	var card_height = 100
 	var y_offset = 28
 
 	for i in range(party.size()):
@@ -226,6 +229,12 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	mp_bar.position = Vector2(58, 52)
 	card.add_child(mp_bar)
 
+	# EXP progress indicator
+	var exp_row = _create_exp_indicator(member)
+	exp_row.name = "EXPRow"
+	exp_row.position = Vector2(58, 68)
+	card.add_child(exp_row)
+
 	# Dead indicator
 	if not member.is_alive:
 		var dead_overlay = ColorRect.new()
@@ -280,6 +289,39 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	value.add_theme_font_size_override("font_size", 10)
 	value.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(value)
+
+	return container
+
+
+func _create_exp_indicator(member: Combatant) -> Control:
+	"""Create a compact level + EXP pip indicator"""
+	var container = Control.new()
+	container.size = Vector2(160, 14)
+
+	var job_level = member.job_level if "job_level" in member else 1
+	var current_exp = member.experience if "experience" in member else 0
+	var next_exp = member.exp_to_next_level if "exp_to_next_level" in member else 100
+
+	var lbl = Label.new()
+	lbl.text = "Lv%d" % job_level
+	lbl.position = Vector2(0, 0)
+	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 1.0))
+	container.add_child(lbl)
+
+	var pip_count = 5
+	var exp_pct = float(current_exp) / float(next_exp) if next_exp > 0 else 0.0
+	var filled_pips = int(exp_pct * pip_count)
+	var pip_str = ""
+	for i in range(pip_count):
+		pip_str += "■" if i < filled_pips else "□"
+
+	var pips = Label.new()
+	pips.text = pip_str
+	pips.position = Vector2(30, 0)
+	pips.add_theme_font_size_override("font_size", 10)
+	pips.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+	container.add_child(pips)
 
 	return container
 
@@ -692,10 +734,23 @@ func _on_passive_changed(_passive_id: String, _equipped: bool) -> void:
 
 
 func _hide_main_ui(except: Control) -> void:
-	"""Hide main menu UI while submenu is open"""
+	"""Hide main menu UI while submenu is open, then slide-in the submenu"""
 	for child in get_children():
 		if child != except:
 			child.visible = false
+	_play_submenu_slide_in(except)
+
+
+func _play_submenu_slide_in(submenu_ctrl: Control) -> void:
+	"""Slide the submenu in from a slight right offset"""
+	var start_x = submenu_ctrl.position.x + 30.0
+	var target_x = submenu_ctrl.position.x
+	submenu_ctrl.position.x = start_x
+	submenu_ctrl.modulate.a = 0.0
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(submenu_ctrl, "position:x", target_x, 0.15).set_ease(Tween.EASE_OUT)
+	tween.tween_property(submenu_ctrl, "modulate:a", 1.0, 0.12)
 
 
 func _on_submenu_closed() -> void:

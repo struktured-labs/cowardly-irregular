@@ -36,6 +36,9 @@ var npcs: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
+## Smoke effect nodes
+var _smoke_emitters: Array = []
+
 
 func _ready() -> void:
 	_setup_scene()
@@ -50,7 +53,48 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music("overworld_industrial")
 
+	_setup_effects()
 	exploration_ready.emit()
+
+
+func _setup_effects() -> void:
+	var smokestack_positions: Array[Vector2] = [
+		Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 13 * TILE_SIZE),
+		Vector2(13 * TILE_SIZE + TILE_SIZE / 2, 13 * TILE_SIZE),
+		Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE),
+		Vector2(13 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE),
+		Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE),
+		Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE),
+		Vector2(31 * TILE_SIZE + TILE_SIZE / 2, 27 * TILE_SIZE),
+	]
+	for pos in smokestack_positions:
+		var emitter = CPUParticles2D.new()
+		emitter.name = "SmokeEmitter"
+		emitter.z_index = 6
+		emitter.emitting = true
+		emitter.amount = 12
+		emitter.lifetime = 2.5
+		emitter.one_shot = false
+		emitter.explosiveness = 0.0
+		emitter.randomness = 0.5
+		emitter.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+		emitter.emission_sphere_radius = 4.0
+		emitter.gravity = Vector2(0.0, 0.0)
+		emitter.initial_velocity_min = 8.0
+		emitter.initial_velocity_max = 20.0
+		emitter.direction = Vector2(0.0, -1.0)
+		emitter.spread = 18.0
+		emitter.scale_amount_min = 2.0
+		emitter.scale_amount_max = 5.0
+		emitter.scale_amount_curve = null
+		emitter.color = Color(0.50, 0.48, 0.46, 0.60)
+		var grad = Gradient.new()
+		grad.add_point(0.0, Color(0.55, 0.52, 0.50, 0.65))
+		grad.add_point(1.0, Color(0.40, 0.38, 0.36, 0.0))
+		emitter.color_ramp = grad
+		emitter.position = pos
+		add_child(emitter)
+		_smoke_emitters.append(emitter)
 
 
 func _setup_scene() -> void:

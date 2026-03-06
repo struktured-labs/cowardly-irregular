@@ -44,11 +44,20 @@ const SOUNDS = {
 	"attack_miss": {"freq": 150, "duration": 0.15, "type": "swoosh"},
 	"critical_hit": {"freq": 250, "duration": 0.2, "type": "impact"},
 	"damage_taken": {"freq": 180, "duration": 0.1, "type": "thud"},
+	"enemy_death": {"freq": 180, "duration": 0.35, "type": "dying_fall"},
 	"heal": {"freq": 800, "duration": 0.3, "type": "sparkle"},
 	"buff": {"freq": 600, "duration": 0.25, "type": "ascending"},
 	"debuff": {"freq": 400, "duration": 0.25, "type": "descending"},
 	"victory": {"freq": 523, "duration": 0.8, "type": "fanfare"},
 	"defeat": {"freq": 200, "duration": 1.0, "type": "sad"},
+	# Status effect sounds
+	"status_poison": {"freq": 220, "duration": 0.3, "type": "woozy"},
+	"status_sleep": {"freq": 300, "duration": 0.4, "type": "woozy"},
+	"status_confuse": {"freq": 500, "duration": 0.3, "type": "woozy"},
+	"status_paralyze": {"freq": 800, "duration": 0.25, "type": "crackle_lock"},
+	# Round transition sounds
+	"phase_select": {"freq": 660, "duration": 0.07, "type": "blip"},
+	"phase_execute": {"freq": 440, "duration": 0.12, "type": "low_pulse"},
 
 	# Ability Types (base sounds, can be modified per ability)
 	"ability_fire": {"freq": 300, "duration": 0.4, "type": "fire"},
@@ -188,6 +197,16 @@ func register_ability_sound(ability_id: String, sound_key: String) -> void:
 	_ability_sounds[ability_id] = sound_key
 
 
+func play_status(status_name: String) -> void:
+	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
+	var key = "status_" + status_name.to_lower()
+	if SOUNDS.has(key):
+		_play_sound(_battle_player, SOUNDS[key])
+	else:
+		# Fallback: generic descending blip for unknown statuses
+		_play_sound(_battle_player, {"freq": 350, "duration": 0.2, "type": "descending"})
+
+
 ## Sound Generation
 
 func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
@@ -262,6 +281,12 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 			_generate_slash(playback, samples, sample_rate, duration)
 		"heal":
 			_generate_heal(playback, samples, freq, sample_rate, duration)
+		"dying_fall":
+			_generate_dying_fall(playback, samples, freq, sample_rate, duration)
+		"woozy":
+			_generate_woozy(playback, samples, freq, sample_rate, duration)
+		"crackle_lock":
+			_generate_crackle_lock(playback, samples, freq, sample_rate, duration)
 		_:
 			_generate_blip(playback, samples, freq, sample_rate, duration)
 
@@ -547,6 +572,52 @@ func _generate_heal(playback: AudioStreamGeneratorPlayback, samples: int, freq: 
 		var tone = sin(t * f * TAU) * 0.4
 		var sparkle = sin(t * f * 2 * TAU) * 0.2 + sin(t * f * 3 * TAU) * 0.1
 		var sample = (tone + sparkle) * envelope
+		playback.push_frame(Vector2(sample, sample) * 0.3)
+
+
+func _generate_dying_fall(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Enemy death: pitch rapidly falls and fades — classic SNES monster defeat chirp"""
+	for i in range(samples):
+		var t = float(i) / rate
+		# Pitch drops fast at the start, then levels off at a low rumble
+		var f = freq * pow(0.15, t / dur)
+		f = max(f, 40.0)
+		# Sharp attack, then decays into silence
+		var envelope = pow(1.0 - (t / dur), 1.5)
+		# Square-ish wave for retro crunch
+		var square = sign(sin(t * f * TAU)) * 0.5
+		# Add some noise at the moment of impact
+		var noise = randf_range(-0.3, 0.3) * max(0.0, 1.0 - t * 6.0)
+		var sample = (square + noise) * envelope
+		playback.push_frame(Vector2(sample, sample) * 0.35)
+
+
+func _generate_woozy(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Status ailment (poison/sleep/confuse): warbling pitch wobble, murky tone"""
+	for i in range(samples):
+		var t = float(i) / rate
+		# Slow wobble — detune effect
+		var wobble = sin(t * 4.0 * TAU) * 40.0
+		var f = freq + wobble
+		# Bell-curve envelope — swell and fade
+		var envelope = sin(t / dur * PI)
+		# Slightly detuned second harmonic for queasy feel
+		var tone = sin(t * f * TAU) * 0.45 + sin(t * f * 1.04 * TAU) * 0.25
+		var sample = tone * envelope
+		playback.push_frame(Vector2(sample, sample) * 0.28)
+
+
+func _generate_crackle_lock(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Paralyze: electric crackle that stutters and locks — high-frequency snap"""
+	for i in range(samples):
+		var t = float(i) / rate
+		var envelope = pow(1.0 - (t / dur), 0.8)
+		# Stutter pattern: brief silence windows simulate the "lock" of paralysis
+		var stutter = 1.0 if fmod(t * 18.0, 1.0) > 0.35 else 0.0
+		# High buzz with random crackle
+		var buzz = sin(t * freq * TAU) * 0.35
+		var crackle = randf_range(-1.0, 1.0) * 0.5 if randf() > 0.55 else 0.0
+		var sample = (buzz + crackle) * envelope * stutter
 		playback.push_frame(Vector2(sample, sample) * 0.3)
 
 

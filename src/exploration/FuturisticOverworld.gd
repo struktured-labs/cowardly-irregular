@@ -37,6 +37,13 @@ var npcs: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
+## Glitch effect state
+var _glitch_overlay: ColorRect
+var _glitch_timer: float = 0.0
+var _glitch_interval: float = 0.0
+var _glitch_flash_time: float = 0.0
+var _glitch_phase: int = 0
+
 
 func _ready() -> void:
 	_setup_scene()
@@ -51,7 +58,56 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music("overworld_futuristic")
 
+	_setup_effects()
 	exploration_ready.emit()
+
+
+func _setup_effects() -> void:
+	var canvas = CanvasLayer.new()
+	canvas.name = "GlitchCanvas"
+	canvas.layer = 10
+	add_child(canvas)
+
+	_glitch_overlay = ColorRect.new()
+	_glitch_overlay.name = "GlitchOverlay"
+	_glitch_overlay.color = Color(0.0, 0.8, 1.0, 0.0)
+	_glitch_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_glitch_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(_glitch_overlay)
+
+	_glitch_interval = randf_range(15.0, 20.0)
+
+
+func _process(delta: float) -> void:
+	_glitch_timer += delta
+
+	if _glitch_phase == 0 and _glitch_timer >= _glitch_interval:
+		_glitch_timer = 0.0
+		_glitch_phase = 1
+		_glitch_flash_time = 0.0
+		_glitch_overlay.color = Color(0.0, 0.9, 1.0, 0.18)
+
+	elif _glitch_phase == 1:
+		_glitch_flash_time += delta
+		if _glitch_flash_time >= 0.05:
+			_glitch_overlay.color = Color(0.0, 0.0, 0.0, 0.25)
+			_glitch_phase = 2
+			_glitch_flash_time = 0.0
+
+	elif _glitch_phase == 2:
+		_glitch_flash_time += delta
+		if _glitch_flash_time >= 0.04:
+			_glitch_overlay.color = Color(0.0, 0.9, 1.0, 0.10)
+			_glitch_phase = 3
+			_glitch_flash_time = 0.0
+
+	elif _glitch_phase == 3:
+		_glitch_flash_time += delta
+		if _glitch_flash_time >= 0.06:
+			_glitch_overlay.color = Color(0.0, 0.8, 1.0, 0.0)
+			_glitch_phase = 0
+			_glitch_timer = 0.0
+			_glitch_interval = randf_range(15.0, 20.0)
 
 
 func _setup_scene() -> void:

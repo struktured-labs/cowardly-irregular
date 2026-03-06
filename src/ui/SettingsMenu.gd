@@ -76,6 +76,7 @@ func _ready() -> void:
 			if text_speed_index < 0:
 				text_speed_index = 1
 	_build_ui()
+	_play_open_animation()
 
 
 func _find_closest_preset(value: float) -> int:
@@ -656,6 +657,10 @@ func _input(event: InputEvent) -> void:
 	"""Handle settings input"""
 	if not visible:
 		return
+	var confirm_dialog = get_node_or_null("QuitConfirmDialog")
+	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
+		confirm_dialog.get_meta("_input_func").call(event)
+		return
 	if _controls_submenu_open:
 		return
 
@@ -843,8 +848,7 @@ func _activate_setting() -> void:
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
-			quit_to_title.emit()
-			queue_free()
+			_show_quit_confirmation()
 	elif item["type"] == "toggle":
 		# A button also toggles for convenience
 		_adjust_setting(1)
@@ -884,9 +888,174 @@ func _on_controls_closed() -> void:
 	_controls_submenu_open = false
 
 
+func _play_open_animation() -> void:
+	"""Fade in the settings menu"""
+	modulate.a = 0.0
+	var tween = create_tween()
+	tween.tween_property(self, "modulate:a", 1.0, 0.15).set_ease(Tween.EASE_OUT)
+
+
 func _close_settings() -> void:
 	"""Close settings menu"""
 	if SoundManager:
 		SoundManager.play_ui("menu_close")
 	closed.emit()
 	queue_free()
+
+
+func _show_quit_confirmation() -> void:
+	"""Show a confirmation dialog before quitting to title"""
+	_controls_submenu_open = true
+	var confirm = Control.new()
+	confirm.name = "QuitConfirmDialog"
+	confirm.set_anchors_preset(Control.PRESET_FULL_RECT)
+	confirm.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(confirm)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0.0, 0.0, 0.0, 0.6)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	confirm.add_child(dim)
+
+	var dialog_w = 280
+	var dialog_h = 120
+	var vp = get_viewport().get_visible_rect().size
+	var dialog = Control.new()
+	dialog.size = Vector2(dialog_w, dialog_h)
+	dialog.position = Vector2((vp.x - dialog_w) / 2.0, (vp.y - dialog_h) / 2.0)
+	confirm.add_child(dialog)
+
+	var dialog_bg = ColorRect.new()
+	dialog_bg.color = PANEL_COLOR
+	dialog_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dialog.add_child(dialog_bg)
+	RetroPanel.add_border(dialog, dialog.size, Color(1.0, 0.5, 0.5), Color(0.4, 0.1, 0.1))
+
+	var msg = Label.new()
+	msg.text = "Quit to Title Screen?"
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.position = Vector2(0, 16)
+	msg.size = Vector2(dialog_w, 20)
+	msg.add_theme_font_size_override("font_size", 14)
+	msg.add_theme_color_override("font_color", TEXT_COLOR)
+	dialog.add_child(msg)
+
+	var sub = Label.new()
+	sub.text = "Unsaved progress will be lost."
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.position = Vector2(0, 36)
+	sub.size = Vector2(dialog_w, 16)
+	sub.add_theme_font_size_override("font_size", 10)
+	sub.add_theme_color_override("font_color", DISABLED_COLOR)
+	dialog.add_child(sub)
+
+	var yes_btn = _create_confirm_button("Yes, Quit", Color(1.0, 0.5, 0.5))
+	yes_btn.position = Vector2(32, 72)
+	yes_btn.size = Vector2(96, 28)
+	dialog.add_child(yes_btn)
+
+	var no_btn = _create_confirm_button("No, Stay", Color(0.6, 0.85, 1.0))
+	no_btn.position = Vector2(152, 72)
+	no_btn.size = Vector2(96, 28)
+	dialog.add_child(no_btn)
+
+	var confirm_selected: int = 1
+
+	var yes_hl = yes_btn.get_node_or_null("Highlight")
+	var no_hl = no_btn.get_node_or_null("Highlight")
+	if no_hl:
+		no_hl.visible = true
+	if yes_hl:
+		yes_hl.visible = false
+
+	var close_dialog = func():
+		_controls_submenu_open = false
+		confirm.queue_free()
+
+	var do_quit = func():
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
+		quit_to_title.emit()
+		queue_free()
+
+	MenuMouseHelper.make_clickable(yes_btn, 0, 96, 28,
+		func(_i): do_quit.call(), func(_i): pass)
+	MenuMouseHelper.make_clickable(no_btn, 1, 96, 28,
+		func(_i): close_dialog.call(), func(_i): pass)
+
+	confirm.set_meta("confirm_selected", confirm_selected)
+	confirm.set_meta("do_quit", do_quit)
+	confirm.set_meta("close_dialog", close_dialog)
+	confirm.set_meta("yes_hl", yes_hl)
+	confirm.set_meta("no_hl", no_hl)
+
+	confirm.set_process_input(true)
+
+	var slide_from = dialog.position + Vector2(0, 20)
+	dialog.position = slide_from
+	dialog.modulate.a = 0.0
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(dialog, "position", dialog.position - Vector2(0, 20), 0.15).set_ease(Tween.EASE_OUT)
+	tween.tween_property(dialog, "modulate:a", 1.0, 0.12)
+
+	confirm.set_script(null)
+	confirm.connect("tree_exiting", func(): _controls_submenu_open = false)
+
+	confirm.set_meta("_input_func", func(event: InputEvent):
+		if not confirm.is_inside_tree():
+			return
+		var sel: int = confirm.get_meta("confirm_selected", 1)
+		var dq = confirm.get_meta("do_quit")
+		var cd = confirm.get_meta("close_dialog")
+		var yh = confirm.get_meta("yes_hl")
+		var nh = confirm.get_meta("no_hl")
+		var changed = false
+		if event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right"):
+			sel = 1 - sel
+			changed = true
+		elif event.is_action_pressed("ui_accept"):
+			if sel == 0:
+				dq.call()
+			else:
+				cd.call()
+			get_viewport().set_input_as_handled()
+			return
+		elif event.is_action_pressed("ui_cancel"):
+			cd.call()
+			get_viewport().set_input_as_handled()
+			return
+		if changed:
+			confirm.set_meta("confirm_selected", sel)
+			if yh:
+				yh.visible = (sel == 0)
+			if nh:
+				nh.visible = (sel == 1)
+			if SoundManager:
+				SoundManager.play_ui("menu_move")
+			get_viewport().set_input_as_handled()
+	)
+
+
+func _create_confirm_button(label_text: String, text_color: Color) -> Control:
+	"""Create a styled button for the confirmation dialog"""
+	var btn = Control.new()
+	btn.size = Vector2(96, 28)
+
+	var hl = ColorRect.new()
+	hl.name = "Highlight"
+	hl.color = SELECTED_COLOR
+	hl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hl.visible = false
+	btn.add_child(hl)
+
+	var lbl = Label.new()
+	lbl.text = label_text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.position = Vector2(0, 6)
+	lbl.size = Vector2(96, 20)
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", text_color)
+	btn.add_child(lbl)
+
+	return btn

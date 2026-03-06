@@ -22,6 +22,10 @@ enum EffectType {
 ## Active effects container
 var _effects_container: Node2D = null
 
+## Battle background reference for environmental tint reactions
+## Set by BattleScene after creating its background
+var battle_background: Node = null
+
 ## Texture cache for particle sprites (avoids regenerating identical images)
 ## Key: texture type string, Value: ImageTexture
 static var _texture_cache: Dictionary = {}
@@ -228,8 +232,21 @@ func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Calla
 
 ## Effect Animations
 
+func _tint_battle_background(tint_color: Color, duration: float = 0.3) -> void:
+	"""Briefly tint the battle background then restore it (environmental spell reaction)"""
+	if not battle_background or not is_instance_valid(battle_background):
+		return
+	var tween = create_tween()
+	# Snap to tint color then fade back to neutral over duration
+	tween.tween_property(battle_background, "modulate", tint_color, duration * 0.15).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(battle_background, "modulate", Color.WHITE, duration * 0.85).set_trans(Tween.TRANS_SINE)
+
+
 func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Fire spell - dramatic explosion with rising flames, scaled by power"""
+	# Environmental reaction: warm orange background tint
+	_tint_battle_background(Color(1.2, 0.85, 0.6, 1.0), 0.3)
+
 	var particles: Array[Sprite2D] = []
 	# Scale particle count by power (12 at min, 36 at max)
 	var particle_count = int(lerp(12, 36, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
@@ -382,6 +399,9 @@ static func _generate_fire_particle_texture() -> ImageTexture:
 
 func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Ice spell - crystalline shards forming"""
+	# Environmental reaction: cool blue-gray desaturation
+	_tint_battle_background(Color(0.75, 0.82, 0.95, 1.0), 0.3)
+
 	var particles: Array[Sprite2D] = []
 	var particle_count = 8
 
@@ -442,6 +462,9 @@ func _create_ice_particle() -> Sprite2D:
 
 func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Lightning spell - dramatic multi-bolt strike with bright flash, scaled by power"""
+	# Environmental reaction: snap-white flash for 0.05s
+	_tint_battle_background(Color(2.0, 2.0, 2.0, 1.0), 0.05)
+
 	# Bolt count scales with power (2 at min, 5 at max)
 	var bolt_count = int(lerp(2, 5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
 	var bolts: Array[Sprite2D] = []
@@ -573,6 +596,9 @@ func _create_lightning_bolt() -> Sprite2D:
 
 func _animate_holy(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Holy spell - radiant light beams"""
+	# Environmental reaction: warm golden brightening
+	_tint_battle_background(Color(1.4, 1.35, 1.1, 1.0), 0.7)
+
 	var particles: Array[Sprite2D] = []
 	var ray_count = 8
 
@@ -657,6 +683,9 @@ func _create_holy_glow() -> Sprite2D:
 
 func _animate_dark(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Dark spell - swirling shadows"""
+	# Environmental reaction: background dims to near-black briefly
+	_tint_battle_background(Color(0.4, 0.35, 0.5, 1.0), 0.6)
+
 	var particles: Array[Sprite2D] = []
 	var particle_count = 10
 

@@ -31,6 +31,11 @@ var transitions: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
+## Steam vent effect state
+var _steam_emitters: Array = []
+var _steam_timers: Array = []
+var _steam_intervals: Array = []
+
 
 func _ready() -> void:
 	_setup_scene()
@@ -44,7 +49,57 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music("overworld_steampunk")
 
+	_setup_effects()
 	exploration_ready.emit()
+
+
+func _setup_effects() -> void:
+	var vent_positions: Array[Vector2] = [
+		Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE),
+		Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE),
+		Vector2(48 * TILE_SIZE + TILE_SIZE / 2, 12 * TILE_SIZE),
+		Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE),
+		Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE),
+		Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE),
+	]
+	for i in range(vent_positions.size()):
+		var emitter = CPUParticles2D.new()
+		emitter.name = "SteamVent_%d" % i
+		emitter.z_index = 6
+		emitter.emitting = false
+		emitter.amount = 10
+		emitter.lifetime = 1.0
+		emitter.one_shot = true
+		emitter.explosiveness = 0.7
+		emitter.randomness = 0.4
+		emitter.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+		emitter.emission_sphere_radius = 3.0
+		emitter.gravity = Vector2(0.0, 0.0)
+		emitter.initial_velocity_min = 20.0
+		emitter.initial_velocity_max = 45.0
+		emitter.direction = Vector2(0.0, -1.0)
+		emitter.spread = 25.0
+		emitter.scale_amount_min = 1.5
+		emitter.scale_amount_max = 3.5
+		emitter.color = Color(0.92, 0.92, 0.95, 0.70)
+		var grad = Gradient.new()
+		grad.add_point(0.0, Color(0.95, 0.95, 1.0, 0.75))
+		grad.add_point(1.0, Color(0.85, 0.85, 0.90, 0.0))
+		emitter.color_ramp = grad
+		emitter.position = vent_positions[i]
+		add_child(emitter)
+		_steam_emitters.append(emitter)
+		_steam_timers.append(randf_range(0.0, 8.0))
+		_steam_intervals.append(randf_range(5.0, 12.0))
+
+
+func _process(delta: float) -> void:
+	for i in range(_steam_emitters.size()):
+		_steam_timers[i] += delta
+		if _steam_timers[i] >= _steam_intervals[i]:
+			_steam_timers[i] = 0.0
+			_steam_intervals[i] = randf_range(5.0, 12.0)
+			_steam_emitters[i].restart()
 
 
 func _setup_scene() -> void:

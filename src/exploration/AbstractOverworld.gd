@@ -47,6 +47,14 @@ var npcs: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
+## Reality distortion effect state
+var _bg_rect: ColorRect
+var _hue_time: float = 0.0
+var _flicker_timer: float = 0.0
+var _flicker_interval: float = 0.0
+var _flicker_active: bool = false
+var _flicker_elapsed: float = 0.0
+
 
 func _ready() -> void:
 	_setup_scene()
@@ -61,7 +69,44 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music("overworld_abstract")
 
+	_setup_effects()
 	exploration_ready.emit()
+
+
+func _setup_effects() -> void:
+	_bg_rect = get_node_or_null("Background")
+	_flicker_interval = randf_range(18.0, 30.0)
+
+
+func _process(delta: float) -> void:
+	_hue_time += delta
+
+	if _bg_rect:
+		var hue = fmod(_hue_time / 30.0, 1.0)
+		var base_color = Color.from_hsv(hue, 0.06, 0.96)
+		_bg_rect.color = base_color
+
+	_flicker_timer += delta
+	if not _flicker_active and _flicker_timer >= _flicker_interval:
+		_flicker_timer = 0.0
+		_flicker_active = true
+		_flicker_elapsed = 0.0
+		modulate = Color(0.0, 0.0, 0.0, 1.0)
+
+	if _flicker_active:
+		_flicker_elapsed += delta
+		if _flicker_elapsed < 0.05:
+			modulate = Color(0.0, 0.0, 0.0, 1.0)
+		elif _flicker_elapsed < 0.10:
+			modulate = Color(1.0, 1.0, 1.0, 1.0)
+		elif _flicker_elapsed < 0.14:
+			modulate = Color(0.0, 0.0, 0.0, 1.0)
+		elif _flicker_elapsed < 0.20:
+			modulate = Color(1.0, 1.0, 1.0, 1.0)
+		else:
+			modulate = Color(1.0, 1.0, 1.0, 1.0)
+			_flicker_active = false
+			_flicker_interval = randf_range(18.0, 30.0)
 
 
 func _setup_scene() -> void:

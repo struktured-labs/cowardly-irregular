@@ -169,6 +169,9 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			var can_afford = combatant.current_mp >= mp_cost
 			var target_type = ability.get("target_type", "single_enemy")
 
+			var ability_desc = ability.get("description", "")
+			var ability_tooltip = ability_desc if ability_desc != "" else "MP: %d" % mp_cost
+
 			# For enemy-targeting abilities, add enemy submenu
 			if target_type == "single_enemy" and alive_enemies.size() > 0 and can_afford:
 				var enemy_targets = []
@@ -187,6 +190,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				ability_items.append({
 					"id": "ability_menu_" + ability_id,
 					"label": "%s (%d)" % [ability["name"], mp_cost],
+					"tooltip": ability_tooltip,
 					"submenu": enemy_targets,
 					"disabled": not can_afford
 				})
@@ -210,6 +214,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				ability_items.append({
 					"id": "ability_menu_" + ability_id,
 					"label": "%s (%d)" % [ability["name"], mp_cost],
+					"tooltip": ability_tooltip,
 					"submenu": ally_targets,
 					"disabled": not can_afford
 				})
@@ -235,6 +240,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 					ability_items.append({
 						"id": "ability_menu_" + ability_id,
 						"label": "%s (%d)" % [ability["name"], mp_cost],
+						"tooltip": ability_tooltip,
 						"submenu": dead_targets,
 						"disabled": not can_afford
 					})
@@ -243,6 +249,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 					ability_items.append({
 						"id": "ability_" + ability_id,
 						"label": "%s (%d)" % [ability["name"], mp_cost],
+						"tooltip": ability_tooltip,
 						"data": {"ability_id": ability_id},
 						"disabled": true
 					})
@@ -250,6 +257,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				ability_items.append({
 					"id": "ability_" + ability_id,
 					"label": "%s (%d)" % [ability["name"], mp_cost],
+					"tooltip": ability_tooltip,
 					"data": {"ability_id": ability_id},
 					"disabled": not can_afford
 				})

@@ -102,11 +102,11 @@
 		"id": "glass_cannon",
 		"name": "Glass Cannon",
 		"category": 3,
-		"description": "+100% damage, -50% defense",
+		"description": "+80% damage, -40% defense",
 		"stat_mods": {
-			"attack_multiplier": 2.0,
-			"magic_multiplier": 2.0,
-			"defense_multiplier": 0.5
+			"attack_multiplier": 1.8,
+			"magic_multiplier": 1.8,
+			"defense_multiplier": 0.6
 		}
 	},
 	"berserker": {
@@ -239,9 +239,9 @@
 		"id": "death_resistance",
 		"name": "Death Resistance",
 		"category": 1,
-		"description": "50% chance to survive a killing blow with 1 HP",
+		"description": "75% chance to survive a killing blow with 1 HP",
 		"meta_effects": {
-			"death_resist_chance": 0.5
+			"death_resist_chance": 0.75
 		}
 	},
 	"bp_recovery": {

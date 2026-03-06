@@ -556,8 +556,8 @@ func recalculate_stats() -> void:
 		if job_mods.has("speed"):
 			speed = job_mods["speed"]
 
-	# Apply job level bonuses (+2% all stats per level)
-	var level_mult = 1.0 + (job_level - 1) * 0.02
+	# Apply job level bonuses (+4% all stats per level)
+	var level_mult = 1.0 + (job_level - 1) * 0.04
 	max_hp = int(max_hp * level_mult)
 	max_mp = int(max_mp * level_mult)
 	attack = int(attack * level_mult)

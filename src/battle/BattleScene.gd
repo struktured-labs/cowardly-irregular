@@ -109,6 +109,11 @@ var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 ## Danger music state
 var _is_danger_music: bool = false
 
+## Idle animation state (sway/breathing)
+var _idle_time: float = 0.0
+var _enemy_base_positions: Array[Vector2] = []
+var _party_base_positions: Array[Vector2] = []
+
 ## Dialogue system
 var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
@@ -275,6 +280,8 @@ func _create_battle_background() -> void:
 	move_child(_battle_background, 0)
 	# Apply current terrain
 	_battle_background.set_terrain_from_string(_current_terrain)
+	# Give EffectSystem a reference so it can tint the background during spells
+	EffectSystem.battle_background = _battle_background
 
 
 func set_command_menu_visible(visible: bool) -> void:
@@ -562,6 +569,11 @@ func _create_battle_sprites() -> void:
 			animator.queue_free()
 	enemy_animators.clear()
 
+	# Clear idle position caches when rebuilding sprites
+	_enemy_base_positions.clear()
+	_party_base_positions.clear()
+	_idle_time = 0.0
+
 	# Create party member sprites
 	for i in range(party_members.size()):
 		var member = party_members[i]
@@ -576,16 +588,27 @@ func _create_battle_sprites() -> void:
 		var custom = member.get("customization") if "customization" in member else null
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
-		# Auto-scale: target 144px display height (48px procedural * 3x)
+		# Auto-scale: 144px for procedural/old sprites, 200px for new artist sprites (frame > 128px)
 		var _sprite_scale = 3.0
 		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
 			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 				var _ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
-				if _ftex and _ftex.get_height() > 48:
+				if _ftex and _ftex.get_height() > 128:
+					_sprite_scale = 300.0 / float(_ftex.get_height())
+				elif _ftex and _ftex.get_height() > 48:
 					_sprite_scale = 144.0 / float(_ftex.get_height())
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		sprite.position = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
+
+		# V-formation depth stagger: front members (index 0,1) lower, back members higher
+		# Stagger: i=0 -> +10px, i=1 -> +5px, i=2 -> -5px, i=3 -> -10px
+		var party_y_offsets: Array[float] = [10.0, 5.0, -5.0, -10.0]
+		var base_pos = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
+		var party_y_stagger = party_y_offsets[i] if i < party_y_offsets.size() else 0.0
+		base_pos.y += party_y_stagger
+		sprite.position = base_pos
+		_party_base_positions.append(base_pos)
+
 		sprite.flip_h = true  # Flip to face left
 		sprite.play("idle")
 		party_sprites.add_child(sprite)
@@ -607,7 +630,18 @@ func _create_battle_sprites() -> void:
 		# Choose sprite based on monster type ID stored in enemy
 		var monster_id = enemy.get_meta("monster_type", "slime")
 		sprite.sprite_frames = _get_monster_sprite_frames(monster_id)
-		sprite.position = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
+
+		# Depth stagger: index 0 is closer (lower/larger), higher indices are farther
+		# Y stagger: 0->+0px, 1->-15px, 2->-30px
+		var enemy_y_stagger = float(i) * -15.0
+		# Scale stagger: 0->1.0x, 1->0.95x, 2->0.9x
+		var depth_scale = 1.0 - float(i) * 0.05
+		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
+		base_enemy_pos.y += enemy_y_stagger
+		sprite.position = base_enemy_pos
+		sprite.scale = Vector2(depth_scale, depth_scale)
+		_enemy_base_positions.append(base_enemy_pos)
+
 		sprite.play("idle")
 		$BattleField/EnemySprites.add_child(sprite)
 		enemy_sprite_nodes.append(sprite)
@@ -1451,10 +1485,8 @@ func _on_battle_ended(victory: bool) -> void:
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
 		log_message("[color=gray]Press ENTER to continue...[/color]")
-		# Play victory animation for all party members
-		for animator in party_animators:
-			if animator:
-				animator.play_victory()
+		# Play victory animation for all party members with staggered delays
+		_play_staggered_victory_animations()
 		# Switch to victory music
 		SoundManager.play_music("victory")
 		# Show victory results overlay
@@ -1481,6 +1513,9 @@ func _process(delta: float) -> void:
 
 	# Check for danger music (player about to die)
 	_check_danger_music()
+
+	# Idle sway/breathing animations
+	_process_idle_animations(delta)
 
 	if _battle_ended and not managed_by_game_loop:
 		if Input.is_action_just_pressed("ui_accept"):
@@ -1525,6 +1560,39 @@ func _process_hold_a(delta: float) -> void:
 	else:
 		_holding_auto = false
 		_hold_timer = 0.0
+
+
+func _process_idle_animations(delta: float) -> void:
+	"""Apply subtle idle sway to enemies and breathing to party sprites"""
+	if _battle_ended:
+		return
+	_idle_time += delta
+
+	# Enemy idle sway: ±3px Y oscillation at different frequencies per sprite
+	for i in range(enemy_sprite_nodes.size()):
+		var sprite = enemy_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		if i >= _enemy_base_positions.size():
+			continue
+		# Each enemy has a slightly different frequency (0.8, 0.95, 1.1 Hz)
+		var freq = 0.8 + float(i) * 0.15
+		var phase = float(i) * 1.1  # Phase offset so they don't move in sync
+		var sway = sin(_idle_time * freq * TAU + phase) * 3.0
+		sprite.position.y = _enemy_base_positions[i].y + sway
+
+	# Party idle breathing: ±2px Y oscillation at different rates per character
+	for i in range(party_sprite_nodes.size()):
+		var sprite = party_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		if i >= _party_base_positions.size():
+			continue
+		# Party members breathe at slightly different rates (0.4-0.55 Hz, slower = calmer)
+		var freq = 0.4 + float(i) * 0.05
+		var phase = float(i) * 0.9
+		var breathe = sin(_idle_time * freq * TAU + phase) * 2.0
+		sprite.position.y = _party_base_positions[i].y + breathe
 
 
 func _open_autobattle_editor_for(combatant: Combatant) -> void:
@@ -1615,6 +1683,8 @@ func _restart_battle() -> void:
 func _on_selection_phase_started() -> void:
 	"""Handle selection phase start"""
 	log_message("\n[color=yellow]>>> Selection Phase[/color]")
+	# Subtle tick to signal the start of the player input window
+	SoundManager.play_ui("phase_select")
 
 	# Check if autobattle cancellation was queued during last execution phase
 	if AutobattleSystem.cancel_all_next_turn:
@@ -1651,6 +1721,8 @@ func _on_selection_turn_ended(combatant: Combatant) -> void:
 func _on_execution_phase_started() -> void:
 	"""Handle execution phase start - all actions now execute"""
 	log_message("\n[color=yellow]>>> Execution Phase[/color]")
+	# Brief low pulse to signal the action window opening
+	SoundManager.play_ui("phase_execute")
 	_update_turn_info()
 	_update_ui()
 
@@ -1816,8 +1888,27 @@ func _on_round_ended(round_num: int) -> void:
 
 
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
-	"""Handle action execution"""
+	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
 	_update_ui()
+	var action_type = action.get("type", "")
+	if action_type == "ability":
+		var ability_id = action.get("ability_id", "")
+		var ability = JobSystem.get_ability(ability_id)
+		if not ability.is_empty():
+			var effect = ability.get("effect", "")
+			match effect:
+				"defense_up", "attack_up", "volatility_up_self", "volatility_down":
+					SoundManager.play_battle("buff")
+				"defense_down", "volatility_up":
+					SoundManager.play_battle("debuff")
+				"poison":
+					SoundManager.play_status("poison")
+				"sleep":
+					SoundManager.play_status("sleep")
+				"confuse":
+					SoundManager.play_status("confuse")
+				"paralyze":
+					SoundManager.play_status("paralyze")
 
 
 ## Combatant event handlers
@@ -1853,6 +1944,7 @@ func _on_enemy_hp_changed(old_value: int, new_value: int, enemy_idx: int) -> voi
 func _on_enemy_died(enemy_idx: int) -> void:
 	"""Handle enemy death"""
 	_command_menu.invalidate_alive_cache()
+	SoundManager.play_battle("enemy_death")
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
 		log_message("[color=yellow]%s has been defeated![/color]" % enemy.combatant_name)
@@ -1981,14 +2073,21 @@ func _close_win98_menu() -> void:
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
+	if is_crit:
+		# Critical hit: louder impact with raised pitch for extra punch
+		SoundManager.play_battle_scaled("critical_hit", 2.0, 1.3)
+	else:
+		SoundManager.play_battle("attack_hit")
 
 
 func _on_attack_missed(target: Combatant) -> void:
 	_results_display.on_attack_missed(target)
+	SoundManager.play_battle("attack_miss")
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
 	_results_display.on_healing_done(target, amount)
+	SoundManager.play_battle("heal")
 
 
 func _on_battle_log_message(message: String) -> void:
@@ -2198,6 +2297,32 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	tween.tween_property(flash_container, "modulate:a", 0.0, 0.5)
 	# Clean up
 	tween.tween_callback(func(): flash_container.queue_free())
+
+
+func _play_staggered_victory_animations() -> void:
+	"""Stagger party victory animations and briefly brighten the background"""
+	# Stagger delays: 0.0s, 0.15s, 0.3s, 0.45s per party member
+	var victory_delays: Array[float] = [0.0, 0.15, 0.3, 0.45]
+	for i in range(party_animators.size()):
+		var animator = party_animators[i]
+		if not animator:
+			continue
+		var delay = victory_delays[i] if i < victory_delays.size() else float(i) * 0.15
+		if delay <= 0.0:
+			animator.play_victory()
+		else:
+			get_tree().create_timer(delay).timeout.connect(func():
+				if is_instance_valid(animator):
+					animator.play_victory()
+			)
+
+	# Background brightening on victory (brief warm flash)
+	if _battle_background and is_instance_valid(_battle_background):
+		var bg_tween = create_tween()
+		bg_tween.tween_property(_battle_background, "modulate",
+			Color(1.3, 1.25, 1.0, 1.0), 0.35).set_trans(Tween.TRANS_SINE)
+		bg_tween.tween_property(_battle_background, "modulate",
+			Color(1.0, 1.0, 1.0, 1.0), 0.6).set_trans(Tween.TRANS_SINE)
 
 
 func _show_victory_results() -> void:
