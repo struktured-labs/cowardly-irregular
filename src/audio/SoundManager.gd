@@ -798,11 +798,12 @@ func _start_battle_music() -> void:
 	"""Generate and start looping battle music"""
 	_music_playing = true
 
-	# Generate music buffer (12 bars at 140 BPM - 3 sections of 4 bars each)
+	# Generate 2 passes (24 bars) so the 2nd pass has drum/harmony variation.
+	# The WAV loops both passes together — listener hears variation every other loop.
 	var sample_rate = 22050
 	var bpm = 140.0
 	var beats_per_bar = 4
-	var bars = 12  # 3x longer with 3 distinct sections
+	var bars = 24  # 2 passes of 12 bars: pass 1 = bars 1-12, pass 2 = bars 13-24 (enhanced)
 	var beat_duration = 60.0 / bpm
 	var total_duration = beat_duration * beats_per_bar * bars
 
@@ -954,7 +955,7 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 			var melody_env = _adsr(note_t, 0.005, 0.04, 0.6, sixteenth_duration * 0.7, sixteenth_duration)
 			var melody_vol = 0.10 if sixteenth_idx >= 128 else 0.22  # Duck for lead
 			# SNES lead: pulse + detuned + vibrato (depth halved to avoid wobble)
-			var vfreq = _vibrato_freq(melody_freq, t, 5.5, 0.004, 0.25)
+			var vfreq = _vibrato_freq(melody_freq, t, 5.5, 0.001, 0.35)
 			var lead_wave = _pulse_wave(t * vfreq, 0.25) * 0.55
 			lead_wave += _pulse_wave(t * vfreq * pow(2.0, 6.0 / 1200.0), 0.25) * 0.28  # +6 cents
 			lead_wave += _triangle_wave(t * vfreq * 2.0) * 0.12  # Octave shimmer
@@ -962,6 +963,20 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 			# Pan melody slightly left
 			sample_l += mv * 0.85
 			sample_r += mv * 0.72
+
+		# --- PASS 2 HARMONY: Extra voice a 3rd above melody on 2nd loop ---
+		var pass_num_mel = int(t / (beat_duration * 4 * 12))
+		if pass_num_mel >= 1 and melody_freq > 0:
+			var harm_freq = melody_freq * 1.2599  # Minor 3rd up
+			var harm_vfreq = _vibrato_freq(harm_freq, t, 5.5, 0.001, 0.40)
+			var harm_wave = _triangle_wave(t * harm_vfreq) * 0.45
+			harm_wave += sin(t * harm_vfreq * TAU) * 0.25
+			var harm_note_t = t_in_sixteenth * sixteenth_duration
+			var harm_env = _adsr(harm_note_t, 0.005, 0.04, 0.6, sixteenth_duration * 0.7, sixteenth_duration)
+			harm_wave *= harm_env * 0.11
+			# Pan harmony right for stereo spread on 2nd pass
+			sample_l += harm_wave * 0.45
+			sample_r += harm_wave * 0.90
 
 		# --- BASS: Triangle overdrive + sub octave, center ---
 		var bass_freq = bass_pattern[quarter_idx] * 0.5  # Octave down
@@ -971,14 +986,34 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 		sample_l += bass_val
 		sample_r += bass_val
 
-		# --- DRUMS: Proper SNES-style pitch-sweep kick, bandpass snare, crisp hat ---
+		# --- DRUMS: SNES kick/snare/hat with variation on 2nd pass ---
 		var beat_pos = fmod(t, beat_duration)
+		# Which 12-bar pass are we in? Pass 0 = original, Pass 1 = enhanced
+		var pass_num = int(t / (beat_duration * 4 * 12))  # 12 bars per pass
+		var bar_in_pass = int(t / (beat_duration * 4)) % 12  # bar within current 12-bar pass
+
+		# Crash cymbal on bar 1 of pass 2 (the enhanced repeat)
+		if pass_num == 1 and bar_in_pass == 0 and beat_pos < 0.22:
+			var crash = _snes_crash(beat_pos, 0.20) * 0.55
+			sample_l += crash * 0.80
+			sample_r += crash
 
 		# Kick on beats 1 and 3
 		if beat_pos < 0.10:
 			var kick = _snes_kick(beat_pos, 0.095)
+			# Occasional double-kick: add extra kick on "and" of beat 1 in pass 2 bars 5-8
+			if pass_num == 1 and bar_in_pass >= 4 and bar_in_pass < 8:
+				kick *= 1.15  # Slightly heavier
 			sample_l += kick * 0.55
 			sample_r += kick * 0.55
+
+		# Double kick on "and" of beat 4 in pass 2 (every even bar)
+		if pass_num == 1 and bar_in_pass % 2 == 0:
+			var double_kick_pos = fmod(t - beat_duration * 3.5, beat_duration)
+			if double_kick_pos >= 0.0 and double_kick_pos < 0.08:
+				var dk = _snes_kick(double_kick_pos, 0.075) * 0.50
+				sample_l += dk
+				sample_r += dk
 
 		# Snare on 2 and 4
 		var beat_in_bar = int(t / beat_duration) % 4
@@ -996,6 +1031,28 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 			# Pan hats slightly right for stereo width
 			sample_l += hat * 0.65
 			sample_r += hat * 1.0
+
+		# Extra 16th-note hi-hats in pass 2 (between the 8th notes)
+		if pass_num == 1:
+			var sixteenth_pos_hat = fmod(t, beat_duration / 4.0)
+			var sixteenth_count = int(t / (beat_duration / 4.0)) % 4
+			# Only hit 16ths on positions 1 and 3 (between 8th notes)
+			if sixteenth_count % 2 == 1 and sixteenth_pos_hat < 0.015:
+				var extra_hat = _snes_hihat(sixteenth_pos_hat, 0.012, false) * 0.35
+				sample_l += extra_hat * 0.60
+				sample_r += extra_hat * 0.95
+
+		# Tom fills on last beat of bar 4 and bar 8 (in every pass)
+		if beat_in_bar == 3 and bar_in_pass % 4 == 3:
+			var sub_beat = fmod(beat_pos * 4.0, 1.0)
+			var sub_idx = int(beat_pos * 4.0) % 4
+			# 4 toms descending across the beat (hi→lo)
+			var tom_pitches = [200.0, 150.0, 110.0, 80.0]
+			if sub_beat < 0.12:
+				var tom_vol = 0.50 if pass_num == 0 else 0.70
+				var tom = _snes_tom(sub_beat * (beat_duration / 4.0), tom_pitches[sub_idx], 0.10) * tom_vol
+				sample_l += tom * 0.85
+				sample_r += tom * 0.95
 
 		# --- LEAD GUITAR: Tapping arpeggios bars 9-12, panned right ---
 		if sixteenth_idx >= 128:
@@ -1501,7 +1558,7 @@ func _generate_boss_music_buffer(rate: int, duration: float, bpm: float) -> Pack
 			var note_t = t_in_sixteenth * sixteenth_duration
 			var melody_env = _adsr(note_t, 0.004, 0.035, 0.65, sixteenth_duration * 0.75, sixteenth_duration)
 			# Boss lead: harsh pulse + detuned square for menace (depth halved, delay increased)
-			var vfreq = _vibrato_freq(melody_freq, t, 5.0, 0.004, 0.20)
+			var vfreq = _vibrato_freq(melody_freq, t, 5.0, 0.001, 0.35)
 			var mel = _pulse_wave(t * vfreq, 0.25) * 0.50
 			mel += _square_wave(t * vfreq * 1.004) * 0.28   # Thick detune
 			mel += _square_wave(t * vfreq * 0.997) * 0.15   # Lower detune for width
@@ -1554,9 +1611,20 @@ func _generate_boss_music_buffer(rate: int, duration: float, bpm: float) -> Pack
 		var phrase_beat = int(t / beat_duration) % 16
 		if phrase_beat == 0 and beat_pos < 0.35:
 			var crash_env = pow(max(0.0, 1.0 - beat_pos / 0.35), 2.5)
-			var crash = randf_range(-0.15, 0.15) * crash_env
-			sample_l += crash
-			sample_r += crash
+			var crash_noise = randf_range(-0.15, 0.15) * crash_env
+			sample_l += crash_noise
+			sample_r += crash_noise
+
+		# Tom fills on last beat of bars 4 and 8 (every 4-bar phrase end)
+		var bar_in_loop = int(t / (beat_duration * 4)) % 16
+		if beat_in_bar == 3 and bar_in_loop % 4 == 3:
+			var sub_beat_pos = fmod(beat_pos * 4.0, 1.0)
+			var sub_idx = int(beat_pos * 4.0) % 4
+			var tom_pitches_b = [220.0, 160.0, 120.0, 85.0]
+			if sub_beat_pos < 0.12:
+				var tom_b = _snes_tom(sub_beat_pos * (beat_duration / 4.0), tom_pitches_b[sub_idx], 0.10) * 0.65
+				sample_l += tom_b * 0.80
+				sample_r += tom_b * 0.95
 
 		# Soft clip + tanh warmth
 		sample_l = tanh(sample_l * 1.3) * 0.88
@@ -1908,8 +1976,10 @@ func _generate_danger_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 		sample_l += bass_val
 		sample_r += bass_val
 
-		# --- DRUMS: Heartbeat kick on every beat, urgent hats ---
+		# --- DRUMS: Heartbeat kick on every beat, urgent hats + variation ---
 		var beat_pos = fmod(t, beat_duration)
+		var beat_in_bar_d = int(t / beat_duration) % 4
+		var bar_in_loop_d = int(t / (beat_duration * 4)) % 8
 
 		# Heavy heartbeat kick on every single beat
 		if beat_pos < 0.10:
@@ -1917,12 +1987,30 @@ func _generate_danger_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 			sample_l += kick
 			sample_r += kick
 
-		# Anxious 8th-note hi-hats
+		# Anxious 8th-note hi-hats (closed)
 		var eighth_pos = fmod(t, beat_duration / 2.0)
 		if eighth_pos < 0.020:
 			var hat = _snes_hihat(eighth_pos, 0.018, false) * 0.65
 			sample_l += hat * 0.80
 			sample_r += hat * 1.0
+
+		# 16th-note hi-hat accents between 8th notes (off-16ths) — adds urgency
+		var sixteenth_pos_d = fmod(t, beat_duration / 4.0)
+		var sixteenth_count_d = int(t / (beat_duration / 4.0)) % 4
+		if sixteenth_count_d % 2 == 1 and sixteenth_pos_d < 0.015:
+			var extra_hat_d = _snes_hihat(sixteenth_pos_d, 0.012, false) * 0.40
+			sample_l += extra_hat_d * 0.72
+			sample_r += extra_hat_d * 0.95
+
+		# Tom fill on last beat of bar 4 and bar 8
+		# beat_pos is time in seconds (0..beat_duration), sixteenth_pos_d is within a 16th
+		if beat_in_bar_d == 3 and bar_in_loop_d % 4 == 3:
+			var sub_idx_d = int(beat_pos / (beat_duration / 4.0)) % 4  # which 16th (0-3)
+			var tom_pitches_d = [210.0, 155.0, 115.0, 80.0]
+			if sixteenth_pos_d < 0.12:
+				var tom_d = _snes_tom(sixteenth_pos_d, tom_pitches_d[sub_idx_d], 0.11) * 0.60
+				sample_l += tom_d * 0.85
+				sample_r += tom_d
 
 		# Tension noise bed (swelling)
 		var noise_level = 0.025 + 0.018 * sin(t * 1.8 * TAU)
@@ -1997,11 +2085,12 @@ func _adsr(t: float, attack: float, decay: float, sustain: float, release_start:
 		return 0.0
 
 
-func _vibrato_freq(base_freq: float, t: float, rate: float = 5.5, depth: float = 0.004, delay: float = 0.25) -> float:
+func _vibrato_freq(base_freq: float, t: float, rate: float = 5.5, depth: float = 0.001, delay: float = 0.30) -> float:
 	"""Return frequency with vibrato modulation (SNES-style lead warmth).
 	   Vibrato ramps in after 'delay' seconds for natural feel.
+	   On short notes (< delay seconds), vibrato is essentially zero.
 	   rate: Hz of pitch wobble (4-6 Hz is classic)
-	   depth: fraction of semitone deviation (0.004 = subtle warmth, not wobble)"""
+	   depth: fraction of semitone deviation (0.001 = barely perceptible, SNES-clean)"""
 	var ramp = clamp((t - delay) / 0.08, 0.0, 1.0)
 	return base_freq * (1.0 + sin(t * rate * TAU) * depth * ramp)
 
@@ -2024,10 +2113,11 @@ func _chorus_voice(t: float, freq: float, detune_cents: float, wave_type: String
 			return _triangle_wave(t * detuned_freq)
 
 
-func _snes_lead(t: float, freq: float, vibrato_delay: float = 0.25) -> float:
+func _snes_lead(t: float, freq: float, vibrato_delay: float = 0.40) -> float:
 	"""Classic SNES lead tone: pulse wave + detuned copy + vibrato.
-	   This is the signature sound of FF4/FF6/Chrono Trigger melodies."""
-	var vfreq = _vibrato_freq(freq, t, 5.5, 0.003, vibrato_delay)
+	   This is the signature sound of FF4/FF6/Chrono Trigger melodies.
+	   Vibrato only kicks in on long sustained notes (after vibrato_delay seconds)."""
+	var vfreq = _vibrato_freq(freq, t, 5.5, 0.001, vibrato_delay)
 	# Primary: 25% pulse wave (SNES-like nasal lead)
 	var voice1 = _pulse_wave(t * vfreq, 0.25) * 0.5
 	# Secondary: slightly detuned pulse for chorus warmth (3 cents, was 7)
@@ -2086,6 +2176,34 @@ func _snes_hihat(hat_pos: float, duration: float = 0.018, is_open: bool = false)
 		return 0.0
 	var env = pow(1.0 - hat_pos / dur, 3.0)
 	return randf_range(-0.18, 0.18) * env
+
+
+func _snes_tom(beat_pos: float, pitch_hz: float = 150.0, duration: float = 0.10) -> float:
+	"""SNES-style tom: pitch-sweeping sine (like kick but higher pitched, shorter).
+	   pitch_hz: starting pitch (150=hi-tom, 100=mid-tom, 70=lo-tom)"""
+	if beat_pos >= duration:
+		return 0.0
+	var t = beat_pos / duration
+	var env = pow(1.0 - t, 1.2)
+	# Pitch sweeps from pitch_hz down by about 60%
+	var pitch = pitch_hz * pow(0.40, t)
+	var tone = sin(beat_pos * pitch * TAU) * env * 0.65
+	# Light noise attack for initial transient
+	var noise_env = max(0.0, 1.0 - beat_pos * 30.0)
+	var noise = randf_range(-0.2, 0.2) * noise_env
+	return tone + noise
+
+
+func _snes_crash(crash_pos: float, duration: float = 0.20) -> float:
+	"""SNES-style crash cymbal: white noise burst with longer decay."""
+	if crash_pos >= duration:
+		return 0.0
+	var env = pow(1.0 - crash_pos / duration, 1.8)
+	# High-frequency noise with slight metallic shimmer
+	var noise = randf_range(-0.25, 0.25) * env
+	var shimmer = sin(crash_pos * 3800.0 * TAU) * env * 0.06
+	var shimmer2 = sin(crash_pos * 5700.0 * TAU) * env * 0.03
+	return noise + shimmer + shimmer2
 
 
 func _apply_reverb(buffer: PackedVector2Array, room_size: float = 0.3, wet: float = 0.18, sample_rate: int = 22050) -> PackedVector2Array:
@@ -2317,7 +2435,7 @@ func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, mons
 			var detune_phase = fmod(t * melody_note * pow(2.0, 6.0 / 1200.0), 1.0)
 			var detune_wave = _get_monster_wave(detune_phase, params["style"])
 			# Add subtle vibrato on lead voice
-			var vib_freq = melody_note * (1.0 + sin(t * 5.2 * TAU) * 0.008 * clamp((t - 0.08) * 10.0, 0.0, 1.0))
+			var vib_freq = melody_note * (1.0 + sin(t * 5.2 * TAU) * 0.002 * clamp((t - 0.30) * 10.0, 0.0, 1.0))
 			var vib_wave = sin(t * vib_freq * TAU) * 0.12  # Sine shimmer
 			var env = _get_monster_envelope(beat_pos, params["style"])
 			var mel_vol = (base_wave * 0.65 + detune_wave * 0.25 + vib_wave) * 0.26 * env * dyn
@@ -2333,7 +2451,7 @@ func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, mons
 				var counter_phase = fmod(t * counter_note, 1.0)
 				var counter_wave = _triangle_wave(counter_phase)
 				# Slight vibrato on counter-melody too
-				counter_wave += sin(t * counter_note * (1.0 + sin(t * 5.0 * TAU) * 0.006) * TAU) * 0.15
+				counter_wave += sin(t * counter_note * (1.0 + sin(t * 5.0 * TAU) * 0.002 * clamp((t - 0.30) * 10.0, 0.0, 1.0)) * TAU) * 0.15
 				var counter_env = 0.7 + 0.3 * (1.0 - fmod(beat_pos * 2, 1.0))
 				var counter_vol = counter_wave * 0.14 * counter_env * (dyn * 0.8)
 				# Pan counter-melody right
@@ -2352,7 +2470,7 @@ func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, mons
 			sample_l += bass_val
 			sample_r += bass_val
 
-		# --- DRUMS: Now using proper SNES kick/snare ---
+		# --- DRUMS: SNES kick/snare with crash and tom fills ---
 		var drum_raw = _get_monster_drums(beat_pos, t, params["style"])
 		var drum_vol = 0.90 * dyn  # Scale applied inside _get_monster_drums already
 		if bar % 8 == 7 and beat_pos >= 3.0:
@@ -2360,6 +2478,29 @@ func _generate_monster_music_buffer(rate: int, duration: float, bpm: float, mons
 		# Drums center with slight right bias for snare crack
 		sample_l += drum_raw * drum_vol * 0.88
 		sample_r += drum_raw * drum_vol * 0.95
+
+		# Crash cymbal on bar 1 of each 8-bar section
+		if bar % 8 == 0 and beat_pos < 0.18:
+			# Convert fractional beat to time: crash_pos = fraction within first beat * beat_duration
+			var crash_t_m = beat_pos * beat_duration
+			var crash_m = _snes_crash(crash_t_m, 0.18) * 0.45 * dyn
+			sample_l += crash_m * 0.80
+			sample_r += crash_m
+
+		# Tom fill descending on the last beat of every 4th bar
+		var beat_in_bar_m = int(beat_pos)
+		if bar % 4 == 3 and beat_in_bar_m == 3:
+			# sub_beat_m: fraction within beat 4 (0.0 to 1.0)
+			var sub_beat_m = beat_pos - 3.0  # 0.0 to 1.0
+			var sub_idx_m = int(sub_beat_m * 4.0) % 4  # which 16th note (0-3)
+			var sub_16th_pos = fmod(sub_beat_m * 4.0, 1.0)  # position within 16th note
+			var tom_pitches_m = [160.0, 120.0, 90.0, 65.0]
+			# Hit at the start of each 16th note within the tom fill
+			if sub_16th_pos < 0.15:
+				var tom_time = sub_16th_pos * beat_duration * 0.25  # time within 16th note
+				var tom_m = _snes_tom(tom_time, tom_pitches_m[sub_idx_m], 0.09) * 0.50 * dyn
+				sample_l += tom_m * 0.85
+				sample_r += tom_m * 0.95
 
 		# Warm tanh soft clip
 		sample_l = tanh(sample_l * 1.12) * 0.88
@@ -3336,7 +3477,7 @@ func _generate_title_music_buffer(rate: int, duration: float, bpm: float) -> Pac
 			var mel_env = mel_attack * mel_decay
 
 			# Sine with slight vibrato (trippy)
-			var vibrato = sin(t * 5.5) * 0.015
+			var vibrato = sin(t * 5.5) * 0.006
 			sample += sin(t * melody_freq * (1.0 + vibrato) * TAU) * 0.15 * mel_env
 			# Add harmonics for richer sound
 			sample += sin(t * melody_freq * 2.0 * TAU) * 0.04 * mel_env
@@ -3457,7 +3598,7 @@ func _generate_overworld_music(rate: int, duration: float, bpm: float) -> Packed
 			var note_t = t_in_sixteenth * sixteenth_dur
 			var melody_env = _adsr(note_t, 0.008, 0.055, 0.70, sixteenth_dur * 0.75, sixteenth_dur)
 			# Warm overworld lead: vibrato triangle + detuned copy for chorus (depth halved)
-			var vfreq = _vibrato_freq(melody_freq, t, 4.8, 0.004, 0.25)
+			var vfreq = _vibrato_freq(melody_freq, t, 4.8, 0.001, 0.35)
 			var mel = _triangle_wave(t * vfreq) * 0.55
 			mel += _triangle_wave(t * vfreq * pow(2.0, 5.0 / 1200.0)) * 0.28  # +5 cents
 			mel += _triangle_wave(t * vfreq * pow(2.0, -4.0 / 1200.0)) * 0.18  # -4 cents
@@ -3465,7 +3606,7 @@ func _generate_overworld_music(rate: int, duration: float, bpm: float) -> Packed
 			mel *= melody_env * 0.20
 			# Counter-harmony a 6th above (SNES layered voices)
 			var harm_freq = melody_freq * 1.667  # Major 6th
-			var harm = _triangle_wave(t * _vibrato_freq(harm_freq, t, 4.8, 0.003, 0.28)) * 0.12 * melody_env
+			var harm = _triangle_wave(t * _vibrato_freq(harm_freq, t, 4.8, 0.001, 0.35)) * 0.12 * melody_env
 			sample_l += mel * 0.90 + harm * 0.45
 			sample_r += mel * 0.75 + harm * 0.90
 
@@ -3563,13 +3704,13 @@ func _generate_village_music(rate: int, duration: float, bpm: float) -> PackedVe
 			var note_t = t_in_eighth * eighth_dur
 			var melody_env = _adsr(note_t, 0.012, 0.06, 0.78, eighth_dur * 0.80, eighth_dur)
 			# Flute-like: sine + triangle with warm vibrato (depth halved)
-			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.005, 0.25)
+			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.001, 0.35)
 			var mel = sin(t * vfreq * TAU) * 0.55         # Sine fundamental (flute)
 			mel += _triangle_wave(t * vfreq) * 0.32       # Triangle for body
 			mel += sin(t * vfreq * 2.0 * TAU) * 0.10     # Octave harmonic
 			mel *= melody_env * 0.20
 			# Harmony a third above for warmth (pastoral feel)
-			var h_freq = _vibrato_freq(melody_freq * 1.25, t, 4.5, 0.004, 0.28)
+			var h_freq = _vibrato_freq(melody_freq * 1.25, t, 4.5, 0.001, 0.35)
 			var harm = (sin(t * h_freq * TAU) * 0.6 + _triangle_wave(t * h_freq) * 0.3) * melody_env * 0.10
 			# Lead slightly left, harmony slightly right
 			sample_l += mel * 0.95 + harm * 0.40
@@ -3674,7 +3815,7 @@ func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVecto
 			var note_t = t_in_sixteenth * sixteenth_dur
 			var melody_env = _adsr(note_t, 0.015, 0.08, 0.60, sixteenth_dur * 0.70, sixteenth_dur)
 			# Hollow cave lead: triangle with slight vibrato + detuned copy (depth halved)
-			var vfreq = _vibrato_freq(melody_freq, t, 3.8, 0.003, 0.25)
+			var vfreq = _vibrato_freq(melody_freq, t, 3.8, 0.001, 0.35)
 			var mel = _triangle_wave(t * vfreq) * 0.55
 			mel += _triangle_wave(t * vfreq * 1.008) * 0.30  # Detuned for eerie beating
 			mel += sin(t * vfreq * TAU) * 0.15               # Sine for hollow quality
@@ -3824,7 +3965,7 @@ func _generate_suburban_music(rate: int, duration: float, bpm: float) -> PackedV
 		if melody_freq > 0:
 			var note_t = t_in_sixteenth * sixteenth_dur
 			var melody_env = _adsr(note_t, 0.010, 0.06, 0.72, sixteenth_dur * 0.78, sixteenth_dur)
-			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.004, 0.25)
+			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.001, 0.35)
 			# EarthBound-style: triangle lead with detuned warmth
 			var mel = _triangle_wave(t * vfreq) * 0.55
 			mel += _triangle_wave(t * vfreq * pow(2.0, 5.0 / 1200.0)) * 0.28  # +5 cents chorus
@@ -4014,6 +4155,24 @@ func _generate_suburban_battle_music(rate: int, duration: float, bpm: float) -> 
 			var hat = _snes_hihat(sixteenth_pos, 0.018, false) * (0.80 if is_offbeat else 0.45)
 			sample_l += hat * 0.72
 			sample_r += hat
+
+		# Tom fill on last beat of every 4th bar
+		var bar_sb = int(t / (quarter_dur * 4)) % 8
+		if beat_in_bar == 3 and bar_sb % 4 == 3:
+			# sixteenth_pos is already computed: fmod(t, sixteenth_dur)
+			var sub_idx_sb = int(beat_pos / sixteenth_dur) % 4  # which 16th within beat
+			var tom_pitches_sb = [190.0, 145.0, 105.0, 75.0]
+			if sixteenth_pos < 0.13:
+				var tom_sb = _snes_tom(sixteenth_pos, tom_pitches_sb[sub_idx_sb], 0.10) * 0.55
+				sample_l += tom_sb * 0.80
+				sample_r += tom_sb * 0.90
+
+		# Crash on bar 1 of loop
+		var abs_bar_sb = int(t / (quarter_dur * 4)) % 16
+		if abs_bar_sb == 0 and beat_in_bar == 0 and beat_pos < 0.20:
+			var crash_sb = _snes_crash(beat_pos, 0.18) * 0.45
+			sample_l += crash_sb * 0.80
+			sample_r += crash_sb
 
 		# Psychedelic warble (EarthBound signature texture)
 		var warble_freq = 330.0 + sin(t * 3.0) * 30.0
@@ -4319,6 +4478,21 @@ func _generate_urban_battle_music(rate: int, duration: float, bpm: float) -> Pac
 			var hiss_t = two_beat - hiss_start
 			var hiss_env = pow(1.0 - hiss_t / 0.06, 1.2)
 			sample += randf_range(-0.08, 0.08) * hiss_env
+
+		# Tom fill on last beat of every 4th bar (hammering metal descent)
+		var bar_ub = int(t / (quarter_dur * 4)) % 8
+		if beat_in_bar == 3 and bar_ub % 4 == 3:
+			var sub_idx_ub = int(beat_pos / sixteenth_dur) % 4  # which 16th within beat
+			var tom_pitches_ub = [180.0, 140.0, 100.0, 70.0]
+			if sixteenth_pos < 0.12:
+				var tom_ub = _snes_tom(sixteenth_pos, tom_pitches_ub[sub_idx_ub], 0.10) * 0.60
+				sample += tom_ub
+
+		# Crash on bar 1 of loop
+		var abs_bar_ub = int(t / (quarter_dur * 4)) % 16
+		if abs_bar_ub == 0 and beat_in_bar == 0 and beat_pos < 0.18:
+			var crash_ub = _snes_crash(beat_pos, 0.16) * 0.50
+			sample += crash_ub * 0.85
 
 		# Grinding industrial noise floor (slight stereo spread)
 		sample += randf_range(-0.012, 0.012)
@@ -4881,6 +5055,21 @@ func _generate_industrial_battle_music(rate: int, duration: float, bpm: float) -
 			sample_l += hiss * 1.2
 			sample_r += hiss * 0.5
 
+		# Tom fill on last beat of every 4th bar (industrial hammering)
+		if beat_in_bar == 3 and bar_num % 4 == 3:
+			var sub_idx_ib = int(beat_pos / sixteenth_duration) % 4  # which 16th within beat
+			var tom_pitches_ib = [175.0, 130.0, 95.0, 65.0]
+			if sixteenth_pos < 0.14:
+				var tom_ib = _snes_tom(sixteenth_pos, tom_pitches_ib[sub_idx_ib], 0.11) * 0.65
+				sample_l += tom_ib * 0.85
+				sample_r += tom_ib * 0.95
+
+		# Crash on bar 1 of loop
+		if bar_num == 0 and beat_in_bar == 0 and beat_pos < 0.22:
+			var crash_ib = _snes_crash(beat_pos, 0.20) * 0.55
+			sample_l += crash_ib * 0.80
+			sample_r += crash_ib
+
 		# Hard industrial clip
 		sample_l = clamp(tanh(sample_l * 1.25) * 0.88, -0.92, 0.92)
 		sample_r = clamp(tanh(sample_r * 1.25) * 0.88, -0.92, 0.92)
@@ -5066,6 +5255,22 @@ func _generate_digital_battle_music(rate: int, duration: float, bpm: float) -> P
 				# Glitch hard panned alternating
 				sample_l += glitch * (1.5 if bar_num == 3 else 0.4)
 				sample_r += glitch * (0.4 if bar_num == 3 else 1.5)
+
+		# Tom fill (digital pitch sweep) on last beat of every 4th bar
+		var beat_in_bar_db = int(t / beat_duration) % 4
+		if beat_in_bar_db == 3 and bar_num % 4 == 3:
+			var sub_idx_db = int(beat_pos / sixteenth_duration) % 4  # which 16th within beat
+			var tom_pitches_db = [200.0, 155.0, 115.0, 80.0]
+			if sixteenth_pos < 0.12:
+				var tom_db = _snes_tom(sixteenth_pos, tom_pitches_db[sub_idx_db], 0.09) * 0.55
+				sample_l += tom_db * 0.75
+				sample_r += tom_db * 0.95
+
+		# Crash on bar 1 of loop
+		if bar_num == 0 and beat_in_bar_db == 0 and beat_pos < 0.20:
+			var crash_db = _snes_crash(beat_pos, 0.18) * 0.50
+			sample_l += crash_db * 0.75
+			sample_r += crash_db
 
 		sample_l = tanh(sample_l * 1.15) * 0.86
 		sample_r = tanh(sample_r * 1.15) * 0.86
