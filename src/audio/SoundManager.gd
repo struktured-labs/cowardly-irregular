@@ -798,12 +798,16 @@ func _start_battle_music() -> void:
 	"""Generate and start looping battle music"""
 	_music_playing = true
 
-	# Generate 2 passes (24 bars) so the 2nd pass has drum/harmony variation.
-	# The WAV loops both passes together — listener hears variation every other loop.
+	# Generate 4 passes (48 bars) for a full loop with dynamic arc:
+	#   Pass 0 (bars  1-12): intense opening, clean drums
+	#   Pass 1 (bars 13-24): enhanced — harmony voice, extra 16th hats, heavier toms
+	#   Pass 2 (bars 25-36): groove half — relaxed classic backbeat, mellow melody octave-down, warm pad
+	#   Pass 3 (bars 37-48): groove half repeat — same groove, harmony pad added
+	# On loop, returning to pass 0 feels fresh due to the contrast with pass 3.
 	var sample_rate = 22050
 	var bpm = 140.0
 	var beats_per_bar = 4
-	var bars = 24  # 2 passes of 12 bars: pass 1 = bars 1-12, pass 2 = bars 13-24 (enhanced)
+	var bars = 48  # 4 passes of 12 bars each
 	var beat_duration = 60.0 / bpm
 	var total_duration = beat_duration * beats_per_bar * bars
 
@@ -834,7 +838,9 @@ func _start_battle_music() -> void:
 
 
 func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
-	"""Generate a catchy 16-bit battle theme - 12 bars with 3 distinct sections"""
+	"""Generate a catchy 16-bit battle theme - 48 bars (4 x 12-bar passes).
+	Passes 0-1: intense opening with aggressive drums and full-register melody.
+	Passes 2-3: groovy second half with classic backbeat, octave-down melody, warm pad."""
 	var buffer = PackedVector2Array()
 	var samples = int(rate * duration)
 	var beat_duration = 60.0 / bpm
@@ -936,6 +942,15 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 	for i in range(samples):
 		var t = float(i) / rate  # Time in seconds
 
+		# Which 12-bar pass are we in?
+		# Pass 0 = bars  1-12 (intense, clean)
+		# Pass 1 = bars 13-24 (enhanced — harmony, 16th hats, heavier toms)
+		# Pass 2 = bars 25-36 (groove half — relaxed backbeat, mellow octave-down melody, warm pad)
+		# Pass 3 = bars 37-48 (groove half + pad harmony)
+		var pass_num = int(t / (beat_duration * 4 * 12))  # 12 bars per pass
+		var bar_in_pass = int(t / (beat_duration * 4)) % 12  # bar within current 12-bar pass
+		var is_groove_half = pass_num >= 2  # Second 24 bars: relaxed groove
+
 		# Which note are we on? (wrap around full 12-bar pattern)
 		var sixteenth_idx = int(t / sixteenth_duration) % 192  # 12 bars * 16 sixteenths
 		var quarter_idx = int(t / quarter_duration) % 48  # 12 bars * 4 quarters
@@ -947,26 +962,37 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 		var sample_l = 0.0
 		var sample_r = 0.0
 
-		# --- MELODY: SNES lead with vibrato + detuned chorus, panned slightly left ---
+		# --- MELODY ---
 		var melody_freq = melody_pattern[sixteenth_idx]
 		if melody_freq > 0:
-			# ADSR: fast attack, short decay, 0.6 sustain, short release
 			var note_t = t_in_sixteenth * sixteenth_duration
 			var melody_env = _adsr(note_t, 0.005, 0.04, 0.6, sixteenth_duration * 0.7, sixteenth_duration)
-			var melody_vol = 0.10 if sixteenth_idx >= 128 else 0.22  # Duck for lead
-			# SNES lead: pulse + detuned + vibrato (depth halved to avoid wobble)
-			var vfreq = _vibrato_freq(melody_freq, t, 5.5, 0.001, 0.35)
-			var lead_wave = _pulse_wave(t * vfreq, 0.25) * 0.55
-			lead_wave += _pulse_wave(t * vfreq * pow(2.0, 6.0 / 1200.0), 0.25) * 0.28  # +6 cents
-			lead_wave += _triangle_wave(t * vfreq * 2.0) * 0.12  # Octave shimmer
-			var mv = lead_wave * melody_env * melody_vol
-			# Pan melody slightly left
-			sample_l += mv * 0.85
-			sample_r += mv * 0.72
 
-		# --- PASS 2 HARMONY: Extra voice a 3rd above melody on 2nd loop ---
-		var pass_num_mel = int(t / (beat_duration * 4 * 12))
-		if pass_num_mel >= 1 and melody_freq > 0:
+			if is_groove_half:
+				# Groove half: melody drops an octave for a mellow, warm feel.
+				# Use a softer triangle-dominant tone instead of bright pulse.
+				var gmel_freq = melody_freq * 0.5  # One octave down
+				var gvfreq = _vibrato_freq(gmel_freq, t, 4.5, 0.0008, 0.40)
+				var gmel_wave = _triangle_wave(t * gvfreq) * 0.60
+				gmel_wave += _pulse_wave(t * gvfreq, 0.30) * 0.28  # Softer pulse duty
+				gmel_wave += _triangle_wave(t * gvfreq * 2.0) * 0.10  # Octave shimmer
+				var gmel_vol = 0.17 if sixteenth_idx >= 128 else 0.20  # No lead-duck needed
+				var gmv = gmel_wave * melody_env * gmel_vol
+				sample_l += gmv * 0.80
+				sample_r += gmv * 0.68
+			else:
+				# Intense half: original bright SNES lead with vibrato + detuned chorus.
+				var melody_vol = 0.10 if sixteenth_idx >= 128 else 0.22  # Duck for lead
+				var vfreq = _vibrato_freq(melody_freq, t, 5.5, 0.001, 0.35)
+				var lead_wave = _pulse_wave(t * vfreq, 0.25) * 0.55
+				lead_wave += _pulse_wave(t * vfreq * pow(2.0, 6.0 / 1200.0), 0.25) * 0.28  # +6 cents
+				lead_wave += _triangle_wave(t * vfreq * 2.0) * 0.12  # Octave shimmer
+				var mv = lead_wave * melody_env * melody_vol
+				sample_l += mv * 0.85
+				sample_r += mv * 0.72
+
+		# --- PASS 1 HARMONY: Extra voice a 3rd above melody on pass 1 (enhanced repeat) ---
+		if pass_num == 1 and melody_freq > 0:
 			var harm_freq = melody_freq * 1.2599  # Minor 3rd up
 			var harm_vfreq = _vibrato_freq(harm_freq, t, 5.5, 0.001, 0.40)
 			var harm_wave = _triangle_wave(t * harm_vfreq) * 0.45
@@ -974,107 +1000,170 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 			var harm_note_t = t_in_sixteenth * sixteenth_duration
 			var harm_env = _adsr(harm_note_t, 0.005, 0.04, 0.6, sixteenth_duration * 0.7, sixteenth_duration)
 			harm_wave *= harm_env * 0.11
-			# Pan harmony right for stereo spread on 2nd pass
 			sample_l += harm_wave * 0.45
 			sample_r += harm_wave * 0.90
+
+		# --- GROOVE HALF WARM PAD: Sustained chord texture under the mellow melody ---
+		# A minor chord: A + C + E, triangle sine blend, slow attack, long sustain.
+		# Adds warmth and body so the groove half doesn't feel thin.
+		if is_groove_half:
+			var pad_root = 220.0  # A3
+			var pad_third = 261.63  # C4 (minor 3rd)
+			var pad_fifth = 329.63  # E4
+			# Slow vibrato for that SNES string pad feel
+			var pad_vibrato = 1.0 + sin(t * TAU * 4.8) * 0.0006
+			var pad_r = _triangle_wave(t * pad_root * pad_vibrato) * 0.30
+			pad_r += sin(t * pad_root * pad_vibrato * TAU) * 0.20
+			var pad_t3 = _triangle_wave(t * pad_third * pad_vibrato) * 0.22
+			pad_t3 += sin(t * pad_third * pad_vibrato * TAU) * 0.15
+			var pad_t5 = _triangle_wave(t * pad_fifth * pad_vibrato) * 0.18
+			pad_t5 += sin(t * pad_fifth * pad_vibrato * TAU) * 0.12
+			# Slightly detuned upper voice for width (pass 3 only, adds pad harmony)
+			var pad_upper: float = 0.0
+			if pass_num == 3:
+				pad_upper = _triangle_wave(t * pad_root * 2.0 * (1.0 + sin(t * TAU * 4.2) * 0.0005)) * 0.12
+			var pad_mix = (pad_r + pad_t3 + pad_t5 + pad_upper) * 0.055
+			# Gentle fade-in at start of groove half (first 0.5 beat)
+			var groove_t_in_pass = fmod(t, beat_duration * 4.0 * 12.0)
+			var pad_fade_in = min(groove_t_in_pass / (beat_duration * 0.5), 1.0)
+			pad_mix *= pad_fade_in
+			# Spread wide: pad is spacious
+			sample_l += pad_mix * 0.80
+			sample_r += pad_mix * 1.0
 
 		# --- BASS: Triangle overdrive + sub octave, center ---
 		var bass_freq = bass_pattern[quarter_idx] * 0.5  # Octave down
 		var bass_note_t = t_in_quarter * quarter_duration
 		var bass_env = _adsr(bass_note_t, 0.003, 0.08, 0.75, quarter_duration * 0.8, quarter_duration)
-		var bass_val = _snes_bass(t, bass_freq) * 0.22 * bass_env
-		sample_l += bass_val
-		sample_r += bass_val
+		if is_groove_half:
+			# Groove half: gentler bass — use lower drive level for a rounder, less aggressive tone.
+			# The _snes_bass function uses tanh(tri * 2.2) internally; we compensate by scaling
+			# the output down and relying more on the sub component for warmth over punch.
+			var bass_raw = _snes_bass(t, bass_freq)
+			var bass_val = bass_raw * 0.17 * bass_env  # 0.22 → 0.17 (less driven feel)
+			sample_l += bass_val
+			sample_r += bass_val
+		else:
+			var bass_val = _snes_bass(t, bass_freq) * 0.22 * bass_env
+			sample_l += bass_val
+			sample_r += bass_val
 
-		# --- DRUMS: SNES kick/snare/hat with variation on 2nd pass ---
+		# --- DRUMS ---
 		var beat_pos = fmod(t, beat_duration)
-		# Which 12-bar pass are we in? Pass 0 = original, Pass 1 = enhanced
-		var pass_num = int(t / (beat_duration * 4 * 12))  # 12 bars per pass
-		var bar_in_pass = int(t / (beat_duration * 4)) % 12  # bar within current 12-bar pass
-
-		# Crash cymbal on bar 1 of pass 2 (the enhanced repeat)
-		if pass_num == 1 and bar_in_pass == 0 and beat_pos < 0.22:
-			var crash = _snes_crash(beat_pos, 0.20) * 0.55
-			sample_l += crash * 0.80
-			sample_r += crash
-
-		# Kick on beats 1 and 3
-		if beat_pos < 0.10:
-			var kick = _snes_kick(beat_pos, 0.095)
-			# Occasional double-kick: add extra kick on "and" of beat 1 in pass 2 bars 5-8
-			if pass_num == 1 and bar_in_pass >= 4 and bar_in_pass < 8:
-				kick *= 1.15  # Slightly heavier
-			sample_l += kick * 0.55
-			sample_r += kick * 0.55
-
-		# Double kick on "and" of beat 4 in pass 2 (every even bar)
-		if pass_num == 1 and bar_in_pass % 2 == 0:
-			var double_kick_pos = fmod(t - beat_duration * 3.5, beat_duration)
-			if double_kick_pos >= 0.0 and double_kick_pos < 0.08:
-				var dk = _snes_kick(double_kick_pos, 0.075) * 0.50
-				sample_l += dk
-				sample_r += dk
-
-		# Snare on 2 and 4
 		var beat_in_bar = int(t / beat_duration) % 4
-		if beat_in_bar in [1, 3] and beat_pos < 0.10:
-			var snare = _snes_snare(beat_pos, 0.095)
-			# Snare slightly wider than center for punch
-			sample_l += snare * 0.85
-			sample_r += snare * 0.92
 
-		# Hi-hat on every 8th note, open on off-beats
-		var eighth_pos = fmod(t, beat_duration / 2.0)
-		var is_on_beat = fmod(t / (beat_duration / 2.0), 2.0) < 1.0
-		if eighth_pos < 0.045:
-			var hat = _snes_hihat(eighth_pos, 0.018, not is_on_beat)
-			# Pan hats slightly right for stereo width
-			sample_l += hat * 0.65
-			sample_r += hat * 1.0
+		if is_groove_half:
+			# -------------------------------------------------------
+			# GROOVE DRUMS: Classic SNES RPG backbeat — clean and steady.
+			# No tom fills, no double kicks, no extra 16ths, no crashes.
+			# Kick: beats 1 and 3.
+			# Snare: beats 2 and 4 (standard backbeat).
+			# Hi-hat: every 8th note (closed), open hi-hat on "and" of beat 4.
+			# -------------------------------------------------------
 
-		# Extra 16th-note hi-hats in pass 2 (between the 8th notes)
-		if pass_num == 1:
-			var sixteenth_pos_hat = fmod(t, beat_duration / 4.0)
-			var sixteenth_count = int(t / (beat_duration / 4.0)) % 4
-			# Only hit 16ths on positions 1 and 3 (between 8th notes)
-			if sixteenth_count % 2 == 1 and sixteenth_pos_hat < 0.015:
-				var extra_hat = _snes_hihat(sixteenth_pos_hat, 0.012, false) * 0.35
-				sample_l += extra_hat * 0.60
-				sample_r += extra_hat * 0.95
+			# Kick: beats 1 and 3 only — clean, moderate volume
+			if beat_in_bar in [0, 2] and beat_pos < 0.10:
+				var kick = _snes_kick(beat_pos, 0.090)
+				sample_l += kick * 0.48
+				sample_r += kick * 0.48
 
-		# Tom fills on last beat of bar 4 and bar 8 (in every pass)
-		if beat_in_bar == 3 and bar_in_pass % 4 == 3:
-			var sub_beat = fmod(beat_pos * 4.0, 1.0)
-			var sub_idx = int(beat_pos * 4.0) % 4
-			# 4 toms descending across the beat (hi→lo)
-			var tom_pitches = [200.0, 150.0, 110.0, 80.0]
-			if sub_beat < 0.12:
-				var tom_vol = 0.50 if pass_num == 0 else 0.70
-				var tom = _snes_tom(sub_beat * (beat_duration / 4.0), tom_pitches[sub_idx], 0.10) * tom_vol
-				sample_l += tom * 0.85
-				sample_r += tom * 0.95
+			# Snare: classic backbeat on 2 and 4 — slightly softer than intense half
+			if beat_in_bar in [1, 3] and beat_pos < 0.10:
+				var snare = _snes_snare(beat_pos, 0.090)
+				sample_l += snare * 0.72
+				sample_r += snare * 0.78
 
-		# --- LEAD GUITAR: Tapping arpeggios bars 9-12, panned right ---
-		if sixteenth_idx >= 128:
+			# Hi-hat: closed on every 8th note
+			var eighth_pos_g = fmod(t, beat_duration / 2.0)
+			var eighth_count_g = int(t / (beat_duration / 2.0)) % 2
+			# Open hi-hat on the "and" of beat 4 (beat_in_bar == 3, off-beat 8th)
+			var is_and_of_beat4 = (beat_in_bar == 3) and (eighth_count_g == 1)
+			if eighth_pos_g < 0.045:
+				var hat_g = _snes_hihat(eighth_pos_g, 0.018, is_and_of_beat4)
+				# Pan slightly right for that classic stereo feel
+				sample_l += hat_g * 0.58
+				sample_r += hat_g * 0.88
+
+		else:
+			# -------------------------------------------------------
+			# INTENSE DRUMS: Original aggressive patterns for passes 0-1.
+			# -------------------------------------------------------
+
+			# Crash cymbal on bar 1 of pass 1 (the enhanced repeat)
+			if pass_num == 1 and bar_in_pass == 0 and beat_pos < 0.22:
+				var crash = _snes_crash(beat_pos, 0.20) * 0.55
+				sample_l += crash * 0.80
+				sample_r += crash
+
+			# Kick on beats 1 and 3
+			if beat_pos < 0.10:
+				var kick = _snes_kick(beat_pos, 0.095)
+				# Slightly heavier in pass 1 bars 5-8
+				if pass_num == 1 and bar_in_pass >= 4 and bar_in_pass < 8:
+					kick *= 1.15
+				sample_l += kick * 0.55
+				sample_r += kick * 0.55
+
+			# Double kick on "and" of beat 4 in pass 1 (every even bar)
+			if pass_num == 1 and bar_in_pass % 2 == 0:
+				var double_kick_pos = fmod(t - beat_duration * 3.5, beat_duration)
+				if double_kick_pos >= 0.0 and double_kick_pos < 0.08:
+					var dk = _snes_kick(double_kick_pos, 0.075) * 0.50
+					sample_l += dk
+					sample_r += dk
+
+			# Snare on 2 and 4
+			if beat_in_bar in [1, 3] and beat_pos < 0.10:
+				var snare = _snes_snare(beat_pos, 0.095)
+				sample_l += snare * 0.85
+				sample_r += snare * 0.92
+
+			# Hi-hat on every 8th note, open on off-beats
+			var eighth_pos = fmod(t, beat_duration / 2.0)
+			var is_on_beat = fmod(t / (beat_duration / 2.0), 2.0) < 1.0
+			if eighth_pos < 0.045:
+				var hat = _snes_hihat(eighth_pos, 0.018, not is_on_beat)
+				sample_l += hat * 0.65
+				sample_r += hat * 1.0
+
+			# Extra 16th-note hi-hats in pass 1 (between the 8th notes)
+			if pass_num == 1:
+				var sixteenth_pos_hat = fmod(t, beat_duration / 4.0)
+				var sixteenth_count = int(t / (beat_duration / 4.0)) % 4
+				if sixteenth_count % 2 == 1 and sixteenth_pos_hat < 0.015:
+					var extra_hat = _snes_hihat(sixteenth_pos_hat, 0.012, false) * 0.35
+					sample_l += extra_hat * 0.60
+					sample_r += extra_hat * 0.95
+
+			# Tom fills on last beat of bar 4 and bar 8 (in every intense pass)
+			if beat_in_bar == 3 and bar_in_pass % 4 == 3:
+				var sub_beat = fmod(beat_pos * 4.0, 1.0)
+				var sub_idx = int(beat_pos * 4.0) % 4
+				var tom_pitches = [200.0, 150.0, 110.0, 80.0]
+				if sub_beat < 0.12:
+					var tom_vol = 0.50 if pass_num == 0 else 0.70
+					var tom = _snes_tom(sub_beat * (beat_duration / 4.0), tom_pitches[sub_idx], 0.10) * tom_vol
+					sample_l += tom * 0.85
+					sample_r += tom * 0.95
+
+		# --- LEAD GUITAR: Tapping arpeggios bars 9-12, panned right (intense half only) ---
+		if not is_groove_half and sixteenth_idx >= 128:
 			var lead_idx = sixteenth_idx - 128
 			var lead_freq = lead_pattern[lead_idx]
 			if lead_freq > 0:
 				var lead_env = sqrt(max(1.0 - t_in_sixteenth, 0.0))
-				# Bright distorted tone: pulse + octave harmonic + detuned + hard clip
 				var lead_raw = _pulse_wave(t * lead_freq, 0.25) * 0.50
 				lead_raw += _square_wave(t * lead_freq * 2.0) * 0.30
 				lead_raw += _square_wave(t * lead_freq * 1.004) * 0.18  # Slight detune
 				lead_raw += _sine_wave(t * lead_freq * 3.0) * 0.08  # 12th shimmer
 				var lead_dist = clamp(lead_raw * 2.5, -1.0, 1.0)
 				var lead_vol = lead_dist * lead_env * 0.32
-				# Lead panned right
 				sample_l += lead_vol * 0.65
 				sample_r += lead_vol * 1.0
 
-		# --- COUNTER-MELODY: Triangle, panned right, enters section B ---
-		if sixteenth_idx >= 64 and sixteenth_idx < 128:
+		# --- COUNTER-MELODY: Triangle, panned right, enters section B (intense half only) ---
+		if not is_groove_half and sixteenth_idx >= 64 and sixteenth_idx < 128:
 			var cm_idx = sixteenth_idx - 64
-			# Harmonize a third above the main melody
 			var cm_freq = melody_pattern[cm_idx]
 			if cm_freq > 0:
 				cm_freq *= 1.25  # Approximate major third up
@@ -1083,9 +1172,14 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 				sample_l += cm * 0.5
 				sample_r += cm * 0.9
 
-		# Soft clip for warmth
-		sample_l = tanh(sample_l * 1.15) * 0.88
-		sample_r = tanh(sample_r * 1.15) * 0.88
+		# Soft clip for warmth.
+		# Groove half: lighter drive + lower ceiling for dynamic contrast (~1.5 dB quieter).
+		if is_groove_half:
+			sample_l = tanh(sample_l * 0.95) * 0.78
+			sample_r = tanh(sample_r * 0.95) * 0.78
+		else:
+			sample_l = tanh(sample_l * 1.15) * 0.88
+			sample_r = tanh(sample_r * 1.15) * 0.88
 		buffer.append(Vector2(sample_l, sample_r))
 
 	# Post-process: reverb for SNES room depth
@@ -2086,13 +2180,8 @@ func _adsr(t: float, attack: float, decay: float, sustain: float, release_start:
 
 
 func _vibrato_freq(base_freq: float, t: float, rate: float = 5.5, depth: float = 0.001, delay: float = 0.30) -> float:
-	"""Return frequency with vibrato modulation (SNES-style lead warmth).
-	   Vibrato ramps in after 'delay' seconds for natural feel.
-	   On short notes (< delay seconds), vibrato is essentially zero.
-	   rate: Hz of pitch wobble (4-6 Hz is classic)
-	   depth: fraction of semitone deviation (0.001 = barely perceptible, SNES-clean)"""
-	var ramp = clamp((t - delay) / 0.08, 0.0, 1.0)
-	return base_freq * (1.0 + sin(t * rate * TAU) * depth * ramp)
+	"""Vibrato disabled. Returns base_freq unchanged."""
+	return base_freq
 
 
 func _chorus_voice(t: float, freq: float, detune_cents: float, wave_type: String = "triangle") -> float:
@@ -2114,16 +2203,13 @@ func _chorus_voice(t: float, freq: float, detune_cents: float, wave_type: String
 
 
 func _snes_lead(t: float, freq: float, vibrato_delay: float = 0.40) -> float:
-	"""Classic SNES lead tone: pulse wave + detuned copy + vibrato.
-	   This is the signature sound of FF4/FF6/Chrono Trigger melodies.
-	   Vibrato only kicks in on long sustained notes (after vibrato_delay seconds)."""
-	var vfreq = _vibrato_freq(freq, t, 5.5, 0.001, vibrato_delay)
+	"""Classic SNES lead tone: pulse wave + detuned copy. Vibrato removed."""
 	# Primary: 25% pulse wave (SNES-like nasal lead)
-	var voice1 = _pulse_wave(t * vfreq, 0.25) * 0.5
-	# Secondary: slightly detuned pulse for chorus warmth (3 cents, was 7)
-	var voice2 = _pulse_wave(t * vfreq * pow(2.0, 3.0 / 1200.0), 0.25) * 0.25
+	var voice1 = _pulse_wave(t * freq, 0.25) * 0.5
+	# Secondary: slightly detuned pulse for chorus warmth (3 cents)
+	var voice2 = _pulse_wave(t * freq * pow(2.0, 3.0 / 1200.0), 0.25) * 0.25
 	# Tertiary: triangle octave up for shimmer
-	var voice3 = _triangle_wave(t * vfreq * 2.0) * 0.15
+	var voice3 = _triangle_wave(t * freq * 2.0) * 0.15
 	return voice1 + voice2 + voice3
 
 

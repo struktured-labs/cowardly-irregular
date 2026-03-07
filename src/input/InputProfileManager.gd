@@ -111,12 +111,15 @@ func apply_profile(profile_name: String) -> void:
 	active_profile = profile_name
 	var bindings = get_profile_bindings(profile_name)
 
+	print("[InputProfileManager] Applying profile: %s" % profile_name)
 	for action in REMAPPABLE_ACTIONS:
 		if not bindings.has(action):
 			continue
-		_replace_joypad_buttons(action, bindings[action])
+		var indices = bindings[action]
+		print("[InputProfileManager]   %s -> buttons %s" % [action, str(indices)])
+		_replace_joypad_buttons(action, indices)
 
-	print("[InputProfileManager] Applied profile: %s" % profile_name)
+	print("[InputProfileManager] Profile applied: %s" % profile_name)
 
 
 func _replace_joypad_buttons(action: String, button_indices: Array) -> void:

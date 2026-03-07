@@ -50,10 +50,13 @@ func _update_input_map() -> void:
 	if preferred_device == -1:
 		return
 
-	# Update all InputMap actions: set joypad events to preferred device
+	# Update all InputMap actions: replace joypad events bound to the wrong device.
+	# action_get_events() returns copies, so we must erase+re-add to mutate the map.
 	for action in InputMap.get_actions():
 		var events = InputMap.action_get_events(action)
 		for event in events:
 			if event is InputEventJoypadButton or event is InputEventJoypadMotion:
 				if event.device != preferred_device:
+					InputMap.action_erase_event(action, event)
 					event.device = preferred_device
+					InputMap.action_add_event(action, event)

@@ -40,6 +40,7 @@ var text_speed_index: int = 1
 var selected_index: int = 0
 var _settings_items: Array = []
 var _controls_submenu_open: bool = false
+var _jukebox_submenu_open: bool = false
 
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
@@ -244,17 +245,33 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(controls_item, 6, 400, 50,
 		_on_setting_click.bind(6), _on_setting_hover.bind(6))
 
+	# Jukebox button (debug-only)
+	if debug_log_enabled:
+		var jukebox_idx = _settings_items.size()
+		var jukebox_item = _create_action_button_neutral(
+			"Jukebox",
+			"[DEBUG] Play any music track",
+			jukebox_idx
+		)
+		jukebox_item.position = Vector2(16, 488)
+		panel.add_child(jukebox_item)
+		_settings_items.append({"control": jukebox_item, "type": "action", "id": "jukebox"})
+		MenuMouseHelper.make_clickable(jukebox_item, jukebox_idx, 400, 50,
+			_on_setting_click.bind(jukebox_idx), _on_setting_hover.bind(jukebox_idx))
+
 	# Quit to Title button
+	var quit_idx = _settings_items.size()
 	var quit_item = _create_action_button(
 		"Quit to Title",
 		"Return to the title screen",
-		7
+		quit_idx
 	)
-	quit_item.position = Vector2(16, 488)
+	var quit_y = 488 + (50 if debug_log_enabled else 0)
+	quit_item.position = Vector2(16, quit_y)
 	panel.add_child(quit_item)
 	_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
-	MenuMouseHelper.make_clickable(quit_item, 7, 400, 50,
-		_on_setting_click.bind(7), _on_setting_hover.bind(7))
+	MenuMouseHelper.make_clickable(quit_item, quit_idx, 400, 50,
+		_on_setting_click.bind(quit_idx), _on_setting_hover.bind(quit_idx))
 
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_settings)
@@ -661,7 +678,7 @@ func _input(event: InputEvent) -> void:
 	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
-	if _controls_submenu_open:
+	if _controls_submenu_open or _jukebox_submenu_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -845,6 +862,8 @@ func _activate_setting() -> void:
 	if item["type"] == "action":
 		if item["id"] == "controls":
 			_open_controls_menu()
+		elif item["id"] == "jukebox":
+			_open_jukebox_menu()
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
@@ -886,6 +905,24 @@ func _open_controls_menu() -> void:
 func _on_controls_closed() -> void:
 	"""Controls menu closed"""
 	_controls_submenu_open = false
+
+
+func _open_jukebox_menu() -> void:
+	"""Open the jukebox debug submenu"""
+	_jukebox_submenu_open = true
+	var JukeboxMenuScript = load("res://src/ui/JukeboxMenu.gd")
+	if JukeboxMenuScript:
+		var jukebox = JukeboxMenuScript.new()
+		jukebox.set_anchors_preset(Control.PRESET_FULL_RECT)
+		jukebox.closed.connect(_on_jukebox_closed)
+		add_child(jukebox)
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
+
+
+func _on_jukebox_closed() -> void:
+	"""Jukebox menu closed"""
+	_jukebox_submenu_open = false
 
 
 func _play_open_animation() -> void:
