@@ -5,14 +5,14 @@
 			"path": "res://assets/sprites/jobs/fighter",
 			"frame_width": 256,
 			"frame_height": 256,
-			"fps": 8,
+			"fps": 10,
 			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		},
 		"mage": {
 			"path": "res://assets/sprites/jobs/mage",
 			"frame_width": 256,
 			"frame_height": 256,
-			"fps": 8,
+			"fps": 10,
 			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		},
 		"cleric": {
@@ -38,5 +38,126 @@
 		}
 	},
 	"party_sheets": {},
-	"monster_sheets": {}
+	"monster_sheets": {
+		"slime": {
+			"path": "res://assets/sprites/monsters/slime.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"bat": {
+			"path": "res://assets/sprites/monsters/bat.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 8,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"goblin": {
+			"path": "res://assets/sprites/monsters/goblin.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"wolf": {
+			"path": "res://assets/sprites/monsters/wolf.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 8,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"spider": {
+			"path": "res://assets/sprites/monsters/spider.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"skeleton": {
+			"path": "res://assets/sprites/monsters/skeleton.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"ghost": {
+			"path": "res://assets/sprites/monsters/ghost.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 5,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"imp": {
+			"path": "res://assets/sprites/monsters/imp.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 8,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"troll": {
+			"path": "res://assets/sprites/monsters/troll.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 5,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"snake": {
+			"path": "res://assets/sprites/monsters/snake.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		}
+	}
 }

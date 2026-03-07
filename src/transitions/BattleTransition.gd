@@ -62,6 +62,9 @@ var _screen_texture: ImageTexture
 var _screen_rect: TextureRect
 var _viewport_size: Vector2
 
+## Iris-open shader material for battle reveal
+var _iris_shader: ShaderMaterial
+
 
 func _ready() -> void:
 	layer = 100  # Above everything
@@ -103,6 +106,15 @@ func _create_screen_rect() -> TextureRect:
 	return rect
 
 
+## Quick white flash to sell the "encounter!" moment, like classic FF games
+func _play_encounter_flash() -> void:
+	_overlay.color = Color.WHITE
+	_overlay.modulate.a = 1.0
+	await get_tree().create_timer(0.05).timeout
+	_overlay.modulate.a = 0.0
+	_overlay.color = Color.BLACK
+
+
 ## Play battle transition based on enemy type
 func play_battle_transition(enemy_types: Array) -> void:
 	if _is_transitioning:
@@ -114,6 +126,9 @@ func play_battle_transition(enemy_types: Array) -> void:
 
 	# Capture screen before any effects are drawn
 	await _capture_screen()
+
+	# Brief white flash at moment of encounter, classic FF style
+	await _play_encounter_flash()
 
 	# Determine transition type from first enemy
 	var transition_type = _get_transition_for_enemies(enemy_types)
@@ -163,16 +178,54 @@ func play_battle_transition(enemy_types: Array) -> void:
 	transition_midpoint.emit()
 
 
-## Fade out after battle transition (to reveal battle scene)
+## Fade out after battle transition using iris-open circular wipe to reveal battle scene
 func fade_out() -> void:
 	print("[TRANSITION] fade_out() called - overlay alpha: %s, color: %s" % [_overlay.modulate.a, _overlay.color])
+
+	# Build an iris-open shader inline so we have no external dependency
+	var shader_code = """
+shader_type canvas_item;
+uniform float radius : hint_range(0.0, 1.5) = 0.0;
+uniform vec2 center = vec2(0.5, 0.5);
+
+void fragment() {
+    vec2 uv = UV - center;
+    uv.x *= SCREEN_PIXEL_SIZE.x / SCREEN_PIXEL_SIZE.y;
+    float dist = length(uv);
+    float edge = smoothstep(radius - 0.02, radius + 0.02, dist);
+    COLOR = vec4(0.0, 0.0, 0.0, edge);
+}
+"""
+
+	var shader = Shader.new()
+	shader.code = shader_code
+
+	_iris_shader = ShaderMaterial.new()
+	_iris_shader.shader = shader
+	_iris_shader.set_shader_parameter("radius", 0.0)
+	_iris_shader.set_shader_parameter("center", Vector2(0.5, 0.5))
+
+	# Apply the shader material to the overlay for the iris wipe
+	_overlay.material = _iris_shader
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+
+	# Expand the iris radius from 0 to 1.2 (past corners) over 0.35s
 	var tween = create_tween()
-	tween.tween_property(_overlay, "modulate:a", 0.0, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
+	tween.tween_method(
+		func(r: float) -> void:
+			if is_instance_valid(_iris_shader):
+				_iris_shader.set_shader_parameter("radius", r),
+		0.0, 1.2, 0.35
+	).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	await tween.finished
 
-	# Check if we're still valid after the async tween
 	if not is_instance_valid(self):
 		return
+
+	# Remove shader and hide overlay fully
+	_overlay.material = null
+	_overlay.modulate.a = 0.0
 
 	print("[TRANSITION] fade_out() finished - overlay alpha: %s" % _overlay.modulate.a)
 	_cleanup_effects()
@@ -430,7 +483,18 @@ func _play_shatter() -> void:
 			_effect_container.add_child(frag)
 			_fragments.append(frag)
 
+	# Screen shake: 3 rapid camera jolts for impact feel before fragments fly
+	var original_offset = _effect_container.position
+	for _jolt in range(3):
+		_effect_container.position = original_offset + Vector2(
+			randf_range(-5.0, 5.0),
+			randf_range(-5.0, 5.0)
+		)
+		await get_tree().create_timer(0.1).timeout
+	_effect_container.position = original_offset
+
 	# Phase 1: fragments explode outward with rotation and gravity (0.75s)
+	# EASE_IN + TRANS_QUAD gives strong gravity acceleration feel
 	var phase_duration = transition_duration * 0.75
 	var tween = create_tween()
 	tween.set_parallel(true)
@@ -448,7 +512,7 @@ func _play_shatter() -> void:
 		var rot_amount = randf_range(-TAU * 0.6, TAU * 0.6)
 		var delay = randf_range(0.0, 0.12)
 
-		tween.tween_property(frag, "position", target_pos, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+		tween.tween_property(frag, "position", target_pos, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 		tween.tween_property(frag, "rotation", rot_amount, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 		tween.tween_property(frag, "modulate:a", 0.0, phase_duration * 0.6).set_delay(delay + phase_duration * 0.4)
 
@@ -461,7 +525,7 @@ func _play_shatter() -> void:
 	_overlay.color = Color.BLACK
 
 
-## SPIRAL - Captured screen spins and shrinks into nothingness
+## SPIRAL - Captured screen spins and shrinks into nothingness with magic dust sparkles
 func _play_spiral() -> void:
 	_clear_fragments()
 
@@ -471,13 +535,46 @@ func _play_spiral() -> void:
 	_effect_container.add_child(_screen_rect)
 
 	var phase_duration = transition_duration * 0.75
+	var center = _viewport_size / 2.0
+
+	# Spawn sparkle particles that trail inward toward the vortex
+	var sparkle_count = 28
+	var sparkles: Array[Control] = []
+	for s in range(sparkle_count):
+		var sparkle = ColorRect.new()
+		sparkle.size = Vector2(randf_range(2.0, 5.0), randf_range(2.0, 5.0))
+		# Distribute around a ring outside the center
+		var angle = float(s) / sparkle_count * TAU
+		var dist = randf_range(_viewport_size.x * 0.2, _viewport_size.x * 0.45)
+		sparkle.position = center + Vector2(cos(angle), sin(angle)) * dist
+		# Bright magic colors: white, cyan, pale yellow, lavender
+		var hue = fmod(float(s) / sparkle_count * 2.0, 1.0)
+		sparkle.color = Color.from_hsv(hue, 0.3, 1.0)
+		sparkle.modulate.a = 0.0
+		sparkle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_effect_container.add_child(sparkle)
+		_fragments.append(sparkle)
+		sparkles.append(sparkle)
 
 	# Tween: rotate 720 degrees, shrink to zero, tint purple
+	# EASE_IN_OUT + TRANS_SINE gives smooth spin-up and spin-down
 	var tween = create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(_screen_rect, "rotation", TAU * 2.0, phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(_screen_rect, "rotation", TAU * 2.0, phase_duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(_screen_rect, "scale", Vector2(0.02, 0.02), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 	tween.tween_property(_screen_rect, "modulate", Color(0.6, 0.4, 0.9, 0.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+	# Sparkles: fade in early, then spiral inward to center and fade out
+	for s in range(sparkles.size()):
+		var sparkle = sparkles[s]
+		var delay = float(s) / sparkles.size() * phase_duration * 0.4
+		var inward_duration = phase_duration * 0.65
+		# Drift toward center with slight spiral offset
+		var drift_angle = float(s) / sparkles.size() * TAU + TAU * 0.5
+		var end_pos = center + Vector2(cos(drift_angle), sin(drift_angle)) * 8.0 - sparkle.size / 2.0
+		tween.tween_property(sparkle, "modulate:a", 1.0, 0.12).set_delay(delay)
+		tween.tween_property(sparkle, "position", end_pos, inward_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
+		tween.tween_property(sparkle, "modulate:a", 0.0, inward_duration * 0.4).set_delay(delay + inward_duration * 0.6)
 
 	await tween.finished
 
@@ -500,10 +597,11 @@ func _play_zoom_burst() -> void:
 	var phase_duration = transition_duration * 0.65
 
 	# Zoom in hard and fade to white
+	# EASE_IN + TRANS_EXPO gives dramatic exponential acceleration
 	var tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(_screen_rect, "scale", Vector2(3.0, 3.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
-	tween.tween_property(_screen_rect, "modulate", Color(2.0, 2.0, 2.0, 0.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(_screen_rect, "modulate", Color(2.0, 2.0, 2.0, 0.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 
 	await tween.finished
 
@@ -575,6 +673,7 @@ func _play_drip() -> void:
 		_fragments.append(col_rect)
 
 	# Animate strips sliding down at different speeds - wave pattern
+	# EASE_IN + TRANS_CUBIC gives natural gravity drip acceleration
 	var tween = create_tween()
 	tween.set_parallel(true)
 
@@ -587,7 +686,10 @@ func _play_drip() -> void:
 		var speed_variation = randf_range(0.7, 1.0)
 		var slide_duration = phase_duration * speed_variation
 		var delay = wave_offset + randf_range(0.0, 0.08)
+		# Slight random horizontal wobble (+-2px) for organic melt feel
+		var wobble_x = col_rect.position.x + randf_range(-2.0, 2.0)
 
+		tween.tween_property(col_rect, "position:x", wobble_x, slide_duration * 0.3).set_delay(delay).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(col_rect, "position:y", _viewport_size.y, slide_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 
 	await tween.finished
@@ -637,7 +739,7 @@ func _play_curtain() -> void:
 	_overlay.modulate.a = 1.0
 
 
-## PIXELATE - Simulated pixelation: captured screen resized to increasingly coarse blocks
+## PIXELATE - Simulated pixelation with 12-step smoother progression and darkening
 func _play_pixelate() -> void:
 	_clear_fragments()
 
@@ -645,9 +747,9 @@ func _play_pixelate() -> void:
 	_screen_rect = _create_screen_rect()
 	_effect_container.add_child(_screen_rect)
 
-	# Simulate pixelation by repeatedly downsampling the source image and
-	# redisplaying it with NEAREST filtering across increasing block sizes
-	var steps = 8
+	# 12-step smoother block size progression with gradual dark tint
+	var block_sizes = [2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128]
+	var steps = block_sizes.size()
 	var phase_duration = transition_duration * 0.7
 	var step_time = phase_duration / steps
 
@@ -655,10 +757,8 @@ func _play_pixelate() -> void:
 	var w = int(_viewport_size.x)
 	var h = int(_viewport_size.y)
 
-	for step in range(1, steps + 1):
-		# Compute block size: grows from 4px to ~64px
-		var block_size = int(pow(2.0, step + 1))  # 4, 8, 16, 32, 64, 128, 256, 512
-		block_size = min(block_size, 128)
+	for step in range(steps):
+		var block_size = block_sizes[step]
 
 		# Downsample
 		var small_w = max(1, w / block_size)
@@ -671,6 +771,10 @@ func _play_pixelate() -> void:
 
 		var pixelated_tex = ImageTexture.create_from_image(small_img)
 		_screen_rect.texture = pixelated_tex
+
+		# Gradually darken the image as blocks get larger (0 = no tint, 1 = full dark)
+		var dark_factor = float(step) / (steps - 1)
+		_screen_rect.modulate = Color(1.0 - dark_factor * 0.7, 1.0 - dark_factor * 0.7, 1.0 - dark_factor * 0.7, 1.0)
 
 		await get_tree().create_timer(step_time).timeout
 
@@ -711,6 +815,7 @@ func _play_slice() -> void:
 		_fragments.append(slice_rect)
 
 	# Alternate slices slide left/right off screen
+	# EASE_IN_OUT + TRANS_BACK gives overshoot-and-settle feel
 	var tween = create_tween()
 	tween.set_parallel(true)
 	var phase_duration = transition_duration * 0.75
@@ -721,7 +826,7 @@ func _play_slice() -> void:
 		var target_x = direction * (_viewport_size.x * 1.2)
 		var delay = i * 0.04
 
-		tween.tween_property(slice_rect, "position:x", target_x, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
+		tween.tween_property(slice_rect, "position:x", target_x, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_BACK)
 
 	await tween.finished
 
@@ -844,4 +949,5 @@ func _cleanup_effects() -> void:
 		_screen_rect.queue_free()
 		_screen_rect = null
 	_screen_texture = null
+	_iris_shader = null
 	_effect_container.modulate = Color.WHITE
