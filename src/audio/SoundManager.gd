@@ -953,8 +953,8 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 			var note_t = t_in_sixteenth * sixteenth_duration
 			var melody_env = _adsr(note_t, 0.005, 0.04, 0.6, sixteenth_duration * 0.7, sixteenth_duration)
 			var melody_vol = 0.10 if sixteenth_idx >= 128 else 0.22  # Duck for lead
-			# SNES lead: pulse + detuned + vibrato
-			var vfreq = _vibrato_freq(melody_freq, t, 5.5, 0.009, 0.06)
+			# SNES lead: pulse + detuned + vibrato (depth halved to avoid wobble)
+			var vfreq = _vibrato_freq(melody_freq, t, 5.5, 0.004, 0.25)
 			var lead_wave = _pulse_wave(t * vfreq, 0.25) * 0.55
 			lead_wave += _pulse_wave(t * vfreq * pow(2.0, 6.0 / 1200.0), 0.25) * 0.28  # +6 cents
 			lead_wave += _triangle_wave(t * vfreq * 2.0) * 0.12  # Octave shimmer
@@ -1500,8 +1500,8 @@ func _generate_boss_music_buffer(rate: int, duration: float, bpm: float) -> Pack
 		if melody_freq > 0:
 			var note_t = t_in_sixteenth * sixteenth_duration
 			var melody_env = _adsr(note_t, 0.004, 0.035, 0.65, sixteenth_duration * 0.75, sixteenth_duration)
-			# Boss lead: harsh pulse + detuned square for menace
-			var vfreq = _vibrato_freq(melody_freq, t, 5.0, 0.008, 0.05)
+			# Boss lead: harsh pulse + detuned square for menace (depth halved, delay increased)
+			var vfreq = _vibrato_freq(melody_freq, t, 5.0, 0.004, 0.20)
 			var mel = _pulse_wave(t * vfreq, 0.25) * 0.50
 			mel += _square_wave(t * vfreq * 1.004) * 0.28   # Thick detune
 			mel += _square_wave(t * vfreq * 0.997) * 0.15   # Lower detune for width
@@ -1997,11 +1997,11 @@ func _adsr(t: float, attack: float, decay: float, sustain: float, release_start:
 		return 0.0
 
 
-func _vibrato_freq(base_freq: float, t: float, rate: float = 5.5, depth: float = 0.012, delay: float = 0.1) -> float:
+func _vibrato_freq(base_freq: float, t: float, rate: float = 5.5, depth: float = 0.004, delay: float = 0.25) -> float:
 	"""Return frequency with vibrato modulation (SNES-style lead warmth).
 	   Vibrato ramps in after 'delay' seconds for natural feel.
 	   rate: Hz of pitch wobble (4-6 Hz is classic)
-	   depth: fraction of semitone deviation (0.01 = ~1 cent)"""
+	   depth: fraction of semitone deviation (0.004 = subtle warmth, not wobble)"""
 	var ramp = clamp((t - delay) / 0.08, 0.0, 1.0)
 	return base_freq * (1.0 + sin(t * rate * TAU) * depth * ramp)
 
@@ -2024,14 +2024,14 @@ func _chorus_voice(t: float, freq: float, detune_cents: float, wave_type: String
 			return _triangle_wave(t * detuned_freq)
 
 
-func _snes_lead(t: float, freq: float, vibrato_delay: float = 0.08) -> float:
+func _snes_lead(t: float, freq: float, vibrato_delay: float = 0.25) -> float:
 	"""Classic SNES lead tone: pulse wave + detuned copy + vibrato.
 	   This is the signature sound of FF4/FF6/Chrono Trigger melodies."""
-	var vfreq = _vibrato_freq(freq, t, 5.5, 0.010, vibrato_delay)
+	var vfreq = _vibrato_freq(freq, t, 5.5, 0.003, vibrato_delay)
 	# Primary: 25% pulse wave (SNES-like nasal lead)
 	var voice1 = _pulse_wave(t * vfreq, 0.25) * 0.5
-	# Secondary: slightly detuned pulse for chorus warmth
-	var voice2 = _pulse_wave(t * vfreq * pow(2.0, 7.0 / 1200.0), 0.25) * 0.25
+	# Secondary: slightly detuned pulse for chorus warmth (3 cents, was 7)
+	var voice2 = _pulse_wave(t * vfreq * pow(2.0, 3.0 / 1200.0), 0.25) * 0.25
 	# Tertiary: triangle octave up for shimmer
 	var voice3 = _triangle_wave(t * vfreq * 2.0) * 0.15
 	return voice1 + voice2 + voice3
@@ -3456,8 +3456,8 @@ func _generate_overworld_music(rate: int, duration: float, bpm: float) -> Packed
 		if melody_freq > 0:
 			var note_t = t_in_sixteenth * sixteenth_dur
 			var melody_env = _adsr(note_t, 0.008, 0.055, 0.70, sixteenth_dur * 0.75, sixteenth_dur)
-			# Warm overworld lead: vibrato triangle + detuned copy for chorus
-			var vfreq = _vibrato_freq(melody_freq, t, 4.8, 0.008, 0.12)
+			# Warm overworld lead: vibrato triangle + detuned copy for chorus (depth halved)
+			var vfreq = _vibrato_freq(melody_freq, t, 4.8, 0.004, 0.25)
 			var mel = _triangle_wave(t * vfreq) * 0.55
 			mel += _triangle_wave(t * vfreq * pow(2.0, 5.0 / 1200.0)) * 0.28  # +5 cents
 			mel += _triangle_wave(t * vfreq * pow(2.0, -4.0 / 1200.0)) * 0.18  # -4 cents
@@ -3465,7 +3465,7 @@ func _generate_overworld_music(rate: int, duration: float, bpm: float) -> Packed
 			mel *= melody_env * 0.20
 			# Counter-harmony a 6th above (SNES layered voices)
 			var harm_freq = melody_freq * 1.667  # Major 6th
-			var harm = _triangle_wave(t * _vibrato_freq(harm_freq, t, 4.8, 0.007, 0.15)) * 0.12 * melody_env
+			var harm = _triangle_wave(t * _vibrato_freq(harm_freq, t, 4.8, 0.003, 0.28)) * 0.12 * melody_env
 			sample_l += mel * 0.90 + harm * 0.45
 			sample_r += mel * 0.75 + harm * 0.90
 
@@ -3562,14 +3562,14 @@ func _generate_village_music(rate: int, duration: float, bpm: float) -> PackedVe
 		if melody_freq > 0:
 			var note_t = t_in_eighth * eighth_dur
 			var melody_env = _adsr(note_t, 0.012, 0.06, 0.78, eighth_dur * 0.80, eighth_dur)
-			# Flute-like: sine + triangle with warm vibrato
-			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.010, 0.15)
+			# Flute-like: sine + triangle with warm vibrato (depth halved)
+			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.005, 0.25)
 			var mel = sin(t * vfreq * TAU) * 0.55         # Sine fundamental (flute)
 			mel += _triangle_wave(t * vfreq) * 0.32       # Triangle for body
 			mel += sin(t * vfreq * 2.0 * TAU) * 0.10     # Octave harmonic
 			mel *= melody_env * 0.20
 			# Harmony a third above for warmth (pastoral feel)
-			var h_freq = _vibrato_freq(melody_freq * 1.25, t, 4.5, 0.008, 0.18)
+			var h_freq = _vibrato_freq(melody_freq * 1.25, t, 4.5, 0.004, 0.28)
 			var harm = (sin(t * h_freq * TAU) * 0.6 + _triangle_wave(t * h_freq) * 0.3) * melody_env * 0.10
 			# Lead slightly left, harmony slightly right
 			sample_l += mel * 0.95 + harm * 0.40
@@ -3673,8 +3673,8 @@ func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVecto
 		if melody_freq > 0:
 			var note_t = t_in_sixteenth * sixteenth_dur
 			var melody_env = _adsr(note_t, 0.015, 0.08, 0.60, sixteenth_dur * 0.70, sixteenth_dur)
-			# Hollow cave lead: triangle with slight vibrato + detuned copy
-			var vfreq = _vibrato_freq(melody_freq, t, 3.8, 0.007, 0.20)
+			# Hollow cave lead: triangle with slight vibrato + detuned copy (depth halved)
+			var vfreq = _vibrato_freq(melody_freq, t, 3.8, 0.003, 0.25)
 			var mel = _triangle_wave(t * vfreq) * 0.55
 			mel += _triangle_wave(t * vfreq * 1.008) * 0.30  # Detuned for eerie beating
 			mel += sin(t * vfreq * TAU) * 0.15               # Sine for hollow quality
@@ -3824,7 +3824,7 @@ func _generate_suburban_music(rate: int, duration: float, bpm: float) -> PackedV
 		if melody_freq > 0:
 			var note_t = t_in_sixteenth * sixteenth_dur
 			var melody_env = _adsr(note_t, 0.010, 0.06, 0.72, sixteenth_dur * 0.78, sixteenth_dur)
-			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.009, 0.12)
+			var vfreq = _vibrato_freq(melody_freq, t, 4.5, 0.004, 0.25)
 			# EarthBound-style: triangle lead with detuned warmth
 			var mel = _triangle_wave(t * vfreq) * 0.55
 			mel += _triangle_wave(t * vfreq * pow(2.0, 5.0 / 1200.0)) * 0.28  # +5 cents chorus
