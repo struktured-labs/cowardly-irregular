@@ -17,6 +17,7 @@ signal closed()
 signal menu_action(action: String, target: Combatant)
 signal quit_to_title()
 signal teleport_requested(target_map: String, spawn_point: String)
+signal party_leader_changed(new_index: int)
 
 ## Menu options (built dynamically in setup to include debug options)
 var _menu_options: Array = []
@@ -126,7 +127,7 @@ func _build_ui() -> void:
 
 	# Footer help text
 	var footer = Label.new()
-	footer.text = "↑↓: Select  A/Click: Confirm  B/RClick: Close  ←→: Character"
+	footer.text = "↑↓: Select  A/Click: Confirm  B/RClick: Close  ←→: Character  L/R: Leader"
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -186,12 +187,23 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	"""Create a character status card"""
 	var card = Control.new()
 
+	var is_leader = (index == GameState.party_leader_index)
+
 	# Card background
 	var card_bg = ColorRect.new()
 	card_bg.color = SELECTED_COLOR if index == selected_character else Color(0.08, 0.08, 0.12)
 	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card_bg.name = "Background"
 	card.add_child(card_bg)
+
+	# Leader star indicator (top-right corner of card)
+	var leader_label = Label.new()
+	leader_label.name = "LeaderStar"
+	leader_label.text = "★" if is_leader else ""
+	leader_label.position = Vector2(4, 82)
+	leader_label.add_theme_font_size_override("font_size", 10)
+	leader_label.add_theme_color_override("font_color", Color.YELLOW)
+	card.add_child(leader_label)
 
 	# Character portrait (left)
 	var job_id = member.job.get("id", "fighter") if member.job else "fighter"
@@ -519,6 +531,24 @@ func _input(event: InputEvent) -> void:
 		selected_character = (selected_character + 1) % party.size()
 		_update_selection()
 		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
+	# L shoulder / battle_defer = cycle leader backward
+	elif event.is_action_pressed("battle_defer") and not event.is_echo():
+		GameState.cycle_party_leader(-1)
+		_ui_built = false
+		call_deferred("_build_ui")
+		SoundManager.play_ui("menu_move")
+		party_leader_changed.emit(GameState.party_leader_index)
+		get_viewport().set_input_as_handled()
+
+	# R shoulder / battle_advance = cycle leader forward
+	elif event.is_action_pressed("battle_advance") and not event.is_echo():
+		GameState.cycle_party_leader(1)
+		_ui_built = false
+		call_deferred("_build_ui")
+		SoundManager.play_ui("menu_move")
+		party_leader_changed.emit(GameState.party_leader_index)
 		get_viewport().set_input_as_handled()
 
 	# Confirm

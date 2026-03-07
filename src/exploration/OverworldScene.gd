@@ -324,7 +324,9 @@ func _setup_player() -> void:
 	player = OverworldPlayerScript.new()
 	player.name = "Player"
 	player.position = spawn_points.get("default", Vector2(320, 256))
-	player.set_job("fighter")
+	var leader = GameState.get_party_leader()
+	var job_id = leader.get("job_id", "fighter") if leader else "fighter"
+	player.set_job(job_id)
 	add_child(player)
 
 

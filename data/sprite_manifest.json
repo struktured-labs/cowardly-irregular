@@ -10,24 +10,24 @@
 		},
 		"mage": {
 			"path": "res://assets/sprites/jobs/mage",
-			"frame_width": 80,
-			"frame_height": 100,
+			"frame_width": 256,
+			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		},
 		"cleric": {
 			"path": "res://assets/sprites/jobs/cleric",
-			"frame_width": 80,
-			"frame_height": 100,
+			"frame_width": 256,
+			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		},
 		"rogue": {
 			"path": "res://assets/sprites/jobs/rogue",
-			"frame_width": 80,
-			"frame_height": 100,
+			"frame_width": 256,
+			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		},
 		"bard": {
 			"path": "res://assets/sprites/jobs/bard",

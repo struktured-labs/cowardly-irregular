@@ -270,10 +270,26 @@ func _on_autobattle_editor_closed() -> void:
 		_exploration_scene.resume()
 
 
+func _sync_party_to_game_state() -> void:
+	"""Sync runtime Combatant party into GameState.player_party for leader lookup"""
+	GameState.player_party.clear()
+	for member in party:
+		var job_id = "fighter"
+		if member.job and member.job is Dictionary:
+			job_id = member.job.get("id", "fighter")
+		GameState.player_party.append({"job_id": job_id, "name": member.combatant_name})
+	# Clamp leader index in case party size changed
+	if not GameState.player_party.is_empty():
+		GameState.party_leader_index = clampi(GameState.party_leader_index, 0, GameState.player_party.size() - 1)
+
+
 func _open_overworld_menu() -> void:
 	"""Open the overworld/pause menu"""
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		return  # Already open
+
+	# Sync party data into GameState so leader cycling has job info
+	_sync_party_to_game_state()
 
 	# Pause exploration
 	if _exploration_scene and _exploration_scene.has_method("pause"):
@@ -294,6 +310,8 @@ func _open_overworld_menu() -> void:
 	_overworld_menu.quit_to_title.connect(_on_quit_to_title)
 	if _overworld_menu.has_signal("teleport_requested"):
 		_overworld_menu.teleport_requested.connect(_on_teleport_requested)
+	if _overworld_menu.has_signal("party_leader_changed"):
+		_overworld_menu.party_leader_changed.connect(_on_party_leader_changed)
 	SoundManager.play_ui("menu_open")
 	print("Overworld menu opened")
 
@@ -310,6 +328,22 @@ func _on_overworld_menu_closed() -> void:
 	# Resume exploration
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
+
+
+func _on_party_leader_changed(new_index: int) -> void:
+	"""Update the overworld player sprite when the party leader changes"""
+	if party.is_empty() or new_index >= party.size():
+		return
+	var leader = party[new_index]
+	print("[LEADER] Party leader changed to index %d: %s" % [new_index, leader.combatant_name])
+	if _exploration_scene:
+		if _exploration_scene.has_method("set_player_appearance"):
+			_exploration_scene.set_player_appearance(leader)
+		elif _exploration_scene.has_method("set_player_job"):
+			var job_id = "fighter"
+			if leader.job and leader.job is Dictionary:
+				job_id = leader.job.get("id", "fighter")
+			_exploration_scene.set_player_job(job_id)
 
 
 func _on_quit_to_title() -> void:
@@ -888,9 +922,10 @@ func _start_exploration() -> void:
 	if exploration_scene.has_method("spawn_player_at"):
 		exploration_scene.spawn_player_at(_spawn_point)
 
-	# Set player appearance based on party leader
+	# Set player appearance based on party leader (respects party_leader_index)
 	if party.size() > 0:
-		var leader = party[0]
+		var leader_idx = clampi(GameState.party_leader_index, 0, party.size() - 1)
+		var leader = party[leader_idx]
 		var leader_job = "fighter"
 		if leader.job and leader.job is Dictionary:
 			leader_job = leader.job.get("id", "fighter")

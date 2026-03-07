@@ -22,6 +22,9 @@ var macro_volatility: float = 0.0  # 0.0-1.0, soft cap
 ## Player party state (references to Combatant nodes)
 var player_party: Array[Dictionary] = []
 
+## Party leader index (which party member leads the overworld sprite)
+var party_leader_index: int = 0
+
 ## Economy
 var party_gold: int = 500  # Starting gold
 
@@ -146,6 +149,7 @@ func _create_save_data() -> Dictionary:
 		"corruption_level": corruption_level,
 		"party_gold": party_gold,
 		"player_party": player_party.duplicate(true),
+		"party_leader_index": party_leader_index,
 		"game_constants": game_constants.duplicate(),
 		"meta_features": meta_features.duplicate(),
 		"corruption_effects": corruption_effects.duplicate()
@@ -162,6 +166,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		party_gold = save_data["party_gold"]
 	if save_data.has("player_party"):
 		player_party = save_data["player_party"].duplicate(true)
+	if save_data.has("party_leader_index"):
+		party_leader_index = save_data["party_leader_index"]
 	if save_data.has("game_constants"):
 		game_constants = save_data["game_constants"].duplicate()
 	if save_data.has("meta_features"):
@@ -346,6 +352,20 @@ func spend_gold(amount: int) -> bool:
 func get_gold() -> int:
 	"""Get current party gold"""
 	return party_gold
+
+
+## Party leader methods
+func get_party_leader() -> Dictionary:
+	if player_party.is_empty():
+		return {}
+	var idx = clampi(party_leader_index, 0, player_party.size() - 1)
+	return player_party[idx]
+
+
+func cycle_party_leader(delta: int) -> void:
+	if player_party.is_empty():
+		return
+	party_leader_index = (party_leader_index + delta + player_party.size()) % player_party.size()
 
 
 ## Utility
