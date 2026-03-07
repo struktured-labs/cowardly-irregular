@@ -7,11 +7,12 @@ class_name ControlsMenu
 signal closed()
 
 ## UI State
-var selected_index: int = 0  # 0=profile row, 1-6=action rows, 7=reset
+var selected_index: int = 0  # 0=profile row, 1-6=action rows, 7=reset, 8=test buttons
 var _capturing: bool = false
 var _capture_action: String = ""
 var _capture_timer: float = 0.0
 const CAPTURE_TIMEOUT = 5.0
+var _testing: bool = false
 
 ## Node references
 var _panel: Control
@@ -19,12 +20,14 @@ var _profile_label: Label
 var _action_labels: Dictionary = {}  # action -> Label showing current button
 var _highlight_refs: Array = []
 var _capture_overlay: Control
+var _test_overlay: Control
+var _test_result_label: Label
 var _conflict_label: Label
 var _flash_label: Label
 var _flash_timer: float = 0.0
 
 ## Layout
-const ITEM_COUNT = 8  # profile + 6 actions + reset
+const ITEM_COUNT = 9  # profile + 6 actions + reset + test buttons
 const ROW_HEIGHT = 40
 const ROW_START_Y = 48
 
@@ -105,6 +108,10 @@ func _build_ui() -> void:
 	# Row 7: Reset to Default
 	y += 8
 	_add_row(7, y, "Reset to Default", "", false, true)
+	y += ROW_HEIGHT
+
+	# Row 8: Test Buttons
+	_add_row(8, y, "Test Buttons", "", false, true)
 
 	# Conflict display
 	_conflict_label = Label.new()
@@ -135,6 +142,9 @@ func _build_ui() -> void:
 
 	# Capture overlay (hidden)
 	_build_capture_overlay()
+
+	# Test overlay (hidden)
+	_build_test_overlay()
 
 	_update_selection()
 
@@ -249,6 +259,127 @@ func _build_capture_overlay() -> void:
 	box.add_child(timer_label)
 
 
+func _build_test_overlay() -> void:
+	_test_overlay = Control.new()
+	_test_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_test_overlay.visible = false
+	_test_overlay.z_index = 10
+	add_child(_test_overlay)
+
+	var overlay_bg = ColorRect.new()
+	overlay_bg.color = CAPTURE_BG
+	overlay_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_test_overlay.add_child(overlay_bg)
+
+	var box = ColorRect.new()
+	box.color = PANEL_COLOR
+	box.position = Vector2(size.x * 0.2, size.y * 0.25)
+	box.size = Vector2(size.x * 0.6, size.y * 0.5)
+	box.name = "TestBox"
+	_test_overlay.add_child(box)
+
+	RetroPanel.add_border(box, box.size, BORDER_LIGHT, BORDER_SHADOW)
+
+	var title = Label.new()
+	title.text = "BUTTON TEST"
+	title.position = Vector2(20, 16)
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color.YELLOW)
+	box.add_child(title)
+
+	var prompt = Label.new()
+	prompt.text = "Press any gamepad button..."
+	prompt.position = Vector2(20, 52)
+	prompt.add_theme_font_size_override("font_size", 14)
+	prompt.add_theme_color_override("font_color", TEXT_COLOR)
+	prompt.name = "TestPrompt"
+	box.add_child(prompt)
+
+	_test_result_label = Label.new()
+	_test_result_label.text = ""
+	_test_result_label.position = Vector2(20, 90)
+	_test_result_label.add_theme_font_size_override("font_size", 22)
+	_test_result_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.6))
+	_test_result_label.name = "TestResult"
+	box.add_child(_test_result_label)
+
+	var raw_label = Label.new()
+	raw_label.text = ""
+	raw_label.position = Vector2(20, 126)
+	raw_label.add_theme_font_size_override("font_size", 13)
+	raw_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	raw_label.name = "TestRaw"
+	box.add_child(raw_label)
+
+	var hint = Label.new()
+	hint.text = "B / Escape to close"
+	hint.position = Vector2(20, box.size.y - 36)
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", DISABLED_COLOR)
+	box.add_child(hint)
+
+
+func _start_test() -> void:
+	_testing = true
+	_test_overlay.visible = true
+	var result = _test_overlay.get_node_or_null("TestBox/TestResult")
+	if result:
+		result.text = ""
+	var raw = _test_overlay.get_node_or_null("TestBox/TestRaw")
+	if raw:
+		raw.text = ""
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
+func _stop_test() -> void:
+	_testing = false
+	_test_overlay.visible = false
+	if SoundManager:
+		SoundManager.play_ui("menu_close")
+
+
+func _handle_test_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_X or event.keycode == KEY_ESCAPE:
+			_stop_test()
+			get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventJoypadButton and event.pressed:
+		var btn = event.button_index
+		var label_str = InputProfileManager.get_button_label(btn)
+		var result = _test_overlay.get_node_or_null("TestBox/TestResult")
+		if result:
+			result.text = "Button %d: %s" % [btn, label_str]
+		var raw = _test_overlay.get_node_or_null("TestBox/TestRaw")
+		if raw:
+			# Show which action this maps to in the active profile, if any
+			var mapped_actions = []
+			var bindings = InputProfileManager.get_profile_bindings(InputProfileManager.active_profile)
+			for action in bindings:
+				if btn in bindings[action]:
+					var action_label = InputProfileManager.ACTION_LABELS.get(action, action)
+					mapped_actions.append(action_label)
+			if mapped_actions.is_empty():
+				raw.text = "(no action mapped)"
+			else:
+				raw.text = "Mapped to: %s" % " / ".join(mapped_actions)
+
+		# B (button 0) also closes after showing the result — but only if it
+		# was already shown before (i.e. user presses B intentionally to exit).
+		# We let it display first on press then user presses B again to close.
+		# Actually: if btn == 0, close immediately so it's not confusing.
+		if btn == 0:
+			_stop_test()
+
+		get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventJoypadMotion or event is InputEventKey:
+		get_viewport().set_input_as_handled()
+
+
 func _get_profile_display() -> String:
 	return InputProfileManager.active_profile
 
@@ -323,6 +454,10 @@ func _input(event: InputEvent) -> void:
 		_handle_capture_input(event)
 		return
 
+	if _testing:
+		_handle_test_input(event)
+		return
+
 	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_index = max(0, selected_index - 1)
 		_update_selection()
@@ -376,6 +511,11 @@ func _activate_row() -> void:
 		if SoundManager:
 			SoundManager.play_ui("menu_select")
 		_show_flash("Reset to defaults")
+		return
+
+	if selected_index == 8:
+		# Test Buttons diagnostic
+		_start_test()
 		return
 
 	# Action rows (1-6) — remap

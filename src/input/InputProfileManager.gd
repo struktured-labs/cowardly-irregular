@@ -29,10 +29,15 @@ const ACTION_LABELS = {
 
 ## Built-in profile definitions: action -> button index(es)
 ## Button indices follow SDL GameController standard:
-##   0=A(South), 1=B(East), 2=X(West), 3=Y(North)
-##   4=Back/Select, 6=Guide, 7=Start
-##   9=LeftShoulder(LB/L), 10=RightShoulder(RB/R)
-##   11=DPadUp, 12=DPadDown, 13=DPadLeft, 14=DPadRight
+##   SN30:  0=A(South), 1=B(East), 2=X(West), 3=Y(North)
+##          4=Back/Select, 6=Guide, 7=Start
+##          9=LeftShoulder(LB/L), 10=RightShoulder(RB/R)
+##          11=DPadUp, 12=DPadDown, 13=DPadLeft, 14=DPadRight
+##   Ultimate Pro 2 (XInput mode):
+##          0=A(South), 1=B(East), 2=X(West), 3=Y(North)
+##          4=LB (Left Bumper), 5=RB (Right Bumper)
+##          6=Back/Select, 7=Start
+##          9=LeftShoulder(L3), 10=RightShoulder(R3)
 const PROFILE_SN30 = {
 	"ui_accept": [1],        # B (East) = SNES A
 	"ui_cancel": [0],        # A (South) = SNES B
@@ -43,29 +48,31 @@ const PROFILE_SN30 = {
 }
 
 const PROFILE_ULTIMATE_PRO_2 = {
-	"ui_accept": [1],
-	"ui_cancel": [0],
-	"battle_advance": [10],
-	"battle_defer": [9],
-	"battle_toggle_auto": [4],
-	"ui_menu": [6, 7],
+	"ui_accept": [1],          # B (East)
+	"ui_cancel": [0],          # A (South)
+	"battle_advance": [5],     # RB (Right Bumper)
+	"battle_defer": [4],       # LB (Left Bumper)
+	"battle_toggle_auto": [6], # Back/Select
+	"ui_menu": [7],            # Start
 }
 
 ## Profile names
 const PROFILE_NAMES = ["8BitDo SN30", "8BitDo Ultimate Pro 2", "Custom"]
 
 ## Human-readable button labels by index
+## These labels reflect the Ultimate Pro 2 (XInput) layout where buttons 4/5 are
+## LB/RB and 6/7 are Back/Start.  SN30 uses 9/10 for shoulders and 4 for Select.
 const BUTTON_LABELS = {
 	0: "A (South)",
 	1: "B (East)",
 	2: "X (West)",
 	3: "Y (North)",
-	4: "Select",
-	5: "Guide",
-	6: "Start",
+	4: "LB / Select",
+	5: "RB",
+	6: "Back / Select",
 	7: "Start",
-	9: "LB (L)",
-	10: "RB (R)",
+	9: "L3 / LB (SN30)",
+	10: "R3 / RB (SN30)",
 	11: "D-Up",
 	12: "D-Down",
 	13: "D-Left",
@@ -77,13 +84,13 @@ const BUTTON_LABELS = {
 }
 
 ## Runtime state
-var active_profile: String = "8BitDo SN30"
+var active_profile: String = "8BitDo Ultimate Pro 2"
 var custom_bindings: Dictionary = {}
 
 
 func _ready() -> void:
-	# Initialize custom bindings from SN30 defaults
-	custom_bindings = PROFILE_SN30.duplicate(true)
+	# Initialize custom bindings from Ultimate Pro 2 defaults
+	custom_bindings = PROFILE_ULTIMATE_PRO_2.duplicate(true)
 	load_config()
 	apply_profile(active_profile)
 
@@ -188,7 +195,7 @@ func detect_conflicts() -> Array:
 func reset_custom_to_preset() -> void:
 	var source = get_profile_bindings(active_profile)
 	if active_profile == "Custom":
-		source = PROFILE_SN30
+		source = PROFILE_ULTIMATE_PRO_2
 	custom_bindings = source.duplicate(true)
 	if active_profile == "Custom":
 		apply_profile("Custom")
