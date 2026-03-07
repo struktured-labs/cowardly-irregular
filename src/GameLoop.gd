@@ -69,6 +69,10 @@ var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
 var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
 var _current_terrain: String = "plains"  # Current terrain type for battle backgrounds
 
+## Area transition fade overlay (reused across all area transitions)
+var _area_fade_layer: CanvasLayer = null
+var _area_fade_rect: ColorRect = null
+
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
@@ -91,6 +95,17 @@ var _title_layer: CanvasLayer = null
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
+
+	# Create the persistent area-transition fade overlay (layer=90, below BattleTransition=100)
+	_area_fade_layer = CanvasLayer.new()
+	_area_fade_layer.layer = 90
+	add_child(_area_fade_layer)
+	_area_fade_rect = ColorRect.new()
+	_area_fade_rect.color = Color.BLACK
+	_area_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_area_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_area_fade_rect.modulate.a = 0.0
+	_area_fade_layer.add_child(_area_fade_rect)
 
 	# Check for existing save to determine if this is first launch
 	_first_launch = not _save_exists()
@@ -1049,10 +1064,9 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
 
-	# Hide exploration scene immediately to prevent visual bleed-through
-	# (the overlay should cover it, but this is a belt-and-suspenders safeguard)
-	if _exploration_scene and is_instance_valid(_exploration_scene):
-		_exploration_scene.visible = false
+	# NOTE: Do NOT hide the exploration scene here — BattleTransition needs one rendered
+	# frame to capture the overworld screenshot. We hide it at transition_midpoint instead,
+	# right before instantiating the battle scene behind the overlay.
 
 	# Save terrain for battle background
 	if terrain != "":
@@ -1095,27 +1109,52 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	# Pre-warm sprite cache during transition (deferred so it runs during animation)
 	call_deferred("_prewarm_battle_sprites", enemies)
 
-	# Play transition animation (loads in parallel)
 	if BattleTransition:
 		print("[GAMELOOP] Starting battle transition")
+
+		# transition_midpoint fires at the START of the effect animation so we can
+		# load the battle scene underneath while the overworld capture animates away
+		BattleTransition.transition_midpoint.connect(
+			func():
+				# Wait for the threaded load then instantiate battle behind the overlay
+				_load_battle_behind_transition(enemies),
+			CONNECT_ONE_SHOT
+		)
+
+		# Run the transition effect — battle loads in parallel underneath
 		await BattleTransition.play_battle_transition(enemy_types)
-		print("[GAMELOOP] Battle transition complete")
+		print("[GAMELOOP] Battle transition effect complete")
 
-	# Wait for battle scene to finish loading
-	print("[GAMELOOP] Waiting for battle scene to load")
-	while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-		await get_tree().process_frame
-	print("[GAMELOOP] Battle scene loaded")
+		# Wait for battle to finish loading/starting if it hasn't yet
+		while current_state != LoopState.BATTLE:
+			await get_tree().process_frame
 
-	# Start battle with pre-loaded scene, passing specific enemies if provided
-	await _start_battle_async(enemies, true)
-	print("[GAMELOOP] Battle scene started")
-
-	# Fade out transition to reveal battle
-	if BattleTransition:
+		# Fade out / clean up — battle is already visible through transparent overlay
 		print("[GAMELOOP] Starting fade out")
 		await BattleTransition.fade_out()
 		print("[GAMELOOP] Fade out complete - battle should be visible")
+	else:
+		# No transition — load battle directly
+		while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			await get_tree().process_frame
+		await _start_battle_async(enemies, true)
+
+
+func _load_battle_behind_transition(enemies: Array) -> void:
+	"""Called at transition midpoint to instantiate battle scene behind the overlay.
+	The screen has been captured by this point, so we can safely hide the overworld."""
+	# Hide exploration scene now that the screenshot has been taken — the transition
+	# fragments/slices render on top; battle scene will render underneath them
+	if _exploration_scene and is_instance_valid(_exploration_scene):
+		_exploration_scene.visible = false
+
+	# Wait for threaded scene load to complete
+	print("[GAMELOOP] Midpoint: waiting for battle scene resource")
+	while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		await get_tree().process_frame
+	print("[GAMELOOP] Midpoint: battle scene resource ready, instantiating")
+	await _start_battle_async(enemies, true)
+	print("[GAMELOOP] Midpoint: battle scene started behind transition")
 
 
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
@@ -1196,13 +1235,34 @@ func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 	_on_area_transition(target_map, spawn_point)
 
 
+func _area_fade_to_black() -> void:
+	"""Fade the area-transition overlay to opaque black (0.3s)."""
+	if not _area_fade_rect:
+		return
+	var tween = create_tween()
+	tween.tween_property(_area_fade_rect, "modulate:a", 1.0, 0.3)
+	await tween.finished
+
+
+func _area_fade_from_black() -> void:
+	"""Fade the area-transition overlay back to transparent (0.3s)."""
+	if not _area_fade_rect:
+		return
+	var tween = create_tween()
+	tween.tween_property(_area_fade_rect, "modulate:a", 0.0, 0.3)
+	await tween.finished
+
+
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
-	"""Handle transitioning between areas"""
+	"""Handle transitioning between areas with a fade to hide load stutter."""
 	_current_map_id = target_map
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO  # Clear saved position when changing maps
 	_current_terrain = _get_terrain_for_map(target_map)  # Update terrain for new area
+
+	await _area_fade_to_black()
 	_start_exploration()
+	await _area_fade_from_black()
 
 
 func _get_terrain_for_map(map_id: String) -> String:

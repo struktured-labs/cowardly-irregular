@@ -34,8 +34,12 @@ const ANIM_SPEED: float = 0.08  # Seconds per frame (slightly faster for 4-frame
 const SPRITE_SIZE: int = 32
 const WALK_FRAMES: int = 4  # 4-frame walk cycle for smoother animation
 
-## Sprite cache (direction -> frame -> texture)
+## Sprite cache (direction -> frame -> texture) - instance level
 var _sprite_cache: Dictionary = {}
+
+## Static sprite cache shared across all OverworldPlayer instances (survives scene changes)
+## Key: "<job>_<use_custom>_<hair_hex>_<skin_hex>" -> Dictionary of frame caches
+static var _static_sprite_cache: Dictionary = {}
 
 ## Click-to-move
 var _click_target: Vector2 = Vector2.ZERO
@@ -342,13 +346,32 @@ func _update_sprite() -> void:
 		_sprite.texture = _sprite_cache[cache_key]
 
 
+func _get_static_cache_key() -> String:
+	if _use_custom_colors:
+		return "%s_1_%s_%s" % [current_job, _custom_hair_color.to_html(false), _custom_skin_color.to_html(false)]
+	return "%s_0" % current_job
+
+
 func _generate_all_sprites() -> void:
+	var static_key = _get_static_cache_key()
+	if _static_sprite_cache.has(static_key):
+		_sprite_cache = _static_sprite_cache[static_key]
+		return
+
+	var new_cache: Dictionary = {}
 	for dir in [Direction.DOWN, Direction.UP, Direction.LEFT, Direction.RIGHT]:
 		for frame in range(WALK_FRAMES):
 			var img = _generate_character_sprite(dir, frame)
 			var tex = ImageTexture.create_from_image(img)
 			var cache_key = "%d_%d" % [dir, frame]
-			_sprite_cache[cache_key] = tex
+			new_cache[cache_key] = tex
+
+	_static_sprite_cache[static_key] = new_cache
+	_sprite_cache = new_cache
+
+	if _static_sprite_cache.size() > 30:
+		var keys = _static_sprite_cache.keys()
+		_static_sprite_cache.erase(keys[0])
 
 
 func _generate_character_sprite(direction: Direction, frame: int) -> Image:

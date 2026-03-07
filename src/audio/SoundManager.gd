@@ -21,6 +21,10 @@ var _music_base_db: float = -12.0  # Base volume for music
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
 
+# Area music WAV cache - stores fully built AudioStreamWAV per area so re-entering
+# an area replays instantly without regenerating thousands of samples.
+static var _area_wav_cache: Dictionary = {}
+
 # Sound definitions - procedural parameters
 const SOUNDS = {
 	# UI Sounds
@@ -3396,14 +3400,25 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 ## ============================================================
 
 var _current_area: String = ""
+var _pending_music_area: String = ""
 
 func play_area_music(area_type: String) -> void:
-	"""Play appropriate music for an exploration area"""
+	"""Play appropriate music for an exploration area.
+	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
 		return  # Already playing
 
 	_current_area = area_type
+	_pending_music_area = area_type
 	stop_music()
+
+	call_deferred("_start_area_music_deferred", area_type)
+
+
+func _start_area_music_deferred(area_type: String) -> void:
+	"""Actually generate and start music - called deferred so scene renders first."""
+	if _pending_music_area != area_type:
+		return  # A newer area was requested before this ran; skip stale call
 
 	match area_type:
 		"overworld":
@@ -3430,6 +3445,8 @@ func _start_overworld_music() -> void:
 	"""Generate peaceful overworld exploration theme"""
 	_music_playing = true
 	print("[MUSIC] Playing overworld theme")
+	if _play_area_wav_cached("overworld"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 100.0
@@ -3438,13 +3455,15 @@ func _start_overworld_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_overworld_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "overworld")
 
 
 func _start_village_music() -> void:
 	"""Generate peaceful village theme"""
 	_music_playing = true
 	print("[MUSIC] Playing village theme")
+	if _play_area_wav_cached("village"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 80.0
@@ -3453,13 +3472,15 @@ func _start_village_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_village_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "village")
 
 
 func _start_cave_music() -> void:
 	"""Generate mysterious dungeon/cave theme"""
 	_music_playing = true
 	print("[MUSIC] Playing cave/dungeon theme")
+	if _play_area_wav_cached("cave"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 90.0
@@ -3468,13 +3489,15 @@ func _start_cave_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_cave_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "cave")
 
 
 func _start_title_music() -> void:
 	"""Generate majestic EarthBound-style trippy title theme"""
 	_music_playing = true
 	print("[MUSIC] Playing title theme")
+	if _play_area_wav_cached("title"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 72.0  # Slow and majestic
@@ -3483,7 +3506,7 @@ func _start_title_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_title_music_buffer(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "title")
 
 
 func _generate_title_music_buffer(rate: int, duration: float, bpm: float) -> PackedVector2Array:
@@ -3603,8 +3626,8 @@ func _generate_title_music_buffer(rate: int, duration: float, bpm: float) -> Pac
 	return buffer
 
 
-func _create_and_play_looping_wav(buffer: PackedVector2Array, sample_rate: int) -> void:
-	"""Helper to create looping WAV from buffer"""
+func _create_and_play_looping_wav(buffer: PackedVector2Array, sample_rate: int, area_cache_key: String = "") -> void:
+	"""Helper to create looping WAV from buffer. Caches the result by area_cache_key if provided."""
 	var wav = AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = sample_rate
@@ -3623,8 +3646,23 @@ func _create_and_play_looping_wav(buffer: PackedVector2Array, sample_rate: int) 
 		data.append((right >> 8) & 0xFF)
 
 	wav.data = data
+
+	if area_cache_key != "":
+		_area_wav_cache[area_cache_key] = wav
+
 	_music_player.stream = wav
 	_music_player.play()
+
+
+func _play_area_wav_cached(area_key: String) -> bool:
+	"""Play a cached area WAV if available. Returns true on cache hit."""
+	if _area_wav_cache.has(area_key):
+		print("[MUSIC] Cache hit for area: %s" % area_key)
+		_music_player.stream = _area_wav_cache[area_key]
+		_music_player.play()
+		_music_playing = true
+		return true
+	return false
 
 
 func _generate_overworld_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
@@ -3963,6 +4001,8 @@ func _start_suburban_music() -> void:
 	"""Generate EarthBound-inspired suburban overworld theme - cheerful with eerie undercurrent"""
 	_music_playing = true
 	print("[MUSIC] Playing suburban overworld theme")
+	if _play_area_wav_cached("suburban"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 120.0  # Upbeat walking-around-town pace
@@ -3971,7 +4011,7 @@ func _start_suburban_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_suburban_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "suburban")
 
 
 func _generate_suburban_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
@@ -4281,6 +4321,8 @@ func _start_steampunk_music() -> void:
 	"""Generate Victorian steampunk overworld theme - brass-like, march-like, clockwork"""
 	_music_playing = true
 	print("[MUSIC] Playing steampunk overworld theme")
+	if _play_area_wav_cached("steampunk"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 105.0  # March-like, dignified pace
@@ -4289,7 +4331,7 @@ func _start_steampunk_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_steampunk_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "steampunk")
 
 
 func _generate_steampunk_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
@@ -4593,6 +4635,8 @@ func _start_industrial_music() -> void:
 	"""Generate heavy industrial factory theme - D minor, rhythmic machinery"""
 	_music_playing = true
 	print("[MUSIC] Playing industrial theme")
+	if _play_area_wav_cached("industrial"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 110.0  # Steady, relentless machine tempo
@@ -4601,7 +4645,7 @@ func _start_industrial_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_industrial_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "industrial")
 
 
 func _generate_industrial_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
@@ -4712,6 +4756,8 @@ func _start_futuristic_music() -> void:
 	"""Generate cold digital ambient theme - B minor/diminished, synth pads, arpeggiated sequences"""
 	_music_playing = true
 	print("[MUSIC] Playing futuristic digital theme")
+	if _play_area_wav_cached("futuristic"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 85.0  # Measured, clinical tempo
@@ -4720,7 +4766,7 @@ func _start_futuristic_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_futuristic_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "futuristic")
 
 
 func _generate_futuristic_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
@@ -5543,6 +5589,8 @@ func _start_abstract_music() -> void:
 	   Haunting and beautiful."""
 	_music_playing = true
 	print("[MUSIC] Playing abstract void theme")
+	if _play_area_wav_cached("abstract"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 40.0  # Extremely slow - glacial, contemplative
@@ -5551,7 +5599,7 @@ func _start_abstract_music() -> void:
 	var total_duration = beat_duration * 4 * bars
 
 	_music_buffer = _generate_abstract_music(sample_rate, total_duration, bpm)
-	_create_and_play_looping_wav(_music_buffer, sample_rate)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "abstract")
 
 
 func _generate_abstract_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:

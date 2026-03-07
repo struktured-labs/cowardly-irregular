@@ -652,20 +652,19 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		_process_grid_autobattle(combatant)
 		return
 
-	# AI can advance or defer too!
-	var should_advance = randf() < 0.15 and combatant.current_ap >= 0  # 15% chance to advance
-	var should_defer = randf() < 0.1 and combatant.current_ap < 4    # 10% chance to defer
-
+	# AI strategic defer: enemies can defer to build AP for a future advance.
+	# Only defer if AP is low (< 2) and with a small chance (5%).
+	# This gives enemies tactical depth without making them feel passive.
+	var should_defer = randf() < 0.05 and combatant.current_ap < 2
 	if should_defer:
-		var action = {
-			"type": "defer",
-			"combatant": combatant,
-			"speed": _compute_action_speed(combatant, "defer")
-		}
+		var action = {"type": "defer", "combatant": combatant, "speed": _compute_action_speed(combatant, "defer")}
 		_queue_action(action)
-		print("%s (AI) chooses to defer" % combatant.combatant_name)
+		print("%s (AI) chooses to defer (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
 		_end_selection_turn()
 		return
+
+	# AI can advance with a small random chance to pressure the party.
+	var should_advance = randf() < 0.15 and combatant.current_ap >= 0  # 15% chance to advance
 
 	if should_advance and combatant.current_ap >= 1:
 		# Queue multiple attacks as advance (each action costs 1 AP)
@@ -1030,6 +1029,9 @@ func _execute_next_action() -> void:
 			return  # Advance handles its own continuation
 		_:
 			push_warning("BattleManager: Unknown action type '%s'" % action.get("type", ""))
+			# Do NOT return here — fall through to keep the execution chain alive.
+			# A stray unknown action must not freeze the whole battle.
+			_execute_next_action()
 			return
 
 	# Log player action for adaptive AI pattern detection

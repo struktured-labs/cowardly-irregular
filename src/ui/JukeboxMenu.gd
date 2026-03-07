@@ -57,6 +57,9 @@ const PLAYING_COLOR = Color(0.3, 1.0, 0.4)
 var selected_index: int = 0
 var scroll_offset: int = 0  # First visible row index
 var _currently_playing: String = ""
+var _generating: bool = false
+var _last_play_time: float = -999.0
+const PLAY_DEBOUNCE_SEC = 0.3
 
 ## Node references
 var _panel: Control
@@ -214,23 +217,50 @@ func _refresh_now_playing() -> void:
 func _play_selected() -> void:
 	if selected_index < 0 or selected_index >= TRACKS.size():
 		return
+	if _generating:
+		return
+	var now = Time.get_ticks_msec() / 1000.0
+	if now - _last_play_time < PLAY_DEBOUNCE_SEC:
+		return
+	_last_play_time = now
+
 	var track_id = TRACKS[selected_index][0]
+
+	_generating = true
 	_currently_playing = track_id
+	_now_playing_label.text = "Generating..."
+	_now_playing_label.add_theme_color_override("font_color", DISABLED_COLOR)
+
+	await get_tree().process_frame
+	await get_tree().create_timer(0.05).timeout
 
 	if SoundManager:
-		# Area tracks go through play_area_music; all others through play_music
 		if track_id.begins_with("overworld") or track_id in ["village", "cave"]:
 			SoundManager.play_area_music(track_id)
 		else:
 			SoundManager.play_music(track_id)
 		SoundManager.play_ui("menu_select")
 
+	_generating = false
+	_now_playing_label.add_theme_color_override("font_color", PLAYING_COLOR)
 	_refresh_now_playing()
 	_refresh_list()
 
 
 func _input(event: InputEvent) -> void:
 	if not visible:
+		return
+
+	# Cancel/Back always works, even while generating
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
+		_close_menu()
+		get_viewport().set_input_as_handled()
+		return
+
+	# All other input is suppressed while music is being generated
+	if _generating:
+		if event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down") or event.is_action_pressed("ui_accept"):
+			get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("ui_up") and not event.is_echo():
@@ -255,10 +285,6 @@ func _input(event: InputEvent) -> void:
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_play_selected()
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
-		_close_menu()
 		get_viewport().set_input_as_handled()
 
 

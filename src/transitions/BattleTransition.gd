@@ -130,6 +130,17 @@ func play_battle_transition(enemy_types: Array) -> void:
 	# Brief white flash at moment of encounter, classic FF style
 	await _play_encounter_flash()
 
+	if not is_instance_valid(self):
+		return
+
+	# Signal battle to load underneath while overworld fragments animate away on top
+	if is_instance_valid(self):
+		transition_midpoint.emit()
+
+	# Overlay stays transparent throughout all effects so the battle scene
+	# renders through the gaps as overworld pieces disappear
+	_overlay.modulate.a = 0.0
+
 	# Determine transition type from first enemy
 	var transition_type = _get_transition_for_enemies(enemy_types)
 	var type_name = TransitionType.keys()[transition_type]
@@ -140,7 +151,8 @@ func play_battle_transition(enemy_types: Array) -> void:
 	# Play monster-specific encounter sound
 	_play_encounter_sound(transition_type)
 
-	# Execute the transition
+	# Execute the transition — fragments/slices sit on top of the battle scene
+	# and animate away, revealing it naturally underneath
 	match transition_type:
 		TransitionType.SHATTER:
 			await _play_shatter()
@@ -163,27 +175,19 @@ func play_battle_transition(enemy_types: Array) -> void:
 		TransitionType.SHOCKWAVE:
 			await _play_shockwave()
 
-	# Check if we're still valid after the async transition
 	if not is_instance_valid(self):
 		return
 
-	# Phase 2: hold on black briefly before signaling
-	_overlay.color = Color.BLACK
-	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.2).timeout
 
-	if not is_instance_valid(self):
-		return
-
-	transition_midpoint.emit()
-
-
-## Fade out after battle transition using iris-open circular wipe to reveal battle scene
+## Fade out after battle transition to fully reveal battle scene.
+## If the overlay is already transparent (most effects), just clean up fragments.
+## If the overlay is opaque (CURTAIN/RADIAL_WIPE), use iris-open to reveal battle.
 func fade_out() -> void:
 	print("[TRANSITION] fade_out() called - overlay alpha: %s, color: %s" % [_overlay.modulate.a, _overlay.color])
 
-	# Build an iris-open shader inline so we have no external dependency
-	var shader_code = """
+	if _overlay.modulate.a > 0.05:
+		# Overlay is covering the screen — iris-open to reveal battle beneath
+		var shader_code = """
 shader_type canvas_item;
 uniform float radius : hint_range(0.0, 1.5) = 0.0;
 uniform vec2 center = vec2(0.5, 0.5);
@@ -197,35 +201,46 @@ void fragment() {
 }
 """
 
-	var shader = Shader.new()
-	shader.code = shader_code
+		var shader = Shader.new()
+		shader.code = shader_code
 
-	_iris_shader = ShaderMaterial.new()
-	_iris_shader.shader = shader
-	_iris_shader.set_shader_parameter("radius", 0.0)
-	_iris_shader.set_shader_parameter("center", Vector2(0.5, 0.5))
+		_iris_shader = ShaderMaterial.new()
+		_iris_shader.shader = shader
+		_iris_shader.set_shader_parameter("radius", 0.0)
+		_iris_shader.set_shader_parameter("center", Vector2(0.5, 0.5))
 
-	# Apply the shader material to the overlay for the iris wipe
-	_overlay.material = _iris_shader
-	_overlay.color = Color.BLACK
-	_overlay.modulate.a = 1.0
+		_overlay.material = _iris_shader
+		_overlay.color = Color.BLACK
+		_overlay.modulate.a = 1.0
 
-	# Expand the iris radius from 0 to 1.2 (past corners) over 0.35s
-	var tween = create_tween()
-	tween.tween_method(
-		func(r: float) -> void:
-			if is_instance_valid(_iris_shader):
-				_iris_shader.set_shader_parameter("radius", r),
-		0.0, 1.2, 0.35
-	).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	await tween.finished
+		# Expand iris from 0 to 1.2 (past corners) over 0.35s
+		var tween = create_tween()
+		tween.tween_method(
+			func(r: float) -> void:
+				if is_instance_valid(_iris_shader):
+					_iris_shader.set_shader_parameter("radius", r),
+			0.0, 1.2, 0.35
+		).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		await tween.finished
+
+		if not is_instance_valid(self):
+			return
+
+		_overlay.material = null
+		_overlay.modulate.a = 0.0
+	else:
+		# Battle is already visible through the transparent overlay — just clean up
+		# any lingering fragment particles with a quick fade if needed
+		if _fragments.size() > 0:
+			var tween = create_tween()
+			tween.set_parallel(true)
+			for frag in _fragments:
+				if is_instance_valid(frag):
+					tween.tween_property(frag, "modulate:a", 0.0, 0.08)
+			await tween.finished
 
 	if not is_instance_valid(self):
 		return
-
-	# Remove shader and hide overlay fully
-	_overlay.material = null
-	_overlay.modulate.a = 0.0
 
 	print("[TRANSITION] fade_out() finished - overlay alpha: %s" % _overlay.modulate.a)
 	_cleanup_effects()
@@ -518,11 +533,12 @@ func _play_shatter() -> void:
 
 	await tween.finished
 
-	# White impact flash
+	# Brief white impact flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color.WHITE
-	_overlay.modulate.a = 1.0
+	_overlay.modulate.a = 0.6
 	await get_tree().create_timer(0.04).timeout
 	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 0.0
 
 
 ## SPIRAL - Captured screen spins and shrinks into nothingness with magic dust sparkles
@@ -578,11 +594,12 @@ func _play_spiral() -> void:
 
 	await tween.finished
 
-	# Implosion flash
+	# Implosion flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.6, 0.4, 0.9)
-	_overlay.modulate.a = 1.0
+	_overlay.modulate.a = 0.7
 	await get_tree().create_timer(0.04).timeout
 	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 0.0
 
 
 ## ZOOM_BURST - Screen zooms toward viewer while flashing white
@@ -605,11 +622,12 @@ func _play_zoom_burst() -> void:
 
 	await tween.finished
 
-	# Bright white flash, then cut to black
+	# Bright white flash, then back to transparent so battle shows through
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
 	await get_tree().create_timer(0.05).timeout
 	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 0.0
 
 
 ## SHAKE_FLASH - Violent shaking with strobe - intense goblin/troll aggression
@@ -639,12 +657,13 @@ func _play_shake_flash() -> void:
 		await get_tree().create_timer(0.1).timeout
 		shake_intensity *= 1.4
 
-	# Final slam to black
+	# Final slam flash — back to transparent so battle shows through
 	_effect_container.position = original_offset
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
 	await get_tree().create_timer(0.04).timeout
 	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 0.0
 
 
 ## DRIP - Screen image melts into vertical strips sliding down at staggered speeds
@@ -693,8 +712,8 @@ func _play_drip() -> void:
 		tween.tween_property(col_rect, "position:y", _viewport_size.y, slide_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 
 	await tween.finished
-	_overlay.color = Color.BLACK
-	_overlay.modulate.a = 1.0
+	# Columns have dripped off screen — battle is fully visible underneath
+	_overlay.modulate.a = 0.0
 
 
 ## CURTAIN - Theater curtain closing - dramatic witch/theatrical enemy
@@ -736,6 +755,8 @@ func _play_curtain() -> void:
 	tween.tween_property(right_curtain, "position:x", _viewport_size.x / 2, curtain_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 	await tween.finished
+	# Curtains now cover the screen — use overlay black so fade_out iris-opens to reveal battle
+	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
 
 
@@ -781,12 +802,12 @@ func _play_pixelate() -> void:
 		if not is_instance_valid(self):
 			return
 
-	# Fade to black with ethereal flash
+	# Ethereal flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.7, 0.8, 1.0)
 	_overlay.modulate.a = 0.8
 	await get_tree().create_timer(0.04).timeout
 	_overlay.color = Color.BLACK
-	_overlay.modulate.a = 1.0
+	_overlay.modulate.a = 0.0
 
 
 ## SLICE - Horizontal strips of captured screen slide left/right off screen
@@ -829,9 +850,8 @@ func _play_slice() -> void:
 		tween.tween_property(slice_rect, "position:x", target_x, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_BACK)
 
 	await tween.finished
-
-	_overlay.color = Color.BLACK
-	_overlay.modulate.a = 1.0
+	# All slices have left the screen — battle is fully visible underneath
+	_overlay.modulate.a = 0.0
 
 
 ## RADIAL_WIPE - Clock-like wipe - spider web/trap feel
@@ -872,6 +892,8 @@ func _play_radial_wipe() -> void:
 		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.05).set_delay(delay)
 
 	await tween.finished
+	# All segments cover the screen — set black overlay so fade_out iris-opens to reveal battle
+	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
 
 
@@ -909,11 +931,12 @@ func _play_shockwave() -> void:
 
 	await get_tree().create_timer(ring_duration * 0.6).timeout
 
-	# Bright energy flash
+	# Bright energy flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.9, 0.7, 1.0)
 	_overlay.modulate.a = 1.0
 	await get_tree().create_timer(0.04).timeout
 	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 0.0
 
 
 func _create_ring(center: Vector2, radius: float, thickness: float) -> Polygon2D:
