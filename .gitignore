@@ -59,3 +59,5 @@ setenv.sh
 # Butler / itch.io deploy binary
 butler-bin/
 butler.zip
+*.zip
+tmp/
