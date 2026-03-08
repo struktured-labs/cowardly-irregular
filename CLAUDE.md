@@ -259,6 +259,53 @@ cowardly-irregular/
 5. **Prototype fast, validate early** - Prove fun before polish
 6. **Controller-first design** - Everything works on gamepad
 
+## Artist Collaboration & Sprite Pipeline Rules
+
+**Pioneering a fair AI-artist collaboration model. We may be the first game to do this right — AI as the artist's force multiplier, not their replacement. The artist stays in the creative loop AND the financial loop.**
+
+### Core Principles
+1. **Artist-first hierarchy**: When artist-made sprites exist, they take priority. AI sprites may supplement or eventually replace, but that decision is always deliberate — never silent or accidental.
+2. **Protect existing artist work**: AI sprite generation must NEVER overwrite, modify, or degrade existing artist-made assets without explicit approval. Fighter sprites (tagged `v0.15.0`) are the baseline example.
+3. **AI can ship**: AI-generated sprites may end up as final art if quality is sufficient. The key is intentionality — every AI-to-production decision should be conscious, documented, and paired with fair artist compensation.
+4. **Artist compensation model**: The artist gets paid regardless of how much AI generates. Possible structures:
+   - **Style licensing**: Artist's originals train/guide the pipeline → ongoing royalty or flat license fee
+   - **Art direction fees**: Artist reviews, approves, and course-corrects AI output → paid for curation
+   - **Cleanup rates**: Artist polishes AI sprites to ship quality → per-asset or hourly
+   - **Revenue share**: Artist participates in game revenue since their style is the foundation
+   - **Retainer**: Ongoing relationship, not per-sprite piecework
+   - The model should be documented and agreed upon — this is new territory worth getting right publicly.
+5. **Attribution & transparency**: AI-generated sprites must be tracked (tier labels in manifest). The artist always knows what's AI-generated vs hand-drawn. They have approval rights on what ships. Consider publishing the collaboration model as part of the game's story — this transparency IS the innovation.
+6. **Budget-conscious prototyping**: Use AI/proc-gen freely for jobs and animations the artist hasn't reached yet. This lets us feel out the full game without blocking on art delivery. The artist cleans up, approves, or replaces at their pace.
+
+### Sprite Pipeline Tiers
+| Tier | Source | Quality | Permanence |
+|------|--------|---------|------------|
+| T0 - Procedural | SnesPartySprites (GDScript) | Functional placeholder | Temporary |
+| T1 - AI-Generated | Python sprite gen scripts (tools/) | Stylistically consistent prototype | Temporary until artist review |
+| T2 - Artist Draft | Artist sprite sheets (per-animation PNGs) | Production candidate | Semi-permanent |
+| T3 - Artist Final | Artist-approved, cleaned, palette-locked | Ship quality | Permanent |
+
+### Workflow
+- AI agents generating sprites must tag output as `tier: "T1"` in sprite_manifest.json
+- Artist sprites are `tier: "T2"` or `tier: "T3"`
+- HybridSpriteLoader priority: T3 > T2 > T1 > T0
+- When generating new job sprites, reference the artist's existing palette and proportions from fighter/cleric/mage/rogue
+- Keep all gen scripts in `tools/` with clear naming: `gen_<job>_sprites.py`
+- Generated sprites go in `assets/sprites/jobs/<job_id>/` following the per-animation PNG convention
+
+### What AI Sprite Agents MUST Do
+- Match the artist's established 256x256 frame size and 16-bit aesthetic
+- Use consistent palettes derived from existing artist work
+- Generate all 9 standard animations: idle, walk, attack, hit, dead, cast, defend, item, victory
+- Register output in sprite_manifest.json
+- Log what was generated vs what exists as artist work
+
+### What AI Sprite Agents MUST NOT Do
+- Overwrite any file in a directory containing artist-made sprites without explicit approval
+- Generate sprites that clash stylistically with artist-established look
+- Claim AI sprites are final art
+- Skip the cleanup step — flag areas needing artist attention
+
 ## Author
 
 Carmelo Piccione ("struktured")
