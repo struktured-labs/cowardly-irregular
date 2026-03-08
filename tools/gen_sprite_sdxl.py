@@ -360,11 +360,13 @@ def remove_background(img: Image.Image, tolerance: int = 35) -> Image.Image:
     return Image.fromarray(arr)
 
 
-def center_character(img: Image.Image, target_w: int = FRAME_W, target_h: int = FRAME_H) -> Image.Image:
+def center_character(img: Image.Image, target_w: int = FRAME_W, target_h: int = FRAME_H,
+                     target_char_h: int = None) -> Image.Image:
     """Center the non-transparent character within the target frame size.
 
-    Finds the bounding box of opaque pixels, crops, and centers in a new
-    transparent canvas of the target size.
+    Args:
+        target_char_h: If provided, scale character to this exact pixel height.
+                       Used for cross-frame normalization.
     """
     arr = np.array(img)
     mask = arr[:, :, 3] > 10
@@ -380,24 +382,31 @@ def center_character(img: Image.Image, target_w: int = FRAME_W, target_h: int = 
     cropped = arr[y_min:y_max+1, x_min:x_max+1]
     ch, cw = cropped.shape[:2]
 
-    # Scale to fit within ~70% of frame (leave margin)
-    max_char_h = int(target_h * 0.85)
-    max_char_w = int(target_w * 0.70)
-    scale = min(max_char_w / max(1, cw), max_char_h / max(1, ch), 1.0)
+    if target_char_h and ch > 0:
+        # Scale to exact target height (for cross-frame consistency)
+        scale = target_char_h / ch
+        # Clamp: don't upscale more than 2x (would look awful) or exceed frame
+        scale = min(scale, 2.0, (target_h * 0.85) / ch, (target_w * 0.70) / cw)
+        scale = max(scale, 0.3)  # don't shrink below 30%
+    else:
+        # Fit within frame bounds
+        max_char_h = int(target_h * 0.85)
+        max_char_w = int(target_w * 0.70)
+        scale = min(max_char_w / max(1, cw), max_char_h / max(1, ch), 1.0)
 
-    if scale < 1.0:
+    if abs(scale - 1.0) > 0.01:
         new_w = max(1, int(cw * scale))
         new_h = max(1, int(ch * scale))
         cropped_img = Image.fromarray(cropped).resize((new_w, new_h), Image.NEAREST)
         cropped = np.array(cropped_img)
         ch, cw = cropped.shape[:2]
 
-    # Create transparent canvas and center the character
-    # Position character slightly above center (feet near bottom)
+    # Create transparent canvas — feet anchored near bottom
     canvas = np.zeros((target_h, target_w, 4), dtype=np.uint8)
     x_offset = (target_w - cw) // 2
     y_offset = target_h - ch - int(target_h * 0.08)  # 8% margin from bottom
-    y_offset = max(0, y_offset)
+    y_offset = max(0, min(y_offset, target_h - ch))
+    x_offset = max(0, min(x_offset, target_w - cw))
 
     canvas[y_offset:y_offset+ch, x_offset:x_offset+cw] = cropped
 
@@ -490,7 +499,7 @@ def generate_frame(pipe, job: str, animation: str, seed: int = None,
         centered = center_character(transparent)
 
         # Validate single character
-        is_valid, reason = validate_single_character(centered)
+        is_valid, reason = validate_single_character(transparent)
         if is_valid:
             print(f"  Validated: {reason}")
             break
@@ -499,32 +508,57 @@ def generate_frame(pipe, job: str, animation: str, seed: int = None,
             if attempt == max_retries - 1:
                 print(f"  Using last attempt despite validation failure")
 
-    # Palette snap if reference available
-    if ref_palette:
-        print(f"  Snapping to reference palette...")
-        centered = snap_to_palette(centered, ref_palette)
+    # Return the transparent (bg-removed) image — centering happens in generate_strip
+    return transparent, current_seed
 
-    return centered, current_seed
+
+def _measure_char_height(img: Image.Image) -> int:
+    """Measure the height of the character (bounding box of opaque pixels)."""
+    arr = np.array(img)
+    mask = arr[:, :, 3] > 10
+    if not mask.any():
+        return 0
+    ys = np.where(mask.any(axis=1))[0]
+    return ys[-1] - ys[0] + 1 if len(ys) > 0 else 0
 
 
 def generate_strip(pipe, job: str, animation: str, n_frames: int,
                    base_seed: int = None, ref_palette: set = None,
                    identity_embeds=None) -> Image.Image:
-    """Generate a full animation strip (multiple frames side by side)."""
-    frames = []
+    """Generate a full animation strip with size-normalized frames."""
+    raw_frames = []
     seeds = []
 
     if base_seed is None:
         base_seed = torch.randint(0, 2**32, (1,)).item()
 
+    # Pass 1: Generate all raw frames (transparent, not yet centered)
     for i in range(n_frames):
         frame, seed = generate_frame(
             pipe, job, animation,
             seed=base_seed + i,
-            ref_palette=ref_palette,
+            ref_palette=None,  # palette snap after centering
             identity_embeds=identity_embeds,
         )
-        frames.append(np.array(frame))
+        raw_frames.append(frame)
+        seeds.append(seed)
+
+    # Pass 2: Measure all character heights and normalize to median
+    heights = [_measure_char_height(f) for f in raw_frames]
+    valid_heights = [h for h in heights if h > 20]
+    if valid_heights:
+        target_h = int(np.median(valid_heights))
+        print(f"  Heights: {heights} → normalizing to {target_h}px")
+    else:
+        target_h = None
+
+    # Pass 3: Center all frames at normalized height, then palette snap
+    frames = []
+    for frame in raw_frames:
+        centered = center_character(frame, target_char_h=target_h)
+        if ref_palette:
+            centered = snap_to_palette(centered, ref_palette)
+        frames.append(np.array(centered))
         seeds.append(seed)
 
     # Concatenate horizontally
