@@ -35,7 +35,9 @@
 			"frame_height": 256,
 			"fps": 8,
 			"tier": "T1",
-			"generator": "SDXL + pixel-art-xl LoRA",
+			"generator": "SDXL + pixel-art-xl LoRA + IP-Adapter Plus (style)",
+			"reference_seed": 42,
+			"ipadapter_scale": 0.35,
 			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		}
 	},

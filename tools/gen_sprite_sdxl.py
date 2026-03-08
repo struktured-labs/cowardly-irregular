@@ -130,28 +130,82 @@ NEGATIVE_PROMPT = (
 )
 
 
-def load_pipeline():
-    """Load SDXL + LoRA pipeline."""
-    from diffusers import StableDiffusionXLPipeline
+IPADAPTER_DIR = COMFYUI_DIR / "models" / "ipadapter"
+IPADAPTER_WEIGHTS = IPADAPTER_DIR / "sdxl_models" / "ip-adapter-plus_sdxl_vit-h.safetensors"
+CLIP_ENCODER_DIR = IPADAPTER_DIR / "models" / "image_encoder"
+
+
+def load_pipeline(use_ipadapter: bool = True):
+    """Load SDXL + LoRA + IP-Adapter pipeline."""
+    from diffusers import StableDiffusionXLPipeline, DDIMScheduler
+
+    if use_ipadapter and CLIP_ENCODER_DIR.exists():
+        from transformers import CLIPVisionModelWithProjection
+        print("Loading CLIP ViT-H image encoder...")
+        image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+            str(CLIP_ENCODER_DIR),
+            torch_dtype=torch.float16,
+        )
+    else:
+        image_encoder = None
 
     print(f"Loading SDXL from {SDXL_CHECKPOINT}...")
     pipe = StableDiffusionXLPipeline.from_single_file(
         str(SDXL_CHECKPOINT),
+        image_encoder=image_encoder,
         torch_dtype=torch.float16,
         use_safetensors=True,
     )
 
+    # DDIM scheduler recommended for IP-Adapter face models
+    if use_ipadapter:
+        pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+
+    # Load IP-Adapter BEFORE LoRA
+    if use_ipadapter and IPADAPTER_WEIGHTS.exists():
+        print("Loading IP-Adapter Plus Face...")
+        pipe.load_ip_adapter(
+            str(IPADAPTER_DIR),
+            subfolder="sdxl_models",
+            weight_name="ip-adapter-plus_sdxl_vit-h.safetensors",
+        )
+        pipe.set_ip_adapter_scale(0.45)
+        print("  IP-Adapter scale: 0.45")
+    else:
+        if use_ipadapter:
+            print("WARNING: IP-Adapter weights not found, generating without identity lock")
+
+    # Load LoRA AFTER IP-Adapter
     if PIXEL_ART_LORA.exists():
-        print(f"Loading pixel-art-xl LoRA...")
+        print("Loading pixel-art-xl LoRA...")
         pipe.load_lora_weights(str(PIXEL_ART_LORA.parent), weight_name=PIXEL_ART_LORA.name)
         pipe.fuse_lora(lora_scale=0.8)
     else:
-        print("WARNING: pixel-art-xl LoRA not found, generating without it")
+        print("WARNING: pixel-art-xl LoRA not found")
 
-    pipe = pipe.to("cuda")
+    # Memory optimization LAST (after all adapters loaded)
     pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
 
     return pipe
+
+
+def compute_identity_embeddings(pipe, reference_image: Image.Image):
+    """Pre-compute IP-Adapter embeddings from a reference image.
+
+    These embeddings encode the character's visual identity and can be
+    reused across all frame generations for consistency.
+    """
+    print("Computing identity embeddings from reference...")
+    embeds = pipe.prepare_ip_adapter_image_embeds(
+        ip_adapter_image=reference_image,
+        ip_adapter_image_embeds=None,
+        device="cuda",
+        num_images_per_prompt=1,
+        do_classifier_free_guidance=True,
+    )
+    print(f"  Embedding shape: {[e.shape for e in embeds]}")
+    return embeds
 
 
 def pixelize_frame(img: Image.Image, pixel_size: int = 16, num_colors: int = 48) -> Image.Image:
@@ -390,7 +444,8 @@ def validate_single_character(img: Image.Image) -> tuple[bool, str]:
 
 
 def generate_frame(pipe, job: str, animation: str, seed: int = None,
-                   ref_palette: set = None, max_retries: int = 3) -> Image.Image:
+                   ref_palette: set = None, max_retries: int = 3,
+                   identity_embeds=None) -> Image.Image:
     """Generate a single sprite frame with auto-retry on bad generations."""
     prompt = build_prompt(job, animation)
 
@@ -406,15 +461,22 @@ def generate_frame(pipe, job: str, animation: str, seed: int = None,
         else:
             print(f"  Generating {job}/{animation} (seed={current_seed})...")
 
-        result = pipe(
+        # Build generation kwargs
+        gen_kwargs = dict(
             prompt=prompt,
             negative_prompt=NEGATIVE_PROMPT,
             num_inference_steps=30,
-            guidance_scale=8.5,  # higher = stronger prompt adherence
+            guidance_scale=8.5,
             width=768,
             height=768,
             generator=generator,
-        ).images[0]
+        )
+
+        # Add identity lock if available
+        if identity_embeds is not None:
+            gen_kwargs["ip_adapter_image_embeds"] = identity_embeds
+
+        result = pipe(**gen_kwargs).images[0]
 
         # Pixelize
         print(f"  Pixelizing...")
@@ -446,7 +508,8 @@ def generate_frame(pipe, job: str, animation: str, seed: int = None,
 
 
 def generate_strip(pipe, job: str, animation: str, n_frames: int,
-                   base_seed: int = None, ref_palette: set = None) -> Image.Image:
+                   base_seed: int = None, ref_palette: set = None,
+                   identity_embeds=None) -> Image.Image:
     """Generate a full animation strip (multiple frames side by side)."""
     frames = []
     seeds = []
@@ -458,7 +521,8 @@ def generate_strip(pipe, job: str, animation: str, n_frames: int,
         frame, seed = generate_frame(
             pipe, job, animation,
             seed=base_seed + i,
-            ref_palette=ref_palette
+            ref_palette=ref_palette,
+            identity_embeds=identity_embeds,
         )
         frames.append(np.array(frame))
         seeds.append(seed)
@@ -477,6 +541,9 @@ def main():
     parser.add_argument("--seed", type=int, default=None, help="Base seed for reproducibility")
     parser.add_argument("--no-pixelize", action="store_true", help="Skip PixelOE post-processing")
     parser.add_argument("--no-palette-snap", action="store_true", help="Skip palette snapping")
+    parser.add_argument("--no-ipadapter", action="store_true", help="Disable IP-Adapter identity lock")
+    parser.add_argument("--reference-image", help="Path to reference character image for IP-Adapter")
+    parser.add_argument("--ipadapter-scale", type=float, default=0.45, help="IP-Adapter strength (0.0-1.0)")
     parser.add_argument("--output", help="Output directory (default: tmp/generated/<job>/)")
     args = parser.parse_args()
 
@@ -491,7 +558,43 @@ def main():
         print(f"  {len(ref_palette)} reference colors loaded")
 
     # Load pipeline
-    pipe = load_pipeline()
+    use_ipadapter = not args.no_ipadapter
+    pipe = load_pipeline(use_ipadapter=use_ipadapter)
+
+    if use_ipadapter:
+        pipe.set_ip_adapter_scale(args.ipadapter_scale)
+        print(f"IP-Adapter scale set to {args.ipadapter_scale}")
+
+    # Generate or load reference hero image for identity lock
+    identity_embeds = None
+    if use_ipadapter and IPADAPTER_WEIGHTS.exists():
+        if args.reference_image:
+            ref_img = Image.open(args.reference_image).convert("RGB")
+            print(f"Using provided reference: {args.reference_image}")
+        else:
+            # Auto-generate a hero frame as reference
+            hero_seed = args.seed if args.seed else 42
+            print(f"\nGenerating hero reference frame (seed={hero_seed})...")
+            gen = torch.Generator("cuda").manual_seed(hero_seed)
+            prompt = build_prompt(args.job, "idle")
+            ref_img = pipe(
+                prompt=prompt,
+                negative_prompt=NEGATIVE_PROMPT,
+                num_inference_steps=40,
+                guidance_scale=9.0,
+                width=768,
+                height=768,
+                generator=gen,
+            ).images[0]
+            hero_path = output_dir / "hero_reference.png"
+            ref_img.save(hero_path)
+            print(f"  Hero saved: {hero_path}")
+
+        identity_embeds = compute_identity_embeddings(pipe, ref_img)
+        # Save embeddings for reuse
+        embeds_path = output_dir / "identity_embeds.pt"
+        torch.save(identity_embeds, embeds_path)
+        print(f"  Identity embeddings saved: {embeds_path}")
 
     animations = ANIMATIONS if args.all_animations else [args.animation]
 
@@ -503,7 +606,10 @@ def main():
 
         for v in range(args.variations):
             seed = (args.seed + v * 1000) if args.seed else None
-            strip, seeds = generate_strip(pipe, args.job, anim, n_frames, seed, ref_palette)
+            strip, seeds = generate_strip(
+                pipe, args.job, anim, n_frames, seed, ref_palette,
+                identity_embeds=identity_embeds,
+            )
 
             suffix = f"_v{v}" if args.variations > 1 else ""
             out_path = output_dir / f"{anim}{suffix}.png"
@@ -515,7 +621,8 @@ def main():
         "job": args.job,
         "tier": "T1",
         "generator": "gen_sprite_sdxl.py",
-        "model": "SDXL 1.0 + pixel-art-xl LoRA",
+        "model": "SDXL 1.0 + pixel-art-xl LoRA + IP-Adapter Plus Face",
+        "ip_adapter_scale": args.ipadapter_scale if use_ipadapter else None,
         "animations": {anim: str(output_dir / f"{anim}.png") for anim in animations},
     }
     meta_path = output_dir / "generation_meta.json"
