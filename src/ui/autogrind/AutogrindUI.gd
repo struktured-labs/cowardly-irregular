@@ -7,6 +7,7 @@ extends Control
 signal closed()
 signal grind_requested(config: Dictionary)
 signal grind_stop_requested()
+signal tier_cycle_requested()
 
 ## Visual style (Win98 danger theme)
 const BG_COLOR = Color(0.03, 0.03, 0.08, 0.95)
@@ -1236,6 +1237,7 @@ func _toggle_grinding() -> void:
 		grind_stop_requested.emit()
 		_log_message("[color=yellow]Autogrind stopped.[/color]")
 		_hide_monitor()
+		visible = true  # Show config UI again
 	else:
 		# Persist current rules to AutogrindSystem so the controller evaluates them
 		AutogrindSystem.set_autogrind_rules(rules.duplicate(true))
@@ -1243,7 +1245,10 @@ func _toggle_grinding() -> void:
 		var config = _get_grind_config()
 		grind_requested.emit(config)
 		_log_message("[color=lime]Autogrind started![/color]")
-		_show_monitor()
+		# Don't show the full-screen monitor at start — Tier 1 (ACCELERATED) shows
+		# full-screen battles. The monitor/dashboard is managed by tier switching.
+		# Hide the config UI so battles are visible.
+		visible = false
 
 	_build_ui()
 	SoundManager.play_ui("menu_select")
@@ -1492,6 +1497,8 @@ func _show_monitor() -> void:
 	_monitor.pause_requested.connect(_on_monitor_pause)
 	_monitor.adjust_rules_requested.connect(_on_monitor_adjust_rules)
 	_monitor.exit_requested.connect(_on_monitor_exit)
+	if _monitor.has_signal("tier_cycle_requested"):
+		_monitor.tier_cycle_requested.connect(func(): tier_cycle_requested.emit())
 
 	# Send initial highlight
 	_monitor.add_highlight("Autogrind session started", "success")
@@ -1542,6 +1549,14 @@ func _on_monitor_exit() -> void:
 	if _is_grinding:
 		_toggle_grinding()
 	_close_ui()
+
+
+func on_tier_changed(new_tier: int) -> void:
+	"""Called by GameLoop when autogrind tier changes.
+	Tier 0 (ACCELERATED): Full-screen battles, no overlay.
+	Tier 1 (DASHBOARD): Mini battle + dashboard (managed by GameLoop)."""
+	_hide_monitor()  # Always hide the old full-screen monitor
+	# AutogrindUI stays hidden during all tiers — battles or dashboard are the view
 
 
 ## ═══════════════════════════════════════════════════════════════════════
@@ -1743,4 +1758,5 @@ func set_grinding(active: bool) -> void:
 	_is_grinding = active
 	if not active:
 		_hide_monitor()
+		visible = true  # Show config UI again when grinding stops
 	_build_ui()

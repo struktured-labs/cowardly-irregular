@@ -5,6 +5,7 @@ extends Node
 
 signal grind_battle_requested(enemies: Array, terrain: String)
 signal grind_complete(reason: String)
+signal tier_changed(new_tier: int)
 
 enum State {
 	IDLE,
@@ -14,6 +15,12 @@ enum State {
 	BETWEEN_BATTLES
 }
 
+enum GrindTier {
+	ACCELERATED,  # Full battles, high speed, turbo mode
+	DASHBOARD,    # Mini battle + analytics dashboard
+	# SIMULATION reserved for future
+}
+
 var _state: State = State.IDLE
 var _party: Array = []
 var _config: Dictionary = {}
@@ -21,13 +28,22 @@ var _saved_autobattle_states: Dictionary = {}
 var _terrain: String = "plains"
 var _between_battle_timer: float = 0.0
 var _skip_next_battle: bool = false
+var _current_tier: GrindTier = GrindTier.ACCELERATED
+var _pending_tier_switch: int = -1  # -1 = no pending switch
 
 ## Tracks whether the current running battle is a meta-boss or collapse-boss fight
 var _current_battle_is_meta_boss: bool = false
 var _current_battle_is_collapse_boss: bool = false
 var _current_meta_boss_data: Dictionary = {}
 
-const BETWEEN_BATTLE_DELAY: float = 1.0
+func _get_between_battle_delay() -> float:
+	match _current_tier:
+		GrindTier.ACCELERATED:
+			return 0.3
+		GrindTier.DASHBOARD:
+			return 0.2
+		_:
+			return 1.0
 
 
 func _process(delta: float) -> void:
@@ -37,6 +53,11 @@ func _process(delta: float) -> void:
 			if _party.is_empty() or _party.all(func(m): return m is Combatant and not m.is_alive):
 				stop_grind("No party available")
 				return
+			if _pending_tier_switch >= 0:
+				_current_tier = _pending_tier_switch as GrindTier
+				_pending_tier_switch = -1
+				tier_changed.emit(_current_tier)
+				print("[AUTOGRIND] Applied queued tier switch: %s" % GrindTier.keys()[_current_tier])
 			_evaluate_and_apply_rules()
 			_state = State.PRE_BATTLE
 			_request_next_battle()
@@ -51,6 +72,8 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	_party = party
 	_config = config
 	_terrain = terrain
+	var tier_val = config.get("tier", 0)
+	_current_tier = tier_val as GrindTier
 
 	# Save and force autobattle states
 	_save_autobattle_states()
@@ -119,7 +142,7 @@ func _request_next_battle() -> void:
 		_skip_next_battle = false
 		print("[AUTOGRIND] Skipping battle due to flee_battle rule")
 		_state = State.BETWEEN_BATTLES
-		_between_battle_timer = BETWEEN_BATTLE_DELAY
+		_between_battle_timer = _get_between_battle_delay()
 		return
 
 	# Check interrupt conditions first
@@ -225,7 +248,7 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		_current_meta_boss_data = {}
 		# Continue grinding after a longer delay
 		_state = State.BETWEEN_BATTLES
-		_between_battle_timer = BETWEEN_BATTLE_DELAY * 2.0
+		_between_battle_timer = _get_between_battle_delay() * 2.0
 		return
 
 	if _current_battle_is_meta_boss:
@@ -247,14 +270,14 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		_current_battle_is_collapse_boss = false
 		_current_meta_boss_data = {}
 		_state = State.BETWEEN_BATTLES
-		_between_battle_timer = BETWEEN_BATTLE_DELAY
+		_between_battle_timer = _get_between_battle_delay()
 		return
 
 	# Normal battle resolution
 	if victory:
 		AutogrindSystem.on_battle_victory(exp_gained, items_gained)
 		_state = State.BETWEEN_BATTLES
-		_between_battle_timer = BETWEEN_BATTLE_DELAY
+		_between_battle_timer = _get_between_battle_delay()
 	else:
 		AutogrindSystem.on_battle_defeat()
 		if AutogrindSystem.is_grinding:
@@ -271,6 +294,7 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	_current_battle_is_meta_boss = false
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
+	_pending_tier_switch = -1
 
 	# Restore autobattle states
 	_restore_autobattle_states()
@@ -334,6 +358,27 @@ func _count_total_items() -> int:
 	for key in AutogrindSystem.total_items_gained:
 		count += AutogrindSystem.total_items_gained[key]
 	return count
+
+
+func switch_tier(new_tier: GrindTier) -> void:
+	if new_tier == _current_tier:
+		return
+	if _state == State.BETWEEN_BATTLES or _state == State.IDLE:
+		_current_tier = new_tier
+		tier_changed.emit(new_tier)
+		print("[AUTOGRIND] Switched to tier: %s" % GrindTier.keys()[new_tier])
+	else:
+		_pending_tier_switch = new_tier
+		print("[AUTOGRIND] Tier switch queued for next between-battles: %s" % GrindTier.keys()[new_tier])
+
+
+func get_current_tier() -> GrindTier:
+	return _current_tier
+
+
+func cycle_tier() -> void:
+	var next = ((_current_tier as int) + 1) % 2  # Only 2 tiers for now
+	switch_tier(next as GrindTier)
 
 
 ## Check if currently grinding

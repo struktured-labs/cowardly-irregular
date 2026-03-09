@@ -60,6 +60,8 @@ var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
 var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
+## Turbo mode - minimize delays between actions for fastest execution
+var turbo_mode: bool = false
 
 ## Terrain modifiers for elemental damage
 var _current_terrain: String = "plains"
@@ -1039,7 +1041,10 @@ func _execute_next_action() -> void:
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
 	# Delay between actions - long enough for animations to complete
-	await get_tree().create_timer(0.7).timeout
+	if turbo_mode:
+		await get_tree().process_frame
+	else:
+		await get_tree().create_timer(0.7).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
@@ -1124,12 +1129,18 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		# Log player action for adaptive AI pattern detection
 		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
-		await get_tree().create_timer(0.5).timeout  # Time for animation
+		if turbo_mode:
+			await get_tree().process_frame
+		else:
+			await get_tree().create_timer(0.5).timeout  # Time for animation
 		if not is_instance_valid(self):
 			return
 
 	# Continue to next action
-	await get_tree().create_timer(0.5).timeout
+	if turbo_mode:
+		await get_tree().process_frame
+	else:
+		await get_tree().create_timer(0.5).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()

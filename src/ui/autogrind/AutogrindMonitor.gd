@@ -9,6 +9,7 @@ class_name AutogrindMonitor
 signal pause_requested()
 signal adjust_rules_requested()
 signal exit_requested()
+signal tier_cycle_requested()
 
 ## Visual style (matches AutogrindUI dark theme)
 const BG_COLOR = Color(0.08, 0.06, 0.12, 0.95)
@@ -155,6 +156,14 @@ func _build_header(vp_size: Vector2) -> void:
 	elapsed_lbl.add_theme_font_size_override("font_size", 13)
 	elapsed_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	add_child(elapsed_lbl)
+
+	var tier_lbl = Label.new()
+	tier_lbl.name = "TierLabel"
+	tier_lbl.text = "[Tier 1]"
+	tier_lbl.position = Vector2(vp_size.x - 220, 14)
+	tier_lbl.add_theme_font_size_override("font_size", 13)
+	tier_lbl.add_theme_color_override("font_color", COLOR_WARN)
+	add_child(tier_lbl)
 
 
 func _build_performance_dashboard(vp_size: Vector2, y_start: float, dash_h: float) -> void:
@@ -448,14 +457,15 @@ func _build_footer(vp_size: Vector2) -> void:
 	footer_bg.size = _footer_panel.size
 	_footer_panel.add_child(footer_bg)
 
-	# Three action buttons spaced across footer
+	# Four action buttons spaced across footer
 	var btn_data = [
 		{"text": "Select: Pause", "action": "pause", "x": 0},
 		{"text": "Start: Adjust Rules", "action": "adjust", "x": 1},
-		{"text": "B: Exit", "action": "exit", "x": 2},
+		{"text": "L+R: Tier", "action": "tier", "x": 2},
+		{"text": "B: Exit", "action": "exit", "x": 3},
 	]
 
-	var btn_w = (_footer_panel.size.x - 16) / 3.0
+	var btn_w = (_footer_panel.size.x - 16) / 4.0
 	for i in range(btn_data.size()):
 		var data = btn_data[i]
 		var bx = 4 + i * btn_w
@@ -502,6 +512,8 @@ func _create_footer_button(text: String, action_name: String,
 				pause_requested.emit()
 			"adjust":
 				adjust_rules_requested.emit()
+			"tier":
+				tier_cycle_requested.emit()
 			"exit":
 				exit_requested.emit()
 
@@ -917,6 +929,13 @@ func _input(event: InputEvent) -> void:
 		exit_requested.emit()
 		get_viewport().set_input_as_handled()
 
+	# L+R together = cycle tier
+	elif event is InputEventJoypadButton and event.pressed:
+		if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
+			if Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER):
+				tier_cycle_requested.emit()
+				get_viewport().set_input_as_handled()
+
 	# Keyboard shortcuts
 	elif event is InputEventKey and event.pressed:
 		match event.keycode:
@@ -925,6 +944,9 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			KEY_R:
 				adjust_rules_requested.emit()
+				get_viewport().set_input_as_handled()
+			KEY_T:
+				tier_cycle_requested.emit()
 				get_viewport().set_input_as_handled()
 
 
