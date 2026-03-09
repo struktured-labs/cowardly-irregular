@@ -64,7 +64,7 @@ The narrative explores:
 **Nature:** Not purely evil; a meta-aware curator
 
 **Role Definition:**
-- Architect of systems
+- Designer of systems
 - Keeper of difficulty
 - Meta-aware curator
 - Defender of challenge integrity
