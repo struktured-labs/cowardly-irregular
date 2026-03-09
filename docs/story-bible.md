@@ -17,20 +17,58 @@ Each overworld tells a self-contained genre story (Layer 1) while the meta-narra
 
 ## Character Identity
 
-Party members have no fixed personalities. Identity emerges from:
+### Core Principle: ALL party members have full personalities, not just the lead.
 
-1. **Base job** — initial disposition and dialogue voice
-2. **Job evolution** — moral/philosophical drift over time
-3. **Secondary job** — personality accent (e.g., Fighter + Cleric = stoic protector, Fighter + Speculator = mercenary)
-4. **Playstyle** — behavioral overlay:
-   - Heavy autobattle → detached, strategic, speaks in abstractions
-   - Manual play → disciplined, present, speaks directly
-   - Grind-heavy → pragmatic, impatient, speaks in numbers
-   - Exploit-heavy → sly, meta-aware, breaks fourth wall earlier
+Party members have no *fixed* personalities — but they always HAVE personalities. Identity emerges from a layered system where every input shifts how each character speaks, acts, and relates to others:
 
-**Player 1** most directly reflects the player. Their dialogue adapts most aggressively to job/playstyle choices.
+#### Layer 1: Base Job (foundation)
+The starting disposition. A Fighter is direct. A Cleric is attentive. A Mage is analytical. A Rogue is perceptive. A Bard is expressive. These aren't stereotypes — they're starting vectors that everything else modifies.
 
-**Party members 2-4** develop secondary personalities that complement or contrast player 1 based on their own job combinations.
+#### Layer 2: World Evolution (automatic drift)
+Jobs auto-evolve per world (see `job_evolutions_by_world.md`). Each evolution shifts personality contextually:
+- Fighter → Security Guard: directness becomes procedural ("Sir, I'm going to have to ask you to leave")
+- Fighter → Steamknight: directness becomes mechanical precision
+- Fighter → Enforcer: directness becomes institutional weight
+- Fighter → Firewall: directness becomes logical rules
+- Fighter → Resolve: directness becomes the pure concept of standing firm
+
+#### Layer 3: Secondary Job (personality accent)
+The secondary job creates tension/harmony with the primary:
+- Fighter + Cleric = stoic protector (duty + faith)
+- Fighter + Speculator = mercenary (duty + profit)
+- Fighter + Rogue = pragmatic survivor (duty + opportunism)
+- Mage + Bard = theatrical intellectual (analysis + performance)
+- Cleric + Rogue = conflicted moralist (faith + edge)
+
+#### Layer 4: Tertiary Job (if applicable — subtle flavor)
+A third job adds a barely-perceptible undercurrent. A Fighter/Cleric/Bard has a hint of showmanship in their stoic protection. Subtle but detectable in key dialogue moments.
+
+#### Layer 5: Playstyle (behavioral overlay — THE BIG ONE)
+This is where the real drift happens. The game tracks how each character is USED, not just what they are:
+
+| Playstyle | Personality Drift | Speech Pattern |
+|-----------|------------------|----------------|
+| Traditional manual | Disciplined, present, engaged | Direct statements, specific observations |
+| Heavy autobattle | Detached, strategic, speaks in abstractions | "The system handled it." / "Optimal." |
+| One-shot builds | Arrogant, precise, impatient with inefficiency | "That should have been faster." |
+| Grind-heavy | Patient, meditative, speaks in rhythms | "Again." / "One more." / repetitive calm |
+| Autogrind | Zen-like detachment, philosophical distance | "It runs. We grow. That's enough." |
+| Exploit-heavy | Sly, meta-aware, breaks fourth wall earliest | "That shouldn't work. It works." |
+| Conservative/defensive | Cautious, risk-averse, speaks in contingencies | "What if we..." / "Just in case." |
+| Risky/aggressive | Bold, impatient, dismissive of caution | "We'll figure it out." / "Go." |
+| Dialogue-skipping | Terse, action-oriented, borderline rude | "..." / "Can we go?" / "Skip." |
+
+**These compound.** A grinding autobattler speaks differently than a grinding manual player. An exploit-heavy one-shotter is cocky AND sly. A conservative dialogue-skipper is anxious but impatient about it.
+
+### Party Dynamics
+
+**Player 1** reflects the player most directly — their playstyle adaptation is strongest.
+
+**Party members 2-4** each have their OWN personality trajectory based on THEIR job combinations and how THEY are used. If the player uses character 2 as the healer who never attacks, character 2 develops a caretaker personality. If character 3 is always on autobattle, character 3 becomes detached and observational.
+
+**Inter-party friction** emerges naturally: a manually-played Fighter clashes with an autobattled Mage. A grinding Cleric has patience a one-shot Rogue doesn't. These tensions show up in rest-point banter and key story moments.
+
+**The novellas show ONE possible personality configuration** — the "canonical playthrough." The actual game generates personality dynamically.
 
 Default placeholder names: Hero, Mira, Zack, Vex (player can rename all).
 
