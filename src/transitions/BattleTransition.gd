@@ -133,12 +133,7 @@ func play_battle_transition(enemy_types: Array) -> void:
 	if not is_instance_valid(self):
 		return
 
-	# Signal battle to load underneath while overworld fragments animate away on top
-	if is_instance_valid(self):
-		transition_midpoint.emit()
-
-	# Overlay stays transparent throughout all effects so the battle scene
-	# renders through the gaps as overworld pieces disappear
+	# Keep overlay visible for effects
 	_overlay.modulate.a = 0.0
 
 	# Determine transition type from first enemy
@@ -177,6 +172,14 @@ func play_battle_transition(enemy_types: Array) -> void:
 
 	if not is_instance_valid(self):
 		return
+
+	# Ensure overlay is opaque black after effects complete
+	# so battle loads behind a black screen
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+
+	# Signal that screen is fully covered — safe to load battle
+	transition_midpoint.emit()
 
 
 ## Fade out after battle transition to fully reveal battle scene.

@@ -1147,25 +1147,22 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	if BattleTransition:
 		print("[GAMELOOP] Starting battle transition")
 
-		# transition_midpoint fires at the START of the effect animation so we can
-		# load the battle scene underneath while the overworld capture animates away
-		BattleTransition.transition_midpoint.connect(
-			func():
-				# Wait for the threaded load then instantiate battle behind the overlay
-				_load_battle_behind_transition(enemies),
-			CONNECT_ONE_SHOT
-		)
-
-		# Run the transition effect — battle loads in parallel underneath
+		# Run the transition effect (captures screen, plays animation, holds black)
 		await BattleTransition.play_battle_transition(enemy_types)
 		print("[GAMELOOP] Battle transition effect complete")
 
-		# Wait for battle to finish loading/starting if it hasn't yet
-		while current_state != LoopState.BATTLE:
+		# Now load the battle scene while screen is black
+		if _exploration_scene and is_instance_valid(_exploration_scene):
+			_exploration_scene.visible = false
+
+		# Wait for threaded scene load to complete
+		while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			await get_tree().process_frame
 
-		# Fade out / clean up — battle is already visible through transparent overlay
-		print("[GAMELOOP] Starting fade out")
+		await _start_battle_async(enemies, true)
+		print("[GAMELOOP] Battle started")
+
+		# Reveal the battle scene
 		await BattleTransition.fade_out()
 		print("[GAMELOOP] Fade out complete - battle should be visible")
 	else:
