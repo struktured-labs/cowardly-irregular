@@ -642,6 +642,90 @@ She left him a prayer card. She didn't know if it would do anything — the fait
 
 ---
 
+#### The Brasston Grind
+
+The clockwork overworld between Brasston and Cogsworth Junction was designed to be crossed in ninety minutes. It was a gauntlet of mechanical sentinels and automated enforcers, each one calibrated to test a party at the expected power level, each one positioned along the critical path at intervals designed to deplete resources before the Grand Mechanism dungeon.
+
+The party had been in the clockwork overworld for eleven hours.
+
+Mira had left after the second hour. She had spotted a gantry structure three hundred meters off the critical path that had, she said, a non-standard gear configuration suggesting it had been retrofitted after the original construction, which meant there was a second architect involved in Cogsworth's design, which was directly relevant to the hypothesis she'd been developing since the blueprints in the Mechanism's outer records room. She would catch up. She had gone northeast.
+
+Vex had lasted four hours before the critical path's lack of interesting geometry had convinced him that the disused maintenance shafts running parallel to the main overworld probably connected to something worth finding. He would also catch up. He had gone north-northwest.
+
+Which left the Steampriest, the Enforcer, and the Busker in the clockwork overworld, fighting sentinel after sentinel in the steady rhythm of people who have found a rhythm and are unwilling to abandon it.
+
+The sentinels were not intelligent. They were mechanism: gears and springs and an attack pattern that repeated on a four-move cycle. The Steampriest had memorized the cycle by the second fight. The Enforcer had memorized it by the first, because the Enforcer memorized things that tried to hurt him on instinct, which was perhaps the most fundamental expression of what a Fighter became when you took everything else away.
+
+Attack. The Enforcer's baton, which had the same balance as every weapon he'd carried across every world, connecting with the sentinel's central chassis with the solid sound of something being hit by someone who means it.
+
+Wait. The sentinel's second-phase wind-up. The Busker's small adjustment of grip on the simplified trumpet. The Steampriest's hands rising slightly, ready.
+
+Heal. The satchel of remedies producing a vial that smelled of camphor and iron, the healing still working, working as it had always worked: the conviction that the damage could be repaired, that restoration was possible.
+
+Wait. The fourth-phase reset. Everyone breathing.
+
+Attack.
+
+The Busker began to play between her defensive calls. Not loudly — the simplified trumpet didn't do loud well, its resonance chamber being designed for information volume rather than musical expression — but finding the melody that lived inside the mechanical repetition. She had always found melody in repetition. That was the Bard's gift and the Busker's evolution of it: finding the thing worth saying in the thing being said over and over until it became background.
+
+The Steampriest listened to the melody forming. It had the rhythm of the fight in it. Attack-wait-heal-wait. Four-four time, more or less. The clockwork world had given everything a rhythm, even the violence, and the Busker had looked at the rhythm of the violence and decided to sing it rather than simply occupy it.
+
+"You're grinding," the Enforcer said. He said it in the way he said most things: directly, with no judgment attached, as a statement of observed fact awaiting confirmation or correction.
+
+"Yes," the Steampriest said.
+
+"We could be at Cogsworth Junction."
+
+"Yes."
+
+A sentinel appeared. They engaged it with the precision of people who had done this enough times that the motion required no thought, which was also the point. The motion requiring no thought left space in which thought could happen freely, which was different from the thought you had when you were also trying to remember the motions.
+
+"Why?" the Enforcer asked, when the sentinel was down.
+
+The Steampriest healed a dent in the Enforcer's armor — not the Enforcer, the armor itself, which she did by habit and which she'd stopped explaining because the Enforcer had stopped questioning it.
+
+"In Harmonia," she said, "before the cave, there was a meadow. We stopped in it for an hour and the Science Nerd was furious and the Footpad left because he thought we were wasting time, and we fought slimes and bats and a pair of goblins who had a dialogue box that only appeared after the third encounter in sequence." She looked at the clockwork landscape around them — the gears turning in the walls, the sky that was a clock face, the beautiful and depressing regularity of a world that had optimized itself into a kind of imprisonment. "That dialogue box — the small goblin who hadn't wanted to fight that day — I found it because we stopped."
+
+"You're looking for dialogue boxes," the Enforcer said. Not skeptically. He was assembling the information.
+
+"I don't know what I'm looking for," the Steampriest said, honestly. "I'm staying long enough that whatever is here can be found. Some of it I'll find by talking to people. Some of it I'll find by being in the overworld long enough for the sequential triggers to fire."
+
+The Enforcer thought about this. He was a direct man, which did not mean he was a fast man — directness and speed were different things, and he had learned that most problems rewarded direct attention more than direct speed. He had been watching the Steampriest's approach since Harmonia with the patient observation of someone learning a new discipline.
+
+"You found the Warden's extended dialogue," he said.
+
+"Yes."
+
+"You found Gerald's permit pathway."
+
+"Yes."
+
+"You found the prayer card opportunity with Sprocket."
+
+"Yes."
+
+"All of those produced information or items that changed subsequent encounters." He looked at the clockwork overworld. "The grind is a search method."
+
+"Partly," she said. "It's also just — peaceful. The rhythm is peaceful. I don't have to justify it past that."
+
+The Enforcer was quiet for a moment. Then he swung at the next sentinel with the clean honesty of someone who has made peace with his situation.
+
+"Then we grind," he said.
+
+The Busker found the melody. It had the shape of the landscape in it — the four-beat tick of the mechanisms, the quarter-note rests when gears changed phase, the longer silence when a sentinel fell and before the next one came. She played through all of it. The trumpet, simplified as it was, found something inside the constraints: a line that moved through the repetition without becoming the repetition, that said something true about staying in a place long enough to hear it.
+
+They came out of the clockwork overworld with a sentinel activation chip that was a key to a maintenance passage bypassing the outer defenses of the Mechanism entirely, which they had found in the fourteenth fight when the sentinel's attack pattern extended into a phase five that only appeared after twelve consecutive encounters in the same grid sector. Most parties never triggered it. It led to a shorter path to the Calibrant's chamber than the designed critical route, which was a slightly insane outcome: they had ground their way into an efficiency that the efficiency-obsessed world had not anticipated.
+
+"The Calibrant is going to be annoyed," Vex said, when they regrouped at the Mechanism's outer gate. He had found the maintenance shaft network. Mira had found the retrofitted gantry and its implications. The Steampriest and the Enforcer had found the chip.
+
+"We're forty-seven hours behind schedule," the Steampriest said. "And we have a shorter path than the one the Calibrant built."
+
+"They're going to be very annoyed," Vex said.
+
+"Good," the Busker said, putting the trumpet away. "The song was better for having stayed."
+
+---
+
 #### The Reveal
 
 The Alchemist — Mira, the Lab Technician in this world, constrained and furious about it — had figured it out at the Mechanism's records room.
@@ -1013,6 +1097,86 @@ The Compiler was quiet for a moment, running calculations.
 "Good?"
 
 "It means the system noticed. Something happened that the system couldn't account for. That matters."
+
+---
+
+#### The Digital Grind
+
+The encounter rate in the digital world was high. The Calibrant had designed it as a sustained pressure environment: constant encounters, enemies that adapted to player behavior, a dungeon structure — Node Prime — that was genuinely labyrinthine and generated new routing challenges each run. It was meant to be exhausting.
+
+The Antivirus found it meditative.
+
+This was by now a pattern the party had stopped finding surprising. The Compiler tracked it in his notes as a behavioral constant: *subject consistently converts high-pressure encounter environments into meditative states through sustained engagement. Effect scales with encounter rate — higher rate produces deeper calm. Mechanism unknown.* He had stopped writing *mechanism unknown* in World 3 because it was no longer helping him understand anything.
+
+The digital overworld outside Node Prime had an encounter rate of roughly one every forty-five seconds. The Antivirus had been in the digital overworld for six hours.
+
+"We're overleveled," the Compiler said.
+
+"Yes," the Antivirus said.
+
+"We've been overleveled since World 1."
+
+"Yes."
+
+"At some point," he said, "the word loses meaning. We're now so far past the designed power curve that the Calibrant's encounter tables simply register our party as a processing error. The system doesn't have a category for 'party that is this level at this point in the game.' We are — we are outside the range of the difficulty model."
+
+"Good," the Antivirus said.
+
+She healed a corrupted packet. Not a battle encounter — just a corrupted packet, a small piece of data floating in the overworld's infrastructure like a bruise. It took her one action, one small expenditure of the resource the game called SP and she privately thought of as attention, and the packet's data resolved, became coherent, rejoined the larger signal.
+
+"You do that constantly," the Compiler said.
+
+"Yes."
+
+"The packets aren't enemies. They're not NPCs. They're not anything the game's interaction system is designed to respond to. You're using an ability on — on noise."
+
+"They were something," she said. "Before they were noise." She moved to the next one. The healing settled like light: quietly, without announcement. "The digital world is built on layers. The current layer is clean and functional and designed by the Calibrant to be this world's operational surface. Underneath it — the packets, the deprecated processes, the cached memories with low allocation — that's the layer the Calibrant built and then updated over. The way you paint over a wall when you change the room."
+
+"What's under the paint," he said.
+
+"What was there before," she said. "The previous version of the world. The things that were built into it and then covered when the design changed." She looked at the stream of corrupted packets drifting past the overworld's wireframe structures. "Someone built these. They were complete, once. And then the system moved on and they were left."
+
+The Compiler watched her heal another one. And another. He was doing calculations in the part of his mind that never stopped doing calculations.
+
+"If you heal every deprecated process in the digital world," he said slowly, "the combined data reconstruction will — " he calculated further " — will generate a composite signal. A collective memory of every process that was deprecated, integrated back into the current layer's awareness." He looked at her. "That's not a designed outcome. The Calibrant didn't build that into the system. You would be doing something with the game's mechanics that the game wasn't designed to produce."
+
+"Yes," she said.
+
+"How did you know?"
+
+"I didn't," she said. "I'm healing them because they deserve to be healed. If something else comes from it, that's good. If nothing else comes from it, the healing was still the right thing to do."
+
+The Compiler looked at his notes. Then at the stream of deprecated processes. Then at his notes again.
+
+Then he began healing the ones she had missed.
+
+Not because he had become her. Not because the logic of care had replaced the logic of analysis. But because he had been following the evidence, as he always followed evidence, and the evidence said: the things she finds matter. The things she attends to produce outcomes. The interpretive axiom is that the designed things are real, and real things deserve real engagement, and real engagement sometimes looks like applying a spell to a corrupted data packet in a digital overworld because it was something once and it deserves to be something again.
+
+"You're grinding," the Exploit said, from somewhere off to the left. She was Vex in this world — the Exploit, sensitivity to edges, finder of gaps — and she had been exploring Node Prime's peripheral architecture while the Antivirus worked the overworld. She had found three unintended exits and a shortcut through the dungeon's second quadrant that shouldn't have existed and that the Calibrant was going to be, as she characterized it, "extremely upset about."
+
+"Yes," the Antivirus said.
+
+"We are very overleveled."
+
+"Yes."
+
+"The Compiler is also healing corrupted packets."
+
+"Yes."
+
+The Exploit looked at the two of them, the Antivirus and the Compiler, methodically restoring deprecated data in a digital overworld while the encounter rate spawned enemies around them and the party killed those enemies and healed through the fight and moved to the next packet without breaking the rhythm. She looked at this for a moment.
+
+Then she found the edge of the nearest enemy's collision geometry and stepped through it, which didn't help with the packets but was the shape of her own version of caring about where things actually ended.
+
+"You're going to unlock something," she said. "From healing all of them."
+
+"Possibly," the Antivirus said.
+
+"The Calibrant's going to be annoyed."
+
+"Possibly."
+
+"Good," the Exploit said. And went back to examining the edge of things, which was her version of the same work: finding out what a thing actually was by standing at the place where it stopped being itself.
 
 ---
 
