@@ -1138,27 +1138,18 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 
 	print("[GAMELOOP] Battle triggered with enemies: %s" % [enemies])
 
-	# Start battle loading in background (async)
-	ResourceLoader.load_threaded_request("res://src/battle/BattleScene.tscn")
-
-	# Pre-warm sprite cache during transition (deferred so it runs during animation)
-	call_deferred("_prewarm_battle_sprites", enemies)
-
 	if BattleTransition:
 		print("[GAMELOOP] Starting battle transition")
 
-		# Run the transition effect (captures screen, plays animation, holds black)
+		# Run the transition effect (captures screen, plays animation, ends on black)
 		await BattleTransition.play_battle_transition(enemy_types)
 		print("[GAMELOOP] Battle transition effect complete")
 
-		# Now load the battle scene while screen is black
+		# Hide exploration scene (screenshot already taken)
 		if _exploration_scene and is_instance_valid(_exploration_scene):
 			_exploration_scene.visible = false
 
-		# Wait for threaded scene load to complete
-		while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-			await get_tree().process_frame
-
+		# Load battle scene (uses preloaded resource, always available)
 		await _start_battle_async(enemies, true)
 		print("[GAMELOOP] Battle started")
 
@@ -1167,8 +1158,6 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		print("[GAMELOOP] Fade out complete - battle should be visible")
 	else:
 		# No transition — load battle directly
-		while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-			await get_tree().process_frame
 		await _start_battle_async(enemies, true)
 
 
@@ -1221,9 +1210,8 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	# Check if this is a miniboss battle (every 3rd battle), but not if forced enemies
 	var is_miniboss_battle = not has_enemies and (battles_won + 1) % 3 == 0 and battles_won > 0
 
-	# Get pre-loaded battle scene
-	var loaded_res = ResourceLoader.load_threaded_get("res://src/battle/BattleScene.tscn")
-	var battle_scene = loaded_res.instantiate()
+	# Use preloaded battle scene (always available, no race conditions)
+	var battle_scene = BattleSceneRes.instantiate()
 
 	# Set flags and party BEFORE adding to tree (since _ready() uses these)
 	battle_scene.managed_by_game_loop = true
