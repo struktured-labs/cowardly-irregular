@@ -1271,7 +1271,7 @@ func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 
 
 func _area_fade_to_black() -> void:
-	"""Fade the area-transition overlay to opaque black (0.3s)."""
+	"""Fade the area-transition overlay to opaque black (0.3s). Generic fallback."""
 	if not _area_fade_rect:
 		return
 	var tween = create_tween()
@@ -1280,7 +1280,7 @@ func _area_fade_to_black() -> void:
 
 
 func _area_fade_from_black() -> void:
-	"""Fade the area-transition overlay back to transparent (0.3s)."""
+	"""Fade the area-transition overlay back to transparent (0.3s). Generic fallback."""
 	if not _area_fade_rect:
 		return
 	var tween = create_tween()
@@ -1288,16 +1288,352 @@ func _area_fade_from_black() -> void:
 	await tween.finished
 
 
+func _get_transition_type(map_id: String) -> String:
+	"""Classify destination into cave, village, overworld, or generic."""
+	var t = map_id.to_lower()
+	if "cave" in t or "dungeon" in t:
+		return "cave"
+	if "village" in t or "town" in t or "heights" in t or "row" in t \
+			or "prime" in t or "vertex" in t or "brasston" in t \
+			or "harmonia" in t or "tavern" in t or "frosthold" in t \
+			or "eldertree" in t or "grimhollow" in t or "sandrift" in t \
+			or "ironhaven" in t:
+		return "village"
+	if "overworld" in t or t == "overworld":
+		return "overworld"
+	return "generic"
+
+
+func _get_location_display_name(map_id: String) -> String:
+	"""Return the human-readable name from locations.json, or a formatted fallback."""
+	var file = FileAccess.open("res://data/locations.json", FileAccess.READ)
+	if file:
+		var json = JSON.new()
+		if json.parse(file.get_as_text()) == OK:
+			var data = json.data
+			if data is Dictionary:
+				for key in data:
+					var entry = data[key]
+					if entry is Dictionary and entry.get("map_id", key) == map_id:
+						return entry.get("name", map_id.replace("_", " ").capitalize())
+		file.close()
+	return map_id.replace("_", " ").capitalize()
+
+
+func _make_location_label(text: String, layer: CanvasLayer) -> Label:
+	"""Create a centred location-name label styled to the game aesthetic."""
+	var lbl = Label.new()
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_color_override("font_color", Color(0.95, 0.92, 0.78))
+	lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	lbl.add_theme_constant_override("shadow_offset_x", 2)
+	lbl.add_theme_constant_override("shadow_offset_y", 2)
+	lbl.modulate.a = 0.0
+	layer.add_child(lbl)
+	return lbl
+
+
+func _area_cave_transition_in(location_name: String) -> void:
+	"""Stone-door slam effect: dim then two rects close from top and bottom."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	# Dim phase (0.25s)
+	var dim_tween = create_tween()
+	dim_tween.tween_property(_area_fade_rect, "modulate:a", 0.55, 0.25)
+	await dim_tween.finished
+
+	# Create top and bottom stone door rects
+	var top_door = ColorRect.new()
+	top_door.color = Color(0.08, 0.07, 0.09)
+	top_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	top_door.position = Vector2(0, -screen_size.y * 0.5 - 4)
+	_area_fade_layer.add_child(top_door)
+
+	var bottom_door = ColorRect.new()
+	bottom_door.color = Color(0.08, 0.07, 0.09)
+	bottom_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	bottom_door.position = Vector2(0, screen_size.y)
+	_area_fade_layer.add_child(bottom_door)
+
+	# Door slam (0.35s) — ease in for weight
+	var slam_tween = create_tween()
+	slam_tween.set_parallel(true)
+	slam_tween.tween_property(top_door, "position:y", 0.0, 0.35).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	slam_tween.tween_property(bottom_door, "position:y", screen_size.y * 0.5, 0.35).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	await slam_tween.finished
+
+	# Snap base rect to full black so it covers when doors are removed later
+	_area_fade_rect.modulate.a = 1.0
+
+	# Location label fade in
+	var lbl = _make_location_label("Entering " + location_name + "...", _area_fade_layer)
+	var lbl_tween = create_tween()
+	lbl_tween.tween_property(lbl, "modulate:a", 1.0, 0.2)
+	await lbl_tween.finished
+	await get_tree().create_timer(0.35).timeout
+
+	# Clean up doors and label (base rect stays black)
+	top_door.queue_free()
+	bottom_door.queue_free()
+	lbl.queue_free()
+
+
+func _area_cave_transition_out() -> void:
+	"""Stone doors open vertically to reveal the cave."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	# Create doors starting in closed position
+	var top_door = ColorRect.new()
+	top_door.color = Color(0.08, 0.07, 0.09)
+	top_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	top_door.position = Vector2(0, 0)
+	_area_fade_layer.add_child(top_door)
+
+	var bottom_door = ColorRect.new()
+	bottom_door.color = Color(0.08, 0.07, 0.09)
+	bottom_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	bottom_door.position = Vector2(0, screen_size.y * 0.5)
+	_area_fade_layer.add_child(bottom_door)
+
+	_area_fade_rect.modulate.a = 0.0  # Let doors carry the black
+
+	# Open doors (0.45s) — ease out for smooth reveal
+	var open_tween = create_tween()
+	open_tween.set_parallel(true)
+	open_tween.tween_property(top_door, "position:y", -screen_size.y * 0.5 - 4, 0.45).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	open_tween.tween_property(bottom_door, "position:y", screen_size.y, 0.45).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	await open_tween.finished
+
+	top_door.queue_free()
+	bottom_door.queue_free()
+
+
+func _area_village_transition_in(location_name: String) -> void:
+	"""Warm amber horizontal wipe left-to-right."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	# Amber wipe bar — starts off-screen left
+	var wipe = ColorRect.new()
+	wipe.color = Color(0.72, 0.48, 0.12)
+	wipe.size = Vector2(screen_size.x * 1.1, screen_size.y)
+	wipe.position = Vector2(-screen_size.x * 1.1, 0)
+	_area_fade_layer.add_child(wipe)
+
+	# Trailing black fill that follows the wipe
+	var fill = ColorRect.new()
+	fill.color = Color(0.04, 0.03, 0.02)
+	fill.size = Vector2(screen_size.x * 1.1, screen_size.y)
+	fill.position = Vector2(-screen_size.x * 2.1, 0)
+	_area_fade_layer.add_child(fill)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var wipe_tween = create_tween()
+	wipe_tween.set_parallel(true)
+	wipe_tween.tween_property(wipe, "position:x", screen_size.x, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	wipe_tween.tween_property(fill, "position:x", 0.0, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	await wipe_tween.finished
+
+	# Snap base rect to full black, remove wipe bar
+	_area_fade_rect.modulate.a = 1.0
+	wipe.queue_free()
+	fill.queue_free()
+
+	# Show location label with animated dots
+	var lbl = _make_location_label("Arriving at " + location_name + "...", _area_fade_layer)
+	var lbl_tween = create_tween()
+	lbl_tween.tween_property(lbl, "modulate:a", 1.0, 0.18)
+	await lbl_tween.finished
+	await get_tree().create_timer(0.38).timeout
+	lbl.queue_free()
+
+
+func _area_village_transition_out() -> void:
+	"""Reverse amber wipe: right-to-left to reveal village."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	var wipe = ColorRect.new()
+	wipe.color = Color(0.72, 0.48, 0.12)
+	wipe.size = Vector2(screen_size.x * 1.1, screen_size.y)
+	wipe.position = Vector2(-screen_size.x * 0.05, 0)
+	_area_fade_layer.add_child(wipe)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var wipe_tween = create_tween()
+	wipe_tween.tween_property(wipe, "position:x", screen_size.x * 1.1, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	await wipe_tween.finished
+
+	wipe.queue_free()
+
+
+func _area_overworld_transition_in() -> void:
+	"""Circular iris-out: screen shrinks to a point at center, hold black."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	# Use a shader-based approach via a SubViewport is complex; instead we approximate
+	# an iris with radial segments drawn via a Control's _draw, using a tween on a
+	# custom property. As a clean fallback we use a fast vignette fade instead.
+	# True circle masking in Godot without shaders needs a CanvasItem shader or
+	# a SubViewport which is too heavy for a transition. We use concentric rects
+	# growing inward to approximate the iris closing.
+	var screen_size = get_viewport().get_visible_rect().size
+	var cx = screen_size.x * 0.5
+	var cy = screen_size.y * 0.5
+
+	# Four black rects collapsing toward center from all four sides
+	var left_r = ColorRect.new()
+	left_r.color = Color.BLACK
+	left_r.set_anchors_preset(Control.PRESET_FULL_RECT)
+	left_r.size = Vector2(cx, screen_size.y)
+	left_r.position = Vector2(0, 0)
+	left_r.pivot_offset = Vector2(0, 0)
+
+	var right_r = ColorRect.new()
+	right_r.color = Color.BLACK
+	right_r.size = Vector2(cx, screen_size.y)
+	right_r.position = Vector2(screen_size.x, 0)
+
+	var top_r = ColorRect.new()
+	top_r.color = Color.BLACK
+	top_r.size = Vector2(screen_size.x, cy)
+	top_r.position = Vector2(0, 0)
+
+	var bottom_r = ColorRect.new()
+	bottom_r.color = Color.BLACK
+	bottom_r.size = Vector2(screen_size.x, cy)
+	bottom_r.position = Vector2(0, screen_size.y)
+
+	for r in [left_r, right_r, top_r, bottom_r]:
+		r.modulate.a = 0.0
+		_area_fade_layer.add_child(r)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var dur = 0.5
+	var iris_tween = create_tween()
+	iris_tween.set_parallel(true)
+	# Fade in all four and slide them inward simultaneously
+	iris_tween.tween_property(left_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(right_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(top_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(bottom_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(left_r, "size:x", cx, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(right_r, "position:x", cx, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(top_r, "size:y", cy, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(bottom_r, "position:y", cy, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	await iris_tween.finished
+
+	# Snap full black, clean up rects
+	_area_fade_rect.modulate.a = 1.0
+	left_r.queue_free()
+	right_r.queue_free()
+	top_r.queue_free()
+	bottom_r.queue_free()
+
+	# Hold black briefly
+	await get_tree().create_timer(0.2).timeout
+
+
+func _area_overworld_transition_out() -> void:
+	"""Iris opens from center revealing the overworld (0.5s)."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+	var cx = screen_size.x * 0.5
+	var cy = screen_size.y * 0.5
+
+	var left_r = ColorRect.new()
+	left_r.color = Color.BLACK
+	left_r.size = Vector2(cx, screen_size.y)
+	left_r.position = Vector2(0, 0)
+
+	var right_r = ColorRect.new()
+	right_r.color = Color.BLACK
+	right_r.size = Vector2(cx, screen_size.y)
+	right_r.position = Vector2(cx, 0)
+
+	var top_r = ColorRect.new()
+	top_r.color = Color.BLACK
+	top_r.size = Vector2(screen_size.x, cy)
+	top_r.position = Vector2(0, 0)
+
+	var bottom_r = ColorRect.new()
+	bottom_r.color = Color.BLACK
+	bottom_r.size = Vector2(screen_size.x, cy)
+	bottom_r.position = Vector2(0, cy)
+
+	for r in [left_r, right_r, top_r, bottom_r]:
+		_area_fade_layer.add_child(r)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var dur = 0.5
+	var iris_tween = create_tween()
+	iris_tween.set_parallel(true)
+	iris_tween.tween_property(left_r, "position:x", -cx, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(right_r, "position:x", screen_size.x, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(top_r, "position:y", -cy, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(bottom_r, "position:y", screen_size.y, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	await iris_tween.finished
+
+	left_r.queue_free()
+	right_r.queue_free()
+	top_r.queue_free()
+	bottom_r.queue_free()
+
+
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
-	"""Handle transitioning between areas with a fade to hide load stutter."""
+	"""Handle contextual area transition based on destination type."""
 	_current_map_id = target_map
 	_spawn_point = spawn_point
-	_player_position = Vector2.ZERO  # Clear saved position when changing maps
-	_current_terrain = _get_terrain_for_map(target_map)  # Update terrain for new area
+	_player_position = Vector2.ZERO
+	_current_terrain = _get_terrain_for_map(target_map)
 
-	await _area_fade_to_black()
-	_start_exploration()
-	await _area_fade_from_black()
+	var transition_type = _get_transition_type(target_map)
+	var display_name = _get_location_display_name(target_map)
+
+	match transition_type:
+		"cave":
+			await _area_cave_transition_in(display_name)
+			_start_exploration()
+			await _area_cave_transition_out()
+		"village":
+			await _area_village_transition_in(display_name)
+			_start_exploration()
+			await _area_village_transition_out()
+		"overworld":
+			await _area_overworld_transition_in()
+			_start_exploration()
+			await _area_overworld_transition_out()
+		_:
+			await _area_fade_to_black()
+			_start_exploration()
+			await _area_fade_from_black()
 
 
 func _get_terrain_for_map(map_id: String) -> String:
