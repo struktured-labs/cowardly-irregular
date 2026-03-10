@@ -583,7 +583,7 @@ The Cleric healed beyond reasonable resource parameters because he had made a ha
 
 The Mage stopped being measured.
 
-Vex found angles that the Coordinator's spatial models didn't account for, because her models were built on a neighborhood she understood and Vex had spent his entire career exploiting the assumption of the predictable.
+Vex found angles that the Coordinator's spatial models didn't account for, because the Coordinator's models were built on a neighborhood she understood and Vex had spent his entire career exploiting the assumption of the predictable.
 
 The Fighter, when a liability form appeared mid-swing, reached into his jacket with his off hand and produced a pen — the Bard's extra pen, borrowed before the community center visit — and signed it without stopping the swing. The form dissolved. The fine didn't apply.
 
