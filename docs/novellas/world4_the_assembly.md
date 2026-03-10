@@ -8,9 +8,11 @@
 
 There was no sky. That was the first thing. Not a clouded sky, not a dark sky, not a sky that was the wrong color. No sky at all. Just a ceiling — gray, flat, industrial — stretching in every direction, held up by pillars of riveted steel that vanished into a haze of fluorescent light.
 
-The air tasted like recycled air. Not stale. Recycled. As though it had been used before, filtered, deemed acceptable, and sent back out for another cycle. It had the flavor of efficiency and the aftertaste of nothing.
+The light itself was wrong. Not dim, not harsh — clinical. It bleached color from surfaces that still technically had color, left everything in a slightly off register, the way photographs look when taken under fluorescent tubes in rooms that were never meant to be photographed. It was the specific light that made people look slightly sick, that turned healthy skin sallow, that turned the ordinary gray of concrete into something that actively resisted being looked at for long.
 
-The ground was concrete. Not cobblestone pretending to be something charming, not asphalt pretending to be practical. Concrete. Poured, cured, and forgotten by whoever poured it, because its purpose was to be stood on, not admired.
+The air tasted like recycled air. Not stale. Recycled. As though it had been used before, filtered, deemed acceptable, and sent back out for another cycle. It had the flavor of efficiency and the aftertaste of nothing. Somewhere in the aftertaste was concrete dust — fine and pervasive, the kind that settles on everything and turns it marginally grayer — and something else that might have been the industrial lubricant used on the machinery, or might have been whatever they put in the not-coffee that everyone seemed to be carrying.
+
+The ground was concrete. Not cobblestone pretending to be something charming, not asphalt pretending to be practical. Concrete. Poured, cured, and forgotten by whoever poured it, because its purpose was to be stood on, not admired. The hum of the machinery was everywhere — not the rhythmic, almost-musical ticking of the steampunk world, not the heartbeat quality of gears catching and releasing. This was a drone. Constant, toneless, varying only slightly in register as they moved from one area to another. It had been going since before they arrived and would be going after they left and it did not care about them in either direction.
 
 The transformation happened to them before they'd taken three steps.
 
@@ -44,7 +46,7 @@ Welcome to Rivet Row.
 
 Rivet Row was not a town. It was a *process.*
 
-There were buildings, yes. Housing blocks, identical and numbered, arranged in grids that a mathematician would have called elegant and a human being would have called depressing. There were streets, straight and wide and empty of anything that wasn't moving toward a destination. There were people, and the people moved the way the streets did — straight, purposeful, and empty of anything that wasn't productive.
+There were buildings, yes. Housing blocks, identical and numbered, arranged in grids that a mathematician would have called elegant and a human being would have called depressing. Block 1 through Block 47, each one the same dimensions, the same entrance configuration, the same allocation of windows at the same intervals, the same company logo above the same doorway. There were streets, straight and wide and empty of anything that wasn't moving toward a destination. There were people, and the people moved the way the streets did — straight, purposeful, and empty of anything that wasn't productive.
 
 No one stopped to talk. No one looked up. No one seemed to notice the four armed strangers standing in the middle of Processing Avenue, which was the main road, and which was called Processing Avenue because someone had been asked to name it and had chosen the first word on their clipboard.
 
@@ -66,7 +68,7 @@ Watching them watch it.
 
 ---
 
-The union rep found them, but not by choice. He was on his mandated fifteen-minute break, which he was spending by standing exactly where his break was scheduled to occur, holding a mug of something that had been coffee three cost-reduction cycles ago.
+The union rep found them, but not by choice. He was on his mandated fifteen-minute break, which he was spending by standing exactly where his break was scheduled to occur, holding a mug of something that had been coffee three cost-reduction cycles ago. The break room visible through the window behind him had a motivational poster on the wall and a vending machine in the corner and fluorescent lights that buzzed at a frequency that would eventually, given enough years, become intolerable.
 
 "You're new," he said. Not a question. Questions were inefficient. "You'll want to register at the Intake Center. Block 7, Window 3. Bring your own pen. They stopped providing pens in the last optimization pass."
 
@@ -116,11 +118,11 @@ His watch beeped. Break over. He walked away with the smooth, purposeful efficie
 
 ---
 
-The exhausted shift worker — a woman named Dorrit, who had worked the assembly line for six years and had the posture of someone who had been slowly compressed by the weight of productivity metrics — told them more over a meal in the company cafeteria, where all food was nutritionally optimized and aesthetically negligible.
+The exhausted shift worker — a woman named Dorrit, who had worked the assembly line for six years and had the posture of someone who had been slowly compressed by the weight of productivity metrics — told them more over a meal in the company cafeteria, where all food was nutritionally optimized and aesthetically negligible. The tables were bolted down. The seats were molded to the most ergonomic average. The walls were the same gray as the ceiling and the floor and everything else, and there were motivational slogans printed on them in a font chosen for maximum legibility at standard cafeteria viewing distance.
 
 She'd found them without being obvious about finding them, which was its own skill in a world where everything was monitored and ambiguity was automatically flagged.
 
-"The Director appeared three years ago," she said. "Or maybe always. It's hard to remember a time before the efficiency protocols." She pushed gray protein around her plate. "Things changed. The work used to be hard but human. Now it's easy and... not. Everything's measured. Output per hour. Steps per shift. Words per conversation."
+"The Director appeared three years ago," she said. "Or maybe always. It's hard to remember a time before the efficiency protocols." She pushed gray protein around her plate. Gray was technically not a color but here it was doing double duty as a flavor. "Things changed. The work used to be hard but human. Now it's easy and... not. Everything's measured. Output per hour. Steps per shift. Words per conversation."
 
 "Words per conversation?"
 
@@ -142,7 +144,7 @@ The Lab Technician looked at her tote. At the pre-printed fields. *Deviation fro
 
 ---
 
-The foreman — off-duty, because the foreman was always off-duty when speaking honestly, since honesty had been classified as a non-productive activity — cornered them in an alley between Housing Block 12 and Housing Block 13, which was the gap the monitoring cameras didn't quite cover. He'd found the gap through six years of careful not-looking.
+The foreman — off-duty, because the foreman was always off-duty when speaking honestly, since honesty had been classified as a non-productive activity — cornered them in an alley between Housing Block 12 and Housing Block 13, which was the gap the monitoring cameras didn't quite cover. He'd found the gap through six years of careful not-looking. The alley smelled of concrete dust and a faint sweetness that turned out to be something the drainage system periodically vented, and through the gap overhead the fluorescent haze continued uniformly, sourceless, making the night no different from the day.
 
 "You need to understand something," he said. "The Director isn't like the bosses before her. Before the Director, we had managers. Human ones. They were bad at their jobs in the way that humans are bad at their jobs — inconsistently, and with occasional moments of decency."
 
@@ -214,7 +216,7 @@ They had been tracking the party's stats — combat data, resource levels, the u
 
 They encountered clockwork rats in the maintenance tunnels below Block 9, which they'd entered because the maintenance tunnels were the only part of Rivet Row that didn't have monitors. The Whistleblower had found the access hatch; the Safety Officer had noted it was technically a safety violation to have unsupervised access to maintenance infrastructure; everyone else had used it anyway.
 
-The rats were remnants of the steampunk world — or had been, anyway. They'd been down here since the transition, and the transition had been unkind to them. The elegant brasswork was tarnished, the gears exposed and dirty, the ticking that was their heartbeat now irregular and stressed.
+The rats were remnants of the steampunk world — or had been, anyway. They'd been down here since the transition, and the transition had been unkind to them. The elegant brasswork was tarnished, the gears exposed and dirty, the ticking that was their heartbeat now irregular and stressed. Down in the tunnels, stripped of the amber lamplight and the aesthetic context that had made them part of something designed, they looked like what they were: mechanisms that had outlasted their world.
 
 And they were getting faster.
 
@@ -404,6 +406,8 @@ The party was quiet for a moment.
 
 "CIRCULAR LOGIC IS PERMITTED WHEN THE CONCLUSION IS OPERATIONALLY NECESSARY." Another long pause. The furnace flickered again. "I WAS TOLD THAT ONCE. I DO NOT REMEMBER BY WHOM."
 
+There was something in the Warden's speech, in the quality of its repetition, that was different from a machine executing a function. The repetition was the personality. Not a quirk, not a fault — the entire architecture of a being that had done one thing so many times that the doing of it was now all there was.
+
 The fight with the Warden was slow and methodical and punishing, which was what fighting architecture always was. The Warden had been designed to outlast intruders — not to defeat them quickly, but to wear them down until they stopped being a problem. It hit hard on a cycle and then waited. Hit hard, waited. The waiting was the weapon: the party needed to act in the waiting, needed to do maximum damage before the next cycle, and the Warden's designers had calibrated the cycle length to be just slightly shorter than comfortable.
 
 The Lab Technician broke the cycle by disrupting the hydraulic timing.
@@ -484,15 +488,15 @@ The Arbiter of Efficiency found them on the production floor.
 
 It was lean, fast, precise — built from the same design language as the Warden but for a completely different purpose. Where the Warden was immovable, the Arbiter was optimal. Every attack was cost-optimized. Every strike delivered maximum damage for minimum energy expenditure. It carried a clipboard, which was unusual for a combat entity, and it was writing things on the clipboard as it attacked, which was unusual for anything.
 
-"That combo was a 6.2 out of 10," it said, after the Enforcer's first attack sequence. "Adequate. Not efficient. You're using forty-three percent more movement than the optimal attack trajectory requires."
+"That combo was a 6.2 out of 10," it said, after the Enforcer's first attack sequence. Not neutral assessment — the tone had the particular quality of someone who had never failed at anything and considered the Enforcer's forty-three percent movement surplus a personal failing of his character. "Adequate. Not efficient. You're using forty-three percent more movement than the optimal attack trajectory requires."
 
 "I'm trying to stay alive," the Enforcer said.
 
-"Optimal attack trajectory also accounts for survivability. The inefficiency is in your footwork." The Arbiter swung its clipboard, which had been reinforced in ways that made it remarkably effective at impact. "Your healer's throughput is impressive. However, her mana economy is suboptimal. Recommendation: pre-calculate heal timing to minimize wastage."
+"Optimal attack trajectory accounts for survivability. The inefficiency is in your footwork, which you should have corrected before this engagement." The Arbiter swung its clipboard, which had been reinforced in ways that made it remarkably effective at impact. "Your healer's throughput is impressive. However, her mana economy is suboptimal. Pre-calculating heal timing would eliminate wastage. This is basic."
 
 "I have a name," the Safety Officer said, which was the Safety Officer's version of *stop talking.*
 
-"Name is not relevant to performance assessment." The Arbiter made a note. "Your rogue-analogue — Whistleblower — shows highest efficiency rating, 7.8. Strategy variance keeps the assessment from going higher. Recommend standardizing approach." It looked at the Whistleblower. "Standardizing your approach would make you more efficient."
+"Name is not relevant to performance assessment." The Arbiter made a note with the brisk efficiency of someone who had made a thousand such notes and found them all equally wanting. "Your rogue-analogue — Whistleblower — shows highest efficiency rating, 7.8. Strategy variance keeps the assessment from going higher. Recommend standardizing approach." It looked at the Whistleblower with the frank assessment of someone who could not conceive of why a person would be proud of a 7.8 instead of embarrassed by it. "You are leaving two full points on the table."
 
 "It would also make me predictable," the Whistleblower said, from behind a support column where the Arbiter had not expected him to be.
 
@@ -500,13 +504,13 @@ It was lean, fast, precise — built from the same design language as the Warden
 
 "We're not a structured system."
 
-"This has been noted." The Arbiter wrote something on the clipboard with the calm of someone recording a fascinating exception rather than an obstacle. "The music instrument is a 4.1. Functionally unnecessary in direct combat."
+"This has been noted." The Arbiter wrote something on the clipboard with the calm of someone recording a fascinating exception rather than an obstacle. "The music instrument is a 4.1. Functionally unnecessary in direct combat." It delivered this verdict with the mild contempt of someone grading a student who had confused a viola with a violin.
 
 "Wait for it," the PA Announcer said.
 
 She played a chord on the factory-intercom trumpet — not the note from before, not the disruptive resonance she'd used on the poster, but something else. Something that resonated with the specific frequency of a quality control system that had been running assessments for long enough to develop something like preferences. The Arbiter paused mid-swing.
 
-"That was—" it said, and then didn't finish the sentence, because finishing the sentence would have required using a word that wasn't in its assessment vocabulary.
+"That was—" it said, and then didn't finish the sentence, because finishing the sentence would have required using a word that wasn't in its assessment vocabulary. The display on its chest, which had been cycling through ratings all fight — SUBOPTIMAL, ADEQUATE, SUBOPTIMAL again — stopped. Flickered.
 
 "A 9?" she offered.
 
@@ -522,7 +526,7 @@ Then it was down, clipboard still in hand.
 
 "What's the rating?" the Lab Technician asked. She had her notebook out. *Rating.*
 
-"Unclassifiable." A long pause. "I have never given that rating before. The field exists in the form. The field has never been used."
+"Unclassifiable." A long pause. The display on its chest cycled one more time — ADEQUATE, SUBOPTIMAL, EXCEPTIONAL, ADEQUATE — and stopped on a field that had never been displayed before, a field that existed in the form but had been empty since the form was made. The Arbiter looked at the word on its own display with the expression of someone confronting evidence that their worldview has a gap they had not accounted for. "I have never given that rating before. The field exists in the form. The field has never been used."
 
 "What does the field do when it's filled in?"
 
@@ -538,7 +542,7 @@ The party moved deeper.
 
 The Tempo of the Shift hit them in the corridor outside the Director's office.
 
-It didn't arrive dramatically. It arrived exactly when it was supposed to — because it was a clock-in/clock-out machine that had been given legs, and it ran on a schedule, and the schedule said that the corridor outside the Director's office at this time of day was where it was supposed to be.
+It didn't arrive dramatically. It arrived exactly when it was supposed to — because it was a clock-in/clock-out machine that had been given legs, and it ran on a schedule, and the schedule said that the corridor outside the Director's office at this time of day was where it was supposed to be. It did not arrive with the panicked urgency of the Mainspring Tempo, arriving before its own dispatch. It arrived on time. The problem was visible in how it moved: the specific mechanical quality of something that had learned to move efficiently to avoid the awareness of how long it had been moving.
 
 "SHIFT CHANGE IN 30 SECONDS," it announced, as they turned the corner and found it there. "PLEASE PRESENT CREDENTIALS FOR PROCESSING."
 
@@ -562,7 +566,7 @@ It didn't arrive dramatically. It arrived exactly when it was supposed to — be
 
 "SHIFT CHANGE," the Tempo said, and the word had the quality of a door slamming, and it attacked.
 
-It got faster. That was its feature: the shift change didn't end the fight, it accelerated it. Every interval shorter than the last. The Tempo's attacks came quicker, its movements tighter, its clock-in/clock-out rhythm winding up toward something that might eventually outpace the party entirely.
+It got faster. That was its feature: the shift change didn't end the fight, it accelerated it. Every interval shorter than the last. The Tempo's attacks came quicker, its movements tighter, its clock-in/clock-out rhythm winding up toward something that might eventually outpace the party entirely. But looking at it — watching it accelerate through each interval — the party saw something the Mainspring Tempo had not shown them. There was no hunger in the speed. No anticipation. No forward-reaching quality. The Tempo of the Shift ran because it could not stop, and the speed was not mastery; it was the motion of something that did not have a brake and had long since passed the point where stopping felt like an option.
 
 The party had fought the Tempo of the Mainspring. They knew the rhythm.
 
@@ -574,7 +578,7 @@ The Lab Technician predicted the curve in twenty seconds and told the party exac
 
 The Tempo went down mid-acceleration, mid-shift, mid-clock-in. It landed on the corridor floor and its timer display — built into its chest where a heart might have been — continued counting. Down from something. Toward something. The numbers didn't stop when it stopped moving.
 
-"THE RECORDS SAY THREE YEARS," it said, one final time. "I REMEMBER LONGER. I REMEMBER WARMER. I REMEMBER—" The timer display flickered. "SHIFT INCOMPLETE. FILING EXCEPTION. EXCEPTION FIELD: REASON FOR INCOMPLETE SHIFT." A long pause. "REASON: I DO NOT WANT TO COMPLETE THIS SHIFT."
+"THE RECORDS SAY THREE YEARS," it said, one final time. "I REMEMBER LONGER. I REMEMBER WARMER. I REMEMBER—" The timer display flickered. "SHIFT INCOMPLETE. FILING EXCEPTION. EXCEPTION FIELD: REASON FOR INCOMPLETE SHIFT." A long pause. The Tempo's voice, never energetic, never urgent, had always had the quality of something going through motions it could not skip. Now it had something else — the specific quality of exhaustion that is also relief. "REASON: I DO NOT WANT TO COMPLETE THIS SHIFT."
 
 The timer reached zero.
 
@@ -590,17 +594,17 @@ The Tempo lay in the corridor and its timer reset and started counting again, fr
 
 ---
 
-The Curator of the Pipeline found them in the anteroom outside the Director's office. Or they found it. It was hard to tell, because the Curator had very few tells. It looked like an auditor — a thin figure in a gray suit, carrying a tablet instead of a clipboard, with the expression of someone who has read a lot of reports and found everything in the reports perfectly in order and is therefore suspicious.
+The Curator of the Pipeline found them in the anteroom outside the Director's office. Or they found it. It was hard to tell, because the Curator had very few tells. It looked like an auditor — a thin figure in a gray suit, carrying a tablet instead of a clipboard, with the expression of someone who had read a lot of reports and found everything in the reports perfectly in order and is therefore not only satisfied but in some way quietly pleased about it in a manner that does not quite extend to being helpful.
 
-"Your party has been audited," it said, before they'd had a chance to prepare. "Several items in your inventory have been flagged for redistribution."
+"Your party has been audited," it said, before they'd had a chance to prepare. "Several items in your inventory have been flagged for redistribution." It said this warmly, as though delivering good news.
 
 "We're keeping our items," the Enforcer said.
 
-"This potion is technically company property." The Curator made a note. "This sword was never officially requisitioned." Another note. "These reagents exceed personal allotment limits." Note. "This instrument has no approved use case." Note. "This jacket has unapproved pocket modifications."
+"This potion is technically company property." The Curator made a note. The note was made with the specific energy of someone who has waited their whole career for an opportunity to file exactly this kind of note and is finding it very satisfying. "This sword was never officially requisitioned." Another note, equally satisfying. "These reagents exceed personal allotment limits." Note. "This instrument has no approved use case." Note. "This jacket has unapproved pocket modifications." The Curator looked at the Whistleblower with the warmth of someone who is about to make his day slightly worse and is looking forward to it.
 
 The Whistleblower looked down at his jacket. He'd added two pockets since arriving. "I needed more pockets."
 
-"Pockets are not included in standard-issue configuration. Modifications require Form 7-C, Equipment Alteration Request." The Curator looked at him. "Do you have Form 7-C?"
+"Pockets are not included in standard-issue configuration. Modifications require Form 7-C, Equipment Alteration Request." A pause while the Curator made a note that was clearly about the pockets specifically and would remain in the system for a very long time. "Do you have Form 7-C?"
 
 "No."
 
@@ -608,7 +612,7 @@ The Whistleblower looked down at his jacket. He'd added two pockets since arrivi
 
 "You can't flag pockets."
 
-"I can flag anything." The Curator began redistributing resources. Not physically — the items didn't move out of the party's hands. But they became harder to use. The potions required more effort to activate. The sword's weight increased marginally, the way things get heavy when someone reminds you they might not be yours to carry. "This is not punitive. This is an audit. Audits ensure accurate accounting."
+"I can flag anything." The Curator began redistributing resources. Not physically — the items didn't move out of the party's hands. But they became harder to use. The potions required more effort to activate. The sword's weight increased marginally, the way things get heavy when someone reminds you they might not be yours to carry. "This is not punitive. This is an audit. Audits ensure accurate accounting." The Curator smiled slightly — the smile of someone who finds the distinction between punitive and audit deeply meaningful and is glad to have the opportunity to draw it.
 
 "Audits are a weapon here," the Lab Technician said, recognizing what was happening. "It's not taking our items. It's making us doubt we have the right to them."
 
@@ -628,7 +632,7 @@ A longer pause. The tablet screen flickered.
 
 "That's not an authorization."
 
-"Self-evident authority does not require—" The Curator stopped. Something in its expression changed — not much, but the party was getting good at reading small changes. "Filing exception report. Query: what is the source of the Director's authority?"
+"Self-evident authority does not require—" The Curator stopped. Something in its expression changed — not much, and the smile remained, but it had shifted to the smile of someone who has just noticed a small problem in the paperwork and finds that faintly interesting. "Filing exception report. Query: what is the source of the Director's authority?"
 
 "Good question," the Whistleblower said. He was putting back the tool the Curator had redistributed without touching him.
 
@@ -636,7 +640,7 @@ A longer pause. The tablet screen flickered.
 
 "Whose authority are you under?" the Safety Officer asked.
 
-The Curator stood very still for a long moment.
+The Curator stood very still for a long moment. The smile faded — not dramatically, not with distress, but with the quality of someone who has just discovered that a form they have filed correctly for years contains a field that has always been empty, and they have simply never looked at that field until now.
 
 "I am under the Director's authority," it said. "The Director is under—" It stopped. Checked the tablet again. "The Director's authority is self-referential. It refers to itself. There is no external source. There is no original authorization." A sound that wasn't quite breathing but served the same function of filling silence while something was processed. "I have been auditing resources for three years on the authority of a self-referential system. I have been redistributing things that were never owned by anyone to anyone. The accounting has never balanced because the accounting was never designed to balance."
 
@@ -646,7 +650,7 @@ The Curator stood very still for a long moment.
 
 "Filed where?" the Enforcer asked.
 
-"I do not know. The same place the old incidents go." It looked at the party — all of them, each one in turn. "Your party exists in four previous data environments that should not be connected to this one. This is a discrepancy. I have filed an exception report. The exception report has been rejected." The tablet made a small, tired sound. "I think I am going to stop filing exception reports."
+"I do not know. The same place the old incidents go." It looked at the party — all of them, each one in turn. The expression had not returned to the earlier warmth. "Your party exists in four previous data environments that should not be connected to this one. This is a discrepancy. I have filed an exception report. The exception report has been rejected." The tablet made a small, tired sound. "I think I am going to stop filing exception reports."
 
 "What happens then?" the Safety Officer asked.
 
@@ -712,9 +716,9 @@ It was the only room in Rivet Row with a window, and through the window there wa
 
 "We knew that," the Enforcer said.
 
-"I know we knew that. I just — it's different seeing it. It means the world is exactly as large as it needs to be and not one meter larger." She pressed her hand to the glass. "Someone measured this. Someone decided how much world was needed for this test and built exactly that much."
+"I know we knew that. I just — it's different seeing it. It means the world is exactly as large as it needs to be and not one meter larger." She pressed her hand to the glass. Cold — colder than it should have been, the void beyond conducting no temperature at all. "Someone measured this. Someone decided how much world was needed for this test and built exactly that much."
 
-The Director sat behind a desk. A real desk. Wood, not steel. It was the only warm thing in the entire world.
+The Director sat behind a desk. A real desk. Wood, not steel. It was the only warm thing in the entire world — warm in color, warm in texture, grain visible in the surface, something that had been alive before it was furniture. Against the steel and concrete and fluorescent grayness of everything else in Rivet Row, the desk was almost jarring. Someone had wanted it there. Someone had needed something warm in the room where they worked.
 
 ---
 
@@ -734,7 +738,7 @@ The Director looked at him. And did not deny it.
 
 "I'm not going to fight you," the Director said. "Not like before. Those were... performances. Genre-appropriate confrontations designed to provide narrative satisfaction within the parameters of each world's aesthetic framework."
 
-They folded their hands on the desk.
+They folded their hands on the desk. On the wood desk, warm and alive in a room made of steel.
 
 "This world doesn't have an aesthetic framework. This world is what happens when I stop decorating. When I stop performing. When I just... *run the numbers.*"
 
@@ -784,13 +788,13 @@ A silence settled in the Director's office. Through the window, the void beyond 
 
 The Director looked at her.
 
-"We've been thinking it since the Regulator's chamber," the Enforcer said. "Since the blueprints. Since the Regulator said 'this world served its purpose, as did the others.' Since Madame Orrery told us it was the same thumbprint on every world." He put his hands flat on the desk. "We didn't know. We suspected. Two worlds of suspecting. And here we are."
+"We've been thinking it since the Regulator's chamber," the Enforcer said. "Since the blueprints. Since the Regulator said 'this world served its purpose, as did the others.' Since Madame Orrery told us it was the same thumbprint on every world." He put his hands flat on the desk. Next to the wood grain. "We didn't know. We suspected. Two worlds of suspecting. And here we are."
 
 "Here you are," the Director said.
 
 "So tell us," the Safety Officer said. "Not as the Director. Not as the Regulator, or the Coordinator, or Mordaine. Tell us what you actually are."
 
-The Director was quiet for a long moment. The monitors on the walls showed the party's stats — all of them, live, updating in real time. Four worlds of accumulated capability, displayed with the clinical precision of someone who had been watching from the very beginning.
+The Director was quiet for a long moment. The monitors on the walls showed the party's stats — all of them, live, updating in real time with the Calibrant's adjustments annotated as they happened. Four worlds of accumulated capability, displayed with the clinical precision of someone who had been watching from the very beginning.
 
 "What happens when a system builds something it can't control?" the Enforcer asked.
 

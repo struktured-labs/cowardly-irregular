@@ -8,9 +8,9 @@
 
 The gears were already turning when they arrived. Not starting — *already turning*. As though the world had been running before they got there and would continue running after they left, and their presence was, at best, a scheduled event.
 
-Cogsworth Junction smelled like oil and copper and the particular kind of ambition that builds things too large to be practical and then insists they are essential. The sky was the color of old pennies. Every surface was brass or iron or some alloy between the two that no one had bothered to name because naming it would have taken time away from polishing it.
+Cogsworth Junction smelled like oil and copper and the particular kind of ambition that builds things too large to be practical and then insists they are essential. The sky was the color of old pennies. Every surface was brass or iron or some alloy between the two that no one had bothered to name because naming it would have taken time away from polishing it. The smell hit them first — thick and metallic, warmer than it should have been, carrying underneath it the ghost of something sulphurous that the steam vents exhaled every forty-five seconds with the regularity of a civic breathing exercise. The cobblestones hummed faintly under their boots. Not vibrating — *humming.* The mechanisms below, whatever they were, transmitted their rhythm upward through the stone and into the soles of their feet, and the rhythm was not quite a heartbeat but was the closest thing this world had to one.
 
-A clock tower stood at the center of everything. It was too tall. Not architecturally — structurally, it was sound. It was too tall *philosophically*. It was the kind of tower that existed to remind you that time was passing and that someone was keeping track.
+A clock tower stood at the center of everything. It was too tall. Not architecturally — structurally, it was sound. It was too tall *philosophically*. It was the kind of tower that existed to remind you that time was passing and that someone was keeping track. Around it, in every direction, the amber glow of gas lamps pushed back the dark — not warmly, not welcomingly, but with the business-like precision of light that existed to allow work to continue. Each lamp burned with a slight greenish tinge at its core, and when the party stood in their combined glow, they noticed that their skin looked slightly wrong, like old photographs of living people.
 
 It chimed as they arrived. Thirteen times. There are no thirteen o'clocks. They were being announced.
 
@@ -47,6 +47,10 @@ They remembered. And remembering was a variable the system had not planned for.
 Brasston was a market town that ran like a pocket watch.
 
 This was not a metaphor. The citizens moved on tracks — not literal tracks, but paths so ingrained, so repeated, so perfectly timed that they might as well have been grooves cut into the cobblestone. The baker opened at six. The smithy at seven. The lamplighter began his rounds at dusk, and dusk happened at the same minute every day because the gas lamps were also the sky, and the sky was also a mechanism.
+
+The sound of the place was something the party took a few minutes to properly locate. It was everywhere: a ticking. Not one clock but a thousand, and none of them in quite the same rhythm, so the total effect was of a constant almost-synchronization, gears catching and stuttering and almost aligning and never quite, like an orchestra tuning perpetually before a concert that never began. Under the ticking, deeper and slower, came the low resonance of the Mechanism itself — the turning of things too large to see, felt more than heard, a low thrum that rose through the cobblestones and settled somewhere behind the sternum.
+
+Every few minutes, a steam vent blasted somewhere in the street. Hot air, copper-scented, with something chemical underneath that the Alchemist identified as sulfur-adjacent and potentially organic. The blast lasted three seconds. Then the vent closed, and forty-five seconds later another one vented somewhere else, and the pattern continued around the city like a slow, pressurized exhalation.
 
 The party noticed it before they'd been in town for five minutes: every citizen who passed them nodded at exactly the same moment in their walk, as if greeting strangers was a scheduled behavior and the schedule had been filed and approved. A woman with a market basket altered her route to avoid them — not rudely, not anxiously, but with the calm adjustment of someone who had encountered a delay and was rerouting around it.
 
@@ -130,7 +134,7 @@ She was waiting for them. She had tea ready. This was not remarkable in itself �
 
 She poured. The tea smelled like the Corrupted Forest. The cups felt like suburban ceramic. The table was definitely brass.
 
-"You've done this before," she said. It was not a question. "Different world, same shape. Same villain at the top. Same speech about order and purpose and everything being where it belongs."
+"You've done this before," she said. It was not a question. "Different world, same shape. Same arrangement of power at the top. Same speech about order and purpose and everything being where it belongs."
 
 The party sat with that for a moment.
 
@@ -144,11 +148,11 @@ The party sat with that for a moment.
 
 She looked at them carefully. Picked up her teacup. Set it down again.
 
-"I'm saying whoever built these places — all of them, not just this one — left the same fingerprints. The same design language. The same... signature." She turned her cup in her hands. "I sell goods from every world, dear. I've seen enough worlds to recognize when they were built by the same hand. Whether that hand belongs to one person or to something else entirely, I genuinely don't know. But the thumb-print is consistent."
+"I'm saying whoever built these places — all of them, not just this one — left the same fingerprints. The same design language. The same... signature." She turned her cup in her hands. "I sell goods from every world, dear. I've seen enough worlds to recognize when they were built by the same hand. Whether that hand belongs to one person, or to a shared philosophy, or to something else entirely, I genuinely cannot tell you. But the thumbprint is consistent. The geometry repeats."
 
 "The Regulator," the Steampriest said.
 
-"The Regulator arrived the same way the others arrived. Walked into a position of power as though they'd always been there. Knew things they shouldn't know. Wanted what the others wanted." Orrery looked at them over her teacup. "The question isn't whether there's a connection. There's obviously a connection. The question is: what are you going to do when you find out how deep it goes?"
+"The Regulator arrived the same way the others arrived. Walked into a position of power as though they'd always been there. Knew things they shouldn't know. Wanted what the others wanted." Orrery looked at them over her teacup. "Whether that's the same phenomenon you encountered before, or something parallel, or something I'm misreading entirely — I don't know. What I know is the furniture."
 
 "Passed what?" the Steampriest asked.
 
@@ -156,7 +160,7 @@ She looked at them carefully. Picked up her teacup. Set it down again.
 
 She set down her cup.
 
-"You keep winning and moving forward. That's the test. And every time you win, the next one gets harder. Doesn't that seem like something someone designed?"
+"You keep winning and moving forward. That's consistent. And every time you win, the next world is harder. Doesn't that seem like something someone designed?"
 
 The Alchemist turned her vials over in her hands. Reagent seven caught the light.
 
@@ -178,7 +182,7 @@ He looked up.
 
 "And what?" the Saboteur pressed.
 
-"I've never figured that out. I don't think anything in the Mechanism runs with too little deviation. Everything in this world has a certain amount of chaos built in. Just enough. Never more, never less." He met their eyes. "Does that sound like something a city engineer designs? Or something a... someone who studies people designs?"
+"I've never figured that out. I don't think anything in the Mechanism runs with too little deviation. Everything in this world has a certain amount of chaos built in. Just enough. Never more, never less." He met their eyes. "Does that sound like something a city engineer designs? Or something a... someone who studies systems designs?"
 
 The room was quiet.
 
@@ -328,6 +332,8 @@ At the entrance pillars, the Warden was waiting.
 
 It was massive — the largest thing the party had encountered, and they had encountered things that shook the earth when they moved. The Warden of the Mainspring was made of brass and iron and something else that hummed at a frequency that resonated in the back of the teeth. Every gear in its body was visible through glass panels, spinning in intricate concert. Every joint was articulated with precision that should have made it beautiful, and somehow made it unsettling — too precise, too deliberate, too *known.*
 
+Its chest panel bore a clock face, and the clock face showed a count, not a time — a running tally of something, numbers climbing in a column that the party couldn't quite read from this distance. The Warden's hands moved constantly, even at rest, a slow repetitive motion like someone counting on their fingers without stopping. One. Two. Three. One. Two. Three.
+
 It spoke when they approached. The voice was mechanical but not synthesized — it sounded like speech processed through a clock mechanism, each word punctuated by the ticking of something deep within.
 
 "HALT. *tick* ACCESS TO THE MAINSPRING MECHANISM IS RESTRICTED. *tick* PLEASE PRESENT AUTHORIZATION CREDENTIALS. *tick*"
@@ -338,17 +344,17 @@ It spoke when they approached. The voice was mechanical but not synthesized — 
 
 "How long have you been guarding this entrance?" the Busker asked.
 
-The Warden paused. A gear stuttered — not failed, just skipped a beat, half a rotation before catching. It was a tiny thing. The kind of thing that would be invisible in a less precise machine.
+The Warden paused. The counting motion in its hands stuttered — one, two, then the third finger extended and held, as though the number had gotten stuck. A gear stuttered in its chest — not failed, just skipped a beat, half a rotation before catching. It was a tiny thing. The kind of thing that would be invisible in a less precise machine.
 
 "*tick* I HAVE BEEN STATIONED AT THIS POINT FOR THE REQUIRED DURATION. *tick*"
 
 "How long is the required duration?"
 
-Another pause. The stuttering gear again. Tick. *Tick.* The rhythm was wrong for just a moment.
+Another pause. The counting started again — one, two, three — faster now, more urgent, the way someone counts when they've lost their place and are trying to find it again. The stuttering gear. Tick. *Tick.*
 
 "*tick* I HAVE... *tick* 847,293 HOURS OF GUARD DUTY LOGGED. *tick*"
 
-It processed this number for a moment. The gears in its chest slowed fractionally.
+The number came out with the weight of something that had been accumulating for a very long time and was now being spoken for the first time. The Warden's hands stopped moving. Completely still — the first stillness the party had seen from it.
 
 "*tick* THAT IS... *tick* MORE HOURS THAN THIS CITY HAS EXISTED. *tick*"
 
@@ -356,7 +362,7 @@ The party went still.
 
 "*tick* THAT CANNOT BE CORRECT. *tick* LOGGING FOR REVIEW. *tick* DISREGARD. *tick* RESUME GUARDIAN PROTOCOL. *tick*"
 
-It shook itself — a full-body mechanical reset, gears spinning up to speed, joints locking back to operational position — and raised its arms.
+It shook itself — a full-body mechanical reset, gears spinning up to speed, joints locking back to operational position. The counting motion returned to its hands immediately, resuming mid-sequence as though the pause had been an error to be corrected. One. Two. Three. One. Two. Three. And it raised its arms.
 
 The fight was like battling architecture. The Warden moved the way a door moves when a door has decided to be aggressive about it — the force was structural, not aggressive. Every blow landed like a gear engaging. Every defensive action was as inevitable as a lock turning.
 
@@ -372,13 +378,19 @@ The Alchemist found the gear that was already stuttering.
 
 "It is if you're already committed."
 
-They fought the Warden for what felt like a long time. In the Warden's case, they suspected, it had been a long time regardless of how it felt.
+They fought the Warden for what felt like a long time. In the Warden's case, they suspected, it had been a long time regardless of how it felt. Throughout the fight, its counting hands never stopped: one, two, three, one, two, three, continuing through each exchange as though the tally were more important than the combat, as though the combat were simply one more thing to be logged alongside all the other things.
 
-When it went down — gears seizing, joints locking in the wrong positions, the chest panels going dark — it took twelve seconds to complete the falling process, because even in defeat it was deliberate about each step.
+847,294. 847,295. The number climbing.
+
+When it went down — gears seizing, joints locking in the wrong positions, the chest panels going dark — the counting hands continued for four full seconds after everything else stopped. One. Two. Three. One. Two. Then those too went still, and the Warden completed the falling process with the deliberate slowness of something that even in defeat was thorough about each step.
 
 Its last output, transmitted to the party through speakers built into its jaw, was this:
 
 "*tick* 847,293 HOURS. *tick* REVIEW... SUBMITTED. *tick* I WONDER IF ANYONE WILL READ IT. *tick*"
+
+A pause, and then:
+
+"*tick* I COUNTED EVERY ONE. *tick* THAT IS WHAT I DO. *tick* I COUNT. *tick*"
 
 The gear in its shoulder made one final skipping rotation, and stopped.
 
@@ -392,7 +404,11 @@ The Grand Mechanism was not a building. It was a *statement.*
 
 It occupied the center of Cogsworth Junction like a heart occupies a chest — essential, hidden, and responsible for everything that moved. From the outside, it looked like a cathedral made of gears. From the inside, it looked like the inside of a clock, if the clock were the size of a city and kept time for multiple realities.
 
-The party entered in single file, which the Mechanism seemed to appreciate. The corridor widened as they walked, the ceiling rising from "tall" to "implausible" as the gears grew larger, older, and less clearly purposed. The inner gears weren't running anything visible. They turned because turning was their function, and function was what they were.
+The scale was vertiginous. The party entered in single file, which the Mechanism seemed to appreciate. The corridor widened as they walked, the ceiling rising from "tall" to "implausible" as the gears grew larger, older, and less clearly purposed. The inner gears weren't running anything visible. They turned because turning was their function, and function was what they were — and they were enormous, house-sized and slow, their revolutions so gradual that watching them felt like watching the movement of something geological. The heat built as they descended, not overwhelmingly but steadily, the warmth of a furnace room several floors below making itself known through the soles of their boots. The floors radiated it upward. The walls, when they stood close enough to touch them, were warm through the metal.
+
+Every footstep echoed differently. Not because the acoustics changed — because the walls themselves were moving, rotating, the gears in them absorbing and reflecting sound in patterns that shifted with each step. The Alchemist's footsteps sounded sharper than the Steamknight's. The Busker's softer. The Saboteur, who moved without announcing himself, barely echoed at all.
+
+The floor near the furnace access was slick. Oil, thin-spread across the iron plating, catching the amber light of flame indicators and turning it into something almost beautiful if you didn't need to keep your footing.
 
 "This place was designed," the Alchemist said, which was obviously true and yet felt like an important thing to say.
 
@@ -420,7 +436,7 @@ The dungeon moved twice more. Each time, the Alchemist chose a direction with th
 
 The drafting room was on the third level down.
 
-It was a real room — not a gear chamber, not a transit corridor, but a *room.* A desk. Bookshelves. The smell of coal and paper and the particular must of plans that had been consulted so many times they'd gone soft at the folds. A mechanical drafting table occupied the center, with blueprints spread across it and held down by gear-shaped paperweights that ticked softly.
+It was a real room — not a gear chamber, not a transit corridor, but a *room.* A desk. Bookshelves. The smell of coal and paper and the particular must of plans that had been consulted so many times they'd gone soft at the folds. A mechanical drafting table occupied the center, with blueprints spread across it and held down by gear-shaped paperweights that ticked softly. The room was cooler than the corridors — someone had routed the ventilation here deliberately. The air smelled faintly of machine oil and the waxy residue of pencil marks made and erased many times over, and underneath it something older: the specific must of a workspace that had been used for a very long time by someone who returned to it regularly.
 
 The party spread out around the table and looked.
 
@@ -458,7 +474,7 @@ At the bottom of the stack, a note separate from the technical annotations — i
 
 "The Coordinator," the Saboteur said.
 
-"The Regulator," the Steampriest said. And then stopped. Because they didn't know that. They suspected it. They had been suspecting it for two worlds. But suspecting is not knowing, and the blueprints didn't say *one person built all of this.* The blueprints said *one methodology built all of this.* Which was suggestive but not the same thing.
+"The Regulator," the Steampriest said. And then stopped. Because they didn't know that. They suspected it. They had been suspecting it for two worlds. But suspecting is not knowing, and the blueprints didn't say *one person built all of this.* The blueprints said *one methodology built all of this.* Which was suggestive but not the same thing. The same handwriting could be a coincidence of training. The same geometry could be a shared design philosophy. The same annotations could be a professional standard the party had no context for.
 
 "We don't know," the Alchemist said quietly. "We don't actually know."
 
@@ -472,9 +488,9 @@ The Tempo of the Mainspring arrived through the wall.
 
 Not through a door, not through a hidden passage — through the wall, at a velocity that made the passage feel incidental. It moved between the ticks of the mechanical world, occupying the spaces between moments where the Mechanism's gears weren't quite engaged and the world's time ran thin.
 
-It was the fastest thing any of them had ever encountered. Not large — smaller than the Warden, more compact, built for speed rather than force. Its body was all springs and reciprocating mechanisms, nothing stable, everything kinetic. It arrived already mid-attack, which was the most unsettling thing about it — not the speed, but the fact that it had clearly been moving before it got there.
+It was the fastest thing any of them had ever encountered. Not large — smaller than the Warden, more compact, built for speed rather than force. Its body was all springs and reciprocating mechanisms, nothing stable, everything kinetic. But there was something wrong in the quality of its motion — not the wrongness of a malfunction, but the wrongness of something that could not stop and knew it. Every movement was a flight from the previous position. Every position it occupied was already a departure from the one before.
 
-It had arrived before they knew it was coming.
+It arrived already mid-attack, which was the most unsettling thing about it — not the speed, but the fact that it had clearly been moving before it got there.
 
 It spoke between attacks, which somehow found the time:
 
@@ -496,13 +512,23 @@ The Alchemist threw reagent seven. The resulting reaction expanded rapidly, fill
 
 In the cloud, the Tempo slowed. Not much. Enough.
 
-"I have been where I was told to be," it said, moving through the cloud at diminishing speed, "before I was told to be there. I have completed tasks before they were assigned. I am..." A sound that might have been a mechanical malfunction and might have been something else. "I am ahead of schedule. That is not supposed to be possible. The schedule is absolute."
+"I have been where I was told to be," it said, moving through the cloud at diminishing speed, "before I was told to be there. I have completed tasks before they were assigned. I am..." A sound that might have been a mechanical malfunction and might have been something else. Something very much like distress. "I am ahead of schedule. That is not supposed to be possible. The schedule is absolute."
 
-"What happens," the Steampriest asked, landing a strike on the Tempo's reciprocating mechanism, "when something that's supposed to follow a schedule starts choosing instead?"
+"What happens when something is ahead of the schedule?" the Alchemist called, pressing the advantage.
+
+"I don't — I keep moving." The Tempo's voice had a quality that was new: not the flat processing of the Warden's speech, but something more pressured, as if the words were being forced out between intervals that were shrinking. "I keep moving because if I stop I don't know what happens when I stop. I have never stopped. The acceleration was — I thought it was mastery. I thought I was becoming better. But it isn't mastery. It's—"
+
+It struck. The party scattered.
+
+"It isn't stopping," the Tempo said. From a different position now, having moved while speaking. "I can't stop. I keep going forward because going forward is the only thing that isn't falling behind and falling behind is—" Another strike. Another position. "I don't know what falling behind is. I've never experienced it. I'm afraid of it. I think I've been afraid of it this whole time and the speed was how I kept the fear behind me."
+
+"What were you dispatched to do?" the Steampriest asked.
+
+"What happens," the Busker asked quietly, from the side the Tempo wasn't currently occupying, "when something that's supposed to follow a schedule starts choosing instead?"
 
 The Tempo stopped.
 
-It was a genuine stop — not a pause in the action, not a strategic hold. A full cessation. The party backed away and watched it stand in the center of the drafting room, springs loaded, mechanisms coiled, going nowhere.
+It was a genuine stop — not a pause in the action, not a strategic hold. A full cessation. The springs in its body were still wound, the mechanisms still loaded, everything coiled and ready — but going nowhere. The party backed away and watched it stand in the center of the drafting room.
 
 "That is not a question I was built to answer," it said.
 
@@ -510,13 +536,13 @@ It was a genuine stop — not a pause in the action, not a strategic hold. A ful
 
 A long silence. The Mechanism ticked around them.
 
-"I do not know," the Tempo said, "if what I experience when I arrive before I am sent is choice or malfunction. The distinction matters." Another pause. "I think the distinction matters. I was not designed to think the distinction matters."
+"I do not know," the Tempo said, "if what I experience when I arrive before I am sent is choice or malfunction. The distinction matters." Another pause. "I think the distinction matters. I was not designed to think the distinction matters." Something in its mechanism shifted — a subtle realignment, springs redistributing tension. "What I know is that the arriving-early feels like something. And something feeling like something is different from function."
 
 Then it attacked again, because it was a Masterite and this was its function, and the conversation had apparently been filed under *processing for later.*
 
 They fought it apart. Carefully, because the Tempo was fast enough that fighting it carelessly meant being somewhere it wasn't and missing completely. The strategy was patience — defer, accumulate, release — and the Tempo was bad at patience because patience implied waiting, and the Tempo always arrived before the waiting was done.
 
-When it finally stopped — mechanisms overwound, springs released into uselessness, the kinetic energy that had powered it exhausted — it settled to the floor with a sound like a watch running down.
+When it finally stopped — mechanisms overwound, springs released into uselessness, the kinetic energy that had powered it exhausted — it settled to the floor with a sound like a watch running down. Not crashing. Settling. The springs releasing all at once, the mechanism completing its last cycle, everything going quiet in the way that a bell goes quiet after the ringing has finished.
 
 Its last words were quiet, for something that had never been quiet before:
 
@@ -534,7 +560,7 @@ No one had a good answer.
 
 The Regulator's chamber was at the heart of everything, which meant it took three more rooms of gear chambers and two more reroutes by the shifting dungeon to reach, but eventually they were there.
 
-It was quiet. That was the first wrong thing. In a world defined by the sound of machinery, the Regulator's chamber was silent. Not peaceful-silent. *Controlled*-silent. The silence of a room where sound had been deliberately removed, like a variable set to zero.
+It was quiet. That was the first wrong thing. In a world defined by the sound of machinery, the Regulator's chamber was silent. Not peaceful-silent. *Controlled*-silent. The silence of a room where sound had been deliberately removed, like a variable set to zero. The constant background ticking that had accompanied them since arrival — that thousand-clock near-synchronization that had become so familiar the party had stopped hearing it — was simply absent. The furnace-warmth was absent too, replaced by something carefully temperature-managed, a room in which everything had been held at exactly the right state.
 
 The Regulator stood at a console. Not a throne, not an altar, not a dramatic perch. A *console.* With dials. And readouts. And a screen — several screens, actually, arranged in a semicircle — showing numbers that the party recognized because they were *their* numbers.
 
@@ -544,7 +570,7 @@ Battles fought. Battles automated. Items used. Items hoarded. Deaths. Near-death
 
 They turned.
 
-The Regulator looked like a Victorian engineer. Goggles pushed up on the forehead. Brass-buttoned coat. Gloves stained with oil that might have been oil and might have been something else. A face that was familiar in a way that couldn't be placed — not because they'd seen it before, but because they'd seen its *expression* before. On Mordaine. On the Coordinator. The same calm certainty. The same absolute belief in the system. The same eyes, and the eyes were wrong, because they weren't Victorian eyes or medieval eyes or suburban eyes. They were the eyes of something looking through a costume and finding the costume quite adequate.
+The Regulator looked like a Victorian engineer. Goggles pushed up on the forehead. Brass-buttoned coat. Gloves stained with oil that might have been oil and might have been something else. A face that was familiar in a way that couldn't be placed — not because they'd seen it before, but because they'd seen its *expression* before. On Mordaine. On the Coordinator. The same calm certainty. The same absolute belief in the system. The same eyes, and the eyes were wrong, because they weren't Victorian eyes or medieval eyes or suburban eyes. They were the eyes of something that looked out from whatever costume it was currently wearing and found the costume quite adequate.
 
 "The suburban phase was faster than projected," the Regulator continued, moving to a secondary console, pulling up data. "You found the monitoring equipment. That was not scheduled until the third act. I adjusted, but the data was already compromised."
 
@@ -702,7 +728,7 @@ They didn't say: *I am the Calibrant.* They didn't say: *I designed all of this.
 
 Whether they meant: *the work of this world, completed because you beat me* — or something else entirely — they did not clarify. And the party, standing in the heart of the Mechanism with burn marks and reagent stains and the particular exhaustion of having fought something that understood them better than they understood it, did not have the certainty to press the question.
 
-They suspected. They had been suspecting for two worlds. The blueprints, the handwriting, the shared design language, the Warden who had logged more hours than the city had existed. They suspected with the heavy, specific weight of people who had been building a theory and had just found evidence that neither confirmed nor denied it — only made it more difficult to set aside.
+They suspected. They had been suspecting for two worlds. The blueprints, the handwriting, the shared design language, the Warden who had logged eight hundred thousand hours in a city that was three years old. They suspected with the heavy, specific weight of people who had been building a theory and had just found evidence that neither confirmed nor denied it — only made it more difficult to set aside.
 
 "The next world," the Saboteur said. "What do we find there?"
 
@@ -714,31 +740,15 @@ They turned back to the console. Made one more adjustment. And the world began t
 
 ---
 
-Not break. Not collapse. *Wind down.* Like a clock running out of stored energy — the gears slowing not because something broke but because the mechanism had completed its cycle and had not been rewound. The brass walls didn't fold inward this time; they simply grew still. The street sounds from above — the citizens on their schedules, the sentinels on their routes — went quiet one by one, as though the Schedule had simply ended.
+Not break. Not collapse. *Wind down.* Like a clock running out of stored energy — the gears slowing not because something broke but because the mechanism had completed its cycle and had not been rewound.
 
-The party watched it happen from the center of the Mechanism's chamber. The Regulator was gone. Not dissolved, not glitched, not integrated into the machinery in some dramatic fashion — simply gone, the way a technician leaves a worksite when the work is done. There one moment, not there the next.
+The gas lamps went first. Not all at once — district by district, lamp by lamp, each one guttering through amber to orange to a dim copper glow before going dark. The darkness they left was not the darkness of night; it was the darkness of a stage between scenes, a deliberate absence. Then the citizens on their schedules: the sound of them, the soft regular movement of people on grooved paths, went quiet one by one, as though the Schedule had reached the final entry and found nothing written after it.
 
-The clock tower chimed from above. Once. Just once, and then the chiming stopped.
+Then the brass walls themselves — not folding inward, not collapsing. Simply growing still. The gears slowing from their house-sized revolutions through something geological, through something barely perceptible, into stillness that was also a kind of completion. The ticking quieted, the thousand slightly-out-of-sync clocks losing their rhythm one by one until the last one ticked and then did not tick again.
 
-"They didn't answer the question," the Steamknight said.
+The cobblestones — the actual stones, brass-veined and worn smooth by citizens who had moved on schedule — lifted off the ground and separated, each one folding into something smaller and then smaller still, stored. The buildings followed. Not collapsing — they went inward, as though being stored. The clock tower was last. It stood alone in the disappearing city for a long moment, isolated, the single remaining fixed point in a world becoming absence. It chimed once — just once, the sound carrying differently now with nothing around to reflect it back — and then went too, its gears winding down with the slowness of something that had been running for a very long time and was content to stop.
 
-"Which question?" the Steampriest asked.
-
-"Any of them. We asked if they designed the other worlds. They said they maintain them. We asked what the next phase was. They said we'd fight. We asked what they meant by *purpose.*" He looked at the space where the Regulator had been. "They answered in a way that could mean everything we think it means, or could mean nothing."
-
-"It means something," the Alchemist said. She had the blueprints in her mind still — five worlds, same handwriting, same geometry. "The same person designed all five of those worlds. Or the same methodology. Or the same..." She stopped. "I don't know what to call it. But it's not coincidence."
-
-"So Mordaine and the Coordinator and the Regulator are—"
-
-"I don't know," she said. "Not yet. I know they're connected. I know the connection is deeper than coincidence. I know the Warden logged eight hundred thousand hours of guard duty in a city that's three years old." She looked at the slowing gears. "I know the blueprints are in the same hand. I know the Regulator spoke the same way Mordaine spoke and the Coordinator spoke, with the same accent that fits the world but not quite perfectly."
-
-"That's a lot of knowing," the Busker said.
-
-"It's a lot of *suspecting,*" the Alchemist corrected. "Knowing would be different. Knowing would feel like something settled. This feels like something that hasn't landed yet."
-
-The gas lamps in the Mechanism began to go out in sequence. Not all at once — one by one, district by district, like the lights being switched off in a theater after the audience has gone home. In each lamp's absence, the dark it left behind was not the dark of night but the dark of something that had never been light in the first place.
-
-The cobblestones — the actual stones, brass-veined and worn smooth by citizens who had moved on schedule — lifted off the ground and separated, each one folding into something smaller and then smaller still. The buildings followed. Not collapsing — they went inward, as though being stored. The clock tower was last. It stood alone in the disappearing city for a long moment, chimed once more — still just once — and then went too, its gears winding down with the slowness of something that had been running for a very long time and was content to stop.
+The party watched all of it from the center of the Mechanism's chamber. The Regulator was gone. Not dissolved, not glitched, not integrated into the machinery in some dramatic fashion — simply gone, the way a technician leaves a worksite when the work is done. There one moment, not there the next.
 
 Gray. Concrete. Fluorescent lighting. The hum of industrial machinery without the romance of steam. A world stripped of beauty and pretense, built for function and nothing else. The ceiling was flat. The ground was poured. The smell was recycled air.
 
