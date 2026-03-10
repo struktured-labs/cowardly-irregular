@@ -12,6 +12,12 @@ Not darkness — darkness has weight because it's the absence of light, and abse
 
 This was *nothing.* Not a void. Not a blank. The space that exists before the concept of space is invented. The moment before the universe decides whether it wants to bother existing.
 
+When you stepped into it, your foot found something that might have been a floor — but finding is the wrong word, because to find a thing it has to be there, and the floor here was more like a decision. Like agreeing to stand, and the world agreeing back. Walking felt like negotiating. Every step required a small act of faith that the next one would hold, and the faith always worked, which was the unsettling part. Not the absence. The answered absence.
+
+The air — if there was air — had no temperature. No smell. No particular quality of pressure on the skin. When the party breathed, they breathed something that was entirely neutral, the conceptual minimum of atmosphere, the ingredient required for the lungs to function without any of the surplus that gives breathing its character. No wood smoke. No city. No damp stone, no morning grass, no salt. Just: enough.
+
+Sound did not echo here. There was nothing to echo off. When they spoke, the words landed and stopped, absorbed immediately, giving back nothing — not silence exactly, but the absence of reverberation, which has its own peculiar weight. The world was listening without responding. The nothing was attentive. That was the strangest part. It didn't feel empty the way empty feels when nobody designed it. It felt empty the way a page feels when someone has taken extraordinary care with the blank space.
+
 The party stood in it. Or floated. Or simply was. Direction didn't apply. Distance didn't apply. The ground was wherever they decided it was, and the sky was everywhere else, and both of them were the same thing: a flat, infinite whiteness that hummed with potential and delivered on none of it.
 
 Their stats were gone. Not zeroed — gone. The floating numbers that had followed them through the digital world had dissolved along with everything else. Their inventories existed in theory but had no interface. Their abilities were memories of abilities, still accessible but stripped of the system that quantified them.
@@ -44,9 +50,11 @@ Just them.
 
 The village materialized slowly, as though it were being remembered rather than built.
 
-It was called The Vertex, and it was barely there. A few structures that might have been buildings if buildings were suggestions rather than structures. A path that led somewhere if "somewhere" was a concept you were willing to take on faith. A sky that was slightly different from the ground — warmer, maybe, or sadder — but only if you squinted.
+It was called The Vertex, and it was barely there. Not barely there like something far away, or barely there like something still being constructed. Barely there like something that exists at the exact threshold between existing and not — an edge case the universe had not quite resolved. The structures had height and width and some suggestion of depth, but the surfaces of them were more proposal than wall. You could see a doorway without quite seeing the door. You could trace the outline of a window without finding the glass. Light fell on these shapes from no discernible source, which was the detail that bothered Resolve most, because light always comes from somewhere and here it seemed to come from the act of looking.
 
-The last shopkeeper sat behind a counter that was a line. A single horizontal line, floating at waist height. Behind it, shapes that implied merchandise without committing to being anything specific.
+The path underfoot led somewhere if "somewhere" was a concept you were willing to take on faith. Ahead, the shapes of things — not things themselves, but their ideaforms — suggested destination without committing to it.
+
+The last shopkeeper sat behind a counter that was a line. A single horizontal line, floating at waist height. Behind it, shapes that implied merchandise without committing to being anything specific — the suggestion of a shelf, the implication of goods, the concept of commerce reduced to its formal minimum. Resolve found himself staring at the shapes for longer than seemed warranted, trying to resolve them into objects. They didn't resolve. They remained perfectly, deliberately unspecific, which was its own kind of specificity.
 
 "Welcome," the shopkeeper said. Their voice had no echo, because echo requires space, and space was optional here. "I sell things. I think. The concept of commerce is... thinner here than it used to be."
 
@@ -142,7 +150,7 @@ No one looked at them. In The Vertex, looking at someone involves a kind of inte
 
 ### Chapter 2: The Question
 
-The walk to the Calibrant was infinite and instantaneous. Every step covered no distance and all distance simultaneously. The whiteness didn't change, but the *quality* of the whiteness shifted — from blank to intentional, from empty to curated. Someone had designed this nothing. Had chosen this specific shade of white. Had decided that the absence here should feel different from the absence there. The nothing was careful. The nothing was the work of someone who had spent a long time with nothing and learned its details.
+The walk to the Calibrant was infinite and instantaneous. Every step covered no distance and all distance simultaneously. The whiteness didn't change, but the *quality* of the whiteness shifted — from blank to intentional, from empty to curated. Someone had designed this nothing. Had chosen this specific shade of white. Had decided that the absence here should feel different from the absence there. The nothing was careful. The nothing was the work of someone who had spent a long time with nothing and learned its details. There was a texture to it, once you knew to look for texture in white. Like fabric woven from a single thread of the same color, the pattern only visible at certain angles. Like silence that has been composed, not simply allowed.
 
 The Calibrant was sitting on the ground.
 
@@ -170,7 +178,9 @@ They sat for a moment in the silence. In The Vertex, silence has a texture. This
 
 The Calibrant looked at each of them in turn. Resolve. Faith. Logic. Edge. Voice. "Those are the right names," they said quietly. "Those were always the right names. I gave you the other ones because I needed you to have roles in the system. The system needed roles. The system didn't need... the things underneath the roles." A pause. "I should have designed the system around the things underneath. But I didn't know what they were. I'm not sure I know what they are now. I'm just beginning to see the shapes."
 
-The Warden of Form materialized beside the Calibrant. Not aggressively. Almost gently. It was barely a Warden — more of an outline, a sketch of defense, the idea of a wall rather than the wall itself. It had no mass. It had no stats, technically — in a world where stats had dissolved, what it had instead was *presence.* The pure concept of obstacle. The idea that some things require effort to get past, that some things push back, that the universe does not simply open at a request.
+The Warden of Form materialized beside the Calibrant. Not aggressively. Almost gently. It was barely a Warden — more of an outline, a sketch, the memory of a wall drawn with a finger in fog. Looking directly at it produced a mild wrongness, the kind you feel in a dream when you know a door is in front of you and cannot find it with your hands. It had no mass you could point to, no surface you could strike with certainty. It was there in the way that a wall in a dark room is there: undeniable on contact, invisible otherwise.
+
+There were no stats floating above it. There was no HP bar, no name-tag, no ATK value. What it had instead was *presence.* The pure concept of obstacle, the idea that some things require effort to get past, that some things push back, that the universe does not simply open at a request. Looking at it felt like looking at an argument you hadn't yet heard but already knew was going to be difficult.
 
 It looked at the party with the full knowledge of what it was: not a being but a concept given temporary form for the purpose of asking a question. And the question was the question that every obstacle asks: *do you deserve to proceed?*
 
@@ -188,7 +198,11 @@ The Calibrant watched this happen and said nothing. But something in their face 
 
 ---
 
-The Arbiter of Function appeared next. It was the most minimal thing the party had ever faced — a single line. One line of existence, pure and horizontal, the simplest possible form of a thing that is there rather than not there. But it moved with the precision of something that has thought very carefully about what it is for, and it asked, in combat, the question it existed to ask:
+The Arbiter of Function appeared next. It was the most minimal thing the party had ever faced — a single line. One line of existence, pure and horizontal, the simplest possible form of a thing that is there rather than not there. It had no body to speak of, no limbs to read, nothing to anticipate. What it had was direction and intention.
+
+It moved like a question moves through a room: directly, deliberately, without courtesy. It did not ask permission before it arrived at you. It simply arrived. Each of the Arbiter's approaches had the quality of a final exam delivered in person — the moment just before the paper is turned over, the awareness that what comes next will require something real from you.
+
+It struck, and the strike did not land on the body. It landed in the chest, in the place where reasons live. The kind of hurt that comes from being asked something you should have been ready for and discovering you weren't quite.
 
 *Why do you fight?*
 
@@ -210,7 +224,13 @@ The Arbiter of Function dissolved into meaning — not into nothing, but into th
 
 ---
 
-The Tempo of Sequence was a ghost. A flicker at the absolute edge of perception, present for half an instant and then not present and then present again elsewhere, moving through the white with the inevitability of a tide. It did not attack quickly. It attacked *eventually.* Everything it did would land unless the party chose to exist outside the sequence — outside the order of things, outside the one-thing-after-another that time usually enforced.
+The Tempo of Sequence was present before it arrived.
+
+That was the feeling it carried into the space — not speed, not urgency, but a sense of having already begun to move, long before the movement became visible. Like watching a horizon before the thing at the horizon has cleared it. Like knowing a sentence has been started somewhere ahead of you and you will reach its end whether you want to or not.
+
+It appeared at the edge of perception and moved toward the party at the pace of something that knows it will get there. Not slowly — not slowly at all — but with the particular quality of the inevitable, which is not about velocity. Inevitability is independent of speed. The wave doesn't rush because it doesn't need to. It will break when it breaks. It told you when it would break.
+
+It did not attack quickly. It attacked *eventually.* Everything it did would land unless the party chose to exist outside the sequence — outside the order of things, outside the one-thing-after-another that time usually enforced.
 
 It spoke without speaking, because in The Vertex, speech and sound are optional communication modes, and the Tempo of Sequence existed in the interval between the sounds of speech — the gap between the word and the meaning, the space between the note and the hearing of it.
 
@@ -222,7 +242,7 @@ They stopped deferring. They stopped advancing. They stepped outside the turn or
 
 The Tempo of Sequence arrived at the moment where it expected to find them and found them already there. Not ahead of it — *with* it. Outside time's allocation, acting in the space that was not a turn but a moment, which is a different thing entirely.
 
-The Tempo stopped. Not because it was defeated but because it had been met. It had lived in the intervals, alone, for longer than the party had existed, and something about being found in its own space — something about being *met* there, in the gap, in the non-turn — changed the quality of its isolation.
+The Tempo stopped. Not because it was defeated but because it had been met. It had lived in the intervals, alone, for longer than the party had existed, and something about being found in its own space — something about being *met* there, in the gap, in the non-turn — changed the quality of its isolation. The wave had broken, and someone was standing in the water.
 
 *You fought me in the gaps,* it said, the way it had almost said this in World 5 and now said it fully, here, in the place where things could be said fully. *In the moments I thought were mine alone. Even my hiding place wasn't hidden from you.*
 
@@ -234,25 +254,29 @@ Time, briefly, felt generous.
 
 ---
 
-The Curator of Entropy was last. The final Masterite. It was the largest absence the party had ever faced — not a presence of nothing but an active, intentional erosion of presence. It did not drain resources. In The Vertex there were no resources to drain. It drained *meaning.* It made the party forget why they were fighting. Not the mechanics — the *why.* The reason. The thing underneath the system.
+The Curator of Entropy was last. The final Masterite.
 
-It worked this way: a thought of Harmonia arose and the Curator touched it and it became just a village — a generic starting-town fantasy village, without the specific texture of having been there, of having spoken to Elder Theron, of having met Phil the Lost on the road who knew too much and said it wrong, of the Sleepy Slime Inn which had misled them about what was inside it. The specific Harmonia, their Harmonia, eroded toward the general. The general was nothing.
+It did not announce itself. It was simply there, in the way that certain mornings are simply there — the kind that feel already late, already ending, the light too thin and the hours already slipping. It did not look threatening. It did not look like anything that would need to look threatening. It had the quality of a room after the furniture has been moved out: the same shape, all the context gone.
+
+It did not drain resources. In The Vertex there were no resources to drain. It drained *meaning.* Not dramatically — not with a beam of dark light or a spectral touch. It simply made things... less specific. Less yours.
+
+A thought of Harmonia arose and the Curator touched it and it became just a village — a generic starting-town fantasy village, without the specific texture of having been there, of having spoken to Elder Theron, of having met Phil the Lost on the road who knew too much and said it wrong, of the Sleepy Slime Inn which had misled them about what was inside it. The specific Harmonia, their Harmonia, eroded toward the general. The general was nothing.
 
 A thought of Maple Heights arose and the Curator touched it and the sky — the wrong blue, the blue that was off by twelve degrees from what you expected — became just a sky. The sentient lawn mower that had cried while attacking them became just an enemy. The moment when the Coordinator's mask had slipped, when they'd seen the same speech patterns as Mordaine, when it had clicked — the Curator touched it and it became just a plot beat, a narrative contrivance, a thing that had happened rather than a thing they had *understood.*
 
-The party felt the erosion. The specific becoming general. The meaning becoming event. The memory becoming data.
+This was what forgetting actually felt like. Not the sudden loss — the gradual one. The way a story stops being your story and becomes just a story. The way a face becomes a face before it becomes a stranger's. The party could feel the edges of their specific history going soft, generalizing, the personal draining out of the particular.
 
 They remembered anyway. Not through effort — through love, which is what memory is when it's working correctly.
 
-Resolve remembered the goblin cave. Not strategically — specifically. The way the torchlight had caught the cave walls. The way the first Masterite had spoken with such certainty about the purpose of its existence and had seemed, in retrospect, to be also asking a question. The weight of the shield — the specific weight, the specific resistance — of the first real fight.
+Resolve remembered the goblin cave. Not strategically — specifically. The way the torchlight had caught the cave walls, the way the stone was wet near the back entrance and dry near the front and nobody had said why. The way the first Masterite had spoken with such certainty about the purpose of its existence and had seemed, in retrospect, to be also asking a question. The weight of the shield — the specific weight, the specific resistance — of the first real fight. The Curator touched this memory and Resolve held it harder. Not because holding made it clearer — it was already clear, it had always been clear — but because the touch made him aware of how clear it was.
 
-Faith remembered the first time the healing had mattered. Not the numbers — the person. The party member who had gone down and come back and looked at her with something that wasn't gratitude exactly, was more like recognition. You did that. You were there. That specific moment, that specific look. The Curator touched it and Faith remembered it more.
+Faith remembered the first time the healing had mattered. Not the numbers — the person. The party member who had gone down and come back and looked at her with something that wasn't gratitude exactly, was more like recognition. *You did that. You were there.* That specific moment, that specific look, the way relief moves through a body that was braced for something worse. The Curator touched it and Faith remembered it more. The image didn't sharpen — it was already sharp. It just became undeniable, the way things become undeniable when something tries to take them.
 
-Logic remembered discovering the autobattle system. Not the system abstractly — the specific moment of understanding. The click of comprehension. The beauty of a rule that held. The moment when a conjured spell had worked exactly as written and he had stood in the digital world and felt the particular satisfaction of a proof completed. The Curator touched it and it became brighter.
+Logic remembered discovering the autobattle system. Not the system abstractly — the specific moment of understanding. The click of comprehension. The beauty of a rule that held. The moment when a conjured spell had worked exactly as written and he had stood in the digital world and felt the particular satisfaction of a proof completed — the small, private pleasure of a thing that could not have worked any other way working exactly as it should. The Curator touched it and it became brighter.
 
 Edge remembered the collision bug in the Whispering Cave. The specific gap in the geometry — the two polygons that hadn't quite touched, the narrow space between world's intention and world's execution, the moment of finding it and thinking: *there.* The Curator touched it and Edge laughed, quietly, because the memory of finding a gap cannot be eroded by a concept that is itself a gap.
 
-Voice remembered every name. Every NPC. The packet vendor who sold things with wrong reasons. The deprecated goblin, cycling. The race condition, resolved. The spam bots with no checkout process. The cached memory and its low allocation and its final gift. The firewall attendant who used bugs as cover. The latency traveler who arrived before she left. All of them, named. All of them, voiced. All of them, remained.
+Voice remembered every name. Every NPC. The packet vendor who sold things with wrong reasons. The deprecated goblin, cycling. The race condition, resolved. The spam bots with no checkout process. The cached memory and its low allocation and its final gift. The firewall attendant who used bugs as cover. The latency traveler who arrived before she left. All of them, named. All of them, voiced. All of them, remained. The Curator reached for these names and found that Voice had already made them permanent in the only way that works: by caring about them, specifically, one by one, by name.
 
 The Curator of Entropy, which was the concept of ending, found itself surrounded by things that had not ended. By a slime from World 1 that mattered. By a lawn mower from World 2 that had cried. By Sprocket in Brasston with his seven-second delay on everything. By the union rep in the industrial world who had offered them something that was not coffee and was therefore worse and somehow also better. By twenty-two Masterites, each one a question, each one slightly closer to the thing it was actually asking. By the Curator of the Flame and the Warden of the Old Guard and the Tempo of the Rush Hour. By all of it.
 

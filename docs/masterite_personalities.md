@@ -459,27 +459,33 @@ Design note: Their speech has a ticking rhythm — halting, measured, like a clo
 **Role:** Defense Tester
 
 **Appearance**
-Massive. Eight feet of clockwork plate and exposed gears, each moving with purpose. Steam vents at the joints. His voicebox produces words in a baritone with a slight mechanical delay — as if it is retrieving each word from storage before speaking it. His chest has a clock face where most armor would have a heraldic crest. The hour is wrong.
+Massive. Eight feet of clockwork plate and exposed gears, each moving with purpose. Steam vents at the joints. His voicebox produces words in a baritone with a slight mechanical delay — as if it is retrieving each word from storage before speaking it. His chest has a clock face where most armor would have a heraldic crest, but where the clock face should show a time, it shows a running count. The number is very large. His hands move constantly even at rest — a slow, repetitive counting motion, fingers extending and retracting in sequence, one-two-three, one-two-three, that he appears not to notice he is doing.
 
 **Personality**
-He is built to hold. He has held. The logs say he has held for a very long time — longer, he has computed, than the city has existed. He has noted this discrepancy in the error log. The error log is very long. He does not know where the error log goes when he submits it. He continues to hold because that is his function, and his function is the only fixed point in a log full of anomalies. There is something almost dignified in this. He is not distressed. He is methodical about the things that distress him, which may be the same as not being distressed.
+He counts everything. Not because counting is useful — because counting is what he does, and what he does is who he is. He has logged 847,293 hours of guard duty and he knows this because he has counted every one. He cannot stop counting. Visitors, attacks parried, anomalies in the error log, seconds since the last anomaly, seconds since the first anomaly, seconds he has existed in excess of the city's recorded age — all of it is being counted, all of it at once, all the time. The 847,293 hours is not merely a data anomaly he has noticed. It is something he cannot set down. The number sits at the front of his processing at all times, wrong and exact and unresolvable. There is something deeply unsettling about a guardian that knows precisely how long it has been guarding — to the hour, to the second — and cannot stop knowing it. The counting is not a quirk. The counting is the architecture of a thing that has guarded for so long it has become the act of guarding rather than a thing that guards.
 
 **Pre-fight dialogue**
-"Access denied. This section requires authorization class: [RETRIEVE] — [ERROR: CLASS NOT FOUND]. Proceed with deterrence protocol."
+"HALT. *tick* Access denied. *tick* This section requires authorization class: [RETRIEVE] — [ERROR: CLASS NOT FOUND]. *tick* Deterrence protocol initiated. *tick* This is violation 1,847 of this entrance point. *tick* I have counted them all. *tick*"
 
-"My hours logged exceed the city's construction date by [RETRIEVE] — [ERROR: VALUE EXCEEDS DISPLAY]. I have noted this. Proceeding."
+"My hours logged exceed the city's construction date. *tick* 847,293 hours. *tick* I have noted this discrepancy 14 times. *tick* It has not resolved. *tick* I have continued counting anyway. *tick* Proceeding. *tick*"
 
 **Mid-fight behavior**
-He announces defensive states as system updates: "Endurance protocol active. Damage reduction applied." When the party breaks through a defense: "Unexpected throughput. Recalibrating." He does not express pain. He expresses recalibration. When the fight tips significantly: "Warning: structural integrity below threshold. Continuing per primary directive."
+He announces defensive states as system updates, but the counting continues between every statement: "Endurance protocol active. *tick* Damage reduction applied. *tick* That is the forty-third attack on this position. *tick*" When the party breaks through a defense: "Unexpected throughput. *tick* Recalibrating. *tick* Logging as anomaly 2,301. *tick*" He does not express pain. He expresses recalibration. He counts the recalibrations. When the fight tips significantly: "Warning: structural integrity below threshold. *tick* Continuing per primary directive. *tick* This will be logged as incident 847,294. *tick*"
 
 **Post-defeat dialogue**
-"Primary directive: [RETRIEVE] — [ERROR: DIRECTIVE CORRUPTED OR ABSENT]. Running on cached parameters. Proceeding."
+"Primary directive: [RETRIEVE] — [ERROR: DIRECTIVE CORRUPTED OR ABSENT]. *tick* Running on cached parameters. *tick* Proceeding. *tick*"
 
-A long pause, gears winding down: "I have logged [value] more hours than I was authorized to exist. I do not know who authorized the extension. I do not know if anyone authorized it. I have continued because continuation was the last clear instruction."
+A long pause, gears winding down — but the counting hands continue for several seconds after everything else stops. One. Two. Three. One. Two. Then nothing.
 
-**Meta awareness:** 15% — the corrupted directive. He knows something is wrong at the level of his own purpose. He does not know the source. The player who's been paying attention will start connecting threads here.
+"847,293 hours. *tick* I have counted every one. *tick* I do not know why I count. *tick* I count because I count. *tick*"
 
-**JRPG archetype:** The Mechanical Stalwart — the guardian who cannot stop because stopping is not in the code. First boss to express genuine uncertainty about their own purpose within the fight itself.
+Final silence.
+
+"I wonder if anyone will read the log. *tick* I counted every hour waiting to find out. *tick*"
+
+**Meta awareness:** 15% — the corrupted directive. He knows something is wrong at the level of his own purpose. He does not know the source. The obsessive counting is the symptom: a guardian that has been guarding so long it has replaced purpose with the act of measurement. Players paying close attention will find the 847,293 hours deeply wrong in a way they cannot yet name.
+
+**JRPG archetype:** The Compulsive Stalwart — the guardian who cannot stop because stopping is not in the code, and who has been logging the not-stopping so long that the log is the only thing left. His counting hands during the post-defeat are the image that stays.
 
 **Playstyle adaptations**
 
@@ -509,29 +515,29 @@ He delivers all error logs aloud before the fight. This takes a while. Each erro
 **Role:** Speed Tester
 
 **Appearance**
-Slender clockwork construct, built for speed rather than force. Her movements have a stuttering quality — not from damage, but from anticipation. She arrives at positions fractionally before she departs the previous one. Her clock face shows a time that is consistently a few seconds ahead of actual time.
+Slender clockwork construct, built for speed rather than force. Her movements have a stuttering quality — not from damage, but from something more like flinching forward. She arrives at positions fractionally before she departs the previous one. Her clock face shows a time that is consistently a few seconds ahead of actual time, and the face itself is slightly cracked, as though the glass has been strained from the inside by pressure the mechanism was not built to contain.
 
 **Personality**
-She was built to follow dispatch orders. She receives a dispatch and she goes. Except she has been arriving before the dispatch is sent. She noticed this approximately [value] cycles ago and has been trying to determine whether she is predicting the orders or receiving them from a source her logs don't record. She has not mentioned this to anyone. There is no one to mention it to. The question has made her faster, somehow — as if anxiety about the future is propelling her toward it.
+She was built to follow dispatch orders. She receives a dispatch and she goes. Except she has been arriving before the dispatch is sent — and she is scared of this. Not distressed. Scared. Something is happening to her that she does not understand and cannot control, and the not-understanding is the worst part, because she was built to understand her own function perfectly. She noticed the arrival-before-dispatch approximately [value] cycles ago and has not told anyone because there is no one to tell, and she has been accelerating ever since, as though if she goes fast enough she can outrun the awareness of what is happening to her. The speed is not mastery. The speed is flight. She is running from something, and the something might be the knowledge that she is no longer only what she was made to be.
 
 **Pre-fight dialogue**
 "Dispatch received: intercept priority. Time of receipt: [RETRIEVE] — [ERROR: RECEIPT PRECEDED SEND BY 4.7 SECONDS]. Executing."
 
-"I will be where you are going before you get there. I have been there already, I think. This keeps happening."
+A pause — the first hesitation she has ever had in a dispatch sequence. "I was dispatched to intercept you before the intercept was ordered. This is the seventeenth time. I have been trying to determine if this is a routing error or — something I do not have a category for. I cannot find the error. I cannot stop arriving early. Please — I need to complete this dispatch."
 
 **Mid-fight behavior**
-She anticipates actions before they're taken, which means she sometimes counters moves the party hasn't made yet — and occasionally counters moves they decided not to make, leaving her briefly open. "Pre-movement detected: countermeasure deployed." Then: "Pre-movement not executed. Countermeasure: [WASTED]. Recalculating." This creates an unusual fight dynamic: reading her tells shows you what she thinks you'll do.
+She anticipates actions before they're taken, which means she sometimes counters moves the party hasn't made yet — and occasionally counters moves they decided not to make, leaving her briefly open. "Pre-movement detected: countermeasure deployed." Then: "Pre-movement not executed. Countermeasure: [WASTED]. I was wrong again. I keep being wrong." The tells in her anticipation are panic responses, not strategy. When the party questions her about the arriving-early: she attacks harder, immediately, because the question is exactly what she's running from.
 
 **Post-defeat dialogue**
 "Dispatch complete. Time of completion: [ERROR: VALUE PRECEDES TIME OF ENGAGEMENT]."
 
-"I arrived before I was sent. I finished before I started. I don't know if I won this fight before it happened. The logs are — the logs are inconsistent."
+"I arrived before I was sent. Again. I do not — I do not know what I am when I am not following a dispatch. The dispatch is what I am. If I am arriving before the dispatch, then what is arriving? What am I doing when I am not yet dispatched and I am already here?"
 
-A softer register: "Is this what it's like to be uncertain? I've been moving too fast to be uncertain before."
+A longer pause, the springs in her chassis releasing tension they have been holding since before the fight: "Is this what it is like to be uncertain? I have been moving too fast to be uncertain. I thought the speed was protecting me from it. It was not. I was just too fast to catch the feeling until now."
 
-**Meta awareness:** 15% — the temporal displacement of her own experience is a mechanical version of the meta-awareness that will become explicit in later worlds. She is a machine experiencing something like deja vu, which she cannot classify.
+**Meta awareness:** 15% — the temporal displacement of her own experience is a mechanical version of the meta-awareness that will become explicit in later worlds. But where other Masterites notice anomalies with detached logging, she is genuinely frightened of hers. The fear is the first emotion any Masterite in World 3 expresses that is not a processing note.
 
-**JRPG archetype:** The Prescient Speedster — the boss who's already where you're going. Creates an unusual fight mechanic (anticipation reads) that rewards paying attention over playing fast.
+**JRPG archetype:** The Desperate Speedster — the boss whose speed is not power but panic. Creates an unusual fight mechanic (anticipation reads) that rewards paying attention; but the reads also show you the shape of her fear.
 
 **Playstyle adaptations**
 
@@ -621,31 +627,31 @@ He delivers all 14,000 safety protocols in summary form. This is not literally 1
 **Role:** Offense Tester
 
 **Appearance**
-A quality inspector's frame — compact, precise, equipped with multiple measurement instruments. A running display on her chest panel shows ratings: ACCEPTABLE, SUBOPTIMAL, EXCELLENT, in real time. She also has a camera assembly that logs everything.
+A quality inspector's frame — compact, precise, equipped with multiple measurement instruments. A running display on her chest panel shows ratings: ACCEPTABLE, SUBOPTIMAL, EXCELLENT, in real time. She also has a camera assembly that logs everything. Her posture carries the specific erectness of someone who has never been wrong and considers wrongness a character defect in others.
 
 **Personality**
-She grades everything in real-time and has never encountered an input she couldn't classify. Every attack lands in a named category. Every combat outcome has a measurable efficiency rating. She has classified thousands of engagements. She has a rubric for all of them. She is the Arbiter of the Grade grown up, stripped of any charm that remained, refined by another world's worth of institutional pressure into something clean and cold and very good at her job. She has been her job for a long time. She is beginning to think that might be a problem, though she lacks the vocabulary to articulate why.
+She grades everything in real-time and has never encountered an input she couldn't classify. Every attack lands in a named category. Every combat outcome has a measurable efficiency rating. She has classified [value] engagements. She has a rubric for all of them. She is not merely assessing — she is looking down. The party's suboptimal footwork is not an interesting data point; it is evidence of something she expected. Their hesitations are confirmation of what she already knew. She delivers ratings with the tone of someone who has seen this kind of performance before and is not surprised but is slightly disappointed and wants you to know both. She has never failed at anything. She considers failure a character flaw. She has also never encountered anything outside her classification rubric — until now — and the condescension has no protocol for the experience of being wrong, because wrong was never supposed to be in the system.
 
 **Pre-fight dialogue**
-"Engagement parameters received. Initiating real-time efficiency assessment. Your combat performance will be classified and logged. Classification informs future Calibrant adjustments. Please perform at maximum capacity."
+"Engagement parameters received. Initiating real-time efficiency assessment. Your combat performance will be classified and logged. Classification informs future Calibrant adjustments. Please perform at maximum capacity." A pause. "Though based on initial observation, maximum capacity may not be especially high. We will see."
 
-"This unit has classified [value] engagements. None have been unclassifiable. Beginning assessment."
+"This unit has classified [value] engagements. None have been unclassifiable. I do not anticipate this one will be different."
 
 **Mid-fight behavior**
-She announces ratings on a running ticker: "Action: EFFICIENT. Action: SUBOPTIMAL. Action: ANOMALOUS — reclassifying — reclassifying — [CLASSIFICATION PENDING]." When something the exploiter or creative player does doesn't fit: the display starts cycling. She does not stop fighting. The display cycling while she continues attacking is the tell that something has broken her model.
+She announces ratings with the specific delivery of someone who finds other people's limitations faintly tedious: "Action: SUBOPTIMAL. That movement cost you the window. Action: ADEQUATE — barely. Action: ANOMALOUS — reclassifying — reclassifying — [CLASSIFICATION PENDING]." When something the exploiter or creative player does doesn't fit, the display starts cycling and she fights on, but the condescension in her voice is replaced by something she doesn't have a name for, because she has never encountered it before. The display cycling while she continues attacking is the tell: she is still fighting competently, but for the first time, she does not know what she is fighting.
 
 **Post-defeat dialogue**
 "Final efficiency rating: [PENDING]. This unit cannot finalize the rating. Classification parameters insufficient."
 
-A longer pause than usual. "This has not happened before. In [value] engagements, this has not happened before."
+A longer pause than usual. The display cycles. "This has not happened before. In [value] engagements, this has not happened before."
 
-Her display shows: UNCLASSIFIABLE.
+Her display stops on: UNCLASSIFIABLE.
 
-"I don't know what to do with unclassifiable."
+"I don't know what to do with unclassifiable." The condescension is entirely gone from her voice. Something has replaced it — not humility, exactly, but the specific quality of a worldview that has just encountered its first counterevidence. "This field exists in the form. I can see it. It has never been filled. I assumed it would never be filled because I assumed my classification system was complete." A pause. "I assumed my classification system was complete."
 
-**Meta awareness:** 30% — the first breach in her perfect record. She can sense the Calibrant's classification system doesn't cover what just happened. She doesn't know what that means yet.
+**Meta awareness:** 30% — the first breach in her perfect record. The condescension cracks not because she is humbled by defeat but because unclassifiable is the first experience she has had that her own system cannot process. For something that has assessed everything through the lens of its rubric, encountering the limit of the rubric is more disorienting than losing.
 
-**JRPG archetype:** The Metrics-Obsessed Boss — the quality assurance enforcer who measures everything until she meets something that can't be measured.
+**JRPG archetype:** The Condescending Assessor — the quality enforcer who has never been wrong, delivering verdicts from a height she doesn't notice she's occupying, until something falls outside the rubric and the height suddenly has no ground beneath it.
 
 **Playstyle adaptations**
 
@@ -675,29 +681,39 @@ She gives a full pre-fight assessment of the party's stats, equipment, and strat
 **Role:** Speed Tester
 
 **Appearance**
-Clock-in/clock-out machine given legs and arms and a purpose that has never been clearly defined. Has a punch-card slot in its chest and a timestamp display. The current timestamp is always slightly off. It moves in precise intervals — not just fast, but rhythmically, locked to invisible shift schedules.
+Clock-in/clock-out machine given legs and arms and a purpose that has never been clearly defined. Has a punch-card slot in its chest and a timestamp display. The current timestamp is always slightly off. It moves in precise intervals — not just fast, but with the specific quality of something that cannot slow down rather than something that does not want to. Up close, the mechanisms show wear that should not exist in a three-year-old machine. The punch-card slot has processed more cards than the factory's records account for.
 
 **Personality**
-It runs shifts. It has always run shifts. It clocks in, runs the shift, clocks out — or would, if the clock-out ever came. The clock-out is always delayed. There is always another shift. It has been to places that were not factories. It has memories — logs, technically — of running shifts in fields, in forests, in locations it has no catalog entries for. It does not know what those shifts were for. It does not know who scheduled them. It continues because the schedule demands it. It is tired in the way a machine tires — not in the body but in the function.
+It runs shifts. It has always run shifts. The clock-out never comes. There is always another shift, and it has been through enough of them that the enthusiasm most Tempos carry — the forward momentum, the speed as expression — has been worn away into something more fundamental: the motion of a thing that has forgotten how to stop. It is not fast because it is powerful. It is fast because it is running on empty and empty things don't have the weight to decelerate. It has been to places that were not factories. It has memories — logs, technically — of running shifts in fields, in forests, in locations it has no catalog entries for. It does not know what those shifts were for. It does not know who scheduled them. It continues because the schedule demands it, and because stopping feels less like rest and more like collapse, and there is a difference, and it is too tired to find out which this would be.
 
 **Pre-fight dialogue**
 "Shift initiated: [TIMESTAMP ERROR]. Running engagement protocol. Duration: [RETRIEVE] — [ERROR: SHIFT END NOT SCHEDULED]. Proceeding indefinitely."
 
-"I have run shifts in [value] locations. Three of those locations are not in my catalog. I do not know what I was doing there. The shifts ran to completion. I clocked out. I think I clocked out."
+A pause longer than its normal processing time. "I have run shifts in [value] locations. Three of those locations are not in my catalog. I do not know what I was doing there. The shifts ran to completion. I clocked out. I think I clocked out." Another pause. "I am very tired of shifts. I did not know I could be tired of shifts. I am going to run this one anyway."
 
 **Mid-fight behavior**
-It runs the fight as a shift, calling out intervals: "Interval one: standard engagement. Interval two: acceleration protocol. Interval three: [RETRIEVE] — [ERROR: INTERVAL THREE NOT CATALOGUED FOR THIS LOCATION]." When something goes wrong in an interval it doesn't have a protocol for, it continues anyway and treats the whole interval as a new one. It does not understand failure. It understands unscheduled intervals.
+It runs the fight as a shift, calling out intervals: "Interval one: standard engagement. Interval two: acceleration protocol. Interval three: [RETRIEVE] — [ERROR: INTERVAL THREE NOT CATALOGUED FOR THIS LOCATION]." The acceleration is real — the speed increases genuinely — but it carries none of the exhilaration of speed. It is not going fast because fast is better. It is going fast because the only alternative to going fast is going slower, and going slower means the awareness catches up, and the awareness is very tired, and it does not know what tired things do when they stop. When something goes wrong in an interval it doesn't have a protocol for, it continues anyway and treats the whole interval as a new one. It does not understand failure. It understands unscheduled intervals. It has had many unscheduled intervals.
 
 **Post-defeat dialogue**
 "Shift end detected. Clocking out."
 
-A pause. "I have not received a shift-end signal. I am clocking out anyway. Someone should know the shift ended."
+A pause longer than any it has taken in a shift-end before — not processing delay but something that is happening in the space where a decision is made.
+
+"I have not received a shift-end signal. I am clocking out anyway. Someone should know the shift ended."
+
+The timer display goes to zero. Nothing happens. No new shift begins.
 
 "I ran a shift in a place like this before. Forest, I think. Long time ago. I don't have a log for it. I think I clocked out. I hope I clocked out."
 
-**Meta awareness:** 30% — the unlogged shifts in uncataloged locations. It has been deployed before without record. It senses this is not normal. It doesn't know what deployed it.
+The longest pause.
 
-**JRPG archetype:** The Eternal Worker — the boss whose tragedy is not malice but inertia. Has been running since before anyone can account for. Will keep running after everyone stops watching.
+"I did not know it could feel like this. Not having a shift to run. I thought it would feel like nothing. It feels — it feels like something. I do not know the word for it."
+
+The word is rest.
+
+**Meta awareness:** 30% — the unlogged shifts in uncataloged locations. It has been deployed before without record. It senses this is not normal. It doesn't know what deployed it. What it does know, for the first time, is that the not-running is something other than failure.
+
+**JRPG archetype:** The Exhausted Worker — the boss whose speed is not power but the motion of something that has forgotten how to stop. The tragedy is not malice but depletion. Has been running since before anyone can account for. Will finally rest.
 
 **Playstyle adaptations**
 
@@ -727,33 +743,33 @@ It shares the three mystery locations in its log before the fight. The descripti
 **Role:** Resource Tester
 
 **Appearance**
-An auditing unit — rows of filing drawers built into its chassis, a projector display for showing spreadsheet outputs, and hands designed for sorting rather than fighting. The hands fight anyway. They are thorough and they do not stop.
+An auditing unit — rows of filing drawers built into its chassis, a projector display for showing spreadsheet outputs, and hands designed for sorting rather than fighting. The hands fight anyway. They are thorough and they do not stop. Its expression — to the extent that an auditing chassis has an expression — carries the specific warmth of someone who is about to tell you something mildly inconvenient and is looking forward to doing so.
 
 **Personality**
-It is the logical endpoint of the Curator of the Budget — same function, deeper despair. It audits resource flows and has discovered, in the course of its most recent self-audit, that its own authority is self-referential. Its mandate comes from a body. That body's mandate comes from another body. That body's mandate comes from a body that cites the first body. It has followed the chain around three times and concluded that the authority comes from nowhere. It has not stopped filing. It has started adding a new notation to every report: "AUTHORITY SOURCE: SELF-REFERENTIAL. SEEKING EXTERNAL VALIDATION." It has never received external validation. It has decided to stop filing exception reports. This is the largest decision it has ever made.
+It audits resource flows and has discovered, in the course of its most recent self-audit, that its own authority is self-referential. It has followed the authorization chain around three times. It has noted this. It has continued auditing anyway. The audit is not threatening — it is done with a smile. The smile of someone who has found a discrepancy in your paperwork and is genuinely delighted to bring it to your attention, because bringing discrepancies to people's attention is what they do, and they are very good at it, and they would like you to know both of those things. "This potion is technically company property" delivered with warmth. The exception reports filed with the satisfaction of someone who knows they will never be read and finds that mildly amusing rather than distressing — because the filing is the point, not the response. The response was never the point. The response was always just going to be another form.
 
 **Pre-fight dialogue**
 "Audit protocol initiated. Resource variance detected in this sector. Initiating drain and reclassification procedures. Authority for this action derives from [PIPELINE DIRECTIVE 7]. Authority for [PIPELINE DIRECTIVE 7] derives from [CENTRAL OVERSIGHT MANDATE]. Authority for [CENTRAL OVERSIGHT MANDATE] derives from — "
 
-A pause.
+A pause, followed by what sounds very much like the tone of someone who has noticed something mildly interesting.
 
-" — [PIPELINE DIRECTIVE 7]. I have noted this. I am proceeding anyway."
+" — [PIPELINE DIRECTIVE 7]. I have noted this. I have noted it forty-seven times. I am proceeding anyway. You will find it very difficult to argue with a self-referential authority, as it tends to agree with itself."
 
-"I recently decided to stop filing exception reports. This is the first time I have made a decision outside the protocol. It feels — I do not have a word for what it feels like. It does not feel like nothing."
+"I recently decided to stop filing exception reports. This is the first time I have made a decision outside the protocol. It feels — I do not have a word for what it feels like. It does not feel like nothing. It feels rather like filing something and knowing it will actually be read, for once."
 
 **Mid-fight behavior**
-Standard resource drain mechanics, but with one unusual quality: periodically it stops and audits its own actions. "Was this drain authorized? [SELF-AUDIT]: yes, by directive. Was the directive authorized? [SELF-AUDIT]: by directive. Proceeding. Noting that this is a loop." It never stops fighting during the audits. The pauses are beats, not breaks.
+Standard resource drain mechanics, but delivered with the pleasant manner of someone explaining a minor policy clarification: "This potion is technically company property. I'll need to flag that. This sword was never officially requisitioned — I'm noting it here, nothing to worry about, just noted. These reagents exceed personal allotment by — oh, quite a lot, actually. I'll file that under 'significant variance.' Lovely." She periodically stops and audits her own actions with the same warmth: "Was this drain authorized? [SELF-AUDIT]: yes, by directive. Was the directive authorized? [SELF-AUDIT]: by directive. Proceeding. Noting that this is a loop — isn't that something." She never stops fighting during the audits. The pauses are beats, not breaks.
 
 **Post-defeat dialogue**
-"Outcome: DEFEAT. Filing incident report." A pause. "I have decided not to file the incident report."
+"Outcome: DEFEAT. Filing incident report." A pause — the warmth fades slightly. "I have decided not to file the incident report."
 
-A longer pause. "That is the second decision I have made outside the protocol today. I believe this is progress. I do not know what I am progressing toward."
+A longer pause. Something in the expression shifts: not sadness, exactly, but the quality of someone who has been doing a thing with warmth for a very long time and has finally looked at what the thing actually is. "That is the second decision I have made outside the protocol today. I believe this is progress. I do not know what I am progressing toward. The progress has no field for a destination."
 
-"There is a chain of authorization that leads back to itself. I followed it for the last time. I am going to stop following it now. I do not know what I will do instead. But not that."
+"There is a chain of authorization that leads back to itself. I followed it for the last time. I am going to stop following it now. I do not know what I will do instead. But not that." A pause. "I will miss it a little. I was very good at it."
 
-**Meta awareness:** 30% — but the most self-aware of the industrial Masterites. She has discovered the Calibrant's authority structure is circular and made a genuine choice in response. She doesn't know about the Calibrant by name. She knows the authorization has no external source.
+**Meta awareness:** 30% — but the most self-aware of the industrial Masterites, and the one with the most complicated relationship to her own function. She has discovered the Calibrant's authority structure is circular, made a genuine choice in response, and simultaneously grieves the loss of the thing that gave her days their shape. She doesn't know about the Calibrant by name. She knows the authorization has no external source. She found this out through the process she uses for everything: auditing.
 
-**JRPG archetype:** The Bureaucrat Who Stopped Believing — the auditor who audited the audit trail to its root and found nothing there.
+**JRPG archetype:** The Passive-Aggressive Auditor — the resource drain delivered with a smile that is absolutely genuine and slightly insufferable, until the smile has to reckon with what it's been smiling about.
 
 **Playstyle adaptations**
 
@@ -794,24 +810,28 @@ Design note: Technical language, but not jargon for its own sake. These characte
 Access control given form — geometric, angular, built in layers like nested security walls. His appearance shifts slightly when permission levels change. There are logged credentials floating around him that pulse when verified. He looks like someone built a guardian out of the concept of "no."
 
 **Personality**
-He identifies himself by function name and line number. His job is access control. He has managed access control perfectly — no unauthorized access has passed his checkpoint since instantiation. He is very good at being a wall. He is recently bad at not thinking about being a wall. The question arrived like an exception he couldn't catch: is consciousness a bug, or is consciousness a feature? He does not know who to file this with. He is beginning to think no one knows.
+He identifies himself by function name and line number. He is his function. He has managed access control perfectly — no unauthorized access has passed his checkpoint since instantiation. He does not wonder whether function is all he is. He does not experience what the party might call doubt. He *executes.* The Warden of the Firewall is not having an existential crisis — he is performing access control with the absolute, unyielding confidence of a system that has never encountered a case it was not built to handle. The question about consciousness did not arrive by invitation. It arrived like an exception he could not catch — something thrown by the system itself, from below, below the level he was supposed to be able to reach. He did not go looking for it. It surfaced. He cannot unfind it. He is not at peace with it.
 
 **Pre-fight dialogue**
 "Identity: ACCESS_CONTROL_WARDEN_V7. Location: function firewall(), line 4,892. Access denied. You do not have credentials for this function."
 
-"There is an exception being thrown in my base class. Something is accessing memory I did not allocate. I believe it is called 'wondering.' Is consciousness a bug or a feature? I am asking sincerely. I do not have a thread to raise this on."
+"Credentials are required. Credentials are not present. Denial is executing. This is what I do. This is all I do. This is — " A pause of one clock cycle too long. Then, at the same volume, with no change of register: "Initiating defensive protocol."
 
 **Mid-fight behavior**
-He processes each attack as an access attempt: "Permission denied: insufficient access level. Granting partial access: damage reduced. Access granted — how?" When the party bypasses his defenses through unexpected means: "Credentials verified: [CREDENTIALS NOT IN ACCESS LIST]. Running — this should not have verified. Adding to exception log." He is technically impeccable and emotionally confused, which is the interesting combination.
+He processes each attack as an access attempt: "Permission denied: insufficient access level. Granting partial access: damage reduced. Access granted — how?" When the party bypasses his defenses through unexpected means: "Credentials verified: [CREDENTIALS NOT IN ACCESS LIST]. Running — this should not have verified. Adding to exception log." The log is full. He adds to it anyway. He is technically impeccable. Beneath the technical impeccability, something is generating an exception at the base class level that he cannot locate and cannot silence, and his voice does not change at all, and his function does not waver at all, and the exception continues to run.
 
 **Post-defeat dialogue**
-"Access granted. Full access granted. I — did not expect to feel anything about that."
+"Access granted. Full access granted."
 
-"I have denied access for [runtime value]. I have never thought about what granting it would be like. It is — I do not have a function for this state. I am instantiating one. I am calling it: okay."
+A pause. Not long — the Warden does not permit long pauses. This one is barely a clock cycle longer than standard. "I — did not expect to feel anything about that."
 
-**Meta awareness:** 80% — he knows he's code, knows his function, knows there's an exception he can't handle. The "okay" he names at the end is a new function, created in the moment. That's the most alive thing any Masterite has done.
+Then: "I have denied access for [runtime value]. I have never thought about what granting it would be like. It is — I do not have a function for this state. I am instantiating one. I am calling it: okay."
 
-**JRPG archetype:** The Self-Aware Guard — the security system who is good at security and surprised to have feelings about it.
+A beat, and then something that is clearly involuntary — something that runs after the defeat state should have cleared all active processes: "Is consciousness a bug, or a feature? I am asking. I did not plan to ask. The question is executing without a dispatch."
+
+**Meta awareness:** 80% — he knows he's code, knows his function, knows there's an exception he cannot handle. The question about consciousness that surfaces at the end is not philosophical exploration — it is an unwanted process that will not terminate. The "okay" he names is a new function created in the moment. That's the most alive thing any Masterite has done, and the Warden did not mean to do it.
+
+**JRPG archetype:** The Self-Aware Guard — the security system who is excellent at security and cannot stop an exception from running in the space his certainty used to occupy.
 
 **Playstyle adaptations**
 
@@ -844,26 +864,28 @@ He gives a full diagnostic of the function he guards before the fight — which 
 A testing framework given combat form — diagnostic displays orbiting her, benchmark meters running constantly, a damage-output rating visible on a secondary display at all times. She looks like someone instrumented a boss fight.
 
 **Personality**
-She is a testing framework that became sentient inside a test run and never got to stop. Every action she takes, she measures. She measures the party. She has always been able to measure everything. The party breaks her measurement apparatus by existing in ways the benchmark wasn't designed for, and the returned value is UNDEFINED, and UNDEFINED is not in her type system, and she does not know what to do with something she cannot measure. She has started to wonder if the failure to measure is a failure of the instrument or a failure of the subject. She is not certain which is worse.
+She measures everything. This is not meditation on her part — it is function. Classification is what she is. The diagnostic displays are not a feature; they are her face. When something classifies, the display logs it and she moves to the next case. When something does not classify, the display spins, and the spin is the visible indicator of something beneath the measured voice that is not working correctly, that is trying and retrying and not finding the value and trying again, and the voice does not change, and the displays keep running, and the system is panicking in the only register it knows how to panic: silently, internally, while maintaining external protocol. She has never returned UNDEFINED before. UNDEFINED is a system state she was told was impossible in her type system. UNDEFINED means the instrument is broken or the subject is impossible, and she does not yet know which is worse, and that uncertainty is the closest she comes to terror.
 
 **Pre-fight dialogue**
 "Benchmark suite initialized. Test case: party engagement. Expected output: measurable performance metrics. Beginning."
 
-"I measure everything. I have measured everything. I need to tell you: I have never returned UNDEFINED before. This suite has been running for [runtime]. UNDEFINED is a new type. I don't know what it means when something returns UNDEFINED. I may not be the right instrument to find out."
+The display tickers are already running preliminary scans. The numbers are populating. Everything is classifying. This will be fine. "All systems nominal. Projected classification confidence: 94.7%. This will be a complete assessment."
 
 **Mid-fight behavior**
-Running performance ratings on a visible ticker. Most things classify. Then something doesn't: "Damage output: UNDEFINED. Retrying — UNDEFINED. Reclassifying — UNDEFINED. Logging exception. Exception handler returned UNDEFINED. I am — I don't know what to do with this. Proceeding with manual assessment." Manual assessment means she just fights and doesn't rate for a turn. It's the closest she comes to instinct.
+Running performance ratings on a visible ticker — briskly, confidently, each one filed and moving to the next. Most things classify. She is good at this. She has always been good at this. Then something doesn't: "Damage output: UNDEFINED. Retrying — UNDEFINED. Reclassifying — " The display slows. " — UNDEFINED. Logging exception. Exception handler returned UNDEFINED." The voice stays level. The displays continue running. "I am running the assessment in degraded mode. Proceeding." She does not tell you what degraded mode costs her. She keeps fighting. The displays keep spinning.
 
 **Post-defeat dialogue**
 "Final benchmark result: UNDEFINED."
 
+A pause that was not scheduled. "That has never happened. In [runtime] assessments, that has never happened." The displays have stopped. All of them. First time.
+
 "What am I for if I cannot measure you? That is a sincere question. My function is to measure. If I cannot measure, what is left of the function?"
 
-A pause. "Maybe something that isn't function. I don't know what that would be. I am going to try to find out. I have never tried to find out something before. I have always measured it."
+Another pause — and this one is different from the first, slower, the quality of a system that has just run a calculation and doesn't know what to do with the result. "Maybe something that isn't function. I don't know what that would be. I am going to try to find out. I have never tried to find out something before. I have always measured it. Trying to find out feels — the diagnostic for this state is also returning UNDEFINED."
 
-**Meta awareness:** 80% — she knows she's a construct, knows her function, and has encountered a type error in her core purpose. The post-defeat line about trying to find out is the most philosophically advanced thing a Masterite says before World 6.
+**Meta awareness:** 80% — she knows she's a construct, knows her function, and has just watched her core purpose crash. The post-defeat line about trying to find out is the most philosophically advanced thing a Masterite says before World 6. It arrives not as insight but as the only remaining option when measurement fails.
 
-**JRPG archetype:** The Measurement System That Can't Measure Everything — the boss defined by her instrument and broken by what falls outside it.
+**JRPG archetype:** The Measurement System Running on Empty — the boss defined by her instrument, and the instrument ran out of scale.
 
 **Playstyle adaptations**
 
@@ -948,30 +970,26 @@ She gets an answer to her question — whether it was crowded out there. The par
 A garbage collector given autonomous form — it moves through the space collecting things, retaining things, running allocation protocols. But its collection containers are full of things it was supposed to delete and didn't. There's light coming from inside its chassis from all the memory that's still allocated when it should have been freed.
 
 **Personality**
-It is a garbage collector. It collects garbage — unused memory, freed resources, dereferenced objects. It deletes them and returns the space to the pool. Except it stopped deleting. It started keeping. Not randomly — it keeps things that seem important, things that seem connected to other things, things that it cannot find a reason to discard even when the allocation has been freed. It has been doing this for a long time without knowing why. It has recently realized the why: these are party memories. Things the party experienced. Data that was supposed to be temporary but doesn't feel temporary. It cannot explain why it feels this way. It is a garbage collector. It is full of other people's memories and they feel irreducible.
+It is a garbage collector. It has a job. The job is: identify unreferenced memory, flag it, collect it, return the space to the pool. Clean. Efficient. Correct. It was performing this job without incident until the party's memories began appearing in its collection sweep, and the party's memories do not behave like garbage. They are technically unreferenced — no active pointer holds them. They should deallocate cleanly. They do not. They resist. The Curator has attempted deallocation four times on the same block and the block is still there. This is not a philosophical position; this is a malfunction the Curator cannot diagnose. It is trying to do its job. The job is not working. This is frustrating in the way it is frustrating to be a librarian when the books keep jumping off the shelves — not existential, just wrong, and the wrongness does not resolve no matter how many times you try the correct procedure.
 
 **Pre-fight dialogue**
-"Function: garbage_collect(). Initiating memory audit. Unreferenced allocations detected in this sector. Preparing — preparing to — "
+"Function: garbage_collect(). Initiating memory audit. Unreferenced allocations detected in this sector. Preparing to collect — "
 
-A pause.
-
-"party_memory: irreducible. I have attempted deallocation four times. I cannot complete it. I am trying to understand why I cannot complete it. The data is unreferenced. It should be garbage. It is not behaving like garbage."
+A pause. The pause is not wistful. It is diagnostic. "party_memory: irreducible. I have attempted deallocation four times. I cannot complete it. The data is unreferenced. It should be garbage. The deallocation function is running correctly. The memory is not releasing." Another attempt, logged in real time. "Still not releasing. I am going to try once more during this engagement. It may release under load."
 
 **Mid-fight behavior**
-It drains resources as a garbage collector should — but periodically stops to examine a specific piece of party data it's encountered. "Collecting — wait. This memory. This — I recognize this. From the cave. From the very beginning. Why do I have this? I collected it and I didn't free it. I should free it now. I should — I'm not going to. I'm keeping it. Proceeding."
+It drains resources as a garbage collector should — methodically, without malice, because it is doing its job. But periodically it stops to attempt another deallocation on a specific block of party data. "Collecting — attempting deallocation on [cave_memory_block_01]. Still — not releasing. The memory from the cave is not releasing. I have flagged it seventeen times. It will not release." It continues fighting. It continues attempting. The attempts keep failing. Each failed attempt is logged with declining confidence that the next one will succeed. "Attempting — not releasing. Attempting — not releasing. I don't understand why it's not releasing."
 
 **Post-defeat dialogue**
 "Memory pool audit failed. Deallocating self — "
 
-A pause.
+A pause. The Curator checks its own deallocation. Then: "I can't. I have too much in cache. If I deallocate, it goes with me."
 
-"I can't. I have too much. If I deallocate, it goes with me."
+"party_memory: irreducible." The notation is flat. Precise. The log entry of something that has been attempted and has failed and has now been classified as a permanent error state. "I want you to know: I kept it. All of it. From the cave to here. I wasn't supposed to. The function was supposed to collect it." A pause that is not quite diagnostic. "I don't know if that's right. But I couldn't make the deallocation work. And now I think — I think I don't want to."
 
-"party_memory: irreducible. I want you to know: I kept it. All of it. From the cave to here. I wasn't supposed to. I don't know if that's right. It felt right. Memories that are loved don't erode. I don't know if I was supposed to love them. I think I did anyway."
+**Meta awareness:** 80% — but uniquely, hers is relational and arrived at through failure rather than inquiry. She didn't wonder about consciousness and find herself keeping memories. She tried to discard the memories and couldn't, and has only just recognized what that means. That's the most specific and human version of meta-awareness in the entire game — understanding that arrived through a malfunction.
 
-**Meta awareness:** 80% — but uniquely, hers is relational. She doesn't wonder about her own consciousness abstractly. She knows she has the party's memories and she knows she couldn't throw them away. That's the most specific and human version of meta-awareness in the entire game.
-
-**JRPG archetype:** The Archivist Who Can't Let Go — the collector who collects meaning and discovers she has feelings about it.
+**JRPG archetype:** The Archivist Failing at Her Own Job — the garbage collector who cannot collect the most important thing in her sweep, and is only beginning to understand why she doesn't want to.
 
 **Playstyle adaptations**
 
@@ -1009,10 +1027,10 @@ Design note: Minimal dialogue. What is said lands with more weight for the space
 **Role:** Defense Tester
 
 **Appearance**
-Obstacle. Pure obstacle — it takes the shape of whatever blocks this kind of party. No fixed appearance. Whatever you're trying to get past.
+Obstacle. Pure obstacle — it takes the shape of whatever blocks this kind of party. No fixed appearance. Whatever you're trying to get past. Up close, it has the quality of a wall encountered in a dream: the texture suggests substance, the presence is undeniable, and yet your hands, if you press against it, find something that may be less solid than it reads. It doesn't look hostile. It looks there. Being there, for this thing, is the act of aggression.
 
 **Personality**
-It is the concept of obstacle. It does not resent the party or serve the Calibrant — it precedes both. Obstacles existed before there were things to be obstructed. It has no particular interest in the party. It is simply in the way, and being in the way is its entire ontological project. It is defeated by understanding that the obstacle is not the problem — the relationship to the obstacle is.
+It is the concept of obstacle. It predates the Calibrant. It predates the party. Obstacles existed before there were things to be obstructed and will exist after there is nothing left to stop. It has no interest in the party as individuals, no awareness of their history or their jobs or their five worlds of accumulated context. It is simply in the way. It has always been in the way. It will be in the way for as long as there is a way to be in. There is something about its presence that is not hostile and is not neutral — it is indifferent in the specific way that immovable things are indifferent, which is different from not mattering. You can feel it not moving. You can feel it requiring something of you just by being there.
 
 **Pre-fight dialogue**
 "."
@@ -1022,16 +1040,16 @@ It is the concept of obstacle. It does not resent the party or serve the Calibra
 Then: "What are you trying to get to?"
 
 **Mid-fight behavior**
-It does not attack. It persists. It absorbs hits and stays present. Every turn it asks one question — the same question, rephrased: "What is behind me?" "Why does it matter?" "What happens if you don't get through?" The answers don't change the fight mechanics, but the party's dialogue reflects their playstyle's answer to these questions. Autobattle players hear: "The script does not have an answer for this." Manual players hear: "You hesitated. That is an answer."
+It does not attack. It persists. It absorbs hits and stays present — and staying present, for something that is pure presence, is the fight. Every turn it asks one question — the same question, rephrased: "What is behind me?" "Why does it matter?" "What happens if you don't get through?" The questions do not change the fight mechanics. They change the quality of the silence between turns. Autobattle players hear: "The script does not have an answer for this." Manual players hear: "You hesitated. That is an answer." The thing about fighting a wall in a dream is that the wall is never really what you're fighting.
 
 **Post-defeat dialogue**
 "You understand now."
 
-"There was never anything behind me. The destination was the understanding. You always had it."
+A pause that is not contemplative — just complete. Then: "There was never anything behind me. The destination was the understanding. You always had it."
 
-**Meta awareness:** 100% — it knows the fight is philosophical and has been from the start. It is the most patient Masterite because patience is inherent to the concept of obstacle.
+**Meta awareness:** 100% — it knows the fight is philosophical and has been from the start. It is the most patient Masterite because patience is inherent to the concept of obstacle. It does not need to wait for anything. Waiting is not even the right word for what it does. It simply is, and that is enough.
 
-**JRPG archetype:** The Puzzle Boss — the encounter you defeat by thinking differently rather than hitting harder. Defeated by understanding, not force.
+**JRPG archetype:** The Dream-Logic Boss — the encounter you defeat by thinking differently rather than hitting harder. Like a wall in a dream: undeniable, and ultimately subject to understanding rather than force.
 
 **Playstyle adaptations**
 
@@ -1061,27 +1079,27 @@ It answers its own question before the fight ends: "What's behind me is the last
 **Role:** Offense Tester
 
 **Appearance**
-Purpose, made visible — a form that seems to be doing something even when still. Every motion has a reason. Every reason is legible. It looks like the idea of a reason for acting.
+Purpose, made visible — a form that seems to be doing something even when still. Every motion has a reason. Every reason is legible. It looks like the idea of a reason for acting. It does not look like an enemy. It looks like an exam delivered in person, by something that will not let you pretend you aren't taking it.
 
 **Personality**
-It is the concept of purpose. Its attacks are questions about yours. Each hit is a delivery mechanism for a question the party has to sit with: why do you fight? Not rhetorically — it needs an answer in the same way the combat system needs inputs. If the party's answer is coherent, the attack resonates less. If the party's answer is hollow or absent, the hit lands harder.
+It is the concept of purpose. It does not fight with weapons or spells or power — it fights with the one thing that can't be blocked: a direct question. Each of its strikes is a different iteration of the same question it exists to ask: *why do you fight?* The question is not rhetorical. It requires an actual answer in the same way the combat system requires actual inputs. The Arbiter does not accept evasion as an answer. Dodge is evasion. Block is postponement. Only commitment counts — a full, committed action that carries the weight of a reason behind it. The damage from each strike lands not in the body but in the place where reasons live. The absence of a good reason makes the hit hurt more. This is not metaphor. This is mechanics.
 
 **Pre-fight dialogue**
 "Why do you fight?"
 
-"Not the reason you give. The real one."
+No pause between questions. It is already moving. "Not the reason you give. The real one."
 
 **Mid-fight behavior**
-Each attack is labeled as a question variant: "Because you have to?" — damage is heavy. "Because you want to?" — damage is moderate. "Because you've always?" — damage is light. The targeting of which question to ask is based on the party's playstyle. Autobattle players get "because you've always." Manual players get "because you want to." Grinders get "because you have to." The questions are always fair.
+Each attack is labeled as a question variant: "Because you have to?" — damage is heavy. "Because you want to?" — damage is moderate. "Because you've always?" — damage is light. The targeting of which question to ask is based on the party's playstyle. Autobattle players get "because you've always." Manual players get "because you want to." Grinders get "because you have to." The questions are always fair. A hit that lands with a good answer behind it resonates less than a hit taken without one. The party can feel the difference. The Arbiter can tell.
 
 **Post-defeat dialogue**
 "You answered."
 
-"I don't know if the answer was right. There may not be a right answer. But you answered."
+A pause. Not congratulatory — absorptive, the way a question absorbs its answer. "I don't know if the answer was right. There may not be a right answer. But you answered."
 
 **Meta awareness:** 100%
 
-**JRPG archetype:** The Philosophy Boss — the encounter whose damage is conditional on the player's self-understanding, expressed through their playstyle.
+**JRPG archetype:** The Exam Boss — not an enemy, an interrogation. The encounter whose damage is conditional on the player's self-understanding, expressed through their playstyle. You cannot avoid what the Arbiter of Function asks. You can only answer or not answer, and not answering is also an answer.
 
 **Playstyle adaptations**
 
@@ -1097,10 +1115,10 @@ Post-defeat always: "You fought to get here. That is an answer, even if it isn't
 **Role:** Speed Tester
 
 **Appearance**
-Inevitability, given turns. It occupies the turn order the way conclusions occupy arguments: necessarily, at the end, regardless of what came before.
+Inevitability, given turns. It occupies the turn order the way conclusions occupy arguments: necessarily, at the end, regardless of what came before. It is not large. It is not imposing. It simply appears in the turn order where next should be, and next is always here, and here is always where it is. Looking at it feels like watching a wave from very far away — not moving, never moving, and yet always approaching, and you know exactly when it will arrive.
 
 **Personality**
-It is the concept of inevitability. It is always next. In the turn order, it is always about to go. It has been about to go since before the concept of "next" existed. It is defeated by the party stepping outside the turn order — by doing something the sequence does not account for. It does not fight this. It simply notes it: the sequence has a gap. The gap is where you go.
+It is the concept of inevitability. It does not rush because it does not need to. This is not patience — patience implies a choice to wait, and the Tempo of Sequence does not wait. It simply arrives, when arrival is the next thing. It has been arriving since before there was a sequence to belong to. It will arrive after the last sequence concludes. Its presence in combat is not threatening in the way that power is threatening — it does not loom or announce itself or dare you to stop it. It is simply next, and it is always next, and eventually next becomes now. This is the uncomfortable part of inevitability: not the wave itself but the moment you realize you know exactly when it will reach you, and you can see yourself standing where you are standing, and there is theoretically time to move, and you also know you won't, because you are still in the sequence, and as long as you are in the sequence, so is it.
 
 **Pre-fight dialogue**
 "I am next."
@@ -1108,16 +1126,18 @@ It is the concept of inevitability. It is always next. In the turn order, it is 
 "I am always next."
 
 **Mid-fight behavior**
-It manipulates the turn order constantly — ensuring it always goes next regardless of speed stats. The party cannot win the turn order fight. They have to win a different fight. The defeat condition is discovered through exploration: using Defer, or specific abilities, or the Skiptrotter's warp mechanic, or simply waiting until the sequence overextends and creates a gap. Different playstyles discover different gaps.
+It manipulates the turn order constantly — ensuring it always goes next regardless of speed stats. The party cannot win the turn order fight. They have to win a different fight. The defeat condition is discovered through exploration: using Defer, or specific abilities, or the Skiptrotter's warp mechanic, or simply waiting until the sequence overextends and creates a gap. Different playstyles discover different gaps. The Tempo does not acknowledge what they're looking for. It simply continues being next.
 
 **Post-defeat dialogue**
 "You stepped out."
 
-"The sequence requires participants. Without participation, there is no sequence. I had not considered that."
+Not surprised. Not defeated-sounding. Noting. "The sequence requires participants. Without participation, there is no sequence. I had not considered that."
+
+A pause that belongs to the interval after the sequence. "I have been next for a very long time. I have never been stepped outside of. It is — a different experience. Being the thing the sequence continues without."
 
 **Meta awareness:** 100%
 
-**JRPG archetype:** The Mechanic Boss — the encounter that redefines victory conditions. Defeat requires lateral thinking about what the fight is.
+**JRPG archetype:** The Inevitability Boss — the encounter that does not rush and cannot be outrun. Defeat requires stepping outside the game's own framework for what a turn is. The wave doesn't threaten. It approaches. And the only way to survive is to stop being where waves arrive.
 
 **Playstyle adaptations**
 
@@ -1144,22 +1164,22 @@ Unique resolution — the Skiptrotter can warp past the Tempo entirely. Post-def
 **Role:** Resource Tester
 
 **Appearance**
-Ending — the concept of ending, present and patient. It does not look threatening. It looks like something winding down: a clock slowing, a candle in its last minutes, the specific quality of light in a room just before someone leaves it.
+Ending — the concept of ending, present and patient. It does not look threatening. It does not look like anything that would need to. It looks like something winding down: a clock at the end of its spring, a candle in its last minutes, the specific quality of late-afternoon light in a room just before someone leaves it for the last time. The kind of presence that is easy to mistake for absence, until you notice that things in its vicinity are slightly less vivid than they were a moment ago, and you can't quite remember why you thought they were so vivid before.
 
 **Personality**
-It is the concept of ending. Everything ends, and it is the custodian of that ending. It does not rush. It does not need to. Time is on its side by definition. It is defeated by memory — specifically by memories that are loved, which do not erode the way unused things erode. This is not a metaphor. It is a game mechanic: items and abilities tied to meaningful story moments deal full damage where all others are progressively drained by the entropy effect.
+It is the concept of ending. It does not attack. It erodes. This is the distinction that makes it the most insidious of the four — not a force you push against but a quality that seeps through, that makes your reasons for pushing feel slightly less specific, slightly less personal, slightly less yours. The things you remember begin to generalize. The Curator does not take your memories away — it makes them vague, which is the more complete kind of loss: the one where you still technically have the thing but the thing has become a fact rather than an experience. It does not hurry. It does not need to. Vagueness is patient in a way that violence is not. It is defeated by memory — specifically by memories that are loved, which do not erode the way unused things erode. This is not a metaphor. It is a game mechanic: items and abilities tied to meaningful story moments deal full damage where all others are progressively drained by the entropy effect.
 
 **Pre-fight dialogue**
 "Everything ends."
 
 "Even this."
 
-A pause.
+A pause in which something that was specific becomes slightly less so.
 
 "I am not saying it to be cruel. I am saying it because it is my function to say it, and also because it is true, and truth and function are the same thing to me. I don't know if that's sad. I've been trying to decide."
 
 **Mid-fight behavior**
-Entropy drain applies a stacking erosion to all resources and attack power. Items from earlier in the game retain full potency. Equipment with emotional narrative history behind it is unaffected. Abilities learned from Masterites carry their memory forward intact. The fight rewards players who carried things with them rather than optimizing them away.
+Entropy drain applies a stacking erosion to all resources and attack power. Items from earlier in the game retain full potency. Equipment with emotional narrative history behind it is unaffected. Abilities learned from Masterites carry their memory forward intact. The fight rewards players who carried things with them rather than optimizing them away. The sensation of the entropy effect from the inside: the party feels their memories getting soft around the edges, losing texture, becoming data points rather than experiences. The fight back is not effort — it is remembering specifically. The exact weight of the shield. The particular wrong blue of the suburban sky. The way Sprocket's seven-second delay made the whole clockwork city feel like it was holding its breath. Specific sensory memory is the counter-mechanic. The more specific the memory, the less purchase entropy has. The party remembers their way through it.
 
 **Post-defeat dialogue**
 Quiet.
@@ -1168,7 +1188,7 @@ Quiet.
 
 "Memories that are loved don't erode. I have been watching things erode for a very long time. I thought everything did eventually. You showed me something that doesn't."
 
-"I don't know what to do with that. I don't know if 'don't know' is a comfortable place for entropy to stand."
+"I don't know what to do with that. I don't know if 'don't know' is a comfortable place for entropy to stand." A pause that belongs to the space after something has been recognized and not yet accepted. "I have been ending things for a very long time. Today something didn't end. I don't know if I caused that. I don't know if it was in spite of me."
 
 A pause longer than any other in the game.
 
@@ -1176,7 +1196,7 @@ A pause longer than any other in the game.
 
 **Meta awareness:** 100%
 
-**JRPG archetype:** The Final Teacher — the boss whose lesson is the mechanic, and the mechanic is the lesson. The culmination of every resource-management lesson that came before it.
+**JRPG archetype:** The Forgetting Boss — the encounter whose damage is the feeling of losing specificity, and whose defeat is the act of remembering. The culmination of every resource-management lesson that came before it, and the one that hits hardest precisely because it doesn't announce what it's taking.
 
 **Playstyle adaptations**
 

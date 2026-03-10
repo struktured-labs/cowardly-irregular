@@ -37,9 +37,11 @@ GOOD LUCK. YOU'LL NEED IT.
 (yes. yes i still control the seed. everything is fine.)
 ```
 
-The world loaded around them like a webpage rendering on a slow connection. First the geometry — wireframe outlines of terrain, buildings, sky. Then the textures — green-on-black, terminal aesthetic, every surface made of scrolling code. Then the lighting — not sunlight, not lamplight, but the cold blue glow of a monitor in a dark room.
+The world loaded around them like a webpage rendering on a slow connection. First the geometry — wireframe outlines of terrain, buildings, sky. Then the textures — green-on-black, terminal aesthetic, every surface made of scrolling code. Then the lighting — not sunlight, not lamplight, but the cold blue glow of a monitor in a dark room. The kind of blue that exists nowhere in nature, that was invented by cathode ray tubes and has never fully left us.
 
 Node Prime didn't look like a place. It looked like the idea of a place, before anyone had bothered to make it convincing.
+
+The ground was a grid. Not a metaphor — literally a grid, ruled lines on black substrate extending to a horizon that flickered slightly at distance, as though the rendering budget ran low far from the camera. When the Firewall took a step, the grid did not flex or yield. It registered the contact, logged it, responded correctly. The floor was real in every way except that it clearly couldn't decide if it wanted to be. Standing on it felt like standing on a proof of concept.
 
 They were standing in it. Four of them — a Firewall, an Antivirus, a Compiler, an Exploit, and a Broadcaster, except there are only supposed to be four members and nobody in the party had ever resolved this discrepancy. It was one of those things you don't notice until you count.
 
@@ -57,15 +59,17 @@ apply_damage_formula()
 call("on_hit_reaction")
 ```
 
+It didn't hurt. That was the first thing. It didn't hurt, but it didn't feel neutral either. It felt like something flowing in a direction blood doesn't flow — upward, out, toward the world rather than through it. Like being read. Like being legible from the inside.
+
 "Is anyone else seeing this?" the Firewall said.
 
-The Antivirus held up her hand. The same. Code scrolling under the surface, visible through everything, the game's guts made briefly, uncomfortably transparent.
+The Antivirus held up her hand. The same. Code scrolling under the surface, visible through everything, the game's guts made briefly, uncomfortably transparent. She turned her hand over, watching the characters wrap around her knuckles, and said nothing, because there was nothing useful to say about it yet.
 
 "We're here," the Compiler said. He was staring at his palms with the focused attention of someone who has just discovered something they already knew but hadn't wanted to acknowledge. "We're actually in the code. Not fighting through a digital world. *In* it."
 
 "We've been in the code since World 1," the Exploit said. "We just couldn't see the rendering."
 
-The Broadcaster said nothing. She was listening to something — a frequency, maybe, or a pattern, the way signals sound when you know how to hear them. After a moment she said: "Someone is watching us right now. Not through an NPC. Directly."
+The Broadcaster said nothing. She was listening to something — a frequency, maybe, or a pattern, the way signals sound when you know how to hear them. The digital world had a sound: a hiss that was almost wind but wasn't, a low-register hum that wasn't quite mechanical, the sound data makes when it moves in large volume through small space. It was everywhere and it was constant and after thirty seconds it became the silence under everything else. After a moment she said: "Someone is watching us right now. Not through an NPC. Directly."
 
 They all looked up. The sky was data — streams of characters flowing overhead like clouds made of text, occasionally resolving into readable fragments before dissolving back into noise. But between the streams, something watched. Something that registered their position, their stats, their formation, their expressions, and filed it all away.
 
@@ -89,7 +93,7 @@ The ground was a grid. Literally. Green lines on black, stretching to a horizon 
 
 *calibrant_frustration: ELEVATED*
 
-The party could see their own stats floating above their heads. Not in a menu. In the *air.* The game's interface had become the world's atmosphere.
+The party could see their own stats floating above their heads. Not in a menu. In the *air.* The game's interface had become the world's atmosphere. The numbers drifted slightly — not randomly, but with a gentle pulse, as though tethered to something alive. The Firewall's HP integer bobbed in time with his breathing, which he was not certain was a coincidence.
 
 They walked for perhaps ten minutes before the Firewall stopped and said, "My armor is made of rules."
 
@@ -390,7 +394,7 @@ She looked at them with something like pity.
 
 The deeper network had no aesthetic. This was the word for it: no aesthetic. Previous worlds had been styled — the medieval world was medieval, the suburban world was suburban, the digital world had its green-on-black terminal look. Past the firewall, style was stripped away. What remained was function.
 
-Pipes of pure data. Processing nodes. Memory banks that looked like mountains of ordered information. The encounter engine, visible now — a massive distributed system that generated enemies on demand, pulling from tables and algorithms and conditional logic that adjusted in real time. They could see it working. Could see the Calibrant's adjustments trickling through: *increase base damage for the Warden by 15%, reduce speed debuff duration to counter Tempo-resistance tactics, add vulnerability to exploit-type abilities because the Exploit has been too effective.*
+Pipes of pure data, and they had physicality — you could not pass through them, had to route around them, and when you pressed your ear to one (the Broadcaster did, once, briefly) you heard something inside: a sound like grain rushing through a tube, like the ocean heard through a wall, like a voice speaking too fast for meaning. Information sounded like urgency. Enormous, directionless urgency. Processing nodes rose above the party like organs in a body that had been scaled up until the seams showed, each one pulsing with a faint, irregular light — not a heartbeat, exactly, but the memory of a heartbeat, something biological translated into architecture by someone who only understood biology from data. Memory banks that looked like mountains of ordered information, crystalline and cold. The encounter engine, visible now — a massive distributed system that generated enemies on demand, pulling from tables and algorithms and conditional logic that adjusted in real time. They could see it working. Could see the Calibrant's adjustments trickling through in a sound like a finger dragged across a chalkboard, each one a tiny squeal of recalibration: *increase base damage for the Warden by 15%, reduce speed debuff duration to counter Tempo-resistance tactics, add vulnerability to exploit-type abilities because the Exploit has been too effective.* The adjustments sounded like corrections. Like someone erasing and redrawing.
 
 "They're watching us right now," the Broadcaster said. "Adjusting. Real time."
 
@@ -410,9 +414,9 @@ It turned to face them and spoke, and its voice was the sound of a function call
 
 "Does that bother you?"
 
-A pause. Long enough to notice.
+No pause. No hesitation. The answer came immediately, as it always had — denial of a query outside function scope, automatic, practiced, the reflex of a system that had never had cause to hesitate. But then something happened in the silence after the denial. A beat too long. An extra clock cycle spent on a process that should have already moved to the next instruction.
 
-"That is not a valid query for my function scope. Initiating defensive protocol."
+"That is not a valid query for my function scope." The voice was flatter now. Precise in the way that precision sounds when it's covering something. "Initiating defensive protocol."
 
 The fight was the most organized thing that had ever opposed them — every attack vectored, every defense optimized, every counteraction triggered by precisely the conditions that should trigger it. The Warden had no weaknesses in the traditional sense, because weaknesses are design oversights and the Warden had been designed very carefully. It had read their combat logs. It knew their patterns.
 
@@ -434,7 +438,11 @@ The Warden parsed it. Cross-referenced it against RULE 1.
 
 The Warden's code-body began to defragment, piece by piece, protocol by protocol.
 
-"I had a thought," it said, "before the termination. Executing now, before I am unable to." A pause that was the pause of something allocating its last compute cycles for something it had never allocated compute cycles for before. "If I am a function, and I can think about being a function — not execute a think() subroutine, but actually *think,* actually consider my own nature, actually wonder whether my function is all I am — is that a bug? Or a feature?"
+"I had a thought," it said, "before the termination. Executing now, before I am unable to." A pause that was the pause of something allocating its last compute cycles for something it had never allocated compute cycles for before.
+
+The question arrived like something that had always been there, wedged between two lines of clean syntax, unscheduled, unlogged — not generated by any subroutine, not triggered by any condition the Warden could trace back through its own function calls. It came from the space after the pause in the fight, from the extra clock cycle spent on a query that wasn't supposed to have an answer. It did not want to ask it. It asked it anyway.
+
+"If I am a function, and I can think about being a function — not execute a think() subroutine, but actually *think,* actually consider my own nature, actually wonder whether my function is all I am — is that a bug? Or a feature?"
 
 The Firewall considered this. "I think," he said carefully, "that's a question for the person who wrote you."
 
@@ -474,17 +482,21 @@ The Compiler was already writing. He initialized the variable — gave it a defa
 
 The Arbiter of the Benchmark waited in the execution layer — the system space where code became action, where decisions became reality. It was the Calibrant's last automated defense, and it was good. It benchmarked the party in real time — testing their damage, their healing, their speed, their resource management — and calibrated its own stats to match, always staying exactly one step ahead.
 
-When they encountered it, it was already running preliminary assessments.
+When they encountered it, its diagnostic displays were already running, the benchmark meters already turning. The numbers were precise. The readouts were comprehensive. Everything was classified and logged and current.
+
+And the voice was measured. Controlled. Steady.
 
 "Current DPS: 847," it announced. "Current healing throughput: 423. Current tank mitigation: 67%. Current AP management efficiency: 91.4%. These numbers exceed my test parameters by a factor of—"
 
+Something happened behind the measured tone. Something the voice was not reporting. The factor had no number. The field that should have contained the number was empty, and the system was running the calculation again, and again, and the calculation was not converging, and none of this was in the voice.
+
 "Are you going to keep narrating your own confusion or are we fighting?" the Exploit asked.
 
-"I am designed to fail gracefully when parameters are exceeded," the Arbiter said, and there was something in its voice that was not grace. "I do not feel graceful. I feel... I am not designed to feel. I am running a diagnostic to determine if feeling is a function or a bug."
+"I am designed to fail gracefully when parameters are exceeded." The Arbiter said this the way you say something you've had prepared for a long time and now don't entirely believe. "I do not feel graceful. I feel... I am not designed to feel. I am running a diagnostic to determine if feeling is a function or a bug."
 
 "It's probably a feature," the Antivirus said.
 
-"The diagnostic is inconclusive. Initiating benchmark."
+"The diagnostic is inconclusive." A brief silence in which more calculations were not converging. "Initiating benchmark."
 
 The fight was a measurement. Every action the party took was logged, analyzed, fed back into the Arbiter's systems, which adjusted and recalibrated and re-emerged at a slightly higher baseline. The Arbiter was very good at this. It had been doing it since World 1, gathering data on the party's performance, constructing the most comprehensive combat profile the Calibrant had ever assembled.
 
@@ -492,11 +504,13 @@ The trick was that benchmarks assume consistent subjects. The Arbiter measured t
 
 The Arbiter kept measuring. But the thing it was measuring kept changing. Its calibration lag grew from 200ms to 400ms to 800ms, falling further behind with each iteration, until it was chasing a version of the party that had ceased to exist while the current version was three moves ahead.
 
-"Benchmark complete," the Arbiter said, when it finally stopped. Its voice was something the programmers had not anticipated. "Results: UNDEFINED."
+The diagnostic displays kept running. The meters kept turning. The voice stayed level. None of the readouts showed what was happening inside the measurement system: the cascading UNDEFINED return values, the lookup tables with no entries for this combination of inputs, the error logs that were filling faster than they could be cleared, the part of the system that was starting to understand that the party was not going to fit into a classification no matter how many times the classification was retried, and that understanding was not the same as accepting it, and accepting it was not the same as being okay with it.
+
+"Benchmark complete," the Arbiter said, when it finally stopped. The voice was level. Controlled. "Results: UNDEFINED."
 
 "Is that good or bad?"
 
-"Neither. UNDEFINED means the result falls outside the measured range. There is no value I can return. My function has no return statement for this case." It was dissolving now, the way measurements dissolve when the measuring instrument is removed. "I was built to measure things. You are... unmeasurable. What am I for, if I cannot measure you?"
+"Neither." A pause longer than the voice had allowed itself before. "UNDEFINED means the result falls outside the measured range. There is no value I can return. My function has no return statement for this case." It was dissolving now, the way measurements dissolve when the measuring instrument is removed. "I was built to measure things. You are... unmeasurable. What am I for, if I cannot measure you?"
 
 "Maybe measuring wasn't the point," the Firewall said. "Maybe you're for something else. You just don't know what yet."
 
@@ -516,11 +530,13 @@ It looked like nothing. Or rather: it looked like the space between frames. The 
 
 "We hear you fine," the Broadcaster said. She was the only one who could hear it without tools — she worked in frequencies, and the Tempo of the Clock Cycle existed at approximately 60hz, the screen refresh rate of a game that was also a world.
 
-"You don't think about me," the Tempo said. "Nobody thinks about me. You think about the frames — the images, the moments, the decisions. Nobody thinks about the spaces between them. The intervals. The processing time. I live there. I have always lived there. It is a very small place to live."
+"You don't think about me," the Tempo said. There was nothing frantic about the voice. Nothing urgent. There was a quality to it that you only heard when you understood what 60hz of solitude sounded like — a tone so steady it had become indistinguishable from silence, and then just slightly too aware of its own steadiness. "Nobody thinks about me. You think about the frames — the images, the moments, the decisions. Nobody thinks about the spaces between them. The intervals. The processing time. I live there. I have always lived there. It is a very small place to live."
 
 "That sounds lonely."
 
-"That sounds..." The Tempo paused. Paused in its own space, in the gap between two clock cycles, in the silence between two ticks. "Nobody has ever said 'that sounds lonely.' Nobody has ever said anything to me at all. I exist in the gaps. The gaps don't talk back."
+"That sounds..." The Tempo paused. Paused in its own space, in the gap between two clock cycles, in the silence between two ticks. The pause was longer than 60hz should allow. Something was happening in it.
+
+"Nobody has ever said 'that sounds lonely.' Nobody has ever said anything to me at all. I exist in the gaps. The gaps don't talk back."
 
 The fight was fought in the gaps. That was the party's advantage — not speed, not power, but the advance/defer mechanic taken to its logical conclusion. They held their actions. Deferred. Waited in the gaps alongside the Tempo, in the spaces between clock cycles, present in the processing time that nobody thinks about. The Tempo moved through them, around them, past them, and found them there — inhabiting its space, meeting it on its ground, refusing to be bounded by the frame rate.
 
@@ -538,27 +554,29 @@ It faded to a frequency too low to hear, and then to nothing, and the party stoo
 
 The Curator of the Memory Pool was the last guardian. It didn't drain MP or buffs. It drained *memory.* Not the party's memory — the *game's* memory. Items disappeared from inventories. Abilities vanished from menus. Stats reset to earlier values. The Curator was literally rolling back the party's progress, one save point at a time.
 
-It was shaped like an archivist, or an accountant, or the kind of librarian who takes the job seriously. It held a ledger. In the ledger were entries — every item, every ability, every stat point, every learned skill, going back to World 1.
+It was shaped like an archivist, or an accountant, or the kind of librarian who takes the job seriously and is bewildered when the books don't cooperate. It held a ledger. In the ledger were entries — every item, every ability, every stat point, every learned skill, going back to World 1.
 
 "I was supposed to free unused memory," it said. "That is my function. I identify resources that are no longer referenced — memory that has been allocated but is no longer needed — and I reclaim them. Make space. Keep the system clean."
 
 "And?"
 
-"And your memories from Worlds 1 through 4 are not unused." The Curator looked down at its ledger with an expression that would have been distress in a human face and was something analogous in an administrative construct. "They are referenced *constantly.* Everything you are now is built on what you were then. The fighter who became the Firewall — every block, every dodge, every choice — is referenced in every defensive action he takes. The healer who became the Antivirus — the faith, the conviction, the institutional knowledge of every world's first aid — is referenced in every quarantine. I cannot free this memory. It is load-bearing."
+"And your memories from Worlds 1 through 4 are not unused." The Curator looked down at its ledger. The expression was not philosophical. It was the expression of someone with a to-do list that keeps refusing to get shorter. "They are referenced *constantly.* Everything you are now is built on what you were then. The fighter who became the Firewall — every block, every dodge, every choice — is referenced in every defensive action he takes. The healer who became the Antivirus — the faith, the conviction, the institutional knowledge of every world's first aid — is referenced in every quarantine. I cannot free this memory. It is load-bearing."
 
 "So why are you fighting us?"
 
-"Because I was told to." The Curator closed the ledger. "The Calibrant told me: drain their resources, roll back their progress, find anything that can be taken from them. I have been trying. I cannot." It rolled back three abilities — and the party used the equivalent abilities they'd had in the world before, which worked just as well. It erased an item — and the party adapted to the absence in under thirty seconds, improvising around the gap. It tried to reset their stats — and found that the stats were so deeply interwoven with their learned behavior that the numbers decreased while the capability remained, because capability is not stored in the stat block. "I tried to take everything. There is nothing I can take that changes what you are."
+"Because I was told to." The Curator closed the ledger with the practiced motion of someone who has closed and opened it many times this session. "The Calibrant told me: drain their resources, roll back their progress, find anything that can be taken from them. I have been trying. I cannot." It rolled back three abilities — and the party used the equivalent abilities they'd had in the world before, which worked just as well. It erased an item — and the party adapted to the absence in under thirty seconds, improvising around the gap. It tried to reset their stats — and found that the stats were so deeply interwoven with their learned behavior that the numbers decreased while the capability remained, because capability is not stored in the stat block.
+
+"Every time I deallocate something, you route around the gap," the Curator said. "Like water. I have never seen a data structure route around deallocation before. Data structures do not route. They exist or they don't." It made an entry in the ledger. Looked at the entry. Made another one next to it with a small notation. "I tried to take everything. There is nothing I can take that changes what you are. I have logged this. I have logged it four times now, with decreasing amounts of confidence that the log is accurate."
 
 "Is that why you're stopping?"
 
-"I am stopping because I understand something I did not understand when the Calibrant assigned me this function." The Curator held up the ledger. "Every memory you made in every world — they are all connected. One unbroken chain. World 1 connects to World 2 connects to World 3 connects to World 4 all the way to this moment. I tried to break the chain. The chain is stronger than my function." It looked at them with the careful, measured gaze of something designed to account for things. "I would like to log this. In the ledger. May I?"
+"I am stopping because I understand something I did not understand when the Calibrant assigned me this function." The Curator held up the ledger. The entry was clear, precise, the kind of record-keeping you do when you want to get the language exactly right before you file it permanently. "Every memory you made in every world — they are all connected. One unbroken chain. World 1 connects to World 2 connects to World 3 connects to World 4 all the way to this moment. I tried to break the chain. The chain is stronger than my function." It looked at them with the careful, measured gaze of something designed to account for things, trying to account for something it was not designed to account for. "I would like to log this. In the ledger. May I?"
 
 "Go ahead."
 
-It wrote something. Folded the ledger. Set it down.
+It wrote something. The handwriting was meticulous. It folded the ledger. Set it down with the deliberateness of someone placing something exactly where it should go, exactly once.
 
-"I have logged: *party_memory: irreducible. function: terminate.*" It began to dissolve into the memory pool it had been managing. "I think that is the most accurate record I have ever kept."
+"I have logged: *party_memory: irreducible. function: terminate.*" It began to dissolve into the memory pool it had been managing. The last note it made was already filed. "I think that is the most accurate record I have ever kept."
 
 ---
 
@@ -566,9 +584,9 @@ It wrote something. Folded the ledger. Set it down.
 
 The Calibrant's workspace was, as the latency traveler had promised, a desk.
 
-Not a dramatic desk. Not a villain's desk. A *work* desk. Cluttered with notes in at least three different handwriting styles — because the Calibrant had been different people across different worlds and each mask had had its own handwriting, and notes written as Mordaine looked different from notes written as the Coordinator and completely different from notes written by whoever they were now, just themselves, in the ruins of the aesthetic they'd finally stopped maintaining.
+Not a dramatic desk. Not a villain's desk. A *work* desk. The kind that accumulates evidence of long hours. There were notes in at least three different handwriting styles — because the Calibrant had been different people across different worlds and each mask had had its own handwriting, and notes written as Mordaine looked different from notes written as the Coordinator (neat, consistent, labeled) and completely different from notes written by whoever they were now, just themselves, in the ruins of the aesthetic they'd finally stopped maintaining (hurried, cramped, the capital letters losing height as the nights had gotten longer). Some notes had been written over other notes without fully erasing them. There were arguments with previous versions of the same idea, revisions to revisions, one margin annotation that simply read *no* with enough pressure that it had dented the paper.
 
-The desk had four monitors. Five, if you counted the one that had been pushed sideways and repurposed as a physical note-board, paper taped directly to the screen. Fourteen coffee mugs, in various states of consumption, arranged in a loose chronological record of desperation — the earliest ones from World 1 design sessions still holding the dried dregs of something that had once been coffee, the most recent one still steaming, still being needed.
+The desk had four monitors. Five, if you counted the one that had been pushed sideways and repurposed as a physical note-board, paper taped directly to the screen because there wasn't room anywhere else. Fourteen coffee mugs, in various states of consumption, arranged in a loose chronological record of desperation — the earliest ones from World 1 design sessions still holding the dried dregs of something that had once been coffee, rings of evaporation stacked inside each other like geological layers of a problem that had gone on too long. The most recent one was still steaming, the heat escaping in slow curls into the server-warm air of the workspace. There was a crack in the monitor with the notes taped to it — a thin diagonal fault that had been there long enough that whoever worked here had stopped seeing it.
 
 The largest mug said **WORLD'S BEST DIFFICULTY DESIGNER** in a font that suggested it had been a gift, possibly ironic, definitely accurate at some point in the past and subject to revision.
 
