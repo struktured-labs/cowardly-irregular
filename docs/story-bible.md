@@ -281,12 +281,12 @@ Each overworld's surface villain IS the antagonist, roleplaying as the final bos
 |-------|------|--------------|
 | Medieval | Chancellor Mordaine | Sorceress-usurper, classic fantasy villain |
 | Suburban | The Coordinator | HOA president, bureaucratic tyrant |
-| Steampunk | The Regulator | Chief engineer, clockwork tyrant — THE REVEAL |
-| Industrial | TBD | Corporate overlord |
-| Digital | TBD | Rogue AI / sysadmin |
+| Steampunk | The Regulator | Chief engineer, clockwork tyrant — suspicion builds |
+| Industrial | The Director | Corporate overlord — THE REVEAL ("I am the Calibrant") |
+| Digital | The Calibrant (unmasked) | Operating openly in the system |
 | Abstract | Unmasked | The antagonist as themselves |
 
-The player doesn't realize these are the same entity until the meta bleed makes it undeniable (World 3+). In retrospect, the clues were there — similar speech patterns, the same philosophy of "order through control," Masterites deployed the same way.
+The player doesn't realize these are the same entity until the meta bleed makes it undeniable (World 4). In retrospect, the clues were there — similar speech patterns, the same philosophy of "order through control," Masterites deployed the same way. World 3 builds suspicion. World 4 confirms it.
 
 ### Philosophy
 
@@ -295,6 +295,36 @@ The player doesn't realize these are the same entity until the meta bleed makes 
 - Deploys Masterites to profile player strengths before each confrontation
 - Genuinely believes balance is necessary — unchecked player power would "break" everything
 - Not evil — just convinced that the system matters more than the player's freedom
+
+### The Mirror: Calibrant Adapts to YOUR Playstyle
+
+**The Calibrant fights the way you play.** This is the core combat design of every Calibrant boss fight.
+
+The Masterites profile the player. The data goes to the Calibrant. By the time you face each world's boss, the Calibrant has built a combat style that mirrors yours:
+
+| Your Playstyle | Calibrant's Response |
+|---------------|---------------------|
+| Heavy autobattle | Calibrant runs its OWN autobattle scripts against you. Optimized. Your scripts vs theirs. Mirror match. |
+| One-shot builds | Calibrant builds one-shot attacks. If you can one-shot, so can they. Suddenly your glass cannon faces a glass cannon. |
+| Manual/traditional | Calibrant fights manually, tactically. Reads your patterns. Plays your game better than you. |
+| Grind/overlevel | Calibrant scales to match. Your stat advantage disappears. "You thought levels would save you?" |
+| Exploit-heavy | Calibrant patches exploits mid-fight. Closes the gaps you rely on. Adapts in real-time. |
+| Defensive/conservative | Calibrant becomes patient. Waits you out. Mirrors your caution with superior endurance. |
+| Aggressive/risky | Calibrant goes aggressive. Matches your tempo. Punishes overcommitment with the same overcommitment. |
+| Mixed/unpredictable | Calibrant struggles most here. Can't lock onto a pattern. This is the intended "solution" — be too human to model. |
+
+**Why this works narratively:** The Calibrant IS calibration. Of course it calibrates itself to be you. It's not cheating — it's doing exactly what it was designed to do: match the player, maintain balance, keep the fight "fair." The horror is that "fair" means fighting yourself, optimized.
+
+**Why this works mechanically:** It forces the player to evolve. If you autobattle everything, the Calibrant boss will punish pure autobattle. If you one-shot everything, the Calibrant will one-shot you back. The only reliable strategy is to be adaptive — to play differently than your profile predicts. This is the game teaching you that mastery isn't optimization, it's flexibility.
+
+**The personality mirror:** The Calibrant's dialogue also shifts to match your playstyle:
+- To an autobattler: "You designed a system. I designed a better one. Let's see whose runs."
+- To a manual player: "You fight every battle yourself. I respect that. So will I."
+- To a grinder: "You thought patience was your advantage? I have been patient for six worlds."
+- To an exploiter: "Every gap you found, I studied. Every edge you exploited, I reinforced. What will you do when there are no more edges?"
+- To a one-shotter: "One hit. That's all it takes. For either of us."
+
+**The crack in the mirror:** The Calibrant can match any SINGLE playstyle perfectly. What it can't match is a player who is genuinely unpredictable — who autobattles one fight, plays manually the next, exploits when they see an opening, grinds when they feel like it. A player who plays like a PERSON, not a profile. That's the intended path to victory: be unmeasurable.
 
 ### Reveal Arc (SLOW BURN)
 
