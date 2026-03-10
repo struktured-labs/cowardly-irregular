@@ -1955,7 +1955,7 @@ func _show_controller_overlay(context: Dictionary) -> void:
 
 	if not _controller_overlay:
 		_controller_overlay_layer = CanvasLayer.new()
-		_controller_overlay_layer.layer = 45
+		_controller_overlay_layer.layer = 55  # Above battle scenes and menus
 		add_child(_controller_overlay_layer)
 
 		_controller_overlay = ControllerOverlay.new()
