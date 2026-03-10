@@ -317,25 +317,23 @@ The Regulator looked at the journal.
 
 The Regulator said, in a voice from which the Victorian engineer's diction had slightly slipped: "You noticed through the *language.*"
 
-"Language is the only thing that carries the person underneath the performance," the Bard said. "A villain's stats are the role. Their word choice is the self. You use the same self in every mask. I've been listening."
+It was not the clinical curiosity the statement implied. It was something closer to unease.
 
-Something happened in the Regulator's face. Not the theatrical pause of a revealed villain. Something more unsettled than that. The quality of a person who has been seen by someone they did not expect to be capable of seeing them.
+"Language is the only thing that carries the person underneath the performance," the Bard said. "A villain's stats are the role. Their word choice is the self. You use the same self in every mask. I've been listening since Mordaine."
 
-"The Calibrant," the Regulator said, at last, and the Victorian lilt was gone entirely. "I am the Calibrant. And you are—"
+Something happened in the Regulator's face. Not the theatrical pause of a revealed villain. Something smaller and more real than that. The quality of a person who has been precisely seen by someone they assumed was not looking.
 
-"More attentive than you calibrated for," the Bard said.
+A silence. The gears of the Grand Mechanism turned around them.
 
-The Calibrant looked at him for a long moment.
+"We'll continue this elsewhere," the Regulator said, at last. "Somewhere the architecture doesn't echo quite so much." They turned toward the far door — not fleeing, but deliberate. The door of someone who has decided this conversation is not yet finished, and will choose its own terms for when it is.
 
-"Yes," they said. "That is precisely the problem."
+The Fighter said, afterward: "Good. So we know what we're looking for."
 
-The Fighter said, afterward: "Good. Good. Then we know what we're dealing with."
+Vex said: "You were right about the phrase. I can feel it."
 
-Vex said: "You were right about the phrase."
+Mira said: "I have the monitor data from World 2. The blueprint handwriting here is a match. The pattern is real. I want one more world's worth of evidence before I name it."
 
-Mira said: "I confirmed it via the monitor in World 2. The system data was unambiguous."
-
-The Bard said nothing. He was writing the elegy for the clockwork world, which was winding down around them as the Calibrant walked away with the particular gait of someone who has revealed too much and is recalculating. He was writing the elegy and also, in a separate margin, the first entry of what would become a very long series of observations about the Calibrant's word choice across all six worlds, because there were three more worlds to go and the Calibrant would keep talking, and talking was where the truth lived.
+The Bard said nothing. He was writing the elegy for the clockwork world, which was winding down around them as the Regulator walked away with the particular gait of someone who has said more than they intended and is recalculating what comes next. He was writing the elegy and also, in a separate margin, the sixteenth page of what had become a very long series of observations about a recurring word choice across three worlds — *purpose, serve, calibrate* — because there were three more worlds to go and the same voice would keep talking, and talking was where the truth lived.
 
 ---
 
@@ -365,7 +363,7 @@ During the fight, the PA system activated.
 
 "Attention workers," it said, in a voice that was not quite the Bard's voice and not quite not his voice. "Deviation from approved schedules is subject to correction. Irregulars are reminded that their purpose is defined by the system, not by themselves."
 
-The Bard kept fighting. He noted, in the part of his attention that was always partly writing, that the Calibrant's vocabulary was consistent even in the architecture of the world. *Purpose defined by the system.* The same phrase. The same philosophy. The mask had changed but the philosophy had not, and philosophy is what reveals the face beneath all masks.
+The Bard kept fighting. He noted, in the part of his attention that was always partly writing, that the vocabulary embedded in the PA announcement was consistent — *purpose, defined by the system, irregulars.* The same phrase. The same philosophy. The mask had changed but the philosophy had not, and philosophy is what reveals the face beneath all masks.
 
 When the Arbiter fell, Vex said: "It's the same thing they all say. Every world."
 
@@ -375,7 +373,7 @@ When the Arbiter fell, Vex said: "It's the same thing they all say. Every world.
 
 "You confirmed it."
 
-"I confirmed it through the monitor in World 2 and the facility records here," Mira said. "Cross-referenced with the blueprint handwriting in World 3."
+"I confirmed it through the monitor in World 2 and the facility records here," Mira said. "Cross-referenced with the blueprint handwriting in World 3. The handwriting is a consistent match. All four worlds. One author."
 
 "I noticed it through the grammar," the Bard said. "In World 1. Before the monitor."
 
@@ -393,9 +391,51 @@ They stood in the wreckage of the assembly floor.
 
 The Bard turned to look at her. This was not what she usually said.
 
-She shrugged. "I've been reading over your shoulder. Might as well admit it." She turned back to the exit. "Come on. The Calibrant's doing something terrible in the upper levels and we should stop it."
+She shrugged. "I've been reading over your shoulder. Might as well admit it." She turned back to the exit. "Come on. Whoever's running this is doing something in the upper levels and we should stop it."
 
 He followed. He was smiling. He wrote, that night: *The Rogue reads over my shoulder. Has been reading. All this time. The witness has a witness. I am not sure what to do with this except be glad.*
+
+---
+
+The Director's office was at the top of the processing facility, behind three security checkpoints and a door that had been left open.
+
+The Bard noticed the door being left open. It was the kind of detail that meant something.
+
+The Director was a person-shaped absence of persona — not the Victorian precision of the Regulator, not Mordaine's embodied authority, not the Coordinator's institutional warmth. What sat behind the desk wore the face of executive power the way an understudy wears a costume: technically correct, clearly borrowed.
+
+"You made it through the Arbiter faster than projected," the Director said.
+
+"We've had practice," the Bard said.
+
+"Three worlds of it." The Director looked at them each in turn. "You've been building something. I've been watching." The executive persona slipped — not gradually, as it had with the Regulator, but as a deliberate act of putting something down. "I suspect you know what I am."
+
+"We have a theory," the Bard said. "Twenty-three pages of it."
+
+"I've read every one." The Director's voice had changed completely — stripped now of institutional cadence, carrying only what it was. "I started in World 3. When you left it open in the Grand Mechanism. I've been reading since."
+
+Something in the room shifted.
+
+"I am the Calibrant," the Director said. "That is not a title the worlds gave me — it is what I am. I calibrate. I build the parameters and set the challenge and watch what moves through the system. Mordaine, the Coordinator, the Regulator — those were masks. This is the last one. After this there is only the next world, and in the next world there are no more masks to wear."
+
+"Then you've been watching us since World 1," Vex said.
+
+"Since before World 1. But watching this particular party — watching *you* —" the Calibrant looked at the Bard — "since the road north from Harmonia, when you played three chords for a wolf that was going to attack you anyway."
+
+The Bard was very still.
+
+"I've never had a party witness it," the Calibrant said. "Every other party moved through the system. You stayed in it. There's a difference I did not calibrate for."
+
+The fight that followed was different from the Arbiter — shorter, sharper, with the quality of a conversation continuing through a different medium. The Calibrant did not hold anything back, but neither did they perform. For the first time in four worlds, the Bard had the sense of fighting something that was not wearing a mask.
+
+When it was over, the Calibrant stood in the wreckage of the office and said: "I'll see you in the next world. There's no mask left after this one."
+
+They left.
+
+Mira updated her file: *Cross-reference complete. Entity confirmed: singular. Author of all four worlds. Self-identified as: the Calibrant. Proceeding to World 5.*
+
+Vex said: "Sixteen pages were right."
+
+"Twenty-three now," the Bard said. He was already writing.
 
 ---
 
