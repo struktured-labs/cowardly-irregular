@@ -39,11 +39,11 @@ var _current_meta_boss_data: Dictionary = {}
 func _get_between_battle_delay() -> float:
 	match _current_tier:
 		GrindTier.ACCELERATED:
-			return 0.3
+			return 0.1
 		GrindTier.DASHBOARD:
-			return 0.2
+			return 0.1
 		_:
-			return 1.0
+			return 0.5
 
 
 func _process(delta: float) -> void:
@@ -92,8 +92,13 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	if region != "":
 		AutogrindSystem.set_current_region(region)
 
-	# Speed up battles
-	Engine.time_scale = 2.0
+	# Apply current battle speed setting (persisted across battles in BattleScene)
+	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+	var speed_idx = BattleSceneScript._battle_speed_index
+	if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
+		Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
+	else:
+		Engine.time_scale = 2.0
 
 	print("[AUTOGRIND] Controller started, requesting first battle")
 	_state = State.PRE_BATTLE
