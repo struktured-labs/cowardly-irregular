@@ -4,12 +4,13 @@ class_name ControllerOverlay
 var _button_labels: Dictionary = {}
 
 const OVERLAY_SIZE = Vector2(320, 190)
-const BG_COLOR = Color(0.05, 0.04, 0.08, 0.55)
-const BORDER_COLOR = Color(0.4, 0.35, 0.5, 0.4)
-const BUTTON_COLOR = Color(0.15, 0.12, 0.2, 0.8)
-const BUTTON_HIGHLIGHT = Color(0.3, 0.25, 0.4, 0.8)
-const TEXT_COLOR = Color(0.85, 0.85, 0.9)
-const LABEL_COLOR = Color(0.6, 0.9, 0.6)
+const BG_COLOR = Color(0.05, 0.04, 0.08, 0.65)
+const BORDER_COLOR = Color(0.4, 0.35, 0.5, 0.5)
+const BUTTON_COLOR = Color(0.12, 0.10, 0.18, 0.7)
+const BUTTON_HIGHLIGHT = Color(0.25, 0.35, 0.5, 0.9)
+const TEXT_COLOR = Color(0.9, 0.9, 0.95)
+const LABEL_COLOR = Color(1.0, 1.0, 0.4)  # Bright yellow for action labels
+const LINE_COLOR = Color(0.5, 0.8, 0.5, 0.4)  # Green connecting lines
 const HINT_COLOR = Color(0.5, 0.5, 0.6)
 const BUTTON_RADIUS = 10.0
 const DPAD_SIZE = 12.0
@@ -148,8 +149,13 @@ func _draw_label_for(button_id: String, button_pos: Vector2) -> void:
 
 	var font = ThemeDB.fallback_font
 	if font:
-		draw_line(button_pos, label_pos + Vector2(0, 6), Color(0.4, 0.8, 0.4, 0.3), 1.0)
-		draw_string(font, label_pos, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, LABEL_COLOR)
+		# Connecting line + small dot at button end
+		var line_end = label_pos + Vector2(0, 6)
+		draw_line(button_pos, line_end, LINE_COLOR, 1.0)
+		draw_circle(button_pos, 2.0, LINE_COLOR)
+		# Label text with shadow for readability
+		draw_string(font, label_pos + Vector2(1, 1), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0, 0, 0, 0.5))
+		draw_string(font, label_pos, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, LABEL_COLOR)
 
 
 static func autogrind_context() -> Dictionary:

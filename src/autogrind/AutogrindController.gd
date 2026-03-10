@@ -69,7 +69,22 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 		print("[AUTOGRIND] Already grinding!")
 		return
 
-	_party = party
+	# Filter out permadead characters
+	_party = []
+	for member in party:
+		if member is Combatant:
+			if AutogrindSystem.is_character_permadead(member.combatant_name):
+				print("[AUTOGRIND] Skipping permadead character: %s" % member.combatant_name)
+				continue
+			if not member.is_alive:
+				print("[AUTOGRIND] Skipping dead character: %s" % member.combatant_name)
+				continue
+		_party.append(member)
+
+	if _party.is_empty():
+		print("[AUTOGRIND] No alive party members available!")
+		return
+
 	_config = config
 	_terrain = terrain
 	var tier_val = config.get("tier", 0)
