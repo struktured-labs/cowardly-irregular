@@ -6,12 +6,12 @@ Each overworld tells a self-contained genre story (Layer 1) while the meta-narra
 
 | World | Genre | Surface Story | Meta Bleed | Calibrant's Approach |
 |-------|-------|--------------|------------|---------------------|
-| Medieval | Arthurian fantasy | The Usurper's Crown | ~5% — dismissible NPC humor | Hidden, performing as fantasy villain |
-| Suburban | EarthBound weird Americana | The Neighborhood Problem | ~20% — characters question transitions | Hidden, performing as bureaucratic villain |
-| Steampunk | Victorian thriller (SHORT) | The Regulator | ~50% — The Calibrant is named | Exposed but still performing — elegant control |
-| Industrial | Brutalist corporate dystopia | TBD | ~75% — systems visibly breaking | Gloves off — raw efficiency, no more art |
-| Digital | Cyber/glitch | TBD | ~90% — fourth wall is gone | Direct manipulation — the game IS the world |
-| Abstract | Existential minimalism | TBD | 100% — you ARE the meta | Unmasked — nothing left to hide behind |
+| Medieval | Arthurian fantasy | The Usurper's Crown | ~1-2% — deeply buried, only the most attentive find it | Hidden, performing as fantasy villain. Player is in the comfort zone. |
+| Suburban | EarthBound weird Americana | The Neighborhood Problem | ~5-10% — transition is strange, small oddities | Hidden, performing as bureaucratic villain. Weirdness is genre, not meta. |
+| Steampunk | Victorian thriller (SHORT) | The Regulator | ~20% — suspicion builds, patterns noticed but unconfirmed | Still masked. Party suspects but can't prove it. Leaves with questions. |
+| Industrial | Brutalist corporate dystopia | The Assembly | ~50% — The Calibrant is named. The reveal. | Exposed. Drops pretense. Direct engagement begins. |
+| Digital | Cyber/glitch | The Source | ~80% — full meta awareness, systems visible | Direct manipulation — the game IS the world |
+| Abstract | Existential minimalism | The Remainder | 100% — you ARE the meta | Unmasked — nothing left to hide behind |
 
 ---
 
@@ -296,13 +296,16 @@ The player doesn't realize these are the same entity until the meta bleed makes 
 - Genuinely believes balance is necessary — unchecked player power would "break" everything
 - Not evil — just convinced that the system matters more than the player's freedom
 
-### Reveal Arc
+### Reveal Arc (SLOW BURN)
 
-- **World 1-2**: No awareness of the antagonist. Mordaine and The Coordinator feel like separate villains. Only subtle traces — system glitches after victories, NPC dialogue that's slightly too aware, Masterites that feel oddly systematic.
-- **World 3**: The antagonist is named. Someone connects the dots — "the chancellor, the coordinator... they spoke the same way."
-- **World 4**: The antagonist communicates directly. Drops the pretense of being a genre villain.
-- **World 5**: Full confrontation. The antagonist is managing the game in real-time, visibly.
-- **World 6 (Abstract)**: Unmasked. Final battle. The antagonist admits they can't keep up. Resolution varies by playstyle (see design-canon.md).
+The meta reveal should feel like a creeping realization, not a plot twist. Players should be able to look back and see the clues, but during the first 3 worlds, nothing breaks the genre.
+
+- **World 1**: Near-zero meta. Pure fantasy on the surface. The party ARE their tropes — Fighter fights, Mage studies, Cleric heals, Rogue skulks, Bard sings. Mordaine is just a fantasy villain. The Masterites are just guardians. BUT — for players paying very close attention (honors English close-reading level), there are 2-3 deeply buried tells: a word choice by Mordaine that's slightly too modern ("variable," "parameters"), an item description that uses "data" instead of "magic," the Warden's guard-hours not adding up. These are NOT signposted. A normal player catches zero of them. An attentive player catches one and thinks "huh, weird." On replay, they're obvious. That's the target: invisible first time, undeniable second time.
+- **World 2**: The world transition itself is strange, but the party adapts and the suburban world has its own internal logic. Small oddities accumulate — Ye Olde Medieval Surplus selling Harmonia items, the Coordinator's memos being weirdly thorough — but they read as EarthBound-style genre weirdness, not meta clues. The monitor in the Coordinator's office exists but could be interpreted as "the villain has surveillance." Maybe 5-10% meta — enough that a VERY attentive player notices, but easy to miss.
+- **World 3**: Suspicion builds but is NOT confirmed. Madame Orrery hints at connections. The blueprints suggest shared design. The Regulator's speech patterns echo Mordaine's. The party SUSPECTS but the Regulator doesn't reveal themselves as the Calibrant. The world ends with the party having questions, not answers. ~20% meta.
+- **World 4**: THE REVEAL. The Director drops all pretense. Names themselves as the Calibrant. Shows the party their stats from all prior worlds. This is where the rug gets pulled — and it hits harder because the player has been sitting with suspicion for an entire world before getting confirmation. ~50% meta.
+- **World 5**: Full meta awareness. The game's systems are visible. The party is inside the code. The Calibrant operates openly. ~80%.
+- **World 6**: 100%. Nothing left to hide. The question.
 
 ### Post-Defeat Dialogue (varies by playstyle)
 
