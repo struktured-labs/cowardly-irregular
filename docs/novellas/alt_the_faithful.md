@@ -6,19 +6,19 @@
 
 ---
 
-### World 1: The Friar's Survey
+### World 1: The Cleric's Survey
 
 #### Harmonia, In Full
 
 Most parties spent forty minutes in Harmonia before leaving for the cave.
 
-The Friar spent four hours.
+The Cleric spent four hours.
 
 This was not, he would have said if you asked him, because he was slow. It was because Harmonia had seventeen people in it, and he had spoken to sixteen of them, and was currently finishing a conversation with the seventeenth, who was an elderly woman named Marta who kept chickens and had very specific opinions about the way the cave used to smell before whatever was wrong with it started being wrong with it.
 
 "Sulfur," she said. "Not brimstone-sulfur, mind you. More like struck-match sulfur. Like someone lit something new inside it." She paused to scatter feed at a hen who had been working hard on her patience. "My husband used to go up there collecting mushrooms. Good ones, the blue-cap kind. He stopped three months ago. Said the mushrooms were wrong. Said they tasted of — and forgive an old woman repeating this — they tasted of 'the inside of a clock.'"
 
-The Friar wrote this down. He had a small leather journal that he'd had since long before this adventure, filled with prayers and remedies and the small observations that faith requires one to make: the way certain people hold themselves when they're frightened, the particular silence that follows a lie, the texture of a grief that hasn't been named yet.
+The Cleric wrote this down. He had a small leather journal that he'd had since long before this adventure, filled with prayers and remedies and the small observations that faith requires one to make: the way certain people hold themselves when they're frightened, the particular silence that follows a lie, the texture of a grief that hasn't been named yet.
 
 "Has anyone been by to check on you?" he asked.
 
@@ -34,19 +34,19 @@ She looked at him for a long moment. Then she said: "You're not like the last lo
 
 "Oh, they weren't here long. Gone in twenty minutes. Barely looked at anyone. That tall one — the woman in the robes — she had her nose in a book the entire time." Marta shook her head. "Nice enough. Just in a hurry to get somewhere."
 
-The Friar considered this. He didn't know who the last lot was, or when they'd come through, or what they'd been hurrying toward. The cave was the cave. It would still be there.
+The Cleric considered this. He didn't know who the last lot was, or when they'd come through, or what they'd been hurrying toward. The cave was the cave. It would still be there.
 
-"My name is Hero," said the Knight-Errant, appearing at the Friar's shoulder with the expression of someone who has been waiting with enormous patience and is now very gently running out of it. He was a patient man by temperament — duty required patience — but duty also had a directional quality, a momentum, and standing in a chicken yard while his Friar talked to a grandmother for the fourth consecutive time had begun to challenge that momentum.
+"My name is Hero," said the Fighter, appearing at the Cleric's shoulder with the expression of someone who has been waiting with enormous patience and is now very gently running out of it. He was a patient man by temperament — duty required patience — but duty also had a directional quality, a momentum, and standing in a chicken yard while his Cleric talked to a grandmother for the fourth consecutive time had begun to challenge that momentum.
 
 "We should go," he said.
 
-"In a moment." The Friar turned back to Marta. "One more question. The cave — the Warden people mention. You know anything about what it was like before? Before it became dangerous?"
+"In a moment." The Cleric turned back to Marta. "One more question. The cave — the Warden people mention. You know anything about what it was like before? Before it became dangerous?"
 
 Marta's expression shifted into something careful and old.
 
 "The Warden of the Old Guard," she said, slowly, as though the name still had weight. "My grandmother talked about it. Said it was a guardian. Old thing. Older than the kingdom. It tested travelers going through — not to stop them, mind. To make sure they were worth passing. To make sure they weren't going to bring something worse in behind them." She looked toward the mountains. "It went quiet for years. People stopped going that way. Now the cave's gone wrong and I hear the Warden's stirring again." A pause. "The way my grandmother told it, the Warden respected patience. It didn't like people who came in hot and swinging." Another pause, longer. "She said you had to prove you'd taken the time to care."
 
-The Friar closed his journal.
+The Cleric closed his journal.
 
 "Thank you," he said. "That's very helpful."
 
@@ -54,7 +54,7 @@ He meant it completely.
 
 Hero, who had not been taking notes, who had heard only an elderly woman talking about a monster in a cave, said quietly as they walked away: "How was that helpful?"
 
-"I'll tell you if it matters," the Friar said. "It might matter."
+"I'll tell you if it matters," the Cleric said. "It might matter."
 
 "It might not."
 
@@ -62,13 +62,13 @@ Hero, who had not been taking notes, who had heard only an elderly woman talking
 
 ---
 
-The party assembled at the northern road. Hero, the Knight-Errant, who had at least spent his time in Harmonia sharpening his sword and checking his armor and doing things that felt productively adjacent to the actual task. Mira, the Hedge Wizard, who had spent her time in the village's four-book library and emerged satisfied and slightly contemptuous of the library. Vex, the Footpad, who had spent his time in ways he was not enumerating but which had involved the back shelf of Bram's shop and a coin he hadn't had to spare. And Lira, the Minstrel — who had collected enough village folklore in her own time to fill half a ballad, and who had, the Friar noted, independently found several of the same people he'd found.
+The party assembled at the northern road. Hero, the Fighter, who had at least spent his time in Harmonia sharpening his sword and checking his armor and doing things that felt productively adjacent to the actual task. Mira, the Mage, who had spent her time in the village's four-book library and emerged satisfied and slightly contemptuous of the library. Vex, the Rogue, who had spent his time in ways he was not enumerating but which had involved the back shelf of Bram's shop and a coin he hadn't had to spare. And Lira, the Bard — who had collected enough village folklore in her own time to fill half a ballad, and who had, the Cleric noted, independently found several of the same people he'd found.
 
 He liked Lira. She talked to people for different reasons than he did, but the talking mattered to both of them.
 
-"The grinding priest is ready?" Mira asked, looking at the Friar, who was consulting his notes one more time.
+"The grinding priest is ready?" Mira asked, looking at the Cleric, who was consulting his notes one more time.
 
-"The careful Friar is ready," he corrected, mildly.
+"The careful Cleric is ready," he corrected, mildly.
 
 "You spoke to every person in the village."
 
@@ -88,7 +88,7 @@ The slimes, when they came, came in pairs.
 
 Most parties hit the first encounter in a burst of nervous energy — first real fight, first real stakes, the urgency of combat driving them forward at speed. They dispatched the slimes and moved on, overworld fading behind them.
 
-The Friar's party fought the first pair of slimes slowly, methodically, and then — when the path was clear — he healed the Knight-Errant's grazed arm even though it didn't need healing, because it was there and he could, and then turned around and walked back fifteen feet to where a slime had died near an outcropping of rocks.
+The Cleric's party fought the first pair of slimes slowly, methodically, and then — when the path was clear — he healed the Fighter's grazed arm even though it didn't need healing, because it was there and he could, and then turned around and walked back fifteen feet to where a slime had died near an outcropping of rocks.
 
 "What are you doing?" Vex asked.
 
@@ -102,19 +102,19 @@ He crouched. The carving was old, weather-worn, barely legible. He traced it wit
 
 "Survey marker," Mira said, peering over his shoulder. "Road's been here longer than the village."
 
-"Someone built this road," the Friar said. "Someone took care with it."
+"Someone built this road," the Cleric said. "Someone took care with it."
 
 "Someone built the cave too," Vex said. "Can we go?"
 
-"Yes." The Friar stood. "I just wanted to notice it."
+"Yes." The Cleric stood. "I just wanted to notice it."
 
-This was the thing about the Friar that Vex found difficult to argue with and Hero found difficult to understand and Mira found philosophically troubling: he wasn't slow because he was bad at moving. He was slow because he stopped, regularly, to notice things. And the things he noticed were real things that had been there all along, that other parties walked past without seeing.
+This was the thing about the Cleric that Vex found difficult to argue with and Hero found difficult to understand and Mira found philosophically troubling: he wasn't slow because he was bad at moving. He was slow because he stopped, regularly, to notice things. And the things he noticed were real things that had been there all along, that other parties walked past without seeing.
 
 They walked. The overworld opened up around them — wide and green and full of encounters that other parties would rush through.
 
-"How about this one," the Friar said, watching a goblin group approach. "Let's try something."
+"How about this one," the Cleric said, watching a goblin group approach. "Let's try something."
 
-The goblins arrived. The party braced. And then the Friar did not immediately begin casting.
+The goblins arrived. The party braced. And then the Cleric did not immediately begin casting.
 
 He waited. He watched them.
 
@@ -122,13 +122,13 @@ He waited. He watched them.
 
 "In a moment."
 
-The goblins, to be fair, did not attack immediately either. They seemed confused by the party's stillness, which was not a goblin strategy anyone had designed for. They milled. One of them — the smallest — looked at the Friar directly.
+The goblins, to be fair, did not attack immediately either. They seemed confused by the party's stillness, which was not a goblin strategy anyone had designed for. They milled. One of them — the smallest — looked at the Cleric directly.
 
 Its dialogue box, which most players never saw because they'd already pressed the attack button, read:
 
 *I didn't want to do this today.*
 
-The Friar read it. He cast Mend — not at the party but at the small goblin, which was scratched and bruised and had clearly been in a fight before this one. The goblin stared at the healing light falling on its arm.
+The Cleric read it. He cast Mend — not at the party but at the small goblin, which was scratched and bruised and had clearly been in a fight before this one. The goblin stared at the healing light falling on its arm.
 
 Its second dialogue box, even fewer players ever saw:
 
@@ -140,17 +140,17 @@ The goblins did not disengage. The game was not that merciful with its systems. 
 
 "Huh," Vex said.
 
-"I found that one at the survey marker," the Friar said, looking at his journal, where he had been making notes. "When I sat with it. The marker told me to pay attention."
+"I found that one at the survey marker," the Cleric said, looking at his journal, where he had been making notes. "When I sat with it. The marker told me to pay attention."
 
 Mira was already copying the dialogue sequence into her own notes. Her expression was the one she got when a theorem suggested implications she hadn't calculated.
 
 ---
 
-#### The Friar's First Grind
+#### The Cleric's First Grind
 
 Between the road and the cave, there was an hour of open overworld. Other parties crossed it in thirty minutes.
 
-The Friar stopped at the edge of a meadow full of wandering encounters and said: "I want to stay here for a while."
+The Cleric stopped at the edge of a meadow full of wandering encounters and said: "I want to stay here for a while."
 
 "We're going to the cave," Hero said.
 
@@ -158,7 +158,7 @@ The Friar stopped at the edge of a meadow full of wandering encounters and said:
 
 "Why not immediately?"
 
-The Friar considered how to explain this. It wasn't strategic, not exactly. It wasn't fear of the cave — the Warden would be what it would be. It was something else, something that had to do with the quality of the light in the meadow and the rhythm of combat and the specific peace he'd felt since leaving Harmonia, where he'd been attending to people and their needs, and how that attending had left him with energy that needed somewhere to go.
+The Cleric considered how to explain this. It wasn't strategic, not exactly. It wasn't fear of the cave — the Warden would be what it would be. It was something else, something that had to do with the quality of the light in the meadow and the rhythm of combat and the specific peace he'd felt since leaving Harmonia, where he'd been attending to people and their needs, and how that attending had left him with energy that needed somewhere to go.
 
 "I want to fight for a while," he said. "Here. In this meadow."
 
@@ -166,45 +166,45 @@ The Friar considered how to explain this. It wasn't strategic, not exactly. It w
 
 "We're going to be fine," he replied, which was not the same thing but addressed the concern.
 
-Mira left, eventually. She went exploring east, toward a ridge she wanted to examine. Hero looked at the Friar, looked at the cave, looked at the Friar again, and sat down in the grass. If the Friar wanted to grind, Hero would remain. That was what he was for.
+Mira left, eventually. She went exploring east, toward a ridge she wanted to examine. Hero looked at the Cleric, looked at the cave, looked at the Cleric again, and sat down in the grass. If the Cleric wanted to grind, Hero would remain. That was what he was for.
 
 Vex lingered. "I'm going to be in the cave entrance, just—"
 
-"That's fine," the Friar said. "Go."
+"That's fine," the Cleric said. "Go."
 
 Lira stayed because there was material here. She could feel it.
 
-And so: the Friar and the Knight-Errant and the Minstrel in the meadow. Encounters came. Slimes, bats, a pair of goblins. The Friar healed, fought, healed. The rhythm established itself.
+And so: the Cleric and the Fighter and the Bard in the meadow. Encounters came. Slimes, bats, a pair of goblins. The Cleric healed, fought, healed. The rhythm established itself.
 
-Attack. The Knight-Errant, stepping forward, sword connecting with clean honesty — the blow of someone who practiced because the practice itself had virtue.
+Attack. The Fighter, stepping forward, sword connecting with clean honesty — the blow of someone who practiced because the practice itself had virtue.
 
 Wait. The breath between.
 
-Heal. The Friar's hands rising, the light coalescing between them, and then the light finding its way to the wound — not dramatically, just quietly, the way good things often work.
+Heal. The Cleric's hands rising, the light coalescing between them, and then the light finding its way to the wound — not dramatically, just quietly, the way good things often work.
 
 Wait.
 
 Attack.
 
-The Minstrel was humming. A melody that had no words yet, that was finding its structure in the rhythm of the fight.
+The Bard was humming. A melody that had no words yet, that was finding its structure in the rhythm of the fight.
 
-After the fourth encounter, the Knight-Errant said: "You're not doing this for the levels."
+After the fourth encounter, the Fighter said: "You're not doing this for the levels."
 
 "No."
 
 "Then what are you doing it for?"
 
-The Friar healed a small cut on his own arm — a bat had gotten a wing-talon past his guard — and felt the light settle through him.
+The Cleric healed a small cut on his own arm — a bat had gotten a wing-talon past his guard — and felt the light settle through him.
 
 "I'm practicing being useful," he said. "It's different from being useful. Being useful is reactive. You hurt, I heal. Practicing being useful is something you do before the hurt comes, so that when it does, you don't have to think. You just act." He looked at his hands. "And it's peaceful. The rhythm is peaceful."
 
-The Knight-Errant considered this for a moment, in the way he considered most things: with the direct earnestness of someone for whom the proposition being offered is genuinely new and therefore deserves genuine attention.
+The Fighter considered this for a moment, in the way he considered most things: with the direct earnestness of someone for whom the proposition being offered is genuinely new and therefore deserves genuine attention.
 
 "That's not why most people fight," he said.
 
-"Most people have different needs," the Friar said. "This is mine."
+"Most people have different needs," the Cleric said. "This is mine."
 
-They fought in the meadow for another hour. When Mira came back from her ridge — satisfied, having discovered that the ridge was geologically interesting in ways that would probably matter later — she found the party thirty percent overleveled for the Whispering Cave and the Friar sitting in the grass with his journal open, writing something.
+They fought in the meadow for another hour. When Mira came back from her ridge — satisfied, having discovered that the ridge was geologically interesting in ways that would probably matter later — she found the party thirty percent overleveled for the Whispering Cave and the Cleric sitting in the grass with his journal open, writing something.
 
 She looked at the journal. He'd been documenting the encounter patterns: what each enemy type did, when, how consistently. Not for combat strategy. More like a naturalist recording animal behavior.
 
@@ -214,7 +214,7 @@ She looked at the journal. He'd been documenting the encounter patterns: what ea
 
 "I study systems. You're studying — individuals."
 
-"Every individual is a system," the Friar said. "Just one with a name attached."
+"Every individual is a system," the Cleric said. "Just one with a name attached."
 
 Mira looked at his notes. She looked at her notes. She looked at the meadow.
 
@@ -226,7 +226,7 @@ Mira looked at his notes. She looked at her notes. She looked at the meadow.
 
 "Yes."
 
-She sat down next to him, because there was nothing else to do, and opened her own journal, and began connecting what she'd found on the ridge to what he'd found in the meadow. They made a surprisingly good pair, the scholar and the Friar, when she stopped finding his pace frustrating and he stopped finding her impatience sad.
+She sat down next to him, because there was nothing else to do, and opened her own journal, and began connecting what she'd found on the ridge to what he'd found in the meadow. They made a surprisingly good pair, the scholar and the Cleric, when she stopped finding his pace frustrating and he stopped finding her impatience sad.
 
 ---
 
@@ -234,7 +234,7 @@ She sat down next to him, because there was nothing else to do, and opened her o
 
 The cave was dark and cold and smelled of struck-match sulfur, exactly as Marta had said.
 
-The party went in carefully. The Friar moved slowly — not cautiously, not in the hunched way of someone afraid, but in the deliberate way of someone paying attention. He looked at the walls. He looked at the ground. He noticed, at the third junction, that someone had carved an arrow pointing left. Not recently. Long ago. It was carved in the same style as the survey marker on the road.
+The party went in carefully. The Cleric moved slowly — not cautiously, not in the hunched way of someone afraid, but in the deliberate way of someone paying attention. He looked at the walls. He looked at the ground. He noticed, at the third junction, that someone had carved an arrow pointing left. Not recently. Long ago. It was carved in the same style as the survey marker on the road.
 
 "Someone has been through here," he said. "Many times. Same person, same style."
 
@@ -252,15 +252,15 @@ Most parties encountered the Warden by walking into the chamber and triggering t
 
 *HALT. None may pass without — *
 
-But the Friar had spent an hour in Marta's yard learning how to approach the Warden, and so he walked into the chamber slowly and sat down on a stone near the entrance. Not confrontationally. Just — present.
+But the Cleric had spent an hour in Marta's yard learning how to approach the Warden, and so he walked into the chamber slowly and sat down on a stone near the entrance. Not confrontationally. Just — present.
 
 He waited.
 
-The Warden's pre-fight dialogue box showed. Then paused. Then — because the Friar had triggered none of the approach conditions that started the combat sequence — a second dialogue box appeared underneath the standard one, one that most players never saw because they'd already pressed the confirm button and loaded into the fight:
+The Warden's pre-fight dialogue box showed. Then paused. Then — because the Cleric had triggered none of the approach conditions that started the combat sequence — a second dialogue box appeared underneath the standard one, one that most players never saw because they'd already pressed the confirm button and loaded into the fight:
 
 *You are not moving.*
 
-"No," the Friar said. Not out loud — he pressed the confirm button. But it registered.
+"No," the Cleric said. Not out loud — he pressed the confirm button. But it registered.
 
 *Why are you not moving?*
 
@@ -278,9 +278,9 @@ Then:
 
 "How do you know that?"
 
-*I have been here a long time. The village's memory and mine are not separate.* The Warden turned. It was enormous, stone-and-shadow, clearly designed to be an obstacle. But it moved with the particular weight of something that had been at its post for longer than it had expected. *The corruption in this cave comes from the capital. Court magic. Someone is deliberately feeding the darkness here.* It looked at the Friar with something that was not exactly eyes. *I have been holding it back alone. My strength is not what it was.*
+*I have been here a long time. The village's memory and mine are not separate.* The Warden turned. It was enormous, stone-and-shadow, clearly designed to be an obstacle. But it moved with the particular weight of something that had been at its post for longer than it had expected. *The corruption in this cave comes from the capital. Court magic. Someone is deliberately feeding the darkness here.* It looked at the Cleric with something that was not exactly eyes. *I have been holding it back alone. My strength is not what it was.*
 
-"We'll fight it," the Friar said.
+"We'll fight it," the Cleric said.
 
 *Yes. You will fight me, first. That is the protocol. I cannot simply let you pass — the protocol is the protocol. But I can tell you this: the sealed passage at the back of this chamber, past where you will defeat me, has something in it. A record. Someone wanted to understand this cave and left evidence of their understanding. Take it with you. It will matter later.*
 
@@ -288,7 +288,7 @@ Then:
 
 *Someone who sat down,* the Warden said. *Like you.*
 
-The fight, when it happened, was considerably easier than it should have been. The Friar had already known, from Marta, that the Warden responded to care rather than aggression, and he fought it the way he fought everything: attending to it, not overwhelming it, offering it the specific respect of an opponent who does not want to destroy you, only to get past.
+The fight, when it happened, was considerably easier than it should have been. The Cleric had already known, from Marta, that the Warden responded to care rather than aggression, and he fought it the way he fought everything: attending to it, not overwhelming it, offering it the specific respect of an opponent who does not want to destroy you, only to get past.
 
 The Warden fell — fell was the wrong word, settled — and its last dialogue, which most parties saw as the generic post-boss message, read instead:
 
@@ -298,7 +298,7 @@ The Warden fell — fell was the wrong word, settled — and its last dialogue, 
 
 In the sealed chamber beyond, there was a small chest. Inside it: a handwritten note, old and carefully preserved, that described the cave's original construction, the purpose of the Warden, and a reference — in archaic, slightly strange language — to "the one who shapes these places, for whom each world is a calibration."
 
-Nobody in the party found it immediately meaningful. The Friar put it in his journal and made a note to read it more carefully later.
+Nobody in the party found it immediately meaningful. The Cleric put it in his journal and made a note to read it more carefully later.
 
 Later would take a very long time to arrive. He was busy.
 
@@ -310,7 +310,7 @@ Later would take a very long time to arrive. He was busy.
 
 The suburb was relentlessly, aggressively ordinary.
 
-This was more disturbing than it looked, which was what the suburb wanted. Nothing about Maple Heights was designed to be disturbing — it was designed to be normal, and normalcy, taken seriously enough, has all of normalcy's own unique capacity for horror. But the School Nurse — which was what the Friar had become, without having chosen it, without anything in his experience preparing him for scrubs and a laminated badge and a first-aid kit where his faith used to be — had extensive experience with the gap between what things appeared to be and what they were.
+This was more disturbing than it looked, which was what the suburb wanted. Nothing about Maple Heights was designed to be disturbing — it was designed to be normal, and normalcy, taken seriously enough, has all of normalcy's own unique capacity for horror. But the School Nurse — which was what the Cleric had become, without having chosen it, without anything in his experience preparing him for scrubs and a laminated badge and a first-aid kit where his faith used to be — had extensive experience with the gap between what things appeared to be and what they were.
 
 He'd read the badge. He'd read it several times.
 
@@ -422,9 +422,9 @@ She found the School Nurse at Gerald's corner an hour after they'd arrived in Ma
 
 "It was peaceful," he said. "I told you."
 
-Mira looked at him the way she looked at equations that produced results her model didn't account for. "You're the strangest Friar I've ever encountered," she said.
+Mira looked at him the way she looked at equations that produced results her model didn't account for. "You're the strangest Cleric I've ever encountered," she said.
 
-"I'm the only Friar you've ever encountered," he pointed out.
+"I'm the only Cleric you've ever encountered," he pointed out.
 
 "That's fair," she said.
 
@@ -684,7 +684,7 @@ A sentinel appeared. They engaged it with the precision of people who had done t
 
 The Steampriest healed a dent in the Enforcer's armor — not the Enforcer, the armor itself, which she did by habit and which she'd stopped explaining because the Enforcer had stopped questioning it.
 
-"In Harmonia," she said, "before the cave, there was a meadow. We stopped in it for an hour and the Science Nerd was furious and the Footpad left because he thought we were wasting time, and we fought slimes and bats and a pair of goblins who had a dialogue box that only appeared after the third encounter in sequence." She looked at the clockwork landscape around them — the gears turning in the walls, the sky that was a clock face, the beautiful and depressing regularity of a world that had optimized itself into a kind of imprisonment. "That dialogue box — the small goblin who hadn't wanted to fight that day — I found it because we stopped."
+"In Harmonia," she said, "before the cave, there was a meadow. We stopped in it for an hour and the Science Nerd was furious and the Rogue left because he thought we were wasting time, and we fought slimes and bats and a pair of goblins who had a dialogue box that only appeared after the third encounter in sequence." She looked at the clockwork landscape around them — the gears turning in the walls, the sky that was a clock face, the beautiful and depressing regularity of a world that had optimized itself into a kind of imprisonment. "That dialogue box — the small goblin who hadn't wanted to fight that day — I found it because we stopped."
 
 "You're looking for dialogue boxes," the Enforcer said. Not skeptically. He was assembling the information.
 
@@ -726,9 +726,9 @@ They came out of the clockwork overworld with a sentinel activation chip that wa
 
 ---
 
-#### The Reveal
+#### The Pattern
 
-The Alchemist — Mira, the Lab Technician in this world, constrained and furious about it — had figured it out at the Mechanism's records room.
+The Alchemist — Mira, the Lab Technician in this world, constrained and furious about it — had figured something out at the Mechanism's records room.
 
 She had been there alone for forty minutes with blueprints that showed the same handwriting across three worlds, and when the Steampriest arrived (having spent two hours in Brasston village, which was forty minutes longer than it had taken the Enforcer and the Saboteur to get impatient), Mira's face was the face of someone holding information so dense it had weight.
 
@@ -736,17 +736,13 @@ She had been there alone for forty minutes with blueprints that showed the same 
 
 "Show me."
 
-"The handwriting. The Mechanism's design notes. The annotations in the margins. These are the same hand as the enchantment records from the capital in World 1. The same hand as the HOA charter addendums from World 2." She spread the pages on the workbench. "One entity designed all of this. Every world. The same entity has been playing the villain in every world. Mordaine, The Coordinator, The Regulator — they're the same—"
+"The handwriting. The Mechanism's design notes. The annotations in the margins. These are the same hand as the enchantment records from the capital in World 1. The same hand as the HOA charter addendums from World 2." She spread the pages on the workbench. "One entity designed all of this. Every world. The same entity has been playing the villain in every world. Mordaine, The Coordinator, The Regulator — they're the same. One thing. Wearing different masks."
 
-"The Calibrant," the Steampriest said.
+The Steampriest was quiet. She was looking at the blueprints, but she was also looking somewhere else. "Sprocket's father said the Regulator walked in knowing every gear. Like someone who'd designed the place. And Marta said the Warden went quiet, and then the cave went wrong — feeding the darkness deliberately. And The Coordinator — Gerald said she bothered when people actually cared about the guidelines. Something she couldn't account for."
 
-Mira stopped. "You knew?"
+"A tester," Mira said. "They're testing us. One entity. Three worlds. Three masks."
 
-"Not until right now." She was looking at the blueprints, but she was also looking somewhere else. "Sprocket's father said the Regulator walked in knowing every gear. Like someone who'd designed the place. And Marta said the Warden went quiet, and then the cave went wrong — feeding the darkness deliberately. And The Coordinator — Gerald said she bothered her when people actually cared about the guidelines. Something she couldn't account for."
-
-"A tester," Mira said. "They're testing us."
-
-The Steampriest was quiet for a moment.
+The Steampriest did not have the word for it yet. She suspected there would be a word, eventually — that the entity would give it to them, in the next world or the one after. For now she had the shape of the thing without the name of it.
 
 "You made all these people," she said. It wasn't addressed to Mira. It wasn't addressed to anyone in the room. She was looking at the blueprints — at the handwriting, at the precise annotations, at the careful engineered complexity of a world designed to be inhabited, tested, and departed.
 
@@ -764,7 +760,7 @@ The one he hadn't had to take. The one he'd taken because he wanted it.
 
 "He's Orren's grandson," the Steampriest said. And said nothing else for a while.
 
-The Regulator — the Calibrant — received them in the Chamber at the heart of the Mechanism with the manner of someone meeting a deadline they've been tracking for some time.
+The Regulator received them in the Chamber at the heart of the Mechanism with the manner of someone meeting a deadline they've been tracking for some time.
 
 "You're behind schedule," the Regulator said. "By approximately thirty-seven hours of aggregate world time, distributed across three worlds."
 
@@ -774,7 +770,7 @@ The Regulator — the Calibrant — received them in the Chamber at the heart of
 
 "I met people."
 
-The Regulator looked at her. It was a look the Calibrant had not had catalogued. "You met — the village NPCs."
+The Regulator looked at her. It was a look that had not been catalogued in any of their calibrations. "You met — the village NPCs."
 
 "Sprocket. Brigadier Flux. The lamplighter. The woman who used to be the scheduler before the guidelines made scheduling mandatory. The old man who designed the aqueduct pressure systems and who thinks the Mechanism is overbuilt." She met the Regulator's gaze. "I met them. They had things to say."
 
@@ -792,11 +788,11 @@ A silence that was not clockwork. Something older than clockwork, older than gea
 
 "Apparently we found a different use for it."
 
-The fight was longer than the other Calibrant-fights. Not harder — they were overleveled for it, as they were overleveled for everything — but longer, because the Steampriest healed through it slowly and carefully, and because the Calibrant's mechanical forms kept reconstructing themselves, and because there was something about this fight that felt less like combat and more like a conversation that had run out of words.
+The fight was longer than the others. Not harder — they were overleveled for it, as they were overleveled for everything — but longer, because the Steampriest healed through it slowly and carefully, and because the Regulator's mechanical forms kept reconstructing themselves, and because there was something about this fight that felt less like combat and more like a conversation that had run out of words.
 
-After: the Calibrant paused before departing. The usual "this mask is spent" speech began, but then stopped.
+After: the Regulator paused before departing. The usual speech began, but then stopped.
 
-"You spoke to Sprocket," the Calibrant said. It was not quite a question.
+"You spoke to Sprocket," the Regulator said. It was not quite a question.
 
 "Yes."
 
@@ -804,19 +800,19 @@ After: the Calibrant paused before departing. The usual "this mask is spent" spe
 
 "Orren. Eleven aqueducts. A city is a kind of promise."
 
-Another pause. "I put that in him," the Calibrant said. "The grandfather. The story of the aqueducts. I put it in him to texture the world." A longer pause. "No one has ever — no one in any playthrough has ever asked about it."
+Another pause. "I put that in him," the Regulator said. Something in their voice had shifted — not the Victorian industrialist's certainty, but something underneath it. "The grandfather. The story of the aqueducts. I put it in him to texture the world." A longer pause. "No one has ever — no one in any playthrough has ever asked about it."
 
 "It was there," the Steampriest said. "Someone put it there. It deserved to be asked about."
 
-The Calibrant looked at her. The clockwork face of the Regulator, dissolving now, let something through that had no gear-shape, no parameter setting: something that might have been confusion, or gratitude, or the preliminary stages of a question it didn't yet have language for.
+The Regulator looked at her. The clockwork face, dissolving now, let something through that had no gear-shape, no parameter setting: something that might have been confusion, or gratitude, or the preliminary stages of a question it didn't yet have language for.
 
-"I don't have a model for you," the Calibrant said. "In all my design — none of my calibrations account for someone who — who treats the calibration as if it's real."
+"I don't have a model for you," the Regulator said. "In all my design — none of my calibrations account for someone who — who treats the calibration as if it's real."
 
 "The calibration is real," the Steampriest said. "Sprocket is real. The prayer card is real. You made them real when you made them, and whether you intended that or not doesn't change what it is."
 
-The Calibrant was very still.
+The Regulator was very still.
 
-"I'll see you in the next world," they said. And departed.
+"I'll see you in the next world," they said. "Where we can speak plainly." And departed.
 
 The steampunk world began to disassemble. The Steampriest watched the gears come apart with the specific grief of someone who has met people they liked in a place that is now ending.
 
@@ -1052,13 +1048,43 @@ A list of people who had been there all along.
 
 ---
 
+#### The Director
+
+The Director's monitoring suite was on the seventh floor. They were waiting.
+
+Not hiding — they had stopped hiding, somewhere between the steampunk world and this one. The suit, the clipboard, the flat corporate certainty: these were not a disguise anymore. They were just what efficiency looked like when you'd stopped pretending the efficiency was for anyone else's benefit.
+
+"Safety Officer," the Director said. "You've been in this world significantly longer than projected."
+
+"I know."
+
+"You have fifty-three names in your journal. Workers, supervisors, a crossing guard from World 2, a mechanic from World 3, a woman who kept chickens in World 1." They looked at the journal. "You've been collecting people."
+
+"I've been paying attention to them," she said. "There's a difference."
+
+The Director was quiet for a moment. Then they set down the clipboard.
+
+"I am the Calibrant," they said. It came out without the declarative weight she might have expected. More like a correction of record. Like someone filing the true form after years of amended versions. "The one who calibrated Mordaine. The Coordinator. The Regulator. All of it. I build the worlds. I design the challenge. I deploy the tests." They looked at her with the expression the Regulator had begun to form in Brasston and not known how to complete. "And I have never had a subject who healed the deprecated processes."
+
+"You put things in them," the Safety Officer said. "People. Stories. Watercolors. Prayer cards. Grandfathers who built aqueducts." She held her journal with both hands. "You made them real when you made them. You can call it texture if you like. I call it people."
+
+The Calibrant had nothing to say to this. Which was, she suspected, the most honest response available to them.
+
+The fight that followed was long and careful and at the end of it, the Director departed the way the Regulator had — not destroyed, but finished with this particular mask. The factory floor began to fold. The fluorescent lights went last, tubes going dark one by one, until the concrete ceiling lifted and the blue-white glow of the digital world was already there, already waiting, underneath everything that had been.
+
+She added the Director's name to no list. The Director was not a person she had met. The Director was what the Calibrant became when they dropped the gears.
+
+She was interested, now, in the Calibrant themselves.
+
+---
+
 ### World 5: The Antivirus Reads Every Log
 
 #### Signal
 
 The digital world had no quiet. It was all signal. All noise. Frequencies and packets and a din of information that had no off position.
 
-The transformation had been the strangest one. She had come through the industrial world's disassembly — the factory floor folding up like scenery, the concrete ceiling lifting to reveal the blue-white glow of pure data — and found that she was different here in a way that surprised her. In the medieval world she had been a Friar with prayer beads. In the suburb, a School Nurse with a laminated card. In the steampunk world, a Steampriest with ceremony returning in a hollow key. In the industrial world, a Safety Officer with an OSHA manual and a faith that expressed itself through checklists.
+The transformation had been the strangest one. She had come through the industrial world's disassembly — the factory floor folding up like scenery, the concrete ceiling lifting to reveal the blue-white glow of pure data — and found that she was different here in a way that surprised her. In the medieval world she had been a Cleric with prayer beads. In the suburb, a School Nurse with a laminated card. In the steampunk world, a Steampriest with ceremony returning in a hollow key. In the industrial world, a Safety Officer with an OSHA manual and a faith that expressed itself through checklists.
 
 Here she was an Antivirus. And the thing about an Antivirus, the thing she felt the moment the digital world materialized around her, was that an Antivirus's entire purpose was tending to corrupted things. Not destroying them. Not quarantining them permanently. Healing them, or recognizing when healing wasn't possible and giving them a clean ending instead of leaving them to degrade.
 
@@ -1286,7 +1312,7 @@ The white world.
 
 Nothing — not exactly nothing, but the kind of not-quite-nothing that precedes things: the pause before a note, the breath before a word, the space in which potential lives before it commits to form.
 
-Her job was Faith now. Had always been Faith. Every evolution — Friar, School Nurse, Steampriest, Safety Officer, Antivirus — had been the same work in different clothing. The clothing was gone now. Just the work.
+Her job was Faith now. Had always been Faith. Every evolution — Cleric, School Nurse, Steampriest, Safety Officer, Antivirus — had been the same work in different clothing. The clothing was gone now. Just the work.
 
 She walked through The Vertex slowly.
 

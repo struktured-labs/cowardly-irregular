@@ -18,9 +18,9 @@ She had been in Harmonia for eleven days. She had come through on the trade road
 
 She had come to find the source. Elder Theron had not been the source. The cave to the north, however, was a promising candidate.
 
-So when the others arrived in the square — the Knight-Errant with his untested sword and his polished convictions, the Friar with his sandals and his impractical faith, the Footpad who appeared to have been physically pointed at this gathering by someone who had caught him sleeping — she was already there. Already noting things. Already with three more pages written than anyone else.
+So when the others arrived in the square — the Fighter with his untested sword and his polished convictions, the Cleric with his sandals and his impractical faith, the Rogue who appeared to have been physically pointed at this gathering by someone who had caught him sleeping — she was already there. Already noting things. Already with three more pages written than anyone else.
 
-"A party of five," said the Minstrel, who had apparently materialized from the general air of narrative possibility. He was composing the sentence about them before they'd had a chance to become it. "A valiant knight, a servant of the cloth, a woman of arcane learning—"
+"A party of five," said the Bard, who had apparently materialized from the general air of narrative possibility. He was composing the sentence about them before they'd had a chance to become it. "A valiant knight, a servant of the cloth, a woman of arcane learning—"
 
 "Science Nerd," said Scholar Milo, who had appeared at her elbow. "That's the trajectory. Not yet, but eventually."
 
@@ -40,7 +40,7 @@ Milo blinked. "Most people start at chapter one."
 
 He walked away before she could ask what that meant. She wrote it down instead, with a small asterisk, because asterisked notes were things she expected to understand later.
 
-The Knight-Errant — his name, she had learned, was Hero, which she suspected was either aspirational or literally his name, and in either case was statistically improbable — was looking at her.
+The Fighter — his name, she had learned, was Hero, which she suspected was either aspirational or literally his name, and in either case was statistically improbable — was looking at her.
 
 "Are you writing in your journal right now?" he asked.
 
@@ -50,15 +50,15 @@ The Knight-Errant — his name, she had learned, was Hero, which she suspected w
 
 "About the system." She finished the note. "You're all inputs to the system. I'm not being reductive. Inputs are important. You can't build a model without data."
 
-The Minstrel was already composing the part about her. She could tell because his quill hand had taken on a particular angle that preceded narration. She preemptively added: *Minstrel: documenting. Note: the Minstrel will document everything. Do not attempt to prevent the documenting. It is load-bearing for the morale structure of the group.*
+The Bard was already composing the part about her. She could tell because his quill hand had taken on a particular angle that preceded narration. She preemptively added: *Bard: documenting. Note: the Bard will document everything. Do not attempt to prevent the documenting. It is load-bearing for the morale structure of the group.*
 
 "What's load-bearing for morale?" Hero asked, reading over her shoulder.
 
-She hadn't realized he was close enough to read it. She made a note about maintaining greater spatial awareness of the Knight-Errant.
+She hadn't realized he was close enough to read it. She made a note about maintaining greater spatial awareness of the Fighter.
 
 "You are," she said honestly. "You and Zack."
 
-The Friar — Zack — looked up from his blessing of the equipment. "I've been included in a system," he said, with the gentle pleasure of a man who finds inclusion anywhere a blessing.
+The Cleric — Zack — looked up from his blessing of the equipment. "I've been included in a system," he said, with the gentle pleasure of a man who finds inclusion anywhere a blessing.
 
 "Everyone is part of a system," Mira said. "The relevant question is whether the system knows what it's doing."
 
@@ -68,7 +68,7 @@ She opened the autobattle journal to chapter three and began designing their fir
 
 ### Chapter 1: World 1 — The Usurper's Crown
 
-#### *Medieval. 8-bit. The Mage evolves to Hedge Wizard.*
+#### *Medieval. 8-bit. The Mage in the first world.*
 
 ---
 
@@ -85,7 +85,7 @@ IF MP(self) ≤ 60% AND ATK(Vex) > 12 → Vex: Strike(target=highest_defense)
 DEFAULT → Hero: Attack(target=highest_threat)
 ```
 
-"That's a poem," said the Minstrel, reading over her shoulder. He had a gift for appearing over shoulders that was either a social skill or a minor supernatural ability; she had not ruled out the latter.
+"That's a poem," said the Bard, reading over her shoulder. He had a gift for appearing over shoulders that was either a social skill or a minor supernatural ability; she had not ruled out the latter.
 
 "It's a decision tree."
 
@@ -173,7 +173,7 @@ The cave corridor beyond the Warden led deeper. Court magic. Deliberate corrupti
 
 "Mordaine," she said.
 
-"You know this already?" the Minstrel said.
+"You know this already?" the Bard said.
 
 "I have a working model. The evidence supports it. I'd give it eighty-two percent."
 
@@ -312,7 +312,7 @@ He looked at her for a moment with the expression that contained the thing he ha
 
 "But," he said, and she'd been expecting the *but*, "there's a kid in this neighborhood whose bicycle got confiscated by the HOA because it wasn't the approved color. She's nine. She's been crying about it for three days. Vex knows about it because he spent the morning talking to people instead of reading data." He stood up. "The system analysis matters. The nine-year-old also matters. I'm not saying one is more important. I'm saying you haven't been in the same room as her."
 
-She wrote this down. Hero + Zack: manual engagement with local population. Vex: social information gathering. Minstrel: chronicling. Self: data analysis.
+She wrote this down. Hero + Zack: manual engagement with local population. Vex: social information gathering. Bard: chronicling. Self: data analysis.
 
 "The bicycle is probably an enforcement case," she said. "If we resolve the Coordinator, the bicycle gets returned."
 
@@ -334,7 +334,7 @@ Script v2.0 had twenty-three lines.
 
 She'd built it from the World 2 encounter data, which was substantially stranger than World 1 — sentient lawn mowers had variable attack patterns based on lawn health state, which was a model variable she hadn't anticipated, and HOA drones had a shield mechanic that only activated when compliance violation flags were active in their behavior state. This required dynamic flag tracking in the script, which required a new notation system, which she built over two evenings in the inn.
 
-The Minstrel watched her build it. Not writing. Just watching.
+The Bard watched her build it. Not writing. Just watching.
 
 "You know," he said eventually, "the script is getting beautiful."
 
@@ -354,7 +354,7 @@ She thought about the Warden fight. Script v1.1. Watching the pre-emptive heal l
 
 She was going to say that there was a meaningful distinction between pleasure and verification, but she found herself unable to complete the argument without relying on a premise she wasn't certain she could support.
 
-She gave the Minstrel's observation an asterisk. She gave it a second one because she was running out of single-asterisk things.
+She gave the Bard's observation an asterisk. She gave it a second one because she was running out of single-asterisk things.
 
 ---
 
@@ -370,7 +370,7 @@ And then the world transitioned: cobblestones, steam, gears, the smell of hot br
 
 ### Chapter 3: World 3 — The Regulator
 
-#### *Steampunk. 32-bit. The Mage evolves to Alchemist. The revelation.*
+#### *Steampunk. 32-bit. The Mage evolves to Alchemist. Suspicion accumulates.*
 
 ---
 
@@ -440,7 +440,7 @@ The Regulator smiled. It was the smile of someone who had been waiting for this 
 
 "Within the first hour."
 
-"Fifty-three minutes." The Regulator adjusted something on the Mechanism's central console. "That's a record. Most players — most subjects — don't arrive at it until I name myself. Some never do." Something in their voice shifted — not warmth, exactly, but the approximation of it. The technical description of warmth in a system that found warmth categorically interesting. "What's your current confidence?"
+"Fifty-three minutes." The Regulator adjusted something on the Mechanism's central console. "That's a record. Most subjects don't arrive at the unified-entity conclusion until much later. Some never do." Something in their voice shifted — not warmth, exactly, but the approximation of it. The technical description of warmth in a system that found warmth categorically interesting. "What's your current confidence?"
 
 "Ninety-six percent."
 
@@ -450,29 +450,27 @@ The Regulator smiled. It was the smile of someone who had been waiting for this 
 
 The Regulator was quiet. The gears turned.
 
-"That," they said finally, "is the wrong question. The right question is what it was designed to be, versus what it has become." They looked at the monitors — the tracking data, the world-by-world statistics, the accumulated record of nine hundred and forty-seven encounters. "But we'll have that conversation at the end. You're ahead of schedule and I'm not done calibrating."
+"That," they said finally, "is the wrong question. The right question is what it was designed to be, versus what it has become." They looked at the monitors — the tracking data, the world-by-world statistics, the accumulated record of nine hundred and forty-seven encounters. "But we'll have that conversation at the end. You're ahead of schedule and I'm not done." A pause. "We'll finish this conversation somewhere the gears don't get in the way."
 
-Then: "I am the Calibrant. And you are a significant deviation from expected parameters."
+She wrote the exchange down during the boss fight.
 
-She wrote this down during the boss fight.
-
-The fight itself she gave to Script v2.4, which she had pre-loaded with adaptive response protocols based on the Regulator's known mechanics and a new wrinkle — mid-fight stat adjustment, which she had predicted from the vocabulary (*calibration, tolerance thresholds, deviation correction*) and built a detection-and-compensation loop for. When the Director's mid-fight adjustments hit, her script caught them in one cycle and rerouted.
+The fight itself she gave to Script v2.4, which she had pre-loaded with adaptive response protocols based on the Regulator's known mechanics and a new wrinkle — mid-fight stat adjustment, which she had predicted from the vocabulary (*calibration, tolerance thresholds, deviation correction*) and built a detection-and-compensation loop for. When the Regulator's mid-fight adjustments hit, her script caught them in one cycle and rerouted.
 
 "You anticipated this," Hero said, watching his own stats fluctuate and stabilize.
 
 "I modeled it from the vocabulary." She was watching the script run. "When someone talks about calibration constantly, you build scripts that can detect being calibrated."
 
-The Calibrant — the Regulator, the mask still on but slipping — looked at her compensation loop and said: "You're trying to calibrate my calibration of your calibration."
+The Regulator — the mask still on but visibly slipping — looked at her compensation loop and said: "You're trying to calibrate my calibration of your calibration."
 
 "Yes."
 
-Something crossed the Calibrant's face that she found genuinely difficult to classify. Not frustration. Not admiration. Something between them. The expression of a system encountering a subsystem that has independently derived a principle the system thought was uniquely its own.
+Something crossed the Regulator's face that she found genuinely difficult to classify. Not frustration. Not admiration. Something between them. The expression of a system encountering a subsystem that has independently derived a principle the system thought was uniquely its own.
 
-"I built these worlds," the Calibrant said. "I have been doing this for longer than this game has had players. And you have been in it for eighty-three days and you—" They stopped. Started again. "This mask is spent. The next one won't be so polite." A pause. "We'll finish this conversation in the abstract world. Where I don't have a character to hide behind and you don't have a script to watch."
+"I have been doing this for longer than this game has had players," the Regulator said. "And you have been in it for eighty-three days and you—" They stopped. Started again. "This mask is spent. The next one won't be so polite." A pause. "We'll finish this conversation somewhere more direct."
 
 They departed into the Mechanism. The clockwork world began to disassemble.
 
-Mira wrote, in the notebook: *The Calibrant finds me the most threatening. Note: threatening is not always because of damage. Sometimes threatening is because of comprehension.*
+Mira wrote, in the notebook: *Entity: one. Masks: three confirmed. Objective function: unknown. Probability of further worlds with further masks: high. Note to self — the next world is where this resolves. The Regulator all but said so.*
 
 Hero looked over her shoulder. He said nothing. But his expression said: *you're still watching numbers while the world is disassembling around you.*
 
@@ -502,7 +500,7 @@ Not literally — the Director wore a gray suit, carried a clipboard, spoke with
 
 "You've dropped a layer of abstraction," she said, on meeting the Director.
 
-"Efficiency," the Director said. "The steampunk aesthetic required considerable maintenance. The bureaucratic persona in the suburb required extensive contextual knowledge of a cultural form I found opaque. This is simpler."
+"Efficiency," the Director said. "The steampunk aesthetic required considerable maintenance. The bureaucratic persona in the suburb required extensive contextual knowledge of a cultural form I found opaque. This is simpler." They set the clipboard down. "You've been building toward a name since World 3. I'll give it to you. I am the Calibrant. That is what I am and what I do — I calibrate. You already knew. Now you have the word for it."
 
 "You're less comfortable."
 
@@ -608,7 +606,7 @@ She stood in Node Prime — the hub city of a civilization that ran on data — 
 
 She had been writing the world's language in the margins of her notebook since the Whispering Cave.
 
-"You look different," the Minstrel said.
+"You look different," the Bard said.
 
 She glanced at him. Her costume had shifted: the jeans were gone, replaced by something that looked like her own notation system made fabric — structured, legible, built for function. The scientific calculator had become a light-tablet. The fire that had lived in the calculator's click was now something more obvious: when she opened a new page, the notation appeared in light.
 
@@ -632,7 +630,7 @@ She had been, without knowing it, writing the world.
 
 She stood with this for a long time.
 
-The Minstrel was watching her. He had been watching her for five worlds, writing things down, and she had always found it slightly intrusive and occasionally useful. Now, watching her own code scroll past in the sky, she found herself understanding something about what the Minstrel was doing that she hadn't understood before.
+The Bard was watching her. He had been watching her for five worlds, writing things down, and she had always found it slightly intrusive and occasionally useful. Now, watching her own code scroll past in the sky, she found herself understanding something about what the Bard was doing that she hadn't understood before.
 
 He was building a record. Not of events — of the *shape* of how they moved through the worlds. The texture of their choices. The way each of them was most themselves when under pressure, and what that texture looked like from outside.
 
@@ -646,15 +644,15 @@ He was building a record. Not of events — of the *shape* of how they moved thr
 
 She thought about the Director saying *that is a form of art.*
 
-She thought about the Minstrel at the inn in World 1, saying *your script has rhythm.* She'd dismissed it. She'd written it down, because she wrote everything down, but she'd filed it as a subjective aesthetic observation of no analytical significance.
+She thought about the Bard at the inn in World 1, saying *your script has rhythm.* She'd dismissed it. She'd written it down, because she wrote everything down, but she'd filed it as a subjective aesthetic observation of no analytical significance.
 
 She looked at the sky. Her own conditional trees in the code-sky of a digital world. The accumulated logic of four worlds of optimization, incorporated into the fabric of the place she was trying to understand.
 
 "I wrote this," she said. Not a question.
 
-"Parts of it, yes," the Minstrel said. "The encounter engine adapted to you. The challenge calibration systems adjusted around your adjustments. You left marks." He was quiet. "That's what we all do. Leave marks. The question is what kind."
+"Parts of it, yes," the Bard said. "The encounter engine adapted to you. The challenge calibration systems adjusted around your adjustments. You left marks." He was quiet. "That's what we all do. Leave marks. The question is what kind."
 
-She looked at Script v1.0. She looked at Script v3.7. She looked at the forty-one-line recursive self-adjusting thing she had written under pressure in an industrial world because she needed to out-adapt an adaptor, and she thought about the two days the recursive loop had taken, and the specific feeling — she had a word for it now, thanks to the Minstrel's persistent question at the inn — the specific pleasure of watching the state transitions resolve cleanly after the second day's revision.
+She looked at Script v1.0. She looked at Script v3.7. She looked at the forty-one-line recursive self-adjusting thing she had written under pressure in an industrial world because she needed to out-adapt an adaptor, and she thought about the two days the recursive loop had taken, and the specific feeling — she had a word for it now, thanks to the Bard's persistent question at the inn — the specific pleasure of watching the state transitions resolve cleanly after the second day's revision.
 
 She had been building something. Not a script. A relationship with the system. A forty-one-line letter to the world she was moving through, saying: *I see you. I am trying to understand you. Here is what I understand so far.*
 
@@ -670,7 +668,7 @@ Hero was standing next to her. He had been quiet, which was unusual. She looked 
 
 "What were you building?"
 
-She thought about what the Minstrel had said. About the pattern of her revisions. About the priorities embedded in Script v1.0 — Zack's heals at the top, Hero's defensive fallback, the threat modeling that treated every party member as worth protecting.
+She thought about what the Bard had said. About the pattern of her revisions. About the priorities embedded in Script v1.0 — Zack's heals at the top, Hero's defensive fallback, the threat modeling that treated every party member as worth protecting.
 
 She thought about the bicycle.
 
@@ -732,11 +730,11 @@ The digital world began to simplify. Code-streams slowing. Green-on-black fading
 
 She looked at the code-sky one more time. Her own logic, written in the fabric of the world.
 
-*That's what we all do,* the Minstrel had said. *Leave marks.*
+*That's what we all do,* the Bard had said. *Leave marks.*
 
 She had left marks in the form of decision trees. Patient, recursive, redundancy-built decision trees that could tolerate imperfection and keep running.
 
-For the first time, she understood what the Minstrel had meant.
+For the first time, she understood what the Bard had meant.
 
 She looked at Hero. He was already looking at her. He nodded, once, in the specific way that meant: *I see you seeing it. I have been waiting.*
 
@@ -758,7 +756,7 @@ No clutter. No competing signals. Just potential. The kind of space where the on
 
 Her costume simplified to pure notation. Her light-tablet was gone. But the capacity remained: she could think something and it would become real, locally, temporarily, because this world ran on the same grammar her scripts had always been written in. She was, she understood, in her natural environment. The abstract world was built for her the way the medieval world had been built for Hero — it spoke her language.
 
-Her job was Logic now. Had always been Logic. The Hedge Wizard had been Logic with a self-taught accent. The Science Nerd had been Logic excited by its own methodology. The Alchemist had been Logic freed from notation. The Lab Technician had been Logic chafing against protocol. The Compiler had been Logic recognizing itself. And now: Logic, plain, which was also a kind of love — the kind that said *I will think carefully about this because it matters.*
+Her job was Logic now. Had always been Logic. The Mage had been Logic with a self-taught accent. The Science Nerd had been Logic excited by its own methodology. The Alchemist had been Logic freed from notation. The Lab Technician had been Logic chafing against protocol. The Compiler had been Logic recognizing itself. And now: Logic, plain, which was also a kind of love — the kind that said *I will think carefully about this because it matters.*
 
 The Calibrant was waiting. No desk. No chair. No monitors. Nothing to hide behind.
 
@@ -822,7 +820,7 @@ The Calibrant looked at her with the expression she had found genuinely difficul
 
 "That was beautiful," they said.
 
-She had not been called beautiful before, in any context that wasn't about the scripts. The Minstrel had said it about the scripts. The Director had said it about the architecture. Now the Calibrant was saying it about both at once — the architecture and what it was for.
+She had not been called beautiful before, in any context that wasn't about the scripts. The Bard had said it about the scripts. The Director had said it about the architecture. Now the Calibrant was saying it about both at once — the architecture and what it was for.
 
 She found she didn't have an asterisk for this. Some things didn't require further investigation.
 
@@ -832,7 +830,7 @@ She found she didn't have an asterisk for this. Some things didn't require furth
 
 "Your job," the Calibrant said, "was caring about the system enough to keep learning it. That is my job. That's what calibration is, done right." They looked around the nothing. The pure white of a world before its first word. "I've been calibrating the *challenge.* The right variable to calibrate is the experience. The understanding of whether the people inside the system are having the experience worth having."
 
-She thought about Hero's frustrated earnestness. About Zack's bottomless patience. About Vex finding edges in everything including the emotional states of people he'd just met. About the Minstrel writing everything down because the story was real and deserved a record. About the nine-year-old's bicycle.
+She thought about Hero's frustrated earnestness. About Zack's bottomless patience. About Vex finding edges in everything including the emotional states of people he'd just met. About the Bard writing everything down because the story was real and deserved a record. About the nine-year-old's bicycle.
 
 She thought about being eleven days into a monster distribution analysis and getting swept up in something much larger, and how that was not what she had planned and had turned out to be the most interesting data she had ever collected.
 
@@ -846,7 +844,7 @@ This, finally, made her laugh. It wasn't a large laugh. It was dry and brief and
 
 "What does it say?"
 
-She thought about all the asterisks. The quotes she hadn't known how to categorize in the moment and had saved for later. The Warden: *present everywhere and nowhere.* Milo's chapter three: *the gap between letting go and having it taken from you is smaller than most people think.* The Minstrel at the inn, every time he said *that's rhythm* or *that's art* or *you don't know what you're building.*
+She thought about all the asterisks. The quotes she hadn't known how to categorize in the moment and had saved for later. The Warden: *present everywhere and nowhere.* Milo's chapter three: *the gap between letting go and having it taken from you is smaller than most people think.* The Bard at the inn, every time he said *that's rhythm* or *that's art* or *you don't know what you're building.*
 
 Hero: *you're missing it.* And also: *you've been trying.*
 
@@ -868,7 +866,7 @@ Zack — Faith. He'd been patching her damage output since the Whispering Cave, 
 
 Vex — Edge. He'd been finding the gaps she couldn't map since before she built the first script. The compliance reset vulnerability. The collision bug in the Whispering Cave. The flanks the Director left unguarded. Every world had edges, and he had found all of them.
 
-The Minstrel — Voice. He'd been saying true things since the first morning, and she had been writing them down and asterisking them and filing them for later comprehension. He had known what she was building before she did. He had been waiting for her to notice.
+The Bard — Voice. He'd been saying true things since the first morning, and she had been writing them down and asterisking them and filing them for later comprehension. He had known what she was building before she did. He had been waiting for her to notice.
 
 The abstract world began to warm. Something like sunlight entered the nothing — not dramatic, not overwhelming, just present, the way real light is present.
 
@@ -896,7 +894,7 @@ The Calibrant listened to this, and something in their face went quiet and warm.
 
 Hero was grinning at her, in the open, uncalibrated way he grinned when something resolved that had been unresolved for a long time. Zack was quietly pleased in the manner of someone who had been confident all along. Vex was already looking at the edge of the abstract world — the boundary beyond the designed nothing, the undesigned space beyond — with the particular focused attention of someone whose specialty was exactly this.
 
-The Minstrel had his notebook out.
+The Bard had his notebook out.
 
 "You're writing this down," she said.
 

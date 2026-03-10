@@ -17,7 +17,7 @@ It did not anticipate this player.
 
 ---
 
-## Part One: World 1 — The Footpad (Medieval)
+## Part One: World 1 — The Rogue (Medieval)
 
 ### "Whoever Moves First Wins"
 
@@ -649,45 +649,45 @@ He was a data type now. He'd been labeled.
 
 The Regulator was mid-speech when Vex walked in. Something about acceptable parameters. Deviation. The importance of balance.
 
-"I know who you are," Vex said.
+"I know what you are," Vex said.
 
 The Regulator stopped.
 
-"I've known since I broke your monitoring system in the suburb. I have your Calibration Log. I have your cross-world records. I have three sets of architectural notes in the same handwriting." He stood in the center of the room, compass in his pocket, the needle pressing toward the Regulator's position. "You're the Calibrant. You've been running these worlds to calibrate a challenge. For me. Or for players like me. You deploy Masterites to profile us and then you adjust." He tilted his head. "Can we skip the Regulator speech and get to the part where you admit this?"
+"I've known since I broke your monitoring system in the suburb. I have your Calibration Log. I have your cross-world records. I have three sets of architectural notes in the same handwriting." He stood in the center of the room, compass in his pocket, the needle pressing toward the Regulator's position. "One entity. Three worlds. Three costumes. You built them all and you've been watching us through all of them." He tilted his head. "Can we skip the speech and get to the part where you stop pretending?"
 
 The Regulator was very still.
 
-"You're significantly ahead of schedule," they said. The Victorian affect was gone, or nearly. Underneath it was something that sounded, for the first time, genuinely unprepared. "In the previous analogous playthrough, this revelation came during the confrontation. Not..." They gestured. "Not like this. Not with you sitting on my calibration logs."
+"You're significantly ahead of schedule," they said. The Victorian affect was gone, or nearly. Underneath it was something that sounded, for the first time, genuinely unprepared. "In the previous analogous playthrough, this confrontation came differently. Not..." They gestured. "Not like this. Not with you already sitting on three worlds of evidence."
 
-"I hacked them."
+"I hacked your logs."
 
 "I noticed." A pause. Not the pause of someone composing a response. The pause of someone experiencing something for the first time. "You found the maintenance access in World 2's monitoring room. That access wasn't supposed to—" Another pause. "I didn't know that access existed."
 
 "I know." Vex studied them. "You built the world. You didn't build everything in the world. Developers never do." He pulled out the compass. The needle was pointing directly at the Regulator. "There are always things you didn't know you'd left in."
 
-The Regulator — the Calibrant — looked at the compass with an expression that on anyone else would have been called wonder.
+The Regulator looked at the compass with an expression that on anyone else would have been called wonder.
 
 "You found my glitch," they said.
 
 "Several of them. The goat path. The maintenance shaft. The access credential." He pocketed the compass. "And I'm going to find more."
 
-"I'm sure you will." Something shifted in the Calibrant's posture. Not defeat — something older. Respect, maybe, and something that complicated the respect. "I built these worlds to test players. To calibrate challenge. To ensure that the system produced meaningful engagement." They looked at Vex. "You've produced something I can't classify."
+"I'm sure you will." Something shifted in the Regulator's posture. Not defeat — something older. Unease, maybe, at the specific problem of being read by something that reads faster than expected. "Your logs call you a deviation. I'd call you something worse — a variable that doesn't stay where you put it."
 
-"Deviation," Vex said.
+"You built these worlds to calibrate something," Vex said. "What?"
 
-"You're outside my parameters."
+The Regulator's eyes moved, briefly, to something that wasn't in the room. "That," they said, "is a conversation for when I'm not wearing gears." A beat. "The next mask will be direct. No Victorian. No bureaucracy. Just — what I am."
 
-"I know." He let this sit. "That's why I'm here. And you're going to fight me anyway."
+"Good," Vex said. "I want to know what that is."
 
-"Yes." The Victorian affect came back, but differently — not a mask now, more like a preferred mode of dress. "Because the fight is still worth having. Even knowing you'll find the edges of it." A pause. "Even if you already know which edges you'll find."
+"I know you do." The Victorian affect came back, not as a mask now, more like a habit being set aside slowly. "And you're going to fight me anyway."
 
-"I don't know all of them," Vex said. "That's the interesting part."
+"Yes."
 
-The Calibrant smiled. "Yes. That's the interesting part."
+"Then let's find out what you haven't broken yet."
 
-They fought. The Calibrant adjusted mid-fight — visible stat changes, healing phases, mechanical restructuring — and Vex tracked the adjustments and mapped the edges of them. The Cleric noticed which heals the Calibrant could interrupt and which they couldn't. The Fighter held the lines. The Bard found the tempo — not the Masterite Tempo, the actual tempo of the Calibrant's strategy — and started working against it.
+They fought. The Regulator adjusted mid-fight — visible stat changes, healing phases, mechanical restructuring — and Vex tracked the adjustments and mapped the edges of them. The Cleric noticed which heals could be interrupted. The Fighter held the lines. The Bard found the tempo — not the Masterite Tempo, the actual tempo of the Regulator's strategy — and started working against it.
 
-At the end, the Calibrant didn't dissolve. They simply stopped.
+At the end, the Regulator didn't dissolve. They simply stopped.
 
 "The next mask won't be polite," they said.
 
@@ -699,13 +699,13 @@ At the end, the Calibrant didn't dissolve. They simply stopped.
 
 The clockwork world began winding down. The gears slowed. The walls revealed what was behind them: concrete. Steel. The shape of the next world, always already there.
 
-"Why?" the Calibrant asked, as they faded. "Why do you break things? What do you want?"
+"Why?" the Regulator asked, as they faded. "Why do you break things? What do you want?"
 
 Vex thought about this. He hadn't been asked directly before.
 
 "To see what's really there," he said.
 
-The Calibrant considered this. And vanished.
+The Regulator considered this. And vanished.
 
 The Bard was writing. Had been writing throughout.
 
@@ -823,7 +823,11 @@ The Director looked at him. They were broad, institutional, carrying the weight 
 
 "Yes."
 
-"Good." He stood. "Then we can be honest about what this is. You're the Calibrant. This is a system you built. You're adjusting it in real-time because I keep finding the edges of it." He stepped out from behind the desk. "And I want to know: what's beyond the last edge? What happens when I break all the systems?"
+"Good." He stood. "Then we can be honest about what this is. Your logs call the entity behind all of this 'the Calibrant.' Is that accurate?"
+
+The Director looked at him. "Yes," they said. "That is what I am. I calibrate. I build the worlds and adjust the challenge and watch what happens." They said it without the bureaucratic performance. Just a statement of record. "The Calibrant. The one who calibrated Mordaine, the Coordinator, the Regulator. This." They set the clipboard on the desk. "You've been in three of my worlds and you found every seam I had. Now you're in the fourth and you're sitting in my chair. So yes. We can be honest."
+
+"And I want to know: what's beyond the last edge? What happens when I break all the systems?"
 
 The Director was quiet.
 
