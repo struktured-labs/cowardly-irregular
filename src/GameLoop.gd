@@ -87,6 +87,8 @@ var _autogrind_dashboard: Control = null
 var _autogrind_overlay: Control = null
 var _autogrind_overlay_layer: CanvasLayer = null
 var _autogrind_battle_summaries: Array = []
+var _controller_overlay: ControllerOverlay = null
+var _controller_overlay_layer: CanvasLayer = null
 
 ## Character creation
 var _character_creation_screen: Control = null
@@ -1573,6 +1575,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	SoundManager.reset_corruption()
 	SoundManager.play_music("autogrind")
 
+	_show_controller_overlay(ControllerOverlay.autogrind_context())
+
 	print("[AUTOGRIND] Session started")
 
 
@@ -1608,6 +1612,7 @@ func _stop_autogrind(reason: String) -> void:
 
 	# Clean up compact overlay
 	_destroy_autogrind_overlay()
+	_destroy_controller_overlay()
 
 	# Reset engine speed
 	Engine.time_scale = 1.0
@@ -1823,6 +1828,7 @@ func _on_grind_complete(reason: String) -> void:
 
 	# Clean up compact overlay
 	_destroy_autogrind_overlay()
+	_destroy_controller_overlay()
 
 	# Reset turbo mode
 	BattleManager.turbo_mode = false
@@ -1940,6 +1946,42 @@ func _destroy_autogrind_overlay() -> void:
 	if _autogrind_overlay_layer and is_instance_valid(_autogrind_overlay_layer):
 		_autogrind_overlay_layer.queue_free()
 		_autogrind_overlay_layer = null
+
+
+func _show_controller_overlay(context: Dictionary) -> void:
+	if has_node("/root/GameState"):
+		if not GameState.show_controller_overlay:
+			return
+
+	if not _controller_overlay:
+		_controller_overlay_layer = CanvasLayer.new()
+		_controller_overlay_layer.layer = 45
+		add_child(_controller_overlay_layer)
+
+		_controller_overlay = ControllerOverlay.new()
+		var vp_size = get_viewport().get_visible_rect().size
+		if vp_size.x == 0 or vp_size.y == 0:
+			vp_size = Vector2(1280, 720)
+		_controller_overlay.position = Vector2(vp_size.x - 330, vp_size.y - 200)
+		_controller_overlay.size = ControllerOverlay.OVERLAY_SIZE
+		_controller_overlay_layer.add_child(_controller_overlay)
+
+	_controller_overlay.set_context(context)
+	_controller_overlay.visible = true
+
+
+func _hide_controller_overlay() -> void:
+	if _controller_overlay and is_instance_valid(_controller_overlay):
+		_controller_overlay.visible = false
+
+
+func _destroy_controller_overlay() -> void:
+	if _controller_overlay and is_instance_valid(_controller_overlay):
+		_controller_overlay.queue_free()
+		_controller_overlay = null
+	if _controller_overlay_layer and is_instance_valid(_controller_overlay_layer):
+		_controller_overlay_layer.queue_free()
+		_controller_overlay_layer = null
 
 
 func _show_autogrind_dashboard() -> void:

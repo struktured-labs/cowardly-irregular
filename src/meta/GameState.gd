@@ -31,6 +31,7 @@ var party_gold: int = 500  # Starting gold
 ## Settings (exposed to UI)
 var encounter_rate_multiplier: float = 1.0  # 0.0 to 2.0, controlled via settings menu
 var debug_log_enabled: bool = true  # Show debug log overlay (default on)
+var show_controller_overlay: bool = true  # Show controller hint overlay during autogrind/battle
 
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {

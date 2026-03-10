@@ -27,6 +27,7 @@ const TEXT_SPEED_LABELS = ["Slow", "Normal", "Fast", "Instant"]
 var encounter_rate: float = 1.0  # Default 100%
 var encounter_preset_index: int = 4  # Index into ENCOUNTER_PRESETS (100%)
 var debug_log_enabled: bool = true  # Default on
+var show_controller_overlay: bool = true  # Default on
 var music_volume: int = 100  # 0-100
 var music_volume_index: int = 4
 var sfx_volume: int = 100  # 0-100
@@ -62,6 +63,8 @@ func _ready() -> void:
 			encounter_preset_index = _find_closest_preset(encounter_rate)
 		if "debug_log_enabled" in GameState:
 			debug_log_enabled = GameState.debug_log_enabled
+		if "show_controller_overlay" in GameState:
+			show_controller_overlay = GameState.show_controller_overlay
 		if "music_volume" in GameState:
 			music_volume = GameState.music_volume
 			music_volume_index = _find_volume_preset(music_volume)
@@ -177,19 +180,32 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(debug_item, 1, 400, 60,
 		_on_setting_click.bind(1), _on_setting_hover.bind(1))
 
+	# Controller Overlay toggle
+	var overlay_item = _create_toggle_setting(
+		"Controller Overlay",
+		"Show button hints during autogrind/battle",
+		show_controller_overlay,
+		2
+	)
+	overlay_item.position = Vector2(16, 188)
+	panel.add_child(overlay_item)
+	_settings_items.append({"control": overlay_item, "type": "toggle", "id": "controller_overlay"})
+	MenuMouseHelper.make_clickable(overlay_item, 2, 400, 60,
+		_on_setting_click.bind(2), _on_setting_hover.bind(2))
+
 	# Music Volume
 	var music_item = _create_volume_setting(
 		"Music Volume",
 		"Background music volume",
 		VOLUME_LABELS,
 		music_volume_index,
-		2
+		3
 	)
-	music_item.position = Vector2(16, 188)
+	music_item.position = Vector2(16, 248)
 	panel.add_child(music_item)
 	_settings_items.append({"control": music_item, "type": "volume", "id": "music_volume"})
-	MenuMouseHelper.make_clickable(music_item, 2, 400, 60,
-		_on_setting_click.bind(2), _on_setting_hover.bind(2))
+	MenuMouseHelper.make_clickable(music_item, 3, 400, 60,
+		_on_setting_click.bind(3), _on_setting_hover.bind(3))
 
 	# SFX Volume
 	var sfx_item = _create_volume_setting(
@@ -197,13 +213,13 @@ func _build_ui() -> void:
 		"Sound effects volume",
 		VOLUME_LABELS,
 		sfx_volume_index,
-		3
+		4
 	)
-	sfx_item.position = Vector2(16, 248)
+	sfx_item.position = Vector2(16, 308)
 	panel.add_child(sfx_item)
 	_settings_items.append({"control": sfx_item, "type": "volume", "id": "sfx_volume"})
-	MenuMouseHelper.make_clickable(sfx_item, 3, 400, 60,
-		_on_setting_click.bind(3), _on_setting_hover.bind(3))
+	MenuMouseHelper.make_clickable(sfx_item, 4, 400, 60,
+		_on_setting_click.bind(4), _on_setting_hover.bind(4))
 
 	# Battle Speed Default
 	var speed_item = _create_option_setting_small(
@@ -211,13 +227,13 @@ func _build_ui() -> void:
 		"Default battle animation speed",
 		BATTLE_SPEED_LABELS,
 		battle_speed_index,
-		4
+		5
 	)
-	speed_item.position = Vector2(16, 308)
+	speed_item.position = Vector2(16, 368)
 	panel.add_child(speed_item)
 	_settings_items.append({"control": speed_item, "type": "battle_speed", "id": "battle_speed"})
-	MenuMouseHelper.make_clickable(speed_item, 4, 400, 60,
-		_on_setting_click.bind(4), _on_setting_hover.bind(4))
+	MenuMouseHelper.make_clickable(speed_item, 5, 400, 60,
+		_on_setting_click.bind(5), _on_setting_hover.bind(5))
 
 	# Text Speed
 	var text_item = _create_option_setting_small(
@@ -225,25 +241,25 @@ func _build_ui() -> void:
 		"Dialogue text display speed",
 		TEXT_SPEED_LABELS,
 		text_speed_index,
-		5
+		6
 	)
-	text_item.position = Vector2(16, 368)
+	text_item.position = Vector2(16, 428)
 	panel.add_child(text_item)
 	_settings_items.append({"control": text_item, "type": "text_speed", "id": "text_speed"})
-	MenuMouseHelper.make_clickable(text_item, 5, 400, 60,
-		_on_setting_click.bind(5), _on_setting_hover.bind(5))
+	MenuMouseHelper.make_clickable(text_item, 6, 400, 60,
+		_on_setting_click.bind(6), _on_setting_hover.bind(6))
 
 	# Controls button
 	var controls_item = _create_action_button_neutral(
 		"Controls",
 		"Remap gamepad buttons",
-		6
+		7
 	)
-	controls_item.position = Vector2(16, 428)
+	controls_item.position = Vector2(16, 488)
 	panel.add_child(controls_item)
 	_settings_items.append({"control": controls_item, "type": "action", "id": "controls"})
-	MenuMouseHelper.make_clickable(controls_item, 6, 400, 50,
-		_on_setting_click.bind(6), _on_setting_hover.bind(6))
+	MenuMouseHelper.make_clickable(controls_item, 7, 400, 50,
+		_on_setting_click.bind(7), _on_setting_hover.bind(7))
 
 	# Jukebox button (debug-only)
 	if debug_log_enabled:
@@ -253,7 +269,7 @@ func _build_ui() -> void:
 			"[DEBUG] Play any music track",
 			jukebox_idx
 		)
-		jukebox_item.position = Vector2(16, 488)
+		jukebox_item.position = Vector2(16, 538)
 		panel.add_child(jukebox_item)
 		_settings_items.append({"control": jukebox_item, "type": "action", "id": "jukebox"})
 		MenuMouseHelper.make_clickable(jukebox_item, jukebox_idx, 400, 50,
@@ -266,7 +282,7 @@ func _build_ui() -> void:
 		"Return to the title screen",
 		quit_idx
 	)
-	var quit_y = 488 + (50 if debug_log_enabled else 0)
+	var quit_y = 538 + (50 if debug_log_enabled else 0)
 	quit_item.position = Vector2(16, quit_y)
 	panel.add_child(quit_item)
 	_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
@@ -730,10 +746,15 @@ func _adjust_setting(delta: int) -> void:
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 	elif item["id"] == "debug_log":
-		# Toggle on any left/right press
 		debug_log_enabled = not debug_log_enabled
 		_update_toggle_display(selected_index, debug_log_enabled)
 		_save_debug_log_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+	elif item["id"] == "controller_overlay":
+		show_controller_overlay = not show_controller_overlay
+		_update_toggle_display(selected_index, show_controller_overlay)
+		_save_controller_overlay_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 	elif item["id"] == "music_volume":
@@ -783,6 +804,13 @@ func _save_debug_log_setting() -> void:
 		DebugLogOverlay.set_enabled(debug_log_enabled)
 	settings_changed.emit("debug_log", debug_log_enabled)
 	print("[SETTINGS] Debug log %s" % ("enabled" if debug_log_enabled else "disabled"))
+
+
+func _save_controller_overlay_setting() -> void:
+	if GameState:
+		GameState.show_controller_overlay = show_controller_overlay
+	settings_changed.emit("controller_overlay", show_controller_overlay)
+	print("[SETTINGS] Controller overlay %s" % ("enabled" if show_controller_overlay else "disabled"))
 
 
 func _update_volume_display(index: int, option_index: int) -> void:
