@@ -46,7 +46,7 @@ The man across the street, in cargo shorts and a polo, was watering his lawn. He
 
 ### Chapter 1: Maple Heights
 
-The suburb existed in a state of aggressive normalcy. Every house was a variation on the same house. Every lawn was the same shade of green, maintained to the same height, edged with the same precision. The sky was blue, but it was the wrong blue — not wrong in a way you could point to, but wrong in a way you could *feel*. Like someone had looked up "sky blue" in a reference manual and matched the hex code exactly without ever having looked at an actual sky.
+The suburb existed in a state of aggressive normalcy. Every house was a variation on the same house — the same beige and ecru and off-white, differentiated only by which family had chosen a burgundy mailbox versus a black one, which driveway had a basketball hoop at the end. Every lawn was the same shade of green, maintained to the same height, edged with the same precision. From somewhere a few streets over, a dog was barking at something it had already forgotten about, and beneath the bark was the layered ambient sound of a hundred air conditioners running at once, a collective hum that wasn't quite audible as individual machines but assembled into a frequency that sat at the back of your awareness and stayed there. The sky was blue, but it was the wrong blue — not wrong in a way you could point to, but wrong in a way you could *feel*, like someone had looked up "sky blue" in a reference manual and matched the color exactly without ever having looked at an actual sky. The light was different from Harmonia's: softer, more diffuse, coming from everywhere and casting almost no shadow. Fluorescent-quality, though the sun was plainly present.
 
 The party walked down Elm Street — there was also an Oak Street, a Maple Lane, and a Birch Court, because the naming committee had strong feelings about trees and weak feelings about creativity — and tried to understand what they were looking at.
 
@@ -74,7 +74,7 @@ He rode away. The party stood on the sidewalk and contemplated the concept of se
 
 "Dressed as ourselves in a different world," the Bard said. He had opened the trumpet case again and was touching the instrument with the tentative affection of someone bonding with livestock they hadn't chosen. "That's either profound or embarrassing and I haven't decided which."
 
-The strip mall was two blocks east. It had a pizza place, a dry cleaner, a store that sold candles that smelled like other things, and — inexplicably — an armory. Not a sporting goods store. An armory. It was wedged between the candle shop and a frozen yogurt place, and its sign read **YE OLDE MEDIEVAL SURPLUS** in a font that was trying very hard.
+The strip mall was two blocks east. It had a pizza place whose ventilation perfumed half the block with oregano and hot cardboard, a dry cleaner, a candle shop whose fragrance — something called "Coastal Linen Breeze" — leaked through the walls and competed aggressively with the pizza smell until both lost, and — inexplicably — an armory. Not a sporting goods store. An armory. It was wedged between the candle shop and a frozen yogurt place, and its sign read **YE OLDE MEDIEVAL SURPLUS** in a font that was trying very hard.
 
 Inside, the shelves held items from Harmonia. Not similar items. The *same* items. Potions with the same labels. Swords with the same smithing marks. A shield that one of the party members was fairly certain they had seen on a rack in Ironclad Arms three days and one dimension ago.
 
@@ -218,7 +218,7 @@ The garage sale on Oak Street had a sign: EVERYTHING MUST GO. The sign was large
 
 They should not have stopped.
 
-The tables were covered with the detritus of suburban accumulation — ceramic figurines, folded sweaters, stacks of VHS tapes, a bread maker with the hopeful air of something that had been used twice and kept in case of a second chance. Behind the tables, an older woman in a floral dress sat in a lawn chair reading a paperback, the entirety of her garage laid out for the neighborhood's consideration.
+The tables were covered with the detritus of suburban accumulation — ceramic figurines, folded sweaters, stacks of VHS tapes, a bread maker with the hopeful air of something that had been used twice and kept in case of a second chance. Behind the tables, an older woman in a floral dress sat in a lawn chair reading a paperback, the entirety of her garage laid out for the neighborhood's consideration. The driveway smelled of hot concrete and the faint vanilla of the candle shop three blocks over, and a portable radio on the folding table beside her played an oldies station with the low volume of something that was always on, had always been on, would always be on.
 
 "Half off everything," she said, not looking up. "Cash only. No returns."
 
@@ -258,6 +258,8 @@ He kept it.
 
 The school sat at the end of Maple Lane with the weight of a building that knows it is important. MAPLE HEIGHTS ELEMENTARY, read the sign out front, and below that, in smaller letters: EXCELLENCE THROUGH ACCOUNTABILITY.
 
+Inside, the hallway had the specific institutional smell of carpet shampoo and old coffee and something laminated — achievement posters on every wall, motivational eagles saying things like SOAR ABOVE THE STANDARD and THERE IS NO SHORTCUT TO MASTERY. The hallway was longer than the building's exterior suggested it should be, and the fluorescent lights hummed at a frequency just barely audible, the way they always did in buildings where children were required to be evaluated.
+
 They had been inside for approximately forty seconds when the loudspeaker crackled.
 
 "Good morning, unregistered visitors. Please proceed directly to Room 204 for assessment. Refusal to proceed constitutes a violation of school policy and will be noted in your permanent record."
@@ -286,13 +288,19 @@ Vex's first question: *Your skateboard travels at an average speed of 12 kilomet
 
 "This one's personal," Vex said.
 
-"All learning is personal," the Arbiter said. "Pencils up."
+"All learning is personal," the Arbiter said pleasantly. Then he looked at Vex with the small, precise smile of a man who has constructed this moment with care. "Or perhaps *you* find it personal because of certain observable patterns in your behavioral record. Yes?" He let the implication settle. "Pencils up."
 
 The quiz attacks were, in practice, each wrong answer manifesting as direct damage — specific, targeted, and scaled to the magnitude of the incorrectness rather than simply the occurrence of an error. The correct answers reduced the damage but did not eliminate it entirely, because, as the Arbiter noted, the learning curve was the point.
 
-The Bard answered every question in verse and received partial credit on all of them, which was the highest partial credit the Arbiter had ever awarded to a non-standard response format.
+The Bard answered every question in verse and received partial credit on all of them, which was the highest partial credit the Arbiter had ever awarded to a non-standard response format. He did not mention this without appending: "Charming. Incomplete. C-plus."
 
-The Cleric answered his questions ("Define the moral calculus of triage in a resource-limited medical setting, citing at least two ethical frameworks") with the genuine thoughtfulness of someone who had actually practiced triage and found the academic framework less useful than the lived version. The Arbiter marked two of his answers incorrect due to "insufficient citation" but acknowledged, in a margin note, that the answers were correct in practice.
+The Cleric answered his questions ("Define the moral calculus of triage in a resource-limited medical setting, citing at least two ethical frameworks") with the genuine thoughtfulness of someone who had actually practiced triage and found the academic framework less useful than the lived version. The Arbiter marked two of his answers incorrect due to "insufficient citation."
+
+"Your answers are experientially correct," the Arbiter said, in the tone of someone delivering a diagnosis. "Academically, however, you lack rigor. What you know and what you can demonstrate you know are not the same thing, and I grade the demonstration." He added a note to his grade book. "That gap tends to limit people. I expect it's limited you before."
+
+"It hasn't," the Cleric said quietly.
+
+"The grade disagrees," the Arbiter said, and turned back to the room.
 
 The fight broke out when the Fighter answered the question about the chain of command in a feudal military hierarchy by explaining, with polite earnestness, that in his experience the chain of command ran directly to whoever was willing to do the work, and the Arbiter declared this ideologically out of standard and assigned a zero.
 
@@ -304,11 +312,11 @@ The fight broke out when the Fighter answered the question about the chain of co
 
 "The parameters are the rubric," the Arbiter said, and the rubric appeared as a physical document, and the physical document became a weapon in a way that felt like either metaphor or justice depending on your perspective.
 
-The grading battle was close. The Arbiter's academic precision translated into a fighting style of calibrated, optimal strikes — the same principle as the medieval Arbiter, rephrased for a setting where the vocabulary of excellence was measured in percentages. It adapted. When the party found a strategy that worked, it revised its approach with the unhurried confidence of someone who has been revising their approach for longer than the party had been fighting together.
+The grading battle was close. The Arbiter's academic precision translated into a fighting style of calibrated, optimal strikes — the same principle as the medieval Arbiter, rephrased for a setting where the vocabulary of excellence was measured in percentages. It adapted with the particular cruelty of someone who had been doing this long enough to know exactly which failures to hold up. When Mira's counterattack faltered, the Arbiter noted it — not tactically, but personally: "Interesting. Your theory outpaces your execution. I've seen that before. It tends not to improve." When the Bard's trumpet missed its effect window, the Arbiter clicked his pen. "Timing. Your greatest weakness. The rubric rewards completion, not intention."
 
 They passed. Technically. The Cleric's rubric-compliant approach and the Mage's technically correct answers on the science and mathematics questions accumulated enough points to meet the curve.
 
-The Arbiter received this outcome with the equanimity of someone who finds partial victories informative.
+The Arbiter received this outcome with the equanimity of a man consulting a ledger and finding a line he doesn't quite understand.
 
 "My rubric was perfect," he said, sitting on the edge of his desk. "My curve was calibrated precisely. How did you pass without studying?"
 
@@ -316,11 +324,11 @@ The Arbiter received this outcome with the equanimity of someone who finds parti
 
 "The underlying principles are the same," the Cleric added. "Every healing decision uses triage logic. Every tactical choice is resource allocation."
 
-The Arbiter looked at his grade book. "You are not the students this curriculum was designed for," he said. "And yet the curriculum worked." A pause. "Partially. With significant deviation." He closed the grade book. "I don't know whether to mark that as a success."
+The Arbiter looked at his grade book. Something moved across his face that was not quite recognition and not quite discomfort. "You are not the students this curriculum was designed for," he said. "And yet the curriculum worked." A pause. "Partially. With significant deviation." He closed the grade book. "I don't know whether to mark that as a success."
 
 "Mark it as interesting," the Bard suggested.
 
-"I don't have a column for interesting," the Arbiter said. But he wrote something in the margin anyway.
+"I don't have a column for interesting," the Arbiter said. But he wrote something in the margin anyway, and when he wrote it, his pen moved with the particular slowness of someone writing something they didn't expect to write.
 
 ---
 
@@ -346,7 +354,7 @@ The Arbiter looked at his grade book. "You are not the students this curriculum 
 
 They heard the car before they saw it.
 
-It was the kind of sound a car makes when it has been asked to operate at a speed that implies a philosophical commitment to arriving. The engine had clearly been modified. The suspension had clearly been abused. The car itself — a beat-up compact with a magnetic sign on the roof reading MAPLE HEIGHTS PIZZA — came around the corner of Birch Court at a speed that was ambitious for a residential zone.
+It was the kind of sound a car makes when it has been asked to operate at a speed that implies a philosophical commitment to arriving. The engine had clearly been modified. The suspension had clearly been abused. The car itself — a beat-up compact with a magnetic sign on the roof reading MAPLE HEIGHTS PIZZA — came around the corner of Birch Court at a speed that was ambitious for a residential zone, trailing the smell of exhaust and hot cheese from its previous runs.
 
 The window rolled down. A head appeared.
 
@@ -354,19 +362,29 @@ The window rolled down. A head appeared.
 
 "Thirty minutes or less what?" the Cleric said.
 
+"EVERYTHING! ALL OF IT! WHAT DO YOU MEAN WHAT?"
+
 The answer was the car accelerating toward them.
 
-The chase through Maple Heights' subdivisions was a different kind of test than the forest run had been. Scriptura's alleys had been navigable, knowable. The suburb's cul-de-sacs and through-streets and sudden dead ends were designed with the logic of a place that expected its residents to have GPS and twenty years of familiarity. The party had neither. The Tempo had both, and the car, and a genuine professional commitment to completing the delivery.
+The chase through Maple Heights' subdivisions was a different kind of test than the forest run had been. Scriptura's alleys had been navigable, knowable. The suburb's cul-de-sacs and through-streets and sudden dead ends were designed with the logic of a place that expected its residents to have GPS and twenty years of familiarity. The party had neither. The Tempo had both, and the car, and a genuine professional commitment to completing the delivery that had curdled somewhere along the way into something more absolute.
+
+"THIRTY MINUTES!" came from two streets over. "THE TIMER IS RUNNING! THE TIMER IS ALWAYS RUNNING!"
+
+"What timer?" the Bard shouted, running.
+
+"THE ONE THAT SAYS THIRTY MINUTES OR LESS OR WHAT'S THE POINT! WHAT IS THE POINT IF NOT THE TIME! I HAVE BEEN DOING THIS EVERY NIGHT OF MY ENTIRE LIFE AND I HAVE NEVER BEEN LATE AND I WILL *NOT* START NOW—"
+
+The car clipped a fire hydrant with the confidence of something that has decided fire hydrants are an acceptable cost.
 
 Vex discovered, around the second lap of the subdivision, that the skateboard worked the way it was supposed to work — which is to say that it translated his existing spatial instincts into a different vocabulary. He could outmaneuver a car in places a car couldn't fit. He did. He led the Tempo down a footpath between houses that ended in a yard with a fence.
 
 The car hit the fence. The fence won, temporarily.
 
-In the moment of the Tempo's extraction from the fence situation — car in reverse, backing onto the street, engine screaming — the party assembled.
+In the moment of the Tempo's extraction from the fence situation — car in reverse, backing onto the street, engine screaming, driver still audibly explaining the thirty-minute guarantee to no one in particular — the party assembled.
 
 The fight was fast and loud and municipal-scale wrong. The Tempo used the car itself as a weapon of crowd control, and the Fighter's baton against the chassis had the same structural logic as sword against armor but with worse optics. The Mage's electrical pen had excellent synergy with a car engine, which she noted with academic satisfaction. The Bard played the trumpet during the fight, which either boosted the party or confused the Tempo or both; the causality was unclear and she didn't stop.
 
-When the car finally sputtered out — electrical system compromised, fence-damage compounded — the Tempo stepped out, brushing broken glass from the pizza company's branded windbreaker.
+When the car finally sputtered out — electrical system compromised, fence-damage compounded — the Tempo stepped out, brushing broken glass from the pizza company's branded windbreaker. The manic frequency was gone. What replaced it was quieter, and the quiet seemed to surprise the Tempo as much as anyone.
 
 "Heck of a chase," the Tempo said, with genuine appreciation. "I've been doing this route my whole life." They looked at the car. Back at the party. "Except..." Something shifted in the easy confidence of the expression. "I don't remember starting. I've been delivering to this neighborhood my whole life, and I remember every house, every regular order, every dog that runs at the car, but I don't remember the first delivery." They looked at their own hands. "That's weird, right? That should be weird."
 
@@ -390,7 +408,7 @@ Specifically: a shopping cart.
 
 Not a fleet of shopping carts. One. The others were docked in their return stations, compliant, corralled. This one had escaped its corral at some point and had been ranging freely through the parking lot, operating on a logic that no one had yet reverse-engineered. It did not move when observed. It moved when you turned your back. It had, according to the teenager at Ye Olde Medieval Surplus, been "coming in through the back door" after hours, and she had stopped questioning it because there were larger problems.
 
-The party encountered the feral shopping cart while trying to take a shortcut through the parking lot to the community center.
+The party encountered the feral shopping cart while trying to take a shortcut through the parking lot to the community center. The asphalt was sticky with the afternoon heat, and the smell of the pizza place was stronger out here than inside — the full exhaust from the commercial oven venting into the alley, oregano and grease and the faint sulfur of the gas line.
 
 It was waiting.
 
@@ -436,11 +454,11 @@ Nobody said anything. It was a parking lot. They moved on.
 
 *As of this writing, the five (5) unregistered subjects have defeated three (3) of four (4) designated compliance-testing agents. Performance summary:*
 
-*- Warden of Routine: Subjects demonstrated sustained damage output and adaptive positioning. Loss condition met. Warden has been expressing unusual self-reflection, which is off-profile. Monitoring.*
+*— Warden of Routine: Subjects demonstrated sustained damage output and adaptive positioning. Loss condition met. Warden has been expressing unusual self-reflection, which is off-profile. Monitoring.*
 
-*- Arbiter of the Grade: Subjects demonstrated unconventional competency metrics. Passed on a curve that I specifically calibrated to be uncurvable. I am revising the assessment rubric. This is the third revision. I am beginning to question the rubric.*
+*— Arbiter of the Grade: Subjects demonstrated unconventional competency metrics. Passed on a curve that I specifically calibrated to be uncurvable. I am revising the assessment rubric. This is the third revision. I am beginning to question the rubric.*
 
-*- Tempo of the Rush Hour: Subjects demonstrated spatial reasoning and teamwork under mobile pursuit conditions. Tempo has been "thinking about beginnings," which is also off-profile. This is becoming a pattern.*
+*— Tempo of the Rush Hour: Subjects demonstrated spatial reasoning and teamwork under mobile pursuit conditions. Tempo has been "thinking about beginnings," which is also off-profile. This is becoming a pattern.*
 
 *Note: the off-profile self-reflection among testing agents was not within parameters. I am noting it. I am uncertain what to do about it. This is itself unusual, as I am not typically uncertain about what to do.*
 
@@ -463,7 +481,7 @@ Nobody said anything. It was a parking lot. They moved on.
 
 *He is wearing it in a way that suggests it is.*
 
-*I am noting this because I track all deviations from expected subject behavior and this is a deviation. I am not noting this because I have any particular feeling about it. I am simply thorough.*
+*I am noting this because I track all deviations from expected subject behavioral patterns and this is a deviation. I am not noting this because I have any particular feeling about it. I am simply thorough.*
 
 *The subject in the nurse's uniform has a high degree of what my old metrics called "faith investment" and what I am revising my metrics to call "quality of attention." He attends to things — the old king, the Warden's lesson, the sweater — in a way that my models struggle to account for.*
 
@@ -479,27 +497,27 @@ Nobody said anything. It was a parking lot. They moved on.
 
 The accountant had an office in the strip mall, between the frozen yogurt place and the candle shop. The door had a handwritten sign: BUDGET SOLUTIONS — WALK-INS WELCOME. The sign was a lie, but the door was unlocked.
 
-Inside: a desk covered in ledgers. A man in a short-sleeved dress shirt and a tie that had been perfect at the start of the day. A filing cabinet that occupied far more wall than the room's geometry should have allowed. The smell of toner and anxiety.
+Inside: a desk covered in ledgers. A man in a short-sleeved dress shirt and a tie that had been perfect at the start of the day. A filing cabinet that occupied far more wall than the room's geometry should have allowed. The smell of toner and whatever the anxiety of a hundred audited people leaves behind in the air of a small office.
 
-The Curator of the Budget looked up from his spreadsheets.
+The Curator of the Budget looked up from his spreadsheets. He looked at the party with the patient pleasure of a man who has been expecting exactly this.
 
 "Ah," he said. "The irregulars."
 
 "You know who we are," Mira said.
 
-"I know your financial profile," he said. "Fourteen potions consumed over the residential phase. Two swords — one with irregular provenance, one repurposed from a medieval baton-equivalent. Total GP equivalent spent at Ye Olde Medieval Surplus: seventy-three dollars and forty cents." He turned the ledger toward them. "You're not from here. Your itemized deductions are unusual." He tapped the page. "Medieval healing potions. Those aren't in any tax bracket I recognize."
+"I know your financial profile," he said. He said it the way people say *I know your reputation* — with the precise, savoring emphasis of someone who has been thorough and intends you to feel it. "Fourteen potions consumed over the residential phase. Two swords — one with irregular provenance, one repurposed from a medieval baton-equivalent. Total GP equivalent spent at Ye Olde Medieval Surplus: seventy-three dollars and forty cents." He turned the ledger toward them. "You're not from here. Your itemized deductions are unusual." He tapped the page, and there was something almost fond about the tap, the fond attention of a collector identifying a rare specimen. "Medieval healing potions. Those aren't in any tax bracket I recognize."
 
 "We've been spending across multiple jurisdictions," Mira said, because this was, technically, the most accurate description she had available.
 
-"Multi-jurisdictional deductions are complicated," the Curator said. He produced a form. It was IRS Form 4797. It had been modified to include a field labeled "POINT OF ORIGIN" and another labeled "RESOURCE STATE AT COMMUNITY ENTRY." "I've taken the liberty of beginning your assessment. I'll need the primary taxpayer to sit down."
+"Multi-jurisdictional deductions are complicated," the Curator said. The pleasure in his voice was undisguised. "Oh, *very* complicated. You'll need to document the point of origin for each item separately." He produced a form. It was IRS Form 4797. It had been modified to include a field labeled "POINT OF ORIGIN" and another labeled "RESOURCE STATE AT COMMUNITY ENTRY." "I've taken the liberty of beginning your assessment. I'll need the primary taxpayer to sit down."
 
 "We're not filing taxes," Vex said.
 
-"You have resources," the Curator said. "Resources imply taxation. Taxation implies filing." He opened his briefcase. Inside: a clipboard, a calculator that was much better than Mira's, and what appeared to be a weapon made of laminated forms. "I've been very patient. The HOA has been very patient. The system requires that you file."
+"You have resources," the Curator said. "Resources imply taxation. Taxation implies filing." He opened his briefcase with the careful motion of someone revealing something they have been looking forward to revealing. Inside: a clipboard, a calculator that was much better than Mira's, and what appeared to be a weapon made of laminated forms. "I'll need receipts for the potions. All of them. Going back to your first purchase in World One." He looked up. "Oh — you didn't keep receipts, did you?" The smile that followed was small, precise, and deeply satisfied. "That's going to be a problem."
 
-The fight with the Curator of the Budget was a sustained drain — not on health, but on every other resource the party had accumulated. The laminated forms could strip potions from inventory. The audit conducted mid-battle identified every buff the party was running and filed for an "itemized deduction" against each one. The briefcase contained a secondary filing that appeared to function as a debuff cloud. At one point, the calculator produced a number that was described, mechanically, as "your remaining resource potential after taxes," and the number was not zero but it was low.
+The fight with the Curator of the Budget was a sustained drain — not on health, but on every other resource the party had accumulated. The laminated forms could strip potions from inventory. The audit conducted mid-battle identified every buff the party was running and filed for an "itemized deduction" against each one. The briefcase contained a secondary filing that appeared to function as a debuff cloud. At one point, the calculator produced a number that was described, mechanically, as "your remaining resource potential after deductions," and the number was not zero but it was low.
 
-"You are running at a net negative," the Curator said, halfway through. He was not gloating. He was reporting. "Current asset-to-liability ratio suggests you cannot sustain this engagement."
+"You are running at a net negative," the Curator said, halfway through. He was not gloating exactly. He was *reporting*, but the report had the particular enunciation of someone who has been waiting to deliver this specific news for a long time. "Current asset-to-liability ratio suggests you cannot sustain this engagement." A pause. "I could extend the audit timeline. Give you a chance to recover. That's not typical procedure, but—" He let the offer sit. He enjoyed watching people consider accepting help from the person causing the problem.
 
 "Then we'd better end it," the Mage said, and stopped holding back her electrical pen.
 
@@ -515,7 +533,7 @@ What Mira read in those three seconds, she wrote down later, in the spiral noteb
 
 The Curator received his defeat with the silence of someone who has received bad news from a ledger before and has developed equanimity through practice.
 
-"Your itemized deductions," he said, as the files settled, "are unlike anything in the system." He looked at his own hands — at the forms, the clipboard, the briefcase. "And my system is comprehensive. My records here cover every resident since the neighborhood was established." He looked up. "I have records for residents who do not remember living here. I have records for people who don't exist in any other database." A pause. "That should bother me more than it does."
+"Your itemized deductions," he said, as the files settled, "are unlike anything in the system." He looked at his own hands — at the forms, the clipboard, the briefcase. "And my system is comprehensive. My records here cover every resident since the neighborhood was established." He looked up. "I have records for residents who do not remember living here. I have records for people who don't exist in any other database." A pause. His voice had lost the tidy pleasure it had carried through the audit. "That should bother me more than it does."
 
 "Does it bother you at all?" the Cleric asked.
 
@@ -527,6 +545,8 @@ The Curator received his defeat with the silence of someone who has received bad
 
 The community center occupied the exact geographic center of Maple Heights, which was either a coincidence or a statement.
 
+Inside, it was beige in the specific institutional way of buildings that were designed for function and decorated with whatever the budget allowed after function was achieved. The meeting rooms had names — Oak Room, Maple Room, Cedar Room — and motivational posters at consistent intervals, the kind with eagles and sunsets and words like PERSEVERANCE in a font that believed in itself. The carpet was the particular pattern of commercial carpet whose primary purpose is to hide what has been spilled on it over the years. The smell was old coffee and toner and the ghost of a hundred laminated agendas.
+
 They found the back entrance through the Oak Room — one of the meeting rooms named after trees, which the Rogue had identified during the third day of their residence as the most navigable part of the building from a structural standpoint. The hallway beyond the meeting rooms was longer than the building should have allowed, which was the kind of spatial inconsistency that had stopped startling them roughly around the third day.
 
 The Coordinator's private office was at the end.
@@ -535,11 +555,11 @@ It was immaculate. A desk. A lamp. A filing cabinet that contained folders for e
 
 And on the desk, a monitor.
 
-The screen showed footage: the cave near Harmonia. The forest. Scriptura's market district. A split-screen of locations they had traveled through, recorded from angles that suggested something had been watching above them the entire time. In one corner, numbers scrolled — numbers that looked, when Mira leaned in, like tallied encounters. Party composition. Timestamps. A column labeled SUBJECT BEHAVIOR with entries like "cautious," "adaptive," "irregular."
+The screen showed footage: the cave near Harmonia. The forest. Scriptura's market district. A split-screen of locations they had traveled through, recorded from angles that suggested something had been watching above them the entire time. In one corner, numbers scrolled — tallied encounters. Party composition. Timestamps. A column labeled SUBJECT BEHAVIORAL PATTERNS with entries like "cautious," "adaptive," "irregular."
 
 The Fighter looked at the screen for a long moment. "She has surveillance across the whole route," he said. "Back to the cave."
 
-"Surveillance," Mira said, writing. "Yes. That's probably what it is."
+"Surveillance," Mira said, writing. "Yes. That's what it is."
 
 "You're not supposed to see that," said a voice from the doorway.
 
@@ -607,7 +627,7 @@ The party stood in the Coordinator's office with the files still scattered and t
 
 "The same words," Mira said. "'Order.' 'Purpose.' 'The system.'"
 
-"The same philosophy," Vex said. "Not just similar — the same. Like someone wrote a script."
+"The same philosophy," Vex said. "Not just similar — the same. Like someone wrote the same speech twice in different handwriting."
 
 "That reminded you of her," the Bard said carefully. "Didn't it."
 
@@ -629,7 +649,7 @@ The word *sequence* landed in the room like a coin placed deliberately on a tabl
 
 "For what?" the Cleric asked.
 
-Nobody answered. The monitor showed gears turning. The office walls began to change — the beige fading, brass creeping in at the edges, the smell of oil and coal smoke threading through the lavender candle scent.
+Nobody answered. The monitor showed gears turning. The office walls began to change — the beige fading, brass creeping in at the edges, the smell of oil and coal smoke threading through the lavender candle scent that had been following them since the strip mall.
 
 "The Masterites," the Fighter said quietly. "The Warden asked if we'd earned the right to rest. The Arbiter asked where we learned to fight. The Tempo asked about our beginning." He looked at the party. "And the Curator's last words were: 'More today than yesterday. That's new.'" He paused. "They're waking up to something."
 

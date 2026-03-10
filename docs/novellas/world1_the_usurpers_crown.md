@@ -12,7 +12,7 @@ The notice was nailed to the door of the Sleepy Slime Inn at dawn, which was unu
 
 **All able-bodied citizens are hereby conscripted into auxiliary service for the defense of the realm. Report to Elder Theron at the village square. Sincerely, The Royal Bureau of Definitely Real Military Operations.**
 
-Nobody in Harmonia had ever seen a Royal Bureau of anything. The village was six houses, a chapel, a shop that sold swords it had never tested, and an inn whose slime mascot had been repainted so many times it now resembled a vaguely threatening cloud.
+Nobody in Harmonia had ever seen a Royal Bureau of anything. The village was six houses, a chapel, a shop that sold swords it had never tested, and an inn whose slime mascot had been repainted so many times it now resembled a vaguely threatening cloud. The inn's sign hung over the door on two chains, one of which squeaked in the morning wind with the persistence of something that had been meaning to be oiled for three seasons. The smell drifting from the kitchen was barley and woodsmoke and the faint sweetness of last night's mead, all of it settling in the pale gold light of early morning like a village asserting that it was still, in fact, here.
 
 But the notice was there. And the monsters were getting worse. And the real army — the one with matching armor and a pension plan — was busy in the capital doing whatever it was armies did when chancellors needed protecting.
 
@@ -44,7 +44,7 @@ But something had changed.
 
 The bats were bigger. The slimes were angrier. Traders stopped coming through, then stopped sending messages, then stopped existing in conversation entirely, as though the roads themselves had forgotten they were there.
 
-Elder Theron stood in the village square — which was less a square and more a circle of packed dirt where chickens held parliament — and regarded the four people who had answered the call with a fifth who had not technically answered it but had come anyway.
+Elder Theron stood in the village square — which was less a square and more a circle of packed dirt where chickens held parliament — and regarded the four people who had answered the call with a fifth who had not technically answered it but had come anyway. In the square's center, the old well sat in the morning quiet, its rope furred with moss, and around it a dozen chickens picked at the dust with the unhurried authority of creatures who had lived here longer than most people and intended to outlast them all.
 
 "You'll do," he said, in a tone that suggested they absolutely would not do, but that complaining about it would take energy he didn't have.
 
@@ -72,7 +72,7 @@ The village offered what it could. A woman whose brother had gone to Scriptura a
 
 "Before what?" Mira asked.
 
-Phil scratched his head. He had the look of a man trying to remember a dream.
+Phil scratched his head. He had the look of a man trying to remember a dream, the way very old men look when the years have blurred together like wet ink, winter following winter until they're all the same winter.
 
 "Before anything much," he said. "The village. The seasons. You know how it is — years blur together. You forget which winter was which." He tilted his head. "Though I will say this: good luck with the cave. Try not to die in the first room. It's bad for the spirit."
 
@@ -96,7 +96,7 @@ Between Harmonia and the Whispering Cave lay two hours of open road and at least
 
 The first thing was a pair of slimes.
 
-Slimes in Harmonia were, by tradition, more nuisance than threat. Blue, globular, possessed of appetites that outpaced their ability to act on them. But these slimes — and Mira noted it in her journal with the intensity of someone who has found confirmation for a theory — were *different.* Not stronger. Sharper. More deliberate in their malice.
+Slimes in Harmonia were, by tradition, more nuisance than threat. Blue, globular, possessed of appetites that outpaced their ability to act on them. But these slimes — and Mira noted it in her journal with the intensity of someone who has found confirmation for a theory — were *different.* Not stronger. Sharper. More deliberate in their malice. The afternoon sun picked out a faint iridescence in their bodies that ordinary slimes did not have, something almost organized about the way the light moved through them.
 
 When the Fighter struck the first slime with the untested sword, it split.
 
@@ -178,7 +178,7 @@ They reached the cave mouth as the sun dropped behind the mountains and the whis
 
 The cave had earned its name honestly. It whispered.
 
-Not words, exactly. More like the memory of words — the sound a sentence makes after everyone has forgotten what it meant. The walls were slick with something that wasn't quite moss and wasn't quite light, and the deeper the party went, the more the whispers sounded like they were coming from inside the stone itself.
+Not words, exactly. More like the memory of words — the sound a sentence makes after everyone has forgotten what it meant. The entrance was a low arch in the mountain's face, and the moment you stepped through it the temperature dropped five degrees and the light from outside ceased to matter. Inside, the air tasted of iron and wet limestone, and something older beneath that — the mineral breath of deep rock, cold and patient as stone. The walls were slick with seepage, not quite moss but the promise of it, and the torchlight the party carried made the moisture on the walls gleam in uncertain patterns. Shadows moved before they did.
 
 The monsters here were different from the road fodder. Sharper. More deliberate. A goblin in the upper chambers fought like it had read a manual on how goblins were supposed to fight — textbook aggression, predictable patterns, as if it were performing the role of "cave monster" rather than simply being one.
 
@@ -212,7 +212,7 @@ When it finally fell — armor clattering, bones scattering, the sword ringing a
 
 He stood up and didn't say anything for a moment. The Bard, for once, didn't narrate.
 
-Deeper into the cave, the whispers grew. The Mage pressed her hand to the wall and felt something she couldn't name — not heat, not cold, but the impression of *design*. Intentional structure. Walls that had been shaped not by water but by something that worked by different rules.
+Deeper into the cave, the whispers grew. The second passage descended steeply — the floor sloping down in a way that made footing uncertain, the walls narrowing until the torchlight barely reached both sides at once. The cold deepened. Down here, the water seeping through the stone had carved shallow channels in the floor, and the sound of it was the only sound that didn't seem to come from somewhere else. The Mage pressed her hand to the wall and felt something she couldn't name — not heat, not cold, but the impression of *design*. Intentional structure. Walls that had been shaped not by water but by something that worked by different rules.
 
 "Someone made this harder," she said.
 
@@ -224,15 +224,15 @@ Deeper into the cave, the whispers grew. The Mage pressed her hand to the wall a
 
 "Someone in the capital *designed* this floor."
 
-In a small alcove off the second passage, the Rogue found a chest the corruption hadn't touched. Inside: a healing vial, sealed with unfamiliar wax. The label on the vial read, in script too precise to be hand-lettered: *Restorative Compound — contains residual data, handle with ambient care.* Below that, crossed out and rewritten: *residual magic.* The crossed-out line was the original. Someone had changed it, apparently decided the change was wrong, and then left both versions on the label without removing either.
+In a small alcove off the second passage, the Rogue found a chest the corruption hadn't touched. Inside: a healing vial, sealed with unfamiliar wax. The label on the vial read, in script too precise to be hand-lettered: *Restorative Compound — contains residual magic, handle with ambient care.* Below that, crossed out and rewritten: *residual magic.* The crossed-out line was the original. Someone had changed it, apparently decided the change was wrong, and then left both versions on the label without removing either.
 
 Vex held the vial up to the cave light. He read the label twice. He handed it to the Mage without comment.
 
 She read it. Looked at the crossed-out word. Read it again. Put the vial in her pack.
 
-"Data," the Bard said, reading over her shoulder.
+"Odd label," the Bard said, reading over her shoulder.
 
-"Probably a copying error," she said. "The label-maker was in a hurry."
+"Someone was in a hurry," she said.
 
 "Probably," the Bard agreed.
 
@@ -246,7 +246,7 @@ The Warden was not what the party expected.
 
 They had expected a monster. Or a corrupted guardian. Or, at minimum, something that looked like it wanted to be here.
 
-What they found was a figure in full plate armor, utterly still, standing in the center of a chamber that was almost perfectly circular. The armor was old — not decayed, not corrupted, but *old* in the way that things are old when they have been maintained for centuries rather than centuries of neglect. The sword was sheathed. The shield was up. The figure's posture was that of a soldier standing at ease, which meant ready to be uneasily at arms in a moment's notice.
+What they found was a figure in full plate armor, utterly still, standing in the center of a chamber that was almost perfectly circular. The chamber itself had the quality of a place that had been maintained over centuries through some principle of pure duty — the stone floor worn smooth not by traffic but by the slow passage of time, the walls bare except for an inscription too weathered to read. The air here was different from the rest of the cave: drier, stiller, as if the ordinary dampness of the mountain had decided to leave this room alone. The armor was old — not decayed, not corrupted, but *old* in the way that things are old when they have been maintained for centuries rather than centuries of neglect. The sword was sheathed. The shield was up. The figure's posture was that of a soldier standing at ease, which meant ready to be uneasily at arms in a moment's notice.
 
 When the party entered, the figure's head rose. Not with aggression. With attention.
 
@@ -282,7 +282,7 @@ Vex, approaching from an angle the Warden hadn't turned to cover, found a gap in
 
 The Warden went down on one knee.
 
-He stayed there for a moment. The chamber was very quiet.
+He stayed there for a moment. The chamber was very quiet, the kind of quiet that only exists deep underground, where there is nothing for sound to bounce off of except stone.
 
 "You have proven worthy," he said, and his voice carried no bitterness. Just — completion. The voice of a long job reaching its end. "I may rest now."
 
@@ -310,7 +310,7 @@ Someone with authority had been feeding the cave's corruption deliberately.
 
 ### Chapter 5: The Forest That Remembered
 
-The Corrupted Forest wore its sickness openly. Trees bent at angles that wood shouldn't permit. The light came from the wrong direction — not from the sky, but from somewhere beneath the roots, filtering upward through soil that glowed faintly green.
+The Corrupted Forest wore its sickness openly. The trees bent at angles that wood shouldn't permit — not the lean of a tree shaped by decades of prevailing wind, but a sudden torque, as if something had reached down and twisted them partway through growing. The light came from the wrong direction, not from the sky but from somewhere beneath the roots, filtering upward through soil that glowed faintly green in the shadows beneath the canopy. Walking into it felt like stepping into a room that had been rearranged by someone who didn't understand how rooms were supposed to work: the geometry was almost right, almost recognizable, and the almost was worse than entirely wrong. The air tasted different too — sharper, with a mineral edge under the leaf-rot smell, as though the corruption had altered even the way the forest breathed. The ground was soft in places it shouldn't have been soft, and firm where roots should have given.
 
 On the road to the forest, they passed through a stretch of woodland where the trees were still healthy and the shadows were the right shape, and where a figure had been following them since roughly the river crossing.
 
@@ -366,9 +366,9 @@ She looked at him with the distant expression of someone surfacing from deep wat
 
 He wrote it down anyway. He wrote everything down. He told himself it was habit.
 
-The forest resisted them. The deeper they went, the more the corruption pushed back — not with monsters, but with *wrongness*. Paths that looped. Clearings that repeated. The feeling, impossible to shake, that the forest wasn't corrupted at all but *redesigned*. Rebuilt from the ground up to be a challenge rather than a place.
+The forest resisted them. The deeper they went, the more the corruption pushed back — not with monsters, but with *wrongness*. Paths that looped. Clearings that repeated. The feeling, impossible to shake, that the forest wasn't corrupted at all but *redesigned*. Rebuilt from the ground up to be a challenge rather than a place. The trees that had been twisted now seemed less like victims of blight and more like obstacles with intent — positioned to funnel, to confuse, to channel movement toward particular clearings. Sound carried wrong: footsteps muffled, voices absorbed, the forest's natural noise replaced by an anticipatory silence that had the quality of listening.
 
-They found the Tempo's second calling card nailed to a tree at the forest's center: a crude drawing of five stick figures looking confused in a circle. Beneath it: *You've been here three times now. I've been watching. - T.*
+They found the Tempo's second calling card nailed to a tree at the forest's center: a crude drawing of five stick figures looking confused in a circle. Beneath it: *You've been here three times now. I've been watching. — T.*
 
 They had not been to this clearing before.
 
@@ -384,17 +384,19 @@ They had not been to this clearing before.
 
 The Arbiter of Steel waited in a clearing where the corruption was thickest.
 
-It stood exactly at the clearing's center, which Mira noted was geometrically precise — not where a creature would naturally position itself, but where a designer would place a checkpoint. The armor it wore was immaculate despite the forest's decay, as if the corruption knew better than to try. It carried two blades, one in each hand, held at angles that communicated a great deal to anyone who understood what stance vocabulary looked like.
+It stood exactly at the clearing's center, which Mira noted was geometrically precise — not where a creature would naturally position itself, but where a designer would place a checkpoint. The armor it wore was immaculate despite the forest's decay, as if the corruption knew better than to try. The two blades it carried were held at angles that communicated a great deal about their owner: this was not someone who had been placed here. This was someone who had arrived and found the location beneath them and set up within it anyway, out of professional obligation rather than respect.
 
 When the party entered the clearing, the Arbiter raised one blade in formal challenge.
 
-"You are five," it said. The voice was controlled — clipped, precise, the voice of someone who considered economy in language to be a virtue. "The challenge is single combat. One of you. Whichever you choose. The rest stand aside."
+"You are five," it said. The voice was clipped and cold — precise in the way of someone who considered every syllable an unnecessary expenditure and resented the expenditure. "The challenge is single combat. One of you. Whichever you choose. The rest stand aside."
 
 "And if we refuse?" the Fighter asked.
 
-"Then you fight together, and you have already compromised your honor before the first blow lands." A pause. "The choice is yours. I have made no deception about what I prefer."
+"Then you fight together, and you have already compromised your honor before the first blow lands." The Arbiter's gaze swept the party with frank dismissal. "Though looking at you, that may be the more appropriate arrangement. I had hoped for a genuine challenge."
 
 The Fighter stepped forward without consulting anyone else. The party started to protest and he turned briefly to look at them with an expression that required no words: *Let me.*
+
+"The one in the dented pauldron," the Arbiter said. "Interesting choice. Or lack of one." It rolled one sword in a slow arc, loosening the wrist. "This will be brief."
 
 What followed was, in the Bard's notes and several subsequent performances, described as "the finest duel of the age." In practice, it was harrowing, because the Arbiter was a glass cannon in the truest sense — it could end you before you had processed that the engagement had started, and its counterstrike window was timed to punish overconfidence with mathematical precision.
 
@@ -404,37 +406,25 @@ He rose. He adjusted. He corrected for the right side, at the cost of two steps 
 
 The Arbiter did not exploit it. Instead, it paused.
 
-"You're adapting," it said. "Mid-fight."
+"You're adapting," it said. The cold precision of its voice had developed a crack in it — not warmth, but involuntary attention. "Mid-fight."
 
 "Yes," the Fighter said.
 
-"That's..." The Arbiter's stance shifted, very slightly. "Unusual."
+"That's..." The Arbiter's stance shifted, very slightly. "Inconvenient."
 
 The fight resumed. The Fighter did not win by being better. He won by being slightly less bad in the right moments, and by having companions whose collective prayers and secondary investments of magic-from-a-distance may have technically constituted cheating, but then the Arbiter had never explicitly defined the prohibition on ambient support.
 
-When the Arbiter fell, it knelt, and the kneeling was deliberate.
+When the Arbiter fell, it knelt, and the kneeling was deliberate — the motion of something that has chosen its posture.
 
-"You fight in groups by habit," it said. "You are not trained to fight alone. And yet when I demanded single combat, you chose to try." It looked up at the Fighter. "Why?"
+"You fight in groups by habit," it said. There was no grace in the acknowledgment. "You are not trained to fight alone. And yet when I demanded single combat, you chose to try." It looked up at the Fighter. The dismissal was gone; what replaced it was not respect exactly, but a reluctant audit. "You were less incompetent than expected. I will note that."
 
-"Because it seemed right," he said.
+"Thank you," the Fighter said.
 
-"That is not a tactical reason."
+"It is not a compliment." The Arbiter was quiet for a moment. Something in its controlled voice had shifted — not enough to be called curiosity, but a thread of something that hadn't been there before. "Your movements are irregular. Not trained. Not disciplined. But you persist through mistakes in a way that suggests you haven't yet accepted their cost." It looked at the party assembled at the clearing's edge. "That is either a flaw or a quality. I cannot determine which."
 
-"No," the Fighter agreed. "It isn't."
+"Maybe both," Mira said.
 
-The Arbiter was silent for a moment. When it spoke, something in the controlled voice had shifted — a thread of genuine curiosity running through it, not staged, not strategic.
-
-"Your movements are... irregular. Not trained. Not disciplined. But effective." It looked at the party assembled at the clearing's edge — the Cleric with his holy symbol lowered, the Mage closing her notebook, the Rogue leaning against a tree with the affect of a man who had not definitely been ready to throw a knife if needed. "Where did you learn to fight like that?"
-
-"We didn't learn," Mira said. "We figured it out."
-
-"That's not how fighting works," the Arbiter said.
-
-"That's," she said, "exactly how we work."
-
-The Arbiter considered this for a long moment. "I should remember having seen something like this before," it said, half to itself. "Something about this arrangement — the irregularity of it — is familiar in a way I cannot place. My records are comprehensive. And yet."
-
-It fell silent. Then: "Behind the sealed passage to the north. The court magic there was not intended to be found. Find it."
+"That answer is outside my assessment criteria," the Arbiter said. But it was quiet for a moment afterward, and the quiet had weight. "Behind the sealed passage to the north. The court magic there was not intended to be found. Find it."
 
 Behind the Arbiter, a sealed passage. And carved into the seal, in the same precise hand as the cave: *The crown is not what it seems.*
 
@@ -444,17 +434,21 @@ Behind the Arbiter, a sealed passage. And carved into the seal, in the same prec
 
 Scriptura was beautiful. That was the problem.
 
-The streets were clean. The buildings were maintained. The guards were polite in the way that people are polite when they know they could stop being polite at any time and nobody would do anything about it. Flowers grew in window boxes. Children played in courtyards. Everything was exactly where it was supposed to be.
+The city announced itself before you reached it — the smell of baking bread and horse and tallow candles, the sound of a thousand people conducting the business of living carried on the morning air from a mile out. Coming over the last rise on the capital road, you saw the walls first: pale stone, well-maintained, higher than they needed to be for a city that hadn't been besieged in fifty years. Then the towers above the walls. Then, through the gate, the streets themselves.
+
+The streets were clean. The buildings were maintained. The guards were polite in the way that people are polite when they know they could stop being polite at any time and nobody would do anything about it. Flowers grew in window boxes. Children played in courtyards. In the market district the stalls were heavy with produce and cloth and the smell of roasting meat and spiced wine and fresh-tanned leather, and the merchants called their prices with a precision that was almost too precise, as if the prices had been set by someone who had calculated the correct price rather than discovered it through the usual chaos of supply and want.
+
+Everything was exactly where it was supposed to be.
 
 It was the most oppressive place any of them had ever seen.
 
 They entered through the tradesman's gate, where the Rogue's ability to produce paperwork from his person without anyone having seen him write it became their first practical advantage. He had obtained the paperwork somewhere between the Arbiter's clearing and the city walls. No one asked where. Some questions were less useful than others.
 
-The resistance operated out of a bookshop, because of course it did. A woman named Sera — sharp-eyed, exhausted, operating on conviction and caffeine's medieval equivalent — laid out what they knew.
+The resistance operated out of a bookshop, because of course it did. The bookshop's exterior was indistinguishable from its neighbors — well-kept, properly painted, sign hanging at regulation height. Inside, it was a different country. The shelves were overfull, the kind of overfull that looks like disorganization but is actually a system legible only to its creator. The smell of old paper and glue was everywhere, overlaid with lamp oil. A woman named Sera — sharp-eyed, exhausted, operating on conviction and caffeine's medieval equivalent — laid out what they knew.
 
 "The king is enchanted. Not the fairy-tale kind — the administrative kind. Mordaine doesn't need magic chains when she has policy. He signs what she writes. He says what she scripts. He's not a prisoner. He's a *process.*"
 
-The Scriptweaver's Guild, once the intellectual heart of the city, had been co-opted. Its scholars now wrote Mordaine's edicts instead of their own research. But some of them still kept their old work hidden — books about the nature of reality that used words like "functions" and "variables" in ways that were plainly metaphorical, the language of philosophers, though the Mage found herself rereading the same passage three times before moving on.
+The Scriptweaver's Guild, once the intellectual heart of the city, had been co-opted. Its scholars now wrote Mordaine's edicts instead of their own research. But some of them still kept their old work hidden — books about the nature of reality that used words like "functions" and "principles" in ways that were plainly metaphorical, the language of philosophers, though the Mage found herself rereading the same passage three times before moving on.
 
 "There's a theory," one scholar whispered, glancing at the door as though it might report him. "That the structures governing our world — the kingdoms, the seasons, the way power flows — are more like... a design than an accident. Rules that someone wrote, even if no one living knows who." He showed them a diagram. It was labeled in the careful hand of a civil servant: *Kingdom Administrative Structure — The Realm's Chain of Order.* "I found it in the restricted archive. It maps every authority in the kingdom — from the throne to the outermost village checkpoint." He traced the flowchart's arrows. "The interesting thing is: it maps us. Our route. Every significant location on our journey, as if someone had charted it."
 
@@ -474,35 +468,37 @@ The city was navigated largely by Vex, who treated urban environments like a lan
 
 They found the Tempo of the Hunt in the market district.
 
-Or rather, the Tempo found them — which had been the pattern since the forest. It dropped from a rooftop into the street ahead of them, and it was, finally, visible: a figure in traveling leathers, built for speed rather than defense, wearing an expression of genuine pleasure.
+Or rather, the Tempo found them — which had been the pattern since the forest. It dropped from a rooftop into the street ahead of them, and it was, finally, visible: a figure in traveling leathers, built for speed rather than defense, wearing an expression of genuine pleasure that had nothing polite about it.
 
-"You made it to the city," it said, sounding genuinely pleased. "I had calculated you would lose yourselves in the forest and give up."
+"You made it to the city," it said, and the pleasure was undisguised — the particular delight of a hunter who has spent weeks on a chase and found the quarry still running. "I had calculated you would lose yourselves in the forest and give up. I even cleared one of the loop paths to give you a chance." Its eyes were bright. "I wanted you to last longer."
 
-"We found our way," Vex said.
+"How generous," Vex said.
 
-"Mm." The Tempo's eyes swept the party — assessing, documenting. "You have an interesting way of moving through space. You cover each other's gaps without discussing it. The mage hangs back by exactly the right distance. The healer stays behind the tank without being told. The rogue..." It looked at Vex with something approaching professional appreciation. "The rogue is already three steps from where I expect him to be."
+"Isn't it?" The Tempo's gaze swept the party — assessing, savoring. "You have an interesting way of moving through space. You cover each other's gaps without discussing it. The mage hangs back by exactly the right distance. The healer stays behind the tank without being told. The rogue..." It looked at Vex with the specific appreciation of a predator identifying a good prey animal. "The rogue is already three steps from where I expect him to be."
 
 Vex was, indeed, three steps from where he had been a moment ago.
 
-"Shall we?" the Tempo said, as though inviting them to dance, and then it *moved*.
+"Shall we?" the Tempo said, as though inviting them to dance, and the delight in its voice was not manufactured. It had been waiting for this moment. It had been *looking forward* to this moment. It *moved*.
 
-The chase through Scriptura's streets was everything the Tempo had promised. It knew every alley. It anticipated every route. It was testing them — they understood that now — not trying to kill them but to exhaust them, to make them spend everything they had, to *profile* them before reporting back.
+The chase through Scriptura's streets was everything the Tempo had promised — and the Tempo clearly loved every second of it, cutting through crowds with the ease of something that had been doing this since before the city had crowds, vaulting crates and disappearing around corners and reappearing somewhere improbable, laughing when the party nearly had it and laughing harder when they lost the thread. The chase was not a measure. It was a game. A genuinely, gleefully enjoyed game, and the Tempo was the only one with any fun in it.
 
-"It's measuring us," Mira said, breathing hard, running alongside the Fighter. "Every time we choose a route, it documents it. It wants to know how we make decisions."
+"It's not trying to kill us," Mira said, breathing hard, running alongside the Fighter. "It's *playing.*"
 
-"Can we make decisions that are undocumentable?" the Rogue suggested, and then he did something that was too fast to follow — a turn that wasn't a turn, an approach from an angle that physics should have prevented — and the Tempo, for the first time, was where it had not planned to be.
+"It's measuring us," Vex said, from somewhere to the left.
+
+"No," she said. "It's doing both. It's playing because it enjoys it and the data is incidental." A corner. A turn. "That's worse somehow."
+
+The Rogue did something that was too fast to follow — a turn that wasn't a turn, an approach from an angle that physics should have prevented — and the Tempo, for the first time, was where it had not planned to be.
 
 The fight that followed was desperate and fast and ended in the market square with all five of them surrounding the Tempo, who had been cornered by the simple expedient of removing all the exits one at a time.
 
-The Tempo knelt with the grace of something that has never been forced to kneel and is choosing to now rather than having it chosen for them.
+The Tempo knelt with the grace of something that has never been forced to kneel and is choosing to now rather than having it chosen for them. And even kneeling, it was smiling.
 
-"A fine chase," it said. "I haven't been outrun in..." It paused. "I don't remember how long." Another pause, longer. "Strange. I should remember. A hunter remembers every chase. The duration. The quarry. The outcome." Its brow furrowed. "My memory extends precisely as far back as the beginning of your arrival. Nothing before that." It looked up at them. "That seems wrong."
+"A fine chase," it said, and meant it completely. "The best I can remember. I haven't been outrun in—" It paused. Something shifted behind the brightness of its expression. "I don't remember how long." The smile dimmed slightly, or rather moved somewhere deeper and less comfortable. "Strange. A hunter remembers every chase. The duration. The quarry. The outcome." Its brow furrowed. "My memory extends precisely as far back as the beginning of your arrival. Nothing before that."
 
-"It does," Mira agreed.
+"That seems wrong," Mira agreed.
 
-"Does it trouble you?" the Cleric asked.
-
-"It should," the Tempo said. "The fact that it doesn't trouble me is, perhaps, the most troubling thing." It rose, and the assessing quality had left its eyes, replaced with something unfocused. "Be careful in the palace. The last guardian has been waiting longer than any of us. She has more... history."
+"It should trouble me," the Tempo said. "The fact that it doesn't trouble me is, perhaps, the most troubling thing." It rose, and the easy delight had gone sideways into something more complicated. "Be careful in the palace. The last guardian has been waiting longer than any of us. She has more... history."
 
 With the Tempo broken and the palace district accessible, there was nothing left but the throne room.
 
@@ -514,7 +510,7 @@ Before the palace, the Scriptweaver's Guild.
 
 Mira had insisted, and the insistence had the quality of someone following a thread they didn't yet understand. The scholar who had shown them the administrative diagram met them in the Guild's back room with the look of a man choosing between his safety and his need to be understood.
 
-"I found more documents," he said. "In the deepest part of the archive. The part that technically doesn't exist." He spread them on the table. "The administrative chart I showed you — I was wrong about what it describes. It isn't a political structure." He looked at each of them in turn. "It's a guide. For a journey. Your journey, specifically. Every major location. Every significant enemy. Written before you arrived."
+"I found more documents," he said. "In the deepest part of the archive. The part that technically doesn't exist." He spread them on the table — rolls of parchment, sheets of vellum in different ages of yellow, everything covered in that same precise, civil-servant handwriting. "The administrative chart I showed you — I was wrong about what it describes. It isn't a political structure." He looked at each of them in turn. "It's a guide. For a journey. Your journey, specifically. Every major location. Every significant enemy. Written before you arrived."
 
 "Written by whom?" the Fighter asked.
 
@@ -522,7 +518,7 @@ Mira had insisted, and the insistence had the quality of someone following a thr
 
 "Mordaine wrote a guide to defeating her?" the Cleric said.
 
-"Not for her defeat. For your *challenge.*" The scholar's voice dropped. "There's a note in the margin here. See this column? 'Expected party level upon arrival.' This column: 'Estimated completion time.' This one..." He turned the page. Something in his expression shifted. He closed the document. "I think you should see Mordaine now."
+"Not for her defeat. For your *challenge.*" The scholar's voice dropped. "There's a note in the margin here. See this column? 'Expected party condition upon arrival.' This column: 'Estimated completion time.' This one..." He turned the page. Something in his expression shifted. He closed the document. "I think you should see Mordaine now."
 
 "What does it say?" Mira asked.
 
@@ -532,7 +528,7 @@ He looked at her. "Things that wouldn't make sense to you yet." He refolded the 
 
 ### Chapter 9: The Throne
 
-The palace was a dungeon that didn't know it was a dungeon. Every corridor was a test. Every room had a purpose beyond its decoration. The guards fought in patterns — not because they were disciplined, but because they couldn't do otherwise.
+The palace was a dungeon that didn't know it was a dungeon. Every corridor was a test. Every room had a purpose beyond its decoration. The guards fought in patterns — not because they were disciplined, but because they couldn't do otherwise. The walls were hung with tapestries of the kingdom's history — a history that, examined closely, had been edited with a consistency that suggested a single revising hand.
 
 King Aldric sat on his throne. He looked like a painting of a king — positioned correctly, lit properly, expression carefully neutral. When the party entered, his eyes moved, and for a moment something alive flickered behind the performance.
 
@@ -548,35 +544,39 @@ The Cleric stepped forward and pressed his hand over the king's. He said somethi
 
 King Aldric blinked. Something like gratitude moved across his face before the policy returned.
 
-The Curator of the Flame stood before the throne room doors. It was the cruelest of the Masterites — not because it hit hard, but because it drained. MP. Buffs. Items. The will to continue. It fought like an accountant, reducing the party's resources line by line until there was nothing left but stubbornness.
+---
 
-But before it began, it spoke.
+The Curator of the Flame stood before the throne room doors.
 
-The Curator spoke more than any of them. It had the bearing of a scholar — tall, composed, wearing armor that looked less like protection than like authority — and it spoke with the focused interest of someone who genuinely wanted to know.
+It had the bearing of a scholar — tall, composed, wearing armor that looked less like protection than like a prestigious appointment — and it was speaking before the party had finished entering the antechamber. The Curator was always speaking. It had a voice that was professionally warm, the warmth of a lecturer who has learned that people absorb more when they feel welcome.
 
-"You've come further than expected," it said, not as an accusation. As a note in the margin. "The Warden reports your adaptability. The Arbiter reports your irregular formation. The Tempo reports your decision-making under pressure." It looked at the party with cataloguing eyes. "I have been compiling the complete picture."
+"You've come further than expected," it said. "I've been looking forward to this conversation. The Warden reports your adaptability. The Arbiter reports your irregular formation. The Tempo reports your decision-making under pressure." It spread its hands in a gesture of collegial invitation. "Tell me about your resource strategy. I've been studying it and I find myself with questions."
 
-"And what does the picture show?" Mira asked.
+"We tend not to explain our strategy to the people guarding doors we need to open," Vex said.
 
-"That your resource management is unlike anything in my records." It tilted its head. "You have recovered from difficult positions efficiently. You have improvised solutions to designed challenges. You have, on multiple occasions, done something I have no category for." It paused. "And my records are... extensive. Unusually so, for a guardian of a single throne room."
+"Of course, of course. I'll ask differently." The Curator gestured toward the party's formation with the attention of someone noting a particularly interesting specimen. "You — the healer. I've observed you keep something in reserve even when the rest of the party's resources are depleted. What's your threshold?" It turned to the Mage. "And you. Your magic output in the forest was seventy percent of what I'd expect from your displayed capacity. Why hold back?"
 
-"Where do your records come from?" Mira asked.
+"We're not answering that," the Mage said.
 
-"From observation," the Curator said. "From the archive. From—" It stopped. Its head turned, slightly, as if listening to something. "I have records that are very old. Older than I can account for. I have never asked why. I am asking now, and the answer is..." It looked at its own hands. "Not forthcoming."
+"No, quite right. Good boundary-setting." The Curator's warmth was unwavering. "One more — the rogue. Three times in Scriptura you chose deception over direct engagement when direct engagement would have been faster. The preference for indirection. Is that habit or training or—"
 
-"Does that bother you?" the Cleric asked.
+"You're mapping our weaknesses," Mira said.
 
-"It would be reasonable to be bothered," the Curator said. "I find I am instead simply... curious." And then, with a formality that felt like apology: "The door behind me is what you came for. I cannot let you through. My purpose requires this. I hope you understand."
+"I'm having a conversation," the Curator said.
+
+"And when the conversation ends, you'll fight us with everything we just told you."
+
+A pause. The Curator's expression shifted — not to guilt, which would have been more comfortable, but to something like approval. "Your pattern recognition is excellent. The Arbiter mentioned it." It straightened. "Then let's skip to the relevant part. I cannot let you through. My purpose requires this. Everything I've learned in this conversation — everything you've said and carefully not said — will inform what follows." It met the party's eyes with the composed expression of someone who has done nothing they are ashamed of. "I hope you understand."
 
 "We do," the Fighter said.
 
 "Good," the Curator said, and the fight began.
 
-They beat it with stubbornness. Stubbornness, it turned out, was not a resource the Curator knew how to drain.
+They beat it with stubbornness. Stubbornness, it turned out, was not a resource the Curator could systematically drain, because the Curator had spent the entire conversation building a map of their resources and stubbornness was not on the map.
 
-When it fell, it knelt, and its expression was one of academic satisfaction rather than defeat.
+When it fell, it knelt. Its expression was one of academic satisfaction, and also something else: a first note of surprise, genuine and unperformed.
 
-"Fascinating," it said. "Genuinely. I have extensive records on how challengers approach this door. You used none of the established approaches." A long pause. "I should not find this satisfying. My purpose was to stop you. And yet." It looked up. "Whatever you are — wherever you come from — this place was not made for you. And you succeeded anyway." A final pause. "Make that mean something."
+"Thank you for the data," it said. And then, a beat later, as if revising: "No. That's not — I'm not certain that's the accurate summary." It looked at its own hands. "You did something in the last exchange that was not in any of my records. I was going to use the information about the healer's threshold against you. You gave him something — the bard said something, quietly — and the threshold moved. It wasn't a resource change. It was something else." A long pause. "My records are extensive. I have no category for what I observed." It looked up. "Make that mean something."
 
 ---
 
@@ -594,7 +594,7 @@ She was not what the party had been imagining since Eldertree. The tyrannical ch
 
 "What schedule?" the Mage asked.
 
-"Mine." She moved to the window. Outside, Scriptura's clean streets caught the afternoon light. "The kingdom was chaotic when I arrived. The old king kind but ineffective. Monsters at the borders. Trade failing. I brought order." She turned back to face them. "Not because I wanted power. Because power, applied correctly, is simply the most efficient tool for reducing suffering. The kingdom functions. Its people are fed. The streets are safe."
+"Mine." She moved to the window. Outside, Scriptura's clean streets caught the afternoon light, the flowers in their window boxes and the children in their courtyards, every element of the city performing normalcy with impeccable dedication. "The kingdom was chaotic when I arrived. The old king kind but ineffective. Monsters at the borders. Trade failing. I brought order." She turned back to face them. "Not because I wanted power. Because power, applied correctly, is simply the most efficient tool for reducing suffering. The kingdom functions. Its people are fed. The streets are safe."
 
 "The people live in fear," the Fighter said.
 
@@ -602,11 +602,11 @@ She was not what the party had been imagining since Eldertree. The tyrannical ch
 
 "You calculated people's fear," the Cleric said quietly.
 
-"I calculated everything." She said it without apology. "Including you. You were the variable I didn't account for, at first. Irregulars, untrained, unpredictable. And then—" A pause, brief as a held breath. "And then you became the most interesting data point I have collected in a very long time."
+"I calculated everything." She said it without apology. "Including you. You were the element I didn't account for, at first. Irregulars, untrained, unpredictable. And then—" A pause, brief as a held breath. "And then you became the most interesting observation I have made in a very long time."
 
 The Bard said nothing. He was watching her mouth, the way she chose words.
 
-"The Warden tested you," she said. "The Arbiter tested you. The Tempo. The Curator. Each one reported back, and each report was more anomalous than the last." She looked at them with something that was almost respect and was not quite anything else. "You passed every designed challenge by doing the thing no design anticipated. You were meant to be a demonstration of the system's resilience." She was quiet for a moment. "You were the variable I didn't account for."
+"The Warden tested you," she said. "The Arbiter tested you. The Tempo. The Curator. Each one reported back, and each report was more anomalous than the last." She looked at them with something that was almost respect and was not quite anything else. "You passed every designed challenge by doing the thing no design anticipated. You were meant to be a demonstration of the system's resilience." She was quiet for a moment. "You were the element I didn't account for."
 
 That phrase — she said it twice, and the second time it landed slightly differently. But the throne room was charged with the atmosphere of a final confrontation, and no one had the attention to wonder why.
 
