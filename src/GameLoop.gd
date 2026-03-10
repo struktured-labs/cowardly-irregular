@@ -1843,42 +1843,44 @@ func _create_autogrind_overlay() -> void:
 	if vp_size.x == 0 or vp_size.y == 0:
 		vp_size = Vector2(1280, 720)
 
-	var bar_height = 72.0
+	var bar_height = 120.0
 	var bar_bg = ColorRect.new()
-	bar_bg.color = Color(0.03, 0.02, 0.06, 0.75)
+	bar_bg.color = Color(0.03, 0.02, 0.06, 0.85)
 	bar_bg.position = Vector2(0, vp_size.y - bar_height)
 	bar_bg.size = Vector2(vp_size.x, bar_height)
 	_autogrind_overlay.add_child(bar_bg)
 
 	var border = ColorRect.new()
-	border.color = Color(0.5, 0.4, 0.6, 0.6)
+	border.color = Color(0.5, 0.4, 0.6, 0.8)
 	border.position = Vector2(0, vp_size.y - bar_height)
-	border.size = Vector2(vp_size.x, 1)
+	border.size = Vector2(vp_size.x, 2)
 	_autogrind_overlay.add_child(border)
 
+	# Summary line — big and readable
 	var summary = Label.new()
 	summary.name = "SummaryLabel"
 	summary.text = "Battle #1 | EXP: 0 | Streak: 0 | Efficiency: 1.0x"
-	summary.position = Vector2(12, vp_size.y - bar_height + 4)
-	summary.size = Vector2(vp_size.x - 24, 20)
-	summary.add_theme_font_size_override("font_size", 12)
-	summary.add_theme_color_override("font_color", Color(0.9, 0.9, 0.4))
+	summary.position = Vector2(16, vp_size.y - bar_height + 8)
+	summary.size = Vector2(vp_size.x - 32, 28)
+	summary.add_theme_font_size_override("font_size", 18)
+	summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 	_autogrind_overlay.add_child(summary)
 
-	var AutogrindStatsStripClass = load("res://src/ui/autogrind/AutogrindStatsStrip.gd")
-	var strip = AutogrindStatsStripClass.new()
+	# Stats strip — full width, taller
+	var strip = AutogrindStatsStrip.new()
 	strip.name = "StatsStrip"
-	strip.position = Vector2(4, vp_size.y - bar_height + 22)
-	strip.size = Vector2(vp_size.x - 8, 28)
+	strip.position = Vector2(4, vp_size.y - bar_height + 38)
+	strip.size = Vector2(vp_size.x - 8, 42)
 	_autogrind_overlay.add_child(strip)
 
+	# Control hints — clearer
 	var hints = Label.new()
 	hints.name = "HintsLabel"
-	hints.text = "Y:Turbo   +/-:Speed   T:Dashboard   B:Exit"
-	hints.position = Vector2(12, vp_size.y - 18)
-	hints.size = Vector2(vp_size.x - 24, 16)
-	hints.add_theme_font_size_override("font_size", 10)
-	hints.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	hints.text = "Y: Turbo    +/-: Speed    T: Dashboard    B: Exit"
+	hints.position = Vector2(16, vp_size.y - bar_height + 88)
+	hints.size = Vector2(vp_size.x - 32, 24)
+	hints.add_theme_font_size_override("font_size", 13)
+	hints.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
 	hints.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_autogrind_overlay.add_child(hints)
 
