@@ -278,7 +278,7 @@ Like the last page of a story that had decided it didn't need an ending to be co
 
 They looked at the party. Not as a villain. Not as a designer. As something closer to a colleague.
 
-"You have. Obviously. That's been clear since World 3. Maybe earlier. Maybe since the moment you walked into Harmonia and decided to answer the call, even though you weren't heroes and nobody expected you to matter."
+"You have. Obviously. That's been clear since World 4. Maybe earlier. Maybe since the moment you walked into Harmonia and decided to answer the call, even though you weren't heroes and nobody expected you to matter."
 
 The Calibrant stood. The nothing around them shifted — not changing, but *paying attention.* The way a room gets quieter when someone is about to say something important.
 
@@ -336,9 +336,9 @@ The Calibrant listened to all of it. At some point they had stopped looking at t
 
 "That's... I didn't think of that. The damage threshold I put in the Arbiter of Efficiency. I thought players would key off damage. You keyed off party HP first." A pause. "That's more conservative. More sustainable. It accounts for variance in a way my design didn't anticipate."
 
-"It took us a while to figure out. In World 3, the variance killed us twice."
+"It took us a while to figure out. In World 4, the variance killed us twice."
 
-"I remember." The Calibrant said it softly. "I watched you die twice in World 3. I thought I'd found the right balance. I hadn't." They looked at the script — the imagined shape of it, the described architecture. "You built something better. Out of the ruins of something I built wrong."
+"I remember." The Calibrant said it softly. "I watched you die twice in World 4. I thought I'd finally found the right balance. I hadn't." They looked at the script — the imagined shape of it, the described architecture. "You built something better. Out of the ruins of something I built wrong."
 
 "That's what the system is for. Not challenge. Understanding. You build, we understand, we build back."
 

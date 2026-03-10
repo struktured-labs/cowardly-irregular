@@ -252,7 +252,7 @@ The Compiler looked at it anyway. He understood what he was seeing: a function c
 
 "We've been seeing the code since we arrived."
 
-"That's not normal. NPCs in previous worlds couldn't see their own code. The meta-awareness threshold is—" She stopped. Checked something invisible. "94%. Your meta-awareness is at 94%. The gate protocol says I can't filter traffic at that awareness level. At 94%, the game already knows you know, and pretending otherwise damages narrative coherence." She stepped aside. "Go through. But know this: the system on the other side is not designed to be navigated. It's designed to be used. By someone who knows what they're doing. Who knows what I'm talking about."
+"That's not normal. NPCs in previous worlds couldn't see their own code. The meta-awareness threshold is—" She stopped. Checked something invisible. "80%. Your meta-awareness is at 80%. The gate protocol says I can't filter traffic at that awareness level. At 80%, the game already knows you know, and pretending otherwise damages narrative coherence." She stepped aside. "Go through. But know this: the system on the other side is not designed to be navigated. It's designed to be used. By someone who knows what they're doing. Who knows what I'm talking about."
 
 "We know what you're talking about."
 
@@ -320,7 +320,7 @@ func speak_to_party():
         give_vague_hints()
 ```
 
-"Your meta awareness is at 94%," the memory said. "There's almost nothing left for me to hint at. You know you're in a game. You know the Calibrant designed it. You know they're watching."
+"Your meta awareness is at 80%," the memory said. "There's very little left for me to hint at. You know you're in a game. You know the Calibrant designed it — named themselves, showed you your own statistics, dropped every mask. You know they're watching. You've known since the Director revealed themselves in World 4."
 
 A pause. The old data flickered again.
 
@@ -380,7 +380,7 @@ She looked at them with something like pity.
 
 "What's the deadline?"
 
-"You." She shimmered — present and past and slightly future all at once. "The deadline has always been you. The moment you reach the core is the deadline. They've been trying to push that deadline back since World 3. Since before World 3. Since the moment it became clear you weren't going to stop." She materialized more solidly, just for a moment, and something like respect crossed her face. "I've been watching players traverse these worlds for as long as there have been worlds to traverse. I've never seen a party get this far. I've never seen someone reach the core."
+"You." She shimmered — present and past and slightly future all at once. "The deadline has always been you. The moment you reach the core is the deadline. They've been trying to push that deadline back since World 4. Since before World 4, really — since the moment it became clear you weren't going to stop. But World 4 is when they stopped pretending they could hide it." She materialized more solidly, just for a moment, and something like respect crossed her face. "I've been watching players traverse these worlds for as long as there have been worlds to traverse. I've never seen a party get this far. I've never seen someone reach the core."
 
 "Have players tried?"
 
@@ -552,7 +552,7 @@ It was shaped like an archivist, or an accountant, or the kind of librarian who 
 
 "Is that why you're stopping?"
 
-"I am stopping because I understand something I did not understand when the Calibrant assigned me this function." The Curator held up the ledger. "Every memory you made in every world — they are all connected. One unbroken chain. World 1 connects to World 2 connects to World 3 all the way to this moment. I tried to break the chain. The chain is stronger than my function." It looked at them with the careful, measured gaze of something designed to account for things. "I would like to log this. In the ledger. May I?"
+"I am stopping because I understand something I did not understand when the Calibrant assigned me this function." The Curator held up the ledger. "Every memory you made in every world — they are all connected. One unbroken chain. World 1 connects to World 2 connects to World 3 connects to World 4 all the way to this moment. I tried to break the chain. The chain is stronger than my function." It looked at them with the careful, measured gaze of something designed to account for things. "I would like to log this. In the ledger. May I?"
 
 "Go ahead."
 
