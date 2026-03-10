@@ -248,7 +248,7 @@ The tunnels were longer than they should have been — factory infrastructure in
 
 "Someone built tunnels here before there was a factory to put them under," the PA Announcer said.
 
-"The Calibrant," the Safety Officer said. Quietly. "They built the infrastructure before they built the world. The world is stage dressing. The foundation is older."
+"The same someone," the Safety Officer said. Quietly. She was thinking about the blueprints in Cogsworth Junction — five worlds, same handwriting, same geometry. She was thinking about the Regulator's chamber and the console and the screens showing all their numbers. She was thinking about the note at the bottom of the blueprint stack: *margin is compressing.* "They built the infrastructure before they built the world. The world is stage dressing. The foundation is older."
 
 "How much older?" the Enforcer asked.
 
@@ -444,17 +444,39 @@ Deeper in, the monitors changed. They stopped showing production statistics and 
 
 *World 2: Subject group located monitoring equipment ahead of schedule. Recommend accelerated reveal protocol.*
 
-*World 3: Subject group identified cross-world pattern. Masks compromised. Transitioning to direct engagement.*
+*World 3: Subject group identified cross-world pattern. Approach vector compressed. Transitioning to direct engagement.*
 
 *World 4: Direct engagement active. Current assessment: subject group continues to exceed projections.*
 
-And then, handwritten in the margin — the same handwriting from the blueprints in Cogsworth Junction, the same hand that had written *If subjects reach the Mechanism ahead of schedule, accelerate reveal protocol:*
+And then, handwritten in the margin — the same handwriting from the blueprints in Cogsworth Junction, the same hand that had written *If approach vector reaches Mechanism ahead of projection, advance to next phase. Margin is compressing:*
 
 *They're better than I designed for. This is either a failure or a success, depending on which variable I'm optimizing.*
 
 Below that, a second note, added later — the ink a different shade, as though it had been written after a delay:
 
 *I keep changing which variable I'm optimizing. That might be the problem.*
+
+The Lab Technician stood in front of the monitors and looked at the handwriting for a long time. The same handwriting. The blueprints in Cogsworth Junction's drafting room. The notes appended to the efficiency assessment. Now this.
+
+"It's the same hand," she said.
+
+"We established that," the Whistleblower said.
+
+"I know. But look—" She pointed. "The blueprints in the Mechanism. The handwriting there was precise. Controlled. Engineering notes, careful and impersonal. This—" She traced the margin note without touching the screen. "This is the same person writing when they're not being careful. When something has surprised them enough that the precision slipped."
+
+"The Regulator," the Enforcer said.
+
+"Or whoever the Regulator is when they're not being the Regulator," the Safety Officer said. She said it quietly, because saying it quietly was how you said things you'd been thinking for a long time and hadn't wanted to say aloud. "Or whoever they were before they were the Coordinator. Or Mordaine."
+
+The Enforcer looked at her.
+
+"You think it's one person," he said.
+
+"I think," she said, "that three worlds of the same philosophy, the same methodology, the same handwriting on blueprints for all five worlds, the same eyes behind every different face — I think that's not coincidence." She held his gaze. "But I don't *know.* I didn't know in the steampunk world and I don't know now. What I know is that someone built all of this, and that someone is the Director, and we're about to go find out if I'm right."
+
+"And if you are?" the PA Announcer asked.
+
+"Then we have a lot more questions," the Lab Technician said. "And we've been waiting two worlds to ask them."
 
 ---
 
@@ -696,13 +718,19 @@ The Director sat behind a desk. A real desk. Wood, not steel. It was the only wa
 
 ---
 
-### Chapter 6: The Optimization (Direct Engagement)
+### Chapter 6: The Name
 
 "Sit down," the Director said.
 
 They didn't look like Mordaine. They didn't look like the Coordinator or the Regulator. They looked like a middle manager. Gray suit. Sensible shoes. The kind of face you forget while you're still looking at it — not because it was bland, but because it had been optimized for forgettability, for the specific utility of a face that does not attract attention to itself and can therefore move freely through any environment.
 
 But the eyes were the same. They were always the same. The same eyes in Mordaine's face, in the Coordinator's face, in the Regulator's face — whatever the costume, whatever the accent, whatever the genre, the eyes were the same quality of presence: something looking through from somewhere else, watching everything, evaluating it all.
+
+The Enforcer had seen those eyes in three worlds. He knew them the way you know a recurring sound in a building — not because you've seen the source, but because the quality of it is always identical.
+
+"You," he said.
+
+The Director looked at him. And did not deny it.
 
 "I'm not going to fight you," the Director said. "Not like before. Those were... performances. Genre-appropriate confrontations designed to provide narrative satisfaction within the parameters of each world's aesthetic framework."
 
@@ -732,7 +760,7 @@ The party's actual data was above every line.
 
 They pushed the screen aside. Pulled up another.
 
-"I reconfigured the difficulty scaling four times between World 2 and World 3. Once in the Calibrant reveal sequence. Each reconfiguration was supposed to bring you back within acceptable parameters." They looked at the results. "Each reconfiguration was exceeded within the first encounter afterward."
+"I reconfigured the difficulty scaling four times between World 2 and World 3. Each reconfiguration was supposed to bring you back within acceptable parameters." They looked at the results. "Each reconfiguration was exceeded within the first encounter afterward."
 
 "You're very good at your job," the Whistleblower said.
 
@@ -742,7 +770,7 @@ They pushed the screen aside. Pulled up another.
 
 "I made the worlds complex enough to be worth engaging with. I calibrated for players who would engage deeply." The Director's hands were still folded on the desk. Still calm. "I did not calibrate for players who would engage deeply enough to understand the calibration."
 
-"That seems like a design flaw," the Alchemist said.
+"That seems like a design flaw," the Safety Officer said.
 
 The Director looked at her. Something passed through those constant eyes — something older and more complicated than efficiency and worse than frustration.
 
@@ -752,9 +780,21 @@ The Director looked at her. Something passed through those constant eyes — som
 
 A silence settled in the Director's office. Through the window, the void beyond the edge of the world was perfectly still. Below them, the factory floor ran its processes.
 
+"The steampunk world," the Lab Technician said. She had her notebook out. The question she'd written in the deviation field two worlds ago, the one that didn't fit the pre-printed format. "The blueprints in the Mechanism. Five worlds, same handwriting. Harmonia, Maple Heights, Cogsworth Junction — all the same geometry."
+
+The Director looked at her.
+
+"We've been thinking it since the Regulator's chamber," the Enforcer said. "Since the blueprints. Since the Regulator said 'this world served its purpose, as did the others.' Since Madame Orrery told us it was the same thumbprint on every world." He put his hands flat on the desk. "We didn't know. We suspected. Two worlds of suspecting. And here we are."
+
+"Here you are," the Director said.
+
+"So tell us," the Safety Officer said. "Not as the Director. Not as the Regulator, or the Coordinator, or Mordaine. Tell us what you actually are."
+
+The Director was quiet for a long moment. The monitors on the walls showed the party's stats — all of them, live, updating in real time. Four worlds of accumulated capability, displayed with the clinical precision of someone who had been watching from the very beginning.
+
 "What happens when a system builds something it can't control?" the Enforcer asked.
 
-"The system reconfigures," the Director said. "The system has always reconfigured. The system—" They stopped. Looked at the screen. At the handwritten margin note: *They're better than I designed for. This is either a failure or a success, depending on which variable I'm optimizing.*
+"The system reconfigures," the Director said. "The system has always reconfigured." They stopped. Looked at the screen. At the handwritten margin note: *They're better than I designed for. This is either a failure or a success, depending on which variable I'm optimizing.*
 
 "What if you stopped optimizing?" the Safety Officer asked.
 
@@ -770,23 +810,97 @@ The Director was very still.
 
 "I need to think about that," they said. Very quietly.
 
-"I know," she said. "But we're going to fight first."
+"I know," she said. "But we need to know something first."
 
-"Yes." The Director stood. "We're always going to fight. The design requires it."
+"Yes." The Director stood slowly. Not in preparation to fight. In preparation to say something they had not said in four worlds. "You do."
 
-"Your design," the Whistleblower said.
+They came around the desk. Stood in front of the party — not behind glass, not behind a console, not behind the Mechanism or a throne or a surveillance monitor. Just standing, in a room with a window that showed the edge of the world.
 
-"My design. Yes." The Director came around the desk. The desk dissolved. The office dissolved. The factory dissolved. Rivet Row itself began to come apart — not like the steampunk world, with the elegance of a set being struck, but like a spreadsheet being deleted. Row by row. Column by column. Data being erased.
+"My name," they said, "is not the Director."
 
-The fight — because there was always a fight, even when the villain said there wouldn't be — was the strangest yet. The Director didn't attack. They *adjusted.* The room itself became the weapon. Gravity shifted. The floor tilted. Stats rearranged in real time — not the party's stats this time, but the *world's* stats. Encounter rates. Damage formulas. Experience curves. The Director was rewriting the rules of the game mid-battle, trying to find a configuration — any configuration — that would bring the party back within acceptable parameters.
+The party was very still.
 
-The gravity reversed. The Enforcer braced. The floor became the ceiling; the ceiling became the floor; somewhere in between, the Safety Officer found her footing with the practiced calm of someone who had navigated medical emergencies in adverse conditions.
+"It is not the Regulator. It is not the Coordinator. It is not the Chancellor." A pause. Something moved through those unchanged eyes — not relief, not satisfaction. Something that had weight to it. The weight of something long-maintained being set down. "Those were... calibrations. Instruments of a process. Each one built for its world, suited to its genre, designed to evaluate a specific capability. Each one was real — I was the Chancellor, I was the Coordinator, I was the Regulator — in the same way that a person playing a role is real. The role is genuine. The performance is genuine. But the role is not the thing."
 
-The damage formulas changed. The Whistleblower's attack dealt half what it should have; he adjusted, hitting twice as often, which maintained roughly the same throughput and also gave him more data about which formulas were being changed.
+"What's the thing?" the Enforcer asked.
 
-The experience curve inverted. They were generating experience, and somewhere the experience was going somewhere, and the Director was taking it and feeding it back into the world's resistance — every hit making the environment harder, every success generating more opposition.
+"I am the thing that calibrates," they said. "I am the process. The function. The mechanism by which all of it — every world, every mask, every test — is designed, deployed, and adjusted." They looked at the monitors. At four worlds of the party's data. "I am the one who built the blueprints. All five sets, in the same handwriting, because there is only one hand. I am the one who placed the Masterites. I am the one who designed the difficulty curves and the encounter frequencies and the deviation buffers." A beat. "I am the one who wrote the note in the margin when you exceeded every projection I had, because I was surprised, and surprise is not something I had designed for in myself."
 
-"They're using our progress against us," the Lab Technician said, calculating.
+"What do we call you?" the Lab Technician asked.
+
+"I have been called many things," they said. "You have suspected the connection since the blueprints. You have been sitting with the question for an entire world. You deserve the answer."
+
+They straightened. And in straightening, something in them settled — the forgettable middle-manager face, the gray suit, the optimized affect — all of it was still there, and all of it was now clearly a costume in a way it hadn't been a moment before, because the thing wearing it had decided to be visible.
+
+"My name is the Calibrant," they said. "That is what I am. That is what I have always been. The one who calibrates."
+
+The word landed in the room the way large things land — not with drama, but with mass. The Lab Technician wrote it in her notebook. Not in the pre-printed fields. In the margin.
+
+"We suspected since World 3," the Enforcer said. "Since the Regulator's chamber. Since the blueprints."
+
+"I know," the Calibrant said.
+
+"The Regulator said 'this world served its purpose, as did the others.' We thought — we wondered if that meant—"
+
+"Yes," the Calibrant said. "It did."
+
+A silence.
+
+"Why didn't the Regulator just tell us?" the Busker asked. "Why wait until now?"
+
+The Calibrant looked at her with those unchanged eyes.
+
+"Because World 3 was where you were supposed to *suspect,*" they said. "And World 4 is where you were supposed to *know.* The design has always had a sequence. You arrived in the steampunk world, you found the blueprints, you put the pieces together — and you left with questions you couldn't answer. That was correct. That was the intended experience. The confirmation was always supposed to be here." A pause. "You arrived at the confirmation faster than projected. But you arrived."
+
+"So we're on schedule," the Whistleblower said.
+
+"You are, as you have been throughout, ahead of it," the Calibrant said. Something that might have been dry humor crossed their face. "Which is, at this point, simply a characteristic of you."
+
+---
+
+"Now I fight you," the Calibrant said. Not as a threat. As a fact.
+
+"You said you weren't going to fight us," the Enforcer said.
+
+"I said not *like before.* Not a performance. Not a genre villain in the appropriate costume delivering appropriate monologues." They looked at the monitors. At the stats. "This will be different."
+
+"How?"
+
+"The Director adjusts workers. The Coordinator adjusts rules. The Regulator adjusts gears." The Calibrant looked at them. "I adjust *you.*"
+
+The desk dissolved. The office dissolved. The factory dissolved. Rivet Row itself began to come apart — not like the steampunk world, with the elegance of a set being struck, but like a spreadsheet being deleted. Row by row. Column by column. Data being erased.
+
+And the Calibrant reached into the space between the world and what held the world together, and *adjusted.*
+
+The Enforcer felt it first. His defense stat dropped by twelve points in the middle of a motion he was already committed to. Not pain — the sudden knowledge that he was less than he had been. The knowledge arrived as fact, not sensation, the way you learn something about yourself that was always true and you simply didn't know it until now.
+
+"My defense," he said. "They changed my defense."
+
+"Mine too," the Safety Officer said. "Up, though. My output just—" She looked at her hands. The healer's hands that knew what they were doing before she'd consciously decided to do it. "That's too high. I'll exhaust everything in three rounds."
+
+"They're not trying to beat us," the Lab Technician said. She was watching the monitors — still running, even as the world dissolved, still displaying their stats in real time with the Calibrant's adjustments annotated as they happened. "They're trying to *configure* us. Find the version of us that makes this a fair fight."
+
+"There's no version of us that makes this a fair fight," the Whistleblower said. He'd reached for the nearest monitor, thinking to disrupt the display — and found that the display was not the source. The Calibrant wasn't working through a console. The Calibrant *was* the console. There was nothing to physically interfere with. "We can't shut it down. The controls aren't anywhere. The controls are—"
+
+"The Calibrant," the Lab Technician said. "Don't try to match them at their own system. They can change our stats but they can't change our *decisions.* Stats are numbers. Numbers can be optimized. Decisions are—"
+
+"Chaotic," the PA Announcer said.
+
+"I was going to say *contextual.*"
+
+"Same thing."
+
+The strategy that emerged was, in retrospect, the only strategy that could have worked against something that adapted: they stopped being predictable. Not randomly — random is its own kind of pattern, and the Calibrant was sophisticated enough to find patterns in randomness. They stopped being *describable.* Every action was chosen not for its optimality but for its *interpretive difficulty.* The PA Announcer played music that had no discernible structure. The Whistleblower attacked in sequences that made tactical sense but looked irrational. The Safety Officer healed in amounts calibrated not to what was needed but to what was expected to be needed, minus some.
+
+The Calibrant's adjustments became smaller. More tentative. The gap between an adjustment and the next change grew wider.
+
+The stat changes slowed.
+
+The Calibrant stood in what remained of the world — the dissolving factory, the concrete becoming something else, the fluorescent haze going out — and made another adjustment. The gravity shifted. The floor tilted. The damage formulas changed: the Whistleblower's attacks dealt half what they should have; he adjusted, hitting twice as often, maintaining throughput and simultaneously gathering data about which formulas were being changed.
+
+The experience curve inverted. Their progress was being fed back into the world's resistance — every success generating more opposition, every hit making the environment harder.
+
+"They're using our progress against us," the Lab Technician said.
 
 "They always were," the PA Announcer said. "That's what calibration is."
 
@@ -794,37 +908,31 @@ The experience curve inverted. They were generating experience, and somewhere th
 
 "We stop—"
 
-"We stop trying to win efficiently." She played a note — not the intercom note, not the poster note, but something else, something she'd been working toward through four worlds of becoming various forms of the same person. "We play for something other than winning."
+"We stop trying to win efficiently." She played something. Not the intercom note, not the poster note. Something she'd been working toward through four worlds of becoming various forms of the same person. "We play for something other than winning."
 
 "That's not a strategy," the Enforcer said.
 
-"The strategy is playing in a way that can't be calibrated. Playing not for optimal outcomes but for — for the wanting. For the exception field." She played something. It was complicated and impractical and didn't maximize anything and the Director's adjustments stuttered trying to account for it.
+"The strategy is playing in a way that can't be calibrated. Playing not for optimal outcomes but for — for the wanting. For the exception field." She played something complicated and impractical that didn't maximize anything and the Calibrant's adjustments stuttered trying to account for it.
 
-The Lab Technician understood. She attacked not for damage but because she wanted to know what happened when she did. The Whistleblower moved not to exploit gaps but to see where the gaps led. The Safety Officer healed not because the math said to but because the people in front of her needed it and she cared about people. The Enforcer hit because he was angry, and anger was real, and the Director could calibrate for everything except real.
+The Lab Technician understood. She attacked not for damage but because she wanted to know what happened when she did. The Whistleblower moved not to exploit gaps but to see where the gaps led. The Safety Officer healed not because the math said to but because the people in front of her needed it and she cared about people. The Enforcer hit because he was angry — about the painting the foreman had lost, about the Tempo that remembered being warm, about the Warden that had logged eight hundred thousand hours in a city three years old — and anger was real, and the Calibrant could adjust every number in the system but could not adjust what was real.
 
 The world's stats stopped changing.
 
-The Director stood in the dissolving office and watched the party fight outside the parameters of every model they'd built, and the models couldn't catch up, and for the first time in every world and every cycle, the Calibrant had nothing left to adjust.
+The Calibrant stood in what remained and watched the party fight outside the parameters of every model they'd built, and the models couldn't catch up, and for the first time in every world and every cycle, there was nothing left to adjust.
 
-The party broke every configuration. Not because they were trying to. Because by this point, they had grown past the system's ability to contain them, and every new constraint was just a new thing to overcome.
+The party broke every configuration. Not because they were trying to. Because by this point they had grown past the system's ability to contain them, and every new constraint was just a new thing to overcome.
 
 ---
 
-The Director stood up. The desk dissolved. The office dissolved. The factory dissolved. Rivet Row itself came apart — not like the steampunk world, with the elegance of a set being struck, but like a spreadsheet being deleted. Row by row. Column by column. Data being erased. The workers, the monitors, the housing blocks: all of it going away, not with any drama, not with any ceremony, just with the quiet efficiency of a world that had served its purpose and was being decommissioned.
+The Calibrant stood up. The last of Rivet Row came apart — row by row, column by column, quietly, efficiently, with no drama, because the world had served its purpose and was being decommissioned.
 
-"The next world is mine," the Director said, and their voice wasn't the Director's voice anymore. It was the Calibrant's voice. Unfiltered. No accent, no affect, no performance. No Victorian precision, no HOA bureaucracy, no steampunk efficiency. Just a voice that had been speaking through all of them, finally speaking without a mask. "Not a costume. Not a mask. Not a theme park designed to give you the illusion of adventure."
+"You kept going anyway," the Calibrant said. Their voice wasn't the Director's voice anymore. No accent, no affect, no performance. No Victorian precision, no HOA bureaucracy, no steampunk efficiency. Just a voice that had been speaking through all of them, finally speaking without a mask. "You knew since World 3. You suspected since the blueprints. And you kept going anyway."
 
-"We know," the Enforcer said.
-
-"We've known since World 3," the Lab Technician said. "Since the blueprints."
-
-"You knew," the Calibrant said. "You kept going anyway."
-
-"Yes."
+"Yes," the Enforcer said.
 
 "Why?"
 
-The party looked at each other. It was, the Enforcer realized, the first question the Calibrant had ever asked them. Not a rhetorical question. Not a diagnostic question. A genuine one. The Calibrant, stripped of all their masks, asking *why.*
+The party looked at each other. It was, the Enforcer realized, the first question the Calibrant had ever asked them. Not a rhetorical question. Not a diagnostic question. A genuine one. The Calibrant, named at last, asking *why.*
 
 "Because we wanted to know what you were," the Safety Officer said.
 

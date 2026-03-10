@@ -138,19 +138,21 @@ The party sat with that for a moment.
 
 "The coordinator," said another.
 
-"The same person," said Madame Orrery, setting down the teapot with the finality of someone closing a book. "Or the same *thing*, wearing different costumes. Playing different roles. Running different... scenarios."
+"The same *pattern,*" said Madame Orrery, setting down the teapot with the finality of someone closing a book. "Or the same philosophy. The same obsessive need for *balance.*" She said the word like it tasted sour. "Every world you've passed through — someone was at the top of it who spoke the same way. Who wanted the same thing. Who designed the same systems."
 
-"How do you know this?"
+"You're saying they're the same person."
 
-"Because I sell goods from every world, dear. And every world has the same thumbprint on it. The same design philosophy. The same obsessive need for *balance.*" She said the word like it tasted sour. "Whoever built these places — all of them, not just this one — they're not trying to create worlds. They're trying to create *challenges.* Controlled environments where you can be tested, measured, and evaluated."
+She looked at them carefully. Picked up her teacup. Set it down again.
 
-She looked at them over her teacup.
+"I'm saying whoever built these places — all of them, not just this one — left the same fingerprints. The same design language. The same... signature." She turned her cup in her hands. "I sell goods from every world, dear. I've seen enough worlds to recognize when they were built by the same hand. Whether that hand belongs to one person or to something else entirely, I genuinely don't know. But the thumb-print is consistent."
 
-"The question isn't who they are. You'll find that out soon enough. The question is: what happens when they decide you've passed?"
+"The Regulator," the Steampriest said.
+
+"The Regulator arrived the same way the others arrived. Walked into a position of power as though they'd always been there. Knew things they shouldn't know. Wanted what the others wanted." Orrery looked at them over her teacup. "The question isn't whether there's a connection. There's obviously a connection. The question is: what are you going to do when you find out how deep it goes?"
 
 "Passed what?" the Steampriest asked.
 
-"Whatever test this is." Orrery turned her cup in her hands. "I've been in enough test environments to recognize the furniture. The Regulator arrived exactly when the previous chief engineer disappeared. The Grand Schedule appeared with no author. The Mechanism runs the world's transitions — yes, the *transitions*, not just the trains. I've seen the pipes. I've traced them. They go further than this city, further than this world."
+"Whatever test this is." Orrery set down her cup. "I've been in enough test environments to recognize the furniture. The Regulator arrived exactly when the previous chief engineer disappeared. The Grand Schedule appeared with no author. The Mechanism runs the world's transitions — yes, the *transitions*, not just the trains. I've seen the pipes. I've traced them. They go further than this city, further than this world."
 
 She set down her cup.
 
@@ -176,7 +178,7 @@ He looked up.
 
 "And what?" the Saboteur pressed.
 
-"I've never figured that out. I don't think anything in the Mechanism runs with too little deviation. Everything in this world has a certain amount of chaos built in. Just enough. Never more, never less." He met their eyes. "Does that sound like something a city engineer designs? Or something a... game designer designs?"
+"I've never figured that out. I don't think anything in the Mechanism runs with too little deviation. Everything in this world has a certain amount of chaos built in. Just enough. Never more, never less." He met their eyes. "Does that sound like something a city engineer designs? Or something a... someone who studies people designs?"
 
 The room was quiet.
 
@@ -424,47 +426,45 @@ The party spread out around the table and looked.
 
 ---
 
-The blueprints showed Cogsworth Junction. Every street, every pipe, every steam vent, annotated in a handwriting that was precise and neat and impersonal. Margin notes in the same hand: *deviation corridor: acceptable*, *population density: optimal*, *encounter density: adjustable via Schedule.*
+The blueprints showed Cogsworth Junction. Every street, every pipe, every steam vent, annotated in a handwriting that was precise and neat and impersonal. Margin notes in the same hand: *deviation corridor: within spec*, *population density: nominal*, *throughput: adjustable via Schedule.*
 
 And then, overlaid, like transparencies stacked on a projector:
 
-Harmonia. The same roads, the same distances, different names. The same *shape.* A market district in the same quadrant. A castle at the same relative position. The same number of access routes to the center, the same number of side corridors leading to optional content. The labels were different — *village square* became *market plaza* became *junction hub* — but the underlying geometry was identical.
+Harmonia. The same roads, the same distances, different names. The same *shape.* A market district in the same quadrant. A castle at the same relative position. The same number of access routes to the center, the same number of side corridors leading to optional areas. The labels were different — *village square* became *market plaza* became *junction hub* — but the underlying geometry was identical.
 
 Maple Heights. The same proportions, the same relative population zones, different aesthetic. The strip mall sat exactly where Harmonia's trading district sat. The suburb's streets matched the medieval kingdom's roads at a ratio of one to one.
 
 And two more overlays they hadn't seen yet. One industrial — concrete, steel, no decoration. One made of something that wasn't quite light and wasn't quite code but was both and neither.
 
-All five in the same handwriting. All five with the same annotation style. All five with the same margin notes.
+All five in the same handwriting. All five with the same annotation style. All five with the same margin structure.
 
-*Player retention zone. Encounter density. Difficulty curve. Narrative gate.*
+*Deviation buffer: 12%. Load threshold: nominal. Approach vector: indirect.*
 
-At the bottom of the stack, a note separate from the technical annotations — handwritten and therefore different, as though written in a moment of something the author didn't usually permit themselves:
+The annotations were engineering language — maintenance language, the language of someone who serviced complex systems. They could have been describing a factory. They could have been describing a city. The party stood around the table, looking at five worlds laid out like architectural schematics, and tried to find the word for what they were seeing.
 
-**If subjects reach the Mechanism ahead of schedule, accelerate reveal protocol. The masks are becoming transparent.**
+At the bottom of the stack, a note separate from the technical annotations — in the same hand, but written differently, quickly, as though the careful precision had slipped for a moment:
 
-The party stood around the table and did not speak.
+**If approach vector reaches Mechanism ahead of projection, advance to next phase. Margin is compressing.**
 
-The Steampriest picked up the note. Read it again. Set it down.
+"Margin," the Steamknight said.
 
-"Subjects," she said.
+"That's us," the Saboteur said. "We're the margin."
 
-"That's us," the Saboteur confirmed.
+"Margin of what?" the Busker asked. She was looking at the five overlaid worlds. The same shape, the same distances, the same geometry in five different aesthetics. "Margin of error? Margin of schedule?"
 
-"Masks," the Busker said. She was looking at the overlaid blueprints. "Mordaine. The Coordinator."
+"Margin of..." The Alchemist touched the blueprints. The handwriting. The same hand on all five worlds. "The same person designed all of these. Or the same kind of thinking did. Every place we've been — Harmonia, Maple Heights, here — same proportions. Same structure. Same..." She turned to the others. "The same author."
 
-"The same person," the Steamknight said. He said it the way you say things you already knew but needed to say aloud to make real. "We said it. When we were in the suburbs. We said it but we didn't *say* it."
+"Mordaine," the Steamknight said.
 
-"We said it and we moved on," the Steampriest agreed. "Because moving on is what you do. You win, you move forward. You don't stop and interrogate the geometry of the world because you're busy with the next thing."
+"The Coordinator," the Saboteur said.
 
-"They counted on that," the Alchemist said quietly. "Momentum as a blinder. If you're always moving toward the next objective, you never look at what the objectives have in common."
+"The Regulator," the Steampriest said. And then stopped. Because they didn't know that. They suspected it. They had been suspecting it for two worlds. But suspecting is not knowing, and the blueprints didn't say *one person built all of this.* The blueprints said *one methodology built all of this.* Which was suggestive but not the same thing.
 
-She looked at the overlaid worlds, all the same shape, all the same author.
+"We don't know," the Alchemist said quietly. "We don't actually know."
 
-"They designed us not to notice until they were ready for us to notice."
+"But it fits," the Busker said.
 
-"And now?"
-
-"Now we've noticed ahead of schedule." She set down the note. "So they accelerate the reveal. Which means—"
+"Yes." The Alchemist put the note down. "It fits."
 
 The Tempo of the Mainspring arrived through the wall.
 
@@ -530,7 +530,7 @@ No one had a good answer.
 
 ---
 
-### Chapter 4: The Name
+### Chapter 4: The Engineer
 
 The Regulator's chamber was at the heart of everything, which meant it took three more rooms of gear chambers and two more reroutes by the shifting dungeon to reach, but eventually they were there.
 
@@ -546,7 +546,7 @@ They turned.
 
 The Regulator looked like a Victorian engineer. Goggles pushed up on the forehead. Brass-buttoned coat. Gloves stained with oil that might have been oil and might have been something else. A face that was familiar in a way that couldn't be placed — not because they'd seen it before, but because they'd seen its *expression* before. On Mordaine. On the Coordinator. The same calm certainty. The same absolute belief in the system. The same eyes, and the eyes were wrong, because they weren't Victorian eyes or medieval eyes or suburban eyes. They were the eyes of something looking through a costume and finding the costume quite adequate.
 
-"The suburban phase was faster than projected," the Regulator continued, moving to a secondary console, pulling up data. "You found the monitor. That was not scheduled until the third act. I adjusted, but the data was already compromised."
+"The suburban phase was faster than projected," the Regulator continued, moving to a secondary console, pulling up data. "You found the monitoring equipment. That was not scheduled until the third act. I adjusted, but the data was already compromised."
 
 "You adjusted," the Steamknight said.
 
@@ -582,183 +582,179 @@ The Regulator paused. Something passed through their expression — not guilt, n
 
 "You did." A pause. "That is more courtesy than I extended to any of you."
 
-"You're them," a party member said. Not asked. Said. "The chancellor. The coordinator."
+The Busker looked at the screens. At the numbers. At the five-world profile displayed with an engineer's precision. "The blueprints in the drafting room. The same handwriting on all five worlds."
 
-The Regulator tilted their head. The gesture was identical to one Mordaine had made in the throne room of Harmonia. Exactly identical — not similar, not echoing. Identical. The same angle, the same duration, the same quality of consideration being performed.
+"Efficient documentation practice," the Regulator said.
 
-"Those were roles," the Regulator said. "Appropriate to their context. A medieval world requires a medieval villain. A suburban world requires a suburban villain. This world required—" they gestured at themselves, at the console, at the gears — "an engineer."
+"You designed all of them."
 
-"Why?" the Busker asked.
+"I maintain all of them."
 
-The Regulator looked at her. Something in their expression shifted — not much, but enough to notice. The question *why* was apparently not one they encountered frequently.
+"There's a difference?"
 
-"Each world has a genre," the Regulator said. "Each genre has expectations. A fantasy world without a sorceress-chancellor is an incomplete fantasy. A suburb without an authority figure gone mad with bureaucratic power fails the genre test. Each villain I play serves the narrative of their world and evaluates a different aspect of your capability."
+The Regulator turned back to the console. Adjusted a dial. The numbers on the screen shifted slightly — recalibrating something, somewhere. "The Grand Mechanism maintains the integrity of the transition infrastructure. Each world must be kept within operating parameters. Too much deviation in one world affects the structural coherence of the next."
 
-"Mordaine tested our ability to navigate political complexity," the Alchemist said. She was watching the screens, watching her own numbers. "The Coordinator tested our ability to deal with systemic authority and bureaucratic obstruction."
+"So it's engineering," the Alchemist said. She was watching the Regulator's hands. The precision of the adjustments. The economy of motion. "Pure engineering. No agenda. Just maintenance."
 
-"Yes."
+The Regulator didn't answer immediately.
 
-"What were you testing?"
+"The Schedule must be maintained," they said.
 
-The Regulator looked at the screens. At the numbers. At the profile of a party that had broken through two worlds ahead of schedule.
+"Whose schedule?" the Busker asked.
 
-"I was testing whether you could recognize the pattern."
+Another pause. The Regulator's hands went still on the console.
 
-A silence.
+"What were you testing?" the Alchemist asked. "In each world. Mordaine evaluated political navigation. The Coordinator evaluated institutional obstruction. What were *you* evaluating?"
 
-"You passed," the Regulator said. "Rather ahead of schedule. The recognition was supposed to happen here — the blueprints were intended to be the revelation. But you'd already started putting it together in the suburbs. The timing was off."
+The Regulator looked at the screens. At the numbers. At the profile of a party that had broken through two worlds ahead of schedule and arrived at the third asking questions the design had not anticipated.
 
-"The masks were becoming transparent," the Steampriest said. "You noted that yourself. In the blueprints."
+"Pattern recognition," the Regulator said.
 
-The Regulator was quiet for a moment.
+A silence settled in the chamber.
 
-"Yes. I did."
+"We recognized the pattern," the Steamknight said.
 
-"So what happens now?" the Steamknight asked. "Do we fight? Do you have another form?"
+"Yes. Somewhat ahead of schedule." Something moved in the Regulator's expression — a small calculation being performed. "The blueprints in the drafting room were not intended to be found at this stage. You were... ahead of the projected approach vector."
 
-"Of course we fight," the Regulator said, with the calm of someone stating that water is wet and the sun rises. "That was always the next step. You reach the center, you fight the final challenge of the world, and you proceed. The genre demands it. The design demands it."
-
-They reached to the console and adjusted several dials in sequence.
-
-"But first — you asked about the next world."
-
-"We haven't yet," the Saboteur said.
-
-"You were about to." The Regulator turned to face them fully. "The next world won't need a costume. You've seen behind the curtain. There's no point in another mask."
-
-They straightened. The dials on the console began to move on their own.
-
-"My name," they said, "is not the Regulator. It is not the Chancellor. It is not the Coordinator. Those were... calibrations."
-
-A pause. The gears of the Mechanism, silent until now, began to turn. Slowly. Building. The sound of them was the sound of everything — all the world's wheels, all the world's movement, all the world's mechanism, gathering.
-
-"I am the Calibrant. And you—"
-
-They looked at the screen. At the numbers. At the profile of a party that had broken through two worlds and arrived at the third ahead of schedule, with strategies the system hadn't predicted and behaviors the models couldn't account for. At the automation scripts that had outpaced the difficulty scaling. At the resource management that had never reached the breaking point the design had planned for. At the gap between what they should have been and what they were, widening with every world.
-
-"—are out of tolerance."
-
----
-
-The fight was unlike anything before it.
-
-The Calibrant didn't fight like a villain. They fought like a *system administrator.*
-
-The console was the weapon. Not directly — the Calibrant didn't pick it up and hit anyone with it. But the console was connected to the Mechanism, and the Mechanism was connected to everything, and through it the Calibrant reached into the fabric of the world and *adjusted.*
-
-The Steamknight's defense stat dropped by twelve points in the middle of an attack he was mid-swing with. He felt it — not pain exactly, but the sudden knowledge that he was less than he had been. The hit landed harder than it should have.
-
-"They changed my defense," he said, stunned.
-
-"Mine too," the Steampriest said. "Up, though. My magic output just—" She looked at her hands. "That's not right. That's too high. If I cast at this level I'll burn through everything in three rounds."
-
-"They're balancing us," the Alchemist said, reading the screens as she dodged. The screens were still displaying their stats, in real time, with adjustments being annotated as they happened. "They're not trying to beat us. They're trying to *configure* us. Find the version of us that makes this a fair fight."
-
-"There's no version of us that makes this a fair fight," the Saboteur said. He'd gotten to the console while everyone else was distracted — or tried to. A brass mechanism had locked him out the moment he touched it. "They've locked the controls. I can't—"
-
-"Don't try to match them at their own system," the Alchemist said. She was already calculating. "They can change our stats but they can't change our *decisions.* Stats are numbers. Numbers can be optimized. Decisions are—"
-
-"Chaotic," the Busker said.
-
-"I was going to say *contextual.*"
-
-"Same thing."
-
-The strategy that emerged was, in retrospect, the only strategy that could have worked against something that adapted: they stopped being predictable. Not randomly — random is its own kind of pattern, and the Calibrant was sophisticated enough to find patterns in randomness. They stopped being *describable.* Every action was chosen not for its optimality but for its *interpretive difficulty.* The Busker played music that had no discernible structure. The Saboteur attacked in sequences that made tactical sense but looked irrational. The Steampriest healed in amounts calibrated not to what was needed but to what was expected to be needed, minus some.
-
-The Calibrant's adjustments became smaller. More tentative. The gap between an adjustment and the next attack grew wider.
-
-The stat changes slowed.
-
-The Steamknight hit the console.
-
-Not the mechanism inside it — just the physical object. The brass surface. With the full force of a Steamknight's attack, which was the full force of everything a Knight had always been, distilled from three worlds of fighting into one blow.
-
-The console didn't break. But something in the connection between it and the Calibrant stretched. The next adjustment was late by a half-second.
-
-The half-second was enough.
-
-They won. Not because they were stronger than the system. Because the system was trying to be fair, and they were not.
-
----
-
-The Calibrant didn't dissolve this time. They didn't glitch. They didn't fade.
-
-They simply stopped fighting. Lowered their hands. Looked at the party with something that might have been respect, if respect could be expressed in statistical terms.
-
-The Steamknight was still breathing hard. The Steampriest had her hands on her knees. The Alchemist was making notes — she had a small brass writing board that had materialized from somewhere, and she was writing things down because the thing that mattered right now was writing things down.
-
-The Saboteur was looking at the screens. Still showing their numbers. Still running.
-
-"You changed my stats," the Steamknight said.
+"The note said to advance to the next phase," the Saboteur said. "If we got here early."
 
 "Yes."
 
-"In the middle of combat."
+"What's the next phase?"
 
-"Yes. The parameters required adjustment. You were operating outside the design range."
+The Regulator was quiet for a moment. Looked at the screens. Looked at the party.
 
-"And the design range is— what? What we're supposed to be capable of?"
+"You fight me," they said. "That was always the next phase. This world has a genre. The genre has a climax. You have reached the center of the machine. The center of the machine has a guardian." They stepped away from the console. "That is the design. It does not require my feelings about it."
 
-"What you're designed to be capable of," the Calibrant corrected. "There's a difference. Designed implies intentionality. Intentionality implies an intended outcome. The outcome was calibrated balance — an experience in which your efforts are meaningfully tested without being insurmountably challenged."
+"Do you have feelings about it?" the Steampriest asked.
 
-"An experience," the Busker said. "You keep using that word."
+The Regulator didn't answer. Instead they straightened — a precise, deliberate settling of posture, like a gear engaging — and the dials on the console began to move on their own. Something in the Mechanism began to turn. Not the grinding of failing parts. The purposeful revolution of something beginning.
 
-"It's the accurate word."
+"This world served its purpose," the Regulator said. "As did the others."
 
-"You keep calling us variables and subjects. Why?"
+It was a strange thing to say. The party noticed it. *As did the others.* As though the worlds were projects, completed and filed. As though each one had had a purpose that could be finished.
 
-The Calibrant was quiet. The gears of the Mechanism were still turning, but slowly now, winding down.
+"What purpose?" the Busker asked.
 
-"Because that is what you are in this context," the Calibrant said. "In the context of the system I maintain. Variables that must be accounted for. Subjects whose behavior must be understood. This is not a judgment. A variable is not lesser than a constant. It is simply something that must be measured and accounted for."
+The Regulator turned to face them fully. Their expression was closed. Complete. The face of someone who has said exactly what they intended to say and will not be elaborated upon.
 
-"Does the system know we're people?" the Steampriest asked.
-
-Another pause. Longer.
-
-"The system knows what it needs to know to function," the Calibrant said. And then, quietly, almost beneath the sound of the gears: "Whether that constitutes adequate knowledge is... a question I have not resolved."
-
-They turned away from the party. Faced the console. The screens. All those numbers.
-
-"This mask is spent," they said. "The next one won't be so polite."
-
-They walked backward into the console. Into the gears. Into the machinery itself. Not disappearing — *integrating.* Becoming the system they had always been part of, the costume dissolving as the thing inside it submerged back into the mechanism that had always been its truer form.
-
-And then the world began to disassemble.
+"Shall we proceed?" they said.
 
 ---
 
-Not break. Not collapse. *Disassemble.* Like a stage crew striking a set after the final performance. The gears slowed and separated. The brass walls folded inward. The sky — the penny-colored, gaslit sky — peeled back like wallpaper, revealing something underneath.
+The fight was technical in the way that fighting an engineer is always technical: every attack was optimized, every defense was calculated, every moment of the engagement was managed with the ruthless efficiency of someone who had spent their existence maintaining systems and understood, at a mechanical level, exactly how much stress any component could bear before it failed.
 
-The party watched it happen from the center of the Mechanism's chamber, which was the last thing to go.
+The Regulator fought like a machine that had learned to fight. Not because fighting was their nature — there was nothing of passion in it, nothing of anger or fear — but because the fight was a problem to be solved, and they were very good at solving problems.
 
-The gas lamps went out in sequence. Not all at once — one by one, district by district, like the lights being switched off in a theater after the audience has gone home. In each lamp's absence, the dark it left behind was not the dark of night but the dark of something that had never been light in the first place.
+They used the Mechanism. Not to change the rules — the dials on the console stayed where they were, the screens continued displaying the party's unaltered stats — but to use the environment itself as a weapon. Gear platforms rising and falling on precise schedules. Steam vents venting at timed intervals. The shifting architecture of the dungeon, which the Regulator could navigate with perfect certainty because they knew exactly when each section would rotate and where each rotation would carry them.
 
-The cobblestones — the actual stones, brass-veined and worn smooth by citizens who moved on schedule — lifted off the ground and separated, each one folding into something smaller and then smaller still. The buildings followed. Not collapsing — they went inward, as though being stored. The clock tower was last. It stood alone in the disappearing city for a long moment, and then it went too, its gears winding down with the slowness of something that had been running for a very long time and was grateful to stop.
+The Steamknight fought through the rising platforms and learned their rhythm. The Alchemist threw reagents timed to the steam vents, letting the blasts carry her compounds in directions she couldn't have aimed herself. The Saboteur went sideways, as he always did, and found that the Regulator had accounted for sideways — there was a gear assembly at exactly the position he'd reached, calibrated to close off that approach.
 
-"They're not even hiding it anymore," someone said.
+"They know our patterns," the Saboteur said, finding another sideways.
 
-The words hung in the air that was no longer Cogsworth Junction's air.
+"They've been watching us since World 1," the Alchemist said. "Of course they know our patterns."
+
+"Then we need new patterns."
+
+"In the middle of a fight."
+
+"When else?"
+
+The Busker played something that had no rhythm the Mechanism could predict. Not random — the Mechanism was sophisticated enough to find patterns in randomness — but structured in a way that matched no system the Regulator had mapped for. A melody that had never been composed before, in the sense that it existed only for this moment and would never be repeated. The Mechanism's timing faltered, briefly, on a frequency it hadn't calibrated for.
+
+That was enough.
+
+They won. Not because they were stronger than the system. Because the system was designed to contain what it could predict, and they had finally done something genuinely unpredictable.
+
+---
+
+The Regulator stepped back from the center of the chamber. The platforms settled. The steam vents went quiet. The Mechanism continued turning — it would always continue turning — but the fight was over.
+
+The party was breathing hard. The Steamknight had a burn across his left arm from a vent he hadn't cleared in time. The Steampriest was already looking at it.
+
+The Regulator stood at the console. Looked at the screens. At the numbers. At the profile of a party that had just done something the models had not predicted.
+
+They made one adjustment — a single dial, a small rotation — and then put their hands flat on the console surface.
+
+"You did something I didn't model for," the Regulator said. "At the end. The music."
+
+"Does that bother you?" the Busker asked.
+
+"It requires annotation." The Regulator looked at the screens. Something moved through their expression — not frustration, not respect. A kind of focused attention, the way an engineer looks at a component that has behaved unexpectedly. "You've been outside projected parameters since the second world. I adjusted. You exceeded the adjustment. I adjusted again. You exceeded that." A pause. "You have been consistently outside the tolerance range. This world was supposed to bring you back within it."
+
+"It didn't," the Alchemist said.
+
+"No."
+
+"So what now?"
+
+The Regulator turned away from the console. Faced the far wall — the wall that was also a gear assembly, that was also the Mechanism's innermost ring, that was also, somewhere beyond, the edge of this world and the beginning of the next.
+
+"This world served its purpose," they said again. The same phrase. "As did the others."
+
+"You keep saying that," the Steamknight said. "What does it mean?"
+
+The Regulator was quiet for a long moment.
+
+"It means the work here is done," they said. "And the work elsewhere is beginning."
+
+They didn't say: *I am the Calibrant.* They didn't say: *I designed all of this.* They didn't say: *Mordaine was me, the Coordinator was me, every mask was the same face underneath.* They said what an engineer says when a project phase is complete: the work is done. The work elsewhere is beginning.
+
+Whether they meant: *the work of this world, completed because you beat me* — or something else entirely — they did not clarify. And the party, standing in the heart of the Mechanism with burn marks and reagent stains and the particular exhaustion of having fought something that understood them better than they understood it, did not have the certainty to press the question.
+
+They suspected. They had been suspecting for two worlds. The blueprints, the handwriting, the shared design language, the Warden who had logged more hours than the city had existed. They suspected with the heavy, specific weight of people who had been building a theory and had just found evidence that neither confirmed nor denied it — only made it more difficult to set aside.
+
+"The next world," the Saboteur said. "What do we find there?"
+
+The Regulator looked at him. The Victorian engineer's face. The eyes that were not Victorian.
+
+"You'll find out when you arrive," the Regulator said. "That's how it's always worked."
+
+They turned back to the console. Made one more adjustment. And the world began to wind down.
+
+---
+
+Not break. Not collapse. *Wind down.* Like a clock running out of stored energy — the gears slowing not because something broke but because the mechanism had completed its cycle and had not been rewound. The brass walls didn't fold inward this time; they simply grew still. The street sounds from above — the citizens on their schedules, the sentinels on their routes — went quiet one by one, as though the Schedule had simply ended.
+
+The party watched it happen from the center of the Mechanism's chamber. The Regulator was gone. Not dissolved, not glitched, not integrated into the machinery in some dramatic fashion — simply gone, the way a technician leaves a worksite when the work is done. There one moment, not there the next.
+
+The clock tower chimed from above. Once. Just once, and then the chiming stopped.
+
+"They didn't answer the question," the Steamknight said.
+
+"Which question?" the Steampriest asked.
+
+"Any of them. We asked if they designed the other worlds. They said they maintain them. We asked what the next phase was. They said we'd fight. We asked what they meant by *purpose.*" He looked at the space where the Regulator had been. "They answered in a way that could mean everything we think it means, or could mean nothing."
+
+"It means something," the Alchemist said. She had the blueprints in her mind still — five worlds, same handwriting, same geometry. "The same person designed all five of those worlds. Or the same methodology. Or the same..." She stopped. "I don't know what to call it. But it's not coincidence."
+
+"So Mordaine and the Coordinator and the Regulator are—"
+
+"I don't know," she said. "Not yet. I know they're connected. I know the connection is deeper than coincidence. I know the Warden logged eight hundred thousand hours of guard duty in a city that's three years old." She looked at the slowing gears. "I know the blueprints are in the same hand. I know the Regulator spoke the same way Mordaine spoke and the Coordinator spoke, with the same accent that fits the world but not quite perfectly."
+
+"That's a lot of knowing," the Busker said.
+
+"It's a lot of *suspecting,*" the Alchemist corrected. "Knowing would be different. Knowing would feel like something settled. This feels like something that hasn't landed yet."
+
+The gas lamps in the Mechanism began to go out in sequence. Not all at once — one by one, district by district, like the lights being switched off in a theater after the audience has gone home. In each lamp's absence, the dark it left behind was not the dark of night but the dark of something that had never been light in the first place.
+
+The cobblestones — the actual stones, brass-veined and worn smooth by citizens who had moved on schedule — lifted off the ground and separated, each one folding into something smaller and then smaller still. The buildings followed. Not collapsing — they went inward, as though being stored. The clock tower was last. It stood alone in the disappearing city for a long moment, chimed once more — still just once — and then went too, its gears winding down with the slowness of something that had been running for a very long time and was content to stop.
 
 Gray. Concrete. Fluorescent lighting. The hum of industrial machinery without the romance of steam. A world stripped of beauty and pretense, built for function and nothing else. The ceiling was flat. The ground was poured. The smell was recycled air.
 
 "Next world," the Saboteur said. He didn't make it a question.
 
-"They said we'd see them without a costume," the Alchemist said. "They said the next one wouldn't be polite."
+"They said this world served its purpose," the Steamknight said. "Same as the others."
 
-"You believe them?"
+"What does that mean?" the Steampriest asked.
 
-She thought about the Tempo of the Mainspring. Arriving before it was sent. Becoming something the schedule didn't write.
+Nobody answered. The Alchemist was already looking at the industrial world around them — the concrete, the fluorescent haze, the monitors on every corner showing numbers that were climbing — and writing something in the margin of her mental notebook. Not a conclusion. A question she intended to get an answer to.
 
-"I believe they're running out of options they planned for," she said. "Which means they'll start improvising. And improvising is unpredictable. That should be terrifying."
+The new world didn't welcome them. It simply *was.* No portal. No transition. No ceremony. One world ended and another began, and the seam between them was visible, deliberate, and utterly without apology.
 
-"It is," the Steamknight confirmed.
+"Forward," the Steamknight said.
 
-"Good," she said. "Being correctly terrified is useful. Let's go."
-
-The industrial world didn't welcome them. It simply *was.* No portal. No transition. No ceremony. One world ended and another began, and the seam between them was visible, deliberate, and utterly without apology.
-
-The Calibrant was done performing. From here on, it was just the math.
+The Alchemist followed, still thinking. Still suspecting. Still not yet knowing — but closer than they had ever been.
 
 ---
 
