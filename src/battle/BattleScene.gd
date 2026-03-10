@@ -107,6 +107,10 @@ var _battle_counter_label: RichTextLabel = null
 ## Turbo mode - skip animations and delays for fastest possible battles
 var turbo_mode: bool = false
 
+## Autogrind console mode — replaces battle log with grind stats feed
+var autogrind_console_mode: bool = false
+var _autogrind_console: RichTextLabel = null
+
 ## Autobattle toggle UI
 var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 
@@ -936,6 +940,60 @@ func _show_hint(hint_id: String, text: String) -> void:
 		return
 	_hints_shown[hint_id] = true
 	log_message("[color=gray][i]Tip: %s[/i][/color]" % text)
+
+
+func enable_autogrind_console() -> void:
+	autogrind_console_mode = true
+
+	if battle_log:
+		battle_log.visible = false
+
+	if turn_info and is_instance_valid(turn_info.get_parent()):
+		turn_info.get_parent().visible = false
+
+	var log_panel = get_node_or_null("UI/BattleLogPanel")
+	if not log_panel:
+		return
+
+	_autogrind_console = RichTextLabel.new()
+	_autogrind_console.name = "AutogrindConsole"
+	_autogrind_console.bbcode_enabled = true
+	_autogrind_console.scroll_active = true
+	_autogrind_console.scroll_following = true
+	_autogrind_console.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_autogrind_console.add_theme_font_size_override("normal_font_size", 13)
+	_autogrind_console.add_theme_font_size_override("bold_font_size", 14)
+	_autogrind_console.add_theme_color_override("default_color", Color(0.8, 0.8, 0.9))
+
+	var margin = log_panel.get_node_or_null("MarginContainer")
+	if margin:
+		var vbox = margin.get_node_or_null("VBoxContainer")
+		if vbox:
+			vbox.visible = false
+		margin.add_child(_autogrind_console)
+	else:
+		log_panel.add_child(_autogrind_console)
+
+
+func autogrind_console_log(text: String) -> void:
+	if _autogrind_console and is_instance_valid(_autogrind_console):
+		_autogrind_console.append_text(text + "\n")
+
+
+func update_autogrind_console_stats(stats: Dictionary) -> void:
+	if not _autogrind_console or not is_instance_valid(_autogrind_console):
+		return
+
+	var battles = stats.get("battles_won", 0)
+	var exp = stats.get("total_exp", 0)
+	var streak = stats.get("consecutive_wins", 0)
+	var eff = stats.get("efficiency", 1.0)
+	var corruption = stats.get("corruption", 0.0)
+	var turbo = " [color=#ff4444]TURBO[/color]" if turbo_mode else ""
+
+	_autogrind_console.append_text("[color=#666677]─────────────────────────────[/color]\n")
+	_autogrind_console.append_text("[color=#ffff66]Battle #%d[/color] | EXP: %d | Streak: %d | Eff: %.1fx%s\n" % [battles, exp, streak, eff, turbo])
+	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | Y:Turbo +/-:Speed T:Tier B:Exit[/color]\n" % corruption)
 
 
 ## Button handlers

@@ -86,6 +86,7 @@ var _is_autogrinding: bool = false
 var _autogrind_dashboard: Control = null
 var _autogrind_overlay: Control = null
 var _autogrind_overlay_layer: CanvasLayer = null
+var _autogrind_battle_summaries: Array = []
 
 ## Character creation
 var _character_creation_screen: Control = null
@@ -1565,8 +1566,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	_autogrind_controller.start_grind(party, config, _current_terrain)
 	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
 
-	# Create compact stats overlay for Tier 1
-	_create_autogrind_overlay()
+	# Clear battle summary ring buffer for new session
+	_autogrind_battle_summaries.clear()
 
 	# Switch to dedicated autogrind ambient music
 	SoundManager.reset_corruption()
@@ -1723,6 +1724,17 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Wait for scene to be ready
 	await get_tree().process_frame
 
+	# Enable autogrind console mode (replaces battle log with grind stats feed)
+	battle_scene.enable_autogrind_console()
+
+	# Replay recent battle summaries into the new console
+	for summary_line in _autogrind_battle_summaries:
+		battle_scene.autogrind_console_log(summary_line)
+
+	# Show current stats block
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		battle_scene.update_autogrind_console_stats(_autogrind_controller.get_grind_stats())
+
 	# Connect to battle end with autogrind handler
 	BattleManager.battle_ended.connect(_on_autogrind_battle_ended, CONNECT_ONE_SHOT)
 
@@ -1750,30 +1762,42 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			var battle_summary = BattleManager._summarize_battle_actions()
 			AutogrindSystem.update_learned_patterns(region_id, battle_summary)
 
-		# Heal party between battles (rest bonus)
+		# Heal party using items (no free healing)
 		for member in party:
-			var heal_amount = int(member.max_hp * 0.25)
-			member.heal(heal_amount)
-			var mp_restore = int(member.max_mp * 0.25)
-			member.restore_mp(mp_restore)
 			member.current_ap = 0
+			if member.is_alive and member.current_hp < member.max_hp:
+				_autogrind_heal_member(member)
+			if member.is_alive and member.current_mp < member.max_mp * 0.5:
+				_autogrind_restore_mp(member)
 
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
 
+		var stats = _autogrind_controller.get_grind_stats()
+
+		# Build one-line battle summary for the console ring buffer
+		var rounds = BattleManager.current_round
+		var summary_text: String
+		if victory:
+			summary_text = "[color=#44ff44]#%d Victory[/color] +%d EXP (%d rounds)" % [stats.get("battles_won", 0), exp_gained, rounds]
+			if BattleManager._one_shot_achieved:
+				summary_text += " [color=#ffaa00]ONE-SHOT![/color]"
+		else:
+			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds)" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append(summary_text)
+		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+
 		# Update UI with latest stats
 		if _autogrind_ui and is_instance_valid(_autogrind_ui):
-			_autogrind_ui.update_stats(_autogrind_controller.get_grind_stats())
+			_autogrind_ui.update_stats(stats)
 			_autogrind_ui.update_party_status()
 
 		# Update dashboard if in Tier 2
 		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
 			var region_id = _current_map_id.replace(" ", "_").to_lower()
-			_autogrind_dashboard.refresh(_autogrind_controller.get_grind_stats(), region_id)
-
-		# Update compact overlay
-		_update_autogrind_overlay(_autogrind_controller.get_grind_stats())
+			_autogrind_dashboard.refresh(stats, region_id)
 
 		# Update corruption audio degradation based on current meta-corruption level
 		var corruption_raw = AutogrindSystem.meta_corruption_level
@@ -1952,6 +1976,30 @@ func _hide_autogrind_dashboard() -> void:
 func _on_ui_tier_cycle_requested() -> void:
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.cycle_tier()
+
+
+func _autogrind_heal_member(member: Combatant) -> void:
+	var heal_items = [["hi_potion", 200], ["potion", 50]]
+	for item_pair in heal_items:
+		var item_id = item_pair[0]
+		var heal_amount = item_pair[1]
+		if member.get_item_count(item_id) > 0:
+			member.remove_item(item_id, 1)
+			member.heal(heal_amount)
+			print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, heal_amount])
+			return
+
+
+func _autogrind_restore_mp(member: Combatant) -> void:
+	var mp_items = [["hi_ether", 100], ["ether", 30]]
+	for item_pair in mp_items:
+		var item_id = item_pair[0]
+		var restore = item_pair[1]
+		if member.get_item_count(item_id) > 0:
+			member.remove_item(item_id, 1)
+			member.restore_mp(restore)
+			print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, restore])
+			return
 
 
 func _exit_tree() -> void:

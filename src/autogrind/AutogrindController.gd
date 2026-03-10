@@ -329,6 +329,11 @@ func _force_autobattle_on() -> void:
 		if member is Combatant:
 			var char_id = member.combatant_name.to_lower().replace(" ", "_")
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
+			var active_script = AutobattleSystem.get_character_script(char_id)
+			if active_script.is_empty() or not active_script.has("rules") or active_script["rules"].is_empty():
+				var default_script = AutobattleSystem.create_default_character_script(char_id)
+				AutobattleSystem.set_character_script(char_id, default_script)
+				print("[AUTOGRIND] Created default autobattle script for %s" % char_id)
 	print("[AUTOGRIND] Forced autobattle ON for all party members")
 
 
