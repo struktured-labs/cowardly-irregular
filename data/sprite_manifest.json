@@ -30,11 +30,15 @@
 			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		},
 		"bard": {
-			"path": "res://assets/sprites/jobs/bard",
-			"frame_width": 80,
-			"frame_height": 100,
+			"path": "res://assets/sprites/jobs/bard_sdxl",
+			"frame_width": 256,
+			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead"]
+			"tier": "T1",
+			"generator": "SDXL + pixel-art-xl LoRA + IP-Adapter Plus (style)",
+			"reference_seed": 42,
+			"ipadapter_scale": 0.35,
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		}
 	},
 	"party_sheets": {},
