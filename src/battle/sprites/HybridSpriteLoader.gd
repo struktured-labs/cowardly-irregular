@@ -97,6 +97,7 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 
 		sprite_frames.add_animation(anim_name)
 		sprite_frames.set_animation_speed(anim_name, fps)
+		sprite_frames.set_animation_loop(anim_name, anim_name == "idle")
 
 		for frame_idx in range(start_frame, end_frame + 1):
 			var col: int = frame_idx % cols_per_row
@@ -133,6 +134,8 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 
 		sprite_frames.add_animation(anim_name)
 		sprite_frames.set_animation_speed(anim_name, sheet_data.get("fps", 8))
+		# Only idle and victory loop; all others play once so animation_finished fires
+		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory"])
 
 		var frame_count = texture.get_width() / frame_width
 		for i in range(frame_count):
