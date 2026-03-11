@@ -700,6 +700,10 @@ func _create_battle_sprites() -> void:
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	"""Get the appropriate sprite frames for a monster type"""
+	var external_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(monster_id)
+	if external_frames:
+		return external_frames
+
 	match monster_id:
 		"slime":
 			return BattleAnimatorClass.create_slime_sprite_frames()

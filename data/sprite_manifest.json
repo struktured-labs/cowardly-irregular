@@ -388,6 +388,123 @@
 				"hit":    {"start": 4, "end": 5},
 				"dead":   {"start": 6, "end": 7}
 			}
+		},
+		"cave_rat": {
+			"path": "res://assets/sprites/monsters/cave_rat.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"rat_guard": {
+			"path": "res://assets/sprites/monsters/rat_guard.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"mushroom": {
+			"path": "res://assets/sprites/monsters/mushroom.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 5,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"cave_troll": {
+			"path": "res://assets/sprites/monsters/cave_troll.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 5,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"shadow_knight": {
+			"path": "res://assets/sprites/monsters/shadow_knight.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"fire_dragon": {
+			"path": "res://assets/sprites/monsters/fire_dragon.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 5,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"ice_dragon": {
+			"path": "res://assets/sprites/monsters/ice_dragon.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 5,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"lightning_dragon": {
+			"path": "res://assets/sprites/monsters/lightning_dragon.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
+		},
+		"shadow_dragon": {
+			"path": "res://assets/sprites/monsters/shadow_dragon.png",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 5,
+			"tier": "T1",
+			"animations": {
+				"idle":   {"start": 0, "end": 1},
+				"attack": {"start": 2, "end": 3},
+				"hit":    {"start": 4, "end": 5},
+				"dead":   {"start": 6, "end": 7}
+			}
 		}
 	}
 }
