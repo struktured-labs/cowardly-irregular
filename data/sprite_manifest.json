@@ -6,7 +6,7 @@
 			"frame_width": 256,
 			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"],
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory", "advance", "defer", "power_strike", "cleave", "provoke"],
 			"extra_animations": {
 				"slash": {
 					"path": "res://assets/sprites/jobs/fighter/slash.png",
@@ -24,28 +24,36 @@
 			"frame_width": 256,
 			"frame_height": 256,
 			"fps": 10,
-			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory", "advance", "defer", "cast_fire", "cast_ice", "cast_lightning", "cast_fira"]
 		},
 		"cleric": {
 			"path": "res://assets/sprites/jobs/cleric",
 			"frame_width": 256,
 			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory", "advance", "defer", "heal", "raise", "buff"]
 		},
 		"rogue": {
 			"path": "res://assets/sprites/jobs/rogue",
 			"frame_width": 256,
 			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory", "advance", "defer", "steal", "backstab", "mug", "flee"]
 		},
 		"bard": {
 			"path": "res://assets/sprites/jobs/bard",
-			"frame_width": 80,
-			"frame_height": 100,
+			"frame_width": 256,
+			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "advance", "defer", "battle_hymn", "lullaby", "discord", "inspiring_melody"],
+			"_note": "bard/ contains old 80x100 sprites for idle/walk/attack/hit/dead and new 256x256 for extended anims. Loader skips files it can't load."
+		},
+		"bard_sdxl": {
+			"path": "res://assets/sprites/jobs/bard_sdxl",
+			"frame_width": 256,
+			"frame_height": 256,
+			"fps": 8,
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
 		}
 	},
 	"party_sheets": {},
@@ -55,10 +63,17 @@
 			"notes": "Separated weapon sprites for fighter iron sword. Compose over body animations.",
 			"idle": {
 				"path": "res://assets/sprites/weapons/iron_sword/idle.png",
-				"frame_width": 128,
-				"frame_height": 128,
+				"frame_width": 256,
+				"frame_height": 256,
 				"frame_count": 2,
 				"fps": 4
+			},
+			"attack": {
+				"path": "res://assets/sprites/weapons/iron_sword/attack.png",
+				"frame_width": 256,
+				"frame_height": 256,
+				"frame_count": 3,
+				"fps": 8
 			},
 			"dash": {
 				"path": "res://assets/sprites/weapons/iron_sword/dash.png",
@@ -74,6 +89,182 @@
 				"frame_count": 3,
 				"fps": 8,
 				"notes": "Slash arc with trail effect. Frames: windup, peak, follow-through."
+			}
+		},
+		"bronze_sword": {
+			"tier": "T1",
+			"notes": "Bronze sword weapon sprites for early-game fighter.",
+			"idle": {
+				"path": "res://assets/sprites/weapons/bronze_sword/idle.png",
+				"frame_width": 256,
+				"frame_height": 256,
+				"frame_count": 2,
+				"fps": 4
+			},
+			"attack": {
+				"path": "res://assets/sprites/weapons/bronze_sword/attack.png",
+				"frame_width": 256,
+				"frame_height": 256,
+				"frame_count": 3,
+				"fps": 8
+			}
+		},
+		"flame_sword": {
+			"tier": "T1",
+			"notes": "Flame sword weapon sprites with fire visual effects.",
+			"idle": {
+				"path": "res://assets/sprites/weapons/flame_sword/idle.png",
+				"frame_width": 256,
+				"frame_height": 256,
+				"frame_count": 2,
+				"fps": 4
+			},
+			"attack": {
+				"path": "res://assets/sprites/weapons/flame_sword/attack.png",
+				"frame_width": 256,
+				"frame_height": 256,
+				"frame_count": 3,
+				"fps": 8
+			}
+		},
+		"ice_blade": {
+			"tier": "T1",
+			"notes": "Ice blade weapon sprites with frost visual effects.",
+			"idle": {
+				"path": "res://assets/sprites/weapons/ice_blade/idle.png",
+				"frame_width": 256,
+				"frame_height": 256,
+				"frame_count": 2,
+				"fps": 4
+			},
+			"attack": {
+				"path": "res://assets/sprites/weapons/ice_blade/attack.png",
+				"frame_width": 256,
+				"frame_height": 256,
+				"frame_count": 3,
+				"fps": 8
+			}
+		}
+	},
+	"overworld_monster_sheets": {
+		"slime": {
+			"path": "res://assets/sprites/monsters/overworld/slime.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"bat": {
+			"path": "res://assets/sprites/monsters/overworld/bat.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 8,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"goblin": {
+			"path": "res://assets/sprites/monsters/overworld/goblin.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"wolf": {
+			"path": "res://assets/sprites/monsters/overworld/wolf.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 8,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"spider": {
+			"path": "res://assets/sprites/monsters/overworld/spider.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"skeleton": {
+			"path": "res://assets/sprites/monsters/overworld/skeleton.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"ghost": {
+			"path": "res://assets/sprites/monsters/overworld/ghost.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 5,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"imp": {
+			"path": "res://assets/sprites/monsters/overworld/imp.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 8,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"troll": {
+			"path": "res://assets/sprites/monsters/overworld/troll.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 5,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
+			}
+		},
+		"snake": {
+			"path": "res://assets/sprites/monsters/overworld/snake.png",
+			"frame_width": 32, "frame_height": 32,
+			"fps": 6,
+			"tier": "T1",
+			"animations": {
+				"walk_down":  {"row": 0, "frames": 4},
+				"walk_left":  {"row": 1, "frames": 4},
+				"walk_right": {"row": 2, "frames": 4},
+				"walk_up":    {"row": 3, "frames": 4}
 			}
 		}
 	},

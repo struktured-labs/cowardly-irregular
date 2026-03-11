@@ -1206,34 +1206,7 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 		animator = _get_current_combatant_animator()
 	if not animator:
 		return
-
-	match anim_type:
-		"attack":
-			animator.play_attack()
-		"backstab":
-			# Quick diagonal lunge from behind
-			animator.play_backstab()
-		"steal":
-			# Quick in-and-out grab animation
-			animator.play_steal()
-		"mug":
-			# Attack + steal combo
-			animator.play_mug()
-		"skill":
-			# Generic physical skill (power strike, etc.)
-			animator.play_skill()
-		"heal", "buff":
-			# Healing/buff - use cast with green/blue tint effect
-			animator.play_cast()
-		"cast_fire", "cast_ice", "cast_lightning", "cast_dark", "cast_time", "cast_meta":
-			# All magic types use cast animation
-			animator.play_cast()
-		"special":
-			# Special abilities use item animation
-			animator.play_item()
-		_:
-			# Default to cast
-			animator.play_cast()
+	animator.play_named_animation(anim_type)
 
 
 func _on_item_pressed() -> void:
@@ -1871,7 +1844,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 		"item":
 			animator.play_item()
 		"defer":
-			animator.play_defend()
+			animator.play_named_animation("defer")
 
 
 func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass) -> void:
