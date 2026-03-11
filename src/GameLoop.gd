@@ -4,6 +4,7 @@ extends Node
 ## Manages scene transitions and player persistence
 
 const BattleSceneRes = preload("res://src/battle/BattleScene.tscn")
+const BattleSceneScript = preload("res://src/battle/BattleScene.gd")
 const MenuSceneRes = preload("res://src/ui/MenuScene.tscn")
 const OverworldSceneRes = preload("res://src/exploration/OverworldScene.tscn")
 const CharacterCreationScreenClass = preload("res://src/ui/CharacterCreationScreen.gd")
@@ -82,6 +83,12 @@ var _autogrind_controller: Node = null
 var _autogrind_ui: Control = null
 var _autogrind_ui_layer: CanvasLayer = null
 var _is_autogrinding: bool = false
+var _autogrind_dashboard: Control = null
+var _autogrind_overlay: Control = null
+var _autogrind_overlay_layer: CanvasLayer = null
+var _autogrind_battle_summaries: Array = []
+var _controller_overlay: ControllerOverlay = null
+var _controller_overlay_layer: CanvasLayer = null
 
 ## Character creation
 var _character_creation_screen: Control = null
@@ -130,6 +137,37 @@ func _input(event: InputEvent) -> void:
 		if event.is_action_pressed("ui_cancel"):
 			_stop_autogrind("Manual stop")
 			get_viewport().set_input_as_handled()
+			return
+		# Y button toggles turbo mode
+		if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
+			if current_scene and current_scene.has_method("set") and "turbo_mode" in current_scene:
+				current_scene.turbo_mode = not current_scene.turbo_mode
+				BattleManager.turbo_mode = current_scene.turbo_mode
+				print("[AUTOGRIND] Turbo mode: %s" % ("ON" if current_scene.turbo_mode else "OFF"))
+			get_viewport().set_input_as_handled()
+			return
+		# Y key (keyboard) toggles turbo mode
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_Y:
+			if current_scene and "turbo_mode" in current_scene:
+				current_scene.turbo_mode = not current_scene.turbo_mode
+				BattleManager.turbo_mode = current_scene.turbo_mode
+				print("[AUTOGRIND] Turbo mode: %s" % ("ON" if current_scene.turbo_mode else "OFF"))
+			get_viewport().set_input_as_handled()
+			return
+		# T key (keyboard) cycles tier
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
+			if _autogrind_controller and is_instance_valid(_autogrind_controller):
+				_autogrind_controller.cycle_tier()
+			get_viewport().set_input_as_handled()
+			return
+		# L+R shoulder together cycles tier
+		if event is InputEventJoypadButton and event.pressed:
+			if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
+				if Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER):
+					if _autogrind_controller and is_instance_valid(_autogrind_controller):
+						_autogrind_controller.cycle_tier()
+					get_viewport().set_input_as_handled()
+					return
 		return
 
 	# F5 = Open autobattle editor for current/first player
@@ -1056,8 +1094,13 @@ func _prewarm_area_sprites() -> void:
 
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
-	# Guard against reentrant battle triggers during transition
-	if current_state == LoopState.BATTLE:
+	# Guard against battle triggers during non-exploration states
+	if current_state != LoopState.EXPLORATION:
+		return
+	# Guard against battles while menus/UIs are open
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		return
+	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		return
 
 	# Disable player input during battle transition
@@ -1103,40 +1146,26 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 
 	print("[GAMELOOP] Battle triggered with enemies: %s" % [enemies])
 
-	# Start battle loading in background (async)
-	ResourceLoader.load_threaded_request("res://src/battle/BattleScene.tscn")
-
-	# Pre-warm sprite cache during transition (deferred so it runs during animation)
-	call_deferred("_prewarm_battle_sprites", enemies)
-
 	if BattleTransition:
 		print("[GAMELOOP] Starting battle transition")
 
-		# transition_midpoint fires at the START of the effect animation so we can
-		# load the battle scene underneath while the overworld capture animates away
-		BattleTransition.transition_midpoint.connect(
-			func():
-				# Wait for the threaded load then instantiate battle behind the overlay
-				_load_battle_behind_transition(enemies),
-			CONNECT_ONE_SHOT
-		)
-
-		# Run the transition effect — battle loads in parallel underneath
+		# Run the transition effect (captures screen, plays animation, ends on black)
 		await BattleTransition.play_battle_transition(enemy_types)
 		print("[GAMELOOP] Battle transition effect complete")
 
-		# Wait for battle to finish loading/starting if it hasn't yet
-		while current_state != LoopState.BATTLE:
-			await get_tree().process_frame
+		# Hide exploration scene (screenshot already taken)
+		if _exploration_scene and is_instance_valid(_exploration_scene):
+			_exploration_scene.visible = false
 
-		# Fade out / clean up — battle is already visible through transparent overlay
-		print("[GAMELOOP] Starting fade out")
+		# Load battle scene (uses preloaded resource, always available)
+		await _start_battle_async(enemies, true)
+		print("[GAMELOOP] Battle started")
+
+		# Reveal the battle scene
 		await BattleTransition.fade_out()
 		print("[GAMELOOP] Fade out complete - battle should be visible")
 	else:
 		# No transition — load battle directly
-		while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-			await get_tree().process_frame
 		await _start_battle_async(enemies, true)
 
 
@@ -1189,9 +1218,8 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	# Check if this is a miniboss battle (every 3rd battle), but not if forced enemies
 	var is_miniboss_battle = not has_enemies and (battles_won + 1) % 3 == 0 and battles_won > 0
 
-	# Get pre-loaded battle scene
-	var loaded_res = ResourceLoader.load_threaded_get("res://src/battle/BattleScene.tscn")
-	var battle_scene = loaded_res.instantiate()
+	# Use preloaded battle scene (always available, no race conditions)
+	var battle_scene = BattleSceneRes.instantiate()
 
 	# Set flags and party BEFORE adding to tree (since _ready() uses these)
 	battle_scene.managed_by_game_loop = true
@@ -1236,7 +1264,7 @@ func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 
 
 func _area_fade_to_black() -> void:
-	"""Fade the area-transition overlay to opaque black (0.3s)."""
+	"""Fade the area-transition overlay to opaque black (0.3s). Generic fallback."""
 	if not _area_fade_rect:
 		return
 	var tween = create_tween()
@@ -1245,7 +1273,7 @@ func _area_fade_to_black() -> void:
 
 
 func _area_fade_from_black() -> void:
-	"""Fade the area-transition overlay back to transparent (0.3s)."""
+	"""Fade the area-transition overlay back to transparent (0.3s). Generic fallback."""
 	if not _area_fade_rect:
 		return
 	var tween = create_tween()
@@ -1253,16 +1281,360 @@ func _area_fade_from_black() -> void:
 	await tween.finished
 
 
+func _get_transition_type(map_id: String) -> String:
+	"""Classify destination into cave, village, overworld, or generic."""
+	var t = map_id.to_lower()
+	if "cave" in t or "dungeon" in t:
+		return "cave"
+	if "village" in t or "town" in t or "heights" in t or "row" in t \
+			or "prime" in t or "vertex" in t or "brasston" in t \
+			or "harmonia" in t or "tavern" in t or "frosthold" in t \
+			or "eldertree" in t or "grimhollow" in t or "sandrift" in t \
+			or "ironhaven" in t:
+		return "village"
+	if "overworld" in t or t == "overworld":
+		return "overworld"
+	return "generic"
+
+
+func _get_location_display_name(map_id: String) -> String:
+	"""Return the human-readable name from locations.json, or a formatted fallback."""
+	var file = FileAccess.open("res://data/locations.json", FileAccess.READ)
+	if file:
+		var json = JSON.new()
+		if json.parse(file.get_as_text()) == OK:
+			var data = json.data
+			if data is Dictionary:
+				for key in data:
+					var entry = data[key]
+					if entry is Dictionary and entry.get("map_id", key) == map_id:
+						return entry.get("name", map_id.replace("_", " ").capitalize())
+		file.close()
+	return map_id.replace("_", " ").capitalize()
+
+
+func _make_location_label(text: String, layer: CanvasLayer) -> Label:
+	"""Create a centred location-name label styled to the game aesthetic."""
+	var lbl = Label.new()
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_color_override("font_color", Color(0.95, 0.92, 0.78))
+	lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	lbl.add_theme_constant_override("shadow_offset_x", 2)
+	lbl.add_theme_constant_override("shadow_offset_y", 2)
+	lbl.modulate.a = 0.0
+	layer.add_child(lbl)
+	return lbl
+
+
+func _area_cave_transition_in(location_name: String) -> void:
+	"""Stone-door slam effect: dim then two rects close from top and bottom."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	# Dim phase (0.25s)
+	var dim_tween = create_tween()
+	dim_tween.tween_property(_area_fade_rect, "modulate:a", 0.55, 0.25)
+	await dim_tween.finished
+
+	# Create top and bottom stone door rects
+	var top_door = ColorRect.new()
+	top_door.color = Color(0.08, 0.07, 0.09)
+	top_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	top_door.position = Vector2(0, -screen_size.y * 0.5 - 4)
+	_area_fade_layer.add_child(top_door)
+
+	var bottom_door = ColorRect.new()
+	bottom_door.color = Color(0.08, 0.07, 0.09)
+	bottom_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	bottom_door.position = Vector2(0, screen_size.y)
+	_area_fade_layer.add_child(bottom_door)
+
+	# Door slam (0.35s) — ease in for weight
+	var slam_tween = create_tween()
+	slam_tween.set_parallel(true)
+	slam_tween.tween_property(top_door, "position:y", 0.0, 0.35).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	slam_tween.tween_property(bottom_door, "position:y", screen_size.y * 0.5, 0.35).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	await slam_tween.finished
+
+	# Snap base rect to full black so it covers when doors are removed later
+	_area_fade_rect.modulate.a = 1.0
+
+	# Location label fade in
+	var lbl = _make_location_label("Entering " + location_name + "...", _area_fade_layer)
+	var lbl_tween = create_tween()
+	lbl_tween.tween_property(lbl, "modulate:a", 1.0, 0.2)
+	await lbl_tween.finished
+	await get_tree().create_timer(0.35).timeout
+
+	# Clean up doors and label (base rect stays black)
+	top_door.queue_free()
+	bottom_door.queue_free()
+	lbl.queue_free()
+
+
+func _area_cave_transition_out() -> void:
+	"""Stone doors open vertically to reveal the cave."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	# Create doors starting in closed position
+	var top_door = ColorRect.new()
+	top_door.color = Color(0.08, 0.07, 0.09)
+	top_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	top_door.position = Vector2(0, 0)
+	_area_fade_layer.add_child(top_door)
+
+	var bottom_door = ColorRect.new()
+	bottom_door.color = Color(0.08, 0.07, 0.09)
+	bottom_door.size = Vector2(screen_size.x, screen_size.y * 0.5 + 4)
+	bottom_door.position = Vector2(0, screen_size.y * 0.5)
+	_area_fade_layer.add_child(bottom_door)
+
+	_area_fade_rect.modulate.a = 0.0  # Let doors carry the black
+
+	# Open doors (0.45s) — ease out for smooth reveal
+	var open_tween = create_tween()
+	open_tween.set_parallel(true)
+	open_tween.tween_property(top_door, "position:y", -screen_size.y * 0.5 - 4, 0.45).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	open_tween.tween_property(bottom_door, "position:y", screen_size.y, 0.45).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	await open_tween.finished
+
+	top_door.queue_free()
+	bottom_door.queue_free()
+
+
+func _area_village_transition_in(location_name: String) -> void:
+	"""Warm amber horizontal wipe left-to-right."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	# Amber wipe bar — starts off-screen left
+	var wipe = ColorRect.new()
+	wipe.color = Color(0.72, 0.48, 0.12)
+	wipe.size = Vector2(screen_size.x * 1.1, screen_size.y)
+	wipe.position = Vector2(-screen_size.x * 1.1, 0)
+	_area_fade_layer.add_child(wipe)
+
+	# Trailing black fill that follows the wipe
+	var fill = ColorRect.new()
+	fill.color = Color(0.04, 0.03, 0.02)
+	fill.size = Vector2(screen_size.x * 1.1, screen_size.y)
+	fill.position = Vector2(-screen_size.x * 2.1, 0)
+	_area_fade_layer.add_child(fill)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var wipe_tween = create_tween()
+	wipe_tween.set_parallel(true)
+	wipe_tween.tween_property(wipe, "position:x", screen_size.x, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	wipe_tween.tween_property(fill, "position:x", 0.0, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	await wipe_tween.finished
+
+	# Snap base rect to full black, remove wipe bar
+	_area_fade_rect.modulate.a = 1.0
+	wipe.queue_free()
+	fill.queue_free()
+
+	# Show location label with animated dots
+	var lbl = _make_location_label("Arriving at " + location_name + "...", _area_fade_layer)
+	var lbl_tween = create_tween()
+	lbl_tween.tween_property(lbl, "modulate:a", 1.0, 0.18)
+	await lbl_tween.finished
+	await get_tree().create_timer(0.38).timeout
+	lbl.queue_free()
+
+
+func _area_village_transition_out() -> void:
+	"""Reverse amber wipe: right-to-left to reveal village."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	var wipe = ColorRect.new()
+	wipe.color = Color(0.72, 0.48, 0.12)
+	wipe.size = Vector2(screen_size.x * 1.1, screen_size.y)
+	wipe.position = Vector2(-screen_size.x * 0.05, 0)
+	_area_fade_layer.add_child(wipe)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var wipe_tween = create_tween()
+	wipe_tween.tween_property(wipe, "position:x", screen_size.x * 1.1, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	await wipe_tween.finished
+
+	wipe.queue_free()
+
+
+func _area_overworld_transition_in() -> void:
+	"""Circular iris-out: screen shrinks to a point at center, hold black."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	# Use a shader-based approach via a SubViewport is complex; instead we approximate
+	# an iris with radial segments drawn via a Control's _draw, using a tween on a
+	# custom property. As a clean fallback we use a fast vignette fade instead.
+	# True circle masking in Godot without shaders needs a CanvasItem shader or
+	# a SubViewport which is too heavy for a transition. We use concentric rects
+	# growing inward to approximate the iris closing.
+	var screen_size = get_viewport().get_visible_rect().size
+	var cx = screen_size.x * 0.5
+	var cy = screen_size.y * 0.5
+
+	# Four black rects collapsing toward center from all four sides
+	var left_r = ColorRect.new()
+	left_r.color = Color.BLACK
+	left_r.set_anchors_preset(Control.PRESET_FULL_RECT)
+	left_r.size = Vector2(cx, screen_size.y)
+	left_r.position = Vector2(0, 0)
+	left_r.pivot_offset = Vector2(0, 0)
+
+	var right_r = ColorRect.new()
+	right_r.color = Color.BLACK
+	right_r.size = Vector2(cx, screen_size.y)
+	right_r.position = Vector2(screen_size.x, 0)
+
+	var top_r = ColorRect.new()
+	top_r.color = Color.BLACK
+	top_r.size = Vector2(screen_size.x, cy)
+	top_r.position = Vector2(0, 0)
+
+	var bottom_r = ColorRect.new()
+	bottom_r.color = Color.BLACK
+	bottom_r.size = Vector2(screen_size.x, cy)
+	bottom_r.position = Vector2(0, screen_size.y)
+
+	for r in [left_r, right_r, top_r, bottom_r]:
+		r.modulate.a = 0.0
+		_area_fade_layer.add_child(r)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var dur = 0.5
+	var iris_tween = create_tween()
+	iris_tween.set_parallel(true)
+	# Fade in all four and slide them inward simultaneously
+	iris_tween.tween_property(left_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(right_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(top_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(bottom_r, "modulate:a", 1.0, dur * 0.3)
+	iris_tween.tween_property(left_r, "size:x", cx, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(right_r, "position:x", cx, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(top_r, "size:y", cy, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(bottom_r, "position:y", cy, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	await iris_tween.finished
+
+	# Snap full black, clean up rects
+	_area_fade_rect.modulate.a = 1.0
+	left_r.queue_free()
+	right_r.queue_free()
+	top_r.queue_free()
+	bottom_r.queue_free()
+
+	# Hold black briefly
+	await get_tree().create_timer(0.2).timeout
+
+
+func _area_overworld_transition_out() -> void:
+	"""Iris opens from center revealing the overworld (0.5s)."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+	var cx = screen_size.x * 0.5
+	var cy = screen_size.y * 0.5
+
+	var left_r = ColorRect.new()
+	left_r.color = Color.BLACK
+	left_r.size = Vector2(cx, screen_size.y)
+	left_r.position = Vector2(0, 0)
+
+	var right_r = ColorRect.new()
+	right_r.color = Color.BLACK
+	right_r.size = Vector2(cx, screen_size.y)
+	right_r.position = Vector2(cx, 0)
+
+	var top_r = ColorRect.new()
+	top_r.color = Color.BLACK
+	top_r.size = Vector2(screen_size.x, cy)
+	top_r.position = Vector2(0, 0)
+
+	var bottom_r = ColorRect.new()
+	bottom_r.color = Color.BLACK
+	bottom_r.size = Vector2(screen_size.x, cy)
+	bottom_r.position = Vector2(0, cy)
+
+	for r in [left_r, right_r, top_r, bottom_r]:
+		_area_fade_layer.add_child(r)
+
+	_area_fade_rect.modulate.a = 0.0
+
+	var dur = 0.5
+	var iris_tween = create_tween()
+	iris_tween.set_parallel(true)
+	iris_tween.tween_property(left_r, "position:x", -cx, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(right_r, "position:x", screen_size.x, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(top_r, "position:y", -cy, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	iris_tween.tween_property(bottom_r, "position:y", screen_size.y, dur).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	await iris_tween.finished
+
+	left_r.queue_free()
+	right_r.queue_free()
+	top_r.queue_free()
+	bottom_r.queue_free()
+
+
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
-	"""Handle transitioning between areas with a fade to hide load stutter."""
+	"""Handle contextual area transition based on destination type."""
 	_current_map_id = target_map
 	_spawn_point = spawn_point
-	_player_position = Vector2.ZERO  # Clear saved position when changing maps
-	_current_terrain = _get_terrain_for_map(target_map)  # Update terrain for new area
+	_player_position = Vector2.ZERO
+	_current_terrain = _get_terrain_for_map(target_map)
 
-	await _area_fade_to_black()
-	_start_exploration()
-	await _area_fade_from_black()
+	var transition_type = _get_transition_type(target_map)
+	var display_name = _get_location_display_name(target_map)
+
+	match transition_type:
+		"cave":
+			await _area_cave_transition_in(display_name)
+			_start_exploration()
+			await _area_cave_transition_out()
+		"village":
+			await _area_village_transition_in(display_name)
+			_start_exploration()
+			await _area_village_transition_out()
+		"overworld":
+			await _area_overworld_transition_in()
+			_start_exploration()
+			await _area_overworld_transition_out()
+		_:
+			await _area_fade_to_black()
+			_start_exploration()
+			await _area_fade_from_black()
+
+	# Safety cleanup: ensure fade overlay is transparent and no stale children remain
+	if _area_fade_rect:
+		_area_fade_rect.modulate.a = 0.0
+	if _area_fade_layer:
+		for child in _area_fade_layer.get_children():
+			if child != _area_fade_rect:
+				child.queue_free()
 
 
 func _get_terrain_for_map(map_id: String) -> String:
@@ -1486,6 +1858,7 @@ func _open_autogrind_ui() -> void:
 	_autogrind_ui.closed.connect(_on_autogrind_ui_closed)
 	_autogrind_ui.grind_requested.connect(_start_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
+	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
 
 	SoundManager.play_ui("menu_open")
 	print("[AUTOGRIND] Config UI opened")
@@ -1522,6 +1895,16 @@ func _start_autogrind(config: Dictionary) -> void:
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
+	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
+
+	# Clear battle summary ring buffer for new session
+	_autogrind_battle_summaries.clear()
+
+	# Switch to dedicated autogrind ambient music
+	SoundManager.reset_corruption()
+	SoundManager.play_music("autogrind")
+
+	_show_controller_overlay(ControllerOverlay.autogrind_context())
 
 	print("[AUTOGRIND] Session started")
 
@@ -1548,8 +1931,24 @@ func _stop_autogrind(reason: String) -> void:
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		_autogrind_ui.set_grinding(false)
 
+	# Reset turbo mode
+	BattleManager.turbo_mode = false
+
+	# Clean up dashboard
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		_autogrind_dashboard.queue_free()
+		_autogrind_dashboard = null
+
+	# Clean up compact overlay
+	_destroy_autogrind_overlay()
+	_destroy_controller_overlay()
+
 	# Reset engine speed
 	Engine.time_scale = 1.0
+
+	# Restore clean audio state and resume area music
+	SoundManager.reset_corruption()
+	SoundManager.play_area_music(_current_map_id)
 
 	print("[AUTOGRIND] Session stopped: %s" % reason)
 
@@ -1575,19 +1974,70 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 	await _start_autogrind_battle(enemies)
 
 
+func _show_autogrind_transition() -> void:
+	var battle_num = 0
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		var stats = _autogrind_controller.get_grind_stats()
+		battle_num = stats.get("battles_won", 0) + 1
+
+	var speed_text = ""
+	if BattleManager.turbo_mode:
+		speed_text = "TURBO"
+	else:
+		var speed_idx = BattleSceneScript._battle_speed_index
+		var labels = BattleSceneScript.BATTLE_SPEED_LABELS
+		if speed_idx < labels.size():
+			speed_text = labels[speed_idx]
+
+	var layer = CanvasLayer.new()
+	layer.layer = 95
+	add_child(layer)
+
+	var overlay = ColorRect.new()
+	overlay.color = Color(0.02, 0.01, 0.05, 0.9)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(overlay)
+
+	var battle_label = Label.new()
+	battle_label.text = "BATTLE #%d" % battle_num
+	battle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	battle_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	battle_label.set_anchors_preset(Control.PRESET_CENTER)
+	battle_label.add_theme_font_size_override("font_size", 32)
+	battle_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	battle_label.position = Vector2(-100, -30)
+	battle_label.size = Vector2(200, 40)
+	layer.add_child(battle_label)
+
+	if speed_text != "":
+		var speed_label = Label.new()
+		speed_label.text = speed_text
+		speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		speed_label.set_anchors_preset(Control.PRESET_CENTER)
+		speed_label.add_theme_font_size_override("font_size", 20)
+		var color = Color(0.9, 0.3, 0.3) if speed_text == "TURBO" else Color(0.4, 0.9, 0.4)
+		speed_label.add_theme_color_override("font_color", color)
+		speed_label.position = Vector2(-60, 10)
+		speed_label.size = Vector2(120, 30)
+		layer.add_child(speed_label)
+
+	var tween = create_tween()
+	tween.tween_property(overlay, "color:a", 0.0, 0.25).set_delay(0.05)
+	tween.parallel().tween_property(battle_label, "modulate:a", 0.0, 0.2).set_delay(0.1)
+	tween.tween_callback(layer.queue_free)
+
+
 func _start_autogrind_battle(enemy_data: Array) -> void:
 	"""Start a battle scene with pre-configured autogrind enemies"""
+	_show_autogrind_transition()
+
 	# Remove old scene
 	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()
 		await current_scene.tree_exited
 
-	# Create battle scene
-	var loaded_res = load("res://src/battle/BattleScene.tscn")
-	if not loaded_res:
-		push_error("GameLoop: Failed to load BattleScene.tscn")
-		return
-	var battle_scene = loaded_res.instantiate()
+	# Create battle scene using preloaded resource (avoids redundant disk load)
+	var battle_scene = BattleSceneRes.instantiate()
 
 	# Configure for autogrind
 	battle_scene.managed_by_game_loop = true
@@ -1598,8 +2048,26 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	add_child(battle_scene)
 	current_scene = battle_scene
 
+	# Set turbo mode based on tier
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		var tier = _autogrind_controller.get_current_tier()
+		# Both tiers use turbo for fastest execution
+		battle_scene.turbo_mode = true
+		BattleManager.turbo_mode = true
+
 	# Wait for scene to be ready
 	await get_tree().process_frame
+
+	# Enable autogrind console mode (replaces battle log with grind stats feed)
+	battle_scene.enable_autogrind_console()
+
+	# Replay recent battle summaries into the new console
+	for summary_line in _autogrind_battle_summaries:
+		battle_scene.autogrind_console_log(summary_line)
+
+	# Show current stats block
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		battle_scene.update_autogrind_console_stats(_autogrind_controller.get_grind_stats())
 
 	# Connect to battle end with autogrind handler
 	BattleManager.battle_ended.connect(_on_autogrind_battle_ended, CONNECT_ONE_SHOT)
@@ -1628,22 +2096,48 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			var battle_summary = BattleManager._summarize_battle_actions()
 			AutogrindSystem.update_learned_patterns(region_id, battle_summary)
 
-		# Heal party between battles (rest bonus)
+		# Heal party using items (no free healing)
 		for member in party:
-			var heal_amount = int(member.max_hp * 0.25)
-			member.heal(heal_amount)
-			var mp_restore = int(member.max_mp * 0.25)
-			member.restore_mp(mp_restore)
 			member.current_ap = 0
+			if member.is_alive and member.current_hp < member.max_hp:
+				_autogrind_heal_member(member)
+			if member.is_alive and member.current_mp < member.max_mp * 0.5:
+				_autogrind_restore_mp(member)
 
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
 
+		var stats = _autogrind_controller.get_grind_stats()
+
+		# Build one-line battle summary for the console ring buffer
+		var rounds = BattleManager.current_round
+		var summary_text: String
+		if victory:
+			summary_text = "[color=#44ff44]#%d Victory[/color] +%d EXP (%d rounds)" % [stats.get("battles_won", 0), exp_gained, rounds]
+			if BattleManager._one_shot_achieved:
+				summary_text += " [color=#ffaa00]ONE-SHOT![/color]"
+		else:
+			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds)" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append(summary_text)
+		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+
 		# Update UI with latest stats
 		if _autogrind_ui and is_instance_valid(_autogrind_ui):
-			_autogrind_ui.update_stats(_autogrind_controller.get_grind_stats())
+			_autogrind_ui.update_stats(stats)
 			_autogrind_ui.update_party_status()
+
+		# Update dashboard if in Tier 2
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+			var region_id = _current_map_id.replace(" ", "_").to_lower()
+			_autogrind_dashboard.refresh(stats, region_id)
+
+		# Update corruption audio degradation based on current meta-corruption level
+		var corruption_raw = AutogrindSystem.meta_corruption_level
+		var corruption_threshold = AutogrindSystem.corruption_threshold
+		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
+		SoundManager.set_corruption_intensity(corruption_norm)
 
 
 func _on_grind_complete(reason: String) -> void:
@@ -1656,6 +2150,18 @@ func _on_grind_complete(reason: String) -> void:
 		_autogrind_controller.queue_free()
 		_autogrind_controller = null
 
+	# Clean up dashboard
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		_autogrind_dashboard.queue_free()
+		_autogrind_dashboard = null
+
+	# Clean up compact overlay
+	_destroy_autogrind_overlay()
+	_destroy_controller_overlay()
+
+	# Reset turbo mode
+	BattleManager.turbo_mode = false
+
 	# Reset engine speed
 	Engine.time_scale = 1.0
 
@@ -1667,6 +2173,204 @@ func _on_grind_complete(reason: String) -> void:
 		_return_to_exploration()
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
+
+
+func _on_autogrind_tier_changed(new_tier: int) -> void:
+	if new_tier == 1:  # DASHBOARD
+		SoundManager.play_ui("tier_zoom_out")
+		_show_autogrind_dashboard()
+		if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
+			_autogrind_overlay.visible = false
+	else:  # ACCELERATED
+		SoundManager.play_ui("tier_zoom_in")
+		_hide_autogrind_dashboard()
+		if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
+			_autogrind_overlay.visible = true
+
+	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		_autogrind_ui.on_tier_changed(new_tier)
+
+
+func _create_autogrind_overlay() -> void:
+	if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
+		return
+
+	_autogrind_overlay_layer = CanvasLayer.new()
+	_autogrind_overlay_layer.layer = 40
+	add_child(_autogrind_overlay_layer)
+
+	_autogrind_overlay = Control.new()
+	_autogrind_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_autogrind_overlay_layer.add_child(_autogrind_overlay)
+
+	var vp_size = get_viewport().get_visible_rect().size
+	if vp_size.x == 0 or vp_size.y == 0:
+		vp_size = Vector2(1280, 720)
+
+	var bar_height = 120.0
+	var bar_bg = ColorRect.new()
+	bar_bg.color = Color(0.03, 0.02, 0.06, 0.85)
+	bar_bg.position = Vector2(0, vp_size.y - bar_height)
+	bar_bg.size = Vector2(vp_size.x, bar_height)
+	_autogrind_overlay.add_child(bar_bg)
+
+	var border = ColorRect.new()
+	border.color = Color(0.5, 0.4, 0.6, 0.8)
+	border.position = Vector2(0, vp_size.y - bar_height)
+	border.size = Vector2(vp_size.x, 2)
+	_autogrind_overlay.add_child(border)
+
+	# Summary line — big and readable
+	var summary = Label.new()
+	summary.name = "SummaryLabel"
+	summary.text = "Battle #1 | EXP: 0 | Streak: 0 | Efficiency: 1.0x"
+	summary.position = Vector2(16, vp_size.y - bar_height + 8)
+	summary.size = Vector2(vp_size.x - 32, 28)
+	summary.add_theme_font_size_override("font_size", 18)
+	summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	_autogrind_overlay.add_child(summary)
+
+	# Stats strip — full width, taller
+	var strip = AutogrindStatsStrip.new()
+	strip.name = "StatsStrip"
+	strip.position = Vector2(4, vp_size.y - bar_height + 38)
+	strip.size = Vector2(vp_size.x - 8, 42)
+	_autogrind_overlay.add_child(strip)
+
+	# Control hints — clearer
+	var hints = Label.new()
+	hints.name = "HintsLabel"
+	hints.text = "Y: Turbo    +/-: Speed    T: Dashboard    B: Exit"
+	hints.position = Vector2(16, vp_size.y - bar_height + 88)
+	hints.size = Vector2(vp_size.x - 32, 24)
+	hints.add_theme_font_size_override("font_size", 13)
+	hints.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
+	hints.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_autogrind_overlay.add_child(hints)
+
+
+func _update_autogrind_overlay(stats: Dictionary) -> void:
+	if not _autogrind_overlay or not is_instance_valid(_autogrind_overlay):
+		return
+
+	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel")
+	if summary:
+		var battles = stats.get("battles_won", 0)
+		var exp = stats.get("total_exp", 0)
+		var wins = stats.get("consecutive_wins", 0)
+		var eff = stats.get("efficiency", 1.0)
+		var turbo_txt = " TURBO" if BattleManager.turbo_mode else ""
+		summary.text = "Battle #%d | EXP: %d | Streak: %d | Efficiency: %.1fx%s" % [battles, exp, wins, eff, turbo_txt]
+
+	var strip = _autogrind_overlay.get_node_or_null("StatsStrip")
+	if strip and strip.has_method("refresh"):
+		var region_id = _current_map_id.replace(" ", "_").to_lower()
+		strip.refresh(stats, region_id)
+
+
+func _destroy_autogrind_overlay() -> void:
+	if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
+		_autogrind_overlay.queue_free()
+		_autogrind_overlay = null
+	if _autogrind_overlay_layer and is_instance_valid(_autogrind_overlay_layer):
+		_autogrind_overlay_layer.queue_free()
+		_autogrind_overlay_layer = null
+
+
+func _show_controller_overlay(context: Dictionary) -> void:
+	if has_node("/root/GameState"):
+		if not GameState.show_controller_overlay:
+			return
+
+	if not _controller_overlay:
+		_controller_overlay_layer = CanvasLayer.new()
+		_controller_overlay_layer.layer = 55  # Above battle scenes and menus
+		add_child(_controller_overlay_layer)
+
+		_controller_overlay = ControllerOverlay.new()
+		var vp_size = get_viewport().get_visible_rect().size
+		if vp_size.x == 0 or vp_size.y == 0:
+			vp_size = Vector2(1280, 720)
+		_controller_overlay.position = Vector2(vp_size.x - 330, vp_size.y - 200)
+		_controller_overlay.size = ControllerOverlay.OVERLAY_SIZE
+		_controller_overlay_layer.add_child(_controller_overlay)
+
+	_controller_overlay.set_context(context)
+	_controller_overlay.visible = true
+
+
+func _hide_controller_overlay() -> void:
+	if _controller_overlay and is_instance_valid(_controller_overlay):
+		_controller_overlay.visible = false
+
+
+func _destroy_controller_overlay() -> void:
+	if _controller_overlay and is_instance_valid(_controller_overlay):
+		_controller_overlay.queue_free()
+		_controller_overlay = null
+	if _controller_overlay_layer and is_instance_valid(_controller_overlay_layer):
+		_controller_overlay_layer.queue_free()
+		_controller_overlay_layer = null
+
+
+func _show_autogrind_dashboard() -> void:
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		_autogrind_dashboard.visible = true
+		return
+
+	var DashboardClass = load("res://src/ui/autogrind/AutogrindDashboard.gd")
+	_autogrind_dashboard = DashboardClass.new()
+	_autogrind_dashboard.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	if _autogrind_ui_layer and is_instance_valid(_autogrind_ui_layer):
+		_autogrind_ui_layer.add_child(_autogrind_dashboard)
+	else:
+		add_child(_autogrind_dashboard)
+
+	_autogrind_dashboard.pause_requested.connect(func(): _stop_autogrind("Paused"))
+	_autogrind_dashboard.exit_requested.connect(func(): _stop_autogrind("Manual stop"))
+	_autogrind_dashboard.tier_cycle_requested.connect(func():
+		if _autogrind_controller and is_instance_valid(_autogrind_controller):
+			_autogrind_controller.cycle_tier()
+	)
+
+	print("[AUTOGRIND] Dashboard shown (Tier 2)")
+
+
+func _hide_autogrind_dashboard() -> void:
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		_autogrind_dashboard.queue_free()
+		_autogrind_dashboard = null
+	print("[AUTOGRIND] Dashboard hidden (back to Tier 1)")
+
+
+func _on_ui_tier_cycle_requested() -> void:
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.cycle_tier()
+
+
+func _autogrind_heal_member(member: Combatant) -> void:
+	var heal_items = [["hi_potion", 200], ["potion", 50]]
+	for item_pair in heal_items:
+		var item_id = item_pair[0]
+		var heal_amount = item_pair[1]
+		if member.get_item_count(item_id) > 0:
+			member.remove_item(item_id, 1)
+			member.heal(heal_amount)
+			print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, heal_amount])
+			return
+
+
+func _autogrind_restore_mp(member: Combatant) -> void:
+	var mp_items = [["hi_ether", 100], ["ether", 30]]
+	for item_pair in mp_items:
+		var item_id = item_pair[0]
+		var restore = item_pair[1]
+		if member.get_item_count(item_id) > 0:
+			member.remove_item(item_id, 1)
+			member.restore_mp(restore)
+			print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, restore])
+			return
 
 
 func _exit_tree() -> void:

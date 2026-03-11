@@ -98,10 +98,18 @@ var encounter_enemies: Array = []  # When set, spawn these encounter enemies fro
 var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies from autogrind system
 
 ## Battle speed settings
-const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x"]
-static var _battle_speed_index: int = 2  # Persists across battles
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
+static var _battle_speed_index: int = 1  # Persists across battles (default 0.5x)
 var _speed_indicator: RichTextLabel = null
+var _battle_counter_label: RichTextLabel = null
+
+## Turbo mode - skip animations and delays for fastest possible battles
+var turbo_mode: bool = false
+
+## Autogrind console mode — replaces battle log with grind stats feed
+var autogrind_console_mode: bool = false
+var _autogrind_console: RichTextLabel = null
 
 ## Autobattle toggle UI
 var _autobattle_toggle_ui: AutobattleToggleUIClass = null
@@ -317,6 +325,19 @@ func _create_speed_indicator() -> void:
 
 	# Add to UI layer
 	$UI.add_child(_speed_indicator)
+
+	# Battle counter (shown during autogrind)
+	_battle_counter_label = RichTextLabel.new()
+	_battle_counter_label.name = "BattleCounter"
+	_battle_counter_label.bbcode_enabled = true
+	_battle_counter_label.fit_content = true
+	_battle_counter_label.scroll_active = false
+	_battle_counter_label.custom_minimum_size = Vector2(120, 24)
+	_battle_counter_label.add_theme_font_size_override("normal_font_size", 14)
+	_battle_counter_label.position = Vector2(8, 34)
+	_battle_counter_label.visible = false
+	$UI.add_child(_battle_counter_label)
+
 	_update_speed_indicator()
 
 
@@ -339,8 +360,30 @@ func _update_speed_indicator() -> void:
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
 		4:  # 4x - turbo (orange/red)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
+		5:  # 8x - extreme (red)
+			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
+		6:  # 16x - maximum (magenta)
+			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
+
+	if turbo_mode:
+		text += " [color=#ff4444]TURBO[/color]"
 
 	_speed_indicator.text = text
+
+	if turbo_mode:
+		if _speed_indicator:
+			_speed_indicator.add_theme_font_size_override("normal_font_size", 22)
+			_speed_indicator.custom_minimum_size = Vector2(160, 32)
+	else:
+		if _speed_indicator:
+			_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
+			_speed_indicator.custom_minimum_size = Vector2(80, 24)
+
+
+func set_battle_counter(battle_num: int) -> void:
+	if _battle_counter_label:
+		_battle_counter_label.visible = true
+		_battle_counter_label.text = "[color=#aaaacc]#%d[/color]" % battle_num
 
 
 func _create_dialogue_system() -> void:
@@ -897,6 +940,60 @@ func _show_hint(hint_id: String, text: String) -> void:
 		return
 	_hints_shown[hint_id] = true
 	log_message("[color=gray][i]Tip: %s[/i][/color]" % text)
+
+
+func enable_autogrind_console() -> void:
+	autogrind_console_mode = true
+
+	if battle_log:
+		battle_log.visible = false
+
+	if turn_info and is_instance_valid(turn_info.get_parent()):
+		turn_info.get_parent().visible = false
+
+	var log_panel = get_node_or_null("UI/BattleLogPanel")
+	if not log_panel:
+		return
+
+	_autogrind_console = RichTextLabel.new()
+	_autogrind_console.name = "AutogrindConsole"
+	_autogrind_console.bbcode_enabled = true
+	_autogrind_console.scroll_active = true
+	_autogrind_console.scroll_following = true
+	_autogrind_console.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_autogrind_console.add_theme_font_size_override("normal_font_size", 13)
+	_autogrind_console.add_theme_font_size_override("bold_font_size", 14)
+	_autogrind_console.add_theme_color_override("default_color", Color(0.8, 0.8, 0.9))
+
+	var margin = log_panel.get_node_or_null("MarginContainer")
+	if margin:
+		var vbox = margin.get_node_or_null("VBoxContainer")
+		if vbox:
+			vbox.visible = false
+		margin.add_child(_autogrind_console)
+	else:
+		log_panel.add_child(_autogrind_console)
+
+
+func autogrind_console_log(text: String) -> void:
+	if _autogrind_console and is_instance_valid(_autogrind_console):
+		_autogrind_console.append_text(text + "\n")
+
+
+func update_autogrind_console_stats(stats: Dictionary) -> void:
+	if not _autogrind_console or not is_instance_valid(_autogrind_console):
+		return
+
+	var battles = stats.get("battles_won", 0)
+	var exp = stats.get("total_exp", 0)
+	var streak = stats.get("consecutive_wins", 0)
+	var eff = stats.get("efficiency", 1.0)
+	var corruption = stats.get("corruption", 0.0)
+	var turbo = " [color=#ff4444]TURBO[/color]" if turbo_mode else ""
+
+	_autogrind_console.append_text("[color=#666677]─────────────────────────────[/color]\n")
+	_autogrind_console.append_text("[color=#ffff66]Battle #%d[/color] | EXP: %d | Streak: %d | Eff: %.1fx%s\n" % [battles, exp, streak, eff, turbo])
+	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | Y:Turbo +/-:Speed T:Tier B:Exit[/color]\n" % corruption)
 
 
 ## Button handlers
@@ -1484,13 +1581,12 @@ func _on_battle_ended(victory: bool) -> void:
 
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
-		log_message("[color=gray]Press ENTER to continue...[/color]")
-		# Play victory animation for all party members with staggered delays
-		_play_staggered_victory_animations()
-		# Switch to victory music
-		SoundManager.play_music("victory")
-		# Show victory results overlay
-		_show_victory_results()
+		_battle_victory = true
+		if not turbo_mode:
+			log_message("[color=gray]Press ENTER to continue...[/color]")
+			_play_staggered_victory_animations()
+			SoundManager.play_music("victory")
+			_show_victory_results()
 	else:
 		log_message("\n[color=red]=== DEFEAT ===[/color]")
 		log_message("[color=gray]Press ENTER to restart...[/color]")

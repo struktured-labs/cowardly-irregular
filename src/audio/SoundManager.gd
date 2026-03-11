@@ -42,6 +42,9 @@ const SOUNDS = {
 	"autobattle_open": {"freq": 440, "duration": 0.2, "type": "chord"},
 	"autobattle_close": {"freq": 350, "duration": 0.15, "type": "falling"},
 	"chest_open": {"freq": 700, "duration": 0.25, "type": "sparkle"},  # Treasure chest
+	# Autogrind tier transition sounds
+	"tier_zoom_out": {"freq": 320, "duration": 0.22, "type": "tier_zoom_out"},   # Tier 1 -> Dashboard
+	"tier_zoom_in": {"freq": 520, "duration": 0.18, "type": "tier_zoom_in"},    # Dashboard -> Tier 1
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},
@@ -90,6 +93,9 @@ func _exit_tree() -> void:
 	if _danger_tween and _danger_tween.is_valid():
 		_danger_tween.kill()
 	_danger_tween = null
+	if _corruption_tween and _corruption_tween.is_valid():
+		_corruption_tween.kill()
+	_corruption_tween = null
 
 
 func _setup_audio_players() -> void:
@@ -291,6 +297,10 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 			_generate_woozy(playback, samples, freq, sample_rate, duration)
 		"crackle_lock":
 			_generate_crackle_lock(playback, samples, freq, sample_rate, duration)
+		"tier_zoom_out":
+			_generate_tier_zoom_out(playback, samples, freq, sample_rate, duration)
+		"tier_zoom_in":
+			_generate_tier_zoom_in(playback, samples, freq, sample_rate, duration)
 		_:
 			_generate_blip(playback, samples, freq, sample_rate, duration)
 
@@ -625,6 +635,42 @@ func _generate_crackle_lock(playback: AudioStreamGeneratorPlayback, samples: int
 		playback.push_frame(Vector2(sample, sample) * 0.3)
 
 
+func _generate_tier_zoom_out(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Tier 1 -> Dashboard: whoosh sweep downward, wide stereo spread.
+	   Frequency slides from high to low (zooming out perspective)."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Pitch sweeps from 2x to 0.4x — steep downward swoop
+		var sweep_freq = freq * (2.0 - progress * 1.6)
+		var envelope = sin(progress * PI)
+		# Noise whoosh underneath — the "air rush" of pulling back
+		var noise = randf_range(-1.0, 1.0) * 0.3 * envelope
+		var tone = _triangle_wave(t * sweep_freq) * 0.5 * envelope
+		var s = (tone + noise) * 0.35
+		# Stereo spread: left leads, right slightly delayed for width
+		var l = s * (1.0 - progress * 0.3)
+		var r = s * (0.7 + progress * 0.3)
+		playback.push_frame(Vector2(l, r))
+
+
+func _generate_tier_zoom_in(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Dashboard -> Tier 1: sharp rising snap, focused center.
+	   Quick ascending blip with a percussive attack — snapping back in."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Fast rise then hold — "snap into focus"
+		var sweep_freq = freq * (0.5 + progress * 1.2)
+		# Sharp attack, quick decay
+		var envelope = pow(1.0 - progress, 1.8) if progress > 0.1 else progress * 10.0
+		var tone = _pulse_wave(t * sweep_freq, 0.3) * 0.55 * envelope
+		# Tight transient click at start
+		var click = randf_range(-0.4, 0.4) * max(0.0, 1.0 - progress * 12.0)
+		var s = (tone + click) * 0.38
+		playback.push_frame(Vector2(s, s))
+
+
 ## ============================================================================
 ## MUSIC SYSTEM
 ## ============================================================================
@@ -663,6 +709,8 @@ func play_music(track: String) -> void:
 	match track:
 		"title":
 			_start_title_music()
+		"autogrind":
+			_start_autogrind_music()
 		"battle":
 			_start_battle_music()
 		"boss":
@@ -746,6 +794,10 @@ func is_music_playing() -> bool:
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
 
+## Corruption audio degradation - as autogrind corruption rises, audio degrades
+var _corruption_intensity: float = 0.0  # 0.0 = clean, 1.0 = fully corrupted
+var _corruption_tween: Tween = null
+
 func set_danger_intensity(intensity: float) -> void:
 	"""Set danger intensity (0.0 = safe, 1.0 = critical)
 	   This affects music pitch, tempo feel, and adds urgency"""
@@ -790,6 +842,64 @@ func reset_danger() -> void:
 	if _music_player:
 		_music_player.pitch_scale = 1.0
 		_music_player.volume_db = -12.0
+
+
+## Corruption audio degradation - ties into autogrind meta-awareness theme.
+## As corruption rises in the grind system, the music subtly degrades:
+##   Low corruption  (0.0-0.3): clean, no change
+##   Mid corruption  (0.3-0.6): slight detune, hint of pitch drift
+##   High corruption (0.6-1.0): heavy detune, pitch wobble, volume flicker
+
+func set_corruption_intensity(intensity: float) -> void:
+	"""Set corruption intensity (0.0 = clean, 1.0 = fully corrupted).
+	   Maps to autogrind meta_corruption_level / corruption_threshold.
+	   Call this each time the autogrind battle ends to update audio degradation."""
+	var new_intensity = clamp(intensity, 0.0, 1.0)
+
+	if abs(new_intensity - _corruption_intensity) < 0.04:
+		return
+
+	if _corruption_tween and _corruption_tween.is_valid():
+		_corruption_tween.kill()
+
+	_corruption_tween = create_tween()
+	_corruption_tween.tween_method(_apply_corruption_intensity, _corruption_intensity, new_intensity, 1.5)
+
+
+func _apply_corruption_intensity(intensity: float) -> void:
+	"""Apply corruption degradation to the active music player."""
+	_corruption_intensity = intensity
+
+	if not _music_player:
+		return
+
+	# Pitch: starts clean, drifts downward with a slow wobble at high corruption.
+	# At full corruption: ~half-semitone flat with a 0.8 Hz LFO wobble.
+	var flat_offset = -intensity * 0.03
+	var wobble_depth = intensity * intensity * 0.018  # quadratic — subtle until high
+	var wobble_phase = Time.get_ticks_msec() / 1000.0
+	var wobble = sin(wobble_phase * TAU * 0.8) * wobble_depth
+	_music_player.pitch_scale = 1.0 + flat_offset + wobble
+
+	# Volume: subtle flicker at high corruption (reality destabilizing)
+	var vol_noise = 0.0
+	if intensity > 0.6:
+		vol_noise = randf_range(0.0, (intensity - 0.6) * 4.0)
+	_music_player.volume_db = _music_base_db - vol_noise
+
+
+func get_corruption_intensity() -> float:
+	return _corruption_intensity
+
+
+func reset_corruption() -> void:
+	"""Reset corruption degradation to clean level"""
+	if _corruption_tween and _corruption_tween.is_valid():
+		_corruption_tween.kill()
+	_corruption_intensity = 0.0
+	if _music_player:
+		_music_player.pitch_scale = 1.0
+		_music_player.volume_db = _music_base_db
 
 
 ## Battle Music - Procedural 16-bit Style Loop
@@ -4887,6 +4997,165 @@ func _generate_futuristic_music(rate: int, duration: float, bpm: float) -> Packe
 
 	# Spacious reverb for cold digital void
 	return _apply_reverb(buffer, 0.38, 0.20)
+
+
+## ============================================================================
+## AUTOGRIND AMBIENT MUSIC
+## ============================================================================
+## Plays when autogrind is active: lo-fi, analytical, calm but with urgency.
+## "System monitoring music" — the player is watching automation, not fighting.
+## Style: slow ambient electronic pulse, sparse arpeggios, subtle noise floor.
+## Key: D Dorian (modal — analytical but not bleak). BPM: 72 (slow, measured).
+
+func _start_autogrind_music() -> void:
+	"""Generate and play the autogrind ambient monitoring loop."""
+	_music_playing = true
+	print("[MUSIC] Playing autogrind ambient theme")
+	if _play_area_wav_cached("autogrind"):
+		return
+
+	var sample_rate = 22050
+	var bpm = 72.0
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_autogrind_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "autogrind")
+
+
+func _generate_autogrind_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Autogrind ambient loop — D Dorian, 72 BPM, 16 bars.
+	   Layers: slow pad chord, sparse arpeggio, soft kick pulse, subtle noise floor.
+	   Analytical and calm, with enough motion to feel like a system is running."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_dur = 60.0 / bpm
+	var sixteenth_dur = beat_dur / 4.0
+	var bar_dur = beat_dur * 4.0
+
+	# D Dorian frequencies — analytical, not gloomy
+	const NOTE_D2 = 73.42
+	const NOTE_A2 = 110.0
+	const NOTE_D3 = 146.83
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_A3 = 220.0
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+
+	# Sparse arpeggio — 8 bars of 32 sixteenth notes, mostly rests
+	# Pattern plays notes only every 2-4 steps — analytical breathing room
+	var arp_pattern = [
+		NOTE_D3, 0, 0, NOTE_A3,   0, NOTE_F3, 0, 0,   NOTE_E3, 0, 0, NOTE_B3,  0, 0, NOTE_A3, 0,
+		NOTE_D3, 0, NOTE_F3, 0,   NOTE_A3, 0, 0, NOTE_C4,  0, NOTE_D4, 0, 0,  NOTE_A3, 0, NOTE_E3, 0,
+		NOTE_D3, 0, 0, NOTE_G4,   0, NOTE_F4, 0, 0,   NOTE_E4, 0, NOTE_B3, 0,  0, 0, NOTE_A3, 0,
+		NOTE_D3, 0, NOTE_A3, 0,   0, NOTE_E4, 0, NOTE_D4,  NOTE_A3, 0, 0, NOTE_F3,  0, NOTE_E3, 0, 0,
+	]
+	var arp_len = arp_pattern.size()  # 64 steps = 4 bars, repeats
+
+	# Pad chords — slow harmonic movement, 4 bars each
+	var pad_chords = [
+		[NOTE_D3, NOTE_F3, NOTE_A3],     # Dm
+		[NOTE_A2, NOTE_E3, NOTE_A3],     # Am
+		[NOTE_F3, NOTE_A3, NOTE_C4],     # F
+		[NOTE_E3, NOTE_G4 * 0.5, NOTE_B3],  # Em (G dropped octave)
+	]
+
+	# Slow bass drone — quarter notes, D pedal with occasional movement
+	var bass_pattern = [
+		NOTE_D2, NOTE_D2, NOTE_D2, NOTE_D2,  # Bar 1
+		NOTE_A2, NOTE_A2, NOTE_D2, NOTE_D2,  # Bar 2
+		NOTE_D2, NOTE_F3 * 0.5, NOTE_D2, NOTE_D2,  # Bar 3
+		NOTE_E3 * 0.5, NOTE_E3 * 0.5, NOTE_D2, NOTE_D2,  # Bar 4
+	]
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sample_l = 0.0
+		var sample_r = 0.0
+
+		# --- SLOW SYNTH PAD ---
+		# Four-bar chord cycle, very slow attack (0.5 beat) for ambient float
+		var chord_idx = int(t / (bar_dur * 4)) % 4
+		var chord = pad_chords[chord_idx]
+		var bar_t = fmod(t, bar_dur * 4)
+		var pad_env = min(bar_t / (beat_dur * 2.0), 1.0)  # 2-beat fade-in per cycle
+		for note_freq in chord:
+			# Three detuned oscillators for shimmer
+			var d = 0.0025
+			var v1 = _triangle_wave(t * note_freq * (1.0 + d)) * 0.30
+			var v2 = _triangle_wave(t * note_freq * (1.0 - d)) * 0.28
+			var v3 = sin(t * note_freq * TAU) * 0.18
+			var pad_mix = (v1 + v2 + v3) * pad_env * 0.045
+			sample_l += pad_mix * 0.85
+			sample_r += pad_mix * 1.0
+
+		# --- SPARSE ARPEGGIO ---
+		# Triangle wave — analytical, cold, precise
+		var arp_idx = int(t / sixteenth_dur) % arp_len
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var arp_freq = arp_pattern[arp_idx]
+		if arp_freq > 0:
+			var arp_env = pow(1.0 - t_in_sixteenth, 0.6)
+			var arp_tone = _triangle_wave(t * arp_freq) * 0.55
+			# Detuned echo voice for width
+			arp_tone += _triangle_wave(t * arp_freq * 1.004) * 0.20
+			var av = arp_tone * arp_env * 0.12
+			# Arpeggios lean slightly left
+			sample_l += av * 1.0
+			sample_r += av * 0.70
+
+		# --- BASS DRONE ---
+		# Quarter-note pulse, triangle + sub sine, soft envelope
+		var bass_quarter_idx = int(t / beat_dur) % bass_pattern.size()
+		var t_in_quarter = fmod(t, beat_dur) / beat_dur
+		var bass_freq = bass_pattern[bass_quarter_idx]
+		var bass_env = _adsr(t_in_quarter * beat_dur, 0.02, 0.1, 0.65, beat_dur * 0.7, beat_dur)
+		var bass_tri = _triangle_wave(t * bass_freq) * 0.55
+		var bass_sub = sin(t * bass_freq * TAU) * 0.35
+		var bv = (bass_tri + bass_sub) * bass_env * 0.14
+		sample_l += bv
+		sample_r += bv
+
+		# --- SOFT KICK PULSE ---
+		# Every full beat — just a gentle thump, not a battle drum
+		var beat_pos = fmod(t, beat_dur)
+		if beat_pos < 0.06:
+			var kick_env = pow(1.0 - beat_pos / 0.06, 2.5)
+			var kick_freq = 60.0 * pow(0.3, beat_pos * 15)
+			var kick = sin(beat_pos * kick_freq * TAU) * kick_env * 0.28
+			sample_l += kick
+			sample_r += kick
+
+		# --- SUBTLE HI-HAT TICK (every 2 beats) ---
+		# Gives a sense of measured time passing — data center clock ticks
+		var two_beat_pos = fmod(t, beat_dur * 2.0)
+		if two_beat_pos < 0.008:
+			var tick_env = pow(1.0 - two_beat_pos / 0.008, 4.0)
+			var tick = randf_range(-0.3, 0.3) * tick_env * 0.10
+			sample_l += tick * 0.6
+			sample_r += tick * 1.0
+
+		# --- AMBIENT NOISE FLOOR ---
+		# Very quiet hiss — "system is running" texture
+		var noise_floor = randf_range(-0.012, 0.012)
+		sample_l += noise_floor
+		sample_r += noise_floor
+
+		# Soft tanh limiter
+		var out_l = tanh(sample_l * 1.1) * 0.80
+		var out_r = tanh(sample_r * 1.1) * 0.80
+		buffer.append(Vector2(out_l, out_r))
+
+	# Light reverb — ambient space without washing out the analytical clarity
+	return _apply_reverb(buffer, 0.28, 0.12)
 
 
 ## Piano melody for tavern interaction
