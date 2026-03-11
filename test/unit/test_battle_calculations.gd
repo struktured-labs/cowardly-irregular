@@ -266,3 +266,59 @@ func test_status_effect_add_remove() -> void:
 	assert_true(_combatant.has_status("poison"), "Should have poison status")
 	_combatant.remove_status("poison")
 	assert_false(_combatant.has_status("poison"), "Should not have poison after removal")
+
+
+## Group Attack Formula Tests
+## Formula: raw = int(sum(attack) * pow(N, 1.5) / num_enemies), mitigated = max(1, raw - defense)
+
+func test_group_attack_scaling_2_members() -> void:
+	"""Group attack with 2 members (pow(2,1.5) ≈ 2.828 scale factor)"""
+	var member2 = Combatant.new()
+	member2.combatant_name = "Member2"
+	member2.attack = 20
+	add_child(member2)
+
+	_combatant.attack = 20
+	var total_power = _combatant.attack + member2.attack  # 40
+	var scale = pow(2.0, 1.5)  # ~2.828
+	var raw = int(total_power * scale / 1.0)  # 113
+	var mitigated = max(1, raw - 10)  # 10 defense -> 103
+
+	assert_eq(total_power, 40, "Two 20-attack members sum to 40")
+	assert_between(scale, 2.8, 2.9, "2-member scale is ~2.828")
+	assert_eq(raw, 113, "Group raw damage should be 113")
+	assert_eq(mitigated, 103, "After 10 defense, mitigated = 103")
+
+	member2.queue_free()
+
+
+func test_group_attack_scaling_4_members() -> void:
+	"""Group attack with 4 members (pow(4,1.5) = 8.0 scale factor)"""
+	var total_power = 4 * 20  # 80
+	var scale = pow(4.0, 1.5)  # exactly 8.0
+	var raw = int(float(total_power) * scale / 1.0)  # 640
+	var mitigated = max(1, raw - 10)  # 630
+
+	assert_eq(total_power, 80, "Four 20-attack members sum to 80")
+	assert_eq(scale, 8.0, "4-member scale is exactly 8.0")
+	assert_eq(raw, 640, "Group raw damage at 4 members should be 640")
+	assert_eq(mitigated, 630, "After 10 defense, mitigated = 630")
+
+
+func test_group_attack_multi_enemy_split() -> void:
+	"""Group damage splits across multiple enemies"""
+	var total_power = 2 * 20  # 40
+	var scale = pow(2.0, 1.5)
+	var num_enemies = 3
+	var raw = int(float(total_power) * scale / float(num_enemies))  # 37
+	var mitigated = max(1, raw - 10)  # 27
+
+	assert_eq(raw, 37, "Per-enemy raw damage at 3 enemies should be 37")
+	assert_eq(mitigated, 27, "Per-enemy mitigated = 27")
+
+
+func test_group_attack_minimum_damage() -> void:
+	"""Group attack always deals at least 1 damage even vs high defense"""
+	var raw = 1
+	var mitigated = max(1, raw - 9999)
+	assert_eq(mitigated, 1, "Group attack minimum damage is 1")

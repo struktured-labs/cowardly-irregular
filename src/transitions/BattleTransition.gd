@@ -179,6 +179,8 @@ func play_battle_transition(enemy_types: Array) -> void:
 	_overlay.modulate.a = 1.0
 
 	# Signal that screen is fully covered — safe to load battle
+	if not is_instance_valid(self):
+		return
 	transition_midpoint.emit()
 
 

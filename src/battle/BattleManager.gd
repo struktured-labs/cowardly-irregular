@@ -715,18 +715,10 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		_process_grid_autobattle(combatant)
 		return
 
-	# AI strategic defer: enemies can defer to build AP for a future advance.
-	# Only defer if AP is low (< 2) and with a small chance (5%).
-	# This gives enemies tactical depth without making them feel passive.
-	var should_defer = randf() < 0.05 and combatant.current_ap < 2
-	if should_defer:
-		var action = {"type": "defer", "combatant": combatant, "speed": _compute_action_speed(combatant, "defer")}
-		_queue_action(action)
-		print("%s (AI) chooses to defer (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
-		_end_selection_turn()
-		return
-
 	# AI can advance with a small random chance to pressure the party.
+	# NOTE: Enemies do NOT defer. Deferring caused stall bugs (battles frozen
+	# when all party members deferred and enemies also randomly deferred).
+	# Enemies always attack — defer is a player-only mechanic.
 	var should_advance = randf() < 0.15 and combatant.current_ap >= 0  # 15% chance to advance
 
 	if should_advance and combatant.current_ap >= 1:
