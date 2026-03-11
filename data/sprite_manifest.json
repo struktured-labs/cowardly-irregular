@@ -6,7 +6,18 @@
 			"frame_width": 256,
 			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"]
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"],
+			"extra_animations": {
+				"slash": {
+					"path": "res://assets/sprites/jobs/fighter/slash.png",
+					"frame_width": 128,
+					"frame_height": 128,
+					"frame_count": 3,
+					"fps": 8,
+					"tier": "T2_artist_draft",
+					"notes": "Body-only slash animation, no weapon. Compose with weapon_sheets/iron_sword/slash for full attack."
+				}
+			}
 		},
 		"mage": {
 			"path": "res://assets/sprites/jobs/mage",
@@ -38,6 +49,34 @@
 		}
 	},
 	"party_sheets": {},
+	"weapon_sheets": {
+		"iron_sword": {
+			"tier": "T2_artist_draft",
+			"notes": "Separated weapon sprites for fighter iron sword. Compose over body animations.",
+			"idle": {
+				"path": "res://assets/sprites/weapons/iron_sword/idle.png",
+				"frame_width": 128,
+				"frame_height": 128,
+				"frame_count": 2,
+				"fps": 4
+			},
+			"dash": {
+				"path": "res://assets/sprites/weapons/iron_sword/dash.png",
+				"frame_width": 128,
+				"frame_height": 128,
+				"frame_count": 1,
+				"fps": 1
+			},
+			"slash": {
+				"path": "res://assets/sprites/weapons/iron_sword/slash.png",
+				"frame_width": 128,
+				"frame_height": 128,
+				"frame_count": 3,
+				"fps": 8,
+				"notes": "Slash arc with trail effect. Frames: windup, peak, follow-through."
+			}
+		}
+	},
 	"monster_sheets": {
 		"slime": {
 			"path": "res://assets/sprites/monsters/slime.png",
