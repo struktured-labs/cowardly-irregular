@@ -210,13 +210,16 @@ def compute_identity_embeddings(pipe, reference_image: Image.Image):
     return embeds
 
 
-def pixelize_frame(img: Image.Image, pixel_size: int = 12, num_colors: int = 32) -> Image.Image:
+def pixelize_frame(img: Image.Image, pixel_size: int = 12, num_colors: int = 32,
+                   use_pixeloe: bool = True, pixeloe_quant: bool = False) -> Image.Image:
     """Apply PixelOE pixelization then upscale back to target frame size.
 
     pixel_size: how many input pixels become 1 pixel art pixel.
                 For 768→64 effective resolution, use 12 (768/64=12).
     """
     try:
+        if not use_pixeloe:
+            raise RuntimeError("PixelOE disabled, using manual downscale")
         from pixeloe.torch.pixelize import pixelize
 
         # Convert PIL -> torch tensor (B, C, H, W) float [0, 1]
@@ -224,16 +227,13 @@ def pixelize_frame(img: Image.Image, pixel_size: int = 12, num_colors: int = 32)
         tensor = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).float() / 255.0
         tensor = tensor.cuda()
 
-        # Pixelize with color quantization — softer settings to reduce artifacts
-        result = pixelize(
-            tensor,
-            pixel_size=pixel_size,
-            thickness=1,
-            mode="center",
-            do_quant=True,
-            num_colors=num_colors,
-            quant_mode="kmeans",
-        )
+        # Pixelize
+        pix_kwargs = dict(pixel_size=pixel_size, thickness=1, mode="contrast")
+        if pixeloe_quant:
+            pix_kwargs.update(do_quant=True, num_colors=num_colors, quant_mode="kmeans")
+        else:
+            pix_kwargs["do_quant"] = False
+        result = pixelize(tensor, **pix_kwargs)
 
         # Convert back: (B, C, H, W) -> PIL
         out_arr = (result.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
@@ -252,24 +252,44 @@ def pixelize_frame(img: Image.Image, pixel_size: int = 12, num_colors: int = 32)
         return small.resize((FRAME_W, FRAME_H), Image.NEAREST)
 
 
-def extract_reference_palette() -> set:
-    """Extract palette from artist's fighter sprites."""
+def extract_reference_palette(source_path: str = None) -> set:
+    """Extract palette from a reference image or artist's fighter sprites.
+
+    If source_path is given (e.g. hero_reference.png), extract from that.
+    Otherwise fall back to fighter sprite sheets.
+    """
     from collections import Counter
     all_colors = Counter()
-    for anim in ANIMATIONS:
-        path = REFERENCE_DIR / f"{anim}.png"
-        if path.exists():
-            img = Image.open(path).convert("RGBA")
-            arr = np.array(img)
-            mask = arr[:, :, 3] > 10
-            pixels = arr[mask][:, :3]
-            for p in pixels:
-                all_colors[tuple(int(c) for c in p)] += 1
-    return set(all_colors.keys())
+
+    if source_path and Path(source_path).exists():
+        img = Image.open(source_path).convert("RGBA")
+        arr = np.array(img)
+        mask = arr[:, :, 3] > 10
+        pixels = arr[mask][:, :3]
+        for p in pixels:
+            all_colors[tuple(int(c) for c in p)] += 1
+        print(f"  Extracted {len(all_colors)} colors from {source_path}")
+    else:
+        for anim in ANIMATIONS:
+            path = REFERENCE_DIR / f"{anim}.png"
+            if path.exists():
+                img = Image.open(path).convert("RGBA")
+                arr = np.array(img)
+                mask = arr[:, :, 3] > 10
+                pixels = arr[mask][:, :3]
+                for p in pixels:
+                    all_colors[tuple(int(c) for c in p)] += 1
+
+    # Return top colors by frequency (skip rare noise)
+    min_count = max(1, len(all_colors) * 0.001)
+    return set(c for c, cnt in all_colors.items() if cnt >= min_count)
 
 
-def snap_to_palette(img: Image.Image, palette: set, threshold: float = 40.0) -> Image.Image:
-    """Snap colors to nearest reference palette color."""
+def snap_to_palette(img: Image.Image, palette: set, threshold: float = 60.0) -> Image.Image:
+    """Snap colors to nearest reference palette color.
+
+    Higher threshold = more aggressive snapping (forces artist's colors).
+    """
     arr = np.array(img.convert("RGBA"))
     palette_arr = np.array(list(palette))  # (N, 3)
 
@@ -456,7 +476,8 @@ def validate_single_character(img: Image.Image) -> tuple[bool, str]:
 
 def generate_frame(pipe, job: str, animation: str, seed: int = None,
                    ref_palette: set = None, max_retries: int = 3,
-                   identity_embeds=None) -> Image.Image:
+                   identity_embeds=None, use_pixeloe: bool = True,
+                   pixeloe_quant: bool = False) -> Image.Image:
     """Generate a single sprite frame with auto-retry on bad generations."""
     prompt = build_prompt(job, animation)
 
@@ -490,8 +511,8 @@ def generate_frame(pipe, job: str, animation: str, seed: int = None,
         result = pipe(**gen_kwargs).images[0]
 
         # Pixelize
-        print(f"  Pixelizing...")
-        pixelized = pixelize_frame(result)
+        print(f"  Pixelizing (PixelOE={'on' if use_pixeloe else 'off'}, quant={pixeloe_quant})...")
+        pixelized = pixelize_frame(result, use_pixeloe=use_pixeloe, pixeloe_quant=pixeloe_quant)
 
         # Remove background
         print(f"  Removing background...")
@@ -526,7 +547,8 @@ def _measure_char_height(img: Image.Image) -> int:
 
 def generate_strip(pipe, job: str, animation: str, n_frames: int,
                    base_seed: int = None, ref_palette: set = None,
-                   identity_embeds=None) -> Image.Image:
+                   identity_embeds=None, use_pixeloe: bool = True,
+                   pixeloe_quant: bool = False) -> Image.Image:
     """Generate a full animation strip with size-normalized frames."""
     raw_frames = []
     seeds = []
@@ -541,6 +563,8 @@ def generate_strip(pipe, job: str, animation: str, n_frames: int,
             seed=base_seed + i,
             ref_palette=None,  # palette snap after centering
             identity_embeds=identity_embeds,
+            use_pixeloe=use_pixeloe,
+            pixeloe_quant=pixeloe_quant,
         )
         raw_frames.append(frame)
         seeds.append(seed)
@@ -575,7 +599,8 @@ def main():
     parser.add_argument("--all-animations", action="store_true", help="Generate all 9 animations")
     parser.add_argument("--variations", type=int, default=1, help="Number of variations to generate")
     parser.add_argument("--seed", type=int, default=None, help="Base seed for reproducibility")
-    parser.add_argument("--no-pixelize", action="store_true", help="Skip PixelOE post-processing")
+    parser.add_argument("--no-pixelize", action="store_true", help="Force manual downscale instead of PixelOE")
+    parser.add_argument("--pixeloe-quant", action="store_true", help="Enable PixelOE color quantization (default: off, uses palette snap)")
     parser.add_argument("--no-palette-snap", action="store_true", help="Skip palette snapping")
     parser.add_argument("--no-ipadapter", action="store_true", help="Disable IP-Adapter identity lock")
     parser.add_argument("--reference-image", help="Path to reference character image for IP-Adapter")
@@ -586,12 +611,7 @@ def main():
     output_dir = Path(args.output) if args.output else OUTPUT_DIR / args.job
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load reference palette
-    ref_palette = None
-    if not args.no_palette_snap and REFERENCE_DIR.exists():
-        print("Extracting reference palette from fighter sprites...")
-        ref_palette = extract_reference_palette()
-        print(f"  {len(ref_palette)} reference colors loaded")
+    # Reference palette loaded after hero generation (uses hero colors, not fighter)
 
     # Load pipeline
     use_ipadapter = not args.no_ipadapter
@@ -637,6 +657,19 @@ def main():
         torch.save(identity_embeds, embeds_path)
         print(f"  Identity embeddings saved: {embeds_path}")
 
+    # Extract palette from hero reference (uses the character's own colors, not fighter)
+    ref_palette = None
+    hero_path = output_dir / "hero_reference.png"
+    if not args.no_palette_snap:
+        if hero_path.exists():
+            print(f"Extracting palette from hero reference...")
+            ref_palette = extract_reference_palette(str(hero_path))
+        elif REFERENCE_DIR.exists():
+            print("Extracting palette from fighter sprites (fallback)...")
+            ref_palette = extract_reference_palette()
+        if ref_palette:
+            print(f"  {len(ref_palette)} reference colors loaded")
+
     animations = ANIMATIONS if args.all_animations else [args.animation]
 
     for anim in animations:
@@ -650,6 +683,8 @@ def main():
             strip, seeds = generate_strip(
                 pipe, args.job, anim, n_frames, seed, ref_palette,
                 identity_embeds=identity_embeds,
+                use_pixeloe=not args.no_pixelize,
+                pixeloe_quant=args.pixeloe_quant,
             )
 
             suffix = f"_v{v}" if args.variations > 1 else ""

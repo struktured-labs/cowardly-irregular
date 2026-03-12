@@ -3,16 +3,16 @@
   "tier": "T1",
   "generator": "gen_sprite_sdxl.py",
   "model": "SDXL 1.0 + pixel-art-xl LoRA + IP-Adapter Plus Face",
-  "ip_adapter_scale": 0.45,
+  "ip_adapter_scale": 0.55,
   "animations": {
-    "idle": "assets/sprites/jobs/cleric_sdxl/idle.png",
-    "walk": "assets/sprites/jobs/cleric_sdxl/walk.png",
-    "attack": "assets/sprites/jobs/cleric_sdxl/attack.png",
-    "hit": "assets/sprites/jobs/cleric_sdxl/hit.png",
-    "dead": "assets/sprites/jobs/cleric_sdxl/dead.png",
-    "cast": "assets/sprites/jobs/cleric_sdxl/cast.png",
-    "defend": "assets/sprites/jobs/cleric_sdxl/defend.png",
-    "item": "assets/sprites/jobs/cleric_sdxl/item.png",
-    "victory": "assets/sprites/jobs/cleric_sdxl/victory.png"
+    "idle": "assets/sprites/jobs/cleric_sdxl_b/idle.png",
+    "walk": "assets/sprites/jobs/cleric_sdxl_b/walk.png",
+    "attack": "assets/sprites/jobs/cleric_sdxl_b/attack.png",
+    "hit": "assets/sprites/jobs/cleric_sdxl_b/hit.png",
+    "dead": "assets/sprites/jobs/cleric_sdxl_b/dead.png",
+    "cast": "assets/sprites/jobs/cleric_sdxl_b/cast.png",
+    "defend": "assets/sprites/jobs/cleric_sdxl_b/defend.png",
+    "item": "assets/sprites/jobs/cleric_sdxl_b/item.png",
+    "victory": "assets/sprites/jobs/cleric_sdxl_b/victory.png"
   }
 }
