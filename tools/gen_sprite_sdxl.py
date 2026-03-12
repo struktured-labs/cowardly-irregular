@@ -64,8 +64,8 @@ JOB_PROMPTS = {
         "palette_hint": "deep blues, cyan glow, silver trim, dark shadows",
     },
     "cleric": {
-        "desc": "female cleric healer priestess, elegant white gold blue robes with embroidery, golden healing staff with sun orb, holy halo glow, flowing hair with braids, modest heroic mature personality, medieval holy aesthetic, strong feminine design",
-        "palette_hint": "white, gold, soft blue, cream, red trim accents, warm skin tones",
+        "desc": "young white mage healer girl, warm kind expression, flowing white robe with pink and gold trim, golden staff with crystal orb, classic Final Fantasy white mage aesthetic, soft features, gentle but determined, hood with ribbon detail",
+        "palette_hint": "white, soft pink, pale gold, cream, light blue, warm pastel tones",
     },
     "rogue": {
         "desc": "stealthy rogue in dark leather armor, short green cloak, dual curved daggers, bandana, athletic build",
@@ -210,11 +210,11 @@ def compute_identity_embeddings(pipe, reference_image: Image.Image):
     return embeds
 
 
-def pixelize_frame(img: Image.Image, pixel_size: int = 16, num_colors: int = 48) -> Image.Image:
+def pixelize_frame(img: Image.Image, pixel_size: int = 12, num_colors: int = 32) -> Image.Image:
     """Apply PixelOE pixelization then upscale back to target frame size.
 
     pixel_size: how many input pixels become 1 pixel art pixel.
-                For 1024→64 effective resolution, use 16 (1024/64=16).
+                For 768→64 effective resolution, use 12 (768/64=12).
     """
     try:
         from pixeloe.torch.pixelize import pixelize
@@ -224,12 +224,12 @@ def pixelize_frame(img: Image.Image, pixel_size: int = 16, num_colors: int = 48)
         tensor = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).float() / 255.0
         tensor = tensor.cuda()
 
-        # Pixelize with color quantization
+        # Pixelize with color quantization — softer settings to reduce artifacts
         result = pixelize(
             tensor,
             pixel_size=pixel_size,
-            thickness=2,
-            mode="contrast",
+            thickness=1,
+            mode="center",
             do_quant=True,
             num_colors=num_colors,
             quant_mode="kmeans",
@@ -476,8 +476,8 @@ def generate_frame(pipe, job: str, animation: str, seed: int = None,
         gen_kwargs = dict(
             prompt=prompt,
             negative_prompt=NEGATIVE_PROMPT,
-            num_inference_steps=30,
-            guidance_scale=8.5,
+            num_inference_steps=40,
+            guidance_scale=9.0,
             width=768,
             height=768,
             generator=generator,
