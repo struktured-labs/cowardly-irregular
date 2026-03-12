@@ -631,13 +631,24 @@ func _create_battle_sprites() -> void:
 		var custom = member.get("customization") if "customization" in member else null
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
-		# Auto-scale: 144px for procedural/old sprites, 200px for new artist sprites (frame > 128px)
+		# Per-job display height targets (in pixels) for battle sprites.
+		# Tune these to align characters visually despite different art sizes within frames.
+		const JOB_DISPLAY_HEIGHTS: Dictionary = {
+			"fighter": 375.0,   # Artist sprite — character is small in 256x256 frame
+			"cleric": 300.0,    # SDXL sprite — character fills more of the frame
+			"mage": 300.0,
+			"rogue": 300.0,
+			"bard": 300.0,
+		}
+		var target_height = JOB_DISPLAY_HEIGHTS.get(job_id, 300.0)
+
+		# Auto-scale based on frame height and per-job target
 		var _sprite_scale = 3.0
 		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
 			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 				var _ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
 				if _ftex and _ftex.get_height() > 128:
-					_sprite_scale = 300.0 / float(_ftex.get_height())
+					_sprite_scale = target_height / float(_ftex.get_height())
 				elif _ftex and _ftex.get_height() > 48:
 					_sprite_scale = 144.0 / float(_ftex.get_height())
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
