@@ -27,11 +27,15 @@
 			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory", "advance", "defer", "cast_fire", "cast_ice", "cast_lightning", "cast_fira"]
 		},
 		"cleric": {
-			"path": "res://assets/sprites/jobs/cleric",
+			"path": "res://assets/sprites/jobs/cleric_sdxl",
 			"frame_width": 256,
 			"frame_height": 256,
 			"fps": 8,
-			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory", "advance", "defer", "heal", "raise", "buff"]
+			"tier": "T1",
+			"generator": "SDXL + fighter_ci_pixel LoRA + IP-Adapter (manual downscale)",
+			"animations": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory"],
+			"_fallback_path": "res://assets/sprites/jobs/cleric",
+			"_fallback_note": "Procedural cleric with extended anims (advance, defer, heal, raise, buff) still in cleric/"
 		},
 		"rogue": {
 			"path": "res://assets/sprites/jobs/rogue",
