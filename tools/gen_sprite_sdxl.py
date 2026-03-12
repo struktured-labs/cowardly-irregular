@@ -31,7 +31,7 @@ OUTPUT_DIR = PROJECT_DIR / "tmp" / "generated"
 REFERENCE_DIR = PROJECT_DIR / "assets" / "sprites" / "jobs" / "fighter"
 
 SDXL_CHECKPOINT = MODELS_DIR / "checkpoints" / "sd_xl_base_1.0.safetensors"
-PIXEL_ART_LORA = MODELS_DIR / "loras" / "pixel-art-xl.safetensors"
+PIXEL_ART_LORA = MODELS_DIR / "loras" / "fighter_ci_pixel_500.safetensors"
 
 # Generation constants
 FRAME_W = 256
@@ -64,8 +64,8 @@ JOB_PROMPTS = {
         "palette_hint": "deep blues, cyan glow, silver trim, dark shadows",
     },
     "cleric": {
-        "desc": "devout cleric in white and gold vestments, ornate mitre headdress, golden sun staff, pious expression",
-        "palette_hint": "white, cream, gold, red accents, warm skin tones",
+        "desc": "female cleric healer priestess, elegant white gold blue robes with embroidery, golden healing staff with sun orb, holy halo glow, flowing hair with braids, modest heroic mature personality, medieval holy aesthetic, strong feminine design",
+        "palette_hint": "white, gold, soft blue, cream, red trim accents, warm skin tones",
     },
     "rogue": {
         "desc": "stealthy rogue in dark leather armor, short green cloak, dual curved daggers, bandana, athletic build",
@@ -116,7 +116,7 @@ def build_prompt(job: str, animation: str, frame_idx: int = 0) -> str:
     prompt = (
         f"pixel art RPG battle sprite of a {job_info['desc']}, "
         f"{pose}, "
-        f"16-bit SNES style, {job_info['palette_hint']}, "
+        f"fighter_ci_pixel, 16-bit SNES style, {job_info['palette_hint']}, "
         f"black outline, white background, isolated character"
     )
     return prompt
@@ -126,7 +126,9 @@ NEGATIVE_PROMPT = (
     "multiple characters, multiple views, sprite sheet, reference sheet, "
     "turnaround, model sheet, concept art, collage, grid, tiled, pattern, "
     "background scenery, landscape, room, floor, wall, "
-    "blurry, photorealistic, 3D, text, watermark, deformed"
+    "blurry, photorealistic, 3D, text, watermark, deformed, sword, blade, knife, "
+    "oversexualized, revealing armor, bikini armor, cleavage, "
+    "multiple characters, multiple views, sprite sheet, reference sheet"
 )
 
 
@@ -177,9 +179,9 @@ def load_pipeline(use_ipadapter: bool = True):
 
     # Load LoRA AFTER IP-Adapter
     if PIXEL_ART_LORA.exists():
-        print("Loading pixel-art-xl LoRA...")
+        print("Loading custom fighter_ci_pixel LoRA...")
         pipe.load_lora_weights(str(PIXEL_ART_LORA.parent), weight_name=PIXEL_ART_LORA.name)
-        pipe.fuse_lora(lora_scale=0.8)
+        pipe.fuse_lora(lora_scale=0.5)
     else:
         print("WARNING: pixel-art-xl LoRA not found")
 
@@ -606,11 +608,13 @@ def main():
             ref_img = Image.open(args.reference_image).convert("RGB")
             print(f"Using provided reference: {args.reference_image}")
         else:
-            # Auto-generate a hero frame as reference
+            # Auto-generate a hero frame as reference (disable IP-Adapter for this)
             hero_seed = args.seed if args.seed else 42
             print(f"\nGenerating hero reference frame (seed={hero_seed})...")
             gen = torch.Generator("cuda").manual_seed(hero_seed)
             prompt = build_prompt(args.job, "idle")
+            # Temporarily zero out IP-Adapter so we can generate without image_embeds
+            pipe.set_ip_adapter_scale(0.0)
             ref_img = pipe(
                 prompt=prompt,
                 negative_prompt=NEGATIVE_PROMPT,
@@ -619,7 +623,10 @@ def main():
                 width=768,
                 height=768,
                 generator=gen,
+                ip_adapter_image=Image.new("RGB", (768, 768), (128, 128, 128)),
             ).images[0]
+            # Restore IP-Adapter scale
+            pipe.set_ip_adapter_scale(args.ipadapter_scale)
             hero_path = output_dir / "hero_reference.png"
             ref_img.save(hero_path)
             print(f"  Hero saved: {hero_path}")
