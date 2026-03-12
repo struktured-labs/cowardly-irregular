@@ -635,7 +635,7 @@ func _create_battle_sprites() -> void:
 		# Tune these to align characters visually despite different art sizes within frames.
 		const JOB_DISPLAY_HEIGHTS: Dictionary = {
 			"fighter": 375.0,   # Artist sprite — character is small in 256x256 frame
-			"cleric": 300.0,    # SDXL sprite — character fills more of the frame
+			"cleric": 180.0,    # SDXL sprite — character fills entire frame, scale way down
 			"mage": 300.0,
 			"rogue": 300.0,
 			"bard": 300.0,
