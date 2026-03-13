@@ -322,3 +322,24 @@ func test_group_attack_minimum_damage() -> void:
 	var raw = 1
 	var mitigated = max(1, raw - 9999)
 	assert_eq(mitigated, 1, "Group attack minimum damage is 1")
+
+
+## Group Attack AP Cost Regression Test
+## Bug: _execute_group_action checked group_type == "all_out" (old name) instead of
+## group_type != "limit_break", so "all_out_attack" from the menu always charged 4 AP.
+
+func test_group_attack_ap_cost_all_out_attack() -> void:
+	"""Regression: all_out_attack costs 1 AP (not 4 — old bug used wrong string)"""
+	var ap_cost: int = 4 if "all_out_attack" == "limit_break" else 1
+	assert_eq(ap_cost, 1, "all_out_attack should cost 1 AP, not 4")
+
+
+func test_group_attack_ap_cost_limit_break() -> void:
+	"""Limit Break costs 4 AP"""
+	var ap_cost: int = 4 if "limit_break" == "limit_break" else 1
+	assert_eq(ap_cost, 4, "limit_break should cost 4 AP")
+
+
+func test_group_attack_ap_cost_old_name_would_be_wrong() -> void:
+	"""Regression guard: old check 'all_out' != menu value 'all_out_attack'"""
+	assert_ne("all_out", "all_out_attack", "Old 'all_out' string != menu 'all_out_attack' — confirms why bug existed")

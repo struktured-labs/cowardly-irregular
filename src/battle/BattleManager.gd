@@ -538,7 +538,7 @@ func player_brave(actions: Array[Dictionary]) -> void:
 
 func player_group_attack(group_type: String) -> void:
 	"""Initiate a group attack — all alive party members pool AP for a combined strike.
-	group_type: "all_out" or "limit_break"
+	group_type: "all_out_attack" or "limit_break"
 	Limit Break requires every participant to have >= 4 AP.
 	The calling combatant's action is queued immediately; remaining alive players are
 	auto-queued as participants (their individual selection turns are skipped)."""
@@ -1158,7 +1158,7 @@ func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 func _execute_group_action(action: Dictionary) -> void:
 	"""Execute group attack — all participants strike together"""
 	var participants: Array = action.get("participants", [])
-	var group_type: String = action.get("group_type", "all_out")
+	var group_type: String = action.get("group_type", "all_out_attack")
 	var alive_enemies: Array[Combatant] = enemy_party.filter(func(e): return e.is_alive)
 
 	if alive_enemies.is_empty():
@@ -1174,7 +1174,7 @@ func _execute_group_action(action: Dictionary) -> void:
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
 			continue
-		var ap_cost: int = 1 if group_type == "all_out" else 4
+		var ap_cost: int = 4 if group_type == "limit_break" else 1
 		p.spend_ap(ap_cost)
 		total_power += p.attack
 
