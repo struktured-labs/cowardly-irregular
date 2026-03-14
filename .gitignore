@@ -62,3 +62,16 @@ butler.zip
 *.zip
 tmp/
 __pycache__/
+
+# LoRA training — large binary assets and generated datasets
+tools/lora_training/raw_jrpg_sprites/
+tools/lora_training/raw_jrpg_sprites_flat/
+tools/lora_training/style_dataset/
+tools/lora_training/kohya_dataset/
+tools/lora_training/checkpoints/
+tools/lora_training/logs/
+tools/lora_training/samples/
+tools/lora_training/dataset/
+tools/lora_training/dataset_info.json
+tools/__pycache__/
+uv.lock
