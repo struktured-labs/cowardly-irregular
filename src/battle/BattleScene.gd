@@ -205,6 +205,7 @@ func _ready() -> void:
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
 	BattleManager.one_shot_achieved.connect(_on_one_shot_achieved)
 	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
+	BattleManager.group_attack_executing.connect(_on_group_attack_executing)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -274,6 +275,8 @@ func _exit_tree() -> void:
 		BattleManager.one_shot_achieved.disconnect(_on_one_shot_achieved)
 	if BattleManager.autobattle_victory.is_connected(_on_autobattle_victory):
 		BattleManager.autobattle_victory.disconnect(_on_autobattle_victory)
+	if BattleManager.group_attack_executing.is_connected(_on_group_attack_executing):
+		BattleManager.group_attack_executing.disconnect(_on_group_attack_executing)
 
 	# Cleanup popup menu if open
 	_cleanup_popup()
@@ -1860,6 +1863,44 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			animator.play_item()
 		"defer":
 			animator.play_named_animation("defer")
+
+
+func _on_group_attack_executing(participants: Array, group_type: String, targets: Array) -> void:
+	"""Play simultaneous attack animations on all party members for group actions"""
+	_update_turn_info()
+
+	# Flash the whole battlefield — gold for Limit Break, orange for All-Out Attack
+	var flash_color = Color(1.0, 0.85, 0.0, 0.55) if group_type == "limit_break" else Color(1.0, 0.5, 0.0, 0.4)
+	var flash = ColorRect.new()
+	flash.color = flash_color
+	flash.anchors_preset = Control.PRESET_FULL_RECT
+	flash.z_index = 50
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween = create_tween()
+	tween.tween_property(flash, "modulate:a", 0.0, 0.45)
+	tween.tween_callback(flash.queue_free)
+
+	# Play attack animation on every participating party member simultaneously
+	for participant in participants:
+		if not (participant is Combatant) or not participant.is_alive:
+			continue
+		var idx = BattleManager.player_party.find(participant)
+		if idx < 0 or idx >= party_animators.size():
+			continue
+		var anim = party_animators[idx]
+		if not anim:
+			continue
+		var sprite = party_sprite_nodes[idx] if idx < party_sprite_nodes.size() else null
+
+		# For Limit Break, animate each party member lunging at the closest enemy
+		if group_type == "limit_break" and targets.size() > 0 and sprite:
+			var target_sprite = _get_combatant_sprite(targets[0] as Combatant)
+			if target_sprite:
+				_animate_melee_attack(sprite, target_sprite, anim, null)
+				continue
+		# All-Out Attack: play attack animation in place
+		anim.play_attack()
 
 
 func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass) -> void:
