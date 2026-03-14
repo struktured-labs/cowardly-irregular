@@ -68,8 +68,8 @@ JOB_PROMPTS = {
         "palette_hint": "white, soft pink, pale gold, cream, light blue, warm pastel tones",
     },
     "rogue": {
-        "desc": "gender-ambiguous rogue skiptrotter JRPG sprite, mostly masculine but hard to tell, elusive obscure deceptive, lean agile asymmetrical silhouette, shadowed face with scarf and raised collar, light thief gear belts wraps pouches bracers boots, twin short daggers, sly restrained expression, evasive stance, mysterious slippery, retro SNES pixel art",
-        "palette_hint": "muted olive green, warm brown leather, dusty tan, faded teal accent, dark gray cloak, dull silver daggers",
+        "desc": "gender-ambiguous rogue skiptrotter JRPG sprite, mostly masculine but hard to tell, elusive obscure deceptive, lean agile asymmetrical silhouette, shadowed face with scarf and raised collar, light thief gear belts wraps pouches bracers boots, empty hands, sly restrained expression, evasive stance, mysterious slippery, retro SNES pixel art",
+        "palette_hint": "muted olive green, warm brown leather, dusty tan, faded teal accent, dark gray cloak",
     },
     "bard": {
         "desc": "charming bard in gold-olive doublet with half-cape, feathered beret with red feather, lute on back, rapier at hip",
@@ -109,9 +109,9 @@ ANIMATION_POSES = {
 # Job-specific pose overrides — some classes move differently
 JOB_POSE_OVERRIDES = {
     "rogue": {
-        "idle": "weight shifted, ready to pivot, one hand near hidden blade, restrained ambiguous stance",
+        "idle": "weight shifted, ready to pivot, hands relaxed but ready, restrained ambiguous stance",
         "walk": "light quick stride, almost gliding, scarf trailing",
-        "attack": "quick slashing feint from unexpected angle, blade barely visible",
+        "attack": "quick lunging feint from unexpected angle, open hand strike",
         "hit": "twisting away, already half-dodging, barely grazed",
         "dead": "crumpled in heap, face still obscured even in death",
         "cast": "flicking a trick item or smoke bomb, misdirection gesture",
@@ -150,12 +150,13 @@ NEGATIVE_PROMPT = (
 
 # Per-job negative prompt extensions
 JOB_NEGATIVE_OVERRIDES = {
-    "cleric": "sword, blade, knife",
+    "cleric": "sword, blade, knife, dagger, weapon, bow, axe, spear",
     "rogue": (
         "clearly female body shape, clearly male bodybuilder shape, "
         "visible cleavage, exaggerated hips, exaggerated jawline, hypermasculine brute, "
         "anime catgirl thief, flamboyant bishonen, edgy full-black assassin, all black outfit, "
-        "giant sword, long sword, broadsword, knight armor, priest robes, wizard robes, "
+        "sword, dagger, knife, blade, weapon, bow, staff, wand, axe, spear, "
+        "knight armor, priest robes, wizard robes, "
         "noble symmetry, bright cheerful face, honest open posture, "
         "hypersexualized outfit, cyberpunk techwear, dark silhouette, pure black clothing"
     ),
