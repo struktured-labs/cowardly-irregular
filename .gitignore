@@ -61,3 +61,4 @@ butler-bin/
 butler.zip
 *.zip
 tmp/
+__pycache__/

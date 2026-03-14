@@ -13,6 +13,7 @@ dependencies = [
     "numpy>=1.24.0",
     "scipy>=1.11.0",
     "sentencepiece>=0.1.99",
+    "controlnet-aux>=0.0.7",
 ]
 
 [project.optional-dependencies]
