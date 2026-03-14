@@ -64,12 +64,12 @@ JOB_PROMPTS = {
         "palette_hint": "deep blues, cyan glow, silver trim, dark shadows",
     },
     "cleric": {
-        "desc": "young white mage healer girl, warm kind expression, flowing white robe with pink and gold trim, golden staff with crystal orb, classic Final Fantasy white mage aesthetic, soft features, gentle but determined, hood with ribbon detail",
+        "desc": "cute JRPG cleric priestess girl, ornate ceremonial staff with decorative head, hooded layered robes with belt, braided hair, crown tiara headpiece, determined kind expression, classic Final Fantasy white mage style",
         "palette_hint": "white, soft pink, pale gold, cream, light blue, warm pastel tones",
     },
     "rogue": {
-        "desc": "stealthy rogue in dark leather armor, short green cloak, dual curved daggers, bandana, athletic build",
-        "palette_hint": "dark brown leather, charcoal, dark green, silver blades",
+        "desc": "gender-ambiguous rogue skiptrotter JRPG sprite, mostly masculine but hard to tell, elusive obscure deceptive, lean agile asymmetrical silhouette, shadowed face with scarf and raised collar, light thief gear belts wraps pouches bracers boots, twin short daggers, sly restrained expression, evasive stance, mysterious slippery, retro SNES pixel art",
+        "palette_hint": "muted olive green, warm brown leather, dusty tan, faded teal accent, dark gray cloak, dull silver daggers",
     },
     "bard": {
         "desc": "charming bard in gold-olive doublet with half-cape, feathered beret with red feather, lute on back, rapier at hip",
@@ -106,11 +106,28 @@ ANIMATION_POSES = {
     "victory": "triumphant celebration pose, weapon raised",
 }
 
+# Job-specific pose overrides — some classes move differently
+JOB_POSE_OVERRIDES = {
+    "rogue": {
+        "idle": "weight shifted, ready to pivot, one hand near hidden blade, restrained ambiguous stance",
+        "walk": "light quick stride, almost gliding, scarf trailing",
+        "attack": "quick slashing feint from unexpected angle, blade barely visible",
+        "hit": "twisting away, already half-dodging, barely grazed",
+        "dead": "crumpled in heap, face still obscured even in death",
+        "cast": "flicking a trick item or smoke bomb, misdirection gesture",
+        "defend": "vanishing sidestep, afterimage blur, not blocking but absent",
+        "item": "pulling something from hidden pouch, sleight of hand",
+        "victory": "back turned, glancing over shoulder, already leaving",
+    },
+}
+
 
 def build_prompt(job: str, animation: str, frame_idx: int = 0) -> str:
     """Build the generation prompt for a specific job + animation."""
     job_info = JOB_PROMPTS.get(job, {"desc": job, "palette_hint": "muted fantasy colors"})
-    pose = ANIMATION_POSES.get(animation, "neutral pose")
+    # Use job-specific pose if available, otherwise default
+    job_poses = JOB_POSE_OVERRIDES.get(job, {})
+    pose = job_poses.get(animation, ANIMATION_POSES.get(animation, "neutral pose"))
 
     # Keep prompt under 77 tokens for CLIP — front-load the important stuff
     prompt = (
@@ -126,10 +143,32 @@ NEGATIVE_PROMPT = (
     "multiple characters, multiple views, sprite sheet, reference sheet, "
     "turnaround, model sheet, concept art, collage, grid, tiled, pattern, "
     "background scenery, landscape, room, floor, wall, "
-    "blurry, photorealistic, 3D, text, watermark, deformed, sword, blade, knife, "
+    "blurry, photorealistic, 3D, text, watermark, deformed, "
     "oversexualized, revealing armor, bikini armor, cleavage, "
     "multiple characters, multiple views, sprite sheet, reference sheet"
 )
+
+# Per-job negative prompt extensions
+JOB_NEGATIVE_OVERRIDES = {
+    "cleric": "sword, blade, knife",
+    "rogue": (
+        "clearly female body shape, clearly male bodybuilder shape, "
+        "visible cleavage, exaggerated hips, exaggerated jawline, hypermasculine brute, "
+        "anime catgirl thief, flamboyant bishonen, edgy full-black assassin, all black outfit, "
+        "giant sword, long sword, broadsword, knight armor, priest robes, wizard robes, "
+        "noble symmetry, bright cheerful face, honest open posture, "
+        "hypersexualized outfit, cyberpunk techwear, dark silhouette, pure black clothing"
+    ),
+}
+
+
+def get_negative_prompt(job: str) -> str:
+    """Get negative prompt with job-specific extensions."""
+    base = NEGATIVE_PROMPT
+    extra = JOB_NEGATIVE_OVERRIDES.get(job, "")
+    if extra:
+        return f"{base}, {extra}"
+    return base
 
 
 IPADAPTER_DIR = COMFYUI_DIR / "models" / "ipadapter"
@@ -245,9 +284,13 @@ def pixelize_frame(img: Image.Image, pixel_size: int = 12, num_colors: int = 32,
     except Exception as e:
         print(f"  PixelOE failed ({e}), using manual downscale")
         import traceback; traceback.print_exc()
-        # Fallback: simple downscale + nearest upscale
+        # Fallback: two-stage downscale for smoother pixel art
+        # Stage 1: LANCZOS to 2x target for anti-aliased intermediate
         effective = img.size[0] // pixel_size
-        small = img.resize((effective, effective), Image.LANCZOS)
+        intermediate = effective * 2
+        smooth = img.resize((intermediate, intermediate), Image.LANCZOS)
+        # Stage 2: down to target with slight box filter (averages neighbor pixels)
+        small = smooth.resize((effective, effective), Image.BOX)
         small = small.quantize(colors=num_colors, method=Image.Quantize.MEDIANCUT).convert("RGBA")
         return small.resize((FRAME_W, FRAME_H), Image.NEAREST)
 
@@ -496,7 +539,7 @@ def generate_frame(pipe, job: str, animation: str, seed: int = None,
         # Build generation kwargs
         gen_kwargs = dict(
             prompt=prompt,
-            negative_prompt=NEGATIVE_PROMPT,
+            negative_prompt=get_negative_prompt(job),
             num_inference_steps=40,
             guidance_scale=9.0,
             width=768,
@@ -637,7 +680,7 @@ def main():
             pipe.set_ip_adapter_scale(0.0)
             ref_img = pipe(
                 prompt=prompt,
-                negative_prompt=NEGATIVE_PROMPT,
+                negative_prompt=get_negative_prompt(args.job),
                 num_inference_steps=40,
                 guidance_scale=9.0,
                 width=768,

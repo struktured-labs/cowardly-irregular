@@ -1,0 +1,18 @@
+{
+  "job": "rogue",
+  "tier": "T1",
+  "generator": "gen_sprite_sdxl.py",
+  "model": "SDXL 1.0 + pixel-art-xl LoRA + IP-Adapter Plus Face",
+  "ip_adapter_scale": 0.55,
+  "animations": {
+    "idle": "assets/sprites/jobs/rogue_sdxl/idle.png",
+    "walk": "assets/sprites/jobs/rogue_sdxl/walk.png",
+    "attack": "assets/sprites/jobs/rogue_sdxl/attack.png",
+    "hit": "assets/sprites/jobs/rogue_sdxl/hit.png",
+    "dead": "assets/sprites/jobs/rogue_sdxl/dead.png",
+    "cast": "assets/sprites/jobs/rogue_sdxl/cast.png",
+    "defend": "assets/sprites/jobs/rogue_sdxl/defend.png",
+    "item": "assets/sprites/jobs/rogue_sdxl/item.png",
+    "victory": "assets/sprites/jobs/rogue_sdxl/victory.png"
+  }
+}
