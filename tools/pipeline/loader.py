@@ -100,7 +100,7 @@ def load_pipeline(
         if STYLE_LORA.exists():
             print("Loading jrpg_pixel_style LoRA...")
             pipe.load_lora_weights(str(STYLE_LORA.parent), weight_name=STYLE_LORA.name)
-            pipe.fuse_lora(lora_scale=0.5)
+            pipe.fuse_lora(lora_scale=0.7)
         else:
             print("WARNING: style LoRA not found, skipping")
     elif lora_mode == "none":

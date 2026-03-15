@@ -19,6 +19,7 @@ def generate_frame(
     pixeloe_quant: bool = False,
     controlnet_image: Image.Image = None,
     controlnet_scale: float = 0.6,
+    direct_downscale: bool = False,
 ) -> tuple:
     """Generate a single sprite frame with auto-retry on bad generations.
 
@@ -59,8 +60,13 @@ def generate_frame(
 
         result = pipe(**gen_kwargs).images[0]
 
-        print(f"  Pixelizing (PixelOE={'on' if use_pixeloe else 'off'}, quant={pixeloe_quant})...")
-        pixelized = pixelize_frame(result, use_pixeloe=use_pixeloe, pixeloe_quant=pixeloe_quant)
+        if direct_downscale:
+            from .config import FRAME_W, FRAME_H
+            print(f"  Direct downscale 768→{FRAME_W}...")
+            pixelized = result.resize((FRAME_W, FRAME_H), Image.LANCZOS)
+        else:
+            print(f"  Pixelizing (PixelOE={'on' if use_pixeloe else 'off'}, quant={pixeloe_quant})...")
+            pixelized = pixelize_frame(result, use_pixeloe=use_pixeloe, pixeloe_quant=pixeloe_quant)
 
         print(f"  Removing background...")
         transparent = remove_background(pixelized)
@@ -91,6 +97,7 @@ def generate_strip(
     pixeloe_quant: bool = False,
     controlnet_images: list = None,
     controlnet_scale: float = 0.6,
+    direct_downscale: bool = False,
 ) -> tuple:
     """Generate a full animation strip with size-normalized frames.
 
@@ -118,6 +125,7 @@ def generate_strip(
             pixeloe_quant=pixeloe_quant,
             controlnet_image=pose_img,
             controlnet_scale=controlnet_scale,
+            direct_downscale=direct_downscale,
         )
         raw_frames.append(frame)
         seeds.append(seed)

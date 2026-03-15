@@ -3,7 +3,10 @@
   "tier": "T1",
   "generator": "gen_sprite_sdxl.py",
   "model": "SDXL 1.0 + pixel-art-xl LoRA + IP-Adapter Plus Face",
-  "ip_adapter_scale": 0.55,
+  "lora_mode": "style",
+  "controlnet": true,
+  "controlnet_scale": 0.5,
+  "ip_adapter_scale": 0.5,
   "animations": {
     "idle": "assets/sprites/jobs/rogue_sdxl/idle.png",
     "walk": "assets/sprites/jobs/rogue_sdxl/walk.png",

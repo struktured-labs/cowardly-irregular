@@ -76,6 +76,11 @@ def main():
         default=0.6,
         help="ControlNet conditioning scale (0.0-1.0, default: 0.6)",
     )
+    parser.add_argument(
+        "--direct-downscale",
+        action="store_true",
+        help="Skip pixel art post-processing, just LANCZOS 768->256 (preserves more detail)",
+    )
     args = parser.parse_args()
 
     output_dir = Path(args.output) if args.output else OUTPUT_DIR / args.job
@@ -103,7 +108,7 @@ def main():
             gen = torch.Generator("cuda").manual_seed(hero_seed)
             prompt = build_prompt(args.job, "idle")
             pipe.set_ip_adapter_scale(0.0)
-            ref_img = pipe(
+            hero_kwargs = dict(
                 prompt=prompt,
                 negative_prompt=get_negative_prompt(args.job),
                 num_inference_steps=40,
@@ -112,7 +117,15 @@ def main():
                 height=768,
                 generator=gen,
                 ip_adapter_image=Image.new("RGB", (768, 768), (128, 128, 128)),
-            ).images[0]
+            )
+            # ControlNet pipeline requires a control image
+            if args.use_controlnet:
+                hero_pose = load_pose_skeleton("idle", 0)
+                if hero_pose is None:
+                    hero_pose = Image.new("RGB", (768, 768), (0, 0, 0))
+                hero_kwargs["image"] = hero_pose
+                hero_kwargs["controlnet_conditioning_scale"] = args.controlnet_scale
+            ref_img = pipe(**hero_kwargs).images[0]
             pipe.set_ip_adapter_scale(args.ipadapter_scale)
             hero_path = output_dir / "hero_reference.png"
             ref_img.save(hero_path)
@@ -161,6 +174,7 @@ def main():
                 pixeloe_quant=args.pixeloe_quant,
                 controlnet_images=controlnet_images,
                 controlnet_scale=args.controlnet_scale,
+                direct_downscale=args.direct_downscale,
             )
 
             suffix = f"_v{v}" if args.variations > 1 else ""

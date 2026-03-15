@@ -12,8 +12,8 @@ JOB_PROMPTS = {
         "palette_hint": "white, soft pink, pale gold, cream, light blue, warm pastel tones",
     },
     "rogue": {
-        "desc": "gender-ambiguous rogue skiptrotter JRPG sprite, mostly masculine but hard to tell, elusive obscure deceptive, lean agile asymmetrical silhouette, shadowed face with scarf and raised collar, light thief gear belts wraps pouches bracers boots, empty hands, sly restrained expression, evasive stance, mysterious slippery, retro SNES pixel art",
-        "palette_hint": "muted olive green, warm brown leather, dusty tan, faded teal accent, dark gray cloak",
+        "desc": "mysterious gender-ambiguous rogue, face hidden by deep hood and wrapped scarf, only eyes visible in shadow, lean asymmetrical silhouette, torn cloak over light armor, belts wraps pouches, empty hands at sides, unreadable presence, coiled evasive stance, JRPG battle sprite",
+        "palette_hint": "deep muted green, dark brown leather, dusty purple scarf, shadow tones, weathered",
     },
     "bard": {
         "desc": "charming bard in gold-olive doublet with half-cape, feathered beret with red feather, lute on back, rapier at hip",
