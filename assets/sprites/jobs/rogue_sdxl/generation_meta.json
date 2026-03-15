@@ -6,7 +6,7 @@
   "lora_mode": "style",
   "controlnet": true,
   "controlnet_scale": 0.5,
-  "ip_adapter_scale": 0.5,
+  "ip_adapter_scale": 0.7,
   "animations": {
     "idle": "assets/sprites/jobs/rogue_sdxl/idle.png",
     "walk": "assets/sprites/jobs/rogue_sdxl/walk.png",

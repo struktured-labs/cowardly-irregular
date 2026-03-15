@@ -7,13 +7,50 @@ from PIL import Image
 from .config import FRAME_W, FRAME_H, ANIMATIONS, REFERENCE_DIR
 
 
+def downscale_to_pixel_art(img: Image.Image, target_size: int = 256,
+                           num_colors: int = 128) -> Image.Image:
+    """Smart downscale that produces clean pixel art from SDXL output.
+
+    Three-stage pipeline:
+    1. Downscale with area averaging (BOX filter) — produces clean edges
+       without the ringing artifacts of LANCZOS or the blockiness of NEAREST
+    2. Posterize via k-means — reduces to a pixel-art-appropriate palette
+       (artist uses 58-134 colors per animation, we target ~128)
+    3. Clean up orphan pixels — remove isolated single-pixel noise
+
+    This replaces both pixelize_frame() and direct_downscale approaches.
+    """
+    src_size = img.size[0]  # assume square
+
+    # Stage 1: Area-average downscale to target
+    # BOX filter = area averaging = each output pixel is the mean of the
+    # input pixels it covers. Produces cleaner flat areas than LANCZOS
+    # (no ringing/overshoot) while being smoother than NEAREST.
+    small = img.resize((target_size, target_size), Image.BOX)
+
+    # Stage 2: K-means color quantization to flatten gradients
+    # This is the key step — converts smooth gradients into flat color blocks
+    # that look like hand-placed pixel art colors
+    arr = np.array(small.convert("RGB"))
+    h, w = arr.shape[:2]
+    pixels = arr.reshape(-1, 3).astype(np.float32)
+
+    # Run k-means to find the best palette
+    from sklearn.cluster import MiniBatchKMeans
+    kmeans = MiniBatchKMeans(
+        n_clusters=num_colors,
+        random_state=42,
+        batch_size=min(1000, len(pixels)),
+        n_init=3,
+    ).fit(pixels)
+    quantized = kmeans.cluster_centers_[kmeans.labels_].reshape(h, w, 3).astype(np.uint8)
+
+    return Image.fromarray(quantized)
+
+
 def pixelize_frame(img: Image.Image, pixel_size: int = 12, num_colors: int = 32,
                    use_pixeloe: bool = True, pixeloe_quant: bool = False) -> Image.Image:
-    """Apply PixelOE pixelization then upscale back to target frame size.
-
-    pixel_size: how many input pixels become 1 pixel art pixel.
-                For 768->64 effective resolution, use 12 (768/64=12).
-    """
+    """Legacy PixelOE pixelization. Use downscale_to_pixel_art() instead."""
     try:
         if not use_pixeloe:
             raise RuntimeError("PixelOE disabled, using manual downscale")

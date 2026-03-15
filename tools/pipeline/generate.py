@@ -2,8 +2,9 @@ import numpy as np
 import torch
 from PIL import Image
 
+from .config import FRAME_W, FRAME_H
 from .prompts import build_prompt, get_negative_prompt
-from .postprocess import pixelize_frame, remove_background, center_character, _measure_char_height, snap_to_palette
+from .postprocess import pixelize_frame, downscale_to_pixel_art, remove_background, center_character, _measure_char_height, snap_to_palette
 from .validation import validate_single_character
 
 
@@ -61,11 +62,13 @@ def generate_frame(
         result = pipe(**gen_kwargs).images[0]
 
         if direct_downscale:
-            from .config import FRAME_W, FRAME_H
-            print(f"  Direct downscale 768→{FRAME_W}...")
+            print(f"  Direct downscale 768→{FRAME_W} (LANCZOS, no quantize)...")
             pixelized = result.resize((FRAME_W, FRAME_H), Image.LANCZOS)
+        elif not use_pixeloe:
+            print(f"  Smart downscale 768→{FRAME_W} (BOX + k-means 128 colors)...")
+            pixelized = downscale_to_pixel_art(result, target_size=FRAME_W, num_colors=128)
         else:
-            print(f"  Pixelizing (PixelOE={'on' if use_pixeloe else 'off'}, quant={pixeloe_quant})...")
+            print(f"  Pixelizing (PixelOE, quant={pixeloe_quant})...")
             pixelized = pixelize_frame(result, use_pixeloe=use_pixeloe, pixeloe_quant=pixeloe_quant)
 
         print(f"  Removing background...")
