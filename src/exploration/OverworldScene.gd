@@ -590,3 +590,18 @@ func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> vo
 	collision.shape = shape
 	collision.position = pos
 	parent.add_child(collision)
+
+
+func _exit_tree() -> void:
+	# Only disconnect signals when being freed, not when removed for caching
+	if not is_queued_for_deletion():
+		return
+	if controller and is_instance_valid(controller):
+		if controller.battle_triggered.is_connected(_on_battle_triggered):
+			controller.battle_triggered.disconnect(_on_battle_triggered)
+		if controller.menu_requested.is_connected(_on_menu_requested):
+			controller.menu_requested.disconnect(_on_menu_requested)
+	if transitions and is_instance_valid(transitions):
+		for child in transitions.get_children():
+			if child.has_signal("transition_triggered") and child.transition_triggered.is_connected(_on_transition_triggered):
+				child.transition_triggered.disconnect(_on_transition_triggered)

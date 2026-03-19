@@ -1572,7 +1572,7 @@ func _draw_shadow_tile(img: Image, palette: Dictionary, variant: int) -> void:
 					for dx in range(fw):
 						var px = fx + dx + int(dy * skew)
 						var py = fy + dy
-						if px >= 0 and px < TILE_SIZE and py < TILE_SIZE:
+						if px >= 0 and px < TILE_SIZE and py >= 0 and py < TILE_SIZE:
 							var dist_center = sqrt(pow(dx - fw / 2.0, 2) + pow(dy - fh / 2.0, 2))
 							var shade = palette["shadow_mid"] if dist_center < 1.5 else palette["shadow_light"]
 							img.set_pixel(px, py, shade)

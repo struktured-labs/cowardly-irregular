@@ -65,6 +65,7 @@ var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 var _current_map_id: String = "overworld"
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
+var _cached_exploration_scenes: Dictionary = {}  # map_id -> Node (cached scenes)
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
 var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
 var _current_terrain: String = "plains"  # Current terrain type for battle backgrounds
@@ -97,6 +98,17 @@ var _first_launch: bool = true  # True if no save exists
 ## Title screen
 var _title_screen: Control = null
 var _title_layer: CanvasLayer = null
+
+func _clear_exploration_cache() -> void:
+	for map_id in _cached_exploration_scenes:
+		var scene = _cached_exploration_scenes[map_id]
+		if is_instance_valid(scene):
+			if scene.is_inside_tree():
+				remove_child(scene)
+			scene.queue_free()
+	_cached_exploration_scenes.clear()
+	_exploration_scene = null
+
 
 func _ready() -> void:
 	# Initialize equipment pool with extra items
@@ -416,6 +428,9 @@ func _on_quit_to_title() -> void:
 	"""Handle quit to title from overworld menu settings"""
 	print("[GAME] Returning to title screen")
 
+	# Clear cached exploration scenes
+	_clear_exploration_cache()
+
 	# Clean up overworld menu
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		_overworld_menu.queue_free()
@@ -539,6 +554,7 @@ var _cutscene_director: Node = null
 func _on_title_new_game() -> void:
 	"""Handle new game selected from title screen"""
 	print("[GAME] New Game selected")
+	_clear_exploration_cache()
 	_close_title_screen()
 	# Wait for title screen to actually be removed before starting cutscene
 	await get_tree().process_frame
@@ -568,6 +584,7 @@ func _on_prologue_finished(_cutscene_id: String) -> void:
 func _on_title_continue() -> void:
 	"""Handle continue selected from title screen"""
 	print("[GAME] Continue selected")
+	_clear_exploration_cache()
 	_close_title_screen()
 	# Load saved party and start exploration
 	_create_party()
@@ -1020,22 +1037,46 @@ func _start_exploration() -> void:
 
 func _return_to_exploration() -> void:
 	"""Return to exploration after battle"""
-	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
 	Engine.time_scale = 1.0
 
-	# Keep same map, restore player to saved position
-	await _start_exploration()
+	# Remove battle scene
+	if current_scene and is_instance_valid(current_scene) and current_scene != _exploration_scene:
+		current_scene.queue_free()
+		await current_scene.tree_exited
 
-	# Restore player position after scene is fully set up
+	# Try to restore from cache
+	if _cached_exploration_scenes.has(_current_map_id):
+		var cached = _cached_exploration_scenes[_current_map_id]
+		if is_instance_valid(cached):
+			current_state = LoopState.EXPLORATION
+			if not cached.is_inside_tree():
+				add_child(cached)
+			cached.visible = true
+			cached.set_process(true)
+			cached.set_physics_process(true)
+			current_scene = cached
+			_exploration_scene = cached
+
+			# Restore player position
+			if _player_position != Vector2.ZERO:
+				var player = cached.get("player")
+				if player:
+					player.position = _player_position
+					print("[POSITION] Restored player to: %s" % _player_position)
+			_player_position = Vector2.ZERO
+
+			call_deferred("_prewarm_area_sprites")
+			return
+		else:
+			_cached_exploration_scenes.erase(_current_map_id)
+
+	# Fallback: no valid cache, full recreation
+	await _start_exploration()
 	if _player_position != Vector2.ZERO and _exploration_scene:
 		var player = _exploration_scene.get("player")
 		if player:
 			player.position = _player_position
 			print("[POSITION] Restored player to: %s" % _player_position)
-		else:
-			push_warning("[POSITION] Could not get player from scene")
-
-	# Clear saved position after restoring
 	_player_position = Vector2.ZERO
 
 
@@ -1192,13 +1233,17 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
 
-	# Remove old scene
+	# Remove old scene (cache exploration scene instead of destroying it)
 	if current_scene and is_instance_valid(current_scene):
-		current_scene.queue_free()
-		await current_scene.tree_exited
-
-	# Clear stale exploration reference (scene is freed)
-	_exploration_scene = null
+		if current_scene == _exploration_scene:
+			# Cache exploration scene instead of destroying
+			remove_child(_exploration_scene)
+			_cached_exploration_scenes[_current_map_id] = _exploration_scene
+			_exploration_scene.set_process(false)
+			_exploration_scene.set_physics_process(false)
+		else:
+			current_scene.queue_free()
+			await current_scene.tree_exited
 
 	# Reset viewport camera to prevent exploration zoom from contaminating battle
 	var viewport = get_viewport()

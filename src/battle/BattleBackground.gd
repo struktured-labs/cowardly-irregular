@@ -177,9 +177,10 @@ func _setup_layers() -> void:
 func _process(delta: float) -> void:
 	_parallax_time += delta
 	if _layer_far and _layer_mid and _layer_near:
-		_layer_far.position.x = sin(_parallax_time * PARALLAX_SPEED_FAR * 0.1) * PARALLAX_RANGE * 0.3
-		_layer_mid.position.x = sin(_parallax_time * PARALLAX_SPEED_MID * 0.1) * PARALLAX_RANGE * 0.6
-		_layer_near.position.x = sin(_parallax_time * PARALLAX_SPEED_NEAR * 0.1) * PARALLAX_RANGE
+		# Unidirectional scrolling — classic SNES parallax feel
+		_layer_far.position.x = -fmod(_parallax_time * PARALLAX_SPEED_FAR, PARALLAX_RANGE * 4.0)
+		_layer_mid.position.x = -fmod(_parallax_time * PARALLAX_SPEED_MID, PARALLAX_RANGE * 4.0)
+		_layer_near.position.x = -fmod(_parallax_time * PARALLAX_SPEED_NEAR, PARALLAX_RANGE * 4.0)
 
 	if _sky_rect and is_instance_valid(_sky_rect):
 		var pulse = sin(_parallax_time * 0.4) * 0.025
