@@ -55,6 +55,7 @@ const SOUNDS = {
 	# Autogrind tier transition sounds
 	"tier_zoom_out": {"freq": 320, "duration": 0.22, "type": "tier_zoom_out"},   # Tier 1 -> Dashboard
 	"tier_zoom_in": {"freq": 520, "duration": 0.18, "type": "tier_zoom_in"},    # Dashboard -> Tier 1
+	"speed_change": {"freq": 700, "duration": 0.08, "type": "blip"},  # Battle speed toggle
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},
@@ -113,19 +114,19 @@ func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -8.0
+	_ui_player.volume_db = -22.0  # Menu blips: very subtle background
 	_ui_player.bus = "Master"
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -6.0
+	_battle_player.volume_db = -22.0  # Battle SFX: soft accent under music (-12dB)
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -4.0
+	_ability_player.volume_db = -20.0  # Ability SFX: slightly more present than battle
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
@@ -191,8 +192,10 @@ static func _load_sfx_manifest() -> void:
 			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
 
 
-func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> bool:
-	"""Try to play a file-based SFX from the manifest. Returns true if successful."""
+func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0) -> bool:
+	"""Try to play a file-based SFX from the manifest. Returns true if successful.
+	volume_db_override: if NAN, preserves the player's channel base volume.
+	If set, overrides volume (used by play_battle_scaled)."""
 	if not _sfx_manifest.has(sound_key):
 		return false
 	var entry = _sfx_manifest[sound_key]
@@ -207,7 +210,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		var cached_stream = _sfx_stream_cache[sound_key]
 		if cached_stream:
 			player.stream = cached_stream
-			player.volume_db = volume_db
+			if not is_nan(volume_db_override):
+				player.volume_db = volume_db_override
 			player.pitch_scale = pitch_scale
 			player.play()
 			return true
@@ -226,7 +230,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		return false
 	_sfx_stream_cache[sound_key] = stream
 	player.stream = stream
-	player.volume_db = volume_db
+	if not is_nan(volume_db_override):
+		player.volume_db = volume_db_override
 	player.pitch_scale = pitch_scale
 	player.play()
 	return true
@@ -851,7 +856,7 @@ func play_music(track: String) -> void:
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()
 	var manifest_track_id = track
-	# Map generic track names to world-specific manifest keys
+	# Map generic/monster track names to world-specific manifest keys
 	match track:
 		"battle":
 			manifest_track_id = "battle_" + _current_world_suffix
@@ -859,6 +864,10 @@ func play_music(track: String) -> void:
 			manifest_track_id = "boss_" + _current_world_suffix
 		"danger":
 			manifest_track_id = "danger_" + _current_world_suffix
+	# Monster-specific battle tracks (battle_snake, battle_slime, etc.)
+	# fall back to world battle track when no monster-specific manifest entry
+	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_"):
+		manifest_track_id = "battle_" + _current_world_suffix
 	if _music_manifest.has(manifest_track_id):
 		if _try_play_from_manifest(manifest_track_id):
 			return

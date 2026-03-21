@@ -421,6 +421,7 @@ func _toggle_battle_speed() -> void:
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
 	Engine.time_scale = speed
 	_update_speed_indicator()
+	SoundManager.play_ui("speed_change")
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
 
 
