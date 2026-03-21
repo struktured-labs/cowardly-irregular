@@ -411,9 +411,21 @@ Something in the room shifted.
 
 The Bard was very still.
 
-"I've never had a party witness it," the Calibrant said. "Every other party moved through the system. You stayed in it. There's a difference I did not calibrate for."
+"I've never had a party witness it," the Calibrant said. "Every other party moved through the system. You stayed in it. There's a difference I did not calibrate for." A pause. Something shifted in their voice — not warmth. Something colder. "I want you to know that in World 3, I had the opportunity to confiscate the journal. The Regulator could have taken it during the blueprint examination — you left it open on the mechanism's lower platform for seven minutes while you looked at the handwriting. It would have been a trivial operation."
 
-The fight that followed was different from the Arbiter — shorter, sharper, with the quality of a conversation continuing through a different medium. The Calibrant did not hold anything back, but neither did they perform. For the first time in four worlds, the Bard had the sense of fighting something that was not wearing a mask.
+The Bard's hand moved, instinctively, to the journal.
+
+"I didn't," the Calibrant said. "I chose not to. But I want you to understand what that means: I *can*. The record you've been building exists because I have permitted it to exist. Thirty-one pages of my word choice and vocabulary and grammar, analyzed by someone I was watching the entire time — that survives because I found it more useful to let it survive than to end it." They looked at the journal. "I wanted you to know that. Before we fight. Because you should know what you're operating inside."
+
+The Bard was quiet for a long moment.
+
+Then: "You're trying to make me feel watched instead of present."
+
+The Calibrant blinked.
+
+"It won't work," the Bard said. "I've been watched and present at the same time for six worlds. They're not opposites."
+
+The fight that followed was different from the Arbiter — shorter, sharper, with the quality of a conversation continuing through a different medium. The Calibrant did not hold anything back, but neither did they perform. For the first time in four worlds, the Bard had the sense of fighting something that was not wearing a mask. The sense of something that could, at any moment, unmake the record — and hadn't, and the reason it hadn't was its own kind of exposure.
 
 When it was over, the Calibrant stood in the wreckage of the office and said: "I'll see you in the next world. There's no mask left after this one."
 

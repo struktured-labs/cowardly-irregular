@@ -1124,6 +1124,22 @@ The Compiler was quiet for a moment, running calculations.
 
 "It means the system noticed. Something happened that the system couldn't account for. That matters."
 
+The Compiler looked at his notes again, and then at her, with the expression he got when a calculation had come out in a direction he hadn't expected.
+
+"There's something else," he said. "In the encounter logs. Near the end. A flagged action item." He read it aloud, carefully: *"Antivirus activity has generated recursive restoration events in deprecated process cluster. Total restored processes: 23. Total memory reallocation: estimated 0.3% of system capacity. Stability impact: unknown. Note: evaluate reset protocol for deprecated cluster to restore baseline. Decision deferred pending further data collection."*
+
+The Antivirus was quiet.
+
+"They're considering resetting them," she said. "The ones I healed."
+
+"They haven't done it," the Compiler said. "They've deferred. But—"
+
+"But they could." The Antivirus looked at the logs. At the carefully listed names — the old packet vendor, the cached memory with low allocation, the echoes of things that had been here before the update. Things that had said *thank you.* Things that had been restored. "They flagged it as a system anomaly. My restoration work. They're treating it as a kind of damage to their design."
+
+The Compiler said nothing. There was nothing useful to say.
+
+"All right," the Antivirus said, after a moment. "Then we need to finish this before they run the reset. And we need to do it in a way that makes the reset impossible." She closed the logs. "Something the Calibrant can't undo by pressing a button."
+
 ---
 
 #### The Digital Grind

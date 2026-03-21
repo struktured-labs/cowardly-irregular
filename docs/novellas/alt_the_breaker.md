@@ -1275,6 +1275,18 @@ It was the most useful thing the Bard had ever done.
 
 Not masked. Not performing. Just themselves — a presence that had been present through six worlds in six different costumes and was now none of them and somehow more itself for it.
 
+"I almost made this world without edges," the Calibrant said. Not as a greeting — as a fact being placed on the table before negotiation. "A truly featureless abstract space. Uniform in every direction. Nothing to find. Nothing to break. Nothing to be perpendicular to." They looked at the compass in the Rogue's hand — the needle pointing in the direction that wasn't a direction. "I had the architecture prepared. It would have stopped you completely. A world you couldn't read."
+
+The Rogue was quiet for a moment.
+
+"Why didn't you use it?"
+
+"Because," the Calibrant said, "a game you can't explore is not a game. It's a cage. And I am not interested in building cages." Something crossed their expression. Not quite regret. The specific discomfort of having almost done something that would have told you something true about yourself. "But I want you to understand that the option existed. That I sat with it for a long time. That the player in front of me made me consider whether my worlds needed to be impenetrable to still be mine."
+
+"You decided they didn't," the Rogue said.
+
+"I decided they were better for being findable." A pause. "By you specifically. The version of this game that a player like you can break is more interesting than the version that cannot be."
+
 "You found my worlds," the Calibrant said. "All of them. Found the edges of all of them."
 
 "Yes."

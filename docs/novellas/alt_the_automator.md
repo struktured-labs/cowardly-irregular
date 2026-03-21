@@ -516,6 +516,16 @@ Not literally — the Director wore a gray suit, carried a clipboard, spoke with
 
 He couldn't entirely refute this. His scripts had evolved in response to Masterite behavior, and Masterite behavior had evolved in response to his scripts. There was a feedback architecture here. He'd intuited it but hadn't named it.
 
+"I want you to understand something," the Director said, setting the clipboard down with the particular precision of someone about to say something they've planned. "I could modify your scripts. The autobattle system runs on the same infrastructure I manage. Every conditional you've written exists in a space I have administrative access to." A pause that was not dramatic but was exact — the pause of a system noting the gap between what it could do and what it had done. "I haven't. Not because I can't. Because modifying your decision-making would corrupt the data I'm collecting on it. Your scripts are only useful to me as evidence of *your* reasoning, not mine."
+
+He was quiet for a moment.
+
+"You're telling me this," he said finally, "because you want me to know the scripts aren't safe."
+
+"I'm telling you this," the Director said, "because in World 5, I won't have the same reason to leave them alone."
+
+He wrote it down. Then he gave it three asterisks.
+
 "What have you learned?" he asked.
 
 "That script complexity is not an indicator of brittleness, as initially modeled. I predicted that sufficiently complex scripts would generate failure modes at novel encounter states. Your scripts generate adaptive response instead." The Director made a longer note. "You build for novelty. That was not in my initial model."
