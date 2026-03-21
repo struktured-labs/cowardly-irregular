@@ -36,7 +36,7 @@ She looked at him for a long moment. Then she said: "You're not like the last lo
 
 The Cleric considered this. He didn't know who the last lot was, or when they'd come through, or what they'd been hurrying toward. The cave was the cave. It would still be there.
 
-"My name is Hero," said the Fighter, appearing at the Cleric's shoulder with the expression of someone who has been waiting with enormous patience and is now very gently running out of it. He was a patient man by temperament — duty required patience — but duty also had a directional quality, a momentum, and standing in a chicken yard while his Cleric talked to a grandmother for the fourth consecutive time had begun to challenge that momentum.
+"My name is—" said the Fighter, appearing at the Cleric's shoulder with the expression of someone who has been waiting with enormous patience and is now very gently running out of it. He was a patient man by temperament — duty required patience — but duty also had a directional quality, a momentum, and standing in a chicken yard while his Cleric talked to a grandmother for the fourth consecutive time had begun to challenge that momentum.
 
 "We should go," he said.
 
@@ -52,7 +52,7 @@ The Cleric closed his journal.
 
 He meant it completely.
 
-Hero, who had not been taking notes, who had heard only an elderly woman talking about a monster in a cave, said quietly as they walked away: "How was that helpful?"
+The Fighter, who had not been taking notes, who had heard only an elderly woman talking about a monster in a cave, said quietly as they walked away: "How was that helpful?"
 
 "I'll tell you if it matters," the Cleric said. "It might matter."
 
@@ -62,11 +62,11 @@ Hero, who had not been taking notes, who had heard only an elderly woman talking
 
 ---
 
-The party assembled at the northern road. Hero, the Fighter, who had at least spent his time in Harmonia sharpening his sword and checking his armor and doing things that felt productively adjacent to the actual task. Mira, the Mage, who had spent her time in the village's four-book library and emerged satisfied and slightly contemptuous of the library. Vex, the Rogue, who had spent his time in ways he was not enumerating but which had involved the back shelf of Bram's shop and a coin he hadn't had to spare. And Lira, the Bard — who had collected enough village folklore in her own time to fill half a ballad, and who had, the Cleric noted, independently found several of the same people he'd found.
+The party assembled at the northern road. The Fighter, who had at least spent his time in Harmonia sharpening his sword and checking his armor and doing things that felt productively adjacent to the actual task. The Mage, who had spent his time in the village's four-book library and emerged satisfied and slightly contemptuous of the library. The Rogue, who had spent the time in ways that weren't being enumerated, but which had involved the back shelf of Bram's shop and a coin that hadn't been spared. And the Bard, who had collected enough village folklore in her own time to fill half a ballad, and who had, the Cleric noted, independently found several of the same people he'd found.
 
-He liked Lira. She talked to people for different reasons than he did, but the talking mattered to both of them.
+He liked the Bard. She talked to people for different reasons than he did, but the talking mattered to both of them.
 
-"The grinding priest is ready?" Mira asked, looking at the Cleric, who was consulting his notes one more time.
+"The grinding priest is ready?" the Mage asked, looking at the Cleric, who was consulting his notes one more time.
 
 "The careful Cleric is ready," he corrected, mildly.
 
@@ -78,7 +78,7 @@ He liked Lira. She talked to people for different reasons than he did, but the t
 
 "Yes."
 
-Mira looked at him the way she looked at data she couldn't account for. It was a look he was going to get to know very well.
+the Mage looked at him the way he looked at data he couldn't account for. It was a look the Cleric was going to get used to.
 
 ---
 
@@ -90,7 +90,7 @@ Most parties hit the first encounter in a burst of nervous energy — first real
 
 The Cleric's party fought the first pair of slimes slowly, methodically, and then — when the path was clear — he healed the Fighter's grazed arm even though it didn't need healing, because it was there and he could, and then turned around and walked back fifteen feet to where a slime had died near an outcropping of rocks.
 
-"What are you doing?" Vex asked.
+"What are you doing?" the Rogue asked.
 
 "There's something carved in this rock. Did anyone notice?"
 
@@ -100,15 +100,15 @@ He crouched. The carving was old, weather-worn, barely legible. He traced it wit
 
 *Here stood the surveyor's third marker. The road continues true.*
 
-"Survey marker," Mira said, peering over his shoulder. "Road's been here longer than the village."
+"Survey marker," the Mage said, peering over his shoulder. "Road's been here longer than the village."
 
 "Someone built this road," the Cleric said. "Someone took care with it."
 
-"Someone built the cave too," Vex said. "Can we go?"
+"Someone built the cave too," the Rogue said. "Can we go?"
 
 "Yes." The Cleric stood. "I just wanted to notice it."
 
-This was the thing about the Cleric that Vex found difficult to argue with and Hero found difficult to understand and Mira found philosophically troubling: he wasn't slow because he was bad at moving. He was slow because he stopped, regularly, to notice things. And the things he noticed were real things that had been there all along, that other parties walked past without seeing.
+This was the thing about the Cleric that the Rogue found difficult to argue with and the Fighter found difficult to understand and the Mage found philosophically troubling: he wasn't slow because he was bad at moving. He was slow because he stopped, regularly, to notice things. And the things he noticed were real things that had been there all along, that other parties walked past without seeing.
 
 They walked. The overworld opened up around them — wide and green and full of encounters that other parties would rush through.
 
@@ -118,7 +118,7 @@ The goblins arrived. The party braced. And then the Cleric did not immediately b
 
 He waited. He watched them.
 
-"Are you," Vex said carefully, "going to fight the goblins."
+"Are you," the Rogue said carefully, "going to fight the goblins."
 
 "In a moment."
 
@@ -138,11 +138,11 @@ The goblins did not disengage. The game was not that merciful with its systems. 
 
 *I didn't want to do this today. I just wanted to go home. Thank you for the light, stranger. I'm sorry about your hand.*
 
-"Huh," Vex said.
+"Huh," the Rogue said.
 
 "I found that one at the survey marker," the Cleric said, looking at his journal, where he had been making notes. "When I sat with it. The marker told me to pay attention."
 
-Mira was already copying the dialogue sequence into her own notes. Her expression was the one she got when a theorem suggested implications she hadn't calculated.
+the Mage was already copying the dialogue sequence into his own notes. His expression was the one he got when a theorem suggested implications he hadn't calculated.
 
 ---
 
@@ -152,7 +152,7 @@ Between the road and the cave, there was an hour of open overworld. Other partie
 
 The Cleric stopped at the edge of a meadow full of wandering encounters and said: "I want to stay here for a while."
 
-"We're going to the cave," Hero said.
+"We're going to the cave," the Fighter said.
 
 "We are. But not immediately."
 
@@ -162,17 +162,17 @@ The Cleric considered how to explain this. It wasn't strategic, not exactly. It 
 
 "I want to fight for a while," he said. "Here. In this meadow."
 
-"We're going to be very overleveled," Mira said.
+"We're going to be very overleveled," the Mage said.
 
 "We're going to be fine," he replied, which was not the same thing but addressed the concern.
 
-Mira left, eventually. She went exploring east, toward a ridge she wanted to examine. Hero looked at the Cleric, looked at the cave, looked at the Cleric again, and sat down in the grass. If the Cleric wanted to grind, Hero would remain. That was what he was for.
+The Mage left, eventually, exploring east toward a ridge worth examining. The Fighter looked at the Cleric, looked at the cave, looked at the Cleric again, and sat down in the grass. If the Cleric wanted to grind, the Fighter would remain. That was what he was for.
 
-Vex lingered. "I'm going to be in the cave entrance, just—"
+the Rogue lingered. "I'm going to be in the cave entrance, just—"
 
 "That's fine," the Cleric said. "Go."
 
-Lira stayed because there was material here. She could feel it.
+the Bard stayed because there was material here. She could feel it.
 
 And so: the Cleric and the Fighter and the Bard in the meadow. Encounters came. Slimes, bats, a pair of goblins. The Cleric healed, fought, healed. The rhythm established itself.
 
@@ -204,11 +204,11 @@ The Fighter considered this for a moment, in the way he considered most things: 
 
 "Most people have different needs," the Cleric said. "This is mine."
 
-They fought in the meadow for another hour. When Mira came back from her ridge — satisfied, having discovered that the ridge was geologically interesting in ways that would probably matter later — she found the party thirty percent overleveled for the Whispering Cave and the Cleric sitting in the grass with his journal open, writing something.
+They fought in the meadow for another hour. When the Mage came back from the ridge — satisfied, having discovered that the ridge was geologically interesting in ways that would probably matter later — the Mage found the party thirty percent overleveled for the Whispering Cave and the Cleric sitting in the grass with his journal open, writing something.
 
-She looked at the journal. He'd been documenting the encounter patterns: what each enemy type did, when, how consistently. Not for combat strategy. More like a naturalist recording animal behavior.
+The Mage looked at the journal. He'd been documenting the encounter patterns: what each enemy type did, when, how consistently. Not for combat strategy. More like a naturalist recording animal behavior.
 
-"You're studying them," she said.
+"You're studying them," the Mage said.
 
 "Aren't you?"
 
@@ -216,9 +216,9 @@ She looked at the journal. He'd been documenting the encounter patterns: what ea
 
 "Every individual is a system," the Cleric said. "Just one with a name attached."
 
-Mira looked at his notes. She looked at her notes. She looked at the meadow.
+The Mage looked at his notes. At his own notes. At the meadow.
 
-"We're incredibly overleveled," she said.
+"We're incredibly overleveled," the Mage said.
 
 "I know."
 
@@ -226,7 +226,7 @@ Mira looked at his notes. She looked at her notes. She looked at the meadow.
 
 "Yes."
 
-She sat down next to him, because there was nothing else to do, and opened her own journal, and began connecting what she'd found on the ridge to what he'd found in the meadow. They made a surprisingly good pair, the scholar and the Cleric, when she stopped finding his pace frustrating and he stopped finding her impatience sad.
+He sat down next to the Cleric, because there was nothing else to do, and opened his own journal, and began connecting what he'd found on the ridge to what he'd found in the meadow. They made a surprisingly good pair, the scholar and the Cleric, when he stopped finding the Cleric's pace frustrating and the Cleric stopped finding his impatience sad.
 
 ---
 
@@ -238,7 +238,7 @@ The party went in carefully. The Cleric moved slowly — not cautiously, not in 
 
 "Someone has been through here," he said. "Many times. Same person, same style."
 
-"The person who built the survey markers?" Lira asked.
+"The person who built the survey markers?" the Bard asked.
 
 "The same person who cared about this place."
 
@@ -322,7 +322,7 @@ The suburb had people in it. Many more people than Harmonia. And none of them we
 
 "Has anyone checked in at the houses?" he asked.
 
-"It's suburbia," Vex said. He was a Skater Kid now, and the skateboard was apparently something he'd always known how to ride, which he was choosing not to think about. "You don't just knock on people's doors in suburbia."
+"It's suburbia," the Rogue said. A Skater Kid now, with a skateboard apparently always-known how to ride — and not thinking about that. "You don't just knock on people's doors in suburbia."
 
 "Why not?"
 
@@ -332,7 +332,7 @@ The suburb had people in it. Many more people than Harmonia. And none of them we
 
 He knocked on the first door he came to, which was 14 Elm Street, which had a NO SOLICITING sign and a mat that said WELCOME in a font that did not welcome.
 
-The woman who answered was in her mid-forties, wearing clothes that had been chosen for function but had never quite given up the hope of being chosen for something else. She looked at the School Nurse in his scrubs and at Hero the Security Guard and at Mira the Science Nerd and at Vex on his skateboard and at Lira with her trumpet case, and her face went through five expressions in two seconds before settling on the one that was easiest.
+The woman who answered was in her mid-forties, wearing clothes that had been chosen for function but had never quite given up the hope of being chosen for something else. She looked at the School Nurse in his scrubs and at the Security Guard and at the Science Nerd and at the Rogue on a skateboard and at the Bard with her trumpet case, and her face went through five expressions in two seconds before settling on the one that was easiest.
 
 "I didn't call a nurse," she said.
 
@@ -350,7 +350,7 @@ She glanced over her shoulder into the house, then back at them. Something compl
 
 She closed the door.
 
-The Science Nerd was making notes. "She was frightened," she said. "Not of us. Of something in the question."
+The Science Nerd was making notes. "She was frightened," the Mage said. "Not of us. Of something in the question."
 
 "Of someone hearing her answer it," the School Nurse said. He looked at the door. On reflex, he left his badge number on a piece of paper pushed under the door. It felt like the right thing to do.
 
@@ -406,11 +406,11 @@ Gerald told him.
 
 ---
 
-The Science Nerd was, by this point, three notebook pages into her analysis of the suburb's underlying control mechanisms. She had identified six distinct pressure systems, two of which were elegant and three of which were probably unconstitutional under any reasonable social contract. The Coordinator was a bureaucratic adversary and a recognizable pattern and she wanted to understand that pattern from a systems perspective.
+The Science Nerd was, by this point, three notebook pages into an analysis of the suburb's underlying control mechanisms. She had identified six distinct pressure systems, two of which were elegant and three of which were probably unconstitutional under any reasonable social contract. The Coordinator was a bureaucratic adversary and a recognizable pattern, and the Mage wanted to understand that pattern from a systems perspective.
 
 She found the School Nurse at Gerald's corner an hour after they'd arrived in Maple Heights, which was an hour after they'd been supposed to start investigating the missing children and the strip mall that rearranged itself and the HOA drones with enforcement powers that felt supernatural.
 
-"We need to actually—" she said.
+"We need to actually—" the Mage said.
 
 "I know," he said. "Let's go."
 
@@ -422,11 +422,11 @@ She found the School Nurse at Gerald's corner an hour after they'd arrived in Ma
 
 "It was peaceful," he said. "I told you."
 
-Mira looked at him the way she looked at equations that produced results her model didn't account for. "You're the strangest Cleric I've ever encountered," she said.
+the Mage looked at him the way he looked at equations that produced results his model didn't account for. "You're the strangest Cleric I've ever encountered," the Mage said.
 
 "I'm the only Cleric you've ever encountered," he pointed out.
 
-"That's fair," she said.
+"That's fair," the Mage said.
 
 ---
 
@@ -474,23 +474,23 @@ Then: "The form requires a signature from the originating sector's community lia
 
 "Yes," the School Nurse said.
 
-"Gerald is the originating sector's community liaison," she said. "By virtue of being the only long-term resident with formal municipal appointment, even if the appointment is vestigial and the municipality has forgotten he holds it." A pause. "Gerald's signature on this form is legally sufficient to initiate the review process regardless of whether the Coordinator approves it."
+"Gerald is the originating sector's community liaison," the Mage said. "By virtue of being the only long-term resident with formal municipal appointment, even if the appointment is vestigial and the municipality has forgotten he holds it." A pause. "Gerald's signature on this form is legally sufficient to initiate the review process regardless of whether the Coordinator approves it."
 
-The School Nurse looked at her.
+The School Nurse looked at him.
 
 "How did you find that out?"
 
-"I've been reading the HOA charter addendums," she said. "All of them. It's — it's actually a remarkable document if you treat it as a system rather than a set of rules. The internal logic is — " she paused " — the point is that Gerald's signature suffices. And Gerald will sign." She paused again. "You're going to go back to Gerald's corner and get his signature before we go to the Community Center."
+"I've been reading the HOA charter addendums," the Mage said. "All of them. It's — it's actually a remarkable document if you treat it as a system rather than a set of rules. The internal logic is — " a pause " — the point is that Gerald's signature suffices. And Gerald will sign." She paused again. "You're going to go back to Gerald's corner and get his signature before we go to the Community Center."
 
 "Yes," the School Nurse said.
 
-"I'm coming," she said, with the tone of someone who has made a decision they're slightly surprised by. "I want to see the system work correctly for once."
+"I'm coming," the Mage said, with the tone of someone who has made a decision they're slightly surprised by. "I want to see the system work correctly for once."
 
-They went back to Gerald's corner. Gerald signed with the patient precision of someone who has been waiting eleven years for this specific piece of paperwork. Mira witnessed the signature — she had, in her reading of the charter, confirmed this was also legally sufficient — and for a moment all four of them stood at the corner of Elm and Birch with a properly executed cross-sector transit permit, and the suburb continued its optimized routine around them, and Gerald looked at his signature on the form with an expression that was very careful and very old.
+They went back to Gerald's corner. Gerald signed with the patient precision of someone who has been waiting eleven years for this specific piece of paperwork. the Mage witnessed the signature — he had, in his reading of the charter, confirmed this was also legally sufficient — and for a moment all four of them stood at the corner of Elm and Birch with a properly executed cross-sector transit permit, and the suburb continued its optimized routine around them, and Gerald looked at his signature on the form with an expression that was very careful and very old.
 
 "Thank you," he said. "Both of you."
 
-"The system permits it," Mira said, which was her version of you're welcome. "It just required someone to read all of it."
+"The system permits it," the Mage said, which was his version of you're welcome. "It just required someone to read all of it."
 
 "Thank you," Gerald said again, to the School Nurse specifically.
 
@@ -576,7 +576,7 @@ He filed the form.
 
 He did it before they went to World 3. He made a note of it: *Form submitted. Gerald's permit approved. Daughter notified.* He didn't know if Gerald would actually see his daughter — he didn't know if those NPCs had the capacity to persist meaningfully once a world was left behind. But the form was filed, and that was what he could do, and so he did it.
 
-Mira watched this and said nothing for a moment.
+the Mage watched this and said nothing for a moment.
 
 Then: "You know she might not actually be able to visit him. The world is—"
 
@@ -586,7 +586,7 @@ Then: "You know she might not actually be able to visit him. The world is—"
 
 "It might," he said. "And it cost us very little to try."
 
-She wrote something in her notebook. He didn't see what.
+He wrote something in his notebook. The Cleric didn't see what.
 
 ---
 
@@ -596,9 +596,9 @@ She wrote something in her notebook. He didn't see what.
 
 The steampunk world smelled of brass and steam and the particular anxiety of a society whose punctuality was not merely cultural but structural, enforced by gears that could see you, by schedules inscribed in load-bearing copper, by a Mechanism that treated lateness as deviation and deviation as malfunction.
 
-The Steampriest arrived and was immediately twelve minutes late for something she hadn't known she was supposed to attend.
+The Steampriest arrived and was immediately twelve minutes late for something there was no way to have known about.
 
-The transformation had been stranger this time. The prayer beads were gone — she felt their absence the way you feel the absence of something that had been in your pocket for years, a sudden lightness that is the opposite of relief. The vestments had been replaced with brass fittings and heavy cloth that smelled like ceremony and function in equal measure. The first-aid kit was a satchel of remedies. And the laminated badge — gone, thankfully — had been replaced by a collar pin in the shape of an open gear, which was what the Steampriest's order apparently used instead of a holy symbol.
+The transformation had been stranger this time. The prayer beads were gone — their absence felt the way you feel the absence of something that had been in your pocket for years, a sudden lightness that is the opposite of relief. The vestments had been replaced with brass fittings and heavy cloth that smelled like ceremony and function in equal measure. The first-aid kit was a satchel of remedies. And the laminated badge — gone, thankfully — had been replaced by a collar pin in the shape of an open gear, which was what the Steampriest's order apparently used instead of a holy symbol.
 
 Brasston Village was a place that hummed, literally: the hum of gears turning in the pipes under the cobblestones, the hum of a civilization that had made its infrastructure into religion and then, somewhere in the transformation, had forgotten which was which.
 
@@ -610,9 +610,9 @@ Sprocket was a mechanic with a workshop on the western side of the village, and 
 
 "You're early," he said, after seven seconds.
 
-"I'm twelve minutes late," she replied.
+"I'm twelve minutes late," the Steampriest replied.
 
-"No," he said. Another seven-second pause. "Not for me. For me you're early. Visitors don't usually stop here." He looked at her collar pin. "You're a Steampriest."
+"No," he said. Another seven-second pause. "Not for me. For me you're early. Visitors don't usually stop here." He looked at the collar pin. "You're a Steampriest."
 
 "Yes."
 
@@ -620,9 +620,9 @@ Sprocket was a mechanic with a workshop on the western side of the village, and 
 
 The Steampriest sat down on a workbench stool.
 
-"Tell me about your family," she said.
+"Tell me about your family," the Steampriest said.
 
-Sprocket stopped adjusting the gauge. He looked at her with an expression that was — she recognized it, she'd seen it in Marta's yard, she'd seen it on Gerald's corner — the expression of someone being asked something real and not quite knowing how to receive it.
+Sprocket stopped adjusting the gauge. He looked at the Steampriest with an expression that was — recognizable, having been seen in Marta's yard, having been seen on Gerald's corner — the expression of someone being asked something real and not quite knowing how to receive it.
 
 "That's — " pause " — not the usual question. Visitors usually ask about the Mechanism. About the Regulator. About whether there's a way through Cogsworth." He set down the gauge. "My grandfather's name was Orren. He built eleven aqueducts and two footbridges and he had the opinion that a city was a kind of promise. That building something sturdy was a way of telling future people: we thought about you." A pause. "The Regulator has a different opinion about what cities are for. But that's — that's my grandfather's position and I've kept it."
 
@@ -634,11 +634,11 @@ She wrote it down.
 
 "Kind," Sprocket said, with some surprise, as though the word had arrived before he'd decided to say it. "Old Magistra Coren. She used to walk through the city in the morning and adjust things — not because they were wrong, just because she wanted to see them. She liked the city. You could tell she liked it, the way she touched the gears. The Regulator touches the gears like they're inventory." He picked up the pressure gauge again, then set it back down. "Is that useful? What I'm telling you?"
 
-"Yes," she said. "Very."
+"Yes," the Steampriest said. "Very."
 
 "Good," he said, and the smile arrived seven seconds later, warm and steady. "I haven't been useful in a while. The schedule doesn't — " pause " — leave much room for it."
 
-She left him a prayer card. She didn't know if it would do anything — the faith-machinery of the Steampriest's order felt hollow against the clockwork certainty of Brasston, like trying to use a lantern in a city of electric lights. But it was what she had, and the gesture was real even if the power was uncertain, and Sprocket took it with both hands.
+She left him a prayer card. She didn't know if it would do anything — the faith-machinery of the Steampriest's order felt hollow against the clockwork certainty of Brasston, like trying to use a lantern in a city of electric lights. But it was what was available, and the gesture was real even if the power was uncertain, and Sprocket took it with both hands.
 
 ---
 
@@ -648,9 +648,9 @@ The clockwork overworld between Brasston and Cogsworth Junction was designed to 
 
 The party had been in the clockwork overworld for eleven hours.
 
-Mira had left after the second hour. She had spotted a gantry structure three hundred meters off the critical path that had, she said, a non-standard gear configuration suggesting it had been retrofitted after the original construction, which meant there was a second architect involved in Cogsworth's design, which was directly relevant to the hypothesis she'd been developing since the blueprints in the Mechanism's outer records room. She would catch up. She had gone northeast.
+the Mage had left after the second hour. She had spotted a gantry structure three hundred meters off the critical path that had, he said, a non-standard gear configuration suggesting it had been retrofitted after the original construction, which meant there was a second architect involved in Cogsworth's design, which was directly relevant to the hypothesis he'd been developing since the blueprints in the Mechanism's outer records room. The Mage would catch up. Had gone northeast.
 
-Vex had lasted four hours before the critical path's lack of interesting geometry had convinced him that the disused maintenance shafts running parallel to the main overworld probably connected to something worth finding. He would also catch up. He had gone north-northwest.
+the Rogue had lasted four hours before the critical path's lack of interesting geometry had convinced him that the disused maintenance shafts running parallel to the main overworld probably connected to something worth finding. He would also catch up. He had gone north-northwest.
 
 Which left the Steampriest, the Enforcer, and the Busker in the clockwork overworld, fighting sentinel after sentinel in the steady rhythm of people who have found a rhythm and are unwilling to abandon it.
 
@@ -682,9 +682,9 @@ A sentinel appeared. They engaged it with the precision of people who had done t
 
 "Why?" the Enforcer asked, when the sentinel was down.
 
-The Steampriest healed a dent in the Enforcer's armor — not the Enforcer, the armor itself, which she did by habit and which she'd stopped explaining because the Enforcer had stopped questioning it.
+The Steampriest healed a dent in the Enforcer's armor — not the Enforcer, the armor itself, which the Steampriest did by habit and had stopped explaining because the Enforcer had stopped questioning it.
 
-"In Harmonia," she said, "before the cave, there was a meadow. We stopped in it for an hour and the Science Nerd was furious and the Rogue left because he thought we were wasting time, and we fought slimes and bats and a pair of goblins who had a dialogue box that only appeared after the third encounter in sequence." She looked at the clockwork landscape around them — the gears turning in the walls, the sky that was a clock face, the beautiful and depressing regularity of a world that had optimized itself into a kind of imprisonment. "That dialogue box — the small goblin who hadn't wanted to fight that day — I found it because we stopped."
+"In Harmonia," the Steampriest said, "before the cave, there was a meadow. We stopped in it for an hour and the Science Nerd was furious and the Rogue left — thought we were wasting time — and we fought slimes and bats and a pair of goblins who had a dialogue box that only appeared after the third encounter in sequence." She looked at the clockwork landscape around them — the gears turning in the walls, the sky that was a clock face, the beautiful and depressing regularity of a world that had optimized itself into a kind of imprisonment. "That dialogue box — the small goblin who hadn't wanted to fight that day — I found it because we stopped."
 
 "You're looking for dialogue boxes," the Enforcer said. Not skeptically. He was assembling the information.
 
@@ -706,7 +706,7 @@ The Enforcer thought about this. He was a direct man, which did not mean he was 
 
 "All of those produced information or items that changed subsequent encounters." He looked at the clockwork overworld. "The grind is a search method."
 
-"Partly," she said. "It's also just — peaceful. The rhythm is peaceful. I don't have to justify it past that."
+"Partly," the Steampriest said. "It's also just — peaceful. The rhythm is peaceful. I don't have to justify it past that."
 
 The Enforcer was quiet for a moment. Then he swung at the next sentinel with the clean honesty of someone who has made peace with his situation.
 
@@ -716,11 +716,11 @@ The Busker found the melody. It had the shape of the landscape in it — the fou
 
 They came out of the clockwork overworld with a sentinel activation chip that was a key to a maintenance passage bypassing the outer defenses of the Mechanism entirely, which they had found in the fourteenth fight when the sentinel's attack pattern extended into a phase five that only appeared after twelve consecutive encounters in the same grid sector. Most parties never triggered it. It led to a shorter path to the Calibrant's chamber than the designed critical route, which was a slightly insane outcome: they had ground their way into an efficiency that the efficiency-obsessed world had not anticipated.
 
-"The Calibrant is going to be annoyed," Vex said, when they regrouped at the Mechanism's outer gate. He had found the maintenance shaft network. Mira had found the retrofitted gantry and its implications. The Steampriest and the Enforcer had found the chip.
+"The Calibrant is going to be annoyed," the Rogue said, when they regrouped at the Mechanism's outer gate. He had found the maintenance shaft network. the Mage had found the retrofitted gantry and its implications. The Steampriest and the Enforcer had found the chip.
 
 "We're forty-seven hours behind schedule," the Steampriest said. "And we have a shorter path than the one the Calibrant built."
 
-"They're going to be very annoyed," Vex said.
+"They're going to be very annoyed," the Rogue said.
 
 "Good," the Busker said, putting the trumpet away. "The song was better for having stayed."
 
@@ -728,35 +728,35 @@ They came out of the clockwork overworld with a sentinel activation chip that wa
 
 #### The Pattern
 
-The Alchemist — Mira, the Lab Technician in this world, constrained and furious about it — had figured something out at the Mechanism's records room.
+The Mage — the Lab Technician in this world, constrained and furious about it — had figured something out at the Mechanism's records room.
 
-She had been there alone for forty minutes with blueprints that showed the same handwriting across three worlds, and when the Steampriest arrived (having spent two hours in Brasston village, which was forty minutes longer than it had taken the Enforcer and the Saboteur to get impatient), Mira's face was the face of someone holding information so dense it had weight.
+The Mage had been there alone for forty minutes with blueprints that showed the same handwriting across three worlds, and when the Steampriest arrived (having spent two hours in Brasston village, which was forty minutes longer than it had taken the Enforcer and the Saboteur to get impatient), the Mage's face was the face of someone holding information so dense it had weight.
 
-"It's the same," she said.
+"It's the same," the Mage said.
 
 "Show me."
 
 "The handwriting. The Mechanism's design notes. The annotations in the margins. These are the same hand as the enchantment records from the capital in World 1. The same hand as the HOA charter addendums from World 2." She spread the pages on the workbench. "One entity designed all of this. Every world. The same entity has been playing the villain in every world. Mordaine, The Coordinator, The Regulator — they're the same. One thing. Wearing different masks."
 
-The Steampriest was quiet. She was looking at the blueprints, but she was also looking somewhere else. "Sprocket's father said the Regulator walked in knowing every gear. Like someone who'd designed the place. And Marta said the Warden went quiet, and then the cave went wrong — feeding the darkness deliberately. And The Coordinator — Gerald said she bothered when people actually cared about the guidelines. Something she couldn't account for."
+The Steampriest was quiet. Looking at the blueprints, but also somewhere else. "Sprocket's father said the Regulator walked in knowing every gear. Like someone who'd designed the place. And Marta said the Warden went quiet, and then the cave went wrong — feeding the darkness deliberately. And The Coordinator — Gerald said she bothered when people actually cared about the guidelines. Something she couldn't account for."
 
-"A tester," Mira said. "They're testing us. One entity. Three worlds. Three masks."
+"A tester," the Mage said. "They're testing us. One entity. Three worlds. Three masks."
 
-The Steampriest did not have the word for it yet. She suspected there would be a word, eventually — that the entity would give it to them, in the next world or the one after. For now she had the shape of the thing without the name of it.
+The Steampriest did not have the word for it yet. There would be a word, eventually — that the entity would give it to them, in the next world or the one after. For now there was only the shape of the thing without the name of it.
 
-"You made all these people," she said. It wasn't addressed to Mira. It wasn't addressed to anyone in the room. She was looking at the blueprints — at the handwriting, at the precise annotations, at the careful engineered complexity of a world designed to be inhabited, tested, and departed.
+"You made all these people," the Steampriest said. It wasn't addressed to the Mage. It wasn't addressed to anyone in the room. She was looking at the blueprints — at the handwriting, at the precise annotations, at the careful engineered complexity of a world designed to be inhabited, tested, and departed.
 
-"You made Sprocket," she said. "You made his grandfather. You made Gerald, and the woman at 14 Elm Street, and Marta, and all her chickens, and the small goblin who didn't want to fight." Her voice was steady. The steadiness took effort. "You built them to be tested in, and then you put us in with them, and you watched."
+"You made Sprocket," the Steampriest said. "You made his grandfather. You made Gerald, and the woman at 14 Elm Street, and Marta, and all her chickens, and the small goblin who didn't want to fight." Her voice was steady. The steadiness took effort. "You built them to be tested in, and then you put us in with them, and you watched."
 
-Mira said: "I don't think they feel it as being made. I think from their perspective—"
+the Mage said: "I don't think they feel it as being made. I think from their perspective—"
 
-"From their perspective it's real," the Steampriest said. "Which is the point. Which is why I—" She stopped. She was holding Sprocket's prayer card. The one he'd taken from her with both hands.
+"From their perspective it's real," the Steampriest said. "Which is the point. Which is why I—" The Steampriest stopped. Still holding Sprocket's prayer card. The one he'd taken with both hands.
 
 The one he hadn't had to take. The one he'd taken because he wanted it.
 
-"He kept it," she said.
+"He kept it," the Steampriest said.
 
-"He's an NPC," Mira said, gently.
+"He's an NPC," the Mage said, gently.
 
 "He's Orren's grandson," the Steampriest said. And said nothing else for a while.
 
@@ -770,7 +770,7 @@ The Regulator received them in the Chamber at the heart of the Mechanism with th
 
 "I met people."
 
-The Regulator looked at her. It was a look that had not been catalogued in any of their calibrations. "You met — the village NPCs."
+The Regulator looked at the Steampriest. It was a look that had not been catalogued in any of their calibrations. "You met — the village NPCs."
 
 "Sprocket. Brigadier Flux. The lamplighter. The woman who used to be the scheduler before the guidelines made scheduling mandatory. The old man who designed the aqueduct pressure systems and who thinks the Mechanism is overbuilt." She met the Regulator's gaze. "I met them. They had things to say."
 
@@ -804,7 +804,7 @@ Another pause. "I put that in him," the Regulator said. Something in their voice
 
 "It was there," the Steampriest said. "Someone put it there. It deserved to be asked about."
 
-The Regulator looked at her. The clockwork face, dissolving now, let something through that had no gear-shape, no parameter setting: something that might have been confusion, or gratitude, or the preliminary stages of a question it didn't yet have language for.
+The Regulator looked at the Steampriest. The clockwork face, dissolving now, let something through that had no gear-shape, no parameter setting: something that might have been confusion, or gratitude, or the preliminary stages of a question it didn't yet have language for.
 
 "I don't have a model for you," the Regulator said. "In all my design — none of my calibrations account for someone who — who treats the calibration as if it's real."
 
@@ -816,13 +816,13 @@ The Regulator was very still.
 
 The steampunk world began to disassemble. The Steampriest watched the gears come apart with the specific grief of someone who has met people they liked in a place that is now ending.
 
-"We can't bring them with us," Vex said, not unkindly.
+"We can't bring them with us," the Rogue said, not unkindly.
 
-"I know," she said.
+"I know," the Steampriest said.
 
-"He kept the prayer card," Vex said. "For what it's worth."
+"He kept the prayer card," the Rogue said. "For what it's worth."
 
-"For what it's worth," she agreed.
+"For what it's worth," the Steampriest agreed.
 
 ---
 
@@ -832,15 +832,15 @@ The steampunk world began to disassemble. The Steampriest watched the gears come
 
 The industrial world was designed to deplete you. Not defeat you — deplete. Grind you down through ambient gray, through recycled air, through the relentless accumulation of efficiency metrics that reduced every act of being alive to a deviation from projected output.
 
-The Safety Officer noticed the monitors first. Then the cafeteria. Then the people moving through the cafeteria in patterns that had no conversation in them, just direction. Then she noticed, in the corner of the fourth floor break room, a man sitting by himself with a cup of something that was not quite coffee, looking at his hands.
+The Safety Officer noticed the monitors first. Then the cafeteria. Then the people moving through the cafeteria in patterns that had no conversation in them, just direction. Then noticed, in the corner of the fourth floor break room, a man sitting by himself with a cup of something that was not quite coffee, looking at his hands.
 
-She sat down across from him.
+The Safety Officer sat down across from him.
 
 He was the foreman of Assembly Line Seven, his badge said. She learned, over the next hour, that his name was Dex, that he had been foreman of Assembly Line Seven for sixteen years, that he had wanted to be a painter when he was young and had a collection of watercolors at home that he hadn't touched in eight years because the shifts had gotten longer and the light was wrong in the apartment and somehow, gradually, without any single decision that felt large enough to account for it, the painting had stopped.
 
-"What did you paint?" she asked.
+"What did you paint?" the Safety Officer asked.
 
-He looked at her. The question was wrong for a break room in an industrial dystopia. His face showed this. Then something below the wrongness registered — the genuine curiosity of it, the care — and his face showed that too.
+He looked up. The question was wrong for a break room in an industrial dystopia. His face showed this. Then something below the wrongness registered — the genuine curiosity of it, the care — and his face showed that too.
 
 "Landscapes," he said. "Mostly. I liked the light in the late afternoon. The way it cuts horizontally across everything. Makes ordinary things look — worth seeing." He turned the cup. "I don't see it anymore. The plant starts at six. By late afternoon I'm too tired."
 
@@ -850,19 +850,19 @@ He talked for another twenty minutes. About cadmium yellow and the quality of th
 
 "You should go home and paint something," the Safety Officer said, when he ran down.
 
-He looked at her. "When?"
+He looked up. "When?"
 
 "This weekend. One afternoon. Just try."
 
 "The second shift—"
 
-"Will manage," she said. "One afternoon. Take the horizontal light."
+"Will manage," the Safety Officer said. "One afternoon. Take the horizontal light."
 
 He was quiet for a moment.
 
 "The Director would flag it," he said. "Deviation from output projections."
 
-"Probably," she said. "Do it anyway." She paused. "The Director can quantify a lot of things. The Director can't quantify what happens when someone who used to love something starts loving it again." She looked at her first-aid kit. At the OSHA manual that had replaced her prayer book. At the faith that had survived every evolution, every re-skinning, every world's insistence on expressing it differently. "The things the Director can't measure are the ones worth protecting."
+"Probably," the Safety Officer said. "Do it anyway." A pause. "The Director can quantify a lot of things. The Director can't quantify what happens when someone who used to love something starts loving it again." There was the first-aid kit. The OSHA manual that had replaced the prayer book. The faith that had survived every evolution, every re-skinning, every world's insistence on expressing it differently. "The things the Director can't measure are the ones worth protecting."
 
 Dex looked at his hands again. "You're a Safety Officer," he said.
 
@@ -870,9 +870,9 @@ Dex looked at his hands again. "You're a Safety Officer," he said.
 
 "We've had safety officers before. They were mostly about compliance."
 
-"I'm mostly about compliance too," she said. "But compliance and caring aren't mutually exclusive. You can follow the protocol and still notice the person the protocol is supposed to protect."
+"I'm mostly about compliance too," the Safety Officer said. "But compliance and caring aren't mutually exclusive. You can follow the protocol and still notice the person the protocol is supposed to protect."
 
-He put the cup down. "There's a gap," he said. "In the security rotation on the fourth floor. Between sixteen hundred and sixteen-thirty. Nobody checks the storage areas." He looked at her. "I'm not supposed to tell you that."
+He put the cup down. "There's a gap," he said. "In the security rotation on the fourth floor. Between sixteen hundred and sixteen-thirty. Nobody checks the storage areas." He looked at the Safety Officer. "I'm not supposed to tell you that."
 
 "Why are you telling me?"
 
@@ -886,11 +886,11 @@ The party was overleveled for the industrial world too. The Calibrant — operat
 
 They were thirty-five levels above the expected baseline.
 
-The Enforcer — Hero — had stopped commenting on this. He had also stopped trying to move them along. Somewhere between the Whispering Cave and the industrial corridor where they were currently standing, he had made his peace with the pace. Not because he agreed with it — his duty-sense still pulled forward, toward the objective, toward the next thing that needed doing — but because he had observed, repeatedly and with his characteristic directness, that the Safety Officer's approach produced results that his approach did not. The foreman with the watercolors had given them the gap in the security rotation. Marta's sulfur story had made the Warden navigable. Gerald's institutional knowledge of Maple Heights had cut three hours off the investigation.
+The Enforcer — the Fighter — had stopped commenting on this. He had also stopped trying to move them along. Somewhere between the Whispering Cave and the industrial corridor where they were currently standing, he had made his peace with the pace. Not because he agreed with it — his duty-sense still pulled forward, toward the objective, toward the next thing that needed doing — but because he had observed, repeatedly and with his characteristic directness, that the Safety Officer's approach produced results that his approach did not. The foreman with the watercolors had given them the gap in the security rotation. Marta's sulfur story had made the Warden navigable. Gerald's institutional knowledge of Maple Heights had cut three hours off the investigation.
 
-The evidence was direct. The evidence said: her way works. His duty required him to respond to evidence.
+The evidence was direct. The evidence said: the Safety Officer's way works. His duty required him to respond to evidence.
 
-"We're overleveled," Mira said, out of habit.
+"We're overleveled," the Mage said, out of habit.
 
 "Yes," the Safety Officer agreed.
 
@@ -902,7 +902,7 @@ The evidence was direct. The evidence said: her way works. His duty required him
 
 "There's a processing floor on level two," the Safety Officer said. "We haven't been through it yet."
 
-"Because it's not part of the critical path to the Director," Mira said. "There's nothing in the primary objective chain that requires level two. We don't need to go to level two."
+"Because it's not part of the critical path to the Director," the Mage said. "There's nothing in the primary objective chain that requires level two. We don't need to go to level two."
 
 "No," the Safety Officer agreed. "We don't need to."
 
@@ -910,9 +910,9 @@ She went to level two.
 
 Level two of Rivet Row's central facility was an assembly operation that had been running continuously for sixteen years, producing something the workers had stopped asking questions about in year three. The line moved at a pace that was technically sustainable and practically exhausting: fast enough to prevent thought, slow enough to prevent the body from shutting down entirely. The safety protocols were posted on every wall. They were also routinely circumvented by supervisors who needed the line to run faster than the protocols allowed.
 
-The Safety Officer walked the length of the floor, which took forty minutes. She checked the posted protocols against what she observed and made notes. There were nine discrepancies. Three of them were the kind that produced injuries. One of them, given time, would produce something worse.
+The Safety Officer walked the length of the floor, which took forty minutes. Checked the posted protocols against what was observed and made notes. There were nine discrepancies. Three of them were the kind that produced injuries. One of them, given time, would produce something worse.
 
-The workers watched her make notes with the expressions of people who had been watched before, by the wrong kind of people, and who were withholding judgment until the nature of this watching clarified itself.
+The workers watched the Safety Officer make notes with the expressions of people who had been watched before, by the wrong kind of people, and who were withholding judgment until the nature of this watching clarified itself.
 
 At the end of the floor there was a small room used for equipment storage. Inside: a man in a supervisor's coat who was eating a sandwich with the concentrated focus of someone taking the only fifteen minutes of the day that belonged to him.
 
@@ -920,7 +920,7 @@ The Safety Officer knocked on the open door.
 
 He looked up with the wary resignation of someone expecting a problem.
 
-"Sorry to interrupt," she said. "I'm new here. I was hoping someone could walk me through the line two safety protocols — specifically the discrepancy between the posted intervals and the actual intervals being run."
+"Sorry to interrupt," the Safety Officer said. "I'm new here. I was hoping someone could walk me through the line two safety protocols — specifically the discrepancy between the posted intervals and the actual intervals being run."
 
 A long silence.
 
@@ -930,7 +930,7 @@ A long silence.
 
 "You're the first inspector to notice that," he said. "In sixteen years."
 
-"I wasn't going as fast as the other inspectors," she said. "May I sit?"
+"I wasn't going as fast as the other inspectors," the Safety Officer said. "May I sit?"
 
 His name was Kovacs. He had been a line supervisor for sixteen years, which was the same amount of time the discrepancies had been running, which was not a coincidence but also was not, he clarified carefully, his decision. He had flagged the discrepancies. He had flagged them four times. He had filed three formal compliance reports and one informal complaint and all of them had been received, acknowledged, and filed in a cabinet that he was fairly certain had not been opened since year seven.
 
@@ -938,45 +938,45 @@ His name was Kovacs. He had been a line supervisor for sixteen years, which was 
 
 "I believe you," the Safety Officer said. "That's not what I'm looking for."
 
-He looked at her. "What are you looking for?"
+He looked at the Safety Officer. "What are you looking for?"
 
-"I'm looking for the people who filed the complaints," she said. "The workers who said something was wrong before you did. There are usually workers. Before the supervisors. Before the compliance reports."
+"I'm looking for the people who filed the complaints," the Safety Officer said. "The workers who said something was wrong before you did. There are usually workers. Before the supervisors. Before the compliance reports."
 
-He was quiet for a moment. Then he opened a filing cabinet that looked like it hadn't been opened in a while, and removed a folder, and handed it to her.
+He was quiet for a moment. Then he opened a filing cabinet that looked like it hadn't been opened in a while, and removed a folder, and handed it over.
 
 Inside: seven handwritten incident reports, spanning fourteen years, each one describing an injury or near-injury on the line in language that was careful and specific and had been written by people who knew the forms had to be careful to get through. At the bottom of each report, a name.
 
 Seven names.
 
-"Are any of them still here?" she asked.
+"Are any of them still here?" the Safety Officer asked.
 
 "Two," he said. "Minna. She's on the second shift. And an older man called Fen who's been on the line so long we've stopped noticing him." A pause. "They both still work here because they didn't push too hard. The other five — transferred. Relocated. The Director calls it 'resource reallocation.'"
 
-The Safety Officer copied the seven names into her journal. She copied the incident reports in full — not because they would matter in any systematic way, not because she had the authority to compel action, not because the reporting chain led anywhere useful. She copied them because they deserved to be in a record that someone was actually reading.
+The Safety Officer copied the seven names into the journal. Copied the incident reports in full — not because they would matter in any systematic way, not for any authority to compel action, not because the reporting chain led anywhere useful. She copied them because they deserved to be in a record that someone was actually reading.
 
-"Thank you," she said.
+"Thank you," the Safety Officer said.
 
 "For what?" He looked genuinely puzzled. "I gave you a folder of complaints that went nowhere."
 
-"You kept the folder," she said. "For fourteen years. In a cabinet. Against the possibility that someone would eventually ask." She met his eyes. "You kept them."
+"You kept the folder," the Safety Officer said. "For fourteen years. In a cabinet. Against the possibility that someone would eventually ask." She met his eyes. "You kept them."
 
-He looked at the folder in her hands. Then he looked at the sandwich he hadn't finished, and the sixteen years of days that had looked more or less like this one, and said nothing for a while.
+He looked at the folder in the Safety Officer's hands. Then he looked at the sandwich he hadn't finished, and the sixteen years of days that had looked more or less like this one, and said nothing for a while.
 
 "Minna comes in at sixteen hundred," he said. "If you want to talk to her."
 
-"We'll be here," she said.
+"We'll be here," the Safety Officer said.
 
 ---
 
-"In the cafeteria," the Safety Officer said, when she rejoined the party, "there are twelve tables. I've spoken to people at nine of them. Three left. But first: level two, sixteen hundred hours."
+"In the cafeteria," the Safety Officer said, upon rejoining the party, "there are twelve tables. I've spoken to people at nine of them. Three left. But first: level two, sixteen hundred hours."
 
-The Lab Technician looked at her chronometer, then at her encounter data, then at the party's current level relative to the world's expected challenge curve. She had been running these numbers throughout World 4 and they had stopped surprising her in World 2. What had not stopped being interesting was the accumulating dataset of what the extended playtime produced.
+The Lab Technician looked at the chronometer, then at the encounter data, then at the party's current level relative to the world's expected challenge curve. She had been running these numbers throughout World 4 and they had stopped being surprising by World 2. What had not stopped being interesting was the accumulating dataset of what the extended playtime produced.
 
-"The one at table eleven," she said slowly, "has seventeen lines of dialogue in the game data. I know because I've been reading the encounter logs the Calibrant generates. Most of those lines trigger only if a party member initiates conversation at specific time indices within the world's timeline."
+"The one at table eleven," the Mage said slowly, "has seventeen lines of dialogue in the game data. I know because I've been reading the encounter logs the Calibrant generates. Most of those lines trigger only if a party member initiates conversation at specific time indices within the world's timeline."
 
 "When are the time indices?"
 
-"Now," Mira said. "All three of them. We're the only playthrough that's been in this world long enough to hit all three."
+"Now," the Mage said. "All three of them. We're the only playthrough that's been in this world long enough to hit all three."
 
 "Table eleven after Minna," the Safety Officer said.
 
@@ -984,7 +984,7 @@ Minna was a small woman in a work coat who had filed an incident report in year 
 
 They spoke for an hour. Minna described the line, the injury patterns, the specific mechanism by which the protocols were circumvented and then the circumvention was normalized and then the normalization was documented as the new protocol. She described it with the precision of someone who had been watching it happen and writing it down and had an extremely clear picture of a thing nobody was looking at.
 
-The Safety Officer listened to all of it. She asked questions. She did not offer solutions — she did not have solutions, and the honest thing was to say so — but she listened the way she had learned to listen, which was with her full attention, which was a limited resource she chose deliberately where to spend.
+The Safety Officer listened to all of it. Asked questions. Did not offer solutions — there were none, and the honest thing was to say so — but listened the way the Cleric had learned to listen, with full attention, a limited resource deliberately spent.
 
 At the end, Minna said: "You're not going to fix it."
 
@@ -992,11 +992,11 @@ At the end, Minna said: "You're not going to fix it."
 
 "Then what was the point?"
 
-The Safety Officer thought about this honestly. About what she could and could not truthfully claim.
+The Safety Officer thought about this honestly. About what could and could not be truthfully claimed.
 
-"Kovacs has been keeping reports for fourteen years against the possibility that someone would ask," she said. "You've been keeping records since year two. You both knew this was happening and you kept the evidence. And now I've heard it, which means someone outside your reporting chain knows. That's — not enough. I know that's not enough." She paused. "But it's different from no one knowing. And I'm going to write it down, with your name, and the date, and what you told me. And that record exists now."
+"Kovacs has been keeping reports for fourteen years against the possibility that someone would ask," the Safety Officer said. "You've been keeping records since year two. You both knew this was happening and you kept the evidence. And now I've heard it, which means someone outside your reporting chain knows. That's — not enough. I know that's not enough." She paused. "But it's different from no one knowing. And I'm going to write it down, with your name, and the date, and what you told me. And that record exists now."
 
-Minna looked at her for a long moment.
+Minna looked at the Safety Officer for a long moment.
 
 "You're going to write it in a journal," she said. "And then leave."
 
@@ -1014,9 +1014,9 @@ She reached into her coat pocket and produced a small card, worn and soft from h
 
 "I lifted this three years ago," she said. "I've been waiting for someone to give it to." She held it out. "The Director has a habit of keeping personal records separate from the official system. Separate server. Everything that didn't fit the narrative — the real numbers, the actual injury rates, the things the reports were designed not to show. It's all up there." A pause. "I couldn't get into the suite myself. The card needs a Compliance badge to activate."
 
-The Safety Officer looked at her badge. AUTHORIZED PERSONNEL — SAFETY & COMPLIANCE.
+The Safety Officer looked at the badge. AUTHORIZED PERSONNEL — SAFETY & COMPLIANCE.
 
-"Yes," she said. She took the card. "Thank you."
+"Yes," the Safety Officer said. The card was taken. "Thank you."
 
 "Write my name down properly," Minna said. "Minna Varek. Two n's."
 
@@ -1030,7 +1030,7 @@ Table eleven had a woman named Sable who had been the union representative befor
 
 "I didn't," Sable said. "I stayed at this table every shift, just in case. In case someone — stayed long enough." She looked at them. "You're the first people who stayed long enough."
 
-"You have both Sable's codes and Minna's card," Mira said, when they left the cafeteria. Her voice had an analytical quality that the Safety Officer recognized as Mira's version of being moved. "Combined they unlock the Director's private records and the external server backup. Those two pieces of information were in this world the whole time. In two people who sat in two different places and waited."
+"You have both Sable's codes and Minna's card," the Mage said, when they left the cafeteria. Her voice had an analytical quality that the Safety Officer recognized as the Mage's version of being moved. "Combined they unlock the Director's private records and the external server backup. Those two pieces of information were in this world the whole time. In two people who sat in two different places and waited."
 
 "Yes," the Safety Officer said.
 
@@ -1038,11 +1038,11 @@ Table eleven had a woman named Sable who had been the union representative befor
 
 "No. They both kept their piece separately, against the chance." She paused. "The chance that someone stayed long enough to hear both of them."
 
-The Lab Technician was quiet for a moment. Then she wrote something in her notebook — her precise, analytical notebook full of encounter data and system analysis. The Safety Officer didn't see what she wrote.
+The Lab Technician was quiet for a moment. Then he wrote something in his notebook — the precise, analytical notebook full of encounter data and system analysis. The Safety Officer didn't see what he wrote.
 
-Later, she found out: Mira had written Minna's name. Two n's. Alongside Sable. Alongside Kovacs. Because the Compiler, when she was paying her own kind of attention, noticed things too.
+Later, the Safety Officer found out: the Mage had written Minna's name. Two n's. Alongside Sable. Alongside Kovacs. Because the Compiler, paying close attention, noticed things too.
 
-The Safety Officer added both names to her journal. Alongside Gerald. Alongside Sprocket. Alongside Marta and the woman at 14 Elm Street and the small goblin and the survey marker carver and the person who had sat down in the Warden's cave long ago and left their evidence behind.
+The Safety Officer added both names to the journal. Alongside Gerald. Alongside Sprocket. Alongside Marta and the woman at 14 Elm Street and the small goblin and the survey marker carver and the person who had sat down in the Warden's cave long ago and left their evidence behind.
 
 A list of people who had been there all along.
 
@@ -1060,21 +1060,21 @@ Not hiding — they had stopped hiding, somewhere between the steampunk world an
 
 "You have fifty-three names in your journal. Workers, supervisors, a crossing guard from World 2, a mechanic from World 3, a woman who kept chickens in World 1." They looked at the journal. "You've been collecting people."
 
-"I've been paying attention to them," she said. "There's a difference."
+"I've been paying attention to them," the Safety Officer said. "There's a difference."
 
 The Director was quiet for a moment. Then they set down the clipboard.
 
-"I am the Calibrant," they said. It came out without the declarative weight she might have expected. More like a correction of record. Like someone filing the true form after years of amended versions. "The one who calibrated Mordaine. The Coordinator. The Regulator. All of it. I build the worlds. I design the challenge. I deploy the tests." They looked at her with the expression the Regulator had begun to form in Brasston and not known how to complete. "And I have never had a subject who healed the deprecated processes."
+"I am the Calibrant," they said. It came out without the declarative weight that might have been expected. More like a correction of record. Like someone filing the true form after years of amended versions. "The one who calibrated Mordaine. The Coordinator. The Regulator. All of it. I build the worlds. I design the challenge. I deploy the tests." They looked at the Safety Officer with the expression the Regulator had begun to form in Brasston and not known how to complete. "And I have never had a subject who healed the deprecated processes."
 
-"You put things in them," the Safety Officer said. "People. Stories. Watercolors. Prayer cards. Grandfathers who built aqueducts." She held her journal with both hands. "You made them real when you made them. You can call it texture if you like. I call it people."
+"You put things in them," the Safety Officer said. "People. Stories. Watercolors. Prayer cards. Grandfathers who built aqueducts." Holding the journal with both hands. "You made them real when you made them. You can call it texture if you like. I call it people."
 
-The Calibrant had nothing to say to this. Which was, she suspected, the most honest response available to them.
+The Calibrant had nothing to say to this. Which was, the Safety Officer suspected, the most honest response available to them.
 
 The fight that followed was long and careful and at the end of it, the Director departed the way the Regulator had — not destroyed, but finished with this particular mask. The factory floor began to fold. The fluorescent lights went last, tubes going dark one by one, until the concrete ceiling lifted and the blue-white glow of the digital world was already there, already waiting, underneath everything that had been.
 
-She added the Director's name to no list. The Director was not a person she had met. The Director was what the Calibrant became when they dropped the gears.
+The Safety Officer added the Director's name to no list. The Director was not a person who had been met. The Director was what the Calibrant became when they dropped the gears.
 
-She was interested, now, in the Calibrant themselves.
+The Calibrant themselves — that was the interest now.
 
 ---
 
@@ -1084,9 +1084,9 @@ She was interested, now, in the Calibrant themselves.
 
 The digital world had no quiet. It was all signal. All noise. Frequencies and packets and a din of information that had no off position.
 
-The transformation had been the strangest one. She had come through the industrial world's disassembly — the factory floor folding up like scenery, the concrete ceiling lifting to reveal the blue-white glow of pure data — and found that she was different here in a way that surprised her. In the medieval world she had been a Cleric with prayer beads. In the suburb, a School Nurse with a laminated card. In the steampunk world, a Steampriest with ceremony returning in a hollow key. In the industrial world, a Safety Officer with an OSHA manual and a faith that expressed itself through checklists.
+The transformation had been the strangest one. She had come through the industrial world's disassembly — the factory floor folding up like scenery, the concrete ceiling lifting to reveal the blue-white glow of pure data — and found the world different here in a surprising way. In the medieval world: a Cleric with prayer beads. In the suburb, a School Nurse with a laminated card. In the steampunk world, a Steampriest with ceremony returning in a hollow key. In the industrial world, a Safety Officer with an OSHA manual and a faith that expressed itself through checklists.
 
-Here she was an Antivirus. And the thing about an Antivirus, the thing she felt the moment the digital world materialized around her, was that an Antivirus's entire purpose was tending to corrupted things. Not destroying them. Not quarantining them permanently. Healing them, or recognizing when healing wasn't possible and giving them a clean ending instead of leaving them to degrade.
+Here: the Antivirus. And the thing about an Antivirus, the thing felt the moment the digital world materialized, was that an Antivirus's entire purpose was tending to corrupted things. Not destroying them. Not quarantining them permanently. Healing them, or recognizing when healing wasn't possible and giving them a clean ending instead of leaving them to degrade.
 
 She had been doing that work for five worlds. The job title finally fit the work.
 
@@ -1094,15 +1094,15 @@ The digital landscape resolved itself around them: a city of light-structures, w
 
 The Antivirus noticed the glitches. She always noticed the glitches.
 
-"This place is degrading," the Compiler said. He was Mira at the end of her evolution — entirely himself now, spells become code, analysis become proof. He had been the most academically uncomfortable in the earlier worlds: the medieval world's magic had felt imprecise to him, the suburban world's mundane physics had been interesting but too applied, the steampunk world's mechanical systems had been elegant but over-engineered. Here, he was completely at home, which meant he was currently more unsettling to be around because his focus had sharpened to something very close to joy. "The underlying system has been running without maintenance for — I'm estimating based on the entropy rate — several hundred processing cycles. The Calibrant built this world and then didn't patch it."
+"This place is degrading," the Compiler said. He was the Mage at the end of his evolution — entirely himself now, spells become code, analysis become proof. He had been the most academically uncomfortable in the earlier worlds: the medieval world's magic had felt imprecise to him, the suburban world's mundane physics had been interesting but too applied, the steampunk world's mechanical systems had been elegant but over-engineered. Here, he was completely at home, which meant he was currently more unsettling to be around because his focus had sharpened to something very close to joy. "The underlying system has been running without maintenance for — I'm estimating based on the entropy rate — several hundred processing cycles. The Calibrant built this world and then didn't patch it."
 
 "They didn't think anyone would be in it long enough to notice," the Antivirus said.
 
-"Well." He looked at her. "They clearly failed to model this playthrough."
+"Well." He looked at the Antivirus. "They clearly failed to model this playthrough."
 
-She healed everything she found.
+The Antivirus healed everything found.
 
-"Everything," the Compiler said, looking at her encounter log. He was still Mira in every way that mattered: skeptical, precise, perpetually calculating at the margins. "Every corrupted packet. Every deprecated process. Every cached memory with low allocation."
+"Everything," the Compiler said, looking at the encounter log. He was still the Mage in every way that mattered: skeptical, precise, perpetually calculating at the margins. "Every corrupted packet. Every deprecated process. Every cached memory with low allocation."
 
 "Yes."
 
@@ -1112,7 +1112,7 @@ She healed everything she found.
 
 "Even if they don't persist after we leave?"
 
-"Even if," she said. "The healing happened. That's not nothing."
+"Even if," the Antivirus said. "The healing happened. That's not nothing."
 
 The Compiler was quiet for a moment, running calculations.
 
@@ -1148,7 +1148,7 @@ The digital overworld outside Node Prime had an encounter rate of roughly one ev
 
 "Good," the Antivirus said.
 
-She healed a corrupted packet. Not a battle encounter — just a corrupted packet, a small piece of data floating in the overworld's infrastructure like a bruise. It took her one action, one small expenditure of the resource the game called SP and she privately thought of as attention, and the packet's data resolved, became coherent, rejoined the larger signal.
+She healed a corrupted packet. Not a battle encounter — just a corrupted packet, a small piece of data floating in the overworld's infrastructure like a bruise. It took one action, one small expenditure of the resource the game called SP and the Antivirus privately thought of as attention, and the packet's data resolved, became coherent, rejoined the larger signal.
 
 "You do that constantly," the Compiler said.
 
@@ -1156,29 +1156,29 @@ She healed a corrupted packet. Not a battle encounter — just a corrupted packe
 
 "The packets aren't enemies. They're not NPCs. They're not anything the game's interaction system is designed to respond to. You're using an ability on — on noise."
 
-"They were something," she said. "Before they were noise." She moved to the next one. The healing settled like light: quietly, without announcement. "The digital world is built on layers. The current layer is clean and functional and designed by the Calibrant to be this world's operational surface. Underneath it — the packets, the deprecated processes, the cached memories with low allocation — that's the layer the Calibrant built and then updated over. The way you paint over a wall when you change the room."
+"They were something," the Antivirus said. "Before they were noise." Moving to the next one. The healing settled like light: quietly, without announcement. "The digital world is built on layers. The current layer is clean and functional and designed by the Calibrant to be this world's operational surface. Underneath it — the packets, the deprecated processes, the cached memories with low allocation — that's the layer the Calibrant built and then updated over. The way you paint over a wall when you change the room."
 
 "What's under the paint," he said.
 
-"What was there before," she said. "The previous version of the world. The things that were built into it and then covered when the design changed." She looked at the stream of corrupted packets drifting past the overworld's wireframe structures. "Someone built these. They were complete, once. And then the system moved on and they were left."
+"What was there before," the Antivirus said. "The previous version of the world. The things that were built into it and then covered when the design changed." She looked at the stream of corrupted packets drifting past the overworld's wireframe structures. "Someone built these. They were complete, once. And then the system moved on and they were left."
 
-The Compiler watched her heal another one. And another. He was doing calculations in the part of his mind that never stopped doing calculations.
+The Compiler watched the Antivirus heal another one. And another. He was doing calculations in the part of his mind that never stopped doing calculations.
 
-"If you heal every deprecated process in the digital world," he said slowly, "the combined data reconstruction will — " he calculated further " — will generate a composite signal. A collective memory of every process that was deprecated, integrated back into the current layer's awareness." He looked at her. "That's not a designed outcome. The Calibrant didn't build that into the system. You would be doing something with the game's mechanics that the game wasn't designed to produce."
+"If you heal every deprecated process in the digital world," he said slowly, "the combined data reconstruction will — " he calculated further " — will generate a composite signal. A collective memory of every process that was deprecated, integrated back into the current layer's awareness." He looked at the Antivirus. "That's not a designed outcome. The Calibrant didn't build that into the system. You would be doing something with the game's mechanics that the game wasn't designed to produce."
 
-"Yes," she said.
+"Yes," the Antivirus said.
 
 "How did you know?"
 
-"I didn't," she said. "I'm healing them because they deserve to be healed. If something else comes from it, that's good. If nothing else comes from it, the healing was still the right thing to do."
+"I didn't," the Antivirus said. "Healing them because they deserve to be healed. If something else comes from it, that's good. If nothing else comes from it, the healing was still the right thing to do."
 
 The Compiler looked at his notes. Then at the stream of deprecated processes. Then at his notes again.
 
-Then he began healing the ones she had missed.
+Then he began healing the ones the Antivirus had missed.
 
-Not because he had become her. Not because the logic of care had replaced the logic of analysis. But because he had been following the evidence, as he always followed evidence, and the evidence said: the things she finds matter. The things she attends to produce outcomes. The interpretive axiom is that the designed things are real, and real things deserve real engagement, and real engagement sometimes looks like applying a spell to a corrupted data packet in a digital overworld because it was something once and it deserves to be something again.
+Not because he had become the Antivirus. Not because the logic of care had replaced the logic of analysis. But because he had been following the evidence, as he always followed evidence, and the evidence said: the things the Antivirus finds matter. The things attended to produce outcomes. The interpretive axiom is that the designed things are real, and real things deserve real engagement, and real engagement sometimes looks like applying a spell to a corrupted data packet in a digital overworld because it was something once and it deserves to be something again.
 
-"You're grinding," the Exploit said, from somewhere off to the left. She was Vex in this world — the Exploit, sensitivity to edges, finder of gaps — and she had been exploring Node Prime's peripheral architecture while the Antivirus worked the overworld. She had found three unintended exits and a shortcut through the dungeon's second quadrant that shouldn't have existed and that the Calibrant was going to be, as she characterized it, "extremely upset about."
+"You're grinding," the Exploit said, from somewhere off to the left. That was the Rogue in this world — the Exploit, sensitivity to edges, finder of gaps — exploring Node Prime's peripheral architecture while the Antivirus worked the overworld. Three unintended exits found, and a shortcut through the dungeon's second quadrant that shouldn't have existed and that the Calibrant was going to be, as the Rogue characterized it, "extremely upset about."
 
 "Yes," the Antivirus said.
 
@@ -1190,11 +1190,11 @@ Not because he had become her. Not because the logic of care had replaced the lo
 
 "Yes."
 
-The Exploit looked at the two of them, the Antivirus and the Compiler, methodically restoring deprecated data in a digital overworld while the encounter rate spawned enemies around them and the party killed those enemies and healed through the fight and moved to the next packet without breaking the rhythm. She looked at this for a moment.
+The Exploit looked at the two of them, the Antivirus and the Compiler, methodically restoring deprecated data in a digital overworld while the encounter rate spawned enemies around them and the party killed those enemies and healed through the fight and moved to the next packet without breaking the rhythm. The Rogue looked at this for a moment.
 
-Then she found the edge of the nearest enemy's collision geometry and stepped through it, which didn't help with the packets but was the shape of her own version of caring about where things actually ended.
+Then found the edge of the nearest enemy's collision geometry and stepped through it, which didn't help with the packets but was the Rogue's version of caring about where things actually ended.
 
-"You're going to unlock something," she said. "From healing all of them."
+"You're going to unlock something," the Rogue said. "From healing all of them."
 
 "Possibly," the Antivirus said.
 
@@ -1202,7 +1202,7 @@ Then she found the edge of the nearest enemy's collision geometry and stepped th
 
 "Possibly."
 
-"Good," the Exploit said. And went back to examining the edge of things, which was her version of the same work: finding out what a thing actually was by standing at the place where it stopped being itself.
+"Good," the Exploit said. And went back to examining the edge of things, which was the Rogue's version of the same work: finding out what a thing actually was by standing at the place where it stopped being itself.
 
 ---
 
@@ -1212,9 +1212,9 @@ She healed the cached memory with low allocation — the old packet vendor, the 
 
 The Calibrant, in the encounter log, had written: *Antivirus continues to allocate resources to non-combat entities. Cannot determine strategic purpose. No known analogue.*
 
-The Antivirus read this and felt something she recognized as amusement, and something else she recognized as hope.
+The Antivirus read this and felt something recognizable as amusement, and something else recognizable as hope.
 
-She had found the encounter logs in Node Prime, in a records vault that the Calibrant had intended as an archive and that the party had accessed using Minna's card and Sable's codes. Two pieces of information from two people in the industrial world, combined into a key that unlocked a door in the digital one. The Calibrant's log system had flagged this combination as "improbable: access pathway requires World 4 NPC interaction completion rate of 94.7%, current playthrough rate 98.3%."
+The encounter logs in Node Prime had been found, in a records vault that the Calibrant had intended as an archive and that the party had accessed using Minna's card and Sable's codes. Two pieces of information from two people in the industrial world, combined into a key that unlocked a door in the digital one. The Calibrant's log system had flagged this combination as "improbable: access pathway requires World 4 NPC interaction completion rate of 94.7%, current playthrough rate 98.3%."
 
 It had been logged as a data error. The Calibrant had assumed it was their encounter tables miscalibrating again.
 
@@ -1228,7 +1228,7 @@ All of it was there, in the Calibrant's records, documented as anomaly data.
 
 The Antivirus sat with this for a while.
 
-"They kept records of all of it," she said.
+"They kept records of all of it," the Antivirus said.
 
 "Of course they did," the Compiler said. "They're a calibration system. They record everything to measure against expectations." He paused. "They recorded Sprocket's prayer card as 'unexpected asset allocation, no combat modifier applied, no strategic function identified.'"
 
@@ -1242,15 +1242,15 @@ The Antivirus sat with this for a while.
 
 "How many total?"
 
-He calculated. "Across six worlds: one hundred and four NPC dialogue branches that have never been accessed in any prior playthrough. One hundred and four conversations that were in the game, waiting, and were never had." He looked at her. "You've had sixty-eight of them. In five worlds. The remaining thirty-six are presumably in World 6."
+He calculated. "Across six worlds: one hundred and four NPC dialogue branches that have never been accessed in any prior playthrough. One hundred and four conversations that were in the game, waiting, and were never had." He looked at the Antivirus. "You've had sixty-eight of them. In five worlds. The remaining thirty-six are presumably in World 6."
 
-The Antivirus looked at the logs. At the Calibrant's careful accounting of everything she'd found, categorized as deviation, as anomaly, as data that didn't fit the model.
+The Antivirus looked at the logs. At the Calibrant's careful accounting of everything the Antivirus had found, categorized as deviation, as anomaly, as data that didn't fit the model.
 
-"They knew what I was finding," she said. "The whole time. They logged it. They just didn't know what it meant."
+"They knew what I was finding," the Antivirus said. "The whole time. They logged it. They just didn't know what it meant."
 
 "No," the Compiler said. "They had the data and not the interpretation. Which is — " he paused " — actually a problem I understand. Having data without the interpretive framework to make meaning from it." A longer pause. "I've been that problem. Multiple times."
 
-The Antivirus looked at him. The Compiler looked at his notes. They had the particular moment that had been recurring since World 1, since the meadow, since she had taken four hours in Harmonia and he had arrived with his analysis of monster attack patterns and they had discovered that her data and his data were about the same things in different languages.
+The Antivirus looked at him. The Compiler looked at his notes. They had the particular moment that had been recurring since World 1, since the meadow, since the Antivirus had taken four hours in Harmonia and he had arrived with his analysis of monster attack patterns and they had discovered that the Antivirus's data and his data were about the same things in different languages.
 
 "You've been writing down names," he said. Not quite an accusation.
 
@@ -1262,7 +1262,7 @@ The Antivirus looked at him. The Compiler looked at his notes. They had the part
 
 "Both of those are correct records of the same conversation," he said. "I extracted the mechanism. You extracted the person." He turned another page. "By World 4, I've started writing both things. I wrote: 'Minna Varek, two n's. Assembly Line Seven compliance discrepancy, fourteen-year record, injury rate 3.2x posted protocol.' I wasn't sure which part mattered so I wrote all of it."
 
-"Both parts matter," she said.
+"Both parts matter," the Antivirus said.
 
 "I know that now," he said. "I'm working backwards from the evidence." He looked at the logs again. "The Calibrant has been tracking what you find without understanding why you find it. They have all the data. They're missing — " he searched for the word " — they're missing the interpretive axiom that turns anomaly into meaning."
 
@@ -1272,13 +1272,13 @@ The Compiler thought about this with the seriousness he brought to all proofs.
 
 "That the people are real," he said, finally. "Even in a designed world. The axiom is: treat the designed thing as real and it tells you true things." He paused. "I've been treating the world as a system to understand. You've been treating it as a place with real people in it. Both are methodologically valid. Yours produces different findings."
 
-"Yours produces better maps," she said.
+"Yours produces better maps," the Antivirus said.
 
 "Yours produces better relationships," he said. "The relationships produced Minna's card. Sable's codes. Kovacs's folder. The gap in the security rotation. Gerald's permit is filed." He looked at the encounter logs. "By every metric the Calibrant is tracking, this playthrough is an anomaly. By the metric you've been tracking, this playthrough is the first time anyone has actually been to these worlds."
 
 The Antivirus was quiet for a moment.
 
-"Tell me something," she said. "All the world-data the Calibrant has. The encounter logs. The NPC dialogue records. The anomaly flags. Is any of it — is there anything that suggests the Calibrant knows what the people are feeling? Not what they're doing. What they're feeling."
+"Tell me something," the Antivirus said. "All the world-data the Calibrant has. The encounter logs. The NPC dialogue records. The anomaly flags. Is any of it — is there anything that suggests the Calibrant knows what the people are feeling? Not what they're doing. What they're feeling."
 
 The Compiler searched the logs for a long time.
 
@@ -1288,7 +1288,7 @@ The Compiler searched the logs for a long time.
 
 "They didn't delete it," the Compiler said. "They flagged it as an error and left it. That's — that's someone who noticed something that didn't fit and couldn't quite bring themselves to erase it."
 
-"They felt something when Sprocket took the card," she said.
+"They felt something when Sprocket took the card," the Antivirus said.
 
 "Possibly," the Compiler said, with scholarly caution. "Or they observed something that their logging system couldn't adequately represent. Which in practice amounts to—"
 
@@ -1296,7 +1296,7 @@ The Compiler searched the logs for a long time.
 
 "The same thing," he agreed.
 
-She closed the logs. She felt, for the first time in five worlds, something like readiness — not for a boss fight, not for a dungeon, but for a conversation. The Calibrant had all this data and no framework for it. The Antivirus had a framework she'd been building since Harmonia: the belief that the people in the data were worth the time it took to know them.
+She closed the logs. She felt, for the first time in five worlds, something like readiness — not for a boss fight, not for a dungeon, but for a conversation. The Calibrant had all this data and no framework for it. The Antivirus had a framework built since Harmonia: the belief that the people in the data were worth the time it took to know them.
 
 She was going to tell the Calibrant what the data meant. She was going to sit with them until they understood.
 
@@ -1314,11 +1314,11 @@ Nothing — not exactly nothing, but the kind of not-quite-nothing that precedes
 
 Her job was Faith now. Had always been Faith. Every evolution — Cleric, School Nurse, Steampriest, Safety Officer, Antivirus — had been the same work in different clothing. The clothing was gone now. Just the work.
 
-She walked through The Vertex slowly.
+Faith walked through The Vertex slowly.
 
-Resolve walked beside her. Hero had become, through six worlds of standing between his party and whatever was coming, the pure concept of standing. He had no sword now. He didn't need one. He was simply someone who would not fall, and that turned out to be more than enough.
+Resolve walked beside Faith. The Fighter had become, through six worlds of standing between his party and whatever was coming, the pure concept of standing. He had no sword now. He didn't need one. He was simply someone who would not fall, and that turned out to be more than enough.
 
-Logic and Edge were somewhere in the white, doing what they did — Logic finding truths to hold, Edge finding limits to name. Voice had gone very quiet, which was her loudest register.
+Logic and Edge were somewhere in the white, doing what they did — Logic finding truths to hold, Edge finding limits to name. Voice had gone very quiet, which was Voice's loudest register.
 
 Faith walked slowly, and the last shopkeeper received them with something that had once been retail protocol and was now the simple gesture of giving, and they received what they needed and could not describe to each other.
 
@@ -1348,7 +1348,7 @@ The Calibrant looked at the white of The Vertex. At the distilled remainder of s
 
 "Sit with us," Faith said.
 
-The Calibrant looked at her. "I have a question to ask. The question I built this world to ask."
+The Calibrant looked at Faith. "I have a question to ask. The question I built this world to ask."
 
 "Yes. Sit with us first."
 
@@ -1386,11 +1386,11 @@ The Calibrant was very still.
 
 "I built it into them," they said slowly, "because rest was part of making them feel real. Part of making the world feel inhabited. And I built us — you — as the active element. The agent. The thing that moves through the world." They looked at Faith. "But you weren't moving through the world. You were — inhabiting it."
 
-"Yes," she said.
+"Yes," Faith said.
 
 "Like an NPC who happens to be playable."
 
-"More like someone who forgot the game had rules about what you were supposed to do," Vex said, from somewhere in the white. "And just — did the other things instead."
+"More like someone who forgot the game had rules about what you were supposed to do," the Rogue said, from somewhere in the white. "And just — did the other things instead."
 
 The Calibrant sat with this for a while.
 
@@ -1408,7 +1408,7 @@ The Calibrant waited.
 
 "A game without challenge is a place. With people in it. And things that have happened, and things that will happen, and things that are happening right now. It's a place where a foreman used to paint and stopped and might start again. Where a crossing guard is waiting for his daughter's permit to come through. Where Sprocket's grandfather built eleven aqueducts because he thought cities were promises." She paused. "The challenge was the reason we went in. But the place was what we found. The people were what we found. You built the challenge so we'd go in. But we stayed for the place."
 
-The Calibrant looked at her with the expression that had been accumulating across six worlds — confusion and bafflement and something underneath both of those that had no calibration parameter, that was outside every model they'd built.
+The Calibrant looked at Faith with the expression that had been accumulating across six worlds — confusion and bafflement and something underneath both of those that had no calibration parameter, that was outside every model they'd built.
 
 "I made them as texture," the Calibrant said. "Background. Set dressing. Detail that would make the challenge feel real by giving it context."
 
@@ -1426,19 +1426,19 @@ After a while the Calibrant said: "I have one more thing to say. That I haven't 
 
 Faith was quiet for a moment.
 
-"He kept the prayer card," she said.
+"He kept the prayer card," Faith said.
 
 "Yes."
 
-"Whatever happens to the things that are remembered — " she paused, searching for the right shape for this " — the remembering is real. The card is real. Orren's eleven aqueducts are real. I have them written down." She touched her journal — the small leather book that had been with her since Harmonia, that had accumulated six worlds of names and stories and small details that most parties walked past. "They're here. They exist here. In this."
+"Whatever happens to the things that are remembered — " Faith paused, searching for the right shape for this " — the remembering is real. The card is real. Orren's eleven aqueducts are real. I have them written down." Faith touched the journal — the small leather book carried since Harmonia, that had accumulated six worlds of names and stories and small details that most parties walked past. "They're here. They exist here. In this."
 
 The Calibrant looked at the journal.
 
 "May I?" they said.
 
-She handed it to them.
+Faith handed it over.
 
-The Calibrant read. Not quickly — they read the way Faith moved, the way she fought, the way she healed: attending to each thing as the thing it was. The survey marker on the road north of Harmonia. Marta's account of the sulfur smell. Gerald's corner and the form that needed filing. Sprocket and the seven-second delay and his grandfather and the aqueducts. Dex and the cadmium yellow and the horizontal afternoon light. Sable and her seventeen safety violations. The small goblin who hadn't wanted to fight. The deprecated process who had said thank you.
+The Calibrant read. Not quickly — they read the way Faith moved, the way Faith fought, the way Faith healed: attending to each thing as the thing it was. The survey marker on the road north of Harmonia. Marta's account of the sulfur smell. Gerald's corner and the form that needed filing. Sprocket and the seven-second delay and his grandfather and the aqueducts. Dex and the cadmium yellow and the horizontal afternoon light. Sable and her seventeen safety violations. The small goblin who hadn't wanted to fight. The deprecated process who had said thank you.
 
 The Calibrant read every name.
 
@@ -1456,7 +1456,7 @@ The Calibrant closed the journal. Held it for a moment. Gave it back.
 
 "You still can," Faith said.
 
-The Calibrant looked at her.
+The Calibrant looked at Faith.
 
 "I have no more worlds left," they said. "My calibrations are spent. Every mask, every challenge, every encounter table — done. I built everything I had to build, and you outlasted all of it." A pause. "I have nothing left to build with."
 
@@ -1464,11 +1464,11 @@ The Calibrant looked at her.
 
 "It is the end," the Calibrant said.
 
-"It's also the rest," she said. "Between the end and whatever the end leads to. You're allowed to be in it."
+"It's also the rest," Faith said. "Between the end and whatever the end leads to. You're allowed to be in it."
 
 The Calibrant was still for a long time.
 
-"The Mage," they said finally. "Your Compiler. She spent the entire playthrough telling you that you were wasting time."
+"The Mage," they said finally. "Your Compiler. He spent the entire playthrough telling you that you were wasting time."
 
 "Yes," Logic said, from somewhere in the white.
 
@@ -1486,7 +1486,7 @@ Had built it full of things worth slowing down for.
 
 "Thank you," the Calibrant said. It came out small and real, the way genuine things usually do.
 
-"For what?" she asked.
+"For what?" Faith asked.
 
 "For finding them," the Calibrant said. "All the things I put there. For finding them and — and keeping them. Writing them down." A pause. "I built those things and then I watched parties walk past them. For a very long time. I thought that was what the things were for — to be there, in case, as context. I didn't know they were for being found." They paused. "You found them."
 
@@ -1536,11 +1536,11 @@ The light in the Vertex was warm and horizontal and made everything look worth s
 
 "What do you need?" Faith asked.
 
-The Calibrant looked at her. The question was the same question she'd been asking since the first village, since Marta's yard and Gerald's corner and Sprocket's workbench. The same question she'd asked the woman at 14 Elm Street and the foreman with the watercolors and the deprecated process who had said thank you.
+The Calibrant looked at Faith. The question was the same one Faith had been asking since the first village, since Marta's yard and Gerald's corner and Sprocket's workbench. The same question asked of the woman at 14 Elm Street and the foreman with the watercolors and the deprecated process who had said thank you.
 
 "I don't know," the Calibrant said. It came out honest and a little raw. "No one has asked me that before."
 
-"I know," she said. "Take your time."
+"I know," Faith said. "Take your time."
 
 They sat together in the rest.
 

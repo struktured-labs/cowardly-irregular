@@ -15,23 +15,23 @@ Every party has a purpose. You figure it out by watching how they hold themselve
 
 The Fighter holds himself like a man who has already decided what to do. He does not survey options. He perceives a direction and begins walking it. His sword arm is relaxed. His eyes are not. He has the quality of a door that opens only inward — press him from without and you find resistance; step through the frame on his side and you find something warm and unreasonably earnest.
 
-The Rogue holds herself like a woman calculating distance to exits. She moves through doorways at an angle. Her hands are rarely idle. She has read the map of every room she has entered today, noted three exploitable moments, and exploited none of them yet, because the timing isn't right yet, and she is, above all things, patient about timing.
+The Rogue holds the posture of someone calculating distance to exits — moving through doorways at an angle, hands rarely idle. The map of every room entered today is already filed away, three exploitable moments noted, none acted on yet, because the timing isn't right yet, and patience about timing is, above all things, the Rogue's particular discipline.
 
-The Mage is already not quite here. She is present in the physical sense — her boots are on the ground, her eyes occasionally focus — but her attention is distributed across a dozen observations she is conducting simultaneously, and only a small fraction of that attention concerns itself with the road ahead. She has her journal out. She has another journal in her bag for when this one fills up. She will not fill this one. She never fills them. She uses a page, finds something interesting, and begins an entirely new journal to chase the interesting thing.
+The Mage is already not quite here. He is present in the physical sense — his boots are on the ground, his eyes occasionally focus — but his attention is distributed across a dozen observations he is conducting simultaneously, and only a small fraction of that attention concerns itself with the road ahead. He has his journal out. He has another journal in his bag for when this one fills up. He will not fill this one. He never fills them. He uses a page, finds something interesting, and begins an entirely new journal to chase the interesting thing.
 
 The Bard is different.
 
-The Bard is here. Entirely, deliberately, irreducibly here. He is watching the Rogue's hands. He is noting the texture of the morning light — the particular way it falls on the thatch of Harmonia's rooftops, warm and slightly apologetic, as though the sun feels bad about what the day intends to put them through. He is listening to the Fighter's footfall, which is steady and two beats per second, a tempo he has filed away for later. He is watching Elder Theron watch them go, and he has already written a verse about the expression on that old man's face — the expression of someone planting seeds in difficult soil and having made his peace with the weather.
+The Bard is here. Entirely, deliberately, irreducibly here. She is watching the Rogue's hands. She is noting the texture of the morning light — the particular way it falls on the thatch of Harmonia's rooftops, warm and slightly apologetic, as though the sun feels bad about what the day intends to put them through. She is listening to the Fighter's footfall, which is steady and two beats per second, a tempo she has filed away for later. She is watching Elder Theron watch them go, and she has already written a verse about the expression on that old man's face — the expression of someone planting seeds in difficult soil and having made his peace with the weather.
 
-He is a Bard in the first world, and Bards are not storytellers the way people mean when they say storyteller. They are witnesses. The storytelling is secondary. The primary function is to be there. To attend. To be present in the gap between what happens and what is remembered, and to ensure that gap is as small as possible.
+She is a Bard in the first world, and Bards are not storytellers the way people mean when they say storyteller. They are witnesses. The storytelling is secondary. The primary function is to be there. To attend. To be present in the gap between what happens and what is remembered, and to ensure that gap is as small as possible.
 
-He has a quill. He has three quills. He has an ink pot that will almost certainly spill before world's end. He has a journal bound in leather that had, in a previous life, been something's skin, and he tries not to think about that.
+She has a quill. She has three quills. She has an ink pot that will almost certainly spill before world's end. She has a journal bound in leather that had, in a previous life, been something's skin, and she tries not to think about that.
 
-He will not use autobattle. This is not a value statement. Or it is a value statement but not the kind that requires defending. The thought of not being present for a fight — of scripting his way through it while his attention is elsewhere — carries for him the quality of a dream dreamed in someone else's bed. The fight would have happened. He simply would not have been there for it.
+She will not use autobattle. This is not a value statement. Or it is a value statement but not the kind that requires defending. The thought of not being present for a fight — of scripting her way through it while her attention is elsewhere — carries for her the quality of a dream dreamed in someone else's bed. The fight would have happened. She simply would not have been there for it.
 
-He has been there for everything.
+She has been there for everything.
 
-He intends to continue.
+She intends to continue.
 
 ---
 
@@ -45,11 +45,11 @@ The first entry is dated the morning of the conscription notice. It reads:
 
 *Dawn. Unusual. A notice nailed to the inn door — BY ORDER OF THE CROWN, in capital letters that are trying very hard. Elder Theron is in the square with his seeds-in-difficult-soil face. Four other people answered. One did not technically answer but arrived anyway and is being counted.*
 
-*The Fighter: Hero. He bought a sword from the untested shop. The proprietor threw in a shield because of the Fighter's earnestness, which is, I think, the correct response to earnestness in a world that has very little of it. I wrote a verse about this. I have not shown it to him because the verse is about his face when he received the shield, and I think showing it to him would change the face, and the face is the important thing.*
+*The Fighter. He bought a sword from the untested shop. The proprietor threw in a shield because of the Fighter's earnestness, which is, I think, the correct response to earnestness in a world that has very little of it. I wrote a verse about this. I have not shown it to him because the verse is about his face when he received the shield, and I think showing it to him would change the face, and the face is the important thing.*
 
-*The Rogue: Vex. Stole a health potion and left a coin. I saw this happen. She does not know I saw this happen. I am noting it not as a moral judgment but as a character observation: she cannot help a kind impulse any more than she can help checking door frames.*
+*The Rogue. Stole a health potion and left a coin. I saw this happen. The Rogue does not know I saw this happen. I am noting it not as a moral judgment but as a character observation: cannot help a kind impulse any more than can help checking door frames.*
 
-*The Mage: Mira. Already has a theory about the monster attacks. She has a theory about everything. Her theories are usually correct in their conclusions and spectacular in their methodology, like reaching the right city by traveling through six wrong countries. She uses a second journal to track her first journal's hypotheses.*
+*The Mage. Already has a theory about the monster attacks. He has a theory about everything. His theories are usually correct in their conclusions and spectacular in their methodology, like reaching the right city by traveling through six wrong countries. He uses a second journal to track his first journal's hypotheses.*
 
 *Scholar Milo told us about autobattle. "Why fight manually when you can think strategically?" I want to tell him that being present IS thinking strategically. That the fight is not a problem to be solved from a remove but a thing to be inside of. I said nothing. He seems like a man who has reached his conclusion and would need a longer road to reach a different one.*
 
@@ -59,51 +59,50 @@ The first entry is dated the morning of the conscription notice. It reads:
 
 The wolves came in the late afternoon light.
 
-There were five of them at the tree line, and the Bard's first response to the wolves was not tactical. It was aesthetic: the way they moved in the low gray of late afternoon was exactly the rhythm of the melody he had been assembling since morning, a low rolling thing that lived in the space between lullaby and warning, and he realized as he pulled his lute from his back that he was not choosing to play — he was completing a sentence that the light and the wolves and the day had already begun.
+There were five of them at the tree line, and the Bard's first response to the wolves was not tactical. It was aesthetic: the way they moved in the low gray of late afternoon was exactly the rhythm of the melody she had been assembling since morning, a low rolling thing that lived in the space between lullaby and warning, and she realized as she pulled her lute from her back that she was not choosing to play — she was completing a sentence that the light and the wolves and the day had already begun.
 
-The Fighter drew his sword. The Rogue reached for a thrown knife. The Mage opened her journal.
+The Fighter drew his sword. The Rogue reached for a thrown knife. The Mage opened his journal.
 
 The Bard played.
 
-The pack leader turned its clouded eye toward the sound and reconsidered something. Not the fight — wolves do not reconsider fights — but the accounting. The arithmetic of whether this particular road was worth it. The Cleric, who accompanied them in spirit (the Bard considered himself the closest thing to a Cleric sensibility in the group; his secondary devotion to care shaped the music even then), sent warmth outward from his hands, the kind of warmth that says *we are not prey* without requiring anyone to be struck.
+The pack leader turned its clouded eye toward the sound and reconsidered something. Not the fight — wolves do not reconsider fights — but the accounting. The arithmetic of whether this particular road was worth it. The Cleric, who accompanied them in spirit (the Bard considered himself the closest thing to a Cleric sensibility in the group; her secondary devotion to care shaped the music even then), sent warmth outward from her hands, the kind of warmth that says *we are not prey* without requiring anyone to be struck.
 
 The wolves left.
 
-"You played a song at wolves," Vex said.
+"You played a song at wolves," the Rogue said.
 
 "Yes."
 
 "Instead of throwing things at them."
 
 "They weren't interested in being thrown at. They were interested in the question of whether we were worth the effort. I answered the question."
-
-Vex considered this. "You're going to be a problem, aren't you."
+ the Rogue considered this. "You're going to be a problem, aren't you."
 
 "For whom?"
 
-She opened her mouth. Closed it. "For the wolves, I suppose."
+Opened a mouth. Closed it. "For the wolves, I suppose."
 
-He wrote the wolf encounter in his journal that night at the cave mouth, in the margin of the page where he had written about the morning light. The connection did not escape him: both were about attention. The light that was not yet aware of what the day would demand. The wolves that were not expecting an answer in that particular language. The world was full of things that could be spoken to if you found the right frequency. The Bard believed this in the way that people believe things that are not arguments but facts — the kind of knowing that sits below the level of persuasion.
+She wrote the wolf encounter in her journal that night at the cave mouth, in the margin of the page where she had written about the morning light. The connection did not escape her: both were about attention. The light that was not yet aware of what the day would demand. The wolves that were not expecting an answer in that particular language. The world was full of things that could be spoken to if you found the right frequency. The Bard believed this in the way that people believe things that are not arguments but facts — the kind of knowing that sits below the level of persuasion.
 
 The cave whispered.
 
-He wrote that down too.
+She wrote that down too.
 
 ---
 
-The Warden of the Old Guard was, the Bard thought, the saddest thing he had ever seen.
+The Warden of the Old Guard was, the Bard thought, the saddest thing she had ever seen.
 
 Not in its aesthetics — it was imposing, a shimmering presence of armored guardian-light, ancient and deliberate, the kind of entity that had been standing its post so long it had forgotten there was anything but the post. Not sad like a tragedy. Sad like a long vigil. Sad like a soldier outside a gate whose war ended a generation ago and whose orders have not yet reached him.
 
-The Bard fought. He fought every round, every action deliberate, every choice his own. He watched the Warden's attack patterns and responded to them rather than scripting a response. He chose when to debuff. He chose when to heal. He chose when to sing the particular chord that slowed the Warden's tempo and opened a window for the Fighter's strike. He was inside the fight the way a musician is inside a song — not managing it from above, but inhabiting it from within.
+The Bard fought. She fought every round, every action deliberate, every choice her own. She watched the Warden's attack patterns and responded to them rather than scripting a response. She chose when to debuff. She chose when to heal. She chose when to sing the particular chord that slowed the Warden's tempo and opened a window for the Fighter's strike. She was inside the fight the way a musician is inside a song — not managing it from above, but inhabiting it from within.
 
 When the Warden fell, the light went out of it slowly.
 
 Not defeated. More like: finished.
 
-The Fighter sheathed his sword and nodded, satisfied. Vex was already examining the room beyond. Mira was writing something she would cross-reference with six other observations. The Bard sat down on the cave floor.
+The Fighter sheathed his sword and nodded, satisfied. The Rogue was already examining the room beyond. the Mage was writing something to cross-reference with six other observations. The Bard sat down on the cave floor.
 
-"What are you doing," Vex said.
+"What are you doing," the Rogue said.
 
 "A moment," the Bard said.
 
@@ -111,45 +110,43 @@ The Fighter sheathed his sword and nodded, satisfied. Vex was already examining 
 
 "I'm aware. A moment."
 
-She watched him pull out his journal. Watched him uncork the ink pot, which did not spill this time though it seemed to want to. Watched him write something.
+The Rogue watched her pull out her journal. Watched her uncork the ink pot, which did not spill this time though it seemed to want to. Watched her write something.
 
-"You're writing about the monster," she said. "The one we just killed."
+"You're writing about the monster," the Rogue said. "The one we just killed."
 
 "I'm writing a lament."
 
 "We killed it. We won. Why are you writing a lament."
 
-"Because it stood there," the Bard said, and his voice had the quality of someone explaining a self-evident thing without impatience, the way a teacher speaks who is confident in the student and only uncertain of the timing. "Whatever set it here, it was doing what it was told. It stood, and it tested, and it guarded, and I don't think it ever asked why. Something put it there and told it to stay and it stayed. For a very long time. And then we came and it tested us and it fell, and that was the last thing it ever did. It deserves a lament."
+"Because it stood there," the Bard said, and her voice had the quality of someone explaining a self-evident thing without impatience, the way a teacher speaks who is confident in the student and only uncertain of the timing. "Whatever set it here, it was doing what it was told. It stood, and it tested, and it guarded, and I don't think it ever asked why. Something put it there and told it to stay and it stayed. For a very long time. And then we came and it tested us and it fell, and that was the last thing it ever did. It deserves a lament."
+ the Rogue looked at her for a moment. Then at the ceiling. Then back at her.
 
-Vex looked at him for a moment. Then at the ceiling. Then back at him.
-
-"Nobody's going to read it," she said.
+"Nobody's going to read it," the Rogue said.
 
 "I know."
 
 "So why write it."
 
 "Because if I don't, no one will have been a witness to this creature's end. It will have simply ended. Without a witness, things just happen. With a witness, they are part of a story."
+ the Rogue said nothing else. Turned back toward the passage and gave her sixty seconds, which was the most the Rogue had to offer and was, in the event, enough.
 
-Vex said nothing else. She turned back toward the passage and gave him sixty seconds, which was the most she had to offer and was, in the event, enough.
-
-The lament he wrote was fourteen lines. It did not rhyme, which was a deliberate choice. It was titled: *For the Guardian Who Did Not Choose the Gate.*
+The lament she wrote was fourteen lines. It did not rhyme, which was a deliberate choice. It was titled: *For the Guardian Who Did Not Choose the Gate.*
 
 ---
 
-In the throne room of the Royal Palace, when Mordaine finally fell — glitching, dissolving, something wrong in the manner of her defeat that the Bard could not articulate but filed away in the margins of his journal under a question mark — her last words were:
+In the throne room of the Royal Palace, when Mordaine finally fell — glitching, dissolving, something wrong in the manner of her defeat that the Bard could not articulate but filed away in the margins of her journal under a question mark — her last words were:
 
 "This kingdom needed order. You needed a challenge. Both served their purpose."
 
-The Fighter accepted this as the final speech of a defeated villain. Vex had already moved to the door. Mira wrote the phrase down under the heading *antagonist rationalization, standard.*
+The Fighter accepted this as the final speech of a defeated villain. The Rogue had already moved to the door. the Mage wrote the phrase down under the heading *antagonist rationalization, standard.*
 
-The Bard wrote it in large letters at the top of a fresh page. He did not know yet why. He simply knew the phrase deserved its own page. Something about it did not sit right. Something about it sounded like a line being delivered rather than a feeling being expressed. He added, beneath it, in smaller letters: *she said "served their purpose." Not "fulfilled my plan." Not "failed to stop me." "Served their purpose." As though purpose were external. As though she were not the one who assigned it.*
+The Bard wrote it in large letters at the top of a fresh page. She did not know yet why. She simply knew the phrase deserved its own page. Something about it did not sit right. Something about it sounded like a line being delivered rather than a feeling being expressed. She added, beneath it, in smaller letters: *she said "served their purpose." Not "fulfilled my plan." Not "failed to stop me." "Served their purpose." As though purpose were external. As though she were not the one who assigned it.*
 
-He closed the journal. The portal opened.
+She closed the journal. The portal opened.
 
-He stood at it for three seconds while everyone else stepped through.
+She stood at it for three seconds while everyone else stepped through.
 
-He was writing the last line of a poem about the medieval world. The way the light had fallen in Harmonia at dawn on a day that had become the beginning of everything. The particular quality of a kingdom in the morning before it understood what was about to happen to it.
+She was writing the last line of a poem about the medieval world. The way the light had fallen in Harmonia at dawn on a day that had become the beginning of everything. The particular quality of a kingdom in the morning before it understood what was about to happen to it.
 
 "Are you coming," the Fighter said, from somewhere beyond the portal.
 
@@ -171,15 +168,15 @@ The Bard stepped through.
 
 *I don't know if that's true. I don't know if worlds that are left continue without witnesses. I suspect they do not. I suspect — and I hold this suspicion loosely, as one should hold suspicions — that a world unwitnessed is a world that has no reason to continue being a world.*
 
-*I am mourning something. I don't know if I'm allowed. Vex would say I'm being dramatic.*
+*I am mourning something. I don't know if I'm allowed. The Rogue would say I'm being dramatic.*
 
 *The sky here is wrong. It is blue. It is exactly the right shade of blue for a clear afternoon sky in this genre of place, and it is completely, structurally wrong. The blue of the Harmonia sky had weather in it. Clouds that were building toward something. History in the overcast. This sky is blue the way something is blue when it has been told to be blue. I cannot explain this better. I am noting it regardless.*
 
 *The Fighter is wearing a navy uniform and carrying a baton and does not appear to have noticed the transition as deeply as I have. He said, in the cul-de-sac, "Same job. Different clothes," and seemed satisfied by this. I love him for that. His rootedness is a kind of gift. He carries the same interior in every exterior.*
 
-*Vex is a Skater Kid now. She has a skateboard she did not have before and a distrust of HOA representatives that seems, in this context, entirely earned. She looks younger and angrier. The anger is new on the surface but has always been there underneath — the anger of someone who sees the gap between what things are supposed to be and what they are, and cannot stop seeing it.*
+*The Rogue is a Skater Kid now. A skateboard that wasn't there before and a distrust of HOA representatives that seems, in this context, entirely earned. Looks younger and angrier. The anger is new on the surface but has always been there underneath — the anger of someone who sees the gap between what things are supposed to be and what they are, and cannot stop seeing it.*
 
-*Mira has a laptop. She is more at home here than anywhere we have been. She is already running scripts. I do not ask what the scripts do. She will tell me when she discovers something, and what she discovers she will tell me in the manner of someone explaining a fire by describing the oxygen, the fuel, and the ignition point simultaneously, and I will have to ask three follow-up questions to understand what burned.*
+*The Mage has a laptop. More at home here than anywhere we have been. Already running scripts. I do not ask what the scripts do. He will tell me when he discovers something, and what he discovers he will tell me in the manner of someone explaining a fire by describing the oxygen, the fuel, and the ignition point simultaneously, and I will have to ask three follow-up questions to understand what burned.*
 
 *I miss Harmonia.*
 
@@ -191,39 +188,37 @@ The Coordinator was, at first glance, precisely what the surface required: an HO
 
 The Bard noticed two things early.
 
-The first: she used the word "irregulars" in her first address to the party, which was the same word Mordaine had used in World 1. A coincidence, probably. He noted it.
+The first: she used the word "irregulars" in her first address to the party, which was the same word Mordaine had used in World 1. A coincidence, probably. Noted.
 
 The second came during their confrontation in the HOA headquarters, which was a building that had been designed to communicate the minor power of the person inside it through the specific medium of fluorescent lighting and a single very large desk. The Coordinator sat behind the desk and regarded them with the clipboard smile and said, eventually:
 
 "Every neighborhood functions better when everyone understands their role. The disruptive elements — the ones who arrive with swords and medieval clothing and refuse to follow the schedule — serve a purpose, you know. Even irregulars serve their purpose. Until they stop."
 
-The Bard had his journal open.
+The Bard had her journal open.
 
-He wrote: *"serve their purpose." Second use. Mordaine: "both served their purpose." The Coordinator: "irregulars serve their purpose." The grammar is identical. The philosophy is identical. The emphasis is identical. These are not coincidentally similar villains. These are either the same villain or two villains who share a source.*
+She wrote: *"serve their purpose." Second use. Mordaine: "both served their purpose." The Coordinator: "irregulars serve their purpose." The grammar is identical. The philosophy is identical. The emphasis is identical. These are not coincidentally similar villains. These are either the same villain or two villains who share a source.*
 
-He underlined: *share a source.*
+She underlined: *share a source.*
 
-He wrote, in the margin: *What is the source?*
+She wrote, in the margin: *What is the source?*
 
-Around him, the party was fighting the argument. The Fighter said something direct and protective. Vex made a comment that was technically neutral and operationally hostile. Mira was already compiling something. The Bard was aware of all of this and was present for it. He was also, simultaneously, two pages behind in his journal, already tracking something the others hadn't seen.
+Around her, the party was fighting the argument. The Fighter said something direct and protective. The Rogue made a comment that was technically neutral and operationally hostile. the Mage was already compiling something. The Bard was aware of all of this and was present for it. She was also, simultaneously, two pages behind in her journal, already tracking something the others hadn't seen.
 
-The Coordinator's office had a monitor. Mira found it later — a screen showing World 1 statistics, medieval timestamps, data that should not have existed. Mira read the data and drew a conclusion about connection and continuity.
+The Coordinator's office had a monitor. the Mage found it later — a screen showing World 1 statistics, medieval timestamps, data that should not have existed. the Mage read the data and drew a conclusion about connection and continuity.
 
 The Bard had drawn the same conclusion from the phrase "served their purpose."
 
-Same conclusion. Different method. Different method, he thought, because he was listening to the words.
+Same conclusion. Different method. Different method, she thought, because she was listening to the words.
 
-He wrote: *Mira found the monitor. I found the phrase. She arrived through the system. I arrived through the language. We are at the same place.*
+She wrote: *the Mage found the monitor. I found the phrase. He arrived through the system. I arrived through the language. We are at the same place.*
 
-And then, because he always wrote what he truly thought before he wrote what sounded better: *I wonder if the systems and the language are describing the same thing, or if the language is describing the thing the systems can't.*
+And then, because she always wrote what she truly thought before she wrote what sounded better: *I wonder if the systems and the language are describing the same thing, or if the language is describing the thing the systems can't.*
 
 ---
 
-After the Coordinator fell — the same way Mordaine had, incompletely, like a phase ending rather than a defeat — the party found a quiet place in a Maple Heights parking lot between a defunct strip mall and a fast food restaurant that had not rearranged itself yet.
+After the Coordinator fell — the same way Mordaine had, incompletely, like a phase ending rather than a defeat — the party found a quiet place in a Maple Heights parking lot between a defunct strip mall and a fast food restaurant that had not rearranged itself yet. The Mage autobattled the transition encounters while cross-referencing the monitor data with World 1 notes. The Bard watched the Mage's hands move on the laptop with the precise economy of someone who had long ago determined that certain categories of problem were beneath direct engagement.
 
-Mira autobattled the transition encounters while she cross-referenced the monitor data with her World 1 notes. The Bard watched her hands move on the laptop with the precise economy of someone who had long ago determined that certain categories of problem were beneath direct engagement.
-
-"You're disappointed," Vex said, sitting beside him on a parking barrier.
+"You're disappointed," the Rogue said, sitting beside her on a parking barrier.
 
 "I'm observing," the Bard said.
 
@@ -231,35 +226,33 @@ Mira autobattled the transition encounters while she cross-referenced the monito
 
 "I don't have a disappointed face."
 
-"You do. It's your default face slightly downward." She broke a chip and offered him half. "She's more efficient this way. The encounter data she gets from being in the fight is the same whether she's scripting it or doing it herself."
+"You do. It's your default face slightly downward." The Rogue broke a chip and offered half. "He's more efficient this way. The encounter data he gets from being in the fight is the same whether he's scripting it or doing it himself."
 
-"The data, yes." He took the chip. "I just wonder what else she would have noticed, if she'd been there."
+"The data, yes." She took the chip. "I just wonder what else he would have noticed, if he'd been there."
 
 "You think the fighting has something in it worth noticing."
 
-"I think everything has something in it worth noticing. The fight is the moment the world pushes back. The moment you're fully in contact with it. You learn things when you're in contact with things that you can't learn from above." He looked at the chip in his hand. "But I'm not her. Her method works for her. I just—"
+"I think everything has something in it worth noticing. The fight is the moment the world pushes back. The moment you're fully in contact with it. You learn things when you're in contact with things that you can't learn from above." She looked at the chip in her hand. "But I'm not the Mage. The Mage's method works for the Mage. I just—"
 
-"You just wish you could show her."
+"You just wish you could show him."
 
-"I just think," he said carefully, "that she's missing something, and I don't know how to say that in a way that isn't condescending."
+"I just think," she said carefully, "that he's missing something, and I don't know how to say that in a way that isn't condescending."
 
-"You can't," Vex said. "So don't. Write it down instead."
+"You can't," the Rogue said. "So don't. Write it down instead."
 
-He looked at her.
+She looked at the Rogue.
 
-She shrugged. "Isn't that what you do? When you can't say something, you write it?"
+"Isn't that what you do? When you can't say something, you write it?"
 
 "Yes."
 
 "Then write it. Nobody's going to read it anyway, but you'll feel better."
 
-He didn't argue. He pulled out the journal. He wrote, in the third person, about a Mage who had made herself so efficient at being in the world that she had begun to be adjacent to it instead, and the Bard who couldn't decide if that was loss or transcendence and suspected it was both.
+She didn't argue. She pulled out the journal. She wrote, in the third person, about a Mage who had made himself so efficient at being in the world that he had begun to be adjacent to it instead, and the Bard who couldn't decide if that was loss or transcendence and suspected it was both. The Rogue read over her shoulder, which was something done sometimes, pretending not to.
 
-Vex read over his shoulder, which she did sometimes, pretending she wasn't.
+"Adjacement isn't a word," the Rogue said.
 
-"Adjacement isn't a word," she said.
-
-"It is now," he said. "It's the best word for it."
+"It is now," the Bard said. "It's the best word for it."
 
 ---
 
@@ -281,23 +274,21 @@ Vex read over his shoulder, which she did sometimes, pretending she wasn't.
 
 The Tempo of the Mainspring came at them in the second act of the clockwork world, faster than anything they had faced — a speed-based boss that treated the mechanical environment as a weapon, redirecting gears and platforms and the literal architecture of the Grand Mechanism against them.
 
-The Bard fought it himself. Every turn.
+The Bard fought it herself. Every turn.
 
-The Fighter stood firm and absorbed what he could. Vex found the exploitable rhythms in the Tempo's movement pattern and disrupted them with the precision of someone who had spent two worlds learning to read systems. Mira scripted her offense through three pre-programmed conditions, managing from above with the dispassion of a technician, and her script was efficient and her output was high and the Bard was grateful for it and quietly, privately sad about it.
+The Fighter stood firm and absorbed what he could. The Rogue found the exploitable rhythms in the Tempo's movement pattern and disrupted them with the precision of someone who had spent two worlds learning to read systems. the Mage scripted his offense through three pre-programmed conditions, managing from above with the dispassion of a technician, and his script was efficient and his output was high and the Bard was grateful for it and quietly, privately sad about it.
 
-He fought in the gaps. He sang into the clockwork. He found the frequency at which the gears resonated and played into it, slowing the Tempo's advantage without stopping its movement, the way you don't stop a river but you shape it.
+She fought in the gaps. She sang into the clockwork. She found the frequency at which the gears resonated and played into it, slowing the Tempo's advantage without stopping its movement, the way you don't stop a river but you shape it.
 
 When the Tempo fell, its last words were:
 
 "I was becoming something the schedule didn't write."
 
-The Bard wrote this down during the transition to the Regulator's chamber. He wrote it in the largest letters he had used in any journal. He stared at it for a moment, and then beneath it he wrote:
+The Bard wrote this down during the transition to the Regulator's chamber. She wrote it in the largest letters she had used in any journal. She stared at it for a moment, and then beneath it she wrote:
 
 *The most beautiful thing in the clockwork world was the thing that stopped being clockwork.*
 
-And then he sat with that for a moment, because it was true, and true things deserved a moment's sitting with.
-
-Vex looked over. She did not say "nobody's going to read it." She read it herself, silently, and did not comment. The not-commenting was its own kind of witness.
+And then she sat with that for a moment, because it was true, and true things deserved a moment's sitting with. The Rogue looked over. The Rogue did not say "nobody's going to read it." Read it, silently, and did not comment. The not-commenting was its own kind of witness.
 
 ---
 
@@ -311,7 +302,7 @@ The Regulator regarded them with the precision of an entity that had been expect
 
 The Regulator paused. This was not what players said at this point.
 
-"Your statistics. About us. You have them. You've been watching." The Bard had his journal open. "Mordaine said 'both served their purpose.' The Coordinator said 'irregulars serve their purpose.' You're about to say something in the same grammar. I've been collecting it. I have fourteen pages."
+"Your statistics. About us. You have them. You've been watching." The Bard had her journal open. "Mordaine said 'both served their purpose.' The Coordinator said 'irregulars serve their purpose.' You're about to say something in the same grammar. I've been collecting it. I have fourteen pages."
 
 The Regulator looked at the journal.
 
@@ -328,12 +319,10 @@ A silence. The gears of the Grand Mechanism turned around them.
 "We'll continue this elsewhere," the Regulator said, at last. "Somewhere the architecture doesn't echo quite so much." They turned toward the far door — not fleeing, but deliberate. The door of someone who has decided this conversation is not yet finished, and will choose its own terms for when it is.
 
 The Fighter said, afterward: "Good. So we know what we're looking for."
+ the Rogue said: "You were right about the phrase. I can feel it."
+ the Mage said: "I have the monitor data from World 2. The blueprint handwriting here is a match. The pattern is real. I want one more world's worth of evidence before I name it."
 
-Vex said: "You were right about the phrase. I can feel it."
-
-Mira said: "I have the monitor data from World 2. The blueprint handwriting here is a match. The pattern is real. I want one more world's worth of evidence before I name it."
-
-The Bard said nothing. He was writing the elegy for the clockwork world, which was winding down around them as the Regulator walked away with the particular gait of someone who has said more than they intended and is recalculating what comes next. He was writing the elegy and also, in a separate margin, the sixteenth page of what had become a very long series of observations about a recurring word choice across three worlds — *purpose, serve, calibrate* — because there were three more worlds to go and the same voice would keep talking, and talking was where the truth lived.
+The Bard said nothing. She was writing the elegy for the clockwork world, which was winding down around them as the Regulator walked away with the particular gait of someone who has said more than they intended and is recalculating what comes next. She was writing the elegy and also, in a separate margin, the sixteenth page of what had become a very long series of observations about a recurring word choice across three worlds — *purpose, serve, calibrate* — because there were three more worlds to go and the same voice would keep talking, and talking was where the truth lived.
 
 ---
 
@@ -345,27 +334,27 @@ The Bard said nothing. He was writing the elegy for the clockwork world, which w
 
 *The system has not anticipated that I will use my slot to say true things.*
 
-*I am not being reckless. I am not being naive. I am being very deliberate about which true things I say into the approved channel, and I am saying them in the approved grammar, and the things I am saying are technically accurate in their surface content and substantively subversive in their weight. This is not dishonest. This is what the Busker does with a pitch on a corporate sidewalk: plays what he must, says what he means, lets the listener decide what they heard.*
+*I am not being reckless. I am not being naive. I am being very deliberate about which true things I say into the approved channel, and I am saying them in the approved grammar, and the things I am saying are technically accurate in their surface content and substantively subversive in their weight. This is not dishonest. This is what the Busker does with a pitch on a corporate sidewalk: plays what she must, says what she means, lets the listener decide what they heard.*
 
 *The Fighter is an Enforcer. He is struggling. The role of enforcement in this world is not the role of protection he has always understood himself to be performing, and the gap between the two is visible in his face and in the way he holds the baton differently than he held the sword — as though the baton requires a different grip not just physically but morally, and he has not yet found the grip. I am writing about his face again. It's a different face than the one I wrote about in Harmonia. It is a face in the process of asking a question that will take longer than this world to answer.*
 
-*Vex — a Whistleblower now — has found something she cannot keep to herself. She is going to blow it. This is inevitable. I am watching her not blow it yet with the focused attention of someone who knows what is coming and wants to be present for the moment of decision. The moment a person decides to speak the unspeakable is one of the most extraordinary moments there is. I will not miss it.*
+*The Rogue — a Whistleblower now — has found something that cannot be kept quiet. Going to blow it. This is inevitable. I am watching the Rogue not blow it yet with the focused attention of someone who knows what is coming and wants to be present for the moment of decision. The moment a person decides to speak the unspeakable is one of the most extraordinary moments there is. I will not miss it.*
 
-*Mira autobattled the transition encounters again. I am not writing about this anymore. I have made peace with my lack of peace about it.*
+*The Mage autobattled the transition encounters again. I am not writing about this anymore. I have made peace with my lack of peace about it.*
 
 ---
 
 The industrial world had a Masterite the party met in the corridors of the processing facility — the Arbiter of the Assembly, a crushing presence of institutional power that moved like a policy rather than a being, slow and inevitable and deeply certain of its own correctness.
 
-The fight was long. The Bard chose every action. He monitored the party's states, the Arbiter's patterns, the rhythm of the fight. He played the fight like a composition — knowing that the resolution would come, working toward it without rushing, trusting the structure.
+The fight was long. The Bard chose every action. She monitored the party's states, the Arbiter's patterns, the rhythm of the fight. She played the fight like a composition — knowing that the resolution would come, working toward it without rushing, trusting the structure.
 
 During the fight, the PA system activated.
 
-"Attention workers," it said, in a voice that was not quite the Bard's voice and not quite not his voice. "Deviation from approved schedules is subject to correction. Irregulars are reminded that their purpose is defined by the system, not by themselves."
+"Attention workers," it said, in a voice that was not quite the Bard's voice and not quite not her voice. "Deviation from approved schedules is subject to correction. Irregulars are reminded that their purpose is defined by the system, not by themselves."
 
-The Bard kept fighting. He noted, in the part of his attention that was always partly writing, that the vocabulary embedded in the PA announcement was consistent — *purpose, defined by the system, irregulars.* The same phrase. The same philosophy. The mask had changed but the philosophy had not, and philosophy is what reveals the face beneath all masks.
+The Bard kept fighting. She noted, in the part of her attention that was always partly writing, that the vocabulary embedded in the PA announcement was consistent — *purpose, defined by the system, irregulars.* The same phrase. The same philosophy. The mask had changed but the philosophy had not, and philosophy is what reveals the face beneath all masks.
 
-When the Arbiter fell, Vex said: "It's the same thing they all say. Every world."
+When the Arbiter fell, the Rogue said: "It's the same thing they all say. Every world."
 
 "Yes," the Bard said.
 
@@ -373,27 +362,26 @@ When the Arbiter fell, Vex said: "It's the same thing they all say. Every world.
 
 "You confirmed it."
 
-"I confirmed it through the monitor in World 2 and the facility records here," Mira said. "Cross-referenced with the blueprint handwriting in World 3. The handwriting is a consistent match. All four worlds. One author."
+"I confirmed it through the monitor in World 2 and the facility records here," the Mage said. "Cross-referenced with the blueprint handwriting in World 3. The handwriting is a consistent match. All four worlds. One author."
 
 "I noticed it through the grammar," the Bard said. "In World 1. Before the monitor."
-
-Vex looked at him. "You had fourteen pages in World 3."
+ the Rogue looked at her. "You had fourteen pages in World 3."
 
 "Sixteen by then."
 
-She made a sound that was not quite a laugh but was in the vicinity of one. "Sixteen pages of grammar. Nobody's going to—"
+A sound that was not quite a laugh but was in the vicinity of one. "Sixteen pages of grammar. Nobody's going to—"
 
-"I know," he said.
+"I know," she said.
 
 They stood in the wreckage of the assembly floor.
 
-"I'm going to read it," Vex said. "Eventually. When this is over."
+"I'm going to read it," the Rogue said. "Eventually. When this is over."
 
-The Bard turned to look at her. This was not what she usually said.
+The Bard turned to look at the Rogue. This was not what the Rogue usually said.
 
-She shrugged. "I've been reading over your shoulder. Might as well admit it." She turned back to the exit. "Come on. Whoever's running this is doing something in the upper levels and we should stop it."
+A shrug. "I've been reading over your shoulder. Might as well admit it." Turning back to the exit. "Come on. Whoever's running this is doing something in the upper levels and we should stop it."
 
-He followed. He was smiling. He wrote, that night: *The Rogue reads over my shoulder. Has been reading. All this time. The witness has a witness. I am not sure what to do with this except be glad.*
+She followed. She was smiling. She wrote, that night: *The Rogue reads over my shoulder. Has been reading. All this time. The witness has a witness. I am not sure what to do with this except be glad.*
 
 ---
 
@@ -417,7 +405,7 @@ Something in the room shifted.
 
 "I am the Calibrant," the Director said. "That is not a title the worlds gave me — it is what I am. I calibrate. I build the parameters and set the challenge and watch what moves through the system. Mordaine, the Coordinator, the Regulator — those were masks. This is the last one. After this there is only the next world, and in the next world there are no more masks to wear."
 
-"Then you've been watching us since World 1," Vex said.
+"Then you've been watching us since World 1," the Rogue said.
 
 "Since before World 1. But watching this particular party — watching *you* —" the Calibrant looked at the Bard — "since the road north from Harmonia, when you played three chords for a wolf that was going to attack you anyway."
 
@@ -429,13 +417,10 @@ The fight that followed was different from the Arbiter — shorter, sharper, wit
 
 When it was over, the Calibrant stood in the wreckage of the office and said: "I'll see you in the next world. There's no mask left after this one."
 
-They left.
+They left. The Mage updated the file: *Cross-reference complete. Entity confirmed: singular. Author of all four worlds. Self-identified as: the Calibrant. Proceeding to World 5.*
+ the Rogue said: "Sixteen pages were right."
 
-Mira updated her file: *Cross-reference complete. Entity confirmed: singular. Author of all four worlds. Self-identified as: the Calibrant. Proceeding to World 5.*
-
-Vex said: "Sixteen pages were right."
-
-"Twenty-three now," the Bard said. He was already writing.
+"Twenty-three now," the Bard said. She was already writing.
 
 ---
 
@@ -457,21 +442,21 @@ Not the goblins of Harmonia — those had been chaotic and mercantile and posses
 
 The Bard stopped.
 
-"We don't have time," Vex said.
+"We don't have time," the Rogue said.
 
 "A moment," the Bard said.
 
 "Not this again."
 
-But she stopped. She always stopped when he said it that way.
+But stopped. Always stopped when the Bard said it that way.
 
-He watched the goblin run its encounter loop. It had eyes — textures applied to a mesh — that had been given the visual suggestion of alertness, and the alertness had nowhere to go, and so it cycled, looking up and finding nothing, looking at the door and finding nothing, returning to its idle state, beginning again.
+She watched the goblin run its encounter loop. It had eyes — textures applied to a mesh — that had been given the visual suggestion of alertness, and the alertness had nowhere to go, and so it cycled, looking up and finding nothing, looking at the door and finding nothing, returning to its idle state, beginning again.
 
-He wrote: *A goblin doing its job in a world where there is no one left to do it for. Is this sad? It is sad. Is this also something else? It is also something else. The goblin has not stopped believing in the encounter. It is still, in some sense, ready. Ready for the moment that never comes. There is something in this I recognize from every person I have known who waited for something that did not arrive — and still, every morning, made themselves ready. This is what that looks like when the person is made of code. It looks like this.*
+She wrote: *A goblin doing its job in a world where there is no one left to do it for. Is this sad? It is sad. Is this also something else? It is also something else. The goblin has not stopped believing in the encounter. It is still, in some sense, ready. Ready for the moment that never comes. There is something in this I recognize from every person I have known who waited for something that did not arrive — and still, every morning, made themselves ready. This is what that looks like when the person is made of code. It looks like this.*
 
-He played three notes on the lute, which no longer looked like a lute here — it had become a signal synthesizer, a frequency emitter, a device for generating waveforms that the digital world could parse. Three notes that resolved into a minor key. The goblin's idle animation paused. Just for a moment. Then it continued its loop.
+She played three notes on the lute, which no longer looked like a lute here — it had become a signal synthesizer, a frequency emitter, a device for generating waveforms that the digital world could parse. Three notes that resolved into a minor key. The goblin's idle animation paused. Just for a moment. Then it continued its loop.
 
-"Did it hear you," Vex asked.
+"Did it hear you," the Rogue asked.
 
 "I don't know," the Bard said. "But I was there for it."
 
@@ -482,10 +467,8 @@ The Masterite of the digital world — the Warden, returned in its fifth iterati
 "If a system runs perfectly and no one observes it running, has it run at all?"
 
 The Fighter, Resolve already forming in him, said: "Yes. What you do when no one watches is still what you do."
-
-Mira said: "Observer-independent physical processes are well-documented in systems theory—"
-
-Vex said: "If a system runs perfectly and no one exploits it, is it really perfect?"
+ the Mage said: "Observer-independent physical processes are well-documented in systems theory—"
+ the Rogue said: "If a system runs perfectly and no one exploits it, is it really perfect?"
 
 The Bard said: "Yes. And it deserves a witness anyway."
 
@@ -495,19 +478,18 @@ The Warden processed all four answers. Its final phase collapsed not into defeat
 
 It fell.
 
-The Bard sat on the digital floor. Vex did not say "we don't have time." She sat beside him.
+The Bard sat on the digital floor. The Rogue did not say "we don't have time." She sat beside her.
 
-"That's five," she said.
+"That's five," the Rogue said.
 
-"Five Wardens," he said. "Five guardians of things they didn't choose. Five lives spent on a gate."
+"Five Wardens," she said. "Five guardians of things they didn't choose. Five lives spent on a gate."
 
 "You wrote an elegy for the first one."
 
-"I wrote an elegy for all of them," he said. "One for each. They're in different volumes. But they're connected." He looked at the journal in his hands. "The whole journal is connected. Every entry. Every margin note. It's one long document about what it's like to be inside this."
+"I wrote an elegy for all of them," she said. "One for each. They're in different volumes. But they're connected." The Rogue looked at the journal in her hands. "The whole journal is connected. Every entry. Every margin note. It's one long document about what it's like to be inside this."
+ the Rogue was quiet for a moment.
 
-Vex was quiet for a moment.
-
-"You said the fight has something in it worth noticing," she said.
+"You said the fight has something in it worth noticing," the Rogue said.
 
 "Yes."
 
@@ -519,31 +501,30 @@ Vex was quiet for a moment.
 
 "Yes."
 
-"You've stopped for everything," she said. It was not a criticism.
+"You've stopped for everything," the Rogue said. It was not a criticism.
 
-"Everything deserved a witness," he said. "I was there. Someone should have been there."
-
-Vex picked up a stone from the digital floor — a rendered polygon with a rock texture — and looked at it. "You know what's funny," she said. "I've been trying to get through this game faster. Find the gaps. Skip the parts that don't matter. And you've been in every part, including the parts that definitely don't matter, and you've found something in all of them."
+"Everything deserved a witness," she said. "I was there. Someone should have been there."
+ the Rogue picked up a stone from the digital floor — a rendered polygon with a rock texture — and looked at it. "You know what's funny," the Rogue said. "I've been trying to get through this game faster. Find the gaps. Skip the parts that don't matter. And you've been in every part, including the parts that definitely don't matter, and you've found something in all of them."
 
 "What's funny about that?"
 
-"Nothing's funny about it," she said. "I just don't know what to call it."
+"Nothing's funny about it," the Rogue said. "I just don't know what to call it."
 
-"Presence," he said. "It's called presence."
+"Presence," she said. "It's called presence."
 
-She set the stone back down, which was the wrong action in a system that allowed picked-up stones to remain in inventory as vendor trash, and was right in every other sense.
+The Rogue set the stone back down, which was the wrong action in a system that allowed picked-up stones to remain in inventory as vendor trash, and was right in every other sense.
 
 ---
 
-The Warden of the Processing Core had also, in its final moments, said one other thing. The Bard had written it in his journal and started a fresh page for it:
+The Warden of the Processing Core had also, in its final moments, said one other thing. The Bard had written it in her journal and started a fresh page for it:
 
 *"There is a word for what you are. The systems don't have it. The word is 'witness.' I don't know if the system knows you can be that. I don't know if it was designed for someone paying this much attention."*
 
-He underlined: *I don't know if it was designed for someone paying this much attention.*
+She underlined: *I don't know if it was designed for someone paying this much attention.*
 
-He wrote beneath it, in smaller letters: *The Calibrant is going to find me the most unsettling.*
+She wrote beneath it, in smaller letters: *The Calibrant is going to find me the most unsettling.*
 
-He was right. He had been right about all of it.
+She was right. She had been right about all of it.
 
 ---
 
@@ -551,21 +532,21 @@ The Broadcaster used the signal.
 
 The Bard, in the digital world with a transmitter that reached everywhere in the code-sky, broadcast three things that the Calibrant had not scripted for the PA channel:
 
-First: the name of the deprecated goblin, which it had carried as a file attribute through five worlds: *Grut, encounter type: merchant, classification: deprecated, status: running.* He broadcast it because someone had gone to the trouble of naming a goblin, and the name deserved to be said aloud.
+First: the name of the deprecated goblin, which it had carried as a file attribute through five worlds: *Grut, encounter type: merchant, classification: deprecated, status: running.* She broadcast it because someone had gone to the trouble of naming a goblin, and the name deserved to be said aloud.
 
-Second: the fourteen-word phrase that, appearing across five worlds in the mouths of five different villains, revealed a single speaker: *"Irregulars serve their purpose until they stop."* He broadcast it to the whole network, into every processing node, into the architecture of the world.
+Second: the fourteen-word phrase that, appearing across five worlds in the mouths of five different villains, revealed a single speaker: *"Irregulars serve their purpose until they stop."* She broadcast it to the whole network, into every processing node, into the architecture of the world.
 
-Third: a song. Low. Rolling. Minor. The same song he had begun on the road north from Harmonia when the wolves came in the late afternoon light, finally completed after five worlds of accumulation. It lasted four minutes and thirty-seven seconds. He played every note himself.
+Third: a song. Low. Rolling. Minor. The same song she had begun on the road north from Harmonia when the wolves came in the late afternoon light, finally completed after five worlds of accumulation. It lasted four minutes and thirty-seven seconds. She played every note herself.
 
-Mira's autobattle script paused.
+the Mage's autobattle script paused.
 
-She looked up from the tablet.
+The Mage looked up from the tablet.
 
-She said nothing. She watched him finish.
+Nothing said. Watching the Bard finish.
 
-When he lowered the synthesizer, she said: "I didn't know you were still working on that."
+When she lowered the synthesizer, the Mage said: "I didn't know you were still working on that."
 
-"Since the road to the Whispering Cave," he said. "I finally had enough to finish it."
+"Since the road to the Whispering Cave," the Bard said. "I finally had enough to finish it."
 
 She was quiet.
 
@@ -573,17 +554,17 @@ Then: "I should have fought the Tempo myself. In World 3."
 
 "You were efficient."
 
-"I was absent," she said. "There's a difference, and I missed it because my script was running and I was compiling the data and I didn't notice that I wasn't—" She stopped. Started again. "I wasn't there for it. The Tempo said something, at the end."
+"I was absent," the Mage said. "There's a difference, and I missed it because my script was running and I was compiling the data and I didn't notice that I wasn't—" Stopped. Started again. "I wasn't there for it. The Tempo said something, at the end."
 
 "I was becoming something the schedule didn't write," the Bard said.
 
-She stared at him.
+She stared at her.
 
-"I was there," he said.
+"I was there," the Voice said.
 
-"Tell me," she said. "What it was like."
+"Tell me," the Mage said. "What it was like."
 
-He told her. He told her every fight he had been present for and she had not, and she listened the way she listened to data — completely, without interruption — and her eyes had the look of someone receiving something that was not data but was nonetheless true.
+She told her. She told her every fight she had been present for and she had not, and he listened the way he listened to data — completely, without interruption — and his eyes had the look of someone receiving something that was not data but was nonetheless true.
 
 ---
 
@@ -601,7 +582,7 @@ He told her. He told her every fight he had been present for and she had not, an
 
 The Voice put the journal down.
 
-Not because he had finished. Because the moment was happening and he wanted both hands free for it.
+Not because she had finished. Because the moment was happening and she wanted both hands free for it.
 
 The Calibrant sat in the white.
 
@@ -623,7 +604,7 @@ They had no mask here. No Victorian diction, no clipboard smile, no chancellor's
 
 The Voice was still.
 
-"I read the entry you wrote about the Coordinator using 'served their purpose,'" the Calibrant said. "Before the monitor. Before Mira found the system data. You noticed through the grammar. I designed five worlds and you undid the mystery through an analysis of my word choice." A pause. Not uncomfortable. Thoughtful. "I didn't design for a philologist."
+"I read the entry you wrote about the Coordinator using 'served their purpose,'" the Calibrant said. "Before the monitor. Before the Mage found the system data. You noticed through the grammar. I designed five worlds and you undid the mystery through an analysis of my word choice." A pause. Not uncomfortable. Thoughtful. "I didn't design for a philologist."
 
 "I'm not a philologist. I'm a Bard."
 
@@ -631,7 +612,7 @@ The Voice was still.
 
 "A philologist loves the language. A Bard loves what the language carries."
 
-The Calibrant considered this. They sat with it the way the Bard had taught himself to sit with true things — attentively, without rushing.
+The Calibrant considered this. They sat with it the way the Bard had taught herself to sit with true things — attentively, without rushing.
 
 "I designed every encounter in this game," the Calibrant said. "Every Masterite. Every world transition. Every puzzle and dungeon and villain monologue. I calibrated all of it. I have watched a great many parties come through the system and none of them—" They stopped. "None of them wrote an elegy for the Warden of the Old Guard."
 
@@ -647,9 +628,9 @@ The Calibrant blinked. This was also not what players said.
 
 "That's—" The Calibrant started. Stopped. "That's not how I designed the final encounter."
 
-"I know. I'm asking for something different." He held the journal loosely. "I've been in every fight in this game. Every one of my own, every moment of the Fighter's stand and Vex's exploit and Mira's calculation — I've been present for all of it. I would like to be present for one more. One where neither of us needs to win. Where we're just — there, in the fight, attending to it."
+"I know. I'm asking for something different." She held the journal loosely. "I've been in every fight in this game. Every one of my own, every moment of the Fighter's stand and the Rogue's exploit and the Mage's calculation — I've been present for all of it. I would like to be present for one more. One where neither of us needs to win. Where we're just — there, in the fight, attending to it."
 
-The Calibrant looked at him for a very long time.
+The Calibrant looked at her for a very long time.
 
 "I've never fought without stakes," they said.
 
@@ -663,9 +644,9 @@ The white of The Vertex did not shift into a battle arena. There were no HP bars
 
 They fought.
 
-It was slow. It was strange. Every action the Calibrant made carried the weight of five worlds of design, and the Voice responded to each one not with an optimal counter but with the move that felt truest in the moment, the chord that fit the measure, the spell that matched the register. The Fighter and Vex and Mira watched from the edge of the white, and the Fighter said nothing because he understood that some fights were about standing, and this was about something else, and he was waiting to understand what.
+It was slow. It was strange. Every action the Calibrant made carried the weight of five worlds of design, and the Voice responded to each one not with an optimal counter but with the move that felt truest in the moment, the chord that fit the measure, the spell that matched the register. The Fighter and the Rogue and the Mage watched from the edge of the white, and the Fighter said nothing because he understood that some fights were about standing, and this was about something else, and he was waiting to understand what.
 
-The Calibrant struck. The Voice sustained. The Voice sang something, low and rolling, that resolved into the song from the road to the Whispering Cave — the song he had finally finished in the digital world — and the Calibrant moved with it rather than against it, and the fight became something other than a fight without becoming less than what it was.
+The Calibrant struck. The Voice sustained. The Voice sang something, low and rolling, that resolved into the song from the road to the Whispering Cave — the song she had finally finished in the digital world — and the Calibrant moved with it rather than against it, and the fight became something other than a fight without becoming less than what it was.
 
 Midway through the exchange, the Calibrant stopped.
 
@@ -683,11 +664,11 @@ The Calibrant was very still.
 
 "Yes," the Voice said.
 
-"That's the thing I've been designing around," the Calibrant said slowly. "The thing I forgot I was trying to preserve." They looked at him. "Presence. I built an entire system to produce an experience of being present in something, and I was never present in any of it."
+"That's the thing I've been designing around," the Calibrant said slowly. "The thing I forgot I was trying to preserve." They looked at her. "Presence. I built an entire system to produce an experience of being present in something, and I was never present in any of it."
 
 The Voice did not say: *I know. I noticed. It's in the journal.* Because that would have been observation, and this moment deserved something else.
 
-He said: "There's still time."
+She said: "There's still time."
 
 And they finished the fight. All the way to the end, each action chosen, each response deliberate, each moment attended to. Not managed from above. Not scripted. Not efficient. Present.
 
@@ -721,17 +702,17 @@ They were quiet together in the way that two people are quiet when they have jus
 
 *"Yes," I said. "Exactly that."*
 
-*He said: "Does Mira understand this?"*
+*He said: "Does the Mage understand this?"*
 
-*I said: "Mira is figuring it out."*
+*I said: "the Mage is figuring it out."*
 
-*She has. She fought the last three encounters herself, in the digital world and in The Vertex. She was slower. Her output was lower. She was present. She said, after the second encounter, "I see what you mean. There's data in being there that you can't get from above." And then, a moment later, looking slightly surprised at herself: "It's not just data, is it."*
+*He has. He fought the last three encounters himself, in the digital world and in The Vertex. He was slower. His output was lower. He was present. He said, after the second encounter, "I see what you mean. There's data in being there that you can't get from above." And then, a moment later, looking slightly surprised at himself: "It's not just data, is it."*
 
 *"No," I said. "It's not."*
 
-*She nodded. She fought the third encounter herself.*
+*He nodded. He fought the third encounter himself.*
 
-*Vex has always been present. Her exploiting is a form of presence — you can only find the edge of a thing by being in contact with it. I want to tell her this but she already knows. She's always known. The presence just looked like exploitation because that's what presence looks like when the person doing the present attending is a Rogue.*
+*The Rogue has always been present. The exploiting is a form of presence — you can only find the edge of a thing by being in contact with it. I want to say this but the Rogue already knows. Has always known. The presence just looked like exploitation because that's what presence looks like when the person doing the present attending is a Rogue.*
 
 *The Fighter has always been present in the way that a wall is present — completely, without reservation, occupying his place fully.*
 
@@ -739,13 +720,13 @@ They were quiet together in the way that two people are quiet when they have jus
 
 *And someone was writing it down.*
 
-*I have thirty-one pages of the Calibrant's word choice across six worlds. I have five elegies for five versions of the same guardian. I have a description of the wrong-blue sky that I revised seventeen times before I was satisfied with it. I have the moment Mira looked up from her script and listened. I have the moment Vex stopped walking and let me finish the lament.*
+*I have thirty-one pages of the Calibrant's word choice across six worlds. I have five elegies for five versions of the same guardian. I have a description of the wrong-blue sky that I revised seventeen times before I was satisfied with it. I have the moment the Mage looked up from the script and listened. I have the moment the Rogue stopped walking and let me finish the lament.*
 
 *I have the fight in The Vertex with no stakes and no victory condition, just presence and attention and two entities in contact with an experience neither of them had designed.*
 
-*Vex is reading this journal. She has been reading it since World 2. She will finish it. She will say something about it, and whatever she says will be terse and accurate and she will not tell me she was moved by it, because she expresses things in other ways — she stopped for the laments. She waits the sixty seconds. She sits beside me on the parking barriers. She says "nobody's going to read it" and then reads it.*
+*The Rogue is reading this journal. Has been reading it since World 2. Will finish it. Something will be said about it, and whatever is said will be terse and accurate, and I won't be told that it was moving, because the Rogue expresses things in other ways — stopped for the laments. Waits the sixty seconds. Sits beside me on the parking barriers. Says "nobody's going to read it" and then reads it.*
 
-*She is the best witness I have found for the witnessing.*
+*The Rogue is the best witness I have found for the witnessing.*
 
 *The story of this game is not the Calibrant's challenge or our victory. The story is the encounters. The Warden who guarded so long it forgot why. The Tempo becoming something the schedule didn't write. The goblin completing its loop in an empty room, ready for a player who will not come. The wrong-blue sky. The sound of gears and the moment one of them stops being clockwork.*
 
@@ -761,7 +742,7 @@ They were quiet together in the way that two people are quiet when they have jus
 
 ---
 
-*Vex, in the margin, in a different hand:*
+*The Rogue, in the margin, in a different hand:*
 
 *It was more than enough. It was the whole thing. — V*
 
