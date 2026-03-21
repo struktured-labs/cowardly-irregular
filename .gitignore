@@ -63,6 +63,7 @@ butler.zip
 *.zip
 tmp/
 
-# Music pipeline - keep OGG, ignore raw downloads
+# Music pipeline - keep OGG, ignore raw downloads and locks
 assets/audio/music/*.mp3
 assets/audio/music/*.wav
+*.lock

@@ -74,6 +74,26 @@ def save_manifest(manifest: dict) -> None:
     print(f"Manifest updated: {MANIFEST_PATH}")
 
 
+def update_manifest_atomic(track_key: str, entry: dict) -> None:
+    """Thread/process-safe manifest update using file locking.
+
+    Prevents race conditions when multiple suno_gen.py processes run in parallel.
+    """
+    import fcntl
+    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = MANIFEST_PATH.with_suffix(".lock")
+    with lock_path.open("w") as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX)
+        try:
+            manifest = load_manifest()
+            if "tracks" not in manifest:
+                manifest["tracks"] = {}
+            manifest["tracks"][track_key] = entry
+            save_manifest(manifest)
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
+
+
 def load_world_template(world: int, track_id: str) -> dict:
     """Load a world template and resolve the specific track within it.
 
@@ -647,10 +667,6 @@ def main() -> None:
     # ------------------------------------------------------------------
     selections = pick_tracks(track_data, args.pick)
 
-    manifest = load_manifest()
-    if "tracks" not in manifest:
-        manifest["tracks"] = {}
-
     for pick_idx, track_info in selections:
         audio_url = track_info.get("audio_url", "")
         if not audio_url:
@@ -685,8 +701,8 @@ def main() -> None:
         # Relative path for manifest (relative to project root)
         rel_path = ogg_path.relative_to(PROJECT_ROOT)
 
-        # Update manifest
-        manifest["tracks"][track_key] = {
+        # Update manifest atomically (safe for parallel runs)
+        entry = {
             "file": str(rel_path),
             "tier": "T1",
             "provider": provider.name,
@@ -699,6 +715,7 @@ def main() -> None:
             "loop": True,
             "generated_at": date.today().isoformat(),
         }
+        update_manifest_atomic(track_key, entry)
 
         print(f"\nTrack {pick_idx} ready: {ogg_path}")
 
@@ -706,7 +723,6 @@ def main() -> None:
         if args.preview:
             preview_track(ogg_path)
 
-    save_manifest(manifest)
     print("\nDone.")
 
 
