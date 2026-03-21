@@ -119,13 +119,13 @@ func _setup_audio_players() -> void:
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -14.0  # Battle SFX: present but not dominant vs music
+	_battle_player.volume_db = -20.0  # Battle SFX: well below music, not harsh
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -12.0  # Ability SFX: same level as music, prominent
+	_ability_player.volume_db = -18.0  # Ability SFX: subtle accent alongside music
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
