@@ -70,6 +70,25 @@ SUNO_CREATE_URL = "https://suno.com/create"
 POLL_INTERVAL = 10
 MAX_POLL_SEC = 300
 
+# Human-like timing ranges (milliseconds)
+HUMAN_THINK_MS = (1500, 3500)       # Pause before acting (reading the UI)
+HUMAN_TYPE_CHAR_MS = (30, 90)       # Per-character typing speed (~80-120 WPM)
+HUMAN_FIELD_GAP_MS = (800, 2000)    # Pause between form fields
+HUMAN_PRE_CLICK_MS = (500, 1500)    # Pause before clicking a button
+HUMAN_POST_CLICK_MS = (2000, 5000)  # Pause after clicking (watching result)
+INTER_TRACK_MS = (15000, 30000)     # Gap between track generations
+
+
+def _human_delay(range_ms: tuple[int, int]) -> None:
+    """Sleep for a random duration within the given ms range."""
+    ms = random.randint(range_ms[0], range_ms[1])
+    time.sleep(ms / 1000.0)
+
+
+def _jittered_poll_interval() -> float:
+    """Return a jittered poll interval (8-14s instead of fixed 10s)."""
+    return POLL_INTERVAL + random.uniform(-2, 4)
+
 WORLD_SUFFIXES = {
     1: "medieval", 2: "suburban", 3: "steampunk",
     4: "industrial", 5: "digital", 6: "abstract",
@@ -565,14 +584,56 @@ class SunoBrowser:
             except Exception:
                 pass
 
-    def _react_fill(self, selector: str, value: str, index: int = 0) -> bool:
-        """Fill a React controlled input/textarea by setting native value + dispatching events."""
+    def _simulate_mouse_to(self, selector: str, index: int = 0) -> None:
+        """Move mouse to an element with human-like trajectory."""
         page = self._page
+        try:
+            el = page.locator(selector).nth(index)
+            if el.is_visible():
+                box = el.bounding_box()
+                if box:
+                    # Random offset within the element (don't always hit center)
+                    target_x = box["x"] + box["width"] * random.uniform(0.2, 0.8)
+                    target_y = box["y"] + box["height"] * random.uniform(0.3, 0.7)
+                    # Move with intermediate steps for natural trajectory
+                    steps = random.randint(3, 8)
+                    page.mouse.move(target_x, target_y, steps=steps)
+                    _human_delay((100, 300))
+        except Exception:
+            pass
+
+    def _type_human(self, page, selector: str, value: str, index: int = 0) -> bool:
+        """Type text character-by-character with human-like timing."""
+        try:
+            el = page.locator(selector).nth(index)
+            if not el.is_visible():
+                return False
+            self._simulate_mouse_to(selector, index)
+            el.click()
+            _human_delay((200, 500))
+            # Select all and delete first
+            el.press("Control+a")
+            _human_delay((100, 200))
+            el.press("Backspace")
+            _human_delay((200, 400))
+            # Type with per-character jitter
+            for char in value:
+                el.type(char, delay=random.randint(HUMAN_TYPE_CHAR_MS[0], HUMAN_TYPE_CHAR_MS[1]))
+            return True
+        except Exception:
+            return False
+
+    def _react_fill(self, selector: str, value: str, index: int = 0) -> bool:
+        """Fill a React controlled input/textarea — tries human typing first, falls back to JS."""
+        page = self._page
+        # Try human-like typing first (more natural for hCaptcha)
+        if self._type_human(page, selector, value, index):
+            return True
+        # Fallback: JS injection for React controlled inputs
         return page.evaluate(f"""(value) => {{
             const els = document.querySelectorAll('{selector}');
             if (els.length <= {index}) return false;
             const el = els[{index}];
-            // React uses internal fiber to track state — need to set via native setter
             const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
                 window.HTMLTextAreaElement.prototype, 'value'
             )?.set || Object.getOwnPropertyDescriptor(
@@ -589,55 +650,73 @@ class SunoBrowser:
         }}""", value)
 
     def _fill_form(self, title: str, style: str, instrumental: bool = True) -> None:
-        """Fill the create form with React-compatible event dispatching."""
+        """Fill the create form with human-like timing and interaction."""
         page = self._page
+
+        # Simulate "looking at the page" before interacting
+        _human_delay(HUMAN_THINK_MS)
 
         # Enable Advanced mode
         adv_btn = page.locator("button").filter(has_text=re.compile(r"^Advanced$"))
         try:
             adv_btn.first.wait_for(timeout=3000)
+            self._simulate_mouse_to("button:has-text('Advanced')")
+            _human_delay(HUMAN_PRE_CLICK_MS)
             adv_btn.first.click()
-            page.wait_for_timeout(500)
+            _human_delay(HUMAN_FIELD_GAP_MS)
         except Exception:
             pass  # Already in advanced mode
 
-        page.wait_for_timeout(500)
+        _human_delay(HUMAN_FIELD_GAP_MS)
 
         # Clear lyrics (blank for instrumental) and fill style
         self._react_fill("textarea", "", index=0)  # Lyrics
+        _human_delay(HUMAN_FIELD_GAP_MS)
         if self._react_fill("textarea", style, index=1):
             print(f"  Style: {style[:60]}...")
         else:
             print("  Warning: could not fill style textarea")
 
-        # Title — try various input selectors
+        _human_delay(HUMAN_FIELD_GAP_MS)
+
+        # Title — try human typing first, fall back to JS
         title_filled = False
         for sel in ("input[placeholder*='itle']", "input[placeholder*='ong']",
                     "input[placeholder*='ame']"):
-            result = page.evaluate(f"""(value) => {{
-                const el = document.querySelector("{sel}");
-                if (!el) return false;
-                const setter = Object.getOwnPropertyDescriptor(
-                    window.HTMLInputElement.prototype, 'value'
-                )?.set;
-                if (setter) setter.call(el, value);
-                else el.value = value;
-                el.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                el.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                return true;
-            }}""", title)
-            if result:
+            if self._type_human(page, sel, title, index=0):
                 print(f"  Title: {title}")
                 title_filled = True
                 break
+        # Fallback: JS injection
+        if not title_filled:
+            for sel in ("input[placeholder*='itle']", "input[placeholder*='ong']",
+                        "input[placeholder*='ame']"):
+                result = page.evaluate(f"""(value) => {{
+                    const el = document.querySelector("{sel}");
+                    if (!el) return false;
+                    const setter = Object.getOwnPropertyDescriptor(
+                        window.HTMLInputElement.prototype, 'value'
+                    )?.set;
+                    if (setter) setter.call(el, value);
+                    else el.value = value;
+                    el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    return true;
+                }}""", title)
+                if result:
+                    print(f"  Title: {title}")
+                    title_filled = True
+                    break
         if not title_filled:
             print("  Warning: title input not found")
 
-        page.wait_for_timeout(500)
+        _human_delay(HUMAN_FIELD_GAP_MS)
 
     def _click_create(self) -> None:
-        """Click the Create button (wait for it to be enabled)."""
+        """Click the Create button with human-like pre-click behavior."""
         page = self._page
+        # Human-like pause before clicking (reviewing form)
+        _human_delay(HUMAN_PRE_CLICK_MS)
         # Wait for the Create button to become enabled (form validation)
         for wait in range(20):
             create_btn = page.locator("button").filter(has_text=re.compile(r"Create"))
@@ -648,8 +727,18 @@ class SunoBrowser:
                     visible.append(btn)
             if visible:
                 visible[-1].scroll_into_view_if_needed()
-                page.wait_for_timeout(300)
+                # Move mouse to button naturally
+                try:
+                    box = visible[-1].bounding_box()
+                    if box:
+                        x = box["x"] + box["width"] * random.uniform(0.3, 0.7)
+                        y = box["y"] + box["height"] * random.uniform(0.3, 0.7)
+                        page.mouse.move(x, y, steps=random.randint(4, 10))
+                except Exception:
+                    pass
+                _human_delay((300, 800))
                 visible[-1].click()
+                _human_delay(HUMAN_POST_CLICK_MS)
                 return
             page.wait_for_timeout(1000)
         # Last resort: click even if disabled
@@ -712,8 +801,9 @@ class SunoBrowser:
 
         while time.monotonic() < poll_deadline:
             attempt += 1
-            time.sleep(POLL_INTERVAL)
-            elapsed = attempt * POLL_INTERVAL
+            interval = _jittered_poll_interval()
+            time.sleep(interval)
+            elapsed = int(time.monotonic() - (poll_deadline - MAX_POLL_SEC))
 
             # Refresh JWT if needed
             fresh = get_fresh_jwt()
@@ -956,6 +1046,12 @@ def main() -> None:
     succeeded, failed = 0, []
     try:
         for i, track in enumerate(queue, 1):
+            # Inter-track delay (skip for first track)
+            if i > 1:
+                delay_s = random.randint(INTER_TRACK_MS[0], INTER_TRACK_MS[1]) / 1000
+                print(f"\n  Waiting {delay_s:.0f}s before next track...")
+                time.sleep(delay_s)
+
             print(f"\n{'=' * 60}")
             print(f"[{i}/{len(queue)}] {track['track_id']} — {track['title']}")
             print(f"{'=' * 60}")

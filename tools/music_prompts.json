@@ -218,6 +218,51 @@
       "title_template": "The Grind",
       "style": "lo-fi ambient, repetitive, hypnotic, synth drone, chiptune arpeggios, zen, meditative",
       "prompt": "Ambient monitoring loop for automated grinding, hypnotic repetitive synth arpeggios over warm drone, zen-like concentration, the satisfying hum of a well-oiled machine running battles on autopilot, slightly glitchy undertones suggesting system fatigue"
+    },
+    "battle_slime": {
+      "title_template": "Gelatinous Threat",
+      "style": "JRPG battle, bouncy, playful, C major, comedic percussion, squelchy synth bass, 128 BPM",
+      "prompt": "Quirky bouncy battle theme for fighting slimes, playful and lighthearted but still exciting, squelchy wobbly bass, boing sound effects woven into the rhythm, comedic energy like fighting a goofy but persistent enemy, 16-bit JRPG charm"
+    },
+    "battle_bat": {
+      "title_template": "Wings in the Dark",
+      "style": "JRPG battle, frantic, D minor, fast strings, fluttering percussion, dark urgent, 170 BPM",
+      "prompt": "Frantic high-speed battle theme for fighting bats, rapid fluttering string arpeggios, quick staccato notes darting like echolocation, dark and urgent, the panic of wings swooping at you in a cave, 170 BPM relentless energy"
+    },
+    "battle_mushroom": {
+      "title_template": "Spore Cloud",
+      "style": "JRPG battle, creepy, E minor, slow drone, psychedelic, detuned, eerie, 90 BPM",
+      "prompt": "Creepy slow battle theme for fighting mushroom monsters, psychedelic detuned synths, spore-cloud atmosphere, hypnotic and unsettling, like the music itself is poisoned, droning bass underneath warbling melodic fragments"
+    },
+    "battle_imp": {
+      "title_template": "Infernal Mischief",
+      "style": "JRPG battle, chaotic, F minor, chromatic runs, wild percussion, demonic, 160 BPM",
+      "prompt": "Chaotic demonic battle theme for fighting imps, wild chromatic runs up and down, unpredictable rhythm changes, mischievous and dangerous, cackling energy, fast and disorienting like fighting tiny demons that won't stay still"
+    },
+    "battle_goblin": {
+      "title_template": "Raid!",
+      "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
+      "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity"
+    },
+    "battle_skeleton": {
+      "title_template": "Bone Rattle",
+      "style": "JRPG battle, spooky, B minor, xylophone, staccato strings, rattling percussion, haunted, 120 BPM",
+      "prompt": "Spooky battle theme for fighting skeletons, rattling xylophone and bone-dry staccato strings, clicking percussion like bones clattering, haunted graveyard energy, eerie but driving, undead menace"
+    },
+    "battle_wolf": {
+      "title_template": "Howl of the Pack",
+      "style": "JRPG battle, tense, E minor, prowling bass, hunting rhythm, feral strings, 150 BPM",
+      "prompt": "Tense hunting battle theme for fighting wolves, prowling bass line stalking underneath, feral aggressive strings, the feeling of being circled by a wolf pack, building tension and bursts of ferocious attack, primal and dangerous"
+    },
+    "battle_ghost": {
+      "title_template": "Phantom Waltz",
+      "style": "JRPG battle, ethereal, G minor, floating reverb, music box, ghostly choir, haunting, 100 BPM",
+      "prompt": "Ethereal haunting battle theme for fighting ghosts, floating reversed reverb tails, ghostly choir whispers, music box melody that drifts in and out, unsettling beauty, like dancing with something that shouldn't exist, slow and otherworldly"
+    },
+    "battle_snake": {
+      "title_template": "Serpent Strike",
+      "style": "JRPG battle, slithering, C minor, sinuous melody, rattling percussion, tense coiling bass, 135 BPM",
+      "prompt": "Sinuous slithering battle theme for fighting snakes, coiling bass line that winds and tightens, rattling shaker percussion like a rattlesnake warning, tense melodic line that strikes suddenly, the anxiety of facing something fast and venomous"
     }
   }
 }
