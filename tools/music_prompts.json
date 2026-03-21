@@ -1,0 +1,183 @@
+{
+  "_comment": "World tone templates for Suno music generation. Used by suno_gen.py --world flag.",
+  "worlds": {
+    "1": {
+      "name": "Medieval",
+      "style_base": "16-bit SNES orchestral, Nobuo Uematsu, Final Fantasy, harp, strings",
+      "tracks": {
+        "overworld": {
+          "title_template": "The Realm Awakens",
+          "style": "16-bit SNES orchestral, Nobuo Uematsu, Final Fantasy, harp, strings, adventurous",
+          "prompt": "Peaceful Arthurian countryside, golden morning light over rolling green hills, earnest adventure beginning, slight melancholy undertone, a hero setting out on an uncertain journey, warm strings and gentle harp arpeggios building to a hopeful melody"
+        },
+        "village": {
+          "title_template": "Harmonia's Rest",
+          "style": "16-bit SNES orchestral, gentle woodwinds, pizzicato strings, warm, pastoral",
+          "prompt": "Warm medieval village at dawn, cobblestone streets, shopkeepers opening doors, children playing, peaceful and inviting, gentle flute melody over soft string accompaniment, hints of a music box"
+        },
+        "dungeon": {
+          "title_template": "Echoes Below",
+          "style": "16-bit SNES orchestral, mysterious, minor key, sparse percussion, reverb",
+          "prompt": "Dark cave with dripping water, torch-lit corridors, ancient stone walls, tense exploration, mysterious and foreboding, low strings and sparse percussion, echoing melodic fragments"
+        },
+        "battle": {
+          "title_template": "Call to Arms",
+          "style": "SNES battle theme, energetic, A minor, driving percussion, brass fanfare",
+          "prompt": "Intense turn-based JRPG battle, sword strikes and magic casting, urgent and exciting, driving drums with melodic brass, dramatic string runs, 16-bit era energy"
+        },
+        "boss": {
+          "title_template": "The Usurper's Shadow",
+          "style": "SNES boss battle, intense, dramatic, pipe organ, aggressive drums, minor key",
+          "prompt": "Epic boss confrontation, towering enemy, high stakes battle, intense pipe organ and aggressive percussion, dramatic key changes, sense of overwhelming power and desperate resistance"
+        }
+      }
+    },
+    "2": {
+      "name": "Suburban",
+      "style_base": "EarthBound, synth-pop, lo-fi, slightly unsettling, 90s Americana",
+      "tracks": {
+        "overworld": {
+          "title_template": "Somewhere Normal",
+          "style": "EarthBound, synth-pop, lo-fi, slightly unsettling, 90s Americana, chiptune undertone",
+          "prompt": "Uncanny suburban normalcy, fluorescent-quality sunlight, white picket fences that are too perfect, cheerful veneer masking wrongness, air conditioner hum beneath a catchy melody, like a TV jingle that plays forever"
+        },
+        "village": {
+          "title_template": "Cul-de-sac Dreams",
+          "style": "EarthBound, lo-fi, gentle synth pads, music box, suburban, nostalgic",
+          "prompt": "Quiet suburban neighborhood at dusk, sprinklers on lawns, distant ice cream truck melody, warm nostalgia with an edge of loneliness, slightly detuned synths, childhood memory that feels off"
+        },
+        "battle": {
+          "title_template": "Neighborhood Watch",
+          "style": "EarthBound battle, funky bass, quirky synth, energetic, slightly comedic",
+          "prompt": "Quirky suburban battle, fighting possessed lawn gnomes and angry mailboxes, funky slap bass, weird synth stabs, energetic but humorous, EarthBound-inspired weirdness"
+        },
+        "boss": {
+          "title_template": "HOA President",
+          "style": "EarthBound boss, distorted synth, heavy bass, unsettling, psychedelic",
+          "prompt": "Surreal boss battle against suburban authority figure, reality warping, distorted happy music becoming dark, heavy psychedelic synths, EarthBound Giygas influence"
+        }
+      }
+    },
+    "3": {
+      "name": "Steampunk",
+      "style_base": "Victorian waltz, brass ensemble, clockwork ticking, strings, suspenseful",
+      "tracks": {
+        "overworld": {
+          "title_template": "The Clockwork City",
+          "style": "Victorian waltz, brass ensemble, clockwork ticking, strings, suspenseful, 3/4 time",
+          "prompt": "Brass and iron city, massive gears turning overhead, amber gas lamp glow, 13 chimes from a twisted clock tower, something being measured, waltz rhythm with mechanical precision, mysterious and grand"
+        },
+        "village": {
+          "title_template": "The Tinker's Quarter",
+          "style": "Victorian parlor music, gentle piano, music box, light brass, clockwork sounds",
+          "prompt": "Cozy steampunk workshop district, tinkerers and inventors, gentle piano over rhythmic clockwork ticking, warm brass accents, whimsical and inventive atmosphere"
+        },
+        "battle": {
+          "title_template": "Gears of War",
+          "style": "Steampunk battle, industrial percussion, driving brass, urgent strings, mechanical rhythms",
+          "prompt": "Combat in a gear-filled factory, steam pistons as percussion, driving brass fanfare, urgent string runs, mechanical rhythm layered with orchestral intensity"
+        },
+        "boss": {
+          "title_template": "The Grand Automaton",
+          "style": "Steampunk boss, pipe organ, heavy brass, industrial percussion, epic waltz",
+          "prompt": "Battle against a massive clockwork automaton, epic pipe organ over grinding gears, heavy brass and industrial percussion, waltz rhythm turned menacing, steam whistles"
+        }
+      }
+    },
+    "4": {
+      "name": "Industrial",
+      "style_base": "minimalist drone, industrial ambience, brutalist, sparse percussion",
+      "tracks": {
+        "overworld": {
+          "title_template": "Gray Shift",
+          "style": "minimalist drone, industrial ambience, brutalist, sparse percussion, cold synth",
+          "prompt": "Gray concrete ceiling stretching forever, recycled air, fluorescent clinical light, factory drone in the distance, soul-draining efficiency, sparse cold synths over mechanical rhythms, oppressive and numbing"
+        },
+        "village": {
+          "title_template": "Break Room",
+          "style": "minimalist, muffled, lo-fi industrial, vending machine hum, sparse piano",
+          "prompt": "Sterile break room in an endless factory, vending machine hum, fluorescent buzz, muffled conversations, sparse piano notes echoing in concrete corridors, brief moments of human warmth in cold surroundings"
+        },
+        "battle": {
+          "title_template": "Assembly Line",
+          "style": "industrial battle, heavy percussion, mechanical rhythm, distorted synth, aggressive",
+          "prompt": "Battle on a factory floor, conveyor belts and stamping presses as percussion, distorted industrial synths, mechanical aggressive rhythm, relentless and dehumanizing"
+        },
+        "boss": {
+          "title_template": "The Foreman",
+          "style": "industrial boss, crushing bass, siren tones, harsh noise, rhythmic stamping",
+          "prompt": "Boss battle in the heart of the machine, crushing bass drops, factory sirens, harsh industrial noise, rhythmic stamping that shakes the ground, overwhelming mechanical authority"
+        }
+      }
+    },
+    "5": {
+      "name": "Digital",
+      "style_base": "chiptune, glitch, synthwave, terminal beeps, data corruption",
+      "tracks": {
+        "overworld": {
+          "title_template": "Boot Sequence",
+          "style": "chiptune, glitch, synthwave, terminal beeps, data corruption, retro computing",
+          "prompt": "Wireframe geometry stretching to infinity, green-on-black terminal text scrolling, cold blue monitor glow, boot sequence initializing, grid floor beneath digital sky, glitchy arpeggios over steady synthwave pulse"
+        },
+        "village": {
+          "title_template": "Safe Zone",
+          "style": "chiptune, ambient, warm digital, soft arpeggios, data stream",
+          "prompt": "Peaceful node in a digital network, warm glowing data streams, soft pixel rain, safe harbor in cyberspace, gentle chiptune arpeggios, comforting digital ambience"
+        },
+        "battle": {
+          "title_template": "Firewall Breach",
+          "style": "chiptune battle, aggressive glitch, fast arpeggios, digital combat, cyberpunk",
+          "prompt": "Digital battle in cyberspace, data packets as weapons, rapid chiptune arpeggios, glitch percussion, aggressive electronic combat, virus vs antivirus"
+        },
+        "boss": {
+          "title_template": "Root Access",
+          "style": "digital boss, heavy glitch, distorted chiptune, bass drops, system error tones",
+          "prompt": "Boss battle against a rogue AI, massive data corruption, heavy glitch bass, distorted chiptune melody, system error tones, digital reality breaking apart"
+        }
+      }
+    },
+    "6": {
+      "name": "Abstract",
+      "style_base": "ambient, sparse piano, sustained tones, silence, existential",
+      "tracks": {
+        "overworld": {
+          "title_template": "The Answered Absence",
+          "style": "ambient, sparse piano, sustained tones, silence, existential, minimal",
+          "prompt": "Pure white void stretching infinitely, answered absence, no echo, geometric shapes floating in nothingness, single piano notes hanging in empty space, beautiful in its nothingness, existential calm"
+        },
+        "village": {
+          "title_template": "Remembered Place",
+          "style": "ambient, music box, distant reverb, memory, ethereal",
+          "prompt": "A village that exists only in memory, music box playing a half-remembered melody, sounds arriving from impossible distances, warm but fading, like a dream you're waking from"
+        },
+        "battle": {
+          "title_template": "Contradiction",
+          "style": "abstract battle, deconstructed, glitch, reverse sounds, sparse but intense",
+          "prompt": "Battle in the void where physics don't apply, deconstructed music — notes playing backward, rhythms that skip and stutter, sparse but intensely present, fighting the concept of conflict itself"
+        },
+        "boss": {
+          "title_template": "The Final Question",
+          "style": "abstract boss, crescendo from silence, all genres merging, overwhelming, transcendent",
+          "prompt": "Final confrontation with the void itself, starting from absolute silence, slowly building as all musical styles from all worlds merge together, overwhelming crescendo, transcendent and terrifying"
+        }
+      }
+    }
+  },
+  "shared_tracks": {
+    "victory": {
+      "title_template": "Victory Fanfare",
+      "style": "JRPG victory fanfare, triumphant brass, Final Fantasy, celebratory, short",
+      "prompt": "Classic JRPG victory fanfare, triumphant brass melody, celebratory drums, short and satisfying, the thrill of winning a hard-fought battle, 15-20 seconds"
+    },
+    "game_over": {
+      "title_template": "Fallen Heroes",
+      "style": "JRPG game over, somber, minor key, fading, short",
+      "prompt": "Somber game over theme, fading hope, minor key melody that trails off into silence, 10-15 seconds of melancholy"
+    },
+    "title": {
+      "title_template": "Cowardly Irregular",
+      "style": "JRPG title screen, majestic, epic, orchestral with chiptune elements, grandiose",
+      "prompt": "Epic JRPG title screen theme, majestic orchestral opening building to a powerful melody, hints of all six worlds' musical styles woven together, grandiose yet with a sarcastic undertone"
+    }
+  }
+}

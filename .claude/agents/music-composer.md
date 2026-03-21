@@ -59,6 +59,45 @@ The entire audio system. Handles:
 - Replace music tracks with pre-generated OGG files
 - Use SoundManager's existing crossfade system
 
+### Option D: Suno API Generation (Recommended for BGM)
+- Use `tools/suno_gen.py` to generate tracks via Suno V5 model
+- World tone templates in `tools/music_prompts.json` for consistent style
+- Tracks registered in `data/music_manifest.json` (mirrors sprite_manifest.json pattern)
+- SoundManager hybrid loading: checks manifest first, falls back to procedural
+- Tiers: T0 (procedural) → T1 (AI/Suno) → T2 (composer draft) → T3 (final mastered)
+
+#### Suno Generation Workflow
+1. Pick a track_id from the mapping table (e.g., `overworld_medieval`)
+2. Optionally use `--world N` to load tone templates
+3. Run: `source setenv.sh && uv run tools/suno_gen.py --track-id <id> --world <N> --preview`
+4. Preview with mpv, iterate on prompt/style if needed
+5. Track auto-registered in `data/music_manifest.json`
+6. Game picks it up automatically via SoundManager hybrid loading
+
+#### Track ID → SoundManager Mapping
+| Track ID | SoundManager trigger | World |
+|----------|---------------------|-------|
+| `overworld_medieval` | `play_area_music("overworld")` | 1 |
+| `village_medieval` | `play_area_music("village")` | 1 |
+| `dungeon_cave` | `play_area_music("cave")` | 1 |
+| `battle_medieval` | `play_music("battle")` | 1 |
+| `boss_generic` | `play_music("boss")` | — |
+| `victory` | `play_music("victory")` | — |
+| `title` | `play_music("title")` | — |
+| `overworld_suburban` | `play_area_music("overworld_suburban")` | 2 |
+| `battle_suburban` | `play_music("battle_suburban")` | 2 |
+| `overworld_steampunk` | `play_area_music("overworld_steampunk")` | 3 |
+| `battle_steampunk` | `play_music("battle_urban")` | 3 |
+| `overworld_industrial` | `play_area_music("overworld_industrial")` | 4 |
+| `battle_industrial` | `play_music("battle_industrial")` | 4 |
+| `overworld_digital` | `play_area_music("overworld_futuristic")` | 5 |
+| `battle_digital` | `play_music("battle_digital")` | 5 |
+| `overworld_abstract` | `play_area_music("overworld_abstract")` | 6 |
+| `battle_abstract` | `play_music("battle_void")` | 6 |
+| `game_over` | `play_music("game_over")` | — |
+| `danger` | `play_music("danger")` | — |
+| `autogrind` | `play_music("autogrind")` | — |
+
 ## Technical Notes
 
 - Godot AudioStreamGenerator for procedural: 44100 Hz sample rate

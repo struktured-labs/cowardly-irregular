@@ -49,6 +49,7 @@ addons/gut/.gut_editor_*
 
 tmp/
 setenv.sh
+*APIkey*
 .last_fetched_run
 .last_synced_sha
 
@@ -61,3 +62,7 @@ butler-bin/
 butler.zip
 *.zip
 tmp/
+
+# Music pipeline - keep OGG, ignore raw downloads
+assets/audio/music/*.mp3
+assets/audio/music/*.wav

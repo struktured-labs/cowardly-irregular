@@ -1,0 +1,49 @@
+{
+  "_comment": "Music manifest - maps track IDs to audio files. SoundManager checks this before falling back to procedural generation.",
+  "tracks": {
+    "overworld_medieval": {
+      "file": "assets/audio/music/overworld_medieval.ogg",
+      "tier": "T1",
+      "provider": "aimlapi",
+      "task_id": "HlJmBwvO5-hQmgUJ97_qc",
+      "title": "The Realm Awakens",
+      "prompt": "Peaceful Arthurian countryside, golden morning light over rolling green hills, earnest adventure beginning, slight melancholy undertone, a hero setting out on an uncertain journey, warm strings and gentle harp arpeggios building to a hopeful melody",
+      "style": "16-bit SNES orchestral, Nobuo Uematsu, Final Fantasy, harp, strings, adventurous",
+      "model": "stable-audio",
+      "duration": 30.0,
+      "loop": true,
+      "generated_at": "2026-03-20"
+    },
+    "victory_test": {
+      "file": "assets/audio/music/victory_test.ogg",
+      "tier": "T1",
+      "provider": "aimlapi",
+      "task_id": "FoBMquonKui7WAogKii-i",
+      "title": "Victory Fanfare",
+      "prompt": "Classic JRPG victory fanfare. Opens with a rising brass arpeggio C-E-G-C then resolves into a triumphant sustained chord. Transitions into an energetic rock celebration with power chords, galloping double kick drums, and a shredding lead guitar melody in E minor. Triumphant, celebratory, 140-160 BPM. Like Final Fantasy victory theme meets 80s metal. 15-30 seconds total.",
+      "style": "JRPG victory fanfare, 16-bit SNES brass, Final Fantasy, triumphant, short, chiptune, retro game music",
+      "model": "stable-audio",
+      "duration": 30.0,
+      "loop": true,
+      "generated_at": "2026-03-20"
+    },
+    "sfx_critical_hit": {
+      "file": "assets/audio/music/sfx_critical_hit.ogg",
+      "tier": "T1",
+      "provider": "aimlapi",
+      "task_id": "4ZujaRSpmoVfiz-0es-To",
+      "title": "Critical Hit",
+      "prompt": "Heavy critical hit impact sound effect for a JRPG battle. Massive metallic slash with a deep reverberating boom. Screen-shaking impact, brief ringing aftermath. Powerful and satisfying. 1-2 seconds.",
+      "style": "sound effect, impact, JRPG battle, retro game, 16-bit, heavy hit",
+      "model": "stable-audio",
+      "duration": 30.0,
+      "loop": true,
+      "generated_at": "2026-03-20"
+    }
+  },
+  "tier_priority": [
+    "T3",
+    "T2",
+    "T1"
+  ]
+}
