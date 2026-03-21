@@ -47,6 +47,10 @@ var npcs: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
+## Mode 7 perspective
+var mode7_enabled: bool = true
+var _mode7: Mode7Overlay
+
 ## Reality distortion effect state
 var _bg_rect: ColorRect
 var _hue_time: float = 0.0
@@ -65,6 +69,11 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 
+	if mode7_enabled:
+		_mode7 = Mode7Overlay.new()
+		add_child(_mode7)
+		_mode7.setup(self, player)
+
 	# Start abstract overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_abstract")
@@ -79,6 +88,8 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _mode7:
+		_mode7.process_frame()
 	_hue_time += delta
 
 	if _bg_rect:
@@ -107,6 +118,11 @@ func _process(delta: float) -> void:
 			modulate = Color(1.0, 1.0, 1.0, 1.0)
 			_flicker_active = false
 			_flicker_interval = randf_range(18.0, 30.0)
+
+
+func _exit_tree() -> void:
+	if _mode7:
+		_mode7.cleanup()
 
 
 func _setup_scene() -> void:
@@ -402,14 +418,8 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
-	# 2x zoom for larger sprites
-	camera.zoom = Vector2(2.0, 2.0)
-
-	# Camera limits to map bounds
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = MAP_WIDTH * TILE_SIZE
-	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
+	Mode7Overlay.apply_camera(camera, mode7_enabled)
+	Mode7Overlay.apply_camera_limits(camera, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
 
 	# Smooth camera follow
 	camera.position_smoothing_enabled = true

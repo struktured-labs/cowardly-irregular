@@ -359,6 +359,17 @@ func _generate_all_sprites() -> void:
 		return
 
 	var new_cache: Dictionary = {}
+
+	# Try artist sheet first (no customization applied — artist work is authoritative)
+	if not _use_custom_colors:
+		var artist_cache = _try_build_artist_sprites()
+		if not artist_cache.is_empty():
+			_static_sprite_cache[static_key] = artist_cache
+			_sprite_cache = artist_cache
+			if _static_sprite_cache.size() > 30:
+				_static_sprite_cache.erase(_static_sprite_cache.keys()[0])
+			return
+
 	for dir in [Direction.DOWN, Direction.UP, Direction.LEFT, Direction.RIGHT]:
 		for frame in range(WALK_FRAMES):
 			var img = _generate_character_sprite(dir, frame)
@@ -372,6 +383,79 @@ func _generate_all_sprites() -> void:
 	if _static_sprite_cache.size() > 30:
 		var keys = _static_sprite_cache.keys()
 		_static_sprite_cache.erase(keys[0])
+
+
+## Extract and downscale a single frame from a SpriteFrames animation into a 32x32 Image.
+## Returns null if the frame cannot be extracted.
+func _extract_artist_frame(sf: SpriteFrames, anim: String, frame_idx: int, flip_h: bool) -> ImageTexture:
+	if not sf.has_animation(anim):
+		return null
+	var count = sf.get_frame_count(anim)
+	if count == 0:
+		return null
+	var idx = frame_idx % count
+	var frame_tex = sf.get_frame_texture(anim, idx)
+	if not frame_tex:
+		return null
+
+	var src_img: Image = null
+	if frame_tex is AtlasTexture:
+		var atlas_tex = frame_tex as AtlasTexture
+		if not atlas_tex.atlas:
+			return null
+		var atlas_img = atlas_tex.atlas.get_image()
+		if not atlas_img:
+			return null
+		var region = atlas_tex.region
+		src_img = atlas_img.get_region(Rect2i(int(region.position.x), int(region.position.y), int(region.size.x), int(region.size.y)))
+	else:
+		src_img = frame_tex.get_image()
+
+	if not src_img:
+		return null
+
+	if flip_h:
+		src_img.flip_x()
+
+	src_img.resize(SPRITE_SIZE, SPRITE_SIZE, Image.INTERPOLATE_NEAREST)
+	return ImageTexture.create_from_image(src_img)
+
+
+## Try to build a full direction×frame sprite cache from artist sheets.
+## Returns an empty Dictionary if the job has no usable artist sheet.
+func _try_build_artist_sprites() -> Dictionary:
+	var sf = HybridSpriteLoader.load_sprite_frames(null, current_job)
+	if not sf:
+		return {}
+	if not sf.has_animation("idle") or not sf.has_animation("walk"):
+		return {}
+
+	# Verify at least one frame exists in each required animation
+	if sf.get_frame_count("idle") == 0 or sf.get_frame_count("walk") == 0:
+		return {}
+
+	var cache: Dictionary = {}
+
+	# walk animation: cycle through WALK_FRAMES walk frames
+	# idle animation: use frame 0 for all non-walk (standing) frames
+	for frame in range(WALK_FRAMES):
+		var walk_tex_r = _extract_artist_frame(sf, "walk", frame, false)
+		var walk_tex_l = _extract_artist_frame(sf, "walk", frame, true)
+		var idle_tex   = _extract_artist_frame(sf, "idle", 0, false)
+
+		if not walk_tex_r or not walk_tex_l or not idle_tex:
+			return {}
+
+		# right: artist frames facing right (artist side-profile default)
+		cache["%d_%d" % [Direction.RIGHT, frame]] = walk_tex_r if frame > 0 else _extract_artist_frame(sf, "idle", 0, false)
+		# left: horizontally flipped
+		cache["%d_%d" % [Direction.LEFT, frame]]  = walk_tex_l if frame > 0 else _extract_artist_frame(sf, "idle", 0, true)
+		# down/up: use first idle frame as front/back approximation
+		cache["%d_%d" % [Direction.DOWN, frame]] = idle_tex
+		cache["%d_%d" % [Direction.UP, frame]]   = idle_tex
+
+	print("[OVERWORLD] Using artist sheet for '%s' overworld sprite" % current_job)
+	return cache
 
 
 func _generate_character_sprite(direction: Direction, frame: int) -> Image:

@@ -35,6 +35,10 @@ var npcs: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
+## Mode 7 perspective
+var mode7_enabled: bool = true
+var _mode7: Mode7Overlay
+
 ## Rain effect state
 var _rain_particles: CPUParticles2D
 var _rain_timer: float = 0.0
@@ -50,6 +54,11 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+
+	if mode7_enabled:
+		_mode7 = Mode7Overlay.new()
+		add_child(_mode7)
+		_mode7.setup(self, player)
 
 	# Start suburban overworld music
 	if SoundManager:
@@ -83,6 +92,8 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _mode7:
+		_mode7.process_frame()
 	_rain_timer += delta
 	if _rain_timer >= _rain_interval:
 		_rain_timer = 0.0
@@ -92,6 +103,11 @@ func _process(delta: float) -> void:
 			_rain_interval = randf_range(20.0, 40.0)
 		else:
 			_rain_interval = randf_range(30.0, 60.0)
+
+
+func _exit_tree() -> void:
+	if _mode7:
+		_mode7.cleanup()
 
 
 func _setup_scene() -> void:
@@ -436,14 +452,8 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
-	# 2x zoom for larger sprites
-	camera.zoom = Vector2(2.0, 2.0)
-
-	# Camera limits to map bounds
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = MAP_WIDTH * TILE_SIZE
-	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
+	Mode7Overlay.apply_camera(camera, mode7_enabled)
+	Mode7Overlay.apply_camera_limits(camera, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
 
 	# Smooth camera follow
 	camera.position_smoothing_enabled = true

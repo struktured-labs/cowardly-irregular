@@ -38,6 +38,10 @@ var spawn_points: Dictionary = {}
 ## Current encounter zone
 var _current_zone: String = "central"
 
+## Mode 7 perspective
+var mode7_enabled: bool = true
+var _mode7: Mode7Overlay
+
 
 func _ready() -> void:
 	_setup_scene()
@@ -48,7 +52,11 @@ func _ready() -> void:
 	_setup_controller()
 	_setup_monster_spawner()
 
-	# Start overworld music
+	if mode7_enabled:
+		_mode7 = Mode7Overlay.new()
+		add_child(_mode7)
+		_mode7.setup(self, player)
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -58,6 +66,13 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if player:
 		_update_encounter_zone(player.position)
+	if _mode7:
+		_mode7.process_frame()
+
+
+func _exit_tree() -> void:
+	if _mode7:
+		_mode7.cleanup()
 
 
 func _setup_scene() -> void:
@@ -342,12 +357,8 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
-	camera.zoom = Vector2(2.0, 2.0)
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = MAP_WIDTH * TILE_SIZE
-	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
+	Mode7Overlay.apply_camera(camera, mode7_enabled)
+	Mode7Overlay.apply_camera_limits(camera, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
 
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0

@@ -1613,19 +1613,19 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	match transition_type:
 		"cave":
 			await _area_cave_transition_in(display_name)
-			_start_exploration()
+			await _start_exploration()
 			await _area_cave_transition_out()
 		"village":
 			await _area_village_transition_in(display_name)
-			_start_exploration()
+			await _start_exploration()
 			await _area_village_transition_out()
 		"overworld":
 			await _area_overworld_transition_in()
-			_start_exploration()
+			await _start_exploration()
 			await _area_overworld_transition_out()
 		_:
 			await _area_fade_to_black()
-			_start_exploration()
+			await _start_exploration()
 			await _area_fade_from_black()
 
 	# Safety cleanup: ensure fade overlay is transparent and no stale children remain
