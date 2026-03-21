@@ -702,7 +702,11 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		return false
 	var entry = _music_manifest[track_id]
 	var path = entry.get("file", "")
-	if path == "" or not FileAccess.file_exists(path):
+	if path == "":
+		return false
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	if not FileAccess.file_exists(path):
 		return false
 	var stream = load(path) as AudioStream
 	if not stream:
@@ -712,8 +716,27 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	_music_player.volume_db = _music_base_db
 	_music_player.play()
 	_music_playing = true
-	print("[MUSIC] Playing file: %s (tier %s)" % [path, entry.get("tier", "?")])
+	print("[MUSIC] Playing from manifest: %s (%s)" % [track_id, path])
 	return true
+
+
+func _get_current_world_suffix() -> String:
+	"""Map current area to world suffix for manifest track lookup."""
+	match _current_area:
+		"overworld", "village", "harmonia_village", "cave", "dungeon", "whispering_cave":
+			return "medieval"
+		"overworld_suburban", "maple_heights_village":
+			return "suburban"
+		"overworld_steampunk", "brasston_village":
+			return "steampunk"
+		"overworld_industrial", "rivet_row_village":
+			return "industrial"
+		"overworld_futuristic", "node_prime_village":
+			return "digital"
+		"overworld_abstract", "vertex_village":
+			return "abstract"
+		_:
+			return "medieval"
 
 
 func play_music(track: String) -> void:
@@ -743,6 +766,13 @@ func play_music(track: String) -> void:
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
 	_current_music = track
+
+	# Universal music cache — skip expensive generation if this track was already built
+	if _music_cache.has(track):
+		_music_player.stream = _music_cache[track]
+		_music_playing = true
+		_music_player.play()
+		return
 
 	match track:
 		"title":
@@ -810,6 +840,10 @@ func play_music(track: String) -> void:
 				_start_boss_music()
 			else:
 				push_warning("Unknown music track: %s" % track)
+
+	# Cache the generated stream for instant replay on future calls
+	if _music_player.stream and not _music_cache.has(track):
+		_music_cache[track] = _music_player.stream
 
 
 func stop_music() -> void:
@@ -947,9 +981,15 @@ var _music_timer: float = 0.0
 var _music_buffer: PackedVector2Array = PackedVector2Array()
 
 func _start_battle_music() -> void:
-	"""Generate and start looping battle music"""
+	"""Generate and start looping battle music (cached after first generation)"""
 	_music_playing = true
-	if _try_play_from_manifest("battle_medieval"):
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("battle_" + suffix):
+		return
+
+	if _music_cache.has("battle_generic"):
+		_music_player.stream = _music_cache["battle_generic"]
+		_music_player.play()
 		return
 
 	# Generate 4 passes (48 bars) for a full loop with dynamic arc:
@@ -987,6 +1027,7 @@ func _start_battle_music() -> void:
 		data.append((right >> 8) & 0xFF)
 
 	wav.data = data
+	_music_cache["battle_generic"] = wav
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -1654,7 +1695,8 @@ func _generate_victory_rock_loop(rate: int, duration: float, bpm: float) -> Pack
 func _start_boss_music() -> void:
 	"""Generate and start looping boss battle music"""
 	_music_playing = true
-	if _try_play_from_manifest("boss_generic"):
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("boss_" + suffix):
 		return
 
 	# Generate music buffer (16 bars at 150 BPM - faster, more intense)
@@ -2597,8 +2639,13 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Start monster-specific battle music (uses cache for instant playback)"""
+	"""Start monster-specific battle music — tries world battle track from manifest first"""
 	_music_playing = true
+
+	# Try world-specific battle track from manifest (e.g., battle_suburban for suburban world)
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("battle_" + suffix):
+		return
 
 	# Check cache first
 	if _music_cache.has(monster_type):
@@ -3593,6 +3640,16 @@ func _start_area_music_deferred(area_type: String) -> void:
 			_start_abstract_music()
 		"village", "harmonia_village":
 			_start_village_music()
+		"maple_heights_village":
+			_start_village_world_music("suburban")
+		"brasston_village":
+			_start_village_world_music("steampunk")
+		"rivet_row_village":
+			_start_village_world_music("industrial")
+		"node_prime_village":
+			_start_village_world_music("digital")
+		"vertex_village":
+			_start_village_world_music("abstract")
 		"cave", "dungeon", "whispering_cave":
 			_start_cave_music()
 		_:
@@ -3637,10 +3694,18 @@ func _start_village_music() -> void:
 	_create_and_play_looping_wav(_music_buffer, sample_rate, "village")
 
 
+func _start_village_world_music(world_suffix: String) -> void:
+	"""Play world-specific village music from manifest, fall back to generic village"""
+	_music_playing = true
+	if _try_play_from_manifest("village_" + world_suffix):
+		return
+	_start_village_music()
+
+
 func _start_cave_music() -> void:
 	"""Generate mysterious dungeon/cave theme"""
 	_music_playing = true
-	if _try_play_from_manifest("dungeon_cave"):
+	if _try_play_from_manifest("dungeon_medieval"):
 		return
 	print("[MUSIC] Playing cave/dungeon theme")
 	if _play_area_wav_cached("cave"):
