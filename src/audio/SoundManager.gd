@@ -113,19 +113,19 @@ func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -8.0
+	_ui_player.volume_db = -18.0  # Menu blips: subtle, well below music (-12dB)
 	_ui_player.bus = "Master"
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -6.0
+	_battle_player.volume_db = -14.0  # Battle SFX: present but not dominant vs music
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -4.0
+	_ability_player.volume_db = -12.0  # Ability SFX: same level as music, prominent
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
@@ -191,8 +191,10 @@ static func _load_sfx_manifest() -> void:
 			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
 
 
-func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> bool:
-	"""Try to play a file-based SFX from the manifest. Returns true if successful."""
+func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0) -> bool:
+	"""Try to play a file-based SFX from the manifest. Returns true if successful.
+	volume_db_override: if NAN, preserves the player's channel base volume.
+	If set, overrides volume (used by play_battle_scaled)."""
 	if not _sfx_manifest.has(sound_key):
 		return false
 	var entry = _sfx_manifest[sound_key]
@@ -207,7 +209,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		var cached_stream = _sfx_stream_cache[sound_key]
 		if cached_stream:
 			player.stream = cached_stream
-			player.volume_db = volume_db
+			if not is_nan(volume_db_override):
+				player.volume_db = volume_db_override
 			player.pitch_scale = pitch_scale
 			player.play()
 			return true
@@ -226,7 +229,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		return false
 	_sfx_stream_cache[sound_key] = stream
 	player.stream = stream
-	player.volume_db = volume_db
+	if not is_nan(volume_db_override):
+		player.volume_db = volume_db_override
 	player.pitch_scale = pitch_scale
 	player.play()
 	return true
