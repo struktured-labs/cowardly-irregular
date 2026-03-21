@@ -855,7 +855,7 @@ func play_music(track: String) -> void:
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()
 	var manifest_track_id = track
-	# Map generic track names to world-specific manifest keys
+	# Map generic/monster track names to world-specific manifest keys
 	match track:
 		"battle":
 			manifest_track_id = "battle_" + _current_world_suffix
@@ -863,6 +863,10 @@ func play_music(track: String) -> void:
 			manifest_track_id = "boss_" + _current_world_suffix
 		"danger":
 			manifest_track_id = "danger_" + _current_world_suffix
+	# Monster-specific battle tracks (battle_snake, battle_slime, etc.)
+	# fall back to world battle track when no monster-specific manifest entry
+	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_"):
+		manifest_track_id = "battle_" + _current_world_suffix
 	if _music_manifest.has(manifest_track_id):
 		if _try_play_from_manifest(manifest_track_id):
 			return
