@@ -55,6 +55,7 @@ const SOUNDS = {
 	# Autogrind tier transition sounds
 	"tier_zoom_out": {"freq": 320, "duration": 0.22, "type": "tier_zoom_out"},   # Tier 1 -> Dashboard
 	"tier_zoom_in": {"freq": 520, "duration": 0.18, "type": "tier_zoom_in"},    # Dashboard -> Tier 1
+	"speed_change": {"freq": 700, "duration": 0.08, "type": "blip"},  # Battle speed toggle
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},
@@ -113,19 +114,19 @@ func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -18.0  # Menu blips: subtle, well below music (-12dB)
+	_ui_player.volume_db = -22.0  # Menu blips: very subtle background
 	_ui_player.bus = "Master"
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -20.0  # Battle SFX: well below music, not harsh
+	_battle_player.volume_db = -22.0  # Battle SFX: soft accent under music (-12dB)
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -18.0  # Ability SFX: subtle accent alongside music
+	_ability_player.volume_db = -20.0  # Ability SFX: slightly more present than battle
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
