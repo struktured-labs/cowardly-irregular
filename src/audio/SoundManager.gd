@@ -29,6 +29,12 @@ static var _area_wav_cache: Dictionary = {}
 static var _music_manifest: Dictionary = {}
 static var _manifest_loaded: bool = false
 
+# SFX manifest - file-based SFX take priority over procedural generation
+static var _sfx_manifest: Dictionary = {}
+static var _sfx_manifest_loaded: bool = false
+# Cache loaded AudioStream objects so we only hit disk once per key
+static var _sfx_stream_cache: Dictionary = {}
+
 # Sound definitions - procedural parameters
 const SOUNDS = {
 	# UI Sounds
@@ -85,6 +91,7 @@ var _ability_sounds: Dictionary = {}
 
 
 func _ready() -> void:
+	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
 
@@ -168,17 +175,78 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["mug"] = "ability_physical"
 
 
+## SFX Manifest (file-based SFX take priority over procedural)
+
+static func _load_sfx_manifest() -> void:
+	if _sfx_manifest_loaded:
+		return
+	_sfx_manifest_loaded = true
+	var file = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	if not file:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if parsed and parsed.has("sfx"):
+		_sfx_manifest = parsed["sfx"]
+		if _sfx_manifest.size() > 0:
+			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
+
+
+func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> bool:
+	"""Try to play a file-based SFX from the manifest. Returns true if successful."""
+	if not _sfx_manifest.has(sound_key):
+		return false
+	var entry = _sfx_manifest[sound_key]
+	var path = entry.get("file", "")
+	if path == "":
+		return false
+	if not path.begins_with("res://"):
+		path = "res://" + path
+
+	# Check stream cache first
+	if _sfx_stream_cache.has(sound_key):
+		var cached_stream = _sfx_stream_cache[sound_key]
+		if cached_stream:
+			player.stream = cached_stream
+			player.volume_db = volume_db
+			player.pitch_scale = pitch_scale
+			player.play()
+			return true
+		else:
+			# Cached null = file doesn't exist, fall through to procedural
+			return false
+
+	# Try loading from disk
+	if not FileAccess.file_exists(path):
+		_sfx_stream_cache[sound_key] = null  # Cache miss
+		return false
+	var stream = load(path) as AudioStream
+	if not stream:
+		push_warning("[SFX] Failed to load: %s" % path)
+		_sfx_stream_cache[sound_key] = null
+		return false
+	_sfx_stream_cache[sound_key] = stream
+	player.stream = stream
+	player.volume_db = volume_db
+	player.pitch_scale = pitch_scale
+	player.play()
+	return true
+
+
 ## Public API
 
 func play_ui(sound_key: String) -> void:
-	"""Play a UI sound effect"""
+	"""Play a UI sound effect — file-based if available, else procedural"""
+	if _try_play_sfx_from_manifest(_ui_player, sound_key):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_ui_player, SOUNDS[sound_key])
 
 
 func play_battle(sound_key: String) -> void:
-	"""Play a battle sound effect"""
+	"""Play a battle sound effect — file-based if available, else procedural"""
+	if _try_play_sfx_from_manifest(_battle_player, sound_key):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_battle_player, SOUNDS[sound_key])
@@ -186,6 +254,8 @@ func play_battle(sound_key: String) -> void:
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, volume_db, pitch_scale):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	# Validate pitch scale to prevent invalid frequencies
@@ -202,6 +272,8 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 func play_ability(ability_id: String) -> void:
 	"""Play sound for an ability (looks up mapping or uses default)"""
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
+	if _try_play_sfx_from_manifest(_ability_player, sound_key):
+		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_ability_player, SOUNDS[sound_key])
 
@@ -214,6 +286,8 @@ func register_ability_sound(ability_id: String, sound_key: String) -> void:
 func play_status(status_name: String) -> void:
 	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
 	var key = "status_" + status_name.to_lower()
+	if _try_play_sfx_from_manifest(_battle_player, key):
+		return
 	if SOUNDS.has(key):
 		_play_sound(_battle_player, SOUNDS[key])
 	else:
@@ -702,18 +776,48 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		return false
 	var entry = _music_manifest[track_id]
 	var path = entry.get("file", "")
-	if path == "" or not FileAccess.file_exists(path):
+	if path == "":
+		return false
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	if not FileAccess.file_exists(path):
 		return false
 	var stream = load(path) as AudioStream
 	if not stream:
 		push_warning("[MUSIC] Failed to load audio file: %s" % path)
 		return false
+	# Set looping based on manifest (default true for music)
+	var should_loop = entry.get("loop", true)
+	if stream is AudioStreamOggVorbis:
+		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
 	_music_player.play()
 	_music_playing = true
-	print("[MUSIC] Playing file: %s (tier %s)" % [path, entry.get("tier", "?")])
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s" % [track_id, path, should_loop])
 	return true
+
+
+func _get_current_world_suffix() -> String:
+	"""Map current area to world suffix for manifest track lookup.
+	When _current_area is empty (cleared by play_music for battle/victory),
+	returns the last known world suffix so battle music stays world-aware."""
+	match _current_area:
+		"overworld", "village", "harmonia_village", "cave", "dungeon", "whispering_cave":
+			return "medieval"
+		"overworld_suburban", "maple_heights_village":
+			return "suburban"
+		"overworld_steampunk", "brasston_village":
+			return "steampunk"
+		"overworld_industrial", "rivet_row_village":
+			return "industrial"
+		"overworld_futuristic", "node_prime_village":
+			return "digital"
+		"overworld_abstract", "vertex_village":
+			return "abstract"
+		_:
+			# During battles, _current_area is cleared — use persisted suffix
+			return _current_world_suffix
 
 
 func play_music(track: String) -> void:
@@ -743,6 +847,28 @@ func play_music(track: String) -> void:
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
 	_current_music = track
+
+	# Try manifest first — file-based music always takes priority
+	_load_music_manifest()
+	var manifest_track_id = track
+	# Map generic track names to world-specific manifest keys
+	match track:
+		"battle":
+			manifest_track_id = "battle_" + _current_world_suffix
+		"boss":
+			manifest_track_id = "boss_" + _current_world_suffix
+		"danger":
+			manifest_track_id = "danger_" + _current_world_suffix
+	if _music_manifest.has(manifest_track_id):
+		if _try_play_from_manifest(manifest_track_id):
+			return
+
+	# Universal music cache — skip expensive generation if this track was already built
+	if _music_cache.has(track):
+		_music_player.stream = _music_cache[track]
+		_music_playing = true
+		_music_player.play()
+		return
 
 	match track:
 		"title":
@@ -810,6 +936,10 @@ func play_music(track: String) -> void:
 				_start_boss_music()
 			else:
 				push_warning("Unknown music track: %s" % track)
+
+	# Cache the generated stream for instant replay on future calls
+	if _music_player.stream and not _music_cache.has(track):
+		_music_cache[track] = _music_player.stream
 
 
 func stop_music() -> void:
@@ -947,9 +1077,15 @@ var _music_timer: float = 0.0
 var _music_buffer: PackedVector2Array = PackedVector2Array()
 
 func _start_battle_music() -> void:
-	"""Generate and start looping battle music"""
+	"""Generate and start looping battle music (cached after first generation)"""
 	_music_playing = true
-	if _try_play_from_manifest("battle_medieval"):
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("battle_" + suffix):
+		return
+
+	if _music_cache.has("battle_generic"):
+		_music_player.stream = _music_cache["battle_generic"]
+		_music_player.play()
 		return
 
 	# Generate 4 passes (48 bars) for a full loop with dynamic arc:
@@ -987,6 +1123,7 @@ func _start_battle_music() -> void:
 		data.append((right >> 8) & 0xFF)
 
 	wav.data = data
+	_music_cache["battle_generic"] = wav
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -1654,7 +1791,8 @@ func _generate_victory_rock_loop(rate: int, duration: float, bpm: float) -> Pack
 func _start_boss_music() -> void:
 	"""Generate and start looping boss battle music"""
 	_music_playing = true
-	if _try_play_from_manifest("boss_generic"):
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("boss_" + suffix):
 		return
 
 	# Generate music buffer (16 bars at 150 BPM - faster, more intense)
@@ -2091,8 +2229,11 @@ func _generate_rat_king_music_buffer(rate: int, duration: float, bpm: float) -> 
 ## Danger Music - Dark, urgent theme when player is about to die
 
 func _start_danger_music() -> void:
-	"""Generate and start looping danger/critical HP music"""
+	"""Generate and start looping danger/critical HP music — world-specific"""
 	_music_playing = true
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("danger_" + suffix):
+		return
 	if _try_play_from_manifest("danger"):
 		return
 
@@ -2597,10 +2738,10 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Start monster-specific battle music (uses cache for instant playback)"""
+	"""Start monster-specific battle music — unique per monster type"""
 	_music_playing = true
 
-	# Check cache first
+	# Check cache first (monster-specific proc-gen themes)
 	if _music_cache.has(monster_type):
 		_music_player.stream = _music_cache[monster_type]
 		_music_player.play()
@@ -3558,6 +3699,7 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 ## ============================================================
 
 var _current_area: String = ""
+var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 
 func play_area_music(area_type: String) -> void:
@@ -3567,6 +3709,7 @@ func play_area_music(area_type: String) -> void:
 		return  # Already playing
 
 	_current_area = area_type
+	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
 	stop_music()
 
@@ -3593,6 +3736,16 @@ func _start_area_music_deferred(area_type: String) -> void:
 			_start_abstract_music()
 		"village", "harmonia_village":
 			_start_village_music()
+		"maple_heights_village":
+			_start_village_world_music("suburban")
+		"brasston_village":
+			_start_village_world_music("steampunk")
+		"rivet_row_village":
+			_start_village_world_music("industrial")
+		"node_prime_village":
+			_start_village_world_music("digital")
+		"vertex_village":
+			_start_village_world_music("abstract")
 		"cave", "dungeon", "whispering_cave":
 			_start_cave_music()
 		_:
@@ -3637,10 +3790,18 @@ func _start_village_music() -> void:
 	_create_and_play_looping_wav(_music_buffer, sample_rate, "village")
 
 
+func _start_village_world_music(world_suffix: String) -> void:
+	"""Play world-specific village music from manifest, fall back to generic village"""
+	_music_playing = true
+	if _try_play_from_manifest("village_" + world_suffix):
+		return
+	_start_village_music()
+
+
 func _start_cave_music() -> void:
 	"""Generate mysterious dungeon/cave theme"""
 	_music_playing = true
-	if _try_play_from_manifest("dungeon_cave"):
+	if _try_play_from_manifest("dungeon_medieval"):
 		return
 	print("[MUSIC] Playing cave/dungeon theme")
 	if _play_area_wav_cached("cave"):

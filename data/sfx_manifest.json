@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "description": "SFX manifest — maps sound keys to ElevenLabs-generated OGG files. Falls back to procedural if file missing.",
+  "model_id": "eleven_text_to_sound_v2",
+  "sfx": {
+    "menu_move": {
+      "file": "assets/audio/sfx/menu_move.ogg",
+      "prompt": "Short retro 16-bit SNES menu cursor blip, crisp digital beep, very brief",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "menu_select": {
+      "file": "assets/audio/sfx/menu_select.ogg",
+      "prompt": "Retro 16-bit SNES menu confirm sound, bright rising chime, satisfying click-ding",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "menu_cancel": {
+      "file": "assets/audio/sfx/menu_cancel.ogg",
+      "prompt": "Retro 16-bit menu cancel sound, short descending tone, soft rejection buzz",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "menu_expand": {
+      "file": "assets/audio/sfx/menu_expand.ogg",
+      "prompt": "Retro 16-bit SNES menu open submenu sound, short expanding chord, window pop",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "menu_open": {
+      "file": "assets/audio/sfx/menu_open.ogg",
+      "prompt": "Retro 16-bit SNES shop or inn door opening sound, welcoming ascending chime, warm tone",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "advance_queue": {
+      "file": "assets/audio/sfx/advance_queue.ogg",
+      "prompt": "Heavy JRPG action queue sound, deep satisfying boom with power charge-up, combat readiness thump",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "advance_undo": {
+      "file": "assets/audio/sfx/advance_undo.ogg",
+      "prompt": "Quick retro undo sound, short descending digital whoosh, action removed",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "defer": {
+      "file": "assets/audio/sfx/defer.ogg",
+      "prompt": "JRPG defend or wait sound, calm low-pitched pulse, defensive stance, subtle shield hum",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.5
+    },
+    "player_turn": {
+      "file": "assets/audio/sfx/player_turn.ogg",
+      "prompt": "Classic JRPG your-turn notification, bright two-note da-ding chime, attention signal, Final Fantasy style",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "autobattle_on": {
+      "file": "assets/audio/sfx/autobattle_on.ogg",
+      "prompt": "Retro system activation sound, ascending digital power-up sequence, automation engaged",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "autobattle_off": {
+      "file": "assets/audio/sfx/autobattle_off.ogg",
+      "prompt": "Retro system deactivation sound, descending digital power-down, automation disengaged",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "autobattle_open": {
+      "file": "assets/audio/sfx/autobattle_open.ogg",
+      "prompt": "JRPG script editor opening, techy chord with digital texture, programming interface sound",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "autobattle_close": {
+      "file": "assets/audio/sfx/autobattle_close.ogg",
+      "prompt": "JRPG script editor closing, soft descending digital tone, interface dismiss",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "chest_open": {
+      "file": "assets/audio/sfx/chest_open.ogg",
+      "prompt": "Classic JRPG treasure chest opening, magical sparkle with rewarding shimmer, exciting discovery chime",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "tier_zoom_out": {
+      "file": "assets/audio/sfx/tier_zoom_out.ogg",
+      "prompt": "Retro zoom-out transition, descending whoosh pulling away from scene, camera zoom out",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "tier_zoom_in": {
+      "file": "assets/audio/sfx/tier_zoom_in.ogg",
+      "prompt": "Retro zoom-in transition, ascending whoosh pushing into scene, camera zoom in",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "attack_hit": {
+      "file": "assets/audio/sfx/attack_hit.ogg",
+      "prompt": "JRPG physical attack landing, meaty sword slash impact, 16-bit battle hit with punch",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.5
+    },
+    "attack_miss": {
+      "file": "assets/audio/sfx/attack_miss.ogg",
+      "prompt": "JRPG attack miss, quick airy swoosh through empty space, sword swing whiffing",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "critical_hit": {
+      "file": "assets/audio/sfx/critical_hit.ogg",
+      "prompt": "JRPG critical hit, devastating heavy impact with screen-shake energy, powerful crunch with metallic ring, extra dramatic",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "damage_taken": {
+      "file": "assets/audio/sfx/damage_taken.ogg",
+      "prompt": "JRPG character taking damage, dull thud with slight grunt of pain, hit received",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "enemy_death": {
+      "file": "assets/audio/sfx/enemy_death.ogg",
+      "prompt": "JRPG enemy defeated, dissolving crumble with descending pitch, monster death disintegration, 16-bit style",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "heal": {
+      "file": "assets/audio/sfx/heal.ogg",
+      "prompt": "JRPG healing spell, warm magical sparkle with rising shimmer, restorative chime, gentle and soothing",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "buff": {
+      "file": "assets/audio/sfx/buff.ogg",
+      "prompt": "JRPG stat buff applied, ascending power-up shimmer, strengthening magical chime, empowering whoosh",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "debuff": {
+      "file": "assets/audio/sfx/debuff.ogg",
+      "prompt": "JRPG debuff applied, descending weakening tone, stat reduction ominous shimmer, sapping sound",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "victory": {
+      "file": "assets/audio/sfx/victory.ogg",
+      "prompt": "Classic JRPG victory fanfare jingle, triumphant short brass and chime melody, battle won celebration, Final Fantasy style",
+      "duration_seconds": 3.0,
+      "prompt_influence": 0.5
+    },
+    "defeat": {
+      "file": "assets/audio/sfx/defeat.ogg",
+      "prompt": "JRPG game over sting, sad descending melody, somber defeat, party wiped out, melancholic",
+      "duration_seconds": 3.0,
+      "prompt_influence": 0.5
+    },
+    "status_poison": {
+      "file": "assets/audio/sfx/status_poison.ogg",
+      "prompt": "JRPG poison status applied, toxic bubbling with sickly warble, venomous dripping sound",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "status_sleep": {
+      "file": "assets/audio/sfx/status_sleep.ogg",
+      "prompt": "JRPG sleep status spell, gentle drowsy lullaby tone, soft descending dreamy chime with zzz quality",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "status_confuse": {
+      "file": "assets/audio/sfx/status_confuse.ogg",
+      "prompt": "JRPG confusion status, dizzy swirling warble, disorienting wobble with spinning stars sound",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "status_paralyze": {
+      "file": "assets/audio/sfx/status_paralyze.ogg",
+      "prompt": "JRPG paralysis status, sharp electric crackle then lock-up freeze, stunning zap with stiffening tone",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "phase_select": {
+      "file": "assets/audio/sfx/phase_select.ogg",
+      "prompt": "Short retro phase transition blip, quick digital ping, selection phase start",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "phase_execute": {
+      "file": "assets/audio/sfx/phase_execute.ogg",
+      "prompt": "JRPG execution phase start, deep authoritative pulse, combat actions commencing",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "ability_fire": {
+      "file": "assets/audio/sfx/ability_fire.ogg",
+      "prompt": "JRPG fire spell, explosive whooshing fireball with crackling flames, magical fire burst, 16-bit RPG style",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.5
+    },
+    "ability_ice": {
+      "file": "assets/audio/sfx/ability_ice.ogg",
+      "prompt": "JRPG ice spell, crystalline freezing shatter, sharp icy crack with frigid whoosh, blizzard magic",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.5
+    },
+    "ability_lightning": {
+      "file": "assets/audio/sfx/ability_lightning.ogg",
+      "prompt": "JRPG lightning spell, sharp electric thunderbolt crack with buzzing energy, shocking bolt strike, powerful zap",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.5
+    },
+    "ability_holy": {
+      "file": "assets/audio/sfx/ability_holy.ogg",
+      "prompt": "JRPG holy spell, radiant divine light with angelic choir shimmer, pure sacred energy burst, heavenly",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.5
+    },
+    "ability_dark": {
+      "file": "assets/audio/sfx/ability_dark.ogg",
+      "prompt": "JRPG dark magic spell, ominous shadowy whoosh with deep rumbling void energy, sinister dark pulse",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.5
+    },
+    "ability_physical": {
+      "file": "assets/audio/sfx/ability_physical.ogg",
+      "prompt": "JRPG sword slash attack, sharp metallic blade swing with cutting whoosh, clean physical strike",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "ability_heal": {
+      "file": "assets/audio/sfx/ability_heal.ogg",
+      "prompt": "JRPG cure healing magic, warm gentle sparkle with restorative ascending chimes, white magic recovery glow",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.5
+    }
+  }
+}
