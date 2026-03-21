@@ -721,7 +721,9 @@ func _try_play_from_manifest(track_id: String) -> bool:
 
 
 func _get_current_world_suffix() -> String:
-	"""Map current area to world suffix for manifest track lookup."""
+	"""Map current area to world suffix for manifest track lookup.
+	When _current_area is empty (cleared by play_music for battle/victory),
+	returns the last known world suffix so battle music stays world-aware."""
 	match _current_area:
 		"overworld", "village", "harmonia_village", "cave", "dungeon", "whispering_cave":
 			return "medieval"
@@ -736,7 +738,8 @@ func _get_current_world_suffix() -> String:
 		"overworld_abstract", "vertex_village":
 			return "abstract"
 		_:
-			return "medieval"
+			# During battles, _current_area is cleared — use persisted suffix
+			return _current_world_suffix
 
 
 func play_music(track: String) -> void:
@@ -2136,6 +2139,10 @@ func _start_danger_music() -> void:
 	"""Generate and start looping danger/critical HP music"""
 	_music_playing = true
 	if _try_play_from_manifest("danger"):
+		return
+	# No dedicated danger track yet — use world's boss track as intense stand-in
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("boss_" + suffix):
 		return
 
 	# Generate music buffer (8 bars at 160 BPM - urgent, dark)
@@ -3605,6 +3612,7 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 ## ============================================================
 
 var _current_area: String = ""
+var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 
 func play_area_music(area_type: String) -> void:
@@ -3614,6 +3622,7 @@ func play_area_music(area_type: String) -> void:
 		return  # Already playing
 
 	_current_area = area_type
+	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
 	stop_music()
 
