@@ -107,6 +107,9 @@ var _battle_counter_label: RichTextLabel = null
 ## Turbo mode - skip animations and delays for fastest possible battles
 var turbo_mode: bool = false
 
+## Track current ability being executed so damage callback plays the right sound
+var _current_ability_id: String = ""
+
 ## Autogrind console mode — replaces battle log with grind stats feed
 var autogrind_console_mode: bool = false
 var _autogrind_console: RichTextLabel = null
@@ -1828,6 +1831,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	var action_type = action.get("type", "")
 	match action_type:
 		"attack":
+			_current_ability_id = ""  # Clear — this is a basic attack
 			var target = action.get("target") as Combatant
 			var target_sprite = _get_combatant_sprite(target)
 			var target_animator = _get_combatant_animator(target)
@@ -1847,6 +1851,12 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			var ability = JobSystem.get_ability(ability_id)
 			var ability_type = ability.get("type", "magic")
 			var anim_type = ability.get("animation", "cast")
+
+			# Track ability so damage callback plays element sound instead of generic hit
+			_current_ability_id = ability_id
+
+			# Play the ability-specific sound (fire, ice, lightning, etc.)
+			SoundManager.play_ability(ability_id)
 
 			# Physical abilities move to target
 			if ability_type == "physical" and targets.size() > 0:
@@ -2199,6 +2209,9 @@ func _close_win98_menu() -> void:
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
+	# Skip hit sounds for abilities — ability sound already played at cast time
+	if _current_ability_id != "":
+		return
 	if is_crit:
 		# Critical hit: louder impact with raised pitch for extra punch
 		SoundManager.play_battle_scaled("critical_hit", 2.0, 1.3)
