@@ -184,6 +184,36 @@
       "style": "JRPG critical HP, urgent, heartbeat bass, tense strings, minor key, looping, short",
       "prompt": "Desperate last-stand battle music, party near death, pounding heartbeat bass rhythm, frantic urgent strings, dissonant brass stabs, anxiety and adrenaline, the feeling of one hit from game over, 20-30 seconds looping"
     },
+    "danger_medieval": {
+      "title_template": "Death's Door",
+      "style": "JRPG critical HP, aggressive orchestral, pounding war drums, screaming brass, dissonant strings, terrifying, loud",
+      "prompt": "EXTREMELY intense near-death battle music, party about to be wiped out, massive thundering war drums pounding like a dying heartbeat, shrieking dissonant violins, blaring brass stabs of pure dread, tempo accelerating, overwhelming panic and terror, the sound of imminent death in a medieval battlefield, make the listener's heart race"
+    },
+    "danger_suburban": {
+      "title_template": "911",
+      "style": "EarthBound critical HP, distorted synth, sirens, glitch bass, panic, horror, loud",
+      "prompt": "Terrifying suburban nightmare near-death music, reality breaking apart, distorted emergency sirens warping in and out, crushing glitch bass drops, EarthBound Giygas-inspired pure dread, static and feedback, the cheerful neighborhood music corrupted into something horrifying, overwhelming panic, make the listener feel genuine fear"
+    },
+    "danger_steampunk": {
+      "title_template": "Pressure Critical",
+      "style": "steampunk critical HP, steam whistles, grinding gears, alarm bells, industrial horror, frantic brass, loud",
+      "prompt": "Catastrophic steampunk near-death music, steam pressure gauges exploding, grinding metal gears screaming, frantic alarm bells clanging, brass instruments playing in desperate dissonance, the entire clockwork machine about to blow apart, overwhelming mechanical terror and panic"
+    },
+    "danger_industrial": {
+      "title_template": "Flatline",
+      "style": "industrial critical HP, flatline tone, crushing bass, factory alarm, harsh noise, oppressive, loud",
+      "prompt": "Brutal industrial near-death music, hospital flatline tone droning underneath, crushing mechanical bass that shakes bones, factory emergency alarms blaring, harsh distorted noise walls, the sound of being crushed by the machine, dehumanizing terror, oppressive and suffocating"
+    },
+    "danger_digital": {
+      "title_template": "Stack Overflow",
+      "style": "digital critical HP, glitch, system crash sounds, error tones, corrupted chiptune, cyberpunk horror, loud",
+      "prompt": "Digital system crash near-death music, cascading error tones and blue screen sounds, corrupted chiptune melody glitching and breaking apart, data corruption noise, the terrifying sound of total system failure, memory overflow chaos, cyberpunk horror at maximum intensity"
+    },
+    "danger_abstract": {
+      "title_template": "Void Collapse",
+      "style": "abstract critical HP, reverse reverb, deconstructed, silence weaponized, existential dread, crescendo from nothing, loud",
+      "prompt": "Existential void near-death music, reality itself collapsing, sounds playing backward and inside out, silence that somehow feels LOUD, building from nothingness to overwhelming cosmic dread, the sound of being erased from existence, transcendent terror beyond physical fear"
+    },
     "autogrind": {
       "title_template": "The Grind",
       "style": "lo-fi ambient, repetitive, hypnotic, synth drone, chiptune arpeggios, zen, meditative",
