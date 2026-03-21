@@ -178,6 +178,16 @@
       "title_template": "Cowardly Irregular",
       "style": "JRPG title screen, majestic, epic, orchestral with chiptune elements, grandiose",
       "prompt": "Epic JRPG title screen theme, majestic orchestral opening building to a powerful melody, hints of all six worlds' musical styles woven together, grandiose yet with a sarcastic undertone"
+    },
+    "danger": {
+      "title_template": "Heartbeat",
+      "style": "JRPG critical HP, urgent, heartbeat bass, tense strings, minor key, looping, short",
+      "prompt": "Desperate last-stand battle music, party near death, pounding heartbeat bass rhythm, frantic urgent strings, dissonant brass stabs, anxiety and adrenaline, the feeling of one hit from game over, 20-30 seconds looping"
+    },
+    "autogrind": {
+      "title_template": "The Grind",
+      "style": "lo-fi ambient, repetitive, hypnotic, synth drone, chiptune arpeggios, zen, meditative",
+      "prompt": "Ambient monitoring loop for automated grinding, hypnotic repetitive synth arpeggios over warm drone, zen-like concentration, the satisfying hum of a well-oiled machine running battles on autopilot, slightly glitchy undertones suggesting system fatigue"
     }
   }
 }
