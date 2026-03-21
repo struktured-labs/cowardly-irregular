@@ -712,11 +712,15 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	if not stream:
 		push_warning("[MUSIC] Failed to load audio file: %s" % path)
 		return false
+	# Set looping based on manifest (default true for music)
+	var should_loop = entry.get("loop", true)
+	if stream is AudioStreamOggVorbis:
+		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
 	_music_player.play()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s)" % [track_id, path])
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s" % [track_id, path, should_loop])
 	return true
 
 
