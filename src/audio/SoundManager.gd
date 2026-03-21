@@ -848,6 +848,21 @@ func play_music(track: String) -> void:
 
 	_current_music = track
 
+	# Try manifest first — file-based music always takes priority
+	_load_music_manifest()
+	var manifest_track_id = track
+	# Map generic track names to world-specific manifest keys
+	match track:
+		"battle":
+			manifest_track_id = "battle_" + _current_world_suffix
+		"boss":
+			manifest_track_id = "boss_" + _current_world_suffix
+		"danger":
+			manifest_track_id = "danger_" + _current_world_suffix
+	if _music_manifest.has(manifest_track_id):
+		if _try_play_from_manifest(manifest_track_id):
+			return
+
 	# Universal music cache — skip expensive generation if this track was already built
 	if _music_cache.has(track):
 		_music_player.stream = _music_cache[track]
