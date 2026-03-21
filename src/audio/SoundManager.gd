@@ -2140,10 +2140,6 @@ func _start_danger_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("danger"):
 		return
-	# No dedicated danger track yet — use world's boss track as intense stand-in
-	var suffix = _get_current_world_suffix()
-	if _try_play_from_manifest("boss_" + suffix):
-		return
 
 	# Generate music buffer (8 bars at 160 BPM - urgent, dark)
 	var sample_rate = 22050
