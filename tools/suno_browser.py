@@ -6,19 +6,25 @@
 suno_browser.py — Generate music on suno.com via Playwright browser automation.
 
 Drives the Suno web UI directly — no API needed. Uses a persistent browser
-profile so you only need to log in once.
+profile so you only need to log in once. Captcha requires manual solving.
 
 Usage:
-    uv run tools/suno_browser.py \
-        --prompt "Peaceful medieval JRPG overworld theme" \
-        --style "16-bit SNES orchestral, harp, strings" \
-        --title "The Realm Awakens" \
-        --instrumental
-
-    # With world template:
+    # Single track:
     uv run tools/suno_browser.py --world 1 --track-id overworld_medieval
 
-    # Just open the browser for manual exploration:
+    # Batch — all tracks for a world:
+    uv run tools/suno_browser.py --batch --world 1
+
+    # Batch — ALL worlds (all 24+ tracks):
+    uv run tools/suno_browser.py --batch --world all
+
+    # Shared tracks (victory, game_over, title):
+    uv run tools/suno_browser.py --batch --shared
+
+    # Login only (save session):
+    uv run tools/suno_browser.py --login
+
+    # Explore DOM:
     uv run tools/suno_browser.py --explore
 
 First run:
@@ -28,6 +34,7 @@ First run:
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import re
@@ -48,6 +55,15 @@ PROFILE_DIR = PROJECT_ROOT / "tmp" / "suno-browser-profile"
 
 SUNO_CREATE_URL = "https://suno.com/create"
 
+WORLD_SUFFIXES = {
+    1: "medieval", 2: "suburban", 3: "steampunk",
+    4: "industrial", 5: "digital", 6: "abstract",
+}
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def die(msg: str) -> None:
     print(f"ERROR: {msg}", file=sys.stderr)
@@ -68,11 +84,31 @@ def save_manifest(manifest: dict) -> None:
     print(f"Manifest updated: {MANIFEST_PATH}")
 
 
-def load_world_template(world: int, track_id: str) -> dict:
+def update_manifest_atomic(track_key: str, entry: dict) -> None:
+    """Thread/process-safe manifest update using file locking."""
+    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = MANIFEST_PATH.with_suffix(".lock")
+    with lock_path.open("w") as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX)
+        try:
+            manifest = load_manifest()
+            if "tracks" not in manifest:
+                manifest["tracks"] = {}
+            manifest["tracks"][track_key] = entry
+            save_manifest(manifest)
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
+
+
+def load_prompts() -> dict:
     if not PROMPTS_PATH.exists():
         die(f"music_prompts.json not found at {PROMPTS_PATH}")
     with PROMPTS_PATH.open() as fh:
-        prompts = json.load(fh)
+        return json.load(fh)
+
+
+def load_world_template(world: int, track_id: str) -> dict:
+    prompts = load_prompts()
     worlds = prompts.get("worlds", {})
     key = str(world)
     if key not in worlds:
@@ -98,6 +134,48 @@ def load_world_template(world: int, track_id: str) -> dict:
     if "title_template" in result and "title" not in result:
         result["title"] = result.pop("title_template")
     return result
+
+
+def build_batch_queue(world_arg: str | int | None, shared: bool) -> list[dict]:
+    """Build a list of {track_id, title, style, prompt} dicts for batch generation."""
+    prompts = load_prompts()
+    queue = []
+
+    if world_arg == "all":
+        worlds_to_gen = list(range(1, 7))
+    elif world_arg is not None:
+        worlds_to_gen = [int(world_arg)]
+    else:
+        worlds_to_gen = []
+
+    for w in worlds_to_gen:
+        suffix = WORLD_SUFFIXES[w]
+        world_data = prompts["worlds"][str(w)]
+        for track_type, template in world_data.get("tracks", {}).items():
+            track_id = f"{track_type}_{suffix}"
+            t = dict(template)
+            if "title_template" in t:
+                t["title"] = t.pop("title_template")
+            queue.append({
+                "track_id": track_id,
+                "title": t.get("title", ""),
+                "style": t.get("style", ""),
+                "prompt": t.get("prompt", ""),
+            })
+
+    if shared:
+        for track_id, template in prompts.get("shared_tracks", {}).items():
+            t = dict(template)
+            if "title_template" in t:
+                t["title"] = t.pop("title_template")
+            queue.append({
+                "track_id": track_id,
+                "title": t.get("title", ""),
+                "style": t.get("style", ""),
+                "prompt": t.get("prompt", ""),
+            })
+
+    return queue
 
 
 def convert_to_ogg(src: Path, dest: Path) -> None:
@@ -126,19 +204,17 @@ def probe_duration(path: Path) -> float:
     return 0.0
 
 
-def launch_browser(headless: bool = False) -> tuple:
-    """Launch persistent Chromium context. Returns (playwright, context).
+# ---------------------------------------------------------------------------
+# Browser helpers
+# ---------------------------------------------------------------------------
 
-    For headless mode, always uses the full (headed) chromium binary — never
-    the headless shell or --headless=new, since Suno's hCaptcha blocks
-    anything that identifies as headless.  Combine with xvfb-run for a
-    truly invisible window.
-    """
+def launch_browser(headless: bool = False) -> tuple:
+    """Launch persistent Chromium context. Returns (playwright, context)."""
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     pw = sync_playwright().start()
     ctx = pw.chromium.launch_persistent_context(
         str(PROFILE_DIR),
-        headless=False,  # Always use full browser (hCaptcha blocks headless)
+        headless=False,  # Always headed — hCaptcha blocks headless
         viewport={"width": 1400, "height": 900},
         timeout=60000,
     )
@@ -146,13 +222,12 @@ def launch_browser(headless: bool = False) -> tuple:
 
 
 def save_session_cookies(ctx: BrowserContext) -> None:
-    """Extract session cookies from browser and save to setenv.sh."""
+    """Extract session cookies and save to setenv.sh."""
     cookies = ctx.cookies("https://suno.com")
     relevant = {c["name"]: c["value"] for c in cookies if c["name"].startswith("__")}
     if not relevant:
         print("Warning: No session cookies found to save.")
         return
-
     cookie_str = "; ".join(f"{k}={v}" for k, v in relevant.items())
     setenv_path = PROJECT_ROOT / "setenv.sh"
     if setenv_path.exists():
@@ -161,8 +236,7 @@ def save_session_cookies(ctx: BrowserContext) -> None:
             content = re.sub(
                 r'^export SUNO_COOKIE=.*$',
                 f'export SUNO_COOKIE="{cookie_str}"',
-                content,
-                flags=re.MULTILINE,
+                content, flags=re.MULTILINE,
             )
         else:
             content = content.rstrip() + f'\nexport SUNO_COOKIE="{cookie_str}"\n'
@@ -171,11 +245,10 @@ def save_session_cookies(ctx: BrowserContext) -> None:
 
 
 def inject_cookies(ctx: BrowserContext) -> bool:
-    """Inject SUNO_COOKIE from env into the browser context. Returns True if cookies were injected."""
+    """Inject SUNO_COOKIE from env into browser context."""
     cookie_str = os.environ.get("SUNO_COOKIE", "").strip()
     if not cookie_str:
         return False
-
     cookies = []
     for pair in cookie_str.split(";"):
         pair = pair.strip()
@@ -183,15 +256,10 @@ def inject_cookies(ctx: BrowserContext) -> bool:
             continue
         name, value = pair.split("=", 1)
         cookies.append({
-            "name": name.strip(),
-            "value": value.strip(),
-            "domain": ".suno.com",
-            "path": "/",
-            "httpOnly": False,
-            "secure": True,
-            "sameSite": "Lax",
+            "name": name.strip(), "value": value.strip(),
+            "domain": ".suno.com", "path": "/",
+            "httpOnly": False, "secure": True, "sameSite": "Lax",
         })
-
     if cookies:
         ctx.add_cookies(cookies)
         print(f"Injected {len(cookies)} cookies from SUNO_COOKIE env var.")
@@ -202,22 +270,17 @@ def inject_cookies(ctx: BrowserContext) -> bool:
 def ensure_logged_in(page: Page, headless: bool = False) -> None:
     """Check if logged in, wait for login if not."""
     page.goto(SUNO_CREATE_URL, wait_until="domcontentloaded")
-    # Give the SPA time to hydrate
     page.wait_for_timeout(4000)
 
-    max_attempts = 12 if headless else 60  # 1 min headless, 5 min headed
+    max_attempts = 12 if headless else 60
     for attempt in range(max_attempts):
-        url = page.url
-        # If we're on the create page, check for the prompt input
-        if "/create" in url:
-            prompt_area = page.locator("textarea").first
+        if "/create" in page.url:
             try:
-                prompt_area.wait_for(timeout=3000)
+                page.locator("textarea").first.wait_for(timeout=3000)
                 print("Logged in and on create page.")
                 return
             except PwTimeout:
                 pass
-
         if attempt == 0:
             if headless:
                 print("Checking login status (headless)...")
@@ -226,18 +289,16 @@ def ensure_logged_in(page: Page, headless: bool = False) -> None:
         time.sleep(5)
 
     if headless:
-        # Take a screenshot before dying so we can debug
-        screenshot_path = PROJECT_ROOT / "tmp" / "suno_login_fail.png"
-        screenshot_path.parent.mkdir(parents=True, exist_ok=True)
-        page.screenshot(path=str(screenshot_path))
-        die(f"Login failed in headless mode. Refresh cookie with: uv run tools/suno_cookie.py\n"
-            f"Screenshot: {screenshot_path}")
+        ss = PROJECT_ROOT / "tmp" / "suno_login_fail.png"
+        ss.parent.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(ss))
+        die(f"Login failed in headless mode. Screenshot: {ss}")
     else:
         die("Timed out waiting for login.")
 
 
 def enable_advanced_mode(page: Page) -> None:
-    """Switch to Advanced mode (was 'Custom' in old UI)."""
+    """Switch to Advanced mode."""
     adv_btn = page.locator("button").filter(has_text=re.compile(r"^Advanced$"))
     try:
         adv_btn.first.wait_for(timeout=5000)
@@ -249,39 +310,28 @@ def enable_advanced_mode(page: Page) -> None:
 
 
 def fill_form(page: Page, title: str, style: str, prompt: str, instrumental: bool = True) -> None:
-    """Fill in the Advanced mode creation form.
-
-    Suno Advanced mode (as of 2026-03) has:
-      - textarea[0]: lyrics (placeholder ~'Write some lyrics or a prompt')
-      - textarea[1]: style tags (placeholder varies with examples)
-      - input 'Song Title (Optional)': title
-    For instrumental, leave lyrics blank.
-    """
+    """Fill Advanced mode form. textarea[0]=lyrics, textarea[1]=style."""
     page.wait_for_timeout(500)
 
-    # Lyrics / prompt textarea — first textarea with the lyrics placeholder
-    lyrics_ta = page.locator("textarea").filter(
-        has=page.locator(":scope")  # match all
-    ).first
+    # Lyrics textarea
+    lyrics_ta = page.locator("textarea").first
     if instrumental:
-        # Leave blank for instrumental
         lyrics_ta.fill("")
         print("Lyrics left blank (instrumental).")
     else:
         lyrics_ta.fill(prompt)
-        print(f"Filled lyrics textarea.")
+        print("Filled lyrics textarea.")
 
-    # Style textarea — second textarea (index 1)
+    # Style textarea (index 1)
     style_ta = page.locator("textarea").nth(1)
     try:
         style_ta.wait_for(timeout=3000)
         style_ta.fill(style)
-        print(f"Filled style textarea: {style[:60]}...")
+        print(f"Filled style: {style[:60]}...")
     except PwTimeout:
         print("Warning: Could not find style textarea.")
 
-    # Title input — try multiple selectors since Suno's placeholder text varies
-    title_filled = False
+    # Title input
     for selector in (
         "input[placeholder*='Title']",
         "input[placeholder*='title']",
@@ -296,20 +346,17 @@ def fill_form(page: Page, title: str, style: str, prompt: str, instrumental: boo
             title_input.scroll_into_view_if_needed(timeout=2000)
             title_input.fill(title)
             print(f"Filled title: {title}")
-            title_filled = True
             break
         except Exception:
             continue
-    if not title_filled:
+    else:
         print("Warning: Could not find title input — title skipped.")
 
     page.wait_for_timeout(500)
 
 
 def click_create(page: Page) -> None:
-    """Click the big orange Create button at the bottom of the form."""
-    # Multiple elements contain "Create" text (sidebar nav, form button).
-    # The form submit button is the LAST visible one and is a large styled button.
+    """Click the Create button (form submit, not sidebar nav)."""
     create_btn = page.locator("button").filter(has_text=re.compile(r"Create"))
     visible_creates = []
     for i in range(create_btn.count()):
@@ -318,57 +365,16 @@ def click_create(page: Page) -> None:
             visible_creates.append(btn)
 
     if not visible_creates:
-        # Take screenshot for debug
         ss = PROJECT_ROOT / "tmp" / "suno_no_create_btn.png"
         ss.parent.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(ss))
         die(f"Could not find Create button. Screenshot: {ss}")
 
-    # Click the LAST visible Create button (the form submit at the bottom)
     target = visible_creates[-1]
     target.scroll_into_view_if_needed()
     page.wait_for_timeout(300)
     target.click()
-    print(f"Clicked Create button (matched {len(visible_creates)} visible, picked last).")
-
-
-def wait_for_song(page: Page, timeout_sec: int = 300) -> str | None:
-    """Wait for a generated song to appear and return its audio URL."""
-    print(f"Waiting for generation (up to {timeout_sec}s)...")
-    deadline = time.monotonic() + timeout_sec
-
-    # Watch for new audio elements or download links appearing
-    initial_audio_count = page.locator("audio source, audio[src]").count()
-
-    while time.monotonic() < deadline:
-        page.wait_for_timeout(5000)
-        elapsed = int(time.monotonic() - (deadline - timeout_sec))
-        print(f"  Waiting ({elapsed}s)...")
-
-        # Check for new audio elements
-        current_audio = page.locator("audio source, audio[src]")
-        if current_audio.count() > initial_audio_count:
-            # New audio appeared — get the URL
-            for i in range(current_audio.count() - 1, -1, -1):
-                src = current_audio.nth(i).get_attribute("src")
-                if src and src.startswith("http"):
-                    print(f"  Audio URL found!")
-                    return src
-
-        # Also check for download buttons/links on newly generated songs
-        # Suno shows songs in a list — look for the most recent one
-        download_links = page.locator("a[href*='.mp3'], a[href*='cdn'], a[download]")
-        if download_links.count() > 0:
-            href = download_links.last.get_attribute("href")
-            if href:
-                print(f"  Download link found!")
-                return href
-
-        # Check network requests for audio URLs
-        # (handled via page.on("response") if needed)
-
-    print("  Timed out waiting for song generation.")
-    return None
+    print(f"Clicked Create button ({len(visible_creates)} visible, picked last).")
 
 
 def download_from_url(url: str, dest: Path) -> None:
@@ -385,48 +391,190 @@ def download_from_url(url: str, dest: Path) -> None:
     print(f"Saved: {dest} ({dest.stat().st_size // 1024} KB)")
 
 
+# ---------------------------------------------------------------------------
+# Core generation flow (one track)
+# ---------------------------------------------------------------------------
+
+def generate_one_track(
+    page: Page,
+    audio_urls: list[str],
+    track_id: str,
+    title: str,
+    style: str,
+    prompt: str,
+    instrumental: bool,
+    output_dir: Path,
+    timeout_sec: int,
+    preview: bool,
+) -> bool:
+    """Generate a single track via the Suno web UI.
+
+    Returns True if successful, False if timed out.
+    The browser stays open — caller manages lifecycle.
+    """
+    print(f"\n{'=' * 60}")
+    print(f"  GENERATING: {track_id}")
+    print(f"  Title: {title}")
+    print(f"  Style: {style[:60]}...")
+    print(f"{'=' * 60}\n")
+
+    # Only navigate if not already on create page (preserves captcha session)
+    if "/create" not in page.url:
+        page.goto(SUNO_CREATE_URL, wait_until="domcontentloaded")
+        page.wait_for_timeout(3000)
+
+    enable_advanced_mode(page)
+
+    # Clear form fields before filling (reuse same page)
+    for i in range(page.locator("textarea").count()):
+        try:
+            page.locator("textarea").nth(i).fill("", timeout=2000)
+        except Exception:
+            pass
+    for selector in ("input[placeholder*='Title']", "input[placeholder*='title']",
+                     "input[placeholder*='Song']", "input[placeholder*='name']"):
+        inp = page.locator(selector).first
+        try:
+            if inp.count() > 0:
+                inp.fill("", timeout=2000)
+        except Exception:
+            pass
+
+    fill_form(page, title, style, prompt, instrumental=instrumental)
+
+    # Snapshot pre-create state
+    pre_create_urls = set(audio_urls)
+    pre_dom_srcs = set()
+    for el in [page.locator("audio source"), page.locator("audio[src]")]:
+        for i in range(el.count()):
+            src = el.nth(i).get_attribute("src")
+            if src:
+                pre_dom_srcs.add(src)
+
+    click_create(page)
+    captcha_prompted = False
+
+    # Wait for audio to appear
+    print(f"\nWaiting for generation (up to {timeout_sec}s)...")
+    print("If captcha appears, solve it in the browser window.\n")
+    deadline = time.monotonic() + timeout_sec
+    audio_url = None
+
+    while time.monotonic() < deadline:
+        page.wait_for_timeout(5000)
+        elapsed = int(time.monotonic() - (deadline - timeout_sec))
+
+        # Check for hCaptcha
+        captcha_frame = page.locator("iframe[title*='hCaptcha'], iframe[src*='hcaptcha']")
+        if captcha_frame.count() > 0 and not captcha_prompted:
+            captcha_prompted = True
+            print("\n" + "=" * 60)
+            print("  hCAPTCHA DETECTED — please solve it in the browser window")
+            print("=" * 60 + "\n")
+        elif captcha_prompted and captcha_frame.count() == 0:
+            print("  Captcha solved! Resuming wait...")
+            captcha_prompted = False
+
+        # Check network-intercepted URLs
+        new_urls = [u for u in audio_urls if u not in pre_create_urls]
+        if new_urls:
+            audio_url = new_urls[-1]
+            print(f"  Audio captured from network! ({elapsed}s)")
+            break
+
+        # Check DOM for new audio elements
+        audio_els = page.locator("audio source, audio[src]")
+        for i in range(audio_els.count()):
+            src = audio_els.nth(i).get_attribute("src")
+            if (src and src.startswith("http")
+                    and src not in pre_dom_srcs
+                    and "sil-" not in src):
+                audio_url = src
+                print(f"  New audio in DOM! ({elapsed}s)")
+                break
+        if audio_url:
+            break
+
+        print(f"  Waiting... ({elapsed}s)")
+
+    if not audio_url:
+        ss = PROJECT_ROOT / "tmp" / f"suno_timeout_{track_id}.png"
+        ss.parent.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(ss))
+        print(f"  TIMEOUT: No audio after {timeout_sec}s. Screenshot: {ss}")
+        return False
+
+    # Download and convert
+    ext = Path(urlparse(audio_url).path).suffix or ".mp3"
+    raw_path = output_dir / f"{track_id}{ext}"
+    ogg_path = output_dir / f"{track_id}.ogg"
+
+    download_from_url(audio_url, raw_path)
+    convert_to_ogg(raw_path, ogg_path)
+    duration = probe_duration(ogg_path)
+    raw_path.unlink(missing_ok=True)
+
+    # Update manifest atomically
+    rel_path = ogg_path.relative_to(PROJECT_ROOT)
+    update_manifest_atomic(track_id, {
+        "file": str(rel_path),
+        "tier": "T1",
+        "provider": "suno",
+        "title": title,
+        "prompt": prompt,
+        "style": style,
+        "model": "suno-v4",
+        "duration": round(duration, 2),
+        "loop": True,
+        "generated_at": date.today().isoformat(),
+    })
+
+    print(f"\nTrack ready: {ogg_path}")
+
+    if preview:
+        subprocess.run(["mpv", "--no-video", str(ogg_path)])
+
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Explore mode
+# ---------------------------------------------------------------------------
+
 def explore_mode(page: Page, headless: bool = False) -> None:
-    """Print DOM element info from the create page to help build selectors."""
+    """Print DOM element info from the create page."""
     ensure_logged_in(page, headless=headless)
     print("\n" + "=" * 60)
-    print("  EXPLORE MODE — scanning DOM for form elements")
+    print("  EXPLORE MODE — scanning DOM")
     print("=" * 60 + "\n")
-
-    # Print what we can see
     page.wait_for_timeout(2000)
+
     print("--- Textareas ---")
     for i in range(page.locator("textarea").count()):
         ta = page.locator("textarea").nth(i)
-        print(f"  [{i}] placeholder={ta.get_attribute('placeholder')!r} "
-              f"name={ta.get_attribute('name')!r} "
-              f"id={ta.get_attribute('id')!r}")
+        print(f"  [{i}] placeholder={ta.get_attribute('placeholder')!r}")
 
     print("\n--- Text Inputs ---")
     for i in range(page.locator("input[type='text'], input:not([type])").count()):
         inp = page.locator("input[type='text'], input:not([type])").nth(i)
-        print(f"  [{i}] placeholder={inp.get_attribute('placeholder')!r} "
-              f"name={inp.get_attribute('name')!r} "
-              f"id={inp.get_attribute('id')!r}")
+        print(f"  [{i}] placeholder={inp.get_attribute('placeholder')!r}")
 
     print("\n--- Buttons ---")
     for i in range(min(page.locator("button").count(), 20)):
         btn = page.locator("button").nth(i)
         text = btn.inner_text()[:50] if btn.is_visible() else "(hidden)"
-        print(f"  [{i}] text={text!r} "
-              f"aria-label={btn.get_attribute('aria-label')!r}")
+        print(f"  [{i}] text={text!r}")
 
-    print("\n--- Switches/Toggles ---")
-    for i in range(page.locator("[role='switch']").count()):
-        sw = page.locator("[role='switch']").nth(i)
-        print(f"  [{i}] checked={sw.get_attribute('aria-checked')!r} "
-              f"text={sw.inner_text()[:30]!r}")
+    print("\nDone.")
 
-    print("\nDone. DOM snapshot printed above.")
 
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate Cowardly Irregular music via Suno web UI automation",
+        description="Generate Cowardly Irregular music via Suno web UI (Playwright)",
     )
     parser.add_argument("--track-id", metavar="ID",
                         help="Track ID for music_manifest.json")
@@ -435,100 +583,89 @@ def main() -> None:
     parser.add_argument("--prompt", default="", help="Song description/lyrics")
     parser.add_argument("--instrumental", action="store_true", default=True)
     parser.add_argument("--no-instrumental", dest="instrumental", action="store_false")
-    parser.add_argument("--world", type=int, metavar="N",
-                        help="Load template from music_prompts.json (1-6)")
+    parser.add_argument("--world", metavar="N",
+                        help="World number (1-6) or 'all'")
+    parser.add_argument("--batch", action="store_true",
+                        help="Generate all tracks for the given --world in one session")
+    parser.add_argument("--shared", action="store_true",
+                        help="Include shared tracks (victory, game_over, title)")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--explore", action="store_true",
-                        help="Open browser for manual exploration (prints DOM info)")
+                        help="Open browser for DOM exploration")
     parser.add_argument("--login", action="store_true",
-                        help="Open headed browser for login, save session, then exit")
+                        help="Open browser for login, save session, exit")
     parser.add_argument("--headless", action="store_true",
-                        help="Run browser in headless mode (no visible window)")
+                        help="Run headless (only works if no captcha)")
     parser.add_argument("--preview", action="store_true",
-                        help="Play result with mpv")
+                        help="Play each result with mpv")
     parser.add_argument("--timeout", type=int, default=300,
-                        help="Max seconds to wait for generation (default: 300)")
+                        help="Max seconds to wait per track (default: 300)")
+    parser.add_argument("--skip-existing", action="store_true",
+                        help="Skip tracks already in manifest")
 
     args = parser.parse_args()
 
-    # Resolve template
-    title = args.title
-    style = args.style
-    prompt = args.prompt
-
-    if args.world is not None:
-        track_id = args.track_id or f"world{args.world}_track"
-        template = load_world_template(args.world, track_id)
-        if not title:
-            title = template.get("title", "")
-        if not style:
-            style = template.get("style", "")
-        if not prompt:
-            prompt = template.get("prompt", "")
-
-    if not args.explore and not args.login:
+    # Validate args
+    if not args.explore and not args.login and not args.batch and not args.shared:
         if not args.track_id:
-            die("--track-id is required (or use --explore)")
-        if not prompt:
-            die("--prompt is required (or use --world)")
+            die("--track-id is required (or use --batch/--explore/--login)")
 
     # Launch browser
     print(f"Launching browser {'(headless)' if args.headless else ''}...")
     pw, ctx = launch_browser(headless=args.headless)
     page = ctx.pages[0] if ctx.pages else ctx.new_page()
 
-    # Capture audio URLs from network traffic (both direct audio + JSON API responses)
+    # Network interceptor for audio URLs
     audio_urls: list[str] = []
 
     def on_response(response):
         url = response.url
         ct = response.headers.get("content-type", "")
-
-        # Skip images and static assets
         if any(url.endswith(ext) for ext in (".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".ico", ".css", ".js")):
             return
         if "image/" in ct:
             return
-
-        # Catch direct audio file downloads
-        is_audio_url = any(ext in url for ext in (".mp3", ".wav", ".m4a", ".ogg"))
-        is_audio_ct = "audio" in ct
-        if (is_audio_url or is_audio_ct) and response.status == 200:
-            if url not in audio_urls and "sil-" not in url:
-                audio_urls.append(url)
-                print(f"  [network] Audio file: {url[:80]}...")
-
-        # Intercept JSON API responses that contain audio_url fields
+        is_audio = any(ext in url for ext in (".mp3", ".wav", ".m4a", ".ogg")) or "audio" in ct
+        if is_audio and response.status == 200 and url not in audio_urls and "sil-" not in url:
+            audio_urls.append(url)
+            print(f"  [network] Audio: {url[:80]}...")
         if "application/json" in ct and response.status == 200:
             try:
                 body = response.text()
-                # Look for audio URL patterns in JSON responses
                 for pattern in (r'"audio_url"\s*:\s*"(https://[^"]+\.mp3[^"]*)"',
                                 r'"song_path"\s*:\s*"(https://[^"]+)"',
                                 r'"audio"\s*:\s*"(https://[^"]+\.mp3[^"]*)"',
                                 r'"(https://cdn[^"]*suno[^"]*\.mp3[^"]*)"'):
                     for match in re.finditer(pattern, body):
-                        found_url = match.group(1)
-                        if found_url not in audio_urls and "sil-" not in found_url:
-                            audio_urls.append(found_url)
-                            print(f"  [api] Audio URL from JSON: {found_url[:80]}...")
+                        found = match.group(1)
+                        if found not in audio_urls and "sil-" not in found:
+                            audio_urls.append(found)
+                            print(f"  [api] Audio URL: {found[:80]}...")
             except Exception:
-                pass  # Some responses may not be readable
+                pass
 
     page.on("response", on_response)
 
     try:
-        # In headless mode, inject cookies from env for auth
+        # Always inject cookies from env (restores session without login)
+        inject_cookies(ctx)
+        # Also inject Clerk __client cookie for auth.suno.com
+        clerk_client = os.environ.get("CLERK_CLIENT", "").strip()
+        if clerk_client:
+            ctx.add_cookies([{
+                "name": "__client", "value": clerk_client,
+                "domain": "auth.suno.com", "path": "/",
+                "httpOnly": True, "secure": True, "sameSite": "None",
+            }])
+            print("Injected Clerk __client cookie.")
+
         if args.headless:
-            if not inject_cookies(ctx):
-                print("Warning: No SUNO_COOKIE env var. Run: source setenv.sh")
+            pass  # cookies already injected above
 
         if args.login:
-            # Headed login only — save session to persistent profile + setenv.sh
             ensure_logged_in(page, headless=False)
             save_session_cookies(ctx)
-            print("Login complete. Session cached in browser profile.")
-            print("You can now use --headless for automated generation.")
+            print("Login complete. Session cached.")
             return
 
         if args.explore:
@@ -536,133 +673,86 @@ def main() -> None:
             return
 
         ensure_logged_in(page, headless=args.headless)
-        enable_advanced_mode(page)
-        fill_form(page, title, style, prompt, instrumental=args.instrumental)
 
-        # Snapshot ALL audio element sources before clicking create
-        pre_create_urls = set(audio_urls)
-        pre_dom_srcs = set()
-        for el in [page.locator("audio source"), page.locator("audio[src]")]:
-            for i in range(el.count()):
-                src = el.nth(i).get_attribute("src")
-                if src:
-                    pre_dom_srcs.add(src)
-        print(f"Pre-create: {len(pre_dom_srcs)} existing audio sources in DOM")
+        # Build track queue
+        if args.batch or args.shared:
+            world_arg = args.world if args.batch else None
+            queue = build_batch_queue(world_arg, args.shared)
 
-        click_create(page)
-        captcha_prompted = False
+            if args.skip_existing:
+                manifest = load_manifest()
+                existing = set(manifest.get("tracks", {}).keys())
+                before = len(queue)
+                queue = [t for t in queue if t["track_id"] not in existing]
+                skipped = before - len(queue)
+                if skipped:
+                    print(f"Skipping {skipped} existing tracks.")
 
-        # Wait for audio to appear (network interception or DOM)
-        print(f"\nWaiting for generation (up to {args.timeout}s)...")
-        deadline = time.monotonic() + args.timeout
-        audio_url = None
+            if not queue:
+                print("No tracks to generate.")
+                return
 
-        while time.monotonic() < deadline:
-            page.wait_for_timeout(5000)
-            elapsed = int(time.monotonic() - (deadline - args.timeout))
+            print(f"\nBatch queue: {len(queue)} tracks")
+            for i, t in enumerate(queue, 1):
+                print(f"  {i:2d}. {t['track_id']:30s} {t['title']}")
+            print()
 
-            # Check for hCaptcha challenge iframe
-            captcha_frame = page.locator("iframe[title*='hCaptcha'], iframe[src*='hcaptcha']")
-            if captcha_frame.count() > 0 and not captcha_prompted:
-                captcha_prompted = True
-                print("\n" + "=" * 60)
-                print("  hCAPTCHA DETECTED — please solve it in the browser window")
-                print("=" * 60 + "\n")
-            elif captcha_prompted and captcha_frame.count() == 0:
-                # Captcha was solved (iframe gone)
-                print("  Captcha solved! Resuming wait for generation...")
-                captcha_prompted = False  # Reset in case another appears
+            succeeded = 0
+            failed = []
+            for i, track in enumerate(queue, 1):
+                print(f"\n[{i}/{len(queue)}] Starting {track['track_id']}...")
+                ok = generate_one_track(
+                    page, audio_urls,
+                    track_id=track["track_id"],
+                    title=track["title"],
+                    style=track["style"],
+                    prompt=track["prompt"],
+                    instrumental=args.instrumental,
+                    output_dir=args.output_dir,
+                    timeout_sec=args.timeout,
+                    preview=args.preview,
+                )
+                if ok:
+                    succeeded += 1
+                else:
+                    failed.append(track["track_id"])
 
-            # Check network-intercepted audio URLs
-            new_urls = [u for u in audio_urls if u not in pre_create_urls]
-            if new_urls:
-                audio_url = new_urls[-1]
-                print(f"  Audio captured from network! ({elapsed}s)")
-                break
+            print(f"\n{'=' * 60}")
+            print(f"  BATCH COMPLETE: {succeeded}/{len(queue)} succeeded")
+            if failed:
+                print(f"  Failed: {', '.join(failed)}")
+            print(f"{'=' * 60}")
 
-            # Check DOM for new audio elements
-            audio_els = page.locator("audio source, audio[src]")
-            for i in range(audio_els.count()):
-                src = audio_els.nth(i).get_attribute("src")
-                if (src and src.startswith("http")
-                        and src not in pre_dom_srcs
-                        and "sil-" not in src):
-                    audio_url = src
-                    print(f"  New audio in DOM! ({elapsed}s)")
-                    break
-            if audio_url:
-                break
+        else:
+            # Single track mode
+            world = int(args.world) if args.world else None
+            title = args.title
+            style = args.style
+            prompt = args.prompt
 
-            print(f"  Waiting... ({elapsed}s)")
+            if world is not None:
+                template = load_world_template(world, args.track_id)
+                if not title:
+                    title = template.get("title", "")
+                if not style:
+                    style = template.get("style", "")
+                if not prompt:
+                    prompt = template.get("prompt", "")
 
-        # If no audio via interception, try navigating to library
-        if not audio_url:
-            print("  No audio from create page. Checking library...")
-            page.goto("https://suno.com/me", wait_until="domcontentloaded")
-            page.wait_for_timeout(5000)
+            if not prompt:
+                die("--prompt is required (or use --world)")
 
-            # Reset filters and look for songs
-            reset_btn = page.locator("button:has-text('Reset filters')")
-            if reset_btn.count() > 0:
-                try:
-                    reset_btn.first.click(timeout=3000)
-                    page.wait_for_timeout(2000)
-                except PwTimeout:
-                    pass
-
-            # Try clicking a play button to trigger audio load
-            play_btns = page.locator("button[aria-label*='Play'], button[aria-label*='play']")
-            if play_btns.count() > 0:
-                play_btns.first.click()
-                page.wait_for_timeout(5000)
-
-            new_urls = [u for u in audio_urls if u not in pre_create_urls]
-            if new_urls:
-                audio_url = new_urls[-1]
-                print(f"  Audio from library!")
-
-        if not audio_url:
-            # Last resort — screenshot and let user see what happened
-            screenshot_path = PROJECT_ROOT / "tmp" / "suno_timeout.png"
-            screenshot_path.parent.mkdir(parents=True, exist_ok=True)
-            page.screenshot(path=str(screenshot_path))
-            die(f"No audio URL found after {args.timeout}s. Screenshot: {screenshot_path}")
-
-        # Download and convert
-        track_key = args.track_id
-        ext = Path(urlparse(audio_url).path).suffix or ".mp3"
-        raw_path = args.output_dir / f"{track_key}{ext}"
-        ogg_path = args.output_dir / f"{track_key}.ogg"
-
-        download_from_url(audio_url, raw_path)
-        convert_to_ogg(raw_path, ogg_path)
-
-        duration = probe_duration(ogg_path)
-        raw_path.unlink(missing_ok=True)
-
-        # Update manifest
-        manifest = load_manifest()
-        if "tracks" not in manifest:
-            manifest["tracks"] = {}
-        rel_path = ogg_path.relative_to(PROJECT_ROOT)
-        manifest["tracks"][track_key] = {
-            "file": str(rel_path),
-            "tier": "T1",
-            "provider": "suno_browser",
-            "title": title,
-            "prompt": prompt,
-            "style": style,
-            "model": "suno-web",
-            "duration": round(duration, 2),
-            "loop": True,
-            "generated_at": date.today().isoformat(),
-        }
-        save_manifest(manifest)
-
-        print(f"\nTrack ready: {ogg_path}")
-
-        if args.preview:
-            subprocess.run(["mpv", "--no-video", str(ogg_path)])
+            generate_one_track(
+                page, audio_urls,
+                track_id=args.track_id,
+                title=title,
+                style=style,
+                prompt=prompt,
+                instrumental=args.instrumental,
+                output_dir=args.output_dir,
+                timeout_sec=args.timeout,
+                preview=args.preview,
+            )
 
     finally:
         try:

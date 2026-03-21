@@ -67,3 +67,6 @@ tmp/
 assets/audio/music/*.mp3
 assets/audio/music/*.wav
 *.lock
+captcha-key.txt
+__pycache__/
+tools/test_*.py
