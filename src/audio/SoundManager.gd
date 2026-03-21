@@ -25,6 +25,10 @@ var _music_cache: Dictionary = {}
 # an area replays instantly without regenerating thousands of samples.
 static var _area_wav_cache: Dictionary = {}
 
+# Music manifest - file-based tracks take priority over procedural generation
+static var _music_manifest: Dictionary = {}
+static var _manifest_loaded: bool = false
+
 # Sound definitions - procedural parameters
 const SOUNDS = {
 	# UI Sounds
@@ -678,6 +682,40 @@ func _generate_tier_zoom_in(playback: AudioStreamGeneratorPlayback, samples: int
 ## Replace _generate_battle_music() internals with file loading when real
 ## music assets are available (e.g., load("res://assets/audio/battle.ogg"))
 
+static func _load_music_manifest() -> void:
+	if _manifest_loaded:
+		return
+	_manifest_loaded = true
+	var file = FileAccess.open("res://data/music_manifest.json", FileAccess.READ)
+	if not file:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if parsed and parsed.has("tracks"):
+		_music_manifest = parsed["tracks"]
+		if _music_manifest.size() > 0:
+			print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
+
+
+func _try_play_from_manifest(track_id: String) -> bool:
+	_load_music_manifest()
+	if not _music_manifest.has(track_id):
+		return false
+	var entry = _music_manifest[track_id]
+	var path = entry.get("file", "")
+	if path == "" or not FileAccess.file_exists(path):
+		return false
+	var stream = load(path) as AudioStream
+	if not stream:
+		push_warning("[MUSIC] Failed to load audio file: %s" % path)
+		return false
+	_music_player.stream = stream
+	_music_player.volume_db = _music_base_db
+	_music_player.play()
+	_music_playing = true
+	print("[MUSIC] Playing file: %s (tier %s)" % [path, entry.get("tier", "?")])
+	return true
+
+
 func play_music(track: String) -> void:
 	"""Play a music track with crossfade transition"""
 	if _current_music == track and _music_playing:
@@ -911,6 +949,8 @@ var _music_buffer: PackedVector2Array = PackedVector2Array()
 func _start_battle_music() -> void:
 	"""Generate and start looping battle music"""
 	_music_playing = true
+	if _try_play_from_manifest("battle_medieval"):
+		return
 
 	# Generate 4 passes (48 bars) for a full loop with dynamic arc:
 	#   Pass 0 (bars  1-12): intense opening, clean drums
@@ -1303,6 +1343,8 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 func _start_victory_music() -> void:
 	"""Play victory fanfare intro then loop into 80s rock victory theme"""
 	_music_playing = true
+	if _try_play_from_manifest("victory"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 140.0
@@ -1612,6 +1654,8 @@ func _generate_victory_rock_loop(rate: int, duration: float, bpm: float) -> Pack
 func _start_boss_music() -> void:
 	"""Generate and start looping boss battle music"""
 	_music_playing = true
+	if _try_play_from_manifest("boss_generic"):
+		return
 
 	# Generate music buffer (16 bars at 150 BPM - faster, more intense)
 	var sample_rate = 22050
@@ -2049,6 +2093,8 @@ func _generate_rat_king_music_buffer(rate: int, duration: float, bpm: float) -> 
 func _start_danger_music() -> void:
 	"""Generate and start looping danger/critical HP music"""
 	_music_playing = true
+	if _try_play_from_manifest("danger"):
+		return
 
 	# Generate music buffer (8 bars at 160 BPM - urgent, dark)
 	var sample_rate = 22050
@@ -3387,6 +3433,8 @@ func _get_monster_bass(monster_type: String) -> Array:
 func _start_game_over_music() -> void:
 	"""Generate and play a short game over ditty (no loop)"""
 	_music_playing = true
+	if _try_play_from_manifest("game_over"):
+		return
 
 	# Short death ditty - about 3 seconds
 	var sample_rate = 22050
@@ -3554,6 +3602,8 @@ func _start_area_music_deferred(area_type: String) -> void:
 func _start_overworld_music() -> void:
 	"""Generate peaceful overworld exploration theme"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_medieval"):
+		return
 	print("[MUSIC] Playing overworld theme")
 	if _play_area_wav_cached("overworld"):
 		return
@@ -3571,6 +3621,8 @@ func _start_overworld_music() -> void:
 func _start_village_music() -> void:
 	"""Generate peaceful village theme"""
 	_music_playing = true
+	if _try_play_from_manifest("village_medieval"):
+		return
 	print("[MUSIC] Playing village theme")
 	if _play_area_wav_cached("village"):
 		return
@@ -3588,6 +3640,8 @@ func _start_village_music() -> void:
 func _start_cave_music() -> void:
 	"""Generate mysterious dungeon/cave theme"""
 	_music_playing = true
+	if _try_play_from_manifest("dungeon_cave"):
+		return
 	print("[MUSIC] Playing cave/dungeon theme")
 	if _play_area_wav_cached("cave"):
 		return
@@ -3605,6 +3659,8 @@ func _start_cave_music() -> void:
 func _start_title_music() -> void:
 	"""Generate majestic EarthBound-style trippy title theme"""
 	_music_playing = true
+	if _try_play_from_manifest("title"):
+		return
 	print("[MUSIC] Playing title theme")
 	if _play_area_wav_cached("title"):
 		return
@@ -4110,6 +4166,8 @@ func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVecto
 func _start_suburban_music() -> void:
 	"""Generate EarthBound-inspired suburban overworld theme - cheerful with eerie undercurrent"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_suburban"):
+		return
 	print("[MUSIC] Playing suburban overworld theme")
 	if _play_area_wav_cached("suburban"):
 		return
@@ -4260,6 +4318,8 @@ func _generate_suburban_music(rate: int, duration: float, bpm: float) -> PackedV
 func _start_suburban_battle_music() -> void:
 	"""Generate EarthBound-style funky/psychedelic suburban battle theme"""
 	_music_playing = true
+	if _try_play_from_manifest("battle_suburban"):
+		return
 	print("[MUSIC] Playing suburban battle theme")
 
 	var sample_rate = 22050
@@ -4430,6 +4490,8 @@ func _generate_suburban_battle_music(rate: int, duration: float, bpm: float) -> 
 func _start_steampunk_music() -> void:
 	"""Generate Victorian steampunk overworld theme - brass-like, march-like, clockwork"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_steampunk"):
+		return
 	print("[MUSIC] Playing steampunk overworld theme")
 	if _play_area_wav_cached("steampunk"):
 		return
@@ -4586,6 +4648,8 @@ func _generate_steampunk_music(rate: int, duration: float, bpm: float) -> Packed
 func _start_urban_battle_music() -> void:
 	"""Generate aggressive steampunk/urban battle theme - steam-powered urgency"""
 	_music_playing = true
+	if _try_play_from_manifest("battle_steampunk"):
+		return
 	print("[MUSIC] Playing urban battle theme")
 
 	var sample_rate = 22050
@@ -4744,6 +4808,8 @@ func _generate_urban_battle_music(rate: int, duration: float, bpm: float) -> Pac
 func _start_industrial_music() -> void:
 	"""Generate heavy industrial factory theme - D minor, rhythmic machinery"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_industrial"):
+		return
 	print("[MUSIC] Playing industrial theme")
 	if _play_area_wav_cached("industrial"):
 		return
@@ -4865,6 +4931,8 @@ func _generate_industrial_music(rate: int, duration: float, bpm: float) -> Packe
 func _start_futuristic_music() -> void:
 	"""Generate cold digital ambient theme - B minor/diminished, synth pads, arpeggiated sequences"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_digital"):
+		return
 	print("[MUSIC] Playing futuristic digital theme")
 	if _play_area_wav_cached("futuristic"):
 		return
@@ -5010,6 +5078,8 @@ func _generate_futuristic_music(rate: int, duration: float, bpm: float) -> Packe
 func _start_autogrind_music() -> void:
 	"""Generate and play the autogrind ambient monitoring loop."""
 	_music_playing = true
+	if _try_play_from_manifest("autogrind"):
+		return
 	print("[MUSIC] Playing autogrind ambient theme")
 	if _play_area_wav_cached("autogrind"):
 		return
@@ -5288,6 +5358,8 @@ func _start_industrial_battle_music() -> void:
 	"""Generate heavy mechanical industrial battle music.
 	   Clanking metal, steam hisses, driving machinery tempo."""
 	_music_playing = true
+	if _try_play_from_manifest("battle_industrial"):
+		return
 	print("[MUSIC] Playing industrial battle theme")
 
 	var sample_rate = 22050
@@ -5484,6 +5556,8 @@ func _start_digital_battle_music() -> void:
 	"""Generate electronic/glitchy digital battle music.
 	   Fast arpeggios, digital distortion, Tron/Matrix vibes."""
 	_music_playing = true
+	if _try_play_from_manifest("battle_digital"):
+		return
 	print("[MUSIC] Playing digital battle theme")
 
 	var sample_rate = 22050
@@ -5686,6 +5760,8 @@ func _start_void_battle_music() -> void:
 	   Sparse hits, deep reverb, silence between notes.
 	   The quietest, most uncomfortable battle music."""
 	_music_playing = true
+	if _try_play_from_manifest("battle_abstract"):
+		return
 	print("[MUSIC] Playing void battle theme")
 
 	var sample_rate = 22050
@@ -5857,6 +5933,8 @@ func _start_abstract_music() -> void:
 	   Almost like the music itself has been optimized down to nearly nothing.
 	   Haunting and beautiful."""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_abstract"):
+		return
 	print("[MUSIC] Playing abstract void theme")
 	if _play_area_wav_cached("abstract"):
 		return
