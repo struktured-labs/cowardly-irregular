@@ -29,6 +29,12 @@ static var _area_wav_cache: Dictionary = {}
 static var _music_manifest: Dictionary = {}
 static var _manifest_loaded: bool = false
 
+# SFX manifest - file-based SFX take priority over procedural generation
+static var _sfx_manifest: Dictionary = {}
+static var _sfx_manifest_loaded: bool = false
+# Cache loaded AudioStream objects so we only hit disk once per key
+static var _sfx_stream_cache: Dictionary = {}
+
 # Sound definitions - procedural parameters
 const SOUNDS = {
 	# UI Sounds
@@ -85,6 +91,7 @@ var _ability_sounds: Dictionary = {}
 
 
 func _ready() -> void:
+	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
 
@@ -168,17 +175,78 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["mug"] = "ability_physical"
 
 
+## SFX Manifest (file-based SFX take priority over procedural)
+
+static func _load_sfx_manifest() -> void:
+	if _sfx_manifest_loaded:
+		return
+	_sfx_manifest_loaded = true
+	var file = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	if not file:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if parsed and parsed.has("sfx"):
+		_sfx_manifest = parsed["sfx"]
+		if _sfx_manifest.size() > 0:
+			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
+
+
+func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> bool:
+	"""Try to play a file-based SFX from the manifest. Returns true if successful."""
+	if not _sfx_manifest.has(sound_key):
+		return false
+	var entry = _sfx_manifest[sound_key]
+	var path = entry.get("file", "")
+	if path == "":
+		return false
+	if not path.begins_with("res://"):
+		path = "res://" + path
+
+	# Check stream cache first
+	if _sfx_stream_cache.has(sound_key):
+		var cached_stream = _sfx_stream_cache[sound_key]
+		if cached_stream:
+			player.stream = cached_stream
+			player.volume_db = volume_db
+			player.pitch_scale = pitch_scale
+			player.play()
+			return true
+		else:
+			# Cached null = file doesn't exist, fall through to procedural
+			return false
+
+	# Try loading from disk
+	if not FileAccess.file_exists(path):
+		_sfx_stream_cache[sound_key] = null  # Cache miss
+		return false
+	var stream = load(path) as AudioStream
+	if not stream:
+		push_warning("[SFX] Failed to load: %s" % path)
+		_sfx_stream_cache[sound_key] = null
+		return false
+	_sfx_stream_cache[sound_key] = stream
+	player.stream = stream
+	player.volume_db = volume_db
+	player.pitch_scale = pitch_scale
+	player.play()
+	return true
+
+
 ## Public API
 
 func play_ui(sound_key: String) -> void:
-	"""Play a UI sound effect"""
+	"""Play a UI sound effect — file-based if available, else procedural"""
+	if _try_play_sfx_from_manifest(_ui_player, sound_key):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_ui_player, SOUNDS[sound_key])
 
 
 func play_battle(sound_key: String) -> void:
-	"""Play a battle sound effect"""
+	"""Play a battle sound effect — file-based if available, else procedural"""
+	if _try_play_sfx_from_manifest(_battle_player, sound_key):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_battle_player, SOUNDS[sound_key])
@@ -186,6 +254,8 @@ func play_battle(sound_key: String) -> void:
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, volume_db, pitch_scale):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	# Validate pitch scale to prevent invalid frequencies
@@ -202,6 +272,8 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 func play_ability(ability_id: String) -> void:
 	"""Play sound for an ability (looks up mapping or uses default)"""
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
+	if _try_play_sfx_from_manifest(_ability_player, sound_key):
+		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_ability_player, SOUNDS[sound_key])
 
@@ -214,6 +286,8 @@ func register_ability_sound(ability_id: String, sound_key: String) -> void:
 func play_status(status_name: String) -> void:
 	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
 	var key = "status_" + status_name.to_lower()
+	if _try_play_sfx_from_manifest(_battle_player, key):
+		return
 	if SOUNDS.has(key):
 		_play_sound(_battle_player, SOUNDS[key])
 	else:
