@@ -14,19 +14,19 @@ Most parties spent forty minutes in Harmonia before leaving for the cave.
 
 The Cleric spent four hours.
 
-This was not, he would have said if you asked him, because he was slow. It was because Harmonia had seventeen people in it, and he had spoken to sixteen of them, and was currently finishing a conversation with the seventeenth, who was an elderly woman named Marta who kept chickens and had very specific opinions about the way the cave used to smell before whatever was wrong with it started being wrong with it.
+This was not, she would have said if you asked her, because she was slow. It was because Harmonia had seventeen people in it, and she had spoken to sixteen of them, and was currently finishing a conversation with the seventeenth, who was an elderly woman named Marta who kept chickens and had very specific opinions about the way the cave used to smell before whatever was wrong with it started being wrong with it.
 
 "Sulfur," she said. "Not brimstone-sulfur, mind you. More like struck-match sulfur. Like someone lit something new inside it." She paused to scatter feed at a hen who had been working hard on her patience. "My husband used to go up there collecting mushrooms. Good ones, the blue-cap kind. He stopped three months ago. Said the mushrooms were wrong. Said they tasted of — and forgive an old woman repeating this — they tasted of 'the inside of a clock.'"
 
-The Cleric wrote this down. He had a small leather journal that he'd had since long before this adventure, filled with prayers and remedies and the small observations that faith requires one to make: the way certain people hold themselves when they're frightened, the particular silence that follows a lie, the texture of a grief that hasn't been named yet.
+The Cleric wrote this down. She had a small leather journal that she'd had since long before this adventure, filled with prayers and remedies and the small observations that faith requires one to make: the way certain people hold themselves when they're frightened, the particular silence that follows a lie, the texture of a grief that hasn't been named yet.
 
-"Has anyone been by to check on you?" he asked.
+"Has anyone been by to check on you?" she asked.
 
-Marta gave him the look of someone who has not been asked this question in some time.
+Marta gave her the look of someone who has not been asked this question in some time.
 
 "I'm fine," she said, in the specific tone that means I'm fine and I am very surprised you asked.
 
-"Good." He paused. "If you find you're not, later, the party is — well, we'll be in the cave for a while, but after that. If things get worse in the village. We'll come back."
+"Good." She paused. "If you find you're not, later, the party is — well, we'll be in the cave for a while, but after that. If things get worse in the village. We'll come back."
 
 She looked at him for a long moment. Then she said: "You're not like the last lot."
 
@@ -34,9 +34,9 @@ She looked at him for a long moment. Then she said: "You're not like the last lo
 
 "Oh, they weren't here long. Gone in twenty minutes. Barely looked at anyone. That tall one — the woman in the robes — she had her nose in a book the entire time." Marta shook her head. "Nice enough. Just in a hurry to get somewhere."
 
-The Cleric considered this. He didn't know who the last lot was, or when they'd come through, or what they'd been hurrying toward. The cave was the cave. It would still be there.
+The Cleric considered this. She didn't know who the last lot was, or when they'd come through, or what they'd been hurrying toward. The cave was the cave. It would still be there.
 
-"My name is—" said the Fighter, appearing at the Cleric's shoulder with the expression of someone who has been waiting with enormous patience and is now very gently running out of it. He was a patient man by temperament — duty required patience — but duty also had a directional quality, a momentum, and standing in a chicken yard while his Cleric talked to a grandmother for the fourth consecutive time had begun to challenge that momentum.
+"My name is—" said the Fighter, appearing at the Cleric's shoulder with the expression of someone who has been waiting with enormous patience and is now very gently running out of it. He was a patient man by temperament — duty required patience — but duty also had a directional quality, a momentum, and standing in a chicken yard while the Cleric talked to a grandmother for the fourth consecutive time had begun to challenge that momentum.
 
 "We should go," he said.
 
@@ -46,11 +46,11 @@ Marta's expression shifted into something careful and old.
 
 "The Warden of the Old Guard," she said, slowly, as though the name still had weight. "My grandmother talked about it. Said it was a guardian. Old thing. Older than the kingdom. It tested travelers going through — not to stop them, mind. To make sure they were worth passing. To make sure they weren't going to bring something worse in behind them." She looked toward the mountains. "It went quiet for years. People stopped going that way. Now the cave's gone wrong and I hear the Warden's stirring again." A pause. "The way my grandmother told it, the Warden respected patience. It didn't like people who came in hot and swinging." Another pause, longer. "She said you had to prove you'd taken the time to care."
 
-The Cleric closed his journal.
+The Cleric closed her journal.
 
-"Thank you," he said. "That's very helpful."
+"Thank you," she said. "That's very helpful."
 
-He meant it completely.
+She meant it completely.
 
 The Fighter, who had not been taking notes, who had heard only an elderly woman talking about a monster in a cave, said quietly as they walked away: "How was that helpful?"
 
@@ -62,13 +62,13 @@ The Fighter, who had not been taking notes, who had heard only an elderly woman 
 
 ---
 
-The party assembled at the northern road. The Fighter, who had at least spent his time in Harmonia sharpening his sword and checking his armor and doing things that felt productively adjacent to the actual task. The Mage, who had spent his time in the village's four-book library and emerged satisfied and slightly contemptuous of the library. The Rogue, who had spent the time in ways that weren't being enumerated, but which had involved the back shelf of Bram's shop and a coin that hadn't been spared. And the Bard, who had collected enough village folklore in her own time to fill half a ballad, and who had, the Cleric noted, independently found several of the same people he'd found.
+The party assembled at the northern road. The Fighter, who had at least spent his time in Harmonia sharpening his sword and checking his armor and doing things that felt productively adjacent to the actual task. The Mage, who had spent his time in the village's four-book library and emerged satisfied and slightly contemptuous of the library. The Rogue, who had spent the time in ways that weren't being enumerated, but which had involved the back shelf of Bram's shop and a coin that hadn't been spared. And the Bard, who had collected enough village folklore in her own time to fill half a ballad, and who had, the Cleric noted, independently found several of the same people she'd found.
 
-He liked the Bard. She talked to people for different reasons than he did, but the talking mattered to both of them.
+She liked the Bard. The Bard talked to people for different reasons than the Cleric did, but the talking mattered to both of them.
 
-"The grinding priest is ready?" the Mage asked, looking at the Cleric, who was consulting his notes one more time.
+"The grinding priest is ready?" the Mage asked, looking at the Cleric, who was consulting her notes one more time.
 
-"The careful Cleric is ready," he corrected, mildly.
+"The careful Cleric is ready," she corrected, mildly.
 
 "You spoke to every person in the village."
 
@@ -78,7 +78,7 @@ He liked the Bard. She talked to people for different reasons than he did, but t
 
 "Yes."
 
-the Mage looked at him the way he looked at data he couldn't account for. It was a look the Cleric was going to get used to.
+the Mage looked at her the way he looked at data he couldn't account for. It was a look the Cleric was going to get used to.
 
 ---
 
@@ -88,7 +88,7 @@ The slimes, when they came, came in pairs.
 
 Most parties hit the first encounter in a burst of nervous energy — first real fight, first real stakes, the urgency of combat driving them forward at speed. They dispatched the slimes and moved on, overworld fading behind them.
 
-The Cleric's party fought the first pair of slimes slowly, methodically, and then — when the path was clear — he healed the Fighter's grazed arm even though it didn't need healing, because it was there and he could, and then turned around and walked back fifteen feet to where a slime had died near an outcropping of rocks.
+The Cleric's party fought the first pair of slimes slowly, methodically, and then — when the path was clear — she healed the Fighter's grazed arm even though it didn't need healing, because it was there and she could, and then turned around and walked back fifteen feet to where a slime had died near an outcropping of rocks.
 
 "What are you doing?" the Rogue asked.
 
@@ -96,11 +96,11 @@ The Cleric's party fought the first pair of slimes slowly, methodically, and the
 
 Nobody had noticed.
 
-He crouched. The carving was old, weather-worn, barely legible. He traced it with one finger.
+She crouched. The carving was old, weather-worn, barely legible. She traced it with one finger.
 
 *Here stood the surveyor's third marker. The road continues true.*
 
-"Survey marker," the Mage said, peering over his shoulder. "Road's been here longer than the village."
+"Survey marker," the Mage said, peering over her shoulder. "Road's been here longer than the village."
 
 "Someone built this road," the Cleric said. "Someone took care with it."
 
@@ -108,7 +108,7 @@ He crouched. The carving was old, weather-worn, barely legible. He traced it wit
 
 "Yes." The Cleric stood. "I just wanted to notice it."
 
-This was the thing about the Cleric that the Rogue found difficult to argue with and the Fighter found difficult to understand and the Mage found philosophically troubling: he wasn't slow because he was bad at moving. He was slow because he stopped, regularly, to notice things. And the things he noticed were real things that had been there all along, that other parties walked past without seeing.
+This was the thing about the Cleric that the Rogue found difficult to argue with and the Fighter found difficult to understand and the Mage found philosophically troubling: she wasn't slow because she was bad at moving. She was slow because she stopped, regularly, to notice things. And the things she noticed were real things that had been there all along, that other parties walked past without seeing.
 
 They walked. The overworld opened up around them — wide and green and full of encounters that other parties would rush through.
 
@@ -116,7 +116,7 @@ They walked. The overworld opened up around them — wide and green and full of 
 
 The goblins arrived. The party braced. And then the Cleric did not immediately begin casting.
 
-He waited. He watched them.
+She waited. She watched them.
 
 "Are you," the Rogue said carefully, "going to fight the goblins."
 
@@ -128,7 +128,7 @@ Its dialogue box, which most players never saw because they'd already pressed th
 
 *I didn't want to do this today.*
 
-The Cleric read it. He cast Mend — not at the party but at the small goblin, which was scratched and bruised and had clearly been in a fight before this one. The goblin stared at the healing light falling on its arm.
+The Cleric read it. She cast Mend — not at the party but at the small goblin, which was scratched and bruised and had clearly been in a fight before this one. The goblin stared at the healing light falling on its arm.
 
 Its second dialogue box, even fewer players ever saw:
 
@@ -140,7 +140,7 @@ The goblins did not disengage. The game was not that merciful with its systems. 
 
 "Huh," the Rogue said.
 
-"I found that one at the survey marker," the Cleric said, looking at his journal, where he had been making notes. "When I sat with it. The marker told me to pay attention."
+"I found that one at the survey marker," the Cleric said, looking at her journal, where she had been making notes. "When I sat with it. The marker told me to pay attention."
 
 the Mage was already copying the dialogue sequence into his own notes. His expression was the one he got when a theorem suggested implications he hadn't calculated.
 
@@ -158,13 +158,13 @@ The Cleric stopped at the edge of a meadow full of wandering encounters and said
 
 "Why not immediately?"
 
-The Cleric considered how to explain this. It wasn't strategic, not exactly. It wasn't fear of the cave — the Warden would be what it would be. It was something else, something that had to do with the quality of the light in the meadow and the rhythm of combat and the specific peace he'd felt since leaving Harmonia, where he'd been attending to people and their needs, and how that attending had left him with energy that needed somewhere to go.
+The Cleric considered how to explain this. It wasn't strategic, not exactly. It wasn't fear of the cave — the Warden would be what it would be. It was something else, something that had to do with the quality of the light in the meadow and the rhythm of combat and the specific peace she'd felt since leaving Harmonia, where she'd been attending to people and their needs, and how that attending had left her with energy that needed somewhere to go.
 
-"I want to fight for a while," he said. "Here. In this meadow."
+"I want to fight for a while," she said. "Here. In this meadow."
 
 "We're going to be very overleveled," the Mage said.
 
-"We're going to be fine," he replied, which was not the same thing but addressed the concern.
+"We're going to be fine," she replied, which was not the same thing but addressed the concern.
 
 The Mage left, eventually, exploring east toward a ridge worth examining. The Fighter looked at the Cleric, looked at the cave, looked at the Cleric again, and sat down in the grass. If the Cleric wanted to grind, the Fighter would remain. That was what he was for.
 
@@ -194,9 +194,9 @@ After the fourth encounter, the Fighter said: "You're not doing this for the lev
 
 "Then what are you doing it for?"
 
-The Cleric healed a small cut on his own arm — a bat had gotten a wing-talon past his guard — and felt the light settle through him.
+The Cleric healed a small cut on her own arm — a bat had gotten a wing-talon past her guard — and felt the light settle through her.
 
-"I'm practicing being useful," he said. "It's different from being useful. Being useful is reactive. You hurt, I heal. Practicing being useful is something you do before the hurt comes, so that when it does, you don't have to think. You just act." He looked at his hands. "And it's peaceful. The rhythm is peaceful."
+"I'm practicing being useful," she said. "It's different from being useful. Being useful is reactive. You hurt, I heal. Practicing being useful is something you do before the hurt comes, so that when it does, you don't have to think. You just act." She looked at her hands. "And it's peaceful. The rhythm is peaceful."
 
 The Fighter considered this for a moment, in the way he considered most things: with the direct earnestness of someone for whom the proposition being offered is genuinely new and therefore deserves genuine attention.
 
@@ -204,9 +204,9 @@ The Fighter considered this for a moment, in the way he considered most things: 
 
 "Most people have different needs," the Cleric said. "This is mine."
 
-They fought in the meadow for another hour. When the Mage came back from the ridge — satisfied, having discovered that the ridge was geologically interesting in ways that would probably matter later — the Mage found the party thirty percent overleveled for the Whispering Cave and the Cleric sitting in the grass with his journal open, writing something.
+They fought in the meadow for another hour. When the Mage came back from the ridge — satisfied, having discovered that the ridge was geologically interesting in ways that would probably matter later — the Mage found the party thirty percent overleveled for the Whispering Cave and the Cleric sitting in the grass with her journal open, writing something.
 
-The Mage looked at the journal. He'd been documenting the encounter patterns: what each enemy type did, when, how consistently. Not for combat strategy. More like a naturalist recording animal behavior.
+The Mage looked at the journal. She'd been documenting the encounter patterns: what each enemy type did, when, how consistently. Not for combat strategy. More like a naturalist recording animal behavior.
 
 "You're studying them," the Mage said.
 
@@ -234,9 +234,9 @@ He sat down next to the Cleric, because there was nothing else to do, and opened
 
 The cave was dark and cold and smelled of struck-match sulfur, exactly as Marta had said.
 
-The party went in carefully. The Cleric moved slowly — not cautiously, not in the hunched way of someone afraid, but in the deliberate way of someone paying attention. He looked at the walls. He looked at the ground. He noticed, at the third junction, that someone had carved an arrow pointing left. Not recently. Long ago. It was carved in the same style as the survey marker on the road.
+The party went in carefully. The Cleric moved slowly — not cautiously, not in the hunched way of someone afraid, but in the deliberate way of someone paying attention. She looked at the walls. She looked at the ground. She noticed, at the third junction, that someone had carved an arrow pointing left. Not recently. Long ago. It was carved in the same style as the survey marker on the road.
 
-"Someone has been through here," he said. "Many times. Same person, same style."
+"Someone has been through here," she said. "Many times. Same person, same style."
 
 "The person who built the survey markers?" the Bard asked.
 
@@ -252,21 +252,21 @@ Most parties encountered the Warden by walking into the chamber and triggering t
 
 *HALT. None may pass without — *
 
-But the Cleric had spent an hour in Marta's yard learning how to approach the Warden, and so he walked into the chamber slowly and sat down on a stone near the entrance. Not confrontationally. Just — present.
+But the Cleric had spent an hour in Marta's yard learning how to approach the Warden, and so she walked into the chamber slowly and sat down on a stone near the entrance. Not confrontationally. Just — present.
 
-He waited.
+She waited.
 
 The Warden's pre-fight dialogue box showed. Then paused. Then — because the Cleric had triggered none of the approach conditions that started the combat sequence — a second dialogue box appeared underneath the standard one, one that most players never saw because they'd already pressed the confirm button and loaded into the fight:
 
 *You are not moving.*
 
-"No," the Cleric said. Not out loud — he pressed the confirm button. But it registered.
+"No," the Cleric said. Not out loud — she pressed the confirm button. But it registered.
 
 *Why are you not moving?*
 
 The dialogue box offered two options. Most parties never reached this fork.
 
-He selected the second.
+She selected the second.
 
 *I came to understand what you're protecting. Not to take it from you.*
 
@@ -288,7 +288,7 @@ Then:
 
 *Someone who sat down,* the Warden said. *Like you.*
 
-The fight, when it happened, was considerably easier than it should have been. The Cleric had already known, from Marta, that the Warden responded to care rather than aggression, and he fought it the way he fought everything: attending to it, not overwhelming it, offering it the specific respect of an opponent who does not want to destroy you, only to get past.
+The fight, when it happened, was considerably easier than it should have been. The Cleric had already known, from Marta, that the Warden responded to care rather than aggression, and she fought it the way she fought everything: attending to it, not overwhelming it, offering it the specific respect of an opponent who does not want to destroy you, only to get past.
 
 The Warden fell — fell was the wrong word, settled — and its last dialogue, which most parties saw as the generic post-boss message, read instead:
 
@@ -298,9 +298,9 @@ The Warden fell — fell was the wrong word, settled — and its last dialogue, 
 
 In the sealed chamber beyond, there was a small chest. Inside it: a handwritten note, old and carefully preserved, that described the cave's original construction, the purpose of the Warden, and a reference — in archaic, slightly strange language — to "the one who shapes these places, for whom each world is a calibration."
 
-Nobody in the party found it immediately meaningful. The Cleric put it in his journal and made a note to read it more carefully later.
+Nobody in the party found it immediately meaningful. The Cleric put it in her journal and made a note to read it more carefully later.
 
-Later would take a very long time to arrive. He was busy.
+Later would take a very long time to arrive. She was busy.
 
 ---
 
@@ -310,17 +310,17 @@ Later would take a very long time to arrive. He was busy.
 
 The suburb was relentlessly, aggressively ordinary.
 
-This was more disturbing than it looked, which was what the suburb wanted. Nothing about Maple Heights was designed to be disturbing — it was designed to be normal, and normalcy, taken seriously enough, has all of normalcy's own unique capacity for horror. But the School Nurse — which was what the Cleric had become, without having chosen it, without anything in his experience preparing him for scrubs and a laminated badge and a first-aid kit where his faith used to be — had extensive experience with the gap between what things appeared to be and what they were.
+This was more disturbing than it looked, which was what the suburb wanted. Nothing about Maple Heights was designed to be disturbing — it was designed to be normal, and normalcy, taken seriously enough, has all of normalcy's own unique capacity for horror. But the School Nurse — which was what the Cleric had become, without having chosen it, without anything in her experience preparing her for scrubs and a laminated badge and a first-aid kit where her faith used to be — had extensive experience with the gap between what things appeared to be and what they were.
 
-He'd read the badge. He'd read it several times.
+She'd read the badge. She'd read it several times.
 
 *SCHOOL NURSE.*
 
-The first-aid kit still had his prayer beads in it, which the kit had not originally contained and which he had not put there, which he chose to interpret as reassuring.
+The first-aid kit still had her prayer beads in it, which the kit had not originally contained and which she had not put there, which she chose to interpret as reassuring.
 
 The suburb had people in it. Many more people than Harmonia. And none of them were talking to each other in ways that had any content, which the School Nurse found professionally concerning.
 
-"Has anyone checked in at the houses?" he asked.
+"Has anyone checked in at the houses?" she asked.
 
 "It's suburbia," the Rogue said. A Skater Kid now, with a skateboard apparently always-known how to ride — and not thinking about that. "You don't just knock on people's doors in suburbia."
 
@@ -330,15 +330,15 @@ The suburb had people in it. Many more people than Harmonia. And none of them we
 
 "There are always rules," the School Nurse said. "That doesn't mean you don't care about the people on the other side of the doors."
 
-He knocked on the first door he came to, which was 14 Elm Street, which had a NO SOLICITING sign and a mat that said WELCOME in a font that did not welcome.
+She knocked on the first door she came to, which was 14 Elm Street, which had a NO SOLICITING sign and a mat that said WELCOME in a font that did not welcome.
 
-The woman who answered was in her mid-forties, wearing clothes that had been chosen for function but had never quite given up the hope of being chosen for something else. She looked at the School Nurse in his scrubs and at the Security Guard and at the Science Nerd and at the Rogue on a skateboard and at the Bard with her trumpet case, and her face went through five expressions in two seconds before settling on the one that was easiest.
+The woman who answered was in her mid-forties, wearing clothes that had been chosen for function but had never quite given up the hope of being chosen for something else. She looked at the School Nurse in her scrubs and at the Security Guard and at the Science Nerd and at the Rogue on a skateboard and at the Bard with her trumpet case, and her face went through five expressions in two seconds before settling on the one that was easiest.
 
 "I didn't call a nurse," she said.
 
-"No," he agreed. "I wanted to ask: is everything all right in Maple Heights? We're new here. We're trying to understand the situation."
+"No," she agreed. "I wanted to ask: is everything all right in Maple Heights? We're new here. We're trying to understand the situation."
 
-She looked at him the way people look at something that doesn't fit the category they've placed it in.
+She looked at the School Nurse the way people look at something that doesn't fit the category they've placed it in.
 
 "The HOA has some guidelines," she said, finally. "About — about what's appropriate for the neighborhood. If you're new, you should get the packet. From The Coordinator's office." A pause. "Don't be late for anything."
 
@@ -352,7 +352,7 @@ She closed the door.
 
 The Science Nerd was making notes. "She was frightened," the Mage said. "Not of us. Of something in the question."
 
-"Of someone hearing her answer it," the School Nurse said. He looked at the door. On reflex, he left his badge number on a piece of paper pushed under the door. It felt like the right thing to do.
+"Of someone hearing her answer it," the School Nurse said. She looked at the door. On reflex, she left her badge number on a piece of paper pushed under the door. It felt like the right thing to do.
 
 ---
 
@@ -364,7 +364,7 @@ Gerald was a small man in an orange vest with a stop sign on a pole, and he had 
 
 The School Nurse stopped at his corner — not to cross, just to stop — and said: "Good morning. How long have you been out here?"
 
-Gerald looked at him. Then he looked at the street. A car passed. He raised the sign, though there were no children to cross, and then lowered it again.
+Gerald looked at her. Then he looked at the street. A car passed. He raised the sign, though there were no children to cross, and then lowered it again.
 
 "Since before The Coordinator," he said.
 
@@ -386,7 +386,7 @@ The School Nurse sat on the curb. Gerald looked at this with some surprise.
 
 "I imagine there is."
 
-Gerald sat next to him. It seemed to take him by surprise, as though his own body had decided to do it before he'd thought to approve the action. He held the stop sign upright between them, and the two of them sat on the curb at the corner of Elm and Birch while the suburb went about its optimized routine around them.
+Gerald sat next to her. It seemed to take him by surprise, as though his own body had decided to do it before he'd thought to approve the action. He held the stop sign upright between them, and the two of them sat on the curb at the corner of Elm and Birch while the suburb went about its optimized routine around them.
 
 "She has an office in the Community Center," Gerald said. "The Coordinator. You'll have to go there eventually. That's where the answers are, or where the answers are supposed to be." He paused. "I'll give you advice, if you want it."
 
@@ -398,7 +398,7 @@ Gerald sat next to him. It seemed to take him by surprise, as though his own bod
 
 "Be careful," Gerald said. "She doesn't know what to do with that."
 
-He got the crossing guard's schedule, his history of the neighborhood, and a note about where the disappeared kids had last been seen, all of which most parties received in abbreviated form from the mission NPC. He got something else, too: Gerald's actual name, and his story, and the fact that his daughter had moved to the other side of Maple Heights and he hadn't seen her in three months because there was a guideline about cross-sector transit that required a permit he couldn't get, and if someone happened to be going that way—
+She got the crossing guard's schedule, his history of the neighborhood, and a note about where the disappeared kids had last been seen, all of which most parties received in abbreviated form from the mission NPC. She got something else, too: Gerald's actual name, and his story, and the fact that his daughter had moved to the other side of Maple Heights and he hadn't seen her in three months because there was a guideline about cross-sector transit that required a permit he couldn't get, and if someone happened to be going that way—
 
 "We'll check in on her," the School Nurse said. "What's her name?"
 
@@ -406,13 +406,13 @@ Gerald told him.
 
 ---
 
-The Science Nerd was, by this point, three notebook pages into an analysis of the suburb's underlying control mechanisms. She had identified six distinct pressure systems, two of which were elegant and three of which were probably unconstitutional under any reasonable social contract. The Coordinator was a bureaucratic adversary and a recognizable pattern, and the Mage wanted to understand that pattern from a systems perspective.
+The Science Nerd was, by this point, three notebook pages into an analysis of the suburb's underlying control mechanisms. He had identified six distinct pressure systems, two of which were elegant and three of which were probably unconstitutional under any reasonable social contract. The Coordinator was a bureaucratic adversary and a recognizable pattern, and the Mage wanted to understand that pattern from a systems perspective.
 
-She found the School Nurse at Gerald's corner an hour after they'd arrived in Maple Heights, which was an hour after they'd been supposed to start investigating the missing children and the strip mall that rearranged itself and the HOA drones with enforcement powers that felt supernatural.
+He found the School Nurse at Gerald's corner an hour after they'd arrived in Maple Heights, which was an hour after they'd been supposed to start investigating the missing children and the strip mall that rearranged itself and the HOA drones with enforcement powers that felt supernatural.
 
 "We need to actually—" the Mage said.
 
-"I know," he said. "Let's go."
+"I know," she said. "Let's go."
 
 "We've been overleveled since we got here."
 
@@ -420,11 +420,11 @@ She found the School Nurse at Gerald's corner an hour after they'd arrived in Ma
 
 "That was an hour of grinding in a *meadow.*"
 
-"It was peaceful," he said. "I told you."
+"It was peaceful," she said. "I told you."
 
-the Mage looked at him the way he looked at equations that produced results his model didn't account for. "You're the strangest Cleric I've ever encountered," the Mage said.
+the Mage looked at her the way he looked at equations that produced results his model didn't account for. "You're the strangest Cleric I've ever encountered," the Mage said.
 
-"I'm the only Cleric you've ever encountered," he pointed out.
+"I'm the only Cleric you've ever encountered," she pointed out.
 
 "That's fair," the Mage said.
 
@@ -466,9 +466,9 @@ She looked at him with an expression that was the same expression he'd seen in a
 
 Rosa was quiet for a moment. Then: "Permit B-7. Cross-sector personal transit. Standard form, Appendix Four." She went to a drawer in the kitchen and produced the form, already half-filled out. "I keep it current," she said. "Just in case."
 
-He filed the form that afternoon. He wrote both names on it — Gerald's and Rosa's — with the careful attention he brought to all records. He brought it to The Coordinator's office before the tea appointment. He did not know, yet, that The Coordinator would approve it. He filed it because the filing was what he could do, and doing what you can do is what faith actually looks like most of the time.
+She filed the form that afternoon. She wrote both names on it — Gerald's and Rosa's — with the careful attention she brought to all records. She brought it to The Coordinator's office before the tea appointment. She did not know, yet, that The Coordinator would approve it. She filed it because the filing was what she could do, and doing what you can do is what faith actually looks like most of the time.
 
-The Science Nerd, who had followed him to the clerk's window with increasingly less protest, watched him file the form and said nothing for a long moment.
+The Science Nerd, who had followed her to the clerk's window with increasingly less protest, watched her file the form and said nothing for a long moment.
 
 Then: "The form requires a signature from the originating sector's community liaison."
 
@@ -480,7 +480,7 @@ The School Nurse looked at him.
 
 "How did you find that out?"
 
-"I've been reading the HOA charter addendums," the Mage said. "All of them. It's — it's actually a remarkable document if you treat it as a system rather than a set of rules. The internal logic is — " a pause " — the point is that Gerald's signature suffices. And Gerald will sign." She paused again. "You're going to go back to Gerald's corner and get his signature before we go to the Community Center."
+"I've been reading the HOA charter addendums," the Mage said. "All of them. It's — it's actually a remarkable document if you treat it as a system rather than a set of rules. The internal logic is — " a pause " — the point is that Gerald's signature suffices. And Gerald will sign." He paused again. "You're going to go back to Gerald's corner and get his signature before we go to the Community Center."
 
 "Yes," the School Nurse said.
 
@@ -498,7 +498,7 @@ The School Nurse said: "You've been at that corner a long time."
 
 "Yes."
 
-"She misses you," he said. "She keeps the form current."
+"She misses you," she said. "She keeps the form current."
 
 Gerald was quiet for a moment, holding the stop sign upright at his side.
 
@@ -514,17 +514,17 @@ The School Nurse had tea with her before the fight.
 
 This was not planned. There was an option in her dialogue tree — one most parties skipped because the encounter loaded with combat music and nobody expected it to have a non-combat branch — to accept her offer of refreshment. It was there because the game was thorough. Most players pressed past it.
 
-He accepted.
+She accepted.
 
-The Coordinator poured tea from a carafe that was the same shape as every other carafe in Maple Heights and set a cup in front of him, and for a moment something in her face shifted — some minor recalibration, as though the response was outside an expected parameter set.
+The Coordinator poured tea from a carafe that was the same shape as every other carafe in Maple Heights and set a cup in front of her, and for a moment something in her face shifted — some minor recalibration, as though the response was outside an expected parameter set.
 
 "You want tea," she said.
 
-"Please," he said.
+"Please," she said.
 
-She poured. He took the cup. It tasted like a cup of tea that had been designed to taste like tea: correct, thorough, and slightly sad.
+She poured. The School Nurse took the cup. It tasted like a cup of tea that had been designed to taste like tea: correct, thorough, and slightly sad.
 
-"Tell me about the guidelines," he said.
+"Tell me about the guidelines," she said.
 
 "The guidelines maintain order," she said. The words came out practiced, smooth, the surface of something deeper. "Without the guidelines, the neighborhood falls apart. People are inconsistent. They leave gaps. The guidelines fill the gaps."
 
@@ -540,31 +540,31 @@ A longer pause. "The previous administrator."
 
 The Coordinator's face did something that was almost inquiry. "Why do you want to know about before?"
 
-"Because the before explains the now," he said. "And the now is a place where a crossing guard can't get a permit to visit his daughter."
+"Because the before explains the now," she said. "And the now is a place where a crossing guard can't get a permit to visit his daughter."
 
-The Coordinator looked at her desk. At her tea. At the cup in front of him.
+The Coordinator looked at her desk. At her tea. At the cup in front of her.
 
 "The cross-sector transit protocols were added in the third revision of the Charter," she said, not quite answering. "They addressed a documented problem with unauthorized movement patterns."
 
 "Gerald is seventy-two years old and his daughter lives four blocks away," the School Nurse said, gently. "Is that the problem the protocols addressed?"
 
-She was quiet. He let her be quiet. He drank his tea.
+She was quiet. The School Nurse let her be quiet. She drank her tea.
 
 "You're going to fight me," she said finally. "Everyone who comes to the Community Center to ask questions eventually fights me. It's how this works."
 
-"I know," he said. "I'm sorry about that. I'd rather just fix the permit."
+"I know," she said. "I'm sorry about that. I'd rather just fix the permit."
 
 "The permit requires—"
 
-"A form. I know. We'll file the form." He set down his cup. "After. When this is over. We'll file the form."
+"A form. I know. We'll file the form." She set down her cup. "After. When this is over. We'll file the form."
 
-The Coordinator looked at him for a long moment with an expression that was unclassifiable in her design specifications, the way that expressions can be when a person has been seen more precisely than they expected.
+The Coordinator looked at her for a long moment with an expression that was unclassifiable in her design specifications, the way that expressions can be when a person has been seen more precisely than they expected.
 
 "That's not how this goes," she said.
 
-"It's how it's going," he said. "Unfortunately."
+"It's how it's going," she said. "Unfortunately."
 
-The fight, when it happened, was efficient and sad. The School Nurse healed through it the way he healed through everything: attentively, caring about every party member's state, keeping them whole not because wholeness was the tactical condition for victory but because they were people and people should be whole. The Coordinator fought well — methodically, correctly, by every protocol she had — and when she was defeated her final dialogue read:
+The fight, when it happened, was efficient and sad. The School Nurse healed through it the way she healed through everything: attentively, caring about every party member's state, keeping them whole not because wholeness was the tactical condition for victory but because they were people and people should be whole. The Coordinator fought well — methodically, correctly, by every protocol she had — and when she was defeated her final dialogue read:
 
 *Protocol cannot account for people who care about the protocol.* A pause. *I don't know what to do with that variable.*
 
@@ -572,19 +572,19 @@ The fight, when it happened, was efficient and sad. The School Nurse healed thro
 
 *File the form,* she said, at the very end. *For Gerald. I'll approve it.*
 
-He filed the form.
+She filed the form.
 
-He did it before they went to World 3. He made a note of it: *Form submitted. Gerald's permit approved. Daughter notified.* He didn't know if Gerald would actually see his daughter — he didn't know if those NPCs had the capacity to persist meaningfully once a world was left behind. But the form was filed, and that was what he could do, and so he did it.
+She did it before they went to World 3. She made a note of it: *Form submitted. Gerald's permit approved. Daughter notified.* She didn't know if Gerald would actually see his daughter — she didn't know if those NPCs had the capacity to persist meaningfully once a world was left behind. But the form was filed, and that was what she could do, and so she did it.
 
 the Mage watched this and said nothing for a moment.
 
 Then: "You know she might not actually be able to visit him. The world is—"
 
-"I know," he said.
+"I know," she said.
 
 "It might not matter."
 
-"It might," he said. "And it cost us very little to try."
+"It might," she said. "And it cost us very little to try."
 
 He wrote something in his notebook. The Cleric didn't see what.
 
@@ -648,9 +648,9 @@ The clockwork overworld between Brasston and Cogsworth Junction was designed to 
 
 The party had been in the clockwork overworld for eleven hours.
 
-the Mage had left after the second hour. She had spotted a gantry structure three hundred meters off the critical path that had, he said, a non-standard gear configuration suggesting it had been retrofitted after the original construction, which meant there was a second architect involved in Cogsworth's design, which was directly relevant to the hypothesis he'd been developing since the blueprints in the Mechanism's outer records room. The Mage would catch up. Had gone northeast.
+the Mage had left after the second hour. He had spotted a gantry structure three hundred meters off the critical path that had, he said, a non-standard gear configuration suggesting it had been retrofitted after the original construction, which meant there was a second architect involved in Cogsworth's design, which was directly relevant to the hypothesis he'd been developing since the blueprints in the Mechanism's outer records room. The Mage would catch up. Had gone northeast.
 
-the Rogue had lasted four hours before the critical path's lack of interesting geometry had convinced him that the disused maintenance shafts running parallel to the main overworld probably connected to something worth finding. He would also catch up. He had gone north-northwest.
+the Rogue had lasted four hours before the critical path's lack of interesting geometry had convinced the Rogue that the disused maintenance shafts running parallel to the main overworld probably connected to something worth finding. The Rogue would also catch up. Had gone north-northwest.
 
 Which left the Steampriest, the Enforcer, and the Busker in the clockwork overworld, fighting sentinel after sentinel in the steady rhythm of people who have found a rhythm and are unwilling to abandon it.
 
@@ -716,7 +716,7 @@ The Busker found the melody. It had the shape of the landscape in it — the fou
 
 They came out of the clockwork overworld with a sentinel activation chip that was a key to a maintenance passage bypassing the outer defenses of the Mechanism entirely, which they had found in the fourteenth fight when the sentinel's attack pattern extended into a phase five that only appeared after twelve consecutive encounters in the same grid sector. Most parties never triggered it. It led to a shorter path to the Calibrant's chamber than the designed critical route, which was a slightly insane outcome: they had ground their way into an efficiency that the efficiency-obsessed world had not anticipated.
 
-"The Calibrant is going to be annoyed," the Rogue said, when they regrouped at the Mechanism's outer gate. He had found the maintenance shaft network. the Mage had found the retrofitted gantry and its implications. The Steampriest and the Enforcer had found the chip.
+"The Calibrant is going to be annoyed," the Rogue said, when they regrouped at the Mechanism's outer gate. The Rogue had found the maintenance shaft network. the Mage had found the retrofitted gantry and its implications. The Steampriest and the Enforcer had found the chip.
 
 "We're forty-seven hours behind schedule," the Steampriest said. "And we have a shorter path than the one the Calibrant built."
 
@@ -736,7 +736,7 @@ The Mage had been there alone for forty minutes with blueprints that showed the 
 
 "Show me."
 
-"The handwriting. The Mechanism's design notes. The annotations in the margins. These are the same hand as the enchantment records from the capital in World 1. The same hand as the HOA charter addendums from World 2." She spread the pages on the workbench. "One entity designed all of this. Every world. The same entity has been playing the villain in every world. Mordaine, The Coordinator, The Regulator — they're the same. One thing. Wearing different masks."
+"The handwriting. The Mechanism's design notes. The annotations in the margins. These are the same hand as the enchantment records from the capital in World 1. The same hand as the HOA charter addendums from World 2." He spread the pages on the workbench. "One entity designed all of this. Every world. The same entity has been playing the villain in every world. Mordaine, The Coordinator, The Regulator — they're the same. One thing. Wearing different masks."
 
 The Steampriest was quiet. Looking at the blueprints, but also somewhere else. "Sprocket's father said the Regulator walked in knowing every gear. Like someone who'd designed the place. And Marta said the Warden went quiet, and then the cave went wrong — feeding the darkness deliberately. And The Coordinator — Gerald said she bothered when people actually cared about the guidelines. Something she couldn't account for."
 
@@ -970,7 +970,7 @@ He looked at the folder in the Safety Officer's hands. Then he looked at the san
 
 "In the cafeteria," the Safety Officer said, upon rejoining the party, "there are twelve tables. I've spoken to people at nine of them. Three left. But first: level two, sixteen hundred hours."
 
-The Lab Technician looked at the chronometer, then at the encounter data, then at the party's current level relative to the world's expected challenge curve. She had been running these numbers throughout World 4 and they had stopped being surprising by World 2. What had not stopped being interesting was the accumulating dataset of what the extended playtime produced.
+The Lab Technician looked at the chronometer, then at the encounter data, then at the party's current level relative to the world's expected challenge curve. He had been running these numbers throughout World 4 and they had stopped being surprising by World 2. What had not stopped being interesting was the accumulating dataset of what the extended playtime produced.
 
 "The one at table eleven," the Mage said slowly, "has seventeen lines of dialogue in the game data. I know because I've been reading the encounter logs the Calibrant generates. Most of those lines trigger only if a party member initiates conversation at specific time indices within the world's timeline."
 
@@ -1030,7 +1030,7 @@ Table eleven had a woman named Sable who had been the union representative befor
 
 "I didn't," Sable said. "I stayed at this table every shift, just in case. In case someone — stayed long enough." She looked at them. "You're the first people who stayed long enough."
 
-"You have both Sable's codes and Minna's card," the Mage said, when they left the cafeteria. Her voice had an analytical quality that the Safety Officer recognized as the Mage's version of being moved. "Combined they unlock the Director's private records and the external server backup. Those two pieces of information were in this world the whole time. In two people who sat in two different places and waited."
+"You have both Sable's codes and Minna's card," the Mage said, when they left the cafeteria. His voice had an analytical quality that the Safety Officer recognized as the Mage's version of being moved. "Combined they unlock the Director's private records and the external server backup. Those two pieces of information were in this world the whole time. In two people who sat in two different places and waited."
 
 "Yes," the Safety Officer said.
 

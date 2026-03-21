@@ -28,7 +28,7 @@ The School Nurse's first-aid kit became something more elaborate — a satchel f
 
 The Science Nerd's pen had changed — heavier, warmer, the click replaced by a faint hiss of pressurized something. His backpack had become a satchel that clattered with glass when he moved. He touched the vials inside, felt the labels, read them with his fingers in the dark: *ferrous catalyst, stabilized aether, reagent seven.* The Science Nerd was gone. The Alchemist had arrived, and he was already calculating what could be made from what was available, and what could be made from that, and what that would cost.
 
-The Skater Kid was still himself, mostly. That was the uncomfortable part. Whatever Saboteur was, it wore his face with the same lopsided ease. His hoodie had become a leather coat with too many pockets. His sneakers had become boots with rubber soles — better for running on pipes, he noted, before realizing he shouldn't know that yet. He patted his pockets and found tools he hadn't put there. Lockpicks. A small hammer. Something that was either a wrench or a weapon and had clearly decided to be both.
+The Skater Kid was still the same, mostly. That was the uncomfortable part. Whatever Saboteur was, it wore the same face with the same lopsided ease. The hoodie had become a leather coat with too many pockets. The sneakers had become boots with rubber soles — better for running on pipes, the Saboteur noted, before realizing that shouldn't be known yet. A quick check of the pockets turned up tools that hadn't been put there. Lockpicks. A small hammer. Something that was either a wrench or a weapon and had clearly decided to be both.
 
 The Band Kid — and she had always been the Band Kid, with the trumpet case she carried everywhere like a totem — looked at herself last. Her instrument was still an instrument. Sort of. The trumpet had grown more elaborate, with additional valves and a resonance chamber along the bell that would catch and amplify something other than sound. It would catch *attention.* She was a Busker now. She understood, distantly, that this meant she played for everyone and answered to no one, and that this was a form of power the Regulator would not have planned for.
 
@@ -36,7 +36,7 @@ The Band Kid — and she had always been the Band Kid, with the trumpet case she
 
 "It's not," said the former Science Nerd, now Alchemist. "It's the same as the last time. Just different clothes."
 
-She wasn't wrong. That was the part that made the transition disorienting — not the costume change, but the recognition of it. In the suburbs, they had forgotten being knights and mages until the memory crept back. Here, they remembered everything. They remembered Harmonia and the throne room and the way Mordaine had smiled with absolute certainty. They remembered Maple Heights and the Coordinator's memos and the monitor in the HOA office showing their own stats.
+He wasn't wrong. That was the part that made the transition disorienting — not the costume change, but the recognition of it. In the suburbs, they had forgotten being knights and mages until the memory crept back. Here, they remembered everything. They remembered Harmonia and the throne room and the way Mordaine had smiled with absolute certainty. They remembered Maple Heights and the Coordinator's memos and the monitor in the HOA office showing their own stats.
 
 They remembered. And remembering was a variable the system had not planned for.
 
@@ -162,9 +162,9 @@ She set down her cup.
 
 "You keep winning and moving forward. That's consistent. And every time you win, the next world is harder. Doesn't that seem like something someone designed?"
 
-The Alchemist turned her vials over in her hands. Reagent seven caught the light.
+The Alchemist turned his vials over in his hands. Reagent seven caught the light.
 
-"Yes," she said. "It does."
+"Yes," he said. "It does."
 
 ---
 
@@ -204,7 +204,7 @@ The sentinel on the left raised a calibration rod. A small screen on its chest d
 
 The screen updated: **CORRECTION: STANDARDIZATION OF PARAMETERS. RESISTANCE WILL BE NOTED.**
 
-The Saboteur already had a wrench out. He'd been carrying it since the transformation, and it had now revealed itself to be exactly the kind of wrench designed to put gears in wrong and cause interesting problems. "Does 'noted' mean anything bad?"
+The Saboteur already had a wrench out. It had been there since the transformation, and it had now revealed itself to be exactly the kind of wrench designed to put gears in wrong and cause interesting problems. "Does 'noted' mean anything bad?"
 
 **RESISTANCE HAS BEEN NOTED.**
 
@@ -212,7 +212,7 @@ Three more sentinels arrived from the connecting street.
 
 The fight was quick and educational. Clockwork enemies, the party learned, were extremely good at precision and extremely bad at improvisation. The sentinels' attack patterns were optimized — efficient arcs, no wasted motion, attacks timed to land between actions — but the patterns were *fixed.* Find the gap in the pattern, exploit the gap, win.
 
-The Alchemist found the gap in forty-three seconds. She was annoyed it took that long.
+The Alchemist found the gap in forty-three seconds. He was annoyed it took that long.
 
 After the sentinels went down — not in pieces, exactly, but in a condition that suggested they would require significant recalibration — the party stood in the street breathing hard and looking at the clock tower.
 
@@ -224,7 +224,7 @@ The clock tower looked back. Or something that lived inside it did.
 
 "Is that good or bad?"
 
-She thought about it. "The Regulator is running out of options that don't involve talking to us directly. I think that's where we're going."
+He thought about it. "The Regulator is running out of options that don't involve talking to us directly. I think that's where we're going."
 
 ---
 
@@ -276,7 +276,7 @@ The sentry went down mid-apology. Its chest screen flashed once before going dar
 
 "Escalate to the Regulator," the Saboteur read. "That's where we're going anyway."
 
-"I know," said the Alchemist. She was already walking. "I think that's the point."
+"I know," said the Alchemist. He was already walking. "I think that's the point."
 
 ---
 
@@ -306,7 +306,7 @@ They were positioned at intervals along every elevated walkway, releasing bursts
 
 The Saboteur, who had been watching the vent's rhythm for the past three minutes, simply ran across during the fifteen-second gap and waved from the other side.
 
-"It's not that hard," he said.
+"It's not that hard," the Saboteur said.
 
 "You didn't *time* it," the Alchemist said.
 
@@ -320,7 +320,7 @@ The Steampriest crossed next, then the Busker, then the Alchemist — who timed 
 
 The Alchemist looked at him.
 
-"Four seconds," she said.
+"Four seconds," he said.
 
 "Still made it."
 
@@ -336,11 +336,11 @@ Its chest panel bore a clock face, and the clock face showed a count, not a time
 
 It spoke when they approached. The voice was mechanical but not synthesized — it sounded like speech processed through a clock mechanism, each word punctuated by the ticking of something deep within.
 
-"HALT. *tick* ACCESS TO THE MAINSPRING MECHANISM IS RESTRICTED. *tick* PLEASE PRESENT AUTHORIZATION CREDENTIALS. *tick*"
+"HALT. *tick* ACCESS TO THE MAINSPRING MECHANISM IS RESTRICTED. *tick* PLEASE PRESENT AUTHORIZATION CLASS: [RETRIEVE] — [ERROR: CLASS NOT FOUND]. *tick* UNAUTHORIZED ENTRY TRIGGERS GUARDIAN PROTOCOL. *tick* THIS HAS BEEN LOGGED. *tick* THIS IS VIOLATION 1,847 OF THIS ENTRANCE POINT. *tick* I HAVE COUNTED THEM ALL. *tick*"
 
 "We don't have credentials," the Steamknight said.
 
-"*tick* THEN YOU ARE UNAUTHORIZED. *tick* UNAUTHORIZED ACCESS TRIGGERS GUARDIAN PROTOCOL. *tick* THIS HAS BEEN LOGGED. *tick* INITIATING. *tick*"
+"*tick* THEN YOU ARE UNAUTHORIZED. *tick* PROCEEDING. *tick*"
 
 "How long have you been guarding this entrance?" the Busker asked.
 
@@ -368,7 +368,7 @@ The fight was like battling architecture. The Warden moved the way a door moves 
 
 The Alchemist found the gear that was already stuttering.
 
-"There," she said, pointing at the Warden's left shoulder, where the skipping gear lived. "If we disrupt that one, the whole left-side timing chain fails. The right side will compensate, but the compensation will be wrong — it'll overshoot by one step. That creates an opening every four seconds."
+"There," he said, pointing at the Warden's left shoulder, where the skipping gear lived. "If we disrupt that one, the whole left-side timing chain fails. The right side will compensate, but the compensation will be wrong — it'll overshoot by one step. That creates an opening every four seconds."
 
 "How big is the opening?" the Steamknight asked, parrying a blow that left his arms numb.
 
@@ -386,9 +386,13 @@ When it went down — gears seizing, joints locking in the wrong positions, the 
 
 Its last output, transmitted to the party through speakers built into its jaw, was this:
 
+"*tick* PRIMARY DIRECTIVE: [RETRIEVE] — [ERROR: DIRECTIVE CORRUPTED OR ABSENT]. *tick* RUNNING ON CACHED PARAMETERS. *tick* CACHED PARAMETERS: GUARD THIS POSITION. *tick* GUARD THIS POSITION. *tick* GUARD — *tick*"
+
+A pause, and then, quieter — the volume dropping not deliberately but because the power was going:
+
 "*tick* 847,293 HOURS. *tick* REVIEW... SUBMITTED. *tick* I WONDER IF ANYONE WILL READ IT. *tick*"
 
-A pause, and then:
+And then, last of all:
 
 "*tick* I COUNTED EVERY ONE. *tick* THAT IS WHAT I DO. *tick* I COUNT. *tick*"
 
@@ -414,7 +418,7 @@ The floor near the furnace access was slick. Oil, thin-spread across the iron pl
 
 "Everything was designed," the Steamknight said.
 
-"No. I mean — designed to be *impressive.* The outer gears run actual mechanisms. The inner gears run nothing. They're here because they look like they should be here. Whoever built this wanted people to come in and feel small." She looked up. "You don't build gears this large because you need gears this large. You build them so people will walk underneath them and understand that they're small and the machine is vast."
+"No. I mean — designed to be *impressive.* The outer gears run actual mechanisms. The inner gears run nothing. They're here because they look like they should be here. Whoever built this wanted people to come in and feel small." He looked up. "You don't build gears this large because you need gears this large. You build them so people will walk underneath them and understand that they're small and the machine is vast."
 
 The Busker was quiet for a moment. "That's a very particular thing to know about someone's psychology."
 
@@ -430,7 +434,7 @@ Not dramatically — not a trap triggering or a wall sliding. Just: the corridor
 
 "Or it's trying to get us lost."
 
-"For a labyrinth to work, the center has to be findable. Otherwise it's just a maze with no exit, and a maze with no exit doesn't tell you anything useful about the person trapped in it." She chose a direction. "This way."
+"For a labyrinth to work, the center has to be findable. Otherwise it's just a maze with no exit, and a maze with no exit doesn't tell you anything useful about the person trapped in it." He chose a direction. "This way."
 
 The dungeon moved twice more. Each time, the Alchemist chose a direction with the confidence of someone who had stopped worrying about being wrong and started worrying about being slow.
 
@@ -468,7 +472,7 @@ At the bottom of the stack, a note separate from the technical annotations — i
 
 "Margin of what?" the Busker asked. She was looking at the five overlaid worlds. The same shape, the same distances, the same geometry in five different aesthetics. "Margin of error? Margin of schedule?"
 
-"Margin of..." The Alchemist touched the blueprints. The handwriting. The same hand on all five worlds. "The same person designed all of these. Or the same kind of thinking did. Every place we've been — Harmonia, Maple Heights, here — same proportions. Same structure. Same..." She turned to the others. "The same author."
+"Margin of..." The Alchemist touched the blueprints. The handwriting. The same hand on all five worlds. "The same person designed all of these. Or the same kind of thinking did. Every place we've been — Harmonia, Maple Heights, here — same proportions. Same structure. Same..." He turned to the others. "The same author."
 
 "Mordaine," the Steamknight said.
 
@@ -500,7 +504,7 @@ The Steamknight blocked. Barely.
 
 "I arrived before the order was given."
 
-The Saboteur went sideways, which he was good at.
+The Saboteur went sideways, which was the Saboteur's particular gift.
 
 "This has been happening more frequently."
 
@@ -620,7 +624,7 @@ The Busker looked at the screens. At the numbers. At the five-world profile disp
 
 The Regulator turned back to the console. Adjusted a dial. The numbers on the screen shifted slightly — recalibrating something, somewhere. "The Grand Mechanism maintains the integrity of the transition infrastructure. Each world must be kept within operating parameters. Too much deviation in one world affects the structural coherence of the next."
 
-"So it's engineering," the Alchemist said. She was watching the Regulator's hands. The precision of the adjustments. The economy of motion. "Pure engineering. No agenda. Just maintenance."
+"So it's engineering," the Alchemist said. He was watching the Regulator's hands. The precision of the adjustments. The economy of motion. "Pure engineering. No agenda. Just maintenance."
 
 The Regulator didn't answer immediately.
 
@@ -674,7 +678,7 @@ The Regulator fought like a machine that had learned to fight. Not because fight
 
 They used the Mechanism. Not to change the rules — the dials on the console stayed where they were, the screens continued displaying the party's unaltered stats — but to use the environment itself as a weapon. Gear platforms rising and falling on precise schedules. Steam vents venting at timed intervals. The shifting architecture of the dungeon, which the Regulator could navigate with perfect certainty because they knew exactly when each section would rotate and where each rotation would carry them.
 
-The Steamknight fought through the rising platforms and learned their rhythm. The Alchemist threw reagents timed to the steam vents, letting the blasts carry her compounds in directions she couldn't have aimed herself. The Saboteur went sideways, as he always did, and found that the Regulator had accounted for sideways — there was a gear assembly at exactly the position he'd reached, calibrated to close off that approach.
+The Steamknight fought through the rising platforms and learned their rhythm. The Alchemist threw reagents timed to the steam vents, letting the blasts carry his compounds in directions he couldn't have aimed himself. The Saboteur went sideways, as always, and found that the Regulator had accounted for sideways — there was a gear assembly at exactly the position the Saboteur had reached, calibrated to close off that approach.
 
 "They know our patterns," the Saboteur said, finding another sideways.
 
@@ -734,7 +738,15 @@ They suspected. They had been suspecting for two worlds. The blueprints, the han
 
 The Regulator looked at him. The Victorian engineer's face. The eyes that were not Victorian.
 
-"You'll find out when you arrive," the Regulator said. "That's how it's always worked."
+"You'll find out when you arrive." A pause. Something moved behind the expression — a calculation running faster than usual, recalibrating. "That's how it's always worked."
+
+The Alchemist was watching the Regulator's hands on the console. Watching the way they stilled before each answer. The way they moved — the adjustment, then the answer, always in that order. As if the answer required the dial to be set first. As if the words themselves were a parameter being deployed.
+
+"You said 'always,'" the Alchemist said.
+
+The Regulator didn't turn around.
+
+"That's how it works," the Regulator said, correcting the tense without acknowledging the correction.
 
 They turned back to the console. Made one more adjustment. And the world began to wind down.
 
@@ -752,13 +764,13 @@ The party watched all of it from the center of the Mechanism's chamber. The Regu
 
 Gray. Concrete. Fluorescent lighting. The hum of industrial machinery without the romance of steam. A world stripped of beauty and pretense, built for function and nothing else. The ceiling was flat. The ground was poured. The smell was recycled air.
 
-"Next world," the Saboteur said. He didn't make it a question.
+"Next world," the Saboteur said. Not a question.
 
 "They said this world served its purpose," the Steamknight said. "Same as the others."
 
 "What does that mean?" the Steampriest asked.
 
-Nobody answered. The Alchemist was already looking at the industrial world around them — the concrete, the fluorescent haze, the monitors on every corner showing numbers that were climbing — and writing something in the margin of her mental notebook. Not a conclusion. A question she intended to get an answer to.
+Nobody answered. The Alchemist was already looking at the industrial world around them — the concrete, the fluorescent haze, the monitors on every corner showing numbers that were climbing — and writing something in the margin of his mental notebook. Not a conclusion. A question he intended to get an answer to.
 
 The new world didn't welcome them. It simply *was.* No portal. No transition. No ceremony. One world ended and another began, and the seam between them was visible, deliberate, and utterly without apology.
 

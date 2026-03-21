@@ -24,7 +24,7 @@ Their stats were gone. Not zeroed — gone. The floating numbers that had follow
 
 And their jobs.
 
-The Firewall looked at himself and found that the word no longer applied. The armor of rules was still present, but the rules themselves had simplified to a single principle. The Antivirus felt her quarantine protocols become something quieter and more fundamental. The Compiler reached for his light-tablet and found that the tablet was gone, but the capacity to write — to think something and have it become real — remained. The Exploit felt all the edges of every system she'd ever found collapse into a single, general sensitivity to where things ended and other things began. The Broadcaster — the Voice, she thought, because that was the word now, that was the only word — felt her frequencies reduce to something pure and singular: the ability to say true things and be heard.
+The Firewall looked at himself and found that the word no longer applied. The armor of rules was still present, but the rules themselves had simplified to a single principle. The Antivirus felt her quarantine protocols become something quieter and more fundamental. The Compiler reached for his light-tablet and found that the tablet was gone, but the capacity to write — to think something and have it become real — remained. The Exploit felt all the edges of every system ever found collapse into a single, general sensitivity to where things ended and other things began. The Broadcaster — the Voice, she thought, because that was the word now, that was the only word — felt her frequencies reduce to something pure and singular: the ability to say true things and be heard.
 
 Their jobs had names still. Or rather: their jobs had always had these names. The earlier names had been costumes. In the abstract world, the costumes came off.
 
@@ -34,7 +34,7 @@ The Antivirus was Faith. She had healed through prayer in a medieval world and h
 
 The Compiler was Logic. He had cast spells in World 1 by speaking words whose grammar was a kind of formal system. He had run reactions in World 3. He had written code in World 5. In all cases he had been doing the same thing: taking what was known, applying what was true, and deriving from it what must follow. The specific notation changed. The underlying process was pure logic, which was also, he understood now, a kind of love — the kind that says: I will think carefully about this because it matters.
 
-The Exploit was Edge. Every system has a boundary. Every rule has a limit case. Every world had a place where it ended and something else began, and she had always been the one who found those places — not to break them, or not only to break them, but because the edge of a thing is where you learn what the thing actually is. The rule reveals itself most fully when it's almost violated. The world shows its true shape at its own perimeter. She had been studying the shape of things for five worlds. She knew every shape now.
+The Exploit was Edge. Every system has a boundary. Every rule has a limit case. Every world had a place where it ended and something else began, and the Exploit had always been the one who found those places — not to break them, or not only to break them, but because the edge of a thing is where you learn what the thing actually is. The rule reveals itself most fully when it's almost violated. The world shows its true shape at its own perimeter. Five worlds of studying the shape of things. Every shape known now.
 
 The Voice. The Broadcaster had found words for things that had no words, had given rhythm to disorder, had named what the others couldn't name. In every world, in every register — ballad, march, broadcast, frequency — she had been doing the same work: giving voice to what others couldn't express. Not performing. Not amplifying. Voicing. The world exists more fully when it is spoken.
 
@@ -184,6 +184,12 @@ There were no stats floating above it. There was no HP bar, no name-tag, no ATK 
 
 It looked at the party with the full knowledge of what it was: not a being but a concept given temporary form for the purpose of asking a question. And the question was the question that every obstacle asks: *do you deserve to proceed?*
 
+It looked, specifically, at Resolve. Not at the party as a whole. At the one who stood.
+
+*What are you trying to get to?*
+
+Not a voice. Not words. The question arrived in the space between the chest and the sternum, in the place where doubt and purpose are stored alongside each other, neither fully winning.
+
 Resolve stood up.
 
 The fight was not a fight in the mechanical sense — no damage numbers floated in the air, no AP accumulated, no turn order was managed. It was a fight in the way that standing is a fight, sometimes. The way remaining present when something wants you to leave is a fight. Resolve faced the Warden of Form and did not attack it. Did not try to destroy it. Did not look for an edge to exploit or a pattern to break. Just stood. Remained standing. Was present.
@@ -257,6 +263,12 @@ Time, briefly, felt generous.
 The Curator of Entropy was last. The final Masterite.
 
 It did not announce itself. It was simply there, in the way that certain mornings are simply there — the kind that feel already late, already ending, the light too thin and the hours already slipping. It did not look threatening. It did not look like anything that would need to look threatening. It had the quality of a room after the furniture has been moved out: the same shape, all the context gone.
+
+"Everything ends," it said. Not loudly. Not with the weight of a proclamation. The way you say something true when you have been saying it long enough that the truth has gone smooth from handling. "Even this."
+
+A pause in which something that was specific became slightly less so — not dramatically, just the leading edge of what it was.
+
+"I am not saying it to be cruel. I am saying it because it is my function to say it, and also because it is true, and truth and function are the same thing to me." A pause that belonged to something genuinely uncertain about this claim. "I don't know if that's sad. I have been trying to decide for a long time. I have not decided."
 
 It did not drain resources. In The Vertex there were no resources to drain. It drained *meaning.* Not dramatically — not with a beam of dark light or a spectral touch. It simply made things... less specific. Less yours.
 

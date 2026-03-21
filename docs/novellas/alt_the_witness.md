@@ -65,7 +65,7 @@ The Fighter drew his sword. The Rogue reached for a thrown knife. The Mage opene
 
 The Bard played.
 
-The pack leader turned its clouded eye toward the sound and reconsidered something. Not the fight — wolves do not reconsider fights — but the accounting. The arithmetic of whether this particular road was worth it. The Cleric, who accompanied them in spirit (the Bard considered himself the closest thing to a Cleric sensibility in the group; her secondary devotion to care shaped the music even then), sent warmth outward from her hands, the kind of warmth that says *we are not prey* without requiring anyone to be struck.
+The pack leader turned its clouded eye toward the sound and reconsidered something. Not the fight — wolves do not reconsider fights — but the accounting. The arithmetic of whether this particular road was worth it. The Cleric, who accompanied them in spirit (the Bard considered herself the closest thing to a Cleric sensibility in the group; her secondary devotion to care shaped the music even then), sent warmth outward from her hands, the kind of warmth that says *we are not prey* without requiring anyone to be struck.
 
 The wolves left.
 
@@ -490,7 +490,7 @@ The Warden processed all four answers. Its final phase collapsed not into defeat
 
 It fell.
 
-The Bard sat on the digital floor. The Rogue did not say "we don't have time." She sat beside her.
+The Bard sat on the digital floor. The Rogue did not say "we don't have time." The Rogue sat beside her.
 
 "That's five," the Rogue said.
 
@@ -570,13 +570,13 @@ Then: "I should have fought the Tempo myself. In World 3."
 
 "I was becoming something the schedule didn't write," the Bard said.
 
-She stared at her.
+He stared at her.
 
 "I was there," the Voice said.
 
 "Tell me," the Mage said. "What it was like."
 
-She told her. She told her every fight she had been present for and she had not, and he listened the way he listened to data — completely, without interruption — and his eyes had the look of someone receiving something that was not data but was nonetheless true.
+She told him. She told him every fight she had been present for and the Mage had not, and he listened the way he listened to data — completely, without interruption — and his eyes had the look of someone receiving something that was not data but was nonetheless true.
 
 ---
 

@@ -18,19 +18,19 @@ The sword was not gone. It had become a baton. He held it for a moment — same 
 
 He was the Security Guard now. He didn't know what a security guard was. He just knew he was still the one who stood in front.
 
-The Cleric's robes had become scrubs. Green. With small prints of what might have been angels but were probably more likely cartoon bears. His holy symbol had become a laminated card that read SCHOOL NURSE and his leather medical satchel had become a first-aid kit that had somehow acquired a sticker of a smiling bandage.
+The Cleric's robes had become scrubs. Green. With small prints of what might have been angels but were probably more likely cartoon bears. Her holy symbol had become a laminated card that read SCHOOL NURSE and her leather medical satchel had become a first-aid kit that had somehow acquired a sticker of a smiling bandage.
 
-He read the card twice. Then he looked at the Fighter's badge. Then he said, "I think we're still supposed to be helping people."
+She read the card twice. Then she looked at the Fighter's badge. Then she said, "I think we're still supposed to be helping people."
 
-The Mage — who had gone through the portal in traveling robes with five pocket-books and a staff that crackled with latent fire — came out the other side in jeans and a t-shirt advertising a university whose name she didn't recognize, carrying a backpack and what appeared to be a scientific calculator. The staff was a pen. Specifically a pen that said PROPERTY OF MAPLE HEIGHTS MIDDLE SCHOOL DO NOT REMOVE, which she had not taken from any middle school, which made the inscription philosophically troubling.
+The Mage — who had gone through the portal in traveling robes with five pocket-books and a staff that crackled with latent fire — came out the other side in jeans and a t-shirt advertising a university whose name he didn't recognize, carrying a backpack and what appeared to be a scientific calculator. The staff was a pen. Specifically a pen that said PROPERTY OF MAPLE HEIGHTS MIDDLE SCHOOL DO NOT REMOVE, which he had not taken from any middle school, which made the inscription philosophically troubling.
 
-She pressed the pen's button. It clicked. Something in the clicking felt like it still, potentially, contained fire.
+He pressed the pen's button. It clicked. Something in the clicking felt like it still, potentially, contained fire.
 
-The Rogue — Vex — adjusted his hoodie. He had, somehow, acquired a skateboard. He regarded it. He had never in his life stood on a wheeled plank of wood. He stepped on it experimentally and immediately stepped off.
+The Rogue adjusted a hoodie that had appeared from somewhere. A skateboard had also appeared. The Rogue regarded it. There was no memory of ever having stood on a wheeled plank of wood. One foot went on it experimentally and immediately came off.
 
-"I know how this works," he said, staring at the board. "I don't know how I know. I just do."
+"I know how this works," the Rogue said, staring at the board. "I don't know how I know. I just do."
 
-"New world," Mira said, testing the calculator. "New context. Same skills, different costume."
+"New world," the Mage said, testing the calculator. "New context. Same skills, different costume."
 
 The Bard was looking at himself in the reflection of a car window. The lute was gone. In its place: a trumpet case. He opened it. Examined the instrument. Raised it to his lips.
 
@@ -52,11 +52,11 @@ The party walked down Elm Street — there was also an Oak Street, a Maple Lane,
 
 "It looks like a village," the Fighter said. He was using the word because he didn't have another one.
 
-"It looks like a village that's been through several stages of middle management," Mira said. "Everything is the same distance apart. The same height. The same color within an approved range." She was writing in a new notebook — a spiral-bound one with a cartoon cat on the cover, which had appeared in her backpack and which she was already treating as canonical. "Someone standardized this."
+"It looks like a village that's been through several stages of middle management," the Mage said. "Everything is the same distance apart. The same height. The same color within an approved range." He was writing in a new notebook — a spiral-bound one with a cartoon cat on the cover, which had appeared in his backpack and which he was already treating as canonical. "Someone standardized this."
 
 "Someone standardized the trees," the Cleric said, looking at the evenly spaced oaks lining the street. "Those are the same species, the same age, the same pruning. That's not natural growth."
 
-"Nothing here is natural growth," Vex said.
+"Nothing here is natural growth," the Rogue said.
 
 A kid on a bicycle rode past. He slowed down, circled back, and examined them with the open assessment of someone who has not yet learned to pretend they aren't staring.
 
@@ -70,9 +70,9 @@ He rode away. The party stood on the sidewalk and contemplated the concept of se
 
 "He called this armor," the Fighter said, looking at his jacket.
 
-"He called it *cosplay,*" Mira said. "Which means he thinks we're dressed as something." She looked down at her own outfit. "Dressed as people who belong in a different... genre."
+"He called it *cosplay,*" the Mage said. "Which means he thinks we're dressed as something." He looked down at his own outfit. "Dressed as people who belong in a different... genre."
 
-"Dressed as ourselves in a different world," the Bard said. He had opened the trumpet case again and was touching the instrument with the tentative affection of someone bonding with livestock they hadn't chosen. "That's either profound or embarrassing and I haven't decided which."
+"Dressed as ourselves in a different world," the Bard said. She had opened the trumpet case again and was touching the instrument with the tentative affection of someone bonding with livestock they hadn't chosen. "That's either profound or embarrassing and I haven't decided which."
 
 The strip mall was two blocks east. It had a pizza place whose ventilation perfumed half the block with oregano and hot cardboard, a dry cleaner, a candle shop whose fragrance — something called "Coastal Linen Breeze" — leaked through the walls and competed aggressively with the pizza smell until both lost, and — inexplicably — an armory. Not a sporting goods store. An armory. It was wedged between the candle shop and a frozen yogurt place, and its sign read **YE OLDE MEDIEVAL SURPLUS** in a font that was trying very hard.
 
@@ -86,15 +86,15 @@ The shopkeeper was a teenager in a vest who was doing something on her phone tha
 
 "From wherever. I just ring them up." She tapped her screen. "You want the potions? They're the only things that actually work. The weapons are decorative, which I am legally required to say. The potions are just really good juice or whatever."
 
-"They are very much not juice," Vex said.
+"They are very much not juice," the Rogue said.
 
 "Right, yeah. Wink wink." She finally looked up, assessed the group, looked back at her phone. "You're from the other side of the portal, aren't you. Don't worry about it. People come through sometimes. You get used to it."
 
-"Who else has come through?" Mira asked.
+"Who else has come through?" the Mage asked.
 
 "Mostly just you guys, lately." She scrolled through something. "The stuff tends to arrive in batches. Every few weeks there's a shipment. I stopped asking about the logistics." She shrugged. "The HOA keeps tabs on all of it. They keep tabs on everything."
 
-"This HOA," Mira said. "What are they, exactly?"
+"This HOA," the Mage said. "What are they, exactly?"
 
 She finally set the phone down. "Honey," she said, and her voice had the tired patience of a seventeen-year-old who has been dealing with this for longer than seventeen-year-olds should have to deal with anything, "you are five people in costumes carrying medieval weaponry in a suburb where the mailboxes are *already* alive. You are maximum variance. The Coordinator is going to find you within the day. Stock up first."
 
@@ -114,15 +114,15 @@ Behind the mower, a mailbox opened its door with a creak that was too slow and t
 
 Behind that, a sprinkler system erupted from the lawn with pressure that shouldn't have been possible from residential plumbing, firing jets of water in tight, precise arcs.
 
-"The lawn mower is the tank," Mira said, backing up and pulling out her calculator. "High defense. Low mobility. Focus magical damage — fire pen, if the mower is combustible." She pressed a button on the calculator. "The mailbox has ranged attack and paper-cut damage, which sounds minor but—"
+"The lawn mower is the tank," the Mage said, backing up and pulling out his calculator. "High defense. Low mobility. Focus magical damage — fire pen, if the mower is combustible." He pressed a button on the calculator. "The mailbox has ranged attack and paper-cut damage, which sounds minor but—"
 
-An envelope hit Vex in the ear with enough force to ring it. He made a sound of offense.
+An envelope hit the Rogue in the ear with enough force to ring it. A sound of offense was made.
 
 "—is not minor. Neutralize the mailbox first. The sprinkler has area control. We need to move constantly or it—"
 
 The sprinkler tracked directly to the Fighter's position and hit him dead center in the chest.
 
-"—locks on," Mira finished. "It has targeting. Somehow."
+"—locks on," the Mage finished. "It has targeting. Somehow."
 
 The fight that followed was undignified in ways that the party had not, in their combined experience, encountered. Defeating a riding lawn mower with a security baton required a commitment to not thinking too hard about what you were doing. The Cleric's healing hands, applied to ears stinging from paper cuts, felt like a misallocation of divine grace. The Mage's fire — drawn from the pen, which did in fact contain fire, though less of it than the staff had managed — turned out to be rather more effective against a gas-powered engine than court magic had ever been against a stone golem, and the mower died with a spectacular exhaust backfire that set the Bard's pants briefly alight.
 
@@ -170,17 +170,17 @@ She held up the sign as they approached.
 
 "We need to cross the street," the Fighter said.
 
-"No crossing without the signal," the Warden of Routine said. She did not move. Her expression was the expression of someone who has found, in the management of a single intersection, the full expression of their purpose. "The signal says WALK. I say WALK. Not before. Not after. Not due to extenuating circumstances."
+"No crossing without the signal," the Warden of Routine said. She did not move. She had not moved in a very long time. Her expression was the expression of someone who has found, in the management of a single intersection, the complete expression of their purpose — not a narrow purpose, a sufficient one. "The signal says WALK. I say WALK. Not before. Not after. Not due to extenuating circumstances." She said it with the tone of someone who has said it many times and found it no less true for the repetition. "I have been doing this job for a very long time. I am not going to stop because you are in a hurry."
 
-"There's no traffic," Mira said, looking both ways at the completely empty street.
+"There's no traffic," the Mage said, looking both ways at the completely empty street.
 
 "The absence of visible traffic does not indicate the absence of traffic." The Warden turned the sign toward them. STOP. "This intersection has been under my supervision since the beginning of the neighborhood. I have never had an incident. I intend to maintain that record."
 
-"We'll be quick," Vex said.
+"We'll be quick," the Rogue said.
 
 "Crossing without the signal is a violation. Violations are not quick. Violations have consequences. Consequences take time." Her grip on the pole tightened. "Stand behind the line."
 
-Mira looked at the ground. There was no painted line.
+The Mage looked at the ground. There was no painted line.
 
 "There's no line."
 
@@ -196,13 +196,17 @@ She was difficult in the way a truly well-designed obstacle is difficult. Not un
 
 When she finally went down — when the Cleric's persistence and the Mage's creative application of electrical interference (traffic signals ran on circuits; the pen, as it turned out, also ran on circuits, after a fashion) broke through her endurance — she set her stop sign carefully against a lamppost and sat on the curb.
 
+"I don't understand," she said, and the voice was the same controlled, professional tone, but with something under it that hadn't been there before. "I've never lost a crossing before."
+
+She looked at the stop sign leaning against the lamppost. She sat on the curb.
+
 "You may cross," she said.
 
 "Thank you," the Cleric said.
 
-"You're welcome." She looked at the empty street. "I've been at this crosswalk for... how long?" She frowned at the pavement. "It feels like longer than the neighborhood's been here."
+"You're welcome." A long pause. Then: "I've been here such a long time." She said it simply, a fact being recognized rather than shared. "I've been here such a long time. I don't know where I was before." She looked at the empty street. "I've been at this crosswalk for... how long?" She frowned at the pavement. "It feels like longer than the neighborhood's been here."
 
-"How long has the neighborhood been here?" Mira asked.
+"How long has the neighborhood been here?" the Mage asked.
 
 "Since the beginning." The Warden looked up at them. "That's what I was told. This neighborhood has always been here. I have always been at this intersection." She paused. "Except I can't remember the first day. I can't remember being assigned here. I just... was. And then I was here." She picked up the sign again with the automatic motion of someone who needs to be doing their job or the ground feels uncertain. "You should cross now. Before traffic comes."
 
@@ -224,15 +228,15 @@ The tables were covered with the detritus of suburban accumulation — ceramic f
 
 The Cleric, who had the clearest understanding of the party's financial situation in this world and had discovered that a nurse's salary did not, in fact, exist in their cash-on-hand, began examining the tables for anything useful.
 
-He picked up a sweater.
+She picked up a sweater.
 
 The sweater resisted.
 
-Not with the passive resistance of a sweater that has tangled on something. With the active resistance of a sweater that has decided it does not want to leave. It pulled back. He pulled forward. It escalated. Within three seconds, three additional items had joined the conflict: a ceramic rooster, a set of mixing bowls stacked in a tower, and a garden gnome that had somehow repositioned itself from the far end of the table to directly in front of Vex, who had been thinking about the garden gnome and whether its slightly threatening smile was intentional design or unfortunate craftsmanship.
+Not with the passive resistance of a sweater that has tangled on something. With the active resistance of a sweater that has decided it does not want to leave. It pulled back. The Cleric pulled forward. It escalated. Within three seconds, three additional items had joined the conflict: a ceramic rooster, a set of mixing bowls stacked in a tower, and a garden gnome that had somehow repositioned itself from the far end of the table to directly in front of the Rogue, who had been thinking about the garden gnome and whether its slightly threatening smile was intentional design or unfortunate craftsmanship.
 
-"I probably shouldn't have touched the sweater," the Cleric said, still holding his end of it.
+"I probably shouldn't have touched the sweater," the Cleric said, still holding her end of it.
 
-"No one told us about the sweater," Vex said, taking a step back from the gnome.
+"No one told us about the sweater," the Rogue said, taking a step back from the gnome.
 
 "The sign says everything must go," the older woman said, turning a page. "It doesn't say it has to be *easy.*"
 
@@ -240,7 +244,7 @@ The garden gnome lunged.
 
 What followed was a full engagement with four enchanted garage sale items across a cluttered suburban driveway, which required more spatial awareness than any of the cave fights had, because the terrain was tables and price-tagged knickknacks and a bread maker that had apparently decided this was its moment. The ceramic rooster's pecking attack was technically weaker than most cave goblins but it was ceramic and therefore could not be persuaded to stop by being spoken to. The mixing bowls operated in formation. The gnome was fast in the specific way of things that should not be fast, which is to say startlingly.
 
-They managed it — the Fighter's baton was well-suited to the gnome situation, the Mage's electrical pen had interesting effects on ceramic, and Vex solved the mixing bowl formation problem by the simple expedient of stacking them in a different order, which seemed to break the enchantment.
+They managed it — the Fighter's baton was well-suited to the gnome situation, the Mage's electrical pen had interesting effects on ceramic, and the Rogue solved the mixing bowl formation problem by the simple expedient of stacking them in a different order, which seemed to break the enchantment.
 
 The sweater, finally, let go.
 
@@ -250,7 +254,7 @@ The older woman had not looked up during any of this.
 
 The Cleric examined the sweater. It was warm. It had a small embroidered bear on the pocket. It was, all things considered, quite nice.
 
-He kept it.
+She kept it.
 
 ---
 
@@ -264,7 +268,7 @@ They had been inside for approximately forty seconds when the loudspeaker crackl
 
 "Good morning, unregistered visitors. Please proceed directly to Room 204 for assessment. Refusal to proceed constitutes a violation of school policy and will be noted in your permanent record."
 
-"We don't have permanent records," Vex said.
+"We don't have permanent records," the Rogue said.
 
 "*Yet,*" said the loudspeaker, and clicked off.
 
@@ -278,23 +282,23 @@ The Arbiter of the Grade looked at the party and began distributing papers.
 
 "This school serves the community," the Arbiter said. "You are in the community. You are being served." He set the papers down with precision — one in front of each party member. "You have eight minutes."
 
-Mira picked up her paper. The first question read: *Identify the underlying economic conditions that led to the decline of the merchant class in the transitional period between feudal and proto-capitalist systems of resource distribution. Show all work.*
+The Mage picked up his paper. The first question read: *Identify the underlying economic conditions that led to the decline of the merchant class in the transitional period between feudal and proto-capitalist systems of resource distribution. Show all work.*
 
-"That's a graduate-level economics question," she said.
+"That's a graduate-level economics question," he said.
 
 "The rubric rewards partial credit," the Arbiter said.
 
-Vex's first question: *Your skateboard travels at an average speed of 12 kilometers per hour. You are being pursued by a compliance officer at 15 kilometers per hour. The officer began pursuit 200 meters behind you. How long until you are apprehended, and is this outcome avoidable?*
+The Rogue's first question: *Your skateboard travels at an average speed of 12 kilometers per hour. You are being pursued by a compliance officer at 15 kilometers per hour. The officer began pursuit 200 meters behind you. How long until you are apprehended, and is this outcome avoidable?*
 
-"This one's personal," Vex said.
+"This one's personal," the Rogue said.
 
-"All learning is personal," the Arbiter said pleasantly. Then he looked at Vex with the small, precise smile of a man who has constructed this moment with care. "Or perhaps *you* find it personal because of certain observable patterns in your behavioral record. Yes?" He let the implication settle. "Pencils up."
+"All learning is personal," the Arbiter said pleasantly. Then he looked at the Rogue with the small, precise smile of a man who has constructed this moment with care. "Or perhaps *you* find it personal because of certain observable patterns in your behavioral record. Yes?" He let the implication settle. "Pencils up."
 
 The quiz attacks were, in practice, each wrong answer manifesting as direct damage — specific, targeted, and scaled to the magnitude of the incorrectness rather than simply the occurrence of an error. The correct answers reduced the damage but did not eliminate it entirely, because, as the Arbiter noted, the learning curve was the point.
 
 The Bard answered every question in verse and received partial credit on all of them, which was the highest partial credit the Arbiter had ever awarded to a non-standard response format. He did not mention this without appending: "Charming. Incomplete. C-plus."
 
-The Cleric answered his questions ("Define the moral calculus of triage in a resource-limited medical setting, citing at least two ethical frameworks") with the genuine thoughtfulness of someone who had actually practiced triage and found the academic framework less useful than the lived version. The Arbiter marked two of his answers incorrect due to "insufficient citation."
+The Cleric answered her questions ("Define the moral calculus of triage in a resource-limited medical setting, citing at least two ethical frameworks") with the genuine thoughtfulness of someone who had actually practiced triage and found the academic framework less useful than the lived version. The Arbiter marked two of her answers incorrect due to "insufficient citation."
 
 "Your answers are experientially correct," the Arbiter said, in the tone of someone delivering a diagnosis. "Academically, however, you lack rigor. What you know and what you can demonstrate you know are not the same thing, and I grade the demonstration." He added a note to his grade book. "That gap tends to limit people. I expect it's limited you before."
 
@@ -312,19 +316,23 @@ The fight broke out when the Fighter answered the question about the chain of co
 
 "The parameters are the rubric," the Arbiter said, and the rubric appeared as a physical document, and the physical document became a weapon in a way that felt like either metaphor or justice depending on your perspective.
 
-The grading battle was close. The Arbiter's academic precision translated into a fighting style of calibrated, optimal strikes — the same principle as the medieval Arbiter, rephrased for a setting where the vocabulary of excellence was measured in percentages. It adapted with the particular cruelty of someone who had been doing this long enough to know exactly which failures to hold up. When Mira's counterattack faltered, the Arbiter noted it — not tactically, but personally: "Interesting. Your theory outpaces your execution. I've seen that before. It tends not to improve." When the Bard's trumpet missed its effect window, the Arbiter clicked his pen. "Timing. Your greatest weakness. The rubric rewards completion, not intention."
+The grading battle was close. The Arbiter's academic precision translated into a fighting style of calibrated, optimal strikes — the same principle as the medieval Arbiter, rephrased for a setting where the vocabulary of excellence was measured in percentages. It adapted with the particular cruelty of someone who had been doing this long enough to know exactly which failures to hold up. When the Mage's counterattack faltered, the Arbiter noted it — not tactically, but personally: "Interesting. Your theory outpaces your execution. I've seen that before. It tends not to improve." When the Bard's trumpet missed its effect window, the Arbiter clicked his pen. "Timing. Your greatest weakness. The rubric rewards completion, not intention."
 
 They passed. Technically. The Cleric's rubric-compliant approach and the Mage's technically correct answers on the science and mathematics questions accumulated enough points to meet the curve.
 
 The Arbiter received this outcome with the equanimity of a man consulting a ledger and finding a line he doesn't quite understand.
 
-"My rubric was perfect," he said, sitting on the edge of his desk. "My curve was calibrated precisely. How did you pass without studying?"
+"A," he said. He wrote it in the grade book. A small pause. "No conditions. That was an A."
 
-"We studied our whole lives," Mira said. "Just not these subjects."
+"My rubric was perfect," he continued, sitting on the edge of his desk. "My curve was calibrated precisely. How did you pass without studying?"
+
+"We studied our whole lives," the Mage said. "Just not these subjects."
 
 "The underlying principles are the same," the Cleric added. "Every healing decision uses triage logic. Every tactical choice is resource allocation."
 
 The Arbiter looked at his grade book. Something moved across his face that was not quite recognition and not quite discomfort. "You are not the students this curriculum was designed for," he said. "And yet the curriculum worked." A pause. "Partially. With significant deviation." He closed the grade book. "I don't know whether to mark that as a success."
+
+He was quiet for a moment, looking at the cover of the grade book in the way of a man who has just noticed the title of a book he's been reading for years. "I don't know what class this is for," he said. "I've been grading it a long time." Another pause. "I'm not sure anymore what the subject is."
 
 "Mark it as interesting," the Bard suggested.
 
@@ -376,13 +384,13 @@ The chase through Maple Heights' subdivisions was a different kind of test than 
 
 The car clipped a fire hydrant with the confidence of something that has decided fire hydrants are an acceptable cost.
 
-Vex discovered, around the second lap of the subdivision, that the skateboard worked the way it was supposed to work — which is to say that it translated his existing spatial instincts into a different vocabulary. He could outmaneuver a car in places a car couldn't fit. He did. He led the Tempo down a footpath between houses that ended in a yard with a fence.
+The Rogue discovered, around the second lap of the subdivision, that the skateboard worked the way it was supposed to work — which is to say that it translated the Rogue's existing spatial instincts into a different vocabulary. A car could not fit where the Rogue could fit. The Tempo was led down a footpath between houses that ended in a yard with a fence.
 
 The car hit the fence. The fence won, temporarily.
 
 In the moment of the Tempo's extraction from the fence situation — car in reverse, backing onto the street, engine screaming, driver still audibly explaining the thirty-minute guarantee to no one in particular — the party assembled.
 
-The fight was fast and loud and municipal-scale wrong. The Tempo used the car itself as a weapon of crowd control, and the Fighter's baton against the chassis had the same structural logic as sword against armor but with worse optics. The Mage's electrical pen had excellent synergy with a car engine, which she noted with academic satisfaction. The Bard played the trumpet during the fight, which either boosted the party or confused the Tempo or both; the causality was unclear and she didn't stop.
+The fight was fast and loud and municipal-scale wrong. The Tempo used the car itself as a weapon of crowd control, and the Fighter's baton against the chassis had the same structural logic as sword against armor but with worse optics. The Mage's electrical pen had excellent synergy with a car engine, which he noted with academic satisfaction. The Bard played the trumpet during the fight, which either boosted the party or confused the Tempo or both; the causality was unclear and she didn't stop.
 
 When the car finally sputtered out — electrical system compromised, fence-damage compounded — the Tempo stepped out, brushing broken glass from the pizza company's branded windbreaker. The manic frequency was gone. What replaced it was quieter, and the quiet seemed to surprise the Tempo as much as anyone.
 
@@ -394,7 +402,7 @@ When the car finally sputtered out — electrical system compromised, fence-dama
 
 "We've been doing ours," the Bard said carefully, "since a notice was nailed to a door."
 
-"That's specific." The Tempo looked at the party with new attention. "That's a beginning. That's a real one." Something moved behind their eyes. "I want one of those. I should have one of those."
+"That's specific." The Tempo looked at the party with new attention. "That's a beginning. That's a real one." Something moved behind their eyes. "I want one of those. I should have one of those." They looked at the insulated bag, still sitting on the car's passenger seat. Picked it up. Didn't open it. "I don't know what's in this. I've never opened it. I've delivered it every night of my life and I don't know who I'm delivering it to." They set it down again. "Thirty minutes or less. It's not a slogan. It's — it was supposed to be something. I just don't know what anymore."
 
 They drove away, slowly, one wheel bent, and the party stood in a cul-de-sac at the end of Birch Court and watched them go.
 
@@ -414,7 +422,7 @@ It was waiting.
 
 Not ambushing, precisely. More: positioned. Positioned in the way that the Warden had been positioned in the cave — with the deliberate patience of something that has taken a job seriously and is ready to do it. The cart was blocking the most direct path.
 
-"Are we going to fight a shopping cart," Vex said.
+"Are we going to fight a shopping cart," the Rogue said.
 
 "We fought a lawn mower," the Cleric said.
 
@@ -424,9 +432,9 @@ The cart charged.
 
 Shopping carts are not aerodynamically designed for speed, but this one had apparently solved that problem through a combination of resolve and the slight downward grade of the parking lot. It hit the Fighter's shins with authority and then spun, which carts do, but this spin was controlled, a defensive rotation that put the sharp corner toward the next attacker.
 
-"It fights like a Tempo," Mira said. "Speed-based. Uses geometry."
+"It fights like a Tempo," the Mage said. "Speed-based. Uses geometry."
 
-"It's a *shopping cart,*" Vex said.
+"It's a *shopping cart,*" the Rogue said.
 
 "It's a very good shopping cart," the Bard said, backing away from it.
 
@@ -434,7 +442,7 @@ They drove it into the cart return. This required everyone working in concert, b
 
 "I feel bad," the Cleric said.
 
-"Don't feel bad about the cart," Vex said.
+"Don't feel bad about the cart," the Rogue said.
 
 "It was just doing what carts do," the Cleric said. "It was just doing it with more commitment than expected."
 
@@ -475,15 +483,15 @@ Nobody said anything. It was a parking lot. They moved on.
 
 *MEMO: RE: ITEM ESCALATION — GARAGE SALE INCIDENT*
 
-*I must note for the record that the garage sale enchantments at 14 Oak Street were performing at expected parameters until the male subject in the nurse's uniform picked up the beige sweater and chose to keep it. The sweater was programmed to deter. He kept it anyway. He is wearing it.*
+*I must note for the record that the garage sale enchantments at 14 Oak Street were performing at expected parameters until the subject in the nurse's uniform picked up the beige sweater and chose to keep it. The sweater was programmed to deter. She kept it anyway. She is wearing it.*
 
 *This was not a designed outcome. The sweater is not meaningful. And yet.*
 
-*He is wearing it in a way that suggests it is.*
+*She is wearing it in a way that suggests it is.*
 
 *I am noting this because I track all deviations from expected subject behavioral patterns and this is a deviation. I am not noting this because I have any particular feeling about it. I am simply thorough.*
 
-*The subject in the nurse's uniform has a high degree of what my old metrics called "faith investment" and what I am revising my metrics to call "quality of attention." He attends to things — the old king, the Warden's lesson, the sweater — in a way that my models struggle to account for.*
+*The subject in the nurse's uniform has a high degree of what my old metrics called "faith investment" and what I am revising my metrics to call "quality of attention." She attends to things — the old king, the Warden's lesson, the sweater — in a way that my models struggle to account for.*
 
 *I do not know what to do with "quality of attention" as a metric.*
 
@@ -497,29 +505,29 @@ Nobody said anything. It was a parking lot. They moved on.
 
 The accountant had an office in the strip mall, between the frozen yogurt place and the candle shop. The door had a handwritten sign: BUDGET SOLUTIONS — WALK-INS WELCOME. The sign was a lie, but the door was unlocked.
 
-Inside: a desk covered in ledgers. A man in a short-sleeved dress shirt and a tie that had been perfect at the start of the day. A filing cabinet that occupied far more wall than the room's geometry should have allowed. The smell of toner and whatever the anxiety of a hundred audited people leaves behind in the air of a small office.
+Inside: a desk covered in ledgers. A woman in business casual — badge on a lanyard, a tablet under one arm, a very thick folder of documents under the other. Her posture was the posture of someone who had been in too many meetings but was doing very well at them. A filing cabinet that occupied far more wall than the room's geometry should have allowed. The smell of toner and whatever the anxiety of a hundred audited people leaves behind in the air of a small office.
 
-The Curator of the Budget looked up from his spreadsheets. He looked at the party with the patient pleasure of a man who has been expecting exactly this.
+The Curator of the Budget looked up from her spreadsheets. She did not look dangerous. She looked at the party with the patient pleasure of someone who has been thorough and intends them to feel it.
 
-"Ah," he said. "The irregulars."
+"Ah," she said. "The irregulars."
 
-"You know who we are," Mira said.
+"You know who we are," the Mage said.
 
 "I know your financial profile," he said. He said it the way people say *I know your reputation* — with the precise, savoring emphasis of someone who has been thorough and intends you to feel it. "Fourteen potions consumed over the residential phase. Two swords — one with irregular provenance, one repurposed from a medieval baton-equivalent. Total GP equivalent spent at Ye Olde Medieval Surplus: seventy-three dollars and forty cents." He turned the ledger toward them. "You're not from here. Your itemized deductions are unusual." He tapped the page, and there was something almost fond about the tap, the fond attention of a collector identifying a rare specimen. "Medieval healing potions. Those aren't in any tax bracket I recognize."
 
-"We've been spending across multiple jurisdictions," Mira said, because this was, technically, the most accurate description she had available.
+"We've been spending across multiple jurisdictions," the Mage said, because this was, technically, the most accurate description he had available.
 
-"Multi-jurisdictional deductions are complicated," the Curator said. The pleasure in his voice was undisguised. "Oh, *very* complicated. You'll need to document the point of origin for each item separately." He produced a form. It was IRS Form 4797. It had been modified to include a field labeled "POINT OF ORIGIN" and another labeled "RESOURCE STATE AT COMMUNITY ENTRY." "I've taken the liberty of beginning your assessment. I'll need the primary taxpayer to sit down."
+"Multi-jurisdictional deductions are complicated," the Curator said. The pleasure in her voice was undisguised. "Oh, *very* complicated. You'll need to document the point of origin for each item separately." She produced a form. It was IRS Form 4797. It had been modified to include a field labeled "POINT OF ORIGIN" and another labeled "RESOURCE STATE AT COMMUNITY ENTRY." "I've taken the liberty of beginning your assessment. I'll need the primary taxpayer to sit down."
 
-"We're not filing taxes," Vex said.
+"We're not filing taxes," the Rogue said.
 
-"You have resources," the Curator said. "Resources imply taxation. Taxation implies filing." He opened his briefcase with the careful motion of someone revealing something they have been looking forward to revealing. Inside: a clipboard, a calculator that was much better than Mira's, and what appeared to be a weapon made of laminated forms. "I'll need receipts for the potions. All of them. Going back to your first purchase in World One." He looked up. "Oh — you didn't keep receipts, did you?" The smile that followed was small, precise, and deeply satisfied. "That's going to be a problem."
+"You have resources," the Curator said. "Resources imply taxation. Taxation implies filing." She opened her briefcase with the careful motion of someone revealing something they have been looking forward to revealing. Inside: a clipboard, a calculator that was much better than the Mage's, and what appeared to be a weapon made of laminated forms. "I'll need receipts for the potions. All of them. Going back to your first purchase in World One." She looked up. "Oh — you didn't keep receipts, did you?" The smile that followed was small, precise, and deeply satisfied. "That's going to be a problem."
 
 The fight with the Curator of the Budget was a sustained drain — not on health, but on every other resource the party had accumulated. The laminated forms could strip potions from inventory. The audit conducted mid-battle identified every buff the party was running and filed for an "itemized deduction" against each one. The briefcase contained a secondary filing that appeared to function as a debuff cloud. At one point, the calculator produced a number that was described, mechanically, as "your remaining resource potential after deductions," and the number was not zero but it was low.
 
-"You are running at a net negative," the Curator said, halfway through. He was not gloating exactly. He was *reporting*, but the report had the particular enunciation of someone who has been waiting to deliver this specific news for a long time. "Current asset-to-liability ratio suggests you cannot sustain this engagement." A pause. "I could extend the audit timeline. Give you a chance to recover. That's not typical procedure, but—" He let the offer sit. He enjoyed watching people consider accepting help from the person causing the problem.
+"You are running at a net negative," the Curator said, halfway through. She was not gloating exactly. She was *reporting*, but the report had the particular enunciation of someone who has been waiting to deliver this specific news for a long time. "Current asset-to-liability ratio suggests you cannot sustain this engagement." A pause. "I could extend the audit timeline. Give you a chance to recover. That's not typical procedure, but—" She let the offer sit. She enjoyed watching people consider accepting help from the person causing the problem.
 
-"Then we'd better end it," the Mage said, and stopped holding back her electrical pen.
+"Then we'd better end it," the Mage said, and stopped holding back his electrical pen.
 
 The pen had been, throughout the suburban phase, operating at somewhere between sixty and seventy percent capacity. The fire was there. The electricity was there. The magic was there. But the world's genre had imposed friction — the same way the sword had become a baton, the staff had become a pen, and something about *pen* said *careful,* said *precise,* said *measured.*
 
@@ -529,15 +537,19 @@ The Curator's filing cabinet opened during the burst, and the files inside flew 
 
 They had three seconds to read before the files dispersed.
 
-What Mira read in those three seconds, she wrote down later, in the spiral notebook with the cartoon cat cover.
+What the Mage read in those three seconds, he wrote down later, in the spiral notebook with the cartoon cat cover.
 
-The Curator received his defeat with the silence of someone who has received bad news from a ledger before and has developed equanimity through practice.
+The Curator received her defeat with the silence of someone who has received bad news from a ledger before and has developed equanimity through practice.
 
-"Your itemized deductions," he said, as the files settled, "are unlike anything in the system." He looked at his own hands — at the forms, the clipboard, the briefcase. "And my system is comprehensive. My records here cover every resident since the neighborhood was established." He looked up. "I have records for residents who do not remember living here. I have records for people who don't exist in any other database." A pause. His voice had lost the tidy pleasure it had carried through the audit. "That should bother me more than it does."
+"This has never happened before," she said, as the files settled. "I'm going to need to file a correction."
+
+A longer pause than usual. "I've been filing corrections for a long time. I don't know where they go. I've never received a response." She looked at the folder in her hands. "I've filled a lot of folders."
+
+"Your itemized deductions," she continued, "are unlike anything in the system." She looked at her own hands — at the forms, the clipboard, the briefcase. "And my system is comprehensive. My records here cover every resident since the neighborhood was established." She looked up. "I have records for residents who do not remember living here. I have records for people who don't exist in any other database." A pause. Her voice had lost the tidy pleasure it had carried through the audit. "That should bother me more than it does."
 
 "Does it bother you at all?" the Cleric asked.
 
-"Yes," the Curator said, after a moment. "A little. More today than yesterday." He closed the briefcase. "That's new."
+"Yes," the Curator said, after a moment. "A little. More today than yesterday." She closed the briefcase. "That's new."
 
 ---
 
@@ -559,7 +571,7 @@ The screen showed footage: the cave near Harmonia. The forest. Scriptura's marke
 
 The Fighter looked at the screen for a long moment. "She has surveillance across the whole route," he said. "Back to the cave."
 
-"Surveillance," Mira said, writing. "Yes. That's what it is."
+"Surveillance," the Mage said, writing. "Yes. That's what it is."
 
 "You're not supposed to see that," said a voice from the doorway.
 
@@ -579,37 +591,37 @@ She smiled. It was the most unsettling smile any of them had ever seen, because 
 
 "Yes," she said. "I suppose I am."
 
-"Mordaine," the Bard said. He had his notebook open. He had been writing since the filing cabinet. "Chancellor Mordaine said: 'This kingdom needed order. You needed a challenge. Both served their purpose.'" He looked up. "You're going to say something like that."
+"Mordaine," the Bard said. She had her notebook open. She had been writing since the filing cabinet. "Chancellor Mordaine said: 'This kingdom needed order. You needed a challenge. Both served their purpose.'" She looked up. "You're going to say something like that."
 
 A pause. The Coordinator's expression did not change.
 
 "The neighborhood needed rules," she said. "You needed resistance. Both served their purpose."
 
-The Bard closed his notebook. He didn't close it with satisfaction, the way you close a notebook when you've written something worth keeping. He closed it the way you close a door on a room you're not sure you wanted to enter.
+The Bard closed her notebook. She didn't close it with satisfaction, the way you close a notebook when you've written something worth keeping. She closed it the way you close a door on a room you're not sure you wanted to enter.
 
-"Yes," he said. "That's it."
+"Yes," she said. "That's it."
 
 The fight was bureaucratic in the same way that all Mordaine's masks were bureaucratic — the Coordinator fought with the tools of administration, elevated. Forms materialized as barriers. Memos became projectile attacks. The filing cabinet opened and folders flew out, each one containing a record of every mistake the party had ever made — every suboptimal decision, every failed strategy, every wasted resource. And each record *hurt*, because documentation, wielded correctly, is leverage.
 
 But where Mordaine had manipulated the battlefield physically, the Coordinator manipulated *context*. When the Fighter swung his baton, a form appeared mid-swing: LIABILITY WAIVER — PLEASE SIGN BEFORE PROCEEDING WITH PHYSICAL ENGAGEMENT. He didn't sign it. The form cited him for the unsigned form. The citation accumulated to a fine. The fine extracted gold from the party's inventory.
 
-"You're weaponizing paperwork," Mira said, blocking a memo with her notebook.
+"You're weaponizing paperwork," the Mage said, blocking a memo with his notebook.
 
 "I'm streamlining accountability," the Coordinator said.
 
 They won. The same way they had won against Mordaine — not through optimal strategy, because optimal strategy was something the Coordinator could predict and counter. Through the accumulated specific knowledge of who they had become since Harmonia.
 
-The Cleric healed beyond reasonable resource parameters because he had made a habit of keeping something in reserve for the moment when things looked impossible.
+The Cleric healed beyond reasonable resource parameters because she had made a habit of keeping something in reserve for the moment when things looked impossible.
 
 The Mage stopped being measured.
 
-Vex found angles that the Coordinator's spatial models didn't account for, because the Coordinator's models were built on a neighborhood she understood and Vex had spent his entire career exploiting the assumption of the predictable.
+The Rogue found angles that the Coordinator's spatial models didn't account for, because the Coordinator's models were built on a neighborhood she understood and the Rogue had spent an entire career exploiting the assumption of the predictable.
 
 The Fighter, when a liability form appeared mid-swing, reached into his jacket with his off hand and produced a pen — the Bard's extra pen, borrowed before the community center visit — and signed it without stopping the swing. The form dissolved. The fine didn't apply.
 
 "You cannot both sign and contest," the Coordinator said, briefly wrong-footed.
 
-"I signed," he said. "I didn't contest. I just continued." He met her eyes. "There's no form for that."
+"I signed," the Fighter said. "I didn't contest. I just continued." He met her eyes. "There's no form for that."
 
 She lost. Of course she lost. That was the point. And when she dissolved — the same way Mordaine had dissolved, the same absence rather than an ending — her final words carried the same vocabulary, the same philosophy, the same particular weight.
 
@@ -625,27 +637,27 @@ The party stood in the Coordinator's office with the files still scattered and t
 
 "She talked like Mordaine," the Bard said.
 
-"The same words," Mira said. "'Order.' 'Purpose.' 'The system.'"
+"The same words," the Mage said. "'Order.' 'Purpose.' 'The system.'"
 
-"The same philosophy," Vex said. "Not just similar — the same. Like someone wrote the same speech twice in different handwriting."
+"The same philosophy," the Rogue said. "Not just similar — the same. Like someone wrote the same speech twice in different handwriting."
 
 "That reminded you of her," the Bard said carefully. "Didn't it."
 
-"It was... familiar," the Cleric said. He was looking at the window, the wrong-blue sky. "The way she moved. The way she held herself when she was certain." He turned. "Did that remind any of you of—"
+"It was... familiar," the Cleric said. She was looking at the window, the wrong-blue sky. "The way she moved. The way she held herself when she was certain." She turned. "Did that remind any of you of—"
 
 "Mordaine," the Fighter said. "Yes."
 
 Nobody said the next thing for a moment. The thing that was sitting in the room with them, waiting to be said.
 
-"Not the same person," Mira said finally. "That would be impossible. Different world. Different body. Different name." She was writing, and her pen was moving faster than usual. "But the same... shape. Of reasoning. Of purpose." She looked up. "As if someone built both of them to the same specifications."
+"Not the same person," the Mage said finally. "That would be impossible. Different world. Different body. Different name." He was writing, and his pen was moving faster than usual. "But the same... shape. Of reasoning. Of purpose." He looked up. "As if someone built both of them to the same specifications."
 
 "The HOA surveillance goes back to Harmonia," the Fighter said. "She was watching us in the cave. Before we arrived here."
 
-"She was tracking us," Mira said. "Both of them. In sequence."
+"She was tracking us," the Mage said. "Both of them. In sequence."
 
 The word *sequence* landed in the room like a coin placed deliberately on a table.
 
-"The memos," Vex said. "She called us 'subjects.' Ahead of schedule." He picked up one of the Coordinator's files — a resident's compliance history, years of it, meticulously documented. "All of this is just measurement. Every encounter, every Masterite, every lawn mower. It's measuring something about us."
+"The memos," the Rogue said. "She called us 'subjects.' Ahead of schedule." The Rogue picked up one of the Coordinator's files — a resident's compliance history, years of it, meticulously documented. "All of this is just measurement. Every encounter, every Masterite, every lawn mower. It's measuring something about us."
 
 "For what?" the Cleric asked.
 
@@ -653,19 +665,19 @@ Nobody answered. The monitor showed gears turning. The office walls began to cha
 
 "The Masterites," the Fighter said quietly. "The Warden asked if we'd earned the right to rest. The Arbiter asked where we learned to fight. The Tempo asked about our beginning." He looked at the party. "And the Curator's last words were: 'More today than yesterday. That's new.'" He paused. "They're waking up to something."
 
-"Or noticing," Mira said. "Same thing."
+"Or noticing," the Mage said. "Same thing."
 
-"Does the Coordinator know?" Vex asked.
+"Does the Coordinator know?" the Rogue asked.
 
-"The memos suggest she's noticing but not understanding it," Mira said. "She flagged it as off-profile." She looked at the last memo on the desk — the one that had been in progress when they arrived, half-written, the pen still sitting across it. She read the last line, which the Coordinator had not yet finished.
+"The memos suggest she's noticing but not understanding it," the Mage said. "She flagged it as off-profile." He looked at the last memo on the desk — the one that had been in progress when they arrived, half-written, the pen still sitting across it. He read the last line, which the Coordinator had not yet finished.
 
 *The subjects demonstrate something my models have no category for. It is not tactical excellence. It is not resource optimization. It is —*
 
 The sentence ended there. The pen had been set down. The Coordinator had been going to the door.
 
-Mira read the incomplete sentence twice.
+The Mage read the incomplete sentence twice.
 
-"She was going to write something she'd never written before," the Bard said, reading over her shoulder.
+"She was going to write something she'd never written before," the Bard said, reading over the Mage's shoulder.
 
 "She didn't get to finish."
 
@@ -677,11 +689,11 @@ The suburb didn't end. It *transitioned.* Houses sprouted chimneys that belched 
 
 "Phase Three," the Bard said.
 
-"Cogsworth Junction," Mira confirmed.
+"Cogsworth Junction," the Mage confirmed.
 
 "A steampunk city," the Fighter said.
 
-"Built by the same something," Vex said. "Managed by the same something. With something like Mordaine and something like her waiting at the top."
+"Built by the same something," the Rogue said. "Managed by the same something. With something like Mordaine and something like her waiting at the top."
 
 "Except this time," the Bard said, "we know to look."
 
@@ -689,11 +701,11 @@ The office walls completed their transformation. The filing cabinets became bras
 
 The party stood in a room that had been one thing and was becoming another, and they were the only constant in it, and that felt, for the first time, like it might be the point.
 
-"She was going to write something," Mira said again, looking at the incomplete sentence. "'It is not tactical excellence. It is not resource optimization. It is—'"
+"She was going to write something," the Mage said again, looking at the incomplete sentence. "'It is not tactical excellence. It is not resource optimization. It is—'"
 
 "What?" the Fighter asked.
 
-"I don't know," she said. "But I think it's what someone's been building all of this to figure out." She closed her notebook. "We should go find out."
+"I don't know," he said. "But I think it's what someone's been building all of this to figure out." He closed his notebook. "We should go find out."
 
 The clock tower chimed again. The gears turned. The next phase loaded.
 

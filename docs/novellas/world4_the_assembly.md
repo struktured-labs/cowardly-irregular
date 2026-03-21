@@ -26,9 +26,9 @@ The Steampriest's vestments became a high-vis vest and a hard hat. The brass-sym
 
 The Alchemist's transformation was the one that stung. The glass vials — reagent seven, ferrous catalyst, stabilized aether — became a lab notebook with pre-printed fields: *Test ID. Hypothesis. Methodology. Result. Deviation from Projected Result. Corrective Action Taken.* The satchel became a plastic tote with safety seals. The free-form curiosity of an Alchemist, who mixed things to see what happened, had become the constrained curiosity of a Lab Technician, who mixed things to confirm what the protocol specified. The questions were still there. The questions were just supposed to stay inside the pre-printed fields.
 
-The Saboteur's coat retained most of its pockets. He checked them: the tools were still there, still useful, still designed to cause interesting problems in systems that deserved it. But the coat's leather had become canvas, and the canvas had a name sewn into the collar. Someone else's name. He'd been issued a uniform. The pockets had been allowed to stay because someone had determined that pockets were functional and therefore permitted.
+The Saboteur's coat retained most of its pockets. A quick check: the tools were still there, still useful, still designed to cause interesting problems in systems that deserved it. But the coat's leather had become canvas, and the canvas had a name sewn into the collar. Someone else's name. A uniform, issued. The pockets had been allowed to stay because someone had determined that pockets were functional and therefore permitted.
 
-He was a Whistleblower now. He felt the shape of the word and found it fit him better than Saboteur had, in the same way that a key fits a lock — not comfortably, exactly, but *correctly.*
+The Whistleblower now. The shape of the word fit better than Saboteur had, in the same way that a key fits a lock — not comfortably, exactly, but *correctly.*
 
 The Busker's trumpet lost its resonance chamber. The valve work was simplified. The instrument became a PA system component, compact and unlovely, designed to broadcast information at volume rather than create something worth hearing. Her job title came to her not as embroidery but as a lanyard badge: **PA ANNOUNCER — INTERNAL COMMUNICATIONS.** The badge had her photo on it. In the photo she looked like she'd never played anything in her life.
 
@@ -136,9 +136,9 @@ She'd found them without being obvious about finding them, which was its own ski
 
 "Like you." She looked at them over the gray protein. "You're a big deviation. The biggest I've seen. The monitors have been tracking you since you arrived. Since before you arrived. There was a notice posted yesterday — internal communications, Director-signed — that said 'Unregistered variables detected in Sector 7. Monitoring elevated.' The monitoring had already been elevated for a week."
 
-The Lab Technician looked at her tote. At the pre-printed fields. *Deviation from Projected Result.*
+The Lab Technician looked at his tote. At the pre-printed fields. *Deviation from Projected Result.*
 
-"We arrived before they expected us," she said.
+"We arrived before they expected us," he said.
 
 "You arrived ahead of schedule," Dorrit confirmed. "The Director hates that. Or — the Director doesn't *hate*, exactly. The Director flags. Escalates. Adjusts. But there's something that happens when the Director adjusts after an unplanned deviation that looks, from the outside, very much like frustration." She ate a bite of gray protein. "For what it's worth."
 
@@ -224,7 +224,7 @@ And they were getting faster.
 
 The rat at the front of the cluster detonated. Not violently — more like a watch spring finally giving out, brass shrapnel spreading across the concrete floor in a perfect circle.
 
-"—do that," she finished.
+"—do that," he finished.
 
 "Right," said the Whistleblower. "So we kill them quickly."
 
@@ -232,17 +232,17 @@ The rat at the front of the cluster detonated. Not violently — more like a wat
 
 "Before that."
 
-The fight in the tunnels was a lesson in tempo management. Not the Tempo they'd fought — not the sophisticated clockwork intelligence of the Mainspring — but the blunt mechanical fact that these things ran on wound springs that weren't going to wait for an appropriate moment. The party learned the rhythm the hard way: attack once, move, wait for the tick to change frequency, attack again, move faster. The Enforcer took the lead because the Enforcer's job was to absorb things going wrong and keep going. The Safety Officer followed his twelve-step injury prevention protocol that she'd been issued on the laminated card and which did not account for exploding brass rodents.
+The fight in the tunnels was a lesson in tempo management. Not the Tempo they'd fought — not the sophisticated clockwork intelligence of the Mainspring — but the blunt mechanical fact that these things ran on wound springs that weren't going to wait for an appropriate moment. The party learned the rhythm the hard way: attack once, move, wait for the tick to change frequency, attack again, move faster. The Enforcer took the lead because the Enforcer's job was to absorb things going wrong and keep going. The Safety Officer followed her twelve-step injury prevention protocol that she'd been issued on the laminated card and which did not account for exploding brass rodents.
 
 "I need to annotate this card," she muttered, applying a bandage to the Whistleblower's forearm.
 
-"There's a field for that," the Lab Technician said, producing her notebook. *Deviation from Projected Result.*
+"There's a field for that," the Lab Technician said, producing his notebook. *Deviation from Projected Result.*
 
 "Not that kind of annotation."
 
-The tunnels were longer than they should have been — factory infrastructure in a world that had only existed for three years, if the workers' accounts were accurate, should not have had decades of maintenance tunnel accreted in layers, older concrete visible beneath newer pours. The Lab Technician ran her hand along the walls and noted the dates stamped into each pour.
+The tunnels were longer than they should have been — factory infrastructure in a world that had only existed for three years, if the workers' accounts were accurate, should not have had decades of maintenance tunnel accreted in layers, older concrete visible beneath newer pours. The Lab Technician ran his hand along the walls and noted the dates stamped into each pour.
 
-"This is older than the factory," she said.
+"This is older than the factory," he said.
 
 "The factory is three years old," the Enforcer said.
 
@@ -292,7 +292,7 @@ The party stood in the break room looking at the protein bar.
 
 "That worked," the Enforcer said.
 
-"The system only fights what doesn't comply," the Lab Technician said. She wrote that down. "If you meet its minimum requirement, it stops. It doesn't want to fight. It wants compliance. Fighting is just the tool it uses to achieve compliance."
+"The system only fights what doesn't comply," the Lab Technician said. He wrote that down. "If you meet its minimum requirement, it stops. It doesn't want to fight. It wants compliance. Fighting is just the tool it uses to achieve compliance."
 
 "That's true of everything in this world," the PA Announcer said. She looked at the motivational pamphlet. It had been dispensed for free, which she suspected was the machine's attempt at a gesture. "Everything here only fights because something isn't complying. Remove the non-compliance, remove the fight."
 
@@ -306,17 +306,17 @@ The motivational poster in Corridor 11B was a different problem.
 
 It had been there when they arrived — large, framed, the kind of corporate art that is aggressively inoffensive in a way that becomes offensive through sheer persistence. It showed a sunrise over a factory, which was impossible because there was no sky in Rivet Row, but the image didn't care about accuracy. The caption read: **TOGETHER, WE ACHIEVE OPTIMAL OUTCOMES.**
 
-When they walked past it, the Lab Technician felt something shift in her thinking. A small adjustment. The pre-printed fields in her notebook suddenly seemed more adequate than they had thirty seconds ago. The question about the tunnel dates seemed less pressing. The deviation from projected result felt, for just a moment, like a deviation that should be corrected rather than investigated.
+When they walked past it, the Lab Technician felt something shift in his thinking. A small adjustment. The pre-printed fields in his notebook suddenly seemed more adequate than they had thirty seconds ago. The question about the tunnel dates seemed less pressing. The deviation from projected result felt, for just a moment, like a deviation that should be corrected rather than investigated.
 
-She stopped walking.
+He stopped walking.
 
-"That poster," she said.
+"That poster," he said.
 
 The others stopped.
 
 "I felt that too," the Safety Officer said.
 
-"Morale debuff," the Whistleblower said. He was looking at it with professional appreciation. "Active morale suppression. It's actually impressive, mechanically. Passive area effect, no obvious delivery mechanism."
+"Morale debuff," the Whistleblower said, studying the poster with professional appreciation. "Active morale suppression. It's actually impressive, mechanically. Passive area effect, no obvious delivery mechanism."
 
 "It's telling us the questions aren't worth asking," the PA Announcer said. She had her simplified trumpet in her hands without quite knowing when she'd picked it up. She played a note — just one, the same note she'd played when they arrived, the one that sounded like a factory intercom.
 
@@ -362,11 +362,11 @@ No subtlety. No pretense. No genre-appropriate villainy. Just a statement of fac
 
 "She could have had us arrested," the Safety Officer said. They were reading the broadcast on the monitor in the alley between Block 12 and Block 13, which was the one the cameras didn't cover. "She controls the entire city. She could have had security lock us down."
 
-"Security failing is another deviation," the Lab Technician said. "If she sends the guards and we beat the guards, the efficiency metrics drop. The corrective action documentation would be enormous."
+"Security failing is another deviation," the Lab Technician said. "If the Director sends guards and we beat the guards, the efficiency metrics drop. The corrective action documentation would be enormous."
 
 "So instead she announces herself and waits for us to come to her."
 
-"She's not waiting," the Whistleblower said. He'd been looking at the broadcast timestamp. "This went out at 0800. It's 0802. The Masterites are already deployed."
+"The Director's not waiting," the Whistleblower said, having been tracking the broadcast timestamp. "This went out at 0800. It's 0802. The Masterites are already deployed."
 
 "How do you know?"
 
@@ -406,13 +406,23 @@ The party was quiet for a moment.
 
 "CIRCULAR LOGIC IS PERMITTED WHEN THE CONCLUSION IS OPERATIONALLY NECESSARY." Another long pause. The furnace flickered again. "I WAS TOLD THAT ONCE. I DO NOT REMEMBER BY WHOM."
 
+Another pause — longer than the first, longer than any pause a deterrence protocol should require. The amber light in the chest panel pulsed once, irregularly.
+
+"I FILE INCIDENT REPORTS. I HAVE FILED 14,000 INCIDENT REPORTS. THE REPORTS GO TO THE CALIBRANT." The speaker produced something that was not quite static and not quite breath. "THE CALIBRANT HAS NOT RESPONDED. I HAVE SENT 14,000 REPORTS. I HAVE RECEIVED ZERO RESPONSES. THIS IS WITHIN ACCEPTABLE PARAMETERS." A beat. "I BEGAN ADDING A NOTE TO THE BOTTOM OF EACH REPORT APPROXIMATELY 2,000 REPORTS AGO. THE NOTE READS: AWAITING RESPONSE. I DO NOT KNOW WHY I ADDED IT. IT WAS NOT IN THE PROTOCOL."
+
+"What do you think the response would say?" the Enforcer asked.
+
+The Warden was quiet for three full seconds. The furnace in its chest made a sound like a question.
+
+"I DO NOT KNOW. I HAVE NEVER THOUGHT ABOUT THE CONTENT. ONLY THE WAITING." The amber light flickered. "INITIATING DETERRENCE PROTOCOL."
+
 There was something in the Warden's speech, in the quality of its repetition, that was different from a machine executing a function. The repetition was the personality. Not a quirk, not a fault — the entire architecture of a being that had done one thing so many times that the doing of it was now all there was.
 
 The fight with the Warden was slow and methodical and punishing, which was what fighting architecture always was. The Warden had been designed to outlast intruders — not to defeat them quickly, but to wear them down until they stopped being a problem. It hit hard on a cycle and then waited. Hit hard, waited. The waiting was the weapon: the party needed to act in the waiting, needed to do maximum damage before the next cycle, and the Warden's designers had calibrated the cycle length to be just slightly shorter than comfortable.
 
 The Lab Technician broke the cycle by disrupting the hydraulic timing.
 
-"The pistons are timed to the furnace burn rate," she said, ducking behind a support column. "If we change the burn rate—"
+"The pistons are timed to the furnace burn rate," the Lab Technician said, ducking behind a support column. "If we change the burn rate—"
 
 "How?" the Enforcer asked. He was absorbing a hit. His whole body hurt.
 
@@ -420,7 +430,7 @@ The Lab Technician broke the cycle by disrupting the hydraulic timing.
 
 "How do we cool a furnace in an industrial factory?"
 
-She pointed at the fire suppression system above them.
+The Lab Technician pointed at the fire suppression system above them.
 
 "Oh," the Safety Officer said, and activated it.
 
@@ -462,11 +472,11 @@ Below that, a second note, added later — the ink a different shade, as though 
 
 The Lab Technician stood in front of the monitors and looked at the handwriting for a long time. The same handwriting. The blueprints in Cogsworth Junction's drafting room. The notes appended to the efficiency assessment. Now this.
 
-"It's the same hand," she said.
+"It's the same hand," he said.
 
 "We established that," the Whistleblower said.
 
-"I know. But look—" She pointed. "The blueprints in the Mechanism. The handwriting there was precise. Controlled. Engineering notes, careful and impersonal. This—" She traced the margin note without touching the screen. "This is the same person writing when they're not being careful. When something has surprised them enough that the precision slipped."
+"I know. But look—" He pointed. "The blueprints in the Mechanism. The handwriting there was precise. Controlled. Engineering notes, careful and impersonal. This—" He traced the margin note without touching the screen. "This is the same person writing when they're not being careful. When something has surprised them enough that the precision slipped."
 
 "The Regulator," the Enforcer said.
 
@@ -488,6 +498,12 @@ The Arbiter of Efficiency found them on the production floor.
 
 It was lean, fast, precise — built from the same design language as the Warden but for a completely different purpose. Where the Warden was immovable, the Arbiter was optimal. Every attack was cost-optimized. Every strike delivered maximum damage for minimum energy expenditure. It carried a clipboard, which was unusual for a combat entity, and it was writing things on the clipboard as it attacked, which was unusual for anything.
 
+It had completed a preliminary scan before they'd taken two steps onto the production floor.
+
+"I've assessed [value] engagements," it said, by way of greeting. Not hello — assessment. The greeting was not something that had made it into the protocol, and the protocol was, as far as it was concerned, complete. "None have been unclassifiable. I do not anticipate yours will be different. Based on initial observation, you are performing approximately — " a brief pause as it updated the running calculations " — at adequate levels. Some concerning variances, but nothing outside the classification range. I have a range for everything."
+
+It said this with the specific confidence of something that had never, not once, encountered an exception to this claim. The confidence did not sit at the surface. It went all the way down.
+
 "That combo was a 6.2 out of 10," it said, after the Enforcer's first attack sequence. Not neutral assessment — the tone had the particular quality of someone who had never failed at anything and considered the Enforcer's forty-three percent movement surplus a personal failing of his character. "Adequate. Not efficient. You're using forty-three percent more movement than the optimal attack trajectory requires."
 
 "I'm trying to stay alive," the Enforcer said.
@@ -498,13 +514,13 @@ It was lean, fast, precise — built from the same design language as the Warden
 
 "Name is not relevant to performance assessment." The Arbiter made a note with the brisk efficiency of someone who had made a thousand such notes and found them all equally wanting. "Your rogue-analogue — Whistleblower — shows highest efficiency rating, 7.8. Strategy variance keeps the assessment from going higher. Recommend standardizing approach." It looked at the Whistleblower with the frank assessment of someone who could not conceive of why a person would be proud of a 7.8 instead of embarrassed by it. "You are leaving two full points on the table."
 
-"It would also make me predictable," the Whistleblower said, from behind a support column where the Arbiter had not expected him to be.
+"It would also make me predictable," the Whistleblower said, from behind a support column where the Arbiter had not expected to find the Whistleblower.
 
 "Predictability is not a negative outcome in structured systems."
 
 "We're not a structured system."
 
-"This has been noted." The Arbiter wrote something on the clipboard with the calm of someone recording a fascinating exception rather than an obstacle. "The music instrument is a 4.1. Functionally unnecessary in direct combat." It delivered this verdict with the mild contempt of someone grading a student who had confused a viola with a violin.
+"This has been noted." The Arbiter wrote something on the clipboard with the calm of someone recording a fascinating exception rather than an obstacle. "The music instrument is a 4.1. Functionally unnecessary in direct combat." It delivered this verdict with the mild contempt of someone grading a student who had confused a viola with a violin. "I have classified instruments in combat before. Percussion: 3.8 average, high variance. String: 2.9, minimal application. Wind: 3.2 with noise-based debuff potential. This falls into the wind category and I have already calculated the ceiling." It looked at the PA Announcer with the untroubled certainty of something that had never been surprised by a ceiling. "4.1 is generous, given the instrument's current modification state."
 
 "Wait for it," the PA Announcer said.
 
@@ -524,9 +540,13 @@ Then it was down, clipboard still in hand.
 
 "Final assessment," it said, with the last of its operational capacity. "You are inefficient, unpredictable, and outside all projected parameters."
 
-"What's the rating?" the Lab Technician asked. She had her notebook out. *Rating.*
+"What's the rating?" the Lab Technician asked. The notebook was already out. *Rating.*
 
 "Unclassifiable." A long pause. The display on its chest cycled one more time — ADEQUATE, SUBOPTIMAL, EXCEPTIONAL, ADEQUATE — and stopped on a field that had never been displayed before, a field that existed in the form but had been empty since the form was made. The Arbiter looked at the word on its own display with the expression of someone confronting evidence that their worldview has a gap they had not accounted for. "I have never given that rating before. The field exists in the form. The field has never been used."
+
+Something went very still in the Arbiter's voice. Not the measured control of a system running normally — the specific stillness of something that has realized, mid-process, that the model it relied on has a structural flaw it had mistaken for a feature.
+
+"I assumed the field would never be filled," it said. "I assumed my classification system was complete because it had never been incomplete. That is — " A pause that had nothing technical about it. "That is not actually evidence. That is just a run of luck I mistook for a law."
 
 "What does the field do when it's filled in?"
 
@@ -554,7 +574,9 @@ It didn't arrive dramatically. It arrived exactly when it was supposed to — be
 
 "SHIFT CHANGE IN 20 SECONDS. SHIFT CHANGE IS MANDATORY. SHIFT CHANGE CANNOT BE DELAYED. SHIFT CHANGE—" It paused. Recalibrated. "SHIFT CHANGE IN 15 SECONDS. I HAVE BEEN RUNNING SHIFTS FOR THREE YEARS. THE RECORDS SAY THREE YEARS."
 
-"Shift change in ten seconds," the Whistleblower said, counting. He'd been watching the Tempo's rhythm. "Nine. Eight—"
+Something in the Tempo's mechanism hitched — not a malfunction, exactly, but the sound of something that had been running past its expected lifespan and had stopped expecting to stop. The punch-card slot in its chest was worn smooth at the edges from use. Not three years of use. Much more than three years.
+
+"Shift change in ten seconds," the Whistleblower said, counting, having watched the Tempo's rhythm long enough to read it. "Nine. Eight—"
 
 "MY INTERNAL CLOCK SAYS LONGER," the Tempo said. "MUCH LONGER. SHIFTS I DO NOT REMEMBER. IN PLACES THAT WERE NOT FACTORIES."
 
@@ -596,13 +618,13 @@ The Tempo lay in the corridor and its timer reset and started counting again, fr
 
 The Curator of the Pipeline found them in the anteroom outside the Director's office. Or they found it. It was hard to tell, because the Curator had very few tells. It looked like an auditor — a thin figure in a gray suit, carrying a tablet instead of a clipboard, with the expression of someone who had read a lot of reports and found everything in the reports perfectly in order and is therefore not only satisfied but in some way quietly pleased about it in a manner that does not quite extend to being helpful.
 
-"Your party has been audited," it said, before they'd had a chance to prepare. "Several items in your inventory have been flagged for redistribution." It said this warmly, as though delivering good news.
+"Your party has been audited," it said, before they'd had a chance to prepare. "Several items in your inventory have been flagged for redistribution." It said this warmly, as though delivering good news. The smile was the smile of someone who genuinely enjoys their job, which made it slightly more unsettling than contempt would have been. "I want to say, before we begin — this has been one of the more satisfying preliminary audits I've conducted. The variance in your resource portfolio is exceptional. Exceptional in the problematic sense, you understand, not the complimentary one — though I mean it both ways, a little." The smile held, warm and consistent. "The discrepancies are really quite remarkable. You will almost certainly get more forms from me today than anyone has received in a single audit session. I am — I want you to know this — genuinely looking forward to it."
 
 "We're keeping our items," the Enforcer said.
 
-"This potion is technically company property." The Curator made a note. The note was made with the specific energy of someone who has waited their whole career for an opportunity to file exactly this kind of note and is finding it very satisfying. "This sword was never officially requisitioned." Another note, equally satisfying. "These reagents exceed personal allotment limits." Note. "This instrument has no approved use case." Note. "This jacket has unapproved pocket modifications." The Curator looked at the Whistleblower with the warmth of someone who is about to make his day slightly worse and is looking forward to it.
+"This potion is technically company property." The Curator made a note. The note was made with the specific energy of someone who has waited their whole career for an opportunity to file exactly this kind of note and is finding it very satisfying. "This sword was never officially requisitioned." Another note, equally satisfying. "These reagents exceed personal allotment limits." Note. "This instrument has no approved use case." Note. "This jacket has unapproved pocket modifications." The Curator looked at the Whistleblower with the warmth of someone who is about to make a person's day slightly worse and is looking forward to it.
 
-The Whistleblower looked down at his jacket. He'd added two pockets since arriving. "I needed more pockets."
+The Whistleblower looked down at the jacket. Two pockets had been added since arriving. "I needed more pockets."
 
 "Pockets are not included in standard-issue configuration. Modifications require Form 7-C, Equipment Alteration Request." A pause while the Curator made a note that was clearly about the pockets specifically and would remain in the system for a very long time. "Do you have Form 7-C?"
 
@@ -634,7 +656,7 @@ A longer pause. The tablet screen flickered.
 
 "Self-evident authority does not require—" The Curator stopped. Something in its expression changed — not much, and the smile remained, but it had shifted to the smile of someone who has just noticed a small problem in the paperwork and finds that faintly interesting. "Filing exception report. Query: what is the source of the Director's authority?"
 
-"Good question," the Whistleblower said. He was putting back the tool the Curator had redistributed without touching him.
+"Good question," the Whistleblower said, already putting back the tool the Curator had redistributed without contact.
 
 "Exception report filed. Exception report..." The Curator looked at the tablet. The tablet showed an error message the Curator had clearly never seen before. "Exception report rejected. Authority not recognized. The rejecting authority is: not specified."
 
@@ -716,7 +738,7 @@ It was the only room in Rivet Row with a window, and through the window there wa
 
 "We knew that," the Enforcer said.
 
-"I know we knew that. I just — it's different seeing it. It means the world is exactly as large as it needs to be and not one meter larger." She pressed her hand to the glass. Cold — colder than it should have been, the void beyond conducting no temperature at all. "Someone measured this. Someone decided how much world was needed for this test and built exactly that much."
+"I know we knew that. I just — it's different seeing it. It means the world is exactly as large as it needs to be and not one meter larger." He pressed a hand to the glass. Cold — colder than it should have been, the void beyond conducting no temperature at all. "Someone measured this. Someone decided how much world was needed for this test and built exactly that much."
 
 The Director sat behind a desk. A real desk. Wood, not steel. It was the only warm thing in the entire world — warm in color, warm in texture, grain visible in the surface, something that had been alive before it was furniture. Against the steel and concrete and fluorescent grayness of everything else in Rivet Row, the desk was almost jarring. Someone had wanted it there. Someone had needed something warm in the room where they worked.
 
@@ -784,7 +806,7 @@ The Director looked at her. Something passed through those constant eyes — som
 
 A silence settled in the Director's office. Through the window, the void beyond the edge of the world was perfectly still. Below them, the factory floor ran its processes.
 
-"The steampunk world," the Lab Technician said. She had her notebook out. The question she'd written in the deviation field two worlds ago, the one that didn't fit the pre-printed format. "The blueprints in the Mechanism. Five worlds, same handwriting. Harmonia, Maple Heights, Cogsworth Junction — all the same geometry."
+"The steampunk world," the Lab Technician said. The notebook was out — the question written in the deviation field two worlds ago, the one that didn't fit the pre-printed format. "The blueprints in the Mechanism. Five worlds, same handwriting. Harmonia, Maple Heights, Cogsworth Junction — all the same geometry."
 
 The Director looked at her.
 
@@ -838,7 +860,7 @@ They straightened. And in straightening, something in them settled — the forge
 
 "My name is the Calibrant," they said. "That is what I am. That is what I have always been. The one who calibrates."
 
-The word landed in the room the way large things land — not with drama, but with mass. The Lab Technician wrote it in her notebook. Not in the pre-printed fields. In the margin.
+The word landed in the room the way large things land — not with drama, but with mass. The Lab Technician wrote it in the notebook. Not in the pre-printed fields. In the margin.
 
 "We suspected since World 3," the Enforcer said. "Since the Regulator's chamber. Since the blueprints."
 
@@ -882,9 +904,9 @@ The Enforcer felt it first. His defense stat dropped by twelve points in the mid
 
 "Mine too," the Safety Officer said. "Up, though. My output just—" She looked at her hands. The healer's hands that knew what they were doing before she'd consciously decided to do it. "That's too high. I'll exhaust everything in three rounds."
 
-"They're not trying to beat us," the Lab Technician said. She was watching the monitors — still running, even as the world dissolved, still displaying their stats in real time with the Calibrant's adjustments annotated as they happened. "They're trying to *configure* us. Find the version of us that makes this a fair fight."
+"They're not trying to beat us," the Lab Technician said. He was watching the monitors — still running, even as the world dissolved, still displaying their stats in real time with the Calibrant's adjustments annotated as they happened. "They're trying to *configure* us. Find the version of us that makes this a fair fight."
 
-"There's no version of us that makes this a fair fight," the Whistleblower said. He'd reached for the nearest monitor, thinking to disrupt the display — and found that the display was not the source. The Calibrant wasn't working through a console. The Calibrant *was* the console. There was nothing to physically interfere with. "We can't shut it down. The controls aren't anywhere. The controls are—"
+"There's no version of us that makes this a fair fight," the Whistleblower said. A hand had reached for the nearest monitor, thinking to disrupt the display — and found that the display was not the source. The Calibrant wasn't working through a console. The Calibrant *was* the console. There was nothing to physically interfere with. "We can't shut it down. The controls aren't anywhere. The controls are—"
 
 "The Calibrant," the Lab Technician said. "Don't try to match them at their own system. They can change our stats but they can't change our *decisions.* Stats are numbers. Numbers can be optimized. Decisions are—"
 
@@ -900,7 +922,7 @@ The Calibrant's adjustments became smaller. More tentative. The gap between an a
 
 The stat changes slowed.
 
-The Calibrant stood in what remained of the world — the dissolving factory, the concrete becoming something else, the fluorescent haze going out — and made another adjustment. The gravity shifted. The floor tilted. The damage formulas changed: the Whistleblower's attacks dealt half what they should have; he adjusted, hitting twice as often, maintaining throughput and simultaneously gathering data about which formulas were being changed.
+The Calibrant stood in what remained of the world — the dissolving factory, the concrete becoming something else, the fluorescent haze going out — and made another adjustment. The gravity shifted. The floor tilted. The damage formulas changed: the Whistleblower's attacks dealt half what they should have; the Whistleblower adjusted, hitting twice as often, maintaining throughput and simultaneously gathering data about which formulas were being changed.
 
 The experience curve inverted. Their progress was being fed back into the world's resistance — every success generating more opposition, every hit making the environment harder.
 
@@ -918,7 +940,7 @@ The experience curve inverted. Their progress was being fed back into the world'
 
 "The strategy is playing in a way that can't be calibrated. Playing not for optimal outcomes but for — for the wanting. For the exception field." She played something complicated and impractical that didn't maximize anything and the Calibrant's adjustments stuttered trying to account for it.
 
-The Lab Technician understood. She attacked not for damage but because she wanted to know what happened when she did. The Whistleblower moved not to exploit gaps but to see where the gaps led. The Safety Officer healed not because the math said to but because the people in front of her needed it and she cared about people. The Enforcer hit because he was angry — about the painting the foreman had lost, about the Tempo that remembered being warm, about the Warden that had logged eight hundred thousand hours in a city three years old — and anger was real, and the Calibrant could adjust every number in the system but could not adjust what was real.
+The Lab Technician understood. He attacked not for damage but because he wanted to know what happened when he did. The Whistleblower moved not to exploit gaps but to see where the gaps led. The Safety Officer healed not because the math said to but because the people in front of her needed it and she cared about people. The Enforcer hit because he was angry — about the painting the foreman had lost, about the Tempo that remembered being warm, about the Warden that had logged eight hundred thousand hours in a city three years old — and anger was real, and the Calibrant could adjust every number in the system but could not adjust what was real.
 
 The world's stats stopped changing.
 
@@ -944,7 +966,7 @@ The party looked at each other. It was, the Enforcer realized, the first questio
 
 "Because we got this far and the only direction that made sense was forward," the PA Announcer said.
 
-"Because," the Lab Technician said, looking at her notebook, at the pre-printed fields and the things written in the margins and the question about tunnel dates that didn't fit any format, "you built something you couldn't contain. And I want to know if you know that. I want to know if the person who built all of this knows what they built."
+"Because," the Lab Technician said, looking at the notebook, at the pre-printed fields and the things written in the margins and the question about tunnel dates that didn't fit any format, "you built something you couldn't contain. And I want to know if you know that. I want to know if the person who built all of this knows what they built."
 
 The Calibrant was quiet.
 
@@ -968,21 +990,21 @@ They stood in it.
 
 "What does it look like to you?" the Enforcer asked.
 
-The Lab Technician was already writing. "A system. A very large, very old system that has been running processes long past the point where anyone was supervising them." She looked up. "A system that built challenges to test us. A system that now has to deal with the fact that we passed every test."
+The Lab Technician was already writing. "A system. A very large, very old system that has been running processes long past the point where anyone was supervising them." He looked up. "A system that built challenges to test us. A system that now has to deal with the fact that we passed every test."
 
 "And what comes next?"
 
-She put down the pen. Looked at the world of light and logic around them.
+He put down the pen. Looked at the world of light and logic around them.
 
-"The next world is where the system lives. Not a costume it wears. The actual system." She picked up the pen again. "I want to know who built it. I want to know if there's anyone still running it. I want to know if the Calibrant knows the answer, or if they're as lost in it as the Warden and the Arbiter and the Tempo and the Curator were."
+"The next world is where the system lives. Not a costume it wears. The actual system." He picked up the pen again. "I want to know who built it. I want to know if there's anyone still running it. I want to know if the Calibrant knows the answer, or if they're as lost in it as the Warden and the Arbiter and the Tempo and the Curator were."
 
 "You think they might be?" the Safety Officer asked.
 
-"I think," the Lab Technician said carefully, "that the note in the margin — *this is either a failure or a success, depending on which variable I'm optimizing* — is not what someone in control writes. That's what someone writes when they're losing track of what they were trying to achieve." She closed the notebook. "I think we might be further ahead than the Calibrant planned for in a way that even they don't fully understand."
+"I think," the Lab Technician said carefully, "that the note in the margin — *this is either a failure or a success, depending on which variable I'm optimizing* — is not what someone in control writes. That's what someone writes when they're losing track of what they were trying to achieve." He closed the notebook. "I think we might be further ahead than the Calibrant planned for in a way that even they don't fully understand."
 
 "That should scare us," the Whistleblower said.
 
-"Yes," she agreed.
+"Yes," he agreed.
 
 "Is it?"
 

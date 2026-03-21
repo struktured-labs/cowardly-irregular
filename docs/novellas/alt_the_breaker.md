@@ -27,7 +27,7 @@ The Rogue read the first three lines, confirmed it was conscription of some kind
 
 Assessment: a Fighter, over-equipped and under-experienced, holding his sword like it had said something he disagreed with. A Cleric, efficient, already checking supply inventory, which the Rogue respected. A Bard, approximately two feet from everywhere, already talking.
 
-"A party of five," the Bard said. "A valiant knight, a servant of the cloth, a woman of arcane—"
+"A party of five," the Bard said. "A valiant knight, a servant of the cloth, a soul of arcane—"
 
 "There's four of us," the Rogue said. "And we're going to the cave now."
 

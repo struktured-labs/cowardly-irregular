@@ -99,7 +99,7 @@ He was going to argue this, but the Fighter had reached the first slime, and the
 
 This was the part he found genuinely interesting: watching the script run.
 
-Not the combat itself. The combat was the output, and outputs were less interesting than the process that produced them. What he watched was the decision tree — the sequence of evaluations, the moment when a condition triggered and the corresponding action executed, the information state that had led to each choice. He watched the Cleric heal when his HP dipped, watched the Rogue strike when his MP dropped, watched the Fighter cover the default cases with reliable physical output. The script ran clean. No decision points uncovered. No resource leakage.
+Not the combat itself. The combat was the output, and outputs were less interesting than the process that produced them. What he watched was the decision tree — the sequence of evaluations, the moment when a condition triggered and the corresponding action executed, the information state that had led to each choice. He watched the Cleric heal when his HP dipped, watched the Rogue strike on low MP, watched the Fighter cover the default cases with reliable physical output. The script ran clean. No decision points uncovered. No resource leakage.
 
 "You're not fighting," the Fighter said. He was doing it himself — manually, earnestly, sword connecting with goblin with the specific impact of a man who wanted to feel the contact.
 
@@ -310,7 +310,7 @@ He looked at his for a moment with the expression that contained the thing he ha
 
 "Thank you."
 
-"But," he said, and he'd been expecting the *but*, "there's a kid in this neighborhood whose bicycle got confiscated by the HOA because it wasn't the approved color. She's nine. She's been crying about it for three days. the Rogue knows about it — spent the morning talking to people instead of reading data." He stood up. "The system analysis matters. The nine-year-old also matters. I'm not saying one is more important. I'm saying you haven't been in the same room as him."
+"But," he said, and he'd been expecting the *but*, "there's a kid in this neighborhood whose bicycle got confiscated by the HOA because it wasn't the approved color. She's nine. She's been crying about it for three days. the Rogue knows about it — spent the morning talking to people instead of reading data." He stood up. "The system analysis matters. The nine-year-old also matters. I'm not saying one is more important. I'm saying you haven't been in the same room as the Rogue."
 
 He wrote this down. the Fighter + the Cleric: manual engagement with local population. the Rogue: social information gathering. Bard: chronicling. Self: data analysis.
 
@@ -320,7 +320,7 @@ He wrote this down. the Fighter + the Cleric: manual engagement with local popul
 
 "The efficiency of resolving the root cause is higher than—"
 
-"That's not the point," he said, not unkindly. "The point is he's nine. The point is being there."
+"That's not the point," he said, not unkindly. "The point is she's nine. The point is being there."
 
 He added a fourth asterisk to the quote from the Warden. *Then you are present everywhere and nowhere.*
 
@@ -334,7 +334,7 @@ Script v2.0 had twenty-three lines.
 
 He'd built it from the World 2 encounter data, which was substantially stranger than World 1 — sentient lawn mowers had variable attack patterns based on lawn health state, which was a model variable he hadn't anticipated, and HOA drones had a shield mechanic that only activated when compliance violation flags were active in their behavior state. This required dynamic flag tracking in the script, which required a new notation system, which he built over two evenings in the inn.
 
-The Bard watched his build it. Not writing. Just watching.
+The Bard watched him build it. Not writing. Just watching.
 
 "You know," she said eventually, "the script is getting beautiful."
 

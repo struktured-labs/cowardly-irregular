@@ -70,7 +70,7 @@ This is where the real drift happens. The game tracks how each character is USED
 
 **The novellas show ONE possible personality configuration** — the "canonical playthrough." The actual game generates personality dynamically.
 
-Default placeholder names: the Fighter, the Mage, the Bard, the Rogue (player can rename all).
+Characters are referred to by class title (Fighter, Cleric, Mage, Rogue, Bard) and their world-specific evolution names. Players can assign personal names in-game.
 
 **Party gender identities (canonical defaults, player-modifiable):**
 - **Fighter** — he/him

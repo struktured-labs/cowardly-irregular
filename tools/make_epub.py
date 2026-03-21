@@ -254,5 +254,87 @@ def make_epub():
     print(f"Chapters: {len(chapters)}")
 
 
+ALTERNATES = [
+    ("alt_the_automator.md", "The Automator", "Mage Lead — Autobattle Path"),
+    ("alt_the_faithful.md", "The Faithful", "Cleric Lead — Grind Path"),
+    ("alt_the_breaker.md", "The Breaker", "Rogue Lead — Exploit Path"),
+    ("alt_the_witness.md", "The Witness", "Bard Lead — Manual Path"),
+]
+
+
+def make_alternates_epub():
+    book = epub.EpubBook()
+
+    book.set_identifier("cowardly-irregular-calibrant-alternates-v2")
+    book.set_title("The Calibrant — Alternate Playthroughs")
+    book.set_language("en")
+    book.add_author("Carmelo Piccione")
+    book.add_metadata("DC", "description", "Four Alternate Playthrough Novellas from Cowardly Irregular")
+
+    style = epub.EpubItem(
+        uid="style",
+        file_name="style/default.css",
+        media_type="text/css",
+        content=BOOK_CSS.encode("utf-8"),
+    )
+    book.add_item(style)
+
+    title_html = """
+    <div style="text-align:center; padding-top:40%;">
+        <h1 style="font-size:2.5em; color:#2c1810; page-break-before:avoid;">The Calibrant</h1>
+        <p style="font-size:1.2em; font-style:italic; color:#666; text-indent:0;">Alternate Playthroughs</p>
+        <p style="margin-top:3em; color:#999; text-indent:0;">Carmelo Piccione</p>
+        <p style="color:#999; text-indent:0;">Struktured Labs — 2025</p>
+    </div>
+    """
+    title_page = epub.EpubHtml(
+        title="Title Page", file_name="title.xhtml", lang="en"
+    )
+    title_page.content = title_html.encode("utf-8")
+    title_page.add_item(style)
+    book.add_item(title_page)
+
+    chapters = []
+    spine = ["nav", title_page]
+
+    for i, (filename, title, subtitle) in enumerate(ALTERNATES, 1):
+        filepath = NOVELLA_DIR / filename
+        if not filepath.exists():
+            print(f"WARNING: {filepath} not found, skipping")
+            continue
+
+        md_text = filepath.read_text()
+        body_html = md_to_html(md_text)
+
+        chapter_html = f"""
+        <h1>{title}</h1>
+        <h2>{subtitle}</h2>
+        {body_html}
+        """
+
+        ch = epub.EpubHtml(
+            title=f"{title} ({subtitle})",
+            file_name=f"alt{i}.xhtml",
+            lang="en",
+        )
+        ch.content = chapter_html.encode("utf-8")
+        ch.add_item(style)
+        book.add_item(ch)
+        chapters.append(ch)
+        spine.append(ch)
+
+    book.toc = [title_page] + chapters
+    book.add_item(epub.EpubNcx())
+    book.add_item(epub.EpubNav())
+    book.spine = spine
+
+    output_path = OUTPUT_DIR / "the_calibrant_alternates.epub"
+    epub.write_epub(str(output_path), book)
+    print(f"EPUB written to {output_path}")
+    print(f"Size: {output_path.stat().st_size / 1024:.0f}KB")
+    print(f"Chapters: {len(chapters)}")
+
+
 if __name__ == "__main__":
     make_epub()
+    make_alternates_epub()

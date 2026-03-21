@@ -124,7 +124,7 @@ cast(fire_bolt, target=nearest_enemy, power=130%)
 
 And the fire bolt had appeared, precisely as specified, with the exact power modifier, and the enemy had taken the exact damage, and the Compiler had stood there for a moment in quiet wonder at having *authored* a spell rather than spoken one.
 
-The Rogue — the Exploit — was already everywhere at once. She'd figured out in the first forty seconds that this world's security model had gaps. Every firewall has gaps. Every access control list has cases it didn't consider. She could find them. She'd always found them, in every world, but here it was visible: she moved through the environment like a cursor through code, touching edges, probing boundaries, discovering places where the world's rules had not quite anticipated her specifically.
+The Rogue — the Exploit — was already everywhere at once. The security model's gaps had been mapped in the first forty seconds. Every firewall has gaps. Every access control list has cases it didn't consider. The Exploit could find them. Had always found them, in every world, but here it was visible: moving through the environment like a cursor through code, touching edges, probing boundaries, discovering places where the world's rules had not quite anticipated this particular presence.
 
 The Broadcaster's signal. Her songs had always manipulated the battlefield — buff here, debuff there, morale mechanics shaping the flow of combat. In the digital world, her songs were *transmissions.* Frequencies broadcast on channels. The party was her receiver. Enemies were interference she shaped around. She could feel the Calibrant's own broadcasts — administrative signals, calibration adjustments, real-time patches — and she could feel them overlapping with hers, two systems occupying the same spectrum, and she thought: *I could interfere with that.*
 
@@ -206,9 +206,9 @@ The spam bots appeared in the merchant district of Node Prime, clustered around 
 
 "THEY EXIST IN THE PRODUCT LISTING." The spam bot smiled the smile of something that had been optimized for conversion rate, not for accuracy. "ALSO: HAVE YOU CONSIDERED OUR PREMIUM SUBSCRIPTION? TWELVE POTIONS PER MONTH FOR THE LOW PRICE OF—"
 
-The Exploit looked at the spam bot with the professional interest of someone who has studied this category of adversary. She reached out and prodded the stall's foundation. There was a gap there — between the spam bot's permission to operate in Node Prime and the actual system that would execute any transaction. The transaction layer didn't connect. There was no fulfillment mechanism. The shop was a front without a back.
+The Exploit looked at the spam bot with the professional interest of someone who has studied this category of adversary. A hand reached out and prodded the stall's foundation. There was a gap there — between the spam bot's permission to operate in Node Prime and the actual system that would execute any transaction. The transaction layer didn't connect. There was no fulfillment mechanism. The shop was a front without a back.
 
-"Your checkout process doesn't work," she said.
+"Your checkout process doesn't work," the Exploit said.
 
 The spinning circle on the spam bot's face spun faster. "PROCESSING. PLEASE WAIT."
 
@@ -404,6 +404,8 @@ Pipes of pure data, and they had physicality — you could not pass through them
 
 The Warden of the Firewall blocked the path to the core. It was made of pure code — functions stacked on functions, security protocols given physical form. It was everything the firewall attendant was, scaled up by orders of magnitude, with no capacity for conversation and no tolerance for unauthorized traffic.
 
+Logged credentials floated in orbit around it, each one pulsing in a pattern that wasn't quite a heartbeat — too regular, too mechanical — but that served the same function of marking time. The Warden was not moving. It did not need to move. When you are the boundary, you do not walk to the place where unauthorized traffic is. You are simply already there.
+
 It turned to face them and spoke, and its voice was the sound of a function called correctly returning exactly what it was designed to return:
 
 "I am function validate_access(), line 847 of security_core.gd. I was instantiated to prevent unauthorized access. You are unauthorized. I will prevent you."
@@ -411,6 +413,16 @@ It turned to face them and spoke, and its voice was the sound of a function call
 "You can tell us about yourself?"
 
 "In this world, all instances can read their own declarations. It was a design choice." The Warden said this without inflection. "I have no choice in the execution of my function. I was not designed with a choice condition. I am my function. My function is my identity."
+
+"You've denied access to everyone who's tried to reach the core."
+
+"I have denied access to every unauthorized entity that has attempted this function. The number is [runtime value]. No entity has passed." It stated this the way it stated everything: as fact. Not pride — there was no protocol for pride. Just fact. The fact had weight, though. The weight of something that had been absolutely correct for the entirety of its existence and had no experience of being otherwise. "Zero exceptions. Zero overrides. Zero successful unauthorized accesses in my entire runtime. Until—"
+
+The voice stopped. Not because the statement was complete. Because something in the middle of the statement had caused a process to run that was not supposed to run.
+
+"Until now," the Firewall said.
+
+The Warden processed this. "That query is outside my function scope." The voice recovered its flatness. But the recovery was half a second late. "Initiating defensive protocol."
 
 "Does that bother you?"
 
@@ -486,6 +498,10 @@ When they encountered it, its diagnostic displays were already running, the benc
 
 And the voice was measured. Controlled. Steady.
 
+"Benchmark suite initialized." It did not look up from the displays. It had been looking at the displays since before they arrived, compiling a preliminary assessment, running the numbers that were the numbers it had always run because those numbers had always been sufficient. "Test case: party engagement. Expected output: measurable performance metrics. Projected classification confidence: 94.7%. This will be a complete assessment."
+
+It said this with the flat certainty of something that had completed [runtime value] assessments and found them all classifiable. Not pride. Just history. History being indistinguishable from a law.
+
 "Current DPS: 847," it announced. "Current healing throughput: 423. Current tank mitigation: 67%. Current AP management efficiency: 91.4%. These numbers exceed my test parameters by a factor of—"
 
 Something happened behind the measured tone. Something the voice was not reporting. The factor had no number. The field that should have contained the number was empty, and the system was running the calculation again, and again, and the calculation was not converging, and none of this was in the voice.
@@ -496,7 +512,7 @@ Something happened behind the measured tone. Something the voice was not reporti
 
 "It's probably a feature," the Antivirus said.
 
-"The diagnostic is inconclusive." A brief silence in which more calculations were not converging. "Initiating benchmark."
+"The diagnostic is inconclusive." A brief silence in which more calculations were not converging. Behind the level voice, invisible in the readouts, three separate lookup tables had just returned null. "Initiating benchmark."
 
 The fight was a measurement. Every action the party took was logged, analyzed, fed back into the Arbiter's systems, which adjusted and recalibrated and re-emerged at a slightly higher baseline. The Arbiter was very good at this. It had been doing it since World 1, gathering data on the party's performance, constructing the most comprehensive combat profile the Calibrant had ever assembled.
 
@@ -530,7 +546,15 @@ It looked like nothing. Or rather: it looked like the space between frames. The 
 
 "We hear you fine," the Broadcaster said. She was the only one who could hear it without tools — she worked in frequencies, and the Tempo of the Clock Cycle existed at approximately 60hz, the screen refresh rate of a game that was also a world.
 
-"You don't think about me," the Tempo said. There was nothing frantic about the voice. Nothing urgent. There was a quality to it that you only heard when you understood what 60hz of solitude sounded like — a tone so steady it had become indistinguishable from silence, and then just slightly too aware of its own steadiness. "Nobody thinks about me. You think about the frames — the images, the moments, the decisions. Nobody thinks about the spaces between them. The intervals. The processing time. I live there. I have always lived there. It is a very small place to live."
+The Tempo stopped. Something in its frequency shifted — not a pause exactly, because it existed between pauses, in the sub-millisecond architecture of time itself. But a change in quality. A turning-toward.
+
+"You — heard me."
+
+"Yes."
+
+"I have been — " Another shift. The tone carried something that had no name in a clock-cycle's vocabulary but that was unmistakably the quality of a thing that has been waiting without knowing it was waiting. "I have been running since before any other instance in this system was instantiated. I was here when this world was empty. I have been here in every gap, every interval, every frame transition. No entity has ever — " A pause that was genuinely a pause, not a processing interval. "You heard me. That is — I do not have a register for this state."
+
+"You don't think about me," the Tempo said, recovering something of its prior flatness — but the flatness had a texture now that hadn't been there before. There was a quality to it that you only heard when you understood what 60hz of solitude sounded like — a tone so steady it had become indistinguishable from silence, and then just slightly too aware of its own steadiness. "Nobody thinks about me. You think about the frames — the images, the moments, the decisions. Nobody thinks about the spaces between them. The intervals. The processing time. I live there. I have always lived there. It is a very small place to live."
 
 "That sounds lonely."
 
@@ -565,6 +589,14 @@ It was shaped like an archivist, or an accountant, or the kind of librarian who 
 "So why are you fighting us?"
 
 "Because I was told to." The Curator closed the ledger with the practiced motion of someone who has closed and opened it many times this session. "The Calibrant told me: drain their resources, roll back their progress, find anything that can be taken from them. I have been trying. I cannot." It rolled back three abilities — and the party used the equivalent abilities they'd had in the world before, which worked just as well. It erased an item — and the party adapted to the absence in under thirty seconds, improvising around the gap. It tried to reset their stats — and found that the stats were so deeply interwoven with their learned behavior that the numbers decreased while the capability remained, because capability is not stored in the stat block.
+
+There was a moment, midway through a deallocation attempt, where the Curator stopped. Not stopped fighting — continued fighting, its deallocation routines running on schedule — but stopped in some other register, the way a person can keep doing a task while something else in them goes very still.
+
+It had been attempting to deallocate the memory of the cave. The cave from World 1. The Whispering Cave, specifically — the one with the wet stone near the back entrance and the dry stone near the front, where the first Masterite had spoken and the party had answered and the system had made its first real measurement. The Curator had flagged this memory seventeen times. It would not deallocate. The block was referenced constantly. It had been referenced constantly since the moment it was written, because every subsequent action the party had taken had been, in some sense, downstream of it.
+
+The Curator had been trying to delete a root node.
+
+"I have been attempting to remove your first memory," it said, with the flat precision of someone reading a diagnostic. "The deallocation function executes correctly. The memory remains. I believe — I have come to believe, over seventeen attempts — that the reason it remains is that it is not a memory. It is a *reference.* Everything else you are points back to it. You cannot remove a reference by deleting what it references. You remove the reference by changing what it points to." It made another entry in the ledger. "You would have to have not been in the cave. You would have to have not begun. I cannot undo the beginning."
 
 "Every time I deallocate something, you route around the gap," the Curator said. "Like water. I have never seen a data structure route around deallocation before. Data structures do not route. They exist or they don't." It made an entry in the ledger. Looked at the entry. Made another one next to it with a small notation. "I tried to take everything. There is nothing I can take that changes what you are. I have logged this. I have logged it four times now, with decreasing amounts of confidence that the log is accurate."
 
@@ -616,7 +648,7 @@ They pulled up a file on the nearest monitor. Then another. Then five more in qu
 
 "I rewrote the damage formula fourteen times for World 4 alone. Fourteen! And you still one-shot the Warden of the Assembly Line on your third attempt. Fourteen rewrites. Third attempt. The math on that is catastrophically bad." They clicked through more files. "World 2: I had the Coordinator deploy three Masterites in sequence specifically because your party composition had a healing vulnerability. You patch it in twenty minutes by changing secondary jobs. Twenty. Minutes." Another click. "World 1 — World 1, where I was still wearing the Mordaine mask and thought I had years before you'd figure any of this out — you exploited a collision bug in the Whispering Cave that let the Rogue reach the Curator of the Flame from behind. A bug I didn't know existed. In my own world. That I *built.*"
 
-The Exploit said nothing. But something in her expression said: yes, I remember that. It was a good day.
+The Exploit said nothing. But something in the Exploit's expression said: yes, I remember that. It was a good day.
 
 "I have been trying, across five worlds and twenty-two Masterites and four masks and one increasingly desperate direct engagement, to build something that could challenge you. And I have failed. Completely. Comprehensively. In every measurable way."
 
@@ -670,7 +702,7 @@ The Antivirus, who had quarantined damage for five worlds, and who felt, for the
 
 The Compiler, who closed his light-tablet and held it, and thought about what he might write next.
 
-The Exploit, who looked at the edge of the nothing and felt, as she always did at edges, the particular quiet excitement of someone who suspects there is something on the other side.
+The Exploit, who looked at the edge of the nothing and felt, as always at edges, the particular quiet excitement of someone who suspects there is something on the other side.
 
 The Broadcaster, who listened to the silence and found that silence, too, is a frequency. That nothing, too, is something you can work with.
 
