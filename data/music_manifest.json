@@ -360,6 +360,78 @@
       "duration": 213.64,
       "loop": true,
       "generated_at": "2026-03-21"
+    },
+    "danger_medieval": {
+      "file": "assets/audio/music/danger_medieval.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Death's Door",
+      "prompt": "EXTREMELY intense near-death battle music, party about to be wiped out, massive thundering war drums pounding like a dying heartbeat, shrieking dissonant violins, blaring brass stabs of pure dread, tempo accelerating, overwhelming panic and terror, the sound of imminent death in a medieval battlefield, make the listener's heart race",
+      "style": "JRPG critical HP, aggressive orchestral, pounding war drums, screaming brass, dissonant strings, terrifying, loud",
+      "model": "suno-v4",
+      "duration": 152.36,
+      "loop": true,
+      "generated_at": "2026-03-21"
+    },
+    "danger_suburban": {
+      "file": "assets/audio/music/danger_suburban.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "911",
+      "prompt": "Terrifying suburban nightmare near-death music, reality breaking apart, distorted emergency sirens warping in and out, crushing glitch bass drops, EarthBound Giygas-inspired pure dread, static and feedback, the cheerful neighborhood music corrupted into something horrifying, overwhelming panic, make the listener feel genuine fear",
+      "style": "EarthBound critical HP, distorted synth, sirens, glitch bass, panic, horror, loud",
+      "model": "suno-v4",
+      "duration": 32.4,
+      "loop": true,
+      "generated_at": "2026-03-21"
+    },
+    "danger_steampunk": {
+      "file": "assets/audio/music/danger_steampunk.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Pressure Critical",
+      "prompt": "Catastrophic steampunk near-death music, steam pressure gauges exploding, grinding metal gears screaming, frantic alarm bells clanging, brass instruments playing in desperate dissonance, the entire clockwork machine about to blow apart, overwhelming mechanical terror and panic",
+      "style": "steampunk critical HP, steam whistles, grinding gears, alarm bells, industrial horror, frantic brass, loud",
+      "model": "suno-v4",
+      "duration": 84.88,
+      "loop": true,
+      "generated_at": "2026-03-21"
+    },
+    "danger_industrial": {
+      "file": "assets/audio/music/danger_industrial.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Flatline",
+      "prompt": "Brutal industrial near-death music, hospital flatline tone droning underneath, crushing mechanical bass that shakes bones, factory emergency alarms blaring, harsh distorted noise walls, the sound of being crushed by the machine, dehumanizing terror, oppressive and suffocating",
+      "style": "industrial critical HP, flatline tone, crushing bass, factory alarm, harsh noise, oppressive, loud",
+      "model": "suno-v4",
+      "duration": 152.68,
+      "loop": true,
+      "generated_at": "2026-03-21"
+    },
+    "danger_digital": {
+      "file": "assets/audio/music/danger_digital.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Stack Overflow",
+      "prompt": "Digital system crash near-death music, cascading error tones and blue screen sounds, corrupted chiptune melody glitching and breaking apart, data corruption noise, the terrifying sound of total system failure, memory overflow chaos, cyberpunk horror at maximum intensity",
+      "style": "digital critical HP, glitch, system crash sounds, error tones, corrupted chiptune, cyberpunk horror, loud",
+      "model": "suno-v4",
+      "duration": 127.84,
+      "loop": true,
+      "generated_at": "2026-03-21"
+    },
+    "danger_abstract": {
+      "file": "assets/audio/music/danger_abstract.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Void Collapse",
+      "prompt": "Existential void near-death music, reality itself collapsing, sounds playing backward and inside out, silence that somehow feels LOUD, building from nothingness to overwhelming cosmic dread, the sound of being erased from existence, transcendent terror beyond physical fear",
+      "style": "abstract critical HP, reverse reverb, deconstructed, silence weaponized, existential dread, crescendo from nothing, loud",
+      "model": "suno-v4",
+      "duration": 95.24,
+      "loop": true,
+      "generated_at": "2026-03-21"
     }
   },
   "tier_priority": [

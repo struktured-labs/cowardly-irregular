@@ -2136,8 +2136,11 @@ func _generate_rat_king_music_buffer(rate: int, duration: float, bpm: float) -> 
 ## Danger Music - Dark, urgent theme when player is about to die
 
 func _start_danger_music() -> void:
-	"""Generate and start looping danger/critical HP music"""
+	"""Generate and start looping danger/critical HP music — world-specific"""
 	_music_playing = true
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("danger_" + suffix):
+		return
 	if _try_play_from_manifest("danger"):
 		return
 
@@ -2642,15 +2645,10 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Start monster-specific battle music — tries world battle track from manifest first"""
+	"""Start monster-specific battle music — unique per monster type"""
 	_music_playing = true
 
-	# Try world-specific battle track from manifest (e.g., battle_suburban for suburban world)
-	var suffix = _get_current_world_suffix()
-	if _try_play_from_manifest("battle_" + suffix):
-		return
-
-	# Check cache first
+	# Check cache first (monster-specific proc-gen themes)
 	if _music_cache.has(monster_type):
 		_music_player.stream = _music_cache[monster_type]
 		_music_player.play()
