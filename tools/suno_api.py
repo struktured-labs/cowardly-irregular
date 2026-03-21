@@ -16,6 +16,21 @@ Usage:
     # Batch — all remaining tracks:
     uv run tools/suno_api.py --batch --world all --shared --skip-existing
 
+    # Regenerate unpinned tracks with prompt tweaks:
+    uv run tools/suno_api.py --batch --world all --shared --regenerate --weirdness 0
+
+    # Pin tracks you're happy with:
+    uv run tools/suno_api.py --pin overworld_medieval village_medieval
+
+    # Unpin to allow regeneration:
+    uv run tools/suno_api.py --unpin overworld_medieval
+
+    # List all tracks with pin/generation status:
+    uv run tools/suno_api.py --list
+
+    # Edit prompts in $EDITOR:
+    uv run tools/suno_api.py --edit-prompts
+
     # Login (first time only):
     uv run tools/suno_api.py --login
 
@@ -30,9 +45,12 @@ import base64
 import fcntl
 import json
 import os
+import random
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import date
 from pathlib import Path
@@ -89,6 +107,195 @@ def update_manifest_atomic(track_key: str, entry: dict) -> None:
                 json.dump(manifest, fh, indent=2)
         finally:
             fcntl.flock(lock_fh, fcntl.LOCK_UN)
+
+
+# ---------------------------------------------------------------------------
+# Pin management
+# ---------------------------------------------------------------------------
+
+def pin_tracks(track_ids: list[str]) -> None:
+    manifest = load_manifest()
+    tracks = manifest.get("tracks", {})
+    for tid in track_ids:
+        if tid not in tracks:
+            print(f"  WARNING: '{tid}' not in manifest, skipping")
+            continue
+        tracks[tid]["pinned"] = True
+        print(f"  Pinned: {tid}")
+    with MANIFEST_PATH.open("w") as fh:
+        json.dump(manifest, fh, indent=2)
+
+
+def unpin_tracks(track_ids: list[str]) -> None:
+    manifest = load_manifest()
+    tracks = manifest.get("tracks", {})
+    for tid in track_ids:
+        if tid not in tracks:
+            print(f"  WARNING: '{tid}' not in manifest, skipping")
+            continue
+        tracks[tid].pop("pinned", None)
+        print(f"  Unpinned: {tid}")
+    with MANIFEST_PATH.open("w") as fh:
+        json.dump(manifest, fh, indent=2)
+
+
+def is_pinned(track_id: str) -> bool:
+    manifest = load_manifest()
+    return manifest.get("tracks", {}).get(track_id, {}).get("pinned", False)
+
+
+def list_tracks() -> None:
+    manifest = load_manifest()
+    tracks = manifest.get("tracks", {})
+    prompts = load_prompts()
+    all_world_tracks = set()
+    for wk, wd in prompts.get("worlds", {}).items():
+        suffix = WORLD_SUFFIXES.get(int(wk), wk)
+        for tt in wd.get("tracks", {}):
+            all_world_tracks.add(f"{tt}_{suffix}")
+    for st in prompts.get("shared_tracks", {}):
+        all_world_tracks.add(st)
+
+    print(f"\n{'Track ID':<30s} {'Status':<12s} {'Pinned':<8s} {'Duration':<10s} {'Title'}")
+    print("-" * 90)
+    for tid in sorted(all_world_tracks):
+        entry = tracks.get(tid, {})
+        if entry:
+            status = "generated"
+            pinned = "YES" if entry.get("pinned") else ""
+            dur = f"{entry.get('duration', 0):.0f}s"
+            title = entry.get("title", "")
+        else:
+            status = "missing"
+            pinned = ""
+            dur = ""
+            title = ""
+        print(f"  {tid:<30s} {status:<12s} {pinned:<8s} {dur:<10s} {title}")
+    pinned_count = sum(1 for e in tracks.values() if e.get("pinned"))
+    print(f"\n{len(tracks)}/{len(all_world_tracks)} generated, {pinned_count} pinned")
+
+
+# ---------------------------------------------------------------------------
+# Weirdness / prompt variation
+# ---------------------------------------------------------------------------
+
+def apply_weirdness(title: str, style: str, prompt: str, weirdness: int,
+                    take: int = 0) -> tuple[str, str, str]:
+    """Mutate title/style/prompt based on weirdness level (0-5).
+
+    0 = exact same prompt (reroll — Suno varies output naturally)
+    1 = append take number to title (different seed, same vibe)
+    2 = shuffle style tag order
+    3 = drop one style tag, add a complementary one
+    4 = rewrite prompt ending for variation
+    5 = significant style mutation
+    """
+    if weirdness == 0:
+        return title, style, prompt
+
+    # Level 1+: title variation
+    if take > 0:
+        title = f"{title} (take {take + 1})"
+
+    if weirdness >= 2:
+        # Shuffle style tags
+        tags = [t.strip() for t in style.split(",") if t.strip()]
+        random.shuffle(tags)
+        style = ", ".join(tags)
+
+    if weirdness >= 3:
+        # Drop one tag and add a variation
+        tags = [t.strip() for t in style.split(",") if t.strip()]
+        if len(tags) > 2:
+            dropped = tags.pop(random.randint(0, len(tags) - 1))
+            alternatives = {
+                "harp": "lyre", "strings": "chamber strings", "brass": "horns",
+                "piano": "keys", "synth": "analog synth", "drums": "percussion",
+                "orchestral": "symphonic", "lo-fi": "lo-fi tape hiss",
+                "chiptune": "8-bit", "ambient": "atmospheric", "guitar": "acoustic guitar",
+                "flute": "pan flute", "organ": "church organ", "bass": "deep bass",
+                "gentle": "soft", "aggressive": "intense", "mysterious": "enigmatic",
+                "epic": "grandiose", "dark": "brooding", "bright": "luminous",
+            }
+            # Try to find a related alternative
+            alt = alternatives.get(dropped.lower(), f"variation on {dropped}")
+            tags.append(alt)
+            style = ", ".join(tags)
+
+    if weirdness >= 4:
+        # Add a variation suffix to the prompt
+        suffixes = [
+            ", with a slightly different melodic approach",
+            ", exploring an alternate arrangement",
+            ", with emphasis on rhythmic variation",
+            ", with a more dynamic range",
+            ", leaning into the harmonic undertones",
+        ]
+        prompt = prompt.rstrip(".") + random.choice(suffixes)
+
+    if weirdness >= 5:
+        # Add a mood modifier to the style
+        moods = ["ethereal", "raw", "cinematic", "intimate", "expansive",
+                 "textured", "layered", "stripped-back"]
+        style = style + ", " + random.choice(moods)
+
+    return title, style, prompt
+
+
+# ---------------------------------------------------------------------------
+# Prompt editing
+# ---------------------------------------------------------------------------
+
+def edit_prompts() -> None:
+    """Open music_prompts.json in $EDITOR for manual prompt tweaking."""
+    editor = os.environ.get("EDITOR", os.environ.get("VISUAL", ""))
+    if not editor:
+        # Try to find a sensible default
+        for candidate in ("nano", "vim", "vi"):
+            if shutil.which(candidate):
+                editor = candidate
+                break
+    if not editor:
+        die("No $EDITOR set and no editor found. Set EDITOR env var.")
+
+    # Make a backup
+    backup = PROMPTS_PATH.with_suffix(".json.bak")
+    shutil.copy2(PROMPTS_PATH, backup)
+
+    # Open editor
+    print(f"Opening {PROMPTS_PATH.name} in {editor}...")
+    result = subprocess.run([editor, str(PROMPTS_PATH)])
+    if result.returncode != 0:
+        print("Editor exited with error, restoring backup.")
+        shutil.copy2(backup, PROMPTS_PATH)
+        return
+
+    # Validate JSON
+    try:
+        with PROMPTS_PATH.open() as fh:
+            data = json.load(fh)
+        # Basic structure check
+        assert "worlds" in data, "Missing 'worlds' key"
+        assert "shared_tracks" in data, "Missing 'shared_tracks' key"
+        print("Prompts updated and validated.")
+    except (json.JSONDecodeError, AssertionError) as e:
+        print(f"Invalid JSON after edit: {e}")
+        print("Restoring backup.")
+        shutil.copy2(backup, PROMPTS_PATH)
+        return
+
+    # Show diff
+    diff = subprocess.run(
+        ["diff", "--color=always", "-u", str(backup), str(PROMPTS_PATH)],
+        capture_output=True, text=True,
+    )
+    if diff.stdout.strip():
+        print("\nChanges:")
+        print(diff.stdout)
+    else:
+        print("No changes made.")
+
+    backup.unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -267,19 +474,20 @@ def check_credits(jwt: str) -> int:
 class SunoBrowser:
     """Manages patchright browser for Suno web UI automation."""
 
-    def __init__(self):
+    def __init__(self, headless: bool = True):
         self._pw = None
         self._ctx: BrowserContext | None = None
         self._page: Page | None = None
         self._audio_urls: list[str] = []
         self._generation_responses: list[dict] = []
+        self._headless = headless
 
     def start(self) -> None:
         PROFILE_DIR.mkdir(parents=True, exist_ok=True)
         self._pw = sync_playwright().start()
         self._ctx = self._pw.chromium.launch_persistent_context(
             str(PROFILE_DIR),
-            headless=False,
+            headless=self._headless,
             viewport={"width": 1400, "height": 900},
             timeout=60000,
         )
@@ -598,41 +806,115 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate Cowardly Irregular music via Suno (fully automated)",
     )
-    parser.add_argument("--track-id", metavar="ID", help="Track ID")
-    parser.add_argument("--title", default="")
-    parser.add_argument("--style", default="")
-    parser.add_argument("--prompt", default="")
-    parser.add_argument("--instrumental", action="store_true", default=True)
-    parser.add_argument("--no-instrumental", dest="instrumental", action="store_false")
-    parser.add_argument("--world", metavar="N", help="World 1-6 or 'all'")
-    parser.add_argument("--batch", action="store_true")
-    parser.add_argument("--shared", action="store_true")
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--preview", action="store_true")
-    parser.add_argument("--skip-existing", action="store_true")
-    parser.add_argument("--login", action="store_true", help="Interactive login flow")
+
+    # Generation args
+    gen = parser.add_argument_group("generation")
+    gen.add_argument("--track-id", metavar="ID", help="Track ID")
+    gen.add_argument("--title", default="")
+    gen.add_argument("--style", default="")
+    gen.add_argument("--prompt", default="")
+    gen.add_argument("--instrumental", action="store_true", default=True)
+    gen.add_argument("--no-instrumental", dest="instrumental", action="store_false")
+    gen.add_argument("--world", metavar="N", help="World 1-6 or 'all'")
+    gen.add_argument("--batch", action="store_true")
+    gen.add_argument("--shared", action="store_true")
+    gen.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    gen.add_argument("--preview", action="store_true")
+    gen.add_argument("--skip-existing", action="store_true",
+                     help="Skip tracks already in manifest (always skips pinned)")
+    gen.add_argument("--regenerate", action="store_true",
+                     help="Regenerate existing unpinned tracks (opposite of --skip-existing)")
+    gen.add_argument("--weirdness", type=int, default=0, metavar="N",
+                     help="Prompt variation level 0-5 (0=exact reroll, 5=significant mutation)")
+
+    # Pin management
+    pin = parser.add_argument_group("pin management")
+    pin.add_argument("--pin", nargs="+", metavar="ID",
+                     help="Pin tracks (protect from regeneration)")
+    pin.add_argument("--unpin", nargs="+", metavar="ID",
+                     help="Unpin tracks (allow regeneration)")
+    pin.add_argument("--pin-all", action="store_true",
+                     help="Pin all existing tracks")
+
+    # Info / editing
+    info = parser.add_argument_group("info & editing")
+    info.add_argument("--list", action="store_true", dest="list_tracks",
+                      help="List all tracks with pin/generation status")
+    info.add_argument("--edit-prompts", action="store_true",
+                      help="Open music_prompts.json in $EDITOR")
+
+    # Browser
+    browser_grp = parser.add_argument_group("browser")
+    browser_grp.add_argument("--login", action="store_true",
+                             help="Interactive login flow (headed)")
+    browser_grp.add_argument("--headed", action="store_true",
+                             help="Run browser with visible window (default: headless)")
 
     args = parser.parse_args()
 
+    # --- Non-generation commands (no browser needed) ---
+
+    if args.pin:
+        pin_tracks(args.pin)
+        return
+
+    if args.unpin:
+        unpin_tracks(args.unpin)
+        return
+
+    if args.pin_all:
+        manifest = load_manifest()
+        all_ids = list(manifest.get("tracks", {}).keys())
+        if all_ids:
+            pin_tracks(all_ids)
+        else:
+            print("No tracks to pin.")
+        return
+
+    if args.list_tracks:
+        list_tracks()
+        return
+
+    if args.edit_prompts:
+        edit_prompts()
+        return
+
     if not args.login and not args.batch and not args.shared and not args.track_id:
-        die("--track-id required (or use --batch/--shared/--login)")
+        die("--track-id required (or use --batch/--shared/--login/--list/--pin/--edit-prompts)")
 
     # Check credits
     if not args.login:
         jwt = get_fresh_jwt()
-        credits = check_credits(jwt)
-        print(f"Credits: {credits}")
+        credits_left = check_credits(jwt)
+        print(f"Credits: {credits_left}")
 
     # Build queue
     if args.batch or args.shared:
         queue = build_batch_queue(args.world if args.batch else None, args.shared)
-        if args.skip_existing:
-            existing = set(load_manifest().get("tracks", {}).keys())
-            before = len(queue)
-            queue = [t for t in queue if t["track_id"] not in existing]
-            skipped = before - len(queue)
-            if skipped:
-                print(f"Skipping {skipped} existing tracks.")
+
+        # Filter: always skip pinned tracks
+        manifest = load_manifest()
+        existing = manifest.get("tracks", {})
+        before = len(queue)
+        pinned_skipped = 0
+        filtered = []
+        for t in queue:
+            tid = t["track_id"]
+            entry = existing.get(tid, {})
+            if entry.get("pinned"):
+                pinned_skipped += 1
+                continue
+            if args.skip_existing and tid in existing:
+                continue
+            if not args.regenerate and tid in existing:
+                continue
+            filtered.append(t)
+        queue = filtered
+        if pinned_skipped:
+            print(f"Skipping {pinned_skipped} pinned track(s).")
+        skipped = before - len(queue) - pinned_skipped
+        if skipped > 0:
+            print(f"Skipping {skipped} existing track(s).")
     elif args.login:
         queue = []
     else:
@@ -643,6 +925,9 @@ def main() -> None:
             title = title or template.get("title", "")
             style = style or template.get("style", "")
             prompt = prompt or template.get("prompt", "")
+        # Single track: check if pinned
+        if is_pinned(args.track_id):
+            die(f"Track '{args.track_id}' is pinned. Use --unpin first.")
         queue = [{"track_id": args.track_id, "title": title, "style": style, "prompt": prompt}]
 
     if not args.login and not queue:
@@ -652,13 +937,15 @@ def main() -> None:
     if queue:
         print(f"\nQueue: {len(queue)} track(s)")
         for i, t in enumerate(queue, 1):
-            print(f"  {i:2d}. {t['track_id']:30s} {t['title']}")
+            w_tag = f" [W{args.weirdness}]" if args.weirdness > 0 else ""
+            print(f"  {i:2d}. {t['track_id']:30s} {t['title']}{w_tag}")
         credits_needed = len(queue) * 10
         print(f"Credits needed: ~{credits_needed}")
 
-    # Launch browser
-    print("\nStarting browser...")
-    browser = SunoBrowser()
+    # Launch browser — headless by default, headed for --login or --headed
+    headless = not (args.login or args.headed)
+    print(f"\nStarting browser ({'headless' if headless else 'headed'})...")
+    browser = SunoBrowser(headless=headless)
     browser.start()
 
     if args.login:
@@ -673,11 +960,19 @@ def main() -> None:
             print(f"[{i}/{len(queue)}] {track['track_id']} — {track['title']}")
             print(f"{'=' * 60}")
 
+            # Apply weirdness to prompts
+            gen_title, gen_style, gen_prompt = apply_weirdness(
+                track["title"], track["style"], track["prompt"],
+                args.weirdness, take=i - 1,
+            )
+            if args.weirdness > 0:
+                print(f"  Weirdness {args.weirdness}: title='{gen_title}', style='{gen_style[:60]}...'")
+
             result = browser.generate_track(
                 track_id=track["track_id"],
-                title=track["title"],
-                style=track["style"],
-                prompt=track["prompt"],
+                title=gen_title,
+                style=gen_style,
+                prompt=gen_prompt,
                 instrumental=args.instrumental,
             )
 
@@ -703,7 +998,9 @@ def main() -> None:
             duration = result.get("duration") or probe_duration(ogg_path)
             raw_path.unlink(missing_ok=True)
 
-            update_manifest_atomic(track_key, {
+            # Preserve pinned status if track was already in manifest
+            existing_entry = load_manifest().get("tracks", {}).get(track_key, {})
+            entry = {
                 "file": str(ogg_path.relative_to(PROJECT_ROOT)),
                 "tier": "T1",
                 "provider": "suno",
@@ -714,7 +1011,10 @@ def main() -> None:
                 "duration": round(duration, 2),
                 "loop": True,
                 "generated_at": date.today().isoformat(),
-            })
+            }
+            if existing_entry.get("pinned"):
+                entry["pinned"] = True
+            update_manifest_atomic(track_key, entry)
             print(f"  Track ready: {ogg_path}")
 
             if args.preview:
