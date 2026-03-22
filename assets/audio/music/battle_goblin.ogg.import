@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://b31yb328h26lf"
+path="res://.godot/imported/battle_goblin.ogg-e79dfdce524a56360501a5abbd0c5079.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/battle_goblin.ogg"
+dest_files=["res://.godot/imported/battle_goblin.ogg-e79dfdce524a56360501a5abbd0c5079.oggvorbisstr"]
 
 [params]
 

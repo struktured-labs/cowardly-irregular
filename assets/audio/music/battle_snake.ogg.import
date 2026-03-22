@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://b1ut4dlwvyp1c"
+path="res://.godot/imported/battle_snake.ogg-e3b25d8f0140462203c9285d086b3963.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/battle_snake.ogg"
+dest_files=["res://.godot/imported/battle_snake.ogg-e3b25d8f0140462203c9285d086b3963.oggvorbisstr"]
 
 [params]
 
