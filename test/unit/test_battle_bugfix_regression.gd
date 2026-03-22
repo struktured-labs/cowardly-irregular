@@ -193,3 +193,121 @@ func test_all_jobs_have_evolution_block() -> void:
 		var job = jobs[job_id]
 		assert_has(job, "evolution",
 			"Job '%s' is missing 'evolution' block — will crash on job[\"evolution\"][\"target\"]" % job_id)
+
+
+# ===========================================================================
+# Phase 2 regression tests (commit c7ee479)
+# ===========================================================================
+
+# ---- Bug: Buffs stacked infinitely with no cap or refresh ----
+
+func test_duplicate_buff_refreshes_instead_of_stacking() -> void:
+	_combatant.add_buff("Protect", "defense", 2.0, 3)
+	assert_eq(_combatant.active_buffs.size(), 1, "Should have 1 buff")
+
+	# Adding same effect again should refresh, not stack
+	_combatant.add_buff("Protect", "defense", 2.0, 5)
+	assert_eq(_combatant.active_buffs.size(), 1,
+		"Duplicate buff should refresh, not stack (got %d buffs)" % _combatant.active_buffs.size())
+	assert_eq(_combatant.active_buffs[0]["remaining_turns"], 5,
+		"Refreshed buff should have new duration")
+
+
+func test_duplicate_debuff_refreshes_instead_of_stacking() -> void:
+	_combatant.add_debuff("Armor Break", "defense", 0.5, 2)
+	assert_eq(_combatant.active_debuffs.size(), 1, "Should have 1 debuff")
+
+	_combatant.add_debuff("Armor Break", "defense", 0.5, 4)
+	assert_eq(_combatant.active_debuffs.size(), 1,
+		"Duplicate debuff should refresh, not stack")
+	assert_eq(_combatant.active_debuffs[0]["remaining_turns"], 4,
+		"Refreshed debuff should have new duration")
+
+
+func test_stronger_buff_upgrades_modifier() -> void:
+	_combatant.add_buff("Berserk", "attack", 1.5, 3)
+	_combatant.add_buff("Berserk", "attack", 2.0, 3)
+	assert_eq(_combatant.active_buffs.size(), 1, "Should still be 1 buff")
+	assert_eq(_combatant.active_buffs[0]["modifier"], 2.0,
+		"Stronger buff should upgrade modifier")
+
+
+func test_weaker_buff_does_not_downgrade_modifier() -> void:
+	_combatant.add_buff("Berserk", "attack", 2.0, 3)
+	_combatant.add_buff("Berserk", "attack", 1.5, 5)
+	assert_eq(_combatant.active_buffs[0]["modifier"], 2.0,
+		"Weaker buff should not downgrade modifier")
+	assert_eq(_combatant.active_buffs[0]["remaining_turns"], 5,
+		"Duration should still refresh even if modifier is not upgraded")
+
+
+# ---- Bug: get_buffed_stat had no cap ----
+
+func test_buffed_stat_capped_at_4x() -> void:
+	# Stack multiple different buffs to try to exceed 4x
+	# With refresh-on-duplicate, we need different effect names
+	_combatant.add_buff("Berserk", "attack", 3.0, 5)
+	_combatant.add_buff("War Cry", "attack", 3.0, 5)
+	# 20 * 3.0 * 3.0 = 180, but cap is 4x base = 80
+	var buffed = _combatant.get_buffed_stat("attack", _combatant.attack)
+	assert_true(buffed <= _combatant.attack * 4,
+		"Buffed stat should not exceed 4x base (got %d, max %d)" % [buffed, _combatant.attack * 4])
+
+
+func test_debuffed_stat_floored_at_25_percent() -> void:
+	_combatant.add_debuff("Weaken", "attack", 0.1, 5)
+	# 20 * 0.1 = 2, but floor is 0.25x base = 5
+	var debuffed = _combatant.get_buffed_stat("attack", _combatant.attack)
+	assert_true(debuffed >= int(_combatant.attack * 0.25),
+		"Debuffed stat should not go below 25%% base (got %d, min %d)" % [debuffed, int(_combatant.attack * 0.25)])
+
+
+func test_buffed_stat_minimum_is_one() -> void:
+	# Combatant with very low base stat + debuff
+	_combatant.defense = 1
+	_combatant.add_debuff("Shatter", "defense", 0.1, 5)
+	var debuffed = _combatant.get_buffed_stat("defense", _combatant.defense)
+	assert_true(debuffed >= 1, "Buffed stat should never go below 1")
+
+
+# ---- Bug: restore_mp/spend_mp had no dead-combatant guard ----
+
+func test_restore_mp_on_dead_combatant_returns_zero() -> void:
+	_combatant.current_hp = 0
+	_combatant.is_alive = false
+	var restored = _combatant.restore_mp(20)
+	assert_eq(restored, 0, "Dead combatant should not restore MP")
+
+
+func test_spend_mp_on_dead_combatant_returns_false() -> void:
+	_combatant.current_hp = 0
+	_combatant.is_alive = false
+	var result = _combatant.spend_mp(10)
+	assert_false(result, "Dead combatant should not spend MP")
+
+
+# ---- Bug: Volatility starting bands only had 2 tiers ----
+
+func test_volatility_starting_bands() -> void:
+	var VolatilitySystem = preload("res://src/battle/VolatilitySystem.gd")
+	var vol = VolatilitySystem.new()
+
+	# Low macro → STABLE
+	vol.macro_volatility = 0.2
+	vol.reset_battle()
+	assert_eq(vol.get_band_name(), "Stable", "Low macro should start STABLE")
+
+	# Medium macro → SHIFTING
+	vol.macro_volatility = 0.5
+	vol.reset_battle()
+	assert_eq(vol.get_band_name(), "Shifting", "Medium macro should start SHIFTING")
+
+	# High macro → UNSTABLE
+	vol.macro_volatility = 0.8
+	vol.reset_battle()
+	assert_eq(vol.get_band_name(), "Unstable", "High macro should start UNSTABLE")
+
+	# Very high macro → FRACTURED
+	vol.macro_volatility = 0.95
+	vol.reset_battle()
+	assert_eq(vol.get_band_name(), "Fractured", "Very high macro should start FRACTURED")
