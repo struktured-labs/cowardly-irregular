@@ -612,6 +612,35 @@ func _on_cutscene_finished(_cutscene_id: String, previous_state: LoopState) -> v
 	print("[GAME] Cutscene '%s' finished, returning to %s" % [_cutscene_id, LoopState.keys()[current_state]])
 
 
+func _play_new_game_cutscenes() -> void:
+	"""Play prologue and chapter 1 cutscenes on new game, then start exploration."""
+	current_state = LoopState.CUTSCENE
+
+	if not _cutscene_director or not is_instance_valid(_cutscene_director):
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+
+	# Play prologue
+	_cutscene_director.cutscene_finished.connect(
+		_on_prologue_finished, CONNECT_ONE_SHOT
+	)
+	_cutscene_director.play_cutscene("world1_prologue")
+
+
+func _on_prologue_finished(_cutscene_id: String) -> void:
+	"""After prologue, play chapter 1."""
+	_cutscene_director.cutscene_finished.connect(
+		_on_chapter1_finished, CONNECT_ONE_SHOT
+	)
+	_cutscene_director.play_cutscene("world1_chapter1")
+
+
+func _on_chapter1_finished(_cutscene_id: String) -> void:
+	"""After chapter 1 cutscene, start exploration."""
+	current_state = LoopState.EXPLORATION
+	_start_exploration()
+
+
 func _show_character_creation() -> void:
 	"""Show the character creation screen"""
 	var layer = CanvasLayer.new()
@@ -643,8 +672,8 @@ func _on_character_creation_complete(customizations: Array, layer: CanvasLayer) 
 	# Save customizations
 	_save_customizations(customizations)
 
-	# Start exploration
-	_start_exploration()
+	# Play prologue + chapter 1 cutscenes before exploration
+	_play_new_game_cutscenes()
 
 
 func _on_character_creation_skipped(layer: CanvasLayer) -> void:
@@ -659,8 +688,8 @@ func _on_character_creation_skipped(layer: CanvasLayer) -> void:
 	# Create default party
 	_create_party()
 
-	# Start exploration
-	_start_exploration()
+	# Play prologue + chapter 1 cutscenes before exploration
+	_play_new_game_cutscenes()
 
 
 func _create_party_from_customizations(customizations: Array) -> void:
