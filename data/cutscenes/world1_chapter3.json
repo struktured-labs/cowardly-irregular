@@ -1,0 +1,87 @@
+{
+  "id": "world1_chapter3",
+  "title": "The Whispering Cave",
+  "world": 1,
+  "trigger": "enter_whispering_cave",
+  "description": "Entering the Whispering Cave. The honorable skeleton, designed monsters, and deepening mystery.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "dungeon"},
+
+    {"type": "narration", "lines": [
+      "The cave had earned its name honestly. It whispered.",
+      "Not words, exactly. More like the memory of words \u2014 the sound a sentence makes after everyone has forgotten what it meant.",
+      "The air tasted of iron and wet limestone, and something older beneath that. Shadows moved before they did."
+    ]},
+
+    {"type": "narration", "text": "The monsters here were different from the road fodder. Sharper. More deliberate. As if performing the role of 'cave monster' rather than simply being one."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "lines": [
+      "In the second chamber, a skeleton in ancient knight's plate stood at parade rest.",
+      "It turned to face the Fighter. It raised one gauntleted fist to the side of its skull.",
+      "It saluted."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "What.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "It's being chivalric.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Mage",
+        "text": "It's a skeleton.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Chivalric skeletons are not documented. And yet here we are.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "narration", "lines": [
+      "The fight was the most courteous exchange of violence the cave had ever witnessed.",
+      "When it finally fell, the Fighter found an inscription on the inside of the visor: SERVE WITH HONOR. REST WITH PEACE."
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Someone made this harder. Someone went through the cave and... arranged it. Court magic. The formal kind. The kind with a wax seal.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Someone in the capital designed this floor?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Someone in the capital designed this floor.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "narration", "text": "The deepest chamber was where the whispers converged."},
+
+    {"type": "set_flag", "flag": "chapter3_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

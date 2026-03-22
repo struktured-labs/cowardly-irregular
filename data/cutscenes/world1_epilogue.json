@@ -1,0 +1,79 @@
+{
+  "id": "world1_epilogue",
+  "title": "After",
+  "world": 1,
+  "trigger": "world1_mordaine_defeated",
+  "description": "After Mordaine's defeat. The throne room flickers. A portal to World 2 opens. The party questions the nature of their journey.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "fade_to_black", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "fade_from_black", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "Mordaine dissolved. Not in the way enemies dissolve \u2014 in smoke and light and theatrical satisfaction.",
+      "She dissolved the way a thought dissolves. One moment she was there. The next, a memory already fading.",
+      "The throne room flickered. Not the lights \u2014 the room. The walls shuddered, and for a fraction of a second, the party saw something behind them.",
+      "Not stone. Not darkness. Something that looked like... suburbs."
+    ]},
+
+    {"type": "screen_shake", "duration": 0.4, "intensity": 3.0},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "In Harmonia Village, a device that had appeared overnight hummed to life. Its portal shimmered with images of parking lots and picket fences."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Mordaine designed our journey. All of it. The cave. The forest. The Masterites. Us.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "She designed a challenge. We happened to be the ones inside it.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Bard",
+        "text": "That's not better.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "It's not worse either. The design is real. The challenges were real. What we built \u2014 the way we fight, the way we adapt \u2014 that came from us, not from her.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Does it count if everything we overcame was built to be overcome?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Does any game count if the pieces were designed to fit together?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "The word landed strangely. Game. A children's word. A word for dice and boards and rules someone else wrote.",
+      "None of them had used it before.",
+      "They looked at the portal. Behind it, a world that made no sense. Ahead: the unknown.",
+      "The Fighter went first. Because that was what fighters were for."
+    ]},
+
+    {"type": "fade_to_black", "duration": 1.5},
+    {"type": "set_flag", "flag": "world1_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

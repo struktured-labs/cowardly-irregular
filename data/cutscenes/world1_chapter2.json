@@ -1,0 +1,141 @@
+{
+  "id": "world1_chapter2",
+  "title": "The Road North",
+  "world": 1,
+  "trigger": "overworld_road_north",
+  "description": "Encounters on the road to the Whispering Cave: clever slimes, Grut the goblin merchant, wolf pack standoff.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+
+    {"type": "narration", "lines": [
+      "Between Harmonia and the Whispering Cave lay two hours of open road and at least three things that wanted to hurt them.",
+      "The first thing was a pair of slimes. Not ordinary slimes \u2014 these were sharper, more deliberate in their malice."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Oh. Oh, that's clever.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "The slime is clever?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The DESIGN is clever. Don't hit it with the sword again. Use fire. Area effects. Force them to converge rather than divide.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "I would have preferred simply stabbing them.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You can simply stab the next thing. I promise there will be a next thing.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The next thing was a goblin named, according to a hand-painted sign, GRUT \u2014 AUTHENTIC HERO SUPPLIES."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Grut",
+        "text": "Greetings, heroes! You look like you are going to the cave. Good news. Grut has everything you need.",
+        "theme": "goblin",
+        "portrait": "goblin"
+      },
+      {
+        "speaker": "Mage",
+        "text": "That helmet is a pot.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Grut",
+        "text": "Authentic ancient warrior vessel! Very rare. Very powerful. Kings wore these.",
+        "theme": "goblin",
+        "portrait": "goblin"
+      },
+      {
+        "speaker": "Mage",
+        "text": "What king wore a pot on his head?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Grut",
+        "text": "...King Pothelm. Very famous king. From the west. You wouldn't have heard of him.",
+        "theme": "goblin",
+        "portrait": "goblin"
+      },
+      {
+        "speaker": "Bard",
+        "text": "I'll take it.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You will not.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "The story requires that we purchased something from the goblin merchant. The narrative demands it.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Grut",
+        "text": "Good luck in the cave! If you die, your equipment reverts to the shop system! Very convenient!",
+        "theme": "goblin",
+        "portrait": "goblin"
+      }
+    ]},
+
+    {"type": "narration", "text": "No one knew what the shop system was. They kept walking."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The third obstacle was a pack of wolves. The Bard pulled her lute from her back and began to play."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Bard performance and Cleric radiant aura. Combined effect on territorial mammalian aggression: decisive. The system works better when we coordinate.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Bard",
+        "text": "That's what I've been saying.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You've been saying it in verse. It lands differently in prose.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "narration", "text": "They reached the cave mouth as the sun dropped behind the mountains and the whispers began."},
+
+    {"type": "set_flag", "flag": "chapter2_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
