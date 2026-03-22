@@ -242,6 +242,86 @@
       "prompt": "Gentle rain on leaves with harp notes, nature healing sounds, birdsong and dewdrops, peaceful restoration",
       "duration_seconds": 1.2,
       "prompt_influence": 0.6
+    },
+
+    "screen_shake": {
+      "file": "assets/audio/sfx/screen_shake.ogg",
+      "prompt": "Deep rumbling earthquake tremor, ground shaking impact with low bass vibration, dramatic cinematic rumble",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "screen_flash": {
+      "file": "assets/audio/sfx/screen_flash.ogg",
+      "prompt": "Sharp thunder crack with bright flash impact, sudden lightning strike, dramatic cinematic hit",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.7
+    },
+    "letterbox_in": {
+      "file": "assets/audio/sfx/letterbox_in.ogg",
+      "prompt": "Smooth cinematic curtain closing whoosh, subtle film projector engaging, quiet dramatic transition in",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.6
+    },
+    "letterbox_out": {
+      "file": "assets/audio/sfx/letterbox_out.ogg",
+      "prompt": "Smooth cinematic curtain opening whoosh, subtle film projector disengaging, quiet dramatic transition out",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.6
+    },
+    "cave_whispers": {
+      "file": "assets/audio/sfx/cave_whispers.ogg",
+      "prompt": "Eerie cave whispers echoing in darkness, ghostly murmuring voices in a deep cavern, unsettling ambient wind through stone tunnels",
+      "duration_seconds": 3.0,
+      "prompt_influence": 0.7
+    },
+    "armor_clank": {
+      "file": "assets/audio/sfx/armor_clank.ogg",
+      "prompt": "Medieval plate armor clanking together, metal gauntlet striking breastplate in salute, military honor gesture",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
+    },
+    "sword_draw_heavy": {
+      "file": "assets/audio/sfx/sword_draw_heavy.ogg",
+      "prompt": "Heavy two-handed greatsword being drawn from scabbard, long slow steel scraping against leather, weighty and deliberate unsheathe",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "sword_on_stone": {
+      "file": "assets/audio/sfx/sword_on_stone.ogg",
+      "prompt": "Heavy sword being placed point-down on stone floor, metallic ring echoing in a hall, solemn weapon resting, armor settling",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "portal_activate": {
+      "file": "assets/audio/sfx/portal_activate.ogg",
+      "prompt": "Magical portal opening with swirling energy hum, reality warping distortion building to a resonant tone, interdimensional gateway powering up",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
+    "reality_glitch": {
+      "file": "assets/audio/sfx/reality_glitch.ogg",
+      "prompt": "Reality flickering and glitching, digital static mixed with broken record skipping, world tearing momentarily, unsettling distortion",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "lute_strum": {
+      "file": "assets/audio/sfx/lute_strum.ogg",
+      "prompt": "Quick medieval lute chord strum, bright acoustic string pluck, bard playing a confident flourish, warm wooden instrument",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
+    },
+    "goblin_fanfare": {
+      "file": "assets/audio/sfx/goblin_fanfare.ogg",
+      "prompt": "Comical goblin merchant entrance fanfare, silly kazoo and off-key trumpet, goofy carnival jingle, mischievous and funny",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "rat_king_squeak": {
+      "file": "assets/audio/sfx/rat_king_squeak.ogg",
+      "prompt": "Dramatic oversized rat squeaking menacingly, deep pitched rodent squeal building to a threatening screech, comically intimidating boss entrance",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
     }
   }
 }
+
