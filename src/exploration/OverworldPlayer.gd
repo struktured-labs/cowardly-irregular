@@ -360,15 +360,16 @@ func _generate_all_sprites() -> void:
 
 	var new_cache: Dictionary = {}
 
-	# Try artist sheet first (no customization applied — artist work is authoritative)
-	if not _use_custom_colors:
-		var artist_cache = _try_build_artist_sprites()
-		if not artist_cache.is_empty():
-			_static_sprite_cache[static_key] = artist_cache
-			_sprite_cache = artist_cache
-			if _static_sprite_cache.size() > 30:
-				_static_sprite_cache.erase(_static_sprite_cache.keys()[0])
-			return
+	# Try artist sheet first — artist work is authoritative regardless of
+	# custom colors. Custom colors only apply to proc-gen sprites; when artist
+	# sheets exist, we use them as-is.
+	var artist_cache = _try_build_artist_sprites()
+	if not artist_cache.is_empty():
+		_static_sprite_cache[static_key] = artist_cache
+		_sprite_cache = artist_cache
+		if _static_sprite_cache.size() > 30:
+			_static_sprite_cache.erase(_static_sprite_cache.keys()[0])
+		return
 
 	for dir in [Direction.DOWN, Direction.UP, Direction.LEFT, Direction.RIGHT]:
 		for frame in range(WALK_FRAMES):
