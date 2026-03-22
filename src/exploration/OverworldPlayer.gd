@@ -424,8 +424,20 @@ func _extract_artist_frame(sf: SpriteFrames, anim: String, frame_idx: int, flip_
 	if flip_h:
 		src_img.flip_x()
 
-	src_img.resize(SPRITE_SIZE, SPRITE_SIZE, Image.INTERPOLATE_NEAREST)
-	return ImageTexture.create_from_image(src_img)
+	# Scale proportionally to fit within SPRITE_SIZE, then center on
+	# transparent canvas. Direct resize(32,32) squashes the aspect ratio.
+	var sw = src_img.get_width()
+	var sh = src_img.get_height()
+	var scale_factor = min(float(SPRITE_SIZE) / max(sw, 1), float(SPRITE_SIZE) / max(sh, 1))
+	var new_w = max(1, int(sw * scale_factor))
+	var new_h = max(1, int(sh * scale_factor))
+	src_img.resize(new_w, new_h, Image.INTERPOLATE_NEAREST)
+
+	var canvas = Image.create(SPRITE_SIZE, SPRITE_SIZE, true, Image.FORMAT_RGBA8)
+	var x_off = (SPRITE_SIZE - new_w) / 2
+	var y_off = SPRITE_SIZE - new_h  # foot-align to bottom
+	canvas.blit_rect(src_img, Rect2i(0, 0, new_w, new_h), Vector2i(x_off, y_off))
+	return ImageTexture.create_from_image(canvas)
 
 
 ## Try to build a full direction×frame sprite cache from artist sheets.
