@@ -15,34 +15,13 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Capture right stick from joypad events (any axis 2-5 that moves)
 	if event is InputEventJoypadMotion:
 		var e = event as InputEventJoypadMotion
-		# Axes 0,1 = left stick. 2-5 could be right stick depending on driver.
 		if e.axis >= 2 and e.axis <= 5:
 			if abs(e.axis_value) > 0.2:
 				right_stick_x = e.axis_value
-			elif e.axis in [2, 3]:
+			else:
 				right_stick_x = 0.0
-	# Steam may convert right stick to mouse motion
-	elif event is InputEventMouseMotion:
-		var mx = event.relative.x
-		if abs(mx) > 3.0:
-			right_stick_x = clampf(mx * 0.04, -1.0, 1.0)
-
-
-func _process(_delta: float) -> void:
-	# Also poll axes directly as a fallback (some drivers only support polling)
-	if preferred_device >= 0 and abs(right_stick_x) < 0.1:
-		for ax in [2, 3, 4, 5]:
-			var val = Input.get_joy_axis(preferred_device, ax)
-			if abs(val) > 0.2:
-				right_stick_x = val
-				break
-
-	# Decay toward zero when no input (mouse events don't send "release")
-	if abs(right_stick_x) > 0.01:
-		right_stick_x *= 0.85
 
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:

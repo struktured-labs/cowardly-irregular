@@ -2,9 +2,9 @@ shader_type canvas_item;
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_nearest;
 uniform float horizon : hint_range(0.0, 0.5) = 0.0;
-uniform float near_scale : hint_range(0.05, 0.5) = 0.12;
-uniform float ground_y : hint_range(0.3, 0.95) = 0.59;
-uniform float curvature : hint_range(0.0, 0.2) = 0.02;
+uniform float near_scale : hint_range(0.05, 0.5) = 0.22;
+uniform float ground_y : hint_range(0.3, 0.95) = 0.52;
+uniform float curvature : hint_range(0.0, 0.2) = 0.01;
 uniform float world_rotation : hint_range(-3.14159, 3.14159) = 0.0;
 uniform vec4 sky_top : source_color = vec4(0.25, 0.35, 0.65, 1.0);
 uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);

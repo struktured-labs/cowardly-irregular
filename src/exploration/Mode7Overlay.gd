@@ -6,9 +6,9 @@ var player_display_size: float = 240.0
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0
-var near_scale: float = 0.12
-var ground_y: float = 0.59
-var curvature: float = 0.02
+var near_scale: float = 0.22
+var ground_y: float = 0.52
+var curvature: float = 0.01
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
 
 var _mode7_layer: CanvasLayer
@@ -19,8 +19,8 @@ var _shader_mat: ShaderMaterial
 
 var _current_rotation: float = 0.0
 const ROTATION_SPEED: float = 2.5
-const SWAY_PIXELS: float = 24.0
-const BOB_AMPLITUDE: float = 3.0
+const SWAY_PIXELS: float = 16.0
+const BOB_AMPLITUDE: float = 2.5
 const BOB_SPEED: float = 10.0
 var _bob_timer: float = 0.0
 var _last_player_pos: Vector2 = Vector2.ZERO
@@ -96,28 +96,25 @@ func process_frame() -> void:
 	_player_moving = move_delta.length_squared() > 0.5
 	_last_player_pos = _player_ref.position
 
-	# Camera rotation: right stick (via GamepadFilter autoload) > Q/E > walking fallback
+	# Camera rotation: right stick only (no movement-based auto-turn)
 	var cam_input = GamepadFilter.right_stick_x
 	if abs(cam_input) < 0.1:
 		if Input.is_key_pressed(KEY_E):
 			cam_input = 1.0
 		elif Input.is_key_pressed(KEY_Q):
 			cam_input = -1.0
-	if abs(cam_input) < 0.1 and abs(move_delta.x) > 0.5:
-		cam_input = -sign(move_delta.x) * 0.4
 
-	if abs(cam_input) > 0.05:
+	if abs(cam_input) > 0.1:
 		_current_rotation += cam_input * ROTATION_SPEED * delta
 
 	camera_angle = _current_rotation
 
 	var cam = _player_ref.get_node_or_null("Camera") as Camera2D
 	if cam:
-		cam.ignore_rotation = false
-		cam.rotation = _current_rotation
+		cam.ignore_rotation = true
 
 	if _shader_mat:
-		_shader_mat.set_shader_parameter("world_rotation", 0.0)
+		_shader_mat.set_shader_parameter("world_rotation", _current_rotation)
 
 	# Sway
 	var screen_move = move_delta.rotated(-_current_rotation)
@@ -151,14 +148,13 @@ func cleanup() -> void:
 	if _player_ref:
 		var cam = _player_ref.get_node_or_null("Camera") as Camera2D
 		if cam:
-			cam.rotation = 0.0
 			cam.ignore_rotation = true
 
 
 static func apply_camera(cam: Camera2D, mode7: bool) -> void:
 	if mode7:
-		cam.zoom = Vector2(0.8, 0.8)
-		cam.offset = Vector2(0, -50)
+		cam.zoom = Vector2(0.65, 0.65)
+		cam.offset = Vector2(0, -30)
 	else:
 		cam.zoom = Vector2(2.0, 2.0)
 		cam.offset = Vector2.ZERO
