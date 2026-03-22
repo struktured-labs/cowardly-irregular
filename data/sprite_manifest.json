@@ -107,7 +107,23 @@
         "aseprite": "assets/sprites/jobs/aseprite/Rogue Main design.aseprite",
         "tier": "T1",
         "generator": "Procedural Lua/Aseprite (pixel-by-pixel, palette from Cleric design)",
-        "layers": ["Shadow","Cloak_Back","Leg_R","Boot_R","Leg_L","Boot_L","Body","Belt_Pouches","Arm_R","Cloak_Front","Arm_L","Scarf","Head","Hood","Eyes"],
+        "layers": [
+          "Shadow",
+          "Cloak_Back",
+          "Leg_R",
+          "Boot_R",
+          "Leg_L",
+          "Boot_L",
+          "Body",
+          "Belt_Pouches",
+          "Arm_R",
+          "Cloak_Front",
+          "Arm_L",
+          "Scarf",
+          "Head",
+          "Hood",
+          "Eyes"
+        ],
         "palette_basis": "Cleric Main design.aseprite palette, shifted to dark navy/charcoal hood, dusty purple scarf, dark brown leather",
         "notes": "Gender-ambiguous, deep hood with eyes in shadow, dusty purple scarf, torn asymmetric cloak, empty hands (weapons composited at runtime)"
       },
@@ -154,6 +170,44 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
+      "animations": [
+        "idle",
+        "walk",
+        "attack",
+        "hit",
+        "dead",
+        "cast",
+        "defend",
+        "item",
+        "victory"
+      ]
+    },
+    "rogue_sdxl": {
+      "path": "res://assets/sprites/jobs/rogue_sdxl",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "tier": "T1",
+      "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + IP-Adapter + ControlNet",
+      "animations": [
+        "idle",
+        "walk",
+        "attack",
+        "hit",
+        "dead",
+        "cast",
+        "defend",
+        "item",
+        "victory"
+      ]
+    },
+    "mage_sdxl": {
+      "path": "res://assets/sprites/jobs/mage_sdxl",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "tier": "T1",
+      "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + ControlNet",
       "animations": [
         "idle",
         "walk",
@@ -955,6 +1009,506 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "fungoid": {
+      "path": "res://assets/sprites/monsters/fungoid.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "viper": {
+      "path": "res://assets/sprites/monsters/viper.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "elemental": {
+      "path": "res://assets/sprites/monsters/elemental.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "corrupted_sprite": {
+      "path": "res://assets/sprites/monsters/corrupted_sprite.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "giant_bat": {
+      "path": "res://assets/sprites/monsters/giant_bat.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "diseased_rat": {
+      "path": "res://assets/sprites/monsters/diseased_rat.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "cave_rat_king": {
+      "path": "res://assets/sprites/monsters/cave_rat_king.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "ice_wolf": {
+      "path": "res://assets/sprites/monsters/ice_wolf.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "specter": {
+      "path": "res://assets/sprites/monsters/specter.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "treasure_mimic": {
+      "path": "res://assets/sprites/monsters/treasure_mimic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "ironback_beetle": {
+      "path": "res://assets/sprites/monsters/ironback_beetle.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "cursed_armor": {
+      "path": "res://assets/sprites/monsters/cursed_armor.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "blood_wolf_alpha": {
+      "path": "res://assets/sprites/monsters/blood_wolf_alpha.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "crystal_golem": {
+      "path": "res://assets/sprites/monsters/crystal_golem.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "elder_mushroom": {
+      "path": "res://assets/sprites/monsters/elder_mushroom.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "corrupted_guardian": {
+      "path": "res://assets/sprites/monsters/corrupted_guardian.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_warden_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_arbiter_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_tempo_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_curator_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
       "tier": "T1",
       "animations": {
         "idle": {

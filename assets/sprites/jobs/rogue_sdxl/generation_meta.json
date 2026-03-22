@@ -1,0 +1,79 @@
+{
+  "job": "rogue",
+  "tier": "T1",
+  "generator": "gen_sprite_sdxl.py",
+  "model": "SDXL 1.0 + jrpg_pixel_style LoRA + IP-Adapter Plus Face",
+  "lora_mode": "style",
+  "controlnet": true,
+  "controlnet_scale": 0.5,
+  "ip_adapter_scale": 0.5,
+  "animations": {
+    "idle": "tmp/generated/rogue_v6/idle.png",
+    "walk": "tmp/generated/rogue_v6/walk.png",
+    "attack": "tmp/generated/rogue_v6/attack.png",
+    "hit": "tmp/generated/rogue_v6/hit.png",
+    "dead": "tmp/generated/rogue_v6/dead.png",
+    "cast": "tmp/generated/rogue_v6/cast.png",
+    "defend": "tmp/generated/rogue_v6/defend.png",
+    "item": "tmp/generated/rogue_v6/item.png",
+    "victory": "tmp/generated/rogue_v6/victory.png"
+  },
+  "seeds": {
+    "idle": [
+      64812704,
+      64812705
+    ],
+    "walk": [
+      1975099395,
+      1975099396,
+      1975099397,
+      1975099398,
+      1975099399,
+      1975099400
+    ],
+    "attack": [
+      2712121263,
+      2712121264,
+      2712121265,
+      2712121266,
+      2712121267,
+      2712121268
+    ],
+    "hit": [
+      2840415793,
+      2840415794,
+      2840415795,
+      2840415796
+    ],
+    "dead": [
+      2150236307,
+      2150236308,
+      2150236309,
+      2150236310
+    ],
+    "cast": [
+      2954923973,
+      2954923974,
+      2954923975,
+      2954923976
+    ],
+    "defend": [
+      241138535,
+      241138536,
+      241138537,
+      241138538
+    ],
+    "item": [
+      3193162292,
+      3193162293,
+      3193162294,
+      3193162295
+    ],
+    "victory": [
+      1349421866,
+      1349421867,
+      1349421868,
+      1349421869
+    ]
+  }
+}

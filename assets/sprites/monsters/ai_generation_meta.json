@@ -1,0 +1,231 @@
+{
+  "tier": "T1",
+  "generator": "gen_medieval_monsters.py",
+  "lora_mode": "style",
+  "frame_size": "256x256",
+  "frames_per_monster": 8,
+  "monsters": [
+    "fungoid",
+    "viper",
+    "elemental",
+    "corrupted_sprite",
+    "giant_bat",
+    "diseased_rat",
+    "cave_rat_king",
+    "ice_wolf",
+    "specter",
+    "treasure_mimic",
+    "ironback_beetle",
+    "cursed_armor",
+    "blood_wolf_alpha",
+    "crystal_golem",
+    "elder_mushroom",
+    "corrupted_guardian",
+    "masterite_warden_medieval",
+    "masterite_arbiter_medieval",
+    "masterite_tempo_medieval",
+    "masterite_curator_medieval"
+  ],
+  "seeds": {
+    "fungoid": [
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49
+    ],
+    "viper": [
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149
+    ],
+    "elemental": [
+      242,
+      243,
+      244,
+      245,
+      246,
+      247,
+      248,
+      249
+    ],
+    "corrupted_sprite": [
+      342,
+      343,
+      344,
+      345,
+      346,
+      347,
+      348,
+      349
+    ],
+    "giant_bat": [
+      442,
+      443,
+      444,
+      445,
+      446,
+      447,
+      448,
+      449
+    ],
+    "diseased_rat": [
+      542,
+      543,
+      544,
+      545,
+      546,
+      547,
+      548,
+      549
+    ],
+    "cave_rat_king": [
+      642,
+      643,
+      644,
+      645,
+      646,
+      647,
+      648,
+      649
+    ],
+    "ice_wolf": [
+      742,
+      743,
+      744,
+      745,
+      746,
+      747,
+      748,
+      749
+    ],
+    "specter": [
+      842,
+      843,
+      844,
+      845,
+      846,
+      847,
+      848,
+      849
+    ],
+    "treasure_mimic": [
+      942,
+      943,
+      944,
+      945,
+      946,
+      947,
+      948,
+      949
+    ],
+    "ironback_beetle": [
+      1042,
+      1043,
+      1044,
+      1045,
+      1046,
+      1047,
+      1048,
+      1049
+    ],
+    "cursed_armor": [
+      1142,
+      1143,
+      1144,
+      1145,
+      1146,
+      1147,
+      1148,
+      1149
+    ],
+    "blood_wolf_alpha": [
+      1242,
+      1243,
+      1244,
+      1245,
+      1246,
+      1247,
+      1248,
+      1249
+    ],
+    "crystal_golem": [
+      1342,
+      1343,
+      1344,
+      1345,
+      1346,
+      1347,
+      1348,
+      1349
+    ],
+    "elder_mushroom": [
+      1442,
+      1443,
+      1444,
+      1445,
+      1446,
+      1447,
+      1448,
+      1449
+    ],
+    "corrupted_guardian": [
+      1542,
+      1543,
+      1544,
+      1545,
+      1546,
+      1547,
+      1548,
+      1549
+    ],
+    "masterite_warden_medieval": [
+      1642,
+      1643,
+      1644,
+      1645,
+      1646,
+      1647,
+      1648,
+      1649
+    ],
+    "masterite_arbiter_medieval": [
+      1742,
+      1743,
+      1744,
+      1745,
+      1746,
+      1747,
+      1748,
+      1749
+    ],
+    "masterite_tempo_medieval": [
+      1842,
+      1843,
+      1844,
+      1845,
+      1846,
+      1847,
+      1848,
+      1849
+    ],
+    "masterite_curator_medieval": [
+      1942,
+      1943,
+      1944,
+      1945,
+      1946,
+      1947,
+      1948,
+      1949
+    ]
+  }
+}
