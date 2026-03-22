@@ -414,6 +414,13 @@ func _extract_artist_frame(sf: SpriteFrames, anim: String, frame_idx: int, flip_
 	if not src_img:
 		return null
 
+	# Crop to opaque bounding box before downscaling — battle sprites are
+	# 256x256 with the character occupying ~40% of the frame. Without cropping,
+	# the 32x32 result is a tiny blob.
+	var used_rect = src_img.get_used_rect()
+	if used_rect.size.x > 0 and used_rect.size.y > 0:
+		src_img = src_img.get_region(used_rect)
+
 	if flip_h:
 		src_img.flip_x()
 
