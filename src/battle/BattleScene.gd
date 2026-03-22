@@ -17,6 +17,14 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
+const JOB_DISPLAY_HEIGHTS: Dictionary = {
+	"fighter": 375.0,
+	"cleric": 180.0,
+	"mage": 300.0,
+	"rogue": 300.0,
+	"bard": 300.0,
+}
+
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
 @onready var turn_info: Label = $UI/TurnInfoPanel/TurnInfo
@@ -640,13 +648,6 @@ func _create_battle_sprites() -> void:
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
 		# Tune these to align characters visually despite different art sizes within frames.
-		const JOB_DISPLAY_HEIGHTS: Dictionary = {
-			"fighter": 375.0,   # Artist sprite — character is small in 256x256 frame
-			"cleric": 180.0,    # SDXL sprite — character fills entire frame, scale way down
-			"mage": 300.0,
-			"rogue": 300.0,
-			"bard": 300.0,
-		}
 		var target_height = JOB_DISPLAY_HEIGHTS.get(job_id, 300.0)
 
 		# Auto-scale based on frame height and per-job target

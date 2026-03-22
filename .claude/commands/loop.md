@@ -15,14 +15,14 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 8. SKIPPED — Legacy pipeline functions are actually used by `create_default_character_script` and default script builders. Not dead code.
 9. DONE — Removed dead `_create_character_sprite`, `_create_enemy_sprite`, `_on_player_hp_changed`, `_on_player_ap_changed` from BattleScene.
 10. DONE — Deleted VirtualGamepad.gd (also removed autoload), AdaptiveAI.gd, OverworldInteractable.gd.
-11. `src/exploration/OverworldPlayer.gd` — Remove dead `walk_frames` building code in `_try_load_artist_sprites` (frames are built but cache only uses idle_frames).
-12. `src/maps/MapSystem.gd` — The entire transition system (`load_map`, `transition_to_map`, `unload_current_map`, `enter_location`, `exit_location`) is never called from GameLoop. Either wire it in or mark as future/remove.
+11. DONE — Sprite agent already replaced `_try_load_artist_sprites` with `_try_build_artist_sprites` which has no dead walk_frames code.
+12. SKIPPED — MapSystem.load_map is called from SaveSystem on game load. Transition functions are partially live.
 
 ### Tier 3: Architecture Improvements
 13. Extract village base class — 10 village scripts share ~150 lines of identical boilerplate (`_setup_scene`, `_setup_camera`, `_setup_controller`, `_setup_transition_collision`, `spawn_player_at`, `resume`, `pause`, `set_player_job`, `set_player_appearance`). Create `BaseVillage.gd` and refactor.
 14. Consolidate border constants — `BORDER_LIGHT`/`BORDER_SHADOW` duplicated in 10+ files. Move to `RetroPanel.gd` as class constants, reference from menus.
-15. `src/ui/RetroFont.gd` — Remove dead `apply_retro_theme()` and `generate_bitmap_font_texture()`.
-16. `src/battle/BattleScene.gd` — Move `JOB_DISPLAY_HEIGHTS` from function-level const to class-level const.
+15. DONE — Removed dead `apply_retro_theme()`, `generate_bitmap_font_texture()`, `_draw_character()`, `_get_character_patterns()` (~125 lines).
+16. DONE — Moved `JOB_DISPLAY_HEIGHTS` from function-level to class-level const.
 17. `src/GameState.gd` — Remove or gate dead Time Mage rewind infrastructure, dead `macro_volatility`, dead parallel save system (`save_game`/`load_game`/`get_save_list`/`delete_save`).
 
 ### Tier 4: Performance
