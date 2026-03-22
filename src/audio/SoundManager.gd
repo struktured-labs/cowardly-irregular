@@ -25,6 +25,16 @@ var _music_cache: Dictionary = {}
 # an area replays instantly without regenerating thousands of samples.
 static var _area_wav_cache: Dictionary = {}
 
+# Music manifest - file-based tracks take priority over procedural generation
+static var _music_manifest: Dictionary = {}
+static var _manifest_loaded: bool = false
+
+# SFX manifest - file-based SFX take priority over procedural generation
+static var _sfx_manifest: Dictionary = {}
+static var _sfx_manifest_loaded: bool = false
+# Cache loaded AudioStream objects so we only hit disk once per key
+static var _sfx_stream_cache: Dictionary = {}
+
 # Sound definitions - procedural parameters
 const SOUNDS = {
 	# UI Sounds
@@ -42,6 +52,10 @@ const SOUNDS = {
 	"autobattle_open": {"freq": 440, "duration": 0.2, "type": "chord"},
 	"autobattle_close": {"freq": 350, "duration": 0.15, "type": "falling"},
 	"chest_open": {"freq": 700, "duration": 0.25, "type": "sparkle"},  # Treasure chest
+	# Autogrind tier transition sounds
+	"tier_zoom_out": {"freq": 320, "duration": 0.22, "type": "tier_zoom_out"},   # Tier 1 -> Dashboard
+	"tier_zoom_in": {"freq": 520, "duration": 0.18, "type": "tier_zoom_in"},    # Dashboard -> Tier 1
+	"speed_change": {"freq": 700, "duration": 0.08, "type": "blip"},  # Battle speed toggle
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},
@@ -78,6 +92,7 @@ var _ability_sounds: Dictionary = {}
 
 
 func _ready() -> void:
+	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
 
@@ -90,25 +105,28 @@ func _exit_tree() -> void:
 	if _danger_tween and _danger_tween.is_valid():
 		_danger_tween.kill()
 	_danger_tween = null
+	if _corruption_tween and _corruption_tween.is_valid():
+		_corruption_tween.kill()
+	_corruption_tween = null
 
 
 func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -8.0
+	_ui_player.volume_db = -10.0  # Menu blips: subtle (files normalized to -12dB peak)
 	_ui_player.bus = "Master"
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -6.0
+	_battle_player.volume_db = -8.0  # Battle SFX: present alongside music (files at -12dB peak)
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -4.0
+	_ability_player.volume_db = -6.0  # Ability SFX: prominent, spells should be felt (files at -12dB peak)
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
@@ -158,17 +176,82 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["mug"] = "ability_physical"
 
 
+## SFX Manifest (file-based SFX take priority over procedural)
+
+static func _load_sfx_manifest() -> void:
+	if _sfx_manifest_loaded:
+		return
+	_sfx_manifest_loaded = true
+	var file = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	if not file:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if parsed and parsed.has("sfx"):
+		_sfx_manifest = parsed["sfx"]
+		if _sfx_manifest.size() > 0:
+			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
+
+
+func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0) -> bool:
+	"""Try to play a file-based SFX from the manifest. Returns true if successful.
+	volume_db_override: if NAN, preserves the player's channel base volume.
+	If set, overrides volume (used by play_battle_scaled)."""
+	if not _sfx_manifest.has(sound_key):
+		return false
+	var entry = _sfx_manifest[sound_key]
+	var path = entry.get("file", "")
+	if path == "":
+		return false
+	if not path.begins_with("res://"):
+		path = "res://" + path
+
+	# Check stream cache first
+	if _sfx_stream_cache.has(sound_key):
+		var cached_stream = _sfx_stream_cache[sound_key]
+		if cached_stream:
+			player.stream = cached_stream
+			if not is_nan(volume_db_override):
+				player.volume_db = volume_db_override
+			player.pitch_scale = pitch_scale
+			player.play()
+			return true
+		else:
+			# Cached null = file doesn't exist, fall through to procedural
+			return false
+
+	# Try loading from disk
+	if not FileAccess.file_exists(path):
+		_sfx_stream_cache[sound_key] = null  # Cache miss
+		return false
+	var stream = load(path) as AudioStream
+	if not stream:
+		push_warning("[SFX] Failed to load: %s" % path)
+		_sfx_stream_cache[sound_key] = null
+		return false
+	_sfx_stream_cache[sound_key] = stream
+	player.stream = stream
+	if not is_nan(volume_db_override):
+		player.volume_db = volume_db_override
+	player.pitch_scale = pitch_scale
+	player.play()
+	return true
+
+
 ## Public API
 
 func play_ui(sound_key: String) -> void:
-	"""Play a UI sound effect"""
+	"""Play a UI sound effect — file-based if available, else procedural"""
+	if _try_play_sfx_from_manifest(_ui_player, sound_key):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_ui_player, SOUNDS[sound_key])
 
 
 func play_battle(sound_key: String) -> void:
-	"""Play a battle sound effect"""
+	"""Play a battle sound effect — file-based if available, else procedural"""
+	if _try_play_sfx_from_manifest(_battle_player, sound_key):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_battle_player, SOUNDS[sound_key])
@@ -176,6 +259,8 @@ func play_battle(sound_key: String) -> void:
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, volume_db, pitch_scale):
+		return
 	if not SOUNDS.has(sound_key):
 		return
 	# Validate pitch scale to prevent invalid frequencies
@@ -192,6 +277,8 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 func play_ability(ability_id: String) -> void:
 	"""Play sound for an ability (looks up mapping or uses default)"""
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
+	if _try_play_sfx_from_manifest(_ability_player, sound_key):
+		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_ability_player, SOUNDS[sound_key])
 
@@ -204,6 +291,8 @@ func register_ability_sound(ability_id: String, sound_key: String) -> void:
 func play_status(status_name: String) -> void:
 	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
 	var key = "status_" + status_name.to_lower()
+	if _try_play_sfx_from_manifest(_battle_player, key):
+		return
 	if SOUNDS.has(key):
 		_play_sound(_battle_player, SOUNDS[key])
 	else:
@@ -291,6 +380,10 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 			_generate_woozy(playback, samples, freq, sample_rate, duration)
 		"crackle_lock":
 			_generate_crackle_lock(playback, samples, freq, sample_rate, duration)
+		"tier_zoom_out":
+			_generate_tier_zoom_out(playback, samples, freq, sample_rate, duration)
+		"tier_zoom_in":
+			_generate_tier_zoom_in(playback, samples, freq, sample_rate, duration)
 		_:
 			_generate_blip(playback, samples, freq, sample_rate, duration)
 
@@ -335,9 +428,10 @@ func _generate_double_blip(playback: AudioStreamGeneratorPlayback, samples: int,
 	var half = samples / 2
 	for i in range(samples):
 		var t = float(i) / rate
-		var local_t = float(i % half) / half
+		var local_t = float(i % half) / float(half)
 		var envelope = 1.0 - local_t
 		var sample = sin(t * freq * TAU) * envelope
+		playback.push_frame(Vector2(sample, sample) * 0.3)
 
 
 func _generate_boom(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
@@ -625,12 +719,112 @@ func _generate_crackle_lock(playback: AudioStreamGeneratorPlayback, samples: int
 		playback.push_frame(Vector2(sample, sample) * 0.3)
 
 
+func _generate_tier_zoom_out(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Tier 1 -> Dashboard: whoosh sweep downward, wide stereo spread.
+	   Frequency slides from high to low (zooming out perspective)."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Pitch sweeps from 2x to 0.4x — steep downward swoop
+		var sweep_freq = freq * (2.0 - progress * 1.6)
+		var envelope = sin(progress * PI)
+		# Noise whoosh underneath — the "air rush" of pulling back
+		var noise = randf_range(-1.0, 1.0) * 0.3 * envelope
+		var tone = _triangle_wave(t * sweep_freq) * 0.5 * envelope
+		var s = (tone + noise) * 0.35
+		# Stereo spread: left leads, right slightly delayed for width
+		var l = s * (1.0 - progress * 0.3)
+		var r = s * (0.7 + progress * 0.3)
+		playback.push_frame(Vector2(l, r))
+
+
+func _generate_tier_zoom_in(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Dashboard -> Tier 1: sharp rising snap, focused center.
+	   Quick ascending blip with a percussive attack — snapping back in."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Fast rise then hold — "snap into focus"
+		var sweep_freq = freq * (0.5 + progress * 1.2)
+		# Sharp attack, quick decay
+		var envelope = pow(1.0 - progress, 1.8) if progress > 0.1 else progress * 10.0
+		var tone = _pulse_wave(t * sweep_freq, 0.3) * 0.55 * envelope
+		# Tight transient click at start
+		var click = randf_range(-0.4, 0.4) * max(0.0, 1.0 - progress * 12.0)
+		var s = (tone + click) * 0.38
+		playback.push_frame(Vector2(s, s))
+
+
 ## ============================================================================
 ## MUSIC SYSTEM
 ## ============================================================================
 ## Stub implementation - generates procedural 16-bit style battle music
 ## Replace _generate_battle_music() internals with file loading when real
 ## music assets are available (e.g., load("res://assets/audio/battle.ogg"))
+
+static func _load_music_manifest() -> void:
+	if _manifest_loaded:
+		return
+	_manifest_loaded = true
+	var file = FileAccess.open("res://data/music_manifest.json", FileAccess.READ)
+	if not file:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if parsed and parsed.has("tracks"):
+		_music_manifest = parsed["tracks"]
+		if _music_manifest.size() > 0:
+			print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
+
+
+func _try_play_from_manifest(track_id: String) -> bool:
+	_load_music_manifest()
+	if not _music_manifest.has(track_id):
+		return false
+	var entry = _music_manifest[track_id]
+	var path = entry.get("file", "")
+	if path == "":
+		return false
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	if not FileAccess.file_exists(path):
+		return false
+	var stream = load(path) as AudioStream
+	if not stream:
+		push_warning("[MUSIC] Failed to load audio file: %s" % path)
+		return false
+	# Set looping based on manifest (default true for music)
+	var should_loop = entry.get("loop", true)
+	if stream is AudioStreamOggVorbis:
+		stream.loop = should_loop
+	_music_player.stream = stream
+	_music_player.volume_db = _music_base_db
+	_music_player.play()
+	_music_playing = true
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s" % [track_id, path, should_loop])
+	return true
+
+
+func _get_current_world_suffix() -> String:
+	"""Map current area to world suffix for manifest track lookup.
+	When _current_area is empty (cleared by play_music for battle/victory),
+	returns the last known world suffix so battle music stays world-aware."""
+	match _current_area:
+		"overworld", "village", "harmonia_village", "cave", "dungeon", "whispering_cave":
+			return "medieval"
+		"overworld_suburban", "maple_heights_village":
+			return "suburban"
+		"overworld_steampunk", "brasston_village":
+			return "steampunk"
+		"overworld_industrial", "rivet_row_village":
+			return "industrial"
+		"overworld_futuristic", "node_prime_village":
+			return "digital"
+		"overworld_abstract", "vertex_village":
+			return "abstract"
+		_:
+			# During battles, _current_area is cleared — use persisted suffix
+			return _current_world_suffix
+
 
 func play_music(track: String) -> void:
 	"""Play a music track with crossfade transition"""
@@ -660,9 +854,37 @@ func play_music(track: String) -> void:
 
 	_current_music = track
 
+	# Try manifest first — file-based music always takes priority
+	_load_music_manifest()
+	var manifest_track_id = track
+	# Map generic/monster track names to world-specific manifest keys
+	match track:
+		"battle":
+			manifest_track_id = "battle_" + _current_world_suffix
+		"boss":
+			manifest_track_id = "boss_" + _current_world_suffix
+		"danger":
+			manifest_track_id = "danger_" + _current_world_suffix
+	# Monster-specific battle tracks (battle_snake, battle_slime, etc.)
+	# fall back to world battle track when no monster-specific manifest entry
+	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_"):
+		manifest_track_id = "battle_" + _current_world_suffix
+	if _music_manifest.has(manifest_track_id):
+		if _try_play_from_manifest(manifest_track_id):
+			return
+
+	# Universal music cache — skip expensive generation if this track was already built
+	if _music_cache.has(track):
+		_music_player.stream = _music_cache[track]
+		_music_playing = true
+		_music_player.play()
+		return
+
 	match track:
 		"title":
 			_start_title_music()
+		"autogrind":
+			_start_autogrind_music()
 		"battle":
 			_start_battle_music()
 		"boss":
@@ -725,6 +947,10 @@ func play_music(track: String) -> void:
 			else:
 				push_warning("Unknown music track: %s" % track)
 
+	# Cache the generated stream for instant replay on future calls
+	if _music_player.stream and not _music_cache.has(track):
+		_music_cache[track] = _music_player.stream
+
 
 func stop_music() -> void:
 	"""Stop currently playing music"""
@@ -745,6 +971,10 @@ func is_music_playing() -> bool:
 ## Danger intensity system - modulates music when party is hurt
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
+
+## Corruption audio degradation - as autogrind corruption rises, audio degrades
+var _corruption_intensity: float = 0.0  # 0.0 = clean, 1.0 = fully corrupted
+var _corruption_tween: Tween = null
 
 func set_danger_intensity(intensity: float) -> void:
 	"""Set danger intensity (0.0 = safe, 1.0 = critical)
@@ -792,6 +1022,64 @@ func reset_danger() -> void:
 		_music_player.volume_db = -12.0
 
 
+## Corruption audio degradation - ties into autogrind meta-awareness theme.
+## As corruption rises in the grind system, the music subtly degrades:
+##   Low corruption  (0.0-0.3): clean, no change
+##   Mid corruption  (0.3-0.6): slight detune, hint of pitch drift
+##   High corruption (0.6-1.0): heavy detune, pitch wobble, volume flicker
+
+func set_corruption_intensity(intensity: float) -> void:
+	"""Set corruption intensity (0.0 = clean, 1.0 = fully corrupted).
+	   Maps to autogrind meta_corruption_level / corruption_threshold.
+	   Call this each time the autogrind battle ends to update audio degradation."""
+	var new_intensity = clamp(intensity, 0.0, 1.0)
+
+	if abs(new_intensity - _corruption_intensity) < 0.04:
+		return
+
+	if _corruption_tween and _corruption_tween.is_valid():
+		_corruption_tween.kill()
+
+	_corruption_tween = create_tween()
+	_corruption_tween.tween_method(_apply_corruption_intensity, _corruption_intensity, new_intensity, 1.5)
+
+
+func _apply_corruption_intensity(intensity: float) -> void:
+	"""Apply corruption degradation to the active music player."""
+	_corruption_intensity = intensity
+
+	if not _music_player:
+		return
+
+	# Pitch: starts clean, drifts downward with a slow wobble at high corruption.
+	# At full corruption: ~half-semitone flat with a 0.8 Hz LFO wobble.
+	var flat_offset = -intensity * 0.03
+	var wobble_depth = intensity * intensity * 0.018  # quadratic — subtle until high
+	var wobble_phase = Time.get_ticks_msec() / 1000.0
+	var wobble = sin(wobble_phase * TAU * 0.8) * wobble_depth
+	_music_player.pitch_scale = 1.0 + flat_offset + wobble
+
+	# Volume: subtle flicker at high corruption (reality destabilizing)
+	var vol_noise = 0.0
+	if intensity > 0.6:
+		vol_noise = randf_range(0.0, (intensity - 0.6) * 4.0)
+	_music_player.volume_db = _music_base_db - vol_noise
+
+
+func get_corruption_intensity() -> float:
+	return _corruption_intensity
+
+
+func reset_corruption() -> void:
+	"""Reset corruption degradation to clean level"""
+	if _corruption_tween and _corruption_tween.is_valid():
+		_corruption_tween.kill()
+	_corruption_intensity = 0.0
+	if _music_player:
+		_music_player.pitch_scale = 1.0
+		_music_player.volume_db = _music_base_db
+
+
 ## Battle Music - Procedural 16-bit Style Loop
 ## This is a STUB - replace with actual music file when available
 
@@ -799,8 +1087,16 @@ var _music_timer: float = 0.0
 var _music_buffer: PackedVector2Array = PackedVector2Array()
 
 func _start_battle_music() -> void:
-	"""Generate and start looping battle music"""
+	"""Generate and start looping battle music (cached after first generation)"""
 	_music_playing = true
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("battle_" + suffix):
+		return
+
+	if _music_cache.has("battle_generic"):
+		_music_player.stream = _music_cache["battle_generic"]
+		_music_player.play()
+		return
 
 	# Generate 4 passes (48 bars) for a full loop with dynamic arc:
 	#   Pass 0 (bars  1-12): intense opening, clean drums
@@ -837,6 +1133,7 @@ func _start_battle_music() -> void:
 		data.append((right >> 8) & 0xFF)
 
 	wav.data = data
+	_music_cache["battle_generic"] = wav
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -1193,6 +1490,8 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 func _start_victory_music() -> void:
 	"""Play victory fanfare intro then loop into 80s rock victory theme"""
 	_music_playing = true
+	if _try_play_from_manifest("victory"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 140.0
@@ -1502,6 +1801,9 @@ func _generate_victory_rock_loop(rate: int, duration: float, bpm: float) -> Pack
 func _start_boss_music() -> void:
 	"""Generate and start looping boss battle music"""
 	_music_playing = true
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("boss_" + suffix):
+		return
 
 	# Generate music buffer (16 bars at 150 BPM - faster, more intense)
 	var sample_rate = 22050
@@ -1937,8 +2239,13 @@ func _generate_rat_king_music_buffer(rate: int, duration: float, bpm: float) -> 
 ## Danger Music - Dark, urgent theme when player is about to die
 
 func _start_danger_music() -> void:
-	"""Generate and start looping danger/critical HP music"""
+	"""Generate and start looping danger/critical HP music — world-specific"""
 	_music_playing = true
+	var suffix = _get_current_world_suffix()
+	if _try_play_from_manifest("danger_" + suffix):
+		return
+	if _try_play_from_manifest("danger"):
+		return
 
 	# Generate music buffer (8 bars at 160 BPM - urgent, dark)
 	var sample_rate = 22050
@@ -2441,10 +2748,10 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Start monster-specific battle music (uses cache for instant playback)"""
+	"""Start monster-specific battle music — unique per monster type"""
 	_music_playing = true
 
-	# Check cache first
+	# Check cache first (monster-specific proc-gen themes)
 	if _music_cache.has(monster_type):
 		_music_player.stream = _music_cache[monster_type]
 		_music_player.play()
@@ -3277,6 +3584,8 @@ func _get_monster_bass(monster_type: String) -> Array:
 func _start_game_over_music() -> void:
 	"""Generate and play a short game over ditty (no loop)"""
 	_music_playing = true
+	if _try_play_from_manifest("game_over"):
+		return
 
 	# Short death ditty - about 3 seconds
 	var sample_rate = 22050
@@ -3400,6 +3709,7 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 ## ============================================================
 
 var _current_area: String = ""
+var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 
 func play_area_music(area_type: String) -> void:
@@ -3409,6 +3719,7 @@ func play_area_music(area_type: String) -> void:
 		return  # Already playing
 
 	_current_area = area_type
+	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
 	stop_music()
 
@@ -3435,6 +3746,16 @@ func _start_area_music_deferred(area_type: String) -> void:
 			_start_abstract_music()
 		"village", "harmonia_village":
 			_start_village_music()
+		"maple_heights_village":
+			_start_village_world_music("suburban")
+		"brasston_village":
+			_start_village_world_music("steampunk")
+		"rivet_row_village":
+			_start_village_world_music("industrial")
+		"node_prime_village":
+			_start_village_world_music("digital")
+		"vertex_village":
+			_start_village_world_music("abstract")
 		"cave", "dungeon", "whispering_cave":
 			_start_cave_music()
 		_:
@@ -3444,6 +3765,8 @@ func _start_area_music_deferred(area_type: String) -> void:
 func _start_overworld_music() -> void:
 	"""Generate peaceful overworld exploration theme"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_medieval"):
+		return
 	print("[MUSIC] Playing overworld theme")
 	if _play_area_wav_cached("overworld"):
 		return
@@ -3461,6 +3784,8 @@ func _start_overworld_music() -> void:
 func _start_village_music() -> void:
 	"""Generate peaceful village theme"""
 	_music_playing = true
+	if _try_play_from_manifest("village_medieval"):
+		return
 	print("[MUSIC] Playing village theme")
 	if _play_area_wav_cached("village"):
 		return
@@ -3475,9 +3800,19 @@ func _start_village_music() -> void:
 	_create_and_play_looping_wav(_music_buffer, sample_rate, "village")
 
 
+func _start_village_world_music(world_suffix: String) -> void:
+	"""Play world-specific village music from manifest, fall back to generic village"""
+	_music_playing = true
+	if _try_play_from_manifest("village_" + world_suffix):
+		return
+	_start_village_music()
+
+
 func _start_cave_music() -> void:
 	"""Generate mysterious dungeon/cave theme"""
 	_music_playing = true
+	if _try_play_from_manifest("dungeon_medieval"):
+		return
 	print("[MUSIC] Playing cave/dungeon theme")
 	if _play_area_wav_cached("cave"):
 		return
@@ -3495,6 +3830,8 @@ func _start_cave_music() -> void:
 func _start_title_music() -> void:
 	"""Generate majestic EarthBound-style trippy title theme"""
 	_music_playing = true
+	if _try_play_from_manifest("title"):
+		return
 	print("[MUSIC] Playing title theme")
 	if _play_area_wav_cached("title"):
 		return
@@ -4000,6 +4337,8 @@ func _generate_cave_music(rate: int, duration: float, bpm: float) -> PackedVecto
 func _start_suburban_music() -> void:
 	"""Generate EarthBound-inspired suburban overworld theme - cheerful with eerie undercurrent"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_suburban"):
+		return
 	print("[MUSIC] Playing suburban overworld theme")
 	if _play_area_wav_cached("suburban"):
 		return
@@ -4150,6 +4489,8 @@ func _generate_suburban_music(rate: int, duration: float, bpm: float) -> PackedV
 func _start_suburban_battle_music() -> void:
 	"""Generate EarthBound-style funky/psychedelic suburban battle theme"""
 	_music_playing = true
+	if _try_play_from_manifest("battle_suburban"):
+		return
 	print("[MUSIC] Playing suburban battle theme")
 
 	var sample_rate = 22050
@@ -4320,6 +4661,8 @@ func _generate_suburban_battle_music(rate: int, duration: float, bpm: float) -> 
 func _start_steampunk_music() -> void:
 	"""Generate Victorian steampunk overworld theme - brass-like, march-like, clockwork"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_steampunk"):
+		return
 	print("[MUSIC] Playing steampunk overworld theme")
 	if _play_area_wav_cached("steampunk"):
 		return
@@ -4476,6 +4819,8 @@ func _generate_steampunk_music(rate: int, duration: float, bpm: float) -> Packed
 func _start_urban_battle_music() -> void:
 	"""Generate aggressive steampunk/urban battle theme - steam-powered urgency"""
 	_music_playing = true
+	if _try_play_from_manifest("battle_steampunk"):
+		return
 	print("[MUSIC] Playing urban battle theme")
 
 	var sample_rate = 22050
@@ -4634,6 +4979,8 @@ func _generate_urban_battle_music(rate: int, duration: float, bpm: float) -> Pac
 func _start_industrial_music() -> void:
 	"""Generate heavy industrial factory theme - D minor, rhythmic machinery"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_industrial"):
+		return
 	print("[MUSIC] Playing industrial theme")
 	if _play_area_wav_cached("industrial"):
 		return
@@ -4755,6 +5102,8 @@ func _generate_industrial_music(rate: int, duration: float, bpm: float) -> Packe
 func _start_futuristic_music() -> void:
 	"""Generate cold digital ambient theme - B minor/diminished, synth pads, arpeggiated sequences"""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_digital"):
+		return
 	print("[MUSIC] Playing futuristic digital theme")
 	if _play_area_wav_cached("futuristic"):
 		return
@@ -4889,6 +5238,167 @@ func _generate_futuristic_music(rate: int, duration: float, bpm: float) -> Packe
 	return _apply_reverb(buffer, 0.38, 0.20)
 
 
+## ============================================================================
+## AUTOGRIND AMBIENT MUSIC
+## ============================================================================
+## Plays when autogrind is active: lo-fi, analytical, calm but with urgency.
+## "System monitoring music" — the player is watching automation, not fighting.
+## Style: slow ambient electronic pulse, sparse arpeggios, subtle noise floor.
+## Key: D Dorian (modal — analytical but not bleak). BPM: 72 (slow, measured).
+
+func _start_autogrind_music() -> void:
+	"""Generate and play the autogrind ambient monitoring loop."""
+	_music_playing = true
+	if _try_play_from_manifest("autogrind"):
+		return
+	print("[MUSIC] Playing autogrind ambient theme")
+	if _play_area_wav_cached("autogrind"):
+		return
+
+	var sample_rate = 22050
+	var bpm = 72.0
+	var bars = 16
+	var beat_duration = 60.0 / bpm
+	var total_duration = beat_duration * 4 * bars
+
+	_music_buffer = _generate_autogrind_music(sample_rate, total_duration, bpm)
+	_create_and_play_looping_wav(_music_buffer, sample_rate, "autogrind")
+
+
+func _generate_autogrind_music(rate: int, duration: float, bpm: float) -> PackedVector2Array:
+	"""Autogrind ambient loop — D Dorian, 72 BPM, 16 bars.
+	   Layers: slow pad chord, sparse arpeggio, soft kick pulse, subtle noise floor.
+	   Analytical and calm, with enough motion to feel like a system is running."""
+	var buffer = PackedVector2Array()
+	var samples = int(rate * duration)
+	var beat_dur = 60.0 / bpm
+	var sixteenth_dur = beat_dur / 4.0
+	var bar_dur = beat_dur * 4.0
+
+	# D Dorian frequencies — analytical, not gloomy
+	const NOTE_D2 = 73.42
+	const NOTE_A2 = 110.0
+	const NOTE_D3 = 146.83
+	const NOTE_E3 = 164.81
+	const NOTE_F3 = 174.61
+	const NOTE_A3 = 220.0
+	const NOTE_B3 = 246.94
+	const NOTE_C4 = 261.63
+	const NOTE_D4 = 293.66
+	const NOTE_E4 = 329.63
+	const NOTE_F4 = 349.23
+	const NOTE_G4 = 392.0
+	const NOTE_A4 = 440.0
+	const NOTE_B4 = 493.88
+
+	# Sparse arpeggio — 8 bars of 32 sixteenth notes, mostly rests
+	# Pattern plays notes only every 2-4 steps — analytical breathing room
+	var arp_pattern = [
+		NOTE_D3, 0, 0, NOTE_A3,   0, NOTE_F3, 0, 0,   NOTE_E3, 0, 0, NOTE_B3,  0, 0, NOTE_A3, 0,
+		NOTE_D3, 0, NOTE_F3, 0,   NOTE_A3, 0, 0, NOTE_C4,  0, NOTE_D4, 0, 0,  NOTE_A3, 0, NOTE_E3, 0,
+		NOTE_D3, 0, 0, NOTE_G4,   0, NOTE_F4, 0, 0,   NOTE_E4, 0, NOTE_B3, 0,  0, 0, NOTE_A3, 0,
+		NOTE_D3, 0, NOTE_A3, 0,   0, NOTE_E4, 0, NOTE_D4,  NOTE_A3, 0, 0, NOTE_F3,  0, NOTE_E3, 0, 0,
+	]
+	var arp_len = arp_pattern.size()  # 64 steps = 4 bars, repeats
+
+	# Pad chords — slow harmonic movement, 4 bars each
+	var pad_chords = [
+		[NOTE_D3, NOTE_F3, NOTE_A3],     # Dm
+		[NOTE_A2, NOTE_E3, NOTE_A3],     # Am
+		[NOTE_F3, NOTE_A3, NOTE_C4],     # F
+		[NOTE_E3, NOTE_G4 * 0.5, NOTE_B3],  # Em (G dropped octave)
+	]
+
+	# Slow bass drone — quarter notes, D pedal with occasional movement
+	var bass_pattern = [
+		NOTE_D2, NOTE_D2, NOTE_D2, NOTE_D2,  # Bar 1
+		NOTE_A2, NOTE_A2, NOTE_D2, NOTE_D2,  # Bar 2
+		NOTE_D2, NOTE_F3 * 0.5, NOTE_D2, NOTE_D2,  # Bar 3
+		NOTE_E3 * 0.5, NOTE_E3 * 0.5, NOTE_D2, NOTE_D2,  # Bar 4
+	]
+
+	for i in range(samples):
+		var t = float(i) / rate
+		var sample_l = 0.0
+		var sample_r = 0.0
+
+		# --- SLOW SYNTH PAD ---
+		# Four-bar chord cycle, very slow attack (0.5 beat) for ambient float
+		var chord_idx = int(t / (bar_dur * 4)) % 4
+		var chord = pad_chords[chord_idx]
+		var bar_t = fmod(t, bar_dur * 4)
+		var pad_env = min(bar_t / (beat_dur * 2.0), 1.0)  # 2-beat fade-in per cycle
+		for note_freq in chord:
+			# Three detuned oscillators for shimmer
+			var d = 0.0025
+			var v1 = _triangle_wave(t * note_freq * (1.0 + d)) * 0.30
+			var v2 = _triangle_wave(t * note_freq * (1.0 - d)) * 0.28
+			var v3 = sin(t * note_freq * TAU) * 0.18
+			var pad_mix = (v1 + v2 + v3) * pad_env * 0.045
+			sample_l += pad_mix * 0.85
+			sample_r += pad_mix * 1.0
+
+		# --- SPARSE ARPEGGIO ---
+		# Triangle wave — analytical, cold, precise
+		var arp_idx = int(t / sixteenth_dur) % arp_len
+		var t_in_sixteenth = fmod(t, sixteenth_dur) / sixteenth_dur
+		var arp_freq = arp_pattern[arp_idx]
+		if arp_freq > 0:
+			var arp_env = pow(1.0 - t_in_sixteenth, 0.6)
+			var arp_tone = _triangle_wave(t * arp_freq) * 0.55
+			# Detuned echo voice for width
+			arp_tone += _triangle_wave(t * arp_freq * 1.004) * 0.20
+			var av = arp_tone * arp_env * 0.12
+			# Arpeggios lean slightly left
+			sample_l += av * 1.0
+			sample_r += av * 0.70
+
+		# --- BASS DRONE ---
+		# Quarter-note pulse, triangle + sub sine, soft envelope
+		var bass_quarter_idx = int(t / beat_dur) % bass_pattern.size()
+		var t_in_quarter = fmod(t, beat_dur) / beat_dur
+		var bass_freq = bass_pattern[bass_quarter_idx]
+		var bass_env = _adsr(t_in_quarter * beat_dur, 0.02, 0.1, 0.65, beat_dur * 0.7, beat_dur)
+		var bass_tri = _triangle_wave(t * bass_freq) * 0.55
+		var bass_sub = sin(t * bass_freq * TAU) * 0.35
+		var bv = (bass_tri + bass_sub) * bass_env * 0.14
+		sample_l += bv
+		sample_r += bv
+
+		# --- SOFT KICK PULSE ---
+		# Every full beat — just a gentle thump, not a battle drum
+		var beat_pos = fmod(t, beat_dur)
+		if beat_pos < 0.06:
+			var kick_env = pow(1.0 - beat_pos / 0.06, 2.5)
+			var kick_freq = 60.0 * pow(0.3, beat_pos * 15)
+			var kick = sin(beat_pos * kick_freq * TAU) * kick_env * 0.28
+			sample_l += kick
+			sample_r += kick
+
+		# --- SUBTLE HI-HAT TICK (every 2 beats) ---
+		# Gives a sense of measured time passing — data center clock ticks
+		var two_beat_pos = fmod(t, beat_dur * 2.0)
+		if two_beat_pos < 0.008:
+			var tick_env = pow(1.0 - two_beat_pos / 0.008, 4.0)
+			var tick = randf_range(-0.3, 0.3) * tick_env * 0.10
+			sample_l += tick * 0.6
+			sample_r += tick * 1.0
+
+		# --- AMBIENT NOISE FLOOR ---
+		# Very quiet hiss — "system is running" texture
+		var noise_floor = randf_range(-0.012, 0.012)
+		sample_l += noise_floor
+		sample_r += noise_floor
+
+		# Soft tanh limiter
+		var out_l = tanh(sample_l * 1.1) * 0.80
+		var out_r = tanh(sample_r * 1.1) * 0.80
+		buffer.append(Vector2(out_l, out_r))
+
+	# Light reverb — ambient space without washing out the analytical clarity
+	return _apply_reverb(buffer, 0.28, 0.12)
+
+
 ## Piano melody for tavern interaction
 func play_piano_melody() -> void:
 	"""Play a procedural piano melody for the tavern piano"""
@@ -5019,6 +5529,8 @@ func _start_industrial_battle_music() -> void:
 	"""Generate heavy mechanical industrial battle music.
 	   Clanking metal, steam hisses, driving machinery tempo."""
 	_music_playing = true
+	if _try_play_from_manifest("battle_industrial"):
+		return
 	print("[MUSIC] Playing industrial battle theme")
 
 	var sample_rate = 22050
@@ -5215,6 +5727,8 @@ func _start_digital_battle_music() -> void:
 	"""Generate electronic/glitchy digital battle music.
 	   Fast arpeggios, digital distortion, Tron/Matrix vibes."""
 	_music_playing = true
+	if _try_play_from_manifest("battle_digital"):
+		return
 	print("[MUSIC] Playing digital battle theme")
 
 	var sample_rate = 22050
@@ -5417,6 +5931,8 @@ func _start_void_battle_music() -> void:
 	   Sparse hits, deep reverb, silence between notes.
 	   The quietest, most uncomfortable battle music."""
 	_music_playing = true
+	if _try_play_from_manifest("battle_abstract"):
+		return
 	print("[MUSIC] Playing void battle theme")
 
 	var sample_rate = 22050
@@ -5588,6 +6104,8 @@ func _start_abstract_music() -> void:
 	   Almost like the music itself has been optimized down to nearly nothing.
 	   Haunting and beautiful."""
 	_music_playing = true
+	if _try_play_from_manifest("overworld_abstract"):
+		return
 	print("[MUSIC] Playing abstract void theme")
 	if _play_area_wav_cached("abstract"):
 		return

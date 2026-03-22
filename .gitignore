@@ -49,6 +49,7 @@ addons/gut/.gut_editor_*
 
 tmp/
 setenv.sh
+*APIkey*
 .last_fetched_run
 .last_synced_sha
 
@@ -59,3 +60,13 @@ setenv.sh
 # Butler / itch.io deploy binary
 butler-bin/
 butler.zip
+*.zip
+tmp/
+
+# Music pipeline - keep OGG, ignore raw downloads and locks
+assets/audio/music/*.mp3
+assets/audio/music/*.wav
+*.lock
+captcha-key.txt
+__pycache__/
+tools/test_*.py

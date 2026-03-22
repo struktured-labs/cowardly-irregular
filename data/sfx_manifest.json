@@ -1,0 +1,247 @@
+{
+  "version": 3,
+  "description": "SFX manifest — maps sound keys to ElevenLabs-generated OGG files. Falls back to procedural if file missing.",
+  "model_id": "eleven_text_to_sound_v2",
+  "sfx": {
+    "menu_move": {
+      "file": "assets/audio/sfx/menu_move.ogg",
+      "prompt": "Satisfying arcade button click, solid mechanical switch press with a clean tactile pop, slot machine button",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "menu_select": {
+      "file": "assets/audio/sfx/menu_select.ogg",
+      "prompt": "Casino coin drop into metal tray, bright rewarding ching with a satisfying metallic resonance, slot machine payout coin",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "menu_cancel": {
+      "file": "assets/audio/sfx/menu_cancel.ogg",
+      "prompt": "Solid mechanical switch toggle off, firm click-clack rejection, arcade button releasing with a low snap",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "menu_expand": {
+      "file": "assets/audio/sfx/menu_expand.ogg",
+      "prompt": "Playing card being dealt onto felt table, satisfying slap of cardboard on fabric, casino dealer flick",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "menu_open": {
+      "file": "assets/audio/sfx/menu_open.ogg",
+      "prompt": "Casino machine powering up, warm electronic hum with a confident ascending tone, inviting slot machine ready",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.5
+    },
+    "advance_queue": {
+      "file": "assets/audio/sfx/advance_queue.ogg",
+      "prompt": "Low caliber gunshot with a deep bass punch, suppressed pistol firing, short powerful thump with low-end boom, satisfying",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "advance_undo": {
+      "file": "assets/audio/sfx/advance_undo.ogg",
+      "prompt": "Gun slide racking backward, mechanical metal slide retraction, weapon uncocking click-clack",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "defer": {
+      "file": "assets/audio/sfx/defer.ogg",
+      "prompt": "Shield being planted on stone ground, solid metal clunk of a guard bracing, firm defensive stance thud",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "player_turn": {
+      "file": "assets/audio/sfx/player_turn.ogg",
+      "prompt": "Two-note casino notification chime, confident ding-dong like a hotel bell, clear and present, attention getting",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "autobattle_on": {
+      "file": "assets/audio/sfx/autobattle_on.ogg",
+      "prompt": "Heavy industrial lever being pulled, solid mechanical clunk engaging with a confident ka-chunk, machine activated",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "autobattle_off": {
+      "file": "assets/audio/sfx/autobattle_off.ogg",
+      "prompt": "Heavy switch thrown to off position, solid mechanical disengagement clunk, power-down lever release",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "autobattle_open": {
+      "file": "assets/audio/sfx/autobattle_open.ogg",
+      "prompt": "Old computer terminal booting up, warm CRT monitor turning on with an electronic hum, retro tech startup",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.5
+    },
+    "autobattle_close": {
+      "file": "assets/audio/sfx/autobattle_close.ogg",
+      "prompt": "CRT monitor powering off, electronic whine descending to silence, retro computer shutdown",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "chest_open": {
+      "file": "assets/audio/sfx/chest_open.ogg",
+      "prompt": "Treasure chest unlatching and creaking open, cascade of gold coins jingling inside, slot machine jackpot payout, rewarding",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "tier_zoom_out": {
+      "file": "assets/audio/sfx/tier_zoom_out.ogg",
+      "prompt": "Quick cinematic zoom out whoosh, camera pulling back smoothly, confident transition sweep",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "tier_zoom_in": {
+      "file": "assets/audio/sfx/tier_zoom_in.ogg",
+      "prompt": "Quick cinematic zoom in whoosh, camera pushing forward smoothly, confident transition sweep",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "speed_change": {
+      "file": "assets/audio/sfx/speed_change.ogg",
+      "prompt": "Ratchet clicking one notch forward, mechanical gear tooth engaging, satisfying single click of a dial turning",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "attack_hit": {
+      "file": "assets/audio/sfx/attack_hit.ogg",
+      "prompt": "Quick satisfying sword swing and connect, clean blade whoosh followed by a tight pop impact, classic RPG melee hit, not heavy or harsh",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "attack_miss": {
+      "file": "assets/audio/sfx/attack_miss.ogg",
+      "prompt": "Sword swinging through empty air, quick blade whoosh cutting nothing, clean miss",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "critical_hit": {
+      "file": "assets/audio/sfx/critical_hit.ogg",
+      "prompt": "Devastating impact with a bass boom and bright metallic ring, powerful critical strike, satisfying crunch, dramatic",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.5
+    },
+    "damage_taken": {
+      "file": "assets/audio/sfx/damage_taken.ogg",
+      "prompt": "Punch landing on body armor, solid impact thud with a dull crunch, taking a hit",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "enemy_death": {
+      "file": "assets/audio/sfx/enemy_death.ogg",
+      "prompt": "Monster dissolving into particles, crackling disintegration with a descending whoosh, defeated enemy vanishing",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "heal": {
+      "file": "assets/audio/sfx/heal.ogg",
+      "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "buff": {
+      "file": "assets/audio/sfx/buff.ogg",
+      "prompt": "Ascending harp glissando with a confident shimmer, magical power-up strengthening, encouraging upward sweep",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "debuff": {
+      "file": "assets/audio/sfx/debuff.ogg",
+      "prompt": "Descending trombone wobble, weakening comical slide downward, stat reduced, deflating",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "victory": {
+      "file": "assets/audio/sfx/victory.ogg",
+      "prompt": "Triumphant brass fanfare melody, classic RPG victory jingle, celebratory horns and chimes, joyful short tune",
+      "duration_seconds": 3.0,
+      "prompt_influence": 0.5
+    },
+    "defeat": {
+      "file": "assets/audio/sfx/defeat.ogg",
+      "prompt": "Sad piano descending, somber game over melody, melancholic and fading to silence",
+      "duration_seconds": 3.0,
+      "prompt_influence": 0.5
+    },
+    "status_poison": {
+      "file": "assets/audio/sfx/status_poison.ogg",
+      "prompt": "Toxic bubbling liquid, sickly gurgling potion, venomous dripping with a wet squelch",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "status_sleep": {
+      "file": "assets/audio/sfx/status_sleep.ogg",
+      "prompt": "Music box winding down, sleepy descending lullaby notes, drowsy tinkling fading out slowly",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.5
+    },
+    "status_confuse": {
+      "file": "assets/audio/sfx/status_confuse.ogg",
+      "prompt": "Cartoon dizzy birds circling head, wobbly spiraling sound, comical disorientation, spinning stars",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.5
+    },
+    "status_paralyze": {
+      "file": "assets/audio/sfx/status_paralyze.ogg",
+      "prompt": "Electric taser zap followed by frozen stillness, sharp static crackle then silence, stunning shock",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.6
+    },
+    "phase_select": {
+      "file": "assets/audio/sfx/phase_select.ogg",
+      "prompt": "Clear bell ding, single clean notification chime, present and noticeable, like a service bell tap",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6
+    },
+    "phase_execute": {
+      "file": "assets/audio/sfx/phase_execute.ogg",
+      "prompt": "Firm drum hit, single confident snare strike signaling go-time, decisive and authoritative",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.5
+    },
+    "ability_fire": {
+      "file": "assets/audio/sfx/ability_fire.ogg",
+      "prompt": "Roaring campfire erupting, warm crackling flames whooshing upward, deep orange fire with wood pops and snaps, cozy but powerful",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_ice": {
+      "file": "assets/audio/sfx/ability_ice.ogg",
+      "prompt": "Cracking frozen lake, sharp crystalline ice forming rapidly, cold brittle snapping with frosty wind howl, winter blizzard",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_lightning": {
+      "file": "assets/audio/sfx/ability_lightning.ogg",
+      "prompt": "Close thunderclap with electric buzzing aftermath, raw thunder strike with static discharge crackling, stormy atmospheric",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "ability_holy": {
+      "file": "assets/audio/sfx/ability_holy.ogg",
+      "prompt": "Cathedral pipe organ chord with heavenly choir voices, sacred resonant golden light, deep reverberant church acoustics, divine",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "ability_dark": {
+      "file": "assets/audio/sfx/ability_dark.ogg",
+      "prompt": "Deep underground rumble with whispering ghostly voices, dark cavern echoing void, eerie low vibration with distant wailing",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "ability_physical": {
+      "file": "assets/audio/sfx/ability_physical.ogg",
+      "prompt": "Quick clean sword unsheathing and slicing through air, sharp steel ring fading, precise blade technique",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.6
+    },
+    "ability_heal": {
+      "file": "assets/audio/sfx/ability_heal.ogg",
+      "prompt": "Gentle rain on leaves with harp notes, nature healing sounds, birdsong and dewdrops, peaceful restoration",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.6
+    }
+  }
+}

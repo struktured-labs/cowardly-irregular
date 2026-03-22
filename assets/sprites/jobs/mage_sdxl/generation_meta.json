@@ -1,0 +1,79 @@
+{
+  "job": "mage",
+  "tier": "T1",
+  "generator": "gen_sprite_sdxl.py",
+  "model": "SDXL 1.0 + jrpg_pixel_style LoRA + IP-Adapter Plus Face",
+  "lora_mode": "style",
+  "controlnet": true,
+  "controlnet_scale": 0.5,
+  "ip_adapter_scale": 0.5,
+  "animations": {
+    "idle": "tmp/generated/mage_v2/idle.png",
+    "walk": "tmp/generated/mage_v2/walk.png",
+    "attack": "tmp/generated/mage_v2/attack.png",
+    "hit": "tmp/generated/mage_v2/hit.png",
+    "dead": "tmp/generated/mage_v2/dead.png",
+    "cast": "tmp/generated/mage_v2/cast.png",
+    "defend": "tmp/generated/mage_v2/defend.png",
+    "item": "tmp/generated/mage_v2/item.png",
+    "victory": "tmp/generated/mage_v2/victory.png"
+  },
+  "seeds": {
+    "idle": [
+      924487588,
+      924487589
+    ],
+    "walk": [
+      3728663561,
+      3728663562,
+      3728663563,
+      3728663564,
+      3728663565,
+      3728663566
+    ],
+    "attack": [
+      1172356440,
+      1172356441,
+      1172356442,
+      1172356443,
+      1172356444,
+      1172356445
+    ],
+    "hit": [
+      1937375243,
+      1937375244,
+      1937375245,
+      1937375246
+    ],
+    "dead": [
+      3891267434,
+      3891267435,
+      3891267436,
+      3891267437
+    ],
+    "cast": [
+      2166968403,
+      2166968404,
+      2166968405,
+      2166968406
+    ],
+    "defend": [
+      2116328467,
+      2116328468,
+      2116328469,
+      2116328470
+    ],
+    "item": [
+      2897677109,
+      2897677110,
+      2897677111,
+      2897677112
+    ],
+    "victory": [
+      1786010855,
+      1786010856,
+      1786010857,
+      1786010858
+    ]
+  }
+}

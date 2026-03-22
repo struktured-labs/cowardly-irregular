@@ -8,6 +8,7 @@ const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
 const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
+const MonsterSpawnerScript = preload("res://src/exploration/MonsterSpawner.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -28,11 +29,19 @@ var tile_generator: Node  # TileGenerator
 ## Area transitions
 var transitions: Node2D
 
+## Roaming monster spawner
+var monster_spawner: Node  # MonsterSpawner
+
 ## Spawn points
 var spawn_points: Dictionary = {}
 
 ## Current encounter zone
 var _current_zone: String = "central"
+var _last_tile_pos: Vector2i = Vector2i(-1, -1)
+
+## Mode 7 perspective
+var mode7_enabled: bool = true
+var _mode7: Mode7Overlay
 
 
 func _ready() -> void:
@@ -42,8 +51,14 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+	_setup_monster_spawner()
 
-	# Start overworld music
+	if mode7_enabled:
+		_mode7 = Mode7Overlay.new()
+		add_child(_mode7)
+		_mode7.apply_preset("medieval")
+		_mode7.setup(self, player)
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -53,6 +68,18 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if player:
 		_update_encounter_zone(player.position)
+	if _mode7:
+		# Register roaming monsters as billboards (deduplicates automatically)
+		var roaming = get_node_or_null("RoamingMonsters")
+		if roaming:
+			for child in roaming.get_children():
+				_mode7.register_billboard(child)
+		_mode7.process_frame()
+
+
+func _exit_tree() -> void:
+	if _mode7:
+		_mode7.cleanup()
 
 
 func _setup_scene() -> void:
@@ -204,8 +231,8 @@ func _generate_map() -> void:
 
 	print("Tile counts: ", tile_counts)
 
-	# Default spawn point (near Harmonia village)
-	spawn_points["default"] = spawn_points.get("village_entrance", Vector2(MAP_WIDTH / 2 * TILE_SIZE, MAP_HEIGHT / 2 * TILE_SIZE))
+	# Default spawn: central grassland (column 40, row 25 — clear of water)
+	spawn_points["default"] = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _register_spawn_point(char: String, x: int, y: int) -> void:
@@ -337,12 +364,8 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
-	camera.zoom = Vector2(2.0, 2.0)
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = MAP_WIDTH * TILE_SIZE
-	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
+	Mode7Overlay.apply_camera(camera, mode7_enabled)
+	Mode7Overlay.apply_camera_limits(camera, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
 
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
@@ -364,11 +387,21 @@ func _setup_controller() -> void:
 	add_child(controller)
 
 
+func _setup_monster_spawner() -> void:
+	monster_spawner = MonsterSpawnerScript.new()
+	monster_spawner.name = "MonsterSpawner"
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
+	add_child(monster_spawner)
+	monster_spawner.setup(player, ["slime", "bat", "goblin"])
+
+
 ## Regional encounter zones based on player position
 func _update_encounter_zone(pos: Vector2) -> void:
-	var tile_x = int(pos.x / TILE_SIZE)
-	var tile_y = int(pos.y / TILE_SIZE)
-	var new_zone = _get_zone_for_tile(tile_x, tile_y)
+	var tile_pos = Vector2i(int(pos.x / TILE_SIZE), int(pos.y / TILE_SIZE))
+	if tile_pos == _last_tile_pos:
+		return
+	_last_tile_pos = tile_pos
+	var new_zone = _get_zone_for_tile(tile_pos.x, tile_pos.y)
 	if new_zone != _current_zone:
 		_current_zone = new_zone
 		_apply_zone_encounters(new_zone)
@@ -398,21 +431,31 @@ func _get_zone_for_tile(tx: int, ty: int) -> String:
 
 
 func _apply_zone_encounters(zone: String) -> void:
+	var pool: Array = []
 	match zone:
 		"central":
-			controller.set_area_config("overworld_central", false, 0.05, ["slime", "bat", "goblin"])
+			pool = ["slime", "bat", "goblin"]
+			controller.set_area_config("overworld_central", false, 0.05, pool)
 		"forest":
-			controller.set_area_config("overworld_forest", false, 0.06, ["wolf", "spider", "fungoid"])
+			pool = ["wolf", "spider", "goblin"]
+			controller.set_area_config("overworld_forest", false, 0.06, pool)
 		"ice":
-			controller.set_area_config("overworld_ice", false, 0.06, ["ice_wolf", "skeleton", "specter"])
+			pool = ["skeleton", "wolf", "goblin"]
+			controller.set_area_config("overworld_ice", false, 0.06, pool)
 		"swamp":
-			controller.set_area_config("overworld_swamp", false, 0.07, ["snake", "ghost", "imp"])
+			pool = ["snake", "ghost", "imp"]
+			controller.set_area_config("overworld_swamp", false, 0.07, pool)
 		"desert":
-			controller.set_area_config("overworld_desert", false, 0.07, ["viper", "elemental", "skeleton"])
+			pool = ["skeleton", "snake", "goblin"]
+			controller.set_area_config("overworld_desert", false, 0.07, pool)
 		"volcanic":
-			controller.set_area_config("overworld_volcanic", false, 0.08, ["imp", "skeleton", "troll"])
+			pool = ["imp", "skeleton", "troll"]
+			controller.set_area_config("overworld_volcanic", false, 0.08, pool)
 		"coast":
-			controller.set_area_config("overworld_coast", false, 0.05, ["slime", "bat", "spider"])
+			pool = ["slime", "bat", "spider"]
+			controller.set_area_config("overworld_coast", false, 0.05, pool)
+	if monster_spawner and not pool.is_empty():
+		monster_spawner.set_enemy_pool(pool)
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
@@ -420,6 +463,16 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 
 func _on_battle_triggered(enemies: Array) -> void:
+	battle_triggered.emit(enemies)
+
+
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	if player:
+		player.set_can_move(false)
+	var enemies = [monster_id]
+	var extra = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
 	battle_triggered.emit(enemies)
 
 
@@ -437,11 +490,15 @@ func spawn_player_at(spawn_name: String) -> void:
 ## Resume exploration after battle/menu
 func resume() -> void:
 	controller.resume_exploration()
+	if monster_spawner:
+		monster_spawner.set_enabled(true)
 
 
 ## Pause exploration
 func pause() -> void:
 	controller.pause_exploration()
+	if monster_spawner:
+		monster_spawner.set_enabled(false)
 
 
 ## Set the player's job (updates sprite)

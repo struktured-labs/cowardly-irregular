@@ -33,6 +33,12 @@ static func reload_manifest() -> void:
 	_load_manifest()
 
 
+static func has_artist_sheet(job_id: String) -> bool:
+	"""Check if a job has an artist sprite sheet in the manifest."""
+	_load_manifest()
+	return _manifest.has(job_id)
+
+
 static func load_sprite_frames(customization, primary_job_id: String, secondary_job_id: String = "", weapon_id: String = "", armor_id: String = "", accessory_id: String = "") -> SpriteFrames:
 	_load_manifest()
 
@@ -56,10 +62,15 @@ static func load_sprite_frames(customization, primary_job_id: String, secondary_
 ## allowing the caller to fall back to procedural generation.
 ## Monster sheet schema (in manifest under "monster_sheets"):
 ##   monster_id: {
-##     "path": "res://assets/monsters/monster_id.png",
-##     "frame_width": 96, "frame_height": 96, "fps": 8,
-##     "animations": [{"name": "idle", "frames": [0,1,2,3]}, ...]
+##     "path": "res://assets/sprites/monsters/monster_id.png",
+##     "frame_width": 256, "frame_height": 256, "fps": 8,
+##     "animations": {
+##       "idle":   {"start": 0, "end": 1},
+##       "attack": {"start": 2, "end": 3},
+##       ...
+##     }
 ##   }
+## Sheets are horizontal strips: frame_width * num_frames wide, frame_height tall.
 static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	_load_manifest()
 
@@ -67,37 +78,46 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 		return null
 
 	var sheet_data = _monster_manifest[monster_id]
-	var sheet_path = sheet_data.get("path", "res://assets/monsters/%s.png" % monster_id)
+	var sheet_path = sheet_data.get("path", "res://assets/sprites/monsters/%s.png" % monster_id)
 	if not ResourceLoader.exists(sheet_path):
+		push_warning("[SPRITES] Monster sheet not found: %s" % sheet_path)
 		return null
 
 	var texture = load(sheet_path) as Texture2D
 	if not texture:
+		push_warning("[SPRITES] Failed to load monster texture: %s" % sheet_path)
 		return null
 
-	var frame_width = sheet_data.get("frame_width", 96)
-	var frame_height = sheet_data.get("frame_height", 96)
-	var fps = sheet_data.get("fps", 8)
-	var animations = sheet_data.get("animations", [])
+	var frame_width: int = sheet_data.get("frame_width", 256)
+	var frame_height: int = sheet_data.get("frame_height", 256)
+	var fps: float = sheet_data.get("fps", 8)
+	var animations = sheet_data.get("animations", {})
 
 	var sprite_frames = SpriteFrames.new()
+	var cols_per_row: int = texture.get_width() / frame_width
 
-	for anim_entry in animations:
-		var anim_name = anim_entry.get("name", "idle")
-		var frames = anim_entry.get("frames", [])
+	for anim_name in animations:
+		var anim_data = animations[anim_name]
+		var start_frame: int = anim_data.get("start", 0)
+		var end_frame: int = anim_data.get("end", start_frame)
 
 		sprite_frames.add_animation(anim_name)
 		sprite_frames.set_animation_speed(anim_name, fps)
+		sprite_frames.set_animation_loop(anim_name, anim_name == "idle")
 
-		for frame_idx in frames:
-			var col = frame_idx % (texture.get_width() / frame_width)
-			var row = frame_idx / (texture.get_width() / frame_width)
+		for frame_idx in range(start_frame, end_frame + 1):
+			var col: int = frame_idx % cols_per_row
+			var row: int = frame_idx / cols_per_row
 			var atlas = AtlasTexture.new()
 			atlas.atlas = texture
 			atlas.region = Rect2(col * frame_width, row * frame_height, frame_width, frame_height)
 			sprite_frames.add_frame(anim_name, atlas)
 
-	return sprite_frames if sprite_frames.get_animation_names().size() > 0 else null
+	if sprite_frames.get_animation_names().size() == 0:
+		return null
+
+	print("[SPRITES] Loaded monster sheet for '%s' (%d animations)" % [monster_id, sprite_frames.get_animation_names().size()])
+	return sprite_frames
 
 
 static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> SpriteFrames:
@@ -120,6 +140,8 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 
 		sprite_frames.add_animation(anim_name)
 		sprite_frames.set_animation_speed(anim_name, sheet_data.get("fps", 8))
+		# Only idle and victory loop; all others play once so animation_finished fires
+		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory"])
 
 		var frame_count = texture.get_width() / frame_width
 		for i in range(frame_count):

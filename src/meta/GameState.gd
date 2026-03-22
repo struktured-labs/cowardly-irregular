@@ -31,6 +31,7 @@ var party_gold: int = 500  # Starting gold
 ## Settings (exposed to UI)
 var encounter_rate_multiplier: float = 1.0  # 0.0 to 2.0, controlled via settings menu
 var debug_log_enabled: bool = true  # Show debug log overlay (default on)
+var show_controller_overlay: bool = true  # Show controller hint overlay during autogrind/battle
 
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {
@@ -76,70 +77,6 @@ func _ensure_save_directory() -> void:
 		DirAccess.make_dir_absolute(SAVE_DIR)
 
 
-func save_game(save_name: String = "") -> bool:
-	"""Save current game state"""
-	if save_name.is_empty():
-		save_name = "autosave" if meta_features["autosave_enabled"] else "quicksave"
-
-	current_save_name = save_name
-	var save_path = SAVE_DIR + save_name + SAVE_EXTENSION
-
-	var save_data = _create_save_data()
-
-	# Apply corruption effects
-	if corruption_level > 0.0:
-		save_data = _apply_corruption_to_save(save_data)
-
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if not file:
-		print("Error: Failed to create save file at %s" % save_path)
-		return false
-
-	var json_string = JSON.stringify(save_data, "\t")
-	file.store_string(json_string)
-	file.close()
-
-	# Add to history for Time Mage rewind
-	if meta_features["rewind_enabled"]:
-		_add_to_history(save_data)
-
-	save_created.emit(save_name)
-	print("Game saved: %s (corruption: %.1f%%)" % [save_name, corruption_level * 100])
-	return true
-
-
-func load_game(save_name: String) -> bool:
-	"""Load a saved game"""
-	var save_path = SAVE_DIR + save_name + SAVE_EXTENSION
-
-	if not FileAccess.file_exists(save_path):
-		print("Error: Save file not found: %s" % save_path)
-		return false
-
-	var file = FileAccess.open(save_path, FileAccess.READ)
-	if not file:
-		print("Error: Failed to open save file: %s" % save_path)
-		return false
-
-	var json_string = file.get_as_text()
-	file.close()
-
-	var json = JSON.new()
-	var parse_result = json.parse(json_string)
-
-	if parse_result != OK:
-		print("Error: Failed to parse save file: %s" % json.get_error_message())
-		return false
-
-	var save_data = json.data
-	_apply_save_data(save_data)
-
-	current_save_name = save_name
-	save_loaded.emit(save_name)
-	print("Game loaded: %s" % save_name)
-	return true
-
-
 func _create_save_data() -> Dictionary:
 	"""Create save data dictionary"""
 	return {
@@ -174,33 +111,6 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		meta_features = save_data["meta_features"].duplicate()
 	if save_data.has("corruption_effects"):
 		corruption_effects = save_data["corruption_effects"].duplicate()
-
-
-func get_save_list() -> Array[String]:
-	"""Get list of available save files"""
-	var saves: Array[String] = []
-	var dir = DirAccess.open(SAVE_DIR)
-
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(SAVE_EXTENSION):
-				saves.append(file_name.trim_suffix(SAVE_EXTENSION))
-			file_name = dir.get_next()
-		dir.list_dir_end()
-
-	return saves
-
-
-func delete_save(save_name: String) -> bool:
-	"""Delete a save file"""
-	var save_path = SAVE_DIR + save_name + SAVE_EXTENSION
-	if FileAccess.file_exists(save_path):
-		DirAccess.remove_absolute(save_path)
-		print("Save deleted: %s" % save_name)
-		return true
-	return false
 
 
 ## Corruption system

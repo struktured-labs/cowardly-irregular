@@ -17,6 +17,14 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
+const JOB_DISPLAY_HEIGHTS: Dictionary = {
+	"fighter": 375.0,
+	"cleric": 180.0,
+	"mage": 300.0,
+	"rogue": 300.0,
+	"bard": 300.0,
+}
+
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
 @onready var turn_info: Label = $UI/TurnInfoPanel/TurnInfo
@@ -98,10 +106,21 @@ var encounter_enemies: Array = []  # When set, spawn these encounter enemies fro
 var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies from autogrind system
 
 ## Battle speed settings
-const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x"]
-static var _battle_speed_index: int = 2  # Persists across battles
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
+static var _battle_speed_index: int = 1  # Persists across battles (default 0.5x)
 var _speed_indicator: RichTextLabel = null
+var _battle_counter_label: RichTextLabel = null
+
+## Turbo mode - skip animations and delays for fastest possible battles
+var turbo_mode: bool = false
+
+## Track current ability being executed so damage callback plays the right sound
+var _current_ability_id: String = ""
+
+## Autogrind console mode — replaces battle log with grind stats feed
+var autogrind_console_mode: bool = false
+var _autogrind_console: RichTextLabel = null
 
 ## Autobattle toggle UI
 var _autobattle_toggle_ui: AutobattleToggleUIClass = null
@@ -197,6 +216,7 @@ func _ready() -> void:
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
 	BattleManager.one_shot_achieved.connect(_on_one_shot_achieved)
 	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
+	BattleManager.group_attack_executing.connect(_on_group_attack_executing)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -266,6 +286,8 @@ func _exit_tree() -> void:
 		BattleManager.one_shot_achieved.disconnect(_on_one_shot_achieved)
 	if BattleManager.autobattle_victory.is_connected(_on_autobattle_victory):
 		BattleManager.autobattle_victory.disconnect(_on_autobattle_victory)
+	if BattleManager.group_attack_executing.is_connected(_on_group_attack_executing):
+		BattleManager.group_attack_executing.disconnect(_on_group_attack_executing)
 
 	# Cleanup popup menu if open
 	_cleanup_popup()
@@ -317,6 +339,19 @@ func _create_speed_indicator() -> void:
 
 	# Add to UI layer
 	$UI.add_child(_speed_indicator)
+
+	# Battle counter (shown during autogrind)
+	_battle_counter_label = RichTextLabel.new()
+	_battle_counter_label.name = "BattleCounter"
+	_battle_counter_label.bbcode_enabled = true
+	_battle_counter_label.fit_content = true
+	_battle_counter_label.scroll_active = false
+	_battle_counter_label.custom_minimum_size = Vector2(120, 24)
+	_battle_counter_label.add_theme_font_size_override("normal_font_size", 14)
+	_battle_counter_label.position = Vector2(8, 34)
+	_battle_counter_label.visible = false
+	$UI.add_child(_battle_counter_label)
+
 	_update_speed_indicator()
 
 
@@ -339,8 +374,30 @@ func _update_speed_indicator() -> void:
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
 		4:  # 4x - turbo (orange/red)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
+		5:  # 8x - extreme (red)
+			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
+		6:  # 16x - maximum (magenta)
+			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
+
+	if turbo_mode:
+		text += " [color=#ff4444]TURBO[/color]"
 
 	_speed_indicator.text = text
+
+	if turbo_mode:
+		if _speed_indicator:
+			_speed_indicator.add_theme_font_size_override("normal_font_size", 22)
+			_speed_indicator.custom_minimum_size = Vector2(160, 32)
+	else:
+		if _speed_indicator:
+			_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
+			_speed_indicator.custom_minimum_size = Vector2(80, 24)
+
+
+func set_battle_counter(battle_num: int) -> void:
+	if _battle_counter_label:
+		_battle_counter_label.visible = true
+		_battle_counter_label.text = "[color=#aaaacc]#%d[/color]" % battle_num
 
 
 func _create_dialogue_system() -> void:
@@ -375,6 +432,7 @@ func _toggle_battle_speed() -> void:
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
 	Engine.time_scale = speed
 	_update_speed_indicator()
+	SoundManager.play_ui("speed_change")
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
 
 
@@ -588,13 +646,17 @@ func _create_battle_sprites() -> void:
 		var custom = member.get("customization") if "customization" in member else null
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
-		# Auto-scale: 144px for procedural/old sprites, 200px for new artist sprites (frame > 128px)
+		# Per-job display height targets (in pixels) for battle sprites.
+		# Tune these to align characters visually despite different art sizes within frames.
+		var target_height = JOB_DISPLAY_HEIGHTS.get(job_id, 300.0)
+
+		# Auto-scale based on frame height and per-job target
 		var _sprite_scale = 3.0
 		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
 			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 				var _ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
 				if _ftex and _ftex.get_height() > 128:
-					_sprite_scale = 300.0 / float(_ftex.get_height())
+					_sprite_scale = target_height / float(_ftex.get_height())
 				elif _ftex and _ftex.get_height() > 48:
 					_sprite_scale = 144.0 / float(_ftex.get_height())
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
@@ -657,6 +719,10 @@ func _create_battle_sprites() -> void:
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	"""Get the appropriate sprite frames for a monster type"""
+	var external_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(monster_id)
+	if external_frames:
+		return external_frames
+
 	match monster_id:
 		"slime":
 			return BattleAnimatorClass.create_slime_sprite_frames()
@@ -766,75 +832,6 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	sprite.add_child(label)
 
 
-func _create_character_sprite(color: Color, label: String) -> Sprite2D:
-	"""Create a placeholder character sprite with 12-bit aesthetic"""
-	var sprite = Sprite2D.new()
-
-	# Create a simple colored sprite placeholder
-	var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Draw character silhouette (simple rectangle for now)
-	for y in range(10, 60):
-		for x in range(20, 44):
-			var c = color
-			# Add simple shading
-			if x < 24 or y < 15:
-				c = color.lightened(0.2)
-			elif x > 38 or y > 50:
-				c = color.darkened(0.2)
-			img.set_pixel(x, y, c)
-
-	# Add label
-	var texture = ImageTexture.create_from_image(img)
-	sprite.texture = texture
-	sprite.centered = true
-
-	# Add label below sprite
-	var label_node = Label.new()
-	label_node.text = label
-	label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label_node.position = Vector2(-32, 35)
-	sprite.add_child(label_node)
-
-	return sprite
-
-
-func _create_enemy_sprite(color: Color, label: String) -> Sprite2D:
-	"""Create a placeholder enemy sprite"""
-	var sprite = Sprite2D.new()
-
-	# Create enemy sprite (blob-like for slime)
-	var img = Image.create(80, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Draw blob shape
-	for y in range(20, 55):
-		for x in range(15, 65):
-			var dist_from_center = sqrt(pow(x - 40, 2) + pow(y - 37, 2))
-			if dist_from_center < 22:
-				var c = color
-				# Gradient shading
-				if y < 30:
-					c = color.lightened(0.3)
-				elif y > 45:
-					c = color.darkened(0.3)
-				img.set_pixel(x, y, c)
-
-	var texture = ImageTexture.create_from_image(img)
-	sprite.texture = texture
-	sprite.centered = true
-
-	# Add label
-	var label_node = Label.new()
-	label_node.text = label
-	label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label_node.position = Vector2(-40, 35)
-	sprite.add_child(label_node)
-
-	return sprite
-
-
 func _update_ui() -> void:
 	_ui_manager.update_ui()
 
@@ -897,6 +894,60 @@ func _show_hint(hint_id: String, text: String) -> void:
 		return
 	_hints_shown[hint_id] = true
 	log_message("[color=gray][i]Tip: %s[/i][/color]" % text)
+
+
+func enable_autogrind_console() -> void:
+	autogrind_console_mode = true
+
+	if battle_log:
+		battle_log.visible = false
+
+	if turn_info and is_instance_valid(turn_info.get_parent()):
+		turn_info.get_parent().visible = false
+
+	var log_panel = get_node_or_null("UI/BattleLogPanel")
+	if not log_panel:
+		return
+
+	_autogrind_console = RichTextLabel.new()
+	_autogrind_console.name = "AutogrindConsole"
+	_autogrind_console.bbcode_enabled = true
+	_autogrind_console.scroll_active = true
+	_autogrind_console.scroll_following = true
+	_autogrind_console.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_autogrind_console.add_theme_font_size_override("normal_font_size", 13)
+	_autogrind_console.add_theme_font_size_override("bold_font_size", 14)
+	_autogrind_console.add_theme_color_override("default_color", Color(0.8, 0.8, 0.9))
+
+	var margin = log_panel.get_node_or_null("MarginContainer")
+	if margin:
+		var vbox = margin.get_node_or_null("VBoxContainer")
+		if vbox:
+			vbox.visible = false
+		margin.add_child(_autogrind_console)
+	else:
+		log_panel.add_child(_autogrind_console)
+
+
+func autogrind_console_log(text: String) -> void:
+	if _autogrind_console and is_instance_valid(_autogrind_console):
+		_autogrind_console.append_text(text + "\n")
+
+
+func update_autogrind_console_stats(stats: Dictionary) -> void:
+	if not _autogrind_console or not is_instance_valid(_autogrind_console):
+		return
+
+	var battles = stats.get("battles_won", 0)
+	var exp = stats.get("total_exp", 0)
+	var streak = stats.get("consecutive_wins", 0)
+	var eff = stats.get("efficiency", 1.0)
+	var corruption = stats.get("corruption", 0.0)
+	var turbo = " [color=#ff4444]TURBO[/color]" if turbo_mode else ""
+
+	_autogrind_console.append_text("[color=#666677]─────────────────────────────[/color]\n")
+	_autogrind_console.append_text("[color=#ffff66]Battle #%d[/color] | EXP: %d | Streak: %d | Eff: %.1fx%s\n" % [battles, exp, streak, eff, turbo])
+	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | Y:Turbo +/-:Speed T:Tier B:Exit[/color]\n" % corruption)
 
 
 ## Button handlers
@@ -1109,34 +1160,7 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 		animator = _get_current_combatant_animator()
 	if not animator:
 		return
-
-	match anim_type:
-		"attack":
-			animator.play_attack()
-		"backstab":
-			# Quick diagonal lunge from behind
-			animator.play_backstab()
-		"steal":
-			# Quick in-and-out grab animation
-			animator.play_steal()
-		"mug":
-			# Attack + steal combo
-			animator.play_mug()
-		"skill":
-			# Generic physical skill (power strike, etc.)
-			animator.play_skill()
-		"heal", "buff":
-			# Healing/buff - use cast with green/blue tint effect
-			animator.play_cast()
-		"cast_fire", "cast_ice", "cast_lightning", "cast_dark", "cast_time", "cast_meta":
-			# All magic types use cast animation
-			animator.play_cast()
-		"special":
-			# Special abilities use item animation
-			animator.play_item()
-		_:
-			# Default to cast
-			animator.play_cast()
+	animator.play_named_animation(anim_type)
 
 
 func _on_item_pressed() -> void:
@@ -1484,13 +1508,12 @@ func _on_battle_ended(victory: bool) -> void:
 
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
-		log_message("[color=gray]Press ENTER to continue...[/color]")
-		# Play victory animation for all party members with staggered delays
-		_play_staggered_victory_animations()
-		# Switch to victory music
-		SoundManager.play_music("victory")
-		# Show victory results overlay
-		_show_victory_results()
+		_battle_victory = true
+		if not turbo_mode:
+			log_message("[color=gray]Press ENTER to continue...[/color]")
+			_play_staggered_victory_animations()
+			SoundManager.play_music("victory")
+			_show_victory_results()
 	else:
 		log_message("\n[color=red]=== DEFEAT ===[/color]")
 		log_message("[color=gray]Press ENTER to restart...[/color]")
@@ -1740,6 +1763,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	var action_type = action.get("type", "")
 	match action_type:
 		"attack":
+			_current_ability_id = ""  # Clear — this is a basic attack
 			var target = action.get("target") as Combatant
 			var target_sprite = _get_combatant_sprite(target)
 			var target_animator = _get_combatant_animator(target)
@@ -1760,6 +1784,12 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			var ability_type = ability.get("type", "magic")
 			var anim_type = ability.get("animation", "cast")
 
+			# Track ability so damage callback plays element sound instead of generic hit
+			_current_ability_id = ability_id
+
+			# Play the ability-specific sound (fire, ice, lightning, etc.)
+			SoundManager.play_ability(ability_id)
+
 			# Physical abilities move to target
 			if ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
@@ -1775,7 +1805,45 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 		"item":
 			animator.play_item()
 		"defer":
-			animator.play_defend()
+			animator.play_named_animation("defer")
+
+
+func _on_group_attack_executing(participants: Array, group_type: String, targets: Array) -> void:
+	"""Play simultaneous attack animations on all party members for group actions"""
+	_update_turn_info()
+
+	# Flash the whole battlefield — gold for Limit Break, orange for All-Out Attack
+	var flash_color = Color(1.0, 0.85, 0.0, 0.55) if group_type == "limit_break" else Color(1.0, 0.5, 0.0, 0.4)
+	var flash = ColorRect.new()
+	flash.color = flash_color
+	flash.anchors_preset = Control.PRESET_FULL_RECT
+	flash.z_index = 50
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween = create_tween()
+	tween.tween_property(flash, "modulate:a", 0.0, 0.45)
+	tween.tween_callback(flash.queue_free)
+
+	# Play attack animation on every participating party member simultaneously
+	for participant in participants:
+		if not (participant is Combatant) or not participant.is_alive:
+			continue
+		var idx = BattleManager.player_party.find(participant)
+		if idx < 0 or idx >= party_animators.size():
+			continue
+		var anim = party_animators[idx]
+		if not anim:
+			continue
+		var sprite = party_sprite_nodes[idx] if idx < party_sprite_nodes.size() else null
+
+		# For Limit Break, animate each party member lunging at the closest enemy
+		if group_type == "limit_break" and targets.size() > 0 and sprite:
+			var target_sprite = _get_combatant_sprite(targets[0] as Combatant)
+			if target_sprite:
+				_animate_melee_attack(sprite, target_sprite, anim, null)
+				continue
+		# All-Out Attack: play attack animation in place
+		anim.play_attack()
 
 
 func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass) -> void:
@@ -1925,13 +1993,16 @@ func _on_party_ap_changed(old_value: int, new_value: int, member_idx: int) -> vo
 	_update_ui()
 
 
-# Legacy aliases for backwards compatibility
-func _on_player_hp_changed(old_value: int, new_value: int) -> void:
-	_on_party_hp_changed(old_value, new_value, 0)
+func _on_summon_hp_changed(enemy: Combatant, old_value: int, new_value: int) -> void:
+	var idx = test_enemies.find(enemy)
+	if idx >= 0:
+		_on_enemy_hp_changed(old_value, new_value, idx)
 
 
-func _on_player_ap_changed(old_value: int, new_value: int) -> void:
-	_on_party_ap_changed(old_value, new_value, 0)
+func _on_summon_died(enemy: Combatant) -> void:
+	var idx = test_enemies.find(enemy)
+	if idx >= 0:
+		_on_enemy_died(idx)
 
 
 func _on_enemy_hp_changed(old_value: int, new_value: int, enemy_idx: int) -> void:
@@ -2073,6 +2144,9 @@ func _close_win98_menu() -> void:
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
+	# Skip hit sounds for abilities — ability sound already played at cast time
+	if _current_ability_id != "":
+		return
 	if is_crit:
 		# Critical hit: louder impact with raised pitch for extra punch
 		SoundManager.play_battle_scaled("critical_hit", 2.0, 1.3)
@@ -2178,6 +2252,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 
 	# Animate: scale up from 0, hold, then fade out
 	one_shot_label.scale = Vector2(0.1, 0.1)
+	await get_tree().process_frame
 	one_shot_label.pivot_offset = one_shot_label.size / 2
 	rank_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -2280,6 +2355,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 
 	# Animate: scale-in, hold, fade out (no delay — shows simultaneously with one-shot)
 	auto_label.scale = Vector2(0.1, 0.1)
+	await get_tree().process_frame
 	auto_label.pivot_offset = auto_label.size / 2
 	turns_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -2366,10 +2442,10 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	for resistance in monster_data.get("resistances", []):
 		enemy.elemental_resistances.append(resistance)
 
-	# Find a position for the new enemy
+	# Bind signals using enemy reference — find index at call time to avoid stale index
+	enemy.hp_changed.connect(func(old_val, new_val): _on_summon_hp_changed(enemy, old_val, new_val))
+	enemy.died.connect(func(): _on_summon_died(enemy))
 	var new_idx = test_enemies.size()
-	enemy.hp_changed.connect(_on_enemy_hp_changed.bind(new_idx))
-	enemy.died.connect(_on_enemy_died.bind(new_idx))
 
 	test_enemies.append(enemy)
 

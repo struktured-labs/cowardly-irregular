@@ -8,6 +8,7 @@ const SteampunkTileGeneratorScript = preload("res://src/exploration/SteampunkTil
 const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
+const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -28,8 +29,15 @@ var tile_generator: Node  # SteampunkTileGenerator
 ## Area transitions
 var transitions: Node2D
 
+## NPC container
+var npcs: Node2D
+
 ## Spawn points
 var spawn_points: Dictionary = {}
+
+## Mode 7 perspective
+var mode7_enabled: bool = true
+var _mode7: Mode7Overlay
 
 ## Steam vent effect state
 var _steam_emitters: Array = []
@@ -41,9 +49,16 @@ func _ready() -> void:
 	_setup_scene()
 	_generate_map()
 	_setup_transitions()
+	_setup_npcs()
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+
+	if mode7_enabled:
+		_mode7 = Mode7Overlay.new()
+		add_child(_mode7)
+		_mode7.apply_preset("steampunk")
+		_mode7.setup(self, player)
 
 	# Start steampunk overworld music
 	if SoundManager:
@@ -94,12 +109,23 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _mode7:
+		var roaming = get_node_or_null("RoamingMonsters")
+		if roaming:
+			for child in roaming.get_children():
+				_mode7.register_billboard(child)
+		_mode7.process_frame()
 	for i in range(_steam_emitters.size()):
 		_steam_timers[i] += delta
 		if _steam_timers[i] >= _steam_intervals[i]:
 			_steam_timers[i] = 0.0
 			_steam_intervals[i] = randf_range(5.0, 12.0)
 			_steam_emitters[i].restart()
+
+
+func _exit_tree() -> void:
+	if _mode7:
+		_mode7.cleanup()
 
 
 func _setup_scene() -> void:
@@ -125,6 +151,11 @@ func _setup_scene() -> void:
 	transitions = Node2D.new()
 	transitions.name = "Transitions"
 	add_child(transitions)
+
+	# Create NPC container
+	npcs = Node2D.new()
+	npcs.name = "NPCs"
+	add_child(npcs)
 
 	# Create boundary walls
 	_create_map_boundaries()
@@ -296,6 +327,81 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	trans.add_child(collision)
 
 
+func _setup_npcs() -> void:
+	# === Brigadier Flux - off-grid house, west residential ===
+	var flux = _create_npc("Brigadier Flux", "elder", Vector2(4 * TILE_SIZE, 26 * TILE_SIZE), [
+		"I keep my lamps lit by hand. No gear drives them.",
+		"Everyone says I'm paranoid, but I've SEEN the gears skip.",
+		"One skipped beat and the whole Mechanism resets.",
+		"Mark my words — the Regulator knows exactly what he's doing."
+	])
+	npcs.add_child(flux)
+
+	# === Sprocket - mechanic, near industrial pipes ===
+	var sprocket = _create_npc("Sprocket", "villager", Vector2(50 * TILE_SIZE, 9 * TILE_SIZE), [
+		"Name's Sprocket. I fix things that shouldn't break.",
+		"The pipes in the east district? They're not carrying steam.",
+		"I've heard... ticking. Like a countdown.",
+		"Something inside the Mechanism is waking up."
+	])
+	npcs.add_child(sprocket)
+
+	# === Cogsworth - plaza clocktower keeper ===
+	var cogsworth = _create_npc("Cogsworth", "guard", Vector2(22 * TILE_SIZE, 17 * TILE_SIZE), [
+		"The fountain plaza runs like clockwork. Literally.",
+		"Every gear, every pipe, every cobblestone — synchronized.",
+		"I maintain the central clock. If it stops, Brasston stops.",
+		"Don't touch the gears. I mean it."
+	])
+	npcs.add_child(cogsworth)
+
+	# === Ember - park area, southern gardens ===
+	var ember = _create_npc("Ember", "villager", Vector2(6 * TILE_SIZE, 35 * TILE_SIZE), [
+		"I grow flowers in the park. The only organic thing in Brasston.",
+		"The gears underground make the soil warm. Perfect for roses.",
+		"Sometimes the flowers bloom in perfect spirals. Fibonacci.",
+		"The Mechanism is beautiful if you know where to look."
+	])
+	npcs.add_child(ember)
+
+	# === Rail Master Piston - southern rail station ===
+	var piston = _create_npc("Rail Master Piston", "guard", Vector2(28 * TILE_SIZE, 44 * TILE_SIZE), [
+		"All aboard! The 3:47 to... well, nowhere, actually.",
+		"The tracks go in a circle. Always have.",
+		"Passengers get on, ride for an hour, get off where they started.",
+		"Nobody complains. Efficiency doesn't require destinations."
+	])
+	npcs.add_child(piston)
+
+	# === Whistler - mysterious figure near manholes ===
+	var whistler = _create_npc("Whistler", "villager", Vector2(28 * TILE_SIZE, 19 * TILE_SIZE), [
+		"*whistles tunelessly*",
+		"You want to know what's under the manholes?",
+		"Maintenance shafts. Gantries. Steam vents.",
+		"And the Mechanism. The real one. Not the building — the idea.",
+		"The Regulator built it to regulate... everything."
+	])
+	npcs.add_child(whistler)
+
+	# === Tinkerer Wren - neon sign district, east ===
+	var wren = _create_npc("Tinkerer Wren", "villager", Vector2(46 * TILE_SIZE, 16 * TILE_SIZE), [
+		"I make the neon signs! Each one hand-bent brass tubing.",
+		"The glow? That's pressurized aether, not electricity.",
+		"My autobattle scripts? Oh, I wrote one that uses ONLY Defer.",
+		"Just Defer. Forever. The monsters give up eventually."
+	])
+	npcs.add_child(wren)
+
+
+func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
+	var npc = OverworldNPCScript.new()
+	npc.npc_name = npc_name
+	npc.npc_type = npc_type
+	npc.position = pos
+	npc.dialogue_lines = dialogue
+	return npc
+
+
 func _setup_player() -> void:
 	player = OverworldPlayerScript.new()
 	player.name = "Player"
@@ -314,14 +420,8 @@ func _setup_camera() -> void:
 	player.add_child(camera)
 	camera.make_current()
 
-	# 2x zoom for larger sprites
-	camera.zoom = Vector2(2.0, 2.0)
-
-	# Camera limits to map bounds
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = MAP_WIDTH * TILE_SIZE
-	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
+	Mode7Overlay.apply_camera(camera, mode7_enabled)
+	Mode7Overlay.apply_camera_limits(camera, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
 
 	# Smooth camera follow
 	camera.position_smoothing_enabled = true

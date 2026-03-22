@@ -214,11 +214,11 @@ func _setup_sprite() -> void:
 	_sprite.name = "Sprite"
 	add_child(_sprite)
 
-	# Setup collision shape
+	# Setup collision shape — circle avoids directional bias with Mode 7 camera rotation
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(24, 24)  # Slightly smaller than sprite for easier navigation
+	var shape = CircleShape2D.new()
+	shape.radius = 12.0  # Slightly smaller than sprite for easier navigation
 	collision.shape = shape
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)
@@ -243,6 +243,14 @@ func _physics_process(delta: float) -> void:
 		input_dir.y -= 1
 	if Input.is_action_pressed("ui_down"):
 		input_dir.y += 1
+
+	# Rotate input to match Mode 7 camera direction
+	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
+		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
+		# Snap to nearest 8-direction to prevent continuous sliding
+		var angle = input_dir.angle()
+		angle = round(angle / (PI / 4.0)) * (PI / 4.0)
+		input_dir = Vector2.from_angle(angle)
 
 	# Keyboard/gamepad cancels click-to-move
 	if input_dir != Vector2.ZERO:
@@ -359,6 +367,18 @@ func _generate_all_sprites() -> void:
 		return
 
 	var new_cache: Dictionary = {}
+
+	# Try artist sheet first — artist work is authoritative regardless of
+	# custom colors. Custom colors only apply to proc-gen sprites; when artist
+	# sheets exist, we use them as-is.
+	var artist_cache = _try_build_artist_sprites()
+	if not artist_cache.is_empty():
+		_static_sprite_cache[static_key] = artist_cache
+		_sprite_cache = artist_cache
+		if _static_sprite_cache.size() > 30:
+			_static_sprite_cache.erase(_static_sprite_cache.keys()[0])
+		return
+
 	for dir in [Direction.DOWN, Direction.UP, Direction.LEFT, Direction.RIGHT]:
 		for frame in range(WALK_FRAMES):
 			var img = _generate_character_sprite(dir, frame)
@@ -372,6 +392,104 @@ func _generate_all_sprites() -> void:
 	if _static_sprite_cache.size() > 30:
 		var keys = _static_sprite_cache.keys()
 		_static_sprite_cache.erase(keys[0])
+
+
+## Extract and downscale a single frame from a SpriteFrames animation into a 32x32 Image.
+## Returns null if the frame cannot be extracted.
+func _extract_artist_frame(sf: SpriteFrames, anim: String, frame_idx: int, flip_h: bool) -> ImageTexture:
+	if not sf.has_animation(anim):
+		return null
+	var count = sf.get_frame_count(anim)
+	if count == 0:
+		return null
+	var idx = frame_idx % count
+	var frame_tex = sf.get_frame_texture(anim, idx)
+	if not frame_tex:
+		return null
+
+	var src_img: Image = null
+	if frame_tex is AtlasTexture:
+		var atlas_tex = frame_tex as AtlasTexture
+		if not atlas_tex.atlas:
+			return null
+		var atlas_img = atlas_tex.atlas.get_image()
+		if not atlas_img:
+			return null
+		var region = atlas_tex.region
+		src_img = atlas_img.get_region(Rect2i(int(region.position.x), int(region.position.y), int(region.size.x), int(region.size.y)))
+	else:
+		src_img = frame_tex.get_image()
+
+	if not src_img:
+		return null
+
+	# Crop to opaque bounding box before downscaling — battle sprites are
+	# 256x256 with the character occupying ~40% of the frame. Without cropping,
+	# the 32x32 result is a tiny blob.
+	var used_rect = src_img.get_used_rect()
+	if used_rect.size.x > 0 and used_rect.size.y > 0:
+		src_img = src_img.get_region(used_rect)
+
+	if flip_h:
+		src_img.flip_x()
+
+	# Scale proportionally to fit within SPRITE_SIZE, then center on
+	# transparent canvas. Direct resize(32,32) squashes the aspect ratio.
+	var sw = src_img.get_width()
+	var sh = src_img.get_height()
+	var scale_factor = min(float(SPRITE_SIZE) / max(sw, 1), float(SPRITE_SIZE) / max(sh, 1))
+	var new_w = max(1, int(sw * scale_factor))
+	var new_h = max(1, int(sh * scale_factor))
+	src_img.resize(new_w, new_h, Image.INTERPOLATE_NEAREST)
+
+	var canvas = Image.create(SPRITE_SIZE, SPRITE_SIZE, true, Image.FORMAT_RGBA8)
+	var x_off = (SPRITE_SIZE - new_w) / 2
+	var y_off = SPRITE_SIZE - new_h  # foot-align to bottom
+	canvas.blit_rect(src_img, Rect2i(0, 0, new_w, new_h), Vector2i(x_off, y_off))
+	return ImageTexture.create_from_image(canvas)
+
+
+## Try to build a full direction×frame sprite cache from artist sheets.
+## Returns an empty Dictionary if the job has no usable artist sheet.
+func _try_build_artist_sprites() -> Dictionary:
+	# Only use artist sheets — check manifest to avoid proc-gen fallback
+	if not HybridSpriteLoader.has_artist_sheet(current_job):
+		print("[OVERWORLD] No artist sheet for '%s', using procedural" % current_job)
+		return {}
+
+	var sf = HybridSpriteLoader.load_sprite_frames(null, current_job)
+	if not sf:
+		return {}
+	if not sf.has_animation("idle") or not sf.has_animation("walk"):
+		print("[OVERWORLD] Artist sheet for '%s' missing idle/walk animations" % current_job)
+		return {}
+
+	# Verify at least one frame exists in each required animation
+	if sf.get_frame_count("idle") == 0 or sf.get_frame_count("walk") == 0:
+		return {}
+
+	var cache: Dictionary = {}
+
+	# walk animation: cycle through WALK_FRAMES walk frames
+	# idle animation: use frame 0 for all non-walk (standing) frames
+	for frame in range(WALK_FRAMES):
+		var walk_tex_r = _extract_artist_frame(sf, "walk", frame, false)
+		var walk_tex_l = _extract_artist_frame(sf, "walk", frame, true)
+		var idle_tex   = _extract_artist_frame(sf, "idle", 0, false)
+
+		if not walk_tex_r or not walk_tex_l or not idle_tex:
+			return {}
+
+		# right: artist frames facing right (artist side-profile default)
+		cache["%d_%d" % [Direction.RIGHT, frame]] = walk_tex_r if frame > 0 else _extract_artist_frame(sf, "idle", 0, false)
+		# left: horizontally flipped
+		cache["%d_%d" % [Direction.LEFT, frame]]  = walk_tex_l if frame > 0 else _extract_artist_frame(sf, "idle", 0, true)
+		# down/up: use first idle frame as front/back approximation
+		cache["%d_%d" % [Direction.DOWN, frame]] = idle_tex
+		cache["%d_%d" % [Direction.UP, frame]]   = idle_tex
+
+	print("[OVERWORLD] Using artist sheet for '%s' overworld sprite" % current_job)
+	return cache
 
 
 func _generate_character_sprite(direction: Direction, frame: int) -> Image:

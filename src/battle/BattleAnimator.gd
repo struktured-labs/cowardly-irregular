@@ -27,7 +27,27 @@ enum AnimState {
 	ITEM,
 	VICTORY,
 	DEFEAT,
-	DEAD
+	DEAD,
+	ADVANCE,
+	DEFER,
+	POWER_STRIKE,
+	CLEAVE,
+	PROVOKE,
+	CAST_FIRE,
+	CAST_ICE,
+	CAST_LIGHTNING,
+	CAST_FIRA,
+	HEAL,
+	RAISE,
+	BUFF,
+	STEAL,
+	BACKSTAB,
+	MUG,
+	FLEE,
+	BATTLE_HYMN,
+	LULLABY,
+	DISCORD,
+	INSPIRING_MELODY
 }
 
 ## Animation speeds (frames per animation frame) - slower for visibility
@@ -382,6 +402,51 @@ func play_mug(on_complete: Callable = Callable()) -> void:
 	)
 
 
+func play_advance(on_complete: Callable = Callable()) -> void:
+	play_animation(AnimState.ADVANCE, false, on_complete)
+
+
+func play_defer_anim(on_complete: Callable = Callable()) -> void:
+	play_animation(AnimState.DEFER, false, on_complete)
+
+
+func play_named_animation(anim_name: String, on_complete: Callable = Callable()) -> void:
+	if not sprite:
+		if on_complete.is_valid():
+			on_complete.call()
+		return
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(anim_name):
+		current_state = AnimState.IDLE
+		loop_animation = false
+		on_animation_complete = on_complete
+		is_playing = true
+		sprite.play(anim_name)
+	else:
+		match anim_name:
+			"power_strike", "cleave", "provoke":
+				play_attack(on_complete)
+			"cast_fire", "cast_ice", "cast_lightning", "cast_fira":
+				play_cast(on_complete)
+			"heal", "raise", "buff":
+				play_cast(on_complete)
+			"steal":
+				play_steal(on_complete)
+			"backstab":
+				play_backstab(on_complete)
+			"mug":
+				play_mug(on_complete)
+			"flee":
+				play_item(on_complete)
+			"battle_hymn", "lullaby", "discord", "inspiring_melody":
+				play_cast(on_complete)
+			"advance":
+				play_attack(on_complete)
+			"defer":
+				play_defend(on_complete)
+			_:
+				play_cast(on_complete)
+
+
 func _get_animation_name(state: AnimState) -> String:
 	"""Convert animation state to string name"""
 	match state:
@@ -394,6 +459,26 @@ func _get_animation_name(state: AnimState) -> String:
 		AnimState.VICTORY: return "victory"
 		AnimState.DEFEAT: return "defeat"
 		AnimState.DEAD: return "dead"
+		AnimState.ADVANCE: return "advance"
+		AnimState.DEFER: return "defer"
+		AnimState.POWER_STRIKE: return "power_strike"
+		AnimState.CLEAVE: return "cleave"
+		AnimState.PROVOKE: return "provoke"
+		AnimState.CAST_FIRE: return "cast_fire"
+		AnimState.CAST_ICE: return "cast_ice"
+		AnimState.CAST_LIGHTNING: return "cast_lightning"
+		AnimState.CAST_FIRA: return "cast_fira"
+		AnimState.HEAL: return "heal"
+		AnimState.RAISE: return "raise"
+		AnimState.BUFF: return "buff"
+		AnimState.STEAL: return "steal"
+		AnimState.BACKSTAB: return "backstab"
+		AnimState.MUG: return "mug"
+		AnimState.FLEE: return "flee"
+		AnimState.BATTLE_HYMN: return "battle_hymn"
+		AnimState.LULLABY: return "lullaby"
+		AnimState.DISCORD: return "discord"
+		AnimState.INSPIRING_MELODY: return "inspiring_melody"
 	return "idle"
 
 

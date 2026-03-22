@@ -330,8 +330,7 @@ func _get_party_summary() -> Array:
 
 func _serialize_inventory() -> Dictionary:
 	"""Serialize inventory"""
-	# In full game, would serialize party-wide inventory
-	# For now, placeholder
+	# TODO: serialize party-wide item inventory when InventorySystem is implemented
 	return {}
 
 

@@ -56,6 +56,7 @@ const GATE_COLORS = {
 var _player_in_zone: bool = false
 var _indicator_label: Label
 var _arrow_blink: float = 0.0
+var _redraw_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -69,7 +70,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if show_gate_visual:
 		_arrow_blink += delta * 2.0
-		queue_redraw()
+		_redraw_timer += delta
+		if _redraw_timer > 0.1:
+			_redraw_timer = 0.0
+			queue_redraw()
 
 
 func _draw() -> void:

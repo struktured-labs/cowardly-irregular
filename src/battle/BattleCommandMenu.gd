@@ -336,6 +336,41 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				"submenu": item_items
 			})
 
+	# Group attacks - available when >= 2 alive party members and enemies exist
+	var alive_party: Array[Combatant] = []
+	for m in BattleManager.player_party:
+		if m.is_alive:
+			alive_party.append(m)
+	if alive_party.size() >= 2 and alive_enemies.size() > 0:
+		var can_all_out = true
+		var can_limit = true
+		for m in alive_party:
+			var effective_ap = m.current_ap + (1 if m == combatant else 0)
+			if effective_ap < 1:
+				can_all_out = false
+			if effective_ap < 4:
+				can_limit = false
+		var group_items = []
+		group_items.append({
+			"id": "group_all_out",
+			"label": "All-Out Attack",
+			"tooltip": "All party members strike together (costs 1 AP each)",
+			"data": {"group_type": "all_out_attack"},
+			"disabled": not can_all_out
+		})
+		group_items.append({
+			"id": "group_limit",
+			"label": "Limit Break",
+			"tooltip": "Ultimate combined assault — requires 4 AP from all members",
+			"data": {"group_type": "limit_break"},
+			"disabled": not can_limit
+		})
+		items.append({
+			"id": "group_menu",
+			"label": "Group",
+			"submenu": group_items
+		})
+
 	# Defer - skip turn, gain +1 AP (only available if AP < 4)
 	items.append({
 		"id": "defer",
@@ -499,6 +534,15 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			BattleManager.player_item(i_id, targets)
 		else:
 			_scene.log_message("No valid targets!")
+		return
+
+	# Group attack (All-Out Attack / Limit Break)
+	if item_id.begins_with("group_") and item_data is Dictionary:
+		var group_type: String = item_data.get("group_type", "all_out_attack")
+		var label = "Limit Break" if group_type == "limit_break" else "All-Out Attack"
+		_scene.log_message("[color=orange]★ %s initiated! ★[/color]" % label)
+		BattleManager.player_group_attack(group_type)
+		_scene._update_ui()
 		return
 
 	# Defer - skip turn, gain +1 AP

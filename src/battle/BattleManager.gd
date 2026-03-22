@@ -20,6 +20,7 @@ signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
 signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
+signal group_attack_executing(participants: Array, group_type: String, targets: Array)
 
 enum BattleState {
 	INACTIVE,
@@ -60,6 +61,8 @@ var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
 var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
+## Turbo mode - minimize delays between actions for fastest execution
+var turbo_mode: bool = false
 
 ## Terrain modifiers for elemental damage
 var _current_terrain: String = "plains"
@@ -345,7 +348,9 @@ func _apply_corruption_effects_on_round_start() -> void:
 		for enemy in enemy_party:
 			if enemy.is_alive and enemy.has_meta("corruption_effects") and \
 					"time_distortion" in enemy.get_meta("corruption_effects", []):
-				var base_speed = enemy.speed
+				if not enemy.has_meta("_base_speed"):
+					enemy.set_meta("_base_speed", enemy.speed)
+				var base_speed = enemy.get_meta("_base_speed")
 				var shift = randf_range(-0.3, 0.3)
 				enemy.speed = maxi(1, int(base_speed * (1.0 + shift)))
 		battle_log_message.emit("[color=cyan]Time distorts — enemy speeds fluctuate![/color]")
@@ -533,6 +538,66 @@ func player_brave(actions: Array[Dictionary]) -> void:
 	player_advance(actions)
 
 
+func player_group_attack(group_type: String) -> void:
+	"""Initiate a group attack — all alive party members pool AP for a combined strike.
+	group_type: "all_out_attack" or "limit_break"
+	Limit Break requires every participant to have >= 4 AP.
+	The calling combatant's action is queued immediately; remaining alive players are
+	auto-queued as participants (their individual selection turns are skipped)."""
+	if current_state != BattleState.PLAYER_SELECTING:
+		return
+	_track_manual_player_turn()
+
+	var alive_players: Array[Combatant] = player_party.filter(func(c): return c.is_alive)
+
+	# Limit Break requires full AP (>= 4) from every party member
+	if group_type == "limit_break":
+		for member in alive_players:
+			if member.current_ap < 4:
+				battle_log_message.emit("[color=red]Limit Break requires ALL party members at full AP (4)![/color]")
+				print("[GROUP] Limit Break blocked — %s has AP %d" % [member.combatant_name, member.current_ap])
+				# Abort: return without queuing — battle menu stays open
+				current_state = BattleState.PLAYER_SELECTING
+				selection_turn_started.emit(current_combatant)
+				return
+
+	# Collect participants: current combatant + remaining unselected alive players
+	var participants: Array[Combatant] = []
+	participants.append(current_combatant)
+
+	# Determine remaining players who haven't selected yet (index after current)
+	for i in range(selection_index + 1, selection_order.size()):
+		var c = selection_order[i]
+		if c in player_party and c.is_alive:
+			participants.append(c)
+
+	var action = {
+		"type": "group",
+		"combatant": current_combatant,
+		"group_type": group_type,
+		"participants": participants,
+		"speed": _compute_action_speed(current_combatant, "attack")
+	}
+	_queue_action(action)
+	print("[GROUP] %s initiates group attack '%s' with %d participants" % [
+		current_combatant.combatant_name, group_type, participants.size()])
+
+	# Fast-forward past remaining player selections — they are committed to the group action
+	while selection_index + 1 < selection_order.size():
+		var next = selection_order[selection_index + 1]
+		if next in player_party and next.is_alive:
+			# Give them their natural AP gain and mark turn ended without queuing a new action
+			next.start_turn()
+			next.gain_ap(1)
+			selection_turn_started.emit(next)
+			selection_turn_ended.emit(next)
+			selection_index += 1
+		else:
+			break
+
+	_end_selection_turn()
+
+
 func go_back_to_previous_player() -> void:
 	"""Go back to the previous player's selection (undo their action), skipping those in AP debt"""
 	if current_state != BattleState.PLAYER_SELECTING:
@@ -652,18 +717,10 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		_process_grid_autobattle(combatant)
 		return
 
-	# AI strategic defer: enemies can defer to build AP for a future advance.
-	# Only defer if AP is low (< 2) and with a small chance (5%).
-	# This gives enemies tactical depth without making them feel passive.
-	var should_defer = randf() < 0.05 and combatant.current_ap < 2
-	if should_defer:
-		var action = {"type": "defer", "combatant": combatant, "speed": _compute_action_speed(combatant, "defer")}
-		_queue_action(action)
-		print("%s (AI) chooses to defer (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
-		_end_selection_turn()
-		return
-
 	# AI can advance with a small random chance to pressure the party.
+	# NOTE: Enemies do NOT defer. Deferring caused stall bugs (battles frozen
+	# when all party members deferred and enemies also randomly deferred).
+	# Enemies always attack — defer is a player-only mechanic.
 	var should_advance = randf() < 0.15 and combatant.current_ap >= 0  # 15% chance to advance
 
 	if should_advance and combatant.current_ap >= 1:
@@ -930,11 +987,11 @@ func repeat_previous_actions() -> bool:
 
 		var combatant_id = combatant.combatant_name.to_lower()
 		if not previous_round_actions.has(combatant_id):
-			# No previous action for this player, use default attack
+			var alive = _get_alive_enemies()
 			_queue_action({
 				"combatant": combatant,
 				"type": "attack",
-				"target": _get_alive_enemies()[0] if _get_alive_enemies().size() > 0 else null,
+				"target": alive[0] if alive.size() > 0 else null,
 				"speed": ACTION_SPEEDS["attack"] + combatant.speed
 			})
 			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
@@ -1027,6 +1084,9 @@ func _execute_next_action() -> void:
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
+		"group":
+			_execute_group_action(action)
+			return  # Group handles its own continuation
 		_:
 			push_warning("BattleManager: Unknown action type '%s'" % action.get("type", ""))
 			# Do NOT return here — fall through to keep the execution chain alive.
@@ -1039,7 +1099,10 @@ func _execute_next_action() -> void:
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
 	# Delay between actions - long enough for animations to complete
-	await get_tree().create_timer(0.7).timeout
+	if turbo_mode:
+		await get_tree().process_frame
+	else:
+		await get_tree().create_timer(0.7).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
@@ -1094,6 +1157,60 @@ func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	monster_summoned.emit(monster_type, combatant)
 
 
+func _execute_group_action(action: Dictionary) -> void:
+	"""Execute group attack — all participants strike together"""
+	var participants: Array = action.get("participants", [])
+	var group_type: String = action.get("group_type", "all_out_attack")
+	var alive_enemies: Array[Combatant] = enemy_party.filter(func(e): return e.is_alive)
+
+	if alive_enemies.is_empty():
+		_execute_next_action()
+		return
+
+	group_attack_executing.emit(participants, group_type, alive_enemies)
+	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
+		group_type, participants.size(), alive_enemies.size()])
+
+	# Spend AP from each participant and deal combined damage
+	var total_power: float = 0.0
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		var ap_cost: int = 4 if group_type == "limit_break" else 1
+		p.spend_ap(ap_cost)
+		total_power += p.attack
+
+	# Distribute damage to all enemies (exponential scaling with participant count)
+	var scale: float = pow(participants.size(), 1.5)
+	for enemy in alive_enemies:
+		if not enemy.is_alive:
+			continue
+		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
+		var mitigated: int = max(1, raw_damage - enemy.defense)
+		enemy.take_damage(mitigated)
+		damage_dealt.emit(enemy, mitigated, false)
+		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
+			group_type, enemy.combatant_name, mitigated])
+
+	_log_player_action(participants[0] if participants.size() > 0 else null, action)
+	action_executed.emit(
+		participants[0] if participants.size() > 0 else null,
+		action,
+		alive_enemies
+	)
+
+	if _check_victory_conditions():
+		return
+
+	if turbo_mode:
+		await get_tree().process_frame
+	else:
+		await get_tree().create_timer(0.7).timeout
+	if not is_instance_valid(self):
+		return
+	_execute_next_action()
+
+
 func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	"""Execute advance action - all queued actions in sequence (each costs 1 AP)"""
 	var actions = advance_action.get("actions", []) as Array
@@ -1124,12 +1241,18 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		# Log player action for adaptive AI pattern detection
 		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
-		await get_tree().create_timer(0.5).timeout  # Time for animation
+		if turbo_mode:
+			await get_tree().process_frame
+		else:
+			await get_tree().create_timer(0.5).timeout  # Time for animation
 		if not is_instance_valid(self):
 			return
 
 	# Continue to next action
-	await get_tree().create_timer(0.5).timeout
+	if turbo_mode:
+		await get_tree().process_frame
+	else:
+		await get_tree().create_timer(0.5).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
