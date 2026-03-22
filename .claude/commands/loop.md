@@ -5,8 +5,8 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 ### Tier 1: Critical Bugs
 1. DONE — SaveSystem now finds OverworldPlayer via "player" group instead of nonexistent PlayerController. Player position actually saves now.
 2. DONE — Escape emits battle_ended with `"escaped"` result directly instead of calling end_battle(false) defeat path.
-3. `src/battle/BattleManager.gd:351-353` — `time_distortion` permanently mutates `enemy.speed` each round (compounds multiplicatively). Save base_speed before first mutation, reset each round.
-4. `src/battle/BattleManager.gd:992` — Double `_get_alive_enemies()` call on one line. Store in local var.
+3. DONE — `time_distortion` now stores original speed in `_base_speed` metadata on first mutation, reads from it each round instead of compounding.
+4. DONE — Double `_get_alive_enemies()` call replaced with single local var.
 5. `src/battle/BattleScene.gd:2495-2497` — Summoned enemy signal binds use stale index. Use enemy reference directly instead of array index.
 6. `src/battle/BattleScene.gd:2306,2408` — `pivot_offset = label.size / 2` reads size before layout. Defer to next frame or use `resized` signal.
 
