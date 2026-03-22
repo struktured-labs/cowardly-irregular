@@ -114,6 +114,13 @@ func _ready() -> void:
 	_area_fade_rect.modulate.a = 0.0
 	_area_fade_layer.add_child(_area_fade_rect)
 
+	# Gamepad diagnostic overlay (F11)
+	var diag_layer = CanvasLayer.new()
+	diag_layer.layer = 99
+	add_child(diag_layer)
+	var diag = GamepadDiagnostic.new()
+	diag_layer.add_child(diag)
+
 	# Check for existing save to determine if this is first launch
 	_first_launch = not _save_exists()
 

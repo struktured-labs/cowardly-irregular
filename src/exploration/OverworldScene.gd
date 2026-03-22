@@ -224,8 +224,8 @@ func _generate_map() -> void:
 
 	print("Tile counts: ", tile_counts)
 
-	# Default spawn point (near Harmonia village)
-	spawn_points["default"] = spawn_points.get("village_entrance", Vector2(MAP_WIDTH / 2 * TILE_SIZE, MAP_HEIGHT / 2 * TILE_SIZE))
+	# Default spawn: central grassland (column 40, row 25 — clear of water)
+	spawn_points["default"] = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _register_spawn_point(char: String, x: int, y: int) -> void:

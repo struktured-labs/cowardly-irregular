@@ -244,6 +244,10 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("ui_down"):
 		input_dir.y += 1
 
+	# Rotate input to match Mode 7 camera direction
+	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
+		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
+
 	# Keyboard/gamepad cancels click-to-move
 	if input_dir != Vector2.ZERO:
 		_moving_to_click = false
