@@ -424,10 +424,16 @@ func _extract_artist_frame(sf: SpriteFrames, anim: String, frame_idx: int, flip_
 ## Try to build a full direction×frame sprite cache from artist sheets.
 ## Returns an empty Dictionary if the job has no usable artist sheet.
 func _try_build_artist_sprites() -> Dictionary:
+	# Only use artist sheets — check manifest to avoid proc-gen fallback
+	if not HybridSpriteLoader.has_artist_sheet(current_job):
+		print("[OVERWORLD] No artist sheet for '%s', using procedural" % current_job)
+		return {}
+
 	var sf = HybridSpriteLoader.load_sprite_frames(null, current_job)
 	if not sf:
 		return {}
 	if not sf.has_animation("idle") or not sf.has_animation("walk"):
+		print("[OVERWORLD] Artist sheet for '%s' missing idle/walk animations" % current_job)
 		return {}
 
 	# Verify at least one frame exists in each required animation

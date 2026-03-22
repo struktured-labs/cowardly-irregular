@@ -33,6 +33,12 @@ static func reload_manifest() -> void:
 	_load_manifest()
 
 
+static func has_artist_sheet(job_id: String) -> bool:
+	"""Check if a job has an artist sprite sheet in the manifest."""
+	_load_manifest()
+	return _manifest.has(job_id)
+
+
 static func load_sprite_frames(customization, primary_job_id: String, secondary_job_id: String = "", weapon_id: String = "", armor_id: String = "", accessory_id: String = "") -> SpriteFrames:
 	_load_manifest()
 
