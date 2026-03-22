@@ -11,7 +11,8 @@
       "model": "suno-v4",
       "duration": 197.88,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_medieval": {
       "file": "assets/audio/music/village_medieval.ogg",
@@ -23,7 +24,8 @@
       "model": "suno-v4",
       "duration": 243.04,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_medieval": {
       "file": "assets/audio/music/battle_medieval.ogg",
@@ -35,7 +37,8 @@
       "model": "suno-v4",
       "duration": 128.4,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "dungeon_medieval": {
       "file": "assets/audio/music/dungeon_medieval.ogg",
@@ -47,7 +50,8 @@
       "model": "suno-v4",
       "duration": 119.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_medieval": {
       "file": "assets/audio/music/boss_medieval.ogg",
@@ -59,7 +63,8 @@
       "model": "suno-v4",
       "duration": 147.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_suburban": {
       "file": "assets/audio/music/overworld_suburban.ogg",
@@ -71,7 +76,8 @@
       "model": "suno-v4",
       "duration": 240.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_suburban": {
       "file": "assets/audio/music/village_suburban.ogg",
@@ -83,7 +89,8 @@
       "model": "suno-v4",
       "duration": 207.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_steampunk": {
       "file": "assets/audio/music/overworld_steampunk.ogg",
@@ -95,7 +102,8 @@
       "model": "suno-v4",
       "duration": 109.88,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_steampunk": {
       "file": "assets/audio/music/boss_steampunk.ogg",
@@ -107,7 +115,8 @@
       "model": "suno-v4",
       "duration": 94.48,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_digital": {
       "file": "assets/audio/music/village_digital.ogg",
@@ -119,7 +128,8 @@
       "model": "suno-v4",
       "duration": 142.16,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_suburban": {
       "file": "assets/audio/music/battle_suburban.ogg",
@@ -131,7 +141,8 @@
       "model": "suno-v4",
       "duration": 124.92,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_suburban": {
       "file": "assets/audio/music/boss_suburban.ogg",
@@ -143,7 +154,8 @@
       "model": "suno-v4",
       "duration": 163.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_steampunk": {
       "file": "assets/audio/music/village_steampunk.ogg",
@@ -155,7 +167,8 @@
       "model": "suno-v4",
       "duration": 86.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_steampunk": {
       "file": "assets/audio/music/battle_steampunk.ogg",
@@ -167,7 +180,8 @@
       "model": "suno-v4",
       "duration": 148.96,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_industrial": {
       "file": "assets/audio/music/overworld_industrial.ogg",
@@ -179,7 +193,8 @@
       "model": "suno-v4",
       "duration": 134.8,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_industrial": {
       "file": "assets/audio/music/village_industrial.ogg",
@@ -191,7 +206,8 @@
       "model": "suno-v4",
       "duration": 159.52,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_industrial": {
       "file": "assets/audio/music/battle_industrial.ogg",
@@ -203,7 +219,8 @@
       "model": "suno-v4",
       "duration": 136.2,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_industrial": {
       "file": "assets/audio/music/boss_industrial.ogg",
@@ -215,7 +232,8 @@
       "model": "suno-v4",
       "duration": 144.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_digital": {
       "file": "assets/audio/music/overworld_digital.ogg",
@@ -227,7 +245,8 @@
       "model": "suno-v4",
       "duration": 147.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_digital": {
       "file": "assets/audio/music/battle_digital.ogg",
@@ -239,7 +258,8 @@
       "model": "suno-v4",
       "duration": 136.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_digital": {
       "file": "assets/audio/music/boss_digital.ogg",
@@ -251,7 +271,8 @@
       "model": "suno-v4",
       "duration": 157.2,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_abstract": {
       "file": "assets/audio/music/overworld_abstract.ogg",
@@ -263,7 +284,8 @@
       "model": "suno-v4",
       "duration": 133.76,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_abstract": {
       "file": "assets/audio/music/village_abstract.ogg",
@@ -275,7 +297,8 @@
       "model": "suno-v4",
       "duration": 146.56,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_abstract": {
       "file": "assets/audio/music/battle_abstract.ogg",
@@ -287,7 +310,8 @@
       "model": "suno-v4",
       "duration": 90.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_abstract": {
       "file": "assets/audio/music/boss_abstract.ogg",
@@ -299,7 +323,8 @@
       "model": "suno-v4",
       "duration": 224.96,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "victory": {
       "file": "assets/audio/music/victory.ogg",
@@ -311,7 +336,8 @@
       "model": "suno-v4",
       "duration": 74.12,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "game_over": {
       "file": "assets/audio/music/game_over.ogg",
@@ -323,7 +349,8 @@
       "model": "suno-v4",
       "duration": 101.56,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "title": {
       "file": "assets/audio/music/title.ogg",
@@ -335,7 +362,8 @@
       "model": "suno-v4",
       "duration": 171.48,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger": {
       "file": "assets/audio/music/danger.ogg",
@@ -347,7 +375,8 @@
       "model": "suno-v4",
       "duration": 40.8,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "autogrind": {
       "file": "assets/audio/music/autogrind.ogg",
@@ -359,7 +388,8 @@
       "model": "suno-v4",
       "duration": 213.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_medieval": {
       "file": "assets/audio/music/danger_medieval.ogg",
@@ -371,7 +401,8 @@
       "model": "suno-v4",
       "duration": 152.36,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_suburban": {
       "file": "assets/audio/music/danger_suburban.ogg",
@@ -383,7 +414,8 @@
       "model": "suno-v4",
       "duration": 32.4,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_steampunk": {
       "file": "assets/audio/music/danger_steampunk.ogg",
@@ -395,7 +427,8 @@
       "model": "suno-v4",
       "duration": 84.88,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_industrial": {
       "file": "assets/audio/music/danger_industrial.ogg",
@@ -407,7 +440,8 @@
       "model": "suno-v4",
       "duration": 152.68,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_digital": {
       "file": "assets/audio/music/danger_digital.ogg",
@@ -419,7 +453,8 @@
       "model": "suno-v4",
       "duration": 127.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_abstract": {
       "file": "assets/audio/music/danger_abstract.ogg",
@@ -431,7 +466,8 @@
       "model": "suno-v4",
       "duration": 95.24,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_slime": {
       "file": "assets/audio/music/battle_slime.ogg",
@@ -443,7 +479,8 @@
       "model": "suno-v4",
       "duration": 49.68,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_bat": {
       "file": "assets/audio/music/battle_bat.ogg",
@@ -455,7 +492,8 @@
       "model": "suno-v4",
       "duration": 159.96,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_mushroom": {
       "file": "assets/audio/music/battle_mushroom.ogg",
@@ -467,7 +505,8 @@
       "model": "suno-v4",
       "duration": 124.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_imp": {
       "file": "assets/audio/music/battle_imp.ogg",
@@ -479,7 +518,8 @@
       "model": "suno-v4",
       "duration": 142.52,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_goblin": {
       "file": "assets/audio/music/battle_goblin.ogg",
@@ -491,7 +531,8 @@
       "model": "suno-v4",
       "duration": 177.28,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_skeleton": {
       "file": "assets/audio/music/battle_skeleton.ogg",
@@ -503,7 +544,8 @@
       "model": "suno-v4",
       "duration": 107.6,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_wolf": {
       "file": "assets/audio/music/battle_wolf.ogg",
@@ -515,7 +557,8 @@
       "model": "suno-v4",
       "duration": 158.08,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_ghost": {
       "file": "assets/audio/music/battle_ghost.ogg",
@@ -527,7 +570,8 @@
       "model": "suno-v4",
       "duration": 123.32,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_snake": {
       "file": "assets/audio/music/battle_snake.ogg",
@@ -539,7 +583,8 @@
       "model": "suno-v4",
       "duration": 162.56,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     }
   },
   "tier_priority": [
