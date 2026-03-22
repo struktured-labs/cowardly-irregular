@@ -1,0 +1,146 @@
+{
+  "id": "world1_warden_intro",
+  "title": "Warden of the Old Guard",
+  "world": 1,
+  "trigger": "boss_warden_encounter",
+  "description": "The party meets the Warden in the deepest chamber of the Whispering Cave. The first Masterite encounter.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "fade_to_black", "duration": 0.3},
+    {"type": "wait", "duration": 0.8},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "fade_from_black", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The deepest chamber was almost perfectly circular. The stone floor worn smooth not by traffic but by the slow passage of time.",
+      "The air here was different. Drier. Stiller. As if the ordinary dampness of the mountain had decided to leave this room alone.",
+      "In the center stood a figure in full plate armor, utterly still. The armor was old \u2014 not decayed, not corrupted, but old in the way things are old when they have been maintained for centuries."
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+    {"type": "screen_shake", "duration": 0.2, "intensity": 2.0},
+
+    {"type": "narration", "text": "The figure's head rose. Not with aggression. With attention."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "Hm. Four blades. A healer. A mage. Rearguard position on the light-fingered one. Standard formation for an irregular unit.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We're not exactly\u2014",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden",
+        "text": "You're exactly what I said. Conscripts, most of you. Not chosen. Not trained for this. Which means you're here because no one with better options came.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "That makes you either very brave or very unlucky.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "We've had about forty percent of each, so far.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "This pass has been held for three hundred years. By my count, you are the thirty-eighth party to attempt it. The other thirty-seven turned back.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "I am not telling you this to frighten you. I am telling you so the record is clear.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "I have guarded this chamber since before memory. Since before your village was a plan in anyone's mind.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "You will be tested. But first \u2014 there is food in the guardhouse. You may rest before we begin, if you wish.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We're all right.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "Show me what you are, and I will show you what I have left.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Is there a way to avoid\u2014",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Warden",
+        "text": "No.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Right then.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The Warden drew his sword. Not quickly. Not with aggression. The way a craftsman picks up their tool. Natural. Inevitable."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "I want you to know that I bear you no ill will. This is not personal. This is purpose.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Begin when you're ready.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.4, "intensity": 5.0},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "letterbox_out", "duration": 0.3},
+    {"type": "set_flag", "flag": "warden_intro_complete", "value": true}
+  ]
+}

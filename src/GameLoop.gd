@@ -37,7 +37,8 @@ enum LoopState {
 	TITLE,
 	BATTLE,
 	EXPLORATION,
-	AUTOGRIND
+	AUTOGRIND,
+	CUTSCENE
 }
 
 var current_state: LoopState = LoopState.EXPLORATION
@@ -96,6 +97,9 @@ var _first_launch: bool = true  # True if no save exists
 var _title_screen: Control = null
 var _title_layer: CanvasLayer = null
 
+## Cutscene system
+var _cutscene_director: CutsceneDirector = null
+
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
@@ -130,8 +134,12 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Block input handling during title screen or character creation
+	# Block input handling during title screen, character creation, or cutscenes
 	if current_state == LoopState.TITLE or _character_creation_screen:
+		return
+
+	# During cutscene, CutsceneDirector handles its own input (skip/advance)
+	if current_state == LoopState.CUTSCENE:
 		return
 
 	# During autogrind, block editor/menu but allow B to stop
@@ -550,6 +558,58 @@ func _on_title_settings() -> void:
 				if _title_screen.has_method("_build_menu"):
 					_title_screen._build_menu()
 		)
+
+
+## Cutscene System
+
+func play_cutscene(cutscene_id: String) -> void:
+	"""Play a cutscene by ID. Transitions to CUTSCENE state and back when done."""
+	var previous_state = current_state
+	current_state = LoopState.CUTSCENE
+
+	# Pause exploration if active
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
+	# Create director on demand
+	if not _cutscene_director or not is_instance_valid(_cutscene_director):
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+
+	_cutscene_director.cutscene_finished.connect(
+		_on_cutscene_finished.bind(previous_state), CONNECT_ONE_SHOT
+	)
+	_cutscene_director.play_cutscene(cutscene_id)
+
+
+func play_cutscene_data(cutscene_id: String, data: Dictionary) -> void:
+	"""Play a cutscene from in-memory data (no file required)."""
+	var previous_state = current_state
+	current_state = LoopState.CUTSCENE
+
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
+	if not _cutscene_director or not is_instance_valid(_cutscene_director):
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+
+	_cutscene_director.cutscene_finished.connect(
+		_on_cutscene_finished.bind(previous_state), CONNECT_ONE_SHOT
+	)
+	_cutscene_director.play_cutscene_from_data(cutscene_id, data)
+
+
+func _on_cutscene_finished(_cutscene_id: String, previous_state: LoopState) -> void:
+	"""Restore state after cutscene ends."""
+	current_state = previous_state
+
+	# Resume exploration if returning to it
+	if current_state == LoopState.EXPLORATION:
+		if _exploration_scene and _exploration_scene.has_method("resume"):
+			_exploration_scene.resume()
+
+	print("[GAME] Cutscene '%s' finished, returning to %s" % [_cutscene_id, LoopState.keys()[current_state]])
 
 
 func _show_character_creation() -> void:
