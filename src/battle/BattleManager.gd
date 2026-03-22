@@ -348,7 +348,9 @@ func _apply_corruption_effects_on_round_start() -> void:
 		for enemy in enemy_party:
 			if enemy.is_alive and enemy.has_meta("corruption_effects") and \
 					"time_distortion" in enemy.get_meta("corruption_effects", []):
-				var base_speed = enemy.speed
+				if not enemy.has_meta("_base_speed"):
+					enemy.set_meta("_base_speed", enemy.speed)
+				var base_speed = enemy.get_meta("_base_speed")
 				var shift = randf_range(-0.3, 0.3)
 				enemy.speed = maxi(1, int(base_speed * (1.0 + shift)))
 		battle_log_message.emit("[color=cyan]Time distorts — enemy speeds fluctuate![/color]")
@@ -985,11 +987,11 @@ func repeat_previous_actions() -> bool:
 
 		var combatant_id = combatant.combatant_name.to_lower()
 		if not previous_round_actions.has(combatant_id):
-			# No previous action for this player, use default attack
+			var alive = _get_alive_enemies()
 			_queue_action({
 				"combatant": combatant,
 				"type": "attack",
-				"target": _get_alive_enemies()[0] if _get_alive_enemies().size() > 0 else null,
+				"target": alive[0] if alive.size() > 0 else null,
 				"speed": ACTION_SPEEDS["attack"] + combatant.speed
 			})
 			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)

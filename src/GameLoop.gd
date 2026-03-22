@@ -5,7 +5,6 @@ extends Node
 
 const BattleSceneRes = preload("res://src/battle/BattleScene.tscn")
 const BattleSceneScript = preload("res://src/battle/BattleScene.gd")
-const MenuSceneRes = preload("res://src/ui/MenuScene.tscn")
 const OverworldSceneRes = preload("res://src/exploration/OverworldScene.tscn")
 const CharacterCreationScreenClass = preload("res://src/ui/CharacterCreationScreen.gd")
 const CustomizationScript = preload("res://src/character/CharacterCustomization.gd")
@@ -37,7 +36,6 @@ const AbstractOverworldScript = preload("res://src/exploration/AbstractOverworld
 enum LoopState {
 	TITLE,
 	BATTLE,
-	MENU,
 	EXPLORATION,
 	AUTOGRIND,
 	CUTSCENE
@@ -93,7 +91,6 @@ var _controller_overlay_layer: CanvasLayer = null
 
 ## Character creation
 var _character_creation_screen: Control = null
-var _party_customizations: Array = []  # Store CharacterCustomization data
 var _first_launch: bool = true  # True if no save exists
 
 ## Title screen
@@ -117,6 +114,13 @@ func _ready() -> void:
 	_area_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_area_fade_rect.modulate.a = 0.0
 	_area_fade_layer.add_child(_area_fade_rect)
+
+	# Gamepad diagnostic overlay (F11)
+	var diag_layer = CanvasLayer.new()
+	diag_layer.layer = 99
+	add_child(diag_layer)
+	var diag = GamepadDiagnostic.new()
+	diag_layer.add_child(diag)
 
 	# Check for existing save to determine if this is first launch
 	_first_launch = not _save_exists()
@@ -626,7 +630,6 @@ func _show_character_creation() -> void:
 
 func _on_character_creation_complete(customizations: Array, layer: CanvasLayer) -> void:
 	"""Handle character creation completion"""
-	_party_customizations = customizations
 	print("[GAME] Character creation complete with %d characters" % customizations.size())
 
 	# Create party from customizations
@@ -867,35 +870,6 @@ func _create_party() -> void:
 	party.append(vex)
 
 
-func _start_battle() -> void:
-	"""Start a new battle"""
-	current_state = LoopState.BATTLE
-
-	# Remove old scene
-	if current_scene and is_instance_valid(current_scene):
-		current_scene.queue_free()
-		await current_scene.tree_exited
-
-	# Check if this is a miniboss battle (every 3rd battle)
-	var is_miniboss_battle = (battles_won + 1) % 3 == 0 and battles_won > 0
-
-	# Create battle scene
-	var battle_scene = BattleSceneRes.instantiate()
-
-	# Set flags and party BEFORE adding to tree (since _ready() uses these)
-	battle_scene.managed_by_game_loop = true  # Disable BattleScene's internal restart
-	battle_scene.set_party(party)  # MUST be before add_child so _ready() uses correct party
-	if is_miniboss_battle:
-		battle_scene.force_miniboss = true
-		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
-
-	add_child(battle_scene)
-	current_scene = battle_scene
-
-	# Connect to battle end
-	BattleManager.battle_ended.connect(_on_battle_ended, CONNECT_ONE_SHOT)
-
-
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	if victory:
@@ -932,32 +906,6 @@ func _wait_for_confirm() -> void:
 			break
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
-
-
-func _show_menu() -> void:
-	"""Show the between-battle menu"""
-	current_state = LoopState.MENU
-
-	# Remove battle scene
-	if current_scene and is_instance_valid(current_scene):
-		current_scene.queue_free()
-		await current_scene.tree_exited
-
-	# Create menu scene
-	var menu_scene = MenuSceneRes.instantiate()
-	add_child(menu_scene)
-	current_scene = menu_scene
-
-	# Setup menu with full party data
-	menu_scene.setup(party, battles_won)
-
-	# Connect signals
-	menu_scene.continue_pressed.connect(_on_continue_pressed)
-
-
-func _on_continue_pressed() -> void:
-	"""Handle continue from menu - return to exploration"""
-	_return_to_exploration()
 
 
 ## Exploration Management
@@ -1228,22 +1176,6 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		# No transition — load battle directly
 		await _start_battle_async(enemies, true)
 
-
-func _load_battle_behind_transition(enemies: Array) -> void:
-	"""Called at transition midpoint to instantiate battle scene behind the overlay.
-	The screen has been captured by this point, so we can safely hide the overworld."""
-	# Hide exploration scene now that the screenshot has been taken — the transition
-	# fragments/slices render on top; battle scene will render underneath them
-	if _exploration_scene and is_instance_valid(_exploration_scene):
-		_exploration_scene.visible = false
-
-	# Wait for threaded scene load to complete
-	print("[GAMELOOP] Midpoint: waiting for battle scene resource")
-	while ResourceLoader.load_threaded_get_status("res://src/battle/BattleScene.tscn") == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-		await get_tree().process_frame
-	print("[GAMELOOP] Midpoint: battle scene resource ready, instantiating")
-	await _start_battle_async(enemies, true)
-	print("[GAMELOOP] Midpoint: battle scene started behind transition")
 
 
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:

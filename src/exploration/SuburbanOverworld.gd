@@ -58,6 +58,7 @@ func _ready() -> void:
 	if mode7_enabled:
 		_mode7 = Mode7Overlay.new()
 		add_child(_mode7)
+		_mode7.apply_preset("suburban")
 		_mode7.setup(self, player)
 
 	# Start suburban overworld music
@@ -93,6 +94,10 @@ func _setup_effects() -> void:
 
 func _process(delta: float) -> void:
 	if _mode7:
+		var roaming = get_node_or_null("RoamingMonsters")
+		if roaming:
+			for child in roaming.get_children():
+				_mode7.register_billboard(child)
 		_mode7.process_frame()
 	_rain_timer += delta
 	if _rain_timer >= _rain_interval:

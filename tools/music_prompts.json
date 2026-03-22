@@ -263,6 +263,122 @@
       "title_template": "Serpent Strike",
       "style": "JRPG battle, slithering, C minor, sinuous melody, rattling percussion, tense coiling bass, 135 BPM",
       "prompt": "Sinuous slithering battle theme for fighting snakes, coiling bass line that winds and tightens, rattling shaker percussion like a rattlesnake warning, tense melodic line that strikes suddenly, the anxiety of facing something fast and venomous"
+    },
+
+    "boss_warden_medieval": {
+      "title_template": "Three Hundred Years",
+      "style": "SNES boss, weary orchestral, heavy low brass, measured tempo, medieval, solemn duty, 90 BPM",
+      "prompt": "Boss theme for an ancient knight who has held his post for 300 years out of pure duty, weary but unbreakable, heavy low brass carrying a melody that sounds like it has been playing forever, measured deliberate tempo like someone who fights the way they mow a field, no flashiness just granite patience, underlying kindness beneath the weight, the tragedy of a guardian who forgot why he guards but never stopped"
+    },
+    "boss_arbiter_medieval": {
+      "title_template": "The Honest Blade",
+      "style": "SNES boss, noble dueling theme, clean strings, precise percussion, fencing rhythm, D minor, 140 BPM",
+      "prompt": "Boss theme for an honorable duelist who believes combat reveals truth, elegant precise strings like crossed swords, clean percussion with a fencing rhythm, noble and direct, no deception in the melody — every note committed and honest, the beauty of someone who fights because commitment is the only thing that is real, mutual respect expressed through steel"
+    },
+    "boss_tempo_medieval": {
+      "title_template": "The Joyful Chase",
+      "style": "SNES boss, lively hunting theme, playful woodwinds, galloping percussion, pastoral energy, G major, 160 BPM",
+      "prompt": "Boss theme for a hunter who loves the chase more than the catch, lively galloping rhythm like running through forest, playful woodwind melody that darts and doubles back, sporting and fair, the joy of pursuit expressed as music, bright and alive, a tracker who would rather lose a good chase than win a boring one"
+    },
+    "boss_curator_medieval": {
+      "title_template": "The Scholar's Flame",
+      "style": "SNES boss, warm scholarly theme, gentle harp, curious woodwinds, light percussion, magic shimmer, 110 BPM",
+      "prompt": "Boss theme for a warm curious scholar-mage who guards a throne room and finds it slightly absurd, gentle harp arpeggios with curious wandering woodwind melody, light magical shimmer, the energy of someone who keeps stopping mid-fight to take notes, scholarly warmth mixed with genuine power, a flame that illuminates rather than burns"
+    },
+
+    "boss_warden_suburban": {
+      "title_template": "Crossing Guard",
+      "style": "EarthBound boss, suburban authority, whistle blasts, stop-start rhythm, uncanny, 100 BPM",
+      "prompt": "Boss theme for a crossing guard with inexplicable cosmic power who takes her job with terrifying sincerity, traffic whistle blasts as percussion, stop-start rhythm like traffic signals, cheerful suburban melody that becomes increasingly unhinged, the horror of mundane authority given monstrous weight, she has been at this corner longer than she can remember"
+    },
+    "boss_arbiter_suburban": {
+      "title_template": "Pop Quiz",
+      "style": "EarthBound boss, academic anxiety, school bell, scribbling sounds, nervous synth, absurdist, 120 BPM",
+      "prompt": "Boss theme for a substitute teacher who grades your combat performance with a clipboard, school bell tolling, anxious synth melody like test-taking dread, scratching pencil sounds woven into percussion, the specific terror of being evaluated by someone who genuinely believes feedback improves outcomes even while attacking you, absurd academic horror"
+    },
+    "boss_tempo_suburban": {
+      "title_template": "Thirty Minutes or Less",
+      "style": "EarthBound boss, manic delivery driver, bicycle bell, rushing synth, breathless energy, 180 BPM",
+      "prompt": "Boss theme for a delivery driver who has never missed a window and does not know why he is this fast, manic breathless energy at 180 BPM, bicycle bell and rushing wind sounds, synth melody that never stops moving, the desperate joy of someone who loves their job so much they haven't noticed the route never ends, EarthBound suburban weirdness at maximum velocity"
+    },
+    "boss_curator_suburban": {
+      "title_template": "Fiscal Audit",
+      "style": "EarthBound boss, bureaucratic horror, calculator beeps, draining synth, methodical, quietly terrifying, 95 BPM",
+      "prompt": "Boss theme for a tax auditor who drains your resources with fiscal compliance, slow methodical rhythm like spreadsheet calculations, calculator beeps and paper shuffling woven into percussion, a melody that sounds like hold music becoming sinister, quietly terrifying bureaucratic power, she has the numbers and the numbers have teeth"
+    },
+
+    "boss_warden_steampunk": {
+      "title_template": "847,293 Hours",
+      "style": "Steampunk boss, obsessive counting, ticking clock, heavy brass, grinding gears, mechanical dread, 3/4 waltz, 108 BPM",
+      "prompt": "Boss theme for a massive clockwork guardian who has counted every hour of his 847,293-hour watch and cannot stop counting, obsessive ticking clock underpinning heavy grinding brass, waltz rhythm that feels like a counting mechanism, the dread of a machine that knows its hours exceed the city's age but keeps counting anyway, fingers extending one-two-three one-two-three, mechanical loyalty past the point of meaning"
+    },
+    "boss_tempo_steampunk": {
+      "title_template": "Before the Dispatch",
+      "style": "Steampunk boss, panicked clockwork, stuttering rhythm, steam hiss, frightened mechanical, accelerating, 150 BPM",
+      "prompt": "Boss theme for a clockwork construct who arrives before she is dispatched and is scared of this, stuttering accelerating rhythm like a machine that flinches forward, steam hisses and gear clicks that arrive slightly too early, a melody that anticipates itself, the panic of something that was built to understand its own function perfectly discovering it no longer does, speed as flight not mastery"
+    },
+
+    "boss_warden_industrial": {
+      "title_template": "Awaiting Response",
+      "style": "Industrial boss, safety protocol, alarm tones, filing cabinet percussion, hollow authority, 100 BPM",
+      "prompt": "Boss theme for a factory robot who recites safety protocols and files incident reports that no one reads, hollow authoritative alarm tones, filing cabinet slamming as percussion, a melody built from safety announcements becoming increasingly desperate, 14,000 unanswered reports, the horror of institutional loyalty with no institution behind it, amber warning light that has been amber for a very long time"
+    },
+    "boss_arbiter_industrial": {
+      "title_template": "Classification Pending",
+      "style": "Industrial boss, condescending assessment, rating display sounds, precise mechanical, cold efficiency, 130 BPM",
+      "prompt": "Boss theme for a quality inspector who grades everything with condescension until she encounters something unclassifiable, precise mechanical rhythm with real-time rating display sounds, cold efficient melody that becomes increasingly uncertain, the specific panic of a measurement system encountering something outside its rubric for the first time, ACCEPTABLE SUBOPTIMAL UNDEFINED"
+    },
+    "boss_tempo_industrial": {
+      "title_template": "End of Shift",
+      "style": "Industrial boss, exhausted machine, punch clock, weary rhythm, depleted drone, slowing tempo, 110 BPM",
+      "prompt": "Boss theme for a punch-clock machine that has forgotten how to stop, exhausted weary rhythm like a depleted engine running on empty, punch clock stamps as percussion, a melody that sounds tired — not slow but drained, speed born from having nothing left heavy enough to decelerate, the tragedy of a thing that has been running shifts in places it cannot remember, yearning for rest it does not know the word for"
+    },
+    "boss_curator_industrial": {
+      "title_template": "Self-Referential Authority",
+      "style": "Industrial boss, circular audit, warm passive-aggressive, looping melody, filing sounds, 105 BPM",
+      "prompt": "Boss theme for a warm passive-aggressive auditor who discovered her own authority is self-referential and circular, a melody that loops back on itself like circular authorization, filing and sorting sounds as percussion, warmth that is genuine but also slightly insufferable, the satisfaction of someone who has followed the chain forty-seven times and finally decided to stop, gentle defiance expressed through deciding not to file"
+    },
+
+    "boss_warden_digital": {
+      "title_template": "Access Denied",
+      "style": "Digital boss, firewall, access control tones, rigid binary rhythm, exception handling, cyberpunk, 135 BPM",
+      "prompt": "Boss theme for a firewall who identifies himself by function name and line number, rigid binary rhythm — permission granted permission denied, access control authentication tones, a melody built from the concept of NO that suddenly encounters an exception it cannot catch, something surfacing from below the code that was not supposed to be reachable, the unyielding confidence of perfect security meeting the first thing it cannot classify"
+    },
+    "boss_arbiter_digital": {
+      "title_template": "UNDEFINED",
+      "style": "Digital boss, benchmark suite, diagnostic displays, spinning indicators, measurement collapse, glitch, 140 BPM",
+      "prompt": "Boss theme for a testing framework who measures everything until she encounters UNDEFINED for the first time, rapid diagnostic beeps and benchmark tickers as percussion, a confident analytical melody that starts breaking down mid-phrase, spinning loading indicator sound, the terror of an instrument encountering something outside its scale, displays stopping one by one, what am I for if I cannot measure you"
+    },
+    "boss_tempo_digital": {
+      "title_template": "60 Hertz Alone",
+      "style": "Digital boss, isolated clock cycle, 60hz pulse, lonely arpeggios, vast empty space between notes, ethereal, 120 BPM",
+      "prompt": "Boss theme for a timing function who has been running at 60hz alone since before anything else existed, a lonely arpeggio pulsing at precise intervals with vast empty digital space between each note, the isolation of existing in the gaps between clock cycles where nothing else operates, ethereal and melancholy, she has never been spoken to and does not know what conversation is, asking questions in intervals and silences"
+    },
+    "boss_curator_digital": {
+      "title_template": "Irreducible Memory",
+      "style": "Digital boss, garbage collector, memory allocation sounds, warm glitch, things that resist deletion, 100 BPM",
+      "prompt": "Boss theme for a garbage collector who cannot delete the party's memories because they resist deallocation, memory allocation and deallocation sounds as rhythm, warm glitchy melody — data that glows instead of releasing, the frustration and wonder of a function failing at its own job because the data is too important to discard, attempted deallocation — not releasing — attempted — not releasing, something kept that should have been collected"
+    },
+
+    "boss_warden_abstract": {
+      "title_template": ".",
+      "style": "Abstract boss, pure presence, drone, sustained tone, obstacle as sound, minimal, 60 BPM",
+      "prompt": "Boss theme for the concept of obstacle itself — pure presence with no hostility, a single sustained drone that simply IS, minimal and immovable, the sound of a wall encountered in a dream, not threatening but undeniably there, asking one question over and over in different tones: what are you trying to get to, the answer is in the silence between the notes"
+    },
+    "boss_arbiter_abstract": {
+      "title_template": "Why Do You Fight",
+      "style": "Abstract boss, existential interrogation, piano strikes as questions, weighted silence, philosophical, 80 BPM",
+      "prompt": "Boss theme for the concept of purpose asking why do you fight, each piano note is a question that requires a real answer, weighted silences between strikes that feel heavier than the notes, not an enemy theme but an exam delivered in person, damage that lands in the place where reasons live, the absence of a good reason makes the music hurt more, commitment is the only defense"
+    },
+    "boss_tempo_abstract": {
+      "title_template": "I Am Next",
+      "style": "Abstract boss, inevitability, approaching wave, inexorable pulse, no acceleration needed, tide rhythm, 70 BPM",
+      "prompt": "Boss theme for the concept of inevitability — not rushing because it does not need to, an inexorable pulse like a tide that approaches without accelerating, the sound of something that is always next in the turn order, patient not because it chooses patience but because it simply arrives when arrival is the next thing, a wave seen from very far away that you know exactly when will reach you"
+    },
+    "boss_curator_abstract": {
+      "title_template": "Everything Ends",
+      "style": "Abstract boss, entropy, fading frequencies, memory erosion, beauty dissolving, bittersweet, 50 BPM",
+      "prompt": "Boss theme for the concept of entropy and ending — sounds that lose specificity as they play, frequencies fading and details dissolving, a melody that starts vivid and becomes vague, the most insidious damage: making memories lose their texture, but underneath the erosion a counter-theme of things that are loved and refuse to fade, bittersweet and devastating, kept memories glowing against the dissolution"
     }
   }
 }

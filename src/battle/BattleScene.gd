@@ -17,6 +17,14 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
+const JOB_DISPLAY_HEIGHTS: Dictionary = {
+	"fighter": 375.0,
+	"cleric": 180.0,
+	"mage": 300.0,
+	"rogue": 300.0,
+	"bard": 300.0,
+}
+
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
 @onready var turn_info: Label = $UI/TurnInfoPanel/TurnInfo
@@ -640,13 +648,6 @@ func _create_battle_sprites() -> void:
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
 		# Tune these to align characters visually despite different art sizes within frames.
-		const JOB_DISPLAY_HEIGHTS: Dictionary = {
-			"fighter": 375.0,   # Artist sprite — character is small in 256x256 frame
-			"cleric": 180.0,    # SDXL sprite — character fills entire frame, scale way down
-			"mage": 300.0,
-			"rogue": 300.0,
-			"bard": 300.0,
-		}
 		var target_height = JOB_DISPLAY_HEIGHTS.get(job_id, 300.0)
 
 		# Auto-scale based on frame height and per-job target
@@ -829,75 +830,6 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	sprite.add_child(label)
-
-
-func _create_character_sprite(color: Color, label: String) -> Sprite2D:
-	"""Create a placeholder character sprite with 12-bit aesthetic"""
-	var sprite = Sprite2D.new()
-
-	# Create a simple colored sprite placeholder
-	var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Draw character silhouette (simple rectangle for now)
-	for y in range(10, 60):
-		for x in range(20, 44):
-			var c = color
-			# Add simple shading
-			if x < 24 or y < 15:
-				c = color.lightened(0.2)
-			elif x > 38 or y > 50:
-				c = color.darkened(0.2)
-			img.set_pixel(x, y, c)
-
-	# Add label
-	var texture = ImageTexture.create_from_image(img)
-	sprite.texture = texture
-	sprite.centered = true
-
-	# Add label below sprite
-	var label_node = Label.new()
-	label_node.text = label
-	label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label_node.position = Vector2(-32, 35)
-	sprite.add_child(label_node)
-
-	return sprite
-
-
-func _create_enemy_sprite(color: Color, label: String) -> Sprite2D:
-	"""Create a placeholder enemy sprite"""
-	var sprite = Sprite2D.new()
-
-	# Create enemy sprite (blob-like for slime)
-	var img = Image.create(80, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Draw blob shape
-	for y in range(20, 55):
-		for x in range(15, 65):
-			var dist_from_center = sqrt(pow(x - 40, 2) + pow(y - 37, 2))
-			if dist_from_center < 22:
-				var c = color
-				# Gradient shading
-				if y < 30:
-					c = color.lightened(0.3)
-				elif y > 45:
-					c = color.darkened(0.3)
-				img.set_pixel(x, y, c)
-
-	var texture = ImageTexture.create_from_image(img)
-	sprite.texture = texture
-	sprite.centered = true
-
-	# Add label
-	var label_node = Label.new()
-	label_node.text = label
-	label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label_node.position = Vector2(-40, 35)
-	sprite.add_child(label_node)
-
-	return sprite
 
 
 func _update_ui() -> void:
@@ -2061,13 +1993,16 @@ func _on_party_ap_changed(old_value: int, new_value: int, member_idx: int) -> vo
 	_update_ui()
 
 
-# Legacy aliases for backwards compatibility
-func _on_player_hp_changed(old_value: int, new_value: int) -> void:
-	_on_party_hp_changed(old_value, new_value, 0)
+func _on_summon_hp_changed(enemy: Combatant, old_value: int, new_value: int) -> void:
+	var idx = test_enemies.find(enemy)
+	if idx >= 0:
+		_on_enemy_hp_changed(old_value, new_value, idx)
 
 
-func _on_player_ap_changed(old_value: int, new_value: int) -> void:
-	_on_party_ap_changed(old_value, new_value, 0)
+func _on_summon_died(enemy: Combatant) -> void:
+	var idx = test_enemies.find(enemy)
+	if idx >= 0:
+		_on_enemy_died(idx)
 
 
 func _on_enemy_hp_changed(old_value: int, new_value: int, enemy_idx: int) -> void:
@@ -2317,6 +2252,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 
 	# Animate: scale up from 0, hold, then fade out
 	one_shot_label.scale = Vector2(0.1, 0.1)
+	await get_tree().process_frame
 	one_shot_label.pivot_offset = one_shot_label.size / 2
 	rank_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -2419,6 +2355,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 
 	# Animate: scale-in, hold, fade out (no delay — shows simultaneously with one-shot)
 	auto_label.scale = Vector2(0.1, 0.1)
+	await get_tree().process_frame
 	auto_label.pivot_offset = auto_label.size / 2
 	turns_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -2505,10 +2442,10 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	for resistance in monster_data.get("resistances", []):
 		enemy.elemental_resistances.append(resistance)
 
-	# Find a position for the new enemy
+	# Bind signals using enemy reference — find index at call time to avoid stale index
+	enemy.hp_changed.connect(func(old_val, new_val): _on_summon_hp_changed(enemy, old_val, new_val))
+	enemy.died.connect(func(): _on_summon_died(enemy))
 	var new_idx = test_enemies.size()
-	enemy.hp_changed.connect(_on_enemy_hp_changed.bind(new_idx))
-	enemy.died.connect(_on_enemy_died.bind(new_idx))
 
 	test_enemies.append(enemy)
 

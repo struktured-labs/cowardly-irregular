@@ -1528,6 +1528,406 @@
           "end": 7
         }
       }
+    },
+    "masterite_warden_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_arbiter_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_tempo_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_curator_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_curator_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_warden_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_arbiter_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_tempo_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_curator_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_warden_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_arbiter_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_tempo_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_curator_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_warden_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_arbiter_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_tempo_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "masterite_curator_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      }
     }
   }
 }

@@ -5,41 +5,41 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 ### Tier 1: Critical Bugs
 1. DONE — SaveSystem now finds OverworldPlayer via "player" group instead of nonexistent PlayerController. Player position actually saves now.
 2. DONE — Escape emits battle_ended with `"escaped"` result directly instead of calling end_battle(false) defeat path.
-3. `src/battle/BattleManager.gd:351-353` — `time_distortion` permanently mutates `enemy.speed` each round (compounds multiplicatively). Save base_speed before first mutation, reset each round.
-4. `src/battle/BattleManager.gd:992` — Double `_get_alive_enemies()` call on one line. Store in local var.
-5. `src/battle/BattleScene.gd:2495-2497` — Summoned enemy signal binds use stale index. Use enemy reference directly instead of array index.
-6. `src/battle/BattleScene.gd:2306,2408` — `pivot_offset = label.size / 2` reads size before layout. Defer to next frame or use `resized` signal.
+3. DONE — `time_distortion` now stores original speed in `_base_speed` metadata on first mutation, reads from it each round instead of compounding.
+4. DONE — Double `_get_alive_enemies()` call replaced with single local var.
+5. DONE — Summoned enemy signals now use lambda closures that look up index via `test_enemies.find(enemy)` at call time instead of binding stale index.
+6. DONE — `pivot_offset = label.size / 2` now deferred with `await get_tree().process_frame` so Control has valid size.
 
 ### Tier 2: Dead Code Removal
-7. `src/GameLoop.gd` — Remove dead `_start_battle()` (sync version, line ~819), dead `_show_menu()`/`LoopState.MENU` (line ~886), dead `_load_battle_behind_transition()` (line ~1181), unused vars (`_autogrind_dashboard`, `_autogrind_overlay`, `_autogrind_overlay_layer`, `_controller_overlay`, `_controller_overlay_layer`, `_party_customizations`).
-8. `src/autobattle/AutobattleSystem.gd` — Remove ~900 lines of dead legacy execution pipeline (`execute_autobattle`, `_evaluate_rule`, `_evaluate_condition`, `_compare`, `_rule_to_action`, `_action_type_to_string`, `_get_target_for_rule`, the `ConditionType`/`CompareOp`/`ActionType` enums, `saved_scripts`/`save_script`/`load_script`). Only `execute_grid_autobattle` is used.
-9. `src/battle/BattleScene.gd` — Remove dead `_create_character_sprite` (~line 831) and `_create_enemy_sprite` (~line 870). Remove dead `_on_player_hp_changed`/`_on_player_ap_changed` legacy aliases (~line 2053).
-10. Delete 3 dead files: `src/ui/VirtualGamepad.gd`, `src/battle/AdaptiveAI.gd`, `src/exploration/OverworldInteractable.gd`.
-11. `src/exploration/OverworldPlayer.gd` — Remove dead `walk_frames` building code in `_try_load_artist_sprites` (frames are built but cache only uses idle_frames).
-12. `src/maps/MapSystem.gd` — The entire transition system (`load_map`, `transition_to_map`, `unload_current_map`, `enter_location`, `exit_location`) is never called from GameLoop. Either wire it in or mark as future/remove.
+7. DONE — Removed dead `_start_battle()` sync version, `_show_menu()`/`LoopState.MENU`, `_on_continue_pressed()`, `_load_battle_behind_transition()`, `MenuSceneRes` preload, `_party_customizations` var. Kept autogrind dashboard/overlay/controller overlay (actually used by autogrind system).
+8. SKIPPED — Legacy pipeline functions are actually used by `create_default_character_script` and default script builders. Not dead code.
+9. DONE — Removed dead `_create_character_sprite`, `_create_enemy_sprite`, `_on_player_hp_changed`, `_on_player_ap_changed` from BattleScene.
+10. DONE — Deleted VirtualGamepad.gd (also removed autoload), AdaptiveAI.gd, OverworldInteractable.gd.
+11. DONE — Sprite agent already replaced `_try_load_artist_sprites` with `_try_build_artist_sprites` which has no dead walk_frames code.
+12. SKIPPED — MapSystem.load_map is called from SaveSystem on game load. Transition functions are partially live.
 
 ### Tier 3: Architecture Improvements
 13. Extract village base class — 10 village scripts share ~150 lines of identical boilerplate (`_setup_scene`, `_setup_camera`, `_setup_controller`, `_setup_transition_collision`, `spawn_player_at`, `resume`, `pause`, `set_player_job`, `set_player_appearance`). Create `BaseVillage.gd` and refactor.
 14. Consolidate border constants — `BORDER_LIGHT`/`BORDER_SHADOW` duplicated in 10+ files. Move to `RetroPanel.gd` as class constants, reference from menus.
-15. `src/ui/RetroFont.gd` — Remove dead `apply_retro_theme()` and `generate_bitmap_font_texture()`.
-16. `src/battle/BattleScene.gd` — Move `JOB_DISPLAY_HEIGHTS` from function-level const to class-level const.
-17. `src/GameState.gd` — Remove or gate dead Time Mage rewind infrastructure, dead `macro_volatility`, dead parallel save system (`save_game`/`load_game`/`get_save_list`/`delete_save`).
+15. DONE — Removed dead `apply_retro_theme()`, `generate_bitmap_font_texture()`, `_draw_character()`, `_get_character_patterns()` (~125 lines).
+16. DONE — Moved `JOB_DISPLAY_HEIGHTS` from function-level to class-level const.
+17. DONE — Removed dead parallel save system (`save_game`/`load_game`/`get_save_list`/`delete_save`). Kept rewind infrastructure (used by BattleManager) and macro_volatility (used by VolatilitySystem).
 
 ### Tier 4: Performance
-18. `src/battle/BattleScene.gd` — `_check_danger_music()` runs every frame in `_process`. Move to event-driven (call from `_on_party_hp_changed` only).
-19. `src/exploration/AreaTransition.gd` — 11+ instances all call `queue_redraw()` every frame. Use `set_process(false)` when off-screen or use a shared timer.
-20. `src/battle/BattleScene.gd` — `_process_idle_animations` calls `is_instance_valid` on every sprite every frame. Cache valid sprite list, update only on spawn/death.
-21. `src/ui/autogrind/AutogrindDashboard.gd:176-197` — CRT scanline overlay spawns ~120 ColorRect nodes. Replace with shader or single `_draw()` call.
-22. `src/exploration/OverworldScene.gd` — `_update_encounter_zone` tile division runs every frame even when player is still. Add `_last_tile_pos` guard.
+18. DONE — `_check_danger_music` already removed/refactored in earlier work.
+19. DONE — AreaTransition queue_redraw throttled to every 0.1s instead of every frame.
+20. SKIPPED — _process_idle_animations already guards with is_instance_valid, O(n) over 8 sprites, not a hotspot.
+21. TODO — CRT scanline ColorRects are one-time spawn cost, not per-frame. Shader replacement deferred.
+22. DONE — `_update_encounter_zone` now skips when player hasn't moved to a new tile (`_last_tile_pos` guard).
 
 ### Tier 5: Polish
-23. `src/audio/SoundManager.gd:344` — `_generate_double_blip()` never pushes audio frames. Fix or remove.
-24. `src/exploration/OverworldScene.gd` — Mode 7 overlay sprite position hardcoded `(640, 400)`. Make viewport-relative.
-25. `src/ui/OverworldMenu.gd:639` — Settings menu uses `load()` instead of `preload()`. Change to preload.
-26. `src/jobs/PassiveSystem.gd:341` — `can_equip_passive` restriction check never called. Wire into `equip_passive`.
-27. `src/save/SaveSystem.gd:331` — `_serialize_inventory` is a stub. Implement or document as TODO.
-28. Consolidate duplicate `_input` handlers in `AutogrindMonitor.gd` and `AutogrindDashboard.gd` into shared base/utility.
-29. Delete redundant sprite gen scripts in `tools/` (keep only `gen_fighter_walk_release.py`, remove 6 others).
+23. DONE — `_generate_double_blip()` fixed: added missing `push_frame()` call and fixed integer division.
+24. DONE — Mode 7 overlay sprite position now viewport-relative (`viewport_size / 2, viewport_size * 0.75`).
+25. DONE — SettingsMenu changed from runtime `load()` to `preload()` class constant.
+26. DONE — `equip_passive` now calls `can_equip_passive` as gate instead of duplicating logic.
+27. DONE — `_serialize_inventory` stub marked with proper TODO.
+28. TODO — Autogrind duplicate `_input` handlers are short and harmless, base class extraction deferred.
+29. DONE — Deleted 6 redundant `gen_fighter_walk*.py` scripts, kept `gen_fighter_walk_release.py`.
 
 ## Rules
 - Fix ONE item per cycle (or a small related cluster)

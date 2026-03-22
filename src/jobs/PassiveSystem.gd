@@ -238,18 +238,17 @@ func _create_default_passives() -> void:
 ## Passive management
 func equip_passive(combatant: Combatant, passive_id: String) -> bool:
 	"""Equip a passive to a combatant"""
-	if not combatant or not is_instance_valid(combatant):
-		return false
-	if not passives.has(passive_id):
-		print("Error: Passive '%s' not found" % passive_id)
-		return false
-
-	if combatant.equipped_passives.size() >= combatant.max_passive_slots:
-		print("Error: No passive slots available")
-		return false
-
-	if passive_id in combatant.equipped_passives:
-		print("Error: Passive already equipped")
+	if not can_equip_passive(combatant, passive_id):
+		if not combatant or not is_instance_valid(combatant):
+			print("Error: Invalid combatant")
+		elif not passives.has(passive_id):
+			print("Error: Passive '%s' not found" % passive_id)
+		elif combatant.equipped_passives.size() >= combatant.max_passive_slots:
+			print("Error: No passive slots available")
+		elif passive_id in combatant.equipped_passives:
+			print("Error: Passive already equipped")
+		else:
+			print("Error: Cannot equip passive '%s'" % passive_id)
 		return false
 
 	combatant.equipped_passives.append(passive_id)

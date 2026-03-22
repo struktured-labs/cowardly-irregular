@@ -1,6 +1,8 @@
 extends Control
 class_name OverworldMenu
 
+const SettingsMenuScript = preload("res://src/ui/SettingsMenu.gd")
+
 ## Overworld Menu - Standard JRPG pause menu
 ## Shows party stats on left, menu options on right
 ## Triggered by X button on overworld
@@ -637,7 +639,6 @@ func _on_load_completed(_slot: int) -> void:
 func _open_settings() -> void:
 	"""Open the settings submenu"""
 	_submenu_open = true
-	var SettingsMenuScript = load("res://src/ui/SettingsMenu.gd")
 	if SettingsMenuScript:
 		var settings = SettingsMenuScript.new()
 		settings.set_anchors_preset(Control.PRESET_FULL_RECT)

@@ -1,15 +1,14 @@
 shader_type canvas_item;
 
-// Real SNES Mode 7: lambda = 1/h perspective
-// X: 1/h scaling (center crop at bottom, full width at top)
-// Y: ln(h) mapping keeps tiles SQUARE at all depths
-// Above perspective limit: pure fog (no clamped sampling artifacts)
-
 uniform sampler2D screen_tex : hint_screen_texture, filter_nearest;
 uniform float horizon : hint_range(0.0, 0.5) = 0.0;
-uniform float near_scale : hint_range(0.05, 0.5) = 0.12;
-uniform float ground_y : hint_range(0.3, 0.95) = 0.59;
-uniform float curvature : hint_range(0.0, 0.2) = 0.02;
+uniform float near_scale : hint_range(0.05, 0.5) = 0.22;
+uniform float ground_y : hint_range(0.3, 0.95) = 0.52;
+uniform float curvature : hint_range(0.0, 0.2) = 0.01;
+// Camera rotation now driven by Camera2D.rotation instead of UV-space rotation.
+// This eliminates texture sampling degradation past ~180 degrees.
+// Kept as uniform for optional effects (wobble, shake) but not used for main yaw.
+uniform float world_rotation = 0.0;
 uniform vec4 sky_top : source_color = vec4(0.25, 0.35, 0.65, 1.0);
 uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);
 uniform vec4 fog_color : source_color = vec4(0.50, 0.60, 0.78, 1.0);
@@ -24,22 +23,24 @@ void fragment() {
 		float sky_t = uv.y / max(horizon, 0.001);
 		result = mix(sky_top, sky_bottom, sky_t);
 	} else if (h_raw < near_scale) {
-		// Above perspective limit: pure fog (avoids clamped-sampling streaks)
 		result = fog_color;
 	} else {
-		float h = h_raw;
+		float h = max(h_raw, 0.001);
 
-		// X: real 1/h perspective
 		float x_width = near_scale / h;
 		float depth = 1.0 - h;
 		float planet = 1.0 - curvature * depth * depth;
 		float sx = (uv.x - 0.5) * x_width * planet + 0.5;
 
-		// Y: ln(h) keeps tiles square
-		float sy = ground_y + near_scale * log(h);
+		float sy = ground_y + near_scale * log(max(h, 0.001));
 
-		float edge_x = smoothstep(0.0, 0.015, sx) * smoothstep(1.0, 0.985, sx);
-		float edge_y = smoothstep(0.0, 0.015, sy);
+		// Camera yaw is now driven by Camera2D.rotation — no UV rotation needed.
+		// This fixes texture sampling degradation past ~180 degrees.
+
+		// Wider edge softness to prevent harsh lines during camera rotation
+		float edge_margin = 0.06;
+		float edge_x = smoothstep(0.0, edge_margin, sx) * smoothstep(1.0, 1.0 - edge_margin, sx);
+		float edge_y = smoothstep(0.0, edge_margin, sy) * smoothstep(1.0, 1.0 - edge_margin, sy);
 		float edge = edge_x * edge_y;
 
 		vec2 sample_uv = clamp(vec2(sx, sy), vec2(0.0), vec2(1.0));
@@ -47,7 +48,6 @@ void fragment() {
 
 		result = mix(fog_color, tex, edge);
 
-		// Smooth transition: fade terrain into fog near the perspective limit
 		float fade_zone = near_scale * 0.5;
 		if (h_raw < near_scale + fade_zone) {
 			float t = (h_raw - near_scale) / fade_zone;

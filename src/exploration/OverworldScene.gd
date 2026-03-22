@@ -37,6 +37,7 @@ var spawn_points: Dictionary = {}
 
 ## Current encounter zone
 var _current_zone: String = "central"
+var _last_tile_pos: Vector2i = Vector2i(-1, -1)
 
 ## Mode 7 perspective
 var mode7_enabled: bool = true
@@ -55,6 +56,7 @@ func _ready() -> void:
 	if mode7_enabled:
 		_mode7 = Mode7Overlay.new()
 		add_child(_mode7)
+		_mode7.apply_preset("medieval")
 		_mode7.setup(self, player)
 
 	if SoundManager:
@@ -67,6 +69,11 @@ func _process(_delta: float) -> void:
 	if player:
 		_update_encounter_zone(player.position)
 	if _mode7:
+		# Register roaming monsters as billboards (deduplicates automatically)
+		var roaming = get_node_or_null("RoamingMonsters")
+		if roaming:
+			for child in roaming.get_children():
+				_mode7.register_billboard(child)
 		_mode7.process_frame()
 
 
@@ -224,8 +231,8 @@ func _generate_map() -> void:
 
 	print("Tile counts: ", tile_counts)
 
-	# Default spawn point (near Harmonia village)
-	spawn_points["default"] = spawn_points.get("village_entrance", Vector2(MAP_WIDTH / 2 * TILE_SIZE, MAP_HEIGHT / 2 * TILE_SIZE))
+	# Default spawn: central grassland (column 40, row 25 — clear of water)
+	spawn_points["default"] = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _register_spawn_point(char: String, x: int, y: int) -> void:
@@ -390,9 +397,11 @@ func _setup_monster_spawner() -> void:
 
 ## Regional encounter zones based on player position
 func _update_encounter_zone(pos: Vector2) -> void:
-	var tile_x = int(pos.x / TILE_SIZE)
-	var tile_y = int(pos.y / TILE_SIZE)
-	var new_zone = _get_zone_for_tile(tile_x, tile_y)
+	var tile_pos = Vector2i(int(pos.x / TILE_SIZE), int(pos.y / TILE_SIZE))
+	if tile_pos == _last_tile_pos:
+		return
+	_last_tile_pos = tile_pos
+	var new_zone = _get_zone_for_tile(tile_pos.x, tile_pos.y)
 	if new_zone != _current_zone:
 		_current_zone = new_zone
 		_apply_zone_encounters(new_zone)

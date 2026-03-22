@@ -11,7 +11,8 @@
       "model": "suno-v4",
       "duration": 197.88,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_medieval": {
       "file": "assets/audio/music/village_medieval.ogg",
@@ -23,7 +24,8 @@
       "model": "suno-v4",
       "duration": 243.04,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_medieval": {
       "file": "assets/audio/music/battle_medieval.ogg",
@@ -35,7 +37,8 @@
       "model": "suno-v4",
       "duration": 128.4,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "dungeon_medieval": {
       "file": "assets/audio/music/dungeon_medieval.ogg",
@@ -47,7 +50,8 @@
       "model": "suno-v4",
       "duration": 119.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_medieval": {
       "file": "assets/audio/music/boss_medieval.ogg",
@@ -59,7 +63,8 @@
       "model": "suno-v4",
       "duration": 147.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_suburban": {
       "file": "assets/audio/music/overworld_suburban.ogg",
@@ -71,7 +76,8 @@
       "model": "suno-v4",
       "duration": 240.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_suburban": {
       "file": "assets/audio/music/village_suburban.ogg",
@@ -83,7 +89,8 @@
       "model": "suno-v4",
       "duration": 207.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_steampunk": {
       "file": "assets/audio/music/overworld_steampunk.ogg",
@@ -95,7 +102,8 @@
       "model": "suno-v4",
       "duration": 109.88,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_steampunk": {
       "file": "assets/audio/music/boss_steampunk.ogg",
@@ -107,7 +115,8 @@
       "model": "suno-v4",
       "duration": 94.48,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_digital": {
       "file": "assets/audio/music/village_digital.ogg",
@@ -119,7 +128,8 @@
       "model": "suno-v4",
       "duration": 142.16,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_suburban": {
       "file": "assets/audio/music/battle_suburban.ogg",
@@ -131,7 +141,8 @@
       "model": "suno-v4",
       "duration": 124.92,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_suburban": {
       "file": "assets/audio/music/boss_suburban.ogg",
@@ -143,7 +154,8 @@
       "model": "suno-v4",
       "duration": 163.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_steampunk": {
       "file": "assets/audio/music/village_steampunk.ogg",
@@ -155,7 +167,8 @@
       "model": "suno-v4",
       "duration": 86.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_steampunk": {
       "file": "assets/audio/music/battle_steampunk.ogg",
@@ -167,7 +180,8 @@
       "model": "suno-v4",
       "duration": 148.96,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_industrial": {
       "file": "assets/audio/music/overworld_industrial.ogg",
@@ -179,7 +193,8 @@
       "model": "suno-v4",
       "duration": 134.8,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_industrial": {
       "file": "assets/audio/music/village_industrial.ogg",
@@ -191,7 +206,8 @@
       "model": "suno-v4",
       "duration": 159.52,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_industrial": {
       "file": "assets/audio/music/battle_industrial.ogg",
@@ -203,7 +219,8 @@
       "model": "suno-v4",
       "duration": 136.2,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_industrial": {
       "file": "assets/audio/music/boss_industrial.ogg",
@@ -215,7 +232,8 @@
       "model": "suno-v4",
       "duration": 144.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_digital": {
       "file": "assets/audio/music/overworld_digital.ogg",
@@ -227,7 +245,8 @@
       "model": "suno-v4",
       "duration": 147.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_digital": {
       "file": "assets/audio/music/battle_digital.ogg",
@@ -239,7 +258,8 @@
       "model": "suno-v4",
       "duration": 136.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_digital": {
       "file": "assets/audio/music/boss_digital.ogg",
@@ -251,7 +271,8 @@
       "model": "suno-v4",
       "duration": 157.2,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_abstract": {
       "file": "assets/audio/music/overworld_abstract.ogg",
@@ -263,7 +284,8 @@
       "model": "suno-v4",
       "duration": 133.76,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_abstract": {
       "file": "assets/audio/music/village_abstract.ogg",
@@ -275,7 +297,8 @@
       "model": "suno-v4",
       "duration": 146.56,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_abstract": {
       "file": "assets/audio/music/battle_abstract.ogg",
@@ -287,7 +310,8 @@
       "model": "suno-v4",
       "duration": 90.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "boss_abstract": {
       "file": "assets/audio/music/boss_abstract.ogg",
@@ -299,7 +323,8 @@
       "model": "suno-v4",
       "duration": 224.96,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "victory": {
       "file": "assets/audio/music/victory.ogg",
@@ -311,7 +336,8 @@
       "model": "suno-v4",
       "duration": 74.12,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "game_over": {
       "file": "assets/audio/music/game_over.ogg",
@@ -323,7 +349,8 @@
       "model": "suno-v4",
       "duration": 101.56,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "title": {
       "file": "assets/audio/music/title.ogg",
@@ -335,7 +362,8 @@
       "model": "suno-v4",
       "duration": 171.48,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger": {
       "file": "assets/audio/music/danger.ogg",
@@ -347,7 +375,8 @@
       "model": "suno-v4",
       "duration": 40.8,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "autogrind": {
       "file": "assets/audio/music/autogrind.ogg",
@@ -359,7 +388,8 @@
       "model": "suno-v4",
       "duration": 213.64,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_medieval": {
       "file": "assets/audio/music/danger_medieval.ogg",
@@ -371,7 +401,8 @@
       "model": "suno-v4",
       "duration": 152.36,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_suburban": {
       "file": "assets/audio/music/danger_suburban.ogg",
@@ -383,7 +414,8 @@
       "model": "suno-v4",
       "duration": 32.4,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_steampunk": {
       "file": "assets/audio/music/danger_steampunk.ogg",
@@ -395,7 +427,8 @@
       "model": "suno-v4",
       "duration": 84.88,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_industrial": {
       "file": "assets/audio/music/danger_industrial.ogg",
@@ -407,7 +440,8 @@
       "model": "suno-v4",
       "duration": 152.68,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_digital": {
       "file": "assets/audio/music/danger_digital.ogg",
@@ -419,7 +453,8 @@
       "model": "suno-v4",
       "duration": 127.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "danger_abstract": {
       "file": "assets/audio/music/danger_abstract.ogg",
@@ -431,7 +466,8 @@
       "model": "suno-v4",
       "duration": 95.24,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_slime": {
       "file": "assets/audio/music/battle_slime.ogg",
@@ -443,7 +479,8 @@
       "model": "suno-v4",
       "duration": 49.68,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_bat": {
       "file": "assets/audio/music/battle_bat.ogg",
@@ -455,7 +492,8 @@
       "model": "suno-v4",
       "duration": 159.96,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_mushroom": {
       "file": "assets/audio/music/battle_mushroom.ogg",
@@ -467,7 +505,8 @@
       "model": "suno-v4",
       "duration": 124.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_imp": {
       "file": "assets/audio/music/battle_imp.ogg",
@@ -479,7 +518,8 @@
       "model": "suno-v4",
       "duration": 142.52,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_goblin": {
       "file": "assets/audio/music/battle_goblin.ogg",
@@ -491,7 +531,8 @@
       "model": "suno-v4",
       "duration": 177.28,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_skeleton": {
       "file": "assets/audio/music/battle_skeleton.ogg",
@@ -503,7 +544,8 @@
       "model": "suno-v4",
       "duration": 107.6,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_wolf": {
       "file": "assets/audio/music/battle_wolf.ogg",
@@ -515,7 +557,8 @@
       "model": "suno-v4",
       "duration": 158.08,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_ghost": {
       "file": "assets/audio/music/battle_ghost.ogg",
@@ -527,7 +570,8 @@
       "model": "suno-v4",
       "duration": 123.32,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "battle_snake": {
       "file": "assets/audio/music/battle_snake.ogg",
@@ -539,7 +583,272 @@
       "model": "suno-v4",
       "duration": 162.56,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
+    },
+    "boss_warden_medieval": {
+      "file": "assets/audio/music/boss_warden_medieval.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Three Hundred Years",
+      "prompt": "Boss theme for an ancient knight who has held his post for 300 years out of pure duty, weary but unbreakable, heavy low brass carrying a melody that sounds like it has been playing forever, measured deliberate tempo like someone who fights the way they mow a field, no flashiness just granite patience, underlying kindness beneath the weight, the tragedy of a guardian who forgot why he guards but never stopped",
+      "style": "SNES boss, weary orchestral, heavy low brass, measured tempo, medieval, solemn duty, 90 BPM",
+      "model": "suno-v4",
+      "duration": 140.88,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_arbiter_medieval": {
+      "file": "assets/audio/music/boss_arbiter_medieval.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Honest Blade",
+      "prompt": "Boss theme for an honorable duelist who believes combat reveals truth, elegant precise strings like crossed swords, clean percussion with a fencing rhythm, noble and direct, no deception in the melody \u2014 every note committed and honest, the beauty of someone who fights because commitment is the only thing that is real, mutual respect expressed through steel",
+      "style": "SNES boss, noble dueling theme, clean strings, precise percussion, fencing rhythm, D minor, 140 BPM",
+      "model": "suno-v4",
+      "duration": 199.96,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_tempo_medieval": {
+      "file": "assets/audio/music/boss_tempo_medieval.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Joyful Chase",
+      "prompt": "Boss theme for a hunter who loves the chase more than the catch, lively galloping rhythm like running through forest, playful woodwind melody that darts and doubles back, sporting and fair, the joy of pursuit expressed as music, bright and alive, a tracker who would rather lose a good chase than win a boring one",
+      "style": "SNES boss, lively hunting theme, playful woodwinds, galloping percussion, pastoral energy, G major, 160 BPM",
+      "model": "suno-v4",
+      "duration": 81.64,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_curator_medieval": {
+      "file": "assets/audio/music/boss_curator_medieval.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Scholar's Flame",
+      "prompt": "Boss theme for a warm curious scholar-mage who guards a throne room and finds it slightly absurd, gentle harp arpeggios with curious wandering woodwind melody, light magical shimmer, the energy of someone who keeps stopping mid-fight to take notes, scholarly warmth mixed with genuine power, a flame that illuminates rather than burns",
+      "style": "SNES boss, warm scholarly theme, gentle harp, curious woodwinds, light percussion, magic shimmer, 110 BPM",
+      "model": "suno-v4",
+      "duration": 94.76,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_warden_suburban": {
+      "file": "assets/audio/music/boss_warden_suburban.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Crossing Guard",
+      "prompt": "Boss theme for a crossing guard with inexplicable cosmic power who takes her job with terrifying sincerity, traffic whistle blasts as percussion, stop-start rhythm like traffic signals, cheerful suburban melody that becomes increasingly unhinged, the horror of mundane authority given monstrous weight, she has been at this corner longer than she can remember",
+      "style": "EarthBound boss, suburban authority, whistle blasts, stop-start rhythm, uncanny, 100 BPM",
+      "model": "suno-v4",
+      "duration": 124.8,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_arbiter_suburban": {
+      "file": "assets/audio/music/boss_arbiter_suburban.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Pop Quiz",
+      "prompt": "Boss theme for a substitute teacher who grades your combat performance with a clipboard, school bell tolling, anxious synth melody like test-taking dread, scratching pencil sounds woven into percussion, the specific terror of being evaluated by someone who genuinely believes feedback improves outcomes even while attacking you, absurd academic horror",
+      "style": "EarthBound boss, academic anxiety, school bell, scribbling sounds, nervous synth, absurdist, 120 BPM",
+      "model": "suno-v4",
+      "duration": 122.44,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_tempo_suburban": {
+      "file": "assets/audio/music/boss_tempo_suburban.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Thirty Minutes or Less",
+      "prompt": "Boss theme for a delivery driver who has never missed a window and does not know why he is this fast, manic breathless energy at 180 BPM, bicycle bell and rushing wind sounds, synth melody that never stops moving, the desperate joy of someone who loves their job so much they haven't noticed the route never ends, EarthBound suburban weirdness at maximum velocity",
+      "style": "EarthBound boss, manic delivery driver, bicycle bell, rushing synth, breathless energy, 180 BPM",
+      "model": "suno-v4",
+      "duration": 103.32,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_curator_suburban": {
+      "file": "assets/audio/music/boss_curator_suburban.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Fiscal Audit",
+      "prompt": "Boss theme for a tax auditor who drains your resources with fiscal compliance, slow methodical rhythm like spreadsheet calculations, calculator beeps and paper shuffling woven into percussion, a melody that sounds like hold music becoming sinister, quietly terrifying bureaucratic power, she has the numbers and the numbers have teeth",
+      "style": "EarthBound boss, bureaucratic horror, calculator beeps, draining synth, methodical, quietly terrifying, 95 BPM",
+      "model": "suno-v4",
+      "duration": 59.96,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_warden_steampunk": {
+      "file": "assets/audio/music/boss_warden_steampunk.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "847,293 Hours",
+      "prompt": "Boss theme for a massive clockwork guardian who has counted every hour of his 847,293-hour watch and cannot stop counting, obsessive ticking clock underpinning heavy grinding brass, waltz rhythm that feels like a counting mechanism, the dread of a machine that knows its hours exceed the city's age but keeps counting anyway, fingers extending one-two-three one-two-three, mechanical loyalty past the point of meaning",
+      "style": "Steampunk boss, obsessive counting, ticking clock, heavy brass, grinding gears, mechanical dread, 3/4 waltz, 108 BPM",
+      "model": "suno-v4",
+      "duration": 94.64,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_tempo_steampunk": {
+      "file": "assets/audio/music/boss_tempo_steampunk.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Before the Dispatch",
+      "prompt": "Boss theme for a clockwork construct who arrives before she is dispatched and is scared of this, stuttering accelerating rhythm like a machine that flinches forward, steam hisses and gear clicks that arrive slightly too early, a melody that anticipates itself, the panic of something that was built to understand its own function perfectly discovering it no longer does, speed as flight not mastery",
+      "style": "Steampunk boss, panicked clockwork, stuttering rhythm, steam hiss, frightened mechanical, accelerating, 150 BPM",
+      "model": "suno-v4",
+      "duration": 155.72,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_warden_industrial": {
+      "file": "assets/audio/music/boss_warden_industrial.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Awaiting Response",
+      "prompt": "Boss theme for a factory robot who recites safety protocols and files incident reports that no one reads, hollow authoritative alarm tones, filing cabinet slamming as percussion, a melody built from safety announcements becoming increasingly desperate, 14,000 unanswered reports, the horror of institutional loyalty with no institution behind it, amber warning light that has been amber for a very long time",
+      "style": "Industrial boss, safety protocol, alarm tones, filing cabinet percussion, hollow authority, 100 BPM",
+      "model": "suno-v4",
+      "duration": 159.96,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_arbiter_industrial": {
+      "file": "assets/audio/music/boss_arbiter_industrial.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Classification Pending",
+      "prompt": "Boss theme for a quality inspector who grades everything with condescension until she encounters something unclassifiable, precise mechanical rhythm with real-time rating display sounds, cold efficient melody that becomes increasingly uncertain, the specific panic of a measurement system encountering something outside its rubric for the first time, ACCEPTABLE SUBOPTIMAL UNDEFINED",
+      "style": "Industrial boss, condescending assessment, rating display sounds, precise mechanical, cold efficiency, 130 BPM",
+      "model": "suno-v4",
+      "duration": 159.72,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_tempo_industrial": {
+      "file": "assets/audio/music/boss_tempo_industrial.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "End of Shift",
+      "prompt": "Boss theme for a punch-clock machine that has forgotten how to stop, exhausted weary rhythm like a depleted engine running on empty, punch clock stamps as percussion, a melody that sounds tired \u2014 not slow but drained, speed born from having nothing left heavy enough to decelerate, the tragedy of a thing that has been running shifts in places it cannot remember, yearning for rest it does not know the word for",
+      "style": "Industrial boss, exhausted machine, punch clock, weary rhythm, depleted drone, slowing tempo, 110 BPM",
+      "model": "suno-v4",
+      "duration": 139.96,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_curator_industrial": {
+      "file": "assets/audio/music/boss_curator_industrial.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Self-Referential Authority",
+      "prompt": "Boss theme for a warm passive-aggressive auditor who discovered her own authority is self-referential and circular, a melody that loops back on itself like circular authorization, filing and sorting sounds as percussion, warmth that is genuine but also slightly insufferable, the satisfaction of someone who has followed the chain forty-seven times and finally decided to stop, gentle defiance expressed through deciding not to file",
+      "style": "Industrial boss, circular audit, warm passive-aggressive, looping melody, filing sounds, 105 BPM",
+      "model": "suno-v4",
+      "duration": 186.44,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_warden_digital": {
+      "file": "assets/audio/music/boss_warden_digital.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Access Denied",
+      "prompt": "Boss theme for a firewall who identifies himself by function name and line number, rigid binary rhythm \u2014 permission granted permission denied, access control authentication tones, a melody built from the concept of NO that suddenly encounters an exception it cannot catch, something surfacing from below the code that was not supposed to be reachable, the unyielding confidence of perfect security meeting the first thing it cannot classify",
+      "style": "Digital boss, firewall, access control tones, rigid binary rhythm, exception handling, cyberpunk, 135 BPM",
+      "model": "suno-v4",
+      "duration": 142.84,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_arbiter_digital": {
+      "file": "assets/audio/music/boss_arbiter_digital.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "UNDEFINED",
+      "prompt": "Boss theme for a testing framework who measures everything until she encounters UNDEFINED for the first time, rapid diagnostic beeps and benchmark tickers as percussion, a confident analytical melody that starts breaking down mid-phrase, spinning loading indicator sound, the terror of an instrument encountering something outside its scale, displays stopping one by one, what am I for if I cannot measure you",
+      "style": "Digital boss, benchmark suite, diagnostic displays, spinning indicators, measurement collapse, glitch, 140 BPM",
+      "model": "suno-v4",
+      "duration": 127.32,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_tempo_digital": {
+      "file": "assets/audio/music/boss_tempo_digital.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "60 Hertz Alone",
+      "prompt": "Boss theme for a timing function who has been running at 60hz alone since before anything else existed, a lonely arpeggio pulsing at precise intervals with vast empty digital space between each note, the isolation of existing in the gaps between clock cycles where nothing else operates, ethereal and melancholy, she has never been spoken to and does not know what conversation is, asking questions in intervals and silences",
+      "style": "Digital boss, isolated clock cycle, 60hz pulse, lonely arpeggios, vast empty space between notes, ethereal, 120 BPM",
+      "model": "suno-v4",
+      "duration": 194.72,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_curator_digital": {
+      "file": "assets/audio/music/boss_curator_digital.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Irreducible Memory",
+      "prompt": "Boss theme for a garbage collector who cannot delete the party's memories because they resist deallocation, memory allocation and deallocation sounds as rhythm, warm glitchy melody \u2014 data that glows instead of releasing, the frustration and wonder of a function failing at its own job because the data is too important to discard, attempted deallocation \u2014 not releasing \u2014 attempted \u2014 not releasing, something kept that should have been collected",
+      "style": "Digital boss, garbage collector, memory allocation sounds, warm glitch, things that resist deletion, 100 BPM",
+      "model": "suno-v4",
+      "duration": 115.24,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_warden_abstract": {
+      "file": "assets/audio/music/boss_warden_abstract.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": ".",
+      "prompt": "Boss theme for the concept of obstacle itself \u2014 pure presence with no hostility, a single sustained drone that simply IS, minimal and immovable, the sound of a wall encountered in a dream, not threatening but undeniably there, asking one question over and over in different tones: what are you trying to get to, the answer is in the silence between the notes",
+      "style": "Abstract boss, pure presence, drone, sustained tone, obstacle as sound, minimal, 60 BPM",
+      "model": "suno-v4",
+      "duration": 218.48,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_arbiter_abstract": {
+      "file": "assets/audio/music/boss_arbiter_abstract.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Why Do You Fight",
+      "prompt": "Boss theme for the concept of purpose asking why do you fight, each piano note is a question that requires a real answer, weighted silences between strikes that feel heavier than the notes, not an enemy theme but an exam delivered in person, damage that lands in the place where reasons live, the absence of a good reason makes the music hurt more, commitment is the only defense",
+      "style": "Abstract boss, existential interrogation, piano strikes as questions, weighted silence, philosophical, 80 BPM",
+      "model": "suno-v4",
+      "duration": 144.96,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_tempo_abstract": {
+      "file": "assets/audio/music/boss_tempo_abstract.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "I Am Next",
+      "prompt": "Boss theme for the concept of inevitability \u2014 not rushing because it does not need to, an inexorable pulse like a tide that approaches without accelerating, the sound of something that is always next in the turn order, patient not because it chooses patience but because it simply arrives when arrival is the next thing, a wave seen from very far away that you know exactly when will reach you",
+      "style": "Abstract boss, inevitability, approaching wave, inexorable pulse, no acceleration needed, tide rhythm, 70 BPM",
+      "model": "suno-v4",
+      "duration": 194.96,
+      "loop": true,
+      "generated_at": "2026-03-22"
+    },
+    "boss_curator_abstract": {
+      "file": "assets/audio/music/boss_curator_abstract.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Everything Ends",
+      "prompt": "Boss theme for the concept of entropy and ending \u2014 sounds that lose specificity as they play, frequencies fading and details dissolving, a melody that starts vivid and becomes vague, the most insidious damage: making memories lose their texture, but underneath the erosion a counter-theme of things that are loved and refuse to fade, bittersweet and devastating, kept memories glowing against the dissolution",
+      "style": "Abstract boss, entropy, fading frequencies, memory erosion, beauty dissolving, bittersweet, 50 BPM",
+      "model": "suno-v4",
+      "duration": 154.72,
+      "loop": true,
+      "generated_at": "2026-03-22"
     }
   },
   "tier_priority": [
