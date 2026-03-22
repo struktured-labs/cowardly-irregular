@@ -5,6 +5,9 @@ uniform float horizon : hint_range(0.0, 0.5) = 0.0;
 uniform float near_scale : hint_range(0.05, 0.5) = 0.22;
 uniform float ground_y : hint_range(0.3, 0.95) = 0.52;
 uniform float curvature : hint_range(0.0, 0.2) = 0.01;
+// Camera rotation now driven by Camera2D.rotation instead of UV-space rotation.
+// This eliminates texture sampling degradation past ~180 degrees.
+// Kept as uniform for optional effects (wobble, shake) but not used for main yaw.
 uniform float world_rotation = 0.0;
 uniform vec4 sky_top : source_color = vec4(0.25, 0.35, 0.65, 1.0);
 uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);
@@ -31,13 +34,8 @@ void fragment() {
 
 		float sy = ground_y + near_scale * log(max(h, 0.001));
 
-		// Rotate sample coords around camera center in texture space
-		float cr = cos(world_rotation);
-		float sr = sin(world_rotation);
-		float dx = sx - 0.5;
-		float dy = sy - ground_y;
-		sx = dx * cr - dy * sr + 0.5;
-		sy = dx * sr + dy * cr + ground_y;
+		// Camera yaw is now driven by Camera2D.rotation — no UV rotation needed.
+		// This fixes texture sampling degradation past ~180 degrees.
 
 		// Wider edge softness to prevent harsh lines during camera rotation
 		float edge_margin = 0.06;
