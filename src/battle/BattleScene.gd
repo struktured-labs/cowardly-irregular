@@ -2070,6 +2070,18 @@ func _on_player_ap_changed(old_value: int, new_value: int) -> void:
 	_on_party_ap_changed(old_value, new_value, 0)
 
 
+func _on_summon_hp_changed(enemy: Combatant, old_value: int, new_value: int) -> void:
+	var idx = test_enemies.find(enemy)
+	if idx >= 0:
+		_on_enemy_hp_changed(old_value, new_value, idx)
+
+
+func _on_summon_died(enemy: Combatant) -> void:
+	var idx = test_enemies.find(enemy)
+	if idx >= 0:
+		_on_enemy_died(idx)
+
+
 func _on_enemy_hp_changed(old_value: int, new_value: int, enemy_idx: int) -> void:
 	"""Handle enemy HP change"""
 	if new_value < old_value and enemy_idx < enemy_animators.size():
@@ -2317,6 +2329,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 
 	# Animate: scale up from 0, hold, then fade out
 	one_shot_label.scale = Vector2(0.1, 0.1)
+	await get_tree().process_frame
 	one_shot_label.pivot_offset = one_shot_label.size / 2
 	rank_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -2419,6 +2432,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 
 	# Animate: scale-in, hold, fade out (no delay — shows simultaneously with one-shot)
 	auto_label.scale = Vector2(0.1, 0.1)
+	await get_tree().process_frame
 	auto_label.pivot_offset = auto_label.size / 2
 	turns_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -2505,10 +2519,10 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	for resistance in monster_data.get("resistances", []):
 		enemy.elemental_resistances.append(resistance)
 
-	# Find a position for the new enemy
+	# Bind signals using enemy reference — find index at call time to avoid stale index
+	enemy.hp_changed.connect(func(old_val, new_val): _on_summon_hp_changed(enemy, old_val, new_val))
+	enemy.died.connect(func(): _on_summon_died(enemy))
 	var new_idx = test_enemies.size()
-	enemy.hp_changed.connect(_on_enemy_hp_changed.bind(new_idx))
-	enemy.died.connect(_on_enemy_died.bind(new_idx))
 
 	test_enemies.append(enemy)
 

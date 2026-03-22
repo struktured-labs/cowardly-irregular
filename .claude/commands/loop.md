@@ -7,8 +7,8 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 2. DONE — Escape emits battle_ended with `"escaped"` result directly instead of calling end_battle(false) defeat path.
 3. DONE — `time_distortion` now stores original speed in `_base_speed` metadata on first mutation, reads from it each round instead of compounding.
 4. DONE — Double `_get_alive_enemies()` call replaced with single local var.
-5. `src/battle/BattleScene.gd:2495-2497` — Summoned enemy signal binds use stale index. Use enemy reference directly instead of array index.
-6. `src/battle/BattleScene.gd:2306,2408` — `pivot_offset = label.size / 2` reads size before layout. Defer to next frame or use `resized` signal.
+5. DONE — Summoned enemy signals now use lambda closures that look up index via `test_enemies.find(enemy)` at call time instead of binding stale index.
+6. DONE — `pivot_offset = label.size / 2` now deferred with `await get_tree().process_frame` so Control has valid size.
 
 ### Tier 2: Dead Code Removal
 7. `src/GameLoop.gd` — Remove dead `_start_battle()` (sync version, line ~819), dead `_show_menu()`/`LoopState.MENU` (line ~886), dead `_load_battle_behind_transition()` (line ~1181), unused vars (`_autogrind_dashboard`, `_autogrind_overlay`, `_autogrind_overlay_layer`, `_controller_overlay`, `_controller_overlay_layer`, `_party_customizations`).
