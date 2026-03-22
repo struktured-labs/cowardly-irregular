@@ -1,0 +1,92 @@
+{
+  "id": "world1_chapter5",
+  "title": "The Forest That Remembered",
+  "world": 1,
+  "trigger": "enter_corrupted_forest",
+  "description": "The Corrupted Forest, Eldertree Village, the Tempo's chase, and the Arbiter's duel.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+
+    {"type": "narration", "lines": [
+      "The Corrupted Forest wore its sickness openly. Trees bent at angles wood shouldn't permit.",
+      "Light came from the wrong direction \u2014 not from the sky but from somewhere beneath the roots."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "We're being tracked. Since the bridge. Don't reach for the sword.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "If someone is following us\u2014",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Someone is studying us. They've had four opportunities to ambush us and passed on all of them. That's not predation. That's professional curiosity.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "narration", "text": "A calling card fell from a branch above: a small leather token stamped with the image of a running hound."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "The Tempo. They're not attacking us. They're playing.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Bard",
+        "text": "How delightful. We have a nemesis.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "We have a problem.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Those are the same thing to a good story.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "lines": [
+      "Eldertree Village huddled at the forest's edge. Its sacred trees were dying from the inside out. Sap ran black. Leaves fell upward.",
+      "Deep in the village, they found a man who had fled the capital."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Refugee",
+        "text": "Chancellor Mordaine. She doesn't rule the kingdom. She IS the kingdom now.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Refugee",
+        "text": "She believes she's helping. That's the worst part. She has a word for it. Says everything has to be... calibrated.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "narration", "text": "He used that word \u2014 calibrated \u2014 and none of them thought anything of it. Why would they? It was just a word."},
+
+    {"type": "set_flag", "flag": "chapter5_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
