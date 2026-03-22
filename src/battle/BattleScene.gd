@@ -831,75 +831,6 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	sprite.add_child(label)
 
 
-func _create_character_sprite(color: Color, label: String) -> Sprite2D:
-	"""Create a placeholder character sprite with 12-bit aesthetic"""
-	var sprite = Sprite2D.new()
-
-	# Create a simple colored sprite placeholder
-	var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Draw character silhouette (simple rectangle for now)
-	for y in range(10, 60):
-		for x in range(20, 44):
-			var c = color
-			# Add simple shading
-			if x < 24 or y < 15:
-				c = color.lightened(0.2)
-			elif x > 38 or y > 50:
-				c = color.darkened(0.2)
-			img.set_pixel(x, y, c)
-
-	# Add label
-	var texture = ImageTexture.create_from_image(img)
-	sprite.texture = texture
-	sprite.centered = true
-
-	# Add label below sprite
-	var label_node = Label.new()
-	label_node.text = label
-	label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label_node.position = Vector2(-32, 35)
-	sprite.add_child(label_node)
-
-	return sprite
-
-
-func _create_enemy_sprite(color: Color, label: String) -> Sprite2D:
-	"""Create a placeholder enemy sprite"""
-	var sprite = Sprite2D.new()
-
-	# Create enemy sprite (blob-like for slime)
-	var img = Image.create(80, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	# Draw blob shape
-	for y in range(20, 55):
-		for x in range(15, 65):
-			var dist_from_center = sqrt(pow(x - 40, 2) + pow(y - 37, 2))
-			if dist_from_center < 22:
-				var c = color
-				# Gradient shading
-				if y < 30:
-					c = color.lightened(0.3)
-				elif y > 45:
-					c = color.darkened(0.3)
-				img.set_pixel(x, y, c)
-
-	var texture = ImageTexture.create_from_image(img)
-	sprite.texture = texture
-	sprite.centered = true
-
-	# Add label
-	var label_node = Label.new()
-	label_node.text = label
-	label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label_node.position = Vector2(-40, 35)
-	sprite.add_child(label_node)
-
-	return sprite
-
-
 func _update_ui() -> void:
 	_ui_manager.update_ui()
 
@@ -2059,15 +1990,6 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 func _on_party_ap_changed(old_value: int, new_value: int, member_idx: int) -> void:
 	"""Handle party member AP change"""
 	_update_ui()
-
-
-# Legacy aliases for backwards compatibility
-func _on_player_hp_changed(old_value: int, new_value: int) -> void:
-	_on_party_hp_changed(old_value, new_value, 0)
-
-
-func _on_player_ap_changed(old_value: int, new_value: int) -> void:
-	_on_party_ap_changed(old_value, new_value, 0)
 
 
 func _on_summon_hp_changed(enemy: Combatant, old_value: int, new_value: int) -> void:
