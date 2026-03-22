@@ -11,7 +11,7 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 6. DONE — `pivot_offset = label.size / 2` now deferred with `await get_tree().process_frame` so Control has valid size.
 
 ### Tier 2: Dead Code Removal
-7. `src/GameLoop.gd` — Remove dead `_start_battle()` (sync version, line ~819), dead `_show_menu()`/`LoopState.MENU` (line ~886), dead `_load_battle_behind_transition()` (line ~1181), unused vars (`_autogrind_dashboard`, `_autogrind_overlay`, `_autogrind_overlay_layer`, `_controller_overlay`, `_controller_overlay_layer`, `_party_customizations`).
+7. DONE — Removed dead `_start_battle()` sync version, `_show_menu()`/`LoopState.MENU`, `_on_continue_pressed()`, `_load_battle_behind_transition()`, `MenuSceneRes` preload, `_party_customizations` var. Kept autogrind dashboard/overlay/controller overlay (actually used by autogrind system).
 8. `src/autobattle/AutobattleSystem.gd` — Remove ~900 lines of dead legacy execution pipeline (`execute_autobattle`, `_evaluate_rule`, `_evaluate_condition`, `_compare`, `_rule_to_action`, `_action_type_to_string`, `_get_target_for_rule`, the `ConditionType`/`CompareOp`/`ActionType` enums, `saved_scripts`/`save_script`/`load_script`). Only `execute_grid_autobattle` is used.
 9. `src/battle/BattleScene.gd` — Remove dead `_create_character_sprite` (~line 831) and `_create_enemy_sprite` (~line 870). Remove dead `_on_player_hp_changed`/`_on_player_ap_changed` legacy aliases (~line 2053).
 10. Delete 3 dead files: `src/ui/VirtualGamepad.gd`, `src/battle/AdaptiveAI.gd`, `src/exploration/OverworldInteractable.gd`.
