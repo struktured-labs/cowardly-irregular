@@ -17,6 +17,8 @@ var _player_overlay_sprite: Sprite2D
 var _player_ref: Node2D
 var _shader_mat: ShaderMaterial
 
+# TODO: Rotation visuals degrade past ~180° — shader texture sampling wraps poorly at extremes
+# TODO: Movement still feels slippery with camera rotation; consider acceleration curve
 var _current_rotation: float = 0.0
 const ROTATION_SPEED: float = 2.5
 const SWAY_PIXELS: float = 16.0
@@ -89,8 +91,12 @@ func process_frame() -> void:
 
 	var src = _player_ref.get_node_or_null("Sprite")
 	if not src or not src.texture:
+		# Ensure player stays visible if overlay can't take over
+		if _player_overlay_sprite:
+			_player_overlay_sprite.visible = false
 		return
 	_player_overlay_sprite.texture = src.texture
+	_player_overlay_sprite.visible = true
 	var tex_h = src.texture.get_height()
 	var s = player_display_size / max(float(tex_h), 1.0)
 	_player_overlay_sprite.flip_h = src.flip_h
@@ -102,13 +108,14 @@ func process_frame() -> void:
 
 	# Camera rotation: right stick only (no movement-based auto-turn)
 	var cam_input = GamepadFilter.right_stick_x
-	if abs(cam_input) < 0.1:
+	if abs(cam_input) < 0.2:
+		# Keyboard fallback for camera rotation
 		if Input.is_key_pressed(KEY_E):
 			cam_input = 1.0
 		elif Input.is_key_pressed(KEY_Q):
 			cam_input = -1.0
 
-	if abs(cam_input) > 0.1:
+	if abs(cam_input) > 0.2:
 		_current_rotation += cam_input * ROTATION_SPEED * delta
 
 	camera_angle = _current_rotation

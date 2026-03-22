@@ -214,11 +214,11 @@ func _setup_sprite() -> void:
 	_sprite.name = "Sprite"
 	add_child(_sprite)
 
-	# Setup collision shape
+	# Setup collision shape — circle avoids directional bias with Mode 7 camera rotation
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(24, 24)  # Slightly smaller than sprite for easier navigation
+	var shape = CircleShape2D.new()
+	shape.radius = 12.0  # Slightly smaller than sprite for easier navigation
 	collision.shape = shape
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)

@@ -5,7 +5,7 @@ uniform float horizon : hint_range(0.0, 0.5) = 0.0;
 uniform float near_scale : hint_range(0.05, 0.5) = 0.22;
 uniform float ground_y : hint_range(0.3, 0.95) = 0.52;
 uniform float curvature : hint_range(0.0, 0.2) = 0.01;
-uniform float world_rotation : hint_range(-3.14159, 3.14159) = 0.0;
+uniform float world_rotation = 0.0;
 uniform vec4 sky_top : source_color = vec4(0.25, 0.35, 0.65, 1.0);
 uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);
 uniform vec4 fog_color : source_color = vec4(0.50, 0.60, 0.78, 1.0);
@@ -22,14 +22,14 @@ void fragment() {
 	} else if (h_raw < near_scale) {
 		result = fog_color;
 	} else {
-		float h = h_raw;
+		float h = max(h_raw, 0.001);
 
 		float x_width = near_scale / h;
 		float depth = 1.0 - h;
 		float planet = 1.0 - curvature * depth * depth;
 		float sx = (uv.x - 0.5) * x_width * planet + 0.5;
 
-		float sy = ground_y + near_scale * log(h);
+		float sy = ground_y + near_scale * log(max(h, 0.001));
 
 		// Rotate sample coords around camera center in texture space
 		float cr = cos(world_rotation);
@@ -39,8 +39,10 @@ void fragment() {
 		sx = dx * cr - dy * sr + 0.5;
 		sy = dx * sr + dy * cr + ground_y;
 
-		float edge_x = smoothstep(0.0, 0.015, sx) * smoothstep(1.0, 0.985, sx);
-		float edge_y = smoothstep(0.0, 0.015, sy);
+		// Wider edge softness to prevent harsh lines during camera rotation
+		float edge_margin = 0.06;
+		float edge_x = smoothstep(0.0, edge_margin, sx) * smoothstep(1.0, 1.0 - edge_margin, sx);
+		float edge_y = smoothstep(0.0, edge_margin, sy) * smoothstep(1.0, 1.0 - edge_margin, sy);
 		float edge = edge_x * edge_y;
 
 		vec2 sample_uv = clamp(vec2(sx, sy), vec2(0.0), vec2(1.0));
