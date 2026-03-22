@@ -533,40 +533,14 @@ func _trigger_boss_battle() -> void:
 	"""Start the Cave Rat King boss battle"""
 	controller.pause_exploration()
 
-	# Show boss dialogue
-	_show_boss_intro()
-
-	# Trigger battle with Cave Rat King
-	await get_tree().create_timer(2.0).timeout
-	battle_triggered.emit(["cave_rat_king"])
-
-
-func _show_boss_intro() -> void:
-	"""Display boss intro dialogue - 4th wall breaking Rat King"""
-	print("")
-	print("=== BOSS ENCOUNTER ===")
-	print("")
-	print("The party reaches the deepest chamber...")
-	print("A massive rat sits on a throne of cheese wheels.")
-	print("")
-	print("Cave Rat King: 'Ah, another hero.'")
-	print("Cave Rat King: 'Let me guess - you automated your way here?'")
-	print("")
-	print("Hero: '...How do you know about that?'")
-	print("")
-	print("Cave Rat King: 'I've watched THOUSANDS of you.'")
-	print("Cave Rat King: 'Same scripts. Same builds. Same \"optimal\" strategies.'")
-	print("Cave Rat King: 'You think you're clever? I've EVOLVED.'")
-	print("Cave Rat King: 'I've read the source code. I know what you're going to do.'")
-	print("")
-	print("Hero: 'That's... not how games work.'")
-	print("")
-	print("Cave Rat King: 'ISN'T IT?'")
-	print("Cave Rat King: *adjusts tiny crown*")
-	print("Cave Rat King: 'SQUEAK.'")
-	print("")
-	print("======================")
-	print("")
+	# Play boss intro cutscene, then trigger battle
+	var director = CutsceneDirector.new()
+	add_child(director)
+	director.cutscene_finished.connect(func(_id: String):
+		director.queue_free()
+		battle_triggered.emit(["cave_rat_king"])
+	, CONNECT_ONE_SHOT)
+	director.play_cutscene("world1_rat_king_intro")
 
 
 func _on_boss_defeated() -> void:
