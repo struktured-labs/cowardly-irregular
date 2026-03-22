@@ -125,6 +125,13 @@ func spawn_enemies() -> void:
 	# Clear any existing enemies
 	for enemy in _scene.test_enemies:
 		if is_instance_valid(enemy):
+			# Disconnect known signals before freeing to prevent dangling connections
+			if enemy.hp_changed.get_connections().size() > 0:
+				for conn in enemy.hp_changed.get_connections():
+					enemy.hp_changed.disconnect(conn.callable)
+			if enemy.died.get_connections().size() > 0:
+				for conn in enemy.died.get_connections():
+					enemy.died.disconnect(conn.callable)
 			enemy.queue_free()
 	_scene.test_enemies.clear()
 

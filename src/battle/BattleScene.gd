@@ -289,6 +289,9 @@ func _exit_tree() -> void:
 	if BattleManager.group_attack_executing.is_connected(_on_group_attack_executing):
 		BattleManager.group_attack_executing.disconnect(_on_group_attack_executing)
 
+	# Reset engine time scale in case battle speed was altered
+	Engine.time_scale = 1.0
+
 	# Cleanup popup menu if open
 	_cleanup_popup()
 
@@ -1079,11 +1082,16 @@ func _show_ability_menu(ability_ids: Array) -> void:
 			popup.set_item_disabled(i, true)
 
 	popup.id_pressed.connect(_on_ability_selected.bind(ability_ids))
+	popup.close_requested.connect(popup.queue_free)
 	popup.popup_centered()
 
 
 func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 	"""Handle ability selection from menu"""
+	var popup = get_node_or_null("AbilityMenu")
+	if popup and is_instance_valid(popup):
+		popup.queue_free()
+
 	if idx < 0 or idx >= ability_ids.size():
 		return
 
@@ -1208,6 +1216,7 @@ func _show_item_menu() -> void:
 		return
 
 	popup.id_pressed.connect(_on_item_selected.bind(item_ids))
+	popup.close_requested.connect(popup.queue_free)
 	popup.popup_centered()
 
 
@@ -1649,6 +1658,9 @@ func _on_inline_autobattle_editor_closed(editor: Control) -> void:
 
 func _restart_battle() -> void:
 	"""Restart the battle"""
+	_battle_ended = false
+	_battle_victory = false
+
 	# Stop any playing music (will restart when battle starts)
 	SoundManager.stop_music()
 

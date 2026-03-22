@@ -312,9 +312,10 @@ func _start_new_round() -> void:
 	pending_actions.clear()
 	execution_order.clear()
 
-	# Reset combatants for new round
+	# Reset combatants for new round and tick buff/debuff durations
 	for combatant in all_combatants:
 		if combatant.is_alive:
+			combatant.end_turn()
 			combatant.reset_for_new_round()
 
 	# Apply corruption effects from enemies that carry them
@@ -1217,9 +1218,10 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	if actions.is_empty():
 		return
 
-	# Note: Each action costs 1 AP during execution
-	# The first action would normally cost 1 AP anyway (canceling natural gain)
-	# Additional actions go into AP debt
+	# Note: Each action costs 1 AP during execution.
+	# Grant +1 AP upfront to represent the natural turn gain — this offsets the cost
+	# of the first sub-action so only truly extra actions (2nd, 3rd, 4th) go into debt.
+	combatant.gain_ap(1)
 	print("%s advances with %d actions!" % [combatant.combatant_name, actions.size()])
 
 	# Execute all actions in sequence (each will spend 1 AP)
@@ -1254,6 +1256,8 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	else:
 		await get_tree().create_timer(0.5).timeout
 	if not is_instance_valid(self):
+		return
+	if _check_victory_conditions():
 		return
 	_execute_next_action()
 
@@ -1321,7 +1325,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
 		return
 
-	var base_damage = attacker.attack
+	var base_damage = attacker.get_buffed_stat("attack", attacker.attack)
 	var vrange = volatility.get_variance_range(attacker) if volatility else Vector2(0.85, 1.15)
 	var variance = randf_range(vrange.x, vrange.y)
 	var damage = int(base_damage * variance)
@@ -1448,7 +1452,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var is_crit = false
 
 		if randf() < crit_chance:
-			damage = int(damage * 2.0)
+			damage = int(damage * _get_crit_multiplier(caster))
 			is_crit = true
 			print("Critical hit!")
 
@@ -1579,6 +1583,7 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 	var heal_amount = ability.get("heal_amount", 0)
 	var multiplier = GameState.get_constant("healing_multiplier")
 	heal_amount = int(heal_amount * multiplier)
+	heal_amount = int(heal_amount * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0))
 
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:

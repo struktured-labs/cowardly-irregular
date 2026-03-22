@@ -1400,7 +1400,7 @@
 		],
 		"weaknesses": [],
 		"resistances": [
-			"all"
+			"fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "physical"
 		],
 		"meta_enemy": true,
 		"time_manipulation": true,
@@ -1446,7 +1446,7 @@
 		],
 		"weaknesses": [],
 		"resistances": [
-			"all"
+			"fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "physical"
 		],
 		"meta_enemy": true,
 		"glitch_enemy": true,
