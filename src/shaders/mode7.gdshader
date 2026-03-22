@@ -12,6 +12,9 @@ uniform float world_rotation = 0.0;
 uniform vec4 sky_top : source_color = vec4(0.25, 0.35, 0.65, 1.0);
 uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);
 uniform vec4 fog_color : source_color = vec4(0.50, 0.60, 0.78, 1.0);
+// Per-world effects (default 0.0 = inactive)
+uniform float scanline_intensity : hint_range(0.0, 1.0) = 0.0;
+uniform float dissolve_progress : hint_range(0.0, 1.0) = 0.0;
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -53,6 +56,22 @@ void fragment() {
 			float t = (h_raw - near_scale) / fade_zone;
 			result = mix(fog_color, result, smoothstep(0.0, 1.0, t));
 		}
+	}
+
+	// Scanline effect (W5 Digital: CRT/terminal aesthetic)
+	if (scanline_intensity > 0.0) {
+		float scanline = mod(FRAGCOORD.y, 2.0) < 1.0 ? 1.0 : 1.0 - scanline_intensity;
+		result.rgb *= scanline;
+	}
+
+	// Dissolve effect (W5→W6 transition: perspective fragmenting)
+	if (dissolve_progress > 0.0) {
+		float noise = fract(sin(dot(uv * 43.0, vec2(12.9898, 78.233))) * 43758.5453);
+		if (noise < dissolve_progress) {
+			result = fog_color;
+		}
+		// Flatten perspective as dissolve progresses
+		result = mix(result, fog_color, dissolve_progress * 0.5);
 	}
 
 	COLOR = result;
