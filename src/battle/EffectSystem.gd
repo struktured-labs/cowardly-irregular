@@ -26,6 +26,11 @@ var _effects_container: Node2D = null
 ## Set by BattleScene after creating its background
 var battle_background: Node = null
 
+## Screen shake state — prevents overlapping tweens from drifting the camera
+var _shake_tween: Tween = null
+var _original_camera_offset: Vector2 = Vector2.ZERO
+var _is_shaking: bool = false
+
 ## Texture cache for particle sprites (avoids regenerating identical images)
 ## Key: texture type string, Value: ImageTexture
 static var _texture_cache: Dictionary = {}
@@ -340,7 +345,7 @@ func _create_explosion_ring(color: Color) -> Sprite2D:
 
 
 func _trigger_screen_shake(intensity: float, duration: float) -> void:
-	"""Trigger screen shake effect"""
+	"""Trigger screen shake effect. Kills any running shake first to prevent camera drift."""
 	var viewport = get_viewport()
 	if not viewport:
 		return
@@ -353,13 +358,23 @@ func _trigger_screen_shake(intensity: float, duration: float) -> void:
 			camera = cameras[0]
 
 	if camera:
-		var original_offset = camera.offset
-		var shake_tween = create_tween()
+		# Kill any in-progress shake and restore the camera before starting a new one
+		if _shake_tween != null and _shake_tween.is_valid() and _shake_tween.is_running():
+			_shake_tween.kill()
+			camera.offset = _original_camera_offset
+
+		# Only record the baseline offset when we are not already shaking
+		if not _is_shaking:
+			_original_camera_offset = camera.offset
+
+		_is_shaking = true
+		_shake_tween = create_tween()
 		var steps = int(duration * 30)
 		for i in range(steps):
 			var offset = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
-			shake_tween.tween_property(camera, "offset", original_offset + offset, duration / steps)
-		shake_tween.tween_property(camera, "offset", original_offset, 0.05)
+			_shake_tween.tween_property(camera, "offset", _original_camera_offset + offset, duration / steps)
+		_shake_tween.tween_property(camera, "offset", _original_camera_offset, 0.05)
+		_shake_tween.tween_callback(func() -> void: _is_shaking = false)
 
 
 func _create_fire_particle() -> Sprite2D:

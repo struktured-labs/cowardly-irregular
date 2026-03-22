@@ -1661,6 +1661,11 @@ func _restart_battle() -> void:
 	_battle_ended = false
 	_battle_victory = false
 
+	# Remove victory overlay if it persisted from the last battle
+	var victory_overlay = get_node_or_null("VictoryResults")
+	if victory_overlay:
+		victory_overlay.queue_free()
+
 	# Stop any playing music (will restart when battle starts)
 	SoundManager.stop_music()
 

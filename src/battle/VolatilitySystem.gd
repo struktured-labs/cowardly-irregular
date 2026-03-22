@@ -50,7 +50,7 @@ func check_tail_event() -> bool:
 	var macro = _get_macro_volatility()
 	# Macro volatility increases tail event chance
 	var final_pct = tail_pct * (1.0 + macro)
-	return randf() < final_pct
+	return randf() < clampf(final_pct, 0.0, 1.0)
 
 
 func set_local(combatant, value: float) -> void:
@@ -92,10 +92,14 @@ func reset_battle() -> void:
 	local_volatility.clear()
 	# Macro volatility determines starting band
 	var macro = _get_macro_volatility()
-	if macro >= 0.75:
-		global_band = Band.SHIFTING
-	else:
+	if macro < 0.4:
 		global_band = Band.STABLE
+	elif macro < 0.7:
+		global_band = Band.SHIFTING
+	elif macro < 0.9:
+		global_band = Band.UNSTABLE
+	else:
+		global_band = Band.FRACTURED
 	print("[VOLATILITY] Battle started at band: %s (macro: %.2f)" % [BAND_NAMES[global_band], macro])
 
 

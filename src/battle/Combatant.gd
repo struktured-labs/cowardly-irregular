@@ -189,6 +189,8 @@ func heal(amount: int) -> int:
 
 func restore_mp(amount: int) -> int:
 	"""Restore MP, returns actual amount restored"""
+	if not is_alive:
+		return 0
 	var old_mp = current_mp
 	current_mp = min(max_mp, current_mp + amount)
 	return current_mp - old_mp
@@ -196,6 +198,8 @@ func restore_mp(amount: int) -> int:
 
 func spend_mp(amount: int) -> bool:
 	"""Try to spend MP, returns false if insufficient"""
+	if not is_alive:
+		return false
 	if current_mp < amount:
 		return false
 	current_mp -= amount
@@ -238,7 +242,15 @@ func has_status(status: String) -> bool:
 
 ## Buffs and Debuffs
 func add_buff(effect: String, stat: String, modifier: float, duration: int) -> void:
-	"""Add a temporary buff"""
+	"""Add a temporary buff. Refreshes duration if same effect exists; upgrades modifier if stronger."""
+	for existing in active_buffs:
+		if existing["effect"] == effect:
+			existing["remaining_turns"] = duration
+			existing["duration"] = duration
+			if modifier > existing["modifier"]:
+				existing["modifier"] = modifier
+			print("%s refreshed %s (%.1fx %s for %d turns)" % [combatant_name, effect, existing["modifier"], stat, duration])
+			return
 	var buff = {
 		"effect": effect,
 		"stat": stat,
@@ -251,7 +263,15 @@ func add_buff(effect: String, stat: String, modifier: float, duration: int) -> v
 
 
 func add_debuff(effect: String, stat: String, modifier: float, duration: int) -> void:
-	"""Add a temporary debuff"""
+	"""Add a temporary debuff. Refreshes duration if same effect exists; upgrades to stronger (lower) modifier."""
+	for existing in active_debuffs:
+		if existing["effect"] == effect:
+			existing["remaining_turns"] = duration
+			existing["duration"] = duration
+			if modifier < existing["modifier"]:
+				existing["modifier"] = modifier
+			print("%s refreshed %s (%.1fx %s for %d turns)" % [combatant_name, effect, existing["modifier"], stat, duration])
+			return
 	var debuff = {
 		"effect": effect,
 		"stat": stat,
@@ -264,7 +284,7 @@ func add_debuff(effect: String, stat: String, modifier: float, duration: int) ->
 
 
 func get_buffed_stat(stat_name: String, base_value: int) -> int:
-	"""Get stat value with buffs/debuffs applied"""
+	"""Get stat value with buffs/debuffs applied. Clamped to [25%, 400%] of base, minimum 1."""
 	var final_value = float(base_value)
 
 	# Apply buffs
@@ -277,7 +297,9 @@ func get_buffed_stat(stat_name: String, base_value: int) -> int:
 		if debuff["stat"] == stat_name:
 			final_value *= debuff["modifier"]
 
-	return int(final_value)
+	# Cap: buffs can at most 4x a stat, debuffs can at most reduce to 25%
+	final_value = clampf(final_value, base_value * 0.25, base_value * 4.0)
+	return maxi(1, int(final_value))
 
 
 func update_buff_durations() -> void:
@@ -605,7 +627,14 @@ func recalculate_stats() -> void:
 					speed = max(1, speed - injury["penalty"])
 
 	# Clamp current HP/MP to new maxes
+	var old_hp = current_hp
 	current_hp = min(current_hp, max_hp)
+	if current_hp != old_hp:
+		hp_changed.emit(old_hp, current_hp)
+	if current_hp <= 0 and is_alive:
+		die()
+
+	var old_mp = current_mp
 	current_mp = min(current_mp, max_mp)
 
 
