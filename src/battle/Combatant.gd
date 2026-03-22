@@ -153,9 +153,11 @@ func execute_advance(actions: Array[Dictionary]) -> void:
 ## Combat actions
 func take_damage(amount: int, is_magical: bool = false) -> int:
 	"""Apply damage considering defense/magic defense and defending state"""
+	if not is_alive:
+		return 0
 	# Use attack^2 / (attack + defense) formula for smoother scaling
 	# Defense reduces damage but never makes it negligible
-	var def_value = defense if not is_magical else int(defense * 0.5)
+	var def_value = get_buffed_stat("defense", defense) if not is_magical else int(get_buffed_stat("defense", defense) * 0.5)
 	var actual_damage = int((amount * amount) / float(amount + def_value))
 	actual_damage = max(1, actual_damage)  # Always at least 1 damage
 

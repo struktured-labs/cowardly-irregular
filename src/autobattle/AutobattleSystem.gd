@@ -236,7 +236,7 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 
 		"setup_complete":
 			# True when combatant has buffs and max AP (ready for one-shot)
-			var has_buffs = combatant.active_buffs.size() > 0
+			var has_buffs = combatant.active_buffs.size() > 0 if "active_buffs" in combatant else false
 			var max_ap = combatant.current_ap >= 4
 			return has_buffs and max_ap
 
@@ -911,7 +911,7 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 
 		ConditionType.ITEM_COUNT:
 			var item_id = condition.get("item_id", "")
-			var count = combatant.get_item_count(item_id)
+			var count = combatant.get_item_count(item_id) if combatant.has_method("get_item_count") else 0
 			return _compare(count, compare_op, value)
 
 		ConditionType.ALWAYS:
