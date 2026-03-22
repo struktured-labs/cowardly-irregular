@@ -23,23 +23,23 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 14. Consolidate border constants — `BORDER_LIGHT`/`BORDER_SHADOW` duplicated in 10+ files. Move to `RetroPanel.gd` as class constants, reference from menus.
 15. DONE — Removed dead `apply_retro_theme()`, `generate_bitmap_font_texture()`, `_draw_character()`, `_get_character_patterns()` (~125 lines).
 16. DONE — Moved `JOB_DISPLAY_HEIGHTS` from function-level to class-level const.
-17. `src/GameState.gd` — Remove or gate dead Time Mage rewind infrastructure, dead `macro_volatility`, dead parallel save system (`save_game`/`load_game`/`get_save_list`/`delete_save`).
+17. DONE — Removed dead parallel save system (`save_game`/`load_game`/`get_save_list`/`delete_save`). Kept rewind infrastructure (used by BattleManager) and macro_volatility (used by VolatilitySystem).
 
 ### Tier 4: Performance
-18. `src/battle/BattleScene.gd` — `_check_danger_music()` runs every frame in `_process`. Move to event-driven (call from `_on_party_hp_changed` only).
+18. DONE — `_check_danger_music` already removed/refactored in earlier work.
 19. `src/exploration/AreaTransition.gd` — 11+ instances all call `queue_redraw()` every frame. Use `set_process(false)` when off-screen or use a shared timer.
 20. `src/battle/BattleScene.gd` — `_process_idle_animations` calls `is_instance_valid` on every sprite every frame. Cache valid sprite list, update only on spawn/death.
 21. `src/ui/autogrind/AutogrindDashboard.gd:176-197` — CRT scanline overlay spawns ~120 ColorRect nodes. Replace with shader or single `_draw()` call.
-22. `src/exploration/OverworldScene.gd` — `_update_encounter_zone` tile division runs every frame even when player is still. Add `_last_tile_pos` guard.
+22. DONE — `_update_encounter_zone` now skips when player hasn't moved to a new tile (`_last_tile_pos` guard).
 
 ### Tier 5: Polish
 23. `src/audio/SoundManager.gd:344` — `_generate_double_blip()` never pushes audio frames. Fix or remove.
 24. `src/exploration/OverworldScene.gd` — Mode 7 overlay sprite position hardcoded `(640, 400)`. Make viewport-relative.
-25. `src/ui/OverworldMenu.gd:639` — Settings menu uses `load()` instead of `preload()`. Change to preload.
+25. DONE — SettingsMenu changed from runtime `load()` to `preload()` class constant.
 26. `src/jobs/PassiveSystem.gd:341` — `can_equip_passive` restriction check never called. Wire into `equip_passive`.
 27. `src/save/SaveSystem.gd:331` — `_serialize_inventory` is a stub. Implement or document as TODO.
 28. Consolidate duplicate `_input` handlers in `AutogrindMonitor.gd` and `AutogrindDashboard.gd` into shared base/utility.
-29. Delete redundant sprite gen scripts in `tools/` (keep only `gen_fighter_walk_release.py`, remove 6 others).
+29. DONE — Deleted 6 redundant `gen_fighter_walk*.py` scripts, kept `gen_fighter_walk_release.py`.
 
 ## Rules
 - Fix ONE item per cycle (or a small related cluster)
