@@ -70,10 +70,11 @@ func _process(_delta: float) -> void:
 		_update_encounter_zone(player.position)
 	if _mode7:
 		# Register roaming monsters as billboards (deduplicates automatically)
-		var roaming = get_node_or_null("RoamingMonsters")
-		if roaming:
-			for child in roaming.get_children():
-				_mode7.register_billboard(child)
+		for container_name in ["RoamingMonsters", "NPCs", "Transitions"]:
+			var container = get_node_or_null(container_name)
+			if container:
+				for child in container.get_children():
+					_mode7.register_billboard(child)
 		_mode7.process_frame()
 
 

@@ -91,10 +91,11 @@ func _setup_effects() -> void:
 
 func _process(delta: float) -> void:
 	if _mode7:
-		var roaming = get_node_or_null("RoamingMonsters")
-		if roaming:
-			for child in roaming.get_children():
-				_mode7.register_billboard(child)
+		for container_name in ["RoamingMonsters", "NPCs", "Transitions"]:
+			var container = get_node_or_null(container_name)
+			if container:
+				for child in container.get_children():
+					_mode7.register_billboard(child)
 		_mode7.process_frame()
 	_hue_time += delta
 
