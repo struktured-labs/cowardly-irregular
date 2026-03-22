@@ -114,19 +114,19 @@ func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -22.0  # Menu blips: very subtle background
+	_ui_player.volume_db = -10.0  # Menu blips: subtle (files normalized to -12dB peak)
 	_ui_player.bus = "Master"
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -22.0  # Battle SFX: soft accent under music (-12dB)
+	_battle_player.volume_db = -8.0  # Battle SFX: present alongside music (files at -12dB peak)
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -20.0  # Ability SFX: slightly more present than battle
+	_ability_player.volume_db = -6.0  # Ability SFX: prominent, spells should be felt (files at -12dB peak)
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
