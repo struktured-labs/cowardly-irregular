@@ -55,6 +55,7 @@
 
     {"type": "screen_shake", "duration": 0.3, "intensity": 3.0},
 
+    {"type": "play_sfx", "sfx": "rat_king_squeak"},
     {"type": "dialogue", "lines": [
       {
         "speaker": "Cave Rat King",

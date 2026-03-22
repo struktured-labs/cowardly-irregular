@@ -47,6 +47,7 @@
 
     {"type": "wait", "duration": 0.3},
 
+    {"type": "play_sfx", "sfx": "goblin_fanfare"},
     {"type": "narration", "text": "The next thing was a goblin named, according to a hand-painted sign, GRUT \u2014 AUTHENTIC HERO SUPPLIES."},
 
     {"type": "dialogue", "lines": [
@@ -110,6 +111,7 @@
 
     {"type": "wait", "duration": 0.3},
 
+    {"type": "play_sfx", "sfx": "lute_strum"},
     {"type": "narration", "text": "The third obstacle was a pack of wolves. The Bard pulled her lute from her back and began to play."},
 
     {"type": "dialogue", "lines": [

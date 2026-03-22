@@ -18,6 +18,7 @@
     ]},
 
     {"type": "wait", "duration": 0.5},
+    {"type": "play_sfx", "sfx": "armor_clank"},
     {"type": "screen_shake", "duration": 0.2, "intensity": 2.0},
 
     {"type": "narration", "text": "The figure's head rose. Not with aggression. With attention."},
@@ -121,6 +122,7 @@
 
     {"type": "wait", "duration": 0.3},
 
+    {"type": "play_sfx", "sfx": "sword_draw_heavy"},
     {"type": "narration", "text": "The Warden drew his sword. Not quickly. Not with aggression. The way a craftsman picks up their tool. Natural. Inevitable."},
 
     {"type": "dialogue", "lines": [

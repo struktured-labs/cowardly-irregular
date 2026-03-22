@@ -7,6 +7,7 @@
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
     {"type": "play_music", "track": "dungeon"},
+    {"type": "play_sfx", "sfx": "cave_whispers"},
 
     {"type": "narration", "lines": [
       "The cave had earned its name honestly. It whispered.",
@@ -18,6 +19,7 @@
 
     {"type": "wait", "duration": 0.3},
 
+    {"type": "play_sfx", "sfx": "armor_clank"},
     {"type": "narration", "lines": [
       "In the second chamber, a skeleton in ancient knight's plate stood at parade rest.",
       "It turned to face the Fighter. It raised one gauntleted fist to the side of its skull.",

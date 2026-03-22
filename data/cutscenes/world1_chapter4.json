@@ -26,6 +26,7 @@
       }
     ]},
 
+    {"type": "play_sfx", "sfx": "sword_on_stone"},
     {"type": "narration", "text": "He set down his sword deliberately. Placed his shield beside it. The armor began to still in a way that was different from stillness."},
 
     {"type": "dialogue", "lines": [
