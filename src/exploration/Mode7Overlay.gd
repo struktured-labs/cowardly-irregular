@@ -32,6 +32,10 @@ static var camera_angle: float = 0.0
 func setup(scene: Node2D, player: Node2D) -> void:
 	_player_ref = player
 	camera_angle = 0.0
+	var vp_rect = scene.get_viewport().get_visible_rect()
+	var viewport_width = vp_rect.size.x if vp_rect.size.x > 0 else 1280.0
+	var viewport_height = vp_rect.size.y if vp_rect.size.y > 0 else 1080.0
+	player_screen_pos = Vector2(viewport_width / 2.0, viewport_height * 0.75)
 	if not enabled:
 		return
 

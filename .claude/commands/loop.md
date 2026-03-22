@@ -27,18 +27,18 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 
 ### Tier 4: Performance
 18. DONE — `_check_danger_music` already removed/refactored in earlier work.
-19. `src/exploration/AreaTransition.gd` — 11+ instances all call `queue_redraw()` every frame. Use `set_process(false)` when off-screen or use a shared timer.
-20. `src/battle/BattleScene.gd` — `_process_idle_animations` calls `is_instance_valid` on every sprite every frame. Cache valid sprite list, update only on spawn/death.
-21. `src/ui/autogrind/AutogrindDashboard.gd:176-197` — CRT scanline overlay spawns ~120 ColorRect nodes. Replace with shader or single `_draw()` call.
+19. DONE — AreaTransition queue_redraw throttled to every 0.1s instead of every frame.
+20. SKIPPED — _process_idle_animations already guards with is_instance_valid, O(n) over 8 sprites, not a hotspot.
+21. TODO — CRT scanline ColorRects are one-time spawn cost, not per-frame. Shader replacement deferred.
 22. DONE — `_update_encounter_zone` now skips when player hasn't moved to a new tile (`_last_tile_pos` guard).
 
 ### Tier 5: Polish
-23. `src/audio/SoundManager.gd:344` — `_generate_double_blip()` never pushes audio frames. Fix or remove.
-24. `src/exploration/OverworldScene.gd` — Mode 7 overlay sprite position hardcoded `(640, 400)`. Make viewport-relative.
+23. DONE — `_generate_double_blip()` fixed: added missing `push_frame()` call and fixed integer division.
+24. DONE — Mode 7 overlay sprite position now viewport-relative (`viewport_size / 2, viewport_size * 0.75`).
 25. DONE — SettingsMenu changed from runtime `load()` to `preload()` class constant.
-26. `src/jobs/PassiveSystem.gd:341` — `can_equip_passive` restriction check never called. Wire into `equip_passive`.
-27. `src/save/SaveSystem.gd:331` — `_serialize_inventory` is a stub. Implement or document as TODO.
-28. Consolidate duplicate `_input` handlers in `AutogrindMonitor.gd` and `AutogrindDashboard.gd` into shared base/utility.
+26. DONE — `equip_passive` now calls `can_equip_passive` as gate instead of duplicating logic.
+27. DONE — `_serialize_inventory` stub marked with proper TODO.
+28. TODO — Autogrind duplicate `_input` handlers are short and harmless, base class extraction deferred.
 29. DONE — Deleted 6 redundant `gen_fighter_walk*.py` scripts, kept `gen_fighter_walk_release.py`.
 
 ## Rules

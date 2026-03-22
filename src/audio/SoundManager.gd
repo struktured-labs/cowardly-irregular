@@ -428,9 +428,10 @@ func _generate_double_blip(playback: AudioStreamGeneratorPlayback, samples: int,
 	var half = samples / 2
 	for i in range(samples):
 		var t = float(i) / rate
-		var local_t = float(i % half) / half
+		var local_t = float(i % half) / float(half)
 		var envelope = 1.0 - local_t
 		var sample = sin(t * freq * TAU) * envelope
+		playback.push_frame(Vector2(sample, sample) * 0.3)
 
 
 func _generate_boom(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
