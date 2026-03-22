@@ -12,6 +12,8 @@ var curvature: float = 0.01
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
 var sky_top: Color = Color(0.25, 0.35, 0.65, 1.0)
 var sky_bottom: Color = Color(0.55, 0.65, 0.85, 1.0)
+var scanline_intensity: float = 0.0
+var dissolve_progress: float = 0.0
 
 ## Per-world Mode 7 visual presets — the shader evolution IS the narrative.
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
@@ -45,6 +47,7 @@ const WORLD_PRESETS: Dictionary = {
 		"fog_color": Color(0.02, 0.40, 0.70),  # Neon blue
 		"sky_top": Color(0.0, 0.05, 0.12),  # Near black
 		"sky_bottom": Color(0.0, 0.15, 0.30),  # Dark blue
+		"scanline_intensity": 0.3,  # CRT/terminal scanlines
 	},
 	# "abstract" intentionally omitted — W6 disables Mode 7 entirely
 }
@@ -96,6 +99,10 @@ func apply_preset(world_id: String) -> void:
 		near_scale = preset["near_scale"]
 	if preset.has("ground_y"):
 		ground_y = preset["ground_y"]
+	if preset.has("scanline_intensity"):
+		scanline_intensity = preset["scanline_intensity"]
+	if preset.has("dissolve_progress"):
+		dissolve_progress = preset["dissolve_progress"]
 	print("[MODE7] Applied '%s' world preset" % world_id)
 
 
@@ -133,6 +140,8 @@ func setup(scene: Node2D, player: Node2D) -> void:
 	_shader_mat.set_shader_parameter("fog_color", fog_color)
 	_shader_mat.set_shader_parameter("sky_top", sky_top)
 	_shader_mat.set_shader_parameter("sky_bottom", sky_bottom)
+	_shader_mat.set_shader_parameter("scanline_intensity", scanline_intensity)
+	_shader_mat.set_shader_parameter("dissolve_progress", dissolve_progress)
 	_shader_mat.set_shader_parameter("world_rotation", 0.0)
 	overlay.material = _shader_mat
 
@@ -223,6 +232,14 @@ func process_frame() -> void:
 func register_billboard(obj: Node2D) -> void:
 	if obj not in _billboard_sources:
 		_billboard_sources.append(obj)
+
+
+## Set dissolve progress at runtime (for W5→W6 transition animation).
+## Call from a tween or _process loop: 0.0 = normal, 1.0 = fully dissolved.
+func set_dissolve(progress: float) -> void:
+	dissolve_progress = clampf(progress, 0.0, 1.0)
+	if _shader_mat:
+		_shader_mat.set_shader_parameter("dissolve_progress", dissolve_progress)
 
 
 func unregister_billboard(obj: Node2D) -> void:
