@@ -56,6 +56,7 @@ func _ready() -> void:
 	if mode7_enabled:
 		_mode7 = Mode7Overlay.new()
 		add_child(_mode7)
+		_mode7.apply_preset("medieval")
 		_mode7.setup(self, player)
 
 	if SoundManager:
@@ -68,6 +69,11 @@ func _process(_delta: float) -> void:
 	if player:
 		_update_encounter_zone(player.position)
 	if _mode7:
+		# Register roaming monsters as billboards (deduplicates automatically)
+		var roaming = get_node_or_null("RoamingMonsters")
+		if roaming:
+			for child in roaming.get_children():
+				_mode7.register_billboard(child)
 		_mode7.process_frame()
 
 

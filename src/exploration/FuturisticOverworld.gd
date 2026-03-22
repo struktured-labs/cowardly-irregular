@@ -61,7 +61,7 @@ func _ready() -> void:
 	if mode7_enabled:
 		_mode7 = Mode7Overlay.new()
 		add_child(_mode7)
-		_mode7.fog_color = Color(0.02, 0.40, 0.70, 1.0)
+		_mode7.apply_preset("digital")
 		_mode7.setup(self, player)
 
 	# Start futuristic overworld music
@@ -90,6 +90,10 @@ func _setup_effects() -> void:
 
 func _process(delta: float) -> void:
 	if _mode7:
+		var roaming = get_node_or_null("RoamingMonsters")
+		if roaming:
+			for child in roaming.get_children():
+				_mode7.register_billboard(child)
 		_mode7.process_frame()
 	_glitch_timer += delta
 

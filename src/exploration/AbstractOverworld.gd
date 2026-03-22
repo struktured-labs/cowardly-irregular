@@ -47,8 +47,10 @@ var npcs: Node2D
 ## Spawn points
 var spawn_points: Dictionary = {}
 
-## Mode 7 perspective
-var mode7_enabled: bool = true
+## Mode 7 perspective — DISABLED for W6 Abstract.
+## The overworld mechanic itself breaks. No ground plane. Pure concept space.
+## The shader dissolving during the W5→W6 transition is the narrative device.
+var mode7_enabled: bool = false
 var _mode7: Mode7Overlay
 
 ## Reality distortion effect state
@@ -89,6 +91,10 @@ func _setup_effects() -> void:
 
 func _process(delta: float) -> void:
 	if _mode7:
+		var roaming = get_node_or_null("RoamingMonsters")
+		if roaming:
+			for child in roaming.get_children():
+				_mode7.register_billboard(child)
 		_mode7.process_frame()
 	_hue_time += delta
 
