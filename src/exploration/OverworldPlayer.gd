@@ -23,8 +23,8 @@ var distance_walked: float = 0.0
 const STEP_DISTANCE: float = 32.0  # One tile = one step
 
 ## Movement physics
-const ACCELERATION: float = 800.0
-const DECELERATION: float = 600.0
+const ACCELERATION: float = 1600.0
+const DECELERATION: float = 1200.0
 
 ## Animation
 var _sprite: Sprite2D
@@ -270,6 +270,9 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		input_dir = input_dir.normalized()
+		# Kill momentum on sharp direction changes (>90° turn)
+		if velocity.length_squared() > 1.0 and velocity.normalized().dot(input_dir) < 0.0:
+			velocity = Vector2.ZERO
 		velocity = velocity.move_toward(input_dir * move_speed, ACCELERATION * delta)
 		is_moving = true
 

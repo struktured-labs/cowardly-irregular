@@ -68,7 +68,7 @@ const BILLBOARD_BASE_SIZE: float = 96.0
 
 var _current_rotation: float = 0.0
 const ROTATION_SPEED: float = 2.5
-const MAX_ROTATION: float = PI / 2.0  # ±90° = 180° total range (authentic SNES feel)
+const MAX_ROTATION: float = PI  # ±180° = full 360° rotation
 const SWAY_PIXELS: float = 16.0
 const BOB_AMPLITUDE: float = 2.5
 const BOB_SPEED: float = 10.0
