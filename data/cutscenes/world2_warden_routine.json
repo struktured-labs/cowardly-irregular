@@ -1,0 +1,76 @@
+{
+  "id": "world2_warden_routine",
+  "title": "Warden of Routine",
+  "world": 2,
+  "trigger": "boss_warden_suburban",
+  "description": "The crossing guard Masterite. A woman with a STOP sign who has guarded one intersection since the beginning.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "She was wearing an orange vest and carrying a STOP sign. She was standing in the exact center of the crosswalk, and she had clearly been standing there for some time."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of Routine",
+        "text": "Halt.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We need to cross the street.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden of Routine",
+        "text": "No crossing without the signal. The signal says WALK. I say WALK. Not before. Not after. Not due to extenuating circumstances.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "There's no traffic.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Warden of Routine",
+        "text": "The absence of visible traffic does not indicate the absence of traffic.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "We'll be quick.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Warden of Routine",
+        "text": "Crossing without the signal is a violation. Violations are not quick. Violations have consequences. Consequences take time. Stand behind the line.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "There's no line.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Warden of Routine",
+        "text": "The line is implied.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 3.0},
+    {"type": "screen_flash", "duration": 0.15},
+    {"type": "set_flag", "flag": "warden_routine_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

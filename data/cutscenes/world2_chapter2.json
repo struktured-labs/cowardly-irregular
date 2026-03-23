@@ -1,0 +1,86 @@
+{
+  "id": "world2_chapter2",
+  "title": "The Rules",
+  "world": 2,
+  "trigger": "world2_first_encounter",
+  "description": "First suburban encounter: enchanted lawn mower, angry mailbox, targeting sprinkler. The HOA memo.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+
+    {"type": "narration", "text": "The first encounter happened in a cul-de-sac three streets from the strip mall. A riding mower sat in someone's driveway until the party walked past it. Then it sat differently."},
+
+    {"type": "screen_shake", "duration": 0.2, "intensity": 2.0},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Oh no.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The lawn mower is the tank. High defense. Low mobility. The mailbox has ranged attack and paper-cut damage, which sounds minor but\u2014",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Mage",
+        "text": "\u2014is not minor. The sprinkler has area control and... it has targeting. Somehow.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "narration", "text": "They won. No one felt good about it."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What is happening.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mail Carrier",
+        "text": "It's been like this for months. Appliances going rogue. Kids disappearing \u2014 not missing, just 'relocated.' The HOA says it's 'community restructuring.'",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Why doesn't anyone question it?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Mail Carrier",
+        "text": "Have you MET the Coordinator?",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "MEMO: Five unregistered residents observed engaging in unauthorized physical altercations with HOA-registered outdoor equipment. This is a CODE VIOLATION.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "",
+        "text": "Failure to report within 24 hours will result in escalating compliance measures. These measures are calibrated to encourage cooperation. \u2014 The Coordinator",
+        "theme": "system",
+        "portrait": "system"
+      }
+    ]},
+
+    {"type": "narration", "text": "Calibrated. That word again."},
+
+    {"type": "set_flag", "flag": "world2_chapter2_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

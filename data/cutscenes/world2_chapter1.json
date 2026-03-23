@@ -1,0 +1,88 @@
+{
+  "id": "world2_chapter1",
+  "title": "Maple Heights",
+  "world": 2,
+  "trigger": "world2_village_entry",
+  "description": "Exploring the suburb. The strip mall with medieval items. The shopkeeper who knows about the portal.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+
+    {"type": "narration", "lines": [
+      "The suburb existed in a state of aggressive normalcy. Every house was a variation on the same house. Every lawn was the same shade of green.",
+      "The sky was blue, but it was the wrong blue \u2014 not wrong in a way you could point to, but wrong in a way you could feel."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "It looks like a village.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "It looks like a village that's been through several stages of middle management. Someone standardized this.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Someone standardized the trees. Same species, same age, same pruning. That's not natural growth.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Nothing here is natural growth.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The strip mall had a pizza place, a candle shop, a frozen yogurt place, and \u2014 inexplicably \u2014 an armory. YE OLDE MEDIEVAL SURPLUS, read the sign."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Shopkeeper",
+        "text": "Everything's half off. We got a huge shipment from... I don't know, the warehouse? It just shows up.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "From Harmonia?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Shopkeeper",
+        "text": "From wherever. You're from the other side of the portal, aren't you. Don't worry about it. People come through sometimes.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Mage",
+        "text": "This HOA. What are they, exactly?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Shopkeeper",
+        "text": "Honey, you are five people in costumes carrying medieval weaponry in a suburb where the mailboxes are already alive.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Shopkeeper",
+        "text": "You are maximum variance. The Coordinator is going to find you within the day. Stock up first.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world2_chapter1_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
