@@ -205,6 +205,10 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	if not path.begins_with("res://"):
 		path = "res://" + path
 
+	# Subtle pitch randomization (±5%) prevents ear fatigue on repeated sounds
+	var pitch_variation = randf_range(0.95, 1.05)
+	var final_pitch = pitch_scale * pitch_variation
+
 	# Check stream cache first
 	if _sfx_stream_cache.has(sound_key):
 		var cached_stream = _sfx_stream_cache[sound_key]
@@ -212,7 +216,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 			player.stream = cached_stream
 			if not is_nan(volume_db_override):
 				player.volume_db = volume_db_override
-			player.pitch_scale = pitch_scale
+			player.pitch_scale = final_pitch
 			player.play()
 			return true
 		else:
@@ -221,18 +225,19 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 
 	# Try loading from disk
 	if not FileAccess.file_exists(path):
+		push_warning("[SFX] File not found: %s (key: %s)" % [path, sound_key])
 		_sfx_stream_cache[sound_key] = null  # Cache miss
 		return false
 	var stream = load(path) as AudioStream
 	if not stream:
-		push_warning("[SFX] Failed to load: %s" % path)
+		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, sound_key])
 		_sfx_stream_cache[sound_key] = null
 		return false
 	_sfx_stream_cache[sound_key] = stream
 	player.stream = stream
 	if not is_nan(volume_db_override):
 		player.volume_db = volume_db_override
-	player.pitch_scale = pitch_scale
+	player.pitch_scale = final_pitch
 	player.play()
 	return true
 
