@@ -474,9 +474,10 @@ func _setup_controller() -> void:
 	controller.encounter_enabled = true
 	controller.current_area_id = "suburban_overworld"
 
-	# Suburban encounters - EarthBound-style enemies
-	controller.set_area_config("suburban_overworld", false, 0.05,
-		["new_age_retro_hippie", "spiteful_crow", "skate_punk", "unassuming_dog", "cranky_lady"])
+	# W2 Suburban encounters — EarthBound-style, avg lv 4
+	# Rate 0.045: slightly lower than W1 (fewer but trickier enemies)
+	controller.set_area_config("suburban_overworld", false, 0.045,
+		["spiteful_crow", "new_age_retro_hippie", "skate_punk", "unassuming_dog", "cranky_lady"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)

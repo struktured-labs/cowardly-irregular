@@ -479,9 +479,10 @@ func _setup_controller() -> void:
 	controller.encounter_enabled = true
 	controller.current_area_id = "futuristic_overworld"
 
-	# Digital-themed encounters
-	controller.set_area_config("futuristic_overworld", false, 0.04,
-		["rogue_process", "memory_leak", "firewall_sentinel", "data_wraith", "recursive_loop"])
+	# W5 Digital encounters — data-themed, avg lv 12 (big jump from W4)
+	# Rate 0.035: rare but dangerous, late-game
+	controller.set_area_config("futuristic_overworld", false, 0.035,
+		["memory_leak", "rogue_process", "recursive_loop", "data_wraith", "firewall_sentinel"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)

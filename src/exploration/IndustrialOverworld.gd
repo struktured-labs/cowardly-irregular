@@ -525,9 +525,10 @@ func _setup_controller() -> void:
 	controller.encounter_enabled = true
 	controller.current_area_id = "industrial_overworld"
 
-	# Industrial encounters - factory-themed enemies
-	controller.set_area_config("industrial_overworld", false, 0.05,
-		["assembly_line_automaton", "shift_supervisor", "rust_elemental", "toxic_sludge", "conveyor_gremlin"])
+	# W4 Industrial encounters — factory-themed, avg lv 7
+	# Rate 0.04: mid-game pacing, demanding fights
+	controller.set_area_config("industrial_overworld", false, 0.04,
+		["conveyor_gremlin", "toxic_sludge", "assembly_line_automaton", "shift_supervisor", "rust_elemental"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)
