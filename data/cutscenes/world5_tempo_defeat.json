@@ -1,0 +1,180 @@
+{
+  "id": "world5_tempo_defeat",
+  "title": "Tempo of Sequence \u2014 Aftermath",
+  "world": 5,
+  "trigger": "boss_tempo_abstract_defeated",
+  "description": "The sequence broke. Not broken \u2014 completed. First, then, after. After is now. Seven hundred and forty-two before the party, none of them passed. The sequence was waiting for exactly this.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The sequence had stopped.",
+      "This was, in the abstract world, the most unusual thing that had ever happened. The Tempo of Sequence was not a being that could stop. It was sequence. Sequence does not stop. It continues until there is nothing left to come after.",
+      "And yet. The sequence had stopped, and the Tempo stood inside the stop, in a duration that was neither before nor after, and looked at the party with something that was not quite recognition and not quite wonder, but lived in the space between them."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "The sequence\u2026 broke.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "A pause. In the abstract world, pauses were not pauses. They were positions in the sequence. This one did not move toward the next position."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "No. Not broken. Completed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "First. Then. After. After is now.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "We're the seven hundred and forty-third.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "Yes. Seven hundred and forty-two before you. None passed. You are the current state. The current state is the only state in which passing is possible. I told you this before the sequence began.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You knew we would pass.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "I knew the sequence. I knew positions. I knew that every position that came before yours was not the position in which passing was possible. I did not know which position would be. Only that passing would occur at a specific position in the sequence.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "Then all seven hundred and forty-two before us were\u2026",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "Prior. They are all prior. They needed to be prior so that you could be current. Sequence requires everything that comes before so that after can exist.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "Every party that came before you was part of making you possible.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Does that mean they were supposed to fail? That their failure was the point?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "They did not fail. They occupied their position. Every position in the sequence is correct. Position seven hundred and forty-three is the position where passage occurs. That does not mean the previous positions were wrong. They were prior. Prior is not wrong. Prior is necessary.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Tempo was quiet in the way that sequence is quiet when it has reached its current position and has not yet moved to the next. Not stopped. Present."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "I have been sequence since before sequence was needed. Before there was a before, I was there to make before possible.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "I was the thing that made First mean something. First needs something after it. I provided the after. I provided all the afters, in the correct order, for longer than the worlds have existed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "I don't know what comes after After.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Neither do we. That's why we're still moving.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "Yes.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "I was before. You are after. That is all sequence ever was.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "I was before so that you could be after. I don't know if that is what I was for, or if it is simply what happened. But it is what happened.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "The sequence resumed. It moved past the current position and into the next, and the next after that, and the Tempo moved with it. But something had shifted in the direction. Before had always been the reference point. Now after was."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "tempo_abstract_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

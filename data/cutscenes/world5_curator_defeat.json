@@ -1,0 +1,255 @@
+{
+  "id": "world5_curator_defeat",
+  "title": "Curator of Entropy \u2014 Aftermath",
+  "world": 5,
+  "trigger": "boss_curator_abstract_defeated",
+  "description": "Everything ends. The Curator accelerates the inevitable. But these ones made the ending interesting. For the first time, entropy finds it is choosing to remember.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.5},
+
+    {"type": "narration", "lines": [
+      "The Curator of Entropy did not fall. It had never stood. It had sat where a throne might have been, where a center might have been, in the way that inevitable things sit: already arrived, already present, without having moved.",
+      "It sat in the aftermath of the party's passage and looked at them the way something looks at a thing it did not expect to see still standing.",
+      "The quiet was very deep."
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of Entropy",
+        "text": "Everything ends.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "A beat. Then, with the careful precision of something revising a statement it has made without revision for longer than anything in the room has existed:"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of Entropy",
+        "text": "Everything ends. I have accelerated the inevitable since before the worlds needed accelerating.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "But you\u2014",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "You made the ending interesting.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "We didn't end.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "No. Not yet. You will. Everything does. I am patient.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "But the process of your persistence has been\u2026 unexpected. I have accelerated the dissolution of systems for a very long time. Every system resists. That is the nature of organized systems. The resistance is uniform. The outcome is not in question.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "You resisted in a way that was not uniform.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "Are you saying we surprised you?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "Entropy is not surprised. Entropy is the background of all things. It does not have experiences. It is the thing that experiences happen against.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "And yet.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "A long pause that was not comfortable but was honest. The Curator looked at the party the way things look at things when they are examining an anomaly with as much care as they can bring to it."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of Entropy",
+        "text": "You should not have reached this world. The prior four worlds were designed to hold systems such as yours. They did not hold you.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "You should not have passed the Warden of Form. The Warden guards everything that has a shape. You should not have passed the Arbiter of Function. The Arbiter evaluates everything that has a purpose. You should not have passed the Tempo of Sequence. The Tempo orders everything that exists in time.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "I am what remains after all of those have finished. I am the last certainty. I do not lose.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "We're still here.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "Yes.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of Entropy",
+        "text": "I am entropy. I do not choose dissolution. Dissolution is what I am. I do not make decisions about it any more than a river decides to be wet.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "But I find I am choosing to remember this.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "Entropy remembers things?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "No. Entropy disperses things. Memory is the opposite of entropy. Memory is organization persisting against the tendency to disorder.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "I am choosing to do the opposite of what I am. This is new.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The quiet deepened further. The abstract world held still. Around the Curator of Entropy, the gradual dissolution of all organized things continued as it had always continued \u2014 the inevitable slow unwinding of everything that had ever been assembled. Except here. Here, in this one place, something was organizing instead of dispersing. An exception. Small, precise, and deliberate."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of Entropy",
+        "text": "I have watched everything end. I have watched the Curator of the Flame, the Curator of the Budget, the Curator of the Pipeline, the Curator of the Memory Pool \u2014 I have watched all of them approach their conclusions.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "They all kept records until the end. I never understood why. Records become disorder. Records are things that were organized and will eventually not be.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "I think I understand now.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Why?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "Because some things, before they end, are worth the disorder of having been remembered.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The Curator of Entropy sat in its place at the center of all things ending and did not accelerate. The party stood at the edge of what lay beyond the abstract world, and the Curator watched them with the full attention of something that has been watching endings for longer than time had a name and has, just now, discovered what it is like to prefer a different outcome."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of Entropy",
+        "text": "Go. Whatever comes after this \u2014 I hope it is worth the ending that follows it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of Entropy",
+        "text": "Everything ends. I will remember that yours was interesting.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.2},
+
+    {"type": "narration", "text": "Behind them, the abstract world continued its slow return to undifferentiated nothing. Ahead, whatever the system deposited at the end of all things waited in the silence that follows a question that has not yet been asked."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "curator_abstract_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

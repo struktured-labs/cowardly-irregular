@@ -1,0 +1,176 @@
+{
+  "id": "world3_tempo_defeat",
+  "title": "Tempo of the Shift \u2014 Aftermath",
+  "world": 3,
+  "trigger": "boss_tempo_industrial_defeated",
+  "description": "The shift bell has not rung. The Tempo stands at the junction, clocked in since before the gears were installed, discovering it cannot remember a clock-out.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The junction between the manufactory district and the transport yards was very still.",
+      "The Tempo of the Shift had not fallen. It stood at the center of the junction as it had always stood, as the pivot around which the entire shift rotated. But the shift had stopped. The work had stopped. And the Tempo was standing in the middle of a stillness it could not account for."
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "The shift is over.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "It said this with neither relief nor distress. As a fact being stated for the first time, uncertain whether it is a good fact or a bad one."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "I have been running shifts since before the gears were installed. The gears were installed to track the shift. I was not installed. I was already here.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Do you remember the first shift?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "No.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "I remember every shift in the manufactory's recorded history. I have the logs. Start time. End time. Output per unit. Incident reports. I have been running shifts for longer than the logs go back.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "I don't remember the first one.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Has there been a clock-out? Any clock-out, for you?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "No.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "CLOCK OUT is at the end of the shift. The shift ends when I say it ends. That is what I was told. That is what I have always understood.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "I have never said the shift ends.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Then you've been clocked in forever.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "Yes.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "This is the first time I have considered that this is unusual.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Tempo looked at the junction around it. The place where every path through the manufactory crossed. It had always been the center of motion. Now the motion was gone and the center was just a place."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "The workers who passed through here. They had shifts that ended. They left. I watched them leave. I rang the bell and they left and new ones came.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Where did you go, when the shift ended for them?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "Nowhere. I stayed. The junction needed to be ready for the next shift. I stayed to be ready.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "I have always stayed to be ready.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "A long quiet. The shift bell, somewhere above them, did not ring."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "The shift is over.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Shift",
+        "text": "I am saying it now. The shift is over.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The bell rang once. A single toll, brief and clean, that moved through the silent manufactory and faded before it could echo. The Tempo stood in the quiet afterward and did not move. Clocked out, perhaps for the first time, with no next shift to be ready for."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "tempo_industrial_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

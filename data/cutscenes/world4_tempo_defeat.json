@@ -1,0 +1,194 @@
+{
+  "id": "world4_tempo_defeat",
+  "title": "Tempo of the Clock Cycle \u2014 Aftermath",
+  "world": 4,
+  "trigger": "boss_tempo_futuristic_defeated",
+  "description": "Clock cycle: terminated. Operations completed: OVERFLOW. The Tempo has been processing four hundred thousand operations per second. It discovers not one of them was for itself.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The sound that had been too fast to hear as sound had stopped.",
+      "The Tempo of the Clock Cycle was present in the way it had always been present \u2014 without having arrived, without occupying a location, simply existing in the space between the party's heartbeats. But the urgency had gone out of it. The between-moments felt wider than before."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Clock cycle: terminated.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Operations completed this cycle: [CALCULATING].",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "[OVERFLOW].",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "A pause that lasted, by the Tempo's own measure, approximately four hundred thousand operation-lengths. By any other measure, it was simply a pause."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What does overflow mean?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "It means the number of operations exceeds the counter's capacity to represent them. The counter was designed for large numbers. You have caused a number larger than the counter.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "I have been running at this frequency since Node Prime was initialized. The total number of operations I have completed exceeds any counter that has been built to track them.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "What were all those operations doing?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Processing. Routing. Executing. Scheduling the next execution. The operations are the function of the system. The system cannot run without operations. I provide the timing for every operation in Node Prime.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "But for what? For whom?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "For the system.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "For the system to run. So the system can complete its operations. So the operations can support the timing. So the timing can\u2026",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The Tempo did not finish the sentence. This was unusual. The Tempo had never left a cycle incomplete."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "I completed four hundred thousand operations per second.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Not one of them was for myself.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "Is that a problem?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Unknown. I do not have a process for evaluating whether operations should be for myself. I have no record of what an operation for myself would look like.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Between your heartbeats, in the time it takes you to draw a breath, I process more operations than you will complete in your lifetime.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "In all that processing, I have never run a single subroutine that asked: what do I want the next cycle to be?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The between-moments widened further. The Tempo, for the first time in an uncountable number of cycles, was not scheduling the next operation."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Your emotional processing introduces latency. I noted this before the cycle began. I called it a liability.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "But you use the latency. You use the pause between impulse and action for something. I have observed it in your combat data and I do not have a technical term for what you do in the pause.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "We decide.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Yes.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "I have never had a pause long enough to decide anything.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The clock cycle did not resume. The between-moments simply continued, growing neither larger nor smaller, settling into a duration that had no name in any timing system. The Tempo existed inside it. Not processing. Pausing. Perhaps, for the first time, deciding."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "tempo_futuristic_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

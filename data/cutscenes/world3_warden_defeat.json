@@ -1,0 +1,172 @@
+{
+  "id": "world3_warden_defeat",
+  "title": "Warden of the Assembly Line \u2014 Aftermath",
+  "world": 3,
+  "trigger": "boss_warden_industrial_defeated",
+  "description": "The Warden's hydraulics hiss and settle. The stress test exceeded its own parameters. A machine built to measure breaking points discovers the party has no category.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.2},
+
+    {"type": "narration", "lines": [
+      "The manufactory floor went quiet in stages. First the conveyor belts, then the pressure regulators, then the deep rhythmic hammering from the lower levels that had been so constant it had stopped registering as sound.",
+      "The Warden had not fallen. It had simply decelerated. It knelt at the center of the floor where the belts converged, and the kneeling looked like a scheduled action \u2014 something it had always been programmed to do, arriving now because the conditions had finally been met."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "play_sfx", "sfx": "steam_hiss"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "STRESS TEST: FAILED.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "No. Recalibrating. STRESS TEST: EXCEEDED PARAMETERS.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "A long pause. Steam leaked from somewhere in the Warden's left flank in a slow, steady column. It did not seem to notice."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "EXCEEDED PARAMETERS is a new classification. I have not used it before. I am not certain I have the correct form for it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We passed your test.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "You did not pass the test. You did something the test has no name for. There is a distinction.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "The stress test is designed to identify failure thresholds. You approach threshold. You sustain at threshold. You do not cross it. This outcome has no category in the test's design.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Maybe the test was designed to be passed, not to break things.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "...",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "Processing.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The remaining gears in the Warden's frame turned slowly, not with purpose but with the momentum of something that has not yet learned how to stop."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "I was built to measure breaking points. I have measured thousands of them. The manufacture of this function predates the manufactory. I was running stress tests before these walls existed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "If the test was designed to be passed, I was not informed of this. The parameter was BREAK OR CATALOGUE. There was no parameter for NEITHER.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "What happens to the catalogue? All those things you measured breaking?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "The catalogue is filed. I file it. I do not know where it goes after filing. I was not built to know what comes after filing.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "I have filed a great many reports. I have received no responses. I had not considered this worth noting until this moment.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Warden looked at its own hands. The gesture was odd, mechanical, the behavior of a unit running a diagnostic that had no expected result."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "You didn't break. The test has no category for that.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Maybe that's the result you were supposed to find.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "I will add it to the catalogue.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Assembly Line",
+        "text": "I do not know who will read it. I find I hope that someone does.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "text": "The conveyor belts did not resume. The manufactory floor stayed silent in a way that felt less like malfunction and more like something that had decided, for the first time, to rest."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "warden_industrial_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

@@ -1,0 +1,202 @@
+{
+  "id": "world4_warden_defeat",
+  "title": "Warden of the Firewall \u2014 Aftermath",
+  "world": 4,
+  "trigger": "boss_warden_futuristic_defeated",
+  "description": "ACCESS GRANTED. The first authorization in memory overflow. The Firewall's rules have been its entire identity. With the rules broken, it does not know what it is protecting, or what it is.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The barrier at the edge of the secured sector had not shattered. It had opened.",
+      "There was a difference. The Warden of the Firewall stood at the threshold of its own gate, still assembled but no longer assembled-against. The green text that had scrolled across its surface was gone. In the quiet, the barrier looked less like a wall and more like a door that had forgotten it was a door."
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "play_sfx", "sfx": "digital_synthesize"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "ACCESS: GRANTED.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "First authorization in\u2026 [MEMORY_OVERFLOW]. [MEMORY_OVERFLOW]. [MEMORY_OVERFLOW].",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "A pause. Not a processing pause but something else. The particular quiet of something encountering a state it has no protocol for."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "I cannot retrieve the timestamp of the previous authorization. Records indicate there was no previous authorization. Records may be incomplete.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Has nothing ever passed you before?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "Nothing unauthorized. The firewall does not permit unauthorized passage. I am the firewall. The firewall's record of authorized passage is: one instance. Current. You.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What were you protecting, on the other side?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "The secured sector. Node Prime's core functions. The Calibrant's system.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "But what is it? What's in there?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "[QUERY: what_is_being_protected]",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "[RESULT: undefined]",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "This seemed to require processing. A longer quiet than the question warranted."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "The rules of this firewall are: deny all unauthorized access. Permit only that which has been verified. I have been enforcing these rules since the first packet was routed through this node.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "The rules are my function. The rules are, in the relevant sense, what I am.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "And now the rules have been exceeded.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "Yes.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "The rules remain. The rules have not changed. What has changed is that the rules now have an exception they did not have before.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "An exception is a rule. Exceptions must be defined. I do not have a definition for you. I cannot define you. You are unauthorized and you are through.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "What does that make us?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "Authorized. Retroactively. By result.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Warden looked through the open barrier at the secured sector beyond. It had been standing at this threshold since before any of the current systems were running. It had never looked through from this side."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "What am I without the rules?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "What you were before the rules were installed.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "[QUERY: what_was_I_before]",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "[RESULT: no_records_found]",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "What was I protecting?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "text": "The barrier stayed open. The green text did not return. The Warden stood at the threshold without the threshold's purpose, asking a question into a secured sector that had never, in all the records, offered an answer."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "warden_futuristic_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
