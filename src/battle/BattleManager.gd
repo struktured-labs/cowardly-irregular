@@ -833,9 +833,24 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 
 
 func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array, available_abilities: Array) -> Dictionary:
-	"""Specialized AI for Masterite bosses - each type fights differently"""
+	"""Specialized AI for Masterite bosses - each type fights differently.
+	Phase escalation: behavior intensifies at 66% and 33% HP thresholds."""
 	var masterite_type = combatant.get_meta("masterite_type", "")
 	var hp_pct = combatant.get_hp_percentage()
+
+	# Phase escalation: track and announce phase transitions
+	var battle_phase = combatant.get_meta("masterite_battle_phase", 1)
+	var new_phase = 1
+	if hp_pct < 33.0:
+		new_phase = 3
+	elif hp_pct < 66.0:
+		new_phase = 2
+	if new_phase > battle_phase:
+		combatant.set_meta("masterite_battle_phase", new_phase)
+		var phase_names = {2: "enraged", 3: "desperate"}
+		battle_log_message.emit("[color=red]★ %s becomes %s! ★[/color]" % [combatant.combatant_name, phase_names.get(new_phase, "?")])
+		# Phase transition: refresh proclamation buff
+		combatant.active_buffs.clear()
 
 	# Helper to find ability by ID from available list
 	var find_ability = func(id: String) -> Dictionary:
@@ -853,58 +868,75 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 	match masterite_type:
 		"warden":
 			# Tank behavior: iron guard when damaged, endurance test to pressure, crushing blow on lowest
-			if hp_pct < 60.0 and not find_ability.call("masterite_iron_guard").is_empty():
+			# Phase 2+: iron guard triggers earlier, judgment unlocks
+			# Phase 3: endurance test every turn, judgment on weakest
+			var warden_guard_threshold = 60.0 if battle_phase == 1 else 80.0
+			if hp_pct < warden_guard_threshold and not find_ability.call("masterite_iron_guard").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_iron_guard", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.4 and not find_ability.call("masterite_endurance_test").is_empty():
+			var endurance_chance = [0.4, 0.6, 0.85][battle_phase - 1]
+			if randf() < endurance_chance and not find_ability.call("masterite_endurance_test").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_endurance_test", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
 			if randf() < 0.6 and not find_ability.call("masterite_crushing_blow").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_crushing_blow", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
-			if hp_pct < 40.0 and not find_ability.call("masterite_judgment").is_empty():
+			if battle_phase >= 2 and not find_ability.call("masterite_judgment").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_judgment", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
 
 		"arbiter":
 			# Offense behavior: counter stance first, then precise strike, execution on low HP targets
+			# Phase 2+: execution threshold raised to 50%, more aggressive
+			# Phase 3: measured blow spam, execution on anyone below 60%
 			var has_atk_buff = combatant.active_buffs.any(func(b): return b.get("stat") == "attack")
 			if not has_atk_buff and not find_ability.call("masterite_counter_stance").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_counter_stance", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability")}
-			# Execution on targets below 30% HP
-			var low_targets = alive_enemies.filter(func(e): return e.get_hp_percentage() < 30.0)
+			var exec_threshold = [30.0, 50.0, 60.0][battle_phase - 1]
+			var low_targets = alive_enemies.filter(func(e): return e.get_hp_percentage() < exec_threshold)
 			if low_targets.size() > 0 and not find_ability.call("masterite_execution").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_execution", "targets": [low_targets[0]], "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.5 and not find_ability.call("masterite_precise_strike").is_empty():
+			var strike_chance = [0.5, 0.65, 0.8][battle_phase - 1]
+			if randf() < strike_chance and not find_ability.call("masterite_precise_strike").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_precise_strike", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.4 and not find_ability.call("masterite_measured_blow").is_empty():
+			var aoe_chance = [0.4, 0.55, 0.75][battle_phase - 1]
+			if randf() < aoe_chance and not find_ability.call("masterite_measured_blow").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_measured_blow", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
 
 		"tempo":
 			# Speed behavior: haste self, slow party, quick strikes
+			# Phase 2+: time tax more frequent, multi-slow
+			# Phase 3: relentless quick strikes, constant speed manipulation
 			var has_spd_buff = combatant.active_buffs.any(func(b): return b.get("stat") == "speed")
 			if not has_spd_buff and not find_ability.call("masterite_haste").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_haste", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.35 and not find_ability.call("masterite_time_tax").is_empty():
+			var tax_chance = [0.35, 0.5, 0.7][battle_phase - 1]
+			if randf() < tax_chance and not find_ability.call("masterite_time_tax").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_time_tax", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.4 and not find_ability.call("masterite_slow").is_empty():
+			var slow_chance = [0.4, 0.55, 0.7][battle_phase - 1]
+			if randf() < slow_chance and not find_ability.call("masterite_slow").is_empty():
 				var fastest = alive_enemies.duplicate()
 				fastest.sort_custom(func(a, b): return a.speed > b.speed)
-				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_slow", "targets": [fastest[0]], "speed": _compute_action_speed(combatant, "ability")}
+				var slow_targets = [fastest[0]] if battle_phase < 3 else fastest.slice(0, mini(2, fastest.size()))
+				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_slow", "targets": slow_targets, "speed": _compute_action_speed(combatant, "ability")}
 			if not find_ability.call("masterite_quick_strike").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_quick_strike", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
 
 		"curator":
 			# Resource drain behavior: dispel buffs, drain MP from casters, audit for damage
+			# Phase 2+: mana drain more aggressive, dispel multi-target
+			# Phase 3: audit every turn, resource starvation focus
 			var buffed_targets = alive_enemies.filter(func(e): return e.active_buffs.size() > 0)
 			if buffed_targets.size() > 0 and not find_ability.call("masterite_dispel").is_empty():
-				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_dispel", "targets": [buffed_targets[0]], "speed": _compute_action_speed(combatant, "ability")}
-			# Target highest MP enemy with mana drain
-			if randf() < 0.45 and not find_ability.call("masterite_mana_drain").is_empty():
+				var dispel_targets = [buffed_targets[0]] if battle_phase < 3 else buffed_targets.slice(0, mini(3, buffed_targets.size()))
+				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_dispel", "targets": dispel_targets, "speed": _compute_action_speed(combatant, "ability")}
+			var drain_chance = [0.45, 0.6, 0.8][battle_phase - 1]
+			if randf() < drain_chance and not find_ability.call("masterite_mana_drain").is_empty():
 				var mp_sorted = alive_enemies.duplicate()
 				mp_sorted.sort_custom(func(a, b): return a.current_mp > b.current_mp)
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_mana_drain", "targets": [mp_sorted[0]], "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.4 and not find_ability.call("masterite_resource_cut").is_empty():
+			var cut_chance = [0.4, 0.55, 0.7][battle_phase - 1]
+			if randf() < cut_chance and not find_ability.call("masterite_resource_cut").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_resource_cut", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
 			if not find_ability.call("masterite_audit").is_empty():
