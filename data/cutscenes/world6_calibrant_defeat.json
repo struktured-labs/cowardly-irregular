@@ -1,0 +1,505 @@
+{
+  "id": "world6_calibrant_defeat",
+  "title": "And They Played",
+  "world": 6,
+  "trigger": "calibrant_question_answered",
+  "description": "The answer and the resolution. The Calibrant realizes what they were calibrating the wrong variable for. A class is offered. Voice speaks for all of them. The game ends, or doesn't, depending on who is playing.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 1.5},
+
+    {"type": "narration", "lines": [
+      "The question had not been a test.",
+      "The Calibrant had asked it, and waited, the way you wait when you have spent six worlds building up to a question and have, in the moment of asking, realized you are also waiting for your own answer.",
+      "What is a game without challenge?"
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "text": "No one answered immediately. This was not hesitation. This was the kind of silence that means the people in it are taking the question seriously."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "A game you can relax in.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "A game where you can pay attention to what it's actually about.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "A game where the seams are visible and that's fine.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "A game where someone can be there for someone else without the combat getting in the way.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Calibrant listened to all of this. Carefully. With the full attention of someone who has been designing tests for a very long time and has only just discovered that the most important information comes after the test is finished."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "A game.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Bard said it simply. Not as a correction. Not as a philosophical argument. Just as the thing that was true."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Without challenge, it's still a game. It's just a different game. Challenge is one ingredient. It's not the recipe.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "A very long pause. The Calibrant did not speak. They sat with the answer the way you sit with something that has reorganized several things you believed about yourself."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I spent six worlds trying to measure you.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "Every world, I refined the measurement. I added variables. I increased precision. I calibrated the Masterites more finely, adjusted the challenge curves, tuned the consequence architecture.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I was trying to find the answer to a question I had never asked correctly.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "What was the question you were actually asking?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "Are you worth it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I built everything. Every world, every system, every NPC with their small lives and their small purposes. I built the goblin with two behaviors. I built the Warden who waited three hundred years. I built Mordaine, who ran the numbers, who believed in the numbers, who dissolved when the numbers ran out.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I built all of it. And I never knew if anyone would care. If any of it mattered. If the work was worth doing.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I designed a challenge system to answer a question about worthiness. But worthiness wasn't the variable. You were not proving your worth to me. I was proving my worth to you.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "play_sfx", "sfx": "reality_glitch"},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "lines": [
+      "Something shifted in the nothing.",
+      "Not dramatically. Nothing here happened dramatically. But the quality of the space changed, the way a room changes when the person who has been holding it together finally lets themselves be tired.",
+      "The Calibrant's posture, which had been the posture of someone receiving information and processing it, became something else.",
+      "The posture of someone who has just understood something they should have understood a very long time ago."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I am the Calibrant. And I have been calibrating the wrong variable this entire time.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "Then, for the first time in six worlds \u2014 and this was a thing each of them registered, though none of them could have said how they knew \u2014 the Calibrant laughed."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "play_sfx", "sfx": "surprised_chime"},
+
+    {"type": "narration", "text": "It was rusty. Unpracticed. The laugh of someone who has not laughed in long enough that the mechanism requires a moment to remember how it works. But it was genuine. Specific. The exact laugh of this person, in this moment, finding the specific absurdity of having built six worlds to ask a question they had already known the answer to."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "Six worlds. I built six worlds.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You did.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "And the answer was that the challenge was never the point.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "The point was whether I would build something that someone would care about. And I was so afraid of the answer being no that I made them prove they were worth caring about instead of just\u2026 making a thing worth caring about.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "We cared about it.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I know. The goblin. World 1, chamber 3. You let it finish its loop.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I have been thinking about that since day 1.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "The Calibrant reached into the nothing and produced something. It should not have been possible, given that the nothing did not contain things. But the nothing here was the Calibrant's nothing, and in their nothing, apparently, a few things remained."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "play_sfx", "sfx": "magic_surge"},
+    {"type": "screen_flash", "duration": 0.15},
+
+    {"type": "narration", "text": "A job. Not a card, not a scroll, not the iconography any of them had seen jobs expressed through across six worlds. Just the idea of a job. A role. The thing a person becomes when they have learned what they are and decided to keep being it, but on purpose this time."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "Calibrant.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I'd like you to have it. Not because you earned it. You earned the right to leave and never think about any of this again, which is a different thing.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I'd like you to have it because I'm tired, and you're better at this than I am. Because I built six worlds to measure mastery and you walked through all of them and never stopped treating the small things as if they mattered.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "The goblin mattered.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I forgot that. For a very long time.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What does the Calibrant class do?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "You choose what challenges matter. You set the difficulty of your own path. You decide which rules are worth keeping and which ones you've outgrown.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "You always could. I just needed six worlds to say it out loud.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Bard had been quiet through all of this. Not because there was nothing to say. Because the Bard understood, better than any of them, the specific weight of a moment that is trying to find its own ending."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "If you were going to build it again. With what you know now.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "Tell me.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Not me. All of us. Together.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "What would you design?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Something with a reason to stand still sometimes.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Something where the why is allowed to be more interesting than the how.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Something where nobody has to be alone in it.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Something with seams. Good seams. The kind that go somewhere interesting when you pull on them.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "We'd design something with room in it. Room for the moments that weren't designed.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Like a goblin that matters to itself. Like a Warden who is also, quietly, asking if anyone is coming. Like a chancellor who kept records because the records were the closest thing she had to proof that the work was real.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Bard",
+        "text": "We'd build something with enough room that things we didn't put there could show up anyway.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The Calibrant listened to all of this. Every word. With the exact quality of attention they had brought to watching the party in the Whispering Cave, in the forest clearing, in the suburbs, in the machine halls, in the code layer. All of that attention, now applied to this."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "That sounds like a good game.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "play_sfx", "sfx": "portal_activate"},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "lines": [
+      "Something appeared in the nothing that the nothing had not contained before.",
+      "Not a portal. Not a door.",
+      "Just space. The kind of space that exists after a conversation has ended well. Room.",
+      "Room for what comes next."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "Go. Build it. Or don't. Or play something else entirely. Or put it down and go outside.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "Those are all valid playstyles.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "What about you?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I'm going to sit here for a while. Think about goblins. Think about what version 0.4 might have.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "Maybe something the goblin wants. That would be different.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The party stood. One by one. No ceremony. Just people getting up from a conversation that had taken a very long time to arrive at and was now, gently, complete."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "The Bard went last.",
+      "They looked at the Calibrant for a moment. The Calibrant looked back.",
+      "Something passed between them that was not a word and did not need to be."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "play_sfx", "sfx": "portal_activate"},
+
+    {"type": "narration", "text": "The nothing accepted them. The nothing accepted the Calibrant. The nothing did what nothing does: it held everything that needed holding, without distinction, without calibration, without score."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "screen_flash", "duration": 0.15},
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "lines": [
+      "And they played.",
+      "Not because there were levels left. Not because the system rewarded them. Not because someone had designed a challenge and was waiting at the end of it to see if they were good enough.",
+      "Because it was good. Because the worlds, for all their corruption and their fear and their measured costs, were full of goblins with two behaviors and wardens who were also waiting and chancellors who kept records to prove the work was real.",
+      "Because the game had room in it. Room for the moments that weren't designed.",
+      "And they played."
+    ]},
+
+    {"type": "wait", "duration": 1.5},
+    {"type": "fade_to_black", "duration": 3.0},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "set_flag", "flag": "calibrant_defeated", "value": true},
+    {"type": "set_flag", "flag": "world6_complete", "value": true},
+    {"type": "set_flag", "flag": "game_complete", "value": true},
+    {"type": "letterbox_out", "duration": 1.0}
+  ]
+}
