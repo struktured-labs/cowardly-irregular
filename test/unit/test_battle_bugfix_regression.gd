@@ -418,3 +418,105 @@ func test_elemental_immunity_modifier() -> void:
 func test_elemental_neutral_modifier() -> void:
 	var mod = _combatant.calculate_elemental_modifier("dark")
 	assert_eq(mod, 1.0, "Neutral element should return 1.0x modifier")
+
+
+# ===========================================================================
+# Status effect regression tests (commit 0e830a0)
+# ===========================================================================
+
+# ---- Status effect duration tracking ----
+
+func test_status_added_with_duration() -> void:
+	_combatant.add_status("poison", 3)
+	assert_true(_combatant.has_status("poison"), "Combatant should have poison status")
+	assert_eq(_combatant.status_durations.get("poison", 0), 3, "Poison should have 3 turns remaining")
+
+
+func test_status_expires_after_duration() -> void:
+	_combatant.add_status("blind", 2)
+	assert_true(_combatant.has_status("blind"), "Should have blind status")
+
+	_combatant.update_buff_durations()
+	assert_true(_combatant.has_status("blind"), "Blind should persist after 1 tick")
+	assert_eq(_combatant.status_durations.get("blind", 0), 1, "Blind should have 1 turn remaining")
+
+	_combatant.update_buff_durations()
+	assert_false(_combatant.has_status("blind"), "Blind should expire after 2 ticks")
+
+
+func test_status_removed_cleans_duration() -> void:
+	_combatant.add_status("stun", 3)
+	_combatant.remove_status("stun")
+	assert_false(_combatant.has_status("stun"), "Stun should be removed")
+	assert_false(_combatant.status_durations.has("stun"), "Duration entry should be cleaned up")
+
+
+func test_permanent_status_never_expires() -> void:
+	_combatant.add_status("curse", -1)
+	for i in range(10):
+		_combatant.update_buff_durations()
+	assert_true(_combatant.has_status("curse"), "Permanent status (-1) should never expire")
+
+
+# ---- Poison DOT ----
+
+func test_poison_deals_damage_per_turn() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 100
+	_combatant.add_status("poison", 3)
+
+	_combatant.update_buff_durations()
+	# Poison deals 5% max HP = 5 damage
+	assert_eq(_combatant.current_hp, 95, "Poison should deal 5%% max HP (5 damage)")
+
+
+func test_poison_can_kill() -> void:
+	var die_count = 0
+	_combatant.died.connect(func(): die_count += 1)
+	_combatant.max_hp = 100
+	_combatant.current_hp = 3
+	_combatant.add_status("poison", 5)
+
+	_combatant.update_buff_durations()
+	# Poison deals 5 damage, HP was 3 → should die
+	assert_eq(_combatant.current_hp, 0, "HP should reach 0 from poison")
+	assert_eq(die_count, 1, "Poison should kill combatant at 0 HP")
+
+
+func test_poison_minimum_1_damage() -> void:
+	_combatant.max_hp = 10
+	_combatant.current_hp = 10
+	_combatant.add_status("poison", 2)
+
+	_combatant.update_buff_durations()
+	# 5% of 10 = 0.5, floored to 0, but min is 1
+	assert_eq(_combatant.current_hp, 9, "Poison should deal minimum 1 damage even on low HP targets")
+
+
+# ---- Status signal emissions ----
+
+func test_status_added_signal_fires() -> void:
+	var added_status = ""
+	_combatant.status_added.connect(func(s): added_status = s)
+	_combatant.add_status("sleep", 2)
+	assert_eq(added_status, "sleep", "status_added signal should fire with status name")
+
+
+func test_status_removed_signal_fires() -> void:
+	var removed_status = ""
+	_combatant.status_removed.connect(func(s): removed_status = s)
+	_combatant.add_status("stun", 1)
+	_combatant.update_buff_durations()
+	assert_eq(removed_status, "stun", "status_removed signal should fire when status expires")
+
+
+# ---- No duplicate statuses ----
+
+func test_duplicate_status_not_stacked() -> void:
+	_combatant.add_status("poison", 3)
+	_combatant.add_status("poison", 5)
+	var count = 0
+	for s in _combatant.status_effects:
+		if s == "poison":
+			count += 1
+	assert_eq(count, 1, "Same status should not stack — only one instance")
