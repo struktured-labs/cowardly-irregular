@@ -1,0 +1,45 @@
+{
+  "id": "world4_prologue",
+  "title": "Gray",
+  "world": 4,
+  "trigger": "world4_portal_entry",
+  "description": "Arrival in the industrial world. No sky, just ceiling. Steampunk craft becomes raw function. Rivet Row.",
+  "steps": [
+    {"type": "fade_from_black", "duration": 1.5},
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "play_music", "track": "world4_village"},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "There was no sky. Not a clouded sky, not a dark sky. No sky at all. Just a ceiling \u2014 gray, flat, industrial \u2014 stretching in every direction.",
+      "The air tasted like recycled air. Not stale. Recycled. It had the flavor of efficiency and the aftertaste of nothing.",
+      "The ground was concrete. Poured, cured, and forgotten. Its purpose was to be stood on, not admired."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "The wrench-sword became a baton again. The Steamknight's coat simplified into a hard-worn jacket. His patch read: ENFORCER.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      },
+      {
+        "speaker": "",
+        "text": "The Steampriest became a Safety Officer. The Alchemist became a Lab Technician. The Saboteur became the Whistleblower. The Busker became the PA Announcer.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Right. Right.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "narration", "text": "Welcome to Rivet Row."},
+
+    {"type": "set_flag", "flag": "world4_prologue_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

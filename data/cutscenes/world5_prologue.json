@@ -1,0 +1,87 @@
+{
+  "id": "world5_prologue",
+  "title": "Boot Sequence",
+  "world": 5,
+  "trigger": "world5_portal_entry",
+  "description": "The digital world loads like a webpage. The Calibrant's frustration is visible in the sky. Code scrolls under the party's skin.",
+  "steps": [
+    {"type": "fade_from_black", "duration": 1.5},
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "play_music", "track": "world5_village"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "INITIALIZING... LOADING WORLD_05_DIGITAL.DAT... WARNING: PLAYER_PARTY EXCEEDS SYSTEM PARAMETERS",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "",
+        "text": "NOTE TO SELF: they are getting better at this faster than the curve predicted. The damage formula I rewrote for the Arbiter? One-shotted. FOURTEEN TIMES I rewrote it.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "",
+        "text": "WELCOME TO THE SOURCE LAYER. Good luck. You'll need it. (just kidding. luck is a random seed. i control the seed.) (i think i still control the seed.)",
+        "theme": "system",
+        "portrait": "system"
+      }
+    ]},
+
+    {"type": "play_sfx", "sfx": "reality_glitch"},
+
+    {"type": "narration", "lines": [
+      "The world loaded around them like a webpage on a slow connection. First geometry \u2014 wireframe outlines. Then textures \u2014 green-on-black, terminal aesthetic. Then lighting \u2014 the cold blue glow of a monitor in a dark room.",
+      "Node Prime didn't look like a place. It looked like the idea of a place."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Is anyone else seeing this?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "We're actually in the code. Not fighting through a digital world. In it.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "We've been in the code since World 1. We just couldn't see the rendering.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Someone is watching us right now. Not through an NPC. Directly.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "narration", "text": "In the sky, between streams of data: calibrant_frustration: ELEVATED."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Elevated. Not high. Not critical. That's the word of someone trying very hard to seem calm.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Good.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world5_prologue_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
