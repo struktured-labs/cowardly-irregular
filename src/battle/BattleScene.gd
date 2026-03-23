@@ -155,7 +155,7 @@ var _command_menu: BattleCommandMenuClass = null
 var _results_display: BattleResultsDisplayClass = null
 
 ## Tutorial hints (persists across battles via static-like save)
-static var _hints_shown: Dictionary = {}  # {"hint_id": true}
+static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persists across scene instances within a session. Intentional — hints show once per game session.
 
 
 func set_player(player: Combatant) -> void:
@@ -1422,8 +1422,16 @@ func _on_battle_started() -> void:
 	# Start battle music - use boss music if fighting a miniboss
 	var is_boss_fight = _check_for_boss()
 	var boss_type = _get_boss_type()
+	var masterite_type = _get_masterite_type()
 	if is_boss_fight:
-		if boss_type == "cave_rat_king":
+		if masterite_type != "":
+			# Masterite bosses have per-role, per-world music tracks
+			var world_suffix = SoundManager._get_current_world_suffix()
+			var music_track = "boss_%s_%s" % [masterite_type, world_suffix]
+			_base_music_track = music_track
+			SoundManager.play_music(music_track)
+			print("[MUSIC] Playing Masterite %s theme (%s)" % [masterite_type, world_suffix])
+		elif boss_type == "cave_rat_king":
 			_base_music_track = "boss_rat_king"
 			SoundManager.play_music("boss_rat_king")
 			print("[MUSIC] Playing sneaky Rat King theme")
@@ -1487,6 +1495,15 @@ func _get_boss_type() -> String:
 		if enemy and is_instance_valid(enemy):
 			if enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss"):
 				return enemy.get_meta("monster_type", "")
+	return ""
+
+
+func _get_masterite_type() -> String:
+	"""Get the Masterite role (warden/arbiter/tempo/curator) if fighting a Masterite boss"""
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy):
+			if enemy.has_meta("masterite") and enemy.get_meta("masterite"):
+				return enemy.get_meta("masterite_type", "")
 	return ""
 
 
@@ -1819,6 +1836,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			else:
 				_play_ability_animation(anim_type, animator)
 				_spawn_ability_effects(ability_id, targets)
+		"advance":
+			pass  # Advance sub-actions handle their own animations
 		"item":
 			animator.play_item()
 		"defer":

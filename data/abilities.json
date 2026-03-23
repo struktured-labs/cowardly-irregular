@@ -158,10 +158,10 @@
 		"name": "Backstab",
 		"type": "physical",
 		"animation": "backstab",
-		"mp_cost": 10,
+		"mp_cost": 14,
 		"description": "High damage attack with critical chance",
 		"damage_multiplier": 2.0,
-		"crit_chance": 0.5,
+		"crit_chance": 0.3,
 		"target_type": "single_enemy"
 	},
 	"mug": {
@@ -272,10 +272,10 @@
 		"name": "Drain Life",
 		"type": "magic",
 		"animation": "cast_dark",
-		"mp_cost": 12,
+		"mp_cost": 16,
 		"description": "Steal HP from enemy and restore your own",
 		"damage_multiplier": 1.5,
-		"drain_percentage": 100,
+		"drain_percentage": 50,
 		"element": "dark",
 		"target_type": "single_enemy"
 	},
@@ -866,7 +866,7 @@
 		"name": "Battle Hymn",
 		"type": "song",
 		"animation": "buff",
-		"mp_cost": 8,
+		"mp_cost": 14,
 		"description": "A rousing war song that boosts all allies' attack by 25% for 3 turns",
 		"target_type": "all_allies",
 		"effect": "attack_up",
@@ -1137,7 +1137,7 @@
 	"absorb_meaning": {
 		"id": "absorb_meaning",
 		"name": "Absorb Meaning",
-		"type": "magic",
+		"type": "support",
 		"animation": "cast_dark",
 		"mp_cost": 18,
 		"description": "The Absence drinks in the significance of nearby things, reducing their effectiveness.",

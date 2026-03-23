@@ -63,7 +63,7 @@
 	},
 	"mushroom": {
 		"id": "mushroom",
-		"name": "Fungoid",
+		"name": "Mushroom",
 		"description": "A toxic mushroom creature. Slow but poisonous.",
 		"level": 2,
 		"stats": {
@@ -686,7 +686,7 @@
 			"poison"
 		],
 		"one_shot": {
-			"hp_threshold": 650,
+			"hp_threshold": 250,
 			"setup_hint": "Stack attack buffs, defer for max AP, then unleash all at once.",
 			"reward_item": "boss_trophy"
 		},
