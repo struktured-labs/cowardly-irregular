@@ -63,11 +63,25 @@ func _build_portrait() -> void:
 	for child in get_children():
 		child.queue_free()
 
+	# Try artist portrait first (PNG in assets/sprites/portraits/)
+	var portrait_path = "res://assets/sprites/portraits/%s.png" % job_id
+	if ResourceLoader.exists(portrait_path):
+		var tex = load(portrait_path) as Texture2D
+		if tex:
+			var sprite = TextureRect.new()
+			sprite.texture = tex
+			sprite.stretch_mode = TextureRect.STRETCH_SCALE
+			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			sprite.size = _portrait_size
+			sprite.position = Vector2.ZERO
+			add_child(sprite)
+			return
+
 	if not customization:
 		_build_placeholder()
 		return
 
-	# Render portrait as pixel-art image at fixed resolution, then display scaled
+	# Fall back to procedural portrait
 	var img = Image.create(RENDER_SIZE, RENDER_SIZE, false, Image.FORMAT_RGBA8)
 	_draw_portrait(img)
 
