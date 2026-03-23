@@ -15,6 +15,34 @@ uniform vec4 fog_color : source_color = vec4(0.50, 0.60, 0.78, 1.0);
 // Per-world effects (default 0.0 = inactive)
 uniform float scanline_intensity : hint_range(0.0, 1.0) = 0.0;
 uniform float dissolve_progress : hint_range(0.0, 1.0) = 0.0;
+// Parallax sky clouds
+uniform float cloud_density : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 cloud_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform float cloud_scroll : hint_range(0.0, 1000.0) = 0.0;
+
+// Simple value noise for clouds
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	float a = hash(i);
+	float b = hash(i + vec2(1.0, 0.0));
+	float c = hash(i + vec2(0.0, 1.0));
+	float d = hash(i + vec2(1.0, 1.0));
+	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float cloud_fbm(vec2 p) {
+	float v = 0.0;
+	v += 0.5 * vnoise(p); p *= 2.01;
+	v += 0.25 * vnoise(p); p *= 2.02;
+	v += 0.125 * vnoise(p);
+	return v;
+}
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -25,6 +53,14 @@ void fragment() {
 	if (h_raw <= 0.0) {
 		float sky_t = uv.y / max(horizon, 0.001);
 		result = mix(sky_top, sky_bottom, sky_t);
+		// Parallax clouds in sky region
+		if (cloud_density > 0.0) {
+			vec2 cloud_uv = vec2(uv.x * 4.0 + cloud_scroll * 0.1, sky_t * 2.0 + cloud_scroll * 0.02);
+			float clouds = cloud_fbm(cloud_uv);
+			float cloud_mask = smoothstep(0.4, 0.7, clouds) * cloud_density;
+			cloud_mask *= smoothstep(0.0, 0.3, sky_t) * smoothstep(1.0, 0.7, sky_t);
+			result = mix(result, cloud_color, cloud_mask * 0.6);
+		}
 	} else if (h_raw < near_scale) {
 		// Smooth gradient from sky_bottom → fog_color near horizon
 		float fog_t = smoothstep(0.0, near_scale, h_raw);
