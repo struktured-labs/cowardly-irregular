@@ -77,6 +77,13 @@ const BILLBOARD_MAX_DIST: float = 400.0
 const BILLBOARD_MIN_SCALE: float = 0.3
 const BILLBOARD_BASE_SIZE: float = 96.0
 
+## Compass HUD
+var _compass_container: Control
+var _compass_needle: Label
+var _compass_ring: Array[Label] = []
+const COMPASS_RADIUS: float = 28.0
+const COMPASS_DIRS: Array = ["N", "E", "S", "W"]
+
 var _current_rotation: float = 0.0
 const ROTATION_SPEED: float = 2.5
 const MAX_ROTATION: float = PI  # ±180° = full 360° rotation
@@ -186,6 +193,52 @@ func setup(scene: Node2D, player: Node2D) -> void:
 		_pending_dissolve_in = false
 		call_deferred("_auto_dissolve_in")
 
+	_setup_compass()
+
+
+func _setup_compass() -> void:
+	if not _player_overlay_layer:
+		return
+	_compass_container = Control.new()
+	_compass_container.name = "Compass"
+	_compass_container.size = Vector2(70, 70)
+	_compass_container.position = Vector2(20, 20)
+	_player_overlay_layer.add_child(_compass_container)
+
+	# Semi-transparent background circle
+	var bg = ColorRect.new()
+	bg.color = Color(0.0, 0.0, 0.0, 0.35)
+	bg.size = Vector2(64, 64)
+	bg.position = Vector2(3, 3)
+	_compass_container.add_child(bg)
+
+	# Cardinal direction labels
+	for i in range(4):
+		var lbl = Label.new()
+		lbl.text = COMPASS_DIRS[i]
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.size = Vector2(20, 20)
+		lbl.add_theme_font_size_override("font_size", 12)
+		if i == 0:  # N is highlighted
+			lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		else:
+			lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+		_compass_container.add_child(lbl)
+		_compass_ring.append(lbl)
+
+
+func _update_compass() -> void:
+	if _compass_ring.is_empty():
+		return
+	var center = Vector2(35, 35)
+	for i in range(4):
+		# Each direction is 90° apart: N=up, E=right, S=down, W=left
+		var base_angle = i * PI / 2.0 - PI / 2.0  # N=-90°, E=0°, S=90°, W=180°
+		var angle = base_angle - _current_rotation
+		var pos = center + Vector2(cos(angle), sin(angle)) * COMPASS_RADIUS
+		_compass_ring[i].position = pos - Vector2(10, 10)
+
 
 func _auto_dissolve_in() -> void:
 	await play_dissolve_in()
@@ -242,6 +295,8 @@ func process_frame() -> void:
 	if cloud_density > 0.0 and _shader_mat:
 		_cloud_time += delta * 0.5
 		_shader_mat.set_shader_parameter("cloud_scroll", _cloud_time)
+
+	_update_compass()
 
 	# Sway
 	var screen_move = move_delta.rotated(-_current_rotation)
