@@ -311,3 +311,110 @@ func test_volatility_starting_bands() -> void:
 	vol.macro_volatility = 0.95
 	vol.reset_battle()
 	assert_eq(vol.get_band_name(), "Fractured", "Very high macro should start FRACTURED")
+
+
+# ===========================================================================
+# Phase 3 regression tests (commit 85bace6) + Feature tests (c44250f, 0b64069)
+# ===========================================================================
+
+# ---- Balance: backstab no longer strictly superior to power_strike ----
+
+func test_backstab_costs_more_than_power_strike() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	var backstab = abilities.get("backstab", {})
+	var power_strike = abilities.get("power_strike", {})
+	assert_gt(backstab.get("mp_cost", 0), power_strike.get("mp_cost", 0),
+		"Backstab should cost more MP than power_strike to offset crit advantage")
+
+
+func test_drain_life_not_full_drain() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	var drain_life = abilities.get("drain_life", {})
+	assert_true(drain_life.get("drain_percentage", 100) <= 50,
+		"drain_life should drain at most 50%% (got %d)" % drain_life.get("drain_percentage", 100))
+
+
+func test_absorb_meaning_is_support_type() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	var absorb = abilities.get("absorb_meaning", {})
+	assert_eq(absorb.get("type", ""), "support",
+		"absorb_meaning should be support type (was magic with 0 damage)")
+
+
+# ---- Balance: mug should be reachable via rogue ----
+
+func test_mug_in_rogue_abilities() -> void:
+	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(file, "jobs.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "jobs.json should parse")
+	var jobs = json.data
+
+	var rogue = jobs.get("rogue", {})
+	var abilities = rogue.get("abilities", [])
+	assert_true("mug" in abilities, "Rogue should have 'mug' in abilities list")
+
+
+# ---- Balance: mushroom/fungoid name dedup ----
+
+func test_mushroom_fungoid_distinct_names() -> void:
+	var file = FileAccess.open("res://data/monsters.json", FileAccess.READ)
+	assert_not_null(file, "monsters.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "monsters.json should parse")
+	var monsters = json.data
+
+	var mushroom_name = monsters.get("mushroom", {}).get("name", "")
+	var fungoid_name = monsters.get("fungoid", {}).get("name", "")
+	assert_ne(mushroom_name, fungoid_name,
+		"mushroom and fungoid should have distinct display names")
+
+
+# ---- Elemental damage: calculate_elemental_modifier returns correct values ----
+
+func test_elemental_weakness_modifier() -> void:
+	_combatant.elemental_weaknesses = ["fire"]
+	var mod = _combatant.calculate_elemental_modifier("fire")
+	assert_eq(mod, 1.5, "Weakness should return 1.5x modifier")
+
+
+func test_elemental_resistance_modifier() -> void:
+	_combatant.elemental_resistances = ["ice"]
+	var mod = _combatant.calculate_elemental_modifier("ice")
+	assert_eq(mod, 0.5, "Resistance should return 0.5x modifier")
+
+
+func test_elemental_immunity_modifier() -> void:
+	_combatant.elemental_immunities = ["lightning"]
+	var mod = _combatant.calculate_elemental_modifier("lightning")
+	assert_eq(mod, 0.0, "Immunity should return 0.0x modifier")
+
+
+func test_elemental_neutral_modifier() -> void:
+	var mod = _combatant.calculate_elemental_modifier("dark")
+	assert_eq(mod, 1.0, "Neutral element should return 1.0x modifier")
