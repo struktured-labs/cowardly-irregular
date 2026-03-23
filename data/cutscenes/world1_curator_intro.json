@@ -1,0 +1,94 @@
+{
+  "id": "world1_curator_intro",
+  "title": "Curator of the Flame",
+  "world": 1,
+  "trigger": "boss_curator_medieval",
+  "description": "The Curator stands before the throne room doors. A scholar who asks questions to map your weaknesses. From World 1 novella ch9.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The Curator of the Flame stood before the throne room doors. Scholar's robes, singed at the cuffs. A staff with a cupped flame at the top that had clearly been burning for years."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator",
+        "text": "Before we begin \u2014 and we will begin, I'm sorry about that \u2014 can I ask what you think is behind the flame?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We'll know when we open the doors.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Curator",
+        "text": "Of course you'll try. I've studied this room for eleven years. I am genuinely uncertain if what you're looking for is here. That's the most interesting thing that's happened all decade.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator",
+        "text": "The Warden reports your adaptability. The Arbiter reports your irregular formation. The Tempo reports your decision-making under pressure.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator",
+        "text": "Tell me about your resource strategy. I've been studying it and I find myself with questions.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "We tend not to explain our strategy to the people guarding doors we need to open.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "You're mapping our weaknesses.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Curator",
+        "text": "I'm having a conversation.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "And when the conversation ends, you'll fight us with everything we just told you.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Curator",
+        "text": "Your pattern recognition is excellent. The Arbiter mentioned it. Then let's skip to the relevant part. I cannot let you through. My purpose requires this.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator",
+        "text": "I hope you understand.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We do.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.4, "intensity": 5.0},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "set_flag", "flag": "curator_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

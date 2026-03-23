@@ -1,0 +1,51 @@
+{
+  "id": "world1_arbiter_intro",
+  "title": "Arbiter of Steel",
+  "world": 1,
+  "trigger": "boss_arbiter_medieval",
+  "description": "The Arbiter waits in the forest clearing. Light armor, dueling leathers, one-on-one challenge. From the World 1 novella ch6.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "The Arbiter of Steel waited in a clearing where the corruption was thickest.",
+      "She stood at the clearing's center \u2014 geometrically precise. Light armor, dueling leathers, holding her sword point-down in the manner of someone who doesn't need to threaten you."
+    ]},
+
+    {"type": "play_sfx", "sfx": "sword_draw_heavy"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "I challenge one of you. Whoever leads. The others stay back. I'll know if they don't.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "And if we refuse?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "Then you fight together, and you have already compromised your honor before the first blow lands.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "Come at me with everything. I'll know if you're holding back. And I'll be disappointed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
+    {"type": "screen_flash", "duration": 0.15},
+    {"type": "set_flag", "flag": "arbiter_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
