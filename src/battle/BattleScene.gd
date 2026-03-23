@@ -2178,8 +2178,12 @@ func _close_win98_menu() -> void:
 
 ## Damage Numbers
 
-func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
+func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
+	if is_crit:
+		_flash_screen(Color(1.0, 0.9, 0.3, 0.4), 0.15)  # Gold flash for crits
+	if elemental_mod != 1.0 and element != "":
+		_spawn_elemental_indicator(target, element, elemental_mod)
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
@@ -2190,6 +2194,42 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
 		SoundManager.play_battle("attack_hit")
 
 
+func _spawn_elemental_indicator(target: Combatant, element: String, modifier: float) -> void:
+	"""Spawn a floating WEAK!/RESIST!/IMMUNE! indicator above the damage number"""
+	var text: String
+	var color: Color
+	if modifier == 0.0:
+		text = "IMMUNE!"
+		color = Color(0.7, 0.7, 0.7)  # Gray
+	elif modifier > 1.0:
+		text = "WEAK!"
+		color = Color(1.0, 0.3, 0.3)  # Red
+	elif modifier < 1.0:
+		text = "RESIST"
+		color = Color(0.3, 0.5, 1.0)  # Blue
+	else:
+		return
+
+	var pos = _results_display._get_combatant_sprite_position(target)
+	pos.y -= 30  # Offset above damage number
+
+	var label = Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.position = pos
+	label.z_index = 100
+	add_child(label)
+
+	var tween = create_tween()
+	tween.tween_property(label, "position:y", pos.y - 30, 0.8)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
+	tween.tween_callback(label.queue_free)
+
+
 func _on_attack_missed(target: Combatant) -> void:
 	_results_display.on_attack_missed(target)
 	SoundManager.play_battle("attack_miss")
@@ -2198,6 +2238,18 @@ func _on_attack_missed(target: Combatant) -> void:
 func _on_healing_done(target: Combatant, amount: int) -> void:
 	_results_display.on_healing_done(target, amount)
 	SoundManager.play_battle("heal")
+
+
+func _flash_screen(color: Color, duration: float) -> void:
+	"""Brief screen flash effect for impactful moments"""
+	var flash = ColorRect.new()
+	flash.color = color
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween = create_tween()
+	tween.tween_property(flash, "color:a", 0.0, duration)
+	tween.tween_callback(flash.queue_free)
 
 
 func _on_battle_log_message(message: String) -> void:
