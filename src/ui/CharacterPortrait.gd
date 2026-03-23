@@ -68,10 +68,16 @@ func _build_portrait() -> void:
 	if ResourceLoader.exists(portrait_path):
 		var tex = load(portrait_path) as Texture2D
 		if tex:
+			# Downscale to target size as Image first, then display
+			# This avoids TextureRect layout expansion issues
+			var src_img = tex.get_image()
+			src_img.resize(int(_portrait_size.x), int(_portrait_size.y), Image.INTERPOLATE_NEAREST)
+			var small_tex = ImageTexture.create_from_image(src_img)
 			var sprite = TextureRect.new()
-			sprite.texture = tex
-			sprite.stretch_mode = TextureRect.STRETCH_SCALE
+			sprite.texture = small_tex
+			sprite.stretch_mode = TextureRect.STRETCH_KEEP
 			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			sprite.custom_minimum_size = _portrait_size
 			sprite.size = _portrait_size
 			sprite.position = Vector2.ZERO
 			add_child(sprite)
