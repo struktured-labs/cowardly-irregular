@@ -13,7 +13,7 @@ func _init(scene) -> void:
 	_scene = scene
 
 
-func on_damage_dealt(target: Combatant, amount: int, is_crit: bool) -> void:
+func on_damage_dealt(target: Combatant, amount: int, is_crit: bool, _element: String = "", _elemental_mod: float = 1.0) -> void:
 	"""Show floating damage number near target and trigger screen shake"""
 	var pos = _get_combatant_sprite_position(target)
 	if pos != Vector2.ZERO:

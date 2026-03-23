@@ -13,7 +13,7 @@ signal action_executing(combatant: Combatant, action: Dictionary)
 signal action_executed(combatant: Combatant, action: Dictionary, targets: Array)
 signal round_started(round_num: int)
 signal round_ended(round_num: int)
-signal damage_dealt(target: Combatant, amount: int, is_crit: bool)
+signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
 signal attack_missed(target: Combatant)
 signal healing_done(target: Combatant, amount: int)
 signal battle_log_message(message: String)
@@ -1189,7 +1189,7 @@ func _execute_group_action(action: Dictionary) -> void:
 		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
 		var mitigated: int = max(1, raw_damage - enemy.defense)
 		enemy.take_damage(mitigated)
-		damage_dealt.emit(enemy, mitigated, false)
+		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
 		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
 			group_type, enemy.combatant_name, mitigated])
 
@@ -1359,7 +1359,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		battle_log_message.emit("[color=purple]Reality bends — %s's defenses shatter![/color]" % actual_target.combatant_name)
 
 	var actual_damage = actual_target.take_damage(damage, false)
-	damage_dealt.emit(actual_target, actual_damage, is_crit)
+	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
 
 	# Track first damage for one-shot detection
 	if actual_target in enemy_party:
@@ -1460,7 +1460,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		damage = int(damage * randf_range(phys_vrange.x, phys_vrange.y))
 		damage = _apply_market_sense(caster, damage)
 		var actual_damage = target.take_damage(damage, false)
-		damage_dealt.emit(target, actual_damage, is_crit)
+		damage_dealt.emit(target, actual_damage, is_crit, "", 1.0)
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
@@ -1494,12 +1494,13 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			damage = int(damage * terrain_mod)
 
 		var actual_damage = 0
+		var elemental_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 		if element:
 			actual_damage = target.take_elemental_damage(damage, element)
 		else:
 			actual_damage = target.take_damage(damage, true)
 
-		damage_dealt.emit(target, actual_damage, false)
+		damage_dealt.emit(target, actual_damage, false, element, elemental_mod)
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
@@ -1668,7 +1669,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				for target in targets:
 					if target and is_instance_valid(target) and target.is_alive:
 						var actual_damage = target.take_damage(press_damage, true)
-						damage_dealt.emit(target, actual_damage, false)
+						damage_dealt.emit(target, actual_damage, false, "", 1.0)
 						battle_log_message.emit("[color=magenta]PRESS THE EDGE![/color] %s takes [color=yellow]%d[/color] damage! (Band consumed: %s)" % [target.combatant_name, actual_damage, VolatilitySystem.BAND_NAMES[band]])
 				_nudge_macro_volatility(0.03)
 		"forecast":
