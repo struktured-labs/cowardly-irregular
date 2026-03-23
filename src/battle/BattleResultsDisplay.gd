@@ -85,7 +85,13 @@ func show_victory_results() -> void:
 	var panel = PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	var panel_width = 380
-	var panel_height = 60 + char_results.size() * 50 + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
+	var char_height_total = 0
+	for cr in char_results:
+		if cr.get("leveled_up", false):
+			char_height_total += 70  # Extra space for LEVEL UP label
+		else:
+			char_height_total += 50
+	var panel_height = 60 + char_height_total + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
 	panel.offset_left = -panel_width / 2
 	panel.offset_right = panel_width / 2
 	panel.offset_top = -panel_height / 2

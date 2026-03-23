@@ -437,13 +437,15 @@ func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> 
 	for i in range(particles.size()):
 		var p = particles[i]
 		var delay = float(i) * 0.05
+		var converged_pos = p.position * 0.5
+		var shatter_pos = converged_pos * 3.0  # Burst outward from center
 
 		# Form
 		tween.tween_property(p, "scale", Vector2(1.0, 1.0), duration * 0.4).set_delay(delay)
-		tween.tween_property(p, "position", p.position * 0.5, duration * 0.4).set_delay(delay)
+		tween.tween_property(p, "position", converged_pos, duration * 0.4).set_delay(delay)
 
 		# Shatter outward
-		tween.tween_property(p, "position", p.position * 2, duration * 0.4).set_delay(delay + duration * 0.5)
+		tween.tween_property(p, "position", shatter_pos, duration * 0.4).set_delay(delay + duration * 0.5)
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.6)
 
 	tween.chain().tween_callback(func():
@@ -577,34 +579,36 @@ func _create_spark() -> Sprite2D:
 
 
 func _create_lightning_bolt() -> Sprite2D:
-	"""Create lightning bolt sprite"""
+	"""Create lightning bolt sprite (uses cached texture)"""
 	var sprite = Sprite2D.new()
-	var width = 40
-	var height = 80
-	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
+	sprite.texture = _get_cached_texture("lightning_bolt_40x80", func():
+		var width = 40
+		var height = 80
+		var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
 
-	# Draw jagged bolt (12-bit style)
-	var bolt_color = Color(1.0, 1.0, 0.5)
-	var glow_color = Color(0.5, 0.5, 1.0, 0.5)
+		# Draw jagged bolt (12-bit style)
+		var bolt_color = Color(1.0, 1.0, 0.5)
+		var glow_color = Color(0.5, 0.5, 1.0, 0.5)
 
-	var x = width / 2
-	for y in range(height):
-		# Jagged path
-		if y % 8 < 4:
-			x += randi_range(-3, 3)
-		x = clamp(x, 5, width - 5)
+		var x = width / 2
+		for y in range(height):
+			# Jagged path
+			if y % 8 < 4:
+				x += randi_range(-3, 3)
+			x = clamp(x, 5, width - 5)
 
-		# Draw bolt with glow
-		for dx in range(-3, 4):
-			var px = x + dx
-			if px >= 0 and px < width:
-				if abs(dx) <= 1:
-					img.set_pixel(px, y, bolt_color)
-				else:
-					img.set_pixel(px, y, glow_color)
+			# Draw bolt with glow
+			for dx in range(-3, 4):
+				var px = x + dx
+				if px >= 0 and px < width:
+					if abs(dx) <= 1:
+						img.set_pixel(px, y, bolt_color)
+					else:
+						img.set_pixel(px, y, glow_color)
 
-	sprite.texture = ImageTexture.create_from_image(img)
+		return ImageTexture.create_from_image(img)
+	)
 	sprite.position.y = -40  # Center on target
 	return sprite
 
@@ -807,7 +811,8 @@ func _create_heal_particle() -> Sprite2D:
 func _animate_buff(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Buff spell - upward arrows/sparkles"""
 	var particles: Array[Sprite2D] = []
-	var particle_count = 6
+	var particle_count = clamp(int(15 * power), 5, 30)
+	var rise_height = 50.0 * power
 
 	for i in range(particle_count):
 		var particle = _create_buff_arrow()
@@ -826,7 +831,7 @@ func _animate_buff(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		var delay = float(i) * 0.05
 
 		tween.tween_property(p, "modulate:a", 1.0, 0.1).set_delay(delay)
-		tween.tween_property(p, "position:y", p.position.y - 50, duration * 0.7).set_delay(delay)
+		tween.tween_property(p, "position:y", p.position.y - rise_height, duration * 0.7).set_delay(delay)
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
@@ -860,7 +865,8 @@ func _create_buff_arrow() -> Sprite2D:
 func _animate_debuff(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
 	"""Debuff spell - downward arrows"""
 	var particles: Array[Sprite2D] = []
-	var particle_count = 6
+	var particle_count = clamp(int(15 * power), 5, 30)
+	var drop_height = 40.0 * power
 
 	for i in range(particle_count):
 		var particle = _create_debuff_arrow()
@@ -879,7 +885,7 @@ func _animate_debuff(effect: Node2D, on_complete: Callable, power: float = 1.0) 
 		var delay = float(i) * 0.05
 
 		tween.tween_property(p, "modulate:a", 1.0, 0.1).set_delay(delay)
-		tween.tween_property(p, "position:y", p.position.y + 40, duration * 0.6).set_delay(delay)
+		tween.tween_property(p, "position:y", p.position.y + drop_height, duration * 0.6).set_delay(delay)
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():

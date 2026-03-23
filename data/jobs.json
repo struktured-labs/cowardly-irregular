@@ -113,7 +113,8 @@
 		"abilities": [
 			"steal",
 			"flee",
-			"backstab"
+			"backstab",
+			"mug"
 		],
 		"passive_abilities": [
 			"steal_boost",

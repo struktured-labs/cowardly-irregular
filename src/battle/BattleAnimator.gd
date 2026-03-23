@@ -51,6 +51,7 @@ enum AnimState {
 }
 
 ## Animation speeds (frames per animation frame) - slower for visibility
+## Reserved for future per-animation speed control
 const ANIM_SPEED: Dictionary = {
 	"idle": 0.4,
 	"attack": 0.25,

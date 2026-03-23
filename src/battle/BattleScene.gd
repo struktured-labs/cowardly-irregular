@@ -155,7 +155,7 @@ var _command_menu: BattleCommandMenuClass = null
 var _results_display: BattleResultsDisplayClass = null
 
 ## Tutorial hints (persists across battles via static-like save)
-static var _hints_shown: Dictionary = {}  # {"hint_id": true}
+static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persists across scene instances within a session. Intentional — hints show once per game session.
 
 
 func set_player(player: Combatant) -> void:
@@ -1819,6 +1819,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			else:
 				_play_ability_animation(anim_type, animator)
 				_spawn_ability_effects(ability_id, targets)
+		"advance":
+			pass  # Advance sub-actions handle their own animations
 		"item":
 			animator.play_item()
 		"defer":
