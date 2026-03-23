@@ -275,6 +275,25 @@ func set_dissolve(progress: float) -> void:
 		_shader_mat.set_shader_parameter("dissolve_progress", dissolve_progress)
 
 
+## Animate dissolve out (world breaking apart). Await this before transitioning.
+func play_dissolve_out(duration: float = 1.2) -> void:
+	if not _shader_mat or not _player_ref:
+		return
+	var tween = _player_ref.create_tween()
+	tween.tween_method(set_dissolve, 0.0, 1.0, duration)
+	await tween.finished
+
+
+## Animate dissolve in (world reassembling). Call after new scene is loaded.
+func play_dissolve_in(duration: float = 0.8) -> void:
+	if not _shader_mat or not _player_ref:
+		return
+	set_dissolve(1.0)
+	var tween = _player_ref.create_tween()
+	tween.tween_method(set_dissolve, 1.0, 0.0, duration)
+	await tween.finished
+
+
 func unregister_billboard(obj: Node2D) -> void:
 	_billboard_sources.erase(obj)
 	var obj_id = obj.get_instance_id()
