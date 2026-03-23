@@ -641,6 +641,50 @@ func _on_chapter1_finished(_cutscene_id: String) -> void:
 	_start_exploration()
 
 
+func _has_cutscene_flag(flag: String) -> bool:
+	"""Check if a cutscene flag has been set."""
+	if not GameState:
+		return false
+	return GameState.game_constants.get("cutscene_flag_" + flag, false)
+
+
+func _check_area_cutscene(map_id: String) -> void:
+	"""Play first-visit cutscenes when entering certain areas."""
+	match map_id:
+		"overworld":
+			if not _has_cutscene_flag("chapter2_complete") and _has_cutscene_flag("chapter1_complete"):
+				await _play_blocking_cutscene("world1_chapter2")
+		"whispering_cave":
+			if not _has_cutscene_flag("chapter3_complete"):
+				await _play_blocking_cutscene("world1_chapter3")
+		"corrupted_forest", "eldertree_village":
+			if not _has_cutscene_flag("chapter5_complete") and _has_cutscene_flag("warden_defeated"):
+				await _play_blocking_cutscene("world1_chapter5")
+
+
+func _play_blocking_cutscene(cutscene_id: String) -> void:
+	"""Play a cutscene and await its completion (blocks caller)."""
+	var previous_state = current_state
+	current_state = LoopState.CUTSCENE
+
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+
+	if not _cutscene_director or not is_instance_valid(_cutscene_director):
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+
+	_cutscene_director.play_cutscene(cutscene_id)
+	await _cutscene_director.cutscene_finished
+
+	current_state = previous_state
+	if current_state == LoopState.EXPLORATION:
+		if _exploration_scene and _exploration_scene.has_method("resume"):
+			_exploration_scene.resume()
+
+	print("[GAME] Area cutscene '%s' finished" % cutscene_id)
+
+
 func _show_character_creation() -> void:
 	"""Show the character creation screen"""
 	var layer = CanvasLayer.new()
@@ -1648,6 +1692,9 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 			await _area_fade_to_black()
 			await _start_exploration()
 			await _area_fade_from_black()
+
+	# Play first-visit cutscenes after area transition completes
+	await _check_area_cutscene(target_map)
 
 	# Safety cleanup: ensure fade overlay is transparent and no stale children remain
 	if _area_fade_rect:
