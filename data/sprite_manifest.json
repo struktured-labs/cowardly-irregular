@@ -1929,5 +1929,107 @@
         }
       }
     }
+  },
+  "npc_sheets": {
+    "bram": {
+      "path": "res://assets/sprites/npcs/bram.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "talk": {
+          "start": 2,
+          "end": 3
+        },
+        "react": {
+          "start": 4,
+          "end": 5
+        },
+        "gesture": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "scholar_milo": {
+      "path": "res://assets/sprites/npcs/scholar_milo.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "talk": {
+          "start": 2,
+          "end": 3
+        },
+        "react": {
+          "start": 4,
+          "end": 5
+        },
+        "gesture": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "sprocket": {
+      "path": "res://assets/sprites/npcs/sprocket.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "talk": {
+          "start": 2,
+          "end": 3
+        },
+        "react": {
+          "start": 4,
+          "end": 5
+        },
+        "gesture": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "marta": {
+      "path": "res://assets/sprites/npcs/marta.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "talk": {
+          "start": 2,
+          "end": 3
+        },
+        "react": {
+          "start": 4,
+          "end": 5
+        },
+        "gesture": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    }
   }
 }
