@@ -19,7 +19,7 @@ const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay
 
 const JOB_DISPLAY_HEIGHTS: Dictionary = {
 	"fighter": 375.0,
-	"cleric": 180.0,
+	"cleric": 375.0,
 	"mage": 300.0,
 	"rogue": 300.0,
 	"bard": 300.0,
