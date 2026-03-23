@@ -26,6 +26,9 @@ var boss_id: String = "dragon"
 var boss_flag_key: String = "dragon_defeated"
 var total_floors: int = 3
 var overworld_exit_spawn: String = "cave_entrance"
+## Optional: story flag and world to unlock on boss defeat (empty = no world unlock)
+var unlock_story_flag: String = ""
+var unlock_world: int = 0
 
 ## Override in subclass: floor number -> Array of ASCII rows (20 chars × 16 rows)
 var floor_layouts: Dictionary = {}
@@ -364,6 +367,12 @@ func _get_boss_intro_dialogue() -> Array:
 func _on_boss_defeated() -> void:
 	boss_defeated = true
 	_save_boss_state()
+	# Unlock next world if configured
+	if unlock_story_flag != "":
+		GameState.set_story_flag(unlock_story_flag)
+	if unlock_world > 0:
+		while GameState.worlds_unlocked < unlock_world:
+			GameState.unlock_next_world()
 	print("%s defeated! Exit stairs appear." % boss_id)
 	_setup_transitions_for_floor(current_floor)
 

@@ -548,8 +548,12 @@ func _on_boss_defeated() -> void:
 	boss_defeated = true
 	_save_boss_state()
 
+	# Unlock W2 — Cave Rat King is the W1 gatekeeper boss
+	GameState.set_story_flag("w1_boss_defeated")
+	GameState.unlock_next_world()
+
 	# Spawn exit stairs
-	print("Cave Rat King defeated! Exit stairs appear.")
+	print("Cave Rat King defeated! W2 portal unlocked. Exit stairs appear.")
 	_setup_transitions_for_floor(current_floor)
 
 
