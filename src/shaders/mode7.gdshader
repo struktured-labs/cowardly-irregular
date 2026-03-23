@@ -26,7 +26,9 @@ void fragment() {
 		float sky_t = uv.y / max(horizon, 0.001);
 		result = mix(sky_top, sky_bottom, sky_t);
 	} else if (h_raw < near_scale) {
-		result = fog_color;
+		// Smooth gradient from sky_bottom → fog_color near horizon
+		float fog_t = smoothstep(0.0, near_scale, h_raw);
+		result = mix(sky_bottom, fog_color, fog_t);
 	} else {
 		float h = h_raw;
 
