@@ -462,6 +462,11 @@ func _apply_zone_encounters(zone: String) -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	# Dissolve effect for world-to-world portal transitions
+	if "overworld" in target_map and _mode7:
+		if player:
+			player.set_can_move(false)
+		await _mode7.play_dissolve_out()
 	area_transition.emit(target_map, spawn_point)
 
 

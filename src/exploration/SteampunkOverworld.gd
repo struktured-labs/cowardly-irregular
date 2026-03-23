@@ -460,6 +460,10 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	if "overworld" in target_map and _mode7:
+		if player:
+			player.set_can_move(false)
+		await _mode7.play_dissolve_out()
 	area_transition.emit(target_map, spawn_point)
 
 
