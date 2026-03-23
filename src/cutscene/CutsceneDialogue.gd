@@ -421,10 +421,40 @@ func _input(event: InputEvent) -> void:
 
 
 ## =====================
-## PORTRAIT GENERATION
+## PORTRAIT LOADING / GENERATION
 ## =====================
 
-func _create_portrait(portrait_type: String) -> ImageTexture:
+## Mapping from portrait type to sprite asset paths
+const PORTRAIT_SPRITES = {
+	"fighter": "res://assets/sprites/portraits/fighter.png",
+	"hero": "res://assets/sprites/portraits/fighter.png",
+	"cleric": "res://assets/sprites/portraits/cleric.png",
+	"healer": "res://assets/sprites/portraits/cleric.png",
+	"mage": "res://assets/sprites/portraits/mage.png",
+	"rogue": "res://assets/sprites/portraits/rogue.png",
+	"bard": "res://assets/sprites/portraits/bard.png",
+	"shopkeeper": "res://assets/sprites/npcs/bram.png",
+	"merchant": "res://assets/sprites/npcs/bram.png",
+	"scholar": "res://assets/sprites/npcs/scholar_milo.png",
+}
+
+## Cache loaded portrait textures to avoid repeated disk reads
+var _portrait_cache: Dictionary = {}
+
+
+func _create_portrait(portrait_type: String) -> Texture2D:
+	# Try loading artist sprite portrait first
+	var sprite_path = PORTRAIT_SPRITES.get(portrait_type, "")
+	if sprite_path != "":
+		if _portrait_cache.has(sprite_path):
+			return _portrait_cache[sprite_path]
+		if ResourceLoader.exists(sprite_path):
+			var tex = load(sprite_path)
+			if tex:
+				_portrait_cache[sprite_path] = tex
+				return tex
+
+	# Fallback to procedural portrait generation
 	var size = int(PORTRAIT_SIZE - 8)
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
