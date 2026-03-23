@@ -89,6 +89,14 @@ void fragment() {
 
 		result = mix(fog_color, tex, edge);
 
+		// Distance fog: far ground (small h, near horizon) fades toward fog_color
+		// h ranges from near_scale (horizon) to ~1.0 (camera feet)
+		float ground_range = 1.0 - near_scale;
+		float dist_t = 1.0 - clamp((h - near_scale) / ground_range, 0.0, 1.0);
+		float fog_amount = dist_t * dist_t * 0.7;  // Quadratic falloff, max 70% fog
+		result = mix(result, fog_color, fog_amount);
+
+		// Horizon fade zone (smooth transition from fog band to ground)
 		float fade_zone = near_scale * 0.5;
 		if (h_raw < near_scale + fade_zone) {
 			float t = (h_raw - near_scale) / fade_zone;
