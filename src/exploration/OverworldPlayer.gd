@@ -214,11 +214,11 @@ func _setup_sprite() -> void:
 	_sprite.name = "Sprite"
 	add_child(_sprite)
 
-	# Setup collision shape — circle avoids directional bias with Mode 7 camera rotation
+	# Setup collision shape — CircleShape2D for direction-neutral collision
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
 	var shape = CircleShape2D.new()
-	shape.radius = 12.0  # Slightly smaller than sprite for easier navigation
+	shape.radius = 10.0  # Tight collision for smooth navigation
 	collision.shape = shape
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)
@@ -270,10 +270,8 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		input_dir = input_dir.normalized()
-		# Kill momentum on sharp direction changes (>90° turn)
-		if velocity.length_squared() > 1.0 and velocity.normalized().dot(input_dir) < 0.0:
-			velocity = Vector2.ZERO
-		velocity = velocity.move_toward(input_dir * move_speed, ACCELERATION * delta)
+		# Instant velocity — no acceleration ramp, no slippery feel
+		velocity = input_dir * move_speed
 		is_moving = true
 
 		# Update facing direction (prioritize horizontal for diagonal)
@@ -282,8 +280,9 @@ func _physics_process(delta: float) -> void:
 		else:
 			current_direction = Direction.UP if input_dir.y < 0 else Direction.DOWN
 	else:
-		velocity = velocity.move_toward(Vector2.ZERO, DECELERATION * delta)
-		is_moving = velocity.length() > 10.0
+		# Instant stop — no deceleration slide
+		velocity = Vector2.ZERO
+		is_moving = false
 
 	# Track distance for step counting
 	var old_pos = position
