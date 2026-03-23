@@ -2,7 +2,7 @@ extends Node
 class_name Mode7Overlay
 
 var enabled: bool = true
-var player_display_size: float = 240.0
+var player_display_size: float = 160.0
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0
@@ -86,7 +86,8 @@ const COMPASS_DIRS: Array = ["N", "E", "S", "W"]
 
 var _current_rotation: float = 0.0
 const ROTATION_SPEED: float = 2.5
-const MAX_ROTATION: float = PI  # ±180° = full 360° rotation
+## Debug: set GameState.debug_log_enabled = true to enable full rotation (always true for now)
+const ROTATION_SPEED_FAST: float = 3.5  # Faster rotation for debug testing
 const SWAY_PIXELS: float = 16.0
 const BOB_AMPLITUDE: float = 2.5
 const BOB_SPEED: float = 10.0
@@ -272,13 +273,10 @@ func process_frame() -> void:
 			cam_input = -1.0
 
 	if abs(cam_input) > 0.1:
-		_current_rotation += cam_input * ROTATION_SPEED * delta
-		_current_rotation = clampf(_current_rotation, -MAX_ROTATION, MAX_ROTATION)
-	else:
-		# Spring back toward 0° when no rotation input
-		_current_rotation = lerpf(_current_rotation, 0.0, 3.0 * delta)
-		if absf(_current_rotation) < 0.01:
-			_current_rotation = 0.0
+		# Full continuous 360° rotation — no clamp, no spring-back
+		# Camera holds its orientation when input is released
+		var speed = ROTATION_SPEED_FAST if GameState.debug_log_enabled else ROTATION_SPEED
+		_current_rotation += cam_input * speed * delta
 
 	camera_angle = _current_rotation
 
