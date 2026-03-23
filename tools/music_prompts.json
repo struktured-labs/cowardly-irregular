@@ -505,6 +505,68 @@
       "title_template": "Whoever Moves First",
       "style": "speed metal, chiptune, breakneck, kinetic, aggressive, exhilarating",
       "prompt": "Breakneck tempo from the first note. Speed metal guitar over chiptune bass, relentless drums. The sound of a speedrunner tearing through a game at terminal velocity — skipping cutscenes, attacking mid-dialogue, finding every shortcut. Exhilarating, aggressive, joyful destruction. A system being broken at the speed of thought. 55 seconds."
+    },
+
+    "ambient_cave": {
+      "title_template": "Dripping Stone",
+      "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
+      "prompt": "Cave ambient loop. Slow dripping water echoing off stone walls, distant rumbling, subtle wind through crevices, occasional pebble falling. Dark and atmospheric with deep reverb. No melody — pure environmental texture. Seamless loop, 60 seconds."
+    },
+    "ambient_forest": {
+      "title_template": "Whispering Canopy",
+      "style": "ambient, forest, rustling leaves, birdsong, gentle wind, natural, looping",
+      "prompt": "Forest ambient loop. Gentle wind through leaves, distant birdsong, soft rustling undergrowth, occasional branch creak. Warm dappled sunlight in sound. Natural and peaceful. Seamless loop, 60 seconds."
+    },
+    "ambient_village": {
+      "title_template": "Market Morning",
+      "style": "ambient, village, bustle, chatter, footsteps, warm, looping",
+      "prompt": "Medieval village ambient loop. Distant market chatter, cart wheels on cobblestone, hammering from a smithy, children laughing, gentle breeze. Warm busy atmosphere without being chaotic. Seamless loop, 60 seconds."
+    },
+    "ambient_ocean": {
+      "title_template": "Shoreline",
+      "style": "ambient, ocean, waves, seagulls, coastal wind, peaceful, looping",
+      "prompt": "Ocean ambient loop. Rhythmic waves breaking on shore, distant seagulls, coastal wind, occasional spray. Peaceful and vast. The sound of standing at the edge of something infinite. Seamless loop, 60 seconds."
+    },
+    "ambient_steampunk": {
+      "title_template": "The Machinery",
+      "style": "ambient, steampunk, gears, steam hiss, clockwork, industrial, looping",
+      "prompt": "Steampunk machinery ambient loop. Rhythmic gear turning, steam valve hiss, distant clockwork ticking, pneumatic piston cycling, brass resonance. The constant mechanical breath of a clockwork city. Seamless loop, 60 seconds."
+    },
+    "ambient_industrial": {
+      "title_template": "Factory Floor",
+      "style": "ambient, industrial, drone, factory hum, fluorescent buzz, oppressive, looping",
+      "prompt": "Industrial ambient loop. Low factory drone, fluorescent light buzz, distant conveyor belt rhythm, ventilation hum, occasional metallic clang. Oppressive and numbing. The sound of a space that never sleeps. Seamless loop, 60 seconds."
+    },
+    "ambient_digital": {
+      "title_template": "Data Stream",
+      "style": "ambient, digital, static, data flow, electronic hum, cyber, looping",
+      "prompt": "Digital ambient loop. Soft electronic hum, data transmission pulses, gentle static crackling, distant server whir, subtle bitcrushed tones. The sound of existing inside a network. Cool blue digital atmosphere. Seamless loop, 60 seconds."
+    },
+
+    "stinger_level_up": {
+      "title_template": "Level Up!",
+      "style": "JRPG stinger, ascending chime, triumphant, short, bright, 5 seconds",
+      "prompt": "Classic JRPG level up jingle. Bright ascending chimes building to a triumphant two-note resolution. Sparkling, satisfying, the sound of getting stronger. 5 seconds maximum, no fade."
+    },
+    "stinger_item_found": {
+      "title_template": "Discovery",
+      "style": "JRPG stinger, treasure chime, magical shimmer, short, 3 seconds",
+      "prompt": "Item discovery jingle. Short magical shimmer with a satisfying chime at the peak — the classic JRPG treasure chest moment. Bright, brief, rewarding. 3 seconds maximum."
+    },
+    "stinger_boss_defeated": {
+      "title_template": "The Weight Lifts",
+      "style": "JRPG stinger, dramatic resolution, brass fanfare, relief, 8 seconds",
+      "prompt": "Boss defeated fanfare. Dramatic brass chord resolving from tension to triumph, longer than normal victory — the relief of a hard-won boss fight. Weight lifting, tension releasing, a single held triumphant note. 8 seconds."
+    },
+    "stinger_quest_complete": {
+      "title_template": "Task Done",
+      "style": "JRPG stinger, quest complete, warm chime, satisfied, short, 4 seconds",
+      "prompt": "Quest complete jingle. Warm satisfying chime progression — three ascending notes resolving on a fourth. The feeling of checking something off. Brief, clean, earned. 4 seconds."
+    },
+    "stinger_save_point": {
+      "title_template": "Safe Haven",
+      "style": "JRPG stinger, save point, gentle chime, reassuring, 3 seconds",
+      "prompt": "Save point activation sound. Gentle reassuring chime with a soft shimmer — the comfort of knowing your progress is preserved. Warm, brief, safe. 3 seconds."
     }
   }
 }
