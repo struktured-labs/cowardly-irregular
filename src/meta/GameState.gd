@@ -110,7 +110,10 @@ func _create_save_data() -> Dictionary:
 		"party_leader_index": party_leader_index,
 		"game_constants": game_constants.duplicate(),
 		"meta_features": meta_features.duplicate(),
-		"corruption_effects": corruption_effects.duplicate()
+		"corruption_effects": corruption_effects.duplicate(),
+		"current_world": current_world,
+		"worlds_unlocked": worlds_unlocked,
+		"story_flags": story_flags.duplicate(),
 	}
 
 
@@ -132,6 +135,12 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		meta_features = save_data["meta_features"].duplicate()
 	if save_data.has("corruption_effects"):
 		corruption_effects = save_data["corruption_effects"].duplicate()
+	if save_data.has("current_world"):
+		current_world = save_data["current_world"]
+	if save_data.has("worlds_unlocked"):
+		worlds_unlocked = save_data["worlds_unlocked"]
+	if save_data.has("story_flags"):
+		story_flags = save_data["story_flags"].duplicate()
 
 
 ## Corruption system
