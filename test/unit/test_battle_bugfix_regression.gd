@@ -556,3 +556,75 @@ func test_stun_is_one_turn_status() -> void:
 	# Stun is removed by BattleManager when it skips the turn
 	# At the Combatant level, verify duration is 1
 	assert_eq(_combatant.status_durations.get("stun", 0), 1, "Stun should be 1 turn")
+
+
+# ---- Burning DOT: 8% max HP per turn ----
+
+func test_burning_deals_damage_per_turn() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 100
+	_combatant.add_status("burning", 3)
+
+	_combatant.update_buff_durations()
+	# Burning deals 8% max HP = 8 damage
+	assert_eq(_combatant.current_hp, 92, "Burning should deal 8%% max HP (8 damage)")
+
+
+func test_burning_can_kill() -> void:
+	var die_count = 0
+	_combatant.died.connect(func(): die_count += 1)
+	_combatant.max_hp = 100
+	_combatant.current_hp = 5
+	_combatant.add_status("burning", 5)
+
+	_combatant.update_buff_durations()
+	assert_eq(_combatant.current_hp, 0, "HP should reach 0 from burning")
+	assert_eq(die_count, 1, "Burning should kill combatant at 0 HP")
+
+
+func test_burning_stronger_than_poison() -> void:
+	# Both on 100 HP target
+	var target_a = Combatant.new()
+	target_a.max_hp = 100
+	target_a.current_hp = 100
+	target_a.add_status("poison", 3)
+	add_child_autofree(target_a)
+
+	var target_b = Combatant.new()
+	target_b.max_hp = 100
+	target_b.current_hp = 100
+	target_b.add_status("burning", 3)
+	add_child_autofree(target_b)
+
+	target_a.update_buff_durations()
+	target_b.update_buff_durations()
+
+	assert_gt(100 - target_b.current_hp, 100 - target_a.current_hp,
+		"Burning should deal more damage than poison (8%% vs 5%%)")
+
+
+# ---- Curse: reduces healing by 50% ----
+
+func test_curse_reduces_healing() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 50
+
+	# Normal heal
+	var normal_healed = _combatant.heal(40)
+	assert_eq(normal_healed, 40, "Normal heal should restore full amount")
+
+	# Reset and apply curse
+	_combatant.current_hp = 50
+	_combatant.add_status("curse", 5)
+	var cursed_healed = _combatant.heal(40)
+	assert_eq(cursed_healed, 20, "Cursed heal should restore 50%% (20 of 40)")
+
+
+func test_curse_does_not_affect_damage() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 100
+	_combatant.add_status("curse", 5)
+
+	var damage = _combatant.take_damage(30)
+	# Curse should not change damage taken
+	assert_gt(damage, 0, "Curse should not prevent damage")
