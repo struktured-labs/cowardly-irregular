@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://cmiew5o8x8adm"
+path="res://.godot/imported/boss_arbiter_suburban.ogg-ed74d3e4e3f90c03f2a063378c0db69e.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_arbiter_suburban.ogg"
+dest_files=["res://.godot/imported/boss_arbiter_suburban.ogg-ed74d3e4e3f90c03f2a063378c0db69e.oggvorbisstr"]
 
 [params]
 

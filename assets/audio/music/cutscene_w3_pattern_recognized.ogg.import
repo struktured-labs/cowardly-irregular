@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dhv7lylwaex2u"
+path="res://.godot/imported/cutscene_w3_pattern_recognized.ogg-ee5a95af85243af3bc871cbd18196782.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/cutscene_w3_pattern_recognized.ogg"
+dest_files=["res://.godot/imported/cutscene_w3_pattern_recognized.ogg-ee5a95af85243af3bc871cbd18196782.oggvorbisstr"]
 
 [params]
 

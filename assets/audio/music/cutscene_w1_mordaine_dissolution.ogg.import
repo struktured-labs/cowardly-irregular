@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://ddmrxqxhkfyre"
+path="res://.godot/imported/cutscene_w1_mordaine_dissolution.ogg-dfa0625e5d3478d918a0ac5720163d43.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/cutscene_w1_mordaine_dissolution.ogg"
+dest_files=["res://.godot/imported/cutscene_w1_mordaine_dissolution.ogg-dfa0625e5d3478d918a0ac5720163d43.oggvorbisstr"]
 
 [params]
 

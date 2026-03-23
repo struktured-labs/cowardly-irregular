@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bh0cm40w0rqyy"
+path="res://.godot/imported/boss_tempo_digital.ogg-f78e54aaaccd0e77b9c4c5656a00f3dd.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_tempo_digital.ogg"
+dest_files=["res://.godot/imported/boss_tempo_digital.ogg-f78e54aaaccd0e77b9c4c5656a00f3dd.oggvorbisstr"]
 
 [params]
 

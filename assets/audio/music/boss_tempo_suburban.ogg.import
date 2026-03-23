@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dhdxawbymntnh"
+path="res://.godot/imported/boss_tempo_suburban.ogg-631c8dffdf6beb6ac1b0634b4d8c7919.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_tempo_suburban.ogg"
+dest_files=["res://.godot/imported/boss_tempo_suburban.ogg-631c8dffdf6beb6ac1b0634b4d8c7919.oggvorbisstr"]
 
 [params]
 

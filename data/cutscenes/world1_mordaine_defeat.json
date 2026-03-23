@@ -1,0 +1,187 @@
+{
+  "id": "world1_mordaine_defeat",
+  "title": "The Last Calculation",
+  "world": 1,
+  "trigger": "boss_mordaine_defeated",
+  "description": "After Mordaine's defeat. She dissolves like a thought dissolves. The throne room flickers and behind the walls, suburbs. Leads into world1_epilogue.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The maps were still on the table. The ledgers were still stacked in their careful columns. The window was still open.",
+      "Mordaine stood in the center of the room and looked at the documents the way a person looks at something they built and are seeing, perhaps for the first time, from the outside."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mordaine",
+        "text": "The kingdom will need someone to maintain the systems. The records are current through this morning. There are notes in the left margin of the third ledger. The one with the blue binding.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Mordaine\u2014",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mordaine",
+        "text": "This kingdom needed order. You needed a challenge. Both served their purpose.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Were we a variable? The whole time?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Mordaine",
+        "text": "You were the variable I couldn't model. There's a difference.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mordaine",
+        "text": "Every system has the variable it can't model. That variable is usually the most important one.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Did you know? When you built all this. Did you know someone would come through it?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mordaine",
+        "text": "I built it to be passable. Every system I have ever designed, I have designed to be passable. A system that cannot be passed is a system without purpose.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mordaine",
+        "text": "I simply didn't account for how long it would take to find someone who would actually try.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "She looked at each of them once \u2014 brief, precise, the look of someone making a final entry in a column. Then she looked back at the ledger on the table."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mordaine",
+        "text": "I wonder sometimes. Whether someone built the system I was inside. Whether my decisions were as calculated as I believed, or whether I was also a variable. Moving through a design I couldn't see.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "What would you do differently?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Mordaine",
+        "text": "...",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The Chancellor said nothing. Which was the most honest thing she had said since they arrived."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "play_sfx", "sfx": "reality_glitch"},
+
+    {"type": "narration", "lines": [
+      "She dissolved.",
+      "Not in the way enemies dissolve \u2014 in smoke and light and theatrical satisfaction. Not with a final pronouncement, not with a flash of dramatic energy.",
+      "She dissolved the way a thought dissolves. One moment she was there, present and specific and real. The next, a memory already fading at the edges.",
+      "The ledger on the table remained. Open to the page she had last been reading."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "play_sfx", "sfx": "reality_glitch"},
+    {"type": "screen_shake", "duration": 0.5, "intensity": 4.0},
+
+    {"type": "narration", "lines": [
+      "The throne room flickered.",
+      "Not the lights \u2014 the room. The walls shuddered, and for a fraction of a second, the party saw something behind them.",
+      "Not stone. Not the dark wood paneling of a medieval chancellor's working chamber.",
+      "Something that looked like suburbs. A street. A house with a short driveway and a mailbox. Ordinary and impossible.",
+      "Then the room settled back into itself. Stone walls. Tapestries. Maps."
+    ]},
+
+    {"type": "screen_flash", "duration": 0.3},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "Did anyone else\u2014",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Yes.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Interesting.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Is that all you have to say?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "It's interesting. I'm still working on the rest.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The window was still open. Below, the market sounds continued. Someone was still singing. In the middle of everything, someone was just singing, because that was what they were doing today."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "set_flag", "flag": "mordaine_defeated", "value": true},
+    {"type": "set_flag", "flag": "world1_mordaine_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

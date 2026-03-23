@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bw5nsxovoleda"
+path="res://.godot/imported/boss_warden_abstract.ogg-5dcaeca4ed5366677ead1a52bd05f202.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_warden_abstract.ogg"
+dest_files=["res://.godot/imported/boss_warden_abstract.ogg-5dcaeca4ed5366677ead1a52bd05f202.oggvorbisstr"]
 
 [params]
 

@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://w6ipvhtvivps"
+path="res://.godot/imported/cutscene_w2_portal_arrival.ogg-a58dea037d8fdc5d82f74b4bdaa41166.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/cutscene_w2_portal_arrival.ogg"
+dest_files=["res://.godot/imported/cutscene_w2_portal_arrival.ogg-a58dea037d8fdc5d82f74b4bdaa41166.oggvorbisstr"]
 
 [params]
 

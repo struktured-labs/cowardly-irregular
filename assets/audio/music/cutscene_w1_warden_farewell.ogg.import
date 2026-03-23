@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://doix678e7k8tb"
+path="res://.godot/imported/cutscene_w1_warden_farewell.ogg-e7e006119705232a03f4a1d88c5d4c33.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/cutscene_w1_warden_farewell.ogg"
+dest_files=["res://.godot/imported/cutscene_w1_warden_farewell.ogg-e7e006119705232a03f4a1d88c5d4c33.oggvorbisstr"]
 
 [params]
 

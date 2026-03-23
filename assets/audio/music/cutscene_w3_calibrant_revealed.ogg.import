@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://ci0php20oe74y"
+path="res://.godot/imported/cutscene_w3_calibrant_revealed.ogg-7ee6f6d5cef8b4885a10951504bd680f.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/cutscene_w3_calibrant_revealed.ogg"
+dest_files=["res://.godot/imported/cutscene_w3_calibrant_revealed.ogg-7ee6f6d5cef8b4885a10951504bd680f.oggvorbisstr"]
 
 [params]
 

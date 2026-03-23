@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://wx0tk642ckkl"
+path="res://.godot/imported/cutscene_alt_breaker_speed.ogg-99c03ed7e33917dadf5927f2da7a1cb5.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/cutscene_alt_breaker_speed.ogg"
+dest_files=["res://.godot/imported/cutscene_alt_breaker_speed.ogg-99c03ed7e33917dadf5927f2da7a1cb5.oggvorbisstr"]
 
 [params]
 
