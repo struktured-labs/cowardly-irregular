@@ -1,0 +1,161 @@
+{
+  "id": "world2_tempo_defeat",
+  "title": "Tempo of the Rush Hour \u2014 Aftermath",
+  "world": 2,
+  "trigger": "boss_tempo_suburban_defeated",
+  "description": "The Tempo steps out of the wrecked car. The manic frequency is gone. They have been delivering to this neighborhood their whole life and cannot remember the first delivery. The party has a beginning \u2014 a real one \u2014 and the Tempo realizes they want one too.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The car finally sputtered out. Electrical system compromised, fence-damage compounded.",
+      "The Tempo stepped out, brushing glass from the pizza company's branded windbreaker. The manic frequency was gone. What replaced it was quieter, and the quiet seemed to surprise the Tempo as much as anyone."
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "Heck of a chase.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "I've been doing this route my whole life.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "Something shifted in the easy confidence of their expression."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "Except\u2026 I don't remember starting.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "I've been delivering to this neighborhood my whole life, and I remember every house, every regular order, every dog that runs at the car. But I don't remember the first delivery.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "That's weird, right? That should be weird.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "It's okay.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "It's not okay.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "A person remembers their first job. A person remembers the beginning.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "How long have you been doing yours?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "We've been doing ours since a notice was nailed to a door.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "That's specific.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "That's a beginning. That's a real one.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "Something moved behind their eyes. They looked at the insulated bag still sitting on the car's passenger seat. Picked it up. Didn't open it."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "I don't know what's in this. I've never opened it. I've delivered it every night of my life and I don't know who I'm delivering it to.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "Thirty minutes or less.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "It's not a slogan. It was supposed to be something. I just don't know what anymore.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "The Tempo set the bag down. They stood in the cul-de-sac at the end of Birch Court and did not move. For the first time in a life of constant motion, they were not going anywhere."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "I'm\u2026 not late anymore.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "set_flag", "flag": "tempo_suburban_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

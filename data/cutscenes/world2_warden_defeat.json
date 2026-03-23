@@ -1,0 +1,132 @@
+{
+  "id": "world2_warden_defeat",
+  "title": "Warden of Routine \u2014 Aftermath",
+  "world": 2,
+  "trigger": "boss_warden_suburban_defeated",
+  "description": "The Warden of Routine sits on the curb and sets down her stop sign. She has never lost a crossing before. The neighborhood has never existed without her at this intersection. She realizes, for the first time, that she cannot remember being assigned here.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The Warden set her stop sign carefully against the lamppost and sat on the curb.",
+      "The intersection was empty. It had been empty throughout. The signal said WALK, and the walk sign blinked once and went dark."
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "I don't understand.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "I've never lost a crossing before.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "Thank you. For letting us through.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Warden",
+        "text": "You're welcome.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "A long pause. Something shifted in her posture \u2014 not defeat exactly, but a kind of attention turning inward."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "I've been here such a long time.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "I've been at this crosswalk for\u2026 how long?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "It feels like longer than the neighborhood's been here.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "How long has the neighborhood been here?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Since the beginning. That's what I was told. This neighborhood has always been here. I have always been at this intersection.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Except I can't remember the first day. I can't remember being assigned here. I just\u2026 was. And then I was here.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "She picked up the stop sign again, the automatic motion of someone who needs to be doing their job or the ground feels uncertain."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "You should cross now. Before traffic comes.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "There was, as there had been throughout, no traffic."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "You may cross.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "set_flag", "flag": "warden_suburban_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

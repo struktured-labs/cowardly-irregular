@@ -1,0 +1,120 @@
+{
+  "id": "world1_arbiter_defeat",
+  "title": "Arbiter of Steel \u2014 Aftermath",
+  "world": 1,
+  "trigger": "boss_arbiter_medieval_defeated",
+  "description": "The Arbiter kneels with deliberate dignity. Her assessment of the party is blunt, precise, and carries unexpected warmth. She points them to the sealed passage. The sword knows they are real.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The Arbiter fell, and the kneeling was deliberate \u2014 the motion of something that has chosen its posture.",
+      "The forest clearing was very still. The corruption around its edges seemed to wait."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "Hm.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "I asked for your best and you gave it. I didn't expect to like being beaten this much.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Thank you.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "It is not a compliment. It is a fact.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "Your movements are irregular. Not trained. Not disciplined. But you persist through mistakes in a way that suggests you haven't yet accepted their cost.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "That is either a flaw or a quality. I cannot determine which.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Maybe both.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "That answer is outside my assessment criteria.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Arbiter was quiet for a moment, and the quiet had weight. She looked at the Fighter's sword."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "The sword knows.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "Whatever you are \u2014 the sword knows you're real.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "Behind the sealed passage to the north. The court magic there was not intended to be found.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "Find it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "She rose. Behind her, a sealed passage. Carved into the seal, in the same precise hand as the cave: The crown is not what it seems."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "arbiter_medieval_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

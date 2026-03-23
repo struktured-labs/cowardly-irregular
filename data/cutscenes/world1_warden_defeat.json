@@ -1,0 +1,188 @@
+{
+  "id": "world1_warden_defeat",
+  "title": "Warden of the Old Guard \u2014 Aftermath",
+  "world": 1,
+  "trigger": "boss_warden_medieval_defeated",
+  "description": "The Warden kneels after three hundred years of waiting. He gives each party member final words from a soldier who has been watching very carefully. The first Masterite discovers he has questions he cannot answer.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.2},
+
+    {"type": "narration", "lines": [
+      "The chamber was very quiet. The kind of quiet that only exists deep underground, where there is nothing for sound to bounce off of except stone.",
+      "The Warden had gone down on one knee. He stayed there \u2014 not from exhaustion, but from something more considered. The armor had stilled in a way that was different from stillness."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "Thirty-eight.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "You are the first to get through.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "A long quiet. Then, as if the words had been waiting for centuries and had only just found permission."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "I don't know who put me here. I stopped asking.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Maybe you should ask for both of us.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "Fighter.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "...",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Your shield work is poor. You lead with your right side and you don't correct for it. If you survive long enough to face something worse than me, correct it before then.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "I will.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "Mage.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "...",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Stop documenting during the fight. You nearly took a blow from my left flank that would have ended your journey.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Your theory is correct. Trust it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "Cleric.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "...",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Warden",
+        "text": "You held them together longer than anyone had a right to expect. That is rare.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Guard your own life with the same care you spend on theirs.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "And you \u2014 Bard.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Me?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Warden",
+        "text": "When you sang to the wolf pack. That was not the action of a frightened musician. That was strategy. You chose the right moment. You knew music was the correct tool.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Someone taught you well. Or no one taught you and you simply knew.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "I find I cannot tell which is true. Strange. I have watched many people come through here. I should be able to tell.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The Bard said nothing. Which was unusual enough to be notable."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "Behind where the Warden had stood, scratched into the cave wall: traces of court magic. Formal enchantments. The kind of spell that came with a wax seal and a filing system. Someone with authority had been feeding the cave's corruption deliberately."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "set_flag", "flag": "warden_medieval_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

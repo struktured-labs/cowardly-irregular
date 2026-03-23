@@ -1,0 +1,150 @@
+{
+  "id": "world2_arbiter_defeat",
+  "title": "Arbiter of the Grade \u2014 Aftermath",
+  "world": 2,
+  "trigger": "boss_arbiter_suburban_defeated",
+  "description": "The Arbiter writes an A in his grade book and cannot account for how it happened. The rubric had no category for applied experience. He has been grading a class whose subject he can no longer name. The Bard's comment about the rubric being a love letter to certainty stays with him.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The Arbiter received the outcome with the equanimity of a man consulting a ledger and finding a line he doesn't quite understand.",
+      "Room 204 was very quiet. The motivational eagles on the walls continued to soar above the standard without comment."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "A.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "No conditions. That was an A.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "My rubric was perfect. My curve was calibrated precisely. How did you pass without studying?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "We studied our whole lives. Just not these subjects.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "The underlying principles are the same. Every healing decision uses triage logic. Every tactical choice is resource allocation.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The Arbiter looked at his grade book. Something moved across his face that was not quite recognition and not quite discomfort."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "You are not the students this curriculum was designed for. And yet the curriculum worked.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "Partially. With significant deviation.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "I don't know whether to mark that as a success.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "He was quiet for a moment, looking at the cover of the grade book in the way of a man who has just noticed the title of a book he has been reading for years."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "I don't know what class this is for. I've been grading it a long time.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "I'm not sure anymore what the subject is.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Mark it as interesting.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "I don't have a column for interesting.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "He wrote something in the margin anyway. His pen moved with the particular slowness of someone writing something they didn't expect to write."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter",
+        "text": "Charming. Incomplete.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "But passing.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter",
+        "text": "I've never had to curve the grade before.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "set_flag", "flag": "arbiter_suburban_defeated", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
