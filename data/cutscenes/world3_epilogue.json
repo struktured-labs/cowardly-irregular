@@ -1,0 +1,118 @@
+{
+  "id": "world3_epilogue",
+  "title": "After the Grand Mechanism",
+  "world": 3,
+  "trigger": "world3_regulator_defeated",
+  "description": "After the Regulator's defeat. The Grand Mechanism winds down. The clock tower stops for the first time. Behind the brass, glimpses of concrete and fluorescent light. Three rulers. Same philosophy. Same fingerprints. Madame Orrery was right.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "fade_to_black", "duration": 0.5},
+    {"type": "wait", "duration": 1.0},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "fade_from_black", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The Grand Mechanism wound down.",
+      "Not in pieces \u2014 all at once, in the way that a very large clock stops when you remove the one gear everything else depends on. The sound of ten thousand interlocking parts decelerating together was not loud. It was immense. There is a difference.",
+      "And then: silence. The first silence Cogsworth Junction had known since before anyone could remember a time before the ticking."
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "text": "The clock tower stopped. Not the gears inside it \u2014 the tower itself seemed to hold its breath, as though it had been designed to announce things and had just run out of things to announce."},
+
+    {"type": "play_sfx", "sfx": "reality_glitch"},
+    {"type": "screen_shake", "duration": 0.5, "intensity": 3.5},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The brass flickered.",
+      "Behind it: concrete. Flat gray ceiling. The cold hum of fluorescent lights that had probably been humming for years without anyone noticing.",
+      "It lasted less than a second. Then the brass was back, and the copper sky, and the ticking that was no longer ticking."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "Gray ceiling. Fluorescent lights. I know what that is. I've been in rooms like that.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "You've been in rooms like that in a different world.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Yes.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Three worlds. Three rulers. Mordaine, the Coordinator, the Regulator. Same word. Same idea. Same architecture of control.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Madame Orrery said: same fingerprints. She was right.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "She also said the next world would be harder. She was right about that too.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Each world so far has been more abstract about it. Mordaine was explicit. The Coordinator used bureaucracy. The Regulator used precision engineering. The control is the same thing. The disguise is getting more sophisticated.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Which means whoever is building these is watching us get better at recognizing it.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Good.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The clocktower's hands had not moved since the Mechanism wound down. They pointed to a time that was no longer occurring. The town below had not yet decided what to do without its schedule. The streets were full of people standing at their scheduled positions with nowhere scheduled to go."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "play_sfx", "sfx": "portal_activate"},
+
+    {"type": "narration", "lines": [
+      "At the base of the clock tower, where the largest gear had been, the shimmer appeared.",
+      "Behind it: no sky. A ceiling. Concrete, flat, industrial, stretching in every direction. The sound of recycled air.",
+      "The clock tower's hands moved one final tick and stopped permanently. Whatever time it was, it was no longer being tracked.",
+      "The party had seen this shape before. They walked toward the portal faster than they had walked toward the last one."
+    ]},
+
+    {"type": "fade_to_black", "duration": 1.5},
+    {"type": "set_flag", "flag": "world3_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
