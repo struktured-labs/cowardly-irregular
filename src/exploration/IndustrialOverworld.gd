@@ -357,29 +357,30 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Back portal to Suburban world (south gate area)
-	var suburban_portal = AreaTransitionScript.new()
-	suburban_portal.name = "SuburbanPortal"
-	suburban_portal.target_map = "suburban_overworld"
-	suburban_portal.target_spawn = "from_industrial"
-	suburban_portal.require_interaction = true
-	suburban_portal.indicator_text = "Return to Suburbia"
-	suburban_portal.position = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 41 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
-	suburban_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(suburban_portal)
+	# Back portal to W3 Steampunk
+	var back_portal = AreaTransitionScript.new()
+	back_portal.name = "BackPortal"
+	back_portal.target_map = "steampunk_overworld"
+	back_portal.target_spawn = "entrance"
+	back_portal.require_interaction = true
+	back_portal.indicator_text = "Return to the Clockwork Dominion"
+	back_portal.position = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 41 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(back_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
+	back_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(back_portal)
 
-	# Forward portal to Futuristic world (north rail yard - the tracks lead forward)
-	var futuristic_portal = AreaTransitionScript.new()
-	futuristic_portal.name = "FuturisticPortal"
-	futuristic_portal.target_map = "futuristic_overworld"
-	futuristic_portal.target_spawn = "from_industrial"
-	futuristic_portal.require_interaction = true
-	futuristic_portal.indicator_text = "The Network"
-	futuristic_portal.position = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
-	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(futuristic_portal)
+	# Forward portal to W5 Futuristic (gated on world unlock)
+	if GameState.is_world_unlocked(5) or GameState.get_story_flag("w4_boss_defeated"):
+		var forward_portal = AreaTransitionScript.new()
+		forward_portal.name = "WorldPortal"
+		forward_portal.target_map = "futuristic_overworld"
+		forward_portal.target_spawn = "from_industrial"
+		forward_portal.require_interaction = true
+		forward_portal.indicator_text = "Enter the Source Layer"
+		forward_portal.position = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
+		forward_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(forward_portal)
 
 	# Rivet Row village entrance (east worker housing block, row 17)
 	var rivet_row_trans = AreaTransitionScript.new()

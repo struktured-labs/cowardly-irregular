@@ -311,29 +311,30 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Back portal to Industrial world (south access port)
-	var industrial_portal = AreaTransitionScript.new()
-	industrial_portal.name = "IndustrialPortal"
-	industrial_portal.target_map = "industrial_overworld"
-	industrial_portal.target_spawn = "from_futuristic"
-	industrial_portal.require_interaction = true
-	industrial_portal.indicator_text = "Return to Efficiency District"
-	industrial_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 42 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(industrial_portal, Vector2(TILE_SIZE, TILE_SIZE))
-	industrial_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(industrial_portal)
+	# Back portal to W4 Industrial
+	var back_portal = AreaTransitionScript.new()
+	back_portal.name = "BackPortal"
+	back_portal.target_map = "industrial_overworld"
+	back_portal.target_spawn = "from_futuristic"
+	back_portal.require_interaction = true
+	back_portal.indicator_text = "Return to the Assembly Line"
+	back_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 42 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(back_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	back_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(back_portal)
 
-	# Forward portal to Abstract world (north server farm - data degrades into void)
-	var abstract_portal = AreaTransitionScript.new()
-	abstract_portal.name = "AbstractPortal"
-	abstract_portal.target_map = "abstract_overworld"
-	abstract_portal.target_spawn = "from_futuristic"
-	abstract_portal.require_interaction = true
-	abstract_portal.indicator_text = "The Remainder"
-	abstract_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(abstract_portal, Vector2(TILE_SIZE, TILE_SIZE))
-	abstract_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(abstract_portal)
+	# Forward portal to W6 Abstract (gated on world unlock)
+	if GameState.is_world_unlocked(6) or GameState.get_story_flag("w5_boss_defeated"):
+		var forward_portal = AreaTransitionScript.new()
+		forward_portal.name = "WorldPortal"
+		forward_portal.target_map = "abstract_overworld"
+		forward_portal.target_spawn = "from_futuristic"
+		forward_portal.require_interaction = true
+		forward_portal.indicator_text = "The Remainder"
+		forward_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		forward_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(forward_portal)
 
 	# Node Prime village entrance (east residential pods, row 20)
 	var node_prime_trans = AreaTransitionScript.new()

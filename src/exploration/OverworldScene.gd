@@ -314,9 +314,11 @@ func _setup_transitions() -> void:
 	_add_area_transition("IronhavenEntrance", "ironhaven_village", "entrance",
 		spawn_points.get("ironhaven_entrance", Vector2.ZERO), "Enter Ironhaven")
 
-	# Steampunk portal
-	_add_area_transition("SteampunkPortal", "steampunk_overworld", "entrance",
-		spawn_points.get("steampunk_portal", Vector2.ZERO), "??? Gateway ???")
+	# World progression portal — leads to next world (W2 Suburban)
+	# Only visible after W1 boss is defeated (or world 2+ is unlocked)
+	if GameState.is_world_unlocked(2) or GameState.get_story_flag("w1_boss_defeated"):
+		_add_area_transition("WorldPortal", "suburban_overworld", "entrance",
+			spawn_points.get("steampunk_portal", Vector2.ZERO), "Enter the Mundane Sprawl")
 
 
 func _add_area_transition(trans_name: String, target_map: String, target_spawn: String,
