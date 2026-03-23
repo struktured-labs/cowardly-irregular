@@ -88,6 +88,7 @@ var _last_player_pos: Vector2 = Vector2.ZERO
 var _player_moving: bool = false
 
 static var camera_angle: float = 0.0
+static var _pending_dissolve_in: bool = false
 
 
 ## Apply a per-world visual preset. Call BEFORE setup().
@@ -179,6 +180,15 @@ func setup(scene: Node2D, player: Node2D) -> void:
 
 	_last_player_pos = player.position
 	print("[MODE7] Screen-texture Mode 7 overlay active (360° camera)")
+
+	# Auto dissolve-in if previous scene dissolved out (world portal transition)
+	if _pending_dissolve_in:
+		_pending_dissolve_in = false
+		call_deferred("_auto_dissolve_in")
+
+
+func _auto_dissolve_in() -> void:
+	await play_dissolve_in()
 
 
 func process_frame() -> void:
@@ -277,6 +287,7 @@ func play_dissolve_out(duration: float = 1.2) -> void:
 	var tween = _player_ref.create_tween()
 	tween.tween_method(set_dissolve, 0.0, 1.0, duration)
 	await tween.finished
+	_pending_dissolve_in = true
 
 
 ## Animate dissolve in (world reassembling). Call after new scene is loaded.
