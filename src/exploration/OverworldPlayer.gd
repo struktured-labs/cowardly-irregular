@@ -370,16 +370,11 @@ func _generate_all_sprites() -> void:
 
 	var new_cache: Dictionary = {}
 
-	# Try artist sheet first — artist work is authoritative regardless of
-	# custom colors. Custom colors only apply to proc-gen sprites; when artist
-	# sheets exist, we use them as-is.
-	var artist_cache = _try_build_artist_sprites()
-	if not artist_cache.is_empty():
-		_static_sprite_cache[static_key] = artist_cache
-		_sprite_cache = artist_cache
-		if _static_sprite_cache.size() > 30:
-			_static_sprite_cache.erase(_static_sprite_cache.keys()[0])
-		return
+	# Artist battle sheets (256x256) look wrong on the overworld — they're
+	# front-view poses, not top-down walk sprites. Use the procedural chibi
+	# system which was specifically designed for overworld rendering.
+	# TODO: re-enable when artists provide dedicated overworld sprite sheets
+	#       with a "walk_overworld" animation tag.
 
 	for dir in [Direction.DOWN, Direction.UP, Direction.LEFT, Direction.RIGHT]:
 		for frame in range(WALK_FRAMES):
@@ -537,12 +532,12 @@ func _get_walk_phase(frame: int) -> Dictionary:
 	match frame:
 		0:  # Neutral stand / ground contact
 			return {"bob": 0, "ll": 0, "rl": 0, "la": 0, "ra": 0}
-		1:  # Right foot forward, left arm forward
-			return {"bob": 1, "ll": -2, "rl": 2, "la": 1, "ra": -1}
+		1:  # Right foot forward, left arm forward — exaggerated for visibility
+			return {"bob": 2, "ll": -3, "rl": 3, "la": 2, "ra": -2}
 		2:  # Neutral stand / ground contact (opposite side)
 			return {"bob": 0, "ll": 0, "rl": 0, "la": 0, "ra": 0}
 		3:  # Left foot forward, right arm forward
-			return {"bob": 1, "ll": 2, "rl": -2, "la": -1, "ra": 1}
+			return {"bob": 2, "ll": 3, "rl": -3, "la": -2, "ra": 2}
 		_:
 			return {"bob": 0, "ll": 0, "rl": 0, "la": 0, "ra": 0}
 
