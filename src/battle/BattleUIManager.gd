@@ -224,14 +224,14 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		if not member.is_alive:
 			name_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 
-	# Gray out the sprite if KO'd
+	# Gray out the sprite if KO'd; otherwise apply status tint (or reset to white)
 	if idx < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[idx]
 		if is_instance_valid(sprite):
 			if not member.is_alive:
 				sprite.modulate = Color(0.3, 0.3, 0.3, 0.7)  # Dark gray, semi-transparent
 			else:
-				sprite.modulate = Color(1, 1, 1, 1)  # Normal
+				sprite.modulate = _get_status_modulate(member.status_effects)
 
 	# Update MP
 	var mp_bar = box.get_node_or_null("MP")
@@ -318,6 +318,26 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				ap_label.text = "AP: %+d (-%d)" % [ap_value, committed_count]
 			else:
 				ap_label.text = "AP: %+d" % ap_value
+
+
+func _get_status_modulate(status_effects: Array) -> Color:
+	"""Return sprite modulate color for the highest-priority active status effect.
+	Returns Color.WHITE when no relevant statuses are present."""
+	for effect in status_effects:
+		match effect:
+			"poison":
+				return Color(0.7, 1.0, 0.7)   # Green tint
+			"burning":
+				return Color(1.0, 0.6, 0.4)   # Orange-red
+			"curse":
+				return Color(0.7, 0.4, 0.8)   # Purple
+			"stun":
+				return Color(1.0, 1.0, 0.5)   # Yellow
+			"sleep":
+				return Color(0.8, 0.8, 1.0)   # Pale blue
+			"blind":
+				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
+	return Color.WHITE
 
 
 func update_enemy_status() -> void:
@@ -425,7 +445,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 		var status_indicator = " [color=gray]✗[/color]" if is_dead else ""
 		name_label.text = "[color=%s]%s[/color]%s" % [name_color, enemy.combatant_name, status_indicator]
 
-	# Update AP
+	# Update AP and status effects
 	var ap_label = box.get_node_or_null("AP")
 	if ap_label and ap_label is RichTextLabel:
 		var ap_color = "white"
@@ -437,7 +457,15 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 		if is_dead:
 			ap_label.text = "[color=gray]---[/color]"
 		else:
-			ap_label.text = "[color=%s]AP: %+d[/color]" % [ap_color, enemy.current_ap]
+			var ap_text = "[color=%s]AP: %+d[/color]" % [ap_color, enemy.current_ap]
+			if enemy.status_effects.size() > 0:
+				ap_text += " ["
+				for si in range(enemy.status_effects.size()):
+					if si > 0:
+						ap_text += ", "
+					ap_text += "[color=yellow]%s[/color]" % enemy.status_effects[si].capitalize()
+				ap_text += "]"
+			ap_label.text = ap_text
 
 	# Update HP (hidden unless revealed or dead)
 	var hp_label = box.get_node_or_null("HP")

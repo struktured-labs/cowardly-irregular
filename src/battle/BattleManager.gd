@@ -1471,6 +1471,13 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
 
+		# Apply status effect if ability has one
+		var effect = ability.get("effect", "")
+		var effect_chance = ability.get("effect_chance", 0.0)
+		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
+			target.add_status(effect)
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
+
 
 func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var base_damage = caster.get_buffed_stat("magic", caster.magic)
@@ -1523,6 +1530,13 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			var drain_log = "  → [color=white]%s[/color] drains [color=lime]%d[/color] HP!" % [caster.combatant_name, drained]
 			battle_log_message.emit(drain_log)
 			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
+
+		# Apply status effect if ability has one
+		var effect = ability.get("effect", "")
+		var effect_chance = ability.get("effect_chance", 0.0)
+		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
+			target.add_status(effect)
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
 
 
 ## Critical hit system
