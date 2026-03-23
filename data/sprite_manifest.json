@@ -5,7 +5,7 @@
       "path": "res://assets/sprites/jobs/fighter",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
       "animations": [
         "idle",
         "walk",
@@ -61,7 +61,7 @@
       "path": "res://assets/sprites/jobs/cleric_artist",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 4,
+      "fps": 10,
       "tier": "T2",
       "source": "artist Aseprite design (Cleric Main design.aseprite)",
       "animations": [
@@ -101,7 +101,7 @@
       "path": "res://assets/sprites/jobs/rogue",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
       "tier": "T0",
       "_design_source": {
         "aseprite": "assets/sprites/jobs/aseprite/Rogue Main design.aseprite",
@@ -149,7 +149,7 @@
       "path": "res://assets/sprites/jobs/bard",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
       "animations": [
         "idle",
         "walk",
@@ -169,7 +169,7 @@
       "path": "res://assets/sprites/jobs/bard_sdxl",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
       "animations": [
         "idle",
         "walk",
@@ -186,7 +186,7 @@
       "path": "res://assets/sprites/jobs/rogue_sdxl",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
       "tier": "T1",
       "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + IP-Adapter + ControlNet",
       "animations": [
@@ -205,7 +205,7 @@
       "path": "res://assets/sprites/jobs/mage_sdxl",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
       "tier": "T1",
       "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + ControlNet",
       "animations": [
