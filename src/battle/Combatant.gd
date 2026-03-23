@@ -181,12 +181,16 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 
 
 func heal(amount: int) -> int:
-	"""Heal HP, returns actual amount healed"""
+	"""Heal HP, returns actual amount healed. Curse reduces healing by 50%."""
 	if not is_alive:
 		return 0
 
+	var heal_amount = amount
+	if has_status("curse"):
+		heal_amount = int(heal_amount * 0.5)
+
 	var old_hp = current_hp
-	current_hp = min(max_hp, current_hp + amount)
+	current_hp = min(max_hp, current_hp + heal_amount)
 	var healed = current_hp - old_hp
 	hp_changed.emit(old_hp, current_hp)
 	return healed
@@ -318,6 +322,14 @@ func update_buff_durations() -> void:
 		current_hp = max(0, current_hp - poison_damage)
 		hp_changed.emit(current_hp + poison_damage, current_hp)
 		print("%s takes %d poison damage!" % [combatant_name, poison_damage])
+		if current_hp <= 0:
+			die()
+
+	if "burning" in status_effects and is_alive:
+		var burn_damage = max(1, int(max_hp * 0.08))  # 8% max HP per turn (fire burns harder than poison)
+		current_hp = max(0, current_hp - burn_damage)
+		hp_changed.emit(current_hp + burn_damage, current_hp)
+		print("%s takes %d burn damage!" % [combatant_name, burn_damage])
 		if current_hp <= 0:
 			die()
 
