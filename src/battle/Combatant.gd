@@ -170,6 +170,10 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	current_hp = max(0, current_hp - actual_damage)
 	hp_changed.emit(old_hp, current_hp)
 
+	# Taking damage wakes up sleeping targets
+	if has_status("sleep") and actual_damage > 0:
+		remove_status("sleep")
+
 	if current_hp <= 0:
 		die()
 

@@ -1070,6 +1070,25 @@ func _execute_next_action() -> void:
 	current_combatant = combatant
 	current_state = BattleState.PROCESSING_ACTION
 
+	# Status effect behavioral checks
+	if combatant.has_status("stun"):
+		combatant.remove_status("stun")
+		battle_log_message.emit("[color=yellow]%s[/color] is [color=orange]stunned[/color] and cannot act!" % combatant.combatant_name)
+		action_executing.emit(combatant, {"type": "stun_skip"})
+		_execute_next_action()
+		return
+
+	if combatant.has_status("sleep"):
+		# 30% chance to wake up each turn
+		if randf() < 0.3:
+			combatant.remove_status("sleep")
+			battle_log_message.emit("[color=yellow]%s[/color] woke up!" % combatant.combatant_name)
+		else:
+			battle_log_message.emit("[color=yellow]%s[/color] is [color=cyan]asleep[/color]..." % combatant.combatant_name)
+			action_executing.emit(combatant, {"type": "sleep_skip"})
+			_execute_next_action()
+			return
+
 	# Execute based on action type
 	match action.get("type", ""):
 		"attack":
@@ -1316,8 +1335,10 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 	# Miss check: base 10% miss rate, reduced by attacker speed vs target speed
 	var base_miss_rate = 0.10
+	if attacker.has_status("blind"):
+		base_miss_rate += 0.40  # Blind adds 40% miss chance
 	var speed_diff = float(attacker.speed - actual_target.speed) / max(actual_target.speed, 1)
-	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.25)
+	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.60)
 	if randf() < miss_rate:
 		attack_missed.emit(actual_target)
 		var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, actual_target.combatant_name]
@@ -1447,6 +1468,14 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
+
+		# Blind miss check for physical abilities
+		if caster.has_status("blind"):
+			var blind_miss_rate = 0.40
+			if randf() < blind_miss_rate:
+				attack_missed.emit(target)
+				battle_log_message.emit("[color=white]%s[/color]'s attack misses [color=red]%s[/color]! [color=gray](Blind)[/color]" % [caster.combatant_name, target.combatant_name])
+				continue
 
 		var damage = int(base_damage * multiplier)
 		var is_crit = false

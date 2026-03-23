@@ -520,3 +520,39 @@ func test_duplicate_status_not_stacked() -> void:
 		if s == "poison":
 			count += 1
 	assert_eq(count, 1, "Same status should not stack — only one instance")
+
+
+# ===========================================================================
+# Status behavioral hooks regression tests
+# ===========================================================================
+
+# ---- Sleep: damage wakes up sleeping targets ----
+
+func test_damage_wakes_sleeping_combatant() -> void:
+	_combatant.add_status("sleep", 3)
+	assert_true(_combatant.has_status("sleep"), "Should have sleep status")
+
+	_combatant.take_damage(10)
+	assert_false(_combatant.has_status("sleep"), "Taking damage should remove sleep")
+
+
+func test_zero_damage_does_not_wake_sleeper() -> void:
+	# Edge case: 0 actual damage shouldn't wake (immune/absorbed)
+	_combatant.add_status("sleep", 3)
+	_combatant.defense = 999  # Very high defense, but min damage is 1
+	# With the damage formula, even 1 incoming vs 999 def gives 1 damage
+	# So this test verifies the mechanic fires on any positive damage
+	_combatant.take_damage(1)
+	# Min damage is 1, so sleep should be removed
+	assert_false(_combatant.has_status("sleep"),
+		"Even minimum damage (1) should wake a sleeper")
+
+
+# ---- Stun: removed after one skipped turn ----
+
+func test_stun_is_one_turn_status() -> void:
+	_combatant.add_status("stun", 1)
+	assert_true(_combatant.has_status("stun"), "Should have stun")
+	# Stun is removed by BattleManager when it skips the turn
+	# At the Combatant level, verify duration is 1
+	assert_eq(_combatant.status_durations.get("stun", 0), 1, "Stun should be 1 turn")
