@@ -1,4 +1,4 @@
-# Masterites: Agents of the Curator
+# Masterites: Agents of the Calibrant
 
 ## Overview
 Masterites are boss enemies stationed by the final antagonist (the meta-aware difficulty curator) across each overworld. They test the player's mastery across 4 combat dimensions, scaling in power as the world progresses.
@@ -35,9 +35,12 @@ Masterites are boss enemies stationed by the final antagonist (the meta-aware di
 |-------|-----------|-------------|--------|---------|-------|---------|
 | 1 | Medieval | 6-8 | Warden of the Old Guard | Arbiter of Steel | Tempo of the Hunt | Curator of the Flame |
 | 2 | Suburban | 9-11 | Warden of Routine | Arbiter of the Grade | Tempo of the Rush Hour | Curator of the Budget |
-| 3 | Industrial | 12-14 | Warden of the Assembly Line | Arbiter of Efficiency | Tempo of the Shift | Curator of the Pipeline |
-| 4 | Futuristic | 15-17 | Warden of the Firewall | Arbiter of the Benchmark | Tempo of the Clock Cycle | Curator of the Memory Pool |
-| 5 | Abstract | 18-20 | Warden of Form | Arbiter of Function | Tempo of Sequence | Curator of Entropy |
+| 3 | Steampunk (short) | 11-13 | Warden of the Mainspring | — | Tempo of the Mainspring | — |
+| 4 | Industrial | 13-16 | Warden of the Assembly Line | Arbiter of Efficiency | Tempo of the Shift | Curator of the Pipeline |
+| 5 | Digital | 16-19 | Warden of the Firewall | Arbiter of the Benchmark | Tempo of the Clock Cycle | Curator of the Memory Pool |
+| 6 | Abstract | 19-22 | Warden of Form | Arbiter of Function | Tempo of Sequence | Curator of Entropy |
+
+**Note:** Steampunk (Phase 3) only has 2 Masterites — it's a short transitional world where The Calibrant is revealed.
 
 ## Stat Scaling
 
@@ -51,14 +54,15 @@ Stats scale ~1.5-2x per phase. HP ranges from 420-550 (Phase 1) to 1100-1400 (Ph
 - All have intro dialogue reflecting the antagonist's purpose
 
 ## Narrative Role
-Masterites are the antagonist's way of measuring the player before the final confrontation. Each one reports back (narratively) on the player's strengths and weaknesses. By the time the player defeats all 20, the antagonist has a complete profile - setting up the meta-aware final boss fight.
+Masterites are the antagonist's way of measuring the player before the final confrontation. Each one reports back (narratively) on the player's strengths and weaknesses. By the time the player defeats all 22 (4 per world + 2 in steampunk), the antagonist has a complete profile - setting up the meta-aware final boss fight.
 
 ## Drop Materials
 - Phase 1-2: masterite_shard
-- Phase 2-3: masterite_badge
-- Phase 3-4: masterite_core
-- Phase 4-5: masterite_circuit
-- Phase 5: masterite_prism
+- Phase 3: masterite_gear (steampunk exclusive)
+- Phase 3-4: masterite_badge
+- Phase 4-5: masterite_core
+- Phase 5-6: masterite_circuit
+- Phase 6: masterite_prism
 
 ## Encounter Method
 Masterites appear as overworld boss triggers (Area2D interactables) placed in specific locations on each overworld map. They are NOT random encounters - the player must seek them out.

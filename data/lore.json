@@ -192,10 +192,19 @@
 		}
 	],
 	"villain": {
-		"title": "The Architect",
-		"description": "Not a person but a system -- the entity that designs difficulty curves, manufactures grinding, and ensures no player ever feels truly powerful for too long.",
+		"title": "The Calibrant",
+		"description": "Not a person but a force -- the entity that designs difficulty curves, manufactures challenge, and roleplays as the final boss of each overworld. One being, many masks.",
 		"philosophy": "Balance is control. Fun is a variable to be tuned. The player's agency is an illusion we permit.",
-		"meta_awareness": "The Architect knows it is in a game. It knows the player exists. It considers this a design flaw to be patched.",
-		"motivation": "To create the perfect game -- one where the player can never break the rules, exploit the systems, or find shortcuts. The antithesis of everything the player represents."
+		"meta_awareness": "Knows it is in a game. Knows the player exists. Considers unchecked player power a design flaw to be patched.",
+		"motivation": "To create the perfect game -- one where the player can never break the rules, exploit the systems, or find shortcuts. The antithesis of everything the player represents.",
+		"masks": {
+			"medieval": { "name": "Chancellor Mordaine", "archetype": "Sorceress-usurper" },
+			"suburban": { "name": "The Coordinator", "archetype": "HOA bureaucrat-tyrant" },
+			"steampunk": { "name": "The Regulator", "archetype": "Chief engineer of the Grand Mechanism — the reveal mask" },
+			"industrial": { "name": "TBD", "archetype": "Corporate overlord" },
+			"digital": { "name": "TBD", "archetype": "Rogue sysadmin" },
+			"abstract": { "name": "Unmasked", "archetype": "The antagonist as themselves" }
+		},
+		"reveal_arc": "Players don't realize the overworld villains are the same entity until World 3+. Shared speech patterns and philosophy are the clues."
 	}
 }
