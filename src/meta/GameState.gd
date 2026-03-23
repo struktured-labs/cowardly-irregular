@@ -58,7 +58,28 @@ var max_history_size: int = 10
 ## Corruption effects
 var corruption_effects: Array[String] = []
 
+## World progression — tracks which worlds are unlocked and story flags
+var current_world: int = 1  # 1-6
+var worlds_unlocked: int = 1  # Highest world unlocked (1 = only medieval)
+var story_flags: Dictionary = {}  # Generic flag store: "w1_boss_defeated": true, etc.
+
 var playtime_paused: bool = false
+
+
+## Story flag helpers
+func set_story_flag(flag_name: String, value: bool = true) -> void:
+	story_flags[flag_name] = value
+
+func get_story_flag(flag_name: String) -> bool:
+	return story_flags.get(flag_name, false)
+
+func unlock_next_world() -> void:
+	if worlds_unlocked < 6:
+		worlds_unlocked += 1
+		print("[GAMESTATE] World %d unlocked!" % worlds_unlocked)
+
+func is_world_unlocked(world_num: int) -> bool:
+	return world_num <= worlds_unlocked
 
 
 func _ready() -> void:

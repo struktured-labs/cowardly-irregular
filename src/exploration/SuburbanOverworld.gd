@@ -318,17 +318,18 @@ func _setup_transitions() -> void:
 	portal_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(portal_trans)
 
-	# Forward portal to Industrial District (east edge, row 20)
-	var industrial_portal = AreaTransitionScript.new()
-	industrial_portal.name = "IndustrialPortal"
-	industrial_portal.target_map = "industrial_overworld"
-	industrial_portal.target_spawn = "from_suburban"
-	industrial_portal.require_interaction = true
-	industrial_portal.indicator_text = "The Efficiency District"
-	industrial_portal.position = Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(industrial_portal, Vector2(TILE_SIZE, TILE_SIZE))
-	industrial_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(industrial_portal)
+	# Forward portal to W3 Steampunk (gated on world unlock)
+	if GameState.is_world_unlocked(3) or GameState.get_story_flag("w2_boss_defeated"):
+		var forward_portal = AreaTransitionScript.new()
+		forward_portal.name = "WorldPortal"
+		forward_portal.target_map = "steampunk_overworld"
+		forward_portal.target_spawn = "steampunk_portal"
+		forward_portal.require_interaction = true
+		forward_portal.indicator_text = "Enter the Clockwork Dominion"
+		forward_portal.position = Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		forward_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(forward_portal)
 
 	# Maple Heights village entrance (northeast residential corner, row 3)
 	var maple_heights_trans = AreaTransitionScript.new()

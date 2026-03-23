@@ -299,11 +299,11 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 func _setup_transitions() -> void:
 	# Back portal to Futuristic world (Origin Point, south edge)
 	var futuristic_portal = AreaTransitionScript.new()
-	futuristic_portal.name = "FuturisticPortal"
+	futuristic_portal.name = "BackPortal"
 	futuristic_portal.target_map = "futuristic_overworld"
 	futuristic_portal.target_spawn = "from_abstract"
 	futuristic_portal.require_interaction = true
-	futuristic_portal.indicator_text = "Return to The Network"
+	futuristic_portal.indicator_text = "Return to the Source Layer"
 	futuristic_portal.position = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 33 * TILE_SIZE + TILE_SIZE / 2)
 	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
 	futuristic_portal.transition_triggered.connect(_on_transition_triggered)

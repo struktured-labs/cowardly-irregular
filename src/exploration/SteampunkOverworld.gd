@@ -289,17 +289,30 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Portal back to medieval overworld at north edge
-	var portal_trans = AreaTransitionScript.new()
-	portal_trans.name = "MedievalPortal"
-	portal_trans.target_map = "overworld"
-	portal_trans.target_spawn = "steampunk_portal"
-	portal_trans.require_interaction = true
-	portal_trans.indicator_text = "Return to Overworld"
-	portal_trans.position = spawn_points.get("steampunk_portal", Vector2(864, 48))
-	_setup_transition_collision(portal_trans, Vector2(TILE_SIZE, TILE_SIZE))
-	portal_trans.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(portal_trans)
+	# Back portal to W2 Suburban
+	var back_portal = AreaTransitionScript.new()
+	back_portal.name = "BackPortal"
+	back_portal.target_map = "suburban_overworld"
+	back_portal.target_spawn = "entrance"
+	back_portal.require_interaction = true
+	back_portal.indicator_text = "Return to the Mundane Sprawl"
+	back_portal.position = spawn_points.get("steampunk_portal", Vector2(864, 48))
+	_setup_transition_collision(back_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	back_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(back_portal)
+
+	# Forward portal to W4 Industrial (gated on world unlock)
+	if GameState.is_world_unlocked(4) or GameState.get_story_flag("w3_boss_defeated"):
+		var forward_portal = AreaTransitionScript.new()
+		forward_portal.name = "WorldPortal"
+		forward_portal.target_map = "industrial_overworld"
+		forward_portal.target_spawn = "entrance"
+		forward_portal.require_interaction = true
+		forward_portal.indicator_text = "Enter the Assembly Line"
+		forward_portal.position = spawn_points.get("station", Vector2(864, 1400))
+		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		forward_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(forward_portal)
 
 	# Brasston village entrance (west residential quarter, row 26)
 	var brasston_trans = AreaTransitionScript.new()
