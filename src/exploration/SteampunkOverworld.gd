@@ -449,8 +449,10 @@ func _setup_controller() -> void:
 	controller.encounter_enabled = true
 	controller.current_area_id = "steampunk_overworld"
 
-	# Encounters in industrial outskirts, safe in central plaza
-	controller.set_area_config("steampunk_overworld", false, 0.04, ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"])
+	# W3 Steampunk encounters — clockwork enemies, avg lv 5
+	# Rate 0.04: fewer encounters, tougher per fight
+	controller.set_area_config("steampunk_overworld", false, 0.04,
+		["steam_rat", "cog_swarm", "clockwork_sentinel", "pipe_phantom", "brass_golem"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)

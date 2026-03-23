@@ -440,9 +440,10 @@ func _setup_controller() -> void:
 	controller.encounter_enabled = true
 	controller.current_area_id = "abstract_overworld"
 
-	# Abstract encounters - LOWER encounter rate (0.03) - fewer enemies because
-	# most have been optimized away. What remains is existentially terrifying.
-	controller.set_area_config("abstract_overworld", false, 0.03,
+	# W6 Abstract encounters — avg lv 15, endgame
+	# Rate 0.025: fewest encounters — most have been optimized away.
+	# What remains is existentially terrifying.
+	controller.set_area_config("abstract_overworld", false, 0.025,
 		["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"])
 
 	# Connect signals
