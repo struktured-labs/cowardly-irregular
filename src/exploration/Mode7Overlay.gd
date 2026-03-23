@@ -14,6 +14,9 @@ var sky_top: Color = Color(0.25, 0.35, 0.65, 1.0)
 var sky_bottom: Color = Color(0.55, 0.65, 0.85, 1.0)
 var scanline_intensity: float = 0.0
 var dissolve_progress: float = 0.0
+var cloud_density: float = 0.0
+var cloud_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+var _cloud_time: float = 0.0
 
 ## Per-world Mode 7 visual presets — the shader evolution IS the narrative.
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
@@ -23,24 +26,32 @@ const WORLD_PRESETS: Dictionary = {
 		"fog_color": Color(0.50, 0.60, 0.78),
 		"sky_top": Color(0.25, 0.35, 0.65),
 		"sky_bottom": Color(0.55, 0.65, 0.85),
+		"cloud_density": 0.7,  # Fluffy cumulus clouds
+		"cloud_color": Color(1.0, 1.0, 1.0),
 	},
 	"suburban": {
-		"curvature": 0.005,  # Flatter — suburban grid regularity
-		"fog_color": Color(0.72, 0.75, 0.80),  # Artificial-bright HOA haze
+		"curvature": 0.005,
+		"fog_color": Color(0.72, 0.75, 0.80),
 		"sky_top": Color(0.45, 0.55, 0.75),
 		"sky_bottom": Color(0.70, 0.78, 0.90),
+		"cloud_density": 0.4,  # Light suburban haze clouds
+		"cloud_color": Color(0.95, 0.95, 0.98),
 	},
 	"steampunk": {
-		"curvature": 0.02,  # More curved — gear-like horizon
-		"fog_color": Color(0.60, 0.45, 0.25),  # Bronze/warm fog
-		"sky_top": Color(0.35, 0.25, 0.15),  # Dark brass sky
+		"curvature": 0.02,
+		"fog_color": Color(0.60, 0.45, 0.25),
+		"sky_top": Color(0.35, 0.25, 0.15),
 		"sky_bottom": Color(0.55, 0.45, 0.30),
+		"cloud_density": 0.6,  # Steam/smoke clouds
+		"cloud_color": Color(0.75, 0.65, 0.50),
 	},
 	"industrial": {
-		"curvature": 0.0,  # Zero curvature — brutalist flat
-		"fog_color": Color(0.42, 0.40, 0.38),  # Gray-brown smog
-		"sky_top": Color(0.28, 0.27, 0.26),  # Oppressive dark gray
+		"curvature": 0.0,
+		"fog_color": Color(0.42, 0.40, 0.38),
+		"sky_top": Color(0.28, 0.27, 0.26),
 		"sky_bottom": Color(0.38, 0.37, 0.36),
+		"cloud_density": 0.8,  # Thick industrial smog
+		"cloud_color": Color(0.50, 0.48, 0.45),
 	},
 	"digital": {
 		"curvature": 0.005,
@@ -103,6 +114,10 @@ func apply_preset(world_id: String) -> void:
 		scanline_intensity = preset["scanline_intensity"]
 	if preset.has("dissolve_progress"):
 		dissolve_progress = preset["dissolve_progress"]
+	if preset.has("cloud_density"):
+		cloud_density = preset["cloud_density"]
+	if preset.has("cloud_color"):
+		cloud_color = preset["cloud_color"]
 	print("[MODE7] Applied '%s' world preset" % world_id)
 
 
@@ -142,6 +157,9 @@ func setup(scene: Node2D, player: Node2D) -> void:
 	_shader_mat.set_shader_parameter("sky_bottom", sky_bottom)
 	_shader_mat.set_shader_parameter("scanline_intensity", scanline_intensity)
 	_shader_mat.set_shader_parameter("dissolve_progress", dissolve_progress)
+	_shader_mat.set_shader_parameter("cloud_density", cloud_density)
+	_shader_mat.set_shader_parameter("cloud_color", cloud_color)
+	_shader_mat.set_shader_parameter("cloud_scroll", 0.0)
 	_shader_mat.set_shader_parameter("world_rotation", 0.0)
 	overlay.material = _shader_mat
 
@@ -214,6 +232,11 @@ func process_frame() -> void:
 	if cam:
 		cam.ignore_rotation = false
 		cam.rotation = _current_rotation
+
+	# Scroll clouds
+	if cloud_density > 0.0 and _shader_mat:
+		_cloud_time += delta * 0.5
+		_shader_mat.set_shader_parameter("cloud_scroll", _cloud_time)
 
 	# Sway
 	var screen_move = move_delta.rotated(-_current_rotation)
