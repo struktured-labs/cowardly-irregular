@@ -198,6 +198,11 @@ func process_frame() -> void:
 	if abs(cam_input) > 0.2:
 		_current_rotation += cam_input * ROTATION_SPEED * delta
 		_current_rotation = clampf(_current_rotation, -MAX_ROTATION, MAX_ROTATION)
+	else:
+		# Spring back toward 0° when no rotation input
+		_current_rotation = lerpf(_current_rotation, 0.0, 3.0 * delta)
+		if absf(_current_rotation) < 0.01:
+			_current_rotation = 0.0
 
 	camera_angle = _current_rotation
 
