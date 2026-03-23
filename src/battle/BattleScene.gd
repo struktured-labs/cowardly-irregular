@@ -471,6 +471,10 @@ func _start_test_battle() -> void:
 			member.hp_changed.connect(_on_party_hp_changed.bind(i))
 		if not member.ap_changed.is_connected(_on_party_ap_changed):
 			member.ap_changed.connect(_on_party_ap_changed.bind(i))
+		if not member.status_added.is_connected(_on_status_added):
+			member.status_added.connect(_on_status_added.bind(member))
+		if not member.status_removed.is_connected(_on_status_removed):
+			member.status_removed.connect(_on_status_removed.bind(member))
 
 	# Create sprites
 	_create_battle_sprites()
@@ -2029,6 +2033,57 @@ func _on_party_ap_changed(old_value: int, new_value: int, member_idx: int) -> vo
 	_update_ui()
 
 
+func _on_status_added(status: String, combatant: Combatant) -> void:
+	"""Apply visual indicator for status effect"""
+	var sprite = _get_combatant_sprite(combatant)
+	if not sprite:
+		return
+	_apply_status_visual(sprite, combatant)
+
+
+func _on_status_removed(status: String, combatant: Combatant) -> void:
+	"""Remove visual indicator for status effect"""
+	var sprite = _get_combatant_sprite(combatant)
+	if not sprite:
+		return
+	_apply_status_visual(sprite, combatant)
+
+
+func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
+	"""Apply or reset sprite modulate based on current active status effects.
+	KO state takes priority and is handled by BattleUIManager; this only runs
+	for living combatants so we check is_alive before touching modulate."""
+	if not combatant.is_alive:
+		return
+	var effects: Array = combatant.status_effects
+	if effects.is_empty():
+		sprite.modulate = Color.WHITE
+		return
+	# Priority order: first matching status wins
+	for effect in effects:
+		match effect:
+			"poison":
+				sprite.modulate = Color(0.7, 1.0, 0.7)   # Green tint
+				return
+			"burning":
+				sprite.modulate = Color(1.0, 0.6, 0.4)   # Orange-red
+				return
+			"curse":
+				sprite.modulate = Color(0.7, 0.4, 0.8)   # Purple
+				return
+			"stun":
+				sprite.modulate = Color(1.0, 1.0, 0.5)   # Yellow
+				return
+			"sleep":
+				sprite.modulate = Color(0.8, 0.8, 1.0)   # Pale blue
+				return
+			"blind":
+				sprite.modulate = Color(0.6, 0.6, 0.7)   # Dark blue-gray
+				return
+	# Unknown status — leave tint neutral
+	sprite.modulate = Color.WHITE
+
+
 func _on_summon_hp_changed(enemy: Combatant, old_value: int, new_value: int) -> void:
 	var idx = test_enemies.find(enemy)
 	if idx >= 0:
@@ -2533,6 +2588,8 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	# Bind signals using enemy reference — find index at call time to avoid stale index
 	enemy.hp_changed.connect(func(old_val, new_val): _on_summon_hp_changed(enemy, old_val, new_val))
 	enemy.died.connect(func(): _on_summon_died(enemy))
+	enemy.status_added.connect(_on_status_added.bind(enemy))
+	enemy.status_removed.connect(_on_status_removed.bind(enemy))
 	var new_idx = test_enemies.size()
 
 	test_enemies.append(enemy)

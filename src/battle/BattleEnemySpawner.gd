@@ -214,6 +214,8 @@ func spawn_enemies() -> void:
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
+		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
+		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -302,6 +304,8 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
+		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
+		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -380,6 +384,8 @@ func spawn_forced_enemies() -> void:
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
+		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
+		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 		enemy_names.append(stats["name"])
@@ -472,6 +478,8 @@ func spawn_encounter_enemies() -> void:
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
+		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
+		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -538,6 +546,8 @@ func spawn_miniboss() -> void:
 	# Connect signals
 	enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(0))
 	enemy.died.connect(_scene._on_enemy_died.bind(0))
+	enemy.status_added.connect(_scene._on_status_added.bind(enemy))
+	enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
 
 	_scene.test_enemies.append(enemy)
 

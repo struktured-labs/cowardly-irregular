@@ -28,6 +28,7 @@ var is_alive: bool = true
 
 ## Status effects and buffs
 var status_effects: Array[String] = []
+var status_durations: Dictionary = {}  # status_name -> turns remaining (-1 = permanent)
 var permanent_injuries: Array[Dictionary] = []
 var active_buffs: Array[Dictionary] = []  # {effect: String, stat: String, modifier: float, duration: int}
 var active_debuffs: Array[Dictionary] = []
@@ -224,15 +225,18 @@ func revive(hp_amount: int = 0) -> void:
 
 
 ## Status effects
-func add_status(status: String) -> void:
-	if not status in status_effects:
+func add_status(status: String, duration: int = 3) -> void:
+	if status not in status_effects:
 		status_effects.append(status)
+		status_durations[status] = duration
 		status_added.emit(status)
+		print("%s gained status: %s (%d turns)" % [combatant_name, status, duration])
 
 
 func remove_status(status: String) -> void:
 	if status in status_effects:
 		status_effects.erase(status)
+		status_durations.erase(status)
 		status_removed.emit(status)
 
 
@@ -304,6 +308,26 @@ func get_buffed_stat(stat_name: String, base_value: int) -> int:
 
 func update_buff_durations() -> void:
 	"""Decrease buff/debuff durations, remove expired ones"""
+	# Process damage-over-time effects
+	if "poison" in status_effects and is_alive:
+		var poison_damage = max(1, int(max_hp * 0.05))  # 5% max HP per turn
+		current_hp = max(0, current_hp - poison_damage)
+		hp_changed.emit(current_hp + poison_damage, current_hp)
+		print("%s takes %d poison damage!" % [combatant_name, poison_damage])
+		if current_hp <= 0:
+			die()
+
+	# Tick down status effect durations
+	var expired_statuses: Array[String] = []
+	for status in status_durations:
+		if status_durations[status] > 0:  # -1 = permanent
+			status_durations[status] -= 1
+			if status_durations[status] <= 0:
+				expired_statuses.append(status)
+	for status in expired_statuses:
+		remove_status(status)
+		print("%s's %s wore off" % [combatant_name, status])
+
 	# Update buffs
 	for i in range(active_buffs.size() - 1, -1, -1):
 		active_buffs[i]["remaining_turns"] -= 1
