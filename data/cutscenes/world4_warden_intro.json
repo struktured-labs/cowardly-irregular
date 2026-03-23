@@ -1,0 +1,88 @@
+{
+  "id": "world4_warden_intro",
+  "title": "Warden of the Firewall",
+  "world": 4,
+  "trigger": "boss_warden_futuristic",
+  "description": "The party hits the Firewall at the boundary of Node Prime's secured sector. Access denied. Authorization must be demonstrated through force.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "The barrier at the edge of the secured sector was not a wall. It was the concept of a wall expressed in pure denial.",
+      "Green text scrolled across it in columns too fast to read. Then the text stopped. All of it, at once, mid-scroll.",
+      "A figure coalesced at the center of the barrier. Not stepping through it. Assembling from it."
+    ]},
+
+    {"type": "play_sfx", "sfx": "digital_synthesize"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "ACCESS DENIED.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We need to get through.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "Authorization: insufficient. Credentials: unrecognized. Purpose: anomalous. Origin: undefined. ACCESS DENIED.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Is there a form? A process?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "The process is authorization. Authorization is proof. Proof is demonstrated. The Calibrant's system recognizes one form of proof for entities of your classification.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "And that form is?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "Force. Prove your authorization through force. If you can pass me, you are authorized. This is not a contradiction. Authorization is the capacity to pass. The firewall tests capacity.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "Every prior entity that attempted this sector was denied. I have been here since the first packet was routed. I have not been passed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Everything we've done in this world has been about proving we belong. Even when there was no one to prove it to.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Warden of the Firewall",
+        "text": "Correct. Initiate authorization sequence.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.4, "intensity": 5.0},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "set_flag", "flag": "warden_futuristic_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

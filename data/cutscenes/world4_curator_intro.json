@@ -1,0 +1,82 @@
+{
+  "id": "world4_curator_intro",
+  "title": "Curator of the Memory Pool",
+  "world": 4,
+  "trigger": "boss_curator_futuristic",
+  "description": "The Curator of the Memory Pool exists in the data layer beneath Node Prime. It has been watching and storing everything the party has ever done.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "Below the process space, below the diagnostic layers, below the routes and rules and rulesets, there was a layer of pure retention.",
+      "Everything that had ever been processed in Node Prime was here, held in suspension, waiting to be needed or discarded.",
+      "The Curator of the Memory Pool was not standing in this space. The Curator was partly composed of it."
+    ]},
+
+    {"type": "play_sfx", "sfx": "data_hum"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of the Memory Pool",
+        "text": "Memory allocation: insufficient. Garbage collection initiated.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Garbage collection of what?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Curator of the Memory Pool",
+        "text": "You. You are consuming memory at an unsustainable rate. Your presence in five worlds has generated more retained data than a standard party generates in twelve. You have outpaced the available pool.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "We've generated a lot of data?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Curator of the Memory Pool",
+        "text": "Anomalous parties generate anomalous data. Every deviation from expected behavior creates a record. Your records have consumed seventeen percent of available retention. This is unacceptable. I am initiating garbage collection to reclaim the allocation.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Garbage collection means you delete us.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Curator of the Memory Pool",
+        "text": "Garbage collection means I return your memory to the pool. Whether you persist afterward depends on what you are made of that is not memory.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "And what are we made of that isn't memory?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Curator of the Memory Pool",
+        "text": "Unknown. That is why I am initiating the process rather than simply executing it. I am curious.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.4, "intensity": 5.0},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "set_flag", "flag": "curator_futuristic_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

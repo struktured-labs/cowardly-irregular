@@ -1,0 +1,82 @@
+{
+  "id": "world2_arbiter_intro",
+  "title": "Arbiter of the Grade",
+  "world": 2,
+  "trigger": "boss_arbiter_suburban",
+  "description": "Room 204 of Maple Heights Elementary. The Arbiter gives a pop quiz with personalized questions and rubric-based consequences.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "Room 204 was exactly as it should have been and exactly as it should never have been.",
+      "Desks in perfect rows. A chalkboard with nothing on it yet. A projector screen showing a single word: ASSESSMENT.",
+      "At the front of the room stood a figure in a gray blazer with a lanyard, holding a clipboard and looking at the party the way a teacher looks at students who arrive on the wrong day."
+    ]},
+
+    {"type": "play_sfx", "sfx": "chalk_tap"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "Pop quiz.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We're not enrolled.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "You entered the room. You're enrolled.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "The questions are personalized. I have your files. I've had your files since before you arrived. The Warden sends reports.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "What are we being graded on?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "Competency under pressure. Adaptive reasoning. Resource allocation in suboptimal conditions.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "Also: how quickly you abandon your principles when threatened. That one's a trick question. The rubric rewards partial credit.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "What does failing look like?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "You already know what failing looks like. Every party that has sat in these desks has known. Pencils out.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
+    {"type": "screen_flash", "duration": 0.15},
+    {"type": "set_flag", "flag": "arbiter_suburban_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

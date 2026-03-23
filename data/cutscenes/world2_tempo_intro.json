@@ -1,0 +1,82 @@
+{
+  "id": "world2_tempo_intro",
+  "title": "Tempo of the Rush Hour",
+  "world": 2,
+  "trigger": "boss_tempo_suburban",
+  "description": "The Tempo materializes in the cul-de-sac at 8:47 AM, vibrating at a frequency slightly wrong for the suburb. Three minutes behind schedule.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The figure appeared at the end of the cul-de-sac moving at a speed that was technically legal but suggested someone who had never in their existence been late and was not going to start now. The briefcase was a blur. The tie was a blur. The expression was acute personal crisis."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Rush Hour",
+        "text": "LATE. LATE LATE LATE. You are three minutes behind schedule.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We didn't have a schedule.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Tempo of the Rush Hour",
+        "text": "EVERYONE has a schedule. The schedule does not require acknowledgment to function. The 8:44 arrival window has CLOSED.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "The 8:44 for what?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Tempo of the Rush Hour",
+        "text": "For THIS. For the confrontation. For the thing we are currently doing. You have disrupted the flow. You have caused downstream latency. The 9:15 cannot be recovered.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "There are no other appointments. This suburb is empty.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Tempo of the Rush Hour",
+        "text": "The schedule does not care about occupancy. It cares about adherence. Three minutes lost compounds. Three minutes becomes six. Six becomes the entire morning. The entire morning becomes the entire system.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Rush Hour",
+        "text": "We will resolve this quickly. I have a 9:30.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "A 9:30 what.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Tempo of the Rush Hour",
+        "text": "I don't know. It was already on the calendar when I arrived.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.2, "intensity": 3.5},
+    {"type": "screen_flash", "duration": 0.15},
+    {"type": "set_flag", "flag": "tempo_suburban_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

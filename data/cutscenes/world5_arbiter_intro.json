@@ -1,0 +1,87 @@
+{
+  "id": "world5_arbiter_intro",
+  "title": "Arbiter of Function",
+  "world": 5,
+  "trigger": "boss_arbiter_abstract",
+  "description": "The Arbiter of Function exists as pure purpose without context. It asks each party member to demonstrate what they are for.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The Arbiter of Function had no location. It was simply the presence of a question in a space that had decided to be a space.",
+      "Its voice, when it spoke, did not come from a direction. It came from the part of the mind that processes justification."
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of Function",
+        "text": "Function defines existence. Demonstrate yours.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "I stand between the danger and the people behind me.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Arbiter of Function",
+        "text": "A function. Not the function. What is the function that requires this particular instance of you?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "We keep each other moving.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Arbiter of Function",
+        "text": "Toward what.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "We don't know yet. We've been moving long enough that the movement itself has become the function.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Arbiter of Function",
+        "text": "That is the first coherent answer I have received to this question. Most entities struggle with function. They know what they do. They do not know what they are for. You have collapsed the distinction.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of Function",
+        "text": "I must still arbitrate. Function is not sufficient justification on its own. Function must be tested against what it costs and what it serves. I have been the cost of crossing into this world.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Then we pay.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Arbiter of Function",
+        "text": "Yes. I expected nothing less. Proceed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.4, "intensity": 5.0},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "set_flag", "flag": "arbiter_abstract_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "world4_arbiter_intro",
+  "title": "Arbiter of the Benchmark",
+  "world": 4,
+  "trigger": "boss_arbiter_futuristic",
+  "description": "The Arbiter runs a live diagnostic on the party's performance history. All six worlds of data. The numbers are anomalous.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The chamber beyond the Firewall was not a room. It was a process space: no walls, just bounded execution. Data columns floated in every direction. At the center, the Arbiter of the Benchmark sat cross-legged in the air, surrounded by cascading readouts that were all, visibly, about the party. Their entire history, displayed in real time."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of the Benchmark",
+        "text": "Running diagnostic. Your performance will be measured against optimal baseline.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "We saw something like this in World 3. The extrapolated baseline.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Arbiter of the Benchmark",
+        "text": "The World 3 baseline was extrapolated. This baseline is not. I have your complete combat logs from every world. Fifty-three encounters. I have built the optimal from your own data.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of the Benchmark",
+        "text": "You have played suboptimally in thirty-one of those encounters. You have also survived all fifty-three. This is the anomaly I cannot explain.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Maybe suboptimal and survivable aren't mutually exclusive.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Arbiter of the Benchmark",
+        "text": "The model disagrees. I have run it four thousand times. Statistically, you should have failed at twenty-seven distinct points. You did not fail. The model is either wrong or you are wrong. I intend to determine which.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "And if the model is wrong?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Arbiter of the Benchmark",
+        "text": "Then I update the model. This is acceptable. I prefer accurate models to comfortable ones. Diagnostic: commencing.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
+    {"type": "screen_flash", "duration": 0.15},
+    {"type": "set_flag", "flag": "arbiter_futuristic_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

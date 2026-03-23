@@ -1,0 +1,82 @@
+{
+  "id": "world5_tempo_intro",
+  "title": "Tempo of Sequence",
+  "world": 5,
+  "trigger": "boss_tempo_abstract",
+  "description": "The Tempo of Sequence exists as the law of order itself. First. Then. After. The order cannot be violated.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The Tempo of Sequence was not fast. It was simply prior.",
+      "It had been here before the party arrived. Before the world existed. Before the concept of arrival. It was the thing that made before mean before and after mean after.",
+      "When it spoke, it was already the second time it had spoken. You had simply not been present for the first."
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "First. Then. After. The order cannot be violated.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "What comes before you?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "Nothing. That is what before means. Before me, there is no order. There is no time. There is no sequence in which your question could be asked.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "You have arrived after every other party that has tried this world. You have arrived before the ones who will come next. You are a middle state. All things pass through me to become a middle state.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "You've seen parties after us? You know parties will come?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "I know all positions in the sequence. I am the sequence. You are position seven hundred and forty-three. This information is not useful to you. It is accurate.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Have any of the other seven hundred and forty-two passed you?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Tempo of Sequence",
+        "text": "No. They are all prior. Prior means behind. You are the current state. The current state is the only state in which passing is possible. First: acknowledge the sequence. Then: proceed. After: you will know whether you passed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "First.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 4.5},
+    {"type": "screen_flash", "duration": 0.2},
+    {"type": "set_flag", "flag": "tempo_abstract_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
