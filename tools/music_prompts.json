@@ -379,6 +379,132 @@
       "title_template": "Everything Ends",
       "style": "Abstract boss, entropy, fading frequencies, memory erosion, beauty dissolving, bittersweet, 50 BPM",
       "prompt": "Boss theme for the concept of entropy and ending — sounds that lose specificity as they play, frequencies fading and details dissolving, a melody that starts vivid and becomes vague, the most insidious damage: making memories lose their texture, but underneath the erosion a counter-theme of things that are loved and refuse to fade, bittersweet and devastating, kept memories glowing against the dissolution"
+    },
+
+    "cutscene_w1_conscription": {
+      "title_template": "Nobody Special",
+      "style": "celtic folk, acoustic guitar, recorder, gentle, warm, 90 BPM",
+      "prompt": "A quiet medieval village at dawn. Five ordinary people answer a call nobody expected them to answer. Simple folk melody that starts with a single instrument and gradually adds layers as companions gather. Gentle, humble, wry humor underneath genuine warmth. Not heroic — just honest. 90 seconds."
+    },
+    "cutscene_w1_warden_farewell": {
+      "title_template": "Carry Something Worth Carrying",
+      "style": "orchestral, low strings, french horn, piano, solemn, medieval",
+      "prompt": "A centuries-old guardian falls after his first defeat. Not in agony but in acceptance. Military dignity dissolving into something more personal — the sound of an ancient duty completed. Solemn horn melody over tremolo strings, ending with sparse piano notes. Bittersweet, dignified, final. 75 seconds."
+    },
+    "cutscene_w1_mordaine_dissolution": {
+      "title_template": "Both Served Their Purpose",
+      "style": "choir, ambient, eerie, orchestral decay, unsettling",
+      "prompt": "A villain defeated but the victory feels wrong. Choir starts triumphant then distorts and thins into hollow sustained tones. The world flickers. Something behind the walls isn't stone — it's something else entirely. Eerie ambient drone emerging from fading choir. Unresolved, haunting, the feeling of a chapter ending by being deleted rather than finished. 60 seconds."
+    },
+    "cutscene_w2_portal_arrival": {
+      "title_template": "The Wrong Side of the Portal",
+      "style": "muzak, lo-fi, suburban ambient, slightly wrong, comedic",
+      "prompt": "Medieval adventure music abruptly cuts to suburban elevator muzak. Soft rock guitar, light percussion, the ambient hum of air conditioning. Something is slightly off-key — the normalcy is too normal. A single sprinkler provides rhythm. Comedic but with an undercurrent of wrongness, like a smile that's held too long. 70 seconds."
+    },
+    "cutscene_w2_coordinator_memo": {
+      "title_template": "The Incomplete Sentence",
+      "style": "ambient, office drone, creeping dread, surveillance, minimal",
+      "prompt": "Fluorescent light hum becomes a sinister drone. The sound of someone discovering they have been watched since the beginning. Minimal piano notes over static-laced ambient, building tension. A pen scratching on paper. The music stops abruptly mid-phrase — an incomplete sentence made audible. Unsettling, clinical, the moment observation becomes personal. 80 seconds."
+    },
+    "cutscene_w3_pattern_recognized": {
+      "title_template": "The Same Fingerprints",
+      "style": "clockwork, steampunk waltz, haunting, revelatory, layered",
+      "prompt": "Three musical themes from different genres briefly overlay and reveal the same underlying melody. Clockwork ticking underpins a haunting waltz that builds to a moment of clarity. The sound of patterns recognized across worlds. Brass instruments, music box, ticking gears, building from mystery to revelation. The intellectual vertigo of seeing the design for the first time. 90 seconds."
+    },
+    "cutscene_w3_calibrant_revealed": {
+      "title_template": "I Am The Calibrant",
+      "style": "industrial, clockwork deconstruction, dramatic reveal, percussion, brass",
+      "prompt": "The villain reveals their true name. Industrial percussion builds as stats scroll on screens, then a dramatic brass stinger as the mask drops. The world begins disassembling — gears unwinding, steam hissing, the clockwork world literally taking itself apart. Mechanical sounds becoming musical as order collapses into revelation. Dramatic, confrontational, the sound of scenery being struck from a stage. 75 seconds."
+    },
+    "cutscene_w4_foreman_confession": {
+      "title_template": "She Took the Wanting",
+      "style": "ambient, minimal piano, devastating, quiet horror, intimate",
+      "prompt": "A man describes losing the desire to paint — not the ability, the desire. Single piano notes over vast silence. The sound of a personality being quietly erased from the inside. No drama, no crescendo. Just the absence of something that used to be there. Cold ambient drone underneath. Intimate, devastating, the quietest kind of horror. 70 seconds."
+    },
+    "cutscene_w4_direct_engagement": {
+      "title_template": "No More Masks",
+      "style": "industrial, alarm, war drums, threatening, broadcast",
+      "prompt": "Factory alarms transform into war drums. Every screen displays the same warning. Electronic drones layer into a threatening industrial march. The sound of a surveillance system escalating from observation to direct engagement. Cold, mechanical, purposeful. A broadcast declaring war from every speaker simultaneously. 65 seconds."
+    },
+    "cutscene_w4_director_unmasked": {
+      "title_template": "The Variable That Changes",
+      "style": "ambient, tender, exhausted, piano over industrial drone, humanizing",
+      "prompt": "An industrial drone slowly softens. A villain sits behind a wooden desk in a steel world and admits defeat — not dramatically, just honestly. Tired piano melody emerging from factory ambient. The sound of someone who has been working too hard for too long finally being real. Vulnerable, exhausted, the moment a system admits it cannot contain what it was built to contain. 85 seconds."
+    },
+    "cutscene_w5_boot_sequence": {
+      "title_template": "World Loading",
+      "style": "chiptune, glitch, digital ambient, boot sequence, ascending",
+      "prompt": "A world loading from raw code. Modem connection sounds, digital static, and bitcrushed tones assembling into a melody. Wireframe reality becoming textured and lit. Each layer adds a new musical element — bass from the grid, melody from the data streams, rhythm from the clock cycles. Digital awe and vertigo. The sound of discovering you are inside the machine. 80 seconds."
+    },
+    "cutscene_w5_deprecated_goblin": {
+      "title_template": "The Loop Completed",
+      "style": "8-bit, music box, tender, melancholy, small, gentle",
+      "prompt": "A tiny 8-bit melody played on a music box in a vast digital void. The sound of something very old and very small completing the only task it was ever given. Gentle, melancholy, tender. Low-resolution love letter to a creature that just wanted to finish its loop. Brief silence, then the melody repeats once — a respawn. Simple. Complete. 50 seconds."
+    },
+    "cutscene_w5_cached_memory": {
+      "title_template": "The Work Was Worth Doing",
+      "style": "ambient, degrading audio, bittersweet, digital decay, wisdom",
+      "prompt": "A beautiful melody played on instruments that are slowly losing resolution — notes becoming grainy, harmonics simplifying, the audio degrading like an old recording being played for the last time. Bittersweet wisdom from a voice that is running out of memory. The music thins until only a single tone remains, then silence. The sound of a message delivered just before the medium dissolves. 70 seconds."
+    },
+    "cutscene_w5_calibrant_desk": {
+      "title_template": "A Developer on a Deadline",
+      "style": "lo-fi hip hop, keyboard clicks, ambient coding, late night, melancholy",
+      "prompt": "Late-night coding session ambience. Keyboard clicks, coffee mug clinks, the hum of monitors. Lo-fi beat underneath a melancholy synth melody. The sound of someone who has been working alone for a very long time, rewriting the same formula, trying to get it right. Not dramatic — just tired and real. The villain revealed as a burned-out developer. 90 seconds."
+    },
+    "cutscene_w6_entering_nothing": {
+      "title_template": "The Answered Absence",
+      "style": "ambient drone, minimal, existential, vast silence, near-silent",
+      "prompt": "Almost nothing. A single sustained tone hovering at the edge of audibility. The sound of a space that exists only because someone decided to listen. No melody, no rhythm — just presence. The musical equivalent of a white page before the first word. Gradually, almost imperceptibly, other tones gather. Not a crescendo. A becoming. The most quiet and vast thing in the game. 100 seconds."
+    },
+    "cutscene_w6_no_one_speaks": {
+      "title_template": "The Remainder Is the Point",
+      "style": "ambient orchestral, fragments of themes, emotional culmination, tender, vast",
+      "prompt": "Fragments of six different musical worlds heard simultaneously as harmony — medieval lute, suburban guitar, clockwork music box, industrial percussion, digital chiptune, abstract drone — all reduced to single notes that form a chord. The accumulated weight of an entire journey in one moment. Tender, profound, the sound of everything you've ever fought being remembered at once. Not triumphant — grateful. 90 seconds."
+    },
+    "cutscene_w6_calibrant_question": {
+      "title_template": "What Is a Game Without Challenge",
+      "style": "solo piano, sparse, vulnerable, existential, questioning",
+      "prompt": "Solo piano in vast silence. Each note placed with extreme care, long pauses between phrases. The sound of someone asking a genuine question for the first time in their life and being afraid of the answer. Not dramatic — intimate. The smallest, most honest music in the game. A conversation between two people who have been fighting for six worlds and are finally just talking. 100 seconds."
+    },
+    "cutscene_w6_memory_is_love": {
+      "title_template": "Memory Is a Form of Love",
+      "style": "music box, orchestral swell, defiant tenderness, themes returning, emotional",
+      "prompt": "A music box melody is silenced. Silence. Then it returns, slightly stronger. Silenced again. Returns with strings underneath. Each time the melody is suppressed it comes back with more instruments, more conviction. The sound of memories refusing to be erased. Builds from a single fragile melody to a full emotional orchestral statement. Not angry defiance — tender defiance. The gentlest act of resistance. 100 seconds."
+    },
+    "cutscene_w6_answer_automation": {
+      "title_template": "The System Was Beautiful",
+      "style": "algorithmic, electronic, interlocking patterns, intellectual, warm",
+      "prompt": "Two melodies that start separately and gradually interlock through systematic refinement — each adjusting to the other until they form a perfect algorithmic harmony. Electronic tones with warm analog undertones. The sound of two minds understanding each other through shared design language. Intellectual but deeply warm. The beauty of a well-designed system appreciated by its creator. 80 seconds."
+    },
+    "cutscene_w6_answer_manual": {
+      "title_template": "Presence",
+      "style": "live jam session, exuberant, imperfect, joyful, organic",
+      "prompt": "A live jam session where the musicians are clearly having fun. Imperfect, energetic, full of happy accidents. The sound of people playing together for the joy of playing — no recording, no audience, just presence. Guitar, drums, bass, with spontaneous energy. Builds to a triumphant peak then dissolves into laughter and breathing. The best fight in the game. 85 seconds."
+    },
+    "cutscene_w6_answer_grind": {
+      "title_template": "This Is What Rest Is",
+      "style": "ambient, meditation, repetitive loop, peaceful, warm drone",
+      "prompt": "A gentle four-note loop that repeats, each repetition slightly different, each one more beautiful and more peaceful than the last. Warm ambient drone underneath. The sound of people sitting in silence together and discovering that silence is not empty. Meditative, warm, the musical equivalent of a long exhale after years of holding breath. Fades to comfortable silence. 100 seconds."
+    },
+    "cutscene_w6_answer_exploit": {
+      "title_template": "A Glitch in the Nothing",
+      "style": "glitch, ambient, playful, cosmic, expanding, joyful",
+      "prompt": "A sustained ambient tone develops a crack — a glitch, a gap. Through the gap, unexpected music floods in, vast and joyful. The sound of discovering that infinity has edges and the edges are interesting. Playful electronic elements over cosmic ambient. Expanding, delighted, the musical equivalent of laughter at the boundary of everything. 75 seconds."
+    },
+    "cutscene_w6_epilogue": {
+      "title_template": "Calibration Complete",
+      "style": "orchestral, all genres combined, sunrise, triumphant, warm, finale",
+      "prompt": "The final theme. Every genre from six worlds plays together — medieval lute alongside suburban guitar alongside clockwork music box alongside industrial percussion alongside digital chiptune alongside abstract silence. Not competing — harmonizing. Sunrise breaking across a world that has been remade. Triumphant but warm, earned but gentle. The sound of an ending that is also a beginning. Builds to a full ensemble peak then resolves to a simple, quiet, perfect chord. 120 seconds."
+    },
+    "cutscene_alt_witness_lament": {
+      "title_template": "For the Guardian Who Did Not Choose the Gate",
+      "style": "solo lute, lament, unaccompanied, medieval, raw, witnessing",
+      "prompt": "A solo lute plays a lament composed in a cave after a battle. Not polished — written in the moment by someone who felt something needed to be said. Fourteen measures, no accompaniment, the sound of one person bearing witness to something that would otherwise be forgotten. Raw, honest, the beauty of paying attention to things that did not choose their fate. 60 seconds."
+    },
+    "cutscene_alt_breaker_speed": {
+      "title_template": "Whoever Moves First",
+      "style": "speed metal, chiptune, breakneck, kinetic, aggressive, exhilarating",
+      "prompt": "Breakneck tempo from the first note. Speed metal guitar over chiptune bass, relentless drums. The sound of a speedrunner tearing through a game at terminal velocity — skipping cutscenes, attacking mid-dialogue, finding every shortcut. Exhilarating, aggressive, joyful destruction. A system being broken at the speed of thought. 55 seconds."
     }
   }
 }
