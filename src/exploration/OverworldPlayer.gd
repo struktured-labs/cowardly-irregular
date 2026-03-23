@@ -370,12 +370,16 @@ func _generate_all_sprites() -> void:
 
 	var new_cache: Dictionary = {}
 
-	# Artist battle sheets (256x256) look wrong on the overworld — they're
-	# front-view poses, not top-down walk sprites. Use the procedural chibi
-	# system which was specifically designed for overworld rendering.
-	# TODO: re-enable when artists provide dedicated overworld sprite sheets
-	#       with a "walk_overworld" animation tag.
+	# Try dedicated overworld sprite sheet first (32x32 frames, 4x4 grid)
+	var ow_cache = _try_load_overworld_sheet()
+	if not ow_cache.is_empty():
+		_static_sprite_cache[static_key] = ow_cache
+		_sprite_cache = ow_cache
+		if _static_sprite_cache.size() > 30:
+			_static_sprite_cache.erase(_static_sprite_cache.keys()[0])
+		return
 
+	# Fallback: procedural chibi sprites
 	for dir in [Direction.DOWN, Direction.UP, Direction.LEFT, Direction.RIGHT]:
 		for frame in range(WALK_FRAMES):
 			var img = _generate_character_sprite(dir, frame)
@@ -389,6 +393,39 @@ func _generate_all_sprites() -> void:
 	if _static_sprite_cache.size() > 30:
 		var keys = _static_sprite_cache.keys()
 		_static_sprite_cache.erase(keys[0])
+
+
+## Load dedicated overworld sprite sheet (128x128 PNG, 4x4 grid of 32x32 frames).
+## Row order: down, left, right, up. 4 walk frames per row.
+func _try_load_overworld_sheet() -> Dictionary:
+	var path = "res://assets/sprites/jobs/%s/overworld.png" % current_job
+	if not ResourceLoader.exists(path):
+		return {}
+
+	var tex = load(path) as Texture2D
+	if not tex:
+		return {}
+
+	var img = tex.get_image()
+	if not img or img.get_width() < 128 or img.get_height() < 128:
+		return {}
+
+	var cache: Dictionary = {}
+	var frame_w = 32
+	var frame_h = 32
+	# Row mapping: 0=down, 1=left, 2=right, 3=up
+	var row_to_dir = [Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]
+
+	for row in range(4):
+		var dir = row_to_dir[row]
+		for col in range(WALK_FRAMES):
+			var region = Rect2i(col * frame_w, row * frame_h, frame_w, frame_h)
+			var frame_img = img.get_region(region)
+			var frame_tex = ImageTexture.create_from_image(frame_img)
+			cache["%d_%d" % [dir, col]] = frame_tex
+
+	print("[OVERWORLD] Loaded overworld sheet for '%s'" % current_job)
+	return cache
 
 
 ## Extract and downscale a single frame from a SpriteFrames animation into a 32x32 Image.
