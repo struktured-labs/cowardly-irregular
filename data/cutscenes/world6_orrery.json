@@ -1,0 +1,266 @@
+{
+  "id": "world6_orrery",
+  "title": "The Last Appointment",
+  "world": 6,
+  "trigger": "world6_fool_card_five_marks",
+  "quest": "chain_a_traveling_merchant",
+  "description": "Something that feels like waiting in The Vertex. A presence that has been traveling so long she barely remembers why. The Calibrant's true name. Permission to stop.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.8},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The Fool Card pulsed.",
+      "Not light exactly — more like the quality of a room when someone is about to enter it. An anticipation with no source.",
+      "In The Vertex, where everything was the distilled idea of what it had been in five previous worlds, the pulse was a direction."
+    ]},
+
+    {"type": "play_music", "track": "cutscene_w6_entering_nothing"},
+
+    {"type": "narration", "text": "They followed it to a part of The Vertex that was less resolved than the rest — not darker, not emptier, but less committed to the project of being a place. Something was there that was trying, with diminishing success, to be present."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "Oh. You found me.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "narration", "text": "She was barely there. The silhouette of a silhouette. The shape of a fortune teller in the way that smoke has the shape of what burned."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "I've been traveling since before you started. I'm not sure how long that is in any unit that works here. Long enough that traveling is less a thing I do and more a thing I am.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "In World 1 I had a wagon and it smelled like cedar. In World 2 I had a booth with a laminator. In World 3 a clockwork desk. In World 4 a lamp and a stack of reports. In World 5 I was a path that light took when it needed to go somewhere indirect. In World 6 I am —",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "— something that has been traveling so long it no longer carries much. I've left most of myself in the places I stopped.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "I remember why I started traveling. I was looking for someone who had left without saying goodbye. I've looked in six worlds now. I've found many interesting things. I found you.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "I never found them.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "Can you tell me where they went?",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "choice", "prompt": "Her voice doesn't expect an answer. It expects company.", "options": [
+      {"text": "I don't know. But I don't think they went away.", "flag": "world6_orrery_response_kind"},
+      {"text": "Wherever they went, they knew you were looking.", "flag": "world6_orrery_response_witness"},
+      {"text": "Maybe they went to be where they could finally stop too.", "flag": "world6_orrery_response_rest"},
+      {"text": "...I'm sorry.", "flag": "world6_orrery_response_silence"}
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "Good. That's enough.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "lines": [
+      "In The Vertex, sitting is how things that are ending choose to continue.",
+      "She sat down.",
+      "Not on anything in particular — nothing in The Vertex required a surface for sitting. She sat down in the way that a long journey sits down inside you when you stop walking."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "I'd like to stop now. Is it okay to stop?",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The voice that answered came from the party, or from somewhere near it, or from the place between what the party was willing to say and what was true."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "Yes. It's okay to stop.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "She stayed.",
+      "For the first time in six worlds, she did not look like she was about to leave."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "I have two things to give you.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "give_item", "item": "orrery_pendant", "quantity": 1},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "The pendant. When you meet the others — the ones the Calibrant built to stand in your way — it will help you hear what they weren't allowed to say. Everyone deserves to finish what they were saying. Even if it took defeating them first to make enough quiet.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "The second thing. The Calibrant's true name.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "I've been carrying it for six worlds. It's the only piece of information I found that didn't fit into a report or a chart or a routing table. It has to be said, not written. It is a single syllable.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "It sounds like this.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "play_sfx", "sfx": "calibrant_true_name"},
+
+    {"type": "narration", "text": "[ The dialogue box shows the sound of it without the spelling. It is one syllable. You decide what it means. ]"},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Orrery",
+        "text": "They chose it themselves, I think. Not the name they were built with. The name they arrived at, after six worlds of asking why. A name for what you are when the building is done and the question is still open.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The Fool Card changed in the party's inventory. The five marks rearranged themselves — not disappearing, rearranging — into a shape that was also the symbol on Phil's paper, the mark in the cave log, the notation in the corner of the Grand Mechanism blueprint. The symbol the Calibrant had used to sign their work across six worlds and however many years."},
+
+    {"type": "update_item", "item": "fool_card", "new_id": "wild_card"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What are you going to do? Now that you've stopped?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "I don't know. I haven't not-traveled in long enough that I've forgotten what it looks like from inside. I expect it will involve sitting here for a while.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "And watching. I've been very good at watching from a distance. I'd like to try watching from close up for a change.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "I'll put you in the chronicle. If that's all right.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "The fortune teller who traveled six worlds looking for someone who'd gone without saying goodbye, found many interesting things, and finally stopped in a place outside the narrative structure of any of the worlds she'd traveled through.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Orrery",
+        "text": "Yes. Put me in the chronicle. I'd like that.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "lines": [
+      "They left her there. Not sadly.",
+      "She was still there when they looked back. Still sitting. Still present.",
+      "The Vertex had one more thing in it than it had before they arrived. That seemed, on balance, correct."
+    ]},
+
+    {"type": "set_flag", "flag": "world6_orrery_complete", "value": true},
+    {"type": "set_flag", "flag": "chain_a_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.8}
+  ]
+}
