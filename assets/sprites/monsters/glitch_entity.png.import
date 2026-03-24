@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://0x1oq4g1g73d"
+path="res://.godot/imported/glitch_entity.png-c4e3f397084518eb0ace2c612cb0ed17.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/glitch_entity.png"
+dest_files=["res://.godot/imported/glitch_entity.png-c4e3f397084518eb0ace2c612cb0ed17.ctex"]
 
 [params]
 

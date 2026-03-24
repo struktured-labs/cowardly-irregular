@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bpobmfv0k5wnx"
+path="res://.godot/imported/ambient_industrial.ogg-e9a3d39306e9065e3329720755d551ce.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/ambient_industrial.ogg"
+dest_files=["res://.godot/imported/ambient_industrial.ogg-e9a3d39306e9065e3329720755d551ce.oggvorbisstr"]
 
 [params]
 

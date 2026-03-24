@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://g5rjpb2c67a6"
+path="res://.godot/imported/ambient_steampunk.ogg-146142220029b8ae12926d75f1031696.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/ambient_steampunk.ogg"
+dest_files=["res://.godot/imported/ambient_steampunk.ogg-146142220029b8ae12926d75f1031696.oggvorbisstr"]
 
 [params]
 

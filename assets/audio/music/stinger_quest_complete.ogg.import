@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://cxkdsylqrpwfj"
+path="res://.godot/imported/stinger_quest_complete.ogg-5c807a2e6a0b818d66c67b3b44675d2f.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/stinger_quest_complete.ogg"
+dest_files=["res://.godot/imported/stinger_quest_complete.ogg-5c807a2e6a0b818d66c67b3b44675d2f.oggvorbisstr"]
 
 [params]
 

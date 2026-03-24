@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://clhhep62sxra3"
+path="res://.godot/imported/permadeath_reaper.png-a304cce83c94533503fd97bb43a24af8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/permadeath_reaper.png"
+dest_files=["res://.godot/imported/permadeath_reaper.png-a304cce83c94533503fd97bb43a24af8.ctex"]
 
 [params]
 

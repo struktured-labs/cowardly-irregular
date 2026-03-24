@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://byqmwpk2ab863"
+path="res://.godot/imported/clockwork_sentinel.png-68f7e101ab2915c92daa9ce1c40b1391.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/clockwork_sentinel.png"
+dest_files=["res://.godot/imported/clockwork_sentinel.png-68f7e101ab2915c92daa9ce1c40b1391.ctex"]
 
 [params]
 

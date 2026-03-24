@@ -53,10 +53,23 @@ var _total_gold: int = 0
 var _wins: int = 0
 var _party_levels: Array = []
 
+## Rolling average state
+var _exp_history: Array[int] = []
+var _battle_times: Array[float] = []
+const ROLLING_WINDOW = 10
+var _last_total_exp: int = 0
+var _last_total_gold: int = 0
+var _last_battle_count: int = 0
+var _last_refresh_time: float = 0.0
+
+## Prediction accuracy tracking
+var _predictions: Array[Dictionary] = []
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_session_start_time = Time.get_ticks_msec() / 1000.0
+	_last_refresh_time = _session_start_time
 	call_deferred("_build_ui")
 
 
@@ -368,6 +381,7 @@ func _build_projections_panel(panel_size: Vector2, pos: Vector2) -> void:
 		{"key": "battles_per_min", "label": "Battles/min:", "default": "--"},
 		{"key": "projected_exp_10m", "label": "EXP in 10min:", "default": "--"},
 		{"key": "projected_gold_10m", "label": "Gold in 10min:", "default": "--"},
+		{"key": "accuracy", "label": "Accuracy:", "default": "--"},
 	]
 
 	var row_h = (panel_size.y - 20) / projs.size()
@@ -431,22 +445,76 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	if not is_inside_tree():
 		return
 
-	_battles_completed = stats.get("battles_won", _battles_completed)
-	_total_exp = stats.get("total_exp", _total_exp)
+	var current_battles = stats.get("battles_won", _battles_completed)
+	var current_exp = stats.get("total_exp", _total_exp)
+	var current_gold = stats.get("total_gold", _total_gold)
 	_wins = stats.get("consecutive_wins", _wins)
 
-	var elapsed = Time.get_ticks_msec() / 1000.0 - _session_start_time
+	var now = Time.get_ticks_msec() / 1000.0
+	var elapsed = now - _session_start_time
+
 	if _elapsed_label:
 		var hours = int(elapsed) / 3600
 		var mins = (int(elapsed) % 3600) / 60
 		var secs = int(elapsed) % 60
 		_elapsed_label.text = "%02d:%02d:%02d" % [hours, mins, secs]
 
-	var elapsed_min = max(elapsed / 60.0, 0.01)
-	var exp_per_min = _total_exp / elapsed_min
-	var gold_per_min = stats.get("total_items", 0) * 10.0 / elapsed_min
+	# Track per-battle EXP delta for rolling average
+	if current_battles > _last_battle_count and _last_battle_count > 0:
+		var new_battles = current_battles - _last_battle_count
+		var delta_exp = current_exp - _last_total_exp
+		var time_delta = now - _last_refresh_time
+		var time_per_battle = time_delta / float(new_battles) if new_battles > 0 else 0.0
+		var exp_per_new_battle = delta_exp / new_battles if new_battles > 0 else 0
+
+		for _i in range(new_battles):
+			_exp_history.append(exp_per_new_battle)
+			_battle_times.append(time_per_battle)
+			if _exp_history.size() > ROLLING_WINDOW:
+				_exp_history.remove_at(0)
+			if _battle_times.size() > ROLLING_WINDOW:
+				_battle_times.remove_at(0)
+
+	_last_refresh_time = now
+	_last_battle_count = current_battles
+	_last_total_exp = current_exp
+	_last_total_gold = current_gold
+	_battles_completed = current_battles
+	_total_exp = current_exp
+	_total_gold = current_gold
+
+	# Rolling average EXP per battle
+	var avg_exp_per_battle := 0.0
+	if _exp_history.size() > 0:
+		var exp_sum := 0
+		for e in _exp_history:
+			exp_sum += e
+		avg_exp_per_battle = float(exp_sum) / _exp_history.size()
+	elif _battles_completed > 0:
+		avg_exp_per_battle = float(_total_exp) / _battles_completed
+
+	# Rolling average seconds per battle → battles per minute
+	var avg_secs_per_battle := 0.0
+	if _battle_times.size() > 0:
+		var time_sum := 0.0
+		for t in _battle_times:
+			time_sum += t
+		avg_secs_per_battle = time_sum / _battle_times.size()
+	var battles_per_min := 0.0
+	if avg_secs_per_battle > 0.0:
+		battles_per_min = 60.0 / avg_secs_per_battle
+	else:
+		var elapsed_min = max(elapsed / 60.0, 0.01)
+		battles_per_min = _battles_completed / elapsed_min
+
+	# Rolling gold per battle
+	var avg_gold_per_battle := 0.0
+	if _battles_completed > 0:
+		avg_gold_per_battle = float(_total_gold) / _battles_completed
+
+	var exp_per_min = avg_exp_per_battle * battles_per_min
+	var gold_per_min = avg_gold_per_battle * battles_per_min
 	var win_rate = 100.0 * _battles_completed / max(_battles_completed + stats.get("collapse_count", 0), 1)
-	var battles_per_min = _battles_completed / elapsed_min
 
 	if _exp_sparkline:
 		_exp_sparkline.push_value(exp_per_min)
@@ -458,14 +526,35 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	_update_stat("battles", str(_battles_completed))
 	_update_stat("total_exp", str(_total_exp))
 	_update_stat("win_rate", "%.0f%%" % win_rate)
-	_update_stat("total_gold", "~%d" % int(gold_per_min * elapsed_min))
+	_update_stat("total_gold", str(_total_gold))
 	_update_stat("collapses", str(stats.get("collapse_count", 0)))
 
-	var avg_exp = _total_exp / max(_battles_completed, 1)
-	_update_projection("avg_exp_battle", "~%d" % avg_exp)
-	_update_projection("battles_per_min", "%.1f" % battles_per_min)
-	_update_projection("projected_exp_10m", "~%d" % int(exp_per_min * 10))
-	_update_projection("projected_gold_10m", "~%d" % int(gold_per_min * 10))
+	var avg_label := "~%d" % int(avg_exp_per_battle) if _exp_history.size() > 0 else ("~%d" % int(avg_exp_per_battle) if _battles_completed >= 3 else "--")
+	_update_projection("avg_exp_battle", avg_label)
+	_update_projection("battles_per_min", "%.1f" % battles_per_min if battles_per_min > 0 else "--")
+	_update_projection("projected_exp_10m", "~%d" % int(avg_exp_per_battle * battles_per_min * 10) if battles_per_min > 0 else "--")
+	_update_projection("projected_gold_10m", "~%d" % int(gold_per_min * 10) if battles_per_min > 0 else "--")
+
+	# Record a prediction every 5 battles
+	if _battles_completed > 0 and _battles_completed % 5 == 0 and avg_exp_per_battle > 0:
+		var already_recorded := false
+		for pred in _predictions:
+			if pred["at_battle"] == _battles_completed:
+				already_recorded = true
+				break
+		if not already_recorded:
+			var predicted_5 = _total_exp + int(avg_exp_per_battle * 5)
+			_predictions.append({"predicted": predicted_5, "at_battle": _battles_completed, "target_battle": _battles_completed + 5})
+
+	# Check old predictions for accuracy
+	for pred in _predictions.duplicate():
+		if _battles_completed >= pred["target_battle"]:
+			var actual = _total_exp
+			var predicted = pred["predicted"]
+			var error_pct = abs(actual - predicted) / max(float(predicted), 1.0) * 100.0
+			var accuracy = max(0.0, 100.0 - error_pct)
+			_update_projection("accuracy", "%.0f%%" % accuracy)
+			_predictions.erase(pred)
 
 	if _stats_strip and is_instance_valid(_stats_strip):
 		_stats_strip.refresh(stats, region_id)

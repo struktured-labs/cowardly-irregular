@@ -2246,17 +2246,83 @@ func _on_grind_complete(reason: String) -> void:
 func _on_autogrind_tier_changed(new_tier: int) -> void:
 	if new_tier == 1:  # DASHBOARD
 		SoundManager.play_ui("tier_zoom_out")
-		_show_autogrind_dashboard()
+		_transition_to_dashboard()
 		if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
 			_autogrind_overlay.visible = false
 	else:  # ACCELERATED
 		SoundManager.play_ui("tier_zoom_in")
-		_hide_autogrind_dashboard()
+		_transition_to_accelerated()
 		if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
 			_autogrind_overlay.visible = true
 
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		_autogrind_ui.on_tier_changed(new_tier)
+
+
+func _transition_to_dashboard() -> void:
+	var layer = CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+
+	var overlay = ColorRect.new()
+	overlay.color = Color(0.08, 0.06, 0.12, 0.0)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(overlay)
+
+	var label = Label.new()
+	label.text = "DASHBOARD MODE"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_CENTER)
+	label.position = Vector2(-100, -15)
+	label.size = Vector2(200, 30)
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4, 0.0))
+	layer.add_child(label)
+
+	var tween = create_tween()
+	tween.tween_property(overlay, "color:a", 0.95, 0.25)
+	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 1.0, 0.2).set_delay(0.1)
+	tween.tween_interval(0.15)
+	tween.tween_callback(func():
+		_show_autogrind_dashboard()
+	)
+	tween.tween_property(overlay, "color:a", 0.0, 0.2)
+	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 0.0, 0.15)
+	tween.tween_callback(layer.queue_free)
+
+
+func _transition_to_accelerated() -> void:
+	var layer = CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+
+	var overlay = ColorRect.new()
+	overlay.color = Color(0.08, 0.06, 0.12, 0.0)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(overlay)
+
+	var label = Label.new()
+	label.text = "ACCELERATED MODE"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_CENTER)
+	label.position = Vector2(-110, -15)
+	label.size = Vector2(220, 30)
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4, 0.0))
+	layer.add_child(label)
+
+	var tween = create_tween()
+	tween.tween_property(overlay, "color:a", 0.95, 0.2)
+	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 1.0, 0.15).set_delay(0.05)
+	tween.tween_interval(0.1)
+	tween.tween_callback(func():
+		_hide_autogrind_dashboard()
+	)
+	tween.tween_property(overlay, "color:a", 0.0, 0.2)
+	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 0.0, 0.15)
+	tween.tween_callback(layer.queue_free)
 
 
 func _create_autogrind_overlay() -> void:

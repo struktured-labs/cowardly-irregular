@@ -362,6 +362,7 @@ func _restore_autobattle_states() -> void:
 
 ## Get current grind stats for UI update
 func get_grind_stats() -> Dictionary:
+	var sys_stats := AutogrindSystem.get_grind_stats()
 	return {
 		"efficiency": AutogrindSystem.efficiency_multiplier,
 		"corruption": AutogrindSystem.meta_corruption_level,
@@ -371,6 +372,7 @@ func get_grind_stats() -> Dictionary:
 		"consecutive_wins": AutogrindSystem.consecutive_wins,
 		"battles_won": AutogrindSystem.battles_completed,
 		"total_exp": AutogrindSystem.total_exp_gained,
+		"total_gold": sys_stats.get("total_gold", 0),
 		"total_items": _count_total_items(),
 		"collapse_count": AutogrindSystem.collapse_count,
 		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,

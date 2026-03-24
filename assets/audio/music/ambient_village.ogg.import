@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://del5axit6yqi1"
+path="res://.godot/imported/ambient_village.ogg-496fdaa8c5a83706a2b0b62973fb0544.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/ambient_village.ogg"
+dest_files=["res://.godot/imported/ambient_village.ogg-496fdaa8c5a83706a2b0b62973fb0544.oggvorbisstr"]
 
 [params]
 

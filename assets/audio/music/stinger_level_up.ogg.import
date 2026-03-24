@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://diyhrqgy0q8l4"
+path="res://.godot/imported/stinger_level_up.ogg-4661b4f4b4e44bbb84d3a8db4e8e976c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/stinger_level_up.ogg"
+dest_files=["res://.godot/imported/stinger_level_up.ogg-4661b4f4b4e44bbb84d3a8db4e8e976c.oggvorbisstr"]
 
 [params]
 

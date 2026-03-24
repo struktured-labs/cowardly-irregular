@@ -650,11 +650,19 @@ func create_default_character_script(character_id: String) -> Dictionary:
 						return _create_black_mage_default_script(character_id)
 					"bard":
 						return _create_bard_default_script(character_id)
-			# Generic fallback - basic attack
+			# Generic fallback — potion if in danger, then attack lowest HP enemy
 			return {
 				"character_id": character_id,
 				"name": "Default",
 				"rules": [
+					# Use potion at <40% HP so unknown characters don't silently die in W1
+					{
+						"conditions": [
+							{"type": "hp_percent", "op": "<", "value": 40},
+							{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+						],
+						"actions": [{"type": "item", "id": "potion", "target": "self"}]
+					},
 					{
 						"conditions": [{"type": "always"}],
 						"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -664,7 +672,8 @@ func create_default_character_script(character_id: String) -> Dictionary:
 
 
 func _create_fighter_default_script(character_id: String) -> Dictionary:
-	"""Fighter script - aggressive physical damage, potion safety net, Power Strike finisher"""
+	"""Fighter script - aggressive physical damage, proactive potion use, Power Strike finisher.
+	Potion threshold raised to 50% so Fighter doesn't get two-shot before healing triggers."""
 	return {
 		"character_id": character_id,
 		"name": "Fighter Default",
@@ -677,10 +686,11 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
 			},
-			# Critical HP + has potion: use it immediately
+			# HP below 50%: use potion proactively — Fighter has the biggest HP pool and can
+			# absorb a second hit; waiting until 30% risks dying before the next turn
 			{
 				"conditions": [
-					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "hp_percent", "op": "<", "value": 50},
 					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
@@ -688,7 +698,7 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 			# Power Strike to finish off a wounded enemy
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": "<", "value": 35}
+					{"type": "enemy_hp_percent", "op": "<", "value": 40}
 				],
 				"actions": [{"type": "ability", "id": "power_strike", "target": "lowest_hp_enemy"}]
 			},
@@ -702,7 +712,8 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 
 
 func _create_white_mage_default_script(character_id: String) -> Dictionary:
-	"""Cleric script - proactive healing first, potion when dry, attack when party is healthy"""
+	"""Cleric script - proactive healing first, potion when dry, attack when party is healthy.
+	Heal threshold raised to 60% so the Cleric acts before damage compounds into a death spiral."""
 	return {
 		"character_id": character_id,
 		"name": "Healer Default",
@@ -724,26 +735,37 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "echo_herbs", "target": "self"}]
 			},
-			# Priority: any ally (including self) at or below 50% HP — heal immediately
+			# Emergency: self at or below 30% HP and has MP — self-heal immediately before
+			# worrying about allies; a dead Cleric heals nobody
 			{
 				"conditions": [
-					{"type": "ally_hp_percent", "op": "<=", "value": 50},
+					{"type": "hp_percent", "op": "<=", "value": 30},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "cure", "target": "self"}]
+			},
+			# Proactive: any ally (including self) at or below 60% HP — heal before it gets
+			# critical. 60% gives a two-turn buffer against average W1 enemy damage.
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<=", "value": 60},
 					{"type": "mp_percent", "op": ">=", "value": 10}
 				],
 				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
 			},
-			# Self at or below 50% but MP is gone: use a potion
+			# Self at or below 60% but MP is gone: use a potion — Cleric can't help others
+			# if she drops first
 			{
 				"conditions": [
-					{"type": "hp_percent", "op": "<=", "value": 50},
+					{"type": "hp_percent", "op": "<=", "value": 60},
 					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Out of MP but ally critically low: use potion on them
+			# Out of MP but ally critically low (<=40%): use potion on them
 			{
 				"conditions": [
-					{"type": "ally_hp_percent", "op": "<", "value": 30},
+					{"type": "ally_hp_percent", "op": "<=", "value": 40},
 					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "lowest_hp_ally"}]
@@ -758,7 +780,9 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 
 
 func _create_thief_default_script(character_id: String) -> Dictionary:
-	"""Rogue script - backstab opener, steal early, potion safety net, fast finisher"""
+	"""Rogue script - steal opener, backstab finisher opener, proactive potion, fast cleanup.
+	Steal comes before backstab so it fires on a healthy enemy before we damage them.
+	Potion threshold raised to 40% — Rogue's thin HP can't afford the 30% danger zone."""
 	return {
 		"character_id": character_id,
 		"name": "Rogue Default",
@@ -771,27 +795,30 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
 			},
-			# Critical HP: use potion before deferring
+			# HP below 40%: use potion now — Rogue is fragile and one bad hit at 30% is fatal
 			{
 				"conditions": [
-					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "hp_percent", "op": "<", "value": 40},
 					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Backstab: high-damage opener when enemy is healthy (hasn't been tagged yet)
+			# Steal: grab items from a healthy enemy at fight start.
+			# Must come before backstab so steal fires on a fully-HP target (steal
+			# is more likely to succeed on undamaged enemies in many JRPG conventions)
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 75},
+					{"type": "hp_percent", "op": ">", "value": 70}
+				],
+				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
+			},
+			# Backstab: high-damage hit while the enemy is still mostly healthy
 			{
 				"conditions": [
 					{"type": "enemy_hp_percent", "op": ">", "value": 60}
 				],
 				"actions": [{"type": "ability", "id": "backstab", "target": "lowest_hp_enemy"}]
-			},
-			# Steal from high HP enemy at start of fight for items
-			{
-				"conditions": [
-					{"type": "enemy_hp_percent", "op": ">", "value": 75}
-				],
-				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
 			},
 			# Default - attack weakest to finish fights fast
 			{
@@ -803,7 +830,9 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 
 
 func _create_black_mage_default_script(character_id: String) -> Dictionary:
-	"""Mage script - lead with magic, target low-defense enemies, potion safety net"""
+	"""Mage script - lead with magic, target low-defense enemies, proactive potion safety net.
+	Potion threshold raised to 40% — Mage has the lowest HP in the party and routinely gets
+	focused by enemies. 30% was one hit away from death in W1 encounters."""
 	return {
 		"character_id": character_id,
 		"name": "Mage Default",
@@ -816,10 +845,10 @@ func _create_black_mage_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
 			},
-			# Critical HP: use potion before anything else
+			# HP below 40%: use potion now — Mage can't cast if she's dead
 			{
 				"conditions": [
-					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "hp_percent", "op": "<", "value": 40},
 					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
@@ -855,10 +884,10 @@ func _create_bard_default_script(character_id: String) -> Dictionary:
 		"character_id": character_id,
 		"name": "Bard Default",
 		"rules": [
-			# Survival first: critical HP, use potion immediately
+			# Survival first: HP below 40%, use potion — Bard's support is worthless if dead
 			{
 				"conditions": [
-					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "hp_percent", "op": "<", "value": 40},
 					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]

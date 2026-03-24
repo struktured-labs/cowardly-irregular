@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://55ad7yki4s0u"
+path="res://.godot/imported/pipe_phantom.png-90dcc0a21f23b9c67382308a260e6d23.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/pipe_phantom.png"
+dest_files=["res://.godot/imported/pipe_phantom.png-90dcc0a21f23b9c67382308a260e6d23.ctex"]
 
 [params]
 

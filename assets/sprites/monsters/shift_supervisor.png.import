@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://dok5lcfawyxws"
+path="res://.godot/imported/shift_supervisor.png-6fa95993e72fa442206b6a2b4cf12393.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/shift_supervisor.png"
+dest_files=["res://.godot/imported/shift_supervisor.png-6fa95993e72fa442206b6a2b4cf12393.ctex"]
 
 [params]
 

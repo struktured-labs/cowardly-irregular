@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://cq6iui82sile4"
+path="res://.godot/imported/unassuming_dog.png-05370c04c7e51e786e58888f5b96008d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/unassuming_dog.png"
+dest_files=["res://.godot/imported/unassuming_dog.png-05370c04c7e51e786e58888f5b96008d.ctex"]
 
 [params]
 

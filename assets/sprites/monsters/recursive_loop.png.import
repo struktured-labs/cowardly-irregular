@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://be4ebkt7dfvex"
+path="res://.godot/imported/recursive_loop.png-3f79030b6ac3012b5ff6bf363f2e9e02.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/recursive_loop.png"
+dest_files=["res://.godot/imported/recursive_loop.png-3f79030b6ac3012b5ff6bf363f2e9e02.ctex"]
 
 [params]
 

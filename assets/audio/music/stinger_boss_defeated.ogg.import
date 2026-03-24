@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dcga1mas5ywxv"
+path="res://.godot/imported/stinger_boss_defeated.ogg-a4102eb5944739ac7759c6bd319a694c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/stinger_boss_defeated.ogg"
+dest_files=["res://.godot/imported/stinger_boss_defeated.ogg-a4102eb5944739ac7759c6bd319a694c.oggvorbisstr"]
 
 [params]
 

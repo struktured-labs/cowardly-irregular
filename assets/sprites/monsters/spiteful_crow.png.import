@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://nk0qui85csyj"
-path="res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"
+uid="uid://b5d0qed6xw2nu"
+path="res://.godot/imported/spiteful_crow.png-22751d3b74ed87c7989b2ac3672a5079.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/monsters/masterite_curator_medieval.png"
-dest_files=["res://.godot/imported/masterite_curator_medieval.png-1658b4396006ee807a6418a89cf4e714.ctex"]
+source_file="res://assets/sprites/monsters/spiteful_crow.png"
+dest_files=["res://.godot/imported/spiteful_crow.png-22751d3b74ed87c7989b2ac3672a5079.ctex"]
 
 [params]
 
