@@ -42,6 +42,7 @@ var _last_tile_pos: Vector2i = Vector2i(-1, -1)
 ## Mode 7 perspective
 var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
+var _zone_popup: ZoneNamePopup
 
 
 func _ready() -> void:
@@ -58,6 +59,10 @@ func _ready() -> void:
 		add_child(_mode7)
 		_mode7.apply_preset("medieval")
 		_mode7.setup(self, player)
+
+	_zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
 
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
@@ -408,6 +413,8 @@ func _update_encounter_zone(pos: Vector2) -> void:
 	if new_zone != _current_zone:
 		_current_zone = new_zone
 		_apply_zone_encounters(new_zone)
+		if _zone_popup:
+			_zone_popup.show_zone(new_zone)
 
 
 func _get_zone_for_tile(tx: int, ty: int) -> String:
