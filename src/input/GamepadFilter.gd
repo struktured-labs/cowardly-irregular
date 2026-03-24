@@ -8,6 +8,9 @@ const IGNORED_NAME: String = "SNES30"
 var preferred_device: int = -1
 var right_stick_x: float = 0.0
 
+## Shoulder buttons as alternative rotation input (L1=left, R1=right)
+var shoulder_rotate: float = 0.0
+
 
 func _ready() -> void:
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
@@ -17,11 +20,24 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventJoypadMotion:
 		var e = event as InputEventJoypadMotion
-		if e.axis >= 2 and e.axis <= 5:
+		# Only axis 2 = Right Stick X (was 2-5 which included Y, triggers)
+		if e.axis == 2:
 			if abs(e.axis_value) > 0.2:
 				right_stick_x = e.axis_value
 			else:
 				right_stick_x = 0.0
+
+
+func _process(_delta: float) -> void:
+	# Shoulder buttons as alternative rotation (L1=4, R1=5)
+	var l1 = Input.is_joy_button_pressed(preferred_device, JOY_BUTTON_LEFT_SHOULDER) if preferred_device >= 0 else false
+	var r1 = Input.is_joy_button_pressed(preferred_device, JOY_BUTTON_RIGHT_SHOULDER) if preferred_device >= 0 else false
+	if r1 and not l1:
+		shoulder_rotate = 1.0
+	elif l1 and not r1:
+		shoulder_rotate = -1.0
+	else:
+		shoulder_rotate = 0.0
 
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
