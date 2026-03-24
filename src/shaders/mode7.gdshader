@@ -12,6 +12,8 @@ uniform float world_rotation = 0.0;
 uniform vec4 sky_top : source_color = vec4(0.25, 0.35, 0.65, 1.0);
 uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);
 uniform vec4 fog_color : source_color = vec4(0.50, 0.60, 0.78, 1.0);
+// Day/night tint (multiplied with final color)
+uniform vec4 time_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 // Per-world effects (default 0.0 = inactive)
 uniform float scanline_intensity : hint_range(0.0, 1.0) = 0.0;
 uniform float dissolve_progress : hint_range(0.0, 1.0) = 0.0;
@@ -117,6 +119,9 @@ void fragment() {
 		// Flatten perspective as dissolve progresses
 		result = mix(result, fog_color, dissolve_progress * 0.5);
 	}
+
+	// Day/night tint
+	result.rgb *= time_tint.rgb;
 
 	COLOR = result;
 }
