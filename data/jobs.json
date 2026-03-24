@@ -5,10 +5,10 @@
 		"type": 0,
 		"description": "A warrior skilled in physical combat. High HP and attack, excels at dealing consistent damage.",
 		"stat_modifiers": {
-			"max_hp": 120,
+			"max_hp": 132,
 			"max_mp": 30,
 			"attack": 15,
-			"defense": 12,
+			"defense": 14,
 			"magic": 5,
 			"speed": 8
 		},
@@ -37,10 +37,10 @@
 		"type": 0,
 		"description": "A devoted healer who channels restorative light. Low HP but high magic, keeps the party alive through faith and prayer.",
 		"stat_modifiers": {
-			"max_hp": 95,
+			"max_hp": 108,
 			"max_mp": 70,
 			"attack": 5,
-			"defense": 8,
+			"defense": 10,
 			"magic": 18,
 			"speed": 10
 		},
@@ -70,10 +70,10 @@
 		"type": 0,
 		"description": "A scholar of the arcane arts who wields destructive elemental magic. Low HP but devastating magical damage.",
 		"stat_modifiers": {
-			"max_hp": 85,
+			"max_hp": 97,
 			"max_mp": 80,
 			"attack": 5,
-			"defense": 6,
+			"defense": 8,
 			"magic": 20,
 			"speed": 9
 		},
@@ -103,10 +103,10 @@
 		"type": 0,
 		"description": "A cunning operative who strikes from the shadows. High speed, can steal items and gold from enemies.",
 		"stat_modifiers": {
-			"max_hp": 90,
+			"max_hp": 102,
 			"max_mp": 40,
 			"attack": 12,
-			"defense": 9,
+			"defense": 11,
 			"magic": 7,
 			"speed": 16
 		},
