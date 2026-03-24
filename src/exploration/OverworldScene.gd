@@ -43,6 +43,7 @@ var _last_tile_pos: Vector2i = Vector2i(-1, -1)
 var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
 var _zone_popup: ZoneNamePopup
+var _danger_zone: DangerZone
 
 
 func _ready() -> void:
@@ -64,6 +65,16 @@ func _ready() -> void:
 	add_child(_zone_popup)
 	_zone_popup.setup(self)
 
+	# Danger zone warnings near boss caves
+	var danger_pts: Array[Vector2] = []
+	for key in ["cave_entrance", "ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave"]:
+		if spawn_points.has(key):
+			danger_pts.append(spawn_points[key])
+	if not danger_pts.is_empty():
+		_danger_zone = DangerZone.new()
+		add_child(_danger_zone)
+		_danger_zone.setup(self, player, danger_pts)
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -73,6 +84,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if player:
 		_update_encounter_zone(player.position)
+	if _danger_zone:
+		_danger_zone.process(_delta)
 	if _mode7:
 		# Register roaming monsters as billboards (deduplicates automatically)
 		for container_name in ["RoamingMonsters", "NPCs", "Transitions"]:
