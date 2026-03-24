@@ -18,6 +18,19 @@ var cloud_density: float = 0.0
 var cloud_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 var _cloud_time: float = 0.0
 
+## Day/night cycle — tints the entire Mode 7 view
+## Cycle: dawn (warm) → day (neutral) → dusk (warm) → night (cool blue)
+## Set day_night_enabled = false for worlds that don't cycle (W5 digital, W6 abstract)
+var day_night_enabled: bool = true
+var day_night_speed: float = 1.0 / 300.0  # Full cycle every 300 seconds (5 min)
+var _day_night_phase: float = 0.25  # Start at day (0=dawn, 0.25=day, 0.5=dusk, 0.75=night)
+var _fixed_tint: Color = Color.WHITE  # For worlds with fixed time (empty = cycle)
+
+const TINT_DAWN: Color = Color(1.0, 0.85, 0.7)
+const TINT_DAY: Color = Color(1.0, 1.0, 1.0)
+const TINT_DUSK: Color = Color(1.0, 0.75, 0.6)
+const TINT_NIGHT: Color = Color(0.6, 0.65, 0.9)
+
 ## Per-world Mode 7 visual presets — the shader evolution IS the narrative.
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
 const WORLD_PRESETS: Dictionary = {
@@ -42,8 +55,9 @@ const WORLD_PRESETS: Dictionary = {
 		"fog_color": Color(0.60, 0.45, 0.25),
 		"sky_top": Color(0.35, 0.25, 0.15),
 		"sky_bottom": Color(0.55, 0.45, 0.30),
-		"cloud_density": 0.6,  # Steam/smoke clouds
+		"cloud_density": 0.6,
 		"cloud_color": Color(0.75, 0.65, 0.50),
+		"fixed_tint": Color(1.0, 0.85, 0.65),  # Always dusk — amber lamplight
 	},
 	"industrial": {
 		"curvature": 0.0,
@@ -55,10 +69,12 @@ const WORLD_PRESETS: Dictionary = {
 	},
 	"digital": {
 		"curvature": 0.005,
-		"fog_color": Color(0.02, 0.40, 0.70),  # Neon blue
-		"sky_top": Color(0.0, 0.05, 0.12),  # Near black
-		"sky_bottom": Color(0.0, 0.15, 0.30),  # Dark blue
-		"scanline_intensity": 0.3,  # CRT/terminal scanlines
+		"fog_color": Color(0.02, 0.40, 0.70),
+		"sky_top": Color(0.0, 0.05, 0.12),
+		"sky_bottom": Color(0.0, 0.15, 0.30),
+		"scanline_intensity": 0.3,
+		"day_night_enabled": false,  # Always night — terminal glow
+		"fixed_tint": Color(0.7, 0.8, 1.0),
 	},
 	# "abstract" intentionally omitted — W6 disables Mode 7 entirely
 }
@@ -127,6 +143,11 @@ func apply_preset(world_id: String) -> void:
 		cloud_density = preset["cloud_density"]
 	if preset.has("cloud_color"):
 		cloud_color = preset["cloud_color"]
+	if preset.has("day_night_enabled"):
+		day_night_enabled = preset["day_night_enabled"]
+	if preset.has("fixed_tint"):
+		_fixed_tint = preset["fixed_tint"]
+		day_night_enabled = false
 	print("[MODE7] Applied '%s' world preset" % world_id)
 
 
@@ -169,6 +190,7 @@ func setup(scene: Node2D, player: Node2D) -> void:
 	_shader_mat.set_shader_parameter("cloud_density", cloud_density)
 	_shader_mat.set_shader_parameter("cloud_color", cloud_color)
 	_shader_mat.set_shader_parameter("cloud_scroll", 0.0)
+	_shader_mat.set_shader_parameter("time_tint", Color.WHITE)
 	_shader_mat.set_shader_parameter("world_rotation", 0.0)
 	overlay.material = _shader_mat
 
@@ -241,6 +263,18 @@ func _update_compass() -> void:
 		_compass_ring[i].position = pos - Vector2(10, 10)
 
 
+func _get_day_night_tint(phase: float) -> Color:
+	# phase: 0.0=dawn, 0.25=day, 0.5=dusk, 0.75=night, 1.0=dawn again
+	if phase < 0.25:
+		return TINT_DAWN.lerp(TINT_DAY, phase / 0.25)
+	elif phase < 0.5:
+		return TINT_DAY.lerp(TINT_DUSK, (phase - 0.25) / 0.25)
+	elif phase < 0.75:
+		return TINT_DUSK.lerp(TINT_NIGHT, (phase - 0.5) / 0.25)
+	else:
+		return TINT_NIGHT.lerp(TINT_DAWN, (phase - 0.75) / 0.25)
+
+
 func _auto_dissolve_in() -> void:
 	await play_dissolve_in()
 
@@ -297,6 +331,15 @@ func process_frame() -> void:
 	if cloud_density > 0.0 and _shader_mat:
 		_cloud_time += delta * 0.5
 		_shader_mat.set_shader_parameter("cloud_scroll", _cloud_time)
+
+	# Day/night tint cycle
+	if _shader_mat:
+		if day_night_enabled:
+			_day_night_phase = fmod(_day_night_phase + day_night_speed * delta, 1.0)
+			var tint = _get_day_night_tint(_day_night_phase)
+			_shader_mat.set_shader_parameter("time_tint", tint)
+		elif _fixed_tint != Color.WHITE:
+			_shader_mat.set_shader_parameter("time_tint", _fixed_tint)
 
 	_update_compass()
 
