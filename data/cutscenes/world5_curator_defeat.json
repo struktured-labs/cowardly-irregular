@@ -7,6 +7,7 @@
   "steps": [
     {"type": "stop_music"},
     {"type": "letterbox_in", "duration": 0.5},
+    {"type": "play_music", "track": "cutscene_w6_memory_is_love"},
     {"type": "wait", "duration": 1.5},
 
     {"type": "narration", "lines": [

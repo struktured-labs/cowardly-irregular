@@ -6,6 +6,7 @@
   "description": "The last village. The shopkeeper who is just the idea of one. The traveler who has walked between worlds. The question.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "cutscene_w6_no_one_speaks"},
 
     {"type": "narration", "text": "The village materialized slowly, as though it were being remembered rather than built. The Vertex was barely there \u2014 an edge case the universe had not quite resolved."},
 

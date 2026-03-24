@@ -6,6 +6,7 @@
   "description": "The answer and the resolution. The Calibrant realizes what they were calibrating the wrong variable for. A class is offered. Voice speaks for all of them. The game ends, or doesn't, depending on who is playing.",
   "steps": [
     {"type": "stop_music"},
+    {"type": "play_music", "track": "cutscene_w6_epilogue"},
     {"type": "wait", "duration": 1.5},
 
     {"type": "narration", "lines": [

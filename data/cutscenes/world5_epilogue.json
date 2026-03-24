@@ -10,6 +10,7 @@
     {"type": "wait", "duration": 1.0},
     {"type": "letterbox_in", "duration": 0.5},
     {"type": "fade_from_black", "duration": 1.0},
+    {"type": "play_music", "track": "cutscene_w5_calibrant_desk"},
 
     {"type": "narration", "lines": [
       "The code dissolved.",

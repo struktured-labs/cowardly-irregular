@@ -7,6 +7,7 @@
   "steps": [
     {"type": "stop_music"},
     {"type": "letterbox_in", "duration": 0.5},
+    {"type": "play_music", "track": "cutscene_w1_warden_farewell"},
     {"type": "wait", "duration": 1.0},
 
     {"type": "narration", "text": "The chamber was very quiet. The kind of quiet that only exists deep underground, where there is nothing for sound to bounce off of except stone."},

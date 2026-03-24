@@ -6,6 +6,7 @@
   "description": "Rivet Row is not a town, it's a process. The Company, the Director, the monitors showing battle records.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "cutscene_w4_foreman_confession"},
 
     {"type": "narration", "lines": [
       "Rivet Row was not a town. It was a process.",

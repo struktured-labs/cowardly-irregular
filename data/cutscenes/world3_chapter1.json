@@ -6,6 +6,7 @@
   "description": "Brasston village, the Grand Schedule, Sprocket the guide, Clem the Lamplighter, Madame Orrery's revelation.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "cutscene_w3_pattern_recognized"},
 
     {"type": "narration", "lines": [
       "Brasston was a market town that ran like a pocket watch. The citizens moved on paths so ingrained they might as well have been grooves cut into the cobblestone.",
