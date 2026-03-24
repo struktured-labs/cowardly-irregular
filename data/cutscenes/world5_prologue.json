@@ -7,7 +7,7 @@
   "steps": [
     {"type": "fade_from_black", "duration": 1.5},
     {"type": "letterbox_in", "duration": 0.6},
-    {"type": "play_music", "track": "world5_village"},
+    {"type": "play_music", "track": "cutscene_w5_boot_sequence"},
 
     {"type": "dialogue", "lines": [
       {

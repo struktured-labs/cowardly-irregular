@@ -7,7 +7,7 @@
   "steps": [
     {"type": "fade_from_black", "duration": 1.5},
     {"type": "letterbox_in", "duration": 0.6},
-    {"type": "play_music", "track": "world1_village"},
+    {"type": "play_music", "track": "cutscene_w1_conscription"},
     {"type": "wait", "duration": 0.8},
 
     {"type": "narration", "lines": [

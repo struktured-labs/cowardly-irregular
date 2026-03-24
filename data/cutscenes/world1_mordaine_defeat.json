@@ -7,6 +7,7 @@
   "steps": [
     {"type": "stop_music"},
     {"type": "letterbox_in", "duration": 0.5},
+    {"type": "play_music", "track": "cutscene_w1_mordaine_dissolution"},
     {"type": "wait", "duration": 1.0},
 
     {"type": "narration", "lines": [

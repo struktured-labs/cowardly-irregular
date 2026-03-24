@@ -10,6 +10,7 @@
     {"type": "wait", "duration": 1.0},
     {"type": "letterbox_in", "duration": 0.5},
     {"type": "fade_from_black", "duration": 1.0},
+    {"type": "play_music", "track": "cutscene_w1_mordaine_dissolution"},
 
     {"type": "narration", "lines": [
       "Mordaine dissolved. Not in the way enemies dissolve \u2014 in smoke and light and theatrical satisfaction.",

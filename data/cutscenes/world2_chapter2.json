@@ -6,6 +6,7 @@
   "description": "First suburban encounter: enchanted lawn mower, angry mailbox, targeting sprinkler. The HOA memo.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "cutscene_w2_coordinator_memo"},
 
     {"type": "narration", "text": "The first encounter happened in a cul-de-sac three streets from the strip mall. A riding mower sat in someone's driveway until the party walked past it. Then it sat differently."},
 

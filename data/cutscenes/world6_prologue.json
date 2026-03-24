@@ -8,6 +8,7 @@
     {"type": "stop_music"},
     {"type": "fade_from_black", "duration": 2.0},
     {"type": "letterbox_in", "duration": 0.8},
+    {"type": "play_music", "track": "cutscene_w6_entering_nothing"},
     {"type": "wait", "duration": 1.0},
 
     {"type": "narration", "lines": [
