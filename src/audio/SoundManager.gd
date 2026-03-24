@@ -34,6 +34,9 @@ static var _sfx_manifest: Dictionary = {}
 static var _sfx_manifest_loaded: bool = false
 # Cache loaded AudioStream objects so we only hit disk once per key
 static var _sfx_stream_cache: Dictionary = {}
+# Per-key cooldown timestamps to prevent SFX pileup at high battle speeds
+var _sfx_cooldowns: Dictionary = {}
+const SFX_MIN_INTERVAL_MS: int = 80  # Minimum ms between same sound plays
 
 # Sound definitions - procedural parameters
 const SOUNDS = {
@@ -198,6 +201,14 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	If set, overrides volume (used by play_battle_scaled)."""
 	if not _sfx_manifest.has(sound_key):
 		return false
+
+	# Cooldown: skip if same sound played too recently (prevents pileup at high battle speeds)
+	var now_ms = Time.get_ticks_msec()
+	var last_played = _sfx_cooldowns.get(sound_key, 0)
+	if now_ms - last_played < SFX_MIN_INTERVAL_MS:
+		return true  # Return true to suppress procedural fallback too
+	_sfx_cooldowns[sound_key] = now_ms
+
 	var entry = _sfx_manifest[sound_key]
 	var path = entry.get("file", "")
 	if path == "":
