@@ -5,9 +5,9 @@
 		"description": "A gelatinous blob. Weak but numerous.",
 		"level": 1,
 		"stats": {
-			"max_hp": 80,
+			"max_hp": 68,
 			"max_mp": 20,
-			"attack": 25,
+			"attack": 21,
 			"defense": 8,
 			"magic": 12,
 			"speed": 8
@@ -38,7 +38,7 @@
 		"stats": {
 			"max_hp": 50,
 			"max_mp": 15,
-			"attack": 28,
+			"attack": 23,
 			"defense": 5,
 			"magic": 15,
 			"speed": 18
@@ -67,9 +67,9 @@
 		"description": "A toxic mushroom creature. Slow but poisonous.",
 		"level": 2,
 		"stats": {
-			"max_hp": 100,
+			"max_hp": 85,
 			"max_mp": 25,
-			"attack": 22,
+			"attack": 18,
 			"defense": 12,
 			"magic": 25,
 			"speed": 5
@@ -103,11 +103,11 @@
 		"description": "A tiny demon with fire magic. Annoying but dangerous in groups.",
 		"level": 3,
 		"stats": {
-			"max_hp": 70,
+			"max_hp": 62,
 			"max_mp": 50,
-			"attack": 20,
+			"attack": 18,
 			"defense": 8,
-			"magic": 35,
+			"magic": 29,
 			"speed": 14
 		},
 		"abilities": [
@@ -141,9 +141,9 @@
 		"description": "A mischievous creature. Faster and craftier than slimes.",
 		"level": 3,
 		"stats": {
-			"max_hp": 120,
+			"max_hp": 100,
 			"max_mp": 30,
-			"attack": 32,
+			"attack": 27,
 			"defense": 10,
 			"magic": 18,
 			"speed": 12
@@ -175,9 +175,9 @@
 		"description": "A forest predator. Hunts in packs and strikes with surprising ferocity.",
 		"level": 3,
 		"stats": {
-			"max_hp": 110,
+			"max_hp": 92,
 			"max_mp": 10,
-			"attack": 35,
+			"attack": 29,
 			"defense": 12,
 			"magic": 8,
 			"speed": 16
@@ -207,7 +207,7 @@
 		"stats": {
 			"max_hp": 85,
 			"max_mp": 25,
-			"attack": 28,
+			"attack": 23,
 			"defense": 8,
 			"magic": 20,
 			"speed": 14
@@ -512,7 +512,7 @@
 		"stats": {
 			"max_hp": 90,
 			"max_mp": 15,
-			"attack": 30,
+			"attack": 25,
 			"defense": 8,
 			"magic": 10,
 			"speed": 14

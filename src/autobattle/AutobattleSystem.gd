@@ -345,6 +345,8 @@ func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant
 			return enemies[randi() % enemies.size()] if enemies.size() > 0 else null
 		"lowest_hp_ally":
 			return _get_lowest_hp_ally(combatant)
+		"lowest_magic_defense_enemy":
+			return _get_lowest_magic_defense_enemy(combatant)
 		"self":
 			return combatant
 		_:
@@ -606,25 +608,27 @@ func create_default_character_script(character_id: String) -> Dictionary:
 
 
 func _create_fighter_default_script(character_id: String) -> Dictionary:
-	"""Conservative Fighter script - basic attacks, power strike on weakened enemies"""
+	"""Fighter script - aggressive physical damage, potion safety net, Power Strike finisher"""
 	return {
 		"character_id": character_id,
 		"name": "Fighter Default",
 		"rules": [
-			# Low HP - defer to recover
-			{
-				"conditions": [{"type": "hp_percent", "op": "<", "value": 20}],
-				"actions": [{"type": "defer"}]
-			},
-			# Finish off weak enemy with Power Strike
+			# Critical HP + has potion: use it immediately
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": "<", "value": 30},
-					{"type": "mp_percent", "op": ">=", "value": 20}
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Power Strike to finish off a wounded enemy
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": "<", "value": 35}
 				],
 				"actions": [{"type": "ability", "id": "power_strike", "target": "lowest_hp_enemy"}]
 			},
-			# Default - basic attack
+			# Default - attack lowest HP enemy to kill off threats quickly
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -634,33 +638,36 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 
 
 func _create_white_mage_default_script(character_id: String) -> Dictionary:
-	"""Conservative White Mage script - heal allies, conserve MP"""
+	"""Cleric script - proactive healing first, potion when dry, attack when party is healthy"""
 	return {
 		"character_id": character_id,
 		"name": "Healer Default",
 		"rules": [
-			# Emergency self-heal
+			# Priority: any ally (including self) at or below 50% HP — heal immediately
 			{
 				"conditions": [
-					{"type": "hp_percent", "op": "<", "value": 30},
-					{"type": "mp_percent", "op": ">=", "value": 10}
-				],
-				"actions": [{"type": "ability", "id": "cure", "target": "self"}]
-			},
-			# Heal critically low ally
-			{
-				"conditions": [
-					{"type": "ally_hp_percent", "op": "<", "value": 40},
+					{"type": "ally_hp_percent", "op": "<=", "value": 50},
 					{"type": "mp_percent", "op": ">=", "value": 10}
 				],
 				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
 			},
-			# Low MP - conserve with basic attack
+			# Self at or below 50% but MP is gone: use a potion
 			{
-				"conditions": [{"type": "mp_percent", "op": "<", "value": 20}],
-				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+				"conditions": [
+					{"type": "hp_percent", "op": "<=", "value": 50},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Default - attack if everyone healthy
+			# Out of MP but ally critically low: use potion on them
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "lowest_hp_ally"}]
+			},
+			# Default - attack when party is safe
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -670,25 +677,34 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 
 
 func _create_thief_default_script(character_id: String) -> Dictionary:
-	"""Conservative Thief script - fast attacks, steal when safe"""
+	"""Rogue script - backstab opener, steal early, potion safety net, fast finisher"""
 	return {
 		"character_id": character_id,
-		"name": "Thief Default",
+		"name": "Rogue Default",
 		"rules": [
-			# Low HP - defer
-			{
-				"conditions": [{"type": "hp_percent", "op": "<", "value": 25}],
-				"actions": [{"type": "defer"}]
-			},
-			# Steal from high HP enemy (safe to try)
+			# Critical HP: use potion before deferring
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": ">", "value": 70},
-					{"type": "mp_percent", "op": ">=", "value": 15}
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Backstab: high-damage opener when enemy is healthy (hasn't been tagged yet)
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 60}
+				],
+				"actions": [{"type": "ability", "id": "backstab", "target": "lowest_hp_enemy"}]
+			},
+			# Steal from high HP enemy at start of fight for items
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 75}
 				],
 				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
 			},
-			# Default - attack weakest
+			# Default - attack weakest to finish fights fast
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -698,35 +714,35 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 
 
 func _create_black_mage_default_script(character_id: String) -> Dictionary:
-	"""Conservative Black Mage script - magic damage, conserve MP"""
+	"""Mage script - lead with magic, target low-defense enemies, potion safety net"""
 	return {
 		"character_id": character_id,
-		"name": "Nuker Default",
+		"name": "Mage Default",
 		"rules": [
-			# Low HP - defer
+			# Critical HP: use potion before anything else
 			{
-				"conditions": [{"type": "hp_percent", "op": "<", "value": 25}],
-				"actions": [{"type": "defer"}]
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Low MP - conserve with basic attack
-			{
-				"conditions": [{"type": "mp_percent", "op": "<", "value": 25}],
-				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
-			},
-			# Multiple enemies - use Fire for damage
+			# Multiple enemies with enough MP: Fire hits all and softens the pack
 			{
 				"conditions": [
 					{"type": "enemy_count", "op": ">=", "value": 2},
-					{"type": "mp_percent", "op": ">=", "value": 30}
+					{"type": "mp_percent", "op": ">=", "value": 25}
 				],
-				"actions": [{"type": "ability", "id": "fire", "target": "lowest_hp_enemy"}]
+				"actions": [{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"}]
 			},
-			# Single enemy - Thunder for efficiency
+			# Single enemy, good MP: Thunder for solid single-target damage
 			{
-				"conditions": [{"type": "mp_percent", "op": ">=", "value": 25}],
-				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_hp_enemy"}]
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_magic_defense_enemy"}]
 			},
-			# Default fallback
+			# MP depleted: basic attack rather than deferring dead weight
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -1077,6 +1093,16 @@ func _get_lowest_hp_ally(combatant: Combatant) -> Combatant:
 
 	allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
 	return allies[0]
+
+
+func _get_lowest_magic_defense_enemy(combatant: Combatant) -> Combatant:
+	"""Get enemy with lowest defense (magic damage scales at 0.5x defense — lowest defense = best magic target)"""
+	var enemies = _get_enemies_for(combatant)
+	if enemies.size() == 0:
+		return null
+
+	enemies.sort_custom(func(a, b): return a.defense < b.defense)
+	return enemies[0]
 
 
 ## Script management
