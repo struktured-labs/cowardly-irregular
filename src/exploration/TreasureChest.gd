@@ -373,6 +373,7 @@ func _open_chest(player: Node2D) -> void:
 	dialogue_label.text = contents_text
 
 	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
+	SoundManager.play_music("stinger_item_found")
 
 	# Hide after delay
 	await get_tree().create_timer(2.0).timeout

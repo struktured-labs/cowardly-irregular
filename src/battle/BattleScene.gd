@@ -1542,7 +1542,10 @@ func _on_battle_ended(victory: bool) -> void:
 		if not turbo_mode:
 			log_message("[color=gray]Press ENTER to continue...[/color]")
 			_play_staggered_victory_animations()
-			SoundManager.play_music("victory")
+			if _check_for_boss():
+				SoundManager.play_music("stinger_boss_defeated")
+			else:
+				SoundManager.play_music("victory")
 			_show_victory_results()
 	else:
 		log_message("\n[color=red]=== DEFEAT ===[/color]")

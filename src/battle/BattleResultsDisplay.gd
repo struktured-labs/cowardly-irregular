@@ -184,6 +184,7 @@ func show_victory_results() -> void:
 			lvl_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
 			lvl_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			vbox.add_child(lvl_label)
+			SoundManager.play_music("stinger_level_up")
 
 	# Bonuses section
 	if bonuses.size() > 0:
