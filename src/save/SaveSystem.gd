@@ -132,7 +132,10 @@ func save_at_save_point(save_point_id: String) -> bool:
 	print("Saving at save point: %s" % save_point_id)
 
 	# Save points work even in dungeons
-	return save_game(current_save_slot if current_save_slot >= 0 else 1)
+	var result = save_game(current_save_slot if current_save_slot >= 0 else 1)
+	if result:
+		SoundManager.play_music("stinger_save_point")
+	return result
 
 
 ## Load functions
