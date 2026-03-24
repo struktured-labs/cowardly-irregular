@@ -88,6 +88,8 @@ const CONDITION_TYPES = {
 	"ally_count": "Ally Count",
 	"item_count": "Has Item",
 	"setup_complete": "Setup Complete",
+	"ally_has_status": "Ally Has Status",
+	"ally_mp_percent": "Ally MP %",
 	"always": "Always"
 }
 
@@ -203,6 +205,16 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			var status = condition.get("status", "")
 			return status in combatant.status_effects
 
+		"ally_has_status":
+			# True if any living ally (including self) has the given status
+			var status = condition.get("status", "")
+			var allies = _get_allies_for(combatant)
+			allies.append(combatant)
+			for ally in allies:
+				if status in ally.status_effects:
+					return true
+			return false
+
 		"enemy_hp_percent":
 			var target = _get_lowest_hp_enemy(combatant)
 			if target:
@@ -214,6 +226,17 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			if ally:
 				return _compare_str(ally.get_hp_percentage(), op, value)
 			return false
+
+		"ally_mp_percent":
+			# True if the lowest-MP ally (including self) satisfies the comparison
+			var lowest_mp_pct: float = 100.0
+			var allies = _get_allies_for(combatant)
+			allies.append(combatant)
+			for ally in allies:
+				var pct = ally.get_mp_percentage() if ally.has_method("get_mp_percentage") else 100.0
+				if pct < lowest_mp_pct:
+					lowest_mp_pct = pct
+			return _compare_str(lowest_mp_pct, op, value)
 
 		"turn":
 			var battle_mgr = get_node_or_null("/root/BattleManager")
@@ -582,9 +605,15 @@ func copy_profile(character_id: String, source_index: int, new_name: String = ""
 
 
 func create_default_character_script(character_id: String) -> Dictionary:
-	"""Create a default autobattle script for a character based on job class"""
-	# Map character IDs to job-specific conservative scripts
+	"""Create a default autobattle script for a character based on job class.
+	Routing priority:
+	  1. Known character names (hero/mira/zack/vex)
+	  2. Job name aliases (fighter/cleric/mage/rogue/bard) — for future party members
+	     or any character whose combatant_name matches their job
+	  3. GameState party lookup — resolve job from saved party data
+	  4. Generic attack fallback"""
 	match character_id:
+		# ── Named party members (primary route) ──────────────────────────────
 		"hero":
 			return _create_fighter_default_script(character_id)
 		"mira":
@@ -593,8 +622,35 @@ func create_default_character_script(character_id: String) -> Dictionary:
 			return _create_thief_default_script(character_id)
 		"vex":
 			return _create_black_mage_default_script(character_id)
+		# ── Job-name aliases (renamed jobs + bard, for future characters) ─────
+		"fighter":
+			return _create_fighter_default_script(character_id)
+		"cleric", "white_mage":
+			return _create_white_mage_default_script(character_id)
+		"rogue", "thief":
+			return _create_thief_default_script(character_id)
+		"mage", "black_mage":
+			return _create_black_mage_default_script(character_id)
+		"bard":
+			return _create_bard_default_script(character_id)
 		_:
-			# Generic fallback - just attack
+			# Job lookup via GameState: handles any named character whose primary job
+			# is known but whose name doesn't match the cases above
+			var game_state = get_node_or_null("/root/GameState")
+			if game_state and game_state.has_method("get_character_job_id"):
+				var job_id: String = game_state.get_character_job_id(character_id)
+				match job_id:
+					"fighter":
+						return _create_fighter_default_script(character_id)
+					"cleric", "white_mage":
+						return _create_white_mage_default_script(character_id)
+					"rogue", "thief":
+						return _create_thief_default_script(character_id)
+					"mage", "black_mage":
+						return _create_black_mage_default_script(character_id)
+					"bard":
+						return _create_bard_default_script(character_id)
+			# Generic fallback - basic attack
 			return {
 				"character_id": character_id,
 				"name": "Default",
@@ -613,6 +669,14 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 		"character_id": character_id,
 		"name": "Fighter Default",
 		"rules": [
+			# Poison: use antidote before HP drain kills — higher priority than potion
+			{
+				"conditions": [
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
+			},
 			# Critical HP + has potion: use it immediately
 			{
 				"conditions": [
@@ -643,6 +707,23 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 		"character_id": character_id,
 		"name": "Healer Default",
 		"rules": [
+			# Status priority: self poisoned and has antidote — cure it before anything else
+			# (No Esuna ability exists yet; antidote handles poison on self)
+			{
+				"conditions": [
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
+			},
+			# Status priority: self blinded and has echo_herbs — clear it
+			{
+				"conditions": [
+					{"type": "has_status", "status": "blind"},
+					{"type": "item_count", "item_id": "echo_herbs", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "echo_herbs", "target": "self"}]
+			},
 			# Priority: any ally (including self) at or below 50% HP — heal immediately
 			{
 				"conditions": [
@@ -682,6 +763,14 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 		"character_id": character_id,
 		"name": "Rogue Default",
 		"rules": [
+			# Poison: antidote before the DoT compounds — Rogue's HP pool is thin
+			{
+				"conditions": [
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
+			},
 			# Critical HP: use potion before deferring
 			{
 				"conditions": [
@@ -719,6 +808,14 @@ func _create_black_mage_default_script(character_id: String) -> Dictionary:
 		"character_id": character_id,
 		"name": "Mage Default",
 		"rules": [
+			# Poison: antidote immediately — poison ticks are especially punishing on low-HP Mage
+			{
+				"conditions": [
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
+			},
 			# Critical HP: use potion before anything else
 			{
 				"conditions": [
@@ -743,6 +840,56 @@ func _create_black_mage_default_script(character_id: String) -> Dictionary:
 				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_magic_defense_enemy"}]
 			},
 			# MP depleted: basic attack rather than deferring dead weight
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_bard_default_script(character_id: String) -> Dictionary:
+	"""Bard script - buff party with Battle Hymn, crowd-control with Lullaby, restore MP,
+	heal self with potion when critical, fall back to basic attack"""
+	return {
+		"character_id": character_id,
+		"name": "Bard Default",
+		"rules": [
+			# Survival first: critical HP, use potion immediately
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Battle Hymn: cast on turn 1 (setup phase) to get attack buff on the whole party
+			# Re-cast at turn 4+ so the 3-turn buff never fully drops between fights
+			{
+				"conditions": [
+					{"type": "turn", "op": "<=", "value": 1},
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "battle_hymn", "target": "all_allies"}]
+			},
+			# Lullaby: sleep a crowd when 2+ enemies are alive and we have enough MP
+			{
+				"conditions": [
+					{"type": "enemy_count", "op": ">=", "value": 2},
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "lullaby", "target": "lowest_hp_enemy"}]
+			},
+			# Inspiring Melody: restore MP when any ally is running low (below 30%) and
+			# the Bard still has enough MP to cast it (20%+ own MP)
+			{
+				"conditions": [
+					{"type": "ally_mp_percent", "op": "<", "value": 30},
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "inspiring_melody", "target": "all_allies"}]
+			},
+			# Fallback: basic attack
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
