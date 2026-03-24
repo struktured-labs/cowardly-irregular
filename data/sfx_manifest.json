@@ -35,7 +35,7 @@
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
-      "prompt": "Low caliber gunshot with a deep bass punch, suppressed pistol firing, short powerful thump with low-end boom, satisfying",
+      "prompt": "Deep sub-bass cannon boom with reverberating low-end rumble, distant artillery fired in a valley, heavy bass drop impact fading into echo",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
     },
@@ -53,7 +53,7 @@
     },
     "player_turn": {
       "file": "assets/audio/sfx/player_turn.ogg",
-      "prompt": "Two-note casino notification chime, confident ding-dong like a hotel bell, clear and present, attention getting",
+      "prompt": "Quick bright marimba two-note ping, warm wooden mallet on resonant bar, clean melodic notification",
       "duration_seconds": 0.5,
       "prompt_influence": 0.6
     },
@@ -107,7 +107,7 @@
     },
     "attack_hit": {
       "file": "assets/audio/sfx/attack_hit.ogg",
-      "prompt": "Quick satisfying sword swing and connect, clean blade whoosh followed by a tight pop impact, classic RPG melee hit, not heavy or harsh",
+      "prompt": "Quick sword slash connecting with flesh, short sharp swipe with a wet snapping impact, fast and precise melee strike",
       "duration_seconds": 0.5,
       "prompt_influence": 0.6
     },
@@ -119,13 +119,13 @@
     },
     "critical_hit": {
       "file": "assets/audio/sfx/critical_hit.ogg",
-      "prompt": "Devastating impact with a bass boom and bright metallic ring, powerful critical strike, satisfying crunch, dramatic",
+      "prompt": "Explosive critical strike with deep bass slam and a sharp crack, bone-crunching power hit with reverb, devastating blow",
       "duration_seconds": 0.7,
       "prompt_influence": 0.5
     },
     "damage_taken": {
       "file": "assets/audio/sfx/damage_taken.ogg",
-      "prompt": "Punch landing on body armor, solid impact thud with a dull crunch, taking a hit",
+      "prompt": "Leather armor absorbing a blow, muffled fleshy impact with a short grunt, character wincing from damage",
       "duration_seconds": 0.5,
       "prompt_influence": 0.5
     },
@@ -143,13 +143,13 @@
     },
     "buff": {
       "file": "assets/audio/sfx/buff.ogg",
-      "prompt": "Ascending harp glissando with a confident shimmer, magical power-up strengthening, encouraging upward sweep",
+      "prompt": "Quick magical power-up whoosh with rising pitch, energizing upward sweep of warm synth, stat boost activated",
       "duration_seconds": 0.8,
       "prompt_influence": 0.5
     },
     "debuff": {
       "file": "assets/audio/sfx/debuff.ogg",
-      "prompt": "Descending trombone wobble, weakening comical slide downward, stat reduced, deflating",
+      "prompt": "Sad descending pitch drop, deflating rubber balloon losing air, comical weakening spiral downward",
       "duration_seconds": 0.8,
       "prompt_influence": 0.5
     },
