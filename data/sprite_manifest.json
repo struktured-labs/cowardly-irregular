@@ -1529,5 +1529,132 @@
         }
       }
     }
+  },
+  "overworld_player_sheets": {
+    "fighter": {
+      "path": "res://assets/sprites/jobs/fighter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "cleric": {
+      "path": "res://assets/sprites/jobs/cleric/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "mage": {
+      "path": "res://assets/sprites/jobs/mage/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "rogue": {
+      "path": "res://assets/sprites/jobs/rogue/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "bard": {
+      "path": "res://assets/sprites/jobs/bard/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    }
   }
 }
