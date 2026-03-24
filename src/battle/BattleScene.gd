@@ -2083,6 +2083,15 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 			"blind":
 				sprite.modulate = Color(0.6, 0.6, 0.7)   # Dark blue-gray
 				return
+			"confuse":
+				sprite.modulate = Color(0.9, 0.6, 1.0)  # Light purple
+				return
+			"fear":
+				sprite.modulate = Color(0.6, 0.6, 0.6)  # Desaturated gray
+				return
+			"charm":
+				sprite.modulate = Color(1.0, 0.7, 0.8)  # Pink
+				return
 	# Unknown status — leave tint neutral
 	sprite.modulate = Color.WHITE
 

@@ -1121,6 +1121,49 @@ func _execute_next_action() -> void:
 			_execute_next_action()
 			return
 
+	if combatant.has_status("confuse"):
+		# 40% chance to snap out each turn
+		if randf() < 0.4:
+			combatant.remove_status("confuse")
+			battle_log_message.emit("[color=yellow]%s[/color] snapped out of confusion!" % combatant.combatant_name)
+		else:
+			# Attack a random target (could be ally or enemy)
+			var all_alive = []
+			for p in player_party:
+				if p and p.is_alive:
+					all_alive.append(p)
+			for e in enemy_party:
+				if e and e.is_alive:
+					all_alive.append(e)
+			if all_alive.size() > 0:
+				var random_target = all_alive[randi() % all_alive.size()]
+				battle_log_message.emit("[color=yellow]%s[/color] is [color=purple]confused[/color] and attacks wildly!" % combatant.combatant_name)
+				_execute_attack(combatant, random_target)
+				return
+
+	if combatant.has_status("fear"):
+		# 25% chance to overcome fear each turn
+		if randf() < 0.25:
+			combatant.remove_status("fear")
+			battle_log_message.emit("[color=yellow]%s[/color] overcame their fear!" % combatant.combatant_name)
+		elif randf() < 0.5:
+			battle_log_message.emit("[color=yellow]%s[/color] is [color=gray]paralyzed with fear[/color]!" % combatant.combatant_name)
+			action_executing.emit(combatant, {"type": "fear_skip"})
+			_execute_next_action()
+			return
+		# If not skipping, fear still applies — attack proceeds but damage reduction handled elsewhere
+
+	if combatant.has_status("charm"):
+		# 35% chance to break free each turn
+		if randf() < 0.35:
+			combatant.remove_status("charm")
+			battle_log_message.emit("[color=yellow]%s[/color] broke free from charm!" % combatant.combatant_name)
+		else:
+			battle_log_message.emit("[color=yellow]%s[/color] is [color=pink]charmed[/color] and won't act!" % combatant.combatant_name)
+			action_executing.emit(combatant, {"type": "charm_skip"})
+			_execute_next_action()
+			return
+
 	# Execute based on action type
 	match action.get("type", ""):
 		"attack":
@@ -1379,6 +1422,8 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		return
 
 	var base_damage = attacker.get_buffed_stat("attack", attacker.attack)
+	if attacker.has_status("fear"):
+		base_damage = int(base_damage * 0.5)
 	var vrange = volatility.get_variance_range(attacker) if volatility else Vector2(0.85, 1.15)
 	var variance = randf_range(vrange.x, vrange.y)
 	var damage = int(base_damage * variance)
@@ -1494,6 +1539,8 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 
 func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var base_damage = caster.get_buffed_stat("attack", caster.attack)
+	if caster.has_status("fear"):
+		base_damage = int(base_damage * 0.5)
 	var multiplier = ability.get("damage_multiplier", 1.0)
 	var crit_chance = ability.get("crit_chance", 0.0)
 
