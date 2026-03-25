@@ -215,7 +215,8 @@ func setup(scene: Node2D, player: Node2D) -> void:
 		_pending_dissolve_in = false
 		call_deferred("_auto_dissolve_in")
 
-	_setup_compass()
+	# Compass disabled — only useful with camera rotation (future)
+	# _setup_compass()
 
 
 func _setup_compass() -> void:
@@ -297,31 +298,16 @@ func process_frame() -> void:
 	_player_moving = move_delta.length_squared() > 0.5
 	_last_player_pos = _player_ref.position
 
-	# Camera rotation: right stick X or Q/E keys (shoulder buttons reserved for battle)
-	var cam_input = GamepadFilter.right_stick_x
-	# Keyboard fallback
-	if abs(cam_input) < 0.1:
-		if Input.is_key_pressed(KEY_E):
-			cam_input = 1.0
-		elif Input.is_key_pressed(KEY_Q):
-			cam_input = -1.0
+	# Camera rotation DISABLED — deferred to future release.
+	# The infrastructure works (camera-driven rotation, input correction)
+	# but needs more polish before shipping. Keeping code for later.
+	_current_rotation = 0.0
+	camera_angle = 0.0
 
-	if abs(cam_input) > 0.1:
-		# Full continuous 360° rotation — no clamp, no spring-back
-		# Camera holds its orientation when input is released
-		var speed = ROTATION_SPEED_FAST if GameState.debug_log_enabled else ROTATION_SPEED
-		_current_rotation += cam_input * speed * delta
-
-	camera_angle = _current_rotation
-
-	# Drive rotation via Camera2D instead of shader UV rotation.
-	# This fixes texture sampling degradation past ~180 degrees —
-	# the screen texture now contains the correctly rotated world view,
-	# so the shader only needs to apply the perspective warp.
 	var cam = _player_ref.get_node_or_null("Camera") as Camera2D
 	if cam:
-		cam.ignore_rotation = false
-		cam.rotation = _current_rotation
+		cam.ignore_rotation = true
+		cam.rotation = 0.0
 
 	# Scroll clouds
 	if cloud_density > 0.0 and _shader_mat:
@@ -337,7 +323,7 @@ func process_frame() -> void:
 		elif _fixed_tint != Color.WHITE:
 			_shader_mat.set_shader_parameter("time_tint", _fixed_tint)
 
-	_update_compass()
+	# _update_compass()  # Disabled — no rotation
 
 	# Sway
 	var screen_move = move_delta.rotated(-_current_rotation)
