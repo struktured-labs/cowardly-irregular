@@ -819,3 +819,91 @@ func test_script_error_has_gold_reward() -> void:
 	var script_error = monsters.get("script_error", {})
 	assert_gt(script_error.get("gold_reward", 0), 0,
 		"script_error should have non-zero gold reward")
+
+
+# ===========================================================================
+# Hour 7 — Esuna cleanse, Regen wiring, Cleric ability completeness
+# ===========================================================================
+
+# ---- Esuna cleanse: removes negative statuses ----
+
+func test_esuna_cleanse_removes_poison() -> void:
+	_combatant.add_status("poison", 3)
+	assert_true(_combatant.has_status("poison"), "Should have poison")
+
+	# Simulate cleanse (same logic as BattleManager "cleanse" effect)
+	var negative = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm"]
+	for status in negative:
+		if _combatant.has_status(status):
+			_combatant.remove_status(status)
+
+	assert_false(_combatant.has_status("poison"), "Poison should be cleansed")
+
+
+func test_esuna_cleanse_removes_multiple_statuses() -> void:
+	_combatant.add_status("poison", 3)
+	_combatant.add_status("blind", 2)
+	_combatant.add_status("confuse", 4)
+	assert_eq(_combatant.status_effects.size(), 3, "Should have 3 statuses")
+
+	var negative = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm"]
+	for status in negative:
+		if _combatant.has_status(status):
+			_combatant.remove_status(status)
+
+	assert_eq(_combatant.status_effects.size(), 0, "All negative statuses should be cleansed")
+
+
+func test_esuna_cleanse_preserves_regen() -> void:
+	_combatant.add_status("regen", 5)
+	_combatant.add_status("poison", 3)
+
+	var negative = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm"]
+	for status in negative:
+		if _combatant.has_status(status):
+			_combatant.remove_status(status)
+
+	assert_false(_combatant.has_status("poison"), "Poison should be cleansed")
+	assert_true(_combatant.has_status("regen"), "Regen should NOT be cleansed (positive status)")
+
+
+# ---- Cleric ability completeness ----
+
+func test_cleric_has_esuna_and_regen() -> void:
+	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(file, "jobs.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "jobs.json should parse")
+	var jobs = json.data
+
+	var cleric = jobs.get("cleric", {})
+	var abilities = cleric.get("abilities", [])
+	assert_true("esuna" in abilities, "Cleric should have Esuna")
+	assert_true("regen" in abilities, "Cleric should have Regen")
+	assert_true("cure" in abilities, "Cleric should have Cure")
+	assert_true("cura" in abilities, "Cleric should have Cura")
+	assert_true("raise" in abilities, "Cleric should have Raise")
+	assert_true("protect" in abilities, "Cleric should have Protect")
+
+
+# ---- Mage tier 2 spell completeness ----
+
+func test_mage_has_all_tier2_spells() -> void:
+	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(file, "jobs.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "jobs.json should parse")
+	var jobs = json.data
+
+	var mage = jobs.get("mage", {})
+	var abilities = mage.get("abilities", [])
+	assert_true("fire" in abilities, "Mage should have Fire")
+	assert_true("fira" in abilities, "Mage should have Fira")
+	assert_true("blizzard" in abilities, "Mage should have Blizzard")
+	assert_true("blizzara" in abilities, "Mage should have Blizzara")
+	assert_true("thunder" in abilities, "Mage should have Thunder")
+	assert_true("thundara" in abilities, "Mage should have Thundara")
