@@ -699,8 +699,123 @@ func test_statuses_expire_independently() -> void:
 # ---- Confuse/fear/charm visual tint colors (data-level check) ----
 
 func test_all_status_tint_statuses_are_trackable() -> void:
-	var statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm"]
+	var statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "regen"]
 	for status in statuses:
 		_combatant.add_status(status, 1)
 		assert_true(_combatant.has_status(status), "Status '%s' should be trackable" % status)
 		_combatant.remove_status(status)
+
+
+# ===========================================================================
+# Hour 5 regression tests — Esuna, Regen, Blizzara/Thundara, rewards
+# ===========================================================================
+
+# ---- Regen: heals over time ----
+
+func test_regen_heals_per_turn() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 50
+	_combatant.add_status("regen", 5)
+
+	_combatant.update_buff_durations()
+	# Regen heals 5% max HP = 5 HP per turn
+	assert_eq(_combatant.current_hp, 55, "Regen should heal 5%% max HP (5 HP)")
+
+
+func test_regen_capped_at_max_hp() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 98
+	_combatant.add_status("regen", 3)
+
+	_combatant.update_buff_durations()
+	assert_eq(_combatant.current_hp, 100, "Regen should not exceed max HP")
+
+
+func test_regen_expires_after_duration() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 50
+	_combatant.add_status("regen", 2)
+
+	_combatant.update_buff_durations()
+	_combatant.update_buff_durations()
+	assert_false(_combatant.has_status("regen"), "Regen should expire after 2 ticks")
+
+
+func test_regen_and_poison_coexist() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 80
+	_combatant.add_status("poison", 3)
+	_combatant.add_status("regen", 3)
+
+	_combatant.update_buff_durations()
+	# Poison: -5 HP, Regen: +5 HP — net zero
+	assert_eq(_combatant.current_hp, 80, "Poison and regen should cancel out (5%% each)")
+
+
+# ---- Data: Blizzara/Thundara exist and match Fira ----
+
+func test_tier2_spells_exist_and_match() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	# All three tier 2 spells should exist
+	assert_true(abilities.has("fira"), "Fira should exist")
+	assert_true(abilities.has("blizzara"), "Blizzara should exist")
+	assert_true(abilities.has("thundara"), "Thundara should exist")
+
+	# All should have same MP cost and damage multiplier
+	assert_eq(abilities["fira"]["mp_cost"], abilities["blizzara"]["mp_cost"],
+		"Fira and Blizzara should have same MP cost")
+	assert_eq(abilities["fira"]["mp_cost"], abilities["thundara"]["mp_cost"],
+		"Fira and Thundara should have same MP cost")
+	assert_eq(abilities["fira"]["damage_multiplier"], abilities["blizzara"]["damage_multiplier"],
+		"Fira and Blizzara should have same damage multiplier")
+
+
+# ---- Data: Esuna and Regen exist in abilities.json ----
+
+func test_esuna_exists() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	assert_true(abilities.has("esuna"), "Esuna should exist")
+	assert_eq(abilities["esuna"]["effect"], "cleanse", "Esuna should have cleanse effect")
+
+
+func test_regen_spell_exists() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	assert_true(abilities.has("regen"), "Regen should exist")
+	assert_eq(abilities["regen"]["effect"], "regen", "Regen should have regen effect")
+
+
+# ---- Data: script_error no longer has 0 gold ----
+
+func test_script_error_has_gold_reward() -> void:
+	var file = FileAccess.open("res://data/monsters.json", FileAccess.READ)
+	assert_not_null(file, "monsters.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "monsters.json should parse")
+	var monsters = json.data
+
+	var script_error = monsters.get("script_error", {})
+	assert_gt(script_error.get("gold_reward", 0), 0,
+		"script_error should have non-zero gold reward")
