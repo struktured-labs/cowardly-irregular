@@ -37,6 +37,7 @@ DebugLogOverlay="*res://src/ui/DebugLogOverlay.gd"
 GamepadFilter="*res://src/input/GamepadFilter.gd"
 InputProfileManager="*res://src/input/InputProfileManager.gd"
 MouseCursorManager="*res://src/input/MouseCursorManager.gd"
+VirtualGamepad="*res://src/ui/VirtualGamepad.gd"
 InputLockManager="*res://src/input/InputLockManager.gd"
 
 [display]
