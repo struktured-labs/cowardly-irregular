@@ -45,6 +45,7 @@ var _mode7: Mode7Overlay
 var _zone_popup: ZoneNamePopup
 var _danger_zone: DangerZone
 var _minimap: OverworldMinimap
+var _zone_particles: ZoneParticles
 
 
 func _ready() -> void:
@@ -81,6 +82,11 @@ func _ready() -> void:
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
 
+	# Zone ambient particles (leaves, snow, dust, etc.)
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -92,6 +98,8 @@ func _process(_delta: float) -> void:
 		_update_encounter_zone(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
 	if _danger_zone:
 		_danger_zone.process(_delta)
 	if _mode7:
@@ -431,6 +439,8 @@ func _update_encounter_zone(pos: Vector2) -> void:
 		_apply_zone_encounters(new_zone)
 		if _zone_popup:
 			_zone_popup.show_zone(new_zone)
+		if _zone_particles:
+			_zone_particles.update_zone(new_zone)
 
 
 func _get_zone_for_tile(tx: int, ty: int) -> String:
