@@ -519,6 +519,9 @@ func _on_title_new_game() -> void:
 	"""Handle new game selected from title screen"""
 	print("[GAME] New Game selected")
 	_close_title_screen()
+	# Wait for title screen to actually be removed before starting cutscene
+	await get_tree().process_frame
+	await get_tree().process_frame
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
 	# Play prologue cutscene, then start exploration
