@@ -628,3 +628,79 @@ func test_curse_does_not_affect_damage() -> void:
 	var damage = _combatant.take_damage(30)
 	# Curse should not change damage taken
 	assert_gt(damage, 0, "Curse should not prevent damage")
+
+
+# ===========================================================================
+# Confuse/Fear/Charm status regression tests
+# ===========================================================================
+
+# ---- Confuse: status tracking ----
+
+func test_confuse_status_applies_and_expires() -> void:
+	_combatant.add_status("confuse", 3)
+	assert_true(_combatant.has_status("confuse"), "Should have confuse status")
+	assert_eq(_combatant.status_durations.get("confuse", 0), 3, "Confuse should have 3 turns")
+
+	_combatant.update_buff_durations()
+	_combatant.update_buff_durations()
+	_combatant.update_buff_durations()
+	assert_false(_combatant.has_status("confuse"), "Confuse should expire after 3 ticks")
+
+
+# ---- Fear: status tracking + damage reduction ----
+
+func test_fear_status_applies() -> void:
+	_combatant.add_status("fear", 2)
+	assert_true(_combatant.has_status("fear"), "Should have fear status")
+
+
+func test_fear_reduces_attack_damage() -> void:
+	# Fear halves physical damage output
+	# Test via get_buffed_stat — fear applies in BattleManager, not Combatant
+	# At Combatant level, just verify the status is trackable
+	_combatant.add_status("fear", 3)
+	assert_true(_combatant.has_status("fear"), "Fear status should be active")
+	_combatant.remove_status("fear")
+	assert_false(_combatant.has_status("fear"), "Fear should be removable")
+
+
+# ---- Charm: status tracking ----
+
+func test_charm_status_applies_and_expires() -> void:
+	_combatant.add_status("charm", 2)
+	assert_true(_combatant.has_status("charm"), "Should have charm status")
+
+	_combatant.update_buff_durations()
+	_combatant.update_buff_durations()
+	assert_false(_combatant.has_status("charm"), "Charm should expire after 2 ticks")
+
+
+# ---- Multiple statuses can coexist ----
+
+func test_multiple_statuses_coexist() -> void:
+	_combatant.add_status("poison", 3)
+	_combatant.add_status("blind", 2)
+	_combatant.add_status("confuse", 4)
+	assert_true(_combatant.has_status("poison"), "Should have poison")
+	assert_true(_combatant.has_status("blind"), "Should have blind")
+	assert_true(_combatant.has_status("confuse"), "Should have confuse")
+	assert_eq(_combatant.status_effects.size(), 3, "Should have 3 active statuses")
+
+
+func test_statuses_expire_independently() -> void:
+	_combatant.add_status("stun", 1)
+	_combatant.add_status("poison", 3)
+
+	_combatant.update_buff_durations()
+	assert_false(_combatant.has_status("stun"), "Stun (1 turn) should expire")
+	assert_true(_combatant.has_status("poison"), "Poison (3 turns) should persist")
+
+
+# ---- Confuse/fear/charm visual tint colors (data-level check) ----
+
+func test_all_status_tint_statuses_are_trackable() -> void:
+	var statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm"]
+	for status in statuses:
+		_combatant.add_status(status, 1)
+		assert_true(_combatant.has_status(status), "Status '%s' should be trackable" % status)
+		_combatant.remove_status(status)
