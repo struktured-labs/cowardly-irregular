@@ -37,7 +37,8 @@ enum LoopState {
 	TITLE,
 	BATTLE,
 	EXPLORATION,
-	AUTOGRIND
+	AUTOGRIND,
+	CUTSCENE
 }
 
 var current_state: LoopState = LoopState.EXPLORATION
@@ -511,12 +512,32 @@ func _close_title_screen() -> void:
 		_title_layer = null
 
 
+## Cutscene system
+var _cutscene_director: Node = null
+
 func _on_title_new_game() -> void:
 	"""Handle new game selected from title screen"""
 	print("[GAME] New Game selected")
 	_close_title_screen()
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
+	# Play prologue cutscene, then start exploration
+	_play_new_game_cutscenes()
+
+
+func _play_new_game_cutscenes() -> void:
+	"""Play prologue cutscene on new game, then start exploration."""
+	current_state = LoopState.CUTSCENE
+	if not _cutscene_director:
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+	_cutscene_director.cutscene_finished.connect(_on_prologue_finished, CONNECT_ONE_SHOT)
+	_cutscene_director.play_cutscene("world1_prologue")
+
+
+func _on_prologue_finished(_cutscene_id: String) -> void:
+	"""After prologue, start exploration."""
+	current_state = LoopState.EXPLORATION
 	_start_exploration()
 
 
