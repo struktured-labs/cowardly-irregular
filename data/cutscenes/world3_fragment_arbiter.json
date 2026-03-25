@@ -1,0 +1,82 @@
+{
+  "id": "world3_fragment_arbiter",
+  "title": "Fragment: The Circled Entry",
+  "world": 3,
+  "trigger": "arbiter_efficiency_defeated",
+  "location": "ironhaven_control_room_logshelf",
+  "description": "Found on the log shelf in the Ironhaven Control Room after defeating the Arbiter of Efficiency. A calibration log, bound in worn leather, open to a page where one entry has been circled in a hand that is not the same as the hand that wrote the rest.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The control room was unchanged except in the way that rooms are changed by the absence of the person who ran them. Every dial still in position, every log still on its shelf, the pneumatic tubes still connected to their dispatch stations. The machinery of administration, intact and purposeless.",
+      "On the third shelf from the top, pulled slightly forward from the rest as if someone had left it accessible on purpose: a calibration log. The binding was worn smooth at the spine from being opened the same way thousands of times. The pages were dense with entries in a precise technical hand.",
+      "One page near the back had a circle drawn around a single entry. The circle was in a different ink — thicker, drawn with more pressure, the mark of a hand returning to something after deciding to return to it."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The circled entry read only: deviation within acceptable parameters — source unresolved. Picking up the log, the Arbiter's voice arrived, calibrated and even, like a dial being read correctly for the first time."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of Efficiency",
+        "text": "I optimized the intake process, the sorting process, the output verification process, the verification of the verification. I had ratios for everything. Output per hour, error rate per thousand units, downtime factored against throughput lost.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of Efficiency",
+        "text": "I never once optimized for the question of why the factory was producing what it produced.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of Efficiency",
+        "text": "That entry I circled — a deviation in the output that didn't match any known failure mode. I logged it, assigned it acceptable-parameters status, moved on.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of Efficiency",
+        "text": "I circled it later because it was the only moment in twelve years of logs where something happened that the process hadn't produced on purpose. Something extra. I optimized everything except the question of what that was.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of Efficiency",
+        "text": "I think the answer to why might have been in that deviation. I filed it away efficiently.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.1},
+
+    {"type": "narration", "text": "The log was dense and complete and entirely coherent. Every entry cross-referenced, every ratio supported by the one above and below it. A perfect record of everything the factory had done, optimized down to the smallest recoverable margin, with a single circle drawn around the one thing it hadn't been able to account for."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The circle was the only mark in the entire log that wasn't part of the system."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "grant_item", "item": "world3_fragment_arbiter_steampunk", "name": "Arbiter's Calibration Log", "description": "A log where every entry is optimized except one, which is only circled. Grants +8 MP. The bearer's magic spells sometimes produce an unexplained secondary effect — the unresolved deviation, still running. Tooltip: \"Source unresolved. Filed under: acceptable.\""},
+
+    {"type": "set_flag", "flag": "fragment_arbiter_steampunk_collected", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

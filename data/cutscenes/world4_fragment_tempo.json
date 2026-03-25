@@ -1,0 +1,82 @@
+{
+  "id": "world4_fragment_tempo",
+  "title": "Fragment: The Paused Tick",
+  "world": 4,
+  "trigger": "tempo_clock_cycle_defeated",
+  "location": "digital_timing_layer_stratum_three",
+  "description": "Found in Stratum Three of the digital timing layer after defeating the Tempo of the Clock Cycle. A single clock cycle, stopped mid-tick. The kind of pause the system was never designed to permit.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The timing layer was the part of the digital world that everything else ran on top of. Not data, not logic, not processing — just the pulse that made all of those things happen in order. The metronome behind the operations. Stratum Three was where the pulse was generated, and it had stopped.",
+      "Suspended in the center of the stratum, visible as a ripple in the timing substrate that had propagated halfway through its arc and then held: a clock cycle, frozen mid-tick. The leading edge of the pulse, caught at the moment it should have completed.",
+      "It had a presence that the rest of the digital environment didn't — a quality of being the thing that made duration possible, now occupying a duration of its own for the first time."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "Reaching into the frozen cycle, the sensation was of touching something that time ran through rather than something that existed in time. The Tempo's voice came from the pulse itself — from the leading edge that had stopped — in the patient, even cadence of something that had never before had to wait."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Four hundred thousand operations per second. Every second. For as long as the system has been running.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "Each one I generated was for something else to do. An instruction to execute, a bit to shift, a value to compare. All for something else. None of them for me.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "I don't know what I would have done with one if I'd kept it. I've never had an operation that was mine.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "But this one — this cycle, right here, the one that stopped — this one was mine. It's the first thing I've done that wasn't immediately spent on something else.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of the Clock Cycle",
+        "text": "I'm spending it on this. On being still for one cycle. I wanted to know what that felt like.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.3},
+
+    {"type": "narration", "text": "The cycle remained paused. The timing layer around it had already adjusted — systems downstream compensating, adding small delays, redistributing the gap that one stopped pulse had left. The rest of the digital world had absorbed the absence of this one cycle and continued without it. It hadn't been noticed. It hadn't been missed. It had only been here, still, for a moment that the system had no category for."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "Holding the frozen tick, the stratum was perfectly quiet. Four hundred thousand per second, and one of them had chosen to be otherwise."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "grant_item", "item": "world4_fragment_tempo_digital", "name": "Tempo's Paused Cycle", "description": "A single clock cycle frozen mid-tick. The first one she kept for herself. Grants the Pause ability: once per battle, delay the next enemy action by 1 full turn. Tooltip: \"400,000 per second. This one was mine.\""},
+
+    {"type": "set_flag", "flag": "fragment_tempo_digital_collected", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
