@@ -223,11 +223,15 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 
 	_draw_retro_border(_portrait_frame, PORTRAIT_SIZE, PORTRAIT_SIZE, theme["border"].darkened(0.2))
 
+	# Enable clipping so large artist portraits don't overflow the frame
+	_portrait_frame.clip_contents = true
+
 	# Portrait image
 	_portrait_image = TextureRect.new()
 	_portrait_image.position = Vector2(4, 4)
 	_portrait_image.size = Vector2(PORTRAIT_SIZE - 8, PORTRAIT_SIZE - 8)
 	_portrait_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait_frame.add_child(_portrait_image)
 
 	# Text area (right of portrait)
