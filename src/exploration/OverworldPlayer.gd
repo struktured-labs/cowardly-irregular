@@ -232,22 +232,24 @@ func _setup_sprite() -> void:
 	collision_mask = 1   # Player collides with walls (layer 1)
 
 
-var _cant_move_time: float = 0.0
+func _can_move() -> bool:
+	# Layer 1: GameLoop state — only move during EXPLORATION
+	var game_loop = get_node_or_null("/root/GameLoop")
+	if game_loop and game_loop.current_state != game_loop.LoopState.EXPLORATION:
+		return false
+	# Layer 2: Named lock stack — NPC dialogue, shops, etc.
+	if InputLockManager.is_locked():
+		return false
+	# Layer 3: Legacy flag — kept for compatibility during migration
+	return can_move
+
 
 func _physics_process(delta: float) -> void:
-	if not can_move:
+	if not _can_move():
 		velocity = Vector2.ZERO
 		is_moving = false
-		_cant_move_time += delta
-		# Never stay frozen more than 2 seconds — if battle/transition
-		# didn't take over by now, something failed. Unfreeze.
-		if _cant_move_time > 2.0:
-			can_move = true
-			_cant_move_time = 0.0
 		return
-	_cant_move_time = 0.0
 
-	# BARE MINIMUM: input → velocity → move_and_slide. Nothing else.
 	var input_dir = Vector2.ZERO
 	if Input.is_action_pressed("ui_left"):
 		input_dir.x -= 1
