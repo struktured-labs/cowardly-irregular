@@ -247,10 +247,6 @@ func _physics_process(delta: float) -> void:
 	# Rotate input to match Mode 7 camera direction
 	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
 		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
-		# Snap to nearest 8-direction to prevent continuous sliding
-		var angle = input_dir.angle()
-		angle = round(angle / (PI / 4.0)) * (PI / 4.0)
-		input_dir = Vector2.from_angle(angle)
 
 	# Keyboard/gamepad cancels click-to-move
 	if input_dir != Vector2.ZERO:
@@ -1430,12 +1426,6 @@ func set_can_move(enabled: bool) -> void:
 	if not enabled:
 		velocity = Vector2.ZERO
 		is_moving = false
-		# Safety: re-enable movement after 5s if nothing restores it (prevents permanent freeze)
-		get_tree().create_timer(5.0).timeout.connect(func():
-			if not can_move:
-				push_warning("[PLAYER] Movement was frozen for 5s — auto-restoring")
-				can_move = true
-		)
 
 
 ## Teleport player to position
