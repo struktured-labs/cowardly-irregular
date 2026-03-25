@@ -214,6 +214,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_portrait_frame = Control.new()
 	_portrait_frame.position = Vector2(TILE_SIZE * 2, TILE_SIZE * 2)
 	_portrait_frame.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	_portrait_frame.clip_contents = true
 	_dialogue_box.add_child(_portrait_frame)
 
 	var portrait_bg = ColorRect.new()
@@ -227,7 +228,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_portrait_image = TextureRect.new()
 	_portrait_image.position = Vector2(4, 4)
 	_portrait_image.size = Vector2(PORTRAIT_SIZE - 8, PORTRAIT_SIZE - 8)
-	_portrait_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_portrait_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_portrait_frame.add_child(_portrait_image)
 
 	# Text area (right of portrait)
