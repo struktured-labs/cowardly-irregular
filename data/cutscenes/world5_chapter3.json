@@ -1,0 +1,277 @@
+{
+  "id": "world5_chapter3",
+  "title": "The Calibrant's Desk",
+  "world": 5,
+  "trigger": "world5_deep_network_entry",
+  "description": "Deep in the source layer, the party finds a workspace — not a throne room. A desk with the Calibrant's personal annotations on the party's combat logs. The notes become less formal as the worlds progress. The party reads their own story from the other side.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 0.6},
+    {"type": "play_music", "track": "cutscene_w5_calibrant_desk"},
+
+    {"type": "narration", "lines": [
+      "Past the Warden of the Firewall, deeper than the processing nodes, past the encounter engine visible in its raw form — past all of it, at the end of something that had never been meant to be navigated — there was a room.",
+      "Not a throne room. Not a control center. Not the digital cathedral of a god surveying their creation.",
+      "A desk. A chair. A terminal. The specific quality of light that exists when a single monitor is the only light source in a dark room."
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "play_sfx", "sfx": "reality_glitch"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "This is it. The core.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "It looks like someone's office.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "It is someone's office.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The desk was covered in documents. Printed from the terminal, marked up by hand. The Mage approached it — moved aside a stack of routing logs — and found what was underneath."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "These are combat logs.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Our combat logs?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Every fight. World 1 through World 4. Every battle in the Whispering Cave, every encounter in Maple Heights, every Masterite. All of it. Annotated.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Read them.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The Mage read them."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "World 1, first day. Official notation — 'Subject group combat throughput: nominal. Pattern variance: within projected range. Recommend standard difficulty scaling.' And then, in the margin, handwritten: 'The fighter stood in front of the healer when the Warden swept. Not scripted. Instinct.'",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Mage",
+        "text": "And below that: 'Is instinct a designed behavior or an emergent one? Logged for follow-up.'",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "World 2. Official notation — 'Deviation from projected exploration path. Group identified the monitoring system eleven hours ahead of schedule. Accelerating reveal protocol.' And in the margin: 'They noticed the clock. Nobody notices the clock. I have run this world four times and no one has ever noticed the clock.'",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Then: 'I am spending too much time on the margin notes. This is not productive annotation. This is—' And then it stops. Mid-sentence.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "What happens in World 3?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The official notation gets shorter. The margin notes get longer. World 3, after the Warden of the Mainspring fight — official: 'Warden defeated. Transitioning to direct engagement protocol.' And in the margin, three full paragraphs.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Mage",
+        "text": "He read the paragraph. The one where the Warden asked about the incident log. Where the incidents go. That question. I didn't answer it well. I gave the Warden a function, not a reason. There is a difference between those two things and I keep discovering it in retrospect.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The Cleric had found the World 4 annotations. The handwriting was different there — looser, faster, less controlled. The annotations of someone who has stopped trying to maintain the separation between the official record and the personal one."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "Here. After the assembly line. After the workers who'd forgotten their names. The official notation is a single line: 'Subject group progress: nominal. Masterite deployment sequence active.' And then — almost the entire page — in handwriting so compressed it must have been written fast, or late, or both:",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "'They're getting better at this faster than the curve predicted. Not at combat — though they are — but at noticing. Every world I have built around a system that should be invisible, and they walk in and within hours they are explaining the system to each other in the break rooms. I designed the workers without names as a practical optimization. They noticed in forty minutes. They stood in front of a person who'd had her name removed and they were angry about it. I did not design for that response. I do not know what I designed for, now, when I try to reconstruct the original intent. The original intent was mastery evaluation. But you cannot get angry at a mastery evaluation on behalf of an NPC. That is not a mastery metric. That is—'",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "It stops again.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Same place both times. Same word: 'that is.' Starts to say what it is. Doesn't finish.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Because saying it would change things.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "It already has.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "There was one more file on the desk. Not a printed document. A terminal window, minimized, with a blinking cursor. The Fighter opened it."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "NOTE TO SELF (current): they let the deprecated goblin finish its loop. I wrote that goblin in version 0.3. Two behaviors. I don't know where the preference about its own loop came from. I've reviewed the code seventeen times. There is no condition that should produce a preference about completion. But it wanted to complete its loop, and they let it. The goblin is still running, in the deprecated sector, in the space I forgot to clean up. I keep meaning to issue the removal command. I keep not issuing it.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "",
+        "text": "NOTE TO SELF: They are approaching the core. I should be finalizing difficulty adjustments. I have been sitting here instead, reading my own annotations on a party I built challenge environments for, and I cannot find the line where I started caring about the outcome rather than the measurement. There is a line. It exists. I simply cannot locate it in the logs.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "",
+        "text": "NOTE TO SELF: I still control the seed. Everything is still fine. The difficulty is still adjustable. The challenge is still mine to set. There are still levers I have not pulled.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "",
+        "text": "NOTE TO SELF: I don't want to pull them.",
+        "theme": "system",
+        "portrait": "system"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The cursor blinked. The room was quiet in the specific way that rooms are quiet when their occupant has just left. Not empty — recently vacated. The warmth of recent presence still in it."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "They were here. Just now. They know we're reading this.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "They left it for us to find.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Or they left it because they couldn't keep it inside the system any longer and nowhere else was safe to put it.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Is there a difference?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "There's a difference between saying something because you intend it to be heard and saying something because you can't not say it. But both of them involve saying it. And now we've heard it.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The terminal cursor blinked once more. Then the screen went dark. The Calibrant, somewhere in the system above them, had closed the file. The desk remained as it had been found — covered in the annotations of someone watching too carefully to remain objective, who had noticed, somewhere between World 2 and World 4, that they were no longer just watching."},
+
+    {"type": "set_flag", "flag": "world5_chapter3_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

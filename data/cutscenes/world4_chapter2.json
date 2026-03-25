@@ -1,0 +1,278 @@
+{
+  "id": "world4_chapter2",
+  "title": "The Factory Floor",
+  "world": 4,
+  "trigger": "world4_industrial_sector_entry",
+  "description": "The assembly line. Workers who have forgotten their names. The monitors go from statistics to a countdown. The PA Announcer tries to broadcast something unauthorized and the system cuts her off.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "world4_overworld"},
+
+    {"type": "narration", "lines": [
+      "The industrial sector was where the numbers were made.",
+      "Not the products — the numbers. The products were a byproduct of the numbers. The machines ran to generate throughput data. The throughput data justified the machines. The workers ran the machines and generated the workers-to-throughput ratio, which was itself a number being generated for some larger calculation the workers could not see.",
+      "Every horizontal surface was vibrating at a frequency that was too low to hear and too constant to ignore."
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "The monitors changed.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "They're not showing productivity stats anymore. There's a number in the corner of every screen. Going down.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "A countdown.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "To what?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Nothing's labeled. The Director doesn't label things. Labeling implies the thing needs to be explained.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The workers on the assembly line did not look up. They had been here long enough that the assembly line was no longer a place they were. It was something they did. Something they were."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "Excuse me — what are you assembling?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Worker",
+        "text": "Unit 7 performs the fastening operation at station 7.",
+        "theme": "villager",
+        "portrait": "villager"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "That's — you called yourself Unit 7.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Worker",
+        "text": "Unit 7 is the designation for this station. This station performs the fastening operation.",
+        "theme": "villager",
+        "portrait": "villager"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "What's your name?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The worker at station 7 stopped. Not because the question required stopping. Because something about the question produced a pause that the protocol had not accounted for — a gap between the query and the available response, in the space where a name used to live."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Worker",
+        "text": "Unit 7 performs the fastening operation.",
+        "theme": "villager",
+        "portrait": "villager"
+      },
+      {
+        "speaker": "Worker",
+        "text": "At station 7.",
+        "theme": "villager",
+        "portrait": "villager"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "How long has she been like this?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Shift Supervisor",
+        "text": "She came up through the general labor pool. This station was an efficiency improvement — fewer names to track means faster response to reassignment requests. The role has a designation. The designation is sufficient.",
+        "theme": "villager",
+        "portrait": "villager"
+      },
+      {
+        "speaker": "Shift Supervisor",
+        "text": "Move along. Standing still is not a scheduled activity.",
+        "theme": "villager",
+        "portrait": "villager"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The PA Announcer stood in front of the station's speaker panel. The PA system ran through every corridor, every cafeteria, every break room. The Announcer could feel its frequency the way you feel a draft under a door. She had a broadcast access code — they'd issued it to her the moment she became a PA Announcer, because the PA system needed operators, and operators needed access, and the Director had not anticipated that an operator might decide what to broadcast."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What are you doing?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "There are forty-seven stations on this line. Forty-seven people who've had their names removed. I'm going to say them back.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You don't know their names.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "I'm going to say that someone should.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "play_sfx", "sfx": "intercom_click"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Attention, Rivet Row. This is an unscheduled broadcast. The workers on Assembly Line C have names. They had names before they became numbers. The names are—",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "play_sfx", "sfx": "static_burst"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "NON-STANDARD CONTENT DETECTED. BROADCAST SUSPENDED. REVERTING TO APPROVED MESSAGING.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "",
+        "text": "TOGETHER, WE ACHIEVE OPTIMAL OUTCOMES. DEVIATION FROM PROTOCOL IS INEFFICIENCY. INEFFICIENCY IS WASTE. WASTE IS THE ENEMY OF PROGRESS. PROGRESS IS THE GOAL.",
+        "theme": "system",
+        "portrait": "system"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Faster than I thought.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "It auto-reverted. The system monitors for non-standard content in real time.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Bard",
+        "text": "The approved messaging is about progress. Theirs. Toward a goal they didn't choose. Broadcast at them, not to them.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "There's a difference between announcement and voice.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "There's always been a difference. The Director gave me equipment to announce with. It didn't occur to her I might want to speak.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "At station 7, the worker had not resumed the fastening operation."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Worker",
+        "text": "The broadcast cut off.",
+        "theme": "villager",
+        "portrait": "villager"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Yes.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Worker",
+        "text": "There was going to be a name.",
+        "theme": "villager",
+        "portrait": "villager"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "We'll find another way to say it.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "lines": [
+      "The countdown in the corner of every monitor had dropped by twelve.",
+      "Whatever it was counting toward, it was not going to wait."
+    ]},
+
+    {"type": "set_flag", "flag": "world4_chapter2_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

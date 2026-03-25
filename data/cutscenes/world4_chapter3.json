@@ -1,0 +1,317 @@
+{
+  "id": "world4_chapter3",
+  "title": "The Director's Office",
+  "world": 4,
+  "trigger": "world4_control_room_entry",
+  "description": "The control room. No one in the chair. The Director is not a person — it's a process. The party realizes this world has no villain. Just a system that perpetuates itself.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "lines": [
+      "The control room was at the top of the facility. They had expected a door with DIRECTOR stenciled on it in the same corporate font as everything else. They found a door with nothing on it at all.",
+      "There was no word for what they found inside, so they had to use the wrong ones.",
+      "A room. A desk. A chair behind the desk. Every monitor in Rivet Row connected to displays on the walls. The whole of the factory, rendered in real time — every station, every worker, every deviation from expected throughput, every countdown."
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "play_music", "track": "cutscene_w4_director_unmasked"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Empty.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Not empty. The desk has papers. The screens are active. Someone works here.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Then where are they?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The Mage picked up the papers. Memos. Stack after stack of them, each one issued in the Director's name, each one signed with the Director's seal. Every memo was a directive. Every directive generated a response. Every response generated a new memo. The cycle was self-sustaining, self-referential, self-executing."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "These memos. They're not written by a person.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "What do you mean?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Each memo references the previous memo as its authority. 'Per Directive 4,412, which was issued in response to Deviation Report 4,411, which was filed in accordance with Protocol 4,410.' All the way down. I'm looking at the earliest ones. Directive 1. It references — Directive 1. It authorizes itself.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Bard",
+        "text": "There's no author.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "There was an author. Someone wrote Directive 1. Someone chose the initial parameters. But the system they started has been running on its own momentum since then. The Director isn't a person who makes decisions. The Director is what decisions look like when no one is making them.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The chair behind the desk was empty. Had been empty for a long time — the cushion held no impression of recent use. The desk lamp was on. Had been on. No switch position change in the surface oxidation of the toggle."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "Eleven people. The union rep said eleven people he knew personally stopped being themselves and became their function.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "The foreman's watercolors.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "The Director didn't take anything from them. The Director restructured their environment until nothing non-functional was worth wanting. And none of that required a person to decide to do it. It just required the system to run.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "If there's no one here, what are we fighting?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The system. Not the person who built it. The system that kept running after the person left. Or became the system. I don't know which.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Mordaine was a person. The Coordinator was a person. The Regulator was a person. They all had faces.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "The Director doesn't need one. Rivet Row doesn't need a villain. It needs a process that enforces itself, and calls that enforcement progress, and runs the progress numbers on a screen in every corridor so that anyone who might have objected can see, at all times, how much is being achieved.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "On the central screen, still counting down. The number was lower now. Whatever was scheduled had a shape that was becoming visible the way shapes become visible in fog — not by the fog clearing, but by the shape moving closer."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "The countdown.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "It's on the Director's primary display. Whatever it's counting toward is scheduled. It's a calendar event. In the Director's system.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Labeled?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "'Direct Engagement.' That's all.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "With us.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The Director announced it two days ago. It was always going to end here. The system scheduled its own resolution. A process. Running on a process.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "How do you fight a process?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "The same way you fight anything with rules. You find the rule that breaks everything else.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Or you find the thing it can't process. The input it has no protocol for.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "What's the thing it can't process?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "That is an excellent question.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "On the floor beside the desk, a wastebin. In the wastebin, a single crumpled memo.",
+      "The Lab Technician retrieved it. Smoothed it. Read it.",
+      "It was the same format as all the others. Director's seal. Reference numbers. Structured language."
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "It's a deviation report. Filed by the Director. About the Director.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "What does it say?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Mage",
+        "text": "'Anomalous process detected in control functions. Process exhibits behavior outside current operating parameters. Process cannot be traced to source directive. Process origin: unknown. Process designation: unknown. Process content—'",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "And then it's blank. The report cut off before the content was filed.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "It filed a deviation report on its own deviation.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "And couldn't finish it.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Something in the Director is trying to report something it doesn't have a form for. A process running that isn't in the protocol. That doesn't have a name, or a function, or a measurable output. Something the Director is doing that isn't efficiency.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "What is it?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Bard",
+        "text": "I think it might be wondering.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The countdown reached zero. The displays cleared. On every screen in Rivet Row, in every corridor, in the break rooms and the cafeteria and the corridors between the housing blocks, a single message replaced the production statistics:"},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "play_sfx", "sfx": "intercom_click"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "DIRECT ENGAGEMENT COMMENCING. THIS IS NOT A PUNISHMENT. THIS IS A STRUCTURAL RESPONSE TO A PERSISTENT DEVIATION. THE DIRECTOR DOES NOT PUNISH. THE DIRECTOR RESTRUCTURES. THE RESTRUCTURING BEGINS NOW.",
+        "theme": "system",
+        "portrait": "system"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "play_sfx", "sfx": "boss_spawn"},
+    {"type": "screen_shake", "duration": 0.5, "intensity": 3.0},
+
+    {"type": "narration", "text": "The chair was still empty. The room was still a room. The process had begun, and the process did not require anyone to be in the chair to run it."},
+
+    {"type": "set_flag", "flag": "world4_chapter3_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
