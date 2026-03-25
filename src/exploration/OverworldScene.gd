@@ -44,6 +44,7 @@ var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
 var _zone_popup: ZoneNamePopup
 var _danger_zone: DangerZone
+var _minimap: OverworldMinimap
 
 
 func _ready() -> void:
@@ -75,6 +76,11 @@ func _ready() -> void:
 		add_child(_danger_zone)
 		_danger_zone.setup(self, player, danger_pts)
 
+	# Minimap with transition dots
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -84,6 +90,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if player:
 		_update_encounter_zone(player.position)
+		if _minimap:
+			_minimap.update(player.position)
 	if _danger_zone:
 		_danger_zone.process(_delta)
 	if _mode7:
