@@ -517,7 +517,7 @@ func _on_title_new_game() -> void:
 	_close_title_screen()
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
-	_play_new_game_cutscenes()
+	_start_exploration()
 
 
 func _on_title_continue() -> void:
