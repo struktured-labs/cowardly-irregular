@@ -37,8 +37,7 @@ enum LoopState {
 	TITLE,
 	BATTLE,
 	EXPLORATION,
-	AUTOGRIND,
-	CUTSCENE
+	AUTOGRIND
 }
 
 var current_state: LoopState = LoopState.EXPLORATION
@@ -97,9 +96,6 @@ var _first_launch: bool = true  # True if no save exists
 var _title_screen: Control = null
 var _title_layer: CanvasLayer = null
 
-## Cutscene system
-var _cutscene_director: CutsceneDirector = null
-
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
@@ -134,12 +130,8 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Block input handling during title screen, character creation, or cutscenes
+	# Block input handling during title screen or character creation
 	if current_state == LoopState.TITLE or _character_creation_screen:
-		return
-
-	# During cutscene, CutsceneDirector handles its own input (skip/advance)
-	if current_state == LoopState.CUTSCENE:
 		return
 
 	# During autogrind, block editor/menu but allow B to stop
@@ -560,131 +552,6 @@ func _on_title_settings() -> void:
 		)
 
 
-## Cutscene System
-
-func play_cutscene(cutscene_id: String) -> void:
-	"""Play a cutscene by ID. Transitions to CUTSCENE state and back when done."""
-	var previous_state = current_state
-	current_state = LoopState.CUTSCENE
-
-	# Pause exploration if active
-	if _exploration_scene and _exploration_scene.has_method("pause"):
-		_exploration_scene.pause()
-
-	# Create director on demand
-	if not _cutscene_director or not is_instance_valid(_cutscene_director):
-		_cutscene_director = CutsceneDirector.new()
-		add_child(_cutscene_director)
-
-	_cutscene_director.cutscene_finished.connect(
-		_on_cutscene_finished.bind(previous_state), CONNECT_ONE_SHOT
-	)
-	_cutscene_director.play_cutscene(cutscene_id)
-
-
-func play_cutscene_data(cutscene_id: String, data: Dictionary) -> void:
-	"""Play a cutscene from in-memory data (no file required)."""
-	var previous_state = current_state
-	current_state = LoopState.CUTSCENE
-
-	if _exploration_scene and _exploration_scene.has_method("pause"):
-		_exploration_scene.pause()
-
-	if not _cutscene_director or not is_instance_valid(_cutscene_director):
-		_cutscene_director = CutsceneDirector.new()
-		add_child(_cutscene_director)
-
-	_cutscene_director.cutscene_finished.connect(
-		_on_cutscene_finished.bind(previous_state), CONNECT_ONE_SHOT
-	)
-	_cutscene_director.play_cutscene_from_data(cutscene_id, data)
-
-
-func _on_cutscene_finished(_cutscene_id: String, previous_state: LoopState) -> void:
-	"""Restore state after cutscene ends."""
-	current_state = previous_state
-
-	# Resume exploration if returning to it
-	if current_state == LoopState.EXPLORATION:
-		if _exploration_scene and _exploration_scene.has_method("resume"):
-			_exploration_scene.resume()
-
-	print("[GAME] Cutscene '%s' finished, returning to %s" % [_cutscene_id, LoopState.keys()[current_state]])
-
-
-func _play_new_game_cutscenes() -> void:
-	"""Play prologue and chapter 1 cutscenes on new game, then start exploration."""
-	current_state = LoopState.CUTSCENE
-
-	if not _cutscene_director or not is_instance_valid(_cutscene_director):
-		_cutscene_director = CutsceneDirector.new()
-		add_child(_cutscene_director)
-
-	# Play prologue
-	_cutscene_director.cutscene_finished.connect(
-		_on_prologue_finished, CONNECT_ONE_SHOT
-	)
-	_cutscene_director.play_cutscene("world1_prologue")
-
-
-func _on_prologue_finished(_cutscene_id: String) -> void:
-	"""After prologue, play chapter 1."""
-	_cutscene_director.cutscene_finished.connect(
-		_on_chapter1_finished, CONNECT_ONE_SHOT
-	)
-	_cutscene_director.play_cutscene("world1_chapter1")
-
-
-func _on_chapter1_finished(_cutscene_id: String) -> void:
-	"""After chapter 1 cutscene, start exploration."""
-	current_state = LoopState.EXPLORATION
-	_start_exploration()
-
-
-func _has_cutscene_flag(flag: String) -> bool:
-	"""Check if a cutscene flag has been set."""
-	if not GameState:
-		return false
-	return GameState.game_constants.get("cutscene_flag_" + flag, false)
-
-
-func _check_area_cutscene(map_id: String) -> void:
-	"""Play first-visit cutscenes when entering certain areas."""
-	match map_id:
-		"overworld":
-			if not _has_cutscene_flag("chapter2_complete") and _has_cutscene_flag("chapter1_complete"):
-				await _play_blocking_cutscene("world1_chapter2")
-		"whispering_cave":
-			if not _has_cutscene_flag("chapter3_complete"):
-				await _play_blocking_cutscene("world1_chapter3")
-		"corrupted_forest", "eldertree_village":
-			if not _has_cutscene_flag("chapter5_complete") and _has_cutscene_flag("warden_defeated"):
-				await _play_blocking_cutscene("world1_chapter5")
-
-
-func _play_blocking_cutscene(cutscene_id: String) -> void:
-	"""Play a cutscene and await its completion (blocks caller)."""
-	var previous_state = current_state
-	current_state = LoopState.CUTSCENE
-
-	if _exploration_scene and _exploration_scene.has_method("pause"):
-		_exploration_scene.pause()
-
-	if not _cutscene_director or not is_instance_valid(_cutscene_director):
-		_cutscene_director = CutsceneDirector.new()
-		add_child(_cutscene_director)
-
-	_cutscene_director.play_cutscene(cutscene_id)
-	await _cutscene_director.cutscene_finished
-
-	current_state = previous_state
-	if current_state == LoopState.EXPLORATION:
-		if _exploration_scene and _exploration_scene.has_method("resume"):
-			_exploration_scene.resume()
-
-	print("[GAME] Area cutscene '%s' finished" % cutscene_id)
-
-
 func _show_character_creation() -> void:
 	"""Show the character creation screen"""
 	var layer = CanvasLayer.new()
@@ -716,8 +583,8 @@ func _on_character_creation_complete(customizations: Array, layer: CanvasLayer) 
 	# Save customizations
 	_save_customizations(customizations)
 
-	# Play prologue + chapter 1 cutscenes before exploration
-	_play_new_game_cutscenes()
+	# Start exploration
+	_start_exploration()
 
 
 func _on_character_creation_skipped(layer: CanvasLayer) -> void:
@@ -732,8 +599,8 @@ func _on_character_creation_skipped(layer: CanvasLayer) -> void:
 	# Create default party
 	_create_party()
 
-	# Play prologue + chapter 1 cutscenes before exploration
-	_play_new_game_cutscenes()
+	# Start exploration
+	_start_exploration()
 
 
 func _create_party_from_customizations(customizations: Array) -> void:
@@ -966,12 +833,7 @@ func _on_battle_ended(victory: bool) -> void:
 		battles_won = 0
 		_current_map_id = "overworld"
 		_spawn_point = "default"
-		await _start_exploration()
-		# Safety guarantee: ensure player can move after game-over restart
-		if _exploration_scene:
-			var player = _exploration_scene.get("player")
-			if player and player.has_method("set_can_move"):
-				player.set_can_move(true)
+		_start_exploration()
 
 
 func _wait_for_confirm() -> void:
@@ -1057,10 +919,6 @@ func _start_exploration() -> void:
 	current_scene = exploration_scene
 	_exploration_scene = exploration_scene
 
-	# Wait for scene to finish setup before spawning player
-	if exploration_scene.has_signal("exploration_ready"):
-		await exploration_scene.exploration_ready
-
 	# Spawn player at correct position
 	if exploration_scene.has_method("spawn_player_at"):
 		exploration_scene.spawn_player_at(_spawn_point)
@@ -1100,16 +958,11 @@ func _return_to_exploration() -> void:
 	await _start_exploration()
 
 	# Restore player position after scene is fully set up
-	if _exploration_scene:
+	if _player_position != Vector2.ZERO and _exploration_scene:
 		var player = _exploration_scene.get("player")
 		if player:
-			if _player_position != Vector2.ZERO:
-				player.position = _player_position
-				print("[POSITION] Restored player to: %s" % _player_position)
-			# Safety guarantee: always restore movement regardless of how battle ended
-			# (covers fresh-player default, escape, defeat, any error path)
-			if player.has_method("set_can_move"):
-				player.set_can_move(true)
+			player.position = _player_position
+			print("[POSITION] Restored player to: %s" % _player_position)
 		else:
 			push_warning("[POSITION] Could not get player from scene")
 
@@ -1189,15 +1042,17 @@ func _prewarm_area_sprites() -> void:
 
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
+	print("[GAMELOOP] _on_exploration_battle_triggered called! state=%s enemies=%s" % [current_state, enemies])
 	# Guard against battle triggers during non-exploration states
 	if current_state != LoopState.EXPLORATION:
-		print("[BATTLE] BLOCKED — state is %s, not EXPLORATION. Enemies: %s" % [LoopState.keys()[current_state], enemies])
+		print("[GAMELOOP] BLOCKED — state is %s, not EXPLORATION" % current_state)
 		return
-	print("[BATTLE] Starting battle! Enemies: %s" % [enemies])
 	# Guard against battles while menus/UIs are open
 	if _overworld_menu and is_instance_valid(_overworld_menu):
+		print("[GAMELOOP] BLOCKED — overworld menu is open")
 		return
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		print("[GAMELOOP] BLOCKED — autogrind UI is open")
 		return
 
 	# Disable player input during battle transition
@@ -1706,9 +1561,6 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 			await _area_fade_to_black()
 			await _start_exploration()
 			await _area_fade_from_black()
-
-	# Play first-visit cutscenes after area transition completes
-	await _check_area_cutscene(target_map)
 
 	# Safety cleanup: ensure fade overlay is transparent and no stale children remain
 	if _area_fade_rect:
@@ -2260,83 +2112,17 @@ func _on_grind_complete(reason: String) -> void:
 func _on_autogrind_tier_changed(new_tier: int) -> void:
 	if new_tier == 1:  # DASHBOARD
 		SoundManager.play_ui("tier_zoom_out")
-		_transition_to_dashboard()
+		_show_autogrind_dashboard()
 		if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
 			_autogrind_overlay.visible = false
 	else:  # ACCELERATED
 		SoundManager.play_ui("tier_zoom_in")
-		_transition_to_accelerated()
+		_hide_autogrind_dashboard()
 		if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
 			_autogrind_overlay.visible = true
 
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		_autogrind_ui.on_tier_changed(new_tier)
-
-
-func _transition_to_dashboard() -> void:
-	var layer = CanvasLayer.new()
-	layer.layer = 90
-	add_child(layer)
-
-	var overlay = ColorRect.new()
-	overlay.color = Color(0.08, 0.06, 0.12, 0.0)
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(overlay)
-
-	var label = Label.new()
-	label.text = "DASHBOARD MODE"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_preset(Control.PRESET_CENTER)
-	label.position = Vector2(-100, -15)
-	label.size = Vector2(200, 30)
-	label.add_theme_font_size_override("font_size", 20)
-	label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4, 0.0))
-	layer.add_child(label)
-
-	var tween = create_tween()
-	tween.tween_property(overlay, "color:a", 0.95, 0.25)
-	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 1.0, 0.2).set_delay(0.1)
-	tween.tween_interval(0.15)
-	tween.tween_callback(func():
-		_show_autogrind_dashboard()
-	)
-	tween.tween_property(overlay, "color:a", 0.0, 0.2)
-	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 0.0, 0.15)
-	tween.tween_callback(layer.queue_free)
-
-
-func _transition_to_accelerated() -> void:
-	var layer = CanvasLayer.new()
-	layer.layer = 90
-	add_child(layer)
-
-	var overlay = ColorRect.new()
-	overlay.color = Color(0.08, 0.06, 0.12, 0.0)
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(overlay)
-
-	var label = Label.new()
-	label.text = "ACCELERATED MODE"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_preset(Control.PRESET_CENTER)
-	label.position = Vector2(-110, -15)
-	label.size = Vector2(220, 30)
-	label.add_theme_font_size_override("font_size", 20)
-	label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4, 0.0))
-	layer.add_child(label)
-
-	var tween = create_tween()
-	tween.tween_property(overlay, "color:a", 0.95, 0.2)
-	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 1.0, 0.15).set_delay(0.05)
-	tween.tween_interval(0.1)
-	tween.tween_callback(func():
-		_hide_autogrind_dashboard()
-	)
-	tween.tween_property(overlay, "color:a", 0.0, 0.2)
-	tween.parallel().tween_property(label, "theme_override_colors/font_color:a", 0.0, 0.15)
-	tween.tween_callback(layer.queue_free)
 
 
 func _create_autogrind_overlay() -> void:
