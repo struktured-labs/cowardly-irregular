@@ -1042,13 +1042,17 @@ func _prewarm_area_sprites() -> void:
 
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
+	print("[GAMELOOP] _on_exploration_battle_triggered called! state=%s enemies=%s" % [current_state, enemies])
 	# Guard against battle triggers during non-exploration states
 	if current_state != LoopState.EXPLORATION:
+		print("[GAMELOOP] BLOCKED — state is %s, not EXPLORATION" % current_state)
 		return
 	# Guard against battles while menus/UIs are open
 	if _overworld_menu and is_instance_valid(_overworld_menu):
+		print("[GAMELOOP] BLOCKED — overworld menu is open")
 		return
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		print("[GAMELOOP] BLOCKED — autogrind UI is open")
 		return
 
 	# Disable player input during battle transition
