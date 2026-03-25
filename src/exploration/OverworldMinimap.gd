@@ -24,6 +24,21 @@ const DOT_COLORS: Dictionary = {
 	"dragon": Color(1.0, 0.2, 0.2),    # Red
 }
 
+const SHORT_NAMES: Dictionary = {
+	"village_entrance": "Harmonia",
+	"cave_entrance": "Cave",
+	"ice_dragon_cave": "Ice",
+	"shadow_dragon_cave": "Shadow",
+	"lightning_dragon_cave": "Storm",
+	"fire_dragon_cave": "Fire",
+	"frosthold_entrance": "Frost",
+	"eldertree_entrance": "Elder",
+	"grimhollow_entrance": "Grim",
+	"sandrift_entrance": "Sand",
+	"ironhaven_entrance": "Iron",
+	"steampunk_portal": "Portal",
+}
+
 
 func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int, transitions: Dictionary) -> void:
 	_player_ref = player
@@ -58,14 +73,15 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(inner)
 
-	# Transition dots
+	# Transition dots with labels
 	for key in transitions:
 		var pos: Vector2 = transitions[key]
 		if pos == Vector2.ZERO:
 			continue
 		var dot_type = _get_dot_type(key)
 		var color = DOT_COLORS.get(dot_type, Color(0.7, 0.7, 0.7))
-		_add_dot(pos, color)
+		var label_text = SHORT_NAMES.get(key, "")
+		_add_dot(pos, color, label_text)
 
 	# Player dot (on top)
 	_player_dot = ColorRect.new()
@@ -87,7 +103,7 @@ func _get_dot_type(key: String) -> String:
 	return "village"
 
 
-func _add_dot(world_pos: Vector2, color: Color) -> void:
+func _add_dot(world_pos: Vector2, color: Color, label_text: String = "") -> void:
 	var dot = ColorRect.new()
 	dot.color = color
 	dot.size = Vector2(DOT_SIZE, DOT_SIZE)
@@ -97,6 +113,15 @@ func _add_dot(world_pos: Vector2, color: Color) -> void:
 	dot.position = map_pos - Vector2(DOT_SIZE / 2, DOT_SIZE / 2)
 	_canvas.add_child(dot)
 	_dots.append(dot)
+
+	if label_text != "":
+		var lbl = Label.new()
+		lbl.text = label_text
+		lbl.add_theme_font_size_override("font_size", 7)
+		lbl.add_theme_color_override("font_color", color.lightened(0.3))
+		lbl.position = map_pos + Vector2(DOT_SIZE, -4)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(lbl)
 
 
 func _world_to_minimap(world_pos: Vector2) -> Vector2:
