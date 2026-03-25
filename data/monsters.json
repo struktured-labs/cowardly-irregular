@@ -187,7 +187,7 @@
 			"howl"
 		],
 		"exp_reward": 28,
-		"gold_reward": 12,
+		"gold_reward": 18,
 		"drop_table": [
 			{
 				"item": "potion",
@@ -281,7 +281,7 @@
 			"venomous_bite",
 			"coil"
 		],
-		"exp_reward": 26,
+		"exp_reward": 32,
 		"gold_reward": 16,
 		"drop_table": [
 			{
@@ -348,7 +348,7 @@
 			"sand_strike"
 		],
 		"exp_reward": 32,
-		"gold_reward": 18,
+		"gold_reward": 28,
 		"drop_table": [
 			{
 				"item": "antidote",
@@ -521,7 +521,7 @@
 			"bite",
 			"scratch"
 		],
-		"exp_reward": 20,
+		"exp_reward": 26,
 		"gold_reward": 15,
 		"drop_table": [
 			{
@@ -1437,7 +1437,7 @@
 			"memory_leak"
 		],
 		"exp_reward": 500,
-		"gold_reward": 0,
+		"gold_reward": 200,
 		"drop_table": [
 			{
 				"item": "ERROR",
@@ -2057,7 +2057,7 @@
 			"puppy_eyes"
 		],
 		"exp_reward": 45,
-		"gold_reward": 20,
+		"gold_reward": 35,
 		"drop_table": [
 			{
 				"item": "dog_collar",
@@ -2098,8 +2098,8 @@
 			"thrown_newspaper",
 			"call_manager"
 		],
-		"exp_reward": 35,
-		"gold_reward": 40,
+		"exp_reward": 40,
+		"gold_reward": 30,
 		"drop_table": [
 			{
 				"item": "expired_coupon",
@@ -2503,8 +2503,8 @@
 			"steal",
 			"sabotage"
 		],
-		"exp_reward": 60,
-		"gold_reward": 70,
+		"exp_reward": 70,
+		"gold_reward": 60,
 		"drop_table": [
 			{
 				"item": "stolen_wrench",
@@ -2544,8 +2544,8 @@
 			"thread_slash",
 			"clone_self"
 		],
-		"exp_reward": 120,
-		"gold_reward": 95,
+		"exp_reward": 180,
+		"gold_reward": 120,
 		"drop_table": [
 			{
 				"item": "data_fragment",
@@ -2587,8 +2587,8 @@
 			"null_pointer",
 			"bloat"
 		],
-		"exp_reward": 110,
-		"gold_reward": 85,
+		"exp_reward": 150,
+		"gold_reward": 110,
 		"drop_table": [
 			{
 				"item": "corrupted_data",
@@ -2824,7 +2824,7 @@
 			"stack_smash"
 		],
 		"exp_reward": 200,
-		"gold_reward": 95,
+		"gold_reward": 140,
 		"drop_table": [
 			{
 				"item": "wild_integer",
