@@ -1,0 +1,82 @@
+{
+  "id": "world2_fragment_tempo",
+  "title": "Fragment: The Receipt",
+  "world": 2,
+  "trigger": "tempo_rush_defeated",
+  "location": "maple_heights_outroad",
+  "description": "Found on the road outside Maple Heights after defeating the Tempo of Rush Hour. A delivery receipt, crumpled in the way of something that was in a pocket through every stop on a route that never ended, with an address that doesn't exist on any map.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The road outside Maple Heights still had the quality of a place someone had just driven through very fast. Not damage — nothing broken, no skid marks. Just a particular aliveness in the air, the kind that lingers after something has moved through it with purpose.",
+      "Against the curb, flattened under one wheel's worth of pressure then lifted back by the wind: a delivery receipt. Yellow carbon-copy paper, folded and unfolded enough times to be soft at the creases. A barcode at the top, half-faded. A timestamp at the bottom.",
+      "The delivery address was in a standard font, printed clearly, but the street name didn't exist. The city didn't exist. The zip code was all zeros. The signature line had been signed anyway."
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "Picking it up from the curb, the paper was still slightly warm from being carried in a pocket at speed. The Tempo's voice arrived between one breath and the next, moving the way it always had — not waiting to be listened to, just present for a moment, already past."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of Rush Hour",
+        "text": "Every delivery on time. Every route optimized. I could run the whole district in under forty minutes if the lights cooperated.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Rush Hour",
+        "text": "I never once stopped to read what I was carrying.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of Rush Hour",
+        "text": "There was always another stop. Always a window closing. Always a reason why reading it was a problem for the next leg.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo of Rush Hour",
+        "text": "I ran every route in this district. And I have no idea what any of it was for.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo of Rush Hour",
+        "text": "I hope whatever it was got where it needed to go.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "text": "The receipt had the texture of something that had been important once, in a category of importance that hadn't required anyone to think about it. The address that didn't exist was printed clearly, matter-of-factly, as if the printer had known all along and dispatched it anyway. The signature on the signature line was neat, unhurried — the signature of someone who had finally had a moment to stop."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The sensation of moving very fast toward something and not minding, for once, that you don't know what it is."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "grant_item", "item": "tempo_rush_fragment", "name": "Tempo's Last Receipt", "description": "A receipt for something delivered to nowhere, on time. Grants +3 SPD. The bearer always arrives. Tooltip: \"Delivered. Destination unknown. On time.\""},
+
+    {"type": "set_flag", "flag": "fragment_tempo_rush_collected", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
