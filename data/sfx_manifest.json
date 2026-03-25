@@ -35,7 +35,7 @@
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
-      "prompt": "Deep sub-bass cannon boom with reverberating low-end rumble, distant artillery fired in a valley, heavy bass drop impact fading into echo",
+      "prompt": "Single outdoor gunshot with long reverberating echo, pitched down 25% for deep bass, distant rifle fired in mountains",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
     },
