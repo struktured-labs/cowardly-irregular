@@ -1,0 +1,82 @@
+{
+  "id": "world2_fragment_arbiter",
+  "title": "Fragment: The Last Grade",
+  "world": 2,
+  "trigger": "arbiter_grade_defeated",
+  "location": "maple_heights_room_204",
+  "description": "Found in Room 204 of Maple Heights Elementary after defeating the Arbiter of the Grade. A graded paper, left on the desk. The grade has been crossed out and rewritten several times. The final mark is in a different hand — quieter, less certain, more true.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "Room 204 had the quality of a place where a great deal of importance had been assigned to small things for a very long time. The fluorescent light still hummed. The alphabet still ran above the whiteboard in its patient arc.",
+      "On the front desk — the teacher's desk, the one facing all the others — a single sheet of paper. Lined, standard, the kind used for in-class work. At the top, a name field left blank. Below it, what appeared to have been an essay, though the words were hard to read under the corrections.",
+      "The grade at the top had been written and crossed out. Written again. Crossed out again. Circled, uncircled, written a final time in a hand that was slightly different from the others — smaller, less automatic."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "Lifting the paper from the desk, the Arbiter's voice arrived — not the voice from the fight, but the one underneath it, the one that had been grading things before there was anyone to grade them for."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "I graded everything. Every answer, every approach, every silence. I had rubrics for rubrics.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "I built criteria for what constituted a passing score on having sufficient criteria. I thought that was thoroughness.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "The problem with a rubric is that it tells you what the answer has to look like before you've seen the answer. That's not evaluation. That's recognition.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "You showed me something the rubric didn't have a row for.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.9},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Arbiter of the Grade",
+        "text": "The last grade I gave was the first one I meant.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.1},
+
+    {"type": "narration", "text": "The paper had the weight of something that had been held to the light many times. In the margin — not at the top, not in any of the official grade fields, but in the margin, where no rubric governed — a single mark, written carefully, like a word chosen after a long time of not knowing which word to choose."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The sensation of having been assessed by someone who finally understood that they were also being assessed."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "grant_item", "item": "arbiter_grade_fragment", "name": "Arbiter's Final Paper", "description": "A test paper where the only mark that matters is written in the margin. Grants +3 ATK. The bearer's first strike in each battle is evaluated honestly. Tooltip: \"The last grade I gave was the first one I meant.\""},
+
+    {"type": "set_flag", "flag": "fragment_arbiter_grade_collected", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

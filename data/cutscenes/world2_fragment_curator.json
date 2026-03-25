@@ -1,0 +1,82 @@
+{
+  "id": "world2_fragment_curator",
+  "title": "Fragment: Enough",
+  "world": 2,
+  "trigger": "curator_budget_defeated",
+  "location": "hoa_community_center",
+  "description": "Found in the HOA Community Center after defeating the Curator of the Budget. An open ledger on the folding table, the final page blank except for one word, written at the bottom in a hand that was very tired and very clear.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "The community center had the quality of a room that had hosted many meetings about things that mattered to someone. Folding chairs, still arranged in rows. A whiteboard with agenda items from a session that would not be rescheduled. A refreshment table with nothing on it.",
+      "On the folding table at the front of the room, open and flat as if in the middle of a line item: a ledger. Standard accounting format, columns ruled in blue, entries in a careful hand that had spent decades making numbers legible. Every page accounted for.",
+      "The final page was blank. Except at the bottom, centered, in letters slightly larger than the rest — a single word, written with the deliberateness of someone who had chosen it after a very long time of not being able to."
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The word was: ENOUGH. Picking up the ledger, the Curator's voice came in the way of a closing summary — measured, precise, but with something underneath the precision that the columns had never had room for."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of the Budget",
+        "text": "I balanced every account. Every transaction recorded. Every surplus allocated to the next quarter's contingency before the quarter had begun.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of the Budget",
+        "text": "I had a formula for what constituted sufficient reserves. The formula required reserves to execute.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of the Budget",
+        "text": "There was never a surplus. There was always one more category that hadn't been provisioned for. The contingency fund had a contingency fund.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Curator of the Budget",
+        "text": "I spent the whole budget on protecting the budget. I think I knew that. I kept very good records of knowing it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.9},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Curator of the Budget",
+        "text": "The last entry I couldn't file was the cost of filing everything else.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.2},
+
+    {"type": "narration", "text": "The ledger was heavy with its own completeness. Every page before the last one was full — dense with figures, cross-referenced, initialed, dated. The kind of record that would survive the community center, survive the neighborhood, survive whatever came next. The final page, with its one word at the bottom, had the quality of a door left open at the end of a very long hallway."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The sensation of having accounted for everything, and finding that the total came out exactly right."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "grant_item", "item": "curator_budget_fragment", "name": "Curator's Final Ledger", "description": "A ledger where the final page says only: 'enough.' Restores 30% MP and SP to all party members. The books are balanced. Tooltip: \"Every surplus, allocated. Final entry: rest.\""},
+
+    {"type": "set_flag", "flag": "fragment_curator_budget_collected", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
