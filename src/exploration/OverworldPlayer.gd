@@ -232,11 +232,20 @@ func _setup_sprite() -> void:
 	collision_mask = 1   # Player collides with walls (layer 1)
 
 
+var _cant_move_time: float = 0.0
+
 func _physics_process(delta: float) -> void:
 	if not can_move:
 		velocity = Vector2.ZERO
 		is_moving = false
+		_cant_move_time += delta
+		# Never stay frozen more than 2 seconds — if battle/transition
+		# didn't take over by now, something failed. Unfreeze.
+		if _cant_move_time > 2.0:
+			can_move = true
+			_cant_move_time = 0.0
 		return
+	_cant_move_time = 0.0
 
 	# BARE MINIMUM: input → velocity → move_and_slide. Nothing else.
 	var input_dir = Vector2.ZERO
