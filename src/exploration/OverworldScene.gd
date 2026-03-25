@@ -337,6 +337,7 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 		pos: Vector2, indicator: String) -> void:
 	if pos == Vector2.ZERO:
 		return  # Skip if spawn point not found in map
+	print("[SETUP] Transition '%s' → %s at pos %s" % [trans_name, target_map, pos])
 	var trans = AreaTransitionScript.new()
 	trans.name = trans_name
 	trans.target_map = target_map
@@ -344,7 +345,7 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	trans.require_interaction = true
 	trans.indicator_text = indicator
 	trans.position = pos
-	_setup_transition_collision(trans, Vector2(TILE_SIZE, TILE_SIZE))
+	_setup_transition_collision(trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
 
