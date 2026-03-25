@@ -1,0 +1,126 @@
+{
+  "_meta": {
+    "description": "W1 Eldertree Village NPC dialogue. Forest-edge village with dying sacred trees.",
+    "world": 1,
+    "location": "eldertree",
+    "author": "cowir-story"
+  },
+  "npcs": {
+    "forest_keeper": {
+      "portrait": "forest_keeper",
+      "display_name": "Forest Keeper Anya",
+      "description": "Guardian of the sacred trees. Exhausted. Watching the forest she's sworn to protect die from the inside.",
+      "dialogues": {
+        "first_meeting": {
+          "trigger": "story_progress == 'chapter2_forest'",
+          "lines": [
+            {
+              "speaker": "forest_keeper",
+              "text": "The trees are dying. Not the way trees die — slowly, seasonally, with the dignity of something that's had its time. They're dying from the inside. The sap runs black. The leaves fall upward.",
+              "emotion": "grief"
+            },
+            {
+              "speaker": "forest_keeper",
+              "text": "It comes from the east. From the capital's direction. We sent word. No one came.",
+              "emotion": "bitter"
+            },
+            {
+              "speaker": "forest_keeper",
+              "text": "If you're heading through the forest — the corruption is thickest near the center. There's something in there. Something that was put there deliberately. The trees told me that much before they stopped talking.",
+              "emotion": "determined"
+            }
+          ]
+        },
+        "post_arbiter": {
+          "trigger": "story_progress == 'post_arbiter'",
+          "lines": [
+            {
+              "speaker": "forest_keeper",
+              "text": "The trees are breathing again. Not fully — the damage will take seasons to heal. But they're breathing. Whatever you did in there, whatever you fought — it loosened the grip.",
+              "emotion": "hope"
+            },
+            {
+              "speaker": "forest_keeper",
+              "text": "You fought someone in there, didn't you? Someone with a sword and a way of looking at you like she knew exactly what you were worth.",
+              "emotion": "knowing"
+            },
+            {
+              "speaker": "forest_keeper",
+              "text": "The trees remember her. They say she was honest. They say honest things are the hardest to fight.",
+              "emotion": "respectful"
+            }
+          ]
+        }
+      }
+    },
+    "refugee": {
+      "portrait": "villager_scared",
+      "display_name": "Scriptura Refugee",
+      "description": "Fled the capital. Speaks too quickly, as though words might be taken from him.",
+      "dialogues": {
+        "first_meeting": {
+          "trigger": "story_progress == 'chapter2_forest'",
+          "lines": [
+            {
+              "speaker": "refugee",
+              "text": "I came from Scriptura. The capital. Don't go there. Don't — listen, don't go there.",
+              "emotion": "panicked"
+            },
+            {
+              "speaker": "refugee",
+              "text": "The chancellor has something in the tower. Not a weapon. Not a monster. Something that measures. It watches the whole kingdom and it measures what it sees and it adjusts things based on what it measures.",
+              "emotion": "terrified"
+            },
+            {
+              "speaker": "refugee",
+              "text": "I worked in the filing office. I saw the reports. The cave creatures, the forest corruption, the trade routes closing — none of it is random. It's all calibrated. Someone is tuning the difficulty of this kingdom like it's a — like it's a test.",
+              "emotion": "desperate"
+            },
+            {
+              "speaker": "refugee",
+              "text": "The reports were filed under a name I'd never seen. Not the chancellor's name. Something else. Something that started with C.",
+              "emotion": "trailing_off"
+            }
+          ]
+        }
+      }
+    },
+    "herbalist": {
+      "portrait": "herbalist",
+      "display_name": "Old Fen",
+      "description": "Village herbalist. Practical healer. Knows the forest's rhythms better than anyone.",
+      "dialogues": {
+        "first_meeting": {
+          "trigger": "story_progress == 'chapter2_forest'",
+          "lines": [
+            {
+              "speaker": "herbalist",
+              "text": "The corruption changes the plants. Not just kills them — changes them. I found a healing herb yesterday that heals backwards. Took damage to use it. Fascinating, in a deeply upsetting way.",
+              "emotion": "morbid_curiosity"
+            },
+            {
+              "speaker": "herbalist",
+              "text": "I can sell you proper remedies. The kind that heal in the correct direction. You'll want them for the deep forest.",
+              "emotion": "practical"
+            }
+          ]
+        },
+        "completionist": {
+          "trigger": "side_quests_complete >= 2",
+          "lines": [
+            {
+              "speaker": "herbalist",
+              "text": "You're collecting everything, aren't you? Every herb, every story, every scrap of information this village has. I've met your type. Thorough to the point of compulsion.",
+              "emotion": "amused"
+            },
+            {
+              "speaker": "herbalist",
+              "text": "Here. A recipe I've been working on. The corruption twisted a moonpetal into something that reverses poison — takes the venom out of the blood and puts it into the next thing you hit. Disgusting. Effective.",
+              "emotion": "conspiratorial"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

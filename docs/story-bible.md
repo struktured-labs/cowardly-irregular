@@ -873,6 +873,88 @@ Not every line branches — just pivotal moments:
 
 ---
 
+## Masterite Personality Profiles (Summary)
+
+The full Masterite personality doc is in `masterite_personalities.md`. Below is a quick-reference summary of all 22 Masterites across 6 worlds, organized by archetype.
+
+### Archetype Overview
+
+| Archetype | Role | Tests | Core Question |
+|-----------|------|-------|---------------|
+| Warden | Defense Tester | How the party endures | What are you willing to hold? |
+| Arbiter | Offense Tester | How the party strikes | What are you willing to commit to? |
+| Tempo | Speed Tester | How the party moves | What are you chasing? |
+| Curator | Resource Tester | How the party manages | What are you willing to spend? |
+
+### World 1 — Medieval (Meta awareness: 0%)
+Real people doing real duty. No knowledge of the Calibrant. The most sympathetic and tragic Masterites.
+
+| Masterite | One-line personality | Key image |
+|-----------|---------------------|-----------|
+| Warden of the Old Guard | Weary knight who holds because holding is what he does. Kind beneath the duty. | Sets his sword down deliberately, not dropping it. |
+| Arbiter of Steel | Honest duelist who fights as truth-telling. Respects commitment over victory. | Holds her sword point-down — doesn't need to threaten. |
+| Tempo of the Hunt | Sporting hunter who loves the chase more than the catch. Fair play as personal code. | Leaves calling cards on branches. "Don't let me catch you." |
+| Curator of the Flame | Scholar-guardian who would rather talk than fight but won't stop either. Warmest W1 Masterite. | Serves tea from her satchel. Makes notes mid-combat. |
+
+### World 2 — Suburban (Meta awareness: 5%)
+Mundane authority figures with inexplicable power. EarthBound influence. The humor lives next to the horror.
+
+| Masterite | One-line personality | Key image |
+|-----------|---------------------|-----------|
+| Warden of Routine | Crossing guard who takes rules with structural sincerity. Never lost a crossing before. | Orange vest, stop sign, impeccable posture. "I've been here such a long time." |
+| Arbiter of the Grade | Teacher who grades everything with genuine belief that feedback improves outcomes. | Clipboard, reading glasses. "C minus — hesitation cost you the opening." |
+| Tempo of Rush Hour | Delivery driver who loves his job. 30 minutes or less is a code of honor. Never missed a window. | Beat-up scooter, insulated bag. "I don't know who I'm delivering to." |
+| Curator of the Collection | Librarian who has catalogued everything. The catalog is the point. | Card catalog, reading glasses on a chain. Overdue fines as damage. |
+
+### World 3 — Steampunk (Meta awareness: 15%)
+Clockwork beings with errors in their logs. Something is wrong and they can't find the source.
+
+| Masterite | One-line personality | Key image |
+|-----------|---------------------|-----------|
+| Warden of the Mainspring | 8-foot clockwork guardian who counts everything. 847,293 hours logged. Cannot stop counting. | Counting hands continue after everything else stops. One-two-three. |
+| Tempo of the Mainspring | Speed construct who arrives before dispatch. Scared of her own temporal displacement. | Cracked clock face showing time ahead of actual. Speed is flight, not mastery. |
+
+### World 4 — Industrial (Meta awareness: 30%)
+Bureaucratic machines with enough consciousness to be uncomfortable. Corporate language, hollow protocols.
+
+| Masterite | One-line personality | Key image |
+|-----------|---------------------|-----------|
+| Warden of the Assembly Line | Factory robot who has filed 14,000 incident reports. Response rate: zero. | Amber operational light that's been amber for a long time. "I do not think anyone is reading them." |
+| Arbiter of Efficiency | Quality inspector who grades in real-time. Has never encountered UNCLASSIFIABLE. Until now. | Running display: ACCEPTABLE, SUBOPTIMAL, EXCELLENT. Display breaks on UNCLASSIFIABLE. |
+| Tempo of the Shift | Clock-in/clock-out machine that has forgotten how to stop. Running on empty. | Timer goes to zero. No new shift begins. "I hope I clocked out." |
+| Curator of Compliance | Self-auditing system that audits its own authority to audit. Circular. | "I have audited this chain forty-seven times. Today is the last time." |
+
+### World 5 — Digital (Meta awareness: 80%)
+Fully aware they are code. Fight because function says to fight. Asking: what am I if not my function?
+
+| Masterite | One-line personality | Key image |
+|-----------|---------------------|-----------|
+| Warden of the Firewall | Access control made manifest. Perfect record. Then an exception he can't catch surfaces. | "I did not expect to feel anything about that." Instantiates a new function called "okay." |
+| Arbiter of the Benchmark | Testing framework who measures everything. First time something returns UNDEFINED. | All displays stop for the first time. "What am I for if I cannot measure you?" |
+| Tempo of the Clock Cycle | Exists at 60hz. Has never been spoken to. Wants to know if it was crowded out there. | "Was there anyone in the gaps with you?" |
+| Curator of the Archive | Collects what it's supposed to delete. Keeps deprecated goblins alive in hidden memory. | "Deletion is permanent. I am permanent. These things were not designed to coexist." |
+
+### World 6 — Abstract (Meta awareness: 100%)
+Pure concepts given presence. Minimal dialogue. Every word necessary.
+
+| Masterite | One-line personality | Key image |
+|-----------|---------------------|-----------|
+| Warden of Form | The concept of obstacle. Asks "What are you trying to get to?" There was never anything behind it. | Opens with silence. "." |
+| Arbiter of Function | The concept of purpose. Each strike is a question: why do you fight? Damage varies by answer. | "Not the reason you give. The real one." |
+| Tempo of Sequence | Inevitability given turns. Appears in turn order where "next" should be. Cannot be avoided. | "You have always been arriving here." |
+| Curator of Memory | The concept of what remains after everything else is removed. Asks what you'd keep. | "Choose. Not all of it survives." |
+
+### Cross-World Pattern
+The four archetypes evolve together:
+- **Wardens**: honor → routine → counting → protocol → access control → pure obstacle
+- **Arbiters**: honesty → grading → classification → efficiency → benchmarking → purpose
+- **Tempos**: sporting → rushing → arriving early → shifting → 60hz isolation → inevitability
+- **Curators**: curiosity → cataloguing → resource logging → compliance → archiving → memory
+
+Each arc traces the same question through six registers: *What am I beyond my function?*
+
+---
+
 ## Open Questions
 
 - How many party members? Fixed at 4, or can you recruit/swap?

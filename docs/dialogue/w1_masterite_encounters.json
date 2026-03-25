@@ -1,0 +1,312 @@
+{
+  "_meta": {
+    "description": "W1 Masterite pre-fight, mid-fight, and post-defeat dialogue. Derived from masterite_personalities.md. For cowir-cutscenes/cowir-battle to implement as in-battle dialogue triggers.",
+    "world": 1,
+    "author": "cowir-story"
+  },
+  "encounters": {
+    "warden_old_guard": {
+      "display_name": "Warden of the Old Guard",
+      "location": "crystal_cave_depth",
+      "pre_fight": [
+        {
+          "speaker": "warden",
+          "text": "This pass has been held for three hundred years. By my count, you are the thirty-seventh party to attempt it. The other thirty-six turned back.",
+          "emotion": "measured"
+        },
+        {
+          "speaker": "warden",
+          "text": "I am not telling you this to frighten you. I am telling you so the record is clear.",
+          "emotion": "formal"
+        },
+        {
+          "speaker": "warden",
+          "text": "Show me what you are, and I will show you what I have left.",
+          "emotion": "ready"
+        }
+      ],
+      "mid_fight": {
+        "low_hp_party": [
+          { "speaker": "warden", "text": "Still standing. Good.", "emotion": "respectful" }
+        ],
+        "long_fight": [
+          { "speaker": "warden", "text": "You endure. That is not nothing.", "emotion": "approving" }
+        ]
+      },
+      "post_defeat": [
+        {
+          "speaker": "warden",
+          "text": "Thirty-eight. You're the first to get through.",
+          "emotion": "quiet"
+        },
+        {
+          "speaker": "warden",
+          "text": "I don't know what that means for the other side, but... good. Carry something worth carrying.",
+          "emotion": "weary_kind"
+        },
+        {
+          "speaker": "warden",
+          "text": "I don't know who put me here. I stopped asking. Maybe you should ask for both of us.",
+          "emotion": "vulnerable"
+        }
+      ],
+      "post_defeat_per_member": {
+        "fighter": {
+          "text": "Your shield work is poor. You lead with your right side and you don't correct for it. If you survive long enough to face something worse than me, correct it before then.",
+          "emotion": "blunt_caring"
+        },
+        "mage": {
+          "text": "Stop documenting during the fight. You nearly took a blow from my left flank that would have ended your journey. Your theory is correct. Trust it.",
+          "emotion": "stern"
+        },
+        "cleric": {
+          "text": "You held them together longer than anyone had a right to expect. That is rare. Guard your own life with the same care you spend on theirs.",
+          "emotion": "gentle"
+        },
+        "bard": {
+          "text": "When you sang to the wolf pack. That was not the action of a frightened musician. That was strategy. Someone taught you well. Or no one taught you and you simply knew.",
+          "emotion": "curious"
+        }
+      },
+      "playstyle_variants": {
+        "autobattle": {
+          "post_defeat_extra": null,
+          "note": "The Warden does not notice or care. He respected the fight regardless."
+        },
+        "manual": {
+          "post_defeat_extra": {
+            "text": "You handled that yourself. There's something... satisfying in that. Old-fashioned of me.",
+            "emotion": "approving"
+          }
+        },
+        "grinder": {
+          "pre_fight_extra": {
+            "text": "You are strong. Stronger than expected. The record does not account for this. It doesn't change anything. Step forward.",
+            "emotion": "noting"
+          }
+        },
+        "exploiter": {
+          "post_defeat_extra": {
+            "text": "I'm not certain I can explain that. In three hundred years, I cannot explain that. Carry on.",
+            "emotion": "bewildered"
+          }
+        },
+        "completionist": {
+          "pre_fight_extra": {
+            "text": "There is food in the guardhouse. I cannot leave the post. But you may rest before we begin, if you wish.",
+            "emotion": "sincere"
+          }
+        }
+      }
+    },
+    "arbiter_of_steel": {
+      "display_name": "Arbiter of Steel",
+      "location": "corrupted_forest_clearing",
+      "pre_fight": [
+        {
+          "speaker": "arbiter",
+          "text": "I challenge one of you. Whoever leads. The others stay back. I'll know if they don't.",
+          "emotion": "direct"
+        },
+        {
+          "speaker": "arbiter",
+          "text": "Come at me with everything. I'll know if you're holding back. And I'll be disappointed.",
+          "emotion": "honest"
+        }
+      ],
+      "mid_fight": {
+        "good_attack": [
+          { "speaker": "arbiter", "text": "That's a good angle. I'll have to adjust.", "emotion": "approving" }
+        ],
+        "fast_attack": [
+          { "speaker": "arbiter", "text": "Your timing is faster than it looks.", "emotion": "impressed" }
+        ],
+        "group_fight": [
+          { "speaker": "arbiter", "text": "Fine. Let's see if more is better.", "emotion": "shrug" }
+        ]
+      },
+      "post_defeat": [
+        {
+          "speaker": "arbiter",
+          "text": "Hm. I asked for your best and you gave it. I didn't expect to like being beaten this much.",
+          "emotion": "surprised_pleased"
+        },
+        {
+          "speaker": "arbiter",
+          "text": "The sword knows. Whatever you are, the sword knows you're real.",
+          "emotion": "respectful"
+        }
+      ],
+      "playstyle_variants": {
+        "autobattle": {
+          "mid_fight_extra": {
+            "text": "There's a pattern here. You're not improvising.",
+            "emotion": "noticing"
+          },
+          "post_defeat_extra": {
+            "text": "That was... efficient. I still don't know what to make of it. But it won.",
+            "emotion": "uncertain"
+          }
+        },
+        "manual": {
+          "post_defeat_extra": {
+            "text": "That was a real fight. I needed that.",
+            "emotion": "satisfied"
+          }
+        },
+        "completionist": {
+          "pre_fight_extra": {
+            "text": "Spar with me first. Before the real thing. For calibration.",
+            "emotion": "inviting",
+            "note": "Triggers a practice round. Unique item drop if accepted."
+          }
+        }
+      }
+    },
+    "tempo_of_the_hunt": {
+      "display_name": "Tempo of the Hunt",
+      "location": "corrupted_forest_deep",
+      "pre_fight": [
+        {
+          "speaker": "tempo",
+          "text": "You're faster than the trail suggested. I like it when the trail is wrong.",
+          "emotion": "pleased"
+        },
+        {
+          "speaker": "tempo",
+          "text": "Don't let me catch you. That's not a threat. That's the game.",
+          "emotion": "sporting"
+        }
+      ],
+      "mid_fight": {
+        "party_adapts": [
+          { "speaker": "tempo", "text": "Clever. You're slowing down the right moments and speeding up the wrong ones. Adaptive.", "emotion": "genuinely_interested" }
+        ],
+        "pinned_down": [
+          { "speaker": "tempo", "text": "Oh. You learned the pattern. Most don't get that far.", "emotion": "impressed" }
+        ]
+      },
+      "post_defeat": [
+        {
+          "speaker": "tempo",
+          "text": "First time I've been run to ground in a long time. I'd do it again. That was the best part of this year.",
+          "emotion": "exhilarated"
+        },
+        {
+          "speaker": "tempo",
+          "text": "Whatever you're hunting, on the other side of all this — I hope you catch it.",
+          "emotion": "sincere"
+        }
+      ],
+      "playstyle_variants": {
+        "autobattle": {
+          "mid_fight_extra": {
+            "text": "Your timing is mechanical. Not natural. It works, but there's no joy in it.",
+            "emotion": "disappointed"
+          },
+          "post_defeat_extra": {
+            "text": "I've run faster prey. But none more... consistent.",
+            "emotion": "grudging_respect"
+          }
+        },
+        "manual": {
+          "post_defeat_extra": {
+            "text": "You gave me a real run. Thank you for that.",
+            "emotion": "grateful"
+          }
+        },
+        "completionist": {
+          "pre_fight_extra": {
+            "text": "Track me first. Find where I've been. Then we'll see if you can find where I am.",
+            "emotion": "inviting",
+            "note": "Triggers stealth/navigation minigame. Available if all Eldertree NPCs spoken to."
+          }
+        }
+      }
+    },
+    "curator_of_the_flame": {
+      "display_name": "Curator of the Flame",
+      "location": "scriptura_throne_room",
+      "pre_fight": [
+        {
+          "speaker": "curator",
+          "text": "Before we begin — and we will begin, I'm sorry about that — can I ask what you think is behind the flame? Not the literal throne room. Behind all of it.",
+          "emotion": "genuinely_curious"
+        },
+        {
+          "speaker": "curator",
+          "text": "I've studied this room for eleven years. I know exactly what's in it. I am genuinely uncertain if what you're looking for is here. That's the most interesting thing that's happened all decade.",
+          "emotion": "intellectually_excited"
+        }
+      ],
+      "mid_fight": {
+        "drain_spell": [
+          { "speaker": "curator", "text": "Mana drain. Sorry. Necessary.", "emotion": "apologetic" }
+        ],
+        "dispel": [
+          { "speaker": "curator", "text": "Dispel — fascinating how clean that felt on your buffs.", "emotion": "scholarly" }
+        ],
+        "good_positioning": [
+          { "speaker": "curator", "text": "Good positioning there. Sub-optimal there. Interesting choice — I'll want to note that.", "emotion": "grading" }
+        ]
+      },
+      "post_defeat": [
+        {
+          "speaker": "curator",
+          "text": "I don't know who you are, ultimately. But you are the most interesting research subject I've had since I started this post.",
+          "emotion": "warm"
+        },
+        {
+          "speaker": "curator",
+          "text": "There's something I wanted to tell you. About the flame. About what it's actually for. I don't think I have time now. I hope you find out on your own.",
+          "emotion": "regretful"
+        }
+      ],
+      "playstyle_variants": {
+        "autobattle": {
+          "mid_fight_extra": {
+            "text": "Your actions have a formal structure. Is that intentional? It's rather elegant, from a design perspective.",
+            "emotion": "fascinated"
+          },
+          "post_defeat_extra": {
+            "text": "I've never seen a party fight like a formal system before. I have questions. Many questions.",
+            "emotion": "scholarly_delight"
+          }
+        },
+        "manual": {
+          "post_defeat_extra": {
+            "text": "You thought it through as you went. That's rarer than it sounds.",
+            "emotion": "approving"
+          }
+        },
+        "grinder": {
+          "mid_fight_extra": {
+            "text": "I'm going to stop draining your MP. It's a bit like bailing the ocean. I'll try something else.",
+            "emotion": "baffled_amused"
+          }
+        },
+        "exploiter": {
+          "mid_fight_extra": {
+            "text": "You've done something the formulae don't account for. I'm logging this.",
+            "emotion": "frantically_noting",
+            "note": "She literally makes a note in a book mid-fight."
+          }
+        },
+        "completionist": {
+          "pre_fight_extra": [
+            {
+              "text": "Tea? I have tea. It's a restorative, technically. Also it's good tea.",
+              "emotion": "hospitable",
+              "note": "Serves actual restorative tea item."
+            },
+            {
+              "text": "Since you're not in a hurry — let me tell you about the guardian order. All four of us. What we were made for. What we became instead.",
+              "emotion": "grateful",
+              "note": "Delivers 3 lore books and extended backstory."
+            }
+          ]
+        }
+      }
+    }
+  }
+}
