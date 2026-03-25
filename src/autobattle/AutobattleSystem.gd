@@ -718,8 +718,30 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 		"character_id": character_id,
 		"name": "Healer Default",
 		"rules": [
-			# Status priority: self poisoned and has antidote — cure it before anything else
-			# (No Esuna ability exists yet; antidote handles poison on self)
+			# Status priority: Esuna cleanse when any ally has a negative status
+			# Esuna removes ALL negative statuses from one target — use it on the worst-off ally
+			{
+				"conditions": [
+					{"type": "ally_has_status", "status": "poison"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "esuna", "target": "lowest_hp_ally"}]
+			},
+			{
+				"conditions": [
+					{"type": "ally_has_status", "status": "blind"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "esuna", "target": "lowest_hp_ally"}]
+			},
+			{
+				"conditions": [
+					{"type": "ally_has_status", "status": "confuse"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "esuna", "target": "lowest_hp_ally"}]
+			},
+			# Fallback: self poisoned and low MP — use antidote instead
 			{
 				"conditions": [
 					{"type": "has_status", "status": "poison"},
@@ -727,7 +749,7 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
 			},
-			# Status priority: self blinded and has echo_herbs — clear it
+			# Fallback: self blinded and low MP — use echo_herbs
 			{
 				"conditions": [
 					{"type": "has_status", "status": "blind"},
