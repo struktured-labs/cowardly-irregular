@@ -289,13 +289,12 @@ func _physics_process(delta: float) -> void:
 	_update_animation(delta)
 
 
-func _input(event: InputEvent) -> void:
-	if not can_move:
+func _unhandled_input(event: InputEvent) -> void:
+	if not _can_move():
 		return
 
 	if event.is_action_pressed("ui_accept"):
 		interaction_requested.emit()
-		get_viewport().set_input_as_handled()
 
 	if event.is_action_pressed("ui_cancel"):
 		menu_requested.emit()
