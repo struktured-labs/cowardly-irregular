@@ -430,13 +430,15 @@ func _input(event: InputEvent) -> void:
 
 ## Mapping from portrait type to sprite asset paths
 const PORTRAIT_SPRITES = {
-	"fighter": "res://assets/sprites/portraits/fighter.png",
-	"hero": "res://assets/sprites/portraits/fighter.png",
+	# fighter/bard portraits are cropped too tight (chin missing) — use procedural until re-cropped
+	# mage portrait is full-body with weapon, not a face closeup — use procedural until re-cropped
+	#"fighter": "res://assets/sprites/portraits/fighter.png",
+	#"hero": "res://assets/sprites/portraits/fighter.png",
+	#"mage": "res://assets/sprites/portraits/mage.png",
+	#"bard": "res://assets/sprites/portraits/bard.png",
 	"cleric": "res://assets/sprites/portraits/cleric.png",
 	"healer": "res://assets/sprites/portraits/cleric.png",
-	"mage": "res://assets/sprites/portraits/mage.png",
 	"rogue": "res://assets/sprites/portraits/rogue.png",
-	"bard": "res://assets/sprites/portraits/bard.png",
 	# NPC sprites in assets/sprites/npcs/ are 2048x256 sprite sheets (8 frames),
 	# not single portraits. Use procedural portraits until proper NPC portrait crops exist.
 }
