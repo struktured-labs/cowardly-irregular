@@ -38,6 +38,7 @@ var spawn_points: Dictionary = {}
 ## Mode 7 perspective
 var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
+var _minimap: OverworldMinimap
 
 ## Rain effect state
 var _rain_particles: CPUParticles2D
@@ -72,6 +73,9 @@ func _ready() -> void:
 		SoundManager.play_area_music("overworld_suburban")
 
 	_setup_effects()
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
 	exploration_ready.emit()
 
 
@@ -110,6 +114,9 @@ func _process(delta: float) -> void:
 			_rain_interval = randf_range(20.0, 40.0)
 		else:
 			_rain_interval = randf_range(30.0, 60.0)
+	if player:
+		if _minimap:
+			_minimap.update(player.position)
 
 
 func _exit_tree() -> void:
