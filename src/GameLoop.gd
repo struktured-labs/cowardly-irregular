@@ -966,7 +966,12 @@ func _on_battle_ended(victory: bool) -> void:
 		battles_won = 0
 		_current_map_id = "overworld"
 		_spawn_point = "default"
-		_start_exploration()
+		await _start_exploration()
+		# Safety guarantee: ensure player can move after game-over restart
+		if _exploration_scene:
+			var player = _exploration_scene.get("player")
+			if player and player.has_method("set_can_move"):
+				player.set_can_move(true)
 
 
 func _wait_for_confirm() -> void:
@@ -1095,11 +1100,16 @@ func _return_to_exploration() -> void:
 	await _start_exploration()
 
 	# Restore player position after scene is fully set up
-	if _player_position != Vector2.ZERO and _exploration_scene:
+	if _exploration_scene:
 		var player = _exploration_scene.get("player")
 		if player:
-			player.position = _player_position
-			print("[POSITION] Restored player to: %s" % _player_position)
+			if _player_position != Vector2.ZERO:
+				player.position = _player_position
+				print("[POSITION] Restored player to: %s" % _player_position)
+			# Safety guarantee: always restore movement regardless of how battle ended
+			# (covers fresh-player default, escape, defeat, any error path)
+			if player.has_method("set_can_move"):
+				player.set_can_move(true)
 		else:
 			push_warning("[POSITION] Could not get player from scene")
 
