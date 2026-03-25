@@ -224,9 +224,8 @@ func _get_player_in_zone() -> Node2D:
 	return null
 
 
-func _trigger_transition(player: Node2D) -> void:
-	# Disable player movement
-	player.set_can_move(false)
+func _trigger_transition(_player: Node2D) -> void:
+	# GameLoop handles state change — no need to freeze player manually
 
 	# Hide indicator
 	if _indicator_label:

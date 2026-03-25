@@ -110,11 +110,6 @@ func _setup_effects() -> void:
 
 func _process(delta: float) -> void:
 	if _mode7:
-		for container_name in ["RoamingMonsters", "NPCs", "Transitions"]:
-			var container = get_node_or_null(container_name)
-			if container:
-				for child in container.get_children():
-					_mode7.register_billboard(child)
 		_mode7.process_frame()
 	for i in range(_steam_emitters.size()):
 		_steam_timers[i] += delta
