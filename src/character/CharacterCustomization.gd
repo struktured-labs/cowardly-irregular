@@ -164,16 +164,16 @@ static func get_personality_description(p: Personality) -> String:
 func apply_stat_bonus(combatant: Combatant) -> void:
 	match personality:
 		Personality.BRAVE:
-			combatant.base_stats["attack"] = combatant.base_stats.get("attack", 10) + 2
+			combatant.attack += 2
 		Personality.CAUTIOUS:
-			combatant.base_stats["defense"] = combatant.base_stats.get("defense", 10) + 2
+			combatant.defense += 2
 		Personality.SCHOLARLY:
-			combatant.base_stats["magic"] = combatant.base_stats.get("magic", 10) + 2
+			combatant.magic += 2
 		Personality.QUICK:
-			combatant.base_stats["speed"] = combatant.base_stats.get("speed", 10) + 2
+			combatant.speed += 2
 		Personality.CHARISMATIC:
-			combatant.base_stats["magic"] = combatant.base_stats.get("magic", 10) + 2
-			combatant.base_stats["speed"] = combatant.base_stats.get("speed", 10) + 1
+			combatant.magic += 2
+			combatant.speed += 1
 	combatant.recalculate_stats()
 
 
