@@ -1052,6 +1052,10 @@ func _start_exploration() -> void:
 	current_scene = exploration_scene
 	_exploration_scene = exploration_scene
 
+	# Wait for scene to finish setup before spawning player
+	if exploration_scene.has_signal("exploration_ready"):
+		await exploration_scene.exploration_ready
+
 	# Spawn player at correct position
 	if exploration_scene.has_method("spawn_player_at"):
 		exploration_scene.spawn_player_at(_spawn_point)
