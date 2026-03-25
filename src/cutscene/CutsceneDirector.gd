@@ -30,6 +30,10 @@ var _skip_bar_bg: ColorRect
 ## Dialogue reference (created on demand)
 var _dialogue: Node = null
 
+## Background layer (captured screenshot or solid color behind dialogue)
+var _background_texture: TextureRect
+var _background_dim: ColorRect
+
 ## Screen effects overlay
 var _effects_rect: ColorRect
 
@@ -53,6 +57,20 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
+	# Background layer — captures viewport screenshot as backdrop behind dialogue
+	_background_texture = TextureRect.new()
+	_background_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_background_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_background_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_background_texture.visible = false
+	add_child(_background_texture)
+
+	_background_dim = ColorRect.new()
+	_background_dim.color = Color(0, 0, 0, 0.5)
+	_background_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_background_dim.visible = false
+	add_child(_background_dim)
+
 	# Letterbox bars
 	_letterbox_top = ColorRect.new()
 	_letterbox_top.color = Color.BLACK
@@ -99,6 +117,11 @@ func _build_ui() -> void:
 
 func _update_layout() -> void:
 	var screen_size = get_viewport().get_visible_rect().size
+
+	_background_texture.position = Vector2.ZERO
+	_background_texture.size = screen_size
+	_background_dim.position = Vector2.ZERO
+	_background_dim.size = screen_size
 
 	_letterbox_top.size.x = screen_size.x
 	_letterbox_bottom.size = Vector2(screen_size.x, LETTERBOX_HEIGHT)
@@ -154,6 +177,9 @@ func play_cutscene(cutscene_id: String) -> void:
 	_skip_hold_time = 0.0
 	visible = true
 
+	# Capture current viewport as backdrop behind dialogue
+	_capture_background()
+
 	cutscene_started.emit(cutscene_id)
 
 	# Block player input
@@ -179,6 +205,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	_skip_hold_time = 0.0
 	visible = true
 
+	_capture_background()
 	cutscene_started.emit(cutscene_id)
 	_freeze_player()
 
@@ -401,6 +428,34 @@ func _step_set_flag(step: Dictionary) -> void:
 
 
 ## =====================
+## BACKGROUND MANAGEMENT
+## =====================
+
+func _capture_background() -> void:
+	"""Capture current viewport as a dimmed backdrop behind cutscene dialogue."""
+	var viewport = get_viewport()
+	if not viewport:
+		return
+
+	# Wait one frame for the viewport to be fully rendered
+	await get_tree().process_frame
+
+	var img = viewport.get_texture().get_image()
+	if img:
+		var tex = ImageTexture.create_from_image(img)
+		_background_texture.texture = tex
+		_background_texture.visible = true
+		_background_dim.visible = true
+
+
+func _clear_background() -> void:
+	"""Hide the background capture."""
+	_background_texture.visible = false
+	_background_dim.visible = false
+	_background_texture.texture = null
+
+
+## =====================
 ## DIALOGUE MANAGEMENT
 ## =====================
 
@@ -469,9 +524,10 @@ func _end_cutscene() -> void:
 	if _letterbox_visible:
 		await _step_letterbox_out({"duration": 0.3 if not _skipping else 0.0})
 
-	# Clear effects
+	# Clear effects and background
 	_effects_rect.visible = false
 	_effects_rect.color = Color(0, 0, 0, 0)
+	_clear_background()
 
 	# Destroy dialogue
 	if _dialogue and is_instance_valid(_dialogue):
