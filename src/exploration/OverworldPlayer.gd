@@ -204,6 +204,9 @@ var _use_custom_colors: bool = false
 
 
 func _ready() -> void:
+	# FLOATING mode for top-down — enables wall sliding in all directions
+	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
+	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
@@ -218,7 +221,7 @@ func _setup_sprite() -> void:
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
 	var shape = CircleShape2D.new()
-	shape.radius = 10.0  # Tight collision for smooth navigation
+	shape.radius = 7.0  # Small radius prevents getting stuck on tile edges
 	collision.shape = shape
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)
