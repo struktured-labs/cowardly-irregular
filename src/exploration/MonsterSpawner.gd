@@ -116,6 +116,8 @@ func _find_spawn_position() -> Vector2:
 			continue
 		if _too_close_to_others(candidate):
 			continue
+		if _is_impassable_tile(candidate):
+			continue
 		return candidate
 
 	return Vector2.ZERO
@@ -132,6 +134,19 @@ func _in_safe_zone(pos: Vector2) -> bool:
 		if tx >= rx and tx < rx + rw and ty >= ry and ty < ry + rh:
 			return true
 	return false
+
+
+func _is_impassable_tile(pos: Vector2) -> bool:
+	# Check if the tile at this position has collision (= impassable)
+	var tilemap = get_parent().get_node_or_null("TileMap") as TileMapLayer
+	if not tilemap:
+		return false
+	var tile_pos = tilemap.local_to_map(pos)
+	var tile_data = tilemap.get_cell_tile_data(tile_pos)
+	if not tile_data:
+		return true  # No tile = out of bounds, don't spawn
+	# Check if tile has any collision polygons (impassable tiles have physics)
+	return tile_data.get_collision_polygons_count(0) > 0
 
 
 func _too_close_to_others(pos: Vector2) -> bool:
