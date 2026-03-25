@@ -109,10 +109,10 @@ var _tooltip_label: Label = null  # Ability tooltip shown below menu
 ## Signals for target selection with position
 signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
 
-## Pixel tile size
-const TILE_SIZE = 4
-const ITEM_HEIGHT = 16
-const MENU_PADDING = 8
+## Pixel tile size (scaled 1.5x for readability)
+const TILE_SIZE = 6
+const ITEM_HEIGHT = 24
+const MENU_PADDING = 12
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -294,7 +294,7 @@ func _build_target_highlight_box(target_pos: Vector2) -> void:
 	pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pointer.position = Vector2(box_width / 2 - 8, -18)
 	pointer.add_theme_color_override("font_color", border_color)
-	pointer.add_theme_font_size_override("font_size", 16)
+	pointer.add_theme_font_size_override("font_size", 24)
 	_target_highlight.add_child(pointer)
 
 
@@ -312,7 +312,7 @@ func _update_tooltip() -> void:
 	if not _tooltip_label or not is_instance_valid(_tooltip_label):
 		_tooltip_label = Label.new()
 		_tooltip_label.name = "TooltipLabel"
-		_tooltip_label.add_theme_font_size_override("font_size", 9)
+		_tooltip_label.add_theme_font_size_override("font_size", 13)
 		_tooltip_label.add_theme_color_override("font_color", style.get("text", Color.WHITE).lightened(0.2))
 		_tooltip_label.z_index = z_index + 2
 		_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -460,7 +460,7 @@ func _build_menu() -> void:
 			label_text += " >"
 		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 		max_label_width = max(max_label_width, text_width)
-	var menu_width = max(140, int(max_label_width) + content_padding)
+	var menu_width = max(210, int(max_label_width) + content_padding)
 
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
@@ -474,9 +474,9 @@ func _build_menu() -> void:
 		_ap_label = Label.new()
 		_ap_label.name = "APLabel"
 		_ap_label.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING)
-		_ap_label.size = Vector2(menu_width - MENU_PADDING * 2 - TILE_SIZE * 2, 12)
+		_ap_label.size = Vector2(menu_width - MENU_PADDING * 2 - TILE_SIZE * 2, 18)
 		_ap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_ap_label.add_theme_font_size_override("font_size", 9)
+		_ap_label.add_theme_font_size_override("font_size", 13)
 		_update_ap_label()
 		menu_panel.add_child(_ap_label)
 
@@ -635,7 +635,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	cursor.text = "▶"  # Filled triangle for better visibility
 	cursor.position = Vector2(-4, 0)
 	cursor.add_theme_color_override("font_color", style.cursor)
-	cursor.add_theme_font_size_override("font_size", 10)
+	cursor.add_theme_font_size_override("font_size", 15)
 	cursor.visible = false
 	row.add_child(cursor)
 
@@ -657,7 +657,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	else:
 		text_label.add_theme_color_override("font_color", style.text)
 
-	text_label.add_theme_font_size_override("font_size", 11)
+	text_label.add_theme_font_size_override("font_size", 16)
 	row.add_child(text_label)
 
 	# Make clickable
@@ -810,9 +810,9 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	var item_y = parent_index * ITEM_HEIGHT + TILE_SIZE + MENU_PADDING
 	if expand_left:
 		# Position to the left of current menu
-		submenu_pos.x = global_position.x - size.x - 4  # Menu width + gap
+		submenu_pos.x = global_position.x - size.x - 6  # Menu width + gap
 	else:
-		submenu_pos.x = global_position.x + size.x + 4
+		submenu_pos.x = global_position.x + size.x + 6
 
 	if expand_up:
 		# Align bottom of submenu with current item, expand upward
