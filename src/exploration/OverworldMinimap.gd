@@ -1,0 +1,113 @@
+extends Node
+class_name OverworldMinimap
+
+## OverworldMinimap — small corner minimap showing player position
+## and transition points (villages, caves, portals) as colored dots.
+## Helps with navigation on Mode 7 view where landmarks are hard to see.
+
+const MAP_SIZE: float = 120.0  # Minimap display size in pixels
+const DOT_SIZE: float = 4.0
+const PLAYER_DOT_SIZE: float = 6.0
+
+var _canvas: CanvasLayer
+var _bg: ColorRect
+var _player_dot: ColorRect
+var _dots: Array[ColorRect] = []
+var _player_ref: Node2D
+var _map_width: float
+var _map_height: float
+
+const DOT_COLORS: Dictionary = {
+	"village": Color(0.2, 0.8, 0.2),   # Green
+	"cave": Color(0.8, 0.4, 0.1),      # Orange
+	"portal": Color(0.6, 0.3, 0.9),    # Purple
+	"dragon": Color(1.0, 0.2, 0.2),    # Red
+}
+
+
+func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int, transitions: Dictionary) -> void:
+	_player_ref = player
+	_map_width = float(map_w * tile_size)
+	_map_height = float(map_h * tile_size)
+
+	_canvas = CanvasLayer.new()
+	_canvas.name = "Minimap"
+	_canvas.layer = 85
+	parent.add_child(_canvas)
+
+	# Background
+	_bg = ColorRect.new()
+	_bg.color = Color(0.0, 0.0, 0.0, 0.4)
+	_bg.size = Vector2(MAP_SIZE + 8, MAP_SIZE + 8)
+	_bg.position = Vector2(1280 - MAP_SIZE - 24, 16)  # Top-right corner
+	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(_bg)
+
+	# Border
+	var border = ColorRect.new()
+	border.color = Color(0.5, 0.5, 0.5, 0.6)
+	border.size = Vector2(MAP_SIZE + 4, MAP_SIZE + 4)
+	border.position = _bg.position + Vector2(2, 2)
+	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(border)
+
+	var inner = ColorRect.new()
+	inner.color = Color(0.08, 0.12, 0.08, 0.8)
+	inner.size = Vector2(MAP_SIZE, MAP_SIZE)
+	inner.position = _bg.position + Vector2(4, 4)
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(inner)
+
+	# Transition dots
+	for key in transitions:
+		var pos: Vector2 = transitions[key]
+		if pos == Vector2.ZERO:
+			continue
+		var dot_type = _get_dot_type(key)
+		var color = DOT_COLORS.get(dot_type, Color(0.7, 0.7, 0.7))
+		_add_dot(pos, color)
+
+	# Player dot (on top)
+	_player_dot = ColorRect.new()
+	_player_dot.color = Color(1.0, 1.0, 1.0)
+	_player_dot.size = Vector2(PLAYER_DOT_SIZE, PLAYER_DOT_SIZE)
+	_player_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(_player_dot)
+
+
+func _get_dot_type(key: String) -> String:
+	if "dragon" in key:
+		return "dragon"
+	if "cave" in key:
+		return "cave"
+	if "village" in key or "entrance" in key:
+		return "village"
+	if "portal" in key:
+		return "portal"
+	return "village"
+
+
+func _add_dot(world_pos: Vector2, color: Color) -> void:
+	var dot = ColorRect.new()
+	dot.color = color
+	dot.size = Vector2(DOT_SIZE, DOT_SIZE)
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var map_pos = _world_to_minimap(world_pos)
+	dot.position = map_pos - Vector2(DOT_SIZE / 2, DOT_SIZE / 2)
+	_canvas.add_child(dot)
+	_dots.append(dot)
+
+
+func _world_to_minimap(world_pos: Vector2) -> Vector2:
+	var nx = world_pos.x / _map_width
+	var ny = world_pos.y / _map_height
+	var origin = _bg.position + Vector2(4, 4)
+	return origin + Vector2(nx * MAP_SIZE, ny * MAP_SIZE)
+
+
+func update(player_pos: Vector2) -> void:
+	if not _player_dot:
+		return
+	var map_pos = _world_to_minimap(player_pos)
+	_player_dot.position = map_pos - Vector2(PLAYER_DOT_SIZE / 2, PLAYER_DOT_SIZE / 2)
