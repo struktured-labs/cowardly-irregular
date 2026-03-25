@@ -101,9 +101,8 @@ const COMPASS_RADIUS: float = 28.0
 const COMPASS_DIRS: Array = ["N", "E", "S", "W"]
 
 var _current_rotation: float = 0.0
-const ROTATION_SPEED: float = 2.5
-## Debug: set GameState.debug_log_enabled = true to enable full rotation (always true for now)
-const ROTATION_SPEED_FAST: float = 3.5  # Faster rotation for debug testing
+const ROTATION_SPEED: float = 4.0  # ~1.6s for full 360°
+const ROTATION_SPEED_FAST: float = 5.5  # ~1.1s for full 360° (debug)
 const SWAY_PIXELS: float = 16.0
 const BOB_AMPLITUDE: float = 2.5
 const BOB_SPEED: float = 10.0
