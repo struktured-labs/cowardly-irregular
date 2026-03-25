@@ -203,10 +203,14 @@ var _custom_skin_color: Color = Color(0.85, 0.70, 0.55)
 var _use_custom_colors: bool = false
 
 
+var _frozen_timer: float = 0.0
+const FROZEN_SAFETY_TIMEOUT: float = 3.0
+
 func _ready() -> void:
 	# FLOATING mode for top-down — enables wall sliding in all directions
 	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	wall_min_slide_angle = 0.0  # Always allow wall sliding, even head-on
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
@@ -234,7 +238,15 @@ func _setup_sprite() -> void:
 func _physics_process(delta: float) -> void:
 	if not can_move:
 		is_moving = false
+		# Safety: if frozen for too long (battle didn't start, signal dropped),
+		# force movement back on to prevent permanent freeze
+		_frozen_timer += delta
+		if _frozen_timer > FROZEN_SAFETY_TIMEOUT:
+			can_move = true
+			_frozen_timer = 0.0
+			print("[PLAYER] Safety timeout — re-enabled movement after %.1fs freeze" % FROZEN_SAFETY_TIMEOUT)
 		return
+	_frozen_timer = 0.0
 
 	# Get input direction — simple and reliable, no suppression
 	var input_dir = Vector2.ZERO
