@@ -87,12 +87,6 @@ func _process(_delta: float) -> void:
 	if _danger_zone:
 		_danger_zone.process(_delta)
 	if _mode7:
-		# Register roaming monsters as billboards (deduplicates automatically)
-		for container_name in ["RoamingMonsters", "NPCs", "Transitions"]:
-			var container = get_node_or_null(container_name)
-			if container:
-				for child in container.get_children():
-					_mode7.register_billboard(child)
 		_mode7.process_frame()
 
 
