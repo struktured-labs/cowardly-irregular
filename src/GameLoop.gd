@@ -1220,9 +1220,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		if player:
 			_player_position = player.position
 			print("[POSITION] Saved player at: %s" % _player_position)
-			# Explicitly disable movement
-			if player.has_method("set_can_move"):
-				player.set_can_move(false)
+			# Movement blocked by LoopState.BATTLE — no manual freeze needed
 
 		# Save current floor if in cave (any multi-floor dungeon)
 		if "current_floor" in _exploration_scene:

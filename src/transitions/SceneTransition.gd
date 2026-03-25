@@ -78,10 +78,9 @@ func transition_to_battle(enemy_data: Array) -> void:
 	battle_transition_started.emit()
 	print("Transitioning to battle...")
 
-	# Disable player movement immediately
+	# Lock movement during battle transition
+	InputLockManager.push_lock("battle_transition")
 	var player = MapSystem.get_player()
-	if player:
-		player.set_can_move(false)
 
 	# Extract enemy types for transition effect
 	var enemy_types: Array = []
@@ -130,7 +129,7 @@ func transition_from_battle(victory: bool) -> void:
 	var player = MapSystem.get_player()
 	if player:
 		player.visible = true
-		player.set_can_move(true)
+		InputLockManager.pop_lock("battle_transition")
 
 		# Reset step counter to prevent immediate re-encounter
 		player.reset_step_count()
