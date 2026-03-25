@@ -1191,7 +1191,9 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	"""Handle battle triggered from exploration"""
 	# Guard against battle triggers during non-exploration states
 	if current_state != LoopState.EXPLORATION:
+		print("[BATTLE] BLOCKED — state is %s, not EXPLORATION. Enemies: %s" % [LoopState.keys()[current_state], enemies])
 		return
+	print("[BATTLE] Starting battle! Enemies: %s" % [enemies])
 	# Guard against battles while menus/UIs are open
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		return
