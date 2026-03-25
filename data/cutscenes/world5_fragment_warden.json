@@ -1,0 +1,82 @@
+{
+  "id": "world5_fragment_warden",
+  "title": "Fragment: The Shape of Being Passed",
+  "world": 5,
+  "trigger": "warden_form_defeated",
+  "location": "abstract_threshold_the_former_wall",
+  "description": "Found at the Former Wall in the abstract world after defeating the Warden of Form. A shape that used to be a wall. It is no longer that. It is not yet certain what it is instead.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "lines": [
+      "Where the wall had been, there was now something that was the shape of a wall. Not a wall. The quality of wall-ness, the geometric proposition of immovability, remained — but untethered from any surface, any material, any actual resistance. A suggestion of boundary where a boundary used to be.",
+      "It held its form in the way of something not yet certain that form was optional. The edges were clear. The interior was present. But walked through, it offered nothing — no friction, no impedance, only the slight sensation of passing through the memory of something that had once mattered to remain.",
+      "In the center of the former wall, occupying the space that had once been its most solid point: a shape. No material, no temperature, no weight. Just the particular geometry of something that had spent a very long time being exactly that shape and was now considering alternatives."
+    ]},
+
+    {"type": "wait", "duration": 0.9},
+
+    {"type": "narration", "text": "The shape had no mechanism for speaking. And yet its presence had a quality that language arrived through — not sound, not vibration, but meaning becoming adjacent to attention, the way a wall communicates by being there."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of Form",
+        "text": "I was the shape of immovability. Not a thing that was immovable — the shape itself. The geometric fact of remaining.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of Form",
+        "text": "I held my form for longer than form has been a category. Before there was a word for wall, I was the wall-ness that the word was made to describe.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of Form",
+        "text": "I thought being passed meant losing the shape. But I still have it. I'm still the same geometry I always was. I'm just — not stopping anything.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of Form",
+        "text": "I didn't know what the shape of being-passed looks like. I'm finding out now. It looks like this. Like me. Not different. Just not a wall anymore.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.1},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden of Form",
+        "text": "I think I was the wall. And now I'm a doorway. The shape is the same. The function is what changed.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.3},
+
+    {"type": "narration", "text": "The shape held. Not with resistance — with presence, the simpler quality of being somewhere rather than nowhere. Where walls stop and doorways begin is a question of direction, not of form. The Warden of Form had always been both. She had only been showing one face."},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "Reaching into the shape, it settled into the hand the way nothing has weight in a dream — present without mass, real without resistance. A geometry that had been the definition of stopping, holding itself now as the definition of passage."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "grant_item", "item": "world5_fragment_warden_abstract", "name": "Warden's Former Form", "description": "A shape that used to be a wall. The same geometry; the function reversed. Grants the passive Passage: once per dungeon, the party may bypass one locked door or barrier without a key. The warden is still there. She just isn't stopping you anymore. Tooltip: \"Wall. Doorway. The shape hasn't changed.\""},
+
+    {"type": "set_flag", "flag": "fragment_warden_abstract_collected", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
