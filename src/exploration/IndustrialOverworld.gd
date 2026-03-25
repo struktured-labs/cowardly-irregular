@@ -59,6 +59,12 @@ func _ready() -> void:
 		_mode7.apply_preset("industrial")
 		_mode7.setup(self, player)
 
+	# Zone name popup
+	var _zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
+	_zone_popup.show_zone("industrial_overworld")
+
 	# Start industrial overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_industrial")

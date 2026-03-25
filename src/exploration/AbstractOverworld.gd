@@ -76,6 +76,12 @@ func _ready() -> void:
 		add_child(_mode7)
 		_mode7.setup(self, player)
 
+	# Zone name popup
+	var _zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
+	_zone_popup.show_zone("abstract_overworld")
+
 	# Start abstract overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_abstract")
