@@ -260,6 +260,10 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("ui_down"):
 		input_dir.y += 1
 
+	# Rotate input to match camera direction so "up" moves forward visually
+	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
+		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
+
 	if input_dir != Vector2.ZERO:
 		input_dir = input_dir.normalized()
 		velocity = input_dir * move_speed
