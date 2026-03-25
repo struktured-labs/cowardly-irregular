@@ -486,6 +486,7 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 
 func _on_battle_triggered(enemies: Array) -> void:
+	print("[OVERWORLD] Re-emitting battle_triggered to GameLoop: %s" % [enemies])
 	battle_triggered.emit(enemies)
 
 
