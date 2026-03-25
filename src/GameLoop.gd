@@ -515,8 +515,9 @@ func _on_title_new_game() -> void:
 	"""Handle new game selected from title screen"""
 	print("[GAME] New Game selected")
 	_close_title_screen()
-	# Show character creation for new game
-	_show_character_creation()
+	# Skip character creation — use default party (fighter/cleric/rogue/mage)
+	_create_party()
+	_play_new_game_cutscenes()
 
 
 func _on_title_continue() -> void:
