@@ -6,7 +6,7 @@ var player_display_size: float = 160.0
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0
-var near_scale: float = 0.35  # Higher = less horizontal compression near player feet
+var near_scale: float = 0.45  # Higher = less horizontal compression near player feet
 var ground_y: float = 0.48  # Lower = sample from closer to center (less warp at player)
 var curvature: float = 0.01
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
