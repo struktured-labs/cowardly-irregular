@@ -81,7 +81,9 @@
 			"fire",
 			"blizzard",
 			"thunder",
-			"fira"
+			"fira",
+			"blizzara",
+			"thundara"
 		],
 		"passive_abilities": [
 			"magic_boost"
