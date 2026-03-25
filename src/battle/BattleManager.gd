@@ -1815,6 +1815,28 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					else:
 						print("  → %s failed to steal from %s!" % [caster.combatant_name, target.combatant_name])
 						battle_log_message.emit("[color=gray]%s couldn't steal anything from %s.[/color]" % [caster.combatant_name, target.combatant_name])
+		"cleanse":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					var cleansed: Array[String] = []
+					var negative_statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]
+					for status in negative_statuses:
+						if target.has_status(status):
+							cleansed.append(status)
+							target.remove_status(status)
+					if target.doom_counter > 0:
+						target.doom_counter = 0
+						if "doom" not in cleansed:
+							cleansed.append("doom")
+					if cleansed.size() > 0:
+						battle_log_message.emit("[color=cyan]%s cleansed %s![/color] (%s)" % [caster.combatant_name, target.combatant_name, ", ".join(cleansed)])
+					else:
+						battle_log_message.emit("[color=gray]%s has no ailments to cleanse.[/color]" % target.combatant_name)
+		"regen":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("regen", duration)
+					battle_log_message.emit("[color=green]%s gains Regen![/color] (HP restore for %d turns)" % [target.combatant_name, duration])
 		_:
 			print("  → Unknown support effect: %s" % effect)
 
