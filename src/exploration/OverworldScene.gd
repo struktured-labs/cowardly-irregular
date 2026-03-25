@@ -11,7 +11,7 @@ const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const MonsterSpawnerScript = preload("res://src/exploration/MonsterSpawner.gd")
 
 signal exploration_ready()
-signal battle_triggered(enemies: Array)
+signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles)
@@ -487,7 +487,20 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 func _on_battle_triggered(enemies: Array) -> void:
 	print("[OVERWORLD] Re-emitting battle_triggered: %s" % [enemies])
-	battle_triggered.emit(enemies)
+	# NOTE: GameLoop expects (enemies, terrain) — pass terrain to match signature
+	var terrain = _get_terrain_for_zone(_current_zone)
+	battle_triggered.emit(enemies, terrain)
+
+
+func _get_terrain_for_zone(zone: String) -> String:
+	match zone:
+		"forest": return "forest"
+		"ice": return "ice"
+		"swamp": return "swamp"
+		"desert": return "desert"
+		"volcanic": return "volcanic"
+		"coast": return "coast"
+		_: return "plains"
 
 
 func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
@@ -496,7 +509,7 @@ func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> v
 	var extra = randi_range(0, 2)
 	for _i in range(extra):
 		enemies.append(monster_id)
-	battle_triggered.emit(enemies)
+	battle_triggered.emit(enemies, _get_terrain_for_zone(_current_zone))
 
 
 func _on_menu_requested() -> void:
