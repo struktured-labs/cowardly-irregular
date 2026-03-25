@@ -233,20 +233,16 @@ func _physics_process(delta: float) -> void:
 		is_moving = false
 		return
 
-	# Suppress movement while actively rotating camera (prevents stick crosstalk)
-	var is_rotating = abs(GamepadFilter.right_stick_x) > 0.2 or abs(GamepadFilter.shoulder_rotate) > 0.0
-
-	# Get input direction
+	# Get input direction — simple and reliable, no suppression
 	var input_dir = Vector2.ZERO
-	if not is_rotating:
-		if Input.is_action_pressed("ui_left"):
-			input_dir.x -= 1
-		if Input.is_action_pressed("ui_right"):
-			input_dir.x += 1
-		if Input.is_action_pressed("ui_up"):
-			input_dir.y -= 1
-		if Input.is_action_pressed("ui_down"):
-			input_dir.y += 1
+	if Input.is_action_pressed("ui_left"):
+		input_dir.x -= 1
+	if Input.is_action_pressed("ui_right"):
+		input_dir.x += 1
+	if Input.is_action_pressed("ui_up"):
+		input_dir.y -= 1
+	if Input.is_action_pressed("ui_down"):
+		input_dir.y += 1
 
 	# Rotate input to match Mode 7 camera direction
 	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
