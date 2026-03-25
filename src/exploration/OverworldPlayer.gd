@@ -233,7 +233,7 @@ func _physics_process(delta: float) -> void:
 		is_moving = false
 		return
 
-	# Get input direction — movement and rotation are independent (L-stick + R-stick)
+	# Get input direction — simple and reliable, no suppression
 	var input_dir = Vector2.ZERO
 	if Input.is_action_pressed("ui_left"):
 		input_dir.x -= 1
@@ -247,6 +247,10 @@ func _physics_process(delta: float) -> void:
 	# Rotate input to match Mode 7 camera direction
 	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
 		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
+		# Snap to nearest 8-direction to prevent continuous sliding
+		var angle = input_dir.angle()
+		angle = round(angle / (PI / 4.0)) * (PI / 4.0)
+		input_dir = Vector2.from_angle(angle)
 
 	# Keyboard/gamepad cancels click-to-move
 	if input_dir != Vector2.ZERO:
