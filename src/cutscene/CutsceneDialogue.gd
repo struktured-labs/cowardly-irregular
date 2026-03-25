@@ -437,9 +437,8 @@ const PORTRAIT_SPRITES = {
 	"mage": "res://assets/sprites/portraits/mage.png",
 	"rogue": "res://assets/sprites/portraits/rogue.png",
 	"bard": "res://assets/sprites/portraits/bard.png",
-	"shopkeeper": "res://assets/sprites/npcs/bram.png",
-	"merchant": "res://assets/sprites/npcs/bram.png",
-	"scholar": "res://assets/sprites/npcs/scholar_milo.png",
+	# NPC sprites in assets/sprites/npcs/ are 2048x256 sprite sheets (8 frames),
+	# not single portraits. Use procedural portraits until proper NPC portrait crops exist.
 }
 
 ## Cache loaded portrait textures to avoid repeated disk reads
