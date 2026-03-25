@@ -69,8 +69,8 @@ func _check_encounter() -> bool:
 
 
 func _trigger_battle() -> void:
-	# GameLoop sets LoopState.BATTLE — player checks that, no need for can_move
 	var enemies = _generate_enemies()
+	print("[ENCOUNTER] Battle triggered! Enemies: %s" % str(enemies))
 	battle_triggered.emit(enemies)
 
 

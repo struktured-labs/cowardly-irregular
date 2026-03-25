@@ -184,6 +184,7 @@ func _get_default_indicator_text() -> String:
 func _on_body_entered(body: Node2D) -> void:
 	if _is_player(body):
 		_player_in_zone = true
+		print("[TRANSITION] Player entered zone: %s → %s" % [name, target_map])
 		if _indicator_label:
 			_indicator_label.visible = true
 
@@ -225,7 +226,7 @@ func _get_player_in_zone() -> Node2D:
 
 
 func _trigger_transition(_player: Node2D) -> void:
-	# GameLoop handles state change — no need to freeze player manually
+	print("[TRANSITION] Triggering: %s → %s (target_spawn: %s)" % [name, target_map, target_spawn])
 
 	# Hide indicator
 	if _indicator_label:
