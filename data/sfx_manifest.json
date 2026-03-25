@@ -35,7 +35,7 @@
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
-      "prompt": "Deep sub-bass cannon boom with reverberating low-end rumble, distant artillery fired in a valley, heavy bass drop impact fading into echo",
+      "prompt": "Single outdoor gunshot with long reverberating echo, pitched down 25% for deep bass, distant rifle fired in mountains",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
     },
@@ -107,7 +107,7 @@
     },
     "attack_hit": {
       "file": "assets/audio/sfx/attack_hit.ogg",
-      "prompt": "Quick sword slash connecting with flesh, short sharp swipe with a wet snapping impact, fast and precise melee strike",
+      "prompt": "Quick punchy hit with a dry thwack, short percussive slap like a wooden bat on leather, clean tight combat impact, no reverb no ring",
       "duration_seconds": 0.5,
       "prompt_influence": 0.6
     },
@@ -125,7 +125,7 @@
     },
     "damage_taken": {
       "file": "assets/audio/sfx/damage_taken.ogg",
-      "prompt": "Leather armor absorbing a blow, muffled fleshy impact with a short grunt, character wincing from damage",
+      "prompt": "Short dull body hit, quick muffled thud like a boxing glove on a heavy bag, no ring no shimmer, dry impact",
       "duration_seconds": 0.5,
       "prompt_influence": 0.5
     },

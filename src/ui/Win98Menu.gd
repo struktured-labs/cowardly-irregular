@@ -378,7 +378,7 @@ func _play_expand_sound() -> void:
 
 func _play_advance_sound() -> void:
 	"""Play sound when queueing an action (Advance mode)"""
-	SoundManager.play_ui("advance_queue")
+	SoundManager.play_battle("advance_queue")
 
 
 func _play_undo_sound() -> void:
