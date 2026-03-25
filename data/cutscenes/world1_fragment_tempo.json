@@ -1,0 +1,86 @@
+{
+  "id": "world1_fragment_tempo",
+  "title": "Fragment: The Trail",
+  "world": 1,
+  "trigger": "tempo_medieval_defeated",
+  "location": "scriptura_market_ridge",
+  "description": "Found on the ridge in Scriptura's market district where the Tempo was first sighted. A calling card, worn at the edges, left by something that ran very fast and had time to think at the end.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The ridge was empty. The market noise below had resumed — vendors, footsteps, the ordinary hum of a place that had been briefly interrupted and was already forgetting.",
+      "On the ground where the Tempo had first appeared, barely visible against the stone: a card. Small, rectangular, printed on one side with nothing but a mark — something between a footprint and a signature, precise enough to be intentional.",
+      "The edges were worn, as if it had been carried for a long time, or as if the Tempo had a habit of touching it while running."
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "The moment the card was picked up, the voice arrived — close, as if spoken from just behind, from someone who had already moved past."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "I spent a long time running. I assumed the running was the point.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "The movement, the pursuit. The moment where you almost have something and don't quite.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "But the best part was when you started running well.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "When you learned the terrain faster than I expected. When the trail became interesting because you were on the other end of it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "I think I was running toward that. The whole time.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.7},
+
+    {"type": "narration", "text": "A brief sound — genuine, quick, the laugh of something that found what it was looking for at exactly the moment it ran out of road."},
+
+    {"type": "wait", "duration": 0.9},
+
+    {"type": "narration", "text": "The card was warm from being carried. The mark on it was faded but clear. Something about holding it made the market feel slightly faster — not urgently so, but with the particular energy of a place that has recently been worth running through."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The sensation of being followed by something that didn't want to catch you."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "grant_item", "item": "tempos_quarry", "name": "Tempo's Quarry", "description": "A calling card, worn at the edges. The Tempo's mark. Grants a small SPD bonus. The Tempo of the Mainspring has additional dialogue if this is in inventory. Tooltip: \"Good run.\""},
+
+    {"type": "set_flag", "flag": "fragment_tempo_medieval_collected", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
