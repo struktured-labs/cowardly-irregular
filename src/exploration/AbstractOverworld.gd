@@ -52,6 +52,7 @@ var spawn_points: Dictionary = {}
 ## The shader dissolving during the W5→W6 transition is the narrative device.
 var mode7_enabled: bool = false
 var _mode7: Mode7Overlay
+var _minimap: OverworldMinimap
 
 ## Reality distortion effect state
 var _bg_rect: ColorRect
@@ -87,6 +88,9 @@ func _ready() -> void:
 		SoundManager.play_area_music("overworld_abstract")
 
 	_setup_effects()
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
 	exploration_ready.emit()
 
 
@@ -126,6 +130,9 @@ func _process(delta: float) -> void:
 			modulate = Color(1.0, 1.0, 1.0, 1.0)
 			_flicker_active = false
 			_flicker_interval = randf_range(18.0, 30.0)
+	if player:
+		if _minimap:
+			_minimap.update(player.position)
 
 
 func _exit_tree() -> void:
