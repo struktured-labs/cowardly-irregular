@@ -1430,6 +1430,12 @@ func set_can_move(enabled: bool) -> void:
 	if not enabled:
 		velocity = Vector2.ZERO
 		is_moving = false
+		# Safety: re-enable movement after 5s if nothing restores it (prevents permanent freeze)
+		get_tree().create_timer(5.0).timeout.connect(func():
+			if not can_move:
+				push_warning("[PLAYER] Movement was frozen for 5s — auto-restoring")
+				can_move = true
+		)
 
 
 ## Teleport player to position
