@@ -493,9 +493,9 @@ func _setup_controller() -> void:
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 	if "overworld" in target_map and _mode7:
-		if player:
-			player.set_can_move(false)
+		InputLockManager.push_lock("world_transition")
 		await _mode7.play_dissolve_out()
+		InputLockManager.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 

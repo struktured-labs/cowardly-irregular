@@ -484,9 +484,9 @@ func _apply_zone_encounters(zone: String) -> void:
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 	# Dissolve effect for world-to-world portal transitions
 	if "overworld" in target_map and _mode7:
-		if player:
-			player.set_can_move(false)
+		InputLockManager.push_lock("world_transition")
 		await _mode7.play_dissolve_out()
+		InputLockManager.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 
@@ -495,8 +495,7 @@ func _on_battle_triggered(enemies: Array) -> void:
 
 
 func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
-	if player:
-		player.set_can_move(false)
+	# GameLoop sets LoopState.BATTLE — no need for can_move
 	var enemies = [monster_id]
 	var extra = randi_range(0, 2)
 	for _i in range(extra):

@@ -69,14 +69,8 @@ func _check_encounter() -> bool:
 
 
 func _trigger_battle() -> void:
-	# Stop player movement
-	if player:
-		player.set_can_move(false)
-
-	# Generate enemy party
+	# GameLoop sets LoopState.BATTLE — player checks that, no need for can_move
 	var enemies = _generate_enemies()
-
-	# Emit signal for GameLoop to handle
 	battle_triggered.emit(enemies)
 
 
@@ -204,12 +198,10 @@ func _load_enemy_pools() -> Dictionary:
 ## Resume player control after battle or menu
 func resume_exploration() -> void:
 	_paused = false
-	if player:
-		player.set_can_move(true)
+	InputLockManager.pop_lock("exploration_paused")
 
 
 ## Pause player control
 func pause_exploration() -> void:
 	_paused = true
-	if player:
-		player.set_can_move(false)
+	InputLockManager.push_lock("exploration_paused")
