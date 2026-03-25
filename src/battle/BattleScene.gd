@@ -2089,6 +2089,9 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 			"charm":
 				sprite.modulate = Color(1.0, 0.7, 0.8)  # Pink
 				return
+			"regen":
+				sprite.modulate = Color(0.8, 1.0, 0.9)  # Soft green-white glow
+				return
 	# Unknown status — leave tint neutral
 	sprite.modulate = Color.WHITE
 

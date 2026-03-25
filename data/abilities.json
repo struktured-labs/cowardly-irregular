@@ -66,6 +66,31 @@
 		"magic_school": "white",
 		"cost": 1500
 	},
+	"esuna": {
+		"id": "esuna",
+		"name": "Esuna",
+		"type": "support",
+		"animation": "heal",
+		"mp_cost": 10,
+		"description": "Cleanse all negative status effects from one ally",
+		"target_type": "single_ally",
+		"effect": "cleanse",
+		"magic_school": "white",
+		"cost": 800
+	},
+	"regen": {
+		"id": "regen",
+		"name": "Regen",
+		"type": "support",
+		"animation": "heal",
+		"mp_cost": 12,
+		"description": "Restore HP gradually over 5 turns (5% max HP per turn)",
+		"target_type": "single_ally",
+		"effect": "regen",
+		"duration": 5,
+		"magic_school": "white",
+		"cost": 1000
+	},
 	"protect": {
 		"id": "protect",
 		"name": "Protect",

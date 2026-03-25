@@ -333,6 +333,18 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			die()
 
+	# Process heal-over-time effects
+	if "regen" in status_effects and is_alive:
+		var regen_heal = max(1, int(max_hp * 0.05))  # 5% max HP per turn
+		var old_hp = current_hp
+		current_hp = min(max_hp, current_hp + regen_heal)
+		var healed = current_hp - old_hp
+		if healed > 0:
+			hp_changed.emit(old_hp, current_hp)
+			print("%s regenerates %d HP!" % [combatant_name, healed])
+		if current_hp <= 0:
+			die()
+
 	# Tick down status effect durations
 	var expired_statuses: Array[String] = []
 	for status in status_durations:

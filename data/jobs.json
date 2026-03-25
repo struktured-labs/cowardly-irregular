@@ -48,7 +48,9 @@
 			"cure",
 			"cura",
 			"raise",
-			"protect"
+			"protect",
+			"esuna",
+			"regen"
 		],
 		"passive_abilities": [
 			"healing_boost"
