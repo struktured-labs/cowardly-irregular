@@ -203,9 +203,6 @@ var _custom_skin_color: Color = Color(0.85, 0.70, 0.55)
 var _use_custom_colors: bool = false
 
 
-var _frozen_timer: float = 0.0
-const FROZEN_SAFETY_TIMEOUT: float = 3.0
-
 func _ready() -> void:
 	# FLOATING mode for top-down — enables wall sliding in all directions
 	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
@@ -237,18 +234,11 @@ func _setup_sprite() -> void:
 
 func _physics_process(delta: float) -> void:
 	if not can_move:
+		velocity = Vector2.ZERO
 		is_moving = false
-		# Safety: if frozen for too long (battle didn't start, signal dropped),
-		# force movement back on to prevent permanent freeze
-		_frozen_timer += delta
-		if _frozen_timer > FROZEN_SAFETY_TIMEOUT:
-			can_move = true
-			_frozen_timer = 0.0
-			print("[PLAYER] Safety timeout — re-enabled movement after %.1fs freeze" % FROZEN_SAFETY_TIMEOUT)
 		return
-	_frozen_timer = 0.0
 
-	# Get input direction — simple and reliable, no suppression
+	# BARE MINIMUM: input → velocity → move_and_slide. Nothing else.
 	var input_dir = Vector2.ZERO
 	if Input.is_action_pressed("ui_left"):
 		input_dir.x -= 1
@@ -259,43 +249,16 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("ui_down"):
 		input_dir.y += 1
 
-	# Rotate input to match Mode 7 camera direction
-	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
-		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
-		# Snap to nearest 8-direction to prevent continuous sliding
-		var angle = input_dir.angle()
-		angle = round(angle / (PI / 4.0)) * (PI / 4.0)
-		input_dir = Vector2.from_angle(angle)
-
-	# Keyboard/gamepad cancels click-to-move
-	if input_dir != Vector2.ZERO:
-		_moving_to_click = false
-
-	# Click-to-move fallback when no keyboard input
-	if input_dir == Vector2.ZERO and _moving_to_click:
-		var to_target = _click_target - global_position
-		var arrive_dist = INTERACT_ARRIVE_DIST if _interact_on_arrival else CLICK_ARRIVE_DIST
-		if to_target.length() < arrive_dist:
-			_moving_to_click = false
-			if _interact_on_arrival:
-				_interact_on_arrival = false
-				interaction_requested.emit()
-		else:
-			input_dir = to_target.normalized()
-
 	if input_dir != Vector2.ZERO:
 		input_dir = input_dir.normalized()
-		# Instant velocity — no acceleration ramp, no slippery feel
 		velocity = input_dir * move_speed
 		is_moving = true
 
-		# Update facing direction (prioritize horizontal for diagonal)
 		if abs(input_dir.x) > abs(input_dir.y):
 			current_direction = Direction.LEFT if input_dir.x < 0 else Direction.RIGHT
 		else:
 			current_direction = Direction.UP if input_dir.y < 0 else Direction.DOWN
 	else:
-		# Instant stop — no deceleration slide
 		velocity = Vector2.ZERO
 		is_moving = false
 
