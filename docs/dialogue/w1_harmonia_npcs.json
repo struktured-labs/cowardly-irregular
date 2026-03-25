@@ -1,0 +1,290 @@
+{
+  "_meta": {
+    "description": "W1 Harmonia village NPC dialogue. For cowir-cutscenes to convert into CutsceneDirector JSON.",
+    "world": 1,
+    "location": "harmonia",
+    "author": "cowir-story"
+  },
+  "npcs": {
+    "elder_theron": {
+      "portrait": "elder_theron",
+      "display_name": "Elder Theron",
+      "description": "Old village elder. Dry wit. Permanently exhausted by the fact that the world keeps requiring things of him.",
+      "dialogues": {
+        "first_meeting": {
+          "trigger": "story_progress == 'prologue'",
+          "lines": [
+            {
+              "speaker": "elder_theron",
+              "text": "You'll do.",
+              "emotion": "resigned"
+            },
+            {
+              "speaker": "elder_theron",
+              "text": "The cave at the mountain's base has been spitting out monsters for three weeks. The real army is busy protecting the chancellor. The fake army — that's you — is what we have.",
+              "emotion": "dry"
+            },
+            {
+              "speaker": "elder_theron",
+              "text": "There's a man in the village — Scholar Milo — who has theories about combat. Strange theories. He'll want to talk to you. I recommend listening. I also recommend not asking follow-up questions.",
+              "emotion": "warning"
+            }
+          ]
+        },
+        "post_cave": {
+          "trigger": "story_progress == 'post_warden'",
+          "lines": [
+            {
+              "speaker": "elder_theron",
+              "text": "You came back. That's more than the last group managed.",
+              "emotion": "impressed_reluctantly"
+            },
+            {
+              "speaker": "elder_theron",
+              "text": "The corruption came from the capital. Court magic, you said. That means the chancellor isn't just ignoring us — he's feeding whatever is wrong with the cave.",
+              "emotion": "grim"
+            },
+            {
+              "speaker": "elder_theron",
+              "text": "The road east leads to Eldertree. The forest between here and there has been... wrong. Trees bending the wrong way. Sap running black. Villagers who went to check on it haven't come back.",
+              "emotion": "worried"
+            },
+            {
+              "speaker": "elder_theron",
+              "text": "I'd tell you to be careful, but I suspect careful isn't what got you through that cave. Go. And if you find the chancellor — ask him why.",
+              "emotion": "determined"
+            }
+          ]
+        },
+        "revisit": {
+          "trigger": "story_progress >= 'post_warden' && revisit_count > 0",
+          "lines": [
+            {
+              "speaker": "elder_theron",
+              "text": "Back again? The village is the same. We're always the same. That's what villages do — we persist while adventurers do the interesting parts.",
+              "emotion": "dry"
+            },
+            {
+              "speaker": "elder_theron",
+              "text": "Phil's been saying strange things again. Something about 'before.' I don't know what he means. Nobody ever does.",
+              "emotion": "thoughtful"
+            }
+          ]
+        }
+      }
+    },
+    "scholar_milo": {
+      "portrait": "scholar_milo",
+      "display_name": "Scholar Milo",
+      "description": "Enthusiastic autodidact. Inventor of the autobattle journal. Speaks with the energy of someone who has been waiting years for an audience.",
+      "dialogues": {
+        "first_meeting": {
+          "trigger": "story_progress == 'prologue'",
+          "lines": [
+            {
+              "speaker": "scholar_milo",
+              "text": "Before you go — have you considered the philosophical implications of combat automation?",
+              "emotion": "excited"
+            },
+            {
+              "speaker": "scholar_milo",
+              "text": "Imagine a world where you don't fight your battles. You design them. You build a system of rules — if this, then that — and the system fights for you.",
+              "emotion": "passionate"
+            },
+            {
+              "speaker": "scholar_milo",
+              "text": "Not laziness. Enlightenment.",
+              "emotion": "reverent"
+            },
+            {
+              "speaker": "scholar_milo",
+              "text": "Chapter one is about letting go. Chapter two is about letting go faster. Chapter three is about accepting that the gap between letting go and having it taken from you is smaller than most people think.",
+              "emotion": "cheerful_ominous"
+            }
+          ]
+        },
+        "post_cave": {
+          "trigger": "story_progress == 'post_warden'",
+          "lines": [
+            {
+              "speaker": "scholar_milo",
+              "text": "You used the journal! I can tell. There's a specific look people get when they've automated their first combat decision. Half relief, half existential vertigo.",
+              "emotion": "delighted"
+            },
+            {
+              "speaker": "scholar_milo",
+              "text": "The Warden you fought — the one in the cave — did he fight like a person or like a system?",
+              "emotion": "curious"
+            },
+            {
+              "speaker": "scholar_milo",
+              "text": "Interesting. The distinction matters more than you think. Keep the journal. Write more rules. The more rules you write, the more you'll understand about what rules can't do.",
+              "emotion": "knowing"
+            }
+          ]
+        },
+        "revisit": {
+          "trigger": "revisit_count > 0",
+          "lines": [
+            {
+              "speaker": "scholar_milo",
+              "text": "I've been refining the theory. Did you know that if you optimize a combat script long enough, it starts to look less like strategy and more like prayer? Fascinating parallel.",
+              "emotion": "absorbed"
+            }
+          ]
+        }
+      }
+    },
+    "phil_the_lost": {
+      "portrait": "phil_the_lost",
+      "display_name": "Phil the Lost",
+      "description": "Old man by the well. Loses track of things. Specifically: what has happened before. May be more significant than he appears.",
+      "dialogues": {
+        "first_meeting": {
+          "trigger": "story_progress == 'prologue'",
+          "lines": [
+            {
+              "speaker": "phil_the_lost",
+              "text": "Phil. Phil the Lost. Called that because I lose things. Mostly I lose track of... well. Of what's happened before.",
+              "emotion": "vague"
+            },
+            {
+              "speaker": "phil_the_lost",
+              "text": "Before anything much. The village. The seasons. You know how it is — years blur together. You forget which winter was which.",
+              "emotion": "distant"
+            },
+            {
+              "speaker": "phil_the_lost",
+              "text": "Good luck with the cave. Try not to die in the first room. It's bad for the spirit.",
+              "emotion": "casual_ominous"
+            }
+          ]
+        },
+        "post_cave": {
+          "trigger": "story_progress == 'post_warden'",
+          "lines": [
+            {
+              "speaker": "phil_the_lost",
+              "text": "You got through? Hm. I feel like someone's gotten through before. But that can't be right. The Warden said you were the first.",
+              "emotion": "confused"
+            },
+            {
+              "speaker": "phil_the_lost",
+              "text": "I've been having dreams. About a place that isn't here. Metal walls. Blinking lights. A voice that counts things. Does that mean anything to you?",
+              "emotion": "uncertain"
+            },
+            {
+              "speaker": "phil_the_lost",
+              "text": "Probably nothing. Old men dream strange things. That's what old men are for.",
+              "emotion": "dismissive"
+            }
+          ]
+        },
+        "completionist": {
+          "trigger": "side_quests_complete >= 3 && story_progress == 'post_warden'",
+          "lines": [
+            {
+              "speaker": "phil_the_lost",
+              "text": "You're thorough. I like that. Thorough people notice things.",
+              "emotion": "alert"
+            },
+            {
+              "speaker": "phil_the_lost",
+              "text": "Here's something I've never told anyone: I remember a name. Not from here. Not from any season I can place. The name is... calibrate. No. Calibrant. Something like that.",
+              "emotion": "struggling"
+            },
+            {
+              "speaker": "phil_the_lost",
+              "text": "It probably doesn't mean anything. Names from dreams don't usually mean anything. But you're thorough, so — keep it. In case it means something later.",
+              "emotion": "trusting"
+            }
+          ]
+        }
+      }
+    },
+    "innkeeper_marta": {
+      "portrait": "innkeeper",
+      "display_name": "Marta",
+      "description": "Innkeeper of the Sleepy Slime. Practical. Unsentimental. Makes good porridge and better mead.",
+      "dialogues": {
+        "first_meeting": {
+          "trigger": "story_progress == 'prologue'",
+          "lines": [
+            {
+              "speaker": "innkeeper_marta",
+              "text": "The Sleepy Slime has beds, mead, and porridge. The beds are adequate. The mead is good. The porridge is what it is.",
+              "emotion": "professional"
+            },
+            {
+              "speaker": "innkeeper_marta",
+              "text": "If you're the ones going to the cave, eat first. Nobody fights well on an empty stomach, and whatever's in that cave has been making my supply deliveries disappear.",
+              "emotion": "practical"
+            }
+          ]
+        },
+        "rest": {
+          "trigger": "at_inn",
+          "lines": [
+            {
+              "speaker": "innkeeper_marta",
+              "text": "Rest up. The world will still be broken in the morning. It keeps.",
+              "emotion": "matter_of_fact"
+            }
+          ]
+        },
+        "post_cave": {
+          "trigger": "story_progress == 'post_warden'",
+          "lines": [
+            {
+              "speaker": "innkeeper_marta",
+              "text": "You came back alive. Good. The last thing I need is more ghosts in the cellar.",
+              "emotion": "relieved_dry"
+            },
+            {
+              "speaker": "innkeeper_marta",
+              "text": "The mead's on the house tonight. Don't get used to it.",
+              "emotion": "generous_grudging"
+            }
+          ]
+        }
+      }
+    },
+    "sword_merchant": {
+      "portrait": "merchant",
+      "display_name": "Merchant",
+      "description": "Sells swords he's never tested. Cheerfully unqualified.",
+      "dialogues": {
+        "shop": {
+          "trigger": "always",
+          "lines": [
+            {
+              "speaker": "sword_merchant",
+              "text": "Welcome to Ye Olde Definitely Legitimate Armoury. Every sword comes with a guarantee that it is, in fact, a sword.",
+              "emotion": "cheerful"
+            },
+            {
+              "speaker": "sword_merchant",
+              "text": "Testing? No. We don't test. Testing implies doubt, and doubt is bad for business. These swords are swords. That's all you need to know.",
+              "emotion": "defensive_cheerful"
+            }
+          ]
+        },
+        "post_cave": {
+          "trigger": "story_progress == 'post_warden'",
+          "lines": [
+            {
+              "speaker": "sword_merchant",
+              "text": "You used one of my swords in actual combat? And it worked? That's... honestly that's a relief. I was about sixty percent sure they would work.",
+              "emotion": "surprised"
+            },
+            {
+              "speaker": "sword_merchant",
+              "text": "Sixty percent is passing, right?",
+              "emotion": "hopeful"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,270 @@
+{
+  "_meta": {
+    "description": "World transition cutscene dialogue. The liminal moments between worlds — standing at the portal, processing what they've learned, deciding to move forward. For cowir-cutscenes to implement as transition cinematics.",
+    "author": "cowir-story"
+  },
+  "transitions": {
+    "w1_to_w2": {
+      "title": "Phase Transition: Medieval → Suburban",
+      "location": "harmonia_workshop_portal",
+      "context": "The party has defeated all four W1 Masterites and discovered that Chancellor Mordaine was designed — placed — by something larger. A portal has appeared in Dr. Temporal's workshop showing parking lots and picket fences.",
+      "pre_portal": [
+        {
+          "speaker": "bard",
+          "text": "Mordaine designed our journey. All of it. The cave. The forest. The Masterites. Us.",
+          "emotion": "realization"
+        },
+        {
+          "speaker": "mage",
+          "text": "She designed a challenge. We happened to be the ones inside it.",
+          "emotion": "analytical"
+        },
+        {
+          "speaker": "bard",
+          "text": "That's not better.",
+          "emotion": "unsettled"
+        },
+        {
+          "speaker": "mage",
+          "text": "It's not worse either. The design is real. The challenges were real. What we built — the way we fight, the way we adapt — that came from us, not from her.",
+          "emotion": "steady"
+        },
+        {
+          "speaker": "rogue",
+          "text": "Does it count if everything we overcame was built to be overcome?",
+          "emotion": "skeptical"
+        },
+        {
+          "speaker": "cleric",
+          "text": "Does any game count if the pieces were designed to fit together?",
+          "emotion": "quiet_profound",
+          "note": "The word 'game' lands strangely. First time anyone uses it. The Cleric doesn't seem to notice she said it."
+        },
+        {
+          "speaker": "bard",
+          "text": "The diagram — the administrative chart — it wasn't administrative at all. It was a map of phases. And the scholar said there were five more like it.",
+          "emotion": "dawning"
+        },
+        {
+          "speaker": "bard",
+          "text": "This isn't a reward.",
+          "emotion": "grim"
+        },
+        {
+          "speaker": "mage",
+          "text": "No.",
+          "emotion": "flat"
+        },
+        {
+          "speaker": "bard",
+          "text": "It's the next one.",
+          "emotion": "accepting"
+        },
+        {
+          "speaker": "fighter",
+          "text": "We're going anyway.",
+          "emotion": "resolved",
+          "note": "The Fighter steps through first. Always does."
+        }
+      ],
+      "during_transition": [
+        {
+          "speaker": "narrator",
+          "text": "The medieval world didn't end behind them — it simply stopped being relevant. Like a chapter in a book no one was reading anymore.",
+          "emotion": "neutral"
+        },
+        {
+          "speaker": "narrator",
+          "text": "Somewhere, something calibrated.",
+          "emotion": "ominous"
+        }
+      ],
+      "post_portal": [
+        {
+          "speaker": "narrator",
+          "text": "The transformation happened between the shimmer and the step.",
+          "emotion": "matter_of_fact"
+        },
+        {
+          "speaker": "fighter",
+          "text": "...",
+          "emotion": "examining_self",
+          "note": "Fighter looks down at his Security Guard uniform. Badge says SECURITY."
+        },
+        {
+          "speaker": "cleric",
+          "text": "I think we're still supposed to be helping people.",
+          "emotion": "adjusting"
+        },
+        {
+          "speaker": "mage",
+          "text": "New world. New context. Same skills, different costume.",
+          "emotion": "testing"
+        },
+        {
+          "speaker": "rogue",
+          "text": "I know how this works. I don't know how I know. I just do.",
+          "emotion": "wary",
+          "note": "Rogue adjusts hoodie, examines skateboard."
+        },
+        {
+          "speaker": "bard",
+          "text": "I can work with this.",
+          "emotion": "determined",
+          "note": "Bard examines trumpet. Plays a note. Car alarm goes off nearby."
+        }
+      ],
+      "playstyle_variants": {
+        "autobattle": {
+          "extra_line": {
+            "speaker": "mage",
+            "text": "The combat scripts — they came through. Different syntax, same logic. The automation translated.",
+            "emotion": "fascinated"
+          }
+        },
+        "completionist": {
+          "extra_line": {
+            "speaker": "bard",
+            "text": "We didn't miss anything back there, did we? I keep feeling like we left something unfinished. Phil said something about dreams — metal walls, blinking lights. I wrote it all down.",
+            "emotion": "thorough"
+          }
+        }
+      }
+    },
+    "w2_to_w3": {
+      "title": "Phase Transition: Suburban → Steampunk",
+      "location": "maple_heights_community_center_basement",
+      "context": "The party has defeated the suburban Masterites and discovered the HOA President was another designed authority. A portal in the community center basement shows brass gears and steam vents.",
+      "pre_portal": [
+        {
+          "speaker": "mage",
+          "text": "Two worlds. Two designed authorities. Two sets of Masterites — same archetypes, different costumes. Warden, Arbiter, Tempo, Curator. The pattern is repeating.",
+          "emotion": "mapping"
+        },
+        {
+          "speaker": "fighter",
+          "text": "The Warden of Routine was the same as the Warden of the Old Guard. Not the same person. The same... shape.",
+          "emotion": "troubled",
+          "note": "Especially resonant if Fighter has Warden sub-job."
+        },
+        {
+          "speaker": "cleric",
+          "text": "She didn't know where she was before. Neither did the Old Guard. They're placed. Someone places them.",
+          "emotion": "compassionate"
+        },
+        {
+          "speaker": "rogue",
+          "text": "Someone places them and they don't know they've been placed. That's the part that bothers me. Not the placing — the not knowing.",
+          "emotion": "sharp"
+        },
+        {
+          "speaker": "bard",
+          "text": "The crossing guard said she'd been at her corner since before she could remember. The delivery driver said the route never ends. The librarian said the catalog was all there was.",
+          "emotion": "cataloguing"
+        },
+        {
+          "speaker": "bard",
+          "text": "I'm starting to hear a theme. And I don't like the song.",
+          "emotion": "uneasy"
+        },
+        {
+          "speaker": "mage",
+          "text": "The next world has gears. Clockwork. Precision machinery. If the first world was honest duty and the second was sincere bureaucracy, the third is—",
+          "emotion": "predicting"
+        },
+        {
+          "speaker": "rogue",
+          "text": "Systems. Visible systems. The kind that show you how they work.",
+          "emotion": "interested_despite_self"
+        },
+        {
+          "speaker": "fighter",
+          "text": "Let's find out.",
+          "emotion": "forward"
+        }
+      ],
+      "during_transition": [
+        {
+          "speaker": "narrator",
+          "text": "The suburb dissolved behind them like a dream you can't quite hold onto after waking — the details fading first, then the feeling, then the certainty that it had been real at all.",
+          "emotion": "dissolving"
+        },
+        {
+          "speaker": "narrator",
+          "text": "The air changed. It became thicker. Warmer. It tasted of copper and steam and something mechanical — the specific flavor of air that has been breathed by engines.",
+          "emotion": "arriving"
+        }
+      ],
+      "post_portal": [
+        {
+          "speaker": "narrator",
+          "text": "The transformation this time was louder. Metal clanged into place where polyester had been. Gears spun where zippers had closed. The world wasn't subtle about what it was doing.",
+          "emotion": "aggressive_genre_shift"
+        },
+        {
+          "speaker": "fighter",
+          "text": "Armor again. But it's not steel — it's brass. And it's ticking.",
+          "emotion": "examining",
+          "note": "Fighter is now Steamknight. Brass clockwork plate."
+        },
+        {
+          "speaker": "cleric",
+          "text": "The prayers are different here. Same words but they arrive through pipes. Like the faith has plumbing.",
+          "emotion": "adapting",
+          "note": "Cleric is now Steampriest."
+        },
+        {
+          "speaker": "mage",
+          "text": "The formulae — they've become chemical equations. This is alchemy. Not metaphorical alchemy. Actual reaction chemistry with a magical product.",
+          "emotion": "thrilled",
+          "note": "Mage is now Alchemist."
+        },
+        {
+          "speaker": "rogue",
+          "text": "Lockpicks still work. Different locks, same principle. Tumblers are gears now, but a tumbler is a tumbler.",
+          "emotion": "satisfied",
+          "note": "Rogue is now Saboteur."
+        },
+        {
+          "speaker": "bard",
+          "text": "The trumpet became a steam-whistle. I think I can make it sing. Give me a minute.",
+          "emotion": "adjusting",
+          "note": "Bard is now Busker."
+        },
+        {
+          "speaker": "mage",
+          "text": "Two worlds of costumes. The skills underneath don't change — just the interface. Whoever is designing this understands something about abstraction.",
+          "emotion": "noting"
+        },
+        {
+          "speaker": "fighter",
+          "text": "Or they understand something about us.",
+          "emotion": "wary"
+        }
+      ],
+      "playstyle_variants": {
+        "autobattle": {
+          "extra_line": {
+            "speaker": "mage",
+            "text": "The autobattle scripts adapted instantly. Punch-card logic now. Same rules, different encoding. It's like the system wants to be automated.",
+            "emotion": "suspicious"
+          }
+        },
+        "grinder": {
+          "extra_line": {
+            "speaker": "rogue",
+            "text": "We're stronger than we should be. Whatever these worlds are calibrated for, we've outgrown the calibration. Someone's going to notice.",
+            "emotion": "warning"
+          }
+        },
+        "completionist": {
+          "extra_line": {
+            "speaker": "bard",
+            "text": "I kept a complete record. Every conversation from Harmonia and Maple Heights. Sixty-three NPCs. Forty-one side quests. Twelve hidden items. Every single one of them had something to say that mattered. I don't think the designer expected anyone to hear all of it.",
+            "emotion": "proud_uneasy"
+          }
+        }
+      }
+    }
+  }
+}
