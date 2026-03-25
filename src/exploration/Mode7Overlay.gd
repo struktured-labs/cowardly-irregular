@@ -297,11 +297,8 @@ func process_frame() -> void:
 	_player_moving = move_delta.length_squared() > 0.5
 	_last_player_pos = _player_ref.position
 
-	# Camera rotation: right stick X, shoulder buttons (L1/R1), or Q/E keys
+	# Camera rotation: right stick X or Q/E keys (shoulder buttons reserved for battle)
 	var cam_input = GamepadFilter.right_stick_x
-	# Shoulder buttons as alternative (no stick crosstalk)
-	if abs(cam_input) < 0.1 and abs(GamepadFilter.shoulder_rotate) > 0.0:
-		cam_input = GamepadFilter.shoulder_rotate
 	# Keyboard fallback
 	if abs(cam_input) < 0.1:
 		if Input.is_key_pressed(KEY_E):
