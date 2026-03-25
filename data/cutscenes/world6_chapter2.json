@@ -1,0 +1,300 @@
+{
+  "id": "world6_chapter2",
+  "title": "No One",
+  "world": 6,
+  "trigger": "world6_vertex_outer_edge",
+  "description": "The party meets No One — the remainder of every enemy they have ever defeated. Not sad. Just remainder. The slime from World 1 that was their first encounter. The remainder is the point.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "wait", "duration": 0.8},
+    {"type": "play_music", "track": "cutscene_w6_no_one_speaks"},
+
+    {"type": "narration", "lines": [
+      "At the farthest edge of The Vertex, at the point where the village stopped being a village and became pure abstraction, something was present.",
+      "Not a person. The shape of a person after the person had been removed — the outline, the silhouette, the space where someone used to be.",
+      "It was sitting. Or the concept of sitting. In The Vertex, the difference between an action and the idea of an action had collapsed into the same thing."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Who's there?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "No One",
+        "text": "No one.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "That's not an answer.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "No One",
+        "text": "It's the only accurate one. I was everyone who died in your game. Every enemy. Every slime, every goblin, every Masterite in every world. Every boss from every dungeon. I'm what's left of them after the experience points were distributed and the loot was collected and the encounter engine moved on to the next spawn.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The party looked at the shape. It looked back with something that functioned as eyes in a world where seeing was a matter of attention rather than anatomy."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "We're sorry.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "No One",
+        "text": "Don't be. I'm not sad.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "You seem—",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "No One",
+        "text": "Quiet. I seem quiet. I'm not sad. I'm remainder. The part of the equation that's left after everything meaningful has been extracted. It's a different condition from sad. Sad implies something was taken. I'm just what remains after the taking.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "You don't feel like a remainder.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "No One",
+        "text": "That's kind.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "It's not kind. There's a difference between kindness and truth.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "No One",
+        "text": "The slime.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Which—",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "No One",
+        "text": "World 1. Harmonia outskirts. Your first encounter. It didn't say anything remarkable. It attacked. It lost. It dissolved into eight experience points and a healing herb. Standard enemy. Minimum-stat monster in the game's opening zone.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "No One was quiet for a moment — actually quiet, actually thinking, in the way that something given a question it has waited six worlds to be asked thinks before answering."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "No One",
+        "text": "That slime was the first thing you ever fought. The first moment the system was real to you. The first time your choices mattered because something responded to them. Before the Masterites. Before the portals. Before you understood what the worlds were or who built them. Before any of it. Just a slime in a field, and you struck, and it struck back, and the world had weight.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "No One",
+        "text": "That moment. Everything after it was built on that first response. The first time you understood: the world pushes back.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "We hadn't thought about it that way.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "No One",
+        "text": "No. You had other things to think about. That's appropriate. The slime's job was to begin the world for you. It did its job. You moved on. That's what beginnings are for.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "And the others? The ones you're made of.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "No One",
+        "text": "I contain every enemy you've defeated. The clockwork rats in the industrial tunnels. The lawn mower in World 2 that cried. The Warden of the Assembly Line, reciting its protocol 14,000 times into an empty log. The Arbiter of Efficiency, rating the PA Announcer's instrument a 4.1 and being surprised when the rating stopped working.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "No One",
+        "text": "Twenty-two Masterites. Each one a question wearing four different costumes across five worlds. Each one you answered.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "No One",
+        "text": "I'm not a tragedy. I'm a record.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What do you want from us?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "No One",
+        "text": "Nothing. I don't have wants in the way things with futures have wants. I have something to tell you, which is different.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "No One",
+        "text": "The Calibrant is a remainder too. They'd never admit it — they've been building since before you arrived and they'd say they're still building. But they're not. They're remainder. The system outlasted its purpose. The challenge outlasted the reason for challenging. What's left of them, after five worlds of you exceeding everything they could construct, is the question of what the construction was for.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "What was it for?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "No One",
+        "text": "For this.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "No One",
+        "text": "The system was for the encounters. Not the other way around. The worlds, the Masterites, the difficulty curves, the escalating complexity — all of it was to produce encounters. And the encounters were for the memory. And the memory is the remainder. And the remainder is the point.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "No One",
+        "text": "I am the remainder. The slime that began it. The goblin you let loop. All of them. They mattered because they were encountered, and encountering is a form of care. You cared enough to engage. Every enemy you fought — you took seriously enough to try. That is what I am made of. Not defeat. The seriousness of the encounter.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "No One stood. In The Vertex, standing is an orientation of attention rather than a physical movement. It oriented its attention toward the shape in the whiteness — toward the Calibrant, far away or close, distance being meaningless."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "No One",
+        "text": "Tell them that. When you talk to them. They built a system to measure you and you exceeded it and now they don't know what the system was for. Tell them: the remainder is the point. The thing left over after the measurement — the part that can't be quantified — that was always what they were building toward. They just couldn't see it until you got here.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "How do you know that?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "No One",
+        "text": "I'm made of every moment that couldn't be measured. I've been the remainder of twenty-two Masterites and hundreds of minor encounters and one slime that started everything. I've had a long time to become familiar with what the unmeasured part looks like.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "No One",
+        "text": "It looks like you.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "No One sat back down. Or the suggestion of sitting. In The Vertex, the difference between remaining and leaving is subtle — a matter of where the attention goes.",
+      "No One's attention remained. It had nowhere else to be.",
+      "The party walked toward the shape in the whiteness. Toward the Calibrant. Toward whatever came after measurement."
+    ]},
+
+    {"type": "set_flag", "flag": "world6_chapter2_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
