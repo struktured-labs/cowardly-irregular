@@ -2,8 +2,8 @@ shader_type canvas_item;
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_nearest;
 uniform float horizon : hint_range(0.0, 0.5) = 0.0;
-uniform float near_scale : hint_range(0.05, 0.5) = 0.22;
-uniform float ground_y : hint_range(0.3, 0.95) = 0.52;
+uniform float near_scale : hint_range(0.05, 0.6) = 0.35;
+uniform float ground_y : hint_range(0.3, 0.95) = 0.48;
 uniform float curvature : hint_range(0.0, 0.2) = 0.01;
 // Camera rotation now driven by Camera2D.rotation instead of UV-space rotation.
 // This eliminates texture sampling degradation past ~180 degrees.

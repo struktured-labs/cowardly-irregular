@@ -6,8 +6,8 @@ var player_display_size: float = 160.0
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0
-var near_scale: float = 0.22
-var ground_y: float = 0.52
+var near_scale: float = 0.35  # Higher = less horizontal compression near player feet
+var ground_y: float = 0.48  # Lower = sample from closer to center (less warp at player)
 var curvature: float = 0.01
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
 var sky_top: Color = Color(0.25, 0.35, 0.65, 1.0)
@@ -501,8 +501,8 @@ func cleanup() -> void:
 
 static func apply_camera(cam: Camera2D, mode7: bool) -> void:
 	if mode7:
-		cam.zoom = Vector2(0.65, 0.65)
-		cam.offset = Vector2(0, -30)
+		cam.zoom = Vector2(0.85, 0.85)  # Closer zoom = tiles near player match collision size
+		cam.offset = Vector2(0, -20)
 	else:
 		cam.zoom = Vector2(2.0, 2.0)
 		cam.offset = Vector2.ZERO
