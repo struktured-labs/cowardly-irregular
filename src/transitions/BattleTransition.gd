@@ -118,7 +118,9 @@ func _play_encounter_flash() -> void:
 ## Play battle transition based on enemy type
 func play_battle_transition(enemy_types: Array) -> void:
 	if _is_transitioning:
-		return
+		push_warning("[TRANSITION] Previous transition still active — force-resetting")
+		_cleanup_effects()
+		_is_transitioning = false
 
 	_is_transitioning = true
 	_viewport_size = get_viewport().get_visible_rect().size
@@ -979,3 +981,4 @@ func _cleanup_effects() -> void:
 	_screen_texture = null
 	_iris_shader = null
 	_effect_container.modulate = Color.WHITE
+	_is_transitioning = false  # Safety reset — prevent stuck transitions
