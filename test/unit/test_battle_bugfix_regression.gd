@@ -958,3 +958,56 @@ func test_regen_minimum_1_heal() -> void:
 	_combatant.update_buff_durations()
 	# 5% of 10 = 0.5, but min is 1
 	assert_eq(_combatant.current_hp, 6, "Regen should heal minimum 1 HP even on low max HP")
+
+
+# ===========================================================================
+# Day 3 Task 5 — Tier 3 spells + autobattle script completeness
+# ===========================================================================
+
+func test_tier3_spells_exist_and_are_aoe() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	for spell_id in ["firaga", "blizzaga", "thundaga"]:
+		assert_true(abilities.has(spell_id), "%s should exist" % spell_id)
+		assert_eq(abilities[spell_id]["target_type"], "all_enemies",
+			"%s should be AOE (all_enemies)" % spell_id)
+		assert_eq(abilities[spell_id]["mp_cost"], 32,
+			"%s should cost 32 MP" % spell_id)
+		assert_eq(abilities[spell_id]["damage_multiplier"], 5.0,
+			"%s should have 5.0x damage" % spell_id)
+
+
+func test_mage_has_all_tier3_spells() -> void:
+	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(file, "jobs.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "jobs.json should parse")
+	var jobs = json.data
+
+	var mage = jobs.get("mage", {})
+	var abilities = mage.get("abilities", [])
+	for spell in ["firaga", "blizzaga", "thundaga"]:
+		assert_true(spell in abilities, "Mage should have %s" % spell)
+
+
+func test_speculator_has_all_6_abilities() -> void:
+	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(file, "jobs.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "jobs.json should parse")
+	var jobs = json.data
+
+	var spec = jobs.get("speculator", {})
+	var abilities = spec.get("abilities", [])
+	for ability in ["leverage_position", "overexpose", "hedge_position", "press_the_edge", "forecast", "circuit_breaker"]:
+		assert_true(ability in abilities, "Speculator should have %s" % ability)

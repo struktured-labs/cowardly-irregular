@@ -263,6 +263,28 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			var max_ap = combatant.current_ap >= 4
 			return has_buffs and max_ap
 
+		"has_buff":
+			# True when combatant has at least one active buff on the given stat.
+			# Use {type: "has_buff", stat: "defense"} to check for a defense buff.
+			var stat = condition.get("stat", "")
+			if not ("active_buffs" in combatant):
+				return false
+			for buff in combatant.active_buffs:
+				if buff.get("stat", "") == stat:
+					return true
+			return false
+
+		"not_has_buff":
+			# True when combatant does NOT have any active buff on the given stat.
+			# Use {type: "not_has_buff", stat: "defense"} to gate "apply Iron Guard when unbuffed".
+			var stat = condition.get("stat", "")
+			if not ("active_buffs" in combatant):
+				return true
+			for buff in combatant.active_buffs:
+				if buff.get("stat", "") == stat:
+					return false
+			return true
+
 		"always":
 			return true
 
@@ -370,6 +392,8 @@ func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant
 			return _get_lowest_hp_ally(combatant)
 		"lowest_magic_defense_enemy":
 			return _get_lowest_magic_defense_enemy(combatant)
+		"highest_atk_enemy":
+			return _get_highest_atk_enemy(combatant)
 		"self":
 			return combatant
 		_:
@@ -633,6 +657,14 @@ func create_default_character_script(character_id: String) -> Dictionary:
 			return _create_black_mage_default_script(character_id)
 		"bard":
 			return _create_bard_default_script(character_id)
+		"guardian":
+			return _create_guardian_default_script(character_id)
+		"ninja":
+			return _create_ninja_default_script(character_id)
+		"summoner":
+			return _create_summoner_default_script(character_id)
+		"speculator":
+			return _create_speculator_default_script(character_id)
 		_:
 			# Job lookup via GameState: handles any named character whose primary job
 			# is known but whose name doesn't match the cases above
@@ -650,6 +682,12 @@ func create_default_character_script(character_id: String) -> Dictionary:
 						return _create_black_mage_default_script(character_id)
 					"bard":
 						return _create_bard_default_script(character_id)
+					"guardian":
+						return _create_guardian_default_script(character_id)
+					"ninja":
+						return _create_ninja_default_script(character_id)
+					"summoner":
+						return _create_summoner_default_script(character_id)
 			# Generic fallback — potion if in danger, then attack lowest HP enemy
 			return {
 				"character_id": character_id,
@@ -941,6 +979,203 @@ func _create_bard_default_script(character_id: String) -> Dictionary:
 				"actions": [{"type": "ability", "id": "inspiring_melody", "target": "all_allies"}]
 			},
 			# Fallback: basic attack
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_guardian_default_script(character_id: String) -> Dictionary:
+	"""Guardian script - tank/protect role. Iron Guard self-buff, Taunt the hardest hitter,
+	Protect a wounded ally, potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Guardian Default",
+		"rules": [
+			# Survival first: HP below 30%, use potion — Guardian must stay alive to protect the party
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Iron Guard: apply defense buff on self when not already defended — priority setup move
+			{
+				"conditions": [
+					{"type": "not_has_buff", "stat": "defense"},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "iron_guard", "target": "self"}]
+			},
+			# Taunt: force the highest-ATK enemy to attack the Guardian
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "taunt", "target": "highest_atk_enemy"}]
+			},
+			# Protect: cover the lowest-HP ally when they are at risk and Guardian has MP
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<", "value": 50},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "protect", "target": "lowest_hp_ally"}]
+			},
+			# Default - attack to contribute damage while tanking
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_ninja_default_script(character_id: String) -> Dictionary:
+	"""Ninja script - speed/burst role. Steal opener, Backstab on healthy targets,
+	Quick Strike cleanup, potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Ninja Default",
+		"rules": [
+			# Survival first: HP below 30%, use potion — Ninja is fragile and can't burst if dead
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Backstab opener: maximum damage on a healthy enemy before they act
+			# Fires while enemy is above 60% HP — the opener window
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 60}
+				],
+				"actions": [{"type": "ability", "id": "backstab", "target": "highest_hp_enemy"}]
+			},
+			# Steal: grab items from an undamaged enemy who still has their loot
+			# Must come after backstab check so we don't steal from a target we just wounded
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 75}
+				],
+				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
+			},
+			# Quick Strike: fast follow-up on a wounded target to finish them before they act
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": "<", "value": 40}
+				],
+				"actions": [{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"}]
+			},
+			# Default - attack lowest HP to kill off threats quickly
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_summoner_default_script(character_id: String) -> Dictionary:
+	"""Summoner script - AOE/support role. Summon Ifrit and Shiva against groups,
+	Cure wounded allies, potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Summoner Default",
+		"rules": [
+			# Survival first: HP below 30%, use potion — can't summon while dead
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Summon Ifrit: AOE fire damage against packs — highest priority summon
+			{
+				"conditions": [
+					{"type": "enemy_count", "op": ">=", "value": 2},
+					{"type": "mp_percent", "op": ">=", "value": 30}
+				],
+				"actions": [{"type": "ability", "id": "summon_ifrit", "target": "lowest_hp_enemy"}]
+			},
+			# Summon Shiva: AOE ice damage — fires when Ifrit is on cooldown or already used
+			{
+				"conditions": [
+					{"type": "enemy_count", "op": ">=", "value": 2},
+					{"type": "mp_percent", "op": ">=", "value": 30}
+				],
+				"actions": [{"type": "ability", "id": "summon_shiva", "target": "lowest_hp_enemy"}]
+			},
+			# Cure: heal a critically wounded ally when MP allows
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<", "value": 50},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
+			},
+			# Default - basic attack when MP is depleted
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_speculator_default_script(character_id: String) -> Dictionary:
+	"""Speculator script - volatility manipulation and risk/reward plays.
+	Opens with Forecast for intel, leverages self for burst, hedges allies for safety."""
+	return {
+		"character_id": character_id,
+		"name": "Speculator Default",
+		"rules": [
+			# Survival: potion when critically low
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<=", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Forecast first turn — cheap intel gathering (3 MP)
+			{
+				"conditions": [
+					{"type": "turn", "op": "<=", "value": 1},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "forecast", "target": "self"}]
+			},
+			# Press the Edge when band is Shifting+ for burst damage
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "press_the_edge", "target": "lowest_hp_enemy"}]
+			},
+			# Hedge lowest HP ally for protection
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<=", "value": 50},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "hedge_position", "target": "lowest_hp_ally"}]
+			},
+			# Leverage self for damage boost when HP is healthy
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": ">=", "value": 60},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "leverage_position", "target": "self"}]
+			},
+			# Fallback — basic attack
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -1300,6 +1535,16 @@ func _get_lowest_magic_defense_enemy(combatant: Combatant) -> Combatant:
 		return null
 
 	enemies.sort_custom(func(a, b): return a.defense < b.defense)
+	return enemies[0]
+
+
+func _get_highest_atk_enemy(combatant: Combatant) -> Combatant:
+	"""Get enemy with highest base_attack — the biggest threat to a tank"""
+	var enemies = _get_enemies_for(combatant)
+	if enemies.size() == 0:
+		return null
+
+	enemies.sort_custom(func(a, b): return a.base_attack > b.base_attack)
 	return enemies[0]
 
 
