@@ -3,6 +3,7 @@
   "title": "The Notice",
   "world": 1,
   "trigger": "new_game_start",
+  "background": "prologue_village",
   "description": "Opening scene: The conscription notice at the Sleepy Slime Inn, party introductions.",
   "steps": [
     {"type": "fade_from_black", "duration": 1.5},

@@ -42,6 +42,9 @@ var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
 var _minimap: OverworldMinimap
 
+## Zone particles
+var _zone_particles: ZoneParticles
+
 ## Glitch effect state
 var _glitch_overlay: ColorRect
 var _glitch_timer: float = 0.0
@@ -70,6 +73,11 @@ func _ready() -> void:
 	add_child(_zone_popup)
 	_zone_popup.setup(self)
 	_zone_popup.show_zone("futuristic_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("futuristic_overworld")
 
 	# Start futuristic overworld music
 	if SoundManager:
@@ -131,6 +139,8 @@ func _process(delta: float) -> void:
 			_glitch_timer = 0.0
 			_glitch_interval = randf_range(15.0, 20.0)
 	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
 

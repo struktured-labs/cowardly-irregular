@@ -3,6 +3,7 @@
   "title": "The Chancellor's Accounting",
   "world": 1,
   "trigger": "boss_mordaine_encounter",
+  "background": "throne_room",
   "description": "The throne room of Castle Harmonia. Chancellor Mordaine has been expecting them. The architect of World 1 meets the element she did not calculate.",
   "steps": [
     {"type": "stop_music"},

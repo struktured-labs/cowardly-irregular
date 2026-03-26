@@ -3,6 +3,7 @@
   "title": "The Road North",
   "world": 1,
   "trigger": "overworld_road_north",
+  "background": "prologue_forest",
   "description": "Encounters on the road to the Whispering Cave: clever slimes, Grut the goblin merchant, wolf pack standoff.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},

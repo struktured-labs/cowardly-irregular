@@ -41,6 +41,9 @@ var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
 var _minimap: OverworldMinimap
 
+## Zone particles
+var _zone_particles: ZoneParticles
+
 ## Smoke effect nodes
 var _smoke_emitters: Array = []
 
@@ -65,6 +68,11 @@ func _ready() -> void:
 	add_child(_zone_popup)
 	_zone_popup.setup(self)
 	_zone_popup.show_zone("industrial_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("industrial_overworld")
 
 	# Start industrial overworld music
 	if SoundManager:
@@ -121,6 +129,8 @@ func _process(_delta: float) -> void:
 	if _mode7:
 		_mode7.process_frame()
 	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
 
