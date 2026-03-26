@@ -1011,3 +1011,66 @@ func test_speculator_has_all_6_abilities() -> void:
 	var abilities = spec.get("abilities", [])
 	for ability in ["leverage_position", "overexpose", "hedge_position", "press_the_edge", "forecast", "circuit_breaker"]:
 		assert_true(ability in abilities, "Speculator should have %s" % ability)
+
+
+# ===========================================================================
+# Day 3 Round 2 — All 14 jobs completeness tests
+# ===========================================================================
+
+func test_all_14_jobs_have_abilities() -> void:
+	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(file, "jobs.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "jobs.json should parse")
+	var jobs = json.data
+
+	var expected_jobs = [
+		"fighter", "cleric", "mage", "rogue", "bard",
+		"guardian", "ninja", "summoner", "speculator",
+		"scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter"
+	]
+	for job_id in expected_jobs:
+		assert_true(jobs.has(job_id), "Job '%s' should exist in jobs.json" % job_id)
+		var job = jobs[job_id]
+		assert_true(job.has("abilities"), "Job '%s' should have abilities array" % job_id)
+		assert_gt(job["abilities"].size(), 0, "Job '%s' should have at least 1 ability" % job_id)
+
+
+func test_all_14_jobs_have_evolution_blocks() -> void:
+	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(file, "jobs.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "jobs.json should parse")
+	var jobs = json.data
+
+	for job_id in jobs:
+		assert_true(jobs[job_id].has("evolution"),
+			"Job '%s' should have evolution block" % job_id)
+
+
+func test_all_job_abilities_exist_in_abilities_json() -> void:
+	var jobs_file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(jobs_file, "jobs.json should exist")
+	var jobs_json = JSON.new()
+	jobs_json.parse(jobs_file.get_as_text())
+	jobs_file.close()
+	var jobs = jobs_json.data
+
+	var ab_file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(ab_file, "abilities.json should exist")
+	var ab_json = JSON.new()
+	ab_json.parse(ab_file.get_as_text())
+	ab_file.close()
+	var abilities = ab_json.data
+
+	for job_id in jobs:
+		var job = jobs[job_id]
+		if not job.has("abilities"):
+			continue
+		for ability_id in job["abilities"]:
+			assert_true(abilities.has(ability_id),
+				"Job '%s' references ability '%s' which doesn't exist in abilities.json" % [job_id, ability_id])
