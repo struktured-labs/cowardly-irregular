@@ -665,6 +665,16 @@ func create_default_character_script(character_id: String) -> Dictionary:
 			return _create_summoner_default_script(character_id)
 		"speculator":
 			return _create_speculator_default_script(character_id)
+		"scriptweaver":
+			return _create_scriptweaver_default_script(character_id)
+		"time_mage":
+			return _create_time_mage_default_script(character_id)
+		"necromancer":
+			return _create_necromancer_default_script(character_id)
+		"bossbinder":
+			return _create_bossbinder_default_script(character_id)
+		"skiptrotter":
+			return _create_skiptrotter_default_script(character_id)
 		_:
 			# Job lookup via GameState: handles any named character whose primary job
 			# is known but whose name doesn't match the cases above
@@ -688,6 +698,16 @@ func create_default_character_script(character_id: String) -> Dictionary:
 						return _create_ninja_default_script(character_id)
 					"summoner":
 						return _create_summoner_default_script(character_id)
+					"scriptweaver":
+						return _create_scriptweaver_default_script(character_id)
+					"time_mage":
+						return _create_time_mage_default_script(character_id)
+					"necromancer":
+						return _create_necromancer_default_script(character_id)
+					"bossbinder":
+						return _create_bossbinder_default_script(character_id)
+					"skiptrotter":
+						return _create_skiptrotter_default_script(character_id)
 			# Generic fallback — potion if in danger, then attack lowest HP enemy
 			return {
 				"character_id": character_id,
@@ -1176,6 +1196,192 @@ func _create_speculator_default_script(character_id: String) -> Dictionary:
 				"actions": [{"type": "ability", "id": "leverage_position", "target": "self"}]
 			},
 			# Fallback — basic attack
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_scriptweaver_default_script(character_id: String) -> Dictionary:
+	"""Scriptweaver script - meta/debug manipulation role. Potion safety net,
+	highest-damage ability when MP allows, basic attack fallback.
+	Abilities are meta in nature so targeting stays generic."""
+	return {
+		"character_id": character_id,
+		"name": "Scriptweaver Default",
+		"rules": [
+			# Survival: potion when critically low — Scriptweaver's HP is modest
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Use best available ability (analyze_code / modify_constant) when MP allows
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "analyze_code", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is low
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_time_mage_default_script(character_id: String) -> Dictionary:
+	"""Time Mage script - speed/rewind manipulation role. Haste on self for AP economy,
+	Slow the fastest enemy to delay their turns, cast attack spell when MP allows,
+	potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Time Mage Default",
+		"rules": [
+			# Survival: potion when critically low — Time Mage has the lowest HP of meta jobs
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Haste self: priority setup move — only cast if no speed buff already active
+			{
+				"conditions": [
+					{"type": "not_has_buff", "stat": "speed"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "temporal_shield", "target": "self"}]
+			},
+			# Slow the fastest enemy to reduce their turn frequency
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "rewind", "target": "highest_speed_enemy"}]
+			},
+			# Attack spell against lowest HP enemy when MP allows
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "restore_point", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is depleted
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_necromancer_default_script(character_id: String) -> Dictionary:
+	"""Necromancer script - dark magic/drain role. Drain Life for self-healing through
+	damage, dark magic finisher on low-HP enemies, potion last resort, basic attack fallback.
+	Necromancer avoids the save-corrupting abilities in automation — those require intent."""
+	return {
+		"character_id": character_id,
+		"name": "Necromancer Default",
+		"rules": [
+			# Survival: potion when critically low — Necromancer has the thinnest HP pool
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Drain Life: self-heal by dealing damage — fires when HP is below 60%
+			# so Necromancer sustains without burning potion stocks
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 60},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "drain_life", "target": "lowest_hp_enemy"}]
+			},
+			# Necro Blast: concentrated dark magic on the weakest target to kill it off
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "necro_blast", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is depleted
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_bossbinder_default_script(character_id: String) -> Dictionary:
+	"""Bossbinder script - boss control role. Highly situational; keep automation minimal
+	to avoid accidental boss-control-victory save corruption. Strongest ability when MP
+	allows, target lowest HP enemy, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Bossbinder Default",
+		"rules": [
+			# Survival: potion when critically low
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Boss Puppet: use strongest control ability when MP allows
+			# NOTE: mind_swap and control_override deliberately excluded from default
+			# automation — those abilities carry save-corruption risk if the boss wins
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "boss_puppet", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack on lowest HP enemy
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_skiptrotter_default_script(character_id: String) -> Dictionary:
+	"""Skiptrotter script - overworld warp utility role. Combat kit is thin by design;
+	abilities are mostly overworld. Potion safety net, strongest in-battle ability
+	when MP allows, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Skiptrotter Default",
+		"rules": [
+			# Survival: potion when critically low
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Sequence Break: best in-combat option — hits hard when MP allows
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "sequence_break", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is low
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
