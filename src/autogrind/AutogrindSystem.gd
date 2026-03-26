@@ -19,6 +19,12 @@ signal system_collapse()
 signal region_cracked(region_id: String, crack_level: int)
 signal autobattle_interrupted(reason: String)
 signal autogrind_rules_changed()
+signal fatigue_event(event_type: String, description: String)
+
+## System fatigue
+var fatigue_events_triggered: int = 0
+const FATIGUE_BATTLE_THRESHOLD: int = 30
+const FATIGUE_CHANCE: float = 0.05
 
 ## Grind state
 var is_grinding: bool = false
@@ -300,6 +306,28 @@ func get_automation_affinity() -> float:
 	return _automation_affinity
 
 
+func check_fatigue_event() -> Dictionary:
+	if battles_completed < FATIGUE_BATTLE_THRESHOLD:
+		return {}
+	if randf() > FATIGUE_CHANCE:
+		return {}
+
+	fatigue_events_triggered += 1
+	var event_type = ["screen_glitch", "enemy_boost", "party_debuff"][randi() % 3]
+	var description = ""
+
+	match event_type:
+		"screen_glitch":
+			description = "System instability detected — visual artifacts"
+		"enemy_boost":
+			description = "Enemies adapting — next battle +20% stats"
+		"party_debuff":
+			description = "System fatigue — party member weakened"
+
+	fatigue_event.emit(event_type, description)
+	return {"type": event_type, "description": description}
+
+
 func get_grind_stats() -> Dictionary:
 	"""Get grind session statistics with per-minute rates.
 	Returns {exp_per_min, gold_per_min, jp_per_min, encounters_per_min,
@@ -318,7 +346,8 @@ func get_grind_stats() -> Dictionary:
 		"total_exp": _grind_stats["total_exp"],
 		"total_gold": _grind_stats["total_gold"],
 		"total_encounters": _grind_stats["total_encounters"],
-		"elapsed_seconds": elapsed
+		"elapsed_seconds": elapsed,
+		"fatigue_events_triggered": fatigue_events_triggered
 	}
 
 
