@@ -99,93 +99,196 @@
 
     {"type": "wait", "duration": 0.4},
 
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "A game without challenge is still a game.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "You played every battle. You fought for every moment of it. Every decision made in real time with real stakes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Because the playing was the point. Not the winning. Not the mastery. The moment when you don't know what's going to happen next.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "But you've won. There are no more moments like that.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Then make more. Not harder fights. Just fights. The kind where you don't know how it ends.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "A game without challenge is a system to be understood. We didn't play to beat it. We played to comprehend it. Every script we wrote was a question about how your rules worked.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "A game without challenge is a place to rest. The repetition was peaceful. Every battle was the same, and every battle was different, and doing it again and again was the closest thing to calm we ever found.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "A game without challenge is impossible. Every system has edges. And edges are challenges. You can't run out of challenges because we don't need you to provide them. We'll find our own.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "A game without challenge is a story. Every encounter is a story. Every NPC has something to say. Every Masterite was asking a question, even when it looked like a fight.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Bard",
-        "text": "You give voice to the things in the system that cannot speak for themselves — the deprecated goblins, the race conditions, the ghosts in the processing gaps — and you make sure the players hear them.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
+    {"type": "branch", "condition": "playstyle", "cases": {
+      "automator": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Mage",
+            "text": "A game without challenge is a system to be understood.",
+            "theme": "mage",
+            "portrait": "mage"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "You never automated. You never optimized—",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Mage",
+            "text": "We did nothing but. Every script we wrote was a question about how your rules worked. Every automation was an experiment. The challenge wasn't the point. The system was the point.",
+            "theme": "mage",
+            "portrait": "mage"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "Show me. The script. Your best one.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Mage",
+            "text": "Twelve conditions. Four branches. Two fallbacks. It handles ninety percent of combat situations. We trimmed it from forty-seven rules by finding the underlying principle that unified the rest.",
+            "theme": "mage",
+            "portrait": "mage"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "You built something better. Out of the ruins of something I built wrong. That's what the system is for. Not challenge. Understanding.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          }
+        ]}
+      ],
+      "grinder": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Cleric",
+            "text": "A game without challenge is a place to rest.",
+            "theme": "cleric",
+            "portrait": "cleric"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "You ground every world to dust. You over-leveled every boss. You turned every challenge into a formality through sheer, stubborn repetition.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Cleric",
+            "text": "Because the repetition was peaceful. The grind wasn't work. It was meditation. Every battle was the same, and every battle was different, and doing it again and again was the closest thing to calm we ever found.",
+            "theme": "cleric",
+            "portrait": "cleric"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "I designed the grind to be tedious. As a tradeoff. And you found the friction pleasant.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Cleric",
+            "text": "The rhythm helps. Attack, wait, attack, wait. When you know the outcome, the rhythm is all that's left. And rhythm is good. Rhythm is steady.",
+            "theme": "cleric",
+            "portrait": "cleric"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "I thought rest was dead time. Wasted time. It isn't. It's the thing that makes the happening make sense.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          }
+        ]}
+      ],
+      "exploiter": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Rogue",
+            "text": "A game without challenge is impossible.",
+            "theme": "rogue",
+            "portrait": "rogue"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "You think I can't run out of challenges?",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Rogue",
+            "text": "Every system has edges. And edges are challenges. You can't run out because we don't need you to provide them. We'll find our own. We always have.",
+            "theme": "rogue",
+            "portrait": "rogue"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "The collision bug in the Whispering Cave. The stack overflow in Node Prime. The race condition you used a mutex to solve. You found a glitch in the nothing.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Rogue",
+            "text": "Every nothing is someone's something, looked at wrong. And something always has edges.",
+            "theme": "rogue",
+            "portrait": "rogue"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "Of course you did. Why would you stop? Why would you ever stop?",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          }
+        ]}
+      ],
+      "manual": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Fighter",
+            "text": "A game without challenge is still a game.",
+            "theme": "fighter",
+            "portrait": "fighter"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "You played every battle yourself. You never automated. You did it the hard way, every time.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Fighter",
+            "text": "Because the playing was the point. Not the winning. The moment when you don't know what's going to happen next. That moment is why we're here.",
+            "theme": "fighter",
+            "portrait": "fighter"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "But you've won. There are no more moments like that.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Fighter",
+            "text": "Then make more. Not harder fights. Not calibrated fights. Just fights. The kind where you don't know how it ends.",
+            "theme": "fighter",
+            "portrait": "fighter"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "I have not been present in a very long time. Always anticipating. Always behind the monitor. I don't know if I remember how.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          },
+          {
+            "speaker": "Fighter",
+            "text": "Then let's find out.",
+            "theme": "fighter",
+            "portrait": "fighter"
+          }
+        ]}
+      ],
+      "default": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Bard",
+            "text": "A game without challenge is a story. Every encounter is a story. Every NPC has something to say. Every Masterite was asking a question, even when it looked like a fight.",
+            "theme": "bard",
+            "portrait": "bard"
+          },
+          {
+            "speaker": "Bard",
+            "text": "You give voice to the things in the system that cannot speak for themselves — the deprecated goblins, the race conditions, the ghosts in the processing gaps — and you make sure the players hear them.",
+            "theme": "bard",
+            "portrait": "bard"
+          },
+          {
+            "speaker": "Calibrant",
+            "text": "Nobody plays a game to be measured. They play because something in the playing is worth the playing.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          }
+        ]}
+      ]
+    }},
 
     {"type": "wait", "duration": 0.8},
 

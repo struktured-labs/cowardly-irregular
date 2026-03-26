@@ -268,6 +268,8 @@ func _execute_step(step: Dictionary) -> void:
 			_step_set_flag(step)
 		"set_background":
 			_step_set_background(step)
+		"branch":
+			await _step_branch(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -442,6 +444,68 @@ func _step_set_flag(step: Dictionary) -> void:
 		# Store cutscene flags in game_constants for now
 		if GameState:
 			GameState.game_constants["cutscene_flag_" + flag] = value
+
+
+func _step_branch(step: Dictionary) -> void:
+	"""Execute different sub-steps based on a condition.
+	Usage: {"type": "branch", "condition": "playstyle", "cases": {
+	  "automator": [steps...], "grinder": [steps...], "default": [steps...]
+	}}
+	Or flag-based: {"type": "branch", "flag": "some_flag", "if_true": [steps...], "if_false": [steps...]}"""
+	if step.has("flag"):
+		# Flag-based branching
+		var flag = step.get("flag", "")
+		var flag_value = false
+		if GameState and GameState.game_constants.has("cutscene_flag_" + flag):
+			flag_value = GameState.game_constants["cutscene_flag_" + flag]
+		var branch_steps = step.get("if_true", []) if flag_value else step.get("if_false", [])
+		for sub_step in branch_steps:
+			if _skipping:
+				break
+			await _execute_step(sub_step)
+	elif step.get("condition", "") == "playstyle":
+		# Playstyle-based branching
+		var playstyle = _detect_playstyle()
+		var cases = step.get("cases", {})
+		var branch_steps = cases.get(playstyle, cases.get("default", []))
+		for sub_step in branch_steps:
+			if _skipping:
+				break
+			await _execute_step(sub_step)
+
+
+func _detect_playstyle() -> String:
+	"""Detect the dominant playstyle based on game stats.
+	Returns: 'automator', 'manual', 'grinder', 'exploiter', or 'balanced'."""
+	var autobattle_ratio: float = 0.0
+	var total_battles: int = 0
+
+	if SaveSystem and SaveSystem.autobattle_records:
+		var auto_count: int = 0
+		for key in SaveSystem.autobattle_records:
+			auto_count += SaveSystem.autobattle_records[key].get("count", 0)
+		if BattleManager and "total_battles_won" in BattleManager:
+			total_battles = BattleManager.total_battles_won
+		if total_battles > 0:
+			autobattle_ratio = float(auto_count) / float(total_battles)
+
+	# High automation rate → automator
+	if autobattle_ratio > 0.7 and total_battles >= 20:
+		return "automator"
+
+	# High total battles → grinder
+	if total_battles > 100:
+		return "grinder"
+
+	# Check for exploit-style play (low battles, high level — efficient)
+	if total_battles > 0 and total_battles < 40:
+		return "exploiter"
+
+	# Mostly manual play
+	if autobattle_ratio < 0.3 and total_battles >= 20:
+		return "manual"
+
+	return "balanced"
 
 
 ## =====================
