@@ -3,67 +3,88 @@
   "title": "The Efficiency District",
   "world": 4,
   "trigger": "world4_village_entry",
+  "background": "industrial_factory",
   "description": "Rivet Row is not a town, it's a process. The Company, the Director, the monitors showing battle records.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w4_foreman_confession"},
-
-    {"type": "narration", "lines": [
-      "Rivet Row was not a town. It was a process.",
-      "Monitors on every corner showed the same thing: numbers going up. Production rates, efficiency ratings, deviation percentages. The numbers were always going up."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "The Coordinator communicated through memos. The Director communicates through numbers.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "We've been announced.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Union Rep",
-        "text": "The Company. It doesn't have a name. Names are branding. Branding is overhead. Overhead is waste.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "The Director doesn't punish non-compliance. The Director restructures until compliance is achieved.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "What happened to the people who weren't compliant?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "They became compliant. That's all I know. They stop being themselves and start being their job function.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "The monitors are new. Since last month. They show maps of places I've never been. Statistics about people who aren't here. Battle records. YOUR battle records.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world4_chapter1_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w4_foreman_confession"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Rivet Row was not a town. It was a process.",
+        "Monitors on every corner showed the same thing: numbers going up. Production rates, efficiency ratings, deviation percentages. The numbers were always going up."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "The Coordinator communicated through memos. The Director communicates through numbers.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "We've been announced.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Union Rep",
+          "text": "The Company. It doesn't have a name. Names are branding. Branding is overhead. Overhead is waste.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "The Director doesn't punish non-compliance. The Director restructures until compliance is achieved.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "What happened to the people who weren't compliant?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "They became compliant. That's all I know. They stop being themselves and start being their job function.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "The monitors are new. Since last month. They show maps of places I've never been. Statistics about people who aren't here. Battle records. YOUR battle records.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_chapter1_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

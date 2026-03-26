@@ -3,165 +3,227 @@
   "title": "Garage Sales and Other Hazards",
   "world": 2,
   "trigger": "world2_warden_aftermath",
+  "background": "suburban_park",
   "description": "The garage sale on Oak Street. An enchanted sweater, a ceramic rooster, a garden gnome, and a bread maker with unresolved ambitions. Everything must go. It doesn't say it has to be easy.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "village_suburban"},
-
-    {"type": "narration", "lines": [
-      "The garage sale on Oak Street had a sign: EVERYTHING MUST GO.",
-      "The tables were covered with the detritus of suburban accumulation. Behind them, an older woman in a floral dress sat in a lawn chair reading a paperback, the entirety of her garage laid out for the neighborhood's consideration.",
-      "A portable radio played an oldies station with the low volume of something that was always on, had always been on, would always be on."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Garage Sale Woman",
-        "text": "Half off everything. Cash only. No returns.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "I'm just going to look.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Don't touch anything.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "It's a garage sale. I'm allowed to touch things.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "She picked up a sweater. The sweater resisted. Not with the passive resistance of a sweater that has tangled on something. With the active resistance of a sweater that has decided it does not want to leave."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "I probably shouldn't have touched the sweater.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "No one told us about the sweater.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Garage Sale Woman",
-        "text": "The sign says everything must go. It doesn't say it has to be easy.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.2},
-    {"type": "screen_shake", "duration": 0.3, "intensity": 3.0},
-
-    {"type": "narration", "text": "The garden gnome, which had been at the far end of the table, was now directly in front of the Rogue. Its smile was technically a smile in the same way that a trapdoor is technically a floor."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "I was looking at that gnome. Earlier. I was wondering about the smile.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The ceramic rooster is also moving. And the mixing bowls. And \u2014 why is the bread maker doing that.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "The bread maker has apparently decided this is its moment.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Bard",
-        "text": "I have a lot of questions about the bread maker.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.2, "intensity": 4.0},
-
-    {"type": "narration", "text": "The garden gnome lunged. What followed was a full engagement with four enchanted garage sale items across a cluttered suburban driveway, which required more spatial awareness than any of the cave fights had."},
-
-    {"type": "narration", "text": "The ceramic rooster's pecking attack was technically weaker than most cave goblins, but it was ceramic and therefore could not be persuaded to stop by being spoken to. The mixing bowls operated in formation. The gnome was fast in the specific way of things that should not be fast, which is to say startlingly."},
-
-    {"type": "narration", "text": "The Rogue solved the mixing bowl formation problem by the simple expedient of stacking them in a different order, which seemed to break the enchantment. The sweater, finally, let go."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Garage Sale Woman",
-        "text": "You can keep the sweater. You earned it.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "She had not looked up during any of this. The Cleric examined the sweater. It was warm. It had a small embroidered bear on the pocket. It was, all things considered, quite nice."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Is everything here enchanted?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Garage Sale Woman",
-        "text": "Not everything. Some of it is just old. The trick is knowing which is which before you pick it up.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Garage Sale Woman",
-        "text": "The bread maker came with the house. I stopped questioning it.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "What was it doing before we arrived?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Garage Sale Woman",
-        "text": "Waiting.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The Cleric kept the sweater. They moved on."},
-
-    {"type": "give_item", "item": "enchanted_sweater", "quantity": 1},
-    {"type": "set_flag", "flag": "world2_chapter3_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_suburban"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The garage sale on Oak Street had a sign: EVERYTHING MUST GO.",
+        "The tables were covered with the detritus of suburban accumulation. Behind them, an older woman in a floral dress sat in a lawn chair reading a paperback, the entirety of her garage laid out for the neighborhood's consideration.",
+        "A portable radio played an oldies station with the low volume of something that was always on, had always been on, would always be on."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "Half off everything. Cash only. No returns.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "I'm just going to look.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Don't touch anything.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "It's a garage sale. I'm allowed to touch things.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "She picked up a sweater. The sweater resisted. Not with the passive resistance of a sweater that has tangled on something. With the active resistance of a sweater that has decided it does not want to leave."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "I probably shouldn't have touched the sweater.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "No one told us about the sweater.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "The sign says everything must go. It doesn't say it has to be easy.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.2
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.0
+    },
+    {
+      "type": "narration",
+      "text": "The garden gnome, which had been at the far end of the table, was now directly in front of the Rogue. Its smile was technically a smile in the same way that a trapdoor is technically a floor."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "I was looking at that gnome. Earlier. I was wondering about the smile.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The ceramic rooster is also moving. And the mixing bowls. And \u2014 why is the bread maker doing that.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "The bread maker has apparently decided this is its moment.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "I have a lot of questions about the bread maker.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 4.0
+    },
+    {
+      "type": "narration",
+      "text": "The garden gnome lunged. What followed was a full engagement with four enchanted garage sale items across a cluttered suburban driveway, which required more spatial awareness than any of the cave fights had."
+    },
+    {
+      "type": "narration",
+      "text": "The ceramic rooster's pecking attack was technically weaker than most cave goblins, but it was ceramic and therefore could not be persuaded to stop by being spoken to. The mixing bowls operated in formation. The gnome was fast in the specific way of things that should not be fast, which is to say startlingly."
+    },
+    {
+      "type": "narration",
+      "text": "The Rogue solved the mixing bowl formation problem by the simple expedient of stacking them in a different order, which seemed to break the enchantment. The sweater, finally, let go."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "You can keep the sweater. You earned it.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "She had not looked up during any of this. The Cleric examined the sweater. It was warm. It had a small embroidered bear on the pocket. It was, all things considered, quite nice."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Is everything here enchanted?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "Not everything. Some of it is just old. The trick is knowing which is which before you pick it up.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "The bread maker came with the house. I stopped questioning it.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "What was it doing before we arrived?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "Waiting.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The Cleric kept the sweater. They moved on."
+    },
+    {
+      "type": "give_item",
+      "item": "enchanted_sweater",
+      "quantity": 1
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_chapter3_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

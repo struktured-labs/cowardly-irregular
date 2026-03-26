@@ -3,97 +3,118 @@
   "title": "Clockwork",
   "world": 3,
   "trigger": "world3_village_entry",
+  "background": "steampunk_workshop",
   "description": "Brasston village, the Grand Schedule, Sprocket the guide, Clem the Lamplighter, Madame Orrery's revelation.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w3_pattern_recognized"},
-
-    {"type": "narration", "lines": [
-      "Brasston was a market town that ran like a pocket watch. The citizens moved on paths so ingrained they might as well have been grooves cut into the cobblestone.",
-      "Every citizen who passed them nodded at exactly the same moment in their walk, as if greeting strangers was a scheduled behavior."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Sprocket",
-        "text": "Newcomers! Welcome to Brasston! You're \u2014 seven seconds late. My fault, I should have accounted for dimensional transition lag.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Sprocket",
-        "text": "Everything here runs on the Grand Schedule. The Regulator set it up years ago. Or maybe always. Nobody remembers a time before the schedule.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Who is the Regulator?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Sprocket",
-        "text": "Chief Engineer of the Grand Mechanism. Nobody sees them much, but you can feel them. In the way the gears turn. In the way the trains arrive.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Everything orderly and controlled and exactly where it's supposed to be?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Sprocket",
-        "text": "You've met someone like the Regulator before?",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Twice.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Madame Orrery",
-        "text": "Sit. We don't have much time. You never do, in this phase.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Madame Orrery",
-        "text": "You've done this before. Different world, same shape. Same arrangement of power at the top. Same speech about order and purpose.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Madame Orrery",
-        "text": "Whoever built these places \u2014 all of them \u2014 left the same fingerprints. The same design language. The same signature.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Madame Orrery",
-        "text": "You keep winning and moving forward. And every time you win, the next world is harder. Doesn't that seem like something someone designed?",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Yes. It does.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world3_chapter1_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w3_pattern_recognized"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Brasston was a market town that ran like a pocket watch. The citizens moved on paths so ingrained they might as well have been grooves cut into the cobblestone.",
+        "Every citizen who passed them nodded at exactly the same moment in their walk, as if greeting strangers was a scheduled behavior."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Sprocket",
+          "text": "Newcomers! Welcome to Brasston! You're \u2014 seven seconds late. My fault, I should have accounted for dimensional transition lag.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Sprocket",
+          "text": "Everything here runs on the Grand Schedule. The Regulator set it up years ago. Or maybe always. Nobody remembers a time before the schedule.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Who is the Regulator?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Sprocket",
+          "text": "Chief Engineer of the Grand Mechanism. Nobody sees them much, but you can feel them. In the way the gears turn. In the way the trains arrive.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Everything orderly and controlled and exactly where it's supposed to be?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Sprocket",
+          "text": "You've met someone like the Regulator before?",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Twice.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Madame Orrery",
+          "text": "Sit. We don't have much time. You never do, in this phase.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Madame Orrery",
+          "text": "You've done this before. Different world, same shape. Same arrangement of power at the top. Same speech about order and purpose.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Madame Orrery",
+          "text": "Whoever built these places \u2014 all of them \u2014 left the same fingerprints. The same design language. The same signature.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Madame Orrery",
+          "text": "You keep winning and moving forward. And every time you win, the next world is harder. Doesn't that seem like something someone designed?",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Yes. It does.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_chapter1_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

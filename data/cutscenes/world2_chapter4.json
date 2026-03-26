@@ -3,241 +3,299 @@
   "title": "The Arbiter of the Grade",
   "world": 2,
   "trigger": "world2_school_entry",
+  "background": "suburban_school",
   "description": "Maple Heights Elementary. The loudspeaker summons them to Room 204. Personalized pop quiz questions. Wrong answers manifest as damage. The Bard answers in verse and receives C-plus partial credit.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w2_coordinator_memo"},
-
-    {"type": "narration", "lines": [
-      "The school sat at the end of Maple Lane with the weight of a building that knows it is important.",
-      "MAPLE HEIGHTS ELEMENTARY. Below that, in smaller letters: EXCELLENCE THROUGH ACCOUNTABILITY.",
-      "The hallway had achievement posters at consistent intervals. Motivational eagles saying things like SOAR ABOVE THE STANDARD and THERE IS NO SHORTCUT TO MASTERY.",
-      "They had been inside for approximately forty seconds when the loudspeaker crackled."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "Good morning, unregistered visitors. Please proceed directly to Room 204 for assessment. Refusal to proceed constitutes a violation of school policy and will be noted in your permanent record.",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "We don't have permanent records.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "",
-        "text": "Yet.",
-        "theme": "system",
-        "portrait": "system"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "lines": [
-      "Room 204 had the ambient temperature of a place where stress lived and raised a family.",
-      "At the front stood a man in a dress shirt and tie who had the bearing of someone who considered a three-point rubric to be a statement of personal philosophy."
-    ]},
-
-    {"type": "play_sfx", "sfx": "chalk_tap"},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "Pop quiz.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "We're not students.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "This school serves the community. You are in the community. You are being served.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "You have eight minutes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "My first question asks me to identify the underlying economic conditions that led to the decline of the merchant class in the transitional period between feudal and proto-capitalist systems.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Mage",
-        "text": "That is a graduate-level economics question.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "The rubric rewards partial credit.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "My question is a word problem about being chased. It's asking how long until I get apprehended. With specific numbers.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "All learning is personal.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "The Cleric's questions address moral triage in resource-limited settings. The Fighter's, military command structure. The Mage's, systems of control. The Bard's\u2014",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "The Bard has been given a blank page.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "A blank page.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "I could not determine what to test you on. The rubric has no column for your competency. Consider the blank page your prompt.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "Pencils up.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.3, "intensity": 3.5},
-
-    {"type": "narration", "text": "The quiz attacks were, in practice, each wrong answer manifesting as direct damage \u2014 specific, targeted, scaled to the magnitude of the incorrectness rather than simply the occurrence of the error."},
-
-    {"type": "narration", "text": "The Bard answered every question in verse. The Arbiter read each one with the expression of a man encountering an answer format for which he had no precedent and was refusing to be charmed by it."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "Your rubric was a love letter to certainty in an uncertain world.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "That wasn't a question. I was answering the blank page.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "Charming. Incomplete. C-plus.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "Your answers are experientially correct.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Then why is the score low?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "What you know and what you can demonstrate you know are not the same thing. I grade the demonstration. That gap tends to limit people.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "It hasn't limited me.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "The grade disagrees.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "My answer: the chain of command runs to whoever is willing to do the work.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "That answer is not within the established parameters.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "The parameters are wrong.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Arbiter of the Grade",
-        "text": "The parameters are the rubric.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.3, "intensity": 4.5},
-    {"type": "screen_flash", "duration": 0.15},
-
-    {"type": "narration", "text": "The rubric became a physical document. The physical document became a weapon, in a way that felt like either metaphor or justice depending on your perspective."},
-
-    {"type": "narration", "text": "The grading battle was close. The Arbiter's academic precision translated into a fighting style of calibrated, optimal strikes. It adapted with the particular cruelty of someone who had been doing this long enough to know exactly which failures to hold up."},
-
-    {"type": "set_flag", "flag": "arbiter_suburban_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w2_coordinator_memo"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The school sat at the end of Maple Lane with the weight of a building that knows it is important.",
+        "MAPLE HEIGHTS ELEMENTARY. Below that, in smaller letters: EXCELLENCE THROUGH ACCOUNTABILITY.",
+        "The hallway had achievement posters at consistent intervals. Motivational eagles saying things like SOAR ABOVE THE STANDARD and THERE IS NO SHORTCUT TO MASTERY.",
+        "They had been inside for approximately forty seconds when the loudspeaker crackled."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "Good morning, unregistered visitors. Please proceed directly to Room 204 for assessment. Refusal to proceed constitutes a violation of school policy and will be noted in your permanent record.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "We don't have permanent records.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "",
+          "text": "Yet.",
+          "theme": "system",
+          "portrait": "system"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Room 204 had the ambient temperature of a place where stress lived and raised a family.",
+        "At the front stood a man in a dress shirt and tie who had the bearing of someone who considered a three-point rubric to be a statement of personal philosophy."
+      ]
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "chalk_tap"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "Pop quiz.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We're not students.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "This school serves the community. You are in the community. You are being served.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "You have eight minutes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "My first question asks me to identify the underlying economic conditions that led to the decline of the merchant class in the transitional period between feudal and proto-capitalist systems.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Mage",
+          "text": "That is a graduate-level economics question.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "The rubric rewards partial credit.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "My question is a word problem about being chased. It's asking how long until I get apprehended. With specific numbers.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "All learning is personal.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "The Cleric's questions address moral triage in resource-limited settings. The Fighter's, military command structure. The Mage's, systems of control. The Bard's\u2014",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "The Bard has been given a blank page.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "A blank page.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "I could not determine what to test you on. The rubric has no column for your competency. Consider the blank page your prompt.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "Pencils up.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.5
+    },
+    {
+      "type": "narration",
+      "text": "The quiz attacks were, in practice, each wrong answer manifesting as direct damage \u2014 specific, targeted, scaled to the magnitude of the incorrectness rather than simply the occurrence of the error."
+    },
+    {
+      "type": "narration",
+      "text": "The Bard answered every question in verse. The Arbiter read each one with the expression of a man encountering an answer format for which he had no precedent and was refusing to be charmed by it."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "Your rubric was a love letter to certainty in an uncertain world.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "That wasn't a question. I was answering the blank page.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "Charming. Incomplete. C-plus.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "Your answers are experientially correct.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Then why is the score low?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "What you know and what you can demonstrate you know are not the same thing. I grade the demonstration. That gap tends to limit people.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "It hasn't limited me.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "The grade disagrees.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "My answer: the chain of command runs to whoever is willing to do the work.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "That answer is not within the established parameters.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "The parameters are wrong.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "The parameters are the rubric.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 4.5
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "narration",
+      "text": "The rubric became a physical document. The physical document became a weapon, in a way that felt like either metaphor or justice depending on your perspective."
+    },
+    {
+      "type": "narration",
+      "text": "The grading battle was close. The Arbiter's academic precision translated into a fighting style of calibrated, optimal strikes. It adapted with the particular cruelty of someone who had been doing this long enough to know exactly which failures to hold up."
+    },
+    {
+      "type": "set_flag",
+      "flag": "arbiter_suburban_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

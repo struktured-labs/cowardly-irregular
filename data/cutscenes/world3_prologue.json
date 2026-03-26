@@ -3,57 +3,85 @@
   "title": "Brass",
   "world": 3,
   "trigger": "world3_portal_entry",
+  "background": "steampunk_workshop",
   "description": "Arrival in the steampunk world. Suburban gear transforms into brass and clockwork. Cogsworth Junction, the clock tower chiming thirteen.",
   "steps": [
-    {"type": "fade_from_black", "duration": 1.5},
-    {"type": "letterbox_in", "duration": 0.6},
-    {"type": "play_music", "track": "village_steampunk"},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "lines": [
-      "The gears were already turning when they arrived. Not starting \u2014 already turning. As though the world had been running before they got there and would continue after they left.",
-      "Cogsworth Junction smelled like oil and copper. The sky was the color of old pennies. Every surface was brass or iron.",
-      "A clock tower stood at the center of everything. It was too tall. Not architecturally \u2014 philosophically."
-    ]},
-
-    {"type": "screen_shake", "duration": 0.3, "intensity": 2.0},
-
-    {"type": "narration", "text": "It chimed as they arrived. Thirteen times. There are no thirteen o'clocks. They were being announced."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "The Security Guard felt the baton grow heavy, then reshape itself. His uniform stiffened into something darker, with buckles and clockwork clasps. He was a Steamknight now.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "This is new.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "It's not. It's the same as the last time. Just different clothes.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "",
-        "text": "The School Nurse became the Steampriest. The Science Nerd became the Alchemist. The Skater Kid became the Saboteur. The Band Kid became the Busker.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "",
-        "text": "They remembered everything. Harmonia, Mordaine, Maple Heights, the Coordinator. And remembering was a variable the system had not planned for.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world3_prologue_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "fade_from_black",
+      "duration": 1.5
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.6
+    },
+    {
+      "type": "play_music",
+      "track": "village_steampunk"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The gears were already turning when they arrived. Not starting \u2014 already turning. As though the world had been running before they got there and would continue after they left.",
+        "Cogsworth Junction smelled like oil and copper. The sky was the color of old pennies. Every surface was brass or iron.",
+        "A clock tower stood at the center of everything. It was too tall. Not architecturally \u2014 philosophically."
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 2.0
+    },
+    {
+      "type": "narration",
+      "text": "It chimed as they arrived. Thirteen times. There are no thirteen o'clocks. They were being announced."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "The Security Guard felt the baton grow heavy, then reshape itself. His uniform stiffened into something darker, with buckles and clockwork clasps. He was a Steamknight now.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "This is new.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "It's not. It's the same as the last time. Just different clothes.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "",
+          "text": "The School Nurse became the Steampriest. The Science Nerd became the Alchemist. The Skater Kid became the Saboteur. The Band Kid became the Busker.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "",
+          "text": "They remembered everything. Harmonia, Mordaine, Maple Heights, the Coordinator. And remembering was a variable the system had not planned for.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_prologue_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }
