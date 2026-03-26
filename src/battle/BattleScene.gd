@@ -947,10 +947,11 @@ func update_autogrind_console_stats(stats: Dictionary) -> void:
 	var streak = stats.get("consecutive_wins", 0)
 	var eff = stats.get("efficiency", 1.0)
 	var corruption = stats.get("corruption", 0.0)
+	var time_mult = stats.get("time_multiplier", 1.0)
 	var turbo = " [color=#ff4444]TURBO[/color]" if turbo_mode else ""
 
 	_autogrind_console.append_text("[color=#666677]─────────────────────────────[/color]\n")
-	_autogrind_console.append_text("[color=#ffff66]Battle #%d[/color] | EXP: %d | Streak: %d | Eff: %.1fx%s\n" % [battles, exp, streak, eff, turbo])
+	_autogrind_console.append_text("[color=#ffff66]Battle #%d[/color] | EXP: %d | Streak: %d | Eff: %.1fx | Time: %.1fx%s\n" % [battles, exp, streak, eff, time_mult, turbo])
 	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | Y:Turbo +/-:Speed T:Tier B:Exit[/color]\n" % corruption)
 
 

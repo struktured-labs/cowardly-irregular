@@ -99,6 +99,14 @@ var _csi_timestamps: Dictionary = {}
 ## Automation Affinity - meta tracking of how much the player automates (0.0-1.0)
 var _automation_affinity: float = 0.0
 
+## Time-based risk/reward multiplier breakpoints: [minutes, multiplier]
+const TIME_MULTIPLIER_CURVE: Array = [
+	[0.0, 1.0],
+	[5.0, 1.5],
+	[10.0, 2.0],
+	[20.0, 3.0],
+]
+
 ## Grind session statistics for per-minute rate tracking
 var _grind_stats: Dictionary = {
 	"start_time": 0.0,
@@ -314,6 +322,22 @@ func get_grind_stats() -> Dictionary:
 	}
 
 
+func get_time_multiplier() -> float:
+	if not is_grinding or _grind_stats["start_time"] <= 0.0:
+		return 1.0
+
+	var elapsed_min = (Time.get_unix_time_from_system() - _grind_stats["start_time"]) / 60.0
+
+	for i in range(TIME_MULTIPLIER_CURVE.size() - 1):
+		var bp_start = TIME_MULTIPLIER_CURVE[i]
+		var bp_end = TIME_MULTIPLIER_CURVE[i + 1]
+		if elapsed_min <= bp_end[0]:
+			var t = (elapsed_min - bp_start[0]) / max(bp_end[0] - bp_start[0], 0.001)
+			return lerpf(bp_start[1], bp_end[1], clampf(t, 0.0, 1.0))
+
+	return TIME_MULTIPLIER_CURVE[-1][1]
+
+
 ## ═══════════════════════════════════════════════════════════════════════
 ## CONTROLLER INTERFACE - Methods called by AutogrindController
 ## ═══════════════════════════════════════════════════════════════════════
@@ -380,7 +404,7 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 
 	# Combined reward scaling
 	var reward_scale: float = yield_mult * (1.0 - crack_penalty)
-	var adjusted_exp: int = int(exp_gained * reward_scale)
+	var adjusted_exp: int = int(exp_gained * reward_scale * get_time_multiplier())
 
 	total_exp_gained += adjusted_exp
 

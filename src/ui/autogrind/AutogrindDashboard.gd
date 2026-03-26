@@ -333,6 +333,7 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 		{"key": "win_rate", "label": "Win Rate:", "default": "100%"},
 		{"key": "total_gold", "label": "Total Gold:", "default": "0"},
 		{"key": "collapses", "label": "Collapses:", "default": "0"},
+		{"key": "time_mult", "label": "Time Bonus:", "default": "1.0x"},
 	]
 
 	var row_h = (panel_size.y - 20) / stats.size()
@@ -528,6 +529,8 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	_update_stat("win_rate", "%.0f%%" % win_rate)
 	_update_stat("total_gold", str(_total_gold))
 	_update_stat("collapses", str(stats.get("collapse_count", 0)))
+	var time_mult = stats.get("time_multiplier", 1.0)
+	_update_stat("time_mult", "%.1fx" % time_mult)
 
 	var avg_label := "~%d" % int(avg_exp_per_battle) if _exp_history.size() > 0 else ("~%d" % int(avg_exp_per_battle) if _battles_completed >= 3 else "--")
 	_update_projection("avg_exp_battle", avg_label)

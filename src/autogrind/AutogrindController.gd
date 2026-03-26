@@ -376,7 +376,8 @@ func get_grind_stats() -> Dictionary:
 		"total_items": _count_total_items(),
 		"collapse_count": AutogrindSystem.collapse_count,
 		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,
-		"permadead": AutogrindSystem.permadead_characters.duplicate()
+		"permadead": AutogrindSystem.permadead_characters.duplicate(),
+		"time_multiplier": AutogrindSystem.get_time_multiplier()
 	}
 
 
