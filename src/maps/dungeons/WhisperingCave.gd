@@ -287,6 +287,9 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
 
+	# Place treasure chest per floor (progressively better loot)
+	_place_floor_treasure(floor_num)
+
 	# Save crystal on floor 3 (midway rest point)
 	if floor_num == 3:
 		var save_pt = SavePoint.new()
@@ -552,6 +555,36 @@ func _trigger_boss_battle() -> void:
 		battle_triggered.emit(["cave_rat_king"])
 	, CONNECT_ONE_SHOT)
 	director.play_cutscene("world1_rat_king_intro")
+
+
+func _place_floor_treasure(floor_num: int) -> void:
+	"""Place a treasure chest on each cave floor with scaling rewards"""
+	var chest_data = {
+		1: {"id": "cave_f1", "type": "item", "item": "potion", "amount": 2, "gold": 0},
+		2: {"id": "cave_f2", "type": "gold", "item": "", "amount": 0, "gold": 50},
+		3: {"id": "cave_f3", "type": "item", "item": "antidote", "amount": 2, "gold": 0},
+		4: {"id": "cave_f4", "type": "gold", "item": "", "amount": 0, "gold": 150},
+		5: {"id": "cave_f5", "type": "item", "item": "ether", "amount": 1, "gold": 0},
+	}
+	if not chest_data.has(floor_num):
+		return
+	var data = chest_data[floor_num]
+	# Check if already opened (via GameState story_flags)
+	if GameState.get_story_flag("chest_" + data["id"]):
+		return
+	var chest = TreasureChest.new()
+	chest.chest_id = data["id"]
+	chest.contents_type = data["type"]
+	chest.contents_id = data["item"]
+	chest.contents_amount = data["amount"]
+	chest.gold_amount = data["gold"]
+	# Place near stairs_up or center of floor
+	var pos = spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 5 * TILE_SIZE))
+	chest.position = pos + Vector2(TILE_SIZE * 3, 0)
+	chest.chest_opened.connect(func(_contents):
+		GameState.set_story_flag("chest_" + data["id"])
+	)
+	transitions.add_child(chest)
 
 
 func _on_boss_defeated() -> void:
