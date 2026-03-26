@@ -6,7 +6,7 @@
   "description": "The Curator offers tea and genuine curiosity. Eleven years studying this room. The most interesting thing to happen all decade is that the party might be looking for something that isn't here.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w1_curator"},
+    {"type": "play_music", "track": "boss_curator_medieval"},
 
     {"type": "branch", "condition": "playstyle", "cases": {
       "completionist": [

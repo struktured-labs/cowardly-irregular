@@ -7,7 +7,7 @@
   "description": "Orrery's precision futures consultation in Brasston. An eleven-minute scheduling offset. A letter carried across decades in a retired engineer's filing cabinet. The worlds were written simultaneously.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "world3_village"},
+    {"type": "play_music", "track": "village_steampunk"},
     {"type": "wait", "duration": 0.4},
 
     {"type": "narration", "lines": [

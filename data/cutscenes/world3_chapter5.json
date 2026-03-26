@@ -8,7 +8,7 @@
     {"type": "letterbox_in", "duration": 0.6},
     {"type": "stop_music"},
     {"type": "wait", "duration": 0.8},
-    {"type": "play_music", "track": "cutscene_w3_winding_down"},
+    {"type": "play_music", "track": "cutscene_w3_calibrant_revealed"},
 
     {"type": "narration", "lines": [
       "Not break. Not collapse. Wind down.",

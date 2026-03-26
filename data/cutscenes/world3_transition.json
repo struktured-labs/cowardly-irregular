@@ -6,7 +6,7 @@
   "description": "The steampunk world winds down with the elegance of a clock completing its cycle. The party enters a world stripped of beauty and pretense — gray concrete, fluorescent lighting, industrial machinery without the romance of steam. The costumes change: Steamknight becomes Enforcer, Alchemist becomes Lab Technician.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "cutscene_w3_winding_down"},
+    {"type": "play_music", "track": "cutscene_w3_calibrant_revealed"},
 
     {"type": "dialogue", "lines": [
       {

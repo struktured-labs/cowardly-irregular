@@ -7,7 +7,7 @@
   "description": "Orrery's windowless office in Rivet Row. Forty pages of productivity metrics concealing everything she knows. A timed delivery. A union rep who reads the executive summary and doesn't like what it says.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "world4_village"},
+    {"type": "play_music", "track": "village_industrial"},
     {"type": "wait", "duration": 0.3},
 
     {"type": "narration", "lines": [

@@ -6,7 +6,7 @@
   "description": "The assembly line. Workers who have forgotten their names. The monitors go from statistics to a countdown. The PA Announcer tries to broadcast something unauthorized and the system cuts her off.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "world4_overworld"},
+    {"type": "play_music", "track": "overworld_industrial"},
 
     {"type": "narration", "lines": [
       "The industrial sector was where the numbers were made.",

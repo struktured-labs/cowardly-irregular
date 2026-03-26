@@ -6,7 +6,7 @@
   "description": "The Tempo is delighted the trail was wrong about the party's speed. This isn't a threat — it's a game. Don't let it catch you.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w1_tempo"},
+    {"type": "play_music", "track": "boss_tempo_medieval"},
 
     {"type": "branch", "condition": "playstyle", "cases": {
       "completionist": [

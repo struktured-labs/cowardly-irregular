@@ -7,7 +7,7 @@
   "description": "A data packet taking an unreasonable route in Node Prime's market district. Orrery_v5. The annotated blueprint. A firewall attendant who recognizes the handwriting.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "world5_village"},
+    {"type": "play_music", "track": "village_digital"},
     {"type": "wait", "duration": 0.3},
 
     {"type": "narration", "lines": [
