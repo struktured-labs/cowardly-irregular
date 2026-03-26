@@ -2138,6 +2138,21 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
 		SoundManager.set_corruption_intensity(corruption_norm)
 
+		# Milestone toast notifications
+		var battles = stats.get("battles_won", 0)
+		if battles in [10, 20, 30, 50, 100]:
+			_show_autogrind_toast(_get_milestone_text(battles))
+
+		# Log any fatigue event that fired this cycle to the console
+		if AutogrindSystem.fatigue_events_triggered > 0:
+			var last_fatigue = AutogrindSystem.fatigue_events_triggered
+			if current_scene and is_instance_valid(current_scene) and current_scene.has_method("autogrind_console_log"):
+				current_scene.autogrind_console_log("[color=#ff8844][FATIGUE #%d] Check system stability[/color]" % last_fatigue)
+
+		# Update battle log on dashboard
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard) and _autogrind_dashboard.has_method("add_battle_result"):
+			_autogrind_dashboard.add_battle_result(victory, BattleManager.current_round, exp_gained)
+
 
 func _on_grind_complete(reason: String) -> void:
 	"""Handle autogrind session completion"""
@@ -2416,3 +2431,51 @@ func _exit_tree() -> void:
 			_title_screen.disconnect("continue_selected", _on_title_continue)
 		if _title_screen.is_connected("settings_selected", _on_title_settings):
 			_title_screen.disconnect("settings_selected", _on_title_settings)
+
+
+func _get_milestone_text(battles: int) -> String:
+	match battles:
+		10: return "ADAPTATION Lv.1 — Enemies are learning..."
+		20: return "ADAPTATION Lv.2 — Enemies growing stronger!"
+		30: return "SYSTEM FATIGUE — Instability events possible!"
+		50: return "DEEP GRIND — Maximum adaptation reached!"
+		100: return "LEGENDARY SESSION — Reality is bending..."
+		_: return "Milestone: %d battles!" % battles
+
+
+func _show_autogrind_toast(text: String) -> void:
+	var layer = CanvasLayer.new()
+	layer.layer = 80
+	add_child(layer)
+
+	var label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var vp_size = get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+	label.position = Vector2(0, 80)
+	label.size = Vector2(vp_size.x, 40)
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	label.modulate.a = 0.0
+	layer.add_child(label)
+
+	var shadow = Label.new()
+	shadow.text = text
+	shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shadow.position = Vector2(2, 82)
+	shadow.size = Vector2(vp_size.x, 40)
+	shadow.add_theme_font_size_override("font_size", 20)
+	shadow.add_theme_color_override("font_color", Color(0, 0, 0, 0.6))
+	shadow.modulate.a = 0.0
+	layer.add_child(shadow)
+	layer.move_child(shadow, 0)
+
+	var tween = create_tween()
+	tween.tween_property(label, "modulate:a", 1.0, 0.3)
+	tween.parallel().tween_property(shadow, "modulate:a", 1.0, 0.3)
+	tween.tween_interval(2.0)
+	tween.tween_property(label, "modulate:a", 0.0, 0.5)
+	tween.parallel().tween_property(shadow, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(layer.queue_free)

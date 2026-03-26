@@ -65,6 +65,11 @@ var _last_refresh_time: float = 0.0
 ## Prediction accuracy tracking
 var _predictions: Array[Dictionary] = []
 
+## Battle log
+var _battle_log_entries: Array = []
+var _battle_log_container: VBoxContainer = null
+var _battle_log_scroll: ScrollContainer = null
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -125,8 +130,10 @@ func _build_ui() -> void:
 
 	_stats_strip = AutogrindStatsStrip.new()
 	_stats_strip.position = Vector2(8, content_y)
-	_stats_strip.size = Vector2(vp_size.x - 16, 42)
+	_stats_strip.size = Vector2(stats_w, 42)
 	add_child(_stats_strip)
+
+	_build_battle_log_panel(Vector2(proj_w, 42), Vector2(mini_w + 16, content_y))
 
 	_build_footer(vp_size)
 
@@ -436,6 +443,57 @@ func _build_footer(vp_size: Vector2) -> void:
 		lbl.add_theme_color_override("font_color", TEXT_COLOR)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		footer.add_child(lbl)
+
+
+func _build_battle_log_panel(panel_size: Vector2, pos: Vector2) -> void:
+	var panel = Control.new()
+	panel.position = pos
+	panel.size = panel_size
+	add_child(panel)
+
+	var panel_bg = ColorRect.new()
+	panel_bg.color = PANEL_BG
+	panel_bg.size = panel_size
+	panel.add_child(panel_bg)
+	_add_border(panel, panel_size)
+
+	var title = Label.new()
+	title.text = "BATTLE LOG"
+	title.position = Vector2(8, 2)
+	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_color_override("font_color", DISABLED_COLOR)
+	panel.add_child(title)
+
+	_battle_log_scroll = ScrollContainer.new()
+	_battle_log_scroll.position = Vector2(4, 18)
+	_battle_log_scroll.size = Vector2(panel_size.x - 8, panel_size.y - 22)
+	_battle_log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(_battle_log_scroll)
+
+	_battle_log_container = VBoxContainer.new()
+	_battle_log_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_battle_log_container.add_theme_constant_override("separation", 2)
+	_battle_log_scroll.add_child(_battle_log_container)
+
+
+func add_battle_result(victory: bool, turns: int, exp_gained: int) -> void:
+	_battle_log_entries.append({"victory": victory, "turns": turns, "exp": exp_gained})
+	if _battle_log_entries.size() > 10:
+		_battle_log_entries.remove_at(0)
+	_refresh_battle_log()
+
+
+func _refresh_battle_log() -> void:
+	if not _battle_log_container or not is_instance_valid(_battle_log_container):
+		return
+	for child in _battle_log_container.get_children():
+		child.queue_free()
+	for entry in _battle_log_entries:
+		var lbl = Label.new()
+		lbl.text = "%s  %d turns  +%d EXP" % ["WIN" if entry["victory"] else "LOSS", entry["turns"], entry["exp"]]
+		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4) if entry["victory"] else Color(0.9, 0.3, 0.3))
+		_battle_log_container.add_child(lbl)
 
 
 ## ═══════════════════════════════════════════════════════════════════════

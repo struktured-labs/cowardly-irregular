@@ -36,6 +36,8 @@ var _current_battle_is_meta_boss: bool = false
 var _current_battle_is_collapse_boss: bool = false
 var _current_meta_boss_data: Dictionary = {}
 
+var _next_battle_enemy_boost: float = 0.0
+
 func _get_between_battle_delay() -> float:
 	match _current_tier:
 		GrindTier.ACCELERATED:
@@ -165,6 +167,19 @@ func _request_next_battle() -> void:
 		_between_battle_timer = _get_between_battle_delay()
 		return
 
+	# Check for system fatigue events
+	var fatigue = AutogrindSystem.check_fatigue_event()
+	if not fatigue.is_empty():
+		match fatigue["type"]:
+			"enemy_boost":
+				_next_battle_enemy_boost = 0.2
+			"party_debuff":
+				var alive_members = _party.filter(func(m): return m is Combatant and m.is_alive)
+				if alive_members.size() > 0:
+					var target = alive_members[randi() % alive_members.size()]
+					var hp_loss = int(target.max_hp * 0.1)
+					target.take_damage(hp_loss)
+
 	# Check interrupt conditions first
 	var interrupt_reason = AutogrindSystem.pre_battle_check()
 	if interrupt_reason != "":
@@ -243,6 +258,12 @@ func _generate_scaled_enemies() -> Array:
 		# Apply AutogrindSystem scaling
 		var scaled = AutogrindSystem.create_scaled_enemy_data(base_data)
 		selected.append(scaled)
+
+	if _next_battle_enemy_boost > 0.0:
+		for enemy_data in selected:
+			for stat_key in enemy_data.get("stats", {}).keys():
+				enemy_data["stats"][stat_key] = int(enemy_data["stats"][stat_key] * (1.0 + _next_battle_enemy_boost))
+		_next_battle_enemy_boost = 0.0
 
 	return selected
 
@@ -377,7 +398,8 @@ func get_grind_stats() -> Dictionary:
 		"collapse_count": AutogrindSystem.collapse_count,
 		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,
 		"permadead": AutogrindSystem.permadead_characters.duplicate(),
-		"time_multiplier": AutogrindSystem.get_time_multiplier()
+		"time_multiplier": AutogrindSystem.get_time_multiplier(),
+		"fatigue_events_triggered": AutogrindSystem.fatigue_events_triggered
 	}
 
 
