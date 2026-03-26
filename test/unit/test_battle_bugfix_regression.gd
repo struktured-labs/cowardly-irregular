@@ -1149,3 +1149,27 @@ func test_monster_levels_are_reasonable() -> void:
 		var level = m.get("level", 0)
 		assert_gt(level, 0, "Monster '%s' level should be > 0" % monster_id)
 		assert_true(level <= 30, "Monster '%s' level %d seems too high (max 30)" % [monster_id, level])
+
+
+# ===========================================================================
+# Test #100 — Comprehensive ability data integrity
+# ===========================================================================
+
+func test_all_abilities_have_required_fields() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	for ability_id in abilities:
+		var a = abilities[ability_id]
+		assert_true(a.has("id"), "Ability '%s' missing 'id' field" % ability_id)
+		assert_true(a.has("name"), "Ability '%s' missing 'name' field" % ability_id)
+		assert_true(a.has("type"), "Ability '%s' missing 'type' field" % ability_id)
+		# Magic/physical abilities must have damage_multiplier or effect
+		if a.get("type") == "magic" or a.get("type") == "physical":
+			assert_true(a.has("damage_multiplier") or a.has("effect"),
+				"Ability '%s' (type=%s) needs damage_multiplier or effect" % [ability_id, a.get("type")])
