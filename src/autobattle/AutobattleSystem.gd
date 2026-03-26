@@ -663,6 +663,8 @@ func create_default_character_script(character_id: String) -> Dictionary:
 			return _create_ninja_default_script(character_id)
 		"summoner":
 			return _create_summoner_default_script(character_id)
+		"speculator":
+			return _create_speculator_default_script(character_id)
 		_:
 			# Job lookup via GameState: handles any named character whose primary job
 			# is known but whose name doesn't match the cases above
@@ -1119,6 +1121,61 @@ func _create_summoner_default_script(character_id: String) -> Dictionary:
 				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
 			},
 			# Default - basic attack when MP is depleted
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_speculator_default_script(character_id: String) -> Dictionary:
+	"""Speculator script - volatility manipulation and risk/reward plays.
+	Opens with Forecast for intel, leverages self for burst, hedges allies for safety."""
+	return {
+		"character_id": character_id,
+		"name": "Speculator Default",
+		"rules": [
+			# Survival: potion when critically low
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<=", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Forecast first turn — cheap intel gathering (3 MP)
+			{
+				"conditions": [
+					{"type": "turn", "op": "<=", "value": 1},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "forecast", "target": "self"}]
+			},
+			# Press the Edge when band is Shifting+ for burst damage
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "press_the_edge", "target": "lowest_hp_enemy"}]
+			},
+			# Hedge lowest HP ally for protection
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<=", "value": 50},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "hedge_position", "target": "lowest_hp_ally"}]
+			},
+			# Leverage self for damage boost when HP is healthy
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": ">=", "value": 60},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "leverage_position", "target": "self"}]
+			},
+			# Fallback — basic attack
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
