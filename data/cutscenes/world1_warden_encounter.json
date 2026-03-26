@@ -6,7 +6,7 @@
   "description": "Full Warden encounter with playstyle-variant dialogue. Three hundred years of guarding. Thirty-seven failed attempts. The record must be clear.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w1_warden"},
+    {"type": "play_music", "track": "boss_warden_medieval"},
 
     {"type": "branch", "condition": "playstyle", "cases": {
       "grinder": [

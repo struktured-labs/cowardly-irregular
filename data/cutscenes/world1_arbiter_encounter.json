@@ -6,7 +6,7 @@
   "description": "The Arbiter challenges the party leader to single combat. Direct. Honest. Wants a real fight and will be disappointed by anything less.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w1_arbiter"},
+    {"type": "play_music", "track": "boss_arbiter_medieval"},
 
     {"type": "branch", "condition": "playstyle", "cases": {
       "completionist": [

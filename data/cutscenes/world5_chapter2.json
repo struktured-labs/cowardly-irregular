@@ -6,7 +6,7 @@
   "description": "The party encounters a goblin from World 1 still running its patrol loop in the digital world's legacy code. It doesn't attack. It can't. It's deprecated. But it remembers them.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "world5_village"},
+    {"type": "play_music", "track": "village_digital"},
 
     {"type": "narration", "lines": [
       "At the border between Node Prime's safe zone and the deeper network, between the styled world and the unstyled one, there was a place where old code collected.",

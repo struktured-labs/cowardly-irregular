@@ -8,7 +8,7 @@
     {"type": "letterbox_in", "duration": 0.6},
     {"type": "stop_music"},
     {"type": "wait", "duration": 1.0},
-    {"type": "play_music", "track": "cutscene_w6_the_question"},
+    {"type": "play_music", "track": "cutscene_w6_calibrant_question"},
 
     {"type": "narration", "lines": [
       "Twenty-two Masterites. Six worlds. Four archetypes.",

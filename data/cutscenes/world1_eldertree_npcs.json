@@ -6,7 +6,7 @@
   "description": "Forest-edge village with dying sacred trees. Forest Keeper Anya watches the corruption spread. A refugee from Scriptura speaks of something that measures, something that calibrates. Old Fen sells herbs that heal in the correct direction.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w1_village"},
+    {"type": "play_music", "track": "village_medieval"},
 
     {"type": "narration", "text": "Eldertree sat at the forest's edge like a village holding its breath. The trees behind it leaned wrong — not from wind, but from something internal, as though the forest itself were flinching."},
 

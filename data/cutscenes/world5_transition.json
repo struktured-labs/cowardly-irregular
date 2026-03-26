@@ -17,7 +17,7 @@
 
     {"type": "wait", "duration": 0.6},
 
-    {"type": "play_music", "track": "cutscene_w6_vertex_arrival"},
+    {"type": "play_music", "track": "cutscene_w6_entering_nothing"},
 
     {"type": "narration", "text": "The white expanded. Everything disappeared, replaced by nothing — not darkness, not void. The pure, clean nothing of a page before the first word is written."},
 
