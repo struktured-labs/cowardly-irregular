@@ -49,6 +49,7 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+	_setup_save_point()
 
 	if SoundManager:
 		SoundManager.play_area_music("village")
@@ -337,3 +338,16 @@ func set_player_job(job_name: String) -> void:
 func set_player_appearance(leader) -> void:
 	if player and player.has_method("set_appearance_from_leader"):
 		player.set_appearance_from_leader(leader)
+
+
+func _setup_save_point() -> void:
+	var save_pt = SavePoint.new()
+	save_pt.position = Vector2(10 * TILE_SIZE, 6 * TILE_SIZE)
+	save_pt.save_requested.connect(_on_save_requested)
+	add_child(save_pt)
+
+
+func _on_save_requested() -> void:
+	if SaveSystem and SaveSystem.has_method("quick_save"):
+		SaveSystem.quick_save()
+		print("[SAVE] Quick save triggered from Rivet Row save point")
