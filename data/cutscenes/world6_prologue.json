@@ -3,64 +3,95 @@
   "title": "Nothing",
   "world": 6,
   "trigger": "world6_portal_entry",
+  "background": "vertex_village",
   "description": "The abstract world. No sky, no ground, no levels, no menus. Jobs reduce to their essential truths: Resolve, Faith, Logic, Edge, Voice.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "fade_from_black", "duration": 2.0},
-    {"type": "letterbox_in", "duration": 0.8},
-    {"type": "play_music", "track": "cutscene_w6_entering_nothing"},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "Nothing is heavier than you'd think.",
-      "Not darkness. Not emptiness. This was nothing. The space that exists before the concept of space is invented.",
-      "Their stats were gone. Not zeroed \u2014 gone. Their inventories existed in theory but had no interface. Their abilities were memories of abilities."
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "The Firewall was Resolve. Had always been Resolve. Every stand, every block \u2014 not the armor, not the rules. Just the willingness to remain standing.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "",
-        "text": "The Antivirus was Faith. The conviction that the person being healed was worth healing. Not certainty. Faith.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "",
-        "text": "The Compiler was Logic. Taking what was known, applying what was true, and deriving what must follow. Also, he understood now, a kind of love.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "",
-        "text": "The Exploit was Edge. Every system has a boundary. Every rule has a limit case. The edge of a thing is where you learn what the thing actually is.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "",
-        "text": "The Broadcaster was Voice. Giving voice to what others couldn't express. The world exists more fully when it is spoken.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "They were, for the first time in five worlds, just people.",
-      "No levels. No menus. No rules.",
-      "Just them."
-    ]},
-
-    {"type": "set_flag", "flag": "world6_prologue_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "fade_from_black",
+      "duration": 2.0
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.8
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w6_entering_nothing"
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Nothing is heavier than you'd think.",
+        "Not darkness. Not emptiness. This was nothing. The space that exists before the concept of space is invented.",
+        "Their stats were gone. Not zeroed \u2014 gone. Their inventories existed in theory but had no interface. Their abilities were memories of abilities."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "The Firewall was Resolve. Had always been Resolve. Every stand, every block \u2014 not the armor, not the rules. Just the willingness to remain standing.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "",
+          "text": "The Antivirus was Faith. The conviction that the person being healed was worth healing. Not certainty. Faith.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "",
+          "text": "The Compiler was Logic. Taking what was known, applying what was true, and deriving what must follow. Also, he understood now, a kind of love.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "",
+          "text": "The Exploit was Edge. Every system has a boundary. Every rule has a limit case. The edge of a thing is where you learn what the thing actually is.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "",
+          "text": "The Broadcaster was Voice. Giving voice to what others couldn't express. The world exists more fully when it is spoken.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "They were, for the first time in five worlds, just people.",
+        "No levels. No menus. No rules.",
+        "Just them."
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world6_prologue_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

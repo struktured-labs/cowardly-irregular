@@ -3,82 +3,103 @@
   "title": "The Vertex",
   "world": 6,
   "trigger": "world6_village_entry",
+  "background": "vertex_village",
   "description": "The last village. The shopkeeper who is just the idea of one. The traveler who has walked between worlds. The question.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w6_no_one_speaks"},
-
-    {"type": "narration", "text": "The village materialized slowly, as though it were being remembered rather than built. The Vertex was barely there \u2014 an edge case the universe had not quite resolved."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Shopkeeper",
-        "text": "Welcome. I sell things. I think. The concept of commerce is... thinner here than it used to be.",
-        "theme": "shopkeeper",
-        "portrait": "shopkeeper"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Where is everyone?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Shopkeeper",
-        "text": "This is everyone. I was a shopkeeper in every world. Ironclad Arms. Ye Olde Medieval Surplus. The gear merchant. The company store. I'm still a shopkeeper. But now I'm just... the idea of one.",
-        "theme": "shopkeeper",
-        "portrait": "shopkeeper"
-      },
-      {
-        "speaker": "Shopkeeper",
-        "text": "I can offer you something that is exactly what you need. I just can't tell you what it is, because here, what you need can only be known by you.",
-        "theme": "shopkeeper",
-        "portrait": "shopkeeper"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Traveler",
-        "text": "You outlasted everything. Every world, every boss, every system. The Calibrant threw six worlds at you and you broke all of them. Now there's nothing left to throw.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "So what happens now?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Traveler",
-        "text": "Now you go talk to them. And they ask you their question. And depending on your answer, this either ends or it doesn't.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Traveler",
-        "text": "Every party that has made it this far has heard the question. No two have answered it the same way. And every answer has been right.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Every answer?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Traveler",
-        "text": "The question is not the kind that has wrong answers. Wrong answers are for systems. This is not a system. This is what the Calibrant had before they built the systems. And then forgot they had.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world6_chapter1_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w6_no_one_speaks"
+    },
+    {
+      "type": "narration",
+      "text": "The village materialized slowly, as though it were being remembered rather than built. The Vertex was barely there \u2014 an edge case the universe had not quite resolved."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Shopkeeper",
+          "text": "Welcome. I sell things. I think. The concept of commerce is... thinner here than it used to be.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Where is everyone?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Shopkeeper",
+          "text": "This is everyone. I was a shopkeeper in every world. Ironclad Arms. Ye Olde Medieval Surplus. The gear merchant. The company store. I'm still a shopkeeper. But now I'm just... the idea of one.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Shopkeeper",
+          "text": "I can offer you something that is exactly what you need. I just can't tell you what it is, because here, what you need can only be known by you.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Traveler",
+          "text": "You outlasted everything. Every world, every boss, every system. The Calibrant threw six worlds at you and you broke all of them. Now there's nothing left to throw.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "So what happens now?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Traveler",
+          "text": "Now you go talk to them. And they ask you their question. And depending on your answer, this either ends or it doesn't.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Traveler",
+          "text": "Every party that has made it this far has heard the question. No two have answered it the same way. And every answer has been right.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Every answer?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Traveler",
+          "text": "The question is not the kind that has wrong answers. Wrong answers are for systems. This is not a system. This is what the Calibrant had before they built the systems. And then forgot they had.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world6_chapter1_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

@@ -3,57 +3,75 @@
   "title": "The Network",
   "world": 5,
   "trigger": "world5_village_entry",
+  "background": "node_prime",
   "description": "Node Prime. Stats floating in the air. Armor made of rules. Healing by quarantine. Spells cast by typing.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-
-    {"type": "narration", "text": "The party could see their own stats floating above their heads. Not in a menu. In the air. The game's interface had become the world's atmosphere."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "My armor is made of rules. Literally. Each piece is a stacked column of conditional statements and access control lists.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Does it work?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "An enemy attacked. The armor cited Rule 47. The attack reduced itself to acceptable parameters rather than deal with the documentation. So... yes. It's just very weird.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "I cast the first spell of World 5 by typing it. Literally typed it into a tablet of light.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "I heal by quarantining damage. Bad data. Corrupted process. I isolate it, flag it for removal, and watch HP restore itself. It feels nothing like healing. And works exactly like healing.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Every edge I've ever found \u2014 every exploit, every gap \u2014 they're all visible here. The code is showing me where it ends.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world5_chapter1_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The party could see their own stats floating above their heads. Not in a menu. In the air. The game's interface had become the world's atmosphere."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "My armor is made of rules. Literally. Each piece is a stacked column of conditional statements and access control lists.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Does it work?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "An enemy attacked. The armor cited Rule 47. The attack reduced itself to acceptable parameters rather than deal with the documentation. So... yes. It's just very weird.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "I cast the first spell of World 5 by typing it. Literally typed it into a tablet of light.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "I heal by quarantining damage. Bad data. Corrupted process. I isolate it, flag it for removal, and watch HP restore itself. It feels nothing like healing. And works exactly like healing.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Every edge I've ever found \u2014 every exploit, every gap \u2014 they're all visible here. The code is showing me where it ends.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_chapter1_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

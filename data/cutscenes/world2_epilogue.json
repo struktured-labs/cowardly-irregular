@@ -3,118 +3,176 @@
   "title": "After the HOA",
   "world": 2,
   "trigger": "world2_coordinator_defeated",
+  "background": "community_center",
   "description": "After the Coordinator's defeat. The HOA monitors go dark. The suburb flickers, and behind the picket fences the party glimpses gears and brass. A portal opens to the steampunk world. Two rulers. Both used the word 'calibrated.'",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "fade_to_black", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "fade_from_black", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The Coordinator's monitors went dark one by one. Not dramatically \u2014 sequentially, like a building losing power from the top floor down. Each screen winked out and stayed out.",
-      "The HOA office was very quiet. The motivational posters on the walls continued to affirm things. Nobody had told them to stop.",
-      "Then the suburb flickered."
-    ]},
-
-    {"type": "play_sfx", "sfx": "reality_glitch"},
-    {"type": "screen_shake", "duration": 0.4, "intensity": 3.0},
-    {"type": "screen_flash", "duration": 0.2},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "Not the lights. The suburb itself. The picket fences stuttered, and for a half-second behind them: gears. Brass pipes. A sky the color of old copper.",
-      "Then the fences were back. The lawns were back. The wrong-shade-of-blue sky was back.",
-      "The party stood in the HOA office and looked at where the other world had been."
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Did everyone see that?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Gears. Brass. The kind of sky you get when someone decided copper was aspirational.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Two worlds. Two rulers. Mordaine wanted Harmonia calibrated. The Coordinator wanted Maple Heights calibrated. Both used that exact word.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "They didn't just use the same word. They meant the same thing by it. A perfect system with no deviation allowed.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "And they both built their system around us. Mordaine designed the trials. The Coordinator had our files.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Not around us. For us. Or maybe against us. It's difficult to tell the difference from inside.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "Outside, on the street, a lawn sprinkler turned on and off. Turned on and off. The neighborhood's automation running without anyone to authorize it, or anyone to stop it."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "The next world is going to be the same thing. Different costume, same idea. I'm calling it now.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Someone built this. All of it. Harmonia was a design. The suburb was a design. And now there's a world full of gears behind the fences.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Same fingerprints.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Then we go find the hand.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "play_sfx", "sfx": "portal_activate"},
-
-    {"type": "narration", "lines": [
-      "In the strip mall parking lot, between the frozen yogurt place and the armory that had never explained itself, a shimmer appeared.",
-      "Behind it: Cogsworth Junction. A clock tower. A sky that smelled like oil and copper, even through a portal.",
-      "The sprinkler ran its cycle and cut off. The neighborhood held its breath, automated and obedient, waiting for someone to tell it what to do next.",
-      "Nobody did. The party stepped through."
-    ]},
-
-    {"type": "fade_to_black", "duration": 1.5},
-    {"type": "set_flag", "flag": "world2_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "fade_to_black",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "fade_from_black",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Coordinator's monitors went dark one by one. Not dramatically \u2014 sequentially, like a building losing power from the top floor down. Each screen winked out and stayed out.",
+        "The HOA office was very quiet. The motivational posters on the walls continued to affirm things. Nobody had told them to stop.",
+        "Then the suburb flickered."
+      ]
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "reality_glitch"
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.4,
+      "intensity": 3.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.2
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Not the lights. The suburb itself. The picket fences stuttered, and for a half-second behind them: gears. Brass pipes. A sky the color of old copper.",
+        "Then the fences were back. The lawns were back. The wrong-shade-of-blue sky was back.",
+        "The party stood in the HOA office and looked at where the other world had been."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Did everyone see that?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Gears. Brass. The kind of sky you get when someone decided copper was aspirational.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Two worlds. Two rulers. Mordaine wanted Harmonia calibrated. The Coordinator wanted Maple Heights calibrated. Both used that exact word.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "They didn't just use the same word. They meant the same thing by it. A perfect system with no deviation allowed.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "And they both built their system around us. Mordaine designed the trials. The Coordinator had our files.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Not around us. For us. Or maybe against us. It's difficult to tell the difference from inside.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "Outside, on the street, a lawn sprinkler turned on and off. Turned on and off. The neighborhood's automation running without anyone to authorize it, or anyone to stop it."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "The next world is going to be the same thing. Different costume, same idea. I'm calling it now.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Someone built this. All of it. Harmonia was a design. The suburb was a design. And now there's a world full of gears behind the fences.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Same fingerprints.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Then we go find the hand.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "portal_activate"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "In the strip mall parking lot, between the frozen yogurt place and the armory that had never explained itself, a shimmer appeared.",
+        "Behind it: Cogsworth Junction. A clock tower. A sky that smelled like oil and copper, even through a portal.",
+        "The sprinkler ran its cycle and cut off. The neighborhood held its breath, automated and obedient, waiting for someone to tell it what to do next.",
+        "Nobody did. The party stepped through."
+      ]
+    },
+    {
+      "type": "fade_to_black",
+      "duration": 1.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

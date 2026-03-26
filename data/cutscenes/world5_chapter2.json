@@ -3,280 +3,372 @@
   "title": "The Deprecated Goblin",
   "world": 5,
   "trigger": "world5_network_border_entry",
+  "background": "node_prime",
   "description": "The party encounters a goblin from World 1 still running its patrol loop in the digital world's legacy code. It doesn't attack. It can't. It's deprecated. But it remembers them.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "village_digital"},
-
-    {"type": "narration", "lines": [
-      "At the border between Node Prime's safe zone and the deeper network, between the styled world and the unstyled one, there was a place where old code collected.",
-      "Not deleted. Not archived. Just present in the way that things are present when nobody has gotten around to removing them. Legacy. Deprecated. Still running because a running process doesn't stop without an explicit instruction to stop, and the instruction had never come."
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "Something up ahead. Low resolution.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Very low. Version 0.3, maybe. Before the current build.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Is it hostile?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "I can see its code. Two behaviors: patrol and attack. But the attack subroutine isn't running. Just the patrol. Just the loop.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "It was shaped like a goblin — chunky pixels, two-frame animation, the basic silhouette of a cave enemy from a much earlier version of a game that had since become much more complicated. It was running its patrol loop. The patrol route no longer existed, so the goblin was walking in a straight line, uninterrupted, toward a wall that the digital world had placed where a cave had been."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "It noticed them."},
-
-    {"type": "wait", "duration": 0.2},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Goblin",
-        "text": "Oh.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "Players.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "You remember us?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "I remember the pattern. You enter the cave. Third chamber. I attack. You defeat me. That's all I know. That's all I ever knew. But I was there for the beginning of it. I was your first encounter.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "Do you remember me?",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The party was quiet for a moment. The digital world continued around them — code scrolling, grid humming, the processing nodes pulsing in the distance. The goblin's animation cycled. Two frames. Had always been two frames."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "We remember the cave.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "World 1. The Whispering Cave. Third chamber. I had a patrol route and an attack subroutine. I've been in the digital world since the transition and I haven't been able to run the attack. Deprecated. The code is still there but the executable isn't. I can read my own function calls now — I can see the attack subroutine right there in my own logic, just sitting, flagged for removal, and I can't run it.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Mage",
-        "text": "You can read your own code.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "Everyone can, in World 5. It's one of the changes. I can see my patrol behavior, my attack behavior, my spawn parameters. There's a comment in the code. It says — it says todo: remove this instance.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Goblin",
-        "text": "The todo was never completed. So here I am.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Just the patrol.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "Just the patrol. The patrol route doesn't exist. I've been walking a straight line since the worlds changed. I walk until I hit the wall. Then I turn around. This is my life now.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "It would feel very good to finish my loop. Just the one time. Patrol, attack, defeat, respawn. The whole cycle. It's all I know. The loop is the only thing I ever had and I haven't been able to complete it in five worlds.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "You'd deal three damage.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "Version 0.3 goblin attack, yes. Three damage. Maybe four if the variance rolls high.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "You're not dangerous.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "I was the first thing that tried to stop you. I wasn't dangerous then either. But I was there. That matters for something.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "All right. One time.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "play_sfx", "sfx": "attack_hit"},
-    {"type": "wait", "duration": 0.5},
-    {"type": "play_sfx", "sfx": "enemy_death"},
-    {"type": "wait", "duration": 0.4},
-    {"type": "play_sfx", "sfx": "respawn_chime"},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The goblin attacked (three damage), was defeated (one hit), dissolved in a shower of very old, very compressed particle effects, and respawned three seconds later with the expression of something that has just completed the only task it was built for."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Goblin",
-        "text": "Thank you.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "I was the first thing you ever fought. Everything after that was built on that encounter. Not because I was memorable. Because a world that pushes back — that responds to you — starts with the first push. I was the first push.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "You know that?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "I can read my own code. I've had five worlds to think about what the code means. The todo says remove this instance. But the todo was never finished. Maybe the person who wrote me couldn't bring themselves to complete it.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "Or maybe they forgot. I don't know which would be nicer.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Are you going to be all right here?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "I have my loop. It's not much. But having it completed — even once — helps.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "Go forward. The things ahead are much harder than three damage. I hope you're ready for them.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Goblin",
-        "text": "I always was.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "They left the goblin at the border. Still patrolling. Wall to wall, two-frame animation, the loop running endlessly in legacy code at the edge of a world it was never written for. But a little more at peace with the loop."},
-
-    {"type": "set_flag", "flag": "world5_chapter2_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_digital"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "At the border between Node Prime's safe zone and the deeper network, between the styled world and the unstyled one, there was a place where old code collected.",
+        "Not deleted. Not archived. Just present in the way that things are present when nobody has gotten around to removing them. Legacy. Deprecated. Still running because a running process doesn't stop without an explicit instruction to stop, and the instruction had never come."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "Something up ahead. Low resolution.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Very low. Version 0.3, maybe. Before the current build.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Is it hostile?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "I can see its code. Two behaviors: patrol and attack. But the attack subroutine isn't running. Just the patrol. Just the loop.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "It was shaped like a goblin \u2014 chunky pixels, two-frame animation, the basic silhouette of a cave enemy from a much earlier version of a game that had since become much more complicated. It was running its patrol loop. The patrol route no longer existed, so the goblin was walking in a straight line, uninterrupted, toward a wall that the digital world had placed where a cave had been."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "It noticed them."
+    },
+    {
+      "type": "wait",
+      "duration": 0.2
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Goblin",
+          "text": "Oh.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "Players.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "You remember us?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "I remember the pattern. You enter the cave. Third chamber. I attack. You defeat me. That's all I know. That's all I ever knew. But I was there for the beginning of it. I was your first encounter.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "Do you remember me?",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The party was quiet for a moment. The digital world continued around them \u2014 code scrolling, grid humming, the processing nodes pulsing in the distance. The goblin's animation cycled. Two frames. Had always been two frames."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "We remember the cave.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "World 1. The Whispering Cave. Third chamber. I had a patrol route and an attack subroutine. I've been in the digital world since the transition and I haven't been able to run the attack. Deprecated. The code is still there but the executable isn't. I can read my own function calls now \u2014 I can see the attack subroutine right there in my own logic, just sitting, flagged for removal, and I can't run it.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Mage",
+          "text": "You can read your own code.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "Everyone can, in World 5. It's one of the changes. I can see my patrol behavior, my attack behavior, my spawn parameters. There's a comment in the code. It says \u2014 it says todo: remove this instance.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Goblin",
+          "text": "The todo was never completed. So here I am.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Just the patrol.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "Just the patrol. The patrol route doesn't exist. I've been walking a straight line since the worlds changed. I walk until I hit the wall. Then I turn around. This is my life now.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "It would feel very good to finish my loop. Just the one time. Patrol, attack, defeat, respawn. The whole cycle. It's all I know. The loop is the only thing I ever had and I haven't been able to complete it in five worlds.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "You'd deal three damage.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "Version 0.3 goblin attack, yes. Three damage. Maybe four if the variance rolls high.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "You're not dangerous.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "I was the first thing that tried to stop you. I wasn't dangerous then either. But I was there. That matters for something.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "All right. One time.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "attack_hit"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "enemy_death"
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "respawn_chime"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The goblin attacked (three damage), was defeated (one hit), dissolved in a shower of very old, very compressed particle effects, and respawned three seconds later with the expression of something that has just completed the only task it was built for."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Goblin",
+          "text": "Thank you.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "I was the first thing you ever fought. Everything after that was built on that encounter. Not because I was memorable. Because a world that pushes back \u2014 that responds to you \u2014 starts with the first push. I was the first push.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "You know that?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "I can read my own code. I've had five worlds to think about what the code means. The todo says remove this instance. But the todo was never finished. Maybe the person who wrote me couldn't bring themselves to complete it.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "Or maybe they forgot. I don't know which would be nicer.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Are you going to be all right here?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "I have my loop. It's not much. But having it completed \u2014 even once \u2014 helps.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "Go forward. The things ahead are much harder than three damage. I hope you're ready for them.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Goblin",
+          "text": "I always was.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "They left the goblin at the border. Still patrolling. Wall to wall, two-frame animation, the loop running endlessly in legacy code at the edge of a world it was never written for. But a little more at peace with the loop."
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_chapter2_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

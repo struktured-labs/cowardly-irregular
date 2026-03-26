@@ -3,396 +3,513 @@
   "title": "Inside the Machine",
   "world": 3,
   "trigger": "world3_mechanism_entry",
+  "background": "mechanism_interior",
   "description": "The Grand Mechanism opens for an irregularity too large to ignore. Moving corridors, a shifting dungeon, a drafting room with five worlds drawn in the same handwriting. The Regulator's control room. Every deviation corrected. Except you.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "cutscene_w3_pattern_recognized"},
-
-    {"type": "narration", "lines": [
-      "The entrance to the Grand Mechanism stood open.",
-      "It was not a building. It was a statement.",
-      "From the outside, it looked like a cathedral made of gears. From the inside, it looked like the inside of a clock, if the clock were the size of a city and kept time for multiple realities."
-    ]},
-
-    {"type": "play_sfx", "sfx": "steam_hiss"},
-    {"type": "screen_shake", "duration": 0.3, "intensity": 2.0},
-
-    {"type": "narration", "text": "The inner gears weren't running anything visible. They turned because turning was their function, and function was what they were. House-sized and slow, their revolutions so gradual that watching them felt like watching the movement of something geological."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "This place was designed.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Everything was designed.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "No. I mean \u2014 designed to be impressive. The outer gears run actual mechanisms. The inner gears run nothing. They're here because they look like they should be here.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Mage",
-        "text": "You don't build gears this large because you need gears this large. You build them so people will walk underneath them and understand that they're small and the machine is vast.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Bard",
-        "text": "That's a very particular thing to know about someone's psychology.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "People who need to make other people feel small are always the same. The details change. The need doesn't.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-    {"type": "screen_shake", "duration": 0.2, "intensity": 1.5},
-
-    {"type": "narration", "text": "The corridor they had been walking down was now facing a different direction. The room had rotated forty-five degrees. The large gear that had been to their left was now directly behind them."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "The dungeon is moving.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "It's diagnostic. It's testing our navigation.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Or it's trying to get us lost.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "A labyrinth that has no exit doesn't tell you anything useful about the person trapped in it. The center is findable. This way.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The drafting room was on the third level down. A desk. Bookshelves. A mechanical drafting table with blueprints spread across it, held down by gear-shaped paperweights that ticked softly. Someone had routed the ventilation deliberately. The air smelled of machine oil and the waxy residue of pencil marks made and erased many times over."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "Cogsworth Junction. Every street, every pipe, every steam vent. Annotated.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "And overlaid \u2014 Harmonia. The same roads. The same distances. Different names. A market district in the same quadrant. The same shape.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Maple Heights. Same proportions. The strip mall sits exactly where Harmonia's trading district sat.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "There are two more overlays. Ones we haven't been to yet.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "All five worlds in the same handwriting. The same annotation style. The same margin structure.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Bard",
-        "text": "There's a note at the bottom. Different from the technical annotations. Written faster. As though the careful precision slipped for a moment.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "If approach vector reaches Mechanism ahead of projection, advance to next phase. Margin is compressing.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Margin. That's us. We're the margin.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Margin of what? Margin of error? Margin of schedule?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The same person designed all of these. Or the same kind of thinking did. Every place we've been. Same proportions. Same structure. Same\u2026",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The same author.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "Mordaine.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "The Coordinator.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "The Regulator.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "We don't know. We don't actually know.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Bard",
-        "text": "But it fits.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Yes. It fits.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-    {"type": "screen_shake", "duration": 0.4, "intensity": 3.0},
-
-    {"type": "narration", "text": "They had three seconds before the Tempo arrived. It moved between the ticks of the mechanical world, occupying the spaces between moments where the Mechanism's gears weren't quite engaged and the world's time ran thin."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The Regulator's chamber was at the heart of everything. It took three more rooms of gear chambers and two more reroutes by the shifting dungeon, but eventually they were there."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "It was quiet. Not peaceful-silent. Controlled-silent. The constant background ticking that had accompanied them since arrival was simply absent. The furnace-warmth was absent too. A room in which everything had been held at exactly the right state."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Regulator",
-        "text": "You cleared the medieval phase in efficient time. Your automation rate was notable. Your resource management was\u2026 acceptable.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "They turned. The Regulator looked like a Victorian engineer. Goggles. Brass-buttoned coat. A face that was familiar in a way that couldn't be placed \u2014 not because they'd seen it before, but because they'd seen its expression before. On Mordaine. On the Coordinator."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Regulator",
-        "text": "The suburban phase was faster than projected. You found the monitoring equipment. That was not scheduled until the third act. I adjusted, but the data was already compromised.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "You adjusted the world.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Regulator",
-        "text": "I adjust parameters. The world responds accordingly. The Grand Mechanism maintains the integrity of the transition infrastructure. Each world must be kept within operating parameters.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The transitions between them. The difficulty curves within them. The encounter frequencies. The Masterites.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Regulator",
-        "text": "The assessors. Yes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "What were you testing? In each world. Mordaine evaluated political navigation. The Coordinator evaluated institutional obstruction. What were you evaluating?",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Regulator",
-        "text": "Pattern recognition.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "We recognized the pattern.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Regulator",
-        "text": "Yes. Somewhat ahead of schedule. The blueprints in the drafting room were not intended to be found at this stage.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "The note said to advance to the next phase if we got here early.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Regulator",
-        "text": "Yes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "What's the next phase?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Regulator",
-        "text": "You fight me. That was always the next phase. This world has a genre. The genre has a climax. You have reached the center of the machine. The center of the machine has a guardian.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Regulator",
-        "text": "That is the design. It does not require my feelings about it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Do you have feelings about it?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The Regulator didn't answer. Instead they straightened \u2014 a precise, deliberate settling of posture, like a gear engaging \u2014 and the dials on the console began to move on their own."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Regulator",
-        "text": "Every deviation, corrected. Every irregularity, resolved.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Regulator",
-        "text": "Except you.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Regulator",
-        "text": "Shall we proceed?",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.5, "intensity": 5.0},
-    {"type": "screen_flash", "duration": 0.2},
-
-    {"type": "set_flag", "flag": "world3_chapter3_complete", "value": true},
-    {"type": "set_flag", "flag": "regulator_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w3_pattern_recognized"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The entrance to the Grand Mechanism stood open.",
+        "It was not a building. It was a statement.",
+        "From the outside, it looked like a cathedral made of gears. From the inside, it looked like the inside of a clock, if the clock were the size of a city and kept time for multiple realities."
+      ]
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "steam_hiss"
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 2.0
+    },
+    {
+      "type": "narration",
+      "text": "The inner gears weren't running anything visible. They turned because turning was their function, and function was what they were. House-sized and slow, their revolutions so gradual that watching them felt like watching the movement of something geological."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "This place was designed.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Everything was designed.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "No. I mean \u2014 designed to be impressive. The outer gears run actual mechanisms. The inner gears run nothing. They're here because they look like they should be here.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Mage",
+          "text": "You don't build gears this large because you need gears this large. You build them so people will walk underneath them and understand that they're small and the machine is vast.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "That's a very particular thing to know about someone's psychology.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "People who need to make other people feel small are always the same. The details change. The need doesn't.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 1.5
+    },
+    {
+      "type": "narration",
+      "text": "The corridor they had been walking down was now facing a different direction. The room had rotated forty-five degrees. The large gear that had been to their left was now directly behind them."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "The dungeon is moving.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "It's diagnostic. It's testing our navigation.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Or it's trying to get us lost.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "A labyrinth that has no exit doesn't tell you anything useful about the person trapped in it. The center is findable. This way.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The drafting room was on the third level down. A desk. Bookshelves. A mechanical drafting table with blueprints spread across it, held down by gear-shaped paperweights that ticked softly. Someone had routed the ventilation deliberately. The air smelled of machine oil and the waxy residue of pencil marks made and erased many times over."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "Cogsworth Junction. Every street, every pipe, every steam vent. Annotated.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "And overlaid \u2014 Harmonia. The same roads. The same distances. Different names. A market district in the same quadrant. The same shape.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Maple Heights. Same proportions. The strip mall sits exactly where Harmonia's trading district sat.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "There are two more overlays. Ones we haven't been to yet.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "All five worlds in the same handwriting. The same annotation style. The same margin structure.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "There's a note at the bottom. Different from the technical annotations. Written faster. As though the careful precision slipped for a moment.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "If approach vector reaches Mechanism ahead of projection, advance to next phase. Margin is compressing.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Margin. That's us. We're the margin.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Margin of what? Margin of error? Margin of schedule?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The same person designed all of these. Or the same kind of thinking did. Every place we've been. Same proportions. Same structure. Same\u2026",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The same author.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "Mordaine.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "The Coordinator.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "The Regulator.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "We don't know. We don't actually know.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "But it fits.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Yes. It fits.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.4,
+      "intensity": 3.0
+    },
+    {
+      "type": "narration",
+      "text": "They had three seconds before the Tempo arrived. It moved between the ticks of the mechanical world, occupying the spaces between moments where the Mechanism's gears weren't quite engaged and the world's time ran thin."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Regulator's chamber was at the heart of everything. It took three more rooms of gear chambers and two more reroutes by the shifting dungeon, but eventually they were there."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "It was quiet. Not peaceful-silent. Controlled-silent. The constant background ticking that had accompanied them since arrival was simply absent. The furnace-warmth was absent too. A room in which everything had been held at exactly the right state."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Regulator",
+          "text": "You cleared the medieval phase in efficient time. Your automation rate was notable. Your resource management was\u2026 acceptable.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "They turned. The Regulator looked like a Victorian engineer. Goggles. Brass-buttoned coat. A face that was familiar in a way that couldn't be placed \u2014 not because they'd seen it before, but because they'd seen its expression before. On Mordaine. On the Coordinator."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Regulator",
+          "text": "The suburban phase was faster than projected. You found the monitoring equipment. That was not scheduled until the third act. I adjusted, but the data was already compromised.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "You adjusted the world.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Regulator",
+          "text": "I adjust parameters. The world responds accordingly. The Grand Mechanism maintains the integrity of the transition infrastructure. Each world must be kept within operating parameters.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The transitions between them. The difficulty curves within them. The encounter frequencies. The Masterites.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Regulator",
+          "text": "The assessors. Yes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "What were you testing? In each world. Mordaine evaluated political navigation. The Coordinator evaluated institutional obstruction. What were you evaluating?",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Regulator",
+          "text": "Pattern recognition.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "We recognized the pattern.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Regulator",
+          "text": "Yes. Somewhat ahead of schedule. The blueprints in the drafting room were not intended to be found at this stage.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "The note said to advance to the next phase if we got here early.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Regulator",
+          "text": "Yes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "What's the next phase?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Regulator",
+          "text": "You fight me. That was always the next phase. This world has a genre. The genre has a climax. You have reached the center of the machine. The center of the machine has a guardian.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Regulator",
+          "text": "That is the design. It does not require my feelings about it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Do you have feelings about it?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The Regulator didn't answer. Instead they straightened \u2014 a precise, deliberate settling of posture, like a gear engaging \u2014 and the dials on the console began to move on their own."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Regulator",
+          "text": "Every deviation, corrected. Every irregularity, resolved.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Regulator",
+          "text": "Except you.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Regulator",
+          "text": "Shall we proceed?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.5,
+      "intensity": 5.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.2
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_chapter3_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "regulator_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

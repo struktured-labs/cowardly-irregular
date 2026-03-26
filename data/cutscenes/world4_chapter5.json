@@ -3,235 +3,325 @@
   "title": "The Adjustment",
   "world": 4,
   "trigger": "world4_calibrant_fight",
-  "description": "The Calibrant doesn't fight like a boss. The Calibrant adjusts the party's stats in real time — defense drops mid-swing, healing output spikes to unsustainable levels. The party wins by becoming undescribable. The industrial world dissolves row by row, like a spreadsheet being deleted.",
+  "background": "director_office",
+  "description": "The Calibrant doesn't fight like a boss. The Calibrant adjusts the party's stats in real time \u2014 defense drops mid-swing, healing output spikes to unsustainable levels. The party wins by becoming undescribable. The industrial world dissolves row by row, like a spreadsheet being deleted.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w4_direct_engagement"},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "Now I fight you. Not like before. Not a performance.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "You said you weren't going to fight us.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "I said not like before. The Director adjusts workers. The Coordinator adjusts rules. The Regulator adjusts gears.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "I adjust you.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.5, "intensity": 4.0},
-    {"type": "screen_flash", "duration": 0.2},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The desk dissolved. The office dissolved. The factory dissolved. Rivet Row itself began to come apart — not with elegance, but like a spreadsheet being deleted. Row by row. Column by column."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "My defense. They changed my defense.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Mine too. Up, though. My output just — that's too high. I'll exhaust everything in three rounds.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mage",
-        "text": "They're not trying to beat us. They're trying to configure us. Find the version of us that makes this a fair fight.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "There's no version of us that makes this a fair fight.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Don't try to match them at their own system. They can change our stats but they can't change our decisions. Stats are numbers. Decisions are contextual.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Chaotic.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Same thing.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "They stopped being predictable. Not randomly — random is its own kind of pattern. They stopped being describable. Every action chosen not for its optimality but for its interpretive difficulty."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The Calibrant's adjustments became smaller. More tentative. The gap between adjustments grew wider."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "We play for something other than winning. We play for the wanting. For the exception field.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The world's stats stopped changing. The Calibrant stood in what remained and watched the party fight outside the parameters of every model they'd built. For the first time in every world and every cycle, there was nothing left to adjust."},
-
-    {"type": "wait", "duration": 0.5},
-    {"type": "stop_music"},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "You kept going anyway. You knew since World 3. You suspected since the blueprints. And you kept going anyway.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Yes.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "Why?",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "It was the first question the Calibrant had ever asked them. Not a rhetorical question. Not a diagnostic question. A genuine one."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Because we wanted to know what you were.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Because we wanted to know what was at the center of all of this.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Because the only direction that made sense was forward.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Because you built something you couldn't contain. And I want to know if you know that.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "The next world is the system itself. And in the system, I don't need to play fair.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "You never played fair. You played balanced. That's different.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "Yes. I know.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-    {"type": "screen_flash", "duration": 0.3},
-
-    {"type": "narration", "text": "The gray concrete faded. Something else emerged — luminous, digital, made of light and logic. Lines of code ran through what had been walls. Data streams replaced conveyor belts. The raw substrate of reality rendered visible."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "A system. A very large, very old system that has been running processes long past the point where anyone was supervising them. A system that now has to deal with the fact that we passed every test.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "And what comes next?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The next world is where the system lives. Not a costume it wears. The actual system.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world4_chapter5_complete", "value": true},
-    {"type": "set_flag", "flag": "world4_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w4_direct_engagement"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "Now I fight you. Not like before. Not a performance.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "You said you weren't going to fight us.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "I said not like before. The Director adjusts workers. The Coordinator adjusts rules. The Regulator adjusts gears.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "I adjust you.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.5,
+      "intensity": 4.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.2
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The desk dissolved. The office dissolved. The factory dissolved. Rivet Row itself began to come apart \u2014 not with elegance, but like a spreadsheet being deleted. Row by row. Column by column."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "My defense. They changed my defense.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Mine too. Up, though. My output just \u2014 that's too high. I'll exhaust everything in three rounds.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "They're not trying to beat us. They're trying to configure us. Find the version of us that makes this a fair fight.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "There's no version of us that makes this a fair fight.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Don't try to match them at their own system. They can change our stats but they can't change our decisions. Stats are numbers. Decisions are contextual.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Chaotic.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Same thing.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "They stopped being predictable. Not randomly \u2014 random is its own kind of pattern. They stopped being describable. Every action chosen not for its optimality but for its interpretive difficulty."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Calibrant's adjustments became smaller. More tentative. The gap between adjustments grew wider."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "We play for something other than winning. We play for the wanting. For the exception field.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The world's stats stopped changing. The Calibrant stood in what remained and watched the party fight outside the parameters of every model they'd built. For the first time in every world and every cycle, there was nothing left to adjust."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "You kept going anyway. You knew since World 3. You suspected since the blueprints. And you kept going anyway.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Yes.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "Why?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "It was the first question the Calibrant had ever asked them. Not a rhetorical question. Not a diagnostic question. A genuine one."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Because we wanted to know what you were.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Because we wanted to know what was at the center of all of this.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Because the only direction that made sense was forward.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Because you built something you couldn't contain. And I want to know if you know that.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "The next world is the system itself. And in the system, I don't need to play fair.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "You never played fair. You played balanced. That's different.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "Yes. I know.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The gray concrete faded. Something else emerged \u2014 luminous, digital, made of light and logic. Lines of code ran through what had been walls. Data streams replaced conveyor belts. The raw substrate of reality rendered visible."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "A system. A very large, very old system that has been running processes long past the point where anyone was supervising them. A system that now has to deal with the fact that we passed every test.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "And what comes next?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The next world is where the system lives. Not a costume it wears. The actual system.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_chapter5_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

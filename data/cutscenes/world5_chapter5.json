@@ -3,105 +3,168 @@
   "title": "The Last Configuration",
   "world": 5,
   "trigger": "world5_calibrant_final_fight",
-  "description": "The quietest fight. No arena, no phase shifts. Just the Calibrant at their desk, rewriting damage formulas in real time, spawning custom enemies, manipulating code — and discovering that no configuration can contain a party that plays for something other than winning.",
+  "background": "calibrant_desk",
+  "description": "The quietest fight. No arena, no phase shifts. Just the Calibrant at their desk, rewriting damage formulas in real time, spawning custom enemies, manipulating code \u2014 and discovering that no configuration can contain a party that plays for something other than winning.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w5_calibrant_desk"},
-
-    {"type": "narration", "text": "The fight was the quietest one. No arena. No phase shifts. No dramatic music. Just the Calibrant, at their desk, using every tool they had left."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "Rewriting damage formulas on the fly. Spawning custom enemies calibrated to the party's exact weaknesses. Manipulating the game's code in real time to try to find some combination, some configuration, some setting that would bring the party back within acceptable tolerances."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "The party broke every configuration. They'd been doing it for five worlds. They were very good at it by now."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "I could keep rewriting this. The formula. I could make the numbers bigger. I could add a new phase, a new mechanic, a new system.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "But I've been thinking about what the cached memory was preserving. What it held onto, when it held data I never told it to hold. And I think I have been so focused on the system that I forgot to think about what the system was for.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "What was it for?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "I thought it was for challenge. Balance. Measurement. Progression.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "But nobody plays a game to be measured. They play because something in the playing is worth the playing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-    {"type": "stop_music"},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "There's one world left. I built it for this moment. For the moment when I ran out of systems and masks and tricks and calibrations.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "The last world isn't a challenge. It isn't a test. It isn't a phase to be cleared or a boss to be beaten.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "The last world is a question. And I genuinely don't know the answer.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-    {"type": "screen_flash", "duration": 0.4},
-
-    {"type": "narration", "text": "The digital world began to dissolve — not breaking, not deleting. Simplifying. The code streams slowed. The green-on-black faded to white. The complexity of five worlds reduced, step by step, to something elemental."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The white expanded. The desk disappeared. The Calibrant disappeared. Everything disappeared, replaced by nothing — not darkness, not void, but nothing. The pure, clean nothing of a page before the first word is written."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The party stood in it. Five people shaped by five worlds, carrying the weight of every battle and every choice and every moment of automation and manual play and grinding and exploiting and simply being there."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "Somewhere, in the nothing, the Calibrant was waiting. Not as a villain. Not as a boss. Not as a system. As a question."},
-
-    {"type": "set_flag", "flag": "world5_chapter5_complete", "value": true},
-    {"type": "set_flag", "flag": "world5_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w5_calibrant_desk"
+    },
+    {
+      "type": "narration",
+      "text": "The fight was the quietest one. No arena. No phase shifts. No dramatic music. Just the Calibrant, at their desk, using every tool they had left."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Rewriting damage formulas on the fly. Spawning custom enemies calibrated to the party's exact weaknesses. Manipulating the game's code in real time to try to find some combination, some configuration, some setting that would bring the party back within acceptable tolerances."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The party broke every configuration. They'd been doing it for five worlds. They were very good at it by now."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "I could keep rewriting this. The formula. I could make the numbers bigger. I could add a new phase, a new mechanic, a new system.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "But I've been thinking about what the cached memory was preserving. What it held onto, when it held data I never told it to hold. And I think I have been so focused on the system that I forgot to think about what the system was for.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "What was it for?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "I thought it was for challenge. Balance. Measurement. Progression.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "But nobody plays a game to be measured. They play because something in the playing is worth the playing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "There's one world left. I built it for this moment. For the moment when I ran out of systems and masks and tricks and calibrations.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "The last world isn't a challenge. It isn't a test. It isn't a phase to be cleared or a boss to be beaten.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "The last world is a question. And I genuinely don't know the answer.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The digital world began to dissolve \u2014 not breaking, not deleting. Simplifying. The code streams slowed. The green-on-black faded to white. The complexity of five worlds reduced, step by step, to something elemental."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The white expanded. The desk disappeared. The Calibrant disappeared. Everything disappeared, replaced by nothing \u2014 not darkness, not void, but nothing. The pure, clean nothing of a page before the first word is written."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The party stood in it. Five people shaped by five worlds, carrying the weight of every battle and every choice and every moment of automation and manual play and grinding and exploiting and simply being there."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Somewhere, in the nothing, the Calibrant was waiting. Not as a villain. Not as a boss. Not as a system. As a question."
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_chapter5_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

@@ -3,149 +3,237 @@
   "title": "Calibration Complete",
   "world": 6,
   "trigger": "world6_ending",
-  "description": "The Calibrant offers the party the Calibrant class — the ability to design challenges, build worlds, calibrate systems. Not a reward. A responsibility. The worlds reform. Not as they were, but as they could be. The question: What kind of game would you design?",
+  "background": "vertex_village",
+  "description": "The Calibrant offers the party the Calibrant class \u2014 the ability to design challenges, build worlds, calibrate systems. Not a reward. A responsibility. The worlds reform. Not as they were, but as they could be. The question: What kind of game would you design?",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.6},
-    {"type": "stop_music"},
-    {"type": "wait", "duration": 1.0},
-    {"type": "play_music", "track": "cutscene_w6_epilogue"},
-
-    {"type": "narration", "text": "The encounters, the slimes, the deprecated goblins, the Masterites and their impossible questions, the moments of understanding and connection that accrued in the gaps between the designed challenge — those were the point. Not the system. The living in the system."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The nothing shifted. The whiteness warmed. Something that might have been sunlight — not harsh, not overwhelming, just present — began to fill the space. Matter-of-factly, without announcing itself, the way real light is present."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "The system is yours. All of it. Every world, every mechanism, every rule. I built it to contain you. Now it's yours to do with as you please.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "They held out their hand. In it, a small object — a gear, a memo, a crystal, a circuit, a line of code, a pure geometric shape — all of them at once, all of the worlds compressed into a single token."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "This is the Calibrant class. My job. My function. The ability to design challenges, build worlds, set parameters, and calibrate systems.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Calibrant",
-        "text": "I'd like you to have it. Not because you earned it — though you did. Because I'm tired, and you're better at this than I am, and someone should be designing challenges for the people who come after you.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-    {"type": "screen_flash", "duration": 0.3},
-    {"type": "play_sfx", "sfx": "level_up"},
-
-    {"type": "narration", "text": "The party took it. The class integrated — not with a flash of light or a dramatic transformation, but with the quiet certainty of something that had always belonged to them clicking into place."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "You design challenges worth standing against. Not challenges that force people to stand. Challenges that make standing feel like the right choice.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "You design systems that assume people are worth designing for. That the players on the other side of the system are worth caring about.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mage",
-        "text": "You design with rigor, in service of something. Rules are tools. The question you ask of every rule is: what is this for? Who does this serve?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "You leave the edges open. Every system should have places where clever people can find something you didn't put there. Design is not control — design is invitation.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Bard",
-        "text": "You tell the story. Every encounter is a story. You give voice to the things in the system that cannot speak for themselves.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The Calibrant class was not creative control. It was creative responsibility. The understanding that every game is a world, and every world is inhabited, and the people who inhabit it are worth designing for."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The worlds reformed. Not as they had been — but as they could be. Harmonia with its chickens and its Sleepy Slime Inn. Maple Heights with its wrong-blue sky. Brasston with its gears and Sprocket. Rivet Row with its union reps. Node Prime with its deprecated goblins. The Vertex with its beautiful nothing."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "All of them, connected. All of them, available. All of them, open for the party to explore, redesign, rebuild, and recalibrate."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The Calibrant sat on the ground, in the sunlight, in the world they had built and lost and given away."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "So. What kind of game would you design?",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "We'd design something with room in it. Room for the moments that weren't designed. Room for the goblins to finish their loops and the Masterites to ask their questions and the players to be present in the gaps.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Calibrant",
-        "text": "That sounds like a good game.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "text": "And they played."},
-
-    {"type": "wait", "duration": 1.5},
-
-    {"type": "set_flag", "flag": "world6_ending_complete", "value": true},
-    {"type": "set_flag", "flag": "game_complete", "value": true},
-    {"type": "letterbox_out", "duration": 1.0}
+    {
+      "type": "letterbox_in",
+      "duration": 0.6
+    },
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w6_epilogue"
+    },
+    {
+      "type": "narration",
+      "text": "The encounters, the slimes, the deprecated goblins, the Masterites and their impossible questions, the moments of understanding and connection that accrued in the gaps between the designed challenge \u2014 those were the point. Not the system. The living in the system."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The nothing shifted. The whiteness warmed. Something that might have been sunlight \u2014 not harsh, not overwhelming, just present \u2014 began to fill the space. Matter-of-factly, without announcing itself, the way real light is present."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "The system is yours. All of it. Every world, every mechanism, every rule. I built it to contain you. Now it's yours to do with as you please.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "They held out their hand. In it, a small object \u2014 a gear, a memo, a crystal, a circuit, a line of code, a pure geometric shape \u2014 all of them at once, all of the worlds compressed into a single token."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "This is the Calibrant class. My job. My function. The ability to design challenges, build worlds, set parameters, and calibrate systems.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Calibrant",
+          "text": "I'd like you to have it. Not because you earned it \u2014 though you did. Because I'm tired, and you're better at this than I am, and someone should be designing challenges for the people who come after you.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.3
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "level_up"
+    },
+    {
+      "type": "narration",
+      "text": "The party took it. The class integrated \u2014 not with a flash of light or a dramatic transformation, but with the quiet certainty of something that had always belonged to them clicking into place."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "You design challenges worth standing against. Not challenges that force people to stand. Challenges that make standing feel like the right choice.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "You design systems that assume people are worth designing for. That the players on the other side of the system are worth caring about.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "You design with rigor, in service of something. Rules are tools. The question you ask of every rule is: what is this for? Who does this serve?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "You leave the edges open. Every system should have places where clever people can find something you didn't put there. Design is not control \u2014 design is invitation.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "You tell the story. Every encounter is a story. You give voice to the things in the system that cannot speak for themselves.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The Calibrant class was not creative control. It was creative responsibility. The understanding that every game is a world, and every world is inhabited, and the people who inhabit it are worth designing for."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The worlds reformed. Not as they had been \u2014 but as they could be. Harmonia with its chickens and its Sleepy Slime Inn. Maple Heights with its wrong-blue sky. Brasston with its gears and Sprocket. Rivet Row with its union reps. Node Prime with its deprecated goblins. The Vertex with its beautiful nothing."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "All of them, connected. All of them, available. All of them, open for the party to explore, redesign, rebuild, and recalibrate."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The Calibrant sat on the ground, in the sunlight, in the world they had built and lost and given away."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "So. What kind of game would you design?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "We'd design something with room in it. Room for the moments that weren't designed. Room for the goblins to finish their loops and the Masterites to ask their questions and the players to be present in the gaps.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Calibrant",
+          "text": "That sounds like a good game.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "text": "And they played."
+    },
+    {
+      "type": "wait",
+      "duration": 1.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "world6_ending_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "game_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 1.0
+    }
   ]
 }
