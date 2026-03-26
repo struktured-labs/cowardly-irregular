@@ -191,6 +191,12 @@ func _request_next_battle() -> void:
 		_launch_collapse_boss_battle()
 		return
 
+	# Check for fatigue-triggered collapse
+	if AutogrindSystem.check_fatigue_collapse():
+		print("[AUTOGRIND] FATIGUE COLLAPSE — too many system events!")
+		_launch_collapse_boss_battle()
+		return
+
 	# Check for regular meta-boss spawn
 	if AutogrindSystem.should_spawn_meta_boss():
 		_launch_meta_boss_battle()

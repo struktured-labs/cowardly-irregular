@@ -41,6 +41,7 @@ var _winrate_sparkline: SparklineChart = null
 var _stat_labels: Dictionary = {}
 var _projection_labels: Dictionary = {}
 var _elapsed_label: Label = null
+var _permadeath_label: Label = null
 
 ## Stats strip
 var _stats_strip: AutogrindStatsStrip = null
@@ -364,6 +365,14 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 
 		_stat_labels[s["key"]] = val
 
+	var last_y = 18 + stats.size() * row_h
+	_permadeath_label = Label.new()
+	_permadeath_label.text = "PERMADEATH: OFF"
+	_permadeath_label.position = Vector2(12, last_y + 4)
+	_permadeath_label.add_theme_font_size_override("font_size", 12)
+	_permadeath_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	panel.add_child(_permadeath_label)
+
 
 func _build_projections_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var panel = Control.new()
@@ -589,6 +598,11 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	_update_stat("collapses", str(stats.get("collapse_count", 0)))
 	var time_mult = stats.get("time_multiplier", 1.0)
 	_update_stat("time_mult", "%.1fx" % time_mult)
+
+	if _permadeath_label and is_instance_valid(_permadeath_label):
+		var staking = AutogrindSystem.permadeath_staking_enabled
+		_permadeath_label.text = "PERMADEATH: %s (3x EXP)" % ("ON" if staking else "OFF")
+		_permadeath_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2) if staking else Color(0.5, 0.5, 0.6))
 
 	var avg_label := "~%d" % int(avg_exp_per_battle) if _exp_history.size() > 0 else ("~%d" % int(avg_exp_per_battle) if _battles_completed >= 3 else "--")
 	_update_projection("avg_exp_battle", avg_label)

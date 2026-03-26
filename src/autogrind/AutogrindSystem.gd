@@ -328,6 +328,14 @@ func check_fatigue_event() -> Dictionary:
 	return {"type": event_type, "description": description}
 
 
+func check_fatigue_collapse() -> bool:
+	if battles_completed < 50:
+		return false
+	if fatigue_events_triggered < 5:
+		return false
+	return randf() < 0.03
+
+
 func get_grind_stats() -> Dictionary:
 	"""Get grind session statistics with per-minute rates.
 	Returns {exp_per_min, gold_per_min, jp_per_min, encounters_per_min,
