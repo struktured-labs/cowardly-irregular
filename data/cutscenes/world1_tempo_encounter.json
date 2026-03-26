@@ -1,0 +1,43 @@
+{
+  "id": "world1_tempo_encounter",
+  "title": "The Tempo of the Hunt",
+  "world": 1,
+  "trigger": "world1_tempo_pre_fight",
+  "description": "The Tempo is delighted the trail was wrong about the party's speed. This isn't a threat — it's a game. Don't let it catch you.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "cutscene_w1_tempo"},
+
+    {"type": "branch", "condition": "playstyle", "cases": {
+      "completionist": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Tempo",
+            "text": "Track me first. Find where I've been. Then we'll see if you can find where I am.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          }
+        ]}
+      ],
+      "default": []
+    }},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "You're faster than the trail suggested. I like it when the trail is wrong.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "Don't let me catch you. That's not a threat. That's the game.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world1_tempo_encounter_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
