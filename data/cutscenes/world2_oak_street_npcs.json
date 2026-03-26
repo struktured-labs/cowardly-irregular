@@ -1,0 +1,97 @@
+{
+  "id": "world2_oak_street_npcs",
+  "title": "Oak Street",
+  "world": 2,
+  "trigger": "world2_oak_street_entry",
+  "description": "The garage sale lady whose items fight back. The crossing guard who's been at her post longer than the neighborhood has existed. The school loudspeaker that has opinions about permanent records.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "village_suburban"},
+
+    {"type": "narration", "text": "Oak Street smelled of hot concrete and the faint vanilla of a candle shop three blocks over. A portable radio played an oldies station with the low volume of something that had always been on."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Garage Sale Lady",
+        "text": "Half off everything. Cash only. No returns.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "What's the story behind all this?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Garage Sale Lady",
+        "text": "The sign says everything must go. It doesn't say it has to be easy.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Garage Sale Lady",
+        "text": "Fair warning — the gnome bites. The sweater has opinions. The bread maker has been waiting for its moment for three years.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Crossing Guard",
+        "text": "Halt. No crossing without the signal.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "There's no traffic.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Crossing Guard",
+        "text": "The absence of visible traffic does not indicate the absence of traffic. This intersection has been under my supervision since the beginning of the neighborhood. I have never had an incident.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Crossing Guard",
+        "text": "I've been here such a long time. I don't know where I was before. It feels like longer than the neighborhood's been here.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "School Loudspeaker",
+        "text": "Good morning, unregistered visitors. Please proceed directly to Room 204 for assessment. Refusal to proceed will be noted in your permanent record.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "We don't have permanent records.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "School Loudspeaker",
+        "text": "Yet.",
+        "theme": "system",
+        "portrait": "system"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world2_oak_street_npcs_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

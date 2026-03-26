@@ -1,0 +1,108 @@
+{
+  "id": "world2_maple_heights_npcs",
+  "title": "Maple Heights",
+  "world": 2,
+  "trigger": "world2_maple_heights_entry",
+  "description": "First suburban village. A shopkeeper who stocks medieval items and knows about the portal. A mail carrier who's seen the appliances go rogue. A lawn-watering man who thinks Thursday is the answer to everything. A kid on a bicycle with opinions about cosplay.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "village_suburban"},
+
+    {"type": "narration", "text": "Maple Heights existed in a state of aggressive normalcy. Every house was a variation on the same house. Every lawn was the same shade of green. The sky was blue, but it was the wrong blue — not wrong in a way you could point to, but wrong in a way you could feel."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Kid on Bicycle",
+        "text": "Cool cosplay. What convention?",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We're not—",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Kid on Bicycle",
+        "text": "The mall has a Spirit Halloween now. Seasonal, obviously. You could probably get better armor there. No offense.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Surplus Shopkeeper",
+        "text": "Everything's half off. We got a huge shipment in from... I don't know, the warehouse? It just shows up.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "From Harmonia?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Surplus Shopkeeper",
+        "text": "From wherever. I just ring them up. You want the potions? They're the only things that actually work. The weapons are decorative, which I am legally required to say.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Surplus Shopkeeper",
+        "text": "You're from the other side of the portal, aren't you. Don't worry about it. People come through sometimes. You get used to it.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Surplus Shopkeeper",
+        "text": "The HOA keeps tabs on everything. The Coordinator is going to find you within the day. Stock up first.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mail Carrier",
+        "text": "It's been like this for months. Appliances going rogue. Kids disappearing — not missing, just relocated. The HOA says it's 'community restructuring.' Nobody questions it because nobody questions the HOA.",
+        "theme": "elder",
+        "portrait": "elder"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Why not?",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Mail Carrier",
+        "text": "Have you met the Coordinator?",
+        "theme": "elder",
+        "portrait": "elder"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Lawn Man",
+        "text": "HOA meeting's not till Thursday.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world2_maple_heights_npcs_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

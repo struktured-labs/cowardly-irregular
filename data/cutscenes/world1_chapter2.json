@@ -136,6 +136,100 @@
       }
     ]},
 
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "branch", "condition": "playstyle", "cases": {
+      "automator": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Bard",
+            "text": "Is it just me, or did that fight feel... scripted? Not our lines. Our movements. Like someone wrote the choreography before we arrived.",
+            "theme": "bard",
+            "portrait": "bard"
+          },
+          {
+            "speaker": "Mage",
+            "text": "Efficient choreography is not the same as scripted choreography.",
+            "theme": "mage",
+            "portrait": "mage"
+          },
+          {
+            "speaker": "Bard",
+            "text": "Isn't it, though?",
+            "theme": "bard",
+            "portrait": "bard"
+          }
+        ]}
+      ],
+      "grinder": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Bard",
+            "text": "We've fought a lot of things today. More than most parties would. Is anyone else noticing that we're... stronger than the road seems to expect?",
+            "theme": "bard",
+            "portrait": "bard"
+          },
+          {
+            "speaker": "Fighter",
+            "text": "Practice makes better.",
+            "theme": "fighter",
+            "portrait": "fighter"
+          },
+          {
+            "speaker": "Bard",
+            "text": "Practice makes the story wonder why you're still in the first chapter.",
+            "theme": "bard",
+            "portrait": "bard"
+          }
+        ]}
+      ],
+      "exploiter": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Bard",
+            "text": "That last fight. The way you found the angle — the one the monsters weren't guarding. Does anyone else feel like the world has... seams? Places where the design doesn't quite connect?",
+            "theme": "bard",
+            "portrait": "bard"
+          },
+          {
+            "speaker": "Rogue",
+            "text": "Seams are just opportunities with bad PR.",
+            "theme": "rogue",
+            "portrait": "rogue"
+          },
+          {
+            "speaker": "Bard",
+            "text": "I'm going to write that down. For the song. The one I'm definitely writing about all of this.",
+            "theme": "bard",
+            "portrait": "bard"
+          }
+        ]}
+      ],
+      "manual": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Bard",
+            "text": "Every fight we chose ourselves. Every swing, every spell, every decision — ours. There's something honest about that. Something the road seems to... respect.",
+            "theme": "bard",
+            "portrait": "bard"
+          },
+          {
+            "speaker": "Fighter",
+            "text": "Roads don't respect things.",
+            "theme": "fighter",
+            "portrait": "fighter"
+          },
+          {
+            "speaker": "Bard",
+            "text": "This one does. I can hear it in the way the whispers change when we're coming. They expected something. We're not it.",
+            "theme": "bard",
+            "portrait": "bard"
+          }
+        ]}
+      ],
+      "default": []
+    }},
+
     {"type": "narration", "text": "They reached the cave mouth as the sun dropped behind the mountains and the whispers began."},
 
     {"type": "set_flag", "flag": "chapter2_complete", "value": true},
