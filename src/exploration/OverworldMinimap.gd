@@ -90,6 +90,33 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 	_player_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(_player_dot)
 
+	# Legend below minimap
+	var legend_y = _bg.position.y + _bg.size.y + 4
+	var legend_x = _bg.position.x
+	var legend_items = [
+		["You", Color(1.0, 1.0, 1.0)],
+		["Village", DOT_COLORS["village"]],
+		["Cave", DOT_COLORS["cave"]],
+		["Dragon", DOT_COLORS["dragon"]],
+		["Portal", DOT_COLORS["portal"]],
+	]
+	for i in range(legend_items.size()):
+		var item = legend_items[i]
+		var y_off = legend_y + i * 11
+		var dot = ColorRect.new()
+		dot.color = item[1]
+		dot.size = Vector2(4, 4)
+		dot.position = Vector2(legend_x + 4, y_off + 2)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(dot)
+		var lbl = Label.new()
+		lbl.text = item[0]
+		lbl.add_theme_font_size_override("font_size", 7)
+		lbl.add_theme_color_override("font_color", item[1].lightened(0.2))
+		lbl.position = Vector2(legend_x + 12, y_off - 2)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(lbl)
+
 
 func _get_dot_type(key: String) -> String:
 	if "dragon" in key:
