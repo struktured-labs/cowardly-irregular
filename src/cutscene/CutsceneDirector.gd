@@ -191,8 +191,9 @@ func play_cutscene(cutscene_id: String) -> void:
 	_current_world = data.get("world", 0)
 	visible = true
 
-	# Capture current viewport as backdrop behind dialogue
-	await _capture_background()
+	# Load backdrop: prefer explicit image, then viewport capture, then world gradient
+	if not _try_load_backdrop_image(data):
+		await _capture_background()
 
 	cutscene_started.emit(cutscene_id)
 
@@ -220,7 +221,8 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	_current_world = data.get("world", 0)
 	visible = true
 
-	await _capture_background()
+	if not _try_load_backdrop_image(data):
+		await _capture_background()
 	cutscene_started.emit(cutscene_id)
 	_freeze_player()
 
@@ -511,6 +513,29 @@ func _detect_playstyle() -> String:
 ## =====================
 ## BACKGROUND MANAGEMENT
 ## =====================
+
+func _try_load_backdrop_image(data: Dictionary) -> bool:
+	"""Try to load an explicit backdrop image from the cutscene data.
+	Returns true if a backdrop was loaded, false to fall through to capture/gradient.
+	Supports: {"background": "prologue_village"} → res://assets/cutscene_backdrops/prologue_village.png"""
+	var bg = data.get("background", "")
+	if bg == "":
+		return false
+
+	var path = "res://assets/cutscene_backdrops/%s.png" % bg
+	if not ResourceLoader.exists(path):
+		push_warning("CutsceneDirector: Backdrop image not found: %s" % path)
+		return false
+
+	var tex = load(path) as Texture2D
+	if tex:
+		_background_texture.texture = tex
+		_background_texture.visible = true
+		_background_dim.visible = true
+		return true
+
+	return false
+
 
 func _capture_background() -> void:
 	"""Capture current viewport as a dimmed backdrop behind cutscene dialogue.

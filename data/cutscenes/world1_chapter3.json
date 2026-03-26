@@ -3,6 +3,7 @@
   "title": "The Whispering Cave",
   "world": 1,
   "trigger": "enter_whispering_cave",
+  "background": "cave_entrance",
   "description": "Entering the Whispering Cave. The honorable skeleton, designed monsters, and deepening mystery.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},

@@ -3,6 +3,7 @@
   "title": "The Village That Knew Too Much",
   "world": 1,
   "trigger": "after_prologue",
+  "background": "prologue_village",
   "description": "Elder Theron's briefing, Scholar Milo introduces autobattle, NPC encounters in Harmonia.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},

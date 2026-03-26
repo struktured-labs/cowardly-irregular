@@ -3,6 +3,7 @@
   "title": "The Cave Rat King",
   "world": 1,
   "trigger": "boss_cave_rat_king",
+  "background": "cave_entrance",
   "description": "Boss intro for the Cave Rat King in the Whispering Cave. Fourth-wall-breaking rat with a tiny crown.",
   "steps": [
     {"type": "stop_music"},
