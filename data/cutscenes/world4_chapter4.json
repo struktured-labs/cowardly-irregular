@@ -1,0 +1,211 @@
+{
+  "id": "world4_chapter4",
+  "title": "The Name",
+  "world": 4,
+  "trigger": "world4_director_reveal",
+  "description": "The Director appears. Not as a process — as a person. The same eyes as Mordaine, as the Coordinator, as the Regulator. Four worlds of suspicion become certainty. The Calibrant names themselves for the first time.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 0.5},
+    {"type": "play_music", "track": "cutscene_w4_director_unmasked"},
+
+    {"type": "narration", "text": "The Director sat behind a desk. A real desk. Wood, not steel. It was the only warm thing in the entire world — warm in color, warm in texture, grain visible in the surface. Against the steel and concrete and fluorescent grayness of everything else, the desk was almost jarring. Someone had wanted it there."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Director",
+        "text": "Sit down.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "They looked like a middle manager. Gray suit. Sensible shoes. The kind of face you forget while you're still looking at it. But the eyes were the same. They were always the same. Whatever the costume, whatever the accent, whatever the genre — the eyes were the same quality of presence."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "You.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Director",
+        "text": "I'm not going to fight you. Not like before. Those were performances. Genre-appropriate confrontations designed to provide narrative satisfaction within each world's aesthetic framework.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Director",
+        "text": "This world doesn't have an aesthetic framework. This world is what happens when I stop decorating. When I stop performing. When I just run the numbers.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "They turned their monitor around. It showed the party's complete profile — every stat, every tendency, every behavior pattern mapped and analyzed from World 1 through the present."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Director",
+        "text": "You are, by every metric I have, better than the system can contain. Your damage output exceeds projected maximums by forty-seven percent. Your automation scripts are more efficient than my own difficulty scaling.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Director",
+        "text": "I don't know what to do with you.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "The blueprints in the Mechanism. Five worlds, same handwriting. Harmonia, Maple Heights, Cogsworth Junction — all the same geometry.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We've been thinking it since the Regulator's chamber. Since the blueprints. Since the Regulator said 'this world served its purpose, as did the others.'",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "We didn't know. We suspected. Two worlds of suspecting. And here we are.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "Tell us. Not as the Director. Not as the Regulator, or the Coordinator, or Mordaine. Tell us what you actually are.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Director",
+        "text": "Those were calibrations. Instruments of a process. Each one built for its world, suited to its genre, designed to evaluate a specific capability. Each one was real — I was the Chancellor, I was the Coordinator, I was the Regulator. The role is genuine. But the role is not the thing.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "What's the thing?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Director",
+        "text": "I am the thing that calibrates. I am the process. The function. The mechanism by which all of it — every world, every mask, every test — is designed, deployed, and adjusted.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Director",
+        "text": "I am the one who built the blueprints. All five sets, in the same handwriting, because there is only one hand. I am the one who placed the Masterites. I am the one who designed the difficulty curves.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "What do we call you?",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "They straightened. And in straightening, something in them settled — the forgettable middle-manager face, the gray suit, the optimized affect — all of it was still there, and all of it was now clearly a costume, because the thing wearing it had decided to be visible."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Director",
+        "text": "My name is the Calibrant. That is what I am. That is what I have always been. The one who calibrates.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+    {"type": "screen_shake", "duration": 0.3, "intensity": 2.0},
+
+    {"type": "narration", "text": "The word landed in the room the way large things land — not with drama, but with mass."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "We suspected since World 3. Since the Regulator's chamber. Since the blueprints.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I know. World 3 was where you were supposed to suspect. And World 4 is where you were supposed to know. The design has always had a sequence.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "So we're on schedule.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "You are, as you have been throughout, ahead of it. Which is, at this point, simply a characteristic of you.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world4_chapter4_complete", "value": true},
+    {"type": "set_flag", "flag": "calibrant_revealed", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "id": "world5_transition",
+  "title": "Phase Transition: Digital → Abstract",
+  "world": 5,
+  "trigger": "world5_to_world6_transition",
+  "description": "The digital world simplifies. Code streams slow. Green-on-black fades to white. The complexity of five worlds reduces to something elemental — The Vertex. Not a world. A question waiting to be asked. The party's names become what they always were: Resolve, Faith, Logic, Edge, Voice.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "lines": [
+      "The digital world began to dissolve. Not breaking, not deleting.",
+      "Simplifying.",
+      "The code streams slowed. The green-on-black faded to white. The complexity of five worlds reduced, step by step, to something elemental."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "play_music", "track": "cutscene_w6_vertex_arrival"},
+
+    {"type": "narration", "text": "The white expanded. Everything disappeared, replaced by nothing — not darkness, not void. The pure, clean nothing of a page before the first word is written."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "What is this?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The remainder. What's left when you remove everything that was designed to test us. The substrate beneath the substrate.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "It feels like... before. Before the first world. Before the first fight. Like the moment before something begins.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "Five people. Shaped by five worlds. Carrying the weight of every battle and every choice and every moment of automation and manual play and grinding and exploiting and simply being there."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "We've had so many names. Fighter. Security Guard. Steamknight. Enforcer. Firewall.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Here I'm just... me. Whatever that means in a place where everything else has been stripped away.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "In every world, our skills translated. The names changed but the capabilities didn't. There was always something underneath that persisted.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "I can still see the edges. Even here. Even in nothing.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "I can still feel the people. Even in nothing, there are people worth caring about.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "Somewhere in the nothing, something waited. Not as a villain. Not as a boss. Not as a system. As a question that had been building for five worlds and was finally ready to be asked."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Forward.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Always forward.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world5_transition_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.6}
+  ]
+}

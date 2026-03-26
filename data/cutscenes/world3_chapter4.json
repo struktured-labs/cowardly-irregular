@@ -1,0 +1,177 @@
+{
+  "id": "world3_chapter4",
+  "title": "The Engineer",
+  "world": 3,
+  "trigger": "world3_regulator_defeated",
+  "description": "The Regulator is defeated — not by force, but by unpredictability. The Busker plays a melody the Mechanism couldn't calibrate for. The party learns they've been outside projected parameters since World 2. The Regulator won't confirm or deny what they are. But the eyes are the same.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "cutscene_w3_mechanism_interior"},
+
+    {"type": "narration", "lines": [
+      "The Regulator stepped back from the center of the chamber. The platforms settled. The steam vents went quiet.",
+      "The Mechanism continued turning — it would always continue turning — but the fight was over."
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Regulator",
+        "text": "You did something I didn't model for. At the end. The music.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Does that bother you?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Regulator",
+        "text": "It requires annotation.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Regulator",
+        "text": "You've been outside projected parameters since the second world. I adjusted. You exceeded the adjustment. I adjusted again. You exceeded that.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Regulator",
+        "text": "You have been consistently outside the tolerance range. This world was supposed to bring you back within it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "It didn't.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Regulator",
+        "text": "No.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Regulator",
+        "text": "This world served its purpose. As did the others.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "You keep saying that. What does it mean?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Regulator",
+        "text": "It means the work here is done. And the work elsewhere is beginning.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "They didn't say: I am the Calibrant. They didn't say: I designed all of this. They said what an engineer says when a project phase is complete: the work is done. The work elsewhere is beginning."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "The blueprints in the drafting room. The same handwriting on all five worlds.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Regulator",
+        "text": "Efficient documentation practice.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "You designed all of them.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Regulator",
+        "text": "I maintain all of them.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "The next world. What do we find there?",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Regulator",
+        "text": "You'll find out when you arrive. That's how it works.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "You said 'always.' That's how it's always worked.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The Regulator didn't turn around."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Regulator",
+        "text": "That's how it works.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "They corrected the tense without acknowledging the correction. They turned back to the console. Made one more adjustment. And the world began to wind down."},
+
+    {"type": "set_flag", "flag": "world3_chapter4_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

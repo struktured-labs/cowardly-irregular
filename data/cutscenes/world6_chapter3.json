@@ -1,0 +1,224 @@
+{
+  "id": "world6_chapter3",
+  "title": "The Question",
+  "world": 6,
+  "trigger": "world6_calibrant_question",
+  "description": "The Calibrant asks the question they built this entire world to ask. Twenty-two Masterites, six worlds, four masks — all leading to this. 'What is a game without challenge?' The answer depends on who is answering.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 1.0},
+    {"type": "play_music", "track": "cutscene_w6_the_question"},
+
+    {"type": "narration", "lines": [
+      "Twenty-two Masterites. Six worlds. Four archetypes.",
+      "All of them reflections of the same question, the same test, the same desperate attempt by a system to measure something that refused to be measured.",
+      "And at the end of the measurement, something unmeasured remained: the fact of the measuring. The relationship between the measurer and the measured."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "That's all of them. Every test I designed. Every measure I had. Every tool in my entire system for evaluating whether a player has mastered the game.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "You have. Obviously. That's been clear since World 4. Maybe earlier. Maybe since the moment you walked into Harmonia and decided to answer the call, even though you weren't heroes and nobody expected you to matter.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Calibrant stood. The nothing around them shifted — not changing, but paying attention. The way a room gets quieter when someone is about to say something important."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "Here is my question. The one I built this entire world to ask. The one I have no answer to, which is why I need you to answer it.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "What is a game without challenge?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "If you have exceeded every system I can build. If no difficulty curve can contain you. If no boss can stop you, no puzzle can stump you, no world can surprise you. If you have, in every meaningful way, won —",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "Then what is the point of continuing? What do you play for, when there is nothing left to play against?",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I built worlds because I believed the purpose of a game was challenge. Test the player. Measure the player. Push the player to their limits. And you exceeded those limits, and I pushed harder, and you exceeded again, and now —",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "Now I have nothing left. No more worlds. No more masks. No more calibrations. Just the question.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The silence had weight and texture and opinions."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "A game without challenge is still a game.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "You played every battle. You fought for every moment of it. Every decision made in real time with real stakes.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Because the playing was the point. Not the winning. Not the mastery. The moment when you don't know what's going to happen next.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "But you've won. There are no more moments like that.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Then make more. Not harder fights. Just fights. The kind where you don't know how it ends.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "A game without challenge is a system to be understood. We didn't play to beat it. We played to comprehend it. Every script we wrote was a question about how your rules worked.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Cleric",
+        "text": "A game without challenge is a place to rest. The repetition was peaceful. Every battle was the same, and every battle was different, and doing it again and again was the closest thing to calm we ever found.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "A game without challenge is impossible. Every system has edges. And edges are challenges. You can't run out of challenges because we don't need you to provide them. We'll find our own.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "A game without challenge is a story. Every encounter is a story. Every NPC has something to say. Every Masterite was asking a question, even when it looked like a fight.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Bard",
+        "text": "You give voice to the things in the system that cannot speak for themselves — the deprecated goblins, the race conditions, the ghosts in the processing gaps — and you make sure the players hear them.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "Something changed in the Calibrant's face. Not understanding, exactly. Something closer to release. The expression of someone who has been holding a weight they didn't know they were holding, and has just been told they can put it down."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I spent six worlds trying to measure you. Trying to calibrate the perfect challenge. And the answer was that the challenge was never the point.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The Calibrant laughed. It was the first time the Calibrant had laughed in six worlds. It sounded rusty. Unpracticed. Human."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I am the Calibrant. The one who calibrates. And I have been calibrating the wrong variable this entire time.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world6_chapter3_complete", "value": true},
+    {"type": "set_flag", "flag": "calibrant_question_answered", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

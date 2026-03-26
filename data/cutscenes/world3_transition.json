@@ -1,0 +1,123 @@
+{
+  "id": "world3_transition",
+  "title": "Phase Transition: Steampunk → Industrial",
+  "world": 3,
+  "trigger": "world3_to_world4_transition",
+  "description": "The steampunk world winds down with the elegance of a clock completing its cycle. The party enters a world stripped of beauty and pretense — gray concrete, fluorescent lighting, industrial machinery without the romance of steam. The costumes change: Steamknight becomes Enforcer, Alchemist becomes Lab Technician.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "play_music", "track": "cutscene_w3_winding_down"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Three worlds. Three designed authorities. Three sets of Masterites — same archetypes, different costumes. Warden, Arbiter, Tempo, Curator. The pattern is beyond coincidence.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "The Warden of the Mainspring was the same as the Warden of the Old Guard and the Warden of Routine. Not the same person. The same shape.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Someone places them and they don't know they've been placed. That's the part that bothers me. Not the placing — the not knowing.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "I kept a complete record. Every NPC conversation from three worlds. Every single one of them had something to say that mattered. I don't think the designer expected anyone to hear all of it.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The Regulator said the next world has no romance. Just function. Just numbers.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We've handled worse.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "The transformation was not a transformation. There was no portal. No shimmer. No ceremony.",
+      "The steampunk world ended and another began, and the seam between them was visible, deliberate, and utterly without apology."
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The brass became steel. The gears became conveyor belts. The gas lamps became fluorescent tubes. The cobblestones became poured concrete. The romance of steam became the hum of industrial machinery."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Armor again. But it's not brass — it's hard plastic. And it has a badge. Says SECURITY.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "The prayers arrived through pipes in the last world. Here they arrive through memos. The words are the same. The delivery is... corporate.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The formulae have become protocols. Not alchemy — industrial chemistry. Everything documented, everything filed.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Lockpicks became access cards. Same principle. Different interface.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "The trumpet became a PA system. I can make it sing if they let me control the frequency.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Three worlds of costumes. The skills underneath don't change — just the interface. Whoever is designing this understands something about abstraction.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Or they understand something about us.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world3_transition_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

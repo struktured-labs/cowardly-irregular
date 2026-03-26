@@ -1,0 +1,96 @@
+{
+  "id": "world3_chapter5",
+  "title": "Winding Down",
+  "world": 3,
+  "trigger": "world3_regulator_aftermath",
+  "description": "The steampunk world doesn't break. It winds down. Like a clock running out of stored energy. Gas lamps gutter district by district. Citizens on their schedules go quiet. The thousand clocks lose their rhythm one by one until the last one ticks and does not tick again.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 0.8},
+    {"type": "play_music", "track": "cutscene_w3_winding_down"},
+
+    {"type": "narration", "lines": [
+      "Not break. Not collapse. Wind down.",
+      "Like a clock running out of stored energy — the gears slowing not because something broke but because the mechanism had completed its cycle and had not been rewound."
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The gas lamps went first. Not all at once — district by district, lamp by lamp, each one guttering through amber to orange to a dim copper glow before going dark. The darkness they left was not the darkness of night. It was the darkness of a stage between scenes."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "Then the citizens on their schedules: the sound of them, the soft regular movement of people on grooved paths, went quiet one by one, as though the Schedule had reached the final entry and found nothing written after it."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "Then the brass walls themselves. Simply growing still. The gears slowing from their house-sized revolutions through something geological, through something barely perceptible, into stillness that was also a kind of completion."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The ticking quieted, the thousand slightly-out-of-sync clocks losing their rhythm one by one until the last one ticked and then did not tick again."},
+
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 1.0},
+
+    {"type": "narration", "text": "The clock tower was last. It stood alone in the disappearing city for a long moment, isolated, the single remaining fixed point in a world becoming absence. It chimed once — just once — and then went too, its gears winding down with the slowness of something that had been running for a very long time and was content to stop."},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Regulator was gone. Not dissolved, not glitched. Simply gone, the way a technician leaves a worksite when the work is done."},
+
+    {"type": "wait", "duration": 0.5},
+    {"type": "screen_flash", "duration": 0.3},
+
+    {"type": "narration", "text": "Gray. Concrete. Fluorescent lighting. The hum of industrial machinery without the romance of steam. A world stripped of beauty and pretense, built for function and nothing else."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "Next world.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "They said this world served its purpose. Same as the others.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "What does that mean?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "Nobody answered. The Mage was already looking at the industrial world around them — the concrete, the fluorescent haze, the monitors on every corner showing numbers that were climbing — and writing something in the margin of a mental notebook. Not a conclusion. A question."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "The new world doesn't welcome us. It simply is. No portal. No ceremony. One world ended and another began, and the seam between them is visible, deliberate, and utterly without apology.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Forward.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world3_chapter5_complete", "value": true},
+    {"type": "set_flag", "flag": "world3_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

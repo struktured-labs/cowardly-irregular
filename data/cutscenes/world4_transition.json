@@ -1,0 +1,119 @@
+{
+  "id": "world4_transition",
+  "title": "Phase Transition: Industrial → Digital",
+  "world": 4,
+  "trigger": "world4_to_world5_transition",
+  "description": "The industrial world dissolves like a spreadsheet being deleted — row by row, column by column. What emerges is luminous, digital, made of light and logic. Lines of code run through what were walls. The party's costumes become avatars. The Calibrant has no more masks to wear.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "stop_music"},
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "Four worlds. Four designed authorities. Four sets of Masterites. Same archetypes — always the same four: Warden, Arbiter, Tempo, Curator. And the authority behind them all is the same person.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "The Calibrant.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "They told us the next world is the system itself. No more costumes. No more genres. The raw substrate.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "They also said they don't need to play fair anymore.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "They never played fair. They played balanced.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Same thing. Apparently.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The gray concrete faded. Something else emerged — luminous, digital, made of light and logic. Lines of code ran through what had been walls. Data streams replaced conveyor belts."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The raw substrate of reality rendered visible: not what the worlds were made of, but what the worlds were made from."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "The armor is gone. All of it. I'm made of... I don't know what this is.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Code. We're made of code. The costume stopped pretending. We were always made of this — every world, every form. This is just what it looks like without the render layer.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "The healing still works. Different syntax, same intent.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "There are gaps everywhere. Every process has a gap between its cycles. I can see them all.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "The music is frequencies now. Pure waves. No instrument — just the wave itself. It's the most honest sound I've ever made.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "Four worlds of breaking through. The Calibrant has run out of masks.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Bard",
+        "text": "Then let's find out what's underneath.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world4_transition_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

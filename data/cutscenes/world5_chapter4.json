@@ -1,0 +1,157 @@
+{
+  "id": "world5_chapter4",
+  "title": "The Confession",
+  "world": 5,
+  "trigger": "world5_calibrant_confrontation",
+  "description": "The Calibrant speaks without a mask. Five worlds of difficulty design, fourteen damage formula rewrites, and the party still exceeded every projection. The collision bug in the Whispering Cave. The deprecated goblin. The moment the Calibrant stopped being objective.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "cutscene_w5_calibrant_desk"},
+
+    {"type": "narration", "text": "The Calibrant sat in a chair that had seen better millennia. No costume. No chancellor's robes, no engineer's goggles, no director's gray suit. Just someone who had been working too long on a problem that wouldn't solve."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "You found it. The desk. The chair. The unglamorous reality of what I actually am.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "No throne. No final dungeon. No dramatic arena. Just this. The place where the work gets done.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "Five worlds. I built five worlds. Each one was supposed to be better than the last. More challenging. More nuanced. More capable of containing you.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "None of them worked.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "No. None of them worked.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "Do you know what the hardest part of game design is? It's not making things difficult. Difficulty is easy. The hard part is making something fair.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I rewrote the damage formula fourteen times for World 4 alone. Fourteen. And you still defeated the Warden of the Assembly Line on your third attempt.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "World 2: I deployed three Masterites in sequence targeting your healing vulnerability. You patched it in twenty minutes by changing secondary jobs.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "World 1 — you exploited a collision bug in the Whispering Cave that let the Rogue reach the Curator from behind. A bug I didn't know existed. In my own world. That I built.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "I have been trying, across five worlds and twenty-two Masterites and four masks and one increasingly desperate direct engagement, to build something that could challenge you. And I have failed. Completely. Comprehensively.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "The Warden of the Firewall asked whether consciousness was a bug or a feature. In my code. I didn't put that question in the code. That emerged. From four worlds' worth of player interaction, of NPCs being treated as though they had something worth saying.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "They did have something worth saying.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "I know that now. I didn't, when I built World 1. They were function calls. Dialogue triggers.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Calibrant",
+        "text": "The deprecated goblin. You let it finish its loop.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "It seemed important to it.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "It's deprecated. It shouldn't have had an 'important.' I wrote it in version 0.3 with two behaviors: patrol, attack. No 'important.' No sense of completion.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Calibrant",
+        "text": "And yet.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.6},
+
+    {"type": "narration", "text": "The Calibrant looked at the monitor showing Node Prime, where the deprecated goblin was still looping, still cycling, still small and satisfied."},
+
+    {"type": "set_flag", "flag": "world5_chapter4_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
