@@ -50,6 +50,8 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 
+	_setup_save_point()
+
 	if SoundManager:
 		SoundManager.play_area_music("village")
 
@@ -259,6 +261,19 @@ func _setup_npcs() -> void:
 		"...Just kidding. Probably."
 	])
 	npcs.add_child(murk)
+
+
+func _setup_save_point() -> void:
+	var save_pt = SavePoint.new()
+	save_pt.position = Vector2(8 * TILE_SIZE, 6 * TILE_SIZE)
+	save_pt.save_requested.connect(_on_save_requested)
+	add_child(save_pt)
+
+
+func _on_save_requested() -> void:
+	if SaveSystem and SaveSystem.has_method("quick_save"):
+		SaveSystem.quick_save()
+		print("[SAVE] Quick save triggered from Grimhollow save point")
 
 
 func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
