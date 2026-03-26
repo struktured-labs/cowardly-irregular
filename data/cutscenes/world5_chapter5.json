@@ -6,7 +6,7 @@
   "description": "The quietest fight. No arena, no phase shifts. Just the Calibrant at their desk, rewriting damage formulas in real time, spawning custom enemies, manipulating code — and discovering that no configuration can contain a party that plays for something other than winning.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w5_final_configuration"},
+    {"type": "play_music", "track": "cutscene_w5_calibrant_desk"},
 
     {"type": "narration", "text": "The fight was the quietest one. No arena. No phase shifts. No dramatic music. Just the Calibrant, at their desk, using every tool they had left."},
 

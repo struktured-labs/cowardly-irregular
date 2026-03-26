@@ -6,7 +6,7 @@
   "description": "The Regulator's enforcement arm finds them in Brasston. Polished brass humanoids with calibration rods. Deviation logged. The party is outside tolerance range. One sentinel apologizes for the inconvenience, which is also outside its operational parameters.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "world3_village"},
+    {"type": "play_music", "track": "village_steampunk"},
 
     {"type": "narration", "text": "The clockwork sentinels found them on the third street past the market. Polished brass humanoids, each carrying a pair of calibration rods that could measure and correct irregularities with a precision that left bruises. They didn't communicate. They processed."},
 

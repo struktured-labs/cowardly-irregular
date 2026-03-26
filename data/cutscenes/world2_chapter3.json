@@ -6,7 +6,7 @@
   "description": "The garage sale on Oak Street. An enchanted sweater, a ceramic rooster, a garden gnome, and a bread maker with unresolved ambitions. Everything must go. It doesn't say it has to be easy.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "world2_village"},
+    {"type": "play_music", "track": "village_suburban"},
 
     {"type": "narration", "lines": [
       "The garage sale on Oak Street had a sign: EVERYTHING MUST GO.",

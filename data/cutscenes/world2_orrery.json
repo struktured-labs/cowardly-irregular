@@ -7,7 +7,7 @@
   "description": "Orrery's life coaching booth at the Maple Heights strip mall. Form 77-Gamma. The Coordinator's memos. A specification that predates what it specifies.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "world2_village"},
+    {"type": "play_music", "track": "village_suburban"},
     {"type": "wait", "duration": 0.3},
 
     {"type": "narration", "lines": [

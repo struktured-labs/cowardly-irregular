@@ -6,7 +6,7 @@
   "description": "The Calibrant doesn't fight like a boss. The Calibrant adjusts the party's stats in real time — defense drops mid-swing, healing output spikes to unsustainable levels. The party wins by becoming undescribable. The industrial world dissolves row by row, like a spreadsheet being deleted.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w4_calibrant_fight"},
+    {"type": "play_music", "track": "cutscene_w4_direct_engagement"},
 
     {"type": "dialogue", "lines": [
       {

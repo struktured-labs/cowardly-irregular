@@ -6,7 +6,7 @@
   "description": "The Regulator is defeated — not by force, but by unpredictability. The Busker plays a melody the Mechanism couldn't calibrate for. The party learns they've been outside projected parameters since World 2. The Regulator won't confirm or deny what they are. But the eyes are the same.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "cutscene_w3_mechanism_interior"},
+    {"type": "play_music", "track": "cutscene_w3_pattern_recognized"},
 
     {"type": "narration", "lines": [
       "The Regulator stepped back from the center of the chamber. The platforms settled. The steam vents went quiet.",

@@ -1,0 +1,59 @@
+{
+  "id": "world1_warden_encounter",
+  "title": "The Warden of the Old Guard",
+  "world": 1,
+  "trigger": "world1_warden_pre_fight",
+  "description": "Full Warden encounter with playstyle-variant dialogue. Three hundred years of guarding. Thirty-seven failed attempts. The record must be clear.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "boss_warden_medieval"},
+
+    {"type": "branch", "condition": "playstyle", "cases": {
+      "grinder": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Warden",
+            "text": "You are strong. Stronger than expected. The record does not account for this. It doesn't change anything. Step forward.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          }
+        ]}
+      ],
+      "completionist": [
+        {"type": "dialogue", "lines": [
+          {
+            "speaker": "Warden",
+            "text": "There is food in the guardhouse. I cannot leave the post. But you may rest before we begin, if you wish.",
+            "theme": "enemy",
+            "portrait": "mysterious"
+          }
+        ]}
+      ],
+      "default": []
+    }},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Warden",
+        "text": "This pass has been held for three hundred years. By my count, you are the thirty-seventh party to attempt it. The other thirty-six turned back.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "I am not telling you this to frighten you. I am telling you so the record is clear.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden",
+        "text": "Show me what you are, and I will show you what I have left.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world1_warden_encounter_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

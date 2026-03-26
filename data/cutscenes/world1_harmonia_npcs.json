@@ -1,0 +1,125 @@
+{
+  "id": "world1_harmonia_npcs",
+  "title": "Harmonia Village",
+  "world": 1,
+  "trigger": "world1_harmonia_entry",
+  "description": "First village. Elder Theron who's permanently exhausted by heroism. Scholar Milo who invented the autobattle journal. Phil the Lost who remembers things he shouldn't. Marta at the Sleepy Slime. A merchant who's sixty percent sure his swords work.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "village_medieval"},
+
+    {"type": "narration", "text": "Harmonia was the kind of village where nothing happened at dawn. Things happened at a responsible mid-morning hour, after porridge and before the first ale. The party arrived at neither of these times."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Elder Theron",
+        "text": "You'll do.",
+        "theme": "elder",
+        "portrait": "elder"
+      },
+      {
+        "speaker": "Elder Theron",
+        "text": "The cave at the mountain's base has been spitting out monsters for three weeks. The real army is busy protecting the chancellor. The fake army — that's you — is what we have.",
+        "theme": "elder",
+        "portrait": "elder"
+      },
+      {
+        "speaker": "Elder Theron",
+        "text": "There's a man in the village — Scholar Milo — who has theories about combat. Strange theories. I recommend listening. I also recommend not asking follow-up questions.",
+        "theme": "elder",
+        "portrait": "elder"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Scholar Milo",
+        "text": "Before you go — have you considered the philosophical implications of combat automation?",
+        "theme": "scholar",
+        "portrait": "scholar"
+      },
+      {
+        "speaker": "Scholar Milo",
+        "text": "Imagine a world where you don't fight your battles. You design them. You build a system of rules — if this, then that — and the system fights for you.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      },
+      {
+        "speaker": "Scholar Milo",
+        "text": "Not laziness. Enlightenment.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      },
+      {
+        "speaker": "Scholar Milo",
+        "text": "Chapter one is about letting go. Chapter two is about letting go faster. Chapter three is about accepting that the gap between letting go and having it taken from you is smaller than most people think.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Phil the Lost",
+        "text": "Phil. Phil the Lost. Called that because I lose things. Mostly I lose track of what's happened before.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Phil the Lost",
+        "text": "Before anything much. The village. The seasons. You know how it is — years blur together. You forget which winter was which.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Phil the Lost",
+        "text": "Good luck with the cave. Try not to die in the first room. It's bad for the spirit.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Marta",
+        "text": "The Sleepy Slime has beds, mead, and porridge. The beds are adequate. The mead is good. The porridge is what it is.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Marta",
+        "text": "If you're the ones going to the cave, eat first. Nobody fights well on an empty stomach, and whatever's in that cave has been making my supply deliveries disappear.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Merchant",
+        "text": "Welcome to Ye Olde Definitely Legitimate Armoury. Every sword comes with a guarantee that it is, in fact, a sword.",
+        "theme": "merchant",
+        "portrait": "merchant"
+      },
+      {
+        "speaker": "Merchant",
+        "text": "Testing? No. We don't test. Testing implies doubt, and doubt is bad for business. These swords are swords. That's all you need to know.",
+        "theme": "merchant",
+        "portrait": "merchant"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world1_harmonia_npcs_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

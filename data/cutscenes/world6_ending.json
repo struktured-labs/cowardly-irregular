@@ -8,7 +8,7 @@
     {"type": "letterbox_in", "duration": 0.6},
     {"type": "stop_music"},
     {"type": "wait", "duration": 1.0},
-    {"type": "play_music", "track": "cutscene_w6_calibration_complete"},
+    {"type": "play_music", "track": "cutscene_w6_epilogue"},
 
     {"type": "narration", "text": "The encounters, the slimes, the deprecated goblins, the Masterites and their impossible questions, the moments of understanding and connection that accrued in the gaps between the designed challenge — those were the point. Not the system. The living in the system."},
 

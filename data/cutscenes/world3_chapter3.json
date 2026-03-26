@@ -6,7 +6,7 @@
   "description": "The Grand Mechanism opens for an irregularity too large to ignore. Moving corridors, a shifting dungeon, a drafting room with five worlds drawn in the same handwriting. The Regulator's control room. Every deviation corrected. Except you.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "cutscene_w3_mechanism_interior"},
+    {"type": "play_music", "track": "cutscene_w3_pattern_recognized"},
 
     {"type": "narration", "lines": [
       "The entrance to the Grand Mechanism stood open.",
