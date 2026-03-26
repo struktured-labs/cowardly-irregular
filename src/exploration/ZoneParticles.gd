@@ -49,6 +49,51 @@ const ZONE_CONFIGS: Dictionary = {
 		"scale_min": 0.2,
 		"scale_max": 0.4,
 	},
+	# W2 Suburban — pollen/dandelion seeds
+	"suburban_overworld": {
+		"color": Color(0.95, 0.95, 0.8, 0.35),
+		"amount": 8,
+		"lifetime": 5.0,
+		"gravity": Vector2(8.0, 3.0),
+		"scale_min": 0.2,
+		"scale_max": 0.4,
+	},
+	# W3 Steampunk — steam wisps
+	"steampunk_overworld": {
+		"color": Color(0.8, 0.75, 0.65, 0.4),
+		"amount": 15,
+		"lifetime": 2.5,
+		"gravity": Vector2(10.0, -20.0),  # Steam rises
+		"scale_min": 0.4,
+		"scale_max": 0.8,
+	},
+	# W4 Industrial — soot/ash
+	"industrial_overworld": {
+		"color": Color(0.3, 0.3, 0.3, 0.4),
+		"amount": 12,
+		"lifetime": 3.0,
+		"gravity": Vector2(5.0, 15.0),
+		"scale_min": 0.2,
+		"scale_max": 0.5,
+	},
+	# W5 Digital — data motes
+	"futuristic_overworld": {
+		"color": Color(0.0, 0.8, 1.0, 0.3),
+		"amount": 20,
+		"lifetime": 2.0,
+		"gravity": Vector2(0.0, -10.0),  # Float upward
+		"scale_min": 0.1,
+		"scale_max": 0.3,
+	},
+	# W6 Abstract — fading dots
+	"abstract_overworld": {
+		"color": Color(1.0, 1.0, 1.0, 0.2),
+		"amount": 6,
+		"lifetime": 4.0,
+		"gravity": Vector2(2.0, 2.0),
+		"scale_min": 0.1,
+		"scale_max": 0.2,
+	},
 }
 
 

@@ -40,6 +40,9 @@ var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
 var _minimap: OverworldMinimap
 
+## Zone particles
+var _zone_particles: ZoneParticles
+
 ## Rain effect state
 var _rain_particles: CPUParticles2D
 var _rain_timer: float = 0.0
@@ -67,6 +70,11 @@ func _ready() -> void:
 	add_child(_zone_popup)
 	_zone_popup.setup(self)
 	_zone_popup.show_zone("suburban_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("suburban_overworld")
 
 	# Start suburban overworld music
 	if SoundManager:
@@ -115,6 +123,8 @@ func _process(delta: float) -> void:
 		else:
 			_rain_interval = randf_range(30.0, 60.0)
 	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
 
