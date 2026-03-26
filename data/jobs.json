@@ -85,7 +85,10 @@
 			"thunder",
 			"fira",
 			"blizzara",
-			"thundara"
+			"thundara",
+			"firaga",
+			"blizzaga",
+			"thundaga"
 		],
 		"passive_abilities": [
 			"magic_boost"

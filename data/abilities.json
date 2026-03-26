@@ -183,6 +183,45 @@
 		"magic_school": "black",
 		"cost": 1200
 	},
+	"firaga": {
+		"id": "firaga",
+		"name": "Firaga",
+		"type": "magic",
+		"animation": "cast_fire",
+		"mp_cost": 32,
+		"description": "Devastating fire magic damage to all enemies",
+		"damage_multiplier": 5.0,
+		"element": "fire",
+		"target_type": "all_enemies",
+		"magic_school": "black",
+		"cost": 4000
+	},
+	"blizzaga": {
+		"id": "blizzaga",
+		"name": "Blizzaga",
+		"type": "magic",
+		"animation": "cast_ice",
+		"mp_cost": 32,
+		"description": "Devastating ice magic damage to all enemies",
+		"damage_multiplier": 5.0,
+		"element": "ice",
+		"target_type": "all_enemies",
+		"magic_school": "black",
+		"cost": 4000
+	},
+	"thundaga": {
+		"id": "thundaga",
+		"name": "Thundaga",
+		"type": "magic",
+		"animation": "cast_lightning",
+		"mp_cost": 32,
+		"description": "Devastating lightning magic damage to all enemies",
+		"damage_multiplier": 5.0,
+		"element": "lightning",
+		"target_type": "all_enemies",
+		"magic_school": "black",
+		"cost": 4000
+	},
 	"steal": {
 		"id": "steal",
 		"name": "Steal",
