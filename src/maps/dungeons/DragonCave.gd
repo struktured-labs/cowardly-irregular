@@ -143,6 +143,9 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
 
+	# Treasure chest on floors before the boss (scaling loot)
+	_place_floor_treasure(floor_num)
+
 	# Stairs up (to next floor)
 	if spawn_points.has("stairs_up"):
 		var up_trans = AreaTransitionScript.new()
@@ -362,6 +365,26 @@ func _show_boss_intro() -> void:
 ## Virtual - subclass MUST override to provide boss dialogue
 func _get_boss_intro_dialogue() -> Array:
 	return ["A dragon blocks the path!"]
+
+
+func _place_floor_treasure(floor_num: int) -> void:
+	"""Place treasure chest on non-boss dragon cave floors"""
+	if floor_num >= total_floors:
+		return  # No chest on boss floor
+	var chest_key = "%s_f%d" % [cave_id, floor_num]
+	if GameState.get_story_flag("chest_" + chest_key):
+		return  # Already opened
+	var gold_reward = 100 + floor_num * 75  # Scaling gold
+	var chest = TreasureChest.new()
+	chest.chest_id = chest_key
+	chest.contents_type = "gold"
+	chest.gold_amount = gold_reward
+	var pos = spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 4 * TILE_SIZE))
+	chest.position = pos + Vector2(TILE_SIZE * 2, TILE_SIZE)
+	chest.chest_opened.connect(func(_contents):
+		GameState.set_story_flag("chest_" + chest_key)
+	)
+	transitions.add_child(chest)
 
 
 func _on_boss_defeated() -> void:
