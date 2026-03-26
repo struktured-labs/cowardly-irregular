@@ -2780,6 +2780,56 @@
           "end": 7
         }
       }
+    },
+    "elder_theron": {
+      "path": "res://assets/sprites/npcs/elder_theron.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "talk": {
+          "start": 2,
+          "end": 3
+        },
+        "react": {
+          "start": 4,
+          "end": 5
+        },
+        "gesture": {
+          "start": 6,
+          "end": 7
+        }
+      }
+    },
+    "brigadier_flux": {
+      "path": "res://assets/sprites/npcs/brigadier_flux.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "talk": {
+          "start": 2,
+          "end": 3
+        },
+        "react": {
+          "start": 4,
+          "end": 5
+        },
+        "gesture": {
+          "start": 6,
+          "end": 7
+        }
+      }
     }
   },
   "overworld_player_sheets": {
