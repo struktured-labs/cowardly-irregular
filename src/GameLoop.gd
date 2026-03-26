@@ -86,6 +86,7 @@ var _autogrind_dashboard: Control = null
 var _autogrind_overlay: Control = null
 var _autogrind_overlay_layer: CanvasLayer = null
 var _autogrind_battle_summaries: Array = []
+var _autogrind_summary: Control = null
 var _controller_overlay: ControllerOverlay = null
 var _controller_overlay_layer: CanvasLayer = null
 
@@ -1911,6 +1912,11 @@ func _stop_autogrind(reason: String) -> void:
 
 	_is_autogrinding = false
 
+	# Capture stats before controller is stopped and freed
+	var final_stats = {}
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		final_stats = _autogrind_controller.get_grind_stats()
+
 	# Stop controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.stop_grind(reason)
@@ -1948,6 +1954,8 @@ func _stop_autogrind(reason: String) -> void:
 	else:
 		current_state = LoopState.EXPLORATION
 		InputLockManager.pop_all()  # Clear any leaked locks
+
+	_show_autogrind_summary(final_stats, reason)
 
 
 func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
@@ -2137,6 +2145,11 @@ func _on_grind_complete(reason: String) -> void:
 	current_state = LoopState.EXPLORATION
 	InputLockManager.pop_all()  # Clear any leaked locks
 
+	# Capture stats before controller is freed
+	var final_stats = {}
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		final_stats = _autogrind_controller.get_grind_stats()
+
 	# Clean up controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.queue_free()
@@ -2165,6 +2178,27 @@ func _on_grind_complete(reason: String) -> void:
 		_return_to_exploration()
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
+	_show_autogrind_summary(final_stats, reason)
+
+
+func _show_autogrind_summary(stats: Dictionary, reason: String) -> void:
+	if _autogrind_summary and is_instance_valid(_autogrind_summary):
+		return
+
+	var summary_layer = CanvasLayer.new()
+	summary_layer.layer = 60
+	add_child(summary_layer)
+
+	var AutogrindSummaryClass = load("res://src/ui/autogrind/AutogrindSummary.gd")
+	_autogrind_summary = AutogrindSummaryClass.new()
+	_autogrind_summary.set_anchors_preset(Control.PRESET_FULL_RECT)
+	summary_layer.add_child(_autogrind_summary)
+
+	_autogrind_summary.setup(stats, reason)
+	_autogrind_summary.dismissed.connect(func():
+		summary_layer.queue_free()
+		_autogrind_summary = null
+	)
 
 
 func _on_autogrind_tier_changed(new_tier: int) -> void:
