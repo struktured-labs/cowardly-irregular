@@ -1074,3 +1074,102 @@ func test_all_job_abilities_exist_in_abilities_json() -> void:
 		for ability_id in job["abilities"]:
 			assert_true(abilities.has(ability_id),
 				"Job '%s' references ability '%s' which doesn't exist in abilities.json" % [job_id, ability_id])
+
+
+# ===========================================================================
+# Monster data integrity tests
+# ===========================================================================
+
+func test_all_monsters_have_required_fields() -> void:
+	var file = FileAccess.open("res://data/monsters.json", FileAccess.READ)
+	assert_not_null(file, "monsters.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "monsters.json should parse")
+	var monsters = json.data
+
+	var required = ["id", "name", "level", "stats", "exp_reward", "gold_reward"]
+	for monster_id in monsters:
+		var m = monsters[monster_id]
+		for field in required:
+			assert_true(m.has(field),
+				"Monster '%s' missing required field '%s'" % [monster_id, field])
+
+
+func test_all_monsters_have_valid_stats() -> void:
+	var file = FileAccess.open("res://data/monsters.json", FileAccess.READ)
+	assert_not_null(file, "monsters.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "monsters.json should parse")
+	var monsters = json.data
+
+	var stat_fields = ["max_hp", "attack", "defense", "speed"]
+	for monster_id in monsters:
+		var m = monsters[monster_id]
+		if not m.has("stats"):
+			continue
+		for stat in stat_fields:
+			assert_true(m["stats"].has(stat),
+				"Monster '%s' missing stat '%s'" % [monster_id, stat])
+			assert_gt(m["stats"][stat], 0,
+				"Monster '%s' stat '%s' should be > 0" % [monster_id, stat])
+
+
+func test_no_monsters_have_negative_rewards() -> void:
+	var file = FileAccess.open("res://data/monsters.json", FileAccess.READ)
+	assert_not_null(file, "monsters.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "monsters.json should parse")
+	var monsters = json.data
+
+	for monster_id in monsters:
+		var m = monsters[monster_id]
+		assert_true(m.get("exp_reward", 0) >= 0,
+			"Monster '%s' has negative EXP reward" % monster_id)
+		assert_true(m.get("gold_reward", 0) >= 0,
+			"Monster '%s' has negative gold reward" % monster_id)
+
+
+func test_monster_levels_are_reasonable() -> void:
+	var file = FileAccess.open("res://data/monsters.json", FileAccess.READ)
+	assert_not_null(file, "monsters.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "monsters.json should parse")
+	var monsters = json.data
+
+	for monster_id in monsters:
+		var m = monsters[monster_id]
+		var level = m.get("level", 0)
+		assert_gt(level, 0, "Monster '%s' level should be > 0" % monster_id)
+		assert_true(level <= 30, "Monster '%s' level %d seems too high (max 30)" % [monster_id, level])
+
+
+# ===========================================================================
+# Test #100 — Comprehensive ability data integrity
+# ===========================================================================
+
+func test_all_abilities_have_required_fields() -> void:
+	var file = FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	assert_not_null(file, "abilities.json should exist")
+	var json = JSON.new()
+	var err = json.parse(file.get_as_text())
+	file.close()
+	assert_eq(err, OK, "abilities.json should parse")
+	var abilities = json.data
+
+	for ability_id in abilities:
+		var a = abilities[ability_id]
+		assert_true(a.has("id"), "Ability '%s' missing 'id' field" % ability_id)
+		assert_true(a.has("name"), "Ability '%s' missing 'name' field" % ability_id)
+		assert_true(a.has("type"), "Ability '%s' missing 'type' field" % ability_id)
+		# Magic/physical abilities must have damage_multiplier or effect
+		if a.get("type") == "magic" or a.get("type") == "physical":
+			assert_true(a.has("damage_multiplier") or a.has("effect"),
+				"Ability '%s' (type=%s) needs damage_multiplier or effect" % [ability_id, a.get("type")])
