@@ -903,6 +903,7 @@ func _wait_for_confirm() -> void:
 func _start_exploration() -> void:
 	"""Start exploration mode (overworld or interior)"""
 	current_state = LoopState.EXPLORATION
+	InputLockManager.pop_all()  # Clear any leaked locks from previous state
 
 	# Ensure normal speed in exploration (battle speed is separate)
 	Engine.time_scale = 1.0
@@ -1946,6 +1947,7 @@ func _stop_autogrind(reason: String) -> void:
 		_return_to_exploration()
 	else:
 		current_state = LoopState.EXPLORATION
+		InputLockManager.pop_all()  # Clear any leaked locks
 
 
 func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
@@ -2133,6 +2135,7 @@ func _on_grind_complete(reason: String) -> void:
 	"""Handle autogrind session completion"""
 	_is_autogrinding = false
 	current_state = LoopState.EXPLORATION
+	InputLockManager.pop_all()  # Clear any leaked locks
 
 	# Clean up controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
