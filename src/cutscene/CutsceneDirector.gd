@@ -48,6 +48,19 @@ const SKIP_THRESHOLD: float = 1.5
 const SKIP_BAR_WIDTH: float = 120.0
 const SKIP_BAR_HEIGHT: float = 6.0
 
+## Per-world backdrop colors (top, bottom gradient) for cutscenes without game scene behind them
+const WORLD_BACKDROP_COLORS = {
+	1: [Color(0.08, 0.12, 0.22), Color(0.15, 0.20, 0.10)],  # Medieval: dark blue sky → dark green
+	2: [Color(0.10, 0.15, 0.25), Color(0.18, 0.15, 0.12)],  # Suburban: dusk blue → warm brown
+	3: [Color(0.15, 0.10, 0.05), Color(0.20, 0.12, 0.08)],  # Steampunk: dark amber → copper
+	4: [Color(0.10, 0.10, 0.10), Color(0.15, 0.15, 0.15)],  # Industrial: dark gray → gray
+	5: [Color(0.02, 0.08, 0.05), Color(0.05, 0.15, 0.08)],  # Digital: near-black → dark green
+	6: [Color(0.15, 0.15, 0.18), Color(0.20, 0.20, 0.22)],  # Abstract: soft dark gray → lighter
+}
+
+## Current cutscene world (for backdrop color fallback)
+var _current_world: int = 0
+
 
 func _ready() -> void:
 	layer = 95  # Above game (50), below battle transitions (100)
@@ -175,10 +188,11 @@ func play_cutscene(cutscene_id: String) -> void:
 	_skipping = false
 	_fast_forward = false
 	_skip_hold_time = 0.0
+	_current_world = data.get("world", 0)
 	visible = true
 
 	# Capture current viewport as backdrop behind dialogue
-	_capture_background()
+	await _capture_background()
 
 	cutscene_started.emit(cutscene_id)
 
@@ -203,9 +217,10 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	_skipping = false
 	_fast_forward = false
 	_skip_hold_time = 0.0
+	_current_world = data.get("world", 0)
 	visible = true
 
-	_capture_background()
+	await _capture_background()
 	cutscene_started.emit(cutscene_id)
 	_freeze_player()
 
@@ -251,6 +266,8 @@ func _execute_step(step: Dictionary) -> void:
 			_step_play_sfx(step)
 		"set_flag":
 			_step_set_flag(step)
+		"set_background":
+			_step_set_background(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -432,9 +449,11 @@ func _step_set_flag(step: Dictionary) -> void:
 ## =====================
 
 func _capture_background() -> void:
-	"""Capture current viewport as a dimmed backdrop behind cutscene dialogue."""
+	"""Capture current viewport as a dimmed backdrop behind cutscene dialogue.
+	Falls back to a world-themed gradient if viewport is blank (e.g., prologue before overworld)."""
 	var viewport = get_viewport()
 	if not viewport:
+		_apply_world_gradient()
 		return
 
 	# Wait one frame for the viewport to be fully rendered
@@ -442,10 +461,79 @@ func _capture_background() -> void:
 
 	var img = viewport.get_texture().get_image()
 	if img:
-		var tex = ImageTexture.create_from_image(img)
-		_background_texture.texture = tex
+		# Check if the captured image is mostly black/blank (pre-overworld)
+		var sample_colors: Array[Color] = []
+		var w = img.get_width()
+		var h = img.get_height()
+		if w > 0 and h > 0:
+			# Sample 9 points across the image
+			for sx in [w / 4, w / 2, w * 3 / 4]:
+				for sy in [h / 4, h / 2, h * 3 / 4]:
+					sample_colors.append(img.get_pixel(sx, sy))
+
+		var total_brightness: float = 0.0
+		for c in sample_colors:
+			total_brightness += c.r + c.g + c.b
+		var avg_brightness = total_brightness / max(sample_colors.size() * 3.0, 1.0)
+
+		if avg_brightness < 0.05:
+			# Image is effectively black — use world gradient instead
+			_apply_world_gradient()
+		else:
+			var tex = ImageTexture.create_from_image(img)
+			_background_texture.texture = tex
+			_background_texture.visible = true
+			_background_dim.visible = true
+	else:
+		_apply_world_gradient()
+
+
+func _apply_world_gradient() -> void:
+	"""Apply a procedural gradient backdrop based on the current cutscene's world."""
+	var colors = WORLD_BACKDROP_COLORS.get(_current_world, [Color(0.08, 0.08, 0.12), Color(0.12, 0.12, 0.15)])
+	var top_color: Color = colors[0]
+	var bottom_color: Color = colors[1]
+
+	# Create a small gradient image and scale it up
+	var gradient_height: int = 256
+	var gradient_width: int = 2
+	var img = Image.create(gradient_width, gradient_height, false, Image.FORMAT_RGBA8)
+	for y in range(gradient_height):
+		var t = float(y) / float(gradient_height - 1)
+		var c = top_color.lerp(bottom_color, t)
+		for x in range(gradient_width):
+			img.set_pixel(x, y, c)
+
+	var tex = ImageTexture.create_from_image(img)
+	_background_texture.texture = tex
+	_background_texture.visible = true
+	# Don't show dim overlay on procedural gradients — they're already dark
+	_background_dim.visible = false
+
+
+func _step_set_background(step: Dictionary) -> void:
+	"""Set a custom backdrop color/gradient mid-cutscene.
+	Usage: {"type": "set_background", "color": "#1a2030"}
+	   or: {"type": "set_background", "top": "#1a2030", "bottom": "#2a3040"}"""
+	if step.has("color"):
+		var c = Color(step["color"])
+		var img = Image.create(2, 2, false, Image.FORMAT_RGBA8)
+		img.fill(c)
+		_background_texture.texture = ImageTexture.create_from_image(img)
 		_background_texture.visible = true
-		_background_dim.visible = true
+		_background_dim.visible = false
+	elif step.has("top") and step.has("bottom"):
+		var top_c = Color(step["top"])
+		var bottom_c = Color(step["bottom"])
+		var img = Image.create(2, 256, false, Image.FORMAT_RGBA8)
+		for y in range(256):
+			var t = float(y) / 255.0
+			var c = top_c.lerp(bottom_c, t)
+			img.set_pixel(0, y, c)
+			img.set_pixel(1, y, c)
+		_background_texture.texture = ImageTexture.create_from_image(img)
+		_background_texture.visible = true
+		_background_dim.visible = false
 
 
 func _clear_background() -> void:
