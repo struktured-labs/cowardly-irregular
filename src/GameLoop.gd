@@ -1583,8 +1583,13 @@ func _area_overworld_transition_out() -> void:
 	bottom_r.queue_free()
 
 
+var _transition_in_progress: bool = false
+
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	"""Handle contextual area transition based on destination type."""
+	if _transition_in_progress:
+		return
+	_transition_in_progress = true
 	_current_map_id = target_map
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO
@@ -1618,6 +1623,7 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 		for child in _area_fade_layer.get_children():
 			if child != _area_fade_rect:
 				child.queue_free()
+	_transition_in_progress = false
 
 
 func _get_terrain_for_map(map_id: String) -> String:
