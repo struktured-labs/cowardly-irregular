@@ -190,11 +190,16 @@ func _input(event: InputEvent) -> void:
 		_toggle_all_autobattle()
 		get_viewport().set_input_as_handled()
 
-	# Start button = Open autobattle editor for current deciding player
-	# Only when editor is not already open (editor handles its own Start to close)
-	if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
-		if event.is_action_pressed("ui_menu"):
-			_toggle_autobattle_editor()
+	# Start button = context-dependent:
+	# - In battle: open autobattle editor
+	# - In exploration/village/cave: open settings menu
+	if event.is_action_pressed("ui_menu"):
+		if current_state == LoopState.BATTLE:
+			if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
+				_toggle_autobattle_editor()
+				get_viewport().set_input_as_handled()
+		elif current_state == LoopState.EXPLORATION:
+			_open_settings_menu()
 			get_viewport().set_input_as_handled()
 
 	# X key or gamepad X/Y button = Open overworld menu (only in exploration mode)
@@ -551,6 +556,26 @@ func _on_title_continue() -> void:
 	# Load saved party and start exploration
 	_create_party()
 	_start_exploration()
+
+
+func _open_settings_menu() -> void:
+	"""Open settings menu during exploration (Start button)"""
+	print("[GAME] Settings menu opened from exploration")
+	var SettingsMenuClass = load("res://src/ui/SettingsMenu.gd")
+	if SettingsMenuClass:
+		var settings_layer = CanvasLayer.new()
+		settings_layer.layer = 110
+		add_child(settings_layer)
+		var settings_menu = SettingsMenuClass.new()
+		settings_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+		settings_layer.add_child(settings_menu)
+		if _exploration_scene and _exploration_scene.has_method("pause"):
+			_exploration_scene.pause()
+		settings_menu.closed.connect(func():
+			settings_layer.queue_free()
+			if _exploration_scene and _exploration_scene.has_method("resume"):
+				_exploration_scene.resume()
+		)
 
 
 func _on_title_settings() -> void:
