@@ -54,6 +54,9 @@ var mode7_enabled: bool = false
 var _mode7: Mode7Overlay
 var _minimap: OverworldMinimap
 
+## Zone particles
+var _zone_particles: ZoneParticles
+
 ## Reality distortion effect state
 var _bg_rect: ColorRect
 var _hue_time: float = 0.0
@@ -82,6 +85,11 @@ func _ready() -> void:
 	add_child(_zone_popup)
 	_zone_popup.setup(self)
 	_zone_popup.show_zone("abstract_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("abstract_overworld")
 
 	# Start abstract overworld music
 	if SoundManager:
@@ -131,6 +139,8 @@ func _process(delta: float) -> void:
 			_flicker_active = false
 			_flicker_interval = randf_range(18.0, 30.0)
 	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
 

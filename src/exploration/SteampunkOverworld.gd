@@ -40,6 +40,9 @@ var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
 var _minimap: OverworldMinimap
 
+## Zone particles
+var _zone_particles: ZoneParticles
+
 ## Steam vent effect state
 var _steam_emitters: Array = []
 var _steam_timers: Array = []
@@ -66,6 +69,11 @@ func _ready() -> void:
 	add_child(_zone_popup)
 	_zone_popup.setup(self)
 	_zone_popup.show_zone("steampunk_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("steampunk_overworld")
 
 	# Start steampunk overworld music
 	if SoundManager:
@@ -128,6 +136,8 @@ func _process(delta: float) -> void:
 			_steam_intervals[i] = randf_range(5.0, 12.0)
 			_steam_emitters[i].restart()
 	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
 
