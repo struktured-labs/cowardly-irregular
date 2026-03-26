@@ -907,3 +907,54 @@ func test_mage_has_all_tier2_spells() -> void:
 	assert_true("blizzara" in abilities, "Mage should have Blizzara")
 	assert_true("thunder" in abilities, "Mage should have Thunder")
 	assert_true("thundara" in abilities, "Mage should have Thundara")
+
+
+# ===========================================================================
+# Day 3 Task 1 — Regen DOT interaction + edge case tests
+# ===========================================================================
+
+func test_regen_vs_burning_net_healing() -> void:
+	# Regen 5% heal vs burning 8% damage = net 3% damage per turn
+	_combatant.max_hp = 100
+	_combatant.current_hp = 80
+	_combatant.add_status("regen", 3)
+	_combatant.add_status("burning", 3)
+
+	_combatant.update_buff_durations()
+	# Burning: -8, Regen: +5 = net -3
+	assert_eq(_combatant.current_hp, 77, "Burning (8%%) + Regen (5%%) should net -3 HP")
+
+
+func test_regen_does_not_heal_dead_combatant() -> void:
+	_combatant.max_hp = 100
+	_combatant.current_hp = 0
+	_combatant.is_alive = false
+	_combatant.add_status("regen", 5)
+
+	_combatant.update_buff_durations()
+	assert_eq(_combatant.current_hp, 0, "Regen should not heal dead combatant")
+	assert_false(_combatant.is_alive, "Dead combatant should stay dead")
+
+
+func test_poison_kills_before_regen_heals() -> void:
+	# If poison kills, regen should not revive
+	var die_count = 0
+	_combatant.died.connect(func(): die_count += 1)
+	_combatant.max_hp = 100
+	_combatant.current_hp = 3
+	_combatant.add_status("poison", 3)
+	_combatant.add_status("regen", 3)
+
+	_combatant.update_buff_durations()
+	# Poison deals 5 damage (kills at 3 HP), regen runs but is_alive check should prevent heal
+	assert_eq(die_count, 1, "Poison should kill before regen can heal")
+
+
+func test_regen_minimum_1_heal() -> void:
+	_combatant.max_hp = 10
+	_combatant.current_hp = 5
+	_combatant.add_status("regen", 2)
+
+	_combatant.update_buff_durations()
+	# 5% of 10 = 0.5, but min is 1
+	assert_eq(_combatant.current_hp, 6, "Regen should heal minimum 1 HP even on low max HP")
