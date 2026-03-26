@@ -287,6 +287,17 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
 
+	# Save crystal on floor 3 (midway rest point)
+	if floor_num == 3:
+		var save_pt = SavePoint.new()
+		save_pt.position = spawn_points.get("stairs_down", Vector2(5 * TILE_SIZE, 8 * TILE_SIZE)) + Vector2(TILE_SIZE * 2, 0)
+		save_pt.save_requested.connect(func():
+			if SaveSystem and SaveSystem.has_method("quick_save"):
+				SaveSystem.quick_save()
+				print("[SAVE] Quick save in Whispering Cave floor 3")
+		)
+		transitions.add_child(save_pt)
+
 	# Stairs up (to next floor)
 	if spawn_points.has("stairs_up"):
 		var up_trans = AreaTransitionScript.new()
