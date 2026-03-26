@@ -3,113 +3,140 @@
   "title": "Rivet Row",
   "world": 4,
   "trigger": "world4_rivet_row_entry",
+  "background": "industrial_factory",
   "description": "Industrial world. A union rep on his mandated fifteen-minute break. A shift worker who came back from communication efficiency training with fewer questions. A foreman who used to paint watercolors.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "village_industrial"},
-
-    {"type": "narration", "text": "Rivet Row was not a town. It was a process. Housing blocks identical and numbered, arranged in grids. Streets straight and wide. People moving the way the streets did — straight, purposeful, empty of anything that wasn't productive."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Union Rep",
-        "text": "You're new. You'll want to register at the Intake Center. Block 7, Window 3. Bring your own pen. They stopped providing pens in the last optimization pass.",
-        "theme": "elder",
-        "portrait": "elder"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Who runs this place?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "The Company. It doesn't have a name. Names are branding. Branding is overhead. Overhead is waste.",
-        "theme": "elder",
-        "portrait": "elder"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "The Director runs operations. Nobody's met the Director. We get memos. The memos get results. The results get measured. The measurements get optimized. The optimizations generate new memos.",
-        "theme": "elder",
-        "portrait": "elder"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "It sounds terrible.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "Those aren't mutually exclusive.",
-        "theme": "elder",
-        "portrait": "elder"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Dorrit",
-        "text": "The Director appeared three years ago. Or maybe always. Things changed. The work used to be hard but human. Now it's easy and not.",
-        "theme": "shopkeeper",
-        "portrait": "shopkeeper"
-      },
-      {
-        "speaker": "Dorrit",
-        "text": "Everything's measured. Output per hour. Steps per shift. Words per conversation. Twelve is optimal. I'm over quota talking to you.",
-        "theme": "shopkeeper",
-        "portrait": "shopkeeper"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "What happens if you go over quota?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Dorrit",
-        "text": "The Director schedules you for communication efficiency training. After training, twelve words feels like plenty.",
-        "theme": "shopkeeper",
-        "portrait": "shopkeeper"
-      },
-      {
-        "speaker": "Dorrit",
-        "text": "The questions came back, though. After a few months. The Director's recalibration doesn't hold perfectly. There are always deviations.",
-        "theme": "shopkeeper",
-        "portrait": "shopkeeper"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Foreman",
-        "text": "You need to understand something. The Director isn't like the bosses before. The Director is good at her job. That's the problem.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Foreman",
-        "text": "She doesn't punish inefficiency — she eliminates it. Not the people. The inefficiency itself. She restructures your role, your shift, your route, your meals, your sleep schedule, until you are performing at peak output.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Foreman",
-        "text": "I used to paint. Watercolors. Landscapes. She determined it was non-productive recreational activity and reassigned my free hours to supplementary training modules.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world4_rivet_row_npcs_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_industrial"
+    },
+    {
+      "type": "narration",
+      "text": "Rivet Row was not a town. It was a process. Housing blocks identical and numbered, arranged in grids. Streets straight and wide. People moving the way the streets did \u2014 straight, purposeful, empty of anything that wasn't productive."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Union Rep",
+          "text": "You're new. You'll want to register at the Intake Center. Block 7, Window 3. Bring your own pen. They stopped providing pens in the last optimization pass.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Who runs this place?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "The Company. It doesn't have a name. Names are branding. Branding is overhead. Overhead is waste.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "The Director runs operations. Nobody's met the Director. We get memos. The memos get results. The results get measured. The measurements get optimized. The optimizations generate new memos.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "It sounds terrible.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "Those aren't mutually exclusive.",
+          "theme": "elder",
+          "portrait": "elder"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Dorrit",
+          "text": "The Director appeared three years ago. Or maybe always. Things changed. The work used to be hard but human. Now it's easy and not.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Dorrit",
+          "text": "Everything's measured. Output per hour. Steps per shift. Words per conversation. Twelve is optimal. I'm over quota talking to you.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "What happens if you go over quota?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Dorrit",
+          "text": "The Director schedules you for communication efficiency training. After training, twelve words feels like plenty.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Dorrit",
+          "text": "The questions came back, though. After a few months. The Director's recalibration doesn't hold perfectly. There are always deviations.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Foreman",
+          "text": "You need to understand something. The Director isn't like the bosses before. The Director is good at her job. That's the problem.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Foreman",
+          "text": "She doesn't punish inefficiency \u2014 she eliminates it. Not the people. The inefficiency itself. She restructures your role, your shift, your route, your meals, your sleep schedule, until you are performing at peak output.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Foreman",
+          "text": "I used to paint. Watercolors. Landscapes. She determined it was non-productive recreational activity and reassigned my free hours to supplementary training modules.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_rivet_row_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

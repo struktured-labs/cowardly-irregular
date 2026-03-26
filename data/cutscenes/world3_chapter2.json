@@ -3,285 +3,361 @@
   "title": "The Clockwork Sentinels",
   "world": 3,
   "trigger": "world3_sentinel_encounter",
+  "background": "steampunk_airship",
   "description": "The Regulator's enforcement arm finds them in Brasston. Polished brass humanoids with calibration rods. Deviation logged. The party is outside tolerance range. One sentinel apologizes for the inconvenience, which is also outside its operational parameters.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "village_steampunk"},
-
-    {"type": "narration", "text": "The clockwork sentinels found them on the third street past the market. Polished brass humanoids, each carrying a pair of calibration rods that could measure and correct irregularities with a precision that left bruises. They didn't communicate. They processed."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "I don't suppose we're scheduled to be here.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "play_sfx", "sfx": "steam_hiss"},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "DEVIATION: HIGH. CORRECTION: REQUIRED.",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Define correction.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "",
-        "text": "CORRECTION: STANDARDIZATION OF PARAMETERS. RESISTANCE WILL BE NOTED.",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Does 'noted' mean anything bad?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "",
-        "text": "RESISTANCE HAS BEEN NOTED.",
-        "theme": "system",
-        "portrait": "system"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.2, "intensity": 2.0},
-
-    {"type": "narration", "text": "Three more sentinels arrived from the connecting street. The fight was quick and educational. Clockwork enemies were extremely good at precision and extremely bad at improvisation. The patterns were optimized \u2014 efficient arcs, no wasted motion \u2014 but the patterns were fixed. Find the gap. Exploit the gap. Win."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Forty-three seconds to find the gap. I'm annoyed it took that long.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "After the sentinels went down, the party stood in the street and looked at the clock tower. The clock tower looked back. Or something that lived inside it did."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "They know we're here now.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mage",
-        "text": "They knew we were here when we arrived. They just decided we were worth addressing.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Is that good or bad?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The Regulator is running out of options that don't involve talking to us directly. I think that's where we're going.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "At the junction where Brasston's main thoroughfare met the approach road to Cogsworth proper, a more sophisticated sentry blocked the way. Taller. Dual calibration arrays. Its chest screen displayed text rapidly enough to read only if you stood still and focused."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "QUERY: ARE APPROACHING SUBJECTS REGISTERED VISITORS OR UNSCHEDULED INTRUDERS?",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "We're \u2014",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "",
-        "text": "QUERY UPDATED: ARE SUBJECTS SCHEDULED IRREGULARITIES OR UNSCHEDULED IRREGULARITIES?",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Is there a difference?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "",
-        "text": "PROCESSING.",
-        "theme": "system",
-        "portrait": "system"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "DETERMINATION: CANNOT CLASSIFY. APPLYING DEFAULT PROTOCOL: DETAIN.",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "Bard",
-        "text": "What's the default protocol?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "",
-        "text": "DEFAULT PROTOCOL: WHEN CLASSIFICATION IS IMPOSSIBLE, DETAIN.",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "",
-        "text": "NOTE: THIS UNIT APOLOGIZES FOR THE INCONVENIENCE. CLASSIFICATION AMBIGUITY IS NOT VISITOR'S FAULT.",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "",
-        "text": "ADDITIONAL NOTE: THIS UNIT IS AWARE THAT APOLOGIZING IS NOT WITHIN STANDARD OPERATIONAL PARAMETERS. THIS HAS BEEN HAPPENING MORE FREQUENTLY.",
-        "theme": "system",
-        "portrait": "system"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Is it actually sorry?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Does it matter?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Philosophically, yes.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "narration", "text": "The fight was awkward in the way fights with confused opponents always are. The sentry attacked with full force and simultaneously issued apologies at two-second intervals. It was very sorry for the calibration rod. Very sorry for the targeted systems disruption. Very sorry for what it was about to do next."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "INCIDENT LOGGED. CLASSIFICATION: STILL AMBIGUOUS. RECOMMENDATION: ESCALATE TO REGULATOR.",
-        "theme": "system",
-        "portrait": "system"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Escalate to the Regulator. That's where we're going anyway.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "I know. I think that's the point.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "Brigadier Flux was waiting in his kitchen near the edge of Brasston \u2014 slightly off the grid, lamps manual, the smell of old blueprints and coal dust."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Brigadier Flux",
-        "text": "I was the chief engineer before the Regulator. And then one day I wasn't. I remember a conversation. Then I remember being here, with my tools on the table and no memory of how I left.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Brigadier Flux",
-        "text": "The Regulator uses a phrase I've heard nowhere else: 'acceptable deviation.' Everything in the Mechanism has a tolerance range. Too much deviation and the gear is replaced.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "And too little?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Brigadier Flux",
-        "text": "I've never figured that out. Everything here has a certain amount of chaos built in. Just enough. Never more, never less.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Brigadier Flux",
-        "text": "Does that sound like something a city engineer designs? Or something a\u2026 someone who studies systems designs?",
-        "theme": "scholar",
-        "portrait": "scholar"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Brigadier Flux",
-        "text": "You need to go into the Mechanism. I can't give you the combination. But the entrance opens when you prove you're an irregularity large enough to warrant acknowledgment.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Brigadier Flux",
-        "text": "You've been causing deviations since you arrived. The Mechanism will open for you. It has to. You're outside the tolerance range.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "Outside, a clockwork sparrow landed on the windowsill, clicked twice, and flew away."},
-
-    {"type": "set_flag", "flag": "world3_chapter2_complete", "value": true},
-    {"type": "set_flag", "flag": "world3_flux_met", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_steampunk"
+    },
+    {
+      "type": "narration",
+      "text": "The clockwork sentinels found them on the third street past the market. Polished brass humanoids, each carrying a pair of calibration rods that could measure and correct irregularities with a precision that left bruises. They didn't communicate. They processed."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "I don't suppose we're scheduled to be here.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "steam_hiss"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "DEVIATION: HIGH. CORRECTION: REQUIRED.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Define correction.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "",
+          "text": "CORRECTION: STANDARDIZATION OF PARAMETERS. RESISTANCE WILL BE NOTED.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Does 'noted' mean anything bad?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "",
+          "text": "RESISTANCE HAS BEEN NOTED.",
+          "theme": "system",
+          "portrait": "system"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 2.0
+    },
+    {
+      "type": "narration",
+      "text": "Three more sentinels arrived from the connecting street. The fight was quick and educational. Clockwork enemies were extremely good at precision and extremely bad at improvisation. The patterns were optimized \u2014 efficient arcs, no wasted motion \u2014 but the patterns were fixed. Find the gap. Exploit the gap. Win."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Forty-three seconds to find the gap. I'm annoyed it took that long.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "After the sentinels went down, the party stood in the street and looked at the clock tower. The clock tower looked back. Or something that lived inside it did."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "They know we're here now.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "They knew we were here when we arrived. They just decided we were worth addressing.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Is that good or bad?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The Regulator is running out of options that don't involve talking to us directly. I think that's where we're going.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "At the junction where Brasston's main thoroughfare met the approach road to Cogsworth proper, a more sophisticated sentry blocked the way. Taller. Dual calibration arrays. Its chest screen displayed text rapidly enough to read only if you stood still and focused."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "QUERY: ARE APPROACHING SUBJECTS REGISTERED VISITORS OR UNSCHEDULED INTRUDERS?",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We're \u2014",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "",
+          "text": "QUERY UPDATED: ARE SUBJECTS SCHEDULED IRREGULARITIES OR UNSCHEDULED IRREGULARITIES?",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Is there a difference?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "",
+          "text": "PROCESSING.",
+          "theme": "system",
+          "portrait": "system"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "DETERMINATION: CANNOT CLASSIFY. APPLYING DEFAULT PROTOCOL: DETAIN.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "Bard",
+          "text": "What's the default protocol?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "",
+          "text": "DEFAULT PROTOCOL: WHEN CLASSIFICATION IS IMPOSSIBLE, DETAIN.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "",
+          "text": "NOTE: THIS UNIT APOLOGIZES FOR THE INCONVENIENCE. CLASSIFICATION AMBIGUITY IS NOT VISITOR'S FAULT.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "",
+          "text": "ADDITIONAL NOTE: THIS UNIT IS AWARE THAT APOLOGIZING IS NOT WITHIN STANDARD OPERATIONAL PARAMETERS. THIS HAS BEEN HAPPENING MORE FREQUENTLY.",
+          "theme": "system",
+          "portrait": "system"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Is it actually sorry?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Does it matter?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Philosophically, yes.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The fight was awkward in the way fights with confused opponents always are. The sentry attacked with full force and simultaneously issued apologies at two-second intervals. It was very sorry for the calibration rod. Very sorry for the targeted systems disruption. Very sorry for what it was about to do next."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "INCIDENT LOGGED. CLASSIFICATION: STILL AMBIGUOUS. RECOMMENDATION: ESCALATE TO REGULATOR.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Escalate to the Regulator. That's where we're going anyway.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "I know. I think that's the point.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Brigadier Flux was waiting in his kitchen near the edge of Brasston \u2014 slightly off the grid, lamps manual, the smell of old blueprints and coal dust."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Brigadier Flux",
+          "text": "I was the chief engineer before the Regulator. And then one day I wasn't. I remember a conversation. Then I remember being here, with my tools on the table and no memory of how I left.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Brigadier Flux",
+          "text": "The Regulator uses a phrase I've heard nowhere else: 'acceptable deviation.' Everything in the Mechanism has a tolerance range. Too much deviation and the gear is replaced.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "And too little?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Brigadier Flux",
+          "text": "I've never figured that out. Everything here has a certain amount of chaos built in. Just enough. Never more, never less.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Brigadier Flux",
+          "text": "Does that sound like something a city engineer designs? Or something a\u2026 someone who studies systems designs?",
+          "theme": "scholar",
+          "portrait": "scholar"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Brigadier Flux",
+          "text": "You need to go into the Mechanism. I can't give you the combination. But the entrance opens when you prove you're an irregularity large enough to warrant acknowledgment.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Brigadier Flux",
+          "text": "You've been causing deviations since you arrived. The Mechanism will open for you. It has to. You're outside the tolerance range.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "Outside, a clockwork sparrow landed on the windowsill, clicked twice, and flew away."
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_chapter2_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_flux_met",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

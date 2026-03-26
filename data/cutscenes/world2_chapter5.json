@@ -3,234 +3,308 @@
   "title": "The Coordinator",
   "world": 2,
   "trigger": "world2_community_center_entry",
+  "background": "suburban_school",
   "description": "The HOA Community Center. The Coordinator behind her desk, monitors showing party stats. She is not a villain but an administrator who genuinely believes order reduces suffering. She says the same thing Mordaine said. The party notices.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "cutscene_w2_coordinator_memo"},
-
-    {"type": "narration", "lines": [
-      "The community center occupied the exact geographic center of Maple Heights, which was either a coincidence or a statement.",
-      "Inside: beige in the specific institutional way of buildings that were designed for function and decorated with whatever the budget allowed after function was achieved. Eagles and sunsets. The word PERSEVERANCE in a font that believed in itself.",
-      "The hallway was longer than the building's exterior suggested it should be."
-    ]},
-
-    {"type": "narration", "text": "The Coordinator's private office was at the end. On her desk, a monitor. The screen showed footage: the cave near Harmonia. The forest. A split-screen of locations they had traveled through, recorded from angles that suggested something had been watching above them the entire time."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "She has surveillance across the whole route. Back to the cave.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Surveillance. Yes. That's what it is.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Coordinator",
-        "text": "You're not supposed to see that.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "But then, you weren't supposed to get this far. The previous phase usually takes longer.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "She said it like she was commenting on a schedule deviation. Not angry. Not threatened. Just noting the variance. Neat, precise, controlled. Glasses. The kind of person who had never been late for anything in her life, including her own birth."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "Who are you?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "I'm the Coordinator. I coordinate.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "You're doing more than that.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "Yes. I suppose I am.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The smile that followed was the most unsettling smile any of them had ever seen. Not because it was cruel. Because it was genuine."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "Mordaine. Chancellor Mordaine said: 'This kingdom needed order. You needed a challenge. Both served their purpose.'",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Bard",
-        "text": "You're going to say something like that.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Coordinator",
-        "text": "The neighborhood needed rules. You needed resistance. Both served their purpose.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "Yes. That's it.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "narration", "text": "She closed her notebook. Not with satisfaction. The way you close a door on a room you're not sure you wanted to enter."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "The way she's standing. The way she's certain.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Did that remind any of you of \u2014",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Mordaine. Yes.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Not the same person. Different world. Different body. Different name.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Mage",
-        "text": "But the same shape of reasoning. The same purpose. As if someone built both of them to the same specifications.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Coordinator",
-        "text": "I calculated for your arrival. I calculated for every contingency. I calculated the resistance you would generate against the compliance structures, the rate at which my assessors would engage you, the precise moment you would find this office.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "I calculated you. All of you.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "And?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "You are maximum variance. The system was designed to correct for variance. But you generate more than it corrects, and the deficit compounds.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "I calculated everything. Including you. And I find I cannot account for what you are.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Is that why you did all of this? The enchanted lawn mowers, the compliance memos, the Masterites? Because you couldn't account for us?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "No. I did all of this because I believe, genuinely, that order reduces suffering. Every system I built was built to protect something. The residents here. The structure that keeps them stable.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "I am not a villain. I am an administrator. The difference matters to me, even if it does not matter to you right now.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Coordinator",
-        "text": "Shall we proceed?",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-    {"type": "screen_shake", "duration": 0.4, "intensity": 4.0},
-    {"type": "screen_flash", "duration": 0.15},
-
-    {"type": "narration", "text": "The filing cabinet opened. The folders flew. Each one contained a record of every mistake the party had ever made \u2014 every suboptimal decision, every failed strategy, every wasted resource. Each record hurt, because documentation, wielded correctly, is leverage."},
-
-    {"type": "set_flag", "flag": "world2_chapter5_complete", "value": true},
-    {"type": "set_flag", "flag": "coordinator_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w2_coordinator_memo"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The community center occupied the exact geographic center of Maple Heights, which was either a coincidence or a statement.",
+        "Inside: beige in the specific institutional way of buildings that were designed for function and decorated with whatever the budget allowed after function was achieved. Eagles and sunsets. The word PERSEVERANCE in a font that believed in itself.",
+        "The hallway was longer than the building's exterior suggested it should be."
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Coordinator's private office was at the end. On her desk, a monitor. The screen showed footage: the cave near Harmonia. The forest. A split-screen of locations they had traveled through, recorded from angles that suggested something had been watching above them the entire time."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "She has surveillance across the whole route. Back to the cave.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Surveillance. Yes. That's what it is.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Coordinator",
+          "text": "You're not supposed to see that.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "But then, you weren't supposed to get this far. The previous phase usually takes longer.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "She said it like she was commenting on a schedule deviation. Not angry. Not threatened. Just noting the variance. Neat, precise, controlled. Glasses. The kind of person who had never been late for anything in her life, including her own birth."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "Who are you?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "I'm the Coordinator. I coordinate.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "You're doing more than that.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "Yes. I suppose I am.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The smile that followed was the most unsettling smile any of them had ever seen. Not because it was cruel. Because it was genuine."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "Mordaine. Chancellor Mordaine said: 'This kingdom needed order. You needed a challenge. Both served their purpose.'",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Bard",
+          "text": "You're going to say something like that.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Coordinator",
+          "text": "The neighborhood needed rules. You needed resistance. Both served their purpose.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "Yes. That's it.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "She closed her notebook. Not with satisfaction. The way you close a door on a room you're not sure you wanted to enter."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "The way she's standing. The way she's certain.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Did that remind any of you of \u2014",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Mordaine. Yes.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Not the same person. Different world. Different body. Different name.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Mage",
+          "text": "But the same shape of reasoning. The same purpose. As if someone built both of them to the same specifications.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Coordinator",
+          "text": "I calculated for your arrival. I calculated for every contingency. I calculated the resistance you would generate against the compliance structures, the rate at which my assessors would engage you, the precise moment you would find this office.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "I calculated you. All of you.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "And?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "You are maximum variance. The system was designed to correct for variance. But you generate more than it corrects, and the deficit compounds.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "I calculated everything. Including you. And I find I cannot account for what you are.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Is that why you did all of this? The enchanted lawn mowers, the compliance memos, the Masterites? Because you couldn't account for us?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "No. I did all of this because I believe, genuinely, that order reduces suffering. Every system I built was built to protect something. The residents here. The structure that keeps them stable.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "I am not a villain. I am an administrator. The difference matters to me, even if it does not matter to you right now.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Coordinator",
+          "text": "Shall we proceed?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.4,
+      "intensity": 4.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "narration",
+      "text": "The filing cabinet opened. The folders flew. Each one contained a record of every mistake the party had ever made \u2014 every suboptimal decision, every failed strategy, every wasted resource. Each record hurt, because documentation, wielded correctly, is leverage."
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_chapter5_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "coordinator_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

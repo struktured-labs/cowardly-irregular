@@ -3,100 +3,131 @@
   "title": "Brasston Market",
   "world": 3,
   "trigger": "world3_brasston_entry",
+  "background": "steampunk_workshop",
   "description": "Clockwork market town. Sprocket checks his watch and finds the time has moved differently than expected. Clem the Lamplighter arrives at exactly 6:47 PM. Citizens nod at exactly the same moment in their walk.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "village_steampunk"},
-
-    {"type": "narration", "text": "Brasston ran like a pocket watch. The citizens moved on paths so ingrained they might as well have been grooves cut into the cobblestone. The baker opened at six. The smithy at seven. The lamplighter began his rounds at dusk, and dusk happened at the same minute every day."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Sprocket",
-        "text": "Newcomers! Welcome to Brasston! You're — seven seconds late. My fault, I should have accounted for dimensional transition lag.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Dimensional transition.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Sprocket",
-        "text": "Standard allowance in the Schedule for first-time arrivals. The Regulator accounts for variables. Most variables, anyway. You might be something new. Hard to tell yet.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Sprocket",
-        "text": "Everything here runs on the Grand Schedule. The Regulator set it up years ago. Or maybe always. Nobody remembers a time before the schedule.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Is that your outlook? The suspicious one?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Sprocket",
-        "text": "I check my watch more than anyone else in town. Sometimes I find the time has moved differently than I expected. Very small discrepancies. The sort that could be explained away. I've stopped explaining them away.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Sprocket",
-        "text": "I've been trying to find out who wrote the first rule of the Schedule for three years. The Schedule simply exists. The Regulator enforces it. I have never found anyone who wrote the first rule.",
-        "theme": "scholar",
-        "portrait": "scholar"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Clem the Lamplighter",
-        "text": "Dusk. Right on schedule. Always on schedule. The lamps need lighting and I light them and they stay lit until dawn, which is also on schedule.",
-        "theme": "elder",
-        "portrait": "elder"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Do you ever wonder what would happen if you lit them late?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Clem the Lamplighter",
-        "text": "Once. I was seven seconds behind. Just seven. The Mechanism... compensated. I don't know how. But the lamps were lit at the correct time despite my delay. As though the world lit them for me.",
-        "theme": "elder",
-        "portrait": "elder"
-      },
-      {
-        "speaker": "Clem the Lamplighter",
-        "text": "I've been exactly on time ever since. Not because I have to be. Because I want to know if it's me or the Mechanism. And as long as I'm on time, I can pretend it's me.",
-        "theme": "elder",
-        "portrait": "elder"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world3_brasston_npcs_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_steampunk"
+    },
+    {
+      "type": "narration",
+      "text": "Brasston ran like a pocket watch. The citizens moved on paths so ingrained they might as well have been grooves cut into the cobblestone. The baker opened at six. The smithy at seven. The lamplighter began his rounds at dusk, and dusk happened at the same minute every day."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Sprocket",
+          "text": "Newcomers! Welcome to Brasston! You're \u2014 seven seconds late. My fault, I should have accounted for dimensional transition lag.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Dimensional transition.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Sprocket",
+          "text": "Standard allowance in the Schedule for first-time arrivals. The Regulator accounts for variables. Most variables, anyway. You might be something new. Hard to tell yet.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Sprocket",
+          "text": "Everything here runs on the Grand Schedule. The Regulator set it up years ago. Or maybe always. Nobody remembers a time before the schedule.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Is that your outlook? The suspicious one?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Sprocket",
+          "text": "I check my watch more than anyone else in town. Sometimes I find the time has moved differently than I expected. Very small discrepancies. The sort that could be explained away. I've stopped explaining them away.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Sprocket",
+          "text": "I've been trying to find out who wrote the first rule of the Schedule for three years. The Schedule simply exists. The Regulator enforces it. I have never found anyone who wrote the first rule.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Clem the Lamplighter",
+          "text": "Dusk. Right on schedule. Always on schedule. The lamps need lighting and I light them and they stay lit until dawn, which is also on schedule.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Do you ever wonder what would happen if you lit them late?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Clem the Lamplighter",
+          "text": "Once. I was seven seconds behind. Just seven. The Mechanism... compensated. I don't know how. But the lamps were lit at the correct time despite my delay. As though the world lit them for me.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Clem the Lamplighter",
+          "text": "I've been exactly on time ever since. Not because I have to be. Because I want to know if it's me or the Mechanism. And as long as I'm on time, I can pretend it's me.",
+          "theme": "elder",
+          "portrait": "elder"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_brasston_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

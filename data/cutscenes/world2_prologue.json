@@ -3,90 +3,119 @@
   "title": "The Wrong Side of the Portal",
   "world": 2,
   "trigger": "world2_portal_entry",
+  "background": "suburban_neighborhood",
   "description": "The party steps through the portal into Maple Heights. Medieval gear transforms into suburban equivalents.",
   "steps": [
-    {"type": "fade_from_black", "duration": 1.5},
-    {"type": "letterbox_in", "duration": 0.6},
-    {"type": "play_music", "track": "cutscene_w2_portal_arrival"},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "lines": [
-      "The portal didn't do what portals in stories are supposed to do.",
-      "There was no flash. No dramatic dimensional tearing. There was a doorframe-shaped shimmer, and then there was a step, and then there was sidewalk.",
-      "The transformation happened between the shimmer and the step."
-    ]},
-
-    {"type": "play_sfx", "sfx": "portal_activate"},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "The Fighter felt it first. The gauntlets were gone. The pauldrons were gone. In their place: something stiff and polyester. A navy jacket with a badge that said SECURITY.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "...I'm still the one who stands in front. I think.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "",
-        "text": "The Cleric's robes had become scrubs. Green. With small prints of cartoon bears. Her holy symbol had become a laminated card: SCHOOL NURSE.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "I think we're still supposed to be helping people.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "",
-        "text": "The Mage came through in jeans and a t-shirt advertising a university whose name he didn't recognize. The staff was a pen. It said PROPERTY OF MAPLE HEIGHTS MIDDLE SCHOOL DO NOT REMOVE.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Mage",
-        "text": "New world. New context. Same skills, different costume.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "I know how this works. I don't know how I know. I just do.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "",
-        "text": "The Bard's lute had become a trumpet. The sound that came out was not exactly music. A nearby car alarm went off.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Bard",
-        "text": "I can work with this.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Lawn Guy",
-        "text": "HOA meeting's not till Thursday.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world2_prologue_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "fade_from_black",
+      "duration": 1.5
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.6
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w2_portal_arrival"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The portal didn't do what portals in stories are supposed to do.",
+        "There was no flash. No dramatic dimensional tearing. There was a doorframe-shaped shimmer, and then there was a step, and then there was sidewalk.",
+        "The transformation happened between the shimmer and the step."
+      ]
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "portal_activate"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "",
+          "text": "The Fighter felt it first. The gauntlets were gone. The pauldrons were gone. In their place: something stiff and polyester. A navy jacket with a badge that said SECURITY.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "...I'm still the one who stands in front. I think.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "",
+          "text": "The Cleric's robes had become scrubs. Green. With small prints of cartoon bears. Her holy symbol had become a laminated card: SCHOOL NURSE.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "I think we're still supposed to be helping people.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "",
+          "text": "The Mage came through in jeans and a t-shirt advertising a university whose name he didn't recognize. The staff was a pen. It said PROPERTY OF MAPLE HEIGHTS MIDDLE SCHOOL DO NOT REMOVE.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "Mage",
+          "text": "New world. New context. Same skills, different costume.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "I know how this works. I don't know how I know. I just do.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "",
+          "text": "The Bard's lute had become a trumpet. The sound that came out was not exactly music. A nearby car alarm went off.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        },
+        {
+          "speaker": "Bard",
+          "text": "I can work with this.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Lawn Guy",
+          "text": "HOA meeting's not till Thursday.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_prologue_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }
