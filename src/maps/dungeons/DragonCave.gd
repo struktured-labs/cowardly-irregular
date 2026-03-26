@@ -146,6 +146,18 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	# Treasure chest on floors before the boss (scaling loot)
 	_place_floor_treasure(floor_num)
 
+	# Save crystal on penultimate floor (rest before boss)
+	if floor_num == total_floors - 1:
+		var save_pt = SavePoint.new()
+		var pos = spawn_points.get("stairs_up", Vector2(6 * TILE_SIZE, 6 * TILE_SIZE))
+		save_pt.position = pos + Vector2(-TILE_SIZE * 2, 0)
+		save_pt.save_requested.connect(func():
+			if SaveSystem and SaveSystem.has_method("quick_save"):
+				SaveSystem.quick_save()
+				print("[SAVE] Quick save in %s floor %d" % [cave_name, floor_num])
+		)
+		transitions.add_child(save_pt)
+
 	# Stairs up (to next floor)
 	if spawn_points.has("stairs_up"):
 		var up_trans = AreaTransitionScript.new()
