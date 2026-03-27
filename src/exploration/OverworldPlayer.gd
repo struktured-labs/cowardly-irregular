@@ -266,6 +266,11 @@ func _physics_process(delta: float) -> void:
 		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
 
 	if input_dir != Vector2.ZERO:
+		# Compensate for Mode 7 horizontal compression before normalizing.
+		# Shader x_width = near_scale/h = 0.45/0.75 = 0.6 at player feet.
+		# Boost horizontal input by 1/0.6 = 1.667x, then renormalize.
+		# This makes horizontal movement LOOK equal to vertical on Mode 7 view.
+		input_dir.x *= 1.667
 		input_dir = input_dir.normalized()
 		# Fast lerp — reaches 90% speed in ~0.15s. Feels confident, not jittery.
 		var target_vel = input_dir * move_speed
