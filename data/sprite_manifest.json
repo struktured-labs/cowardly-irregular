@@ -102,7 +102,8 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 10,
-      "tier": "T0",
+      "tier": "T1",
+      "generator": "SDXL + jrpg_pixel_style LoRA v4 + IP-Adapter + ControlNet",
       "_design_source": {
         "aseprite": "assets/sprites/jobs/aseprite/Rogue Main design.aseprite",
         "tier": "T1",
