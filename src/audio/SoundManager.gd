@@ -291,12 +291,29 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 
 
 func play_ability(ability_id: String) -> void:
-	"""Play sound for an ability (looks up mapping or uses default)"""
+	"""Play sound for an ability — tries world-variant first, then default"""
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
+	# Try world-specific variant (e.g., "w2_ability_fire" for suburban world)
+	var world_key = _get_world_sfx_prefix() + sound_key
+	if _try_play_sfx_from_manifest(_ability_player, world_key):
+		return
+	# Fall back to default (medieval/W1) sound
 	if _try_play_sfx_from_manifest(_ability_player, sound_key):
 		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_ability_player, SOUNDS[sound_key])
+
+
+func _get_world_sfx_prefix() -> String:
+	"""Return SFX key prefix for current world. Empty string = W1 medieval (default)."""
+	var suffix = _get_current_world_suffix()
+	match suffix:
+		"suburban": return "w2_"
+		"steampunk": return "w3_"
+		"industrial": return "w4_"
+		"digital": return "w5_"
+		"abstract": return "w6_"
+		_: return ""  # W1 medieval uses unprefixed keys
 
 
 func register_ability_sound(ability_id: String, sound_key: String) -> void:

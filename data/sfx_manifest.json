@@ -244,6 +244,49 @@
       "prompt_influence": 0.6
     },
 
+    "w2_ability_fire": {
+      "file": "assets/audio/sfx/w2_ability_fire.ogg",
+      "prompt": "Gas stove burner igniting with a whoosh, kitchen flame flaring up, domestic fire sound, suburban cooking gone wrong",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w2_ability_ice": {
+      "file": "assets/audio/sfx/w2_ability_ice.ogg",
+      "prompt": "Garden sprinkler system bursting on, pressurized water spray freezing in air, suburban lawn irrigation gone icy",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w2_ability_lightning": {
+      "file": "assets/audio/sfx/w2_ability_lightning.ogg",
+      "prompt": "Leaf blower revving to maximum power, aggressive electric motor whine with gusting wind, suburban yard tool weaponized",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w2_ability_holy": {
+      "file": "assets/audio/sfx/w2_ability_holy.ogg",
+      "prompt": "Suburban church bell ringing clearly, neighborhood Sunday morning bell chime, wholesome community sound with warmth",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w2_ability_dark": {
+      "file": "assets/audio/sfx/w2_ability_dark.ogg",
+      "prompt": "Old basement door creaking open, dark cellar moaning with distant furnace rumble, suburban house with something wrong underneath",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w2_ability_heal": {
+      "file": "assets/audio/sfx/w2_ability_heal.ogg",
+      "prompt": "Garden hose spraying gently with backyard wind chimes tinkling, pleasant suburban afternoon, peaceful neighborhood sounds",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w2_ability_physical": {
+      "file": "assets/audio/sfx/w2_ability_physical.ogg",
+      "prompt": "Screen door slamming shut, satisfying suburban door bang, quick domestic impact",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+
     "screen_shake": {
       "file": "assets/audio/sfx/screen_shake.ogg",
       "prompt": "Deep rumbling earthquake tremor, ground shaking impact with low bass vibration, dramatic cinematic rumble",
