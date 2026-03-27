@@ -330,6 +330,22 @@
       "prompt_influence": 0.7
     },
 
+    "w4_ability_fire": { "file": "assets/audio/sfx/w4_ability_fire.ogg", "prompt": "Welding arc igniting", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w4_ability_ice": { "file": "assets/audio/sfx/w4_ability_ice.ogg", "prompt": "Industrial coolant spray", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w4_ability_lightning": { "file": "assets/audio/sfx/w4_ability_lightning.ogg", "prompt": "High voltage breaker tripping", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w4_ability_holy": { "file": "assets/audio/sfx/w4_ability_holy.ogg", "prompt": "Factory PA chime + fluorescent hum", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w4_ability_dark": { "file": "assets/audio/sfx/w4_ability_dark.ogg", "prompt": "Hydraulic press crushing", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w4_ability_heal": { "file": "assets/audio/sfx/w4_ability_heal.ogg", "prompt": "Clean room air filtration", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w4_ability_physical": { "file": "assets/audio/sfx/w4_ability_physical.ogg", "prompt": "Punch clock stamping", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+
+    "w5_ability_fire": { "file": "assets/audio/sfx/w5_ability_fire.ogg", "prompt": "Digital data corruption burning", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w5_ability_ice": { "file": "assets/audio/sfx/w5_ability_ice.ogg", "prompt": "Buffer overflow freeze", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w5_ability_lightning": { "file": "assets/audio/sfx/w5_ability_lightning.ogg", "prompt": "Bandwidth screech + signal overload", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w5_ability_holy": { "file": "assets/audio/sfx/w5_ability_holy.ogg", "prompt": "Pure sine wave chord resolving", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w5_ability_dark": { "file": "assets/audio/sfx/w5_ability_dark.ogg", "prompt": "Memory dump rumble + corrupted audio", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w5_ability_heal": { "file": "assets/audio/sfx/w5_ability_heal.ogg", "prompt": "System restore chime", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+    "w5_ability_physical": { "file": "assets/audio/sfx/w5_ability_physical.ogg", "prompt": "Quick glitch pop + digital clipping", "duration_seconds": 1.2, "prompt_influence": 0.7 },
+
     "screen_shake": {
       "file": "assets/audio/sfx/screen_shake.ogg",
       "prompt": "Deep rumbling earthquake tremor, ground shaking impact with low bass vibration, dramatic cinematic rumble",
