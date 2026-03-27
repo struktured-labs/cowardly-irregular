@@ -190,7 +190,7 @@
       "frame_height": 256,
       "fps": 10,
       "tier": "T1",
-      "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + IP-Adapter + ControlNet",
+      "generator": "SDXL + jrpg_pixel_style LoRA (v3, with artist rogue) + IP-Adapter (artist ref)",
       "animations": [
         "idle",
         "walk",
@@ -220,6 +220,17 @@
         "defend",
         "item",
         "victory"
+      ]
+    },
+    "rogue_artist": {
+      "path": "res://assets/sprites/jobs/rogue_artist",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "tier": "T2",
+      "source": "artist (Rogue Base sprite.png from Google Drive)",
+      "animations": [
+        "base"
       ]
     }
   },
