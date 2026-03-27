@@ -112,6 +112,19 @@ var current_terrain: TerrainType = TerrainType.PLAINS
 var current_time_of_day: TimeOfDay = TimeOfDay.DAY
 var _background_elements: Array[Node] = []
 
+## Artist backdrop — when present, replaces procedural generation
+var _using_artist_backdrop: bool = false
+var _artist_backdrop_rect: TextureRect = null
+
+## Terrain name → backdrop image path mapping
+const BACKDROP_PATHS = {
+	TerrainType.PLAINS: "res://assets/battle_backdrops/battle_plains.png",
+	TerrainType.CAVE: "res://assets/battle_backdrops/battle_cave.png",
+	TerrainType.FOREST: "res://assets/battle_backdrops/battle_forest.png",
+	TerrainType.VILLAGE: "res://assets/battle_backdrops/battle_village.png",
+	TerrainType.BOSS: "res://assets/battle_backdrops/battle_boss.png",
+}
+
 ## Seed-based RNG for reproducible but varied backgrounds
 var background_seed: int = 0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -277,6 +290,12 @@ func _draw_background_immediate() -> void:
 	"""Immediately clear and redraw the background without any transition"""
 	_sky_rect = null
 	_sky_base_modulate = Color.WHITE
+	_using_artist_backdrop = false
+
+	# Clear artist backdrop if present
+	if _artist_backdrop_rect and is_instance_valid(_artist_backdrop_rect):
+		_artist_backdrop_rect.queue_free()
+		_artist_backdrop_rect = null
 
 	# Clear existing elements
 	for element in _background_elements:
@@ -304,6 +323,10 @@ func _draw_background_immediate() -> void:
 	if not _layer_far:
 		_setup_layers()
 
+	# Try artist backdrop first — if available, skip procedural generation
+	if _try_load_artist_backdrop():
+		return
+
 	var viewport_size = get_viewport_rect().size
 	var base_palette = TERRAIN_PALETTES.get(current_terrain, TERRAIN_PALETTES[TerrainType.PLAINS])
 	var palette = _apply_time_tint(base_palette)
@@ -330,6 +353,42 @@ func _draw_background_immediate() -> void:
 
 	# Ambient particles for all terrains
 	_spawn_ambient_particles(viewport_size, palette)
+
+
+func _try_load_artist_backdrop() -> bool:
+	"""Try to load an artist-made backdrop image for the current terrain.
+	Returns true if loaded, false to fall through to procedural generation."""
+	var path = BACKDROP_PATHS.get(current_terrain, "")
+	if path == "" or not ResourceLoader.exists(path):
+		return false
+
+	var tex = load(path) as Texture2D
+	if not tex:
+		return false
+
+	_artist_backdrop_rect = TextureRect.new()
+	_artist_backdrop_rect.texture = tex
+	_artist_backdrop_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_artist_backdrop_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_artist_backdrop_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_artist_backdrop_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_artist_backdrop_rect)
+	move_child(_artist_backdrop_rect, 0)
+
+	# Apply time-of-day tinting to artist backdrops
+	var tint_data = TIME_TINTS.get(current_time_of_day, TIME_TINTS[TimeOfDay.DAY])
+	var tint = Color(
+		1.0 + tint_data["r"],
+		1.0 + tint_data["g"],
+		1.0 + tint_data["b"],
+		1.0
+	) * (1.0 + tint_data["brightness"])
+	_artist_backdrop_rect.modulate = tint
+
+	_sky_rect = _artist_backdrop_rect
+	_sky_base_modulate = tint
+	_using_artist_backdrop = true
+	return true
 
 
 func _add_to_layer(element: Node, layer: Control) -> void:
