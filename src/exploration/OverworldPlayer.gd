@@ -9,7 +9,7 @@ signal interaction_requested()
 signal menu_requested()
 
 ## Movement configuration
-@export var move_speed: float = 150.0
+@export var move_speed: float = 180.0  # Slightly faster to compensate for Mode 7 perspective compression
 
 ## Direction enum
 enum Direction { DOWN, UP, LEFT, RIGHT }
@@ -208,6 +208,7 @@ func _ready() -> void:
 	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	wall_min_slide_angle = 0.0  # Always allow wall sliding, even head-on
+	safe_margin = 1.0  # Prevents getting stuck on tile collision seams
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
@@ -266,7 +267,9 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		input_dir = input_dir.normalized()
-		velocity = input_dir * move_speed
+		# Fast lerp — reaches 90% speed in ~0.15s. Feels confident, not jittery.
+		var target_vel = input_dir * move_speed
+		velocity = velocity.lerp(target_vel, 15.0 * delta)
 		is_moving = true
 
 		if abs(input_dir.x) > abs(input_dir.y):
@@ -274,8 +277,9 @@ func _physics_process(delta: float) -> void:
 		else:
 			current_direction = Direction.UP if input_dir.y < 0 else Direction.DOWN
 	else:
-		velocity = Vector2.ZERO
-		is_moving = false
+		# Quick deceleration — stops in ~0.1s
+		velocity = velocity.lerp(Vector2.ZERO, 20.0 * delta)
+		is_moving = velocity.length() > 5.0
 
 	# Track distance for step counting
 	var old_pos = position
