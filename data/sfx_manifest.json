@@ -287,6 +287,49 @@
       "prompt_influence": 0.7
     },
 
+    "w3_ability_fire": {
+      "file": "assets/audio/sfx/w3_ability_fire.ogg",
+      "prompt": "Industrial furnace blast door opening, roaring metal forge fire with bellows pumping, steampunk smelter eruption",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w3_ability_ice": {
+      "file": "assets/audio/sfx/w3_ability_ice.ogg",
+      "prompt": "High pressure steam valve releasing, sharp hissing jet of freezing steam, industrial coolant venting with pipe rattle",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w3_ability_lightning": {
+      "file": "assets/audio/sfx/w3_ability_lightning.ogg",
+      "prompt": "Tesla coil arcing with buzzing electricity, steampunk generator spark discharge, crackling copper coil energy",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w3_ability_holy": {
+      "file": "assets/audio/sfx/w3_ability_holy.ogg",
+      "prompt": "Grand clocktower bell chiming, ornate brass bell with mechanical hammer strike, steampunk cathedral clock",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w3_ability_dark": {
+      "file": "assets/audio/sfx/w3_ability_dark.ogg",
+      "prompt": "Heavy machinery grinding to a halt, gears seizing with metallic screeching, broken clockwork failing ominously",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w3_ability_heal": {
+      "file": "assets/audio/sfx/w3_ability_heal.ogg",
+      "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w3_ability_physical": {
+      "file": "assets/audio/sfx/w3_ability_physical.ogg",
+      "prompt": "Pneumatic piston firing, compressed air cylinder punching, steampunk mechanical arm striking with a hiss",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+
     "screen_shake": {
       "file": "assets/audio/sfx/screen_shake.ogg",
       "prompt": "Deep rumbling earthquake tremor, ground shaking impact with low bass vibration, dramatic cinematic rumble",
