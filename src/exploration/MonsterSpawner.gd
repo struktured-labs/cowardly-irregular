@@ -44,6 +44,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not _enabled or not _player or not is_instance_valid(_player):
 		return
+	# Respect encounter rate setting — 0 means no monsters at all
+	if GameState and GameState.encounter_rate_multiplier <= 0.0:
+		_despawn_all()
+		return
 
 	_check_timer -= delta
 	if _check_timer <= 0.0:
