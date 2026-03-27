@@ -358,10 +358,10 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	trans.name = trans_name
 	trans.target_map = target_map
 	trans.target_spawn = target_spawn
-	trans.require_interaction = true
+	trans.require_interaction = false  # Auto-enter on contact (no button press needed)
 	trans.indicator_text = indicator
 	trans.position = pos
-	_setup_transition_collision(trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))
+	_setup_transition_collision(trans, Vector2(TILE_SIZE * 5, TILE_SIZE * 5))  # 5x5 tiles for generous entry
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
 
