@@ -346,6 +346,14 @@
     "w5_ability_heal": { "file": "assets/audio/sfx/w5_ability_heal.ogg", "prompt": "System restore chime", "duration_seconds": 1.2, "prompt_influence": 0.7 },
     "w5_ability_physical": { "file": "assets/audio/sfx/w5_ability_physical.ogg", "prompt": "Quick glitch pop + digital clipping", "duration_seconds": 1.2, "prompt_influence": 0.7 },
 
+    "w6_ability_fire": { "file": "assets/audio/sfx/w6_ability_fire.ogg", "prompt": "Pure rising tone — concept of heat", "duration_seconds": 1.5, "prompt_influence": 0.8 },
+    "w6_ability_ice": { "file": "assets/audio/sfx/w6_ability_ice.ogg", "prompt": "Pure descending tone — concept of cold", "duration_seconds": 1.5, "prompt_influence": 0.8 },
+    "w6_ability_lightning": { "file": "assets/audio/sfx/w6_ability_lightning.ogg", "prompt": "Sharp pure tone spike — concept of sudden energy", "duration_seconds": 1.5, "prompt_influence": 0.8 },
+    "w6_ability_holy": { "file": "assets/audio/sfx/w6_ability_holy.ogg", "prompt": "Harmonic chord resolving to unity — abstract truth", "duration_seconds": 1.5, "prompt_influence": 0.8 },
+    "w6_ability_dark": { "file": "assets/audio/sfx/w6_ability_dark.ogg", "prompt": "Low tone fading to silence — concept of absence", "duration_seconds": 1.5, "prompt_influence": 0.8 },
+    "w6_ability_heal": { "file": "assets/audio/sfx/w6_ability_heal.ogg", "prompt": "Two tones converging to unison — becoming whole", "duration_seconds": 1.5, "prompt_influence": 0.8 },
+    "w6_ability_physical": { "file": "assets/audio/sfx/w6_ability_physical.ogg", "prompt": "Single percussive sine ping — concept of force", "duration_seconds": 1.5, "prompt_influence": 0.8 },
+
     "screen_shake": {
       "file": "assets/audio/sfx/screen_shake.ogg",
       "prompt": "Deep rumbling earthquake tremor, ground shaking impact with low bass vibration, dramatic cinematic rumble",
