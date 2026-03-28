@@ -102,8 +102,10 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 10,
-      "tier": "T1",
-      "generator": "SDXL + jrpg_pixel_style LoRA v4 + IP-Adapter + ControlNet",
+      "tier": "T2",
+      "artist_animations": ["idle", "attack", "cast"],
+      "ai_animations_tier": "T1",
+      "generator": "Artist originals (idle/attack/cast) + SDXL LoRA v4 (remaining 12)",
       "_design_source": {
         "aseprite": "assets/sprites/jobs/aseprite/Rogue Main design.aseprite",
         "tier": "T1",
