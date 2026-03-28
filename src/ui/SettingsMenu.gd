@@ -6,6 +6,7 @@ class_name SettingsMenu
 signal closed()
 signal settings_changed(setting: String, value: Variant)
 signal quit_to_title()
+signal start_boss_battle(boss_id: String)
 
 ## Encounter rate presets (default 100%)
 const ENCOUNTER_PRESETS = [0.0, 0.25, 0.50, 0.75, 1.0, 1.5, 2.0]
@@ -42,6 +43,7 @@ var selected_index: int = 0
 var _settings_items: Array = []
 var _controls_submenu_open: bool = false
 var _jukebox_submenu_open: bool = false
+var _boss_submenu_open: bool = false
 
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
@@ -275,6 +277,20 @@ func _build_ui() -> void:
 		MenuMouseHelper.make_clickable(jukebox_item, jukebox_idx, 400, 50,
 			_on_setting_click.bind(jukebox_idx), _on_setting_hover.bind(jukebox_idx))
 
+	# Fight Boss button (debug-only)
+	if debug_log_enabled:
+		var boss_idx = _settings_items.size()
+		var boss_item = _create_action_button_neutral(
+			"Fight Boss",
+			"[DEBUG] Battle a Masterite boss",
+			boss_idx
+		)
+		boss_item.position = Vector2(16, 588)
+		panel.add_child(boss_item)
+		_settings_items.append({"control": boss_item, "type": "action", "id": "fight_boss"})
+		MenuMouseHelper.make_clickable(boss_item, boss_idx, 400, 50,
+			_on_setting_click.bind(boss_idx), _on_setting_hover.bind(boss_idx))
+
 	# Quit to Title button
 	var quit_idx = _settings_items.size()
 	var quit_item = _create_action_button(
@@ -282,7 +298,7 @@ func _build_ui() -> void:
 		"Return to the title screen",
 		quit_idx
 	)
-	var quit_y = 538 + (50 if debug_log_enabled else 0)
+	var quit_y = 538 + (100 if debug_log_enabled else 0)
 	quit_item.position = Vector2(16, quit_y)
 	panel.add_child(quit_item)
 	_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
@@ -694,7 +710,7 @@ func _input(event: InputEvent) -> void:
 	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
-	if _controls_submenu_open or _jukebox_submenu_open:
+	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -892,6 +908,8 @@ func _activate_setting() -> void:
 			_open_controls_menu()
 		elif item["id"] == "jukebox":
 			_open_jukebox_menu()
+		elif item["id"] == "fight_boss":
+			_open_boss_selector()
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
@@ -951,6 +969,33 @@ func _open_jukebox_menu() -> void:
 func _on_jukebox_closed() -> void:
 	"""Jukebox menu closed"""
 	_jukebox_submenu_open = false
+
+
+func _open_boss_selector() -> void:
+	"""Open the boss selector debug submenu"""
+	_boss_submenu_open = true
+	var BossSelectorScript = load("res://src/ui/BossSelectorMenu.gd")
+	if BossSelectorScript:
+		var selector = BossSelectorScript.new()
+		selector.set_anchors_preset(Control.PRESET_FULL_RECT)
+		selector.boss_selected.connect(_on_boss_selected)
+		selector.closed.connect(_on_boss_selector_closed)
+		add_child(selector)
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
+
+
+func _on_boss_selector_closed() -> void:
+	"""Boss selector menu closed without selection"""
+	_boss_submenu_open = false
+
+
+func _on_boss_selected(boss_id: String) -> void:
+	"""Boss selected - close settings and start battle"""
+	_boss_submenu_open = false
+	start_boss_battle.emit(boss_id)
+	closed.emit()
+	queue_free()
 
 
 func _play_open_animation() -> void:

@@ -372,6 +372,8 @@ func _open_overworld_menu() -> void:
 	_overworld_menu.closed.connect(_on_overworld_menu_closed)
 	_overworld_menu.menu_action.connect(_on_overworld_menu_action)
 	_overworld_menu.quit_to_title.connect(_on_quit_to_title)
+	if _overworld_menu.has_signal("start_boss_battle"):
+		_overworld_menu.start_boss_battle.connect(_on_settings_boss_battle)
 	if _overworld_menu.has_signal("teleport_requested"):
 		_overworld_menu.teleport_requested.connect(_on_teleport_requested)
 	if _overworld_menu.has_signal("party_leader_changed"):
@@ -432,6 +434,19 @@ func _on_quit_to_title() -> void:
 
 	# Show title screen
 	_show_title_screen()
+
+
+func _on_settings_boss_battle(boss_id: String) -> void:
+	"""Handle boss battle request from settings debug menu"""
+	print("[GAME] Debug fight boss: %s" % boss_id)
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		_overworld_menu.queue_free()
+		_overworld_menu = null
+	if _overworld_menu_layer and is_instance_valid(_overworld_menu_layer):
+		_overworld_menu_layer.queue_free()
+		_overworld_menu_layer = null
+	current_state = LoopState.EXPLORATION
+	_start_battle_async([boss_id], false)
 
 
 func _on_overworld_menu_action(action: String, target: Combatant) -> void:
@@ -577,6 +592,7 @@ func _open_settings_menu() -> void:
 			if _exploration_scene and _exploration_scene.has_method("resume"):
 				_exploration_scene.resume()
 		)
+		settings_menu.start_boss_battle.connect(_on_settings_boss_battle)
 
 
 func _on_title_settings() -> void:
@@ -601,6 +617,7 @@ func _on_title_settings() -> void:
 				if _title_screen.has_method("_build_menu"):
 					_title_screen._build_menu()
 		)
+		settings_menu.start_boss_battle.connect(_on_settings_boss_battle)
 
 
 func _show_character_creation() -> void:

@@ -18,6 +18,7 @@ const JobMenuClass = preload("res://src/ui/JobMenu.gd")
 signal closed()
 signal menu_action(action: String, target: Combatant)
 signal quit_to_title()
+signal start_boss_battle(boss_id: String)
 signal teleport_requested(target_map: String, spawn_point: String)
 signal party_leader_changed(new_index: int)
 
@@ -644,6 +645,7 @@ func _open_settings() -> void:
 		settings.set_anchors_preset(Control.PRESET_FULL_RECT)
 		settings.closed.connect(_on_settings_closed)
 		settings.quit_to_title.connect(_on_quit_to_title)
+		settings.start_boss_battle.connect(_on_settings_boss_battle)
 		add_child(settings)
 		_hide_main_ui(settings)
 
@@ -651,6 +653,12 @@ func _open_settings() -> void:
 func _on_quit_to_title() -> void:
 	"""Handle quit to title request from settings"""
 	quit_to_title.emit()
+	queue_free()
+
+
+func _on_settings_boss_battle(boss_id: String) -> void:
+	"""Handle boss battle request from settings debug menu"""
+	start_boss_battle.emit(boss_id)
 	queue_free()
 
 
