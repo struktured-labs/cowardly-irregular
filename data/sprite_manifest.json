@@ -39,6 +39,9 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 10,
+      "tier": "T2",
+      "artist_animations": ["idle"],
+      "ai_animations_tier": "T1",
       "animations": [
         "idle",
         "walk",
