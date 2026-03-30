@@ -235,7 +235,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 			return false
 
 	# Try loading from disk
-	if not FileAccess.file_exists(path):
+	if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
 		push_warning("[SFX] File not found: %s (key: %s)" % [path, sound_key])
 		_sfx_stream_cache[sound_key] = null  # Cache miss
 		return false
@@ -819,7 +819,8 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		return false
 	if not path.begins_with("res://"):
 		path = "res://" + path
-	if not FileAccess.file_exists(path):
+	if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
+		push_warning("[MUSIC] Track file not found: %s (track_id: %s)" % [path, track_id])
 		return false
 	var stream = load(path) as AudioStream
 	if not stream:
