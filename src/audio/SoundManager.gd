@@ -234,11 +234,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 			# Cached null = file doesn't exist, fall through to procedural
 			return false
 
-	# Try loading from disk
-	if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
-		push_warning("[SFX] File not found: %s (key: %s)" % [path, sound_key])
-		_sfx_stream_cache[sound_key] = null  # Cache miss
-		return false
+	# Try loading directly — skip existence checks that can fail in web/PCK exports
 	var stream = load(path) as AudioStream
 	if not stream:
 		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, sound_key])
@@ -819,12 +815,12 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		return false
 	if not path.begins_with("res://"):
 		path = "res://" + path
-	if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
-		push_warning("[MUSIC] Track file not found: %s (track_id: %s)" % [path, track_id])
-		return false
+	# Skip file existence checks — just try to load directly.
+	# FileAccess.file_exists() and ResourceLoader.exists() can fail in web/PCK exports
+	# even when the resource is actually available via load().
 	var stream = load(path) as AudioStream
 	if not stream:
-		push_warning("[MUSIC] Failed to load audio file: %s" % path)
+		push_warning("[MUSIC] Failed to load audio: %s (track_id: %s)" % [path, track_id])
 		return false
 	# Set looping based on manifest (default true for music)
 	var should_loop = entry.get("loop", true)
