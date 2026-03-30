@@ -184,13 +184,13 @@ func _setup_default_ability_sounds() -> void:
 static func _load_sfx_manifest() -> void:
 	if _sfx_manifest_loaded:
 		return
-	_sfx_manifest_loaded = true
 	var file = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
 	if not file:
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
 	if parsed and parsed.has("sfx"):
 		_sfx_manifest = parsed["sfx"]
+		_sfx_manifest_loaded = true
 		if _sfx_manifest.size() > 0:
 			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
 
@@ -794,15 +794,19 @@ func _generate_tier_zoom_in(playback: AudioStreamGeneratorPlayback, samples: int
 static func _load_music_manifest() -> void:
 	if _manifest_loaded:
 		return
-	_manifest_loaded = true
+	# Do NOT set _manifest_loaded until successful — allows retry if PCK isn't ready yet
 	var file = FileAccess.open("res://data/music_manifest.json", FileAccess.READ)
 	if not file:
+		push_warning("[MUSIC] Cannot open music_manifest.json — will retry next call")
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
 	if parsed and parsed.has("tracks"):
 		_music_manifest = parsed["tracks"]
+		_manifest_loaded = true  # Only set after successful load
 		if _music_manifest.size() > 0:
 			print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
+	else:
+		push_warning("[MUSIC] Failed to parse music_manifest.json — will retry")
 
 
 func _try_play_from_manifest(track_id: String) -> bool:
