@@ -6,6 +6,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   GODOT_VERSION: "4.3"
   EXPORT_NAME: cowardly-irregular
