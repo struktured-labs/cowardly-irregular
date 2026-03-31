@@ -591,6 +591,20 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter5_complete", false):
 		if _current_map_id == "overworld":
 			return "world1_chapter5"
+	# Chapter 5 Forest: enchanted forest foreshadowing (Tempo chase, old woman)
+	if flags.get("cutscene_flag_chapter5_complete", false) and not flags.get("cutscene_flag_chapter5_forest_entered", false):
+		if _current_map_id == "eldertree_village":
+			return "world1_chapter5_forest"
+	# Chapter 7: entering the capital city Scriptura
+	if flags.get("cutscene_flag_chapter5_forest_entered", false) and not flags.get("cutscene_flag_chapter7_complete", false):
+		if _current_map_id == "overworld":
+			return "world1_chapter7"
+	# Chapter 8: Scholar's Reckoning (auto-chains after chapter 7)
+	if flags.get("cutscene_flag_chapter7_complete", false) and not flags.get("cutscene_flag_chapter8_complete", false):
+		return "world1_chapter8"
+	# Chapter 9: The Throne (King Aldric scene, sets up Mordaine defeat)
+	if flags.get("cutscene_flag_chapter8_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
+		return "world1_chapter9"
 	return ""
 
 

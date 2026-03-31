@@ -1,0 +1,202 @@
+{
+  "id": "world1_chapter7",
+  "title": "The Capital of Comfortable Lies",
+  "world": 1,
+  "trigger": "enter_scriptura",
+  "description": "The party arrives in Scriptura. The resistance bookshop. The Guild's chart. The Tempo's hunt through city streets.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "town_w1"},
+
+    {"type": "narration", "lines": [
+      "Scriptura was beautiful. That was the problem.",
+      "Clean streets. Window boxes full of flowers at regulation height. Guards who smiled and said good morning and meant both words in a way that allowed no deviation.",
+      "The prices in the market were almost too precise. Not round numbers — precise ones. The kind you get from careful calculation rather than tradition.",
+      "It was the most oppressive place any of them had ever seen."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "Everyone is performing. Even the pigeons.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "I like it here.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You would.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The resistance operated out of a bookshop. Of course it did. Its shelves were overfull in the way that only looks like disorganization."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Sera",
+        "text": "The king is enchanted. Not the fairy-tale kind — the administrative kind.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Sera",
+        "text": "Mordaine doesn't need magic chains when she has policy. He signs what she writes. He says what she scripts. He's not a prisoner. He's a process.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Can it be undone?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Sera",
+        "text": "If someone got through to him? If something broke through the performance long enough for him to act on his own? Maybe. That's not a plan. That's a hope.",
+        "theme": "mysterious",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "At the Scriptweaver's Guild — co-opted now, its scholars writing edicts instead of research — one man still kept his old work hidden. He spread documents across a back table."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Scholar",
+        "text": "I've been studying this chart for weeks. Every significant location in the kingdom. Every notable threat. Routes between them. I thought it was a political map.",
+        "theme": "scholar",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Scholar",
+        "text": "It isn't. It's a map of your journey. Every place you've been. Every enemy you've fought. Written before you arrived.",
+        "theme": "scholar",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Someone charted the journey of people they hadn't met yet.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Scholar",
+        "text": "Yes.",
+        "theme": "scholar",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "You're certain this is about political structure? Not something else?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Scholar",
+        "text": "I was certain. I am less certain now.",
+        "theme": "scholar",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "I thought I had a word for it and then I didn't.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "narration", "text": "The Mage closed his notebook with the precision of someone deciding not to read something aloud. Whatever he had written, he kept it."},
+
+    {"type": "wait", "duration": 0.5},
+    {"type": "play_sfx", "sfx": "rooftop_drop"},
+
+    {"type": "narration", "text": "They found the Tempo of the Hunt in the market district. More precisely: it found them. It dropped from a rooftop and landed in front of a vegetable stall without disturbing a single turnip."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "You made it to the city. I had calculated you would lose yourselves in the forest and give up.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "I even cleared one of the loop paths to give you a chance. I wanted you to last longer.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "You helped us.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "I extended the game. Don't let me catch you. That's not a threat. That's the game.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "play_sfx", "sfx": "sprint_start"},
+
+    {"type": "narration", "lines": [
+      "The chase through Scriptura's streets was everything the Tempo had promised.",
+      "It vaulted crates. Disappeared around corners. Reappeared somewhere improbable. It narrated as it ran — not to taunt, but with the genuine delight of something that had been doing this since before the city had crowds.",
+      "'Clever — you're slowing down the right moments.' 'Oh, they've learned the geometry. Most don't.'"
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Mage",
+        "text": "It's not trying to kill us. It's playing.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "It's doing both. It's playing because it enjoys it and the data is incidental. That's worse somehow.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "play_sfx", "sfx": "acrobatic_leap"},
+    {"type": "narration", "text": "The Rogue did something that had no name in any training manual. The geometry of it wasn't strictly possible. The Tempo found itself cornered against a wall, surprised for the first time in what might have been a very long time."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Tempo",
+        "text": "Oh.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Tempo",
+        "text": "Noted.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "chapter7_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}

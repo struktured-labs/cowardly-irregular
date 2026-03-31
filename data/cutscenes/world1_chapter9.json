@@ -1,0 +1,150 @@
+{
+  "id": "world1_chapter9",
+  "title": "The Throne",
+  "world": 1,
+  "trigger": "chapter8_complete",
+  "description": "The palace. King Aldric on his throne. A moment of genuine contact before the performance closes. Critical setup for the Rogue's choice against Mordaine.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "play_music", "track": "dungeon"},
+
+    {"type": "narration", "lines": [
+      "The palace was a dungeon that didn't know it was a dungeon.",
+      "Every corridor was a test. Every room had a purpose beyond its decoration. The guards fought in patterns — not because they were disciplined, but because they couldn't do otherwise.",
+      "The tapestries on the walls told the kingdom's history. Examined closely, the history had been edited. A consistent hand. A single revising eye."
+    ]},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "Someone has been here before us. Not recently. Over years. Adjusting things.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The same hand as the chart.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Bard",
+        "text": "It's very thorough.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "That isn't a compliment.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Bard",
+        "text": "I'm aware.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+    {"type": "play_sfx", "sfx": "throne_room_doors"},
+
+    {"type": "narration", "text": "The throne room was at the end of everything. King Aldric sat on his throne. He looked like a painting of a king — positioned correctly, lit properly, expression carefully neutral."},
+
+    {"type": "play_music", "track": "cutscene_w1_palace"},
+
+    {"type": "narration", "text": "When the party entered, his eyes moved. And for a moment — brief, unmistakable — something alive flickered behind the performance."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "King Aldric",
+        "text": "You shouldn't be here.",
+        "theme": "elder",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We know. We came anyway.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "King Aldric",
+        "text": "She's trying to help. The kingdom was failing. She—",
+        "theme": "elder",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "narration", "text": "The words came out rote. Policy-shaped. He heard them as he said them. Something in his face shifted — not anger, but awareness of the performance he was giving."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "King Aldric",
+        "text": "I know what she's done. I know and I cannot—",
+        "theme": "elder",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "play_sfx", "sfx": "heartbeat"},
+
+    {"type": "narration", "text": "His hand moved to his chest. The gesture was not theatrical. It was the motion of a man checking whether something was still there."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "King Aldric",
+        "text": "I am still here. Somewhere.",
+        "theme": "elder",
+        "portrait": "mysterious"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "The performance resumed. His eyes went neutral. The king who had been briefly present retreated behind the king who was a process."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "The Cleric stepped forward. She didn't speak. She pressed her hand over the king's, where his had rested against his heart. A small, quiet gesture. The kind that costs nothing and means everything."},
+
+    {"type": "play_sfx", "sfx": "soft_chime"},
+
+    {"type": "narration", "text": "Something like gratitude moved across his face before the policy returned."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "He's still in there.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "Yes.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "That matters.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "I thought it might.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+    {"type": "narration", "text": "The Rogue said nothing else. But something had changed in the set of her shoulders. The kind of change that happens when a decision you didn't know you were making quietly completes itself."},
+
+    {"type": "set_flag", "flag": "chapter9_complete", "value": true},
+    {"type": "set_flag", "flag": "king_aldric_met", "value": true},
+    {"type": "letterbox_out", "duration": 0.6}
+  ]
+}

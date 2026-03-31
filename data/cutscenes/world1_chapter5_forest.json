@@ -1,0 +1,98 @@
+{
+  "id": "world1_chapter5_forest",
+  "title": "The Forest That Remembered",
+  "world": 1,
+  "trigger": "enter_enchanted_forest",
+  "description": "The enchanted forest is not corrupted but redesigned — paths that funnel and converge, movement channeled toward particular clearings, and a second Tempo calling card pinned to a tree.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "danger_medieval"},
+
+    {"type": "narration", "lines": [
+      "The enchanted forest was not corrupted. That would have been simpler.",
+      "It had been redesigned. Paths that should have diverged converged instead. Clearings appeared at intervals too regular for nature, positioned to funnel movement toward particular points.",
+      "Something had arranged this forest the way you arrange furniture in a room where you expect company."
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "We've passed that oak before.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "We took the left fork twice. We should be somewhere else entirely.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "My compass has been spinning since we entered.",
+        "theme": "mage",
+        "portrait": "mage"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "They found the note pinned to a tree they had not passed before — or thought they hadn't. A folded square of paper, sealed with the image of a running hound."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "It's addressed to us.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "narration", "text": "The note read: 'You've been here three times now. I've been watching. — T.'"},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "That's not possible. We've only just entered.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Mage",
+        "text": "Someone designed these paths to converge. Every route leads back here. That's not an accident — it's architecture.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "They wanted to see how we handled being disoriented. There's a difference between lost and observed.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "Bard",
+        "text": "So we've been observed. Three times, apparently. I hope our second visit was better than our first.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "We don't remember our first visit. That's the point.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "lines": [
+      "The paths ahead looked identical to the ones they'd already taken.",
+      "The forest offered no help and no apology."
+    ]},
+
+    {"type": "set_flag", "flag": "chapter5_forest_entered", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

@@ -54,7 +54,7 @@
       }
     ]},
 
-    {"type": "narration", "text": "The Fighter returned the salute. Nobody commented on it. It seemed like the right thing."},
+    {"type": "narration", "text": "The Fighter returned the salute. Without hesitation. Without irony."},
 
     {"type": "wait", "duration": 0.8},
 
@@ -63,7 +63,7 @@
       "When it finally fell, the Fighter found an inscription on the inside of the visor: SERVE WITH HONOR. REST WITH PEACE."
     ]},
 
-    {"type": "narration", "text": "The Fighter stood there for a moment longer than necessary. Then they moved on."},
+    {"type": "narration", "text": "The Fighter stood without speaking. The Bard, for once, didn't narrate."},
 
     {"type": "wait", "duration": 0.8},
 

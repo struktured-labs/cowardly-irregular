@@ -10,6 +10,23 @@
     {"type": "play_music", "track": "cutscene_w1_mordaine_dissolution"},
     {"type": "wait", "duration": 1.0},
 
+    {"type": "narration", "text": "The Rogue, while every other party member was occupied managing a summoned guard, walked up to Mordaine. Not attacking. Not flanking. Just walking."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Rogue",
+        "text": "The king is still in there. He spoke to us. The real one. He wants you stopped.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "narration", "text": "Mordaine hesitated. A fraction of a second. It was enough."},
+    {"type": "play_sfx", "sfx": "critical_hit"},
+    {"type": "narration", "text": "The Fighter's sword, the Mage's final fire bolt, and the Cleric's most focused prayer arrived simultaneously."},
+    {"type": "narration", "text": "When her health hit zero, she didn't scream. She didn't curse. She looked at them with an expression that was almost proud, and almost sad, and almost something with no name in a medieval vocabulary."},
+    {"type": "wait", "duration": 0.8},
+
     {"type": "narration", "lines": [
       "The maps were still on the table. The ledgers were still stacked in their careful columns. The window was still open.",
       "Mordaine stood in the center of the room and looked at the documents the way a person looks at something they built and are seeing, perhaps for the first time, from the outside."

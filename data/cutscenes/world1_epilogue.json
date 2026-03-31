@@ -12,17 +12,6 @@
     {"type": "fade_from_black", "duration": 1.0},
     {"type": "play_music", "track": "cutscene_w1_mordaine_dissolution"},
 
-    {"type": "narration", "lines": [
-      "Where Mordaine had stood, there was nothing. Not even the memory of nothing. Just air that didn't know what to do with itself.",
-      "The throne room flickered. Not the lights \u2014 the room. The walls shuddered, and for a fraction of a second, the party saw something behind them.",
-      "Not stone. Not darkness. Something that looked like... suburbs."
-    ]},
-
-    {"type": "play_sfx", "sfx": "reality_glitch"},
-    {"type": "screen_shake", "duration": 0.4, "intensity": 3.0},
-    {"type": "screen_flash", "duration": 0.2},
-    {"type": "wait", "duration": 0.8},
-
     {"type": "play_sfx", "sfx": "portal_activate"},
     {"type": "narration", "text": "In Harmonia Village, a device that had appeared overnight hummed to life. Its portal shimmered with images of parking lots and picket fences."},
 

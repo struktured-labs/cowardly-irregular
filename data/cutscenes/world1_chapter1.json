@@ -61,21 +61,32 @@
       },
       {
         "speaker": "Scholar Milo",
-        "text": "Not laziness. Enlightenment. It's all in my book. Chapter one: the theory. Chapter two: the practice.",
+        "text": "Not laziness. Enlightenment.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      }
+    ]},
+
+    {"type": "narration", "text": "He pressed a leather-bound journal into the Fighter's hands. The cover read: AUTOBATTLE: A Practical Guide to Strategic Detachment."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Fighter",
+        "text": "This is a real book?",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Scholar Milo",
+        "text": "Chapter one is about letting go.",
         "theme": "scholar",
         "portrait": "scholar"
       },
       {
         "speaker": "Scholar Milo",
-        "text": "Here \u2014 take this. My autobattle journal. Everything I've learned about combat scripting, condensed into practical form.",
+        "text": "Chapter two is about letting go faster.",
         "theme": "scholar",
         "portrait": "scholar"
-      },
-      {
-        "speaker": "",
-        "text": "He pressed a battered notebook into the Fighter's hands. The Fighter held it like it might bite.",
-        "theme": "narrator",
-        "portrait": "narrator"
       },
       {
         "speaker": "Bard",
