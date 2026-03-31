@@ -560,9 +560,50 @@ func _play_new_game_cutscenes() -> void:
 
 
 func _on_prologue_finished(_cutscene_id: String) -> void:
-	"""After prologue, start exploration."""
+	"""After prologue, chain into chapter1 (Elder Theron briefing)."""
+	_cutscene_director.cutscene_finished.connect(_on_chapter1_finished, CONNECT_ONE_SHOT)
+	_cutscene_director.play_cutscene("world1_chapter1")
+
+
+func _on_chapter1_finished(_cutscene_id: String) -> void:
+	"""After chapter1 briefing, start exploration."""
 	current_state = LoopState.EXPLORATION
 	_start_exploration()
+
+
+func _get_pending_story_cutscene() -> String:
+	"""Check if a story cutscene should play based on flags.
+	Returns cutscene ID or empty string."""
+	var flags = GameState.game_constants
+	# Chapter 2: plays when entering overworld after chapter1 (road encounters)
+	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):
+		if _current_map_id == "overworld":
+			return "world1_chapter2"
+	# Chapter 3: plays when first entering the cave
+	if flags.get("cutscene_flag_chapter2_complete", false) and not flags.get("cutscene_flag_chapter3_complete", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_chapter3"
+	# Chapter 4: plays after warden/rat king boss defeat, re-entering overworld
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_chapter4_complete", false):
+		if _current_map_id == "overworld":
+			return "world1_chapter4"
+	# Chapter 5: plays when entering corrupted forest area
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter5_complete", false):
+		if _current_map_id == "overworld":
+			return "world1_chapter5"
+	return ""
+
+
+func _play_story_cutscene(cutscene_id: String) -> void:
+	"""Play a story cutscene, then resume exploration."""
+	current_state = LoopState.CUTSCENE
+	if not _cutscene_director:
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+	_cutscene_director.cutscene_finished.connect(func(_id: String):
+		_start_exploration()
+	, CONNECT_ONE_SHOT)
+	_cutscene_director.play_cutscene(cutscene_id)
 
 
 func _on_title_continue() -> void:
@@ -920,6 +961,12 @@ func _wait_for_confirm() -> void:
 
 func _start_exploration() -> void:
 	"""Start exploration mode (overworld or interior)"""
+	# Check for pending story cutscenes before entering free roam
+	var pending = _get_pending_story_cutscene()
+	if pending != "":
+		await _play_story_cutscene(pending)
+		return
+
 	current_state = LoopState.EXPLORATION
 	InputLockManager.pop_all()  # Clear any leaked locks from previous state
 

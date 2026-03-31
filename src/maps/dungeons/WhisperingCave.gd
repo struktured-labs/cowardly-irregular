@@ -588,17 +588,24 @@ func _place_floor_treasure(floor_num: int) -> void:
 
 
 func _on_boss_defeated() -> void:
-	"""Handle boss defeat"""
+	"""Handle boss defeat — play defeat cutscene, then unlock W2"""
 	boss_defeated = true
 	_save_boss_state()
 
-	# Unlock W2 — Cave Rat King is the W1 gatekeeper boss
-	GameState.set_story_flag("w1_boss_defeated")
-	GameState.unlock_next_world()
-
-	# Spawn exit stairs
-	print("Cave Rat King defeated! W2 portal unlocked. Exit stairs appear.")
-	_setup_transitions_for_floor(current_floor)
+	# Play defeat cutscene, then unlock W2
+	var director = CutsceneDirector.new()
+	add_child(director)
+	director.cutscene_finished.connect(func(_id: String):
+		director.queue_free()
+		# Unlock W2 — Cave Rat King is the W1 gatekeeper boss
+		GameState.set_story_flag("w1_boss_defeated")
+		GameState.unlock_next_world()
+		# Spawn exit stairs
+		print("Cave Rat King defeated! W2 portal unlocked. Exit stairs appear.")
+		_setup_transitions_for_floor(current_floor)
+		controller.resume_exploration()
+	, CONNECT_ONE_SHOT)
+	director.play_cutscene("world1_rat_king_defeat")
 
 
 func _load_boss_state() -> void:
