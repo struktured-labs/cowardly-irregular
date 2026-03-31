@@ -1004,6 +1004,10 @@ func _input(event: InputEvent) -> void:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
+		_toggle_grinding()
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
 		_toggle_permadeath_staking()
 		get_viewport().set_input_as_handled()
@@ -1030,6 +1034,8 @@ func _edit_current_cell() -> void:
 			_toggle_current_row()
 		"add_rule":
 			_add_rule()
+		"start_stop":
+			_toggle_grinding()
 
 	SoundManager.play_ui("menu_select")
 
