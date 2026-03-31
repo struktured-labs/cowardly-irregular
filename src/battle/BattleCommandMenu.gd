@@ -344,12 +344,38 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	if alive_party.size() >= 2 and alive_enemies.size() > 0:
 		var can_all_out = true
 		var can_limit = true
+		var can_combo_magic = true
+		var combo_elements: Array[String] = []
 		for m in alive_party:
 			var effective_ap = m.current_ap + (1 if m == combatant else 0)
 			if effective_ap < 1:
 				can_all_out = false
+			if effective_ap < 2:
+				can_combo_magic = false
 			if effective_ap < 4:
 				can_limit = false
+			# Collect magic elements for combo check
+			var job_id: String = m.job.get("id", "") if m.job else ""
+			if not job_id.is_empty():
+				for ability_id in JobSystem.get_job_abilities(job_id):
+					var ability: Dictionary = JobSystem.get_ability(ability_id)
+					if ability.get("type", "") == "magic" and ability.has("element"):
+						var elem: String = ability["element"]
+						if elem not in combo_elements:
+							combo_elements.append(elem)
+		# Need >= 2 distinct elements for combo magic
+		if combo_elements.size() < 2:
+			can_combo_magic = false
+		var combo_tooltip = "Fuse party elements into combined magic (costs 2 AP each)"
+		if can_combo_magic and combo_elements.size() >= 3:
+			combo_tooltip += " — Prism Convergence!"
+		elif can_combo_magic and combo_elements.size() == 2:
+			var has_f = "fire" in combo_elements
+			var has_i = "ice" in combo_elements
+			var has_l = "lightning" in combo_elements
+			if has_f and has_i: combo_tooltip += " — Steam Eruption"
+			elif has_f and has_l: combo_tooltip += " — Plasma Storm"
+			elif has_i and has_l: combo_tooltip += " — Shatter Nova"
 		var group_items = []
 		group_items.append({
 			"id": "group_all_out",
@@ -357,6 +383,13 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"tooltip": "All party members strike together (costs 1 AP each)",
 			"data": {"group_type": "all_out_attack"},
 			"disabled": not can_all_out
+		})
+		group_items.append({
+			"id": "group_combo_magic",
+			"label": "Combo Magic",
+			"tooltip": combo_tooltip,
+			"data": {"group_type": "combo_magic"},
+			"disabled": not can_combo_magic
 		})
 		group_items.append({
 			"id": "group_limit",
@@ -371,12 +404,12 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"submenu": group_items
 		})
 
-	# Defer - skip turn, gain +1 AP (only available if AP < 4)
+	# Defer - skip turn, gain +1 AP (only available if AP < 4 and not exposed)
 	items.append({
 		"id": "defer",
 		"label": "Defer",
 		"data": null,
-		"disabled": combatant.current_ap >= 4
+		"disabled": combatant.current_ap >= 4 or combatant.has_status("cannot_defer")
 	})
 
 	return items
@@ -536,11 +569,12 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			_scene.log_message("No valid targets!")
 		return
 
-	# Group attack (All-Out Attack / Limit Break)
+	# Group attack (All-Out Attack / Combo Magic / Limit Break)
 	if item_id.begins_with("group_") and item_data is Dictionary:
 		var group_type: String = item_data.get("group_type", "all_out_attack")
-		var label = "Limit Break" if group_type == "limit_break" else "All-Out Attack"
-		_scene.log_message("[color=orange]★ %s initiated! ★[/color]" % label)
+		var label = "Limit Break" if group_type == "limit_break" else ("Combo Magic" if group_type == "combo_magic" else "All-Out Attack")
+		var color = "magenta" if group_type == "combo_magic" else "orange"
+		_scene.log_message("[color=%s]★ %s initiated! ★[/color]" % [color, label])
 		BattleManager.player_group_attack(group_type)
 		_scene._update_ui()
 		return

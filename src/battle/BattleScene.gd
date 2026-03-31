@@ -1853,8 +1853,15 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	"""Play simultaneous attack animations on all party members for group actions"""
 	_update_turn_info()
 
-	# Flash the whole battlefield — gold for Limit Break, orange for All-Out Attack
-	var flash_color = Color(1.0, 0.85, 0.0, 0.55) if group_type == "limit_break" else Color(1.0, 0.5, 0.0, 0.4)
+	# Flash the whole battlefield — distinct color per group type
+	var flash_color: Color
+	match group_type:
+		"limit_break":
+			flash_color = Color(1.0, 0.85, 0.0, 0.55)  # Gold
+		"combo_magic":
+			flash_color = Color(0.7, 0.2, 1.0, 0.5)     # Purple
+		_:
+			flash_color = Color(1.0, 0.5, 0.0, 0.4)      # Orange
 	var flash = ColorRect.new()
 	flash.color = flash_color
 	flash.anchors_preset = Control.PRESET_FULL_RECT
@@ -1862,8 +1869,21 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(flash)
 	var tween = create_tween()
-	tween.tween_property(flash, "modulate:a", 0.0, 0.45)
+	tween.tween_property(flash, "modulate:a", 0.0, 0.55 if group_type == "combo_magic" else 0.45)
 	tween.tween_callback(flash.queue_free)
+
+	# Combo Magic: second pulsing flash for dramatic effect
+	if group_type == "combo_magic":
+		var flash2 = ColorRect.new()
+		flash2.color = Color(0.2, 0.8, 1.0, 0.35)  # Cyan pulse
+		flash2.anchors_preset = Control.PRESET_FULL_RECT
+		flash2.z_index = 50
+		flash2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(flash2)
+		var t2 = create_tween()
+		t2.tween_interval(0.15)
+		t2.tween_property(flash2, "modulate:a", 0.0, 0.4)
+		t2.tween_callback(flash2.queue_free)
 
 	# Play attack animation on every participating party member simultaneously
 	for participant in participants:
@@ -1883,6 +1903,18 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			if target_sprite:
 				_animate_melee_attack(sprite, target_sprite, anim, null)
 				continue
+		# Combo Magic: play cast animation + multi-element effects on targets
+		if group_type == "combo_magic":
+			anim.play_named_animation("cast")
+			if sprite:
+				# Spawn layered element effects on each target for visual impact
+				var combo_effects = [EffectSystem.EffectType.FIRE, EffectSystem.EffectType.ICE, EffectSystem.EffectType.LIGHTNING]
+				for target in targets:
+					var t_sprite = _get_combatant_sprite(target as Combatant)
+					if t_sprite:
+						for i in range(min(combo_effects.size(), 3)):
+							EffectSystem.spawn_effect(combo_effects[i], t_sprite.global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)))
+			continue
 		# All-Out Attack: play attack animation in place
 		anim.play_attack()
 
