@@ -15,7 +15,7 @@
     {"type": "dialogue", "lines": [
       {
         "speaker": "Warden",
-        "text": "Thirty-eight. You are the first to get through.",
+        "text": "Thirty-seven. You are the first to get through.",
         "theme": "enemy",
         "portrait": "mysterious"
       },

@@ -54,12 +54,18 @@
       }
     ]},
 
+    {"type": "narration", "text": "The Fighter returned the salute. Nobody commented on it. It seemed like the right thing."},
+
+    {"type": "wait", "duration": 0.8},
+
     {"type": "narration", "lines": [
       "The fight was the most courteous exchange of violence the cave had ever witnessed.",
       "When it finally fell, the Fighter found an inscription on the inside of the visor: SERVE WITH HONOR. REST WITH PEACE."
     ]},
 
-    {"type": "wait", "duration": 0.5},
+    {"type": "narration", "text": "The Fighter stood there for a moment longer than necessary. Then they moved on."},
+
+    {"type": "wait", "duration": 0.8},
 
     {"type": "dialogue", "lines": [
       {

@@ -24,7 +24,7 @@
     {"type": "dialogue", "lines": [
       {
         "speaker": "Warden",
-        "text": "Thirty-eight parties. I never wrote it down anywhere.",
+        "text": "Thirty-seven parties. I never wrote it down anywhere.",
         "theme": "enemy",
         "portrait": "mysterious"
       },
@@ -58,7 +58,7 @@
     {"type": "dialogue", "lines": [
       {
         "speaker": "Warden",
-        "text": "Thirty-eight.",
+        "text": "Thirty-seven.",
         "theme": "enemy",
         "portrait": "mysterious"
       }

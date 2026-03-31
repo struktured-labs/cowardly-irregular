@@ -61,7 +61,7 @@
     {"type": "dialogue", "lines": [
       {
         "speaker": "Warden",
-        "text": "This pass has been held for three hundred years. By my count, you are the thirty-eighth party to attempt it. The other thirty-seven turned back.",
+        "text": "This pass has been held for three hundred years. By my count, you are the thirty-seventh party to attempt it. The other thirty-six turned back.",
         "theme": "enemy",
         "portrait": "mysterious"
       },

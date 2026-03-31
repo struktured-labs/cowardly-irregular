@@ -61,9 +61,21 @@
       },
       {
         "speaker": "Scholar Milo",
-        "text": "Not laziness. Enlightenment.",
+        "text": "Not laziness. Enlightenment. It's all in my book. Chapter one: the theory. Chapter two: the practice.",
         "theme": "scholar",
         "portrait": "scholar"
+      },
+      {
+        "speaker": "Scholar Milo",
+        "text": "Here \u2014 take this. My autobattle journal. Everything I've learned about combat scripting, condensed into practical form.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      },
+      {
+        "speaker": "",
+        "text": "He pressed a battered notebook into the Fighter's hands. The Fighter held it like it might bite.",
+        "theme": "narrator",
+        "portrait": "narrator"
       },
       {
         "speaker": "Bard",
