@@ -46,6 +46,7 @@ var _zone_popup: ZoneNamePopup
 var _danger_zone: DangerZone
 var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
+var _quest_tracker: QuestTracker
 
 
 func _ready() -> void:
@@ -87,6 +88,11 @@ func _ready() -> void:
 	add_child(_zone_particles)
 	_zone_particles.setup(self, player)
 
+	# Quest objective tracker
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -102,6 +108,8 @@ func _process(_delta: float) -> void:
 			_zone_particles.update_position(player.position)
 	if _danger_zone:
 		_danger_zone.process(_delta)
+	if _quest_tracker:
+		_quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
 

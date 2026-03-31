@@ -57,6 +57,8 @@ var _minimap: OverworldMinimap
 ## Zone particles
 var _zone_particles: ZoneParticles
 
+var _quest_tracker: QuestTracker
+
 ## Reality distortion effect state
 var _bg_rect: ColorRect
 var _hue_time: float = 0.0
@@ -91,6 +93,11 @@ func _ready() -> void:
 	_zone_particles.setup(self, player)
 	_zone_particles.update_zone("abstract_overworld")
 
+	GameState.set_story_flag("w6_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
 	# Start abstract overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_abstract")
@@ -108,6 +115,7 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
 	_hue_time += delta

@@ -43,6 +43,8 @@ var _minimap: OverworldMinimap
 ## Zone particles
 var _zone_particles: ZoneParticles
 
+var _quest_tracker: QuestTracker
+
 ## Steam vent effect state
 var _steam_emitters: Array = []
 var _steam_timers: Array = []
@@ -74,6 +76,11 @@ func _ready() -> void:
 	add_child(_zone_particles)
 	_zone_particles.setup(self, player)
 	_zone_particles.update_zone("steampunk_overworld")
+
+	GameState.set_story_flag("w3_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
 
 	# Start steampunk overworld music
 	if SoundManager:
@@ -127,6 +134,7 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
 	for i in range(_steam_emitters.size()):

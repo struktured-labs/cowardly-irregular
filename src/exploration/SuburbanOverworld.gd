@@ -43,6 +43,8 @@ var _minimap: OverworldMinimap
 ## Zone particles
 var _zone_particles: ZoneParticles
 
+var _quest_tracker: QuestTracker
+
 ## Rain effect state
 var _rain_particles: CPUParticles2D
 var _rain_timer: float = 0.0
@@ -75,6 +77,11 @@ func _ready() -> void:
 	add_child(_zone_particles)
 	_zone_particles.setup(self, player)
 	_zone_particles.update_zone("suburban_overworld")
+
+	GameState.set_story_flag("w2_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
 
 	# Start suburban overworld music
 	if SoundManager:
@@ -111,6 +118,7 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
 	_rain_timer += delta

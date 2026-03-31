@@ -45,6 +45,8 @@ var _minimap: OverworldMinimap
 ## Zone particles
 var _zone_particles: ZoneParticles
 
+var _quest_tracker: QuestTracker
+
 ## Glitch effect state
 var _glitch_overlay: ColorRect
 var _glitch_timer: float = 0.0
@@ -79,6 +81,11 @@ func _ready() -> void:
 	_zone_particles.setup(self, player)
 	_zone_particles.update_zone("futuristic_overworld")
 
+	GameState.set_story_flag("w5_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
 	# Start futuristic overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_futuristic")
@@ -107,6 +114,7 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
 	_glitch_timer += delta

@@ -44,6 +44,8 @@ var _minimap: OverworldMinimap
 ## Zone particles
 var _zone_particles: ZoneParticles
 
+var _quest_tracker: QuestTracker
+
 ## Smoke effect nodes
 var _smoke_emitters: Array = []
 
@@ -73,6 +75,11 @@ func _ready() -> void:
 	add_child(_zone_particles)
 	_zone_particles.setup(self, player)
 	_zone_particles.update_zone("industrial_overworld")
+
+	GameState.set_story_flag("w4_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
 
 	# Start industrial overworld music
 	if SoundManager:
@@ -126,6 +133,7 @@ func _setup_effects() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
 	if player:
