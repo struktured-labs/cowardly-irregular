@@ -37,6 +37,7 @@ var _current_battle_is_collapse_boss: bool = false
 var _current_meta_boss_data: Dictionary = {}
 
 var _next_battle_enemy_boost: float = 0.0
+var _next_battle_exp_bonus: float = 0.0
 
 func _get_between_battle_delay() -> float:
 	match _current_tier:
@@ -179,6 +180,22 @@ func _request_next_battle() -> void:
 					var target = alive_members[randi() % alive_members.size()]
 					var hp_loss = int(target.max_hp * 0.1)
 					target.take_damage(hp_loss)
+			"mp_drain":
+				var alive = _party.filter(func(m): return m is Combatant and m.is_alive)
+				if alive.size() > 0:
+					var target = alive[randi() % alive.size()]
+					var mp_loss = int(target.max_mp * 0.15)
+					target.current_mp = max(0, target.current_mp - mp_loss)
+			"item_loss":
+				var alive = _party.filter(func(m): return m is Combatant and m.is_alive)
+				if alive.size() > 0:
+					var target = alive[randi() % alive.size()]
+					for item_id in ["potion", "hi_potion", "ether", "hi_ether"]:
+						if target.get_item_count(item_id) > 0:
+							target.remove_item(item_id, 1)
+							break
+			"exp_surge":
+				_next_battle_exp_bonus = 0.5  # +50% EXP next battle
 
 	# Check interrupt conditions first
 	var interrupt_reason = AutogrindSystem.pre_battle_check()
@@ -322,10 +339,15 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 
 	# Normal battle resolution
 	if victory:
-		AutogrindSystem.on_battle_victory(exp_gained, items_gained)
+		var effective_exp = exp_gained
+		if _next_battle_exp_bonus > 0.0:
+			effective_exp = int(exp_gained * (1.0 + _next_battle_exp_bonus))
+			_next_battle_exp_bonus = 0.0
+		AutogrindSystem.on_battle_victory(effective_exp, items_gained)
 		_state = State.BETWEEN_BATTLES
 		_between_battle_timer = _get_between_battle_delay()
 	else:
+		_next_battle_exp_bonus = 0.0
 		AutogrindSystem.on_battle_defeat()
 		if AutogrindSystem.is_grinding:
 			# on_battle_defeat may have triggered permadeath and already stopped things

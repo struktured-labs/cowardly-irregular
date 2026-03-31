@@ -39,7 +39,7 @@ func _build_ui() -> void:
 	add_child(bg)
 
 	var panel_w = 500.0
-	var panel_h = 420.0
+	var panel_h = 540.0
 	var panel = Control.new()
 	panel.position = Vector2((vp_size.x - panel_w) / 2, (vp_size.y - panel_h) / 2)
 	panel.size = Vector2(panel_w, panel_h)
@@ -83,6 +83,13 @@ func _build_ui() -> void:
 		{"label": "Items Used", "value": str(_stats.get("total_items", 0)), "color": LABEL_COLOR},
 	]
 
+	stats_data.append({"label": "Fatigue Events", "value": str(_stats.get("fatigue_events_triggered", 0)), "color": LABEL_COLOR})
+	var time_mult = _stats.get("time_multiplier", 1.0)
+	stats_data.append({"label": "Time Bonus", "value": "%.1fx" % time_mult, "color": VALUE_COLOR})
+
+	var grade = _compute_grade()
+	stats_data.append({"label": "SESSION GRADE", "value": grade["letter"], "color": grade["color"]})
+
 	var permadead = _stats.get("permadead", [])
 	if permadead.size() > 0:
 		stats_data.append({"label": "PERMADEAD", "value": ", ".join(permadead), "color": BAD_COLOR})
@@ -122,6 +129,21 @@ func _build_ui() -> void:
 	dismiss_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	dismiss_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(dismiss_lbl)
+
+
+func _compute_grade() -> Dictionary:
+	var battles = _stats.get("battles_won", 0)
+	var collapses = _stats.get("collapse_count", 0)
+	if battles >= 50 and collapses == 0:
+		return {"letter": "S", "color": Color(1.0, 0.85, 0.0)}  # Gold
+	elif battles >= 30 and collapses <= 1:
+		return {"letter": "A", "color": Color(0.4, 0.9, 0.4)}  # Green
+	elif battles >= 15:
+		return {"letter": "B", "color": Color(0.4, 0.7, 1.0)}  # Blue
+	elif battles > 0:
+		return {"letter": "C", "color": Color(0.7, 0.7, 0.7)}  # Gray
+	else:
+		return {"letter": "F", "color": Color(0.9, 0.3, 0.3)}  # Red
 
 
 func _input(event: InputEvent) -> void:

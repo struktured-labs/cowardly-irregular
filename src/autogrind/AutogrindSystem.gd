@@ -256,6 +256,11 @@ func update_csi(region_id: String, encounter_type: String = "normal") -> void:
 	var level_weight: float = 1.0 + monster_adaptation_level * 0.1
 
 	var delta_csi: float = CSI_BASE_GROWTH * encounter_weight * mode_weight * level_weight
+
+	# Apply diminishing returns near cap
+	if _region_csi[region_id] > 0.7:
+		delta_csi *= 0.5  # Halved growth above 70%
+
 	_region_csi[region_id] = clampf(_region_csi[region_id] + delta_csi, 0.0, 1.0)
 
 	# Record timestamp for this region
@@ -279,6 +284,14 @@ func decay_all_csi(hours_elapsed: float) -> void:
 	for region_id in _region_csi.keys():
 		var decay_amount: float = CSI_DECAY_RATE * hours_elapsed
 		_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - decay_amount)
+
+
+func decay_csi(delta_seconds: float) -> void:
+	if is_grinding:
+		return
+	var decay_rate = 0.001  # Per second
+	for region_id in _region_csi.keys():
+		_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - decay_rate * delta_seconds)
 
 
 func get_csi(region_id: String) -> float:
@@ -313,7 +326,7 @@ func check_fatigue_event() -> Dictionary:
 		return {}
 
 	fatigue_events_triggered += 1
-	var event_type = ["screen_glitch", "enemy_boost", "party_debuff"][randi() % 3]
+	var event_type = ["screen_glitch", "enemy_boost", "party_debuff", "mp_drain", "item_loss", "exp_surge"][randi() % 6]
 	var description = ""
 
 	match event_type:
@@ -323,6 +336,12 @@ func check_fatigue_event() -> Dictionary:
 			description = "Enemies adapting — next battle +20% stats"
 		"party_debuff":
 			description = "System fatigue — party member weakened"
+		"mp_drain":
+			description = "System interference — MP reserves fluctuating"
+		"item_loss":
+			description = "Inventory anomaly — items corrupted"
+		"exp_surge":
+			description = "Reality fold — experience amplified!"
 
 	fatigue_event.emit(event_type, description)
 	return {"type": event_type, "description": description}
