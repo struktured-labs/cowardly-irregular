@@ -93,6 +93,9 @@ func _ready() -> void:
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
 
+	# Signposts at key intersections for navigation
+	_place_signposts()
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -500,6 +503,27 @@ func _apply_zone_encounters(zone: String) -> void:
 			controller.set_area_config("overworld_coast", false, 0.05, pool)
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
+
+
+func _place_signposts() -> void:
+	var signs = [
+		# Near default spawn — point toward village and cave
+		{"pos": Vector2(35, 24), "text": "← Harmonia Village"},
+		{"pos": Vector2(35, 20), "text": "↑ Whispering Cave"},
+		# Central crossroads
+		{"pos": Vector2(30, 15), "text": "↑ Eldertree / ← Frosthold"},
+		{"pos": Vector2(50, 15), "text": "→ Grimhollow / Dark Lands"},
+		# Southern crossroads
+		{"pos": Vector2(25, 40), "text": "↓ Sandrift / Desert"},
+		{"pos": Vector2(40, 48), "text": "↓ Bridge / Portal South"},
+		# Near bridge
+		{"pos": Vector2(38, 52), "text": "← Desert  →Volcanic"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
