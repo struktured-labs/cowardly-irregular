@@ -239,7 +239,10 @@ func set_terrain(terrain: TerrainType) -> void:
 	if background_seed == 0:
 		background_seed = randi()
 	_rng.seed = background_seed
-	_draw_background()
+	# Defer draw to next frame so viewport size is resolved
+	if not is_inside_tree():
+		await ready
+	call_deferred("_draw_background")
 
 
 func set_terrain_with_seed(terrain: TerrainType, seed_value: int) -> void:
@@ -328,6 +331,11 @@ func _draw_background_immediate() -> void:
 		return
 
 	var viewport_size = get_viewport_rect().size
+	if viewport_size.x == 0 or viewport_size.y == 0:
+		# Viewport not ready yet — retry next frame
+		_has_drawn = false
+		call_deferred("_draw_background")
+		return
 	var base_palette = TERRAIN_PALETTES.get(current_terrain, TERRAIN_PALETTES[TerrainType.PLAINS])
 	var palette = _apply_time_tint(base_palette)
 
