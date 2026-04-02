@@ -1,0 +1,244 @@
+{
+  "id": "world2_chapter7_infrastructure",
+  "title": "Feral Infrastructure",
+  "world": 2,
+  "trigger": "curator_defeated",
+  "background": "suburban_strip_mall",
+  "description": "A feral shopping cart in the strip mall parking lot. The others are docked. This one escaped. It was positioned, not ambushing. Deliberate patience.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_suburban"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The strip mall parking lot, in the hour after the fight, had the particular silence of spaces where something recently finished happening.",
+        "The shopping carts were in their corral at the far end of the lot. All of them.",
+        "Except one."
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The solitary cart sat in the center of the lot at an angle that was not random. It was positioned. The way the Warden had been positioned in the cave near Harmonia, when they first learned what deliberate patience looked like on something that was waiting to act."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "Are we going to fight a shopping cart.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "We fought a lawn mower.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "That was a lawn mower. It had blades. There was precedent for the danger.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "It's not in the corral.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "They escape constantly. They always do.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Not like this.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Mage walked a slow perimeter. The cart's front wheels were locked at the angle of maximum acceleration toward the party's position. This had not happened by drift or wind."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "The wheel angle. The sight lines. It's not ambushing. It's positioned.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "It was waiting for us.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "It was waiting for something. We happened to arrive.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.2
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 2.5
+    },
+    {
+      "type": "narration",
+      "text": "The cart charged. It hit the Fighter's shins with enough force to clarify that momentum applied with purpose does not require a sharp edge to have meaningful consequences."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "It's fast.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "It fights like a Tempo. Speed-based. Uses geometry. That bounce off the curb was not accidental \u2014 it changed the approach vector.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Can we negotiate with a shopping cart.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Don't.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "I'm asking.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Empirically: no.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The answer, functionally, was no. The cart did not respond to verbal approaches. It responded to spatial containment, once the Mage calculated the bounce angles and the Rogue flanked from the loading dock side to collapse the escape routes."
+    },
+    {
+      "type": "narration",
+      "text": "The Fighter drove it toward the corral entrance. This required the Cleric holding the gate, the Bard preventing the docked carts from getting sympathetic ideas, and the Rogue guiding the wheels with the patience of someone who has moved large furniture through narrow doorways and knows that force is less useful than persistence."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The cart went in. The Rogue latched the corral."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "It was just doing what carts do. It was just doing it with more commitment than expected.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We put it back where it belongs. That's not a cruelty.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Is it where it belongs? Or is it where it's kept?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Carts go in corrals.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Lawn mowers go in garages. Sprinklers go in lawns. Everything in this suburb is exactly where someone decided it should be.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "The parking lot doesn't have a choice.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "The cart did.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "Nobody said anything. It was a parking lot. They moved on."
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter7_infrastructure_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

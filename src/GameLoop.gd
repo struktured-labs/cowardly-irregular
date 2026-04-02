@@ -622,13 +622,26 @@ func _get_pending_story_cutscene() -> String:
 	# W2 Chapter 3: Warden of Routine aftermath
 	if flags.get("cutscene_flag_warden_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter3_complete", false):
 		return "world2_chapter3"
+	# W2 Chapter 4 Garage: garage sale encounter, Cleric keeps sweater
+	if flags.get("cutscene_flag_world2_chapter3_complete", false) and not flags.get("cutscene_flag_chapter4_garage_complete", false):
+		if _current_map_id == "maple_heights_village":
+			return "world2_chapter4_garage"
 	# W2 Chapter 4: school entry, Arbiter introduction
-	if flags.get("cutscene_flag_world2_chapter3_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_intro_complete", false):
+	if flags.get("cutscene_flag_chapter4_garage_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_intro_complete", false):
 		if _current_map_id == "maple_heights_village":
 			return "world2_chapter4"
 	# W2 Chapter 5: community center, Coordinator reveal
 	if flags.get("cutscene_flag_arbiter_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter5_complete", false):
 		return "world2_chapter5"
+	# W2 Chapter 7: feral shopping cart (after curator defeat)
+	if flags.get("cutscene_flag_curator_suburban_defeated", false) and not flags.get("cutscene_flag_chapter7_infrastructure_complete", false):
+		return "world2_chapter7_infrastructure"
+	# W2 Chapter 8: Coordinator's memos found
+	if flags.get("cutscene_flag_chapter7_infrastructure_complete", false) and not flags.get("cutscene_flag_chapter8_memos_found", false):
+		return "world2_chapter8_memos"
+	# W2 Chapter 11: incomplete memo + suburb→steampunk transition (after coordinator defeat)
+	if flags.get("cutscene_flag_world2_coordinator_defeated", false) and not flags.get("cutscene_flag_chapter11_complete", false):
+		return "world2_chapter11"
 
 	# ===== WORLD 3: STEAMPUNK =====
 	if flags.get("cutscene_flag_world2_complete", false) and not flags.get("cutscene_flag_world3_prologue_complete", false):

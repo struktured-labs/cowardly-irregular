@@ -1,0 +1,325 @@
+{
+  "id": "world2_chapter8_memos",
+  "title": "The Coordinator's Memos",
+  "world": 2,
+  "trigger": "chapter7_infrastructure_complete",
+  "background": "suburban_community_center",
+  "description": "Two internal memos pinned to the community center bulletin board. The Masterites are off-profile. Quality of attention cannot be measured. The Arbiter flagged the same gap.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w2_coordinator_memo"
+    },
+    {
+      "type": "narration",
+      "text": "The community center bulletin board was in the hallway outside the administrative wing. It was the kind of board that existed in every building of this type: laminated class schedules, a signup sheet for a potluck that had already occurred, a flyer for a fundraiser that still needed three volunteers."
+    },
+    {
+      "type": "narration",
+      "text": "Between the potluck signup and the volunteer flyer, pinned with a single pushpin: two printed memos. The header read: INTERNAL STATUS COMMUNICATION. COORDINATOR'S OFFICE. NOT FOR DISTRIBUTION."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "They pinned them to the community bulletin board.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Someone did. Not necessarily the Coordinator.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Read them.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The Mage unpinned the first memo."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "MEMO",
+          "text": "INTERNAL STATUS COMMUNICATION \u2014 Coordinator's Office. SUBJECT: Assessment Update, Active Subjects.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "Warden (World 1): Demonstrating unusual self-reflection. Engagement pattern deviates from established baseline. The cave confrontation was not on-profile. I have flagged this for review. It may be within acceptable variance. I am less certain of this than I expected to be.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "Arbiter: Passed on a curve I calibrated to be uncurvable. I am revising the assessment rubric. This is the third revision. I am beginning to suspect the rubric.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "Tempo: Subject was observed during cooldown phase thinking about beginnings. This is off-profile. Tempos think about speed. This one is thinking about origins. I do not know what to do with this data.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "These subjects are ahead of schedule. I am noting this without alarm, because alarm is not a useful operational state. I am noting it anyway.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "One subject is maintaining detailed notes. Her pattern recognition is exceptional. She will likely reach conclusions I had hoped to defer to a later phase.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "I do not find this alarming. I find it interesting. This is also unusual. End of memo.",
+          "theme": "system",
+          "portrait": "system"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "She's watching the Masterites. Not just us.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "'She will likely reach conclusions I had hoped to defer.' Which one of us is taking notes?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "The Warden was off-profile. The Arbiter. The Tempo. The Masterites are changing.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "She's noting it the way you note a deviation in a machine. Not distressed. Observing.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "She finds it interesting that she's finding it interesting.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "That's recursive.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Mage unpinned the second memo."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "MEMO",
+          "text": "INTERNAL STATUS COMMUNICATION \u2014 Coordinator's Office. SUBJECT: Incident Report \u2014 Oak Street Garage Sale. Sweater Acquisition.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "The enchanted sweater was programmed with a deterrence function: active resistance, designed to discourage acquisition and observe subject response to a minor obstacle with non-zero effort cost.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "The Cleric acquired it anyway. She kept it. She is wearing it. The deterrence function did not deter. This was not a designed outcome.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "The sweater is not meaningful. It is a garment with an embroidered bear. And yet.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "I have been attempting to locate the variable that accounts for her decision. The deterrence was clear. The effort cost was non-trivial. The item is of low strategic value. Her persistence does not map to any optimization model I am currently running.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "The provisional term I am using is 'quality of attention.' She attends to things. Not strategically. Not instrumentally. She simply notices, and the noticing appears to carry weight for her independent of outcome.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "My models are built on outcomes and optimization. They do not have a column for 'attended to it anyway.' I do not know what to do with 'quality of attention' as a metric.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "The Arbiter has flagged the same gap in his assessment rubric, from a different angle. We are converging on the same problem. End of memo.",
+          "theme": "system",
+          "portrait": "system"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "She wrote a memo about my sweater.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "She wrote a memo about why she cannot explain why you kept it.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "There is a difference.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "I kept it because I liked the embroidered bear.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Exactly.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "What?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "That's what she can't model. 'I liked the bear.' There's no optimization function for that. No rubric. It's just\u2014 you noticed it, and it mattered to you.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "Two Masterites. Different worlds, different roles. Both hit the same wall.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The Arbiter's rubric. The Coordinator's models. Different instruments, same gap.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Which means whatever they're trying to measure, they still can't measure it. After all of this. After everything calibrated to produce data.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "She finds it interesting that she can't account for us.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "I find that interesting.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The Mage folded both memos and put them in his jacket pocket. The potluck signup sheet still needed three more volunteers. Nobody added a name."
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter8_memos_found",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

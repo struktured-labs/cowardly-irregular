@@ -1,0 +1,274 @@
+{
+  "id": "world2_chapter4_garage",
+  "title": "Garage Sales and Other Hazards",
+  "world": 2,
+  "trigger": "enter_oak_street",
+  "background": "suburban_neighborhood",
+  "description": "The garage sale on Oak Street. EVERYTHING MUST GO. Below that, in different ink: They should not have stopped. A sweater resists. A gnome repositions. The woman never looks up.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_suburban"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The garage sale on Oak Street had a sign.",
+        "EVERYTHING MUST GO.",
+        "Below that, in smaller letters that seemed to have been added later, in different ink: They should not have stopped.",
+        "The tables were covered with the accumulated objects of a suburban life, arranged with the careful disorder of someone who had once had a system and then made peace with its absence.",
+        "An older woman in a floral dress sat in a lawn chair behind the tables. She was reading a paperback. A portable radio played an oldies station at the low, permanent volume of something that had always been on."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "Who wrote 'they should not have stopped.'",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "Half off everything. Cash only. No returns.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "She didn't answer the question.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "She didn't need to.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Cleric was already browsing. This was a personality trait rather than a lapse in situational awareness, though the distinction was sometimes difficult to maintain in practice."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "This sweater is nice. The embroidery alone\u2014",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Don't.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "I'm just holding it.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "She picked it up. The sweater resisted. Not the passive resistance of wool caught on something. The active resistance of a sweater that had decided where it wanted to be and was currently conducting a negotiation about it."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "It's\u2014 it's pulling back.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "No one told us about the sweater.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "The sign says everything must go. It doesn't say it has to be easy.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.2
+    },
+    {
+      "type": "narration",
+      "text": "The ceramic rooster on the far table had relocated. The mixing bowls had organized themselves into a formation that was not how mixing bowls emerge from cabinets. The garden gnome, which had been at the far end of the display, was directly in front of the Rogue."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "I was looking at that gnome earlier. I was thinking about the smile.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The ceramic rooster is mobile. The bowls have formed up. And the gnome\u2014",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "It's in front of you.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "I noticed.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.25,
+      "intensity": 3.0
+    },
+    {
+      "type": "narration",
+      "text": "The gnome lunged. What followed was a full engagement across a cluttered suburban driveway that required more spatial awareness than any of the cave encounters had suggested would be necessary today."
+    },
+    {
+      "type": "narration",
+      "text": "The Fighter found that the security baton was well-suited to gnome combat, given its reach advantage against something that low to the ground and moving that fast. The Mage discovered that the electrical pen \u2014 the one from the school, still labeled PROPERTY OF MAPLE HEIGHTS MIDDLE SCHOOL DO NOT REMOVE \u2014 was extremely effective against ceramic. The ceramic rooster had not anticipated this."
+    },
+    {
+      "type": "narration",
+      "text": "The Rogue solved the mixing bowl formation by restacking them in a different order, which appeared to break whatever was running underneath. The sweater, still locked around the Cleric's forearm, abruptly let go."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "You can keep the sweater. You earned it.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "She had not looked up during any of it. She was on a different page than when the fighting started."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "There's a small embroidered bear on the pocket.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Appropriate, somehow.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Is everything here enchanted?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "Not everything. Some of it is just old. The trick is knowing which is which before you pick it up.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "The bread maker came with the house. I stopped questioning it.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "What was it doing before we arrived?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Garage Sale Woman",
+          "text": "Waiting.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The Cleric folded the sweater over her arm and kept it. The radio was still playing. The woman turned a page."
+    },
+    {
+      "type": "give_item",
+      "item": "enchanted_sweater",
+      "quantity": 1
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter4_garage_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "cleric_has_sweater",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
+  ]
+}

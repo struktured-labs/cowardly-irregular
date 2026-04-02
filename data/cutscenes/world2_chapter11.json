@@ -1,0 +1,398 @@
+{
+  "id": "world2_chapter11",
+  "title": "After",
+  "world": 2,
+  "trigger": "world2_coordinator_defeated",
+  "background": "suburban_community_center",
+  "description": "After the Coordinator. Surveillance blinks out. A schematic: Phase 3 — Cogsworth Junction. Her final memo, half-written, pen set down. The sentence she never finished. The suburb shifts.",
+  "steps": [
+    {
+      "type": "fade_from_black",
+      "duration": 1.0
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w2_coordinator_after"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The monitor on the Coordinator's desk flickered once.",
+        "The surveillance feeds \u2014 the cave near Harmonia, the forest clearing, the school hallway, the garage sale driveway, the strip mall parking lot \u2014 blinked out one at a time, in a sequence that felt like an exhale.",
+        "In their place: a schematic. Gears. Brass pipe in organized configurations. Steam venting at controlled intervals. A label in the corner, in the same precise typeface as the HOA memos: PHASE 3 \u2014 COGSWORTH JUNCTION."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "narration",
+      "text": "The files on the floor had the scattered pattern of a conclusion: work finished, set down carelessly because whatever comes next is the only thing that matters now."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "She talked like Mordaine.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The same words. 'Order.' 'Purpose.' 'The system.' The same rhythm. Like a speech written once and then memorized by someone who had never met the first speaker.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Not just similar. The same. Like someone wrote the same speech twice and gave it two different sets of handwriting.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "The way she moved. The way she held herself when she was certain. There was a posture to it.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Mordaine had the same posture.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "As if someone built both of them to the same specifications.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Someone built both of them.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "The HOA surveillance. She had footage going back to the cave near Harmonia. She was watching us before this world started.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Both of them. Mordaine and the Coordinator. In sequence.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The word 'sequence' landed the way a key lands in a lock. Not loudly. Just with the specific weight of something that fits."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "There's a compliance history in this folder. SUBJECT ASSESSMENT.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "The lawn mowers. The school. The memos. The sweater. The parking lot cart. All logged. Dated. Cross-referenced with World 1 data.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "All of this is just measurement.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The Mage found the desk."
+    },
+    {
+      "type": "narration",
+      "text": "On it: a yellow legal pad. A pen, set down mid-sentence. The handwriting was precise, even here, even at whatever this moment had been."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "There's a memo on the desk. Half-written.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Read it.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "MEMO",
+          "text": "INTERNAL STATUS COMMUNICATION \u2014 Coordinator's Office. SUBJECT: Final Assessment.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "The subjects demonstrate something my models have no category for.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "It is not tactical excellence. It is not resource optimization. It is not pattern recognition, or adaptive strategy, or collaborative instinct, or any of the variables I have been tracking across both phases.",
+          "theme": "system",
+          "portrait": "system"
+        },
+        {
+          "speaker": "MEMO",
+          "text": "It is \u2014",
+          "theme": "system",
+          "portrait": "system"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The sentence ended there. The pen had been set down. Not dropped. Set."
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "She was going to write something she had never written before.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "She didn't get to finish.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "No.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "The Arbiter and the Coordinator. Different instruments. Different worlds. Both converging on the same gap. The same thing they couldn't name.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "What is the gap.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "I don't know. But I think someone built all of this to find out.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "clock_chime"
+    },
+    {
+      "type": "narration",
+      "text": "The clock tower outside chimed. Three notes, measured."
+    },
+    {
+      "type": "narration",
+      "text": "Outside the community center windows, something was happening. The houses on Maple Heights' main street had sprouted chimneys. Not the standard brick chimneys of suburban architecture. Tall ones. Industrial. Venting slow coils of steam into an afternoon sky that was no longer quite the right shade of blue."
+    },
+    {
+      "type": "narration",
+      "text": "The sidewalks were cobblestone. The streetlamps had changed \u2014 gas-lit now, amber, casting the kind of light that made everything look like it had a history."
+    },
+    {
+      "type": "narration",
+      "text": "It was happening while they watched. The suburb was becoming something else. The transformation had the quality of something that had always been scheduled."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Phase Three.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Cogsworth Junction.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Built by the same something. Managed by the same something. In sequence.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Except this time we know to look.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "'It is not tactical excellence. It is not resource optimization. It is \u2014'",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Mage",
+          "text": "I don't know what it is. But I think it's what someone has been building all of this to figure out.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "narration",
+      "text": "He set the memo back on the desk. The pen where she had left it."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "Outside, the amber light of Cogsworth Junction stretched across everything that had been Maple Heights. The cobblestones were already worn in places, as if they had been here longer than was possible, as if the suburb had only ever been temporary cover for what was always waiting underneath."
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter11_complete",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_complete",
+      "value": true
+    },
+    {
+      "type": "play_music",
+      "track": "world3_overworld"
+    },
+    {
+      "type": "fade_to_black",
+      "duration": 2.0
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
+  ]
+}
