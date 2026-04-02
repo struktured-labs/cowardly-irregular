@@ -605,6 +605,30 @@ func _get_pending_story_cutscene() -> String:
 	# Chapter 9: The Throne (King Aldric scene, sets up Mordaine defeat)
 	if flags.get("cutscene_flag_chapter8_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
 		return "world1_chapter9"
+
+	# ===== WORLD 2: THE MUNDANE SPRAWL (Suburban) =====
+	# W2 Prologue: portal arrival, gear transformation
+	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world2_prologue_complete", false):
+		if _current_map_id == "suburban_overworld":
+			return "world2_prologue"
+	# W2 Chapter 1: first look at suburb, HOA foreshadow
+	if flags.get("cutscene_flag_world2_prologue_complete", false) and not flags.get("cutscene_flag_world2_chapter1_complete", false):
+		if _current_map_id == "maple_heights_village":
+			return "world2_chapter1"
+	# W2 Chapter 2: first suburban combat, mail carrier hints
+	if flags.get("cutscene_flag_world2_chapter1_complete", false) and not flags.get("cutscene_flag_world2_chapter2_complete", false):
+		if _current_map_id == "suburban_overworld":
+			return "world2_chapter2"
+	# W2 Chapter 3: Warden of Routine aftermath
+	if flags.get("cutscene_flag_warden_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter3_complete", false):
+		return "world2_chapter3"
+	# W2 Chapter 4: school entry, Arbiter introduction
+	if flags.get("cutscene_flag_world2_chapter3_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_intro_complete", false):
+		if _current_map_id == "maple_heights_village":
+			return "world2_chapter4"
+	# W2 Chapter 5: community center, Coordinator reveal
+	if flags.get("cutscene_flag_arbiter_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter5_complete", false):
+		return "world2_chapter5"
 	return ""
 
 
