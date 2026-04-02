@@ -200,8 +200,12 @@ func _input(event: InputEvent) -> void:
 				_toggle_autobattle_editor()
 				get_viewport().set_input_as_handled()
 		elif current_state == LoopState.EXPLORATION:
-			_open_settings_menu()
-			get_viewport().set_input_as_handled()
+			# Don't open settings if autogrind UI is open — let it handle Start
+			if _autogrind_ui and is_instance_valid(_autogrind_ui):
+				pass  # AutogrindUI._input handles Start → toggle grinding
+			else:
+				_open_settings_menu()
+				get_viewport().set_input_as_handled()
 
 	# X key or gamepad X/Y button = Open overworld menu (only in exploration mode)
 	# Note: JOY_BUTTON_X=2 (Xbox X), JOY_BUTTON_Y=3 (Xbox Y) - support both for different controllers
