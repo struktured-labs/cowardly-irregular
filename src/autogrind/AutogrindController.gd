@@ -30,6 +30,7 @@ var _between_battle_timer: float = 0.0
 var _skip_next_battle: bool = false
 var _current_tier: GrindTier = GrindTier.ACCELERATED
 var _pending_tier_switch: int = -1  # -1 = no pending switch
+var headless_mode: bool = false
 
 ## Tracks whether the current running battle is a meta-boss or collapse-boss fight
 var _current_battle_is_meta_boss: bool = false

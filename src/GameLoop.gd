@@ -2148,8 +2148,39 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 	# Set terrain
 	_current_terrain = terrain
 
+	# Headless mode: resolve instantly without BattleScene
+	if _autogrind_controller and is_instance_valid(_autogrind_controller) and _autogrind_controller.headless_mode:
+		_resolve_headless_battle(enemies)
+		return
+
 	# Start battle without transition animation (fast chain)
 	await _start_autogrind_battle(enemies)
+
+
+func _resolve_headless_battle(enemy_data: Array) -> void:
+	var resolver = HeadlessBattleResolver.new()
+
+	var enemies: Array = []
+	for data in enemy_data:
+		var enemy = Combatant.new()
+		var stats = data.get("stats", {})
+		enemy.initialize({
+			"name": data.get("name", "Enemy"),
+			"max_hp": stats.get("max_hp", 50),
+			"max_mp": stats.get("max_mp", 20),
+			"attack": stats.get("attack", 10),
+			"defense": stats.get("defense", 8),
+			"magic": stats.get("magic", 5),
+			"speed": stats.get("speed", 8)
+		})
+		enemies.append(enemy)
+
+	var result = resolver.resolve_battle(party, enemies)
+
+	for e in enemies:
+		e.free()
+
+	_on_autogrind_battle_ended(result["victory"])
 
 
 func _show_autogrind_transition() -> void:
