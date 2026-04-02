@@ -180,14 +180,20 @@
       "type": "dialogue",
       "lines": [
         {
+          "speaker": "Bard",
+          "text": "My answer is a love letter to certainty in an uncertain world.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
           "speaker": "Arbiter of the Grade",
-          "text": "Your rubric was a love letter to certainty in an uncertain world.",
+          "text": "That is not an answer. That is a sentiment.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
         {
           "speaker": "Bard",
-          "text": "That wasn't a question. I was answering the blank page.",
+          "text": "Sentiments are what fill blank pages.",
           "theme": "bard",
           "portrait": "bard"
         },
@@ -232,9 +238,21 @@
         },
         {
           "speaker": "Arbiter of the Grade",
-          "text": "The grade disagrees.",
+          "text": "The grade disagrees. Your triage answers prioritize sentiment over efficiency. You would save the person you care about rather than the person most likely to survive.",
           "theme": "enemy",
           "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Grade",
+          "text": "That is not healing. That is favoritism with a prayer attached.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "...",
+          "theme": "cleric",
+          "portrait": "cleric"
         }
       ]
     },

@@ -3,14 +3,14 @@
   "title": "Curator of the Budget",
   "world": 2,
   "trigger": "boss_curator_suburban",
-  "description": "The Curator sits at a folding table in the HOA community center, surrounded by binders. Requests receipts for everything.",
+  "description": "The Curator sits at a folding table in the strip mall office (between the dry cleaner and the frozen yogurt place), surrounded by binders. Requests receipts for everything.",
   "steps": [
     {"type": "stop_music"},
     {"type": "letterbox_in", "duration": 0.5},
     {"type": "wait", "duration": 0.5},
 
     {"type": "narration", "lines": [
-      "The community center smelled like old coffee and decisions made by committee.",
+      "The office was wedged between the dry cleaner and the frozen yogurt place in Maple Heights' only strip mall. It smelled like toner and decisions made by committee.",
       "At the folding table in the center sat a figure surrounded by binders. Color-coded binders. Eighteen of them. The figure was doing math on a legal pad and did not look up when the party entered."
     ]},
 

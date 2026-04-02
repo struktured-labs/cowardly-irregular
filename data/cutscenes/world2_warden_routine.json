@@ -65,6 +65,24 @@
         "text": "The line is implied.",
         "theme": "enemy",
         "portrait": "mysterious"
+      },
+      {
+        "speaker": "Bard",
+        "text": "How long have you been standing here?",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Warden of Routine",
+        "text": "Since before the crosswalk. Since before the intersection. Since before the street was a street. It was a path. Before that, it was a direction. I guarded the direction.",
+        "theme": "enemy",
+        "portrait": "mysterious"
+      },
+      {
+        "speaker": "Warden of Routine",
+        "text": "The signal will change when the signal changes. Until then: halt.",
+        "theme": "enemy",
+        "portrait": "mysterious"
       }
     ]},
 
