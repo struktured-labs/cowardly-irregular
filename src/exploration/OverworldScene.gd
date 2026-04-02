@@ -96,6 +96,9 @@ func _ready() -> void:
 	# Signposts at key intersections for navigation
 	_place_signposts()
 
+	# Visual landmarks between towns
+	_place_landmarks()
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -503,6 +506,32 @@ func _apply_zone_encounters(zone: String) -> void:
 			controller.set_area_config("overworld_coast", false, 0.05, pool)
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
+
+
+func _place_landmarks() -> void:
+	var landmarks = [
+		# Ruins along the northern forest path
+		{"pos": Vector2(28, 12), "type": Landmark.Type.RUINS},
+		# Campfire at the central rest area
+		{"pos": Vector2(38, 22), "type": Landmark.Type.CAMPFIRE},
+		# Stone circle in the swamp region
+		{"pos": Vector2(68, 10), "type": Landmark.Type.STONE_CIRCLE},
+		# Well near Harmonia village approach
+		{"pos": Vector2(15, 24), "type": Landmark.Type.WELL},
+		# Ancient statue near the ice region bridge
+		{"pos": Vector2(18, 13), "type": Landmark.Type.STATUE},
+		# Campfire on the southern desert road
+		{"pos": Vector2(20, 45), "type": Landmark.Type.CAMPFIRE},
+		# Ruins near the volcanic approach
+		{"pos": Vector2(65, 48), "type": Landmark.Type.RUINS},
+		# Stone circle near the bridge
+		{"pos": Vector2(38, 50), "type": Landmark.Type.STONE_CIRCLE},
+	]
+	for l in landmarks:
+		var lm = Landmark.new()
+		lm.landmark_type = l["type"]
+		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		add_child(lm)
 
 
 func _place_signposts() -> void:
