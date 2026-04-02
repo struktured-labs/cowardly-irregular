@@ -629,6 +629,70 @@ func _get_pending_story_cutscene() -> String:
 	# W2 Chapter 5: community center, Coordinator reveal
 	if flags.get("cutscene_flag_arbiter_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter5_complete", false):
 		return "world2_chapter5"
+
+	# ===== WORLD 3: STEAMPUNK =====
+	if flags.get("cutscene_flag_world2_complete", false) and not flags.get("cutscene_flag_world3_prologue_complete", false):
+		if _current_map_id == "steampunk_overworld":
+			return "world3_prologue"
+	if flags.get("cutscene_flag_world3_prologue_complete", false) and not flags.get("cutscene_flag_world3_chapter1_complete", false):
+		if _current_map_id == "brasston_village":
+			return "world3_chapter1"
+	if flags.get("cutscene_flag_world3_chapter1_complete", false) and not flags.get("cutscene_flag_world3_chapter2_complete", false):
+		if _current_map_id == "steampunk_overworld":
+			return "world3_chapter2"
+	if flags.get("cutscene_flag_world3_chapter2_complete", false) and not flags.get("cutscene_flag_world3_chapter3_complete", false):
+		return "world3_chapter3"
+	if flags.get("cutscene_flag_world3_chapter3_complete", false) and not flags.get("cutscene_flag_world3_chapter4_complete", false):
+		if flags.get("cutscene_flag_warden_industrial_defeated", false):
+			return "world3_chapter4"
+	if flags.get("cutscene_flag_world3_chapter4_complete", false) and not flags.get("cutscene_flag_world3_chapter5_complete", false):
+		return "world3_chapter5"
+
+	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
+	if flags.get("cutscene_flag_world3_complete", false) and not flags.get("cutscene_flag_world4_prologue_complete", false):
+		if _current_map_id == "industrial_overworld":
+			return "world4_prologue"
+	if flags.get("cutscene_flag_world4_prologue_complete", false) and not flags.get("cutscene_flag_world4_chapter1_complete", false):
+		if _current_map_id == "rivet_row_village":
+			return "world4_chapter1"
+	if flags.get("cutscene_flag_world4_chapter1_complete", false) and not flags.get("cutscene_flag_world4_chapter2_complete", false):
+		if _current_map_id == "industrial_overworld":
+			return "world4_chapter2"
+	if flags.get("cutscene_flag_world4_chapter2_complete", false) and not flags.get("cutscene_flag_world4_chapter3_complete", false):
+		return "world4_chapter3"
+	if flags.get("cutscene_flag_world4_chapter3_complete", false) and not flags.get("cutscene_flag_world4_chapter4_complete", false):
+		return "world4_chapter4"
+	if flags.get("cutscene_flag_world4_chapter4_complete", false) and not flags.get("cutscene_flag_world4_chapter5_complete", false):
+		return "world4_chapter5"
+
+	# ===== WORLD 5: ABSTRACT / NETWORK =====
+	if flags.get("cutscene_flag_world4_complete", false) and not flags.get("cutscene_flag_world5_prologue_complete", false):
+		if _current_map_id == "abstract_overworld":
+			return "world5_prologue"
+	if flags.get("cutscene_flag_world5_prologue_complete", false) and not flags.get("cutscene_flag_world5_chapter1_complete", false):
+		if _current_map_id == "node_prime_village":
+			return "world5_chapter1"
+	if flags.get("cutscene_flag_world5_chapter1_complete", false) and not flags.get("cutscene_flag_world5_chapter2_complete", false):
+		if _current_map_id == "abstract_overworld":
+			return "world5_chapter2"
+	if flags.get("cutscene_flag_world5_chapter2_complete", false) and not flags.get("cutscene_flag_world5_chapter3_complete", false):
+		return "world5_chapter3"
+	if flags.get("cutscene_flag_world5_chapter3_complete", false) and not flags.get("cutscene_flag_world5_chapter4_complete", false):
+		return "world5_chapter4"
+	if flags.get("cutscene_flag_world5_chapter4_complete", false) and not flags.get("cutscene_flag_world5_chapter5_complete", false):
+		return "world5_chapter5"
+
+	# ===== WORLD 6: THE VERTEX (Final) =====
+	if flags.get("cutscene_flag_world5_complete", false) and not flags.get("cutscene_flag_world6_prologue_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_prologue"
+	if flags.get("cutscene_flag_world6_prologue_complete", false) and not flags.get("cutscene_flag_world6_chapter1_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_chapter1"
+	if flags.get("cutscene_flag_world6_chapter1_complete", false) and not flags.get("cutscene_flag_world6_chapter2_complete", false):
+		return "world6_chapter2"
+	if flags.get("cutscene_flag_world6_chapter2_complete", false) and not flags.get("cutscene_flag_world6_chapter3_complete", false):
+		return "world6_chapter3"
 	return ""
 
 
