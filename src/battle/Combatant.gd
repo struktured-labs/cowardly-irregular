@@ -166,6 +166,10 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	if is_defending:
 		actual_damage = int(actual_damage * 0.5)
 
+	# Exposed status (from group attacks) increases damage taken by 50%
+	if has_status("exposed"):
+		actual_damage = int(actual_damage * 1.5)
+
 	var old_hp = current_hp
 	current_hp = max(0, current_hp - actual_damage)
 	hp_changed.emit(old_hp, current_hp)

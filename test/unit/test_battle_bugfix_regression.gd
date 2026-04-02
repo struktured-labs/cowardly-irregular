@@ -1173,3 +1173,103 @@ func test_all_abilities_have_required_fields() -> void:
 		if a.get("type") == "magic" or a.get("type") == "physical":
 			assert_true(a.has("damage_multiplier") or a.has("effect"),
 				"Ability '%s' (type=%s) needs damage_multiplier or effect" % [ability_id, a.get("type")])
+
+
+# ===========================================================================
+# Combo Magic & Vulnerability Window regression tests
+# ===========================================================================
+
+# ---- Exposed status: 1.5x damage taken ----
+
+func test_exposed_increases_damage_taken() -> void:
+	_combatant.max_hp = 200
+	_combatant.current_hp = 200
+	_combatant.defense = 0
+	# Normal damage
+	var normal_dmg = _combatant.take_damage(40)
+	_combatant.current_hp = 200  # Reset
+	# Exposed damage
+	_combatant.add_status("exposed", 1)
+	var exposed_dmg = _combatant.take_damage(40)
+	assert_true(exposed_dmg > normal_dmg, "Exposed should increase damage taken (got %d vs %d)" % [exposed_dmg, normal_dmg])
+
+
+func test_exposed_stacks_with_defending() -> void:
+	_combatant.max_hp = 200
+	_combatant.current_hp = 200
+	_combatant.defense = 0
+	_combatant.is_defending = true
+	_combatant.add_status("exposed", 1)
+	var dmg = _combatant.take_damage(100)
+	# Defending halves first, then exposed multiplies by 1.5
+	assert_true(dmg > 50, "Exposed + defending should still apply both modifiers")
+	_combatant.is_defending = false
+
+
+func test_exposed_expires_after_one_turn() -> void:
+	_combatant.add_status("exposed", 1)
+	assert_true(_combatant.has_status("exposed"), "Should have exposed")
+	_combatant.update_buff_durations()
+	assert_false(_combatant.has_status("exposed"), "Exposed should expire after 1 turn")
+
+
+func test_cannot_defer_expires_after_one_turn() -> void:
+	_combatant.add_status("cannot_defer", 1)
+	assert_true(_combatant.has_status("cannot_defer"), "Should have cannot_defer")
+	_combatant.update_buff_durations()
+	assert_false(_combatant.has_status("cannot_defer"), "Cannot_defer should expire after 1 turn")
+
+
+# ---- Combo element resolution ----
+
+func test_combo_resolve_fire_ice_is_steam() -> void:
+	var result = BattleManager._resolve_combo_element(["fire", "ice"] as Array[String])
+	assert_eq(result["bonus_effect"], "armor_pierce", "Fire+Ice should be Steam (armor pierce)")
+	assert_eq(result["element"], "steam")
+
+
+func test_combo_resolve_fire_lightning_is_plasma() -> void:
+	var result = BattleManager._resolve_combo_element(["fire", "lightning"] as Array[String])
+	assert_eq(result["bonus_effect"], "raw_boost", "Fire+Lightning should be Plasma (raw boost)")
+	assert_eq(result["element"], "plasma")
+
+
+func test_combo_resolve_ice_lightning_is_shatter() -> void:
+	var result = BattleManager._resolve_combo_element(["ice", "lightning"] as Array[String])
+	assert_eq(result["bonus_effect"], "defense_ignore", "Ice+Lightning should be Shatter (defense ignore)")
+	assert_eq(result["element"], "shatter")
+
+
+func test_combo_resolve_three_elements_is_prism() -> void:
+	var result = BattleManager._resolve_combo_element(["fire", "ice", "lightning"] as Array[String])
+	assert_eq(result["bonus_effect"], "all_weakness", "3+ elements should be Prism (all weakness)")
+	assert_eq(result["element"], "prism")
+
+
+func test_combo_resolve_single_element_fallback() -> void:
+	var result = BattleManager._resolve_combo_element(["dark"] as Array[String])
+	assert_eq(result["element"], "dark", "Single element should pass through")
+	assert_eq(result["bonus_effect"], "", "Single element should have no special bonus")
+
+
+func test_combo_resolve_empty_elements() -> void:
+	var result = BattleManager._resolve_combo_element([] as Array[String])
+	assert_eq(result["name"], "Magic Burst", "Empty elements should fallback to Magic Burst")
+
+
+# ---- Vulnerability window: AP debt ----
+
+func test_vulnerability_sets_ap_to_negative_two() -> void:
+	_combatant.current_ap = 3
+	BattleManager._apply_vulnerability_window([_combatant])
+	assert_eq(_combatant.current_ap, -2, "Vulnerability should set AP to -2")
+	assert_true(_combatant.has_status("exposed"), "Should have exposed status")
+	assert_true(_combatant.has_status("cannot_defer"), "Should have cannot_defer status")
+
+
+func test_vulnerability_on_dead_combatant_skips() -> void:
+	_combatant.current_hp = 0
+	_combatant.is_alive = false
+	_combatant.current_ap = 3
+	BattleManager._apply_vulnerability_window([_combatant])
+	assert_eq(_combatant.current_ap, 3, "Dead combatant AP should not change")

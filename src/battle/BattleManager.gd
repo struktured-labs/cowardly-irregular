@@ -498,6 +498,9 @@ func player_defer() -> void:
 	"""Queue Defer action (skip turn, gain AP, defend)"""
 	if current_state != BattleState.PLAYER_SELECTING:
 		return
+	if current_combatant.has_status("cannot_defer"):
+		battle_log_message.emit("[color=red]%s cannot defer while exposed![/color]" % current_combatant.combatant_name)
+		return
 	_track_manual_player_turn()
 
 	var action = {
@@ -541,8 +544,9 @@ func player_brave(actions: Array[Dictionary]) -> void:
 
 func player_group_attack(group_type: String) -> void:
 	"""Initiate a group attack — all alive party members pool AP for a combined strike.
-	group_type: "all_out_attack" or "limit_break"
+	group_type: "all_out_attack", "limit_break", or "combo_magic"
 	Limit Break requires every participant to have >= 4 AP.
+	Combo Magic requires >= 2 AP each and >= 2 distinct magic elements across party.
 	The calling combatant's action is queued immediately; remaining alive players are
 	auto-queued as participants (their individual selection turns are skipped)."""
 	if current_state != BattleState.PLAYER_SELECTING:
@@ -557,10 +561,24 @@ func player_group_attack(group_type: String) -> void:
 			if member.current_ap < 4:
 				battle_log_message.emit("[color=red]Limit Break requires ALL party members at full AP (4)![/color]")
 				print("[GROUP] Limit Break blocked — %s has AP %d" % [member.combatant_name, member.current_ap])
-				# Abort: return without queuing — battle menu stays open
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
+
+	# Combo Magic requires >= 2 AP each and >= 2 distinct magic elements
+	if group_type == "combo_magic":
+		for member in alive_players:
+			if member.current_ap < 2:
+				battle_log_message.emit("[color=red]Combo Magic requires ALL party members to have >= 2 AP![/color]")
+				current_state = BattleState.PLAYER_SELECTING
+				selection_turn_started.emit(current_combatant)
+				return
+		var elements = _get_party_elements(alive_players)
+		if elements.size() < 2:
+			battle_log_message.emit("[color=red]Combo Magic requires at least 2 different magic elements![/color]")
+			current_state = BattleState.PLAYER_SELECTING
+			selection_turn_started.emit(current_combatant)
+			return
 
 	# Collect participants: current combatant + remaining unselected alive players
 	var participants: Array[Combatant] = []
@@ -1266,26 +1284,16 @@ func _execute_group_action(action: Dictionary) -> void:
 	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
 		group_type, participants.size(), alive_enemies.size()])
 
-	# Spend AP from each participant and deal combined damage
-	var total_power: float = 0.0
-	for p in participants:
-		if not (p is Combatant) or not p.is_alive:
-			continue
-		var ap_cost: int = 4 if group_type == "limit_break" else 1
-		p.spend_ap(ap_cost)
-		total_power += p.attack
+	# Determine AP cost per participant
+	var ap_cost: int = 4 if group_type == "limit_break" else (2 if group_type == "combo_magic" else 1)
 
-	# Distribute damage to all enemies (exponential scaling with participant count)
-	var scale: float = pow(participants.size(), 1.5)
-	for enemy in alive_enemies:
-		if not enemy.is_alive:
-			continue
-		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
-		var mitigated: int = max(1, raw_damage - enemy.defense)
-		enemy.take_damage(mitigated)
-		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
-		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
-			group_type, enemy.combatant_name, mitigated])
+	if group_type == "combo_magic":
+		_execute_combo_magic(participants, alive_enemies, ap_cost)
+	else:
+		_execute_physical_group(participants, alive_enemies, group_type, ap_cost)
+
+	# --- Vulnerability Window: all participants become exposed ---
+	_apply_vulnerability_window(participants)
 
 	_log_player_action(participants[0] if participants.size() > 0 else null, action)
 	action_executed.emit(
@@ -1304,6 +1312,143 @@ func _execute_group_action(action: Dictionary) -> void:
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
+
+
+func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant], group_type: String, ap_cost: int) -> void:
+	"""Execute All-Out Attack or Limit Break — physical combined damage"""
+	var total_power: float = 0.0
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		p.spend_ap(ap_cost)
+		total_power += p.attack
+
+	var scale: float = pow(participants.size(), 1.5)
+	for enemy in alive_enemies:
+		if not enemy.is_alive:
+			continue
+		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
+		var mitigated: int = max(1, raw_damage - enemy.defense)
+		enemy.take_damage(mitigated)
+		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
+		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
+			group_type, enemy.combatant_name, mitigated])
+
+
+func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], ap_cost: int) -> void:
+	"""Execute Combo Magic — fuse party elements for massive magic damage"""
+	# Spend AP and sum magic power
+	var total_magic: float = 0.0
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		p.spend_ap(ap_cost)
+		total_magic += p.get_buffed_stat("magic", p.magic)
+
+	# Resolve what combo we get from the party's available elements
+	var elements = _get_party_elements(participants)
+	var combo = _resolve_combo_element(elements)
+	var combo_name: String = combo.get("name", "Magic Burst")
+	var combo_element: String = combo.get("element", "")
+	var bonus: String = combo.get("bonus_effect", "")
+
+	var scale: float = pow(participants.size(), 1.5)
+	battle_log_message.emit("[color=magenta]★ %s! ★[/color]" % combo_name)
+
+	for enemy in alive_enemies:
+		if not enemy.is_alive:
+			continue
+		var base_damage: int = int(total_magic * scale / max(1.0, float(alive_enemies.size())))
+
+		# Apply combo bonus effects
+		var effective_def: float = float(enemy.defense)
+		match bonus:
+			"armor_pierce":  # Steam: halve defense
+				effective_def *= 0.5
+			"defense_ignore":  # Shatter: skip defense entirely
+				effective_def = 0.0
+			"raw_boost":  # Plasma: 1.5x raw damage
+				base_damage = int(base_damage * 1.5)
+
+		var mitigated: int = max(1, base_damage - int(effective_def))
+
+		# Apply elemental weakness/resistance
+		var elemental_mod: float = 1.0
+		if bonus == "all_weakness":  # Prism: find best weakness multiplier
+			var best_mod: float = 1.0
+			for weakness in enemy.elemental_weaknesses:
+				best_mod = max(best_mod, 1.5)
+			# Stack with number of weaknesses for true one-shot potential
+			if enemy.elemental_weaknesses.size() > 0:
+				elemental_mod = best_mod * (1.0 + 0.25 * (enemy.elemental_weaknesses.size() - 1))
+		elif not combo_element.is_empty():
+			elemental_mod = enemy.calculate_elemental_modifier(combo_element)
+
+		if elemental_mod == 0.0:
+			battle_log_message.emit("[color=gray]%s is immune to %s![/color]" % [enemy.combatant_name, combo_name])
+			continue
+
+		var final_damage: int = max(1, int(mitigated * elemental_mod))
+		enemy.take_damage(final_damage, true)
+		damage_dealt.emit(enemy, final_damage, false, combo_element, elemental_mod)
+		battle_log_message.emit("[color=magenta]%s blasts %s for %d![/color]" % [
+			combo_name, enemy.combatant_name, final_damage])
+
+
+func _apply_vulnerability_window(participants: Array) -> void:
+	"""After a group attack, all participants become exposed — 1.5x damage, -2 AP, can't defer"""
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		p.add_status("exposed", 1)
+		p.add_status("cannot_defer", 1)
+		var old_ap = p.current_ap
+		p.current_ap = clampi(-2, -4, 4)
+		if p.has_signal("ap_changed"):
+			p.ap_changed.emit(old_ap, p.current_ap)
+	battle_log_message.emit("[color=red]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]")
+
+
+func _get_party_elements(participants: Array) -> Array[String]:
+	"""Scan participants' magic abilities and return unique elements"""
+	var elements: Array[String] = []
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		var job_id: String = p.job.get("id", "") if p.job else ""
+		if job_id.is_empty():
+			continue
+		var ability_ids: Array = JobSystem.get_job_abilities(job_id)
+		for ability_id in ability_ids:
+			var ability: Dictionary = JobSystem.get_ability(ability_id)
+			if ability.get("type", "") == "magic" and ability.has("element"):
+				var elem: String = ability["element"]
+				if elem not in elements:
+					elements.append(elem)
+	return elements
+
+
+func _resolve_combo_element(elements: Array[String]) -> Dictionary:
+	"""Resolve which combo fusion results from the party's available elements.
+	Returns {name, element, bonus_effect}."""
+	if elements.size() >= 3:
+		return {"name": "Prism Convergence", "element": "prism", "bonus_effect": "all_weakness"}
+
+	var has_fire = "fire" in elements
+	var has_ice = "ice" in elements
+	var has_lightning = "lightning" in elements
+
+	if has_fire and has_ice:
+		return {"name": "Steam Eruption", "element": "steam", "bonus_effect": "armor_pierce"}
+	if has_fire and has_lightning:
+		return {"name": "Plasma Storm", "element": "plasma", "bonus_effect": "raw_boost"}
+	if has_ice and has_lightning:
+		return {"name": "Shatter Nova", "element": "shatter", "bonus_effect": "defense_ignore"}
+
+	# Fallback: single element or non-standard combo
+	if elements.size() > 0:
+		return {"name": "Arcane Burst", "element": elements[0], "bonus_effect": ""}
+	return {"name": "Magic Burst", "element": "", "bonus_effect": ""}
 
 
 func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
