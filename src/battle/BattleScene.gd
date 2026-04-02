@@ -1853,6 +1853,21 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	"""Play simultaneous attack animations on all party members for group actions"""
 	_update_turn_info()
 
+	# Screen shake — intensity scales with group type
+	var shake_intensity: float
+	var shake_duration: float
+	match group_type:
+		"limit_break":
+			shake_intensity = 18.0
+			shake_duration = 0.6
+		"combo_magic":
+			shake_intensity = 14.0
+			shake_duration = 0.5
+		_:
+			shake_intensity = 10.0
+			shake_duration = 0.35
+	EffectSystem._trigger_screen_shake(shake_intensity, shake_duration)
+
 	# Flash the whole battlefield — distinct color per group type
 	var flash_color: Color
 	match group_type:
@@ -1862,28 +1877,15 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			flash_color = Color(0.7, 0.2, 1.0, 0.5)     # Purple
 		_:
 			flash_color = Color(1.0, 0.5, 0.0, 0.4)      # Orange
-	var flash = ColorRect.new()
-	flash.color = flash_color
-	flash.anchors_preset = Control.PRESET_FULL_RECT
-	flash.z_index = 50
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(flash)
-	var tween = create_tween()
-	tween.tween_property(flash, "modulate:a", 0.0, 0.55 if group_type == "combo_magic" else 0.45)
-	tween.tween_callback(flash.queue_free)
+	_spawn_screen_flash(flash_color, 0.55 if group_type == "combo_magic" else 0.45)
 
-	# Combo Magic: second pulsing flash for dramatic effect
+	# Limit Break: second brighter gold flash for drama
+	if group_type == "limit_break":
+		_spawn_screen_flash(Color(1.0, 1.0, 0.7, 0.4), 0.3, 0.1)
+
+	# Combo Magic: second pulsing cyan flash
 	if group_type == "combo_magic":
-		var flash2 = ColorRect.new()
-		flash2.color = Color(0.2, 0.8, 1.0, 0.35)  # Cyan pulse
-		flash2.anchors_preset = Control.PRESET_FULL_RECT
-		flash2.z_index = 50
-		flash2.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(flash2)
-		var t2 = create_tween()
-		t2.tween_interval(0.15)
-		t2.tween_property(flash2, "modulate:a", 0.0, 0.4)
-		t2.tween_callback(flash2.queue_free)
+		_spawn_screen_flash(Color(0.2, 0.8, 1.0, 0.35), 0.4, 0.15)
 
 	# Play attack animation on every participating party member simultaneously
 	for participant in participants:
@@ -1897,17 +1899,25 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			continue
 		var sprite = party_sprite_nodes[idx] if idx < party_sprite_nodes.size() else null
 
-		# For Limit Break, animate each party member lunging at the closest enemy
+		# Limit Break: each party member lunges at a different enemy (or wraps around)
 		if group_type == "limit_break" and targets.size() > 0 and sprite:
-			var target_sprite = _get_combatant_sprite(targets[0] as Combatant)
+			var target_idx = BattleManager.player_party.find(participant) % targets.size()
+			var target_combatant = targets[target_idx] as Combatant
+			var target_sprite = _get_combatant_sprite(target_combatant)
 			if target_sprite:
-				_animate_melee_attack(sprite, target_sprite, anim, null)
+				# Stagger lunges slightly for visual impact
+				var target_anim: BattleAnimatorClass = null
+				var enemy_idx = BattleManager.enemy_party.find(target_combatant)
+				if enemy_idx >= 0 and enemy_idx < enemy_animators.size():
+					target_anim = enemy_animators[enemy_idx]
+				_animate_melee_attack(sprite, target_sprite, anim, target_anim)
+				# Spawn physical hit effect on impact
+				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
 				continue
 		# Combo Magic: play cast animation + multi-element effects on targets
 		if group_type == "combo_magic":
 			anim.play_named_animation("cast")
 			if sprite:
-				# Spawn layered element effects on each target for visual impact
 				var combo_effects = [EffectSystem.EffectType.FIRE, EffectSystem.EffectType.ICE, EffectSystem.EffectType.LIGHTNING]
 				for target in targets:
 					var t_sprite = _get_combatant_sprite(target as Combatant)
@@ -1915,8 +1925,27 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 						for i in range(min(combo_effects.size(), 3)):
 							EffectSystem.spawn_effect(combo_effects[i], t_sprite.global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)))
 			continue
-		# All-Out Attack: play attack animation in place
+		# All-Out Attack: play attack animation in place + physical effects on enemies
 		anim.play_attack()
+		for target in targets:
+			var t_sprite = _get_combatant_sprite(target as Combatant)
+			if t_sprite:
+				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, t_sprite.global_position)
+
+
+func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0) -> void:
+	"""Spawn a full-screen color flash that fades out"""
+	var flash = ColorRect.new()
+	flash.color = color
+	flash.anchors_preset = Control.PRESET_FULL_RECT
+	flash.z_index = 50
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var t = create_tween()
+	if delay > 0.0:
+		t.tween_interval(delay)
+	t.tween_property(flash, "modulate:a", 0.0, fade_duration)
+	t.tween_callback(flash.queue_free)
 
 
 func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass) -> void:
