@@ -83,6 +83,8 @@ func _ready() -> void:
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
 
+	_place_signposts()
+
 	# Start suburban overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_suburban")
@@ -92,6 +94,20 @@ func _ready() -> void:
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
 	exploration_ready.emit()
+
+
+func _place_signposts() -> void:
+	var signs = [
+		{"pos": Vector2(25, 10), "text": "↑ Maple Heights"},
+		{"pos": Vector2(25, 36), "text": "↓ Return Portal"},
+		{"pos": Vector2(45, 20), "text": "→ Forward Portal"},
+		{"pos": Vector2(8, 25), "text": "← Park / Playground"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
 
 
 func _setup_effects() -> void:

@@ -82,6 +82,8 @@ func _ready() -> void:
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
 
+	_place_signposts()
+
 	# Start steampunk overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_steampunk")
@@ -91,6 +93,20 @@ func _ready() -> void:
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
 	exploration_ready.emit()
+
+
+func _place_signposts() -> void:
+	var signs = [
+		{"pos": Vector2(10, 26), "text": "← Brasston Village"},
+		{"pos": Vector2(27, 3), "text": "↑ Return Portal"},
+		{"pos": Vector2(27, 43), "text": "↓ Rail Station / Forward"},
+		{"pos": Vector2(22, 17), "text": "→ Central Plaza"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
 
 
 func _setup_effects() -> void:
