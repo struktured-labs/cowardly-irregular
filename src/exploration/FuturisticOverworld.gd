@@ -87,6 +87,7 @@ func _ready() -> void:
 	_quest_tracker.setup(self)
 
 	_place_signposts()
+	_place_landmarks()
 
 	# Start futuristic overworld music
 	if SoundManager:
@@ -111,6 +112,19 @@ func _place_signposts() -> void:
 		post.sign_text = s["text"]
 		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
 		add_child(post)
+
+
+func _place_landmarks() -> void:
+	var landmarks = [
+		{"pos": Vector2(15, 10), "type": Landmark.Type.STONE_CIRCLE},
+		{"pos": Vector2(40, 35), "type": Landmark.Type.STATUE},
+		{"pos": Vector2(30, 20), "type": Landmark.Type.RUINS},
+	]
+	for l in landmarks:
+		var lm = Landmark.new()
+		lm.landmark_type = l["type"]
+		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		add_child(lm)
 
 
 func _setup_effects() -> void:
