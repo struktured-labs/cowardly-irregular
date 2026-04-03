@@ -5,7 +5,19 @@ class_name Landmark
 ## Ruins, campfires, stone circles, etc. Pure visual, no interaction.
 ## Makes the world feel lived-in and helps with navigation.
 
-enum Type { RUINS, CAMPFIRE, STONE_CIRCLE, WELL, STATUE }
+enum Type {
+	RUINS, CAMPFIRE, STONE_CIRCLE, WELL, STATUE,
+	# World-specific types
+	FIRE_HYDRANT,   # W2 Suburban
+	BUS_STOP,       # W2 Suburban
+	GEAR_PILE,      # W3 Steampunk
+	STEAM_PIPE,     # W3 Steampunk
+	SMOKESTACK,     # W4 Industrial
+	BARREL_STACK,   # W4 Industrial
+	DATA_TERMINAL,  # W5 Futuristic
+	SERVER_RACK,    # W5 Futuristic
+	VOID_CRYSTAL,   # W6 Abstract
+}
 
 const TILE_SIZE: int = 32
 
@@ -31,6 +43,24 @@ func _ready() -> void:
 			_draw_well(img)
 		Type.STATUE:
 			_draw_statue(img)
+		Type.FIRE_HYDRANT:
+			_draw_fire_hydrant(img)
+		Type.BUS_STOP:
+			_draw_bus_stop(img)
+		Type.GEAR_PILE:
+			_draw_gear_pile(img)
+		Type.STEAM_PIPE:
+			_draw_steam_pipe(img)
+		Type.SMOKESTACK:
+			_draw_smokestack(img)
+		Type.BARREL_STACK:
+			_draw_barrel_stack(img)
+		Type.DATA_TERMINAL:
+			_draw_data_terminal(img)
+		Type.SERVER_RACK:
+			_draw_server_rack(img)
+		Type.VOID_CRYSTAL:
+			_draw_void_crystal(img)
 
 	_sprite.texture = ImageTexture.create_from_image(img)
 	add_child(_sprite)
@@ -155,3 +185,162 @@ func _draw_statue(img: Image) -> void:
 		for dx in range(-2, 3):
 			if dx * dx + dy * dy <= 4:
 				img.set_pixel(16 + dx, 6 + dy, stone)
+
+
+# --- World-specific landmark draws ---
+
+func _draw_fire_hydrant(img: Image) -> void:
+	var red = Color(0.85, 0.15, 0.1)
+	var dark = Color(0.6, 0.1, 0.08)
+	var cap = Color(0.7, 0.7, 0.7)
+	# Body
+	for y in range(16, 28):
+		for x in range(13, 19):
+			img.set_pixel(x, y, red if (x + y) % 3 != 0 else dark)
+	# Cap
+	for x in range(12, 20):
+		img.set_pixel(x, 15, cap)
+		img.set_pixel(x, 14, cap)
+	# Nozzles
+	img.set_pixel(11, 20, dark)
+	img.set_pixel(12, 20, red)
+	img.set_pixel(19, 20, red)
+	img.set_pixel(20, 20, dark)
+
+
+func _draw_bus_stop(img: Image) -> void:
+	var pole = Color(0.6, 0.6, 0.6)
+	var sign_c = Color(0.2, 0.4, 0.7)
+	# Pole
+	for y in range(10, 30):
+		img.set_pixel(16, y, pole)
+	# Sign
+	for y in range(8, 14):
+		for x in range(11, 22):
+			img.set_pixel(x, y, sign_c)
+	# Bench
+	for x in range(10, 22):
+		img.set_pixel(x, 26, Color(0.45, 0.3, 0.15))
+		img.set_pixel(x, 27, Color(0.35, 0.22, 0.1))
+
+
+func _draw_gear_pile(img: Image) -> void:
+	var brass = Color(0.72, 0.58, 0.3)
+	var dark = Color(0.5, 0.4, 0.2)
+	# Large gear
+	for angle_i in range(12):
+		var a = angle_i * TAU / 12.0
+		var gx = 14 + int(cos(a) * 8)
+		var gy = 18 + int(sin(a) * 8)
+		if gx >= 0 and gx < TILE_SIZE and gy >= 0 and gy < TILE_SIZE:
+			img.set_pixel(gx, gy, brass)
+	# Small gear
+	for angle_i in range(8):
+		var a = angle_i * TAU / 8.0
+		var gx = 20 + int(cos(a) * 4)
+		var gy = 12 + int(sin(a) * 4)
+		if gx >= 0 and gx < TILE_SIZE and gy >= 0 and gy < TILE_SIZE:
+			img.set_pixel(gx, gy, dark)
+	# Center dots
+	img.set_pixel(14, 18, dark)
+	img.set_pixel(20, 12, brass)
+
+
+func _draw_steam_pipe(img: Image) -> void:
+	var pipe = Color(0.5, 0.45, 0.4)
+	var dark = Color(0.35, 0.3, 0.28)
+	var steam = Color(0.85, 0.85, 0.82, 0.5)
+	# Horizontal pipe
+	for x in range(4, 28):
+		img.set_pixel(x, 20, pipe)
+		img.set_pixel(x, 21, dark)
+	# Valve
+	for y in range(16, 20):
+		img.set_pixel(15, y, pipe)
+		img.set_pixel(16, y, dark)
+	# Steam wisps
+	img.set_pixel(15, 14, steam)
+	img.set_pixel(16, 13, steam)
+	img.set_pixel(14, 12, steam)
+
+
+func _draw_smokestack(img: Image) -> void:
+	var brick = Color(0.5, 0.3, 0.25)
+	var dark = Color(0.35, 0.2, 0.15)
+	var smoke = Color(0.4, 0.4, 0.4, 0.6)
+	# Stack
+	for y in range(10, 30):
+		var w = 3 if y < 20 else 4
+		for dx in range(-w, w + 1):
+			img.set_pixel(16 + dx, y, brick if (dx + y) % 3 != 0 else dark)
+	# Smoke
+	for dy in range(0, 8):
+		var sx = 16 + (dy % 3) - 1
+		if sx >= 0 and sx < TILE_SIZE:
+			img.set_pixel(sx, 9 - dy, smoke)
+
+
+func _draw_barrel_stack(img: Image) -> void:
+	var barrel = Color(0.55, 0.4, 0.2)
+	var band = Color(0.4, 0.4, 0.4)
+	# Bottom row (2 barrels)
+	for i in range(2):
+		var bx = 10 + i * 10
+		for y in range(20, 28):
+			for x in range(bx, bx + 8):
+				if x < TILE_SIZE:
+					img.set_pixel(x, y, barrel if y != 23 else band)
+	# Top barrel
+	for y in range(13, 21):
+		for x in range(13, 21):
+			img.set_pixel(x, y, barrel if y != 16 else band)
+
+
+func _draw_data_terminal(img: Image) -> void:
+	var frame = Color(0.2, 0.25, 0.3)
+	var screen = Color(0.0, 0.6, 0.4)
+	var dark = Color(0.0, 0.3, 0.2)
+	# Terminal body
+	for y in range(10, 26):
+		for x in range(10, 22):
+			if x == 10 or x == 21 or y == 10 or y == 25:
+				img.set_pixel(x, y, frame)
+			else:
+				img.set_pixel(x, y, screen if (x + y) % 2 == 0 else dark)
+	# Stand
+	for y in range(26, 30):
+		img.set_pixel(15, y, frame)
+		img.set_pixel(16, y, frame)
+
+
+func _draw_server_rack(img: Image) -> void:
+	var frame = Color(0.25, 0.25, 0.28)
+	var led_on = Color(0.0, 0.9, 0.3)
+	var led_off = Color(0.15, 0.15, 0.18)
+	# Rack body
+	for y in range(6, 28):
+		for x in range(10, 22):
+			if x == 10 or x == 21 or y == 6 or y == 27:
+				img.set_pixel(x, y, frame)
+			else:
+				img.set_pixel(x, y, led_off)
+	# LED rows
+	for row in range(4):
+		var y = 9 + row * 5
+		for x in range(12, 20):
+			img.set_pixel(x, y, led_on if (x + row) % 3 == 0 else led_off)
+
+
+func _draw_void_crystal(img: Image) -> void:
+	var crystal = Color(0.9, 0.9, 1.0, 0.6)
+	var core = Color(1.0, 1.0, 1.0, 0.8)
+	# Diamond shape floating
+	var cx = 16
+	var cy = 14
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var dx = abs(x - cx)
+			var dy = abs(y - cy)
+			if dx + dy < 8:
+				var t = float(dx + dy) / 8.0
+				img.set_pixel(x, y, core if dx + dy < 3 else crystal)

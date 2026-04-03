@@ -117,9 +117,10 @@ func _place_signposts() -> void:
 
 func _place_landmarks() -> void:
 	var landmarks = [
-		{"pos": Vector2(15, 10), "type": Landmark.Type.STONE_CIRCLE},
-		{"pos": Vector2(40, 35), "type": Landmark.Type.STATUE},
-		{"pos": Vector2(30, 20), "type": Landmark.Type.RUINS},
+		{"pos": Vector2(15, 10), "type": Landmark.Type.DATA_TERMINAL},
+		{"pos": Vector2(40, 35), "type": Landmark.Type.SERVER_RACK},
+		{"pos": Vector2(30, 20), "type": Landmark.Type.DATA_TERMINAL},
+		{"pos": Vector2(25, 40), "type": Landmark.Type.SERVER_RACK},
 	]
 	for l in landmarks:
 		var lm = Landmark.new()
