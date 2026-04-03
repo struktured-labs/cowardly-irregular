@@ -84,6 +84,7 @@ func _ready() -> void:
 
 	_place_signposts()
 	_place_landmarks()
+	_place_wanderers()
 
 	# Start steampunk overworld music
 	if SoundManager:
@@ -121,6 +122,23 @@ func _place_landmarks() -> void:
 		lm.landmark_type = l["type"]
 		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{"name": "Clockwinder", "dialogue": "If I stop winding, the whole district stops.", "color": Color(0.55, 0.4, 0.25), "path": [Vector2(25, 20), Vector2(30, 20), Vector2(30, 25), Vector2(25, 25)]},
+		{"name": "Steam Collector", "dialogue": "Good steam is hard to find these days.", "color": Color(0.5, 0.5, 0.5), "path": [Vector2(40, 10), Vector2(45, 10), Vector2(45, 15), Vector2(40, 15)]},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:

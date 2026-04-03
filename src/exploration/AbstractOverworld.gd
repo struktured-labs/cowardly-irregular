@@ -100,6 +100,7 @@ func _ready() -> void:
 
 	_place_signposts()
 	_place_landmarks()
+	_place_wanderers()
 
 	# Start abstract overworld music
 	if SoundManager:
@@ -136,6 +137,22 @@ func _place_landmarks() -> void:
 		lm.landmark_type = l["type"]
 		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{"name": "?", "dialogue": "...", "color": Color(0.7, 0.7, 0.7), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)]},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:

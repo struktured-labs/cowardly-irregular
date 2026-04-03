@@ -85,6 +85,7 @@ func _ready() -> void:
 
 	_place_signposts()
 	_place_landmarks()
+	_place_wanderers()
 
 	# Start suburban overworld music
 	if SoundManager:
@@ -122,6 +123,23 @@ func _place_landmarks() -> void:
 		lm.landmark_type = l["type"]
 		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{"name": "Dog Walker", "dialogue": "Beautiful day for a walk. If you ignore the monsters.", "color": Color(0.6, 0.45, 0.3), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)]},
+		{"name": "Mail Carrier", "dialogue": "Nobody reads mail anymore. Nobody reads anything anymore.", "color": Color(0.3, 0.3, 0.65), "path": [Vector2(30, 10), Vector2(35, 10), Vector2(35, 15), Vector2(30, 15)]},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:

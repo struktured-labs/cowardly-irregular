@@ -83,6 +83,7 @@ func _ready() -> void:
 
 	_place_signposts()
 	_place_landmarks()
+	_place_wanderers()
 
 	# Start industrial overworld music
 	if SoundManager:
@@ -120,6 +121,23 @@ func _place_landmarks() -> void:
 		lm.landmark_type = l["type"]
 		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{"name": "Shift Worker", "dialogue": "Break's over in five minutes. Always five minutes.", "color": Color(0.45, 0.4, 0.35), "path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)]},
+		{"name": "Inspector", "dialogue": "Everything here is up to code. Technically.", "color": Color(0.3, 0.3, 0.35), "path": [Vector2(35, 25), Vector2(40, 25), Vector2(40, 30), Vector2(35, 30)]},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:

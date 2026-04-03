@@ -99,6 +99,9 @@ func _ready() -> void:
 	# Visual landmarks between towns
 	_place_landmarks()
 
+	# Wandering NPCs on paths between towns
+	_place_wanderers()
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -506,6 +509,39 @@ func _apply_zone_encounters(zone: String) -> void:
 			controller.set_area_config("overworld_coast", false, 0.05, pool)
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{
+			"name": "Merchant",
+			"dialogue": "Harmonia's got the best prices... if you can find it.",
+			"color": Color(0.5, 0.35, 0.2),
+			"path": [Vector2(30, 23), Vector2(20, 23), Vector2(20, 26), Vector2(30, 26)],
+		},
+		{
+			"name": "Lost Pilgrim",
+			"dialogue": "I've been walking north for hours... is there a village up here?",
+			"color": Color(0.4, 0.4, 0.6),
+			"path": [Vector2(28, 10), Vector2(28, 14), Vector2(30, 14), Vector2(30, 10)],
+		},
+		{
+			"name": "Retired Guard",
+			"dialogue": "Don't go near the cave. Trust me on this one.",
+			"color": Color(0.55, 0.45, 0.35),
+			"path": [Vector2(12, 20), Vector2(12, 24), Vector2(8, 24), Vector2(8, 20)],
+		},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _place_landmarks() -> void:
