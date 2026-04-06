@@ -64,6 +64,9 @@ const WORLD_BACKDROP_COLORS = {
 ## Current cutscene world (for backdrop color fallback)
 var _current_world: int = 0
 
+## Pre-cutscene music track (restored after cutscene if no explicit music was played)
+var _pre_cutscene_music: String = ""
+
 
 func _ready() -> void:
 	layer = 95  # Above game (50), below battle transitions (100)
@@ -197,6 +200,12 @@ func play_cutscene(cutscene_id: String) -> void:
 	# Load backdrop: prefer explicit image, then viewport capture, then world gradient
 	if not _try_load_backdrop_image(data):
 		await _capture_background()
+
+	# Fade out current music before cutscene begins (smooth transition)
+	if SoundManager and SoundManager._music_playing:
+		_pre_cutscene_music = SoundManager._current_music
+		SoundManager.stop_music()
+		await get_tree().create_timer(0.3).timeout
 
 	cutscene_started.emit(cutscene_id)
 
@@ -746,6 +755,11 @@ func _end_cutscene() -> void:
 
 	# Restore player control
 	_unfreeze_player()
+
+	# Restore pre-cutscene music if it was playing and cutscene stopped it
+	if _pre_cutscene_music != "" and SoundManager:
+		SoundManager.play_music(_pre_cutscene_music)
+	_pre_cutscene_music = ""
 
 	_active = false
 	visible = false
