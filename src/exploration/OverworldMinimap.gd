@@ -17,6 +17,13 @@ var _player_ref: Node2D
 var _map_width: float
 var _map_height: float
 
+## Objective pulse marker
+var _objective_dot: ColorRect
+var _objective_pos: Vector2 = Vector2.ZERO
+var _pulse_time: float = 0.0
+const OBJECTIVE_COLOR = Color(1.0, 0.85, 0.2)  # Gold
+const OBJECTIVE_DOT_SIZE: float = 8.0
+
 const DOT_COLORS: Dictionary = {
 	"village": Color(0.2, 0.8, 0.2),   # Green
 	"cave": Color(0.8, 0.4, 0.1),      # Orange
@@ -158,8 +165,28 @@ func _world_to_minimap(world_pos: Vector2) -> Vector2:
 	return origin + Vector2(nx * MAP_SIZE, ny * MAP_SIZE)
 
 
+func set_objective(world_pos: Vector2) -> void:
+	_objective_pos = world_pos
+	if _objective_pos == Vector2.ZERO:
+		return
+	if not _objective_dot:
+		_objective_dot = ColorRect.new()
+		_objective_dot.color = OBJECTIVE_COLOR
+		_objective_dot.size = Vector2(OBJECTIVE_DOT_SIZE, OBJECTIVE_DOT_SIZE)
+		_objective_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(_objective_dot)
+	var map_pos = _world_to_minimap(_objective_pos)
+	_objective_dot.position = map_pos - Vector2(OBJECTIVE_DOT_SIZE / 2, OBJECTIVE_DOT_SIZE / 2)
+
+
 func update(player_pos: Vector2) -> void:
 	if not _player_dot:
 		return
 	var map_pos = _world_to_minimap(player_pos)
 	_player_dot.position = map_pos - Vector2(PLAYER_DOT_SIZE / 2, PLAYER_DOT_SIZE / 2)
+
+	# Pulse objective marker
+	if _objective_dot:
+		_pulse_time += 0.05
+		var alpha = 0.4 + 0.6 * abs(sin(_pulse_time * 3.0))
+		_objective_dot.color = Color(OBJECTIVE_COLOR.r, OBJECTIVE_COLOR.g, OBJECTIVE_COLOR.b, alpha)

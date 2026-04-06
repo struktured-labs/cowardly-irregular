@@ -83,6 +83,7 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
 
 	# Zone ambient particles (leaves, snow, dust, etc.)
 	_zone_particles = ZoneParticles.new()
@@ -576,6 +577,15 @@ func _place_landmarks() -> void:
 		lm.landmark_type = l["type"]
 		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
+
+
+func _get_objective_position() -> Vector2:
+	## Return the world position of the current quest objective for minimap highlighting.
+	if GameState.get_story_flag("rat_king_defeated") or GameState.get_story_flag("w1_boss_defeated"):
+		return spawn_points.get("steampunk_portal", Vector2.ZERO)
+	if GameState.get_story_flag("chapter1_complete"):
+		return spawn_points.get("cave_entrance", Vector2.ZERO)
+	return spawn_points.get("village_entrance", Vector2.ZERO)
 
 
 func _place_signposts() -> void:
