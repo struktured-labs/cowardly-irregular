@@ -715,6 +715,32 @@ func _get_pending_story_cutscene() -> String:
 		return "world6_chapter2"
 	if flags.get("cutscene_flag_world6_chapter2_complete", false) and not flags.get("cutscene_flag_world6_chapter3_complete", false):
 		return "world6_chapter3"
+
+	# ===== GUIDANCE HINTS (fire when no story cutscene is pending) =====
+	# W1: point toward cave after chapter1
+	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_world1_guidance_cave_shown", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_guidance_cave"
+	# W1: point toward forest after cave
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_guidance_forest_shown", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_guidance_forest"
+	# W1: point toward capital after forest
+	if flags.get("cutscene_flag_chapter5_complete", false) and not flags.get("cutscene_flag_world1_guidance_capital_shown", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_guidance_capital"
+	# W2: explore the neighborhood
+	if flags.get("cutscene_flag_world2_chapter1_complete", false) and not flags.get("cutscene_flag_world2_guidance_explore_shown", false):
+		if _current_map_id == "maple_heights_village":
+			return "world2_guidance_explore"
+	# W3: head toward the Mechanism
+	if flags.get("cutscene_flag_world3_chapter1_complete", false) and not flags.get("cutscene_flag_world3_guidance_mechanism_shown", false):
+		if _current_map_id == "brasston_village":
+			return "world3_guidance_mechanism"
+	# W4: find the Director
+	if flags.get("cutscene_flag_world4_chapter1_complete", false) and not flags.get("cutscene_flag_world4_guidance_director_shown", false):
+		if _current_map_id == "rivet_row_village":
+			return "world4_guidance_director"
 	return ""
 
 

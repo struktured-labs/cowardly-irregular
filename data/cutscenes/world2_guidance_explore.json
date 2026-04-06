@@ -1,0 +1,35 @@
+{
+  "id": "world2_guidance_explore",
+  "title": "Suburban Guidance — Explore",
+  "world": 2,
+  "trigger": "world2_guidance_explore",
+  "background": "suburban_neighborhood",
+  "description": "After arriving in W2, the shopkeeper tells the party to explore the neighborhood and watch out for the HOA.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Surplus Shopkeeper",
+        "text": "New here? The neighborhood is laid out on a grid. Elm, Oak, Maple, Birch. The important places are the school on Maple Lane and the community center on Cedar.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Surplus Shopkeeper",
+        "text": "Watch out for the appliances. They've been going rogue since the HOA started 'community restructuring.' The crossing guard on Birch Court is the first real test.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      },
+      {
+        "speaker": "Surplus Shopkeeper",
+        "text": "And whatever you do, don't ignore the memos. They're not just paper. They're how the Coordinator keeps track of everything.",
+        "theme": "shopkeeper",
+        "portrait": "shopkeeper"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world2_guidance_explore_shown", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

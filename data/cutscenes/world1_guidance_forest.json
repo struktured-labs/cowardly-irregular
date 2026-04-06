@@ -1,0 +1,35 @@
+{
+  "id": "world1_guidance_forest",
+  "title": "Village Guidance — The Forest",
+  "world": 1,
+  "trigger": "world1_guidance_forest",
+  "background": "prologue_village",
+  "description": "After the cave, Elder Theron points toward Eldertree and the corrupted forest.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Elder Theron",
+        "text": "You came back. Good. The corruption from the cave — it's spreading east. The forest near Eldertree Village is dying.",
+        "theme": "elder",
+        "portrait": "elder"
+      },
+      {
+        "speaker": "Elder Theron",
+        "text": "Head east on the road. Eldertree's people know more than we do about what's happening. The Forest Keeper especially.",
+        "theme": "elder",
+        "portrait": "elder"
+      },
+      {
+        "speaker": "Elder Theron",
+        "text": "And be careful. Whatever is in that forest was put there deliberately.",
+        "theme": "elder",
+        "portrait": "elder"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world1_guidance_forest_shown", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

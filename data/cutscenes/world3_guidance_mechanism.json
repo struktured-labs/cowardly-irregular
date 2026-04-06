@@ -1,0 +1,35 @@
+{
+  "id": "world3_guidance_mechanism",
+  "title": "Steampunk Guidance — The Mechanism",
+  "world": 3,
+  "trigger": "world3_guidance_mechanism",
+  "background": "steampunk_workshop",
+  "description": "Sprocket points the party toward the Grand Mechanism at the center of Cogsworth Junction.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Sprocket",
+        "text": "You want answers? The Grand Mechanism is at the center of the city. Everything connects to it — the Schedule, the citizens, the Regulator.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      },
+      {
+        "speaker": "Sprocket",
+        "text": "But you'll need to get past the Masterites first. They guard the approach — the Warden at the gate, the Arbiter on the main road, the Tempo... well, the Tempo finds you.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      },
+      {
+        "speaker": "Sprocket",
+        "text": "Head toward the clock tower. You'll know you're close when the ticking gets louder.",
+        "theme": "scholar",
+        "portrait": "scholar"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world3_guidance_mechanism_shown", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
