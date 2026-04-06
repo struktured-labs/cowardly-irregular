@@ -157,6 +157,9 @@ var _results_display: BattleResultsDisplayClass = null
 ## Tutorial hints (persists across battles via static-like save)
 static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persists across scene instances within a session. Intentional — hints show once per game session.
 
+## Status effect icon containers (combatant -> HBoxContainer of icons)
+var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -688,6 +691,9 @@ func _create_battle_sprites() -> void:
 		# Add label with character name
 		_add_sprite_label(sprite, member.combatant_name.to_upper(), Vector2(-20, 40))
 
+		# Setup status icons for this party member
+		_setup_status_icons(member, sprite)
+
 	# Create enemy sprites
 	for i in range(test_enemies.size()):
 		var enemy = test_enemies[i]
@@ -719,6 +725,9 @@ func _create_battle_sprites() -> void:
 
 		# Add label with enemy name
 		_add_sprite_label(sprite, enemy.combatant_name.to_upper(), Vector2(-20, 40))
+
+		# Setup status icons for this enemy
+		_setup_status_icons(enemy, sprite)
 
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
@@ -834,6 +843,101 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	sprite.add_child(label)
+
+
+## Status effect icon display system
+const STATUS_ICON_CONFIG = {
+	"exposed": {"label": "EXP", "color": Color(1.0, 0.3, 0.3)},
+	"cannot_defer": {"label": "LOCK", "color": Color(0.8, 0.2, 0.2)},
+	"stun": {"label": "STUN", "color": Color(1.0, 1.0, 0.2)},
+	"sleep": {"label": "ZZZ", "color": Color(0.5, 0.5, 1.0)},
+	"confuse": {"label": "CONF", "color": Color(0.9, 0.5, 0.9)},
+	"fear": {"label": "FEAR", "color": Color(0.6, 0.3, 0.8)},
+	"charm": {"label": "CHRM", "color": Color(1.0, 0.5, 0.7)},
+	"blind": {"label": "BLND", "color": Color(0.4, 0.4, 0.4)},
+	"curse": {"label": "CURS", "color": Color(0.5, 0.0, 0.5)},
+	"regen": {"label": "REGN", "color": Color(0.3, 1.0, 0.3)},
+	"permakilled": {"label": "DEAD", "color": Color(0.3, 0.0, 0.0)},
+}
+
+
+func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void:
+	"""Create status icon container above a combatant's sprite and connect signals"""
+	var container = HBoxContainer.new()
+	container.add_theme_constant_override("separation", 2)
+	container.position = Vector2(-30, -55)  # Above sprite
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sprite.add_child(container)
+	_status_icon_containers[combatant] = container
+
+	# Connect signals for reactive updates
+	if not combatant.status_added.is_connected(_on_combatant_status_changed):
+		combatant.status_added.connect(_on_combatant_status_changed.bind(combatant))
+	if not combatant.status_removed.is_connected(_on_combatant_status_changed):
+		combatant.status_removed.connect(_on_combatant_status_changed.bind(combatant))
+
+	# Show any existing statuses
+	_refresh_status_icons(combatant)
+
+
+func _on_combatant_status_changed(_status: String, combatant: Combatant) -> void:
+	"""Refresh status icons when a status is added or removed"""
+	_refresh_status_icons(combatant)
+
+
+func _refresh_status_icons(combatant: Combatant) -> void:
+	"""Rebuild the status icon row for a combatant"""
+	if combatant not in _status_icon_containers:
+		return
+	var container: HBoxContainer = _status_icon_containers[combatant]
+	if not is_instance_valid(container):
+		return
+
+	# Clear existing icons
+	for child in container.get_children():
+		child.queue_free()
+
+	# Add icon for each active status (skip internal-only ones)
+	for status in combatant.status_effects:
+		# Skip taunted_* variants (internal targeting, not visual)
+		if status.begins_with("taunted_"):
+			continue
+
+		var config = STATUS_ICON_CONFIG.get(status, {"label": status.substr(0, 3).to_upper(), "color": Color(0.7, 0.7, 0.7)})
+		var icon = _create_status_icon_label(config["label"], config["color"])
+		container.add_child(icon)
+
+
+func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
+	"""Create a small colored status badge"""
+	var panel = PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.6)
+	style.border_color = color
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.corner_radius_top_left = 2
+	style.corner_radius_top_right = 2
+	style.corner_radius_bottom_left = 2
+	style.corner_radius_bottom_right = 2
+	style.content_margin_left = 2
+	style.content_margin_right = 2
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
+	panel.add_theme_stylebox_override("panel", style)
+
+	var label = Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(label)
+
+	return panel
 
 
 func _update_ui() -> void:
@@ -2708,6 +2812,9 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 	# Add label
 	_add_sprite_label(sprite, enemy.combatant_name.to_upper(), Vector2(-20, 40))
+
+	# Setup status icons for summoned enemy
+	_setup_status_icons(enemy, sprite)
 
 	# Spawn animation - pop in with flash
 	var tween = create_tween()
