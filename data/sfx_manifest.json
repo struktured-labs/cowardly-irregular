@@ -161,6 +161,24 @@
       "duration_seconds": 1.0,
       "prompt_influence": 0.5
     },
+    "group_all_out": {
+      "file": "assets/audio/sfx/group_all_out.ogg",
+      "prompt": "Massive coordinated strike, multiple heavy impacts landing simultaneously like a stampede hitting a wall, thunderous collective body blow with deep bass shockwave, earthquake punch",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "group_combo_magic": {
+      "file": "assets/audio/sfx/group_combo_magic.ogg",
+      "prompt": "Multiple magical elements fusing together, fire ice and lightning converging into one blast, crystalline energy collision with a deep resonant boom, elemental fusion explosion",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
+    "group_limit_break": {
+      "file": "assets/audio/sfx/group_limit_break.ogg",
+      "prompt": "Ultimate power unleashed, ascending energy buildup into a devastating explosion, reality-warping shockwave with deep bass rumble and bright crystalline shatter at the peak",
+      "duration_seconds": 2.5,
+      "prompt_influence": 0.7
+    },
     "heal": {
       "file": "assets/audio/sfx/heal.ogg",
       "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",

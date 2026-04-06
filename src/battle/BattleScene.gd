@@ -1853,6 +1853,15 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	"""Play simultaneous attack animations on all party members for group actions"""
 	_update_turn_info()
 
+	# Group attack SFX
+	match group_type:
+		"limit_break":
+			SoundManager.play_battle("group_limit_break")
+		"combo_magic":
+			SoundManager.play_battle("group_combo_magic")
+		_:
+			SoundManager.play_battle("group_all_out")
+
 	# Screen shake — intensity scales with group type
 	var shake_intensity: float
 	var shake_duration: float
