@@ -1273,3 +1273,26 @@ func test_vulnerability_on_dead_combatant_skips() -> void:
 	_combatant.current_ap = 3
 	BattleManager._apply_vulnerability_window([_combatant])
 	assert_eq(_combatant.current_ap, 3, "Dead combatant AP should not change")
+
+
+# ---- Bug: player_defer() with cannot_defer froze battle (no turn advancement) ----
+
+func test_defer_with_cannot_defer_reemits_selection() -> void:
+	# Setup: put BattleManager in PLAYER_SELECTING state with a combatant that cannot defer
+	_combatant.add_status("cannot_defer", 1)
+	BattleManager.current_combatant = _combatant
+	BattleManager.current_state = BattleManager.BattleState.PLAYER_SELECTING
+
+	# Track whether selection_turn_started is re-emitted (menu re-shown)
+	var signal_fired = [false]
+	var _on_signal = func(_c): signal_fired[0] = true
+	BattleManager.selection_turn_started.connect(_on_signal)
+
+	BattleManager.player_defer()
+
+	# Must re-emit selection signal so menu re-shows (not freeze)
+	assert_true(signal_fired[0], "selection_turn_started must fire when defer blocked by cannot_defer")
+	assert_eq(BattleManager.current_state, BattleManager.BattleState.PLAYER_SELECTING,
+		"State must remain PLAYER_SELECTING so player can pick another action")
+
+	BattleManager.selection_turn_started.disconnect(_on_signal)

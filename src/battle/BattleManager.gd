@@ -500,6 +500,9 @@ func player_defer() -> void:
 		return
 	if current_combatant.has_status("cannot_defer"):
 		battle_log_message.emit("[color=red]%s cannot defer while exposed![/color]" % current_combatant.combatant_name)
+		# Re-show menu instead of silently returning (prevents battle freeze)
+		current_state = BattleState.PLAYER_SELECTING
+		selection_turn_started.emit(current_combatant)
 		return
 	_track_manual_player_turn()
 
