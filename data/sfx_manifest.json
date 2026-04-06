@@ -161,6 +161,12 @@
       "duration_seconds": 1.0,
       "prompt_influence": 0.5
     },
+    "victory_stinger": {
+      "file": "assets/audio/sfx/victory_stinger.ogg",
+      "prompt": "Quick triumphant hit, short celebratory brass stab with a bright chime accent, victorious exclamation point sound, punchy rewarding impact with ascending sparkle tail",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
     "group_all_out": {
       "file": "assets/audio/sfx/group_all_out.ogg",
       "prompt": "Massive coordinated strike, multiple heavy impacts landing simultaneously like a stampede hitting a wall, thunderous collective body blow with deep bass shockwave, earthquake punch",
