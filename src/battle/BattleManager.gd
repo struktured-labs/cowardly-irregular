@@ -206,12 +206,28 @@ func end_battle(victory: bool) -> void:
 			autobattle_exp_bonus = _get_autobattle_exp_multiplier(_autobattle_player_turns)
 			autobattle_victory.emit(autobattle_exp_bonus, _autobattle_player_turns)
 
+		# Collect gold from defeated enemies
+		var total_gold = 0
+		var monsters_data = {}
+		if EncounterSystem and not EncounterSystem.monster_database.is_empty():
+			monsters_data = EncounterSystem.monster_database
+		for enemy in enemy_party:
+			var mt = enemy.get_meta("monster_type", "")
+			if mt in monsters_data:
+				var gold = monsters_data[mt].get("gold_reward", 0)
+				total_gold += int(gold * one_shot_gold_bonus)
+		if total_gold > 0:
+			GameState.add_gold(total_gold)
+			print("Party earned %d gold!" % total_gold)
+
 		# Award job EXP to player party and store results
 		var base_exp = 50
 		var char_results: Array = []
 		for combatant in player_party:
 			var exp_gained = 0
 			var old_level = combatant.job_level
+			var old_exp = combatant.job_exp
+			var old_exp_max = combatant.job_level * 100
 			if combatant.is_alive:
 				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus)
 				combatant.gain_job_exp(exp_gained)
@@ -221,6 +237,8 @@ func end_battle(victory: bool) -> void:
 				"exp_gained": exp_gained,
 				"job_level": combatant.job_level,
 				"job_exp": combatant.job_exp,
+				"job_exp_before": old_exp,
+				"exp_to_next": old_exp_max,
 				"job_name": combatant.job.get("name", "Fighter") if combatant.job else "Fighter",
 				"leveled_up": leveled_up,
 				"is_alive": combatant.is_alive
@@ -242,6 +260,7 @@ func end_battle(victory: bool) -> void:
 			"char_results": char_results,
 			"bonuses": bonuses,
 			"base_exp": base_exp,
+			"total_gold": total_gold,
 			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus
 		}
 
