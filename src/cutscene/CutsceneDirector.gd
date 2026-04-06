@@ -34,6 +34,9 @@ var _dialogue: Node = null
 var _background_texture: TextureRect
 var _background_dim: ColorRect
 
+## Video backdrop (animated background, takes priority over static image)
+var _background_video: VideoStreamPlayer = null
+
 ## Screen effects overlay
 var _effects_rect: ColorRect
 
@@ -515,16 +518,37 @@ func _detect_playstyle() -> String:
 ## =====================
 
 func _try_load_backdrop_image(data: Dictionary) -> bool:
-	"""Try to load an explicit backdrop image from the cutscene data.
+	"""Try to load a backdrop for the cutscene. Priority: video (OGV) > static image (PNG).
 	Returns true if a backdrop was loaded, false to fall through to capture/gradient.
-	Supports: {"background": "prologue_village"} → res://assets/cutscene_backdrops/prologue_village.png"""
+	Supports: {"background": "prologue_village"} → tries OGV first, then PNG."""
 	var bg = data.get("background", "")
 	if bg == "":
 		return false
 
+	# Try animated video backdrop first (OGV for Godot native playback)
+	var video_path = "res://assets/cutscene_videos/%s.ogv" % bg
+	if ResourceLoader.exists(video_path):
+		var stream = load(video_path) as VideoStream
+		if stream:
+			_stop_backdrop_video()
+			_background_video = VideoStreamPlayer.new()
+			_background_video.stream = stream
+			_background_video.set_anchors_preset(Control.PRESET_FULL_RECT)
+			_background_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_background_video.expand = true
+			_background_video.loop = true
+			_background_video.volume_db = -80.0  # Mute — we have our own music
+			add_child(_background_video)
+			move_child(_background_video, 0)
+			_background_video.play()
+			_background_dim.visible = true
+			_background_texture.visible = false
+			return true
+
+	# Fall back to static image
 	var path = "res://assets/cutscene_backdrops/%s.png" % bg
 	if not ResourceLoader.exists(path):
-		push_warning("CutsceneDirector: Backdrop image not found: %s" % path)
+		push_warning("CutsceneDirector: Backdrop not found: %s (tried OGV and PNG)" % bg)
 		return false
 
 	var tex = load(path) as Texture2D
@@ -535,6 +559,14 @@ func _try_load_backdrop_image(data: Dictionary) -> bool:
 		return true
 
 	return false
+
+
+func _stop_backdrop_video() -> void:
+	"""Stop and remove any playing backdrop video."""
+	if _background_video and is_instance_valid(_background_video):
+		_background_video.stop()
+		_background_video.queue_free()
+		_background_video = null
 
 
 func _capture_background() -> void:
@@ -626,7 +658,8 @@ func _step_set_background(step: Dictionary) -> void:
 
 
 func _clear_background() -> void:
-	"""Hide the background capture."""
+	"""Hide the background capture and stop any video."""
+	_stop_backdrop_video()
 	_background_texture.visible = false
 	_background_dim.visible = false
 	_background_texture.texture = null
