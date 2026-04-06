@@ -45,6 +45,7 @@ var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
 
 ## Smoke effect nodes
 var _smoke_emitters: Array = []
@@ -80,6 +81,10 @@ func _ready() -> void:
 	_quest_tracker = QuestTracker.new()
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
+
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "industrial")
 
 	_place_signposts()
 	_place_landmarks()
@@ -185,6 +190,8 @@ func _process(_delta: float) -> void:
 	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(_delta)
 	if player:
 		if _zone_particles:
 			_zone_particles.update_position(player.position)
@@ -301,11 +308,11 @@ func _generate_map() -> void:
 		# Row 16: Waste zone | Grating over furnace | Housing
 		"ddddddddddddddffggggggggggggggggggfffffffwfffffffffffffffhhh",
 
-		# Row 17: Barrel storage | Factory floor | Housing approach
-		"dBdddBdddBdddBfffffffvfffffffvfffffffffffffffffffffffhhhhhhh",
+		# Row 17: Barrel storage | Factory floor | Housing approach (corridor to Rivet Row cols 51-55)
+		"dBdddBdddBdddBfffffffvfffffffvffffffffffffffffffffffffffhhhh",
 
-		# Row 18: Chemical zone | BREAK ROOM hidden | Housing
-		"ddddddddddddddfffffffffffffffRRRRffffffffffffffffffhhhhhhhhh",
+		# Row 18: Chemical zone | BREAK ROOM hidden | Housing (corridor to Rivet Row cols 51-55)
+		"ddddddddddddddfffffffffffffffRRRRfffffffffffffffffffffffhhhh",
 
 		# Row 19: Drainage | Break room floor | Housing
 		"ddddddddddddddffffffffffffffRRRRRRffffffffffffffffhhhhhhhhhh",

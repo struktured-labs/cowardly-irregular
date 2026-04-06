@@ -272,9 +272,8 @@ func _physics_process(delta: float) -> void:
 		# This makes horizontal movement LOOK equal to vertical on Mode 7 view.
 		input_dir.x *= 1.667
 		input_dir = input_dir.normalized()
-		# Fast lerp — reaches 90% speed in ~0.15s. Feels confident, not jittery.
-		var target_vel = input_dir * move_speed
-		velocity = velocity.lerp(target_vel, 15.0 * delta)
+		# Instant velocity — classic JRPG snap, no slide
+		velocity = input_dir * move_speed
 		is_moving = true
 
 		if abs(input_dir.x) > abs(input_dir.y):
@@ -282,9 +281,9 @@ func _physics_process(delta: float) -> void:
 		else:
 			current_direction = Direction.UP if input_dir.y < 0 else Direction.DOWN
 	else:
-		# Quick deceleration — stops in ~0.1s
-		velocity = velocity.lerp(Vector2.ZERO, 20.0 * delta)
-		is_moving = velocity.length() > 5.0
+		# Instant stop — no momentum, classic JRPG feel
+		velocity = Vector2.ZERO
+		is_moving = false
 
 	# Track distance for step counting
 	var old_pos = position

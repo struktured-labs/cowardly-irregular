@@ -47,6 +47,7 @@ var _danger_zone: DangerZone
 var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
 
 
 func _ready() -> void:
@@ -93,6 +94,11 @@ func _ready() -> void:
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
 
+	# Weather effects (rain, fog, etc.)
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "medieval")
+
 	# Signposts at key intersections for navigation
 	_place_signposts()
 
@@ -121,6 +127,8 @@ func _process(_delta: float) -> void:
 		_quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(_delta)
 
 
 func _exit_tree() -> void:
@@ -200,10 +208,10 @@ func _generate_map() -> void:
 		"~~MMMMM~~~~~~~~~~~~~~~~~~~~~~~....gggggggggggg.........gggggg......................................",  # 20
 		"~~.C..........~~~~~~~~~~~~~~~~~...ggggggggggggg........gggggggg.....................................",  # 21
 		"~~M...~~~~~~~~~~~~~~~~~~~~~~~~....ggggggggggggggg.....gggggggggg...................................",  # 22
-		"~~~~..~~~~.....~~~~~~~~~~~~~~~~...ggggggggggggggg....ggggggggggg................................ccc",  # 23
-		"~~~~..~~.......~~~~~~~~~~~~~~~~...gggggggggggggg....gggggggggggg...............................cccc",  # 24
-		"~~~~...V.......~~~~~~~~~~~~~~~~...ggggggggggggg....ggggggggggg................................ccccc",  # 25
-		"~~~~~~~.......~~~~~~~~~~~~~~~~~...gggggggggggg....gggggggggg.................................cccccc",  # 26
+		"~~~~.............BB........BB.....ggggggggggggggg....ggggggggggg................................ccc",  # 23
+		"~~~~.............BB........BB.....gggggggggggggg....gggggggggggg...............................cccc",  # 24
+		"~~~~...V.........BB........BB.....ggggggggggggg....ggggggggggg................................ccccc",  # 25
+		"~~~~~~~..........BB........BB.....gggggggggggg....gggggggggg.................................cccccc",  # 26
 		"~~~~~~~........~~~~~~~~~~~~~~~~...ggggggggggg....ggggggggg..................................ccccccc",  # 27
 		"~~~~~~~.......gggggg...............gggggggggg...gggggggg...................................cccccccc",  # 28
 		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................ccccccccc",  # 29

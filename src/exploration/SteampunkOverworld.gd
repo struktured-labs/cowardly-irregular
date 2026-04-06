@@ -44,6 +44,7 @@ var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
 
 ## Steam vent effect state
 var _steam_emitters: Array = []
@@ -81,6 +82,10 @@ func _ready() -> void:
 	_quest_tracker = QuestTracker.new()
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
+
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "steampunk")
 
 	_place_signposts()
 	_place_landmarks()
@@ -186,6 +191,8 @@ func _process(delta: float) -> void:
 	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(delta)
 	for i in range(_steam_emitters.size()):
 		_steam_timers[i] += delta
 		if _steam_timers[i] >= _steam_intervals[i]:
@@ -280,8 +287,8 @@ func _generate_map() -> void:
 		"cccccccccccaaccccccccccccccccccccccccaaccccccccccccccccccccc",
 		"ccbwwwwwbccaaccccccccccccccccccccccccaaccbwwwwwbcccccccccccc",
 		"ccbwdwiwbccaaccclcccccccccccccclcccccaaccbwidwwbcccccccccccc",
-		"ccbwwwwwbccaaccccccccccccccccccccccccaaccbwwwwwbcccccccccccc",
-		"ccbfffffbccaaccccccccccccccccccccccccaaccbfffffbcccccccccccc",
+		"ccbwwccccccaaccccccccccccccccccccccccaaccbwwwwwbcccccccccccc",
+		"ccbffccccccaaccccccccccccccccccccccccaaccbfffffbcccccccccccc",
 		"ccbgggggbccaaccccccccccccccccccccccccaaccbgggggbcccccccccccc",
 		"ccbgggggbccaaccclcccccclcccclcccclcccaaccbgggggbcccccccccccc",
 		"ccbfffffbccaaccccccccccccccccccccccccaaccbfffffbcccccccccccc",

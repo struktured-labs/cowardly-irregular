@@ -46,6 +46,7 @@ var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
 
 ## Glitch effect state
 var _glitch_overlay: ColorRect
@@ -85,6 +86,10 @@ func _ready() -> void:
 	_quest_tracker = QuestTracker.new()
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
+
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "digital")
 
 	_place_signposts()
 	_place_landmarks()
@@ -166,6 +171,8 @@ func _process(delta: float) -> void:
 	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(delta)
 	_glitch_timer += delta
 
 	if _glitch_phase == 0 and _glitch_timer >= _glitch_interval:

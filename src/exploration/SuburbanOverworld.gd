@@ -44,6 +44,7 @@ var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
 
 ## Rain effect state
 var _rain_particles: CPUParticles2D
@@ -82,6 +83,10 @@ func _ready() -> void:
 	_quest_tracker = QuestTracker.new()
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
+
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "suburban")
 
 	_place_signposts()
 	_place_landmarks()
@@ -170,6 +175,8 @@ func _process(delta: float) -> void:
 	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(delta)
 	_rain_timer += delta
 	if _rain_timer >= _rain_interval:
 		_rain_timer = 0.0
