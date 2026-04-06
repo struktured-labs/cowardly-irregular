@@ -251,14 +251,14 @@ func _generate_map() -> void:
 	var map_data: Array[String] = [
 		# Row 0: North edge - lawns with shade trees
 		"lllelllllllllelllllllllllllllllllllelllllllellllll",
-		# Row 1: Picket fences around houses
-		"lfffffffffflffffffffffffffflffffffffffffffffflllll",
+		# Row 1: Picket fences around houses (gap at cols 37-38 for MapleHeights path)
+		"lfffffffffflffffffffffffffflfffffffffllfffffflllll",
 		# Row 2: House row 1 - 4 houses
-		"lfhwhdhwhfllfhwhdhwhflllfhwhdhwhflfhwhdhwhflllllll",
-		# Row 3: House walls continued
-		"lfhhhhhhhfllfhhhhhhhflllfhhhhhhhflfhhhhhhhflllllll",
-		# Row 4: Fence bottoms, mailboxes
-		"lffmffffffllfffffffmflllfffffffmflffffffmfllllllll",
+		"lfhwhdhwhfllfhwhdhwhflllfhwhdhwhflfhwllhwhflllllll",
+		# Row 3: House walls continued (gap at cols 37-38 for MapleHeights path)
+		"lfhhhhhhhfllfhhhhhhhflllfhhhhhhhflfhhllhhhflllllll",
+		# Row 4: Fence bottoms, mailboxes (gap at cols 37-38 for MapleHeights path)
+		"lffmffffffllfffffffmflllfffffffmflfffllfmfllllllll",
 		# Row 5: Open yard with trees
 		"lllelllllllllellllllllelllllellllllellllllllelllll",
 		# Row 6: Second row fences
