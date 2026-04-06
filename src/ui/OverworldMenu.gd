@@ -14,6 +14,7 @@ const EquipmentMenuClass = preload("res://src/ui/EquipmentMenu.gd")
 const AbilitiesMenuClass = preload("res://src/ui/AbilitiesMenu.gd")
 const StatusMenuClass = preload("res://src/ui/StatusMenu.gd")
 const JobMenuClass = preload("res://src/ui/JobMenu.gd")
+const QuestLogClass = preload("res://src/ui/QuestLog.gd")
 
 signal closed()
 signal menu_action(action: String, target: Combatant)
@@ -26,6 +27,7 @@ signal party_leader_changed(new_index: int)
 var _menu_options: Array = []
 
 const BASE_MENU_OPTIONS = [
+	{"id": "quest_log", "label": "Quest Log", "enabled": true},
 	{"id": "items", "label": "Items", "enabled": true},
 	{"id": "equipment", "label": "Equipment", "enabled": true},
 	{"id": "jobs", "label": "Jobs", "enabled": true},
@@ -580,6 +582,8 @@ func _handle_menu_action(action_id: String) -> void:
 	var target = party[selected_character] if selected_character < party.size() else null
 
 	match action_id:
+		"quest_log":
+			_open_quest_log()
 		"items":
 			_open_items_menu()
 		"equipment":
@@ -604,6 +608,16 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_settings()
 		"teleport":
 			_open_teleport_menu()
+
+
+func _open_quest_log() -> void:
+	_submenu_open = true
+	var quest_log = QuestLogClass.new()
+	quest_log.set_anchors_preset(Control.PRESET_FULL_RECT)
+	quest_log.setup()
+	quest_log.closed.connect(_on_submenu_closed)
+	add_child(quest_log)
+	_hide_main_ui(quest_log)
 
 
 func _open_save_screen(mode: int) -> void:
