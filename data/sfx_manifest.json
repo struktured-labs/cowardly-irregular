@@ -107,9 +107,9 @@
     },
     "attack_hit": {
       "file": "assets/audio/sfx/attack_hit.ogg",
-      "prompt": "Quick punchy hit with a dry thwack, short percussive slap like a wooden bat on leather, clean tight combat impact, no reverb no ring",
+      "prompt": "Short dull punch landing on flesh, soft meaty thud with zero metallic tone, like a fist hitting a sandbag, completely dry muffled low frequency thump, no ring no kling no brightness",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.7
     },
     "attack_miss": {
       "file": "assets/audio/sfx/attack_miss.ogg",
