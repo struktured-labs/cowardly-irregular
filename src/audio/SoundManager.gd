@@ -209,7 +209,14 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		return true  # Return true to suppress procedural fallback too
 	_sfx_cooldowns[sound_key] = now_ms
 
-	var entry = _sfx_manifest[sound_key]
+	# Variant randomization: if entry has "variants", randomly pick original or a variant
+	var resolved_key = sound_key
+	var base_entry = _sfx_manifest[sound_key]
+	if base_entry.has("variants") and base_entry["variants"].size() > 0:
+		var all_keys = [sound_key] + Array(base_entry["variants"])
+		resolved_key = all_keys[randi() % all_keys.size()]
+
+	var entry = _sfx_manifest[resolved_key] if _sfx_manifest.has(resolved_key) else base_entry
 	var path = entry.get("file", "")
 	if path == "":
 		return false
@@ -221,8 +228,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	var final_pitch = pitch_scale * pitch_variation
 
 	# Check stream cache first
-	if _sfx_stream_cache.has(sound_key):
-		var cached_stream = _sfx_stream_cache[sound_key]
+	if _sfx_stream_cache.has(resolved_key):
+		var cached_stream = _sfx_stream_cache[resolved_key]
 		if cached_stream:
 			player.stream = cached_stream
 			if not is_nan(volume_db_override):
@@ -237,10 +244,10 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	# Try loading directly — skip existence checks that can fail in web/PCK exports
 	var stream = load(path) as AudioStream
 	if not stream:
-		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, sound_key])
-		_sfx_stream_cache[sound_key] = null
+		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, resolved_key])
+		_sfx_stream_cache[resolved_key] = null
 		return false
-	_sfx_stream_cache[sound_key] = stream
+	_sfx_stream_cache[resolved_key] = stream
 	player.stream = stream
 	if not is_nan(volume_db_override):
 		player.volume_db = volume_db_override
