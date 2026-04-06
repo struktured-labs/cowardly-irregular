@@ -3,80 +3,125 @@
   "title": "Fragment: The Threshold",
   "world": 3,
   "trigger": "warden_assembly_line_defeated",
+  "background": "steampunk_workshop",
   "location": "ironhaven_assembly_floor_station_seven",
   "description": "Found at Station Seven on the Assembly Floor after defeating the Warden of the Assembly Line. A pressure gauge mounted to a length of copper pipe, still attached to nothing, reading exactly the number it read when something unexpected happened.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The assembly floor had gone still in the way of a machine that has been shut down deliberately rather than broken. The overhead conveyors hung motionless. Steam vented slowly from relief valves that no longer had any pressure to relieve.",
-      "At Station Seven, where the Warden had stood at the end — where the fight had finally found its resolution in the space between one part moving and the next — a pressure gauge remained. Mounted to a short length of copper pipe, disconnected at both ends, sitting on the grating as if set down with care.",
-      "The needle was stopped. It pointed to a number in the middle of the dial, not at the red-marked danger zone, not in the safe green band. Exactly at the line between them. The threshold. Neither passing nor failing."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Lifting the gauge from the grating, it was heavier than expected. The needle did not move. The voice arrived through the copper pipe itself — not loud, but resonant, the voice of someone accustomed to speaking over machinery."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "I tested structural integrity at this station for every batch that came through. Every alloy, every weld, every component rated to hold.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "Most things failed the way the manual predicted. A stress point, a seam, a tolerance exceeded by the expected margin.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "But sometimes something held past the point the manual said it should have failed. Not because the manual was wrong. Because the thing being tested was something the manual hadn't accounted for.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "You didn't break the way the manual predicted.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "I've been running this floor long enough to know the manual isn't wrong. It just hadn't seen you yet.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "text": "The gauge stayed at the threshold. The needle hadn't moved in the fight, hadn't moved when the Warden fell, hadn't moved now. Whatever pressure it had been measuring had reached that exact middle point and held there — not an equilibrium, not a stable reading, but a pause, the kind a thing makes when it has reached the limit of what it was designed to understand."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The copper pipe was warm from the steam that had once run through it. Holding it felt like holding the memory of a process that had been running longer than the building around it."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world3_fragment_warden_steampunk", "name": "Threshold Gauge", "description": "A pressure gauge stopped at the exact line between pass and fail. The Warden's final instrument. Grants +5 max HP. The bearer takes 15% less damage from the first hit in each battle — the tolerance that held past the manual's prediction. Tooltip: \"Neither failing nor passing. Holding.\""},
-
-    {"type": "set_flag", "flag": "fragment_warden_steampunk_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The assembly floor had gone still in the way of a machine that has been shut down deliberately rather than broken. The overhead conveyors hung motionless. Steam vented slowly from relief valves that no longer had any pressure to relieve.",
+        "At Station Seven, where the Warden had stood at the end \u2014 where the fight had finally found its resolution in the space between one part moving and the next \u2014 a pressure gauge remained. Mounted to a short length of copper pipe, disconnected at both ends, sitting on the grating as if set down with care.",
+        "The needle was stopped. It pointed to a number in the middle of the dial, not at the red-marked danger zone, not in the safe green band. Exactly at the line between them. The threshold. Neither passing nor failing."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Lifting the gauge from the grating, it was heavier than expected. The needle did not move. The voice arrived through the copper pipe itself \u2014 not loud, but resonant, the voice of someone accustomed to speaking over machinery."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "I tested structural integrity at this station for every batch that came through. Every alloy, every weld, every component rated to hold.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "Most things failed the way the manual predicted. A stress point, a seam, a tolerance exceeded by the expected margin.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "But sometimes something held past the point the manual said it should have failed. Not because the manual was wrong. Because the thing being tested was something the manual hadn't accounted for.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "You didn't break the way the manual predicted.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "I've been running this floor long enough to know the manual isn't wrong. It just hadn't seen you yet.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The gauge stayed at the threshold. The needle hadn't moved in the fight, hadn't moved when the Warden fell, hadn't moved now. Whatever pressure it had been measuring had reached that exact middle point and held there \u2014 not an equilibrium, not a stable reading, but a pause, the kind a thing makes when it has reached the limit of what it was designed to understand."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The copper pipe was warm from the steam that had once run through it. Holding it felt like holding the memory of a process that had been running longer than the building around it."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world3_fragment_warden_steampunk",
+      "name": "Threshold Gauge",
+      "description": "A pressure gauge stopped at the exact line between pass and fail. The Warden's final instrument. Grants +5 max HP. The bearer takes 15% less damage from the first hit in each battle \u2014 the tolerance that held past the manual's prediction. Tooltip: \"Neither failing nor passing. Holding.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_warden_steampunk_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

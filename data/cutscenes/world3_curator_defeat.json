@@ -3,177 +3,232 @@
   "title": "Curator of the Pipeline \u2014 Aftermath",
   "world": 3,
   "trigger": "boss_curator_industrial_defeated",
+  "background": "steampunk_workshop",
   "description": "The flow has stopped. For the first time since the Curator can measure, nothing is moving through the pipeline. It tracked everything. It discovers it tracked everything except the one thing worth tracking.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "lines": [
-      "The sub-level beneath the manufactory was very quiet.",
-      "The pipes had stilled. Whatever moved through them had stopped, or perhaps had been redirected, or perhaps there had never been as much of it as the meters suggested. The pressure gauges held steady at zero. The Curator of the Pipeline stood at the junction with one hand on the nearest pipe, not reading it now. Just touching it, the way one touches a thing to confirm it is still there."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "The flow has stopped.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "It did not sound distressed. It sounded like someone reading aloud from a record, noting something that has never before appeared in any record."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "For the first time since I can measure, nothing is moving through this junction.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I cannot establish how far back my measurement goes. The records stop at a date that predates the manufactory's construction. Before that there are only tallies. Before the tallies there is nothing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "You've been counting since before this place existed.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "Yes. Resources came in. Resources went out. I set the value of each. I tracked every unit.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "Everything. I tracked everything.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I tracked the coal and the water and the steam and the finished goods and the waste and the time lost to incident and the time recovered through remediation. I have the numbers for all of it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I tracked everything except why.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Why the pipeline exists?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "Why any of it. Why resources move. What the output is for. Who receives it. I set the value of everything that passed through me. I never asked what value meant to the thing on the other end of the pipe.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "It removed its hand from the pipe. Looked at it, at the faint impressions years of contact had worn into the metal of its palm."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "You consumed resources in every world you passed through. I said I would collect. I have not collected.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "You're letting us through.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I am unable to collect. But I find that is not why I am not collecting.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I am not collecting because you have a destination. Resources with a destination have a value I set. Resources with a purpose have a value I cannot set. You are the first thing to pass through this junction that had a purpose I could not price.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "The ledger does not balance. It has never balanced. I have been adding columns for as long as I have existed and the total keeps arriving at a number I cannot name.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "What number is that?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I don't know. I can count everything. I cannot count this.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "The pipeline stayed still. The pressure gauges held at zero. The Curator of the Pipeline stood at the junction of every pipe in the manufactory, at the meeting point of every resource that had ever moved through this place, and for the first time had nothing to count."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "Pass through.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "No charge.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "set_flag", "flag": "curator_industrial_defeated", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The sub-level beneath the manufactory was very quiet.",
+        "The pipes had stilled. Whatever moved through them had stopped, or perhaps had been redirected, or perhaps there had never been as much of it as the meters suggested. The pressure gauges held steady at zero. The Curator of the Pipeline stood at the junction with one hand on the nearest pipe, not reading it now. Just touching it, the way one touches a thing to confirm it is still there."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "The flow has stopped.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "It did not sound distressed. It sounded like someone reading aloud from a record, noting something that has never before appeared in any record."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "For the first time since I can measure, nothing is moving through this junction.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I cannot establish how far back my measurement goes. The records stop at a date that predates the manufactory's construction. Before that there are only tallies. Before the tallies there is nothing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "You've been counting since before this place existed.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "Yes. Resources came in. Resources went out. I set the value of each. I tracked every unit.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "Everything. I tracked everything.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I tracked the coal and the water and the steam and the finished goods and the waste and the time lost to incident and the time recovered through remediation. I have the numbers for all of it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I tracked everything except why.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Why the pipeline exists?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "Why any of it. Why resources move. What the output is for. Who receives it. I set the value of everything that passed through me. I never asked what value meant to the thing on the other end of the pipe.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "It removed its hand from the pipe. Looked at it, at the faint impressions years of contact had worn into the metal of its palm."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "You consumed resources in every world you passed through. I said I would collect. I have not collected.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "You're letting us through.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I am unable to collect. But I find that is not why I am not collecting.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I am not collecting because you have a destination. Resources with a destination have a value I set. Resources with a purpose have a value I cannot set. You are the first thing to pass through this junction that had a purpose I could not price.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "The ledger does not balance. It has never balanced. I have been adding columns for as long as I have existed and the total keeps arriving at a number I cannot name.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "What number is that?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I don't know. I can count everything. I cannot count this.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "The pipeline stayed still. The pressure gauges held at zero. The Curator of the Pipeline stood at the junction of every pipe in the manufactory, at the meeting point of every resource that had ever moved through this place, and for the first time had nothing to count."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "Pass through.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "No charge.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "set_flag",
+      "flag": "curator_industrial_defeated",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

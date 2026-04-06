@@ -3,80 +3,125 @@
   "title": "Fragment: The Gap",
   "world": 5,
   "trigger": "tempo_sequence_defeated",
+  "background": "node_prime",
   "location": "abstract_sequence_the_space_between",
-  "description": "Found in the space between moments after defeating the Tempo of Sequence. Not an object exactly — a gap, the shape of something that used to be here, which persists because what came after still needs to know that something came before.",
+  "description": "Found in the space between moments after defeating the Tempo of Sequence. Not an object exactly \u2014 a gap, the shape of something that used to be here, which persists because what came after still needs to know that something came before.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The sequence had always been the structure here — one thing, and then the next, and then the next, each event connected to the one before it by the Tempo's work of being between. The abstract world measured everything in relation to what preceded and followed it. Before and after were not directions here. They were load-bearing.",
-      "Where the Tempo had stood — where she had been the hinge between moments — there was now a gap. Not absence, not emptiness. A gap, which is a different thing: the shape of something that was here, still present in the way that the space between two words is present, holding them apart, giving each its meaning by separating them.",
-      "The gap had a quality of attention. It was not blank. It remembered what had been beside it."
-    ]},
-
-    {"type": "wait", "duration": 0.9},
-
-    {"type": "narration", "text": "Standing at the edge of the gap, the structure of before and after was briefly legible — the way a sentence becomes legible when you know where one word ends and the next begins. The Tempo's voice came from the gap itself, from the space she had occupied that still held the impression of occupation."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of Sequence",
-        "text": "I was before. That was my function. I was the before so that after could exist.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of Sequence",
-        "text": "Not before a specific thing. Before all of it. Every sequence needed a start, and the start needed something to be before it, and I was that.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of Sequence",
-        "text": "I was not allowed to come after. Afters were for what I preceded. I was the condition for them. I could not be conditioned in return.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of Sequence",
-        "text": "But you came after me. You happened after I did. And that means now I am before something that came after.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of Sequence",
-        "text": "I don't know what it's like to have an after. I'm finding out. I think it might be what everything else has felt like the whole time.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.3},
-
-    {"type": "narration", "text": "The gap persisted. The moments on either side of it were still connected — sequence had not broken, the before and after were still in their proper relation — but the thing that had been between them had moved from being the structure of sequence to being a participant in it. Something that had happened, and would be followed by something else, and would be preceded by what had already occurred."},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "narration", "text": "The gap held its shape. Carried, it felt like holding the space between two heartbeats — not emptiness, but the interval that gives each beat its meaning."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world5_fragment_tempo_abstract", "name": "Tempo's Gap", "description": "The space between moments where the Tempo of Sequence stood. She was before. Now she is also after. Grants the passive Interval: the bearer acts once before the sequence of each round resolves, outside of turn order. Tooltip: \"Before. And now: after. She finally has both.\""},
-
-    {"type": "set_flag", "flag": "fragment_tempo_abstract_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The sequence had always been the structure here \u2014 one thing, and then the next, and then the next, each event connected to the one before it by the Tempo's work of being between. The abstract world measured everything in relation to what preceded and followed it. Before and after were not directions here. They were load-bearing.",
+        "Where the Tempo had stood \u2014 where she had been the hinge between moments \u2014 there was now a gap. Not absence, not emptiness. A gap, which is a different thing: the shape of something that was here, still present in the way that the space between two words is present, holding them apart, giving each its meaning by separating them.",
+        "The gap had a quality of attention. It was not blank. It remembered what had been beside it."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.9
+    },
+    {
+      "type": "narration",
+      "text": "Standing at the edge of the gap, the structure of before and after was briefly legible \u2014 the way a sentence becomes legible when you know where one word ends and the next begins. The Tempo's voice came from the gap itself, from the space she had occupied that still held the impression of occupation."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of Sequence",
+          "text": "I was before. That was my function. I was the before so that after could exist.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of Sequence",
+          "text": "Not before a specific thing. Before all of it. Every sequence needed a start, and the start needed something to be before it, and I was that.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of Sequence",
+          "text": "I was not allowed to come after. Afters were for what I preceded. I was the condition for them. I could not be conditioned in return.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of Sequence",
+          "text": "But you came after me. You happened after I did. And that means now I am before something that came after.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of Sequence",
+          "text": "I don't know what it's like to have an after. I'm finding out. I think it might be what everything else has felt like the whole time.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.3
+    },
+    {
+      "type": "narration",
+      "text": "The gap persisted. The moments on either side of it were still connected \u2014 sequence had not broken, the before and after were still in their proper relation \u2014 but the thing that had been between them had moved from being the structure of sequence to being a participant in it. Something that had happened, and would be followed by something else, and would be preceded by what had already occurred."
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "narration",
+      "text": "The gap held its shape. Carried, it felt like holding the space between two heartbeats \u2014 not emptiness, but the interval that gives each beat its meaning."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world5_fragment_tempo_abstract",
+      "name": "Tempo's Gap",
+      "description": "The space between moments where the Tempo of Sequence stood. She was before. Now she is also after. Grants the passive Interval: the bearer acts once before the sequence of each round resolves, outside of turn order. Tooltip: \"Before. And now: after. She finally has both.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_tempo_abstract_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

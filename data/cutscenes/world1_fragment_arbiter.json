@@ -3,80 +3,125 @@
   "title": "Fragment: The Sword Knows",
   "world": 1,
   "trigger": "arbiter_medieval_defeated",
+  "background": "cave_entrance",
   "location": "corrupted_forest_clearing",
-  "description": "Found in the forest clearing where the Arbiter fell. A piece of steel holds the shape of a blade that no longer exists. Brief, precise — the way she spoke.",
+  "description": "Found in the forest clearing where the Arbiter fell. A piece of steel holds the shape of a blade that no longer exists. Brief, precise \u2014 the way she spoke.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The clearing was still. The corruption at its edges had retreated slightly — not gone, but pulled back, as if uncertain what to do with a space that had recently been used for something honest.",
-      "Where the Arbiter had knelt, the grass was pressed flat in a precise shape: two points of contact, exactly even, the impression of something that had gone down with intention.",
-      "In the center of the impression, a piece of steel. Not a weapon. The shape of one — the suggestion of an edge, the memory of weight — but flattened into something that could be held without cutting."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Picking it up, the voice came — not from the steel, exactly, but from the space the Arbiter had occupied. Very direct. As if directness were the only courtesy."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter",
-        "text": "I said the sword knows. I meant it, and I didn't know what I meant by it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter",
-        "text": "Some things are true before you understand them.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter",
-        "text": "The sword knows that you were real. That's the only kind of knowing that matters — the kind where you have to be present for it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter",
-        "text": "You can't know that way from a distance.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter",
-        "text": "Good fight.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.1},
-
-    {"type": "narration", "text": "The piece of steel held its shape. Whatever the Arbiter had measured in the fight — whatever final assessment she had reached — it had been pressed into the metal at the moment she decided to stop."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "It had the feeling of a verdict that came out in your favor, delivered by someone whose verdicts were worth receiving."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "arbiters_recognition", "name": "Arbiter's Recognition", "description": "A piece of steel that still holds the shape of a blade. The Arbiter's final assessment, material form. Grants +10% critical hit rate on attacks made during the first round of combat."},
-
-    {"type": "set_flag", "flag": "fragment_arbiter_medieval_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The clearing was still. The corruption at its edges had retreated slightly \u2014 not gone, but pulled back, as if uncertain what to do with a space that had recently been used for something honest.",
+        "Where the Arbiter had knelt, the grass was pressed flat in a precise shape: two points of contact, exactly even, the impression of something that had gone down with intention.",
+        "In the center of the impression, a piece of steel. Not a weapon. The shape of one \u2014 the suggestion of an edge, the memory of weight \u2014 but flattened into something that could be held without cutting."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Picking it up, the voice came \u2014 not from the steel, exactly, but from the space the Arbiter had occupied. Very direct. As if directness were the only courtesy."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter",
+          "text": "I said the sword knows. I meant it, and I didn't know what I meant by it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter",
+          "text": "Some things are true before you understand them.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter",
+          "text": "The sword knows that you were real. That's the only kind of knowing that matters \u2014 the kind where you have to be present for it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter",
+          "text": "You can't know that way from a distance.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter",
+          "text": "Good fight.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.1
+    },
+    {
+      "type": "narration",
+      "text": "The piece of steel held its shape. Whatever the Arbiter had measured in the fight \u2014 whatever final assessment she had reached \u2014 it had been pressed into the metal at the moment she decided to stop."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "It had the feeling of a verdict that came out in your favor, delivered by someone whose verdicts were worth receiving."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "arbiters_recognition",
+      "name": "Arbiter's Recognition",
+      "description": "A piece of steel that still holds the shape of a blade. The Arbiter's final assessment, material form. Grants +10% critical hit rate on attacks made during the first round of combat."
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_arbiter_medieval_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

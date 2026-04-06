@@ -3,125 +3,175 @@
   "title": "Visible Systems",
   "world": 2,
   "trigger": "world2_epilogue_complete",
+  "background": "suburban_neighborhood",
   "description": "The party stands at the portal in the Maple Heights Community Center basement. They map the pattern: two worlds, two designed authorities, same four Masterite archetypes. The portal shows gears. They go anyway.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The community center basement smelled like folding chairs and old coffee and something that had been stored here before the building existed.",
-      "The portal was in the corner where the water heater used to be. It showed brass. Gears. A sky the color of tarnished pennies.",
-      "They had a few minutes before they had to decide."
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Two worlds. Two designed authorities. Two sets of Masterites — same archetypes, different costumes. Warden, Arbiter, Tempo, Curator. The pattern is repeating.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "The Warden of Routine was the same as the Warden of the Old Guard. Not the same person. The same... shape.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "She didn't know where she was before. Neither did the Old Guard. They're placed. Someone places them.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Someone places them and they don't know they've been placed. That's the part that bothers me. Not the placing — the not knowing.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Bard",
-        "text": "The crossing guard said she'd been at her corner since before she could remember. The delivery driver said the route never ends. The librarian said the catalog was all there was.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Bard",
-        "text": "I'm starting to hear a theme. And I don't like the song.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The next world has gears. Clockwork. Precision machinery. If the first world was honest duty and the second was sincere bureaucracy, the third is—",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Systems. Visible systems. The kind that show you how they work.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Let's find out.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "The Fighter stepped toward the portal. None of them said anything to stop him. They followed, the way they always did: Cleric second, Mage third, Bard fourth, Rogue last — watching the basement behind them until the portal swallowed the view."},
-
-    {"type": "play_sfx", "sfx": "portal_activate"},
-    {"type": "screen_shake", "duration": 0.5, "intensity": 3.0},
-    {"type": "screen_flash", "duration": 0.3},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The suburb dissolved behind them like a dream you can't quite hold onto after waking — the details fading first, then the feeling, then the certainty that it had been real at all.",
-      "The air changed. It became thicker. Warmer. It tasted of copper and steam and something mechanical — the specific flavor of air that has been breathed by engines."
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "The autobattle scripts adapted instantly. Punch-card logic now. Same rules, different encoding. It's like the system wants to be automated.",
-        "theme": "mage",
-        "portrait": "mage",
-        "_condition": "playstyle_autobattle"
-      }
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "We're stronger than we should be. Whatever these worlds are calibrated for, we've outgrown the calibration. Someone's going to notice.",
-        "theme": "rogue",
-        "portrait": "rogue",
-        "_condition": "playstyle_grinder"
-      }
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "I kept a complete record. Every conversation from Harmonia and Maple Heights. Sixty-three NPCs. Forty-one side quests. Twelve hidden items. Every single one of them had something to say that mattered. I don't think the designer expected anyone to hear all of it.",
-        "theme": "bard",
-        "portrait": "bard",
-        "_condition": "playstyle_completionist"
-      }
-    ]},
-
-    {"type": "fade_to_black", "duration": 1.5},
-    {"type": "set_flag", "flag": "world2_transition_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The community center basement smelled like folding chairs and old coffee and something that had been stored here before the building existed.",
+        "The portal was in the corner where the water heater used to be. It showed brass. Gears. A sky the color of tarnished pennies.",
+        "They had a few minutes before they had to decide."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Two worlds. Two designed authorities. Two sets of Masterites \u2014 same archetypes, different costumes. Warden, Arbiter, Tempo, Curator. The pattern is repeating.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "The Warden of Routine was the same as the Warden of the Old Guard. Not the same person. The same... shape.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "She didn't know where she was before. Neither did the Old Guard. They're placed. Someone places them.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Someone places them and they don't know they've been placed. That's the part that bothers me. Not the placing \u2014 the not knowing.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "The crossing guard said she'd been at her corner since before she could remember. The delivery driver said the route never ends. The librarian said the catalog was all there was.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Bard",
+          "text": "I'm starting to hear a theme. And I don't like the song.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The next world has gears. Clockwork. Precision machinery. If the first world was honest duty and the second was sincere bureaucracy, the third is\u2014",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Systems. Visible systems. The kind that show you how they work.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Let's find out.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The Fighter stepped toward the portal. None of them said anything to stop him. They followed, the way they always did: Cleric second, Mage third, Bard fourth, Rogue last \u2014 watching the basement behind them until the portal swallowed the view."
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "portal_activate"
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.5,
+      "intensity": 3.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.3
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The suburb dissolved behind them like a dream you can't quite hold onto after waking \u2014 the details fading first, then the feeling, then the certainty that it had been real at all.",
+        "The air changed. It became thicker. Warmer. It tasted of copper and steam and something mechanical \u2014 the specific flavor of air that has been breathed by engines."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "The autobattle scripts adapted instantly. Punch-card logic now. Same rules, different encoding. It's like the system wants to be automated.",
+          "theme": "mage",
+          "portrait": "mage",
+          "_condition": "playstyle_autobattle"
+        }
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "We're stronger than we should be. Whatever these worlds are calibrated for, we've outgrown the calibration. Someone's going to notice.",
+          "theme": "rogue",
+          "portrait": "rogue",
+          "_condition": "playstyle_grinder"
+        }
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "I kept a complete record. Every conversation from Harmonia and Maple Heights. Sixty-three NPCs. Forty-one side quests. Twelve hidden items. Every single one of them had something to say that mattered. I don't think the designer expected anyone to hear all of it.",
+          "theme": "bard",
+          "portrait": "bard",
+          "_condition": "playstyle_completionist"
+        }
+      ]
+    },
+    {
+      "type": "fade_to_black",
+      "duration": 1.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_transition_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

@@ -3,81 +3,113 @@
   "title": "Warden of the Assembly Line",
   "world": 3,
   "trigger": "boss_warden_industrial",
+  "background": "steampunk_workshop",
   "description": "The Warden stands at the entrance to the great manufactory floor. A figure of brass and steam, announcing a stress test.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "lines": [
-      "The manufactory floor was the size of a cathedral and louder than one. Conveyor belts moved in every direction carrying things that had no clear beginning and no visible destination.",
-      "The Warden stood at the center where the belts converged, a figure made partly of clockwork and partly of something that had decided to be clockwork. It did not breathe so much as pressurize.",
-      "When it spoke, the nearby gears slowed to listen."
-    ]},
-
-    {"type": "play_sfx", "sfx": "steam_hiss"},
-    {"type": "screen_shake", "duration": 0.2, "intensity": 2.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "UNIT OPERATIONAL. COMMENCING STRESS TEST.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "We're not units.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "Classification pending. All unregistered elements entering the manufactory are units until classification is complete. Classification requires stress testing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "You have exceeded the parameters of every stress test run in this facility. The Warden of the Old Guard filed a report. The Warden of Routine filed a report. Both reports were anomalous.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "We've been stress-tested before. In a cave. By someone who offered us dinner first.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "Noted. The stress test will not offer dinner. The manufactory has no dining facility. Budget was reallocated to efficiency improvements in Q3.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "Stress test parameters: survivability, endurance, load capacity, failure threshold. If you exceed failure threshold, I will update the parameters. This is standard procedure.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Has anything ever exceeded your failure threshold?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Warden of the Assembly Line",
-        "text": "No. I find this informative. COMMENCING.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.4, "intensity": 5.0},
-    {"type": "screen_flash", "duration": 0.2},
-    {"type": "set_flag", "flag": "warden_industrial_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The manufactory floor was the size of a cathedral and louder than one. Conveyor belts moved in every direction carrying things that had no clear beginning and no visible destination.",
+        "The Warden stood at the center where the belts converged, a figure made partly of clockwork and partly of something that had decided to be clockwork. It did not breathe so much as pressurize.",
+        "When it spoke, the nearby gears slowed to listen."
+      ]
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "steam_hiss"
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 2.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "UNIT OPERATIONAL. COMMENCING STRESS TEST.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We're not units.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "Classification pending. All unregistered elements entering the manufactory are units until classification is complete. Classification requires stress testing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "You have exceeded the parameters of every stress test run in this facility. The Warden of the Old Guard filed a report. The Warden of Routine filed a report. Both reports were anomalous.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "We've been stress-tested before. In a cave. By someone who offered us dinner first.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "Noted. The stress test will not offer dinner. The manufactory has no dining facility. Budget was reallocated to efficiency improvements in Q3.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "Stress test parameters: survivability, endurance, load capacity, failure threshold. If you exceed failure threshold, I will update the parameters. This is standard procedure.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Has anything ever exceeded your failure threshold?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Warden of the Assembly Line",
+          "text": "No. I find this informative. COMMENCING.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.4,
+      "intensity": 5.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.2
+    },
+    {
+      "type": "set_flag",
+      "flag": "warden_industrial_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

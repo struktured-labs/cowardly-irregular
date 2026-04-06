@@ -3,76 +3,104 @@
   "title": "Tempo of the Shift",
   "world": 3,
   "trigger": "boss_tempo_industrial",
+  "background": "steampunk_workshop",
   "description": "The Tempo of the Shift materializes when the shift bell rings in the manufactory district. It has been running shifts since before anyone arrived.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The bell rang at the exact moment the party reached the junction between the manufactory district and the transport yards. Not a clock bell. A shift bell. The kind that does not ring to tell you the time but to tell you that your time has come."},
-
-    {"type": "play_sfx", "sfx": "bell_shift"},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "CLOCK IN.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "We're not workers here.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "Everyone is a worker here. The shift does not distinguish between residents and intruders. You are present. Presence is participation. CLOCK IN.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "The bell does not wait. The bell rang. The shift has begun. You will work or you will be worked around.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Worked around sounds fine actually.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "It is not fine. Irregularities in the flow disrupt output. You are an irregularity. The Warden's report was very clear on this point.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "CLOCK OUT is at the end of the shift. The shift ends when I say it ends. It has not ended since before the gears were installed. The gears were installed to track the shift, not to replace it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Has anyone ever clocked out?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "Not yet. Today may be different. CLOCK IN.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.3, "intensity": 3.5},
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "set_flag", "flag": "tempo_industrial_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The bell rang at the exact moment the party reached the junction between the manufactory district and the transport yards. Not a clock bell. A shift bell. The kind that does not ring to tell you the time but to tell you that your time has come."
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "bell_shift"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "CLOCK IN.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "We're not workers here.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "Everyone is a worker here. The shift does not distinguish between residents and intruders. You are present. Presence is participation. CLOCK IN.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "The bell does not wait. The bell rang. The shift has begun. You will work or you will be worked around.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Worked around sounds fine actually.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "It is not fine. Irregularities in the flow disrupt output. You are an irregularity. The Warden's report was very clear on this point.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "CLOCK OUT is at the end of the shift. The shift ends when I say it ends. It has not ended since before the gears were installed. The gears were installed to track the shift, not to replace it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Has anyone ever clocked out?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "Not yet. Today may be different. CLOCK IN.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.5
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "set_flag",
+      "flag": "tempo_industrial_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

@@ -3,77 +3,103 @@
   "title": "Curator of the Pipeline",
   "world": 3,
   "trigger": "boss_curator_industrial",
+  "background": "steampunk_workshop",
   "description": "The Curator stands at the junction of all pipelines beneath the manufactory. Everything flows through it. Nothing is wasted. Nothing is free.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "lines": [
-      "The sub-level beneath the manufactory was all pipe and no room. Every surface was pipe: steam pipes, water pipes, pressure pipes, transfer pipes, pipes whose contents were not labeled.",
-      "At the junction where all pipelines converged, the Curator of the Pipeline stood. The figure was thin in the way things are thin when they have been optimized for passage through tight spaces. It placed a hand on the nearest pipe and the pipe hummed."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "Resources flow through me. I have counted every unit that has passed this junction since the manufactory was built. Nothing has been wasted. Nothing has been free.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Everything costs something?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "Everything costs exactly what it is worth. I set the worth. I have always set the worth. Before the manufactory, I set the worth of what grew in the ground and fell from the sky.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "You have consumed resources in every world you have passed through. I have the ledger.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "You have a ledger for other worlds.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "The pipeline connects everything. Did you think the worlds were separate? They share infrastructure. They share cost.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "You are expensive. I intend to collect.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "What happens if you can't?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "That has not occurred. The question is noted as a variable. I dislike variables.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.4, "intensity": 5.0},
-    {"type": "screen_flash", "duration": 0.2},
-    {"type": "set_flag", "flag": "curator_industrial_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The sub-level beneath the manufactory was all pipe and no room. Every surface was pipe: steam pipes, water pipes, pressure pipes, transfer pipes, pipes whose contents were not labeled.",
+        "At the junction where all pipelines converged, the Curator of the Pipeline stood. The figure was thin in the way things are thin when they have been optimized for passage through tight spaces. It placed a hand on the nearest pipe and the pipe hummed."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "Resources flow through me. I have counted every unit that has passed this junction since the manufactory was built. Nothing has been wasted. Nothing has been free.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Everything costs something?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "Everything costs exactly what it is worth. I set the worth. I have always set the worth. Before the manufactory, I set the worth of what grew in the ground and fell from the sky.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "You have consumed resources in every world you have passed through. I have the ledger.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "You have a ledger for other worlds.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "The pipeline connects everything. Did you think the worlds were separate? They share infrastructure. They share cost.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "You are expensive. I intend to collect.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "What happens if you can't?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "That has not occurred. The question is noted as a variable. I dislike variables.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.4,
+      "intensity": 5.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.2
+    },
+    {
+      "type": "set_flag",
+      "flag": "curator_industrial_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

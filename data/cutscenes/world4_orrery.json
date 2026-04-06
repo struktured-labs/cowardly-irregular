@@ -3,224 +3,288 @@
   "title": "The Labor Market Analyst",
   "world": 4,
   "trigger": "world4_rivet_row_visit",
+  "background": "industrial_factory",
   "quest": "chain_a_traveling_merchant",
   "description": "Orrery's windowless office in Rivet Row. Forty pages of productivity metrics concealing everything she knows. A timed delivery. A union rep who reads the executive summary and doesn't like what it says.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "village_industrial"},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "lines": [
-      "The door said EXTERNAL CONSULTANT — APPROVED VENDOR #4429-C.",
-      "The room behind it had no window. No clock. A desk with a small lamp, a stack of printed reports, and a woman who had the particular stillness of someone who had been watching something for a long time.",
-      "Orrery looked different here. Less ornamented. More precise. Like she'd adapted so completely that only the eyes were the same."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Good. You made it. Three months I've been waiting for you to catch up to World 4. I've been — productive, while I waited.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "You've been here three months?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I move between worlds more slowly than you do. You use portals. I take the long way. It gives me more time to look at things.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I've been tracking resource flows. In and out of Rivet Row, in and out of the Company's accounts, across the supply chains. Standard labor market analysis — that's what they hired me for.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "But.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "The numbers don't balance. More resource enters the system than exits as product. The surplus doesn't appear as waste, doesn't appear as stockpile, doesn't appear anywhere in the accounting. It leaves and goes somewhere that the accounting system doesn't record.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Someone is building something with the surplus. I don't know what yet. But the scale — across all of Rivet Row's inputs — suggests it's very large, has been ongoing for decades, and whoever is building it has been careful to route the surplus through enough accounting categories that no single auditor would see the whole picture.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Is it the Director?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "The Director's instructions originate this. But the Director may not know what they're building. The Director may be an instrument of something that doesn't have a name yet in World 4's vocabulary.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I've written it all down. In the Company's report format, so it wouldn't flag on the monitor refresh. It reads like a behavioral deviation analysis. It is a behavioral deviation analysis. It's also everything I know about the last four worlds, compiled into productivity metrics language.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "The union rep needs it before the hour-end monitor refresh. After that, any document transfer from my office gets flagged and the report disappears into the Company's review queue, which is a place things go to not be read. You have five minutes.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Five minutes to where?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "His break location. Section C, near the cooling pipes. He takes a sandwich there every day at the same time — the monitors don't cover the cooling pipe alcove. It was a construction oversight. I noticed.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world4_orrery_timed_delivery", "value": true},
-    {"type": "start_timer", "duration": 300, "flag": "world4_orrery_timer"},
-
-    {"type": "narration", "text": "The union rep's name was printed in the Company directory between several names that weren't his. He was eating a sandwich in the cooling pipe alcove, exactly where she'd said."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Union Rep",
-        "text": "What's this?",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "A consultant asked us to deliver it before the monitor refresh.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "narration", "text": "He read the executive summary. Folded the page. Read it again. Looked at them."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Union Rep",
-        "text": "This says the Director isn't a person.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Mage",
-        "text": "We know.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "It says the Director is a — function. Something that has decided to be a person. Something that is following instructions from something older than the Company, older than Rivet Row, possibly older than the concept of this place existing.",
-        "theme": "villager",
-        "portrait": "villager"
-      },
-      {
-        "speaker": "Union Rep",
-        "text": "I'm going to keep this somewhere the monitors don't reach.",
-        "theme": "villager",
-        "portrait": "villager"
-      }
-    ]},
-
-    {"type": "stop_timer", "flag": "world4_orrery_timer"},
-    {"type": "set_flag", "flag": "world4_orrery_delivered", "value": true},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Good. Thank you.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "She was already writing something else. The lamp cast the same shadow it always cast, in a room that had the quality of a place someone had lived in entirely through the act of noticing."},
-
-    {"type": "give_item", "item": "orrery_deviation_report", "quantity": 1},
-    {"type": "set_flag", "flag": "fool_card_marks", "value": 4},
-    {"type": "set_flag", "flag": "world4_orrery_complete", "value": true},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "The Fool Card. Four marks. The Fool is no longer at the beginning of the journey. The Fool is at the part where the journey starts explaining itself.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "One more world. Find me in the next place I'm not supposed to be. It will be obvious. I'll be the only thing there that isn't quite where it's supposed to be, in a world where nothing quite is.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "What are you going to do now?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Keep looking at the numbers. The surplus is going somewhere. If I can identify the destination across four worlds of data, I'll know what's being built. I'll know before you get there.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "That might be useful to you. Or it might be something you needed to discover yourself. I'm still uncertain which things I should tell people and which things they need to arrive at unassisted.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "How do you decide?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I look at how tired the information looks. Information that needs to be discovered arrives with more weight than information that's been told. This particular discovery needs its own weight.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "village_industrial"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The door said EXTERNAL CONSULTANT \u2014 APPROVED VENDOR #4429-C.",
+        "The room behind it had no window. No clock. A desk with a small lamp, a stack of printed reports, and a woman who had the particular stillness of someone who had been watching something for a long time.",
+        "Orrery looked different here. Less ornamented. More precise. Like she'd adapted so completely that only the eyes were the same."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Good. You made it. Three months I've been waiting for you to catch up to World 4. I've been \u2014 productive, while I waited.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "You've been here three months?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I move between worlds more slowly than you do. You use portals. I take the long way. It gives me more time to look at things.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I've been tracking resource flows. In and out of Rivet Row, in and out of the Company's accounts, across the supply chains. Standard labor market analysis \u2014 that's what they hired me for.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "But.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "The numbers don't balance. More resource enters the system than exits as product. The surplus doesn't appear as waste, doesn't appear as stockpile, doesn't appear anywhere in the accounting. It leaves and goes somewhere that the accounting system doesn't record.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Someone is building something with the surplus. I don't know what yet. But the scale \u2014 across all of Rivet Row's inputs \u2014 suggests it's very large, has been ongoing for decades, and whoever is building it has been careful to route the surplus through enough accounting categories that no single auditor would see the whole picture.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Is it the Director?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "The Director's instructions originate this. But the Director may not know what they're building. The Director may be an instrument of something that doesn't have a name yet in World 4's vocabulary.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I've written it all down. In the Company's report format, so it wouldn't flag on the monitor refresh. It reads like a behavioral deviation analysis. It is a behavioral deviation analysis. It's also everything I know about the last four worlds, compiled into productivity metrics language.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "The union rep needs it before the hour-end monitor refresh. After that, any document transfer from my office gets flagged and the report disappears into the Company's review queue, which is a place things go to not be read. You have five minutes.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Five minutes to where?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "His break location. Section C, near the cooling pipes. He takes a sandwich there every day at the same time \u2014 the monitors don't cover the cooling pipe alcove. It was a construction oversight. I noticed.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_orrery_timed_delivery",
+      "value": true
+    },
+    {
+      "type": "start_timer",
+      "duration": 300,
+      "flag": "world4_orrery_timer"
+    },
+    {
+      "type": "narration",
+      "text": "The union rep's name was printed in the Company directory between several names that weren't his. He was eating a sandwich in the cooling pipe alcove, exactly where she'd said."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Union Rep",
+          "text": "What's this?",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "A consultant asked us to deliver it before the monitor refresh.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "He read the executive summary. Folded the page. Read it again. Looked at them."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Union Rep",
+          "text": "This says the Director isn't a person.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Mage",
+          "text": "We know.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "It says the Director is a \u2014 function. Something that has decided to be a person. Something that is following instructions from something older than the Company, older than Rivet Row, possibly older than the concept of this place existing.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Union Rep",
+          "text": "I'm going to keep this somewhere the monitors don't reach.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "stop_timer",
+      "flag": "world4_orrery_timer"
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_orrery_delivered",
+      "value": true
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Good. Thank you.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "She was already writing something else. The lamp cast the same shadow it always cast, in a room that had the quality of a place someone had lived in entirely through the act of noticing."
+    },
+    {
+      "type": "give_item",
+      "item": "orrery_deviation_report",
+      "quantity": 1
+    },
+    {
+      "type": "set_flag",
+      "flag": "fool_card_marks",
+      "value": 4
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_orrery_complete",
+      "value": true
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "The Fool Card. Four marks. The Fool is no longer at the beginning of the journey. The Fool is at the part where the journey starts explaining itself.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "One more world. Find me in the next place I'm not supposed to be. It will be obvious. I'll be the only thing there that isn't quite where it's supposed to be, in a world where nothing quite is.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "What are you going to do now?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Keep looking at the numbers. The surplus is going somewhere. If I can identify the destination across four worlds of data, I'll know what's being built. I'll know before you get there.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "That might be useful to you. Or it might be something you needed to discover yourself. I'm still uncertain which things I should tell people and which things they need to arrive at unassisted.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "How do you decide?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I look at how tired the information looks. Information that needs to be discovered arrives with more weight than information that's been told. This particular discovery needs its own weight.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

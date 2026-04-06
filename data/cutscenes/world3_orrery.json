@@ -3,202 +3,265 @@
   "title": "The Scheduled Revelation",
   "world": 3,
   "trigger": "world3_brasston_visit",
+  "background": "steampunk_workshop",
   "quest": "chain_a_traveling_merchant",
   "description": "Orrery's precision futures consultation in Brasston. An eleven-minute scheduling offset. A letter carried across decades in a retired engineer's filing cabinet. The worlds were written simultaneously.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "village_steampunk"},
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "lines": [
-      "The booth was clockwork. Of course it was — everything in Brasston was clockwork.",
-      "The sign read: ORRERY PRECISION FUTURES CONSULTATION. Below that, in smaller type: MANDATORY 7-SECOND SCHEDULING DELAY. PER REGULATORY CODE 44-B.",
-      "Below that, in smaller type still: I know. I know. Please sit."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Seven seconds. I'm required to observe it. The schedule is reviewed.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "There. Hello. I've been expecting you in the sense that I don't have accurate foreknowledge but experience has made me optimistic.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "You look tired.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I've been trying to speak with Brigadier Flux for three weeks. Former chief engineer, retired. He has engineering records I need to see, and he has been trying to schedule a consultation with me for approximately the same three weeks. We have not managed to share a single available appointment window.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "That seems like it should be solvable. Both parties want the appointment.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Our schedules are offset by exactly eleven minutes. Every slot I have available, he is already committed. Every slot he has available, I am obligated elsewhere. The offset is consistent across three weeks. That is — in a clockwork city where everything runs to the gear — not an accident.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "I've written him a letter. I need someone to deliver it in person — not through the scheduling system, which will insert the delay, but directly, by hand. Would you bring it to him? His atelier is on Mainspring Street. He's there most mornings.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "What's in the letter?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "A question about the Grand Mechanism blueprints. And a symbol. The same symbol that was on the paper Phil gave you in Harmonia. I want to know if Flux has seen it before.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world3_orrery_deliver_letter", "value": true},
-
-    {"type": "narration", "lines": [
-      "Brigadier Flux read the letter at his workbench, surrounded by forty years of archived drawings.",
-      "He was quiet for a long time. Then he went to a cabinet that had clearly not been opened recently, and opened it."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Flux",
-        "text": "I found this in a batch of old maintenance logs. Harmonia Cave system — I know that doesn't make geographic sense, but the filing code indicated they came from a medieval administration archive. They were misfiled here decades ago and I never knew what to do with them.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Flux",
-        "text": "The handwriting on those logs. It's the same hand as on the Grand Mechanism blueprints. I noticed it years ago. I've never known what to make of it.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Flux",
-        "text": "The cave logs are dated forty years before the Mechanism was designed. Which means — the same person who designed the Mechanism was maintaining caves in a world that, by my understanding of geography, shouldn't be in the same administrative region as Brasston at all.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "narration", "text": "He sealed his response. It took seven minutes to write. He didn't hurry."},
-
-    {"type": "set_flag", "flag": "world3_orrery_return_letter", "value": true},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Same hand.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "She laid the cave logs beside the blueprint fragment she'd been carrying. She set Phil's paper alongside them. She looked at all three for a long time without speaking."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "The symbol on Phil's paper. It's on the cave logs too. As a provenance mark. And it's in the corner of the Grand Mechanism's core blueprint. Same symbol, three different documents, three worlds apart, spanning what the dates suggest is more than a century.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "But the Mechanism is World 3. The cave is World 1. Phil had the paper before there was a World 1 — he said so himself. Before. Before Harmonia. Before Phil.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "What does that mean?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "You've been moving through these worlds in sequence. World 1, then 2, then 3. That feels like chronology from inside it. But the same author's hand appears in all of them, and the notation predates all of them.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "The worlds aren't sequential. They were written simultaneously. You're playing them in sequence. The author isn't.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Who's the author?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "That's the next question, yes. I'm still on this one. Take this — it will open something in World 4 that has no apparent function without it. Old tunnels. Pre-factory. Someone dug them before the factory was planned.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "give_item", "item": "cogsworth_calibration_key", "quantity": 1},
-    {"type": "set_flag", "flag": "fool_card_marks", "value": 3},
-    {"type": "set_flag", "flag": "world3_orrery_complete", "value": true},
-
-    {"type": "narration", "text": "She took the Fool Card. The third mark appeared with the quality of a sentence completing itself."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Three marks. The Fool is starting to know something. That's the dangerous part of the journey — when the Fool becomes aware enough to understand how lost they are.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Find me in Rivet Row. I'll be in an office that shouldn't have an external consultant in it. I've had three months to compile something interesting.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "village_steampunk"
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The booth was clockwork. Of course it was \u2014 everything in Brasston was clockwork.",
+        "The sign read: ORRERY PRECISION FUTURES CONSULTATION. Below that, in smaller type: MANDATORY 7-SECOND SCHEDULING DELAY. PER REGULATORY CODE 44-B.",
+        "Below that, in smaller type still: I know. I know. Please sit."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Seven seconds. I'm required to observe it. The schedule is reviewed.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "There. Hello. I've been expecting you in the sense that I don't have accurate foreknowledge but experience has made me optimistic.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "You look tired.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I've been trying to speak with Brigadier Flux for three weeks. Former chief engineer, retired. He has engineering records I need to see, and he has been trying to schedule a consultation with me for approximately the same three weeks. We have not managed to share a single available appointment window.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "That seems like it should be solvable. Both parties want the appointment.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Our schedules are offset by exactly eleven minutes. Every slot I have available, he is already committed. Every slot he has available, I am obligated elsewhere. The offset is consistent across three weeks. That is \u2014 in a clockwork city where everything runs to the gear \u2014 not an accident.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "I've written him a letter. I need someone to deliver it in person \u2014 not through the scheduling system, which will insert the delay, but directly, by hand. Would you bring it to him? His atelier is on Mainspring Street. He's there most mornings.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "What's in the letter?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "A question about the Grand Mechanism blueprints. And a symbol. The same symbol that was on the paper Phil gave you in Harmonia. I want to know if Flux has seen it before.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_orrery_deliver_letter",
+      "value": true
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Brigadier Flux read the letter at his workbench, surrounded by forty years of archived drawings.",
+        "He was quiet for a long time. Then he went to a cabinet that had clearly not been opened recently, and opened it."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Flux",
+          "text": "I found this in a batch of old maintenance logs. Harmonia Cave system \u2014 I know that doesn't make geographic sense, but the filing code indicated they came from a medieval administration archive. They were misfiled here decades ago and I never knew what to do with them.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Flux",
+          "text": "The handwriting on those logs. It's the same hand as on the Grand Mechanism blueprints. I noticed it years ago. I've never known what to make of it.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Flux",
+          "text": "The cave logs are dated forty years before the Mechanism was designed. Which means \u2014 the same person who designed the Mechanism was maintaining caves in a world that, by my understanding of geography, shouldn't be in the same administrative region as Brasston at all.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "He sealed his response. It took seven minutes to write. He didn't hurry."
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_orrery_return_letter",
+      "value": true
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Same hand.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "She laid the cave logs beside the blueprint fragment she'd been carrying. She set Phil's paper alongside them. She looked at all three for a long time without speaking."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "The symbol on Phil's paper. It's on the cave logs too. As a provenance mark. And it's in the corner of the Grand Mechanism's core blueprint. Same symbol, three different documents, three worlds apart, spanning what the dates suggest is more than a century.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "But the Mechanism is World 3. The cave is World 1. Phil had the paper before there was a World 1 \u2014 he said so himself. Before. Before Harmonia. Before Phil.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "What does that mean?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "You've been moving through these worlds in sequence. World 1, then 2, then 3. That feels like chronology from inside it. But the same author's hand appears in all of them, and the notation predates all of them.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "The worlds aren't sequential. They were written simultaneously. You're playing them in sequence. The author isn't.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Who's the author?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "That's the next question, yes. I'm still on this one. Take this \u2014 it will open something in World 4 that has no apparent function without it. Old tunnels. Pre-factory. Someone dug them before the factory was planned.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "give_item",
+      "item": "cogsworth_calibration_key",
+      "quantity": 1
+    },
+    {
+      "type": "set_flag",
+      "flag": "fool_card_marks",
+      "value": 3
+    },
+    {
+      "type": "set_flag",
+      "flag": "world3_orrery_complete",
+      "value": true
+    },
+    {
+      "type": "narration",
+      "text": "She took the Fool Card. The third mark appeared with the quality of a sentence completing itself."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Three marks. The Fool is starting to know something. That's the dangerous part of the journey \u2014 when the Fool becomes aware enough to understand how lost they are.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Find me in Rivet Row. I'll be in an office that shouldn't have an external consultant in it. I've had three months to compile something interesting.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

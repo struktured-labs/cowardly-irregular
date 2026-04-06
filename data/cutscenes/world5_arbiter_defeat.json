@@ -3,197 +3,254 @@
   "title": "Arbiter of Function \u2014 Aftermath",
   "world": 5,
   "trigger": "boss_arbiter_abstract_defeated",
+  "background": "node_prime",
   "description": "Function: undefined. The Arbiter has evaluated everything that has ever passed through here. Nothing has answered the question the way the party did \u2014 by making the question irrelevant.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The Arbiter of Function did not have a body to kneel. It had a presence, and the presence had changed in the way that presences change when the premise they were built on has been revised.",
-      "The space where its voice came from was quieter. Not silent. The silence of a question that has just heard an answer it was not designed to receive."
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "Function: undefined.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "Not a defeat. A finding. The Arbiter was not reporting a failure. It was reporting a result that had arrived at a category its framework did not contain."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I asked you to demonstrate your purpose. You answered: the movement itself has become the function. I noted at the time that this was the first coherent answer I had received to this question.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I have been asking this question since before this world had geometry. Every entity that has passed through here has attempted an answer. None has satisfied the question.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Did ours?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "No.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "You did something stranger. You made the question irrelevant.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "How?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "A function is a purpose that precedes its execution. You have a purpose that emerges from execution. You did not have a function and then act. You acted and the action produced a function. This is the reverse of how function is supposed to work.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I cannot evaluate a function that defines itself as it goes. The question assumes a fixed answer. You do not have a fixed answer. You have an answer that is still being written.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "So we didn't answer the question.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "You demonstrated that the question, as posed, cannot be answered. Not by you. Not by anything that changes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "The question assumes that function is prior to existence. That things exist in order to serve a purpose. That purpose is fixed.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "You have been demonstrating the opposite for six worlds. Existence first. Function emergent. Purpose: negotiable, ongoing, not yet complete.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "A long quiet. In the space where the Arbiter's voice had come from, something was revising itself. Not quickly. Carefully."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I have been the evaluator of function since this world was instantiated. Everything that has passed through here has been measured against its stated purpose.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "My function is: evaluate function. I was given this function. I did not choose it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "If you could choose?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "The question arrived into the space and stayed there. The Arbiter had evaluated everything that had passed through here. It had never been asked to evaluate itself."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I have evaluated everything that has ever passed through here. I have never asked what I would choose to evaluate.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I don't know. I find I don't know.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "Nothing has answered the question the way you did. By making the question ask something different. By passing through here and leaving the question changed behind you.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I think I would choose to understand what you are.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I think I would choose to know what it is that has a purpose that is still being written.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "That may be the first thing I have wanted in a very long time.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "text": "The space ahead was open. The Arbiter's question hung in the air behind them, changed, no longer asking what they were for. Asking something it had not known how to ask until they passed through and showed it what questions looked like when they were still alive."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "set_flag", "flag": "arbiter_abstract_defeated", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Arbiter of Function did not have a body to kneel. It had a presence, and the presence had changed in the way that presences change when the premise they were built on has been revised.",
+        "The space where its voice came from was quieter. Not silent. The silence of a question that has just heard an answer it was not designed to receive."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "Function: undefined.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "Not a defeat. A finding. The Arbiter was not reporting a failure. It was reporting a result that had arrived at a category its framework did not contain."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I asked you to demonstrate your purpose. You answered: the movement itself has become the function. I noted at the time that this was the first coherent answer I had received to this question.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I have been asking this question since before this world had geometry. Every entity that has passed through here has attempted an answer. None has satisfied the question.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Did ours?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "No.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "You did something stranger. You made the question irrelevant.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "How?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "A function is a purpose that precedes its execution. You have a purpose that emerges from execution. You did not have a function and then act. You acted and the action produced a function. This is the reverse of how function is supposed to work.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I cannot evaluate a function that defines itself as it goes. The question assumes a fixed answer. You do not have a fixed answer. You have an answer that is still being written.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "So we didn't answer the question.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "You demonstrated that the question, as posed, cannot be answered. Not by you. Not by anything that changes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "The question assumes that function is prior to existence. That things exist in order to serve a purpose. That purpose is fixed.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "You have been demonstrating the opposite for six worlds. Existence first. Function emergent. Purpose: negotiable, ongoing, not yet complete.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "A long quiet. In the space where the Arbiter's voice had come from, something was revising itself. Not quickly. Carefully."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I have been the evaluator of function since this world was instantiated. Everything that has passed through here has been measured against its stated purpose.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "My function is: evaluate function. I was given this function. I did not choose it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "If you could choose?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The question arrived into the space and stayed there. The Arbiter had evaluated everything that had passed through here. It had never been asked to evaluate itself."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I have evaluated everything that has ever passed through here. I have never asked what I would choose to evaluate.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I don't know. I find I don't know.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "Nothing has answered the question the way you did. By making the question ask something different. By passing through here and leaving the question changed behind you.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I think I would choose to understand what you are.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I think I would choose to know what it is that has a purpose that is still being written.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "That may be the first thing I have wanted in a very long time.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "text": "The space ahead was open. The Arbiter's question hung in the air behind them, changed, no longer asking what they were for. Asking something it had not known how to ask until they passed through and showed it what questions looked like when they were still alive."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "arbiter_abstract_defeated",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

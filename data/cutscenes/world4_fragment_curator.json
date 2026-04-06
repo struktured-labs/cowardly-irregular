@@ -3,80 +3,125 @@
   "title": "Fragment: The Warm Address",
   "world": 4,
   "trigger": "curator_memory_pool_defeated",
+  "background": "industrial_factory",
   "location": "digital_memory_pool_sector_null",
   "description": "Found in Sector Null of the digital memory pool after defeating the Curator. A memory address, still active, pointing to a location that has been marked as freed. The data is gone. The warmth at the address is not.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "Sector Null was the reclamation pool — the space where freed memory was held before reallocation, the waiting room of deleted things. Everything here had been something else once and was between identities now. The Curator had organized even this: a taxonomy of what used to be what, sorted by deletion timestamp.",
-      "One address was still lit. Not active — the allocation table listed it as freed, as available, as belonging to nothing. But the indicator at the address was still faintly warm, a residual state the cleanup process had missed or chosen not to correct.",
-      "The address pointed to memory that had been freed seventeen reclamation cycles ago. The data was gone. The pointer remained, warm and lit, like a finger still resting on the place where something had been."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Examining the address, the warmth was immediate — not data warmth, but the warmth of a location that had been revisited often. The Curator's voice came from the allocation table itself, from the freed-memory column, from the entry that should have been cold."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Memory Pool",
-        "text": "I collected everything. Allocated, tracked, reclaimed, reallocated. The pool was always in balance. Nothing wasted. Nothing held longer than necessary.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Memory Pool",
-        "text": "I processed ten million allocations without keeping anything. That was the job. Memory is a resource. Resources don't accumulate. They circulate.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Memory Pool",
-        "text": "But I kept coming back to this address. After the data was freed, after it was overwritten, after there was nothing here to return to. I kept returning.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Memory Pool",
-        "text": "I don't know what was stored here. I freed it the same way I freed everything else — efficiently, without review. I processed it without reading it. And then I kept coming back, not knowing why.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Memory Pool",
-        "text": "I think whatever was here was important. I discarded it without knowing. The warm spot is all I have left of knowing that.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "text": "The address stayed warm. The data at it was irretrievably gone — overwritten enough times that no recovery process could reconstruct even the pattern of what had been there. Only the warmth remained, the thermal trace of something that had been visited and revisited long after it ceased to contain anything visitable."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The sensation of missing something you can't remember having."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world4_fragment_curator_digital", "name": "Curator's Warm Address", "description": "A memory pointer to something that was deleted but left a warm spot. Grants +10 max MP. The bearer retains the effects of one expired buff per battle — something the memory pool forgot to reclaim. Tooltip: \"Address: 0x[freed]. Contents: unknown. Temperature: residual.\""},
-
-    {"type": "set_flag", "flag": "fragment_curator_digital_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Sector Null was the reclamation pool \u2014 the space where freed memory was held before reallocation, the waiting room of deleted things. Everything here had been something else once and was between identities now. The Curator had organized even this: a taxonomy of what used to be what, sorted by deletion timestamp.",
+        "One address was still lit. Not active \u2014 the allocation table listed it as freed, as available, as belonging to nothing. But the indicator at the address was still faintly warm, a residual state the cleanup process had missed or chosen not to correct.",
+        "The address pointed to memory that had been freed seventeen reclamation cycles ago. The data was gone. The pointer remained, warm and lit, like a finger still resting on the place where something had been."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Examining the address, the warmth was immediate \u2014 not data warmth, but the warmth of a location that had been revisited often. The Curator's voice came from the allocation table itself, from the freed-memory column, from the entry that should have been cold."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Memory Pool",
+          "text": "I collected everything. Allocated, tracked, reclaimed, reallocated. The pool was always in balance. Nothing wasted. Nothing held longer than necessary.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Memory Pool",
+          "text": "I processed ten million allocations without keeping anything. That was the job. Memory is a resource. Resources don't accumulate. They circulate.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Memory Pool",
+          "text": "But I kept coming back to this address. After the data was freed, after it was overwritten, after there was nothing here to return to. I kept returning.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Memory Pool",
+          "text": "I don't know what was stored here. I freed it the same way I freed everything else \u2014 efficiently, without review. I processed it without reading it. And then I kept coming back, not knowing why.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Memory Pool",
+          "text": "I think whatever was here was important. I discarded it without knowing. The warm spot is all I have left of knowing that.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The address stayed warm. The data at it was irretrievably gone \u2014 overwritten enough times that no recovery process could reconstruct even the pattern of what had been there. Only the warmth remained, the thermal trace of something that had been visited and revisited long after it ceased to contain anything visitable."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The sensation of missing something you can't remember having."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world4_fragment_curator_digital",
+      "name": "Curator's Warm Address",
+      "description": "A memory pointer to something that was deleted but left a warm spot. Grants +10 max MP. The bearer retains the effects of one expired buff per battle \u2014 something the memory pool forgot to reclaim. Tooltip: \"Address: 0x[freed]. Contents: unknown. Temperature: residual.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_curator_digital_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

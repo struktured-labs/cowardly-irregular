@@ -3,80 +3,125 @@
   "title": "Fragment: The Record",
   "world": 1,
   "trigger": "warden_medieval_defeated",
+  "background": "cave_entrance",
   "location": "whispering_cave_guardpost",
-  "description": "Found at the empty guardpost in the deepest chamber of the Whispering Cave after defeating the Warden. A memory crystallized in stone — the Warden's final private thought, preserved in the silence he kept for three hundred years.",
+  "description": "Found at the empty guardpost in the deepest chamber of the Whispering Cave after defeating the Warden. A memory crystallized in stone \u2014 the Warden's final private thought, preserved in the silence he kept for three hundred years.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The guardpost was empty. The Warden's armor was gone — no trace of it, no fragments, not even an impression in the stone where he had stood for so long.",
-      "But the stone itself had changed. A faint warmth ran through the rock here, in the deepest chamber of the Whispering Cave, as if something had been held in place long enough to leave its temperature behind.",
-      "In the wall — barely visible in the low light — a shallow impression, like a handprint but not a hand. Something pressed there in a final, deliberate moment."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "The impression was warm to the touch. And then a voice — not heard exactly, but present, the way a sound is present after it has already finished."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden",
-        "text": "Thirty-seven parties. I never wrote it down anywhere.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden",
-        "text": "The record exists only because I counted.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden",
-        "text": "When I stop counting, the record stops existing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden",
-        "text": "I wonder if that's true of everything. I wonder if anything exists except in someone's counting of it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden",
-        "text": "Thirty-seven.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "text": "The warmth faded. In the impression in the wall, where the Warden had pressed something at the last moment, a small piece of stone had come loose — a fragment, flat and unremarkable, except that it was warm, and it stayed warm."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "It felt, very faintly, like being watched over."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "old_guard_tally", "name": "Old Guard Tally", "description": "A fragment of the Warden's memory, crystallized in stone. Warm to the touch. Someone is still counting. Grants +2 to party defense when outnumbered."},
-
-    {"type": "set_flag", "flag": "fragment_warden_medieval_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The guardpost was empty. The Warden's armor was gone \u2014 no trace of it, no fragments, not even an impression in the stone where he had stood for so long.",
+        "But the stone itself had changed. A faint warmth ran through the rock here, in the deepest chamber of the Whispering Cave, as if something had been held in place long enough to leave its temperature behind.",
+        "In the wall \u2014 barely visible in the low light \u2014 a shallow impression, like a handprint but not a hand. Something pressed there in a final, deliberate moment."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "The impression was warm to the touch. And then a voice \u2014 not heard exactly, but present, the way a sound is present after it has already finished."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden",
+          "text": "Thirty-seven parties. I never wrote it down anywhere.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden",
+          "text": "The record exists only because I counted.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden",
+          "text": "When I stop counting, the record stops existing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden",
+          "text": "I wonder if that's true of everything. I wonder if anything exists except in someone's counting of it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden",
+          "text": "Thirty-seven.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The warmth faded. In the impression in the wall, where the Warden had pressed something at the last moment, a small piece of stone had come loose \u2014 a fragment, flat and unremarkable, except that it was warm, and it stayed warm."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "It felt, very faintly, like being watched over."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "old_guard_tally",
+      "name": "Old Guard Tally",
+      "description": "A fragment of the Warden's memory, crystallized in stone. Warm to the touch. Someone is still counting. Grants +2 to party defense when outnumbered."
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_warden_medieval_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

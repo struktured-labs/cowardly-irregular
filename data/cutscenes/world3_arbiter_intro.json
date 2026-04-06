@@ -3,74 +3,100 @@
   "title": "Arbiter of Efficiency",
   "world": 3,
   "trigger": "boss_arbiter_industrial",
+  "background": "steampunk_workshop",
   "description": "The Arbiter reviews the party's file in the foreman's office above the manufactory floor. Output is below standard. Demonstrate value.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The foreman's office overlooked the entire manufactory floor through a single long window of thick, smudged glass. Inside, the Arbiter of Efficiency stood at a drafting table covered in charts showing output against target, deviation against acceptable range, time against cost. Every chart showed a gap. The Arbiter was studying the gap."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "Your output is below standard. You have defeated two wardens and one arbiter. Against projected resistance curves, this is adequate. Against optimal baseline, it is not.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Optimal baseline set by whom?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "By prior parties. The ones who progressed further than you have. Their data forms the benchmark.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "How many prior parties made it this far?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "None. The baseline is extrapolated.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "You're measuring us against a hypothetical.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "All baselines are hypotheticals until data confirms them. The purpose of this encounter is to generate that data. Demonstrate value or be reassigned.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Reassigned to what?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "I haven't determined that yet. I'll know after I see what you do next.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "set_flag", "flag": "arbiter_industrial_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The foreman's office overlooked the entire manufactory floor through a single long window of thick, smudged glass. Inside, the Arbiter of Efficiency stood at a drafting table covered in charts showing output against target, deviation against acceptable range, time against cost. Every chart showed a gap. The Arbiter was studying the gap."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "Your output is below standard. You have defeated two wardens and one arbiter. Against projected resistance curves, this is adequate. Against optimal baseline, it is not.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Optimal baseline set by whom?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "By prior parties. The ones who progressed further than you have. Their data forms the benchmark.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "How many prior parties made it this far?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "None. The baseline is extrapolated.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "You're measuring us against a hypothetical.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "All baselines are hypotheticals until data confirms them. The purpose of this encounter is to generate that data. Demonstrate value or be reassigned.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Reassigned to what?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "I haven't determined that yet. I'll know after I see what you do next.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 4.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "set_flag",
+      "flag": "arbiter_industrial_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

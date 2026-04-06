@@ -3,80 +3,125 @@
   "title": "Fragment: The Warm Zero",
   "world": 3,
   "trigger": "curator_pipeline_defeated",
+  "background": "steampunk_workshop",
   "location": "ironhaven_pipeline_junction_four",
-  "description": "Found at Junction Four in the Ironhaven pipeline system after defeating the Curator of the Pipeline. A flow meter, removed from its fitting and set upright against the junction wall, reading zero — but warm in the way of something that has recently carried a great deal.",
+  "description": "Found at Junction Four in the Ironhaven pipeline system after defeating the Curator of the Pipeline. A flow meter, removed from its fitting and set upright against the junction wall, reading zero \u2014 but warm in the way of something that has recently carried a great deal.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "Junction Four was where the pipeline split — four directions, four gauges, four records of what had moved through and in what quantity. Three of the meters were still in their fittings. One had been removed and set upright against the wall, carefully, the way you set something down when you want it to be found.",
-      "The meter read zero. The needle was at the leftmost position, against its stop, indicating no flow, no pressure, nothing passing through.",
-      "But the housing was warm. Not ambient warm — warm in the specific way of a thing that has been conducting heat from something moving through it for a very long time, and has not yet let that heat go."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Picking up the meter, the warmth transferred immediately to the palm, steady and even, like holding something that was still doing something it didn't know how to stop. The Curator's voice came from the pipes — from the junction, from all four directions at once, as if she had been in the walls the whole time."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I tracked everything that moved through this system. Volume, rate, temperature, composition. I had a record for every cubic inch that passed Junction Four going back to when they first pressurized the main.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "At some point — I can tell you the exact date if you want it — something started moving through that my records couldn't account for. Not in volume. Not in pressure. Something in what it was.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I tracked it as far as I could. To Junction Four, and then — nowhere. It didn't arrive at any output. It didn't register at any downstream meter. It went somewhere my pipeline didn't go.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I pulled this meter to look for a leak in the fitting. There was no leak. The meter just read zero, and then stayed warm.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Pipeline",
-        "text": "I tracked every resource this system ever moved. Except whatever that was. It went somewhere I couldn't follow.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "text": "The meter stayed at zero. Whatever had passed through Junction Four and left no record — whatever had moved through the Curator's carefully documented system without appearing in any of her carefully documented columns — it had left this warmth behind as the only evidence of its passage."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The sensation of carrying something the record says isn't there."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world3_fragment_curator_steampunk", "name": "Curator's Warm Zero", "description": "A flow meter reading zero that is still warm. Grants +6 MP and restores 10 MP at the start of each battle. Something is moving through the bearer that no measurement catches. Tooltip: \"Reading: 0. Temperature: not zero. Contents: unresolved.\""},
-
-    {"type": "set_flag", "flag": "fragment_curator_steampunk_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Junction Four was where the pipeline split \u2014 four directions, four gauges, four records of what had moved through and in what quantity. Three of the meters were still in their fittings. One had been removed and set upright against the wall, carefully, the way you set something down when you want it to be found.",
+        "The meter read zero. The needle was at the leftmost position, against its stop, indicating no flow, no pressure, nothing passing through.",
+        "But the housing was warm. Not ambient warm \u2014 warm in the specific way of a thing that has been conducting heat from something moving through it for a very long time, and has not yet let that heat go."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Picking up the meter, the warmth transferred immediately to the palm, steady and even, like holding something that was still doing something it didn't know how to stop. The Curator's voice came from the pipes \u2014 from the junction, from all four directions at once, as if she had been in the walls the whole time."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I tracked everything that moved through this system. Volume, rate, temperature, composition. I had a record for every cubic inch that passed Junction Four going back to when they first pressurized the main.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "At some point \u2014 I can tell you the exact date if you want it \u2014 something started moving through that my records couldn't account for. Not in volume. Not in pressure. Something in what it was.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I tracked it as far as I could. To Junction Four, and then \u2014 nowhere. It didn't arrive at any output. It didn't register at any downstream meter. It went somewhere my pipeline didn't go.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I pulled this meter to look for a leak in the fitting. There was no leak. The meter just read zero, and then stayed warm.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Pipeline",
+          "text": "I tracked every resource this system ever moved. Except whatever that was. It went somewhere I couldn't follow.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The meter stayed at zero. Whatever had passed through Junction Four and left no record \u2014 whatever had moved through the Curator's carefully documented system without appearing in any of her carefully documented columns \u2014 it had left this warmth behind as the only evidence of its passage."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The sensation of carrying something the record says isn't there."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world3_fragment_curator_steampunk",
+      "name": "Curator's Warm Zero",
+      "description": "A flow meter reading zero that is still warm. Grants +6 MP and restores 10 MP at the start of each battle. Something is moving through the bearer that no measurement catches. Tooltip: \"Reading: 0. Temperature: not zero. Contents: unresolved.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_curator_steampunk_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

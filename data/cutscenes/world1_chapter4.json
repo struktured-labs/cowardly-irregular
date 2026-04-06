@@ -3,87 +3,128 @@
   "title": "After the Warden",
   "world": 1,
   "trigger": "boss_warden_defeated",
+  "background": "cave_entrance",
   "description": "The Warden's final words after defeat. Personal advice to each party member. Discovery of court magic corruption.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "cutscene_w1_warden_farewell"},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "text": "The chamber was very quiet. The kind of quiet that only exists deep underground, where there is nothing for sound to bounce off of except stone."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden",
-        "text": "Thirty-seven. You are the first to get through.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden",
-        "text": "I don't know what that means for the other side, but \u2014 good. Carry something worth carrying.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "play_sfx", "sfx": "sword_on_stone"},
-    {"type": "narration", "text": "He set down his sword deliberately. Placed his shield beside it. The armor began to still in a way that was different from stillness."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden",
-        "text": "I don't know who put me here. I stopped asking. Maybe you should ask for both of us.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden",
-        "text": "Fighter. Your shield work is poor. You lead with your right side and don't correct for it. If you survive something worse than me, correct it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden",
-        "text": "Mage. Stop documenting during the fight. You nearly took a blow that would have ended your journey. Your theory is correct. Trust it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden",
-        "text": "Cleric. You held them together longer than anyone had a right to expect. That is rare. Guard your own life with the same care you spend on theirs.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden",
-        "text": "And you \u2014 Bard. When you sang to the wolf pack. That was not the action of a frightened musician. That was strategy.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden",
-        "text": "Someone taught you well. Or no one taught you and you simply knew. I find I cannot tell which is true. Strange.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The Bard said nothing, which was unusual enough to be notable.",
-      "Behind where the Warden had stood, scratched into the cave wall: traces of court magic. Formal enchantments.",
-      "Someone with authority had been feeding the cave's corruption deliberately."
-    ]},
-
-    {"type": "set_flag", "flag": "warden_defeated", "value": true},
-    {"type": "set_flag", "flag": "chapter4_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w1_warden_farewell"
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "text": "The chamber was very quiet. The kind of quiet that only exists deep underground, where there is nothing for sound to bounce off of except stone."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden",
+          "text": "Thirty-seven. You are the first to get through.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden",
+          "text": "I don't know what that means for the other side, but \u2014 good. Carry something worth carrying.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "sword_on_stone"
+    },
+    {
+      "type": "narration",
+      "text": "He set down his sword deliberately. Placed his shield beside it. The armor began to still in a way that was different from stillness."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden",
+          "text": "I don't know who put me here. I stopped asking. Maybe you should ask for both of us.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden",
+          "text": "Fighter. Your shield work is poor. You lead with your right side and don't correct for it. If you survive something worse than me, correct it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden",
+          "text": "Mage. Stop documenting during the fight. You nearly took a blow that would have ended your journey. Your theory is correct. Trust it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden",
+          "text": "Cleric. You held them together longer than anyone had a right to expect. That is rare. Guard your own life with the same care you spend on theirs.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden",
+          "text": "And you \u2014 Bard. When you sang to the wolf pack. That was not the action of a frightened musician. That was strategy.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden",
+          "text": "Someone taught you well. Or no one taught you and you simply knew. I find I cannot tell which is true. Strange.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Bard said nothing, which was unusual enough to be notable.",
+        "Behind where the Warden had stood, scratched into the cave wall: traces of court magic. Formal enchantments.",
+        "Someone with authority had been feeding the cave's corruption deliberately."
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "warden_defeated",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter4_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

@@ -3,80 +3,108 @@
   "title": "Warden of Form",
   "world": 5,
   "trigger": "boss_warden_abstract",
+  "background": "node_prime",
   "description": "The final Warden holds the boundary between everything that can be represented and everything that cannot. To pass, break what cannot be broken.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "There was no room. There was no corridor. There was no path that led here because here was not a place that had a path leading to it.",
-      "And yet the Warden of Form was here. Had always been here. Would always be here because here was what it was made of.",
-      "It did not have a body so much as it had a shape. The shape said: boundary. The shape said: this is where the representable ends."
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of Form",
-        "text": "I am Form. The Master's final shape. Everything before me had a shape I gave it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of Form",
-        "text": "Your world had walls because I gave walls their angles. Your spells had shapes because I gave shapes their meaning. Your wounds had patterns because I gave damage its geometry.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "You built the rules of how everything looks.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Warden of Form",
-        "text": "I am the rules of how everything is. Looking is only one application.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of Form",
-        "text": "To pass, you must break what cannot be broken. This is not a riddle. It is a genuine requirement. I do not know if it can be done. I have been waiting here since before the question was asked.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "What does breaking Form look like?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Warden of Form",
-        "text": "I don't know. I have never seen it. If I had seen it, it would have had a shape. It would have been Form. Whatever breaks me must be something I have not yet given a shape to.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "So you've been guarding something you can't define how to get past.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Warden of Form",
-        "text": "Yes. I find it clarifying. Most problems, when you strip away their shape, are simply the question: what are you willing to do? Demonstrate.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.5, "intensity": 6.0},
-    {"type": "screen_flash", "duration": 0.25},
-    {"type": "set_flag", "flag": "warden_abstract_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "There was no room. There was no corridor. There was no path that led here because here was not a place that had a path leading to it.",
+        "And yet the Warden of Form was here. Had always been here. Would always be here because here was what it was made of.",
+        "It did not have a body so much as it had a shape. The shape said: boundary. The shape said: this is where the representable ends."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of Form",
+          "text": "I am Form. The Master's final shape. Everything before me had a shape I gave it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of Form",
+          "text": "Your world had walls because I gave walls their angles. Your spells had shapes because I gave shapes their meaning. Your wounds had patterns because I gave damage its geometry.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "You built the rules of how everything looks.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Warden of Form",
+          "text": "I am the rules of how everything is. Looking is only one application.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of Form",
+          "text": "To pass, you must break what cannot be broken. This is not a riddle. It is a genuine requirement. I do not know if it can be done. I have been waiting here since before the question was asked.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "What does breaking Form look like?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Warden of Form",
+          "text": "I don't know. I have never seen it. If I had seen it, it would have had a shape. It would have been Form. Whatever breaks me must be something I have not yet given a shape to.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "So you've been guarding something you can't define how to get past.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Warden of Form",
+          "text": "Yes. I find it clarifying. Most problems, when you strip away their shape, are simply the question: what are you willing to do? Demonstrate.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.5,
+      "intensity": 6.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.25
+    },
+    {
+      "type": "set_flag",
+      "flag": "warden_abstract_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

@@ -3,213 +3,271 @@
   "title": "Reading the Fine Print",
   "world": 2,
   "trigger": "world2_strip_mall_visit",
+  "background": "suburban_neighborhood",
   "quest": "chain_a_traveling_merchant",
   "description": "Orrery's life coaching booth at the Maple Heights strip mall. Form 77-Gamma. The Coordinator's memos. A specification that predates what it specifies.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "play_music", "track": "village_suburban"},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "lines": [
-      "The strip mall between the medieval surplus store and the nail salon contained, as of this week, a new booth.",
-      "The sign was laminated. ORRERY LIFE COACHING — BY APPOINTMENT OR WALK-IN. FIRST SESSION FREE.",
-      "The booth was slightly larger inside than outside. Nobody had filed a complaint about this yet, but someone was working up to it."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Your energy profile is remarkably consistent with someone I consulted in a previous context.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Are you — you're Orrery. From the wagon. From Harmonia.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I'm Orrery, yes. The wagon is contextually unavailable here — zoning. I've adapted. Life coaching is essentially the same as fortune telling with better insurance language.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I remember you from before this. I want you to know I understand how strange that sounds in a world where everyone around us is apparently on their first linear pass. I've been in this neighborhood long enough to notice things. I'd very much like to tell you what I've noticed.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "But first — I need a small favor.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "The HOA filed a complaint about my business license. Not an unusual complaint — I've had many, in many places — but this one cites a form I've never encountered. Form 77-Gamma: Itinerant Wisdom Services.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "That's... very specific.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Yes. Suspiciously specific. The form is apparently only obtainable from the Community Center, which requires a resident ID to enter, and I am an itinerant consultant, not a resident. You see the problem.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "We could get a visitor credential. The mail carrier mentioned she could arrange one. She needs help finding a package first — something about a rogue mailbox on Sycamore.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "That would be enormously helpful. I'd do it myself, but I have a client in — she checks something that isn't quite a watch — eleven minutes.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world2_orrery_find_credential", "value": true},
-    {"type": "set_flag", "flag": "world2_orrery_mailbox_errand", "value": true},
-
-    {"type": "narration", "lines": [
-      "The Community Center's Form 77-Gamma was forty-seven pages long.",
-      "Pages 3 through 46 were identical to page 3.",
-      "Page 47 contained a clause, in a font two sizes smaller than the rest: 'Exemption granted for any vendor with documented inter-dimensional licensing under Schedule C of the Inter-Municipal Commerce Agreement (1987, revised 2003).'",
-      "Nobody at the Community Center had ever invoked this clause. The desk clerk had to look it up. It took eleven minutes."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "There's always a gap. Every system has one place where the rule admits it doesn't know how to handle a specific case and quietly excuses itself. The gap is usually in the addendum. Or page 47.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Thank you. Genuinely. Now — what I noticed.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "She produced a folder. It was color-coded, tabbed, and had the thoroughness of someone who had spent three weeks pretending to life-coach while actually investigating."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "The Coordinator sends memos. Many memos. They reference documents — calibration reports, mainly — that I've been trying to locate. I found some of the originals in the Community Center archive.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "The memos reference calibration reports dated 1953. This neighborhood was built in 1983. The oldest house on this street is forty years old. The reports are thirty years older than the neighborhood they describe.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "That could be a filing error.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "A filing error wouldn't contain the correct street names. The reports describe Sycamore Court and Elmwood Lane by name. Those names didn't exist until 1983. But the reports refer to them as though they were already there.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Someone wrote a specification before they built the thing the specification describes.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Exactly. Whoever built this place built it to specification. The specification existed before the place. That's not how neighborhoods work. That's how something else works entirely. I'm still determining what.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Is the Coordinator the something else?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "The Coordinator is maintaining something. I don't think they built it. Their memos have the tone of a caretaker, not an architect. They're following instructions too.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "There's more in the next world, I suspect. There always is. The pattern keeps extending further back than I think it will.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "She handed over a laminated document. 'Life Coaching Summary — Session Notes.' It was professionally formatted. The 'client goals' section contained specific notes about the Coordinator's office monitor's blind spot and the hours the archive desk was unattended."},
-
-    {"type": "give_item", "item": "life_coaching_summary", "quantity": 1},
-    {"type": "set_flag", "flag": "fool_card_marks", "value": 2},
-    {"type": "set_flag", "flag": "world2_orrery_complete", "value": true},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "The Fool Card. May I?",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "narration", "text": "She held it for a moment. A second mark appeared on it — not drawn, exactly. More like it had always been there and the card was only now admitting it."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Good. Two marks. The journey is proceeding at an appropriate pace for someone who doesn't yet know what they're doing.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Is that a compliment?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Knowing what you're doing too early is its own kind of problem. Come find me in Brasston. I'll be the one with the impossible appointment schedule.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "village_suburban"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The strip mall between the medieval surplus store and the nail salon contained, as of this week, a new booth.",
+        "The sign was laminated. ORRERY LIFE COACHING \u2014 BY APPOINTMENT OR WALK-IN. FIRST SESSION FREE.",
+        "The booth was slightly larger inside than outside. Nobody had filed a complaint about this yet, but someone was working up to it."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Your energy profile is remarkably consistent with someone I consulted in a previous context.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Are you \u2014 you're Orrery. From the wagon. From Harmonia.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I'm Orrery, yes. The wagon is contextually unavailable here \u2014 zoning. I've adapted. Life coaching is essentially the same as fortune telling with better insurance language.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I remember you from before this. I want you to know I understand how strange that sounds in a world where everyone around us is apparently on their first linear pass. I've been in this neighborhood long enough to notice things. I'd very much like to tell you what I've noticed.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "But first \u2014 I need a small favor.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "The HOA filed a complaint about my business license. Not an unusual complaint \u2014 I've had many, in many places \u2014 but this one cites a form I've never encountered. Form 77-Gamma: Itinerant Wisdom Services.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "That's... very specific.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Yes. Suspiciously specific. The form is apparently only obtainable from the Community Center, which requires a resident ID to enter, and I am an itinerant consultant, not a resident. You see the problem.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We could get a visitor credential. The mail carrier mentioned she could arrange one. She needs help finding a package first \u2014 something about a rogue mailbox on Sycamore.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "That would be enormously helpful. I'd do it myself, but I have a client in \u2014 she checks something that isn't quite a watch \u2014 eleven minutes.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_orrery_find_credential",
+      "value": true
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_orrery_mailbox_errand",
+      "value": true
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Community Center's Form 77-Gamma was forty-seven pages long.",
+        "Pages 3 through 46 were identical to page 3.",
+        "Page 47 contained a clause, in a font two sizes smaller than the rest: 'Exemption granted for any vendor with documented inter-dimensional licensing under Schedule C of the Inter-Municipal Commerce Agreement (1987, revised 2003).'",
+        "Nobody at the Community Center had ever invoked this clause. The desk clerk had to look it up. It took eleven minutes."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "There's always a gap. Every system has one place where the rule admits it doesn't know how to handle a specific case and quietly excuses itself. The gap is usually in the addendum. Or page 47.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Thank you. Genuinely. Now \u2014 what I noticed.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "She produced a folder. It was color-coded, tabbed, and had the thoroughness of someone who had spent three weeks pretending to life-coach while actually investigating."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "The Coordinator sends memos. Many memos. They reference documents \u2014 calibration reports, mainly \u2014 that I've been trying to locate. I found some of the originals in the Community Center archive.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "The memos reference calibration reports dated 1953. This neighborhood was built in 1983. The oldest house on this street is forty years old. The reports are thirty years older than the neighborhood they describe.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "That could be a filing error.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "A filing error wouldn't contain the correct street names. The reports describe Sycamore Court and Elmwood Lane by name. Those names didn't exist until 1983. But the reports refer to them as though they were already there.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Someone wrote a specification before they built the thing the specification describes.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Exactly. Whoever built this place built it to specification. The specification existed before the place. That's not how neighborhoods work. That's how something else works entirely. I'm still determining what.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Is the Coordinator the something else?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "The Coordinator is maintaining something. I don't think they built it. Their memos have the tone of a caretaker, not an architect. They're following instructions too.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "There's more in the next world, I suspect. There always is. The pattern keeps extending further back than I think it will.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "She handed over a laminated document. 'Life Coaching Summary \u2014 Session Notes.' It was professionally formatted. The 'client goals' section contained specific notes about the Coordinator's office monitor's blind spot and the hours the archive desk was unattended."
+    },
+    {
+      "type": "give_item",
+      "item": "life_coaching_summary",
+      "quantity": 1
+    },
+    {
+      "type": "set_flag",
+      "flag": "fool_card_marks",
+      "value": 2
+    },
+    {
+      "type": "set_flag",
+      "flag": "world2_orrery_complete",
+      "value": true
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "The Fool Card. May I?",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "She held it for a moment. A second mark appeared on it \u2014 not drawn, exactly. More like it had always been there and the card was only now admitting it."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Good. Two marks. The journey is proceeding at an appropriate pace for someone who doesn't yet know what they're doing.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Is that a compliment?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Knowing what you're doing too early is its own kind of problem. Come find me in Brasston. I'll be the one with the impossible appointment schedule.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

@@ -3,80 +3,125 @@
   "title": "Fragment: Simulation 4001",
   "world": 4,
   "trigger": "arbiter_benchmark_defeated",
+  "background": "industrial_factory",
   "location": "digital_performance_chamber_epsilon",
   "description": "Found in Performance Chamber Epsilon after defeating the Arbiter of the Benchmark. A performance report, still rendering its final summary. The baseline column contains the party's own data. The model was perfect. The model was wrong.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The chamber had been designed for measurement — clean surfaces, controlled variables, the kind of environment where nothing happened by accident and everything that happened was entered into the record. The architecture of objectivity, which is also the architecture of something that has decided in advance what it will find.",
-      "Still suspended in the air at the chamber's center, rendering slowly as if the process that had generated it was still resolving its final columns: a performance report. Rows of metrics, confidence intervals, variance analyses. The comparison table at the bottom was the last thing to finish loading.",
-      "The baseline column was labeled YOUR PARTY. Not a theoretical baseline, not a historical average. The Arbiter had run her simulations against the actual party. Against them, specifically, as the model."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Reaching into the rendered report, it felt like touching a surface that was still deciding what temperature to be. The Arbiter's voice came from the data itself, from the rendering process, precise and even, the voice of someone whose certainty had recently been revised."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "I ran four thousand simulations before you arrived. Combat simulations, resource allocation simulations, decision-tree modeling for every strategic variable I could parameterize.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "The model predicted the outcome of this encounter with 94.7% confidence. Four thousand simulations, and the model was consistent.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "The error was in what I used as the baseline. I built the optimal benchmark from historical data — from every party that had passed through before you. I made a model of what a successful party looked like, and I measured you against it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "But the optimal baseline was already your data. You were already in the historical record. The model was predicting you against yourself, and it still got it wrong.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "A perfect model of the wrong question. Simulation 4001 was the only one that ran in reality.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.1},
-
-    {"type": "narration", "text": "The report finished rendering. The summary row at the bottom showed a confidence interval that now contained the actual outcome — updated, post-hoc, the model correcting itself in the only direction left available to it. The baseline column still said YOUR PARTY, but the data in it was slightly different from before. She had updated the model with what had actually happened."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The sensation of being measured by something that learned from the measurement."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world4_fragment_arbiter_digital", "name": "Arbiter's Performance Report", "description": "A benchmark report where the optimal baseline is the party's own data. The model was wrong once. Grants +5% to all stats — the Arbiter's post-hoc update to the model. Tooltip: \"Simulation 4001. Sample size: 1. Confidence: 100%.\""},
-
-    {"type": "set_flag", "flag": "fragment_arbiter_digital_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The chamber had been designed for measurement \u2014 clean surfaces, controlled variables, the kind of environment where nothing happened by accident and everything that happened was entered into the record. The architecture of objectivity, which is also the architecture of something that has decided in advance what it will find.",
+        "Still suspended in the air at the chamber's center, rendering slowly as if the process that had generated it was still resolving its final columns: a performance report. Rows of metrics, confidence intervals, variance analyses. The comparison table at the bottom was the last thing to finish loading.",
+        "The baseline column was labeled YOUR PARTY. Not a theoretical baseline, not a historical average. The Arbiter had run her simulations against the actual party. Against them, specifically, as the model."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Reaching into the rendered report, it felt like touching a surface that was still deciding what temperature to be. The Arbiter's voice came from the data itself, from the rendering process, precise and even, the voice of someone whose certainty had recently been revised."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "I ran four thousand simulations before you arrived. Combat simulations, resource allocation simulations, decision-tree modeling for every strategic variable I could parameterize.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The model predicted the outcome of this encounter with 94.7% confidence. Four thousand simulations, and the model was consistent.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The error was in what I used as the baseline. I built the optimal benchmark from historical data \u2014 from every party that had passed through before you. I made a model of what a successful party looked like, and I measured you against it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "But the optimal baseline was already your data. You were already in the historical record. The model was predicting you against yourself, and it still got it wrong.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "A perfect model of the wrong question. Simulation 4001 was the only one that ran in reality.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.1
+    },
+    {
+      "type": "narration",
+      "text": "The report finished rendering. The summary row at the bottom showed a confidence interval that now contained the actual outcome \u2014 updated, post-hoc, the model correcting itself in the only direction left available to it. The baseline column still said YOUR PARTY, but the data in it was slightly different from before. She had updated the model with what had actually happened."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The sensation of being measured by something that learned from the measurement."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world4_fragment_arbiter_digital",
+      "name": "Arbiter's Performance Report",
+      "description": "A benchmark report where the optimal baseline is the party's own data. The model was wrong once. Grants +5% to all stats \u2014 the Arbiter's post-hoc update to the model. Tooltip: \"Simulation 4001. Sample size: 1. Confidence: 100%.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_arbiter_digital_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

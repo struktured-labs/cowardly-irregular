@@ -3,80 +3,125 @@
   "title": "Fragment: The Missing Shift",
   "world": 3,
   "trigger": "tempo_shift_defeated",
+  "background": "steampunk_workshop",
   "location": "ironhaven_timekeeping_post",
   "description": "Found at the Ironhaven Timekeeping Post after defeating the Tempo of the Shift. A timecard in the punch-slot, already stamped, with a time on it that no clock in the building has ever shown.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The timekeeping post was a small room adjacent to the main floor — a vestibule, really, holding nothing but the punch-clock machine and the rack of timecards sorted by station number. The clock on the wall still ticked. The machine still had ink.",
-      "In the punch-slot, mid-feed as if someone had placed it there mid-motion and not finished: a timecard. Standard format, station designation printed at the top, a column of in-times and out-times running down the card in neat rows.",
-      "The final punch was at the bottom of the column. The time it showed was wrong — not wrong by a few minutes, not a mechanical error. Wrong in the way of a number that doesn't appear on any clock face, a configuration of hour and minute that the machinery of the day does not produce."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Pulling the card free from the slot, the paper was soft with age — not recent, despite the ink still being dark. The Tempo's voice came from the clock itself, from between the ticks, from the space the second hand crossed without marking."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "I've been running shifts since before the gears were cast. Since before the factory had a name for what a shift was.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "I was here when they built the clock. I watched them set the hands to what they decided the time would be, as if they were choosing something rather than measuring it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "I punched my first card at a time that didn't exist on their clock. I punched my last one at the same time. I never clocked out in between.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "The shift doesn't end because the clock doesn't reach the number. The shift ends because the work does.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Shift",
-        "text": "You finished the work. I suppose that's what it took.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "text": "The clock continued ticking. The second hand moved in its patient arc, reaching the number that should have been there and finding only air — the space where the Tempo's time had lived, unrecorded and unrecognized by any system that counted what the factory could measure."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The timecard was worn at the edges. Every punched column before the last one showed regular hours — in, out, in, out, the rhythm of a shift that had repeated so long it had become the definition of shift. The final entry was the only one that marked something true."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world3_fragment_tempo_steampunk", "name": "Tempo's Impossible Timecard", "description": "A timecard punched at a time no clock has ever shown. Grants +4 SPD and reduces cooldown on all timed abilities by 1. The bearer exists slightly outside the factory's accounting of when things happen. Tooltip: \"Clocked in before the clock. Clocked out when the work was done.\""},
-
-    {"type": "set_flag", "flag": "fragment_tempo_steampunk_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The timekeeping post was a small room adjacent to the main floor \u2014 a vestibule, really, holding nothing but the punch-clock machine and the rack of timecards sorted by station number. The clock on the wall still ticked. The machine still had ink.",
+        "In the punch-slot, mid-feed as if someone had placed it there mid-motion and not finished: a timecard. Standard format, station designation printed at the top, a column of in-times and out-times running down the card in neat rows.",
+        "The final punch was at the bottom of the column. The time it showed was wrong \u2014 not wrong by a few minutes, not a mechanical error. Wrong in the way of a number that doesn't appear on any clock face, a configuration of hour and minute that the machinery of the day does not produce."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Pulling the card free from the slot, the paper was soft with age \u2014 not recent, despite the ink still being dark. The Tempo's voice came from the clock itself, from between the ticks, from the space the second hand crossed without marking."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "I've been running shifts since before the gears were cast. Since before the factory had a name for what a shift was.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "I was here when they built the clock. I watched them set the hands to what they decided the time would be, as if they were choosing something rather than measuring it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "I punched my first card at a time that didn't exist on their clock. I punched my last one at the same time. I never clocked out in between.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "The shift doesn't end because the clock doesn't reach the number. The shift ends because the work does.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Shift",
+          "text": "You finished the work. I suppose that's what it took.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The clock continued ticking. The second hand moved in its patient arc, reaching the number that should have been there and finding only air \u2014 the space where the Tempo's time had lived, unrecorded and unrecognized by any system that counted what the factory could measure."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The timecard was worn at the edges. Every punched column before the last one showed regular hours \u2014 in, out, in, out, the rhythm of a shift that had repeated so long it had become the definition of shift. The final entry was the only one that marked something true."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world3_fragment_tempo_steampunk",
+      "name": "Tempo's Impossible Timecard",
+      "description": "A timecard punched at a time no clock has ever shown. Grants +4 SPD and reduces cooldown on all timed abilities by 1. The bearer exists slightly outside the factory's accounting of when things happen. Tooltip: \"Clocked in before the clock. Clocked out when the work was done.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_tempo_steampunk_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

@@ -3,56 +3,82 @@
   "title": "Tempo of the Hunt",
   "world": 1,
   "trigger": "boss_tempo_medieval",
+  "background": "prologue_forest",
   "description": "The Tempo appears in Scriptura's market district. A hunter who has been tracking the party since the forest. From World 1 novella ch7.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The Tempo dropped from a rooftop into the street ahead of them. A figure in traveling leathers, built for speed rather than defense, wearing an expression of genuine pleasure."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo",
-        "text": "You made it to the city. I had calculated you would lose yourselves in the forest and give up.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "I even cleared one of the loop paths to give you a chance. I wanted you to last longer.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "How generous.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "Isn't it? You have an interesting way of moving through space. You cover each other's gaps without discussing it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "The rogue is already three steps from where I expect.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "Don't let me catch you. That's not a threat. That's the game.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.2, "intensity": 3.0},
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "set_flag", "flag": "tempo_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Tempo dropped from a rooftop into the street ahead of them. A figure in traveling leathers, built for speed rather than defense, wearing an expression of genuine pleasure."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo",
+          "text": "You made it to the city. I had calculated you would lose yourselves in the forest and give up.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "I even cleared one of the loop paths to give you a chance. I wanted you to last longer.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "How generous.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "Isn't it? You have an interesting way of moving through space. You cover each other's gaps without discussing it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "The rogue is already three steps from where I expect.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "Don't let me catch you. That's not a threat. That's the game.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 3.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "set_flag",
+      "flag": "tempo_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

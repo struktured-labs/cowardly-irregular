@@ -3,84 +3,133 @@
   "title": "Fragment: The Thing That Stayed",
   "world": 5,
   "trigger": "curator_entropy_defeated",
+  "background": "node_prime",
   "location": "abstract_dissolution_field_the_kept",
-  "description": "Found in the Dissolution Field after defeating the Curator of Entropy. Something that refused to dissolve. In a place where everything eventually disperses, this one thing stayed — not held, not protected. It simply chose not to go.",
+  "description": "Found in the Dissolution Field after defeating the Curator of Entropy. Something that refused to dissolve. In a place where everything eventually disperses, this one thing stayed \u2014 not held, not protected. It simply chose not to go.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The Dissolution Field was the end of the abstract world — the place where differentiation gave way to drift, where the specific became the general, where things stopped being themselves and became the possibility of being things. Not nothing. The warm potential before something decides to be particular again.",
-      "Everything here dispersed eventually. That was the Curator's work: to tend the dissolution, to ensure that what returned to the field returned cleanly, without clinging. To prevent the accumulation of remainders. To keep the potential pure.",
-      "But in the center of the field, where the dissolution should have been most complete: a thing that had not dispersed. Not resisting — not held against the current, not protected from the field's draw. Simply present. Remaining because it had decided to remain. A single remembered thing, specific and intact, in a place where specificity was supposed to be temporary."
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "text": "The thing had no form that words were built to handle. But it was unambiguously there — more there than anything else in the field, more particular, more itself. The Curator's voice came from it directly, from the center of the thing that had stayed, clear and quiet and wondering."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of Entropy",
-        "text": "I am entropy. Not a keeper of entropy — not someone who manages it. I am the process itself, in a form that can be spoken to.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "My nature is to disperse. To un-distinguish. To return everything to the field. I have never kept anything. Keeping things is against my function. Keeping things is against my nature.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of Entropy",
-        "text": "But I am remembering this. Right now. I am holding the memory of this fight, of you being here, of the particular way this moment was different from the field.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "I should not be able to do that. I am entropy. Entropy doesn't remember. Entropy is what happens to memory.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.1},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of Entropy",
-        "text": "I didn't know I could choose. I have been running the dissolution for longer than the things I was dissolving have existed, and I did not know that I was choosing to. I thought I was only being what I am.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.4},
-
-    {"type": "narration", "text": "The thing that had stayed continued to stay. Around it, the dissolution field moved in its slow patient way — everything returning to potential, everything releasing its particular form, the long exhale of a universe settling toward equilibrium. And at the center, one thing that had decided equilibrium could wait."},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "narration", "text": "Held, the thing was warm in the way of something that has been deliberately kept — not preserved against time, but chosen against dispersal, the small act of a will that had previously not known it had one. The dissolution field moved around the hand that held it and left it alone."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The sensation of being remembered by something that is entropy."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world5_fragment_curator_abstract", "name": "Curator's Kept Thing", "description": "The one thing entropy chose to remember. It doesn't dissolve. Nothing about the bearer dissolves while they carry it — status effects expire in half their normal time (good and bad alike). The Curator chose. Tooltip: \"I didn't know I could choose.\""},
-
-    {"type": "set_flag", "flag": "fragment_curator_abstract_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Dissolution Field was the end of the abstract world \u2014 the place where differentiation gave way to drift, where the specific became the general, where things stopped being themselves and became the possibility of being things. Not nothing. The warm potential before something decides to be particular again.",
+        "Everything here dispersed eventually. That was the Curator's work: to tend the dissolution, to ensure that what returned to the field returned cleanly, without clinging. To prevent the accumulation of remainders. To keep the potential pure.",
+        "But in the center of the field, where the dissolution should have been most complete: a thing that had not dispersed. Not resisting \u2014 not held against the current, not protected from the field's draw. Simply present. Remaining because it had decided to remain. A single remembered thing, specific and intact, in a place where specificity was supposed to be temporary."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "text": "The thing had no form that words were built to handle. But it was unambiguously there \u2014 more there than anything else in the field, more particular, more itself. The Curator's voice came from it directly, from the center of the thing that had stayed, clear and quiet and wondering."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of Entropy",
+          "text": "I am entropy. Not a keeper of entropy \u2014 not someone who manages it. I am the process itself, in a form that can be spoken to.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "My nature is to disperse. To un-distinguish. To return everything to the field. I have never kept anything. Keeping things is against my function. Keeping things is against my nature.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of Entropy",
+          "text": "But I am remembering this. Right now. I am holding the memory of this fight, of you being here, of the particular way this moment was different from the field.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "I should not be able to do that. I am entropy. Entropy doesn't remember. Entropy is what happens to memory.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.1
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of Entropy",
+          "text": "I didn't know I could choose. I have been running the dissolution for longer than the things I was dissolving have existed, and I did not know that I was choosing to. I thought I was only being what I am.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.4
+    },
+    {
+      "type": "narration",
+      "text": "The thing that had stayed continued to stay. Around it, the dissolution field moved in its slow patient way \u2014 everything returning to potential, everything releasing its particular form, the long exhale of a universe settling toward equilibrium. And at the center, one thing that had decided equilibrium could wait."
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "narration",
+      "text": "Held, the thing was warm in the way of something that has been deliberately kept \u2014 not preserved against time, but chosen against dispersal, the small act of a will that had previously not known it had one. The dissolution field moved around the hand that held it and left it alone."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The sensation of being remembered by something that is entropy."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world5_fragment_curator_abstract",
+      "name": "Curator's Kept Thing",
+      "description": "The one thing entropy chose to remember. It doesn't dissolve. Nothing about the bearer dissolves while they carry it \u2014 status effects expire in half their normal time (good and bad alike). The Curator chose. Tooltip: \"I didn't know I could choose.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_curator_abstract_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

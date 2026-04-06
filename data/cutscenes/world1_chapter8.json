@@ -3,145 +3,184 @@
   "title": "The Scholar's Reckoning",
   "world": 1,
   "trigger": "chapter7_complete",
-  "description": "Before the palace — the Guild scholar reveals the chart is a guide to the party's own journey, written by Mordaine's hand.",
+  "background": "prologue_village",
+  "description": "Before the palace \u2014 the Guild scholar reveals the chart is a guide to the party's own journey, written by Mordaine's hand.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "mystery_w1"},
-
-    {"type": "narration", "text": "The Mage had insisted on returning to the Guild before the palace. The insistence had the quality of someone following a thread they didn't yet understand."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "The palace is right there.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mage",
-        "text": "I know. Ten minutes.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "It's been forty.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Twenty more.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "narration", "text": "The scholar met them in the Guild's back room with the look of a man choosing between his safety and his need to be understood. He chose the latter."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Scholar",
-        "text": "I found more documents. In the deepest part of the archive. The part that technically doesn't exist.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Scholar",
-        "text": "The administrative chart I showed you — I was wrong about what it describes. It isn't a political structure.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Scholar",
-        "text": "It's a guide. For a journey. Your journey, specifically. Every major location. Every significant enemy. Written before you arrived.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Who wrote it?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Scholar",
-        "text": "The handwriting on the oldest documents matches the enchantments in the cave. The same as the corrupted forest seals. The same as the inscription the Arbiter guided you to.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Scholar",
-        "text": "All of it is the same hand. The same author.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Mordaine wrote a guide to defeating her?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Scholar",
-        "text": "Not for her defeat. For your challenge. The distinction matters and I don't yet understand it.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Someone designed all of this.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Someone designed all of this.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "narration", "text": "They had both said it at the same time. Neither of them pointed that out."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "The scholar unrolled the final document. His eyes moved across the last column. Something there — his expression shifted, became careful in the way of a man handling something fragile."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Scholar",
-        "text": "There are things in this final column that wouldn't make sense to you yet.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Tell us.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Scholar",
-        "text": "Ask her yourself.",
-        "theme": "scholar",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "narration", "text": "He rolled the document closed. His hands were steady. The finality in the gesture was not unkindness. It was the only honest thing he had left to give them."},
-
-    {"type": "set_flag", "flag": "chapter8_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "mystery_w1"
+    },
+    {
+      "type": "narration",
+      "text": "The Mage had insisted on returning to the Guild before the palace. The insistence had the quality of someone following a thread they didn't yet understand."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "The palace is right there.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "I know. Ten minutes.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "It's been forty.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Twenty more.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The scholar met them in the Guild's back room with the look of a man choosing between his safety and his need to be understood. He chose the latter."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Scholar",
+          "text": "I found more documents. In the deepest part of the archive. The part that technically doesn't exist.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Scholar",
+          "text": "The administrative chart I showed you \u2014 I was wrong about what it describes. It isn't a political structure.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Scholar",
+          "text": "It's a guide. For a journey. Your journey, specifically. Every major location. Every significant enemy. Written before you arrived.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Who wrote it?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Scholar",
+          "text": "The handwriting on the oldest documents matches the enchantments in the cave. The same as the corrupted forest seals. The same as the inscription the Arbiter guided you to.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Scholar",
+          "text": "All of it is the same hand. The same author.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Mordaine wrote a guide to defeating her?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Scholar",
+          "text": "Not for her defeat. For your challenge. The distinction matters and I don't yet understand it.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Someone designed all of this.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Someone designed all of this.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "They had both said it at the same time. Neither of them pointed that out."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The scholar unrolled the final document. His eyes moved across the last column. Something there \u2014 his expression shifted, became careful in the way of a man handling something fragile."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Scholar",
+          "text": "There are things in this final column that wouldn't make sense to you yet.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Tell us.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Scholar",
+          "text": "Ask her yourself.",
+          "theme": "scholar",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "He rolled the document closed. His hands were steady. The finality in the gesture was not unkindness. It was the only honest thing he had left to give them."
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter8_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

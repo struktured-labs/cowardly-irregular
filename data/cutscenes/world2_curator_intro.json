@@ -3,83 +3,109 @@
   "title": "Curator of the Budget",
   "world": 2,
   "trigger": "boss_curator_suburban",
+  "background": "suburban_neighborhood",
   "description": "The Curator sits at a folding table in the strip mall office (between the dry cleaner and the frozen yogurt place), surrounded by binders. Requests receipts for everything.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "lines": [
-      "The office was wedged between the dry cleaner and the frozen yogurt place in Maple Heights' only strip mall. It smelled like toner and decisions made by committee.",
-      "At the folding table in the center sat a figure surrounded by binders. Color-coded binders. Eighteen of them. The figure was doing math on a legal pad and did not look up when the party entered."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of the Budget",
-        "text": "Let me see your receipts. All of them.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "We don't have receipts. We came through a portal.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Curator of the Budget",
-        "text": "The portal is a line item. I need to know what it cost and who approved it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Nobody approved it.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Curator of the Budget",
-        "text": "Unauthorized expenditures are still expenditures. They go in the variance column. The variance column is my least favorite column.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of the Budget",
-        "text": "Your weapons \u2014 cost? Your armor \u2014 source? Your potions \u2014 vendor? Your travel from the previous world \u2014 mileage reimbursement or flat rate?",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Some of this was looted.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Curator of the Budget",
-        "text": "Looted items carry acquisition cost zero but depreciation begins at point of combat. Do you have the dates?",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "I genuinely cannot tell if you're going to fight us or audit us.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Curator of the Budget",
-        "text": "Both. The audit is a prerequisite. I need to know what you have before I can correctly quantify what I am taking.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "set_flag", "flag": "curator_suburban_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The office was wedged between the dry cleaner and the frozen yogurt place in Maple Heights' only strip mall. It smelled like toner and decisions made by committee.",
+        "At the folding table in the center sat a figure surrounded by binders. Color-coded binders. Eighteen of them. The figure was doing math on a legal pad and did not look up when the party entered."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of the Budget",
+          "text": "Let me see your receipts. All of them.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "We don't have receipts. We came through a portal.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Curator of the Budget",
+          "text": "The portal is a line item. I need to know what it cost and who approved it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Nobody approved it.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Curator of the Budget",
+          "text": "Unauthorized expenditures are still expenditures. They go in the variance column. The variance column is my least favorite column.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of the Budget",
+          "text": "Your weapons \u2014 cost? Your armor \u2014 source? Your potions \u2014 vendor? Your travel from the previous world \u2014 mileage reimbursement or flat rate?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Some of this was looted.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Curator of the Budget",
+          "text": "Looted items carry acquisition cost zero but depreciation begins at point of combat. Do you have the dates?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "I genuinely cannot tell if you're going to fight us or audit us.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Curator of the Budget",
+          "text": "Both. The audit is a prerequisite. I need to know what you have before I can correctly quantify what I am taking.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 4.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "set_flag",
+      "flag": "curator_suburban_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

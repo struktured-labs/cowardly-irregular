@@ -3,80 +3,106 @@
   "title": "Tempo of the Clock Cycle",
   "world": 4,
   "trigger": "boss_tempo_futuristic",
+  "background": "industrial_factory",
   "description": "The Tempo of the Clock Cycle exists between processor ticks. It finds the party's reaction time deeply inefficient.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "They heard it before they saw it. A sound like a heartbeat that was going too fast, not in a way that suggested panic but in a way that suggested everything else was going too slow. Then it was simply there, between two blinks, where nothing had been."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Clock Cycle",
-        "text": "TICK.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Clock Cycle",
-        "text": "TOCK.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Clock Cycle",
-        "text": "Your processing time is inefficient. Between the moment you perceive a threat and the moment you respond, I have completed four hundred thousand operations.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "That seems like a lot.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Tempo of the Clock Cycle",
-        "text": "It is a conservative estimate. Your reflex arc introduces latency. Your decision-making introduces additional latency. Your emotions introduce latency that varies by circumstance in a way I have failed to accurately model.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Our emotions are a performance liability?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Tempo of the Clock Cycle",
-        "text": "Yes. Also your primary differentiator. The Arbiter's report noted this. I have reviewed the Arbiter's report.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Clock Cycle",
-        "text": "TICK. TOCK. The next cycle begins. Your lag is noted but irrelevant. Begin.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "It's already started, hasn't it.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Tempo of the Clock Cycle",
-        "text": "It started before you finished asking.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.2, "intensity": 3.5},
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "set_flag", "flag": "tempo_futuristic_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "They heard it before they saw it. A sound like a heartbeat that was going too fast, not in a way that suggested panic but in a way that suggested everything else was going too slow. Then it was simply there, between two blinks, where nothing had been."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "TICK.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "TOCK.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "Your processing time is inefficient. Between the moment you perceive a threat and the moment you respond, I have completed four hundred thousand operations.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "That seems like a lot.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "It is a conservative estimate. Your reflex arc introduces latency. Your decision-making introduces additional latency. Your emotions introduce latency that varies by circumstance in a way I have failed to accurately model.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Our emotions are a performance liability?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "Yes. Also your primary differentiator. The Arbiter's report noted this. I have reviewed the Arbiter's report.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "TICK. TOCK. The next cycle begins. Your lag is noted but irrelevant. Begin.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "It's already started, hasn't it.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "It started before you finished asking.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 3.5
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "set_flag",
+      "flag": "tempo_futuristic_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

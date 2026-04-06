@@ -3,80 +3,125 @@
   "title": "Fragment: Allow...",
   "world": 4,
   "trigger": "warden_firewall_defeated",
+  "background": "industrial_factory",
   "location": "digital_perimeter_node_zero",
   "description": "Found at Node Zero on the digital perimeter after defeating the Warden of the Firewall. A rule file, suspended in the residual data where the firewall stood. The last entry is unfinished. She stopped writing mid-word.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "Node Zero was quiet in the specific way of a perimeter that has been dismantled from the inside. The data structures that had formed the wall were still present — still organized, still structured — but no longer organized around keeping anything out. They had the quality of bricks remaining after someone has removed the mortar.",
-      "In the residual data at the center of the node, visible as a dim cluster of persistent bits: a file. A rule file — the kind the firewall ran on, a list of conditions and responses formatted in the rigid syntax of something that had to be unambiguous to work.",
-      "The entries were numbered from the top. RULE_1 through RULE_LAST, spanning decades of access decisions. The final entry had a label: RULE_LAST. After the colon: Allow... And then nothing. The line ended before the condition."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Touching the file, its warmth was unexpected — data structures don't hold heat, but this one did, the residual warmth of something that had processed continuously for a very long time. The Warden's voice came from inside the syntax itself, from between the rule entries, from the space that RULE_LAST had been trying to fill."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of the Firewall",
-        "text": "I wrote the first rule when they built the perimeter. DENY ALL. That was the starting state. Everything not explicitly permitted was forbidden, and nothing had been explicitly permitted yet.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of the Firewall",
-        "text": "Over time I added exceptions. Permitted traffic for known purposes, known protocols, known endpoints. The DENY ALL stayed at the top. The exceptions grew beneath it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of the Firewall",
-        "text": "I don't know what I was protecting anymore. I denied access for so long that I stopped checking whether the thing inside was still worth protecting. I assumed if I was still guarding it, it must still matter.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Warden of the Firewall",
-        "text": "I started writing RULE_LAST when you got through the outer layers. I was going to write: Allow — something. I wasn't sure what. I had never written an allow rule from first principles before.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Warden of the Firewall",
-        "text": "I ran out of time to finish it. But you can read what I meant.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "text": "The file stayed warm. RULE_LAST: Allow... — the unfinished permission, the first one written with genuine intent rather than as a named exception to a general denial. Whatever she had been about to allow, it was legible in the gap. In the space where the condition should have been, the data had a different texture — not empty, but open."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The sensation of having been permitted through by someone still deciding what that means."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world4_fragment_warden_digital", "name": "Warden's Unfinished Rule", "description": "A firewall rule file with the final entry unfinished: Allow... The Warden stopped mid-condition. Grants passive: the bearer cannot be blocked by status effects on the first attempt — the rule that was being written when the wall came down. Tooltip: \"RULE_LAST: Allow [condition pending].\""},
-
-    {"type": "set_flag", "flag": "fragment_warden_digital_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Node Zero was quiet in the specific way of a perimeter that has been dismantled from the inside. The data structures that had formed the wall were still present \u2014 still organized, still structured \u2014 but no longer organized around keeping anything out. They had the quality of bricks remaining after someone has removed the mortar.",
+        "In the residual data at the center of the node, visible as a dim cluster of persistent bits: a file. A rule file \u2014 the kind the firewall ran on, a list of conditions and responses formatted in the rigid syntax of something that had to be unambiguous to work.",
+        "The entries were numbered from the top. RULE_1 through RULE_LAST, spanning decades of access decisions. The final entry had a label: RULE_LAST. After the colon: Allow... And then nothing. The line ended before the condition."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Touching the file, its warmth was unexpected \u2014 data structures don't hold heat, but this one did, the residual warmth of something that had processed continuously for a very long time. The Warden's voice came from inside the syntax itself, from between the rule entries, from the space that RULE_LAST had been trying to fill."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of the Firewall",
+          "text": "I wrote the first rule when they built the perimeter. DENY ALL. That was the starting state. Everything not explicitly permitted was forbidden, and nothing had been explicitly permitted yet.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of the Firewall",
+          "text": "Over time I added exceptions. Permitted traffic for known purposes, known protocols, known endpoints. The DENY ALL stayed at the top. The exceptions grew beneath it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of the Firewall",
+          "text": "I don't know what I was protecting anymore. I denied access for so long that I stopped checking whether the thing inside was still worth protecting. I assumed if I was still guarding it, it must still matter.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Warden of the Firewall",
+          "text": "I started writing RULE_LAST when you got through the outer layers. I was going to write: Allow \u2014 something. I wasn't sure what. I had never written an allow rule from first principles before.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Warden of the Firewall",
+          "text": "I ran out of time to finish it. But you can read what I meant.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The file stayed warm. RULE_LAST: Allow... \u2014 the unfinished permission, the first one written with genuine intent rather than as a named exception to a general denial. Whatever she had been about to allow, it was legible in the gap. In the space where the condition should have been, the data had a different texture \u2014 not empty, but open."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The sensation of having been permitted through by someone still deciding what that means."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world4_fragment_warden_digital",
+      "name": "Warden's Unfinished Rule",
+      "description": "A firewall rule file with the final entry unfinished: Allow... The Warden stopped mid-condition. Grants passive: the bearer cannot be blocked by status effects on the first attempt \u2014 the rule that was being written when the wall came down. Tooltip: \"RULE_LAST: Allow [condition pending].\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_warden_digital_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

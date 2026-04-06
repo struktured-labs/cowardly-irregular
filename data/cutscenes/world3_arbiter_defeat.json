@@ -3,180 +3,233 @@
   "title": "Arbiter of Efficiency \u2014 Aftermath",
   "world": 3,
   "trigger": "boss_arbiter_industrial_defeated",
+  "background": "steampunk_workshop",
   "description": "The Arbiter stands at the drafting table, charts scattered. Efficiency rating: suboptimal. Standing: confirmed. The optimization model has encountered a result it cannot account for, and considers for the first time that the model may have been wrong.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The foreman's office above the manufactory floor had gone quiet. Through the long smudged window, the floor below was still.",
-      "The Arbiter of Efficiency stood at the drafting table with the stillness of a process that has completed and not yet received its next instruction. Several charts had slid from the table during the fight. They lay on the floor, their careful lines pointing nowhere in particular."
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "Your efficiency rating is suboptimal.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "And yet you are standing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "It said this without accusation. As a scientist notes a result that conflicts with the theory. With attention, and something like reluctant respect."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "I have optimized four hundred processes in this manufactory. Output, flow, yield, loss-rate, recovery-rate, shift allocation, fuel consumption. Every process I have touched performs closer to ideal than before I touched it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "None of those processes account for this outcome.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "You had our data from every world. You built a baseline from it.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "Yes. The baseline was accurate. The model was correct. You performed within the model's parameters in thirty-one of fifty-three engagements.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "You also survived all fifty-three. The model does not predict this.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Then the model is wrong.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "Yes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "I have been considering which part is wrong. The inputs were accurate. The historical data was accurate. The optimization was sound.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "I believe the problem is the baseline itself. I constructed an optimal from your past behavior. But you are not bound by your past behavior.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Nobody is.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "The systems I optimize are. A furnace cannot exceed its design capacity. A belt cannot move faster than its motor allows. The gap between what a system has done and what it can do is fixed.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "I applied the same model to you. That was the error.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "It reached for the nearest fallen chart. Picked it up. Looked at the lines without reading them."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "I have been optimizing this manufactory for as long as I can establish from records. The records go back further than the manufactory's construction date.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "That should trouble me. It does not. This also troubles me.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Everything you optimized. Was any of it yours?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "A long pause. The question landed somewhere that did not have a chart for it."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "No.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "The optimization was always in service of outputs I did not set. Targets I did not choose. I made everything more efficient. I never asked what the efficiency was for.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Efficiency",
-        "text": "The model was wrong. But not in the way I thought. The model was wrong because I was not measuring the right thing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "It set the chart down carefully on the table. Straightened it. Then straightened it again, the habit of precision outlasting whatever purpose the precision had served."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "set_flag", "flag": "arbiter_industrial_defeated", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The foreman's office above the manufactory floor had gone quiet. Through the long smudged window, the floor below was still.",
+        "The Arbiter of Efficiency stood at the drafting table with the stillness of a process that has completed and not yet received its next instruction. Several charts had slid from the table during the fight. They lay on the floor, their careful lines pointing nowhere in particular."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "Your efficiency rating is suboptimal.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "And yet you are standing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "It said this without accusation. As a scientist notes a result that conflicts with the theory. With attention, and something like reluctant respect."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "I have optimized four hundred processes in this manufactory. Output, flow, yield, loss-rate, recovery-rate, shift allocation, fuel consumption. Every process I have touched performs closer to ideal than before I touched it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "None of those processes account for this outcome.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "You had our data from every world. You built a baseline from it.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "Yes. The baseline was accurate. The model was correct. You performed within the model's parameters in thirty-one of fifty-three engagements.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "You also survived all fifty-three. The model does not predict this.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Then the model is wrong.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "Yes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "I have been considering which part is wrong. The inputs were accurate. The historical data was accurate. The optimization was sound.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "I believe the problem is the baseline itself. I constructed an optimal from your past behavior. But you are not bound by your past behavior.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Nobody is.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "The systems I optimize are. A furnace cannot exceed its design capacity. A belt cannot move faster than its motor allows. The gap between what a system has done and what it can do is fixed.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "I applied the same model to you. That was the error.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "It reached for the nearest fallen chart. Picked it up. Looked at the lines without reading them."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "I have been optimizing this manufactory for as long as I can establish from records. The records go back further than the manufactory's construction date.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "That should trouble me. It does not. This also troubles me.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Everything you optimized. Was any of it yours?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "A long pause. The question landed somewhere that did not have a chart for it."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "No.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "The optimization was always in service of outputs I did not set. Targets I did not choose. I made everything more efficient. I never asked what the efficiency was for.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Efficiency",
+          "text": "The model was wrong. But not in the way I thought. The model was wrong because I was not measuring the right thing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "It set the chart down carefully on the table. Straightened it. Then straightened it again, the habit of precision outlasting whatever purpose the precision had served."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "arbiter_industrial_defeated",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

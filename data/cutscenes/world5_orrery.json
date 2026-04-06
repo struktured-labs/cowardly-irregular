@@ -3,219 +3,292 @@
   "title": "The Latency Traveler",
   "world": 5,
   "trigger": "world5_market_district_visit",
+  "background": "node_prime",
   "quest": "chain_a_traveling_merchant",
   "description": "A data packet taking an unreasonable route in Node Prime's market district. Orrery_v5. The annotated blueprint. A firewall attendant who recognizes the handwriting.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "village_digital"},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "lines": [
-      "The network logs described it as 'a packet exhibiting anomalous routing behavior consistent with intentional delay or systemic loopback error.'",
-      "The packet had been in transit for what the timestamp indicated was longer than Node Prime had existed as a network.",
-      "It was sitting in the market district like a piece of light that had taken a wrong turn and wasn't sure it minded."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "That packet. It's — aware. It's looking at us.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "It's flagged itself as high-priority but routed itself through every deprecated node in the network to stay off the main inspection pipeline. That's — that's deliberate. Somebody is that packet on purpose.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "narration", "text": "When the party interacted with it, the packet resolved. Not into a person exactly — into the silhouette of one. The outline of a fortune teller, assembled from routing tables and cached lookups, wearing something that had been a coat in five previous worlds."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Oh good. You're here. I've been routing through deprecated nodes for two weeks to avoid packet inspection and I'm fairly tired of it, and I'm a packet, so that's saying something about how tired I am.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "You're a packet.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "I'm whatever traveling looks like in the current world. In World 5, traveling looks like taking an indirect route. I've been debugging my own route table for three worlds now. I keep arriving at places I've already left.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "It's less disorienting than you'd think. Mostly it means I've had a great deal of time to read things.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "I've been carrying a compressed data object since before Node Prime. I can't deliver it myself without triggering the Calibrant's packet inspection — my routing signature is by now very recognizable to anyone watching for anomalous behavior. But you aren't flagged. Would you take it?",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "What's in it?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "Everything I've found, across five worlds, assembled into a single document. It's encrypted. A Compiler can decrypt it. The firewall attendant at the network perimeter needs to receive it before the next major routing update, or the Calibrant's new inspection rules will make the transfer impossible.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world5_orrery_deliver_blueprint", "value": true},
-    {"type": "give_item", "item": "compressed_data_object", "quantity": 1},
-
-    {"type": "narration", "text": "The firewall attendant had the precise angular geometry of someone who had been running access controls for a long time and had developed opinions about who and what deserved entry."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Firewall Attendant",
-        "text": "Encrypted package. Sender: Orrery_v5. I know that routing signature. It's been looping through my perimeter for two weeks.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "We were asked to decrypt it and deliver the contents.",
-        "theme": "mage",
-        "portrait": "mage"
-      }
-    ]},
-
-    {"type": "narration", "text": "The Compiler worked through it. Layers of encryption, each one simpler than the last, as though the encoding had been designed to yield rather than refuse. Inside: a document that spanned six world-lengths, all in the same handwriting, with notes in a second hand that wrote only one word, over and over, at the margins."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "These are the blueprints. All of them. World 1 through World 6, in order, complete schematics. And in the margins — a second handwriting, smaller, asking — 'Why?'",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Firewall Attendant",
-        "text": "That notation. The primary hand. That's the same notation as the access control system I maintain.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "narration", "text": "Her angular geometry shifted. Something in the way she processed the recognition was slower than her usual speed, in the manner of a calculation encountering a value it hadn't planned for."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Firewall Attendant",
-        "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation — the 'why' — that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Firewall Attendant",
-        "text": "I'm going to file this behind the stack overflow. It's a maintenance location — legitimate access from either side requires triggering the overflow first, which is its own event that draws attention. The Calibrant won't look there without reason.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "set_flag", "flag": "world5_orrery_blueprint_delivered", "value": true},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Good. That's the important part, done.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "She was less resolved than she'd been — the packet form already starting to break up at the edges, routing table dissolving back into the network like a sentence returning to words returning to letters."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "I can see their code comments, you know. The Calibrant's. They're visible at this layer of the network.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "They're getting shorter. World 1's code is extensively commented — long explanations, careful notation, the kind of documentation a person writes when they still believe the project is worth explaining to their future self. By World 4 the comments are terse. By World 5 some functions have no comments at all.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "The variable names are getting less descriptive too. In World 1 everything has a full semantic name. In World 5 there are variables named 'x' and 'temp' and one I noticed three times simply called 'thing.'",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "What does that mean?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "It means they're tired. A tired programmer stops naming things carefully. When you're building something with real conviction, you name the pieces — you give them weight. When you're building something out of inertia, the names start not to matter.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "The Calibrant is still building. But I don't think they remember why they started.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "give_item", "item": "annotated_blueprint", "quantity": 1},
-    {"type": "set_flag", "flag": "fool_card_marks", "value": 5},
-    {"type": "set_flag", "flag": "world5_orrery_complete", "value": true},
-
-    {"type": "narration", "text": "The Fool Card was in the party's inventory. Five marks appeared on it at once — not sequentially, all together, as though they had been waiting for this moment to become visible. The card began to emit a faint light, the color of something about to become a question."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Orrery",
-        "text": "Five marks. The Fool has traveled far enough to know what they're a fool of.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Orrery",
-        "text": "When you reach the last world, I'll be the idea of a fortune teller rather than one. But I'll be there. Look for something that feels like waiting.",
-        "theme": "mysterious",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "narration", "text": "She dissolved back into the network. Not abruptly — gradually, the way a story stops not when it ends but when the next thing begins."},
-
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "village_digital"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The network logs described it as 'a packet exhibiting anomalous routing behavior consistent with intentional delay or systemic loopback error.'",
+        "The packet had been in transit for what the timestamp indicated was longer than Node Prime had existed as a network.",
+        "It was sitting in the market district like a piece of light that had taken a wrong turn and wasn't sure it minded."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "That packet. It's \u2014 aware. It's looking at us.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "It's flagged itself as high-priority but routed itself through every deprecated node in the network to stay off the main inspection pipeline. That's \u2014 that's deliberate. Somebody is that packet on purpose.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "When the party interacted with it, the packet resolved. Not into a person exactly \u2014 into the silhouette of one. The outline of a fortune teller, assembled from routing tables and cached lookups, wearing something that had been a coat in five previous worlds."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Oh good. You're here. I've been routing through deprecated nodes for two weeks to avoid packet inspection and I'm fairly tired of it, and I'm a packet, so that's saying something about how tired I am.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "You're a packet.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "I'm whatever traveling looks like in the current world. In World 5, traveling looks like taking an indirect route. I've been debugging my own route table for three worlds now. I keep arriving at places I've already left.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "It's less disorienting than you'd think. Mostly it means I've had a great deal of time to read things.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "I've been carrying a compressed data object since before Node Prime. I can't deliver it myself without triggering the Calibrant's packet inspection \u2014 my routing signature is by now very recognizable to anyone watching for anomalous behavior. But you aren't flagged. Would you take it?",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "What's in it?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "Everything I've found, across five worlds, assembled into a single document. It's encrypted. A Compiler can decrypt it. The firewall attendant at the network perimeter needs to receive it before the next major routing update, or the Calibrant's new inspection rules will make the transfer impossible.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_orrery_deliver_blueprint",
+      "value": true
+    },
+    {
+      "type": "give_item",
+      "item": "compressed_data_object",
+      "quantity": 1
+    },
+    {
+      "type": "narration",
+      "text": "The firewall attendant had the precise angular geometry of someone who had been running access controls for a long time and had developed opinions about who and what deserved entry."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Firewall Attendant",
+          "text": "Encrypted package. Sender: Orrery_v5. I know that routing signature. It's been looping through my perimeter for two weeks.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "We were asked to decrypt it and deliver the contents.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Compiler worked through it. Layers of encryption, each one simpler than the last, as though the encoding had been designed to yield rather than refuse. Inside: a document that spanned six world-lengths, all in the same handwriting, with notes in a second hand that wrote only one word, over and over, at the margins."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "These are the blueprints. All of them. World 1 through World 6, in order, complete schematics. And in the margins \u2014 a second handwriting, smaller, asking \u2014 'Why?'",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Firewall Attendant",
+          "text": "That notation. The primary hand. That's the same notation as the access control system I maintain.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "Her angular geometry shifted. Something in the way she processed the recognition was slower than her usual speed, in the manner of a calculation encountering a value it hadn't planned for."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Firewall Attendant",
+          "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation \u2014 the 'why' \u2014 that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Firewall Attendant",
+          "text": "I'm going to file this behind the stack overflow. It's a maintenance location \u2014 legitimate access from either side requires triggering the overflow first, which is its own event that draws attention. The Calibrant won't look there without reason.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_orrery_blueprint_delivered",
+      "value": true
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Good. That's the important part, done.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "She was less resolved than she'd been \u2014 the packet form already starting to break up at the edges, routing table dissolving back into the network like a sentence returning to words returning to letters."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "I can see their code comments, you know. The Calibrant's. They're visible at this layer of the network.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "They're getting shorter. World 1's code is extensively commented \u2014 long explanations, careful notation, the kind of documentation a person writes when they still believe the project is worth explaining to their future self. By World 4 the comments are terse. By World 5 some functions have no comments at all.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "The variable names are getting less descriptive too. In World 1 everything has a full semantic name. In World 5 there are variables named 'x' and 'temp' and one I noticed three times simply called 'thing.'",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "What does that mean?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "It means they're tired. A tired programmer stops naming things carefully. When you're building something with real conviction, you name the pieces \u2014 you give them weight. When you're building something out of inertia, the names start not to matter.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "The Calibrant is still building. But I don't think they remember why they started.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "give_item",
+      "item": "annotated_blueprint",
+      "quantity": 1
+    },
+    {
+      "type": "set_flag",
+      "flag": "fool_card_marks",
+      "value": 5
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_orrery_complete",
+      "value": true
+    },
+    {
+      "type": "narration",
+      "text": "The Fool Card was in the party's inventory. Five marks appeared on it at once \u2014 not sequentially, all together, as though they had been waiting for this moment to become visible. The card began to emit a faint light, the color of something about to become a question."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Orrery",
+          "text": "Five marks. The Fool has traveled far enough to know what they're a fool of.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Orrery",
+          "text": "When you reach the last world, I'll be the idea of a fortune teller rather than one. But I'll be there. Look for something that feels like waiting.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "She dissolved back into the network. Not abruptly \u2014 gradually, the way a story stops not when it ends but when the next thing begins."
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

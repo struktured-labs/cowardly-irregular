@@ -3,47 +3,68 @@
   "title": "The Curator of the Flame",
   "world": 1,
   "trigger": "world1_curator_pre_fight",
+  "background": "throne_room",
   "description": "The Curator offers tea and genuine curiosity. Eleven years studying this room. The most interesting thing to happen all decade is that the party might be looking for something that isn't here.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "play_music", "track": "boss_curator_medieval"},
-
-    {"type": "branch", "condition": "playstyle", "cases": {
-      "completionist": [
-        {"type": "dialogue", "lines": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "boss_curator_medieval"
+    },
+    {
+      "type": "branch",
+      "condition": "playstyle",
+      "cases": {
+        "completionist": [
           {
-            "speaker": "Curator",
-            "text": "Tea? I have tea. It's a restorative, technically. Also it's good tea.",
-            "theme": "enemy",
-            "portrait": "mysterious"
-          },
-          {
-            "speaker": "Curator",
-            "text": "Since you're not in a hurry — let me tell you about the guardian order. All four of us. What we were made for. What we became instead.",
-            "theme": "enemy",
-            "portrait": "mysterious"
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Curator",
+                "text": "Tea? I have tea. It's a restorative, technically. Also it's good tea.",
+                "theme": "enemy",
+                "portrait": "mysterious"
+              },
+              {
+                "speaker": "Curator",
+                "text": "Since you're not in a hurry \u2014 let me tell you about the guardian order. All four of us. What we were made for. What we became instead.",
+                "theme": "enemy",
+                "portrait": "mysterious"
+              }
+            ]
           }
-        ]}
-      ],
-      "default": []
-    }},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "Before we begin — and we will begin, I'm sorry about that — can I ask what you think is behind the flame? Not the literal throne room. Behind all of it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator",
-        "text": "I've studied this room for eleven years. I know exactly what's in it. I am genuinely uncertain if what you're looking for is here. That's the most interesting thing that's happened all decade.",
-        "theme": "enemy",
-        "portrait": "mysterious"
+        ],
+        "default": []
       }
-    ]},
-
-    {"type": "set_flag", "flag": "world1_curator_encounter_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "Before we begin \u2014 and we will begin, I'm sorry about that \u2014 can I ask what you think is behind the flame? Not the literal throne room. Behind all of it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator",
+          "text": "I've studied this room for eleven years. I know exactly what's in it. I am genuinely uncertain if what you're looking for is here. That's the most interesting thing that's happened all decade.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_curator_encounter_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

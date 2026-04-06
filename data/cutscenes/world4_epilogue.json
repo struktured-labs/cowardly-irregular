@@ -3,117 +3,182 @@
   "title": "After the Factory",
   "world": 4,
   "trigger": "world4_director_defeated",
+  "background": "director_office",
   "description": "After the Director's defeat. The factory monitors go blank. The ceiling cracks and behind the concrete: green-on-black terminal text scrolling. Four worlds. Four systems of control. Same enemy in different costumes. The meta-awareness hardens into certainty.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "fade_to_black", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "fade_from_black", "duration": 1.0},
-    {"type": "play_music", "track": "cutscene_w4_director_unmasked"},
-
-    {"type": "narration", "lines": [
-      "The monitors went blank.",
-      "All of them. Every corner of every corridor of Rivet Row \u2014 every screen that had been showing numbers going up, battle records, efficiency metrics, the party's own statistics used against them \u2014 all of it, dark.",
-      "The numbers going up had stopped. The particular silence of a place that has been defined by surveillance and is now, for the first time, unwatched."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "Then the ceiling cracked."},
-
-    {"type": "play_sfx", "sfx": "reality_glitch"},
-    {"type": "screen_shake", "duration": 0.6, "intensity": 4.0},
-    {"type": "screen_flash", "duration": 0.3},
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "lines": [
-      "Not structurally. The crack was the wrong kind of wrong \u2014 it opened along seams that concrete doesn't have, along the joins between what this world was and what was underneath it.",
-      "Through the crack: green text on black. Scrolling. Data. Code. A terminal aesthetic, clean and cold and very much not concrete.",
-      "The crack closed. The ceiling sealed. The cracked place left no mark."
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "Green text. Terminal. That's what's coming.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Four worlds. Four systems of control. Medieval order. Suburban conformity. Industrial efficiency. Factory compliance. Different words for the same arrangement.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "We're not fighting different enemies. We've been fighting the same enemy the whole time.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Same enemy, different costumes.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "Each world has been harder. The disguise has gotten thinner. By the time we're inside a terminal, the costume might be gone entirely.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "Calibrated. Mordaine's word. The Coordinator used it. The Regulator used it. The Director's monitors used it. 'Party deviation from calibrated parameters: critical.'",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Bard",
-        "text": "Same word. Same author.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mage",
-        "text": "Every world has been a different room in the same building. We've been ascending floors.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Then the next floor is where whoever built the building lives.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The blank monitors reflected their faces back at them. The numbers were gone. The surveillance was gone. The factory floor was silent in a way that felt less like rest and more like being between one breath and the next."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "play_sfx", "sfx": "portal_activate"},
-
-    {"type": "narration", "lines": [
-      "The shimmer appeared where the largest monitor had been. Where their battle records had been displayed. Where they had been data.",
-      "Behind it: green on black. Wireframe geometry. The smell of a machine room at three in the morning.",
-      "They knew this shape by now. They moved toward it without discussing it.",
-      "The factory, empty and unmonitored, did nothing to stop them. There was no one left to authorize the stopping."
-    ]},
-
-    {"type": "fade_to_black", "duration": 1.5},
-    {"type": "set_flag", "flag": "world4_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "fade_to_black",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "fade_from_black",
+      "duration": 1.0
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_w4_director_unmasked"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The monitors went blank.",
+        "All of them. Every corner of every corridor of Rivet Row \u2014 every screen that had been showing numbers going up, battle records, efficiency metrics, the party's own statistics used against them \u2014 all of it, dark.",
+        "The numbers going up had stopped. The particular silence of a place that has been defined by surveillance and is now, for the first time, unwatched."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "Then the ceiling cracked."
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "reality_glitch"
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.6,
+      "intensity": 4.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.3
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Not structurally. The crack was the wrong kind of wrong \u2014 it opened along seams that concrete doesn't have, along the joins between what this world was and what was underneath it.",
+        "Through the crack: green text on black. Scrolling. Data. Code. A terminal aesthetic, clean and cold and very much not concrete.",
+        "The crack closed. The ceiling sealed. The cracked place left no mark."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "Green text. Terminal. That's what's coming.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Four worlds. Four systems of control. Medieval order. Suburban conformity. Industrial efficiency. Factory compliance. Different words for the same arrangement.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "We're not fighting different enemies. We've been fighting the same enemy the whole time.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Same enemy, different costumes.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Each world has been harder. The disguise has gotten thinner. By the time we're inside a terminal, the costume might be gone entirely.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Calibrated. Mordaine's word. The Coordinator used it. The Regulator used it. The Director's monitors used it. 'Party deviation from calibrated parameters: critical.'",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Same word. Same author.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Every world has been a different room in the same building. We've been ascending floors.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Then the next floor is where whoever built the building lives.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The blank monitors reflected their faces back at them. The numbers were gone. The surveillance was gone. The factory floor was silent in a way that felt less like rest and more like being between one breath and the next."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "portal_activate"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The shimmer appeared where the largest monitor had been. Where their battle records had been displayed. Where they had been data.",
+        "Behind it: green on black. Wireframe geometry. The smell of a machine room at three in the morning.",
+        "They knew this shape by now. They moved toward it without discussing it.",
+        "The factory, empty and unmonitored, did nothing to stop them. There was no one left to authorize the stopping."
+      ]
+    },
+    {
+      "type": "fade_to_black",
+      "duration": 1.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "world4_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

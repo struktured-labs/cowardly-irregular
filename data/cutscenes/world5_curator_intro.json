@@ -3,92 +3,120 @@
   "title": "Curator of Entropy",
   "world": 5,
   "trigger": "boss_curator_abstract",
+  "background": "node_prime",
   "description": "The final Masterite of the abstract world. The Curator of Entropy has been watching all six worlds unravel toward their inevitable conclusion.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The Curator of Entropy was not a dramatic presence. It was a quiet one.",
-      "It sat where a throne might have been if the abstract world had needed thrones. It sat where the center of a space would be if the abstract world had geometry.",
-      "It looked at the party the way something looks at things it has been watching for a very long time."
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator of Entropy",
-        "text": "Everything ends. I merely accelerate the inevitable.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "That's the most honest thing any of you have said.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "I have had a long time to practice honesty. The Curator of the Flame had fire. The Curator of the Budget had ledgers. The Curator of the Pipeline had flow. I have time, and time is honest.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "You have fought very hard to persist. I respect this in a purely observational sense. All things fight to persist. It is the nature of organized systems to resist their own dissolution.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "But you dissolve them anyway.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "I am the dissolution. I do not choose it. I am what happens when the choosing is done.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "You have passed the Warden, the Arbiter, the Tempo. You have reached the end of the system. I am what the system deposits here when it has nothing else left to throw.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "And if we pass you?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "Then something persists that I could not dissolve. That would be the most interesting thing that has happened in a very long time.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator of Entropy",
-        "text": "I have not decided whether I want you to pass. I find I am curious, which is not a sensation I expected to have at this stage.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Then find out.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.5, "intensity": 6.0},
-    {"type": "screen_flash", "duration": 0.25},
-    {"type": "set_flag", "flag": "curator_abstract_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Curator of Entropy was not a dramatic presence. It was a quiet one.",
+        "It sat where a throne might have been if the abstract world had needed thrones. It sat where the center of a space would be if the abstract world had geometry.",
+        "It looked at the party the way something looks at things it has been watching for a very long time."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator of Entropy",
+          "text": "Everything ends. I merely accelerate the inevitable.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "That's the most honest thing any of you have said.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "I have had a long time to practice honesty. The Curator of the Flame had fire. The Curator of the Budget had ledgers. The Curator of the Pipeline had flow. I have time, and time is honest.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "You have fought very hard to persist. I respect this in a purely observational sense. All things fight to persist. It is the nature of organized systems to resist their own dissolution.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "But you dissolve them anyway.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "I am the dissolution. I do not choose it. I am what happens when the choosing is done.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "You have passed the Warden, the Arbiter, the Tempo. You have reached the end of the system. I am what the system deposits here when it has nothing else left to throw.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "And if we pass you?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "Then something persists that I could not dissolve. That would be the most interesting thing that has happened in a very long time.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator of Entropy",
+          "text": "I have not decided whether I want you to pass. I find I am curious, which is not a sensation I expected to have at this stage.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Then find out.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.5,
+      "intensity": 6.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.25
+    },
+    {
+      "type": "set_flag",
+      "flag": "curator_abstract_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

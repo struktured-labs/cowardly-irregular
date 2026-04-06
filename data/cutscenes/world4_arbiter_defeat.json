@@ -3,203 +3,260 @@
   "title": "Arbiter of the Benchmark \u2014 Aftermath",
   "world": 4,
   "trigger": "boss_arbiter_futuristic_defeated",
+  "background": "industrial_factory",
   "description": "Four thousand simulations. Zero wins for the party. And yet. The benchmark was built from their own history used against them. They exceeded their own data. The model was perfect. They were not. That is why they won.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The data columns around the Arbiter had stopped cascading. They hung in the process space like walls in a room that had just remembered it was a room.",
-      "The Arbiter of the Benchmark remained where it had been throughout: suspended, cross-legged, at the center of six worlds' worth of the party's own history. The readouts still showed every encounter. The numbers had not changed. Only the conclusion had."
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "Four thousand simulations.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "You won in none of them.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "And yet.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "A pause with genuine weight to it. The Arbiter looked at the readouts surrounding it, all of which were now displaying a result they had not been designed to display."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "You built the benchmark from our own data.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "Yes. Fifty-three encounters. Complete logs. Every decision you made, every resource expended, every threshold approached and not crossed. I derived the optimal from your own history.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "I used your past against you. This is the most precise form of measurement: hold a system against its own best self and observe the gap.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "And the gap was wider than you expected.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "The gap did not exist. You performed above your own optimal. This should not be possible. The optimal derived from past performance represents the theoretical ceiling of a fixed system.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "We're not a fixed system.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "No. You are not.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "The model was perfect. I have verified the model. Every input was accurate. Every derivation was sound. The model correctly predicted the optimal behavior for the system described by your combat logs.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "You were not the system described by your combat logs.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "What were we?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "A system in the process of changing. The logs describe what you were. You arrived as what you are becoming. The benchmark measures the past. It cannot measure the future of a system that is actively revising itself.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "Several of the data columns around the Arbiter shifted, reconfiguring around new inputs. The readouts changed. The Arbiter watched the numbers update with the attention of someone watching a proof complete."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "The model was perfect. You were not. That is why you won.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "Perfection is static. A perfect model is a model that no longer grows. I built the optimal from your past and held it against your present. The optimal lost because you had moved past it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "Something changed in the Arbiter's posture. Still suspended, still surrounded by data, but differently focused. As if the calculation had turned toward something closer."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "I have been refining the benchmark since Node Prime was initialized. I have refined it against every system that has passed through this sector.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "Nothing has ever updated the benchmark. The benchmark is updated when a system exceeds it. No system has exceeded it until now.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "The benchmark has been the same since it was built. I have been the same since I was built.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "Are you updating now?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "Yes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "I find I do not know what I am updating toward. The benchmark was the only measure I had. Without a fixed measure, I cannot assess progress. I can only\u2026 move.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of the Benchmark",
-        "text": "I think that may be what you have been doing the entire time.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "The data columns dissolved. Not deleted. Archived. The process space, without its walls of numbers, was simply space. The Arbiter remained at its center, recalculating with no fixed reference point for the first time."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "set_flag", "flag": "arbiter_futuristic_defeated", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The data columns around the Arbiter had stopped cascading. They hung in the process space like walls in a room that had just remembered it was a room.",
+        "The Arbiter of the Benchmark remained where it had been throughout: suspended, cross-legged, at the center of six worlds' worth of the party's own history. The readouts still showed every encounter. The numbers had not changed. Only the conclusion had."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "Four thousand simulations.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "You won in none of them.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "And yet.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "A pause with genuine weight to it. The Arbiter looked at the readouts surrounding it, all of which were now displaying a result they had not been designed to display."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "You built the benchmark from our own data.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "Yes. Fifty-three encounters. Complete logs. Every decision you made, every resource expended, every threshold approached and not crossed. I derived the optimal from your own history.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "I used your past against you. This is the most precise form of measurement: hold a system against its own best self and observe the gap.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "And the gap was wider than you expected.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The gap did not exist. You performed above your own optimal. This should not be possible. The optimal derived from past performance represents the theoretical ceiling of a fixed system.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "We're not a fixed system.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "No. You are not.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The model was perfect. I have verified the model. Every input was accurate. Every derivation was sound. The model correctly predicted the optimal behavior for the system described by your combat logs.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "You were not the system described by your combat logs.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "What were we?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "A system in the process of changing. The logs describe what you were. You arrived as what you are becoming. The benchmark measures the past. It cannot measure the future of a system that is actively revising itself.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "Several of the data columns around the Arbiter shifted, reconfiguring around new inputs. The readouts changed. The Arbiter watched the numbers update with the attention of someone watching a proof complete."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The model was perfect. You were not. That is why you won.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "Perfection is static. A perfect model is a model that no longer grows. I built the optimal from your past and held it against your present. The optimal lost because you had moved past it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "Something changed in the Arbiter's posture. Still suspended, still surrounded by data, but differently focused. As if the calculation had turned toward something closer."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "I have been refining the benchmark since Node Prime was initialized. I have refined it against every system that has passed through this sector.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "Nothing has ever updated the benchmark. The benchmark is updated when a system exceeds it. No system has exceeded it until now.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The benchmark has been the same since it was built. I have been the same since I was built.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "Are you updating now?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "Yes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "I find I do not know what I am updating toward. The benchmark was the only measure I had. Without a fixed measure, I cannot assess progress. I can only\u2026 move.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "I think that may be what you have been doing the entire time.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "The data columns dissolved. Not deleted. Archived. The process space, without its walls of numbers, was simply space. The Arbiter remained at its center, recalculating with no fixed reference point for the first time."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "arbiter_futuristic_defeated",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

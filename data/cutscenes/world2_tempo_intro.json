@@ -3,126 +3,170 @@
   "title": "Tempo of the Rush Hour",
   "world": 2,
   "trigger": "boss_tempo_suburban",
+  "background": "suburban_park",
   "description": "The Tempo arrives as a pizza delivery driver in a beat-up compact car with a magnetic MAPLE HEIGHTS PIZZA roof sign. Thirty minutes or less. The timer is always running.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The compact car appeared at the end of the street doing a speed that was technically residential but felt much faster. On the roof: a magnetic sign in red and yellow. MAPLE HEIGHTS PIZZA. One corner of the sign was flapping. The figure inside was wearing a branded windbreaker and was already leaning halfway out the window before the car had stopped."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Rush Hour",
-        "text": "THIRTY MINUTES OR LESS!",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Thirty minutes or less what?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Tempo of the Rush Hour",
-        "text": "EVERYTHING! ALL OF IT! WHAT DO YOU MEAN WHAT?",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "We didn't order a pizza.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Tempo of the Rush Hour",
-        "text": "Irrelevant. You are on my route. You are on the clock. THE TIMER IS RUNNING. THE TIMER IS ALWAYS RUNNING.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "narration", "text": "The compact car revved. It was not a powerful car. It was a car held together by determination and the belief that thirty minutes was a deadline and not a guideline. It accelerated toward them."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "Run.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mage",
-        "text": "It's a cul-de-sac.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "All of them are cul-de-sacs.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "narration", "text": "They ran. The car followed. Maple Heights was a maze of dead ends and looping streets that connected to other looping streets that also ended. Every time they turned a corner there was another corner. The Tempo was not deterred. The Tempo had a system."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Rush Hour",
-        "text": "TWENTY-TWO MINUTES REMAINING! TWENTY-ONE! EVERY SECOND YOU WASTE IS A SECOND ON THE CLOCK!",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "narration", "text": "The Rogue found the skateboard leaning against a mailbox. It was purple. It had a cartoon flame on it. It would do."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "I have an idea.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Does it involve a fence.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "Eventually.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "narration", "text": "The Rogue led the car down a footpath between two houses. Not a road. A path. The compact car followed anyway \u2014 the Tempo was past making distinctions at this point. The path ended at a fence. The fence was wooden and looked reasonable. The car hit it at a speed that suggested the Tempo had done the math and concluded the fence would yield. The fence did not yield. The fence had structural opinions."},
-
-    {"type": "narration", "text": "The car stopped. The MAPLE HEIGHTS PIZZA sign was at an angle now. Steam came from somewhere under the hood that did not inspire confidence. The door opened."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo of the Rush Hour",
-        "text": "Eleven minutes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo of the Rush Hour",
-        "text": "Eleven minutes. I still have eleven minutes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.2, "intensity": 3.5},
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "set_flag", "flag": "tempo_suburban_intro_complete", "value": true},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The compact car appeared at the end of the street doing a speed that was technically residential but felt much faster. On the roof: a magnetic sign in red and yellow. MAPLE HEIGHTS PIZZA. One corner of the sign was flapping. The figure inside was wearing a branded windbreaker and was already leaning halfway out the window before the car had stopped."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Rush Hour",
+          "text": "THIRTY MINUTES OR LESS!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Thirty minutes or less what?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Tempo of the Rush Hour",
+          "text": "EVERYTHING! ALL OF IT! WHAT DO YOU MEAN WHAT?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We didn't order a pizza.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Tempo of the Rush Hour",
+          "text": "Irrelevant. You are on my route. You are on the clock. THE TIMER IS RUNNING. THE TIMER IS ALWAYS RUNNING.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The compact car revved. It was not a powerful car. It was a car held together by determination and the belief that thirty minutes was a deadline and not a guideline. It accelerated toward them."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "Run.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "It's a cul-de-sac.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "All of them are cul-de-sacs.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "They ran. The car followed. Maple Heights was a maze of dead ends and looping streets that connected to other looping streets that also ended. Every time they turned a corner there was another corner. The Tempo was not deterred. The Tempo had a system."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Rush Hour",
+          "text": "TWENTY-TWO MINUTES REMAINING! TWENTY-ONE! EVERY SECOND YOU WASTE IS A SECOND ON THE CLOCK!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Rogue found the skateboard leaning against a mailbox. It was purple. It had a cartoon flame on it. It would do."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "I have an idea.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Does it involve a fence.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Eventually.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Rogue led the car down a footpath between two houses. Not a road. A path. The compact car followed anyway \u2014 the Tempo was past making distinctions at this point. The path ended at a fence. The fence was wooden and looked reasonable. The car hit it at a speed that suggested the Tempo had done the math and concluded the fence would yield. The fence did not yield. The fence had structural opinions."
+    },
+    {
+      "type": "narration",
+      "text": "The car stopped. The MAPLE HEIGHTS PIZZA sign was at an angle now. Steam came from somewhere under the hood that did not inspire confidence. The door opened."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo of the Rush Hour",
+          "text": "Eleven minutes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo of the Rush Hour",
+          "text": "Eleven minutes. I still have eleven minutes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 3.5
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "set_flag",
+      "flag": "tempo_suburban_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

@@ -3,80 +3,125 @@
   "title": "Fragment: The Stopped Question",
   "world": 5,
   "trigger": "arbiter_function_defeated",
+  "background": "node_prime",
   "location": "abstract_evaluation_plane_the_suspended",
   "description": "Found on the Evaluation Plane after defeating the Arbiter of Function. A question mark, floating where the Arbiter stood, that has stopped asking. Not collapsed into an answer. Simply stopped.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The Evaluation Plane had always had the quality of a space that expected something to be demonstrated. A formality of assessment, a feeling that existence here was provisional until its function had been declared and found sufficient.",
-      "That quality was gone. The plane was still — not empty, but settled, the way a room feels after the person who made it tense has left. The architecture of judgment remained, but the judgment had been suspended.",
-      "Floating at the center, at exactly the height where the Arbiter had been: a question mark. Curved, pointed, precisely formed, hanging in the abstract air without punctuating anything. Not asking. Not answered. Just present, its purpose intact but its operation arrested."
-    ]},
-
-    {"type": "wait", "duration": 0.9},
-
-    {"type": "narration", "text": "The question mark was still. Questions, by their nature, pull toward resolution — there is a tension in their syntax, an incompleteness that orients everything after them toward an answer. This one had stopped pulling. It simply was, without asking, the way a note can be struck and sustained without demanding response."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "My purpose was to evaluate purpose. Whether a thing was doing what it was for. Whether its function was being discharged correctly, efficiently, with adequate relation to its reason for existing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "I evaluated everything that passed through this plane. Found each thing either sufficient or insufficient. Filed the finding. Moved to the next.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "You did something that made the question irrelevant. Not by answering it — the question of your function has an answer, and it's complex, and I could evaluate it if you wanted.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Arbiter of Function",
-        "text": "But you made the asking feel beside the point. The question stopped mid-evaluation and I found I didn't need to finish it. The thing the question was for was already happening.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Arbiter of Function",
-        "text": "That is the rarest thing I have ever found in this plane. A thing doing something that made evaluating it feel like looking away.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.2},
-
-    {"type": "narration", "text": "The question mark floated, patient and unasking. Taken from the air, it had no weight — it was pure form, pure intention without demand, a question that had discovered it could exist without needing to be answered. Whether that was wisdom or resignation was itself a question the mark had stopped putting."},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The sensation of being evaluated and found sufficient not by the answer but by the fact of being looked at with attention."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "grant_item", "item": "world5_fragment_arbiter_abstract", "name": "Arbiter's Stopped Question", "description": "A question mark that has stopped asking. Grants +12 MP and the passive Sufficient: the bearer's spells always meet their minimum damage threshold regardless of resistance. The Arbiter found the function. She stopped asking whether it was enough. Tooltip: \"Evaluation: suspended. Reason: unnecessary.\""},
-
-    {"type": "set_flag", "flag": "fragment_arbiter_abstract_collected", "value": true},
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Evaluation Plane had always had the quality of a space that expected something to be demonstrated. A formality of assessment, a feeling that existence here was provisional until its function had been declared and found sufficient.",
+        "That quality was gone. The plane was still \u2014 not empty, but settled, the way a room feels after the person who made it tense has left. The architecture of judgment remained, but the judgment had been suspended.",
+        "Floating at the center, at exactly the height where the Arbiter had been: a question mark. Curved, pointed, precisely formed, hanging in the abstract air without punctuating anything. Not asking. Not answered. Just present, its purpose intact but its operation arrested."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.9
+    },
+    {
+      "type": "narration",
+      "text": "The question mark was still. Questions, by their nature, pull toward resolution \u2014 there is a tension in their syntax, an incompleteness that orients everything after them toward an answer. This one had stopped pulling. It simply was, without asking, the way a note can be struck and sustained without demanding response."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "My purpose was to evaluate purpose. Whether a thing was doing what it was for. Whether its function was being discharged correctly, efficiently, with adequate relation to its reason for existing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "I evaluated everything that passed through this plane. Found each thing either sufficient or insufficient. Filed the finding. Moved to the next.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "You did something that made the question irrelevant. Not by answering it \u2014 the question of your function has an answer, and it's complex, and I could evaluate it if you wanted.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of Function",
+          "text": "But you made the asking feel beside the point. The question stopped mid-evaluation and I found I didn't need to finish it. The thing the question was for was already happening.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of Function",
+          "text": "That is the rarest thing I have ever found in this plane. A thing doing something that made evaluating it feel like looking away.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "The question mark floated, patient and unasking. Taken from the air, it had no weight \u2014 it was pure form, pure intention without demand, a question that had discovered it could exist without needing to be answered. Whether that was wisdom or resignation was itself a question the mark had stopped putting."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The sensation of being evaluated and found sufficient not by the answer but by the fact of being looked at with attention."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "grant_item",
+      "item": "world5_fragment_arbiter_abstract",
+      "name": "Arbiter's Stopped Question",
+      "description": "A question mark that has stopped asking. Grants +12 MP and the passive Sufficient: the bearer's spells always meet their minimum damage threshold regardless of resistance. The Arbiter found the function. She stopped asking whether it was enough. Tooltip: \"Evaluation: suspended. Reason: unnecessary.\""
+    },
+    {
+      "type": "set_flag",
+      "flag": "fragment_arbiter_abstract_collected",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

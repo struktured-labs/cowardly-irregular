@@ -3,152 +3,211 @@
   "title": "Curator of the Budget \u2014 Aftermath",
   "world": 2,
   "trigger": "boss_curator_suburban_defeated",
+  "background": "suburban_neighborhood",
   "description": "The Curator closes her ledger as the scattered files settle around her. She has been filing corrections her entire career and never received a response. Her records cover residents who don't remember living here. Something about this bothers her more today than yesterday. That's new.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The Curator's filing cabinet had opened during the final burst. The files had scattered \u2014 purchase histories, HOA violation reports, and something else at the back, labeled with the party's names.",
-      "As the files settled, the Curator received her defeat with the silence of someone who has received bad news from a ledger before and has developed equanimity through practice."
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "This has never happened before.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator",
-        "text": "I'm going to need to file a correction.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "A longer pause than usual."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "I've been filing corrections for a long time. I don't know where they go. I've never received a response.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator",
-        "text": "I've filled a lot of folders.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "Your itemized deductions are unlike anything in the system. And my system is comprehensive.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator",
-        "text": "My records here cover every resident since the neighborhood was established. I have records for residents who do not remember living here. I have records for people who don't exist in any other database.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "That should bother me more than it does.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "Does it bother you at all?",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Curator",
-        "text": "Yes.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator",
-        "text": "A little. More today than yesterday.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "She looked at the folder in her hands. The briefcase. The clipboard. The forms that had, a moment ago, been weapons."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "The numbers don't balance. They never balanced.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Curator",
-        "text": "I kept auditing because auditing was all I had.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "That's new.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "She closed the briefcase. The office was still. Outside, the strip mall's neon signs hummed in the afternoon heat \u2014 frozen yogurt, candles, the armory that shouldn't be there, all performing normal with impeccable dedication."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Curator",
-        "text": "I don't know what comes after the final receipt.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "set_flag", "flag": "curator_suburban_defeated", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Curator's filing cabinet had opened during the final burst. The files had scattered \u2014 purchase histories, HOA violation reports, and something else at the back, labeled with the party's names.",
+        "As the files settled, the Curator received her defeat with the silence of someone who has received bad news from a ledger before and has developed equanimity through practice."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "This has never happened before.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator",
+          "text": "I'm going to need to file a correction.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "A longer pause than usual."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "I've been filing corrections for a long time. I don't know where they go. I've never received a response.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator",
+          "text": "I've filled a lot of folders.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "Your itemized deductions are unlike anything in the system. And my system is comprehensive.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator",
+          "text": "My records here cover every resident since the neighborhood was established. I have records for residents who do not remember living here. I have records for people who don't exist in any other database.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "That should bother me more than it does.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "Does it bother you at all?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Curator",
+          "text": "Yes.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator",
+          "text": "A little. More today than yesterday.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "She looked at the folder in her hands. The briefcase. The clipboard. The forms that had, a moment ago, been weapons."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "The numbers don't balance. They never balanced.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Curator",
+          "text": "I kept auditing because auditing was all I had.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "That's new.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "She closed the briefcase. The office was still. Outside, the strip mall's neon signs hummed in the afternoon heat \u2014 frozen yogurt, candles, the armory that shouldn't be there, all performing normal with impeccable dedication."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "I don't know what comes after the final receipt.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "set_flag",
+      "flag": "curator_suburban_defeated",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

@@ -3,119 +3,166 @@
   "title": "Tempo of the Hunt \u2014 Aftermath",
   "world": 1,
   "trigger": "boss_tempo_medieval_defeated",
+  "background": "prologue_forest",
   "description": "The Tempo kneels in the market square \u2014 cornered, choosing to kneel rather than having it chosen for them. The hunter who loved the chase discovers their memory only extends as far back as the party's arrival. Still smiling, but somewhere quieter now.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 1.0},
-
-    {"type": "narration", "lines": [
-      "The Tempo knelt in the market square with the grace of something that has never been forced to kneel and is choosing to now rather than having it chosen for them.",
-      "Even kneeling, it was smiling."
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo",
-        "text": "A fine chase.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "The best I can remember.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "Something shifted behind the brightness of the Tempo's expression. The smile dimmed slightly, or rather moved somewhere deeper and less comfortable."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo",
-        "text": "I haven't been outrun in\u2014",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "I don't remember how long.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "Strange. A hunter remembers every chase. The duration. The quarry. The outcome.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "My memory extends precisely as far back as the beginning of your arrival. Nothing before that.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "That seems wrong.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "It should trouble me. The fact that it doesn't trouble me is, perhaps, the most troubling thing.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "The Tempo rose, and the easy delight had gone sideways into something more complicated. Something genuine, and quieter."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo",
-        "text": "First time I've been run to ground in a long time. I'd do it again.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Tempo",
-        "text": "Whatever you're hunting, on the other side of all this \u2014 I hope you catch it.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Tempo",
-        "text": "Be careful in the palace. The last guardian has been waiting longer than any of us. She has more\u2026 history.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "narration", "text": "The Tempo looked at the party for a moment with the attention of someone memorizing a thing they expect to not see again."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "set_flag", "flag": "tempo_medieval_defeated", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Tempo knelt in the market square with the grace of something that has never been forced to kneel and is choosing to now rather than having it chosen for them.",
+        "Even kneeling, it was smiling."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo",
+          "text": "A fine chase.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "The best I can remember.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "Something shifted behind the brightness of the Tempo's expression. The smile dimmed slightly, or rather moved somewhere deeper and less comfortable."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo",
+          "text": "I haven't been outrun in\u2014",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "I don't remember how long.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "Strange. A hunter remembers every chase. The duration. The quarry. The outcome.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "My memory extends precisely as far back as the beginning of your arrival. Nothing before that.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "That seems wrong.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "It should trouble me. The fact that it doesn't trouble me is, perhaps, the most troubling thing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The Tempo rose, and the easy delight had gone sideways into something more complicated. Something genuine, and quieter."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo",
+          "text": "First time I've been run to ground in a long time. I'd do it again.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo",
+          "text": "Whatever you're hunting, on the other side of all this \u2014 I hope you catch it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "Be careful in the palace. The last guardian has been waiting longer than any of us. She has more\u2026 history.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "narration",
+      "text": "The Tempo looked at the party for a moment with the attention of someone memorizing a thing they expect to not see again."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "tempo_medieval_defeated",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }
