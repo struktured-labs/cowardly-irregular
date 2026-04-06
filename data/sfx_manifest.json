@@ -5,33 +5,33 @@
   "sfx": {
     "menu_move": {
       "file": "assets/audio/sfx/menu_move.ogg",
-      "prompt": "Satisfying arcade button click, solid mechanical switch press with a clean tactile pop, slot machine button",
+      "prompt": "Ultra short crisp digital tick, snappy cursor blip like a SNES menu highlight moving, tight clean pixel-perfect click",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.8
     },
     "menu_select": {
       "file": "assets/audio/sfx/menu_select.ogg",
-      "prompt": "Casino coin drop into metal tray, bright rewarding ching with a satisfying metallic resonance, slot machine payout coin",
+      "prompt": "Bright decisive confirmation chime, quick two-note ascending ping like a SNES menu confirm, clean digital reward ding",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.8
     },
     "menu_cancel": {
       "file": "assets/audio/sfx/menu_cancel.ogg",
-      "prompt": "Solid mechanical switch toggle off, firm click-clack rejection, arcade button releasing with a low snap",
+      "prompt": "Quick low digital buzz rejection, short descending cancel tone like backing out of a SNES menu, snappy negative blip",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.8
     },
     "menu_expand": {
       "file": "assets/audio/sfx/menu_expand.ogg",
-      "prompt": "Playing card being dealt onto felt table, satisfying slap of cardboard on fabric, casino dealer flick",
+      "prompt": "Crisp window opening whoosh, quick snappy swoosh like a SNES submenu expanding, short airy pop",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.8
     },
     "menu_open": {
       "file": "assets/audio/sfx/menu_open.ogg",
-      "prompt": "Casino machine powering up, warm electronic hum with a confident ascending tone, inviting slot machine ready",
+      "prompt": "Satisfying menu open chime, warm ascending three-note jingle like opening the SNES pause menu, inviting and crisp",
       "duration_seconds": 0.6,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.7
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
@@ -165,6 +165,99 @@
       "file": "assets/audio/sfx/victory_stinger.ogg",
       "prompt": "Quick triumphant hit, short celebratory brass stab with a bright chime accent, victorious exclamation point sound, punchy rewarding impact with ascending sparkle tail",
       "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "footstep_grass": {
+      "file": "assets/audio/sfx/footstep_grass.ogg",
+      "prompt": "Single soft footstep on grass, quiet shoe on lawn, gentle earthy step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_grass_v2", "footstep_grass_v3"]
+    },
+    "footstep_grass_v2": {
+      "file": "assets/audio/sfx/footstep_grass_v2.ogg",
+      "prompt": "Single footstep crunching dry grass, quiet boot on meadow, soft natural step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_grass_v3": {
+      "file": "assets/audio/sfx/footstep_grass_v3.ogg",
+      "prompt": "Single footstep on dewy grass, quiet shoe pressing wet lawn, muffled green step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_stone": {
+      "file": "assets/audio/sfx/footstep_stone.ogg",
+      "prompt": "Single boot step on stone floor, hard sole on cobblestone, quick dry tap on rock surface",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_stone_v2", "footstep_stone_v3"]
+    },
+    "footstep_stone_v2": {
+      "file": "assets/audio/sfx/footstep_stone_v2.ogg",
+      "prompt": "Single footstep on marble floor, hard heel click on polished stone, crisp indoor step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_stone_v3": {
+      "file": "assets/audio/sfx/footstep_stone_v3.ogg",
+      "prompt": "Single boot on gravel path, crunchy stone step, small rocks shifting under foot",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_sand": {
+      "file": "assets/audio/sfx/footstep_sand.ogg",
+      "prompt": "Single footstep in soft sand, quiet shoe sinking into dry beach sand, muffled granular step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_sand_v2", "footstep_sand_v3"]
+    },
+    "footstep_sand_v2": {
+      "file": "assets/audio/sfx/footstep_sand_v2.ogg",
+      "prompt": "Single boot step in desert sand, dry shifting grains under foot, soft arid step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_sand_v3": {
+      "file": "assets/audio/sfx/footstep_sand_v3.ogg",
+      "prompt": "Single footstep on sandy dirt path, dry earth and loose sand underfoot, quiet dusty step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "weather_rain": {
+      "file": "assets/audio/sfx/weather_rain.ogg",
+      "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "weather_sunny": {
+      "file": "assets/audio/sfx/weather_sunny.ogg",
+      "prompt": "Peaceful suburban afternoon ambience, gentle breeze through trees, distant birds chirping softly, warm sunny day in a quiet neighborhood, crickets and light wind",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "weather_steam": {
+      "file": "assets/audio/sfx/weather_steam.ogg",
+      "prompt": "Steampunk city ambience, distant steam vents hissing, brass gears turning slowly, occasional pipe whistle, Victorian industrial backdrop with amber fog atmosphere",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "weather_smog": {
+      "file": "assets/audio/sfx/weather_smog.ogg",
+      "prompt": "Heavy industrial ambience, deep machinery rumble, distant factory clanking, low droning ventilation, oppressive smog atmosphere with metallic echoes",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "weather_glitch": {
+      "file": "assets/audio/sfx/weather_glitch.ogg",
+      "prompt": "Digital void ambience, low electronic hum with occasional data crackle, quiet circuit board buzz, sparse glitchy artifacts in a vast empty digital space",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "boss_intro_stinger": {
+      "file": "assets/audio/sfx/boss_intro_stinger.ogg",
+      "prompt": "Dramatic orchestral hit with deep timpani slam, ominous brass stab announcing danger, dark foreboding impact like a boss appearing in an RPG, reverberating doom chord",
+      "duration_seconds": 2.0,
       "prompt_influence": 0.7
     },
     "group_all_out": {

@@ -1426,6 +1426,7 @@ func _on_battle_started() -> void:
 	var boss_type = _get_boss_type()
 	var masterite_type = _get_masterite_type()
 	if is_boss_fight:
+		SoundManager.play_battle("boss_intro_stinger")
 		if masterite_type != "":
 			# Masterite bosses have per-role, per-world music tracks
 			var world_suffix = SoundManager._get_current_world_suffix()

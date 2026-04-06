@@ -10,6 +10,8 @@ var _battle_player: AudioStreamPlayer
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
+var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
+var _current_ambient_key: String = ""
 var _crossfade_tween: Tween = null
 
 # Music state
@@ -144,6 +146,13 @@ func _setup_audio_players() -> void:
 	_music_player_b.volume_db = -80.0  # Start silent
 	_music_player_b.bus = "Master"
 	add_child(_music_player_b)
+
+	_ambient_player = AudioStreamPlayer.new()
+	_ambient_player.name = "AmbientPlayer"
+	_ambient_player.volume_db = -20.0  # Subtle background layer, below music and SFX
+	_ambient_player.bus = "Master"
+	add_child(_ambient_player)
+	_ambient_player.finished.connect(_on_ambient_finished)
 
 
 func _setup_default_ability_sounds() -> void:
@@ -322,6 +331,45 @@ func _get_world_sfx_prefix() -> String:
 func register_ability_sound(ability_id: String, sound_key: String) -> void:
 	"""Register a custom sound for an ability"""
 	_ability_sounds[ability_id] = sound_key
+
+
+func play_ambient(sound_key: String) -> void:
+	"""Start a looping ambient sound (weather, environment). Stops previous ambient."""
+	if sound_key == _current_ambient_key and _ambient_player.playing:
+		return  # Already playing this ambient
+	stop_ambient()
+	_current_ambient_key = sound_key
+	if not _sfx_manifest.has(sound_key):
+		return
+	var entry = _sfx_manifest[sound_key]
+	var path = entry.get("file", "")
+	if path == "":
+		return
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	var stream = load(path) as AudioStream
+	if not stream:
+		return
+	_ambient_player.stream = stream
+	_ambient_player.play()
+
+
+func stop_ambient() -> void:
+	"""Stop the current ambient loop."""
+	_ambient_player.stop()
+	_current_ambient_key = ""
+
+
+func _on_ambient_finished() -> void:
+	"""Re-loop the ambient sound when it finishes."""
+	if _current_ambient_key != "":
+		_ambient_player.play()
+
+
+func play_footstep(terrain: String = "grass") -> void:
+	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
+	var key = "footstep_" + terrain
+	_try_play_sfx_from_manifest(_ui_player, key)
 
 
 func play_status(status_name: String) -> void:

@@ -88,6 +88,12 @@ func setup(parent: Node, player: Node2D, world_id: String) -> void:
 
 	_fog_breathe = preset.get("fog_breathe", false)
 
+	# Start ambient sound for this world
+	var ambient_key = _get_ambient_key(world_id)
+	if ambient_key != "" and world_id != "medieval":
+		# Medieval rain ambient handled by rain cycling below
+		SoundManager.play_ambient(ambient_key)
+
 	# Rain system
 	if preset.get("rain", false):
 		_setup_rain(preset)
@@ -149,6 +155,11 @@ func process(delta: float) -> void:
 		if _rain_timer <= 0.0:
 			_rain_active = not _rain_active
 			_rain_emitter.emitting = _rain_active
+			# Toggle rain ambient sound
+			if _rain_active:
+				SoundManager.play_ambient("weather_rain")
+			else:
+				SoundManager.stop_ambient()
 			var preset = PRESETS.get(_current_world, {})
 			if _rain_active:
 				_rain_phase_duration = randf_range(preset.get("rain_on_min", 20.0), preset.get("rain_on_max", 45.0))
@@ -187,3 +198,14 @@ func _trigger_glitch() -> void:
 	# Brief screen jitter via overlay offset
 	_glitch_flash.position = Vector2(randf_range(-3, 3), randf_range(-2, 2))
 	tween.parallel().tween_property(_glitch_flash, "position", Vector2.ZERO, 0.15)
+
+
+func _get_ambient_key(world_id: String) -> String:
+	"""Map world ID to weather ambient sound key."""
+	match world_id:
+		"medieval": return "weather_rain"
+		"suburban": return "weather_sunny"
+		"steampunk": return "weather_steam"
+		"industrial": return "weather_smog"
+		"digital": return "weather_glitch"
+		_: return ""

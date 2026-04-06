@@ -296,6 +296,7 @@ func _physics_process(delta: float) -> void:
 		distance_walked -= STEP_DISTANCE
 		step_count += 1
 		moved.emit(step_count)
+		SoundManager.play_footstep()
 
 	# Update animation
 	_update_animation(delta)
