@@ -140,7 +140,20 @@
       "file": "assets/audio/sfx/damage_taken.ogg",
       "prompt": "Short dull body hit, quick muffled thud like a boxing glove on a heavy bag, no ring no shimmer, dry impact",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "variants": ["damage_taken_v2", "damage_taken_v3"]
+    },
+    "damage_taken_v2": {
+      "file": "assets/audio/sfx/damage_taken_v2.ogg",
+      "prompt": "Quick shoulder check body slam, padded tackle impact with a low grunt of displaced air, dull cushioned thump, no brightness",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "damage_taken_v3": {
+      "file": "assets/audio/sfx/damage_taken_v3.ogg",
+      "prompt": "Short slap on thick fabric, quick flat palm hit on a leather jacket, dry muffled smack with zero metallic tone, low frequency",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
     },
     "enemy_death": {
       "file": "assets/audio/sfx/enemy_death.ogg",
