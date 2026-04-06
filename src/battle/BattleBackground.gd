@@ -144,6 +144,7 @@ var _sky_base_modulate: Color = Color.WHITE
 ## Transition state
 var _transition_tween: Tween = null
 var _has_drawn: bool = false
+var _frames_in_tree: int = 0  # Safety counter for background draw retry
 
 
 func _ready() -> void:
@@ -175,6 +176,16 @@ func _setup_layers() -> void:
 
 
 func _process(delta: float) -> void:
+	# Safety: if background never drew after 3 frames, force a draw attempt
+	if not _has_drawn:
+		_frames_in_tree += 1
+		if _frames_in_tree >= 3:
+			var vp = get_viewport_rect().size
+			if vp.x > 0 and vp.y > 0:
+				print("[BG] Safety redraw triggered after %d frames (viewport: %s)" % [_frames_in_tree, vp])
+				_draw_background_immediate()
+				_has_drawn = true
+
 	_parallax_time += delta
 	if _layer_far and _layer_mid and _layer_near:
 		_layer_far.position.x = sin(_parallax_time * PARALLAX_SPEED_FAR * 0.1) * PARALLAX_RANGE * 0.3
@@ -328,11 +339,14 @@ func _draw_background_immediate() -> void:
 
 	# Try artist backdrop first — if available, skip procedural generation
 	if _try_load_artist_backdrop():
+		print("[BG] Artist backdrop loaded for terrain %d" % current_terrain)
 		return
 
 	var viewport_size = get_viewport_rect().size
+	print("[BG] Drawing procedural background — terrain=%d, viewport=%s" % [current_terrain, viewport_size])
 	if viewport_size.x == 0 or viewport_size.y == 0:
 		# Viewport not ready yet — retry next frame
+		print("[BG] Viewport size is zero, deferring draw")
 		_has_drawn = false
 		call_deferred("_draw_background")
 		return
@@ -368,10 +382,12 @@ func _try_load_artist_backdrop() -> bool:
 	Returns true if loaded, false to fall through to procedural generation."""
 	var path = BACKDROP_PATHS.get(current_terrain, "")
 	if path == "" or not ResourceLoader.exists(path):
+		print("[BG] No artist backdrop for terrain %d (path=%s, exists=%s)" % [current_terrain, path, ResourceLoader.exists(path) if path != "" else false])
 		return false
 
 	var tex = load(path) as Texture2D
 	if not tex:
+		print("[BG] Failed to load artist backdrop texture: %s" % path)
 		return false
 
 	_artist_backdrop_rect = TextureRect.new()
@@ -418,6 +434,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var sky_rect = TextureRect.new()
 		sky_rect.texture = cached["sky_tex"]
 		sky_rect.position = Vector2.ZERO
+		sky_rect.size = Vector2(w, sky_height)
+		sky_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sky_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(sky_rect)
 		_sky_rect = sky_rect
@@ -426,6 +445,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var ground_rect = TextureRect.new()
 		ground_rect.texture = cached["ground_tex"]
 		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.size = Vector2(w, int(viewport_size.y) - sky_height)
+		ground_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ground_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(ground_rect)
 	else:
@@ -462,6 +484,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var sky_rect = TextureRect.new()
 		sky_rect.texture = sky_tex
 		sky_rect.position = Vector2.ZERO
+		sky_rect.size = Vector2(w, sky_height)
+		sky_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sky_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(sky_rect)
 		_sky_rect = sky_rect
@@ -483,6 +508,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var ground_rect = TextureRect.new()
 		ground_rect.texture = ground_tex
 		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.size = Vector2(w, ground_height)
+		ground_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ground_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(ground_rect)
 

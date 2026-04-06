@@ -807,7 +807,7 @@ func _process_ai_selection(combatant: Combatant) -> void:
 
 
 func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array) -> Dictionary:
-	"""Make AI decision for action selection"""
+	"""Make AI decision for action selection — behavior varies by monster archetype"""
 	# Get available abilities
 	var available_abilities = []
 	if combatant.job and combatant.job.has("abilities"):
@@ -832,44 +832,267 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 				battle_log_message.emit("The enemy anticipates your strategy...")
 				return counter_action
 
-	# Check if should heal (30% chance if ally below 40% HP)
-	var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 40.0)
-	if low_hp_allies.size() > 0 and randf() < 0.3:
-		var healing_abilities = available_abilities.filter(func(a): return a.get("type", "") == "healing")
-		if healing_abilities.size() > 0:
-			var heal = healing_abilities[randi() % healing_abilities.size()]
-			return {
-				"type": "ability",
-				"combatant": combatant,
-				"ability_id": heal.get("id", ""),
-				"targets": [low_hp_allies[0]],
-				"speed": _compute_action_speed(combatant, "ability", heal)
-			}
+	# Determine AI archetype from stats and abilities
+	var archetype = _get_ai_archetype(combatant, available_abilities)
+	return _execute_archetype_ai(combatant, archetype, available_abilities, alive_allies, alive_enemies)
 
-	# Check if should use offensive ability (40% chance)
-	if randf() < 0.4 and combatant.current_mp >= 10:
-		var offensive_abilities = available_abilities.filter(
+
+func _get_ai_archetype(combatant: Combatant, available_abilities: Array) -> String:
+	"""Derive AI behavior archetype from combatant stats and abilities"""
+	var healing_abilities = available_abilities.filter(func(a): return a.get("type", "") == "healing")
+	var magic_abilities = available_abilities.filter(func(a): return a.get("type", "") == "magic")
+	var debuff_abilities = available_abilities.filter(func(a): return a.get("type", "") in ["debuff", "status"])
+
+	# Check for explicit ai_pattern in monster data
+	if combatant.has_meta("monster_type"):
+		var mt = combatant.get_meta("monster_type", "")
+		if EncounterSystem and mt in EncounterSystem.monster_database:
+			var ai = EncounterSystem.monster_database[mt].get("ai_pattern", "")
+			if ai != "":
+				return ai
+
+	# Healer: has healing abilities
+	if healing_abilities.size() > 0:
+		return "healer"
+	# Caster: magic stat significantly higher than attack, has magic abilities
+	if combatant.magic > combatant.attack * 1.3 and magic_abilities.size() > 0:
+		return "caster"
+	# Debuffer: has debuff/status abilities and isn't purely physical
+	if debuff_abilities.size() > 0:
+		return "debuffer"
+	# Tank: high HP and defense relative to attack
+	if combatant.defense > combatant.attack * 0.5 and combatant.max_hp >= 150:
+		return "tank"
+	# Assassin: very fast, targets wounded enemies
+	if combatant.speed >= 18:
+		return "assassin"
+	# Brute: everything else (high attack, straightforward)
+	return "brute"
+
+
+func _execute_archetype_ai(combatant: Combatant, archetype: String, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+	"""Execute AI logic based on archetype"""
+
+	match archetype:
+		"healer":
+			return _ai_healer(combatant, abilities, alive_allies, alive_enemies)
+		"caster":
+			return _ai_caster(combatant, abilities, alive_enemies)
+		"debuffer":
+			return _ai_debuffer(combatant, abilities, alive_allies, alive_enemies)
+		"tank":
+			return _ai_tank(combatant, abilities, alive_allies, alive_enemies)
+		"assassin":
+			return _ai_assassin(combatant, abilities, alive_enemies)
+		_:
+			return _ai_brute(combatant, abilities, alive_enemies)
+
+
+func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+	"""Healer AI: prioritize healing low-HP allies, attack only when no one needs healing"""
+	var healing_abilities = abilities.filter(func(a): return a.get("type", "") == "healing")
+	var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 60.0)
+
+	# Heal the most wounded ally (70% chance when someone is hurt)
+	if low_hp_allies.size() > 0 and healing_abilities.size() > 0 and randf() < 0.7:
+		low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+		var heal = healing_abilities[randi() % healing_abilities.size()]
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": heal.get("id", ""),
+			"targets": [low_hp_allies[0]],
+			"speed": _compute_action_speed(combatant, "ability", heal)
+		}
+
+	# Buff/support abilities if available
+	var support_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support"])
+	if support_abilities.size() > 0 and randf() < 0.4:
+		var buff = support_abilities[randi() % support_abilities.size()]
+		var ally = alive_allies[randi() % alive_allies.size()]
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": buff.get("id", ""),
+			"targets": [ally],
+			"speed": _compute_action_speed(combatant, "ability", buff)
+		}
+
+	# Fallback: basic attack
+	var target = _choose_target(combatant, alive_enemies, {})
+	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
+
+
+func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) -> Dictionary:
+	"""Caster AI: strongly prefer magic abilities, target weaknesses when possible"""
+	var magic_abilities = abilities.filter(func(a): return a.get("type", "") == "magic")
+
+	# 75% chance to cast a spell if MP allows
+	if magic_abilities.size() > 0 and randf() < 0.75:
+		# Prefer spells that exploit target weaknesses
+		var best_spell = magic_abilities[0]
+		var best_score = 0.0
+		for spell in magic_abilities:
+			var element = spell.get("element", "")
+			var score = spell.get("power", 10)
+			# Check if any enemy is weak to this element
+			for enemy in alive_enemies:
+				if element != "" and element in enemy.weaknesses:
+					score *= 2.0  # Double score for weakness exploitation
+			if score > best_score:
+				best_score = score
+				best_spell = spell
+
+		var spell_target = _choose_target(combatant, alive_enemies, best_spell)
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": best_spell.get("id", ""),
+			"targets": [spell_target],
+			"speed": _compute_action_speed(combatant, "ability", best_spell)
+		}
+
+	# Fallback: basic attack
+	var target = _choose_target(combatant, alive_enemies, {})
+	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
+
+
+func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+	"""Debuffer AI: apply status effects early, then fall back to damage"""
+	var debuff_abilities = abilities.filter(func(a): return a.get("type", "") in ["debuff", "status"])
+	var offensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
+
+	# 55% chance to debuff, preferring targets without existing debuffs
+	if debuff_abilities.size() > 0 and randf() < 0.55:
+		var debuff = debuff_abilities[randi() % debuff_abilities.size()]
+		# Pick a target that doesn't already have too many statuses
+		var target = alive_enemies[0]
+		var fewest_statuses = 999
+		for enemy in alive_enemies:
+			var status_count = enemy.active_statuses.size() if "active_statuses" in enemy else 0
+			if status_count < fewest_statuses:
+				fewest_statuses = status_count
+				target = enemy
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": debuff.get("id", ""),
+			"targets": [target],
+			"speed": _compute_action_speed(combatant, "ability", debuff)
+		}
+
+	# Use offensive ability
+	if offensive_abilities.size() > 0 and randf() < 0.4:
+		var spell = offensive_abilities[randi() % offensive_abilities.size()]
+		var target = _choose_target(combatant, alive_enemies, spell)
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": spell.get("id", ""),
+			"targets": [target],
+			"speed": _compute_action_speed(combatant, "ability", spell)
+		}
+
+	# Fallback: basic attack
+	var target = _choose_target(combatant, alive_enemies, {})
+	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
+
+
+func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+	"""Tank AI: use defensive abilities, protect allies, heavy single hits"""
+	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive"])
+	var physical_abilities = abilities.filter(func(a): return a.get("type", "") == "physical")
+
+	# Use defensive/buff ability if available (40% chance)
+	if defensive_abilities.size() > 0 and randf() < 0.4:
+		var buff = defensive_abilities[randi() % defensive_abilities.size()]
+		# Buff self or lowest-HP ally
+		var target = combatant
+		var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 50.0)
+		if low_hp_allies.size() > 0:
+			low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+			target = low_hp_allies[0]
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": buff.get("id", ""),
+			"targets": [target],
+			"speed": _compute_action_speed(combatant, "ability", buff)
+		}
+
+	# Use strongest physical ability (50% chance)
+	if physical_abilities.size() > 0 and randf() < 0.5:
+		physical_abilities.sort_custom(func(a, b): return a.get("power", 0) > b.get("power", 0))
+		var ability = physical_abilities[0]
+		var target = _choose_target(combatant, alive_enemies, ability)
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": ability.get("id", ""),
+			"targets": [target],
+			"speed": _compute_action_speed(combatant, "ability", ability)
+		}
+
+	# Fallback: basic attack — tanks target the highest-threat enemy (most damage)
+	var target = alive_enemies[0]
+	var highest_atk = 0
+	for enemy in alive_enemies:
+		var threat = enemy.attack + enemy.magic
+		if threat > highest_atk:
+			highest_atk = threat
+			target = enemy
+	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
+
+
+func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) -> Dictionary:
+	"""Assassin AI: focus wounded targets, use abilities for burst damage"""
+	var offensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
+
+	# Target the most wounded enemy (finish them off)
+	var target = alive_enemies[0]
+	var lowest_hp_pct = 100.0
+	for enemy in alive_enemies:
+		var hp_pct = enemy.get_hp_percentage()
+		if hp_pct < lowest_hp_pct:
+			lowest_hp_pct = hp_pct
+			target = enemy
+
+	# Use strongest offensive ability on wounded target (60% chance)
+	if offensive_abilities.size() > 0 and randf() < 0.6:
+		offensive_abilities.sort_custom(func(a, b): return a.get("power", 0) > b.get("power", 0))
+		var ability = offensive_abilities[0]
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": ability.get("id", ""),
+			"targets": [target],
+			"speed": _compute_action_speed(combatant, "ability", ability)
+		}
+
+	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
+
+
+func _ai_brute(combatant: Combatant, abilities: Array, alive_enemies: Array) -> Dictionary:
+	"""Brute AI: mostly physical attacks, occasionally use abilities"""
+	# 30% chance to use offensive ability
+	if randf() < 0.3:
+		var offensive_abilities = abilities.filter(
 			func(a): return a.get("type", "") in ["physical", "magic"]
 		)
 		if offensive_abilities.size() > 0:
-			var spell = offensive_abilities[randi() % offensive_abilities.size()]
-			var spell_target = _choose_target(combatant, alive_enemies, spell)
+			var ability = offensive_abilities[randi() % offensive_abilities.size()]
+			var target = _choose_target(combatant, alive_enemies, ability)
 			return {
 				"type": "ability",
 				"combatant": combatant,
-				"ability_id": spell.get("id", ""),
-				"targets": [spell_target],
-				"speed": _compute_action_speed(combatant, "ability", spell)
+				"ability_id": ability.get("id", ""),
+				"targets": [target],
+				"speed": _compute_action_speed(combatant, "ability", ability)
 			}
 
-	# Default to basic attack
+	# Default: basic attack, random target
 	var target = _choose_target(combatant, alive_enemies, {})
-	return {
-		"type": "attack",
-		"combatant": combatant,
-		"target": target,
-		"speed": _compute_action_speed(combatant, "attack")
-	}
+	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
 
 
 func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array, available_abilities: Array) -> Dictionary:
