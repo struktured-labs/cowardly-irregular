@@ -83,9 +83,21 @@
     },
     "chest_open": {
       "file": "assets/audio/sfx/chest_open.ogg",
-      "prompt": "Treasure chest unlatching and creaking open, cascade of gold coins jingling inside, slot machine jackpot payout, rewarding",
+      "prompt": "Wooden treasure chest lid creaking open with rusty hinges, satisfying latch clunk then magical shimmer of treasure revealed, classic RPG chest",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.7
+    },
+    "door_open": {
+      "file": "assets/audio/sfx/door_open.ogg",
+      "prompt": "Heavy wooden door creaking open, old iron hinges groaning, medieval dungeon door swinging with a deep resonant creak",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "door_close": {
+      "file": "assets/audio/sfx/door_close.ogg",
+      "prompt": "Heavy wooden door shutting firmly, solid thud of thick oak closing with a deep latch click, dungeon door sealing",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
     },
     "tier_zoom_out": {
       "file": "assets/audio/sfx/tier_zoom_out.ogg",
