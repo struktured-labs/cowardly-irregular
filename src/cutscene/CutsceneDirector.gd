@@ -284,6 +284,8 @@ func _execute_step(step: Dictionary) -> void:
 			_step_set_background(step)
 		"branch":
 			await _step_branch(step)
+		"chapter_title":
+			await _step_chapter_title(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -458,6 +460,76 @@ func _step_set_flag(step: Dictionary) -> void:
 		# Store cutscene flags in game_constants for now
 		if GameState:
 			GameState.game_constants["cutscene_flag_" + flag] = value
+
+
+func _step_chapter_title(step: Dictionary) -> void:
+	"""Show a cinematic chapter title card that fades in, holds, then fades out.
+	Usage: {"type": "chapter_title", "title": "Chapter 3", "subtitle": "The Whispering Cave"}"""
+	var title_text = step.get("title", "")
+	var subtitle_text = step.get("subtitle", "")
+	var hold_duration = step.get("duration", 2.5)
+
+	if _skipping:
+		return
+
+	var screen_size = get_viewport_rect().size
+
+	# Container for the title card
+	var container = Control.new()
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.modulate.a = 0.0
+	add_child(container)
+
+	# Semi-transparent backdrop bar
+	var bar = ColorRect.new()
+	bar.color = Color(0, 0, 0, 0.6)
+	bar.position = Vector2(0, screen_size.y * 0.35)
+	bar.size = Vector2(screen_size.x, screen_size.y * 0.3)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bar)
+
+	# Chapter title label
+	var title_label = Label.new()
+	title_label.text = title_text
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	title_label.position.y = screen_size.y * 0.36
+	title_label.size = Vector2(screen_size.x, 40)
+	title_label.add_theme_font_size_override("font_size", 28)
+	title_label.add_theme_color_override("font_color", Color(0.95, 0.90, 0.70))
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(title_label)
+
+	# Subtitle label
+	if subtitle_text != "":
+		var sub_label = Label.new()
+		sub_label.text = subtitle_text
+		sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		sub_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		sub_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+		sub_label.position.y = screen_size.y * 0.36 + 44
+		sub_label.size = Vector2(screen_size.x, 30)
+		sub_label.add_theme_font_size_override("font_size", 18)
+		sub_label.add_theme_color_override("font_color", Color(0.75, 0.72, 0.60))
+		sub_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		container.add_child(sub_label)
+
+	# Fade in
+	var tween = create_tween()
+	tween.tween_property(container, "modulate:a", 1.0, 0.6)
+	await tween.finished
+
+	# Hold
+	await get_tree().create_timer(hold_duration).timeout
+
+	# Fade out
+	var fade_out = create_tween()
+	fade_out.tween_property(container, "modulate:a", 0.0, 0.5)
+	await fade_out.finished
+
+	container.queue_free()
 
 
 func _step_branch(step: Dictionary) -> void:

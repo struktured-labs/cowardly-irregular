@@ -11,6 +11,11 @@
       "duration": 0.6
     },
     {
+      "type": "chapter_title",
+      "title": "Epilogue",
+      "subtitle": "Calibration Complete"
+    },
+    {
       "type": "stop_music"
     },
     {

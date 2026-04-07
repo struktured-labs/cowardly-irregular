@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 5",
+      "subtitle": "The Forest That Remembered"
+    },
+    {
       "type": "narration",
       "lines": [
         "The Corrupted Forest wore its sickness openly. Trees bent at angles wood shouldn't permit.",

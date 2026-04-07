@@ -11,6 +11,11 @@
       "duration": 0.6
     },
     {
+      "type": "chapter_title",
+      "title": "The Final Question",
+      "subtitle": "What is a game without challenge?"
+    },
+    {
       "type": "stop_music"
     },
     {

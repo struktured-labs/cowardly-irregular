@@ -11,6 +11,11 @@
       "duration": 1.5
     },
     {
+      "type": "chapter_title",
+      "title": "World 4",
+      "subtitle": "Gray"
+    },
+    {
       "type": "letterbox_in",
       "duration": 0.6
     },

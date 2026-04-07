@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 1",
+      "subtitle": "Maple Heights"
+    },
+    {
       "type": "narration",
       "lines": [
         "The suburb existed in a state of aggressive normalcy. Every house was a variation on the same house. Every lawn was the same shade of green.",
@@ -50,26 +55,35 @@
       "type": "wait",
       "duration": 0.3
     },
-
-    {"type": "play_sfx", "sfx": "bicycle_bell"},
-    {"type": "narration", "text": "A kid on a bicycle cruised past without stopping. They looked at the party, looked at the sword, looked at the scrubs, looked at the trumpet, and pedaled faster."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "That child did not seem surprised by us.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "That child was not surprised by anything. That was a child who has seen things.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
+    {
+      "type": "play_sfx",
+      "sfx": "bicycle_bell"
+    },
+    {
+      "type": "narration",
+      "text": "A kid on a bicycle cruised past without stopping. They looked at the party, looked at the sword, looked at the scrubs, looked at the trumpet, and pedaled faster."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "That child did not seem surprised by us.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "That child was not surprised by anything. That was a child who has seen things.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
     {
       "type": "narration",
       "text": "The strip mall had a pizza place, a candle shop, a frozen yogurt place, and \u2014 inexplicably \u2014 an armory. YE OLDE MEDIEVAL SURPLUS, read the sign."
