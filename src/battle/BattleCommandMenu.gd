@@ -137,9 +137,10 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				var s = _scene.enemy_sprite_nodes[enemy_idx]
 				if is_instance_valid(s):
 					target_pos = canvas_transform * s.global_position
+			var est_dmg = BattleManager.estimate_attack_damage(combatant, enemy)
 			enemy_targets.append({
 				"id": "attack_" + str(enemy_idx),
-				"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
+				"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_dmg],
 				"data": {"target_idx": enemy_idx, "action": "attack", "target_pos": target_pos}
 			})
 		items.append({
@@ -184,9 +185,10 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						var s = _scene.enemy_sprite_nodes[enemy_idx]
 						if is_instance_valid(s):
 							target_pos = canvas_transform * s.global_position
+					var est_ability_dmg = BattleManager.estimate_ability_damage(combatant, enemy, ability)
 					enemy_targets.append({
 						"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
-						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
+						"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg],
 						"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 					})
 				ability_items.append({
@@ -208,9 +210,14 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						var s = _scene.party_sprite_nodes[i]
 						if is_instance_valid(s):
 							target_pos = canvas_transform * s.global_position
+					# Add heal preview for healing abilities
+					var heal_preview = ""
+					if ability.get("type", "") == "healing" and ability.has("heal_amount"):
+						var est_heal = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
+						heal_preview = " ~+%d" % est_heal
 					ally_targets.append({
 						"id": "ability_" + ability_id + "_ally_" + str(i),
-						"label": "%s (%d/%d HP)" % [member.combatant_name, member.current_hp, member.max_hp],
+						"label": "%s (%d/%d HP)%s" % [member.combatant_name, member.current_hp, member.max_hp, heal_preview],
 						"data": {"ability_id": ability_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
 					})
 				ability_items.append({

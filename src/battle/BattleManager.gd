@@ -2247,6 +2247,43 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 ## Critical hit system
 ## Physical attacks can crit, magic does NOT crit by default
 
+func estimate_attack_damage(attacker: Combatant, target: Combatant) -> int:
+	"""Estimate basic attack damage (no variance, no crit) for UI preview"""
+	var atk = attacker.get_buffed_stat("attack", attacker.attack)
+	var def_val = target.get_buffed_stat("defense", target.defense)
+	var raw = int((atk * atk) / float(atk + def_val))
+	return max(1, raw)
+
+
+func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Dictionary) -> int:
+	"""Estimate ability damage for UI preview"""
+	var power = ability.get("power", 10)
+	var ability_type = ability.get("type", "physical")
+	var is_magical = ability_type == "magic"
+
+	var stat_val: int
+	if is_magical:
+		stat_val = attacker.get_buffed_stat("magic", attacker.magic)
+	else:
+		stat_val = attacker.get_buffed_stat("attack", attacker.attack)
+
+	var raw = int(stat_val * power / 10.0)
+	var def_val = target.get_buffed_stat("defense", target.defense)
+	if is_magical:
+		def_val = int(def_val * 0.5)
+	var mitigated = int((raw * raw) / float(raw + def_val))
+
+	# Apply elemental modifier
+	var element = ability.get("element", "")
+	if element != "":
+		if element in target.elemental_weaknesses:
+			mitigated = int(mitigated * 1.5)
+		elif element in target.elemental_resistances:
+			mitigated = int(mitigated * 0.5)
+
+	return max(1, mitigated)
+
+
 func _calculate_crit_chance(attacker: Combatant) -> float:
 	"""Calculate critical hit chance based on speed and equipment"""
 	# Base crit chance is 5%
