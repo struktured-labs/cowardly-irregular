@@ -353,6 +353,7 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 		{"key": "win_rate", "label": "Win Rate:", "default": "100%"},
 		{"key": "csi", "label": "Saturation:", "default": "0%"},
 		{"key": "yield", "label": "Yield:", "default": "100%"},
+		{"key": "items_used", "label": "Items Used:", "default": "0"},
 		{"key": "collapses", "label": "Collapses:", "default": "0"},
 		{"key": "time_mult", "label": "Time Bonus:", "default": "1.0x"},
 	]
@@ -613,6 +614,11 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	_update_stat("csi", "%.0f%%" % (csi_val * 100.0))
 	var yield_val = stats.get("yield_multiplier", 1.0)
 	_update_stat("yield", "%.0f%%" % (yield_val * 100.0))
+	var consumed = stats.get("items_consumed", {})
+	var total_consumed = 0
+	for key in consumed:
+		total_consumed += consumed[key]
+	_update_stat("items_used", str(total_consumed) if total_consumed > 0 else "0")
 	_update_stat("collapses", str(stats.get("collapse_count", 0)))
 	var time_mult = stats.get("time_multiplier", 1.0)
 	_update_stat("time_mult", "%.1fx" % time_mult)

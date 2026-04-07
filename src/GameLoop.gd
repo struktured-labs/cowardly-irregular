@@ -3003,6 +3003,7 @@ func _autogrind_heal_member(member: Combatant) -> void:
 		if member.get_item_count(item_id) > 0:
 			member.remove_item(item_id, 1)
 			member.heal(heal_amount)
+			AutogrindSystem.track_item_consumed(item_id)
 			print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, heal_amount])
 			return
 
@@ -3015,6 +3016,7 @@ func _autogrind_restore_mp(member: Combatant) -> void:
 		if member.get_item_count(item_id) > 0:
 			member.remove_item(item_id, 1)
 			member.restore_mp(restore)
+			AutogrindSystem.track_item_consumed(item_id)
 			print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, restore])
 			return
 
