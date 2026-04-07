@@ -115,6 +115,9 @@ func _ready() -> void:
 	# Wandering NPCs on paths between towns
 	_place_wanderers()
 
+	# Ambient details (chimney smoke, campfire glow)
+	_place_ambient_effects()
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
@@ -581,6 +584,39 @@ func _place_wanderers() -> void:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
+
+
+func _place_ambient_effects() -> void:
+	## Chimney smoke at village locations + campfire flicker at rest areas
+	var smoke_positions = [
+		spawn_points.get("village_entrance", Vector2.ZERO),
+		spawn_points.get("frosthold_entrance", Vector2.ZERO),
+		spawn_points.get("eldertree_entrance", Vector2.ZERO),
+		spawn_points.get("grimhollow_entrance", Vector2.ZERO),
+		spawn_points.get("sandrift_entrance", Vector2.ZERO),
+		spawn_points.get("ironhaven_entrance", Vector2.ZERO),
+	]
+	for pos in smoke_positions:
+		if pos == Vector2.ZERO:
+			continue
+		var smoke = CPUParticles2D.new()
+		smoke.name = "ChimneySmoke"
+		smoke.position = pos + Vector2(0, -12)
+		smoke.amount = 6
+		smoke.lifetime = 2.5
+		smoke.one_shot = false
+		smoke.explosiveness = 0.0
+		smoke.randomness = 0.4
+		smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+		smoke.emission_rect_extents = Vector2(8, 2)
+		smoke.gravity = Vector2(3.0, -18.0)
+		smoke.initial_velocity_min = 2.0
+		smoke.initial_velocity_max = 6.0
+		smoke.scale_amount_min = 0.4
+		smoke.scale_amount_max = 1.0
+		smoke.color = Color(0.6, 0.6, 0.6, 0.25)
+		smoke.z_index = 2
+		add_child(smoke)
 
 
 func _place_landmarks() -> void:
