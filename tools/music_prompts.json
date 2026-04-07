@@ -169,6 +169,36 @@
       "style": "JRPG victory fanfare, triumphant brass, Final Fantasy, celebratory, short",
       "prompt": "Classic JRPG victory fanfare, triumphant brass melody, celebratory drums, short and satisfying, the thrill of winning a hard-fought battle, 15-20 seconds"
     },
+    "victory_medieval": {
+      "title_template": "Glory of the Realm",
+      "style": "80s rock victory, Van Halen, finger-tapping guitar, triumphant brass, shredding solo, JRPG fanfare, 160 BPM",
+      "prompt": "EXPLOSIVE medieval victory fanfare with VAN HALEN finger-tapping electric guitar energy over triumphant orchestral brass. Shredding guitar solo that screams triumph, pounding drums, the absolute RUSH of winning a hard fight. 80s rock meets JRPG fanfare — Eddie Van Halen playing the Final Fantasy victory theme. Blazing fast, exhilarating, fist-pumping. 20-25 seconds of pure adrenaline."
+    },
+    "victory_suburban": {
+      "title_template": "Nailed It",
+      "style": "funky victory, slap bass, synth brass, EarthBound celebration, quirky triumphant, 140 BPM",
+      "prompt": "Funky suburban victory fanfare — slap bass groove with punchy synth brass hits, quirky EarthBound celebration energy. The satisfying feeling of beating something absurd. Funky guitar licks, hand claps, a melody that sounds like high-fiving after defeating a possessed lawn ornament. Triumphant but weird. 15-20 seconds."
+    },
+    "victory_steampunk": {
+      "title_template": "Gears of Glory",
+      "style": "steampunk victory, brass fanfare, clockwork percussion, steam whistle, triumphant waltz, 150 BPM",
+      "prompt": "Steampunk victory fanfare — triumphant brass fanfare over clockwork percussion, steam whistles blasting in celebration. A victorious waltz that builds to a soaring brass climax with gear-grinding bass and clanging bells. Mechanical triumph — the factory celebrates. 20 seconds."
+    },
+    "victory_industrial": {
+      "title_template": "Shift Complete",
+      "style": "industrial victory, heavy percussion, siren fanfare, distorted triumph, aggressive celebration, 130 BPM",
+      "prompt": "Industrial victory fanfare — factory sirens repurposed as triumphant horns, heavy stamping percussion like a machine celebrating, distorted power chords resolving into a brief moment of human warmth underneath the steel. The sound of punching out after the hardest shift. Brief, hard, earned. 15 seconds."
+    },
+    "victory_digital": {
+      "title_template": "Achievement Unlocked",
+      "style": "digital victory, chiptune fanfare, glitch celebration, ascending arpeggios, level-up energy, 155 BPM",
+      "prompt": "Digital victory fanfare — rapid ascending chiptune arpeggios, glitchy celebration sounds, the EXACT feeling of an achievement unlocking. 8-bit trumpet melody over synthwave bass, cascading data-stream sparkles. Quick, satisfying, dopamine hit. 15 seconds."
+    },
+    "victory_abstract": {
+      "title_template": "Understanding",
+      "style": "abstract victory, all genres merging, transcendent chord, earned silence, profound, 100 BPM",
+      "prompt": "Abstract victory fanfare — all six worlds' musical signatures converging into a single transcendent chord. Not loud celebration but profound UNDERSTANDING. Medieval strings, suburban funk, clockwork brass, industrial percussion, digital chiptune, and abstract silence all resolving together. Earned, vast, the sound of something finally making sense. 20 seconds."
+    },
     "game_over": {
       "title_template": "Fallen Heroes",
       "style": "JRPG game over, somber, minor key, fading, short",
