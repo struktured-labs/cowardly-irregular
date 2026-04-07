@@ -121,6 +121,9 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
 
+	# First-time tutorial hints
+	TutorialHints.show(self, "quest_log")
+
 	exploration_ready.emit()
 
 

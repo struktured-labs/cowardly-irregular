@@ -103,6 +103,7 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
 
 
@@ -304,7 +305,7 @@ func _generate_map() -> void:
 
 	var map_data: Array[String] = [
 		"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
-		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
+		"NcSScvSScvSScvSScvSScvSScvSccvSScvSScvSScvSScvSScvSSccN",
 		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
 		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
 		"NcfffffffffffffffffffffffffffffffffffffffffffffffffffcN",

@@ -98,6 +98,7 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
 
 
@@ -368,8 +369,8 @@ func _generate_map() -> void:
 		"fffwffffffffffffffwfffffffffffffffwffffffffffffffwffffffffff",
 		# Row 32: Gate approach
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 33: Fence line before checkpoint
-		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+		# Row 33: Fence line before checkpoint (gap at cols 29-30 = checkpoint gate)
+		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkffkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
 		# Row 34: Checkpoint area
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		# Row 35: Guard posts and gate
@@ -386,7 +387,7 @@ func _generate_map() -> void:
 		# Row 40: Portal row - return to overworld
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		# Row 41: South boundary approach with portal markers
-		"ffffffffffffffffffffffffffffssffffffffffffffffffffffffffffff",
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		# Row 42: South edge
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		# Row 43: South boundary
