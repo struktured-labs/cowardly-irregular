@@ -87,6 +87,18 @@
       "duration_seconds": 1.0,
       "prompt_influence": 0.7
     },
+    "save_crystal_near": {
+      "file": "assets/audio/sfx/save_crystal_near.ogg",
+      "prompt": "Soft magical crystal hum beginning, gentle ethereal resonance like approaching a glowing gem, quiet mystical proximity chime",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "save_crystal_activate": {
+      "file": "assets/audio/sfx/save_crystal_activate.ogg",
+      "prompt": "Crystal activating with a bright ascending chime cascade, magical save point resonating with pure tones, satisfying confirmation sparkle reaching a clear peak note",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
     "door_open": {
       "file": "assets/audio/sfx/door_open.ogg",
       "prompt": "Heavy wooden door creaking open, old iron hinges groaning, medieval dungeon door swinging with a deep resonant creak",

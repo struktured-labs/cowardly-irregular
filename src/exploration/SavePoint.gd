@@ -85,6 +85,7 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_in_zone = true
 		_indicator.visible = true
+		SoundManager.play_ui("save_crystal_near")
 
 
 func _on_body_exited(body: Node2D) -> void:
@@ -95,5 +96,6 @@ func _on_body_exited(body: Node2D) -> void:
 
 func _input(event: InputEvent) -> void:
 	if _player_in_zone and event.is_action_pressed("ui_accept"):
+		SoundManager.play_ui("save_crystal_activate")
 		save_requested.emit()
 		get_viewport().set_input_as_handled()
