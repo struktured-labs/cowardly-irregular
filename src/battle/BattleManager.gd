@@ -220,6 +220,37 @@ func end_battle(victory: bool) -> void:
 			GameState.add_gold(total_gold)
 			print("Party earned %d gold!" % total_gold)
 
+		# Roll item drops from defeated enemies' drop tables
+		var item_drops: Array = []  # [{item: "potion", name: "Potion", qty: 1}]
+		for enemy in enemy_party:
+			var mt = enemy.get_meta("monster_type", "")
+			if mt in monsters_data:
+				var drop_table = monsters_data[mt].get("drop_table", [])
+				for drop in drop_table:
+					if randf() < drop.get("chance", 0.0):
+						var item_id = drop.get("item", "")
+						if item_id == "":
+							continue
+						# Add to party leader's inventory
+						if player_party.size() > 0 and player_party[0].is_alive:
+							player_party[0].add_item(item_id)
+						# Track for display
+						var item_name = item_id.replace("_", " ").capitalize()
+						var item_data = ItemSystem.get_item(item_id) if ItemSystem else {}
+						if not item_data.is_empty():
+							item_name = item_data.get("name", item_name)
+						# Merge duplicates
+						var found = false
+						for existing in item_drops:
+							if existing["item"] == item_id:
+								existing["qty"] += 1
+								found = true
+								break
+						if not found:
+							item_drops.append({"item": item_id, "name": item_name, "qty": 1})
+		if item_drops.size() > 0:
+			print("Items dropped: %s" % [item_drops])
+
 		# Award job EXP to player party and store results
 		var base_exp = 50
 		var char_results: Array = []
@@ -261,6 +292,7 @@ func end_battle(victory: bool) -> void:
 			"bonuses": bonuses,
 			"base_exp": base_exp,
 			"total_gold": total_gold,
+			"item_drops": item_drops,
 			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus
 		}
 
