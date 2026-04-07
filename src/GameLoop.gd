@@ -1098,7 +1098,16 @@ func _on_battle_ended(victory: bool) -> void:
 
 		# Wait for player to confirm before leaving victory screen
 		await _wait_for_confirm()
+
+		# Play exit transition (iris-close) before returning to overworld
+		if BattleTransition:
+			await BattleTransition.play_exit_transition(true)
+
 		_return_to_exploration()
+
+		# Reveal the overworld with a smooth fade
+		if BattleTransition:
+			await BattleTransition.reveal_exploration()
 	else:
 		# Game over — show dramatic screen with retry/continue options
 		await _show_game_over_screen()
