@@ -330,19 +330,58 @@
       "file": "assets/audio/sfx/heal.ogg",
       "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "variants": ["heal_v2", "heal_v3"]
+    },
+    "heal_v2": {
+      "file": "assets/audio/sfx/heal_v2.ogg",
+      "prompt": "Warm golden light materializing, soft ascending harp glissando with crystalline sparkles, gentle magical restoration",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "heal_v3": {
+      "file": "assets/audio/sfx/heal_v3.ogg",
+      "prompt": "Holy water splash with bell chime, purifying droplets with a soft resonant tone, cleansing white magic wash",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
     },
     "buff": {
       "file": "assets/audio/sfx/buff.ogg",
       "prompt": "Quick magical power-up whoosh with rising pitch, energizing upward sweep of warm synth, stat boost activated",
       "duration_seconds": 0.8,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "variants": ["buff_v2", "buff_v3"]
+    },
+    "buff_v2": {
+      "file": "assets/audio/sfx/buff_v2.ogg",
+      "prompt": "Sharp ascending power chord, quick energizing burst with bright harmonics, magical shield activating with a confident snap",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
+    },
+    "buff_v3": {
+      "file": "assets/audio/sfx/buff_v3.ogg",
+      "prompt": "Rapid upward chime sequence like collecting power stars, bright encouraging ascending notes, RPG stat boost jingle",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
     },
     "debuff": {
       "file": "assets/audio/sfx/debuff.ogg",
       "prompt": "Sad descending pitch drop, deflating rubber balloon losing air, comical weakening spiral downward",
       "duration_seconds": 0.8,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "variants": ["debuff_v2", "debuff_v3"]
+    },
+    "debuff_v2": {
+      "file": "assets/audio/sfx/debuff_v2.ogg",
+      "prompt": "Dark descending warble, ominous power drain with a low rumbling fade, curse taking hold with a hollow echo",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
+    },
+    "debuff_v3": {
+      "file": "assets/audio/sfx/debuff_v3.ogg",
+      "prompt": "Quick dissonant chord dissolving downward, shattering glass falling into a pit, stat reduction with sharp negative tone",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
     },
     "victory": {
       "file": "assets/audio/sfx/victory.ogg",
@@ -471,7 +510,20 @@
       "file": "assets/audio/sfx/ability_heal.ogg",
       "prompt": "Gentle rain on leaves with harp notes, nature healing sounds, birdsong and dewdrops, peaceful restoration",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "variants": ["ability_heal_v2", "ability_heal_v3"]
+    },
+    "ability_heal_v2": {
+      "file": "assets/audio/sfx/ability_heal_v2.ogg",
+      "prompt": "Soft choir voices humming a soothing note, angelic restoration with warm reverb, divine healing magic with gentle bells",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_heal_v3": {
+      "file": "assets/audio/sfx/ability_heal_v3.ogg",
+      "prompt": "Bubbling spring water with gentle flute melody, fresh brook sounds with magical sparkles, nature cure spell",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
     },
 
     "w2_ability_fire": {
