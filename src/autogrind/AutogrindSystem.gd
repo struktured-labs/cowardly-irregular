@@ -1681,31 +1681,36 @@ func apply_autogrind_actions(actions: Array) -> void:
 				stop_autogrind("Autogrind rule triggered stop")
 
 			"heal_party":
-				# Restore 30% of max HP and MP for each living party member
-				var heal_pct: float = action.get("value", 30.0) / 100.0
+				# Use potions from inventory to heal party (no free heals)
+				var healed_count = 0
 				for member in grind_party:
-					if member is Combatant and member.is_alive:
-						var hp_restore: int = int(member.max_hp * heal_pct)
-						var mp_restore: int = int(member.max_mp * heal_pct)
-						member.current_hp = min(member.current_hp + hp_restore, member.max_hp)
-						member.current_mp = min(member.current_mp + mp_restore, member.max_mp)
-				print("[AUTOGRIND] heal_party: restored %.0f%% HP/MP to living party members" % (heal_pct * 100.0))
+					if member is Combatant and member.is_alive and member.current_hp < member.max_hp * 0.8:
+						for item_pair in [["hi_potion", 200], ["potion", 50]]:
+							if member.get_item_count(item_pair[0]) > 0:
+								member.remove_item(item_pair[0], 1)
+								member.heal(item_pair[1])
+								healed_count += 1
+								break
+				if healed_count > 0:
+					print("[AUTOGRIND] heal_party: used potions on %d members" % healed_count)
+				else:
+					print("[AUTOGRIND] heal_party: no potions available")
 
 			"restore_mp":
-				# Restore MP using ethers from inventory, or flat 30% if no items
+				# Use ethers from inventory to restore MP (no free restores)
+				var restored_count = 0
 				for member in grind_party:
 					if member is Combatant and member.is_alive and member.current_mp < member.max_mp * 0.5:
-						var restored = false
 						for item_pair in [["hi_ether", 100], ["ether", 30]]:
 							if member.get_item_count(item_pair[0]) > 0:
 								member.remove_item(item_pair[0], 1)
-								member.current_mp = min(member.current_mp + item_pair[1], member.max_mp)
-								restored = true
+								member.restore_mp(item_pair[1])
+								restored_count += 1
 								break
-						if not restored:
-							var mp_restore = int(member.max_mp * 0.3)
-							member.current_mp = min(member.current_mp + mp_restore, member.max_mp)
-				print("[AUTOGRIND] restore_mp: restored MP to party members")
+				if restored_count > 0:
+					print("[AUTOGRIND] restore_mp: used ethers on %d members" % restored_count)
+				else:
+					print("[AUTOGRIND] restore_mp: no ethers available")
 
 			"flee_battle":
 				# flee_battle is handled by AutogrindController (_skip_next_battle flag).
