@@ -379,7 +379,7 @@ func _generate_map() -> void:
 	# Spawn point for arriving from industrial world (south access port)
 	spawn_points["from_industrial"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 40 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from abstract world (north server farm)
-	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from Node Prime village (east residential pods, row 20)
 	spawn_points["node_prime_entrance"] = Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 
@@ -433,7 +433,7 @@ func _setup_transitions() -> void:
 		forward_portal.target_spawn = "from_futuristic"
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "The Remainder"
-		forward_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+		forward_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
 		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
 		forward_portal.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(forward_portal)

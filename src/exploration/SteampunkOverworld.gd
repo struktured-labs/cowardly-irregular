@@ -360,7 +360,7 @@ func _generate_map() -> void:
 	spawn_points["steampunk_portal"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Spawn point for returning from Brasston village (west residential quarter, row 26)
-	spawn_points["brasston_entrance"] = Vector2(5 * TILE_SIZE + TILE_SIZE / 2, 26 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["brasston_entrance"] = Vector2(11 * TILE_SIZE + TILE_SIZE / 2, 26 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -424,7 +424,7 @@ func _setup_transitions() -> void:
 	brasston_trans.require_interaction = true
 	brasston_trans.indicator_text = "Enter Brasston"
 	brasston_trans.position = spawn_points.get("brasston_entrance", Vector2(176, 848))
-	_setup_transition_collision(brasston_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	_setup_transition_collision(brasston_trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))
 	brasston_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(brasston_trans)
 
