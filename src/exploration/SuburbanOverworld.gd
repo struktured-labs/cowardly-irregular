@@ -377,7 +377,7 @@ func _generate_map() -> void:
 	# Spawn point for returning from industrial world (east side of map)
 	spawn_points["from_industrial"] = Vector2(46 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for Maple Heights village — in open lawn east of house rows (was inside house wall)
-	spawn_points["maple_heights_entrance"] = Vector2(44 * TILE_SIZE + TILE_SIZE / 2, 5 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["maple_heights_entrance"] = Vector2(43 * TILE_SIZE + TILE_SIZE / 2, 10 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
