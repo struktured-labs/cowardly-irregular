@@ -48,6 +48,7 @@ var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
 
 
 func _ready() -> void:
@@ -100,6 +101,11 @@ func _ready() -> void:
 	add_child(_weather)
 	_weather.setup(self, player, "medieval")
 
+	# Map edge indicators
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
 	# Signposts at key intersections for navigation
 	_place_signposts()
 
@@ -122,6 +128,8 @@ func _process(_delta: float) -> void:
 			_minimap.update(player.position)
 		if _zone_particles:
 			_zone_particles.update_position(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
 	if _danger_zone:
 		_danger_zone.process(_delta)
 	if _quest_tracker:
