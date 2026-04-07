@@ -943,7 +943,11 @@ func _refresh_status_icons(combatant: Combatant) -> void:
 			continue
 
 		var config = STATUS_ICON_CONFIG.get(status, {"label": status.substr(0, 3).to_upper(), "color": Color(0.7, 0.7, 0.7)})
-		var icon = _create_status_icon_label(config["label"], config["color"])
+		var turns_left: int = combatant.status_durations.get(status, -1)
+		var display_text: String = config["label"]
+		if turns_left > 0:
+			display_text += " %d" % turns_left  # e.g. "STUN 2"
+		var icon = _create_status_icon_label(display_text, config["color"])
 		container.add_child(icon)
 
 
@@ -2229,6 +2233,9 @@ func _on_round_ended(round_num: int) -> void:
 	"""Handle round end"""
 	log_message("[color=gray]--- Round %d complete ---[/color]" % round_num)
 	_update_ui()
+	# Refresh status icons to update turn counters after duration ticks
+	for combatant in _status_icon_containers:
+		_refresh_status_icons(combatant)
 
 
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
