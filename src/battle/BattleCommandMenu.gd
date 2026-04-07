@@ -54,10 +54,10 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	var canvas_transform = _scene.get_viewport().get_canvas_transform()
 	var screen_pos = canvas_transform * sprite.global_position
 
-	# Position menu on the left side of screen so no party sprites are obscured
-	# Party sprites are on the right (~600px+), enemies on the left (~200px+)
-	# Place menu at ~20% from left edge — visible but clear of all characters
-	var menu_x = clamp(viewport_size.x * 0.15, 10, viewport_size.x * 0.3)
+	# Position menu centered between enemies (left) and party (right)
+	# Party sprites are on the right (~65%+), enemies on the left (~20-35%)
+	# Place menu at ~42% from left — centered, slightly right-favored, clear of all characters
+	var menu_x = clamp(viewport_size.x * 0.42, 10, viewport_size.x * 0.55)
 	var menu_y = clamp(viewport_size.y * 0.3, 10, viewport_size.y - 120)
 	var menu_pos = Vector2(menu_x, menu_y)
 

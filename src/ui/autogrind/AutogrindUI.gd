@@ -416,6 +416,38 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 			panel.add_child(row)
 			y += 24
 
+	# Session history (last 5 sessions)
+	var history = AutogrindSystem.get_session_history()
+	if history.size() > 0:
+		y += 4
+		var hist_label = Label.new()
+		hist_label.text = "RECENT SESSIONS"
+		hist_label.position = Vector2(8, y)
+		hist_label.add_theme_font_size_override("font_size", 10)
+		hist_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		panel.add_child(hist_label)
+		y += 14
+
+		var show_count = min(history.size(), 5)
+		for i in range(show_count):
+			var entry = history[history.size() - show_count + i]
+			var dur_min = int(entry.get("duration_sec", 0)) / 60
+			var dur_sec = int(entry.get("duration_sec", 0)) % 60
+			var line_text = "#%d  %db  %dxp  %d:%02d  %s" % [
+				history.size() - show_count + i + 1,
+				entry.get("battles", 0),
+				entry.get("total_exp", 0),
+				dur_min, dur_sec,
+				entry.get("reason", "?"),
+			]
+			var line = Label.new()
+			line.text = line_text
+			line.position = Vector2(12, y)
+			line.add_theme_font_size_override("font_size", 9)
+			line.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
+			panel.add_child(line)
+			y += 12
+
 	# Battle log
 	y += 8
 	var log_label = Label.new()
