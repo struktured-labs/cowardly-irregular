@@ -6,67 +6,97 @@
   "background": "cave_entrance",
   "description": "Boss intro for the Cave Rat King in the Whispering Cave. Fourth-wall-breaking rat with a tiny crown.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "lines": [
-      "The party reaches the deepest chamber of the Whispering Cave.",
-      "A massive rat sits on a throne of cheese wheels, wearing a crown far too small for the dignity it aspires to."
-    ]},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cave Rat King",
-        "text": "Ah, another party. Let me guess \u2014 you automated your way here?",
-        "theme": "enemy",
-        "portrait": "goblin"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "...How do you know about that?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cave Rat King",
-        "text": "I've watched THOUSANDS of you. Same scripts. Same builds. Same 'optimal' strategies.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      },
-      {
-        "speaker": "Cave Rat King",
-        "text": "You think you're clever? I've EVOLVED. I've read the source code. I know what you're going to do.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      },
-      {
-        "speaker": "Mage",
-        "text": "That's... not how games work.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Cave Rat King",
-        "text": "ISN'T IT?",
-        "theme": "enemy",
-        "portrait": "goblin"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.3, "intensity": 3.0},
-
-    {"type": "play_sfx", "sfx": "rat_king_squeak"},
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cave Rat King",
-        "text": "SQUEAK.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      }
-    ]},
-
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "letterbox_out", "duration": 0.3}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "boss_intro",
+      "name": "Cave Rat King",
+      "title": "The First Boss"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The party reaches the deepest chamber of the Whispering Cave.",
+        "A massive rat sits on a throne of cheese wheels, wearing a crown far too small for the dignity it aspires to."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cave Rat King",
+          "text": "Ah, another party. Let me guess \u2014 you automated your way here?",
+          "theme": "enemy",
+          "portrait": "goblin"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "...How do you know about that?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cave Rat King",
+          "text": "I've watched THOUSANDS of you. Same scripts. Same builds. Same 'optimal' strategies.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        },
+        {
+          "speaker": "Cave Rat King",
+          "text": "You think you're clever? I've EVOLVED. I've read the source code. I know what you're going to do.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        },
+        {
+          "speaker": "Mage",
+          "text": "That's... not how games work.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cave Rat King",
+          "text": "ISN'T IT?",
+          "theme": "enemy",
+          "portrait": "goblin"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.0
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "rat_king_squeak"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cave Rat King",
+          "text": "SQUEAK.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        }
+      ]
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
   ]
 }

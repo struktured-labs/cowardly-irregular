@@ -14,6 +14,11 @@
       "duration": 0.5
     },
     {
+      "type": "boss_intro",
+      "name": "Warden of the Firewall",
+      "title": "Masterite \u2014 Digital"
+    },
+    {
       "type": "wait",
       "duration": 1.0
     },

@@ -14,6 +14,11 @@
       "duration": 0.5
     },
     {
+      "type": "boss_intro",
+      "name": "Arbiter of the Grade",
+      "title": "Masterite \u2014 Suburban"
+    },
+    {
       "type": "wait",
       "duration": 0.5
     },

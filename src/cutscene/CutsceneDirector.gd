@@ -286,6 +286,8 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_branch(step)
 		"chapter_title":
 			await _step_chapter_title(step)
+		"boss_intro":
+			await _step_boss_intro(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -530,6 +532,91 @@ func _step_chapter_title(step: Dictionary) -> void:
 	await fade_out.finished
 
 	container.queue_free()
+
+
+func _step_boss_intro(step: Dictionary) -> void:
+	"""Show a dramatic boss introduction card with name, title, and screen effects.
+	Usage: {"type": "boss_intro", "name": "Warden of the Old Guard", "title": "Masterite — World 1"}"""
+	var boss_name = step.get("name", "???")
+	var boss_title = step.get("title", "")
+
+	if _skipping:
+		return
+
+	var screen_size = get_viewport().get_visible_rect().size
+
+	# Dark vignette overlay
+	var vignette = ColorRect.new()
+	vignette.color = Color(0, 0, 0, 0.0)
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(vignette)
+
+	# Screen shake + flash
+	if not _skipping:
+		var shake_tween = create_tween()
+		shake_tween.tween_property(vignette, "color:a", 0.7, 0.3)
+	await get_tree().create_timer(0.3).timeout
+
+	# Boss name label — large, dramatic
+	var name_label = Label.new()
+	name_label.text = boss_name
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	name_label.position.y = screen_size.y * 0.4
+	name_label.size = Vector2(screen_size.x, 50)
+	name_label.add_theme_font_size_override("font_size", 36)
+	name_label.add_theme_color_override("font_color", Color(0.95, 0.3, 0.2))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.modulate.a = 0.0
+	add_child(name_label)
+
+	# Title subtitle
+	var title_label: Label = null
+	if boss_title != "":
+		title_label = Label.new()
+		title_label.text = boss_title
+		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+		title_label.position.y = screen_size.y * 0.4 + 48
+		title_label.size = Vector2(screen_size.x, 30)
+		title_label.add_theme_font_size_override("font_size", 16)
+		title_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.5))
+		title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		title_label.modulate.a = 0.0
+		add_child(title_label)
+
+	# Slam in — name scales up with a punch
+	var name_tween = create_tween()
+	name_label.scale = Vector2(1.5, 1.5)
+	name_label.pivot_offset = Vector2(screen_size.x / 2.0, 25)
+	name_tween.set_parallel(true)
+	name_tween.tween_property(name_label, "modulate:a", 1.0, 0.2)
+	name_tween.tween_property(name_label, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK)
+	await name_tween.finished
+
+	# Title fades in after name
+	if title_label:
+		var title_tween = create_tween()
+		title_tween.tween_property(title_label, "modulate:a", 1.0, 0.4)
+		await title_tween.finished
+
+	# Hold
+	await get_tree().create_timer(1.5).timeout
+
+	# Fade everything out
+	var fade = create_tween()
+	fade.set_parallel(true)
+	fade.tween_property(vignette, "color:a", 0.0, 0.4)
+	fade.tween_property(name_label, "modulate:a", 0.0, 0.4)
+	if title_label:
+		fade.tween_property(title_label, "modulate:a", 0.0, 0.4)
+	await fade.finished
+
+	vignette.queue_free()
+	name_label.queue_free()
+	if title_label:
+		title_label.queue_free()
 
 
 func _step_branch(step: Dictionary) -> void:

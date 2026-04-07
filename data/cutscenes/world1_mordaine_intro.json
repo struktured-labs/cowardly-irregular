@@ -6,377 +6,500 @@
   "background": "throne_room",
   "description": "The throne room of Castle Harmonia. Chancellor Mordaine has been expecting them. The architect of World 1 meets the element she did not calculate.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "fade_to_black", "duration": 0.4},
-    {"type": "wait", "duration": 0.8},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "fade_from_black", "duration": 1.2},
-
-    {"type": "narration", "lines": [
-      "The throne room was not what they expected.",
-      "They had half-expected dramatics. A high seat, torches, guards ranked along the walls in ceremonial armor. The kind of staging a ruler uses when they want you to feel small.",
-      "Instead: a working room. Maps on every surface. Ledgers stacked in careful columns. A single window, open, admitting the ordinary sounds of the village below. Markets. Children. Someone arguing about a fence.",
-      "Chancellor Mordaine stood at the central table with her back to them, studying a document. She did not turn when they entered."
-    ]},
-
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "text": "She finished reading the document. Folded it. Set it in a stack that was distinguishable from the other stacks only because it was the one she had just set a document on. Then she turned."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mordaine",
-        "text": "The irregulars.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "Not contempt. Recognition. The kind of recognition reserved for a number that has finally appeared in the column where you had written a placeholder."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "Chancellor.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "You are ahead of schedule.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "What schedule?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "Mine.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mordaine",
-        "text": "I projected your arrival at the castle between day forty-seven and day fifty-two. You are on day forty-three. The cave system is the variable I underweighted. I'll note that.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mage",
-        "text": "You were tracking us.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I track everything that moves through this kingdom. Population flow, trade route efficiency, spell corruption propagation rates. You were entered as an anomalous variable at the cave mouth. Day one.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "The Masterites. The Warden. The Arbiter. Those were yours.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "They were the system's agents. Not mine personally. They exist to measure. To profile. To report.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "They don't know that.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "You gave them a purpose that wasn't true.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I gave them a purpose that was functional. The Warden believes he guards an ancient pass. He does guard it. That he also produces data on every party that attempts it \u2014 that is simply an additional function of the same action.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Bard",
-        "text": "It affects them.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "Yes. I suppose it does.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The admission landed quietly, without apology. Not dismissal. Something more unsettling: a person who had already processed this cost, filed it, and moved on."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Fighter",
-        "text": "The people here live in fear.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "The people live. Fear is a cost I calculated was acceptable.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "You calculated people's fear.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I calculated everything. The kingdom was chaotic when I arrived. Not poetically chaotic. Not the kind of chaos that songwriters romanticize. The kind where people starve. Where villages burn because no one has the authority to stop the burning.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I brought order. Not because I wanted power. Because power, applied correctly, is simply the most efficient tool for reducing suffering.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "And the fear? How does that fit into the reduction of suffering?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "Fear of authority reduces variance in behavior. Reduced behavioral variance reduces conflict. Reduced conflict reduces harm. The chain is not elegant. But it holds.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Unless the people afraid of your authority are suffering from the fear itself.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I ran those numbers. The suffering from fear is lower than the suffering from the chaos I replaced.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "You ran those numbers.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "Someone had to.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "She moved to the window. Below, the market sounds continued. Someone had resolved the fence argument. Someone else was singing. The ordinary persistence of people who did not know they were inside a system."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mordaine",
-        "text": "I calculated everything. Including you.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "You were the element I didn't account for.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Rogue",
-        "text": "You accounted for us. You had us tracked from day one.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I tracked your progress. I did not account for what you would become by the time you got here.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "Most parties who make it this far are harder than when they started. Sharper. More efficient. Better at survival. That is what challenge produces, in my experience.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "You became something else.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "What did we become?",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I don't have a category for it. That's the problem.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.6},
-
-    {"type": "narration", "text": "She returned to the table. Picked up a ledger. Set it down again. For the first time since they had entered, her hands were not doing anything purposeful. They were simply hands."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mordaine",
-        "text": "I have managed this kingdom for eleven years. Every decision documented. Every outcome measured. Every cost weighed against every benefit. I have the records. You are welcome to audit them when this is over.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I am not a monster. I want that on the record.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "We know.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "That is, I think, the most troubling thing anyone has said to me in eleven years.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "She straightened. The Chancellor returned \u2014 the posture, the precision, the sense of a person who has already decided what comes next and is simply performing the formality of arriving at the decision in public."},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mordaine",
-        "text": "So. You've come to remove me from the system. That is also in the ledger. The scenario where my presence becomes the primary inefficiency.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "I won't make it easy. I didn't build all of this to have it end easily.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      },
-      {
-        "speaker": "Mordaine",
-        "text": "But I want you to understand, before we begin, that I built all of this because someone had to.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cleric",
-        "text": "We know that too.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.7},
-
-    {"type": "play_sfx", "sfx": "paper_shuffle"},
-    {"type": "narration", "text": "Mordaine looked at the Cleric for a long moment. Then she closed the ledger on the table. A sound like a verdict."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mordaine",
-        "text": "Yes. I suppose you do.",
-        "theme": "enemy",
-        "portrait": "mysterious"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-    {"type": "play_sfx", "sfx": "magic_surge"},
-    {"type": "screen_flash", "duration": 0.15},
-    {"type": "screen_shake", "duration": 0.3, "intensity": 3.0},
-    {"type": "letterbox_out", "duration": 0.3},
-    {"type": "set_flag", "flag": "mordaine_intro_complete", "value": true}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "fade_to_black",
+      "duration": 0.4
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "boss_intro",
+      "name": "Chancellor Mordaine",
+      "title": "The Usurper's Crown"
+    },
+    {
+      "type": "fade_from_black",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The throne room was not what they expected.",
+        "They had half-expected dramatics. A high seat, torches, guards ranked along the walls in ceremonial armor. The kind of staging a ruler uses when they want you to feel small.",
+        "Instead: a working room. Maps on every surface. Ledgers stacked in careful columns. A single window, open, admitting the ordinary sounds of the village below. Markets. Children. Someone arguing about a fence.",
+        "Chancellor Mordaine stood at the central table with her back to them, studying a document. She did not turn when they entered."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "text": "She finished reading the document. Folded it. Set it in a stack that was distinguishable from the other stacks only because it was the one she had just set a document on. Then she turned."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "The irregulars.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "Not contempt. Recognition. The kind of recognition reserved for a number that has finally appeared in the column where you had written a placeholder."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "Chancellor.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "You are ahead of schedule.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "What schedule?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "Mine.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "I projected your arrival at the castle between day forty-seven and day fifty-two. You are on day forty-three. The cave system is the variable I underweighted. I'll note that.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "You were tracking us.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I track everything that moves through this kingdom. Population flow, trade route efficiency, spell corruption propagation rates. You were entered as an anomalous variable at the cave mouth. Day one.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "The Masterites. The Warden. The Arbiter. Those were yours.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "They were the system's agents. Not mine personally. They exist to measure. To profile. To report.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "They don't know that.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "You gave them a purpose that wasn't true.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I gave them a purpose that was functional. The Warden believes he guards an ancient pass. He does guard it. That he also produces data on every party that attempts it \u2014 that is simply an additional function of the same action.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Bard",
+          "text": "It affects them.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "Yes. I suppose it does.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The admission landed quietly, without apology. Not dismissal. Something more unsettling: a person who had already processed this cost, filed it, and moved on."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "The people here live in fear.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "The people live. Fear is a cost I calculated was acceptable.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "You calculated people's fear.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I calculated everything. The kingdom was chaotic when I arrived. Not poetically chaotic. Not the kind of chaos that songwriters romanticize. The kind where people starve. Where villages burn because no one has the authority to stop the burning.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I brought order. Not because I wanted power. Because power, applied correctly, is simply the most efficient tool for reducing suffering.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "And the fear? How does that fit into the reduction of suffering?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "Fear of authority reduces variance in behavior. Reduced behavioral variance reduces conflict. Reduced conflict reduces harm. The chain is not elegant. But it holds.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Unless the people afraid of your authority are suffering from the fear itself.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I ran those numbers. The suffering from fear is lower than the suffering from the chaos I replaced.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "You ran those numbers.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "Someone had to.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "She moved to the window. Below, the market sounds continued. Someone had resolved the fence argument. Someone else was singing. The ordinary persistence of people who did not know they were inside a system."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "I calculated everything. Including you.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "You were the element I didn't account for.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "You accounted for us. You had us tracked from day one.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I tracked your progress. I did not account for what you would become by the time you got here.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "Most parties who make it this far are harder than when they started. Sharper. More efficient. Better at survival. That is what challenge produces, in my experience.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "You became something else.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "What did we become?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I don't have a category for it. That's the problem.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "She returned to the table. Picked up a ledger. Set it down again. For the first time since they had entered, her hands were not doing anything purposeful. They were simply hands."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "I have managed this kingdom for eleven years. Every decision documented. Every outcome measured. Every cost weighed against every benefit. I have the records. You are welcome to audit them when this is over.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I am not a monster. I want that on the record.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We know.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "That is, I think, the most troubling thing anyone has said to me in eleven years.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "She straightened. The Chancellor returned \u2014 the posture, the precision, the sense of a person who has already decided what comes next and is simply performing the formality of arriving at the decision in public."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "So. You've come to remove me from the system. That is also in the ledger. The scenario where my presence becomes the primary inefficiency.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I won't make it easy. I didn't build all of this to have it end easily.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "But I want you to understand, before we begin, that I built all of this because someone had to.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "We know that too.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "paper_shuffle"
+    },
+    {
+      "type": "narration",
+      "text": "Mordaine looked at the Cleric for a long moment. Then she closed the ledger on the table. A sound like a verdict."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "Yes. I suppose you do.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "magic_surge"
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.0
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    },
+    {
+      "type": "set_flag",
+      "flag": "mordaine_intro_complete",
+      "value": true
+    }
   ]
 }
