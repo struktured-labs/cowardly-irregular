@@ -296,6 +296,48 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.8
     },
+    "group_formation": {
+      "file": "assets/audio/sfx/group_formation.ogg",
+      "prompt": "Party uniting in formation, synchronized war cry with weapons clashing together, team power combining with a resonant harmonic chord, RPG party unite attack",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_four_heroes": {
+      "file": "assets/audio/sfx/formation_four_heroes.ogg",
+      "prompt": "Four warriors striking as one, balanced sword slash and magic burst and shield bash and arrow combined into a single powerful harmonious impact",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_arcane_tempest": {
+      "file": "assets/audio/sfx/formation_arcane_tempest.ogg",
+      "prompt": "Massive magical storm erupting, swirling arcane energy tornado with multiple spell elements colliding, overwhelming magical vortex explosion",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
+    "formation_blade_storm": {
+      "file": "assets/audio/sfx/formation_blade_storm.ogg",
+      "prompt": "Rapid flurry of blade strikes, dozens of sword slashes in quick succession like a blender of steel, metallic whirlwind of cutting edges",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_iron_wall": {
+      "file": "assets/audio/sfx/formation_iron_wall.ogg",
+      "prompt": "Massive shields slamming together into formation, deep resonant metal wall impact, fortress defense activating with a heavy bass shockwave",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_shadow_strike": {
+      "file": "assets/audio/sfx/formation_shadow_strike.ogg",
+      "prompt": "Silent deadly assassination strike, quick shadow whoosh into a precise lethal impact, ninja vanish and reappear with a sharp finishing blow",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "formation_chaos_theory": {
+      "file": "assets/audio/sfx/formation_chaos_theory.ogg",
+      "prompt": "Slot machine spinning with chaotic energy, random magical effects firing wildly, dice rolling mixed with explosions and sparkles, unpredictable gamble sound",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
     "boss_defeat_stinger": {
       "file": "assets/audio/sfx/boss_defeat_stinger.ogg",
       "prompt": "Epic triumphant orchestral explosion, massive brass fanfare with cymbal crash and deep bass resolve, victorious final blow shockwave dissolving into golden sparkles",

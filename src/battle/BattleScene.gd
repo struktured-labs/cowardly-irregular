@@ -1996,18 +1996,23 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			animator.play_named_animation("defer")
 
 
-func _on_group_attack_executing(participants: Array, group_type: String, targets: Array) -> void:
+func _on_group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String = "") -> void:
 	"""Play simultaneous attack animations on all party members for group actions"""
 	_update_turn_info()
 
-	# Group attack SFX
-	match group_type:
-		"limit_break":
-			SoundManager.play_battle("group_limit_break")
-		"combo_magic":
-			SoundManager.play_battle("group_combo_magic")
-		_:
-			SoundManager.play_battle("group_all_out")
+	# Group attack SFX — per-formation sounds when available
+	if group_type == "formation" and formation_id != "":
+		var formation_key = "formation_" + formation_id
+		if not _try_play_formation_sfx(formation_key):
+			SoundManager.play_battle("group_formation")
+	else:
+		match group_type:
+			"limit_break":
+				SoundManager.play_battle("group_limit_break")
+			"combo_magic":
+				SoundManager.play_battle("group_combo_magic")
+			_:
+				SoundManager.play_battle("group_all_out")
 
 	# Screen shake — intensity scales with group type
 	var shake_intensity: float
@@ -2092,6 +2097,14 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			var t_sprite = _get_combatant_sprite(target as Combatant)
 			if t_sprite:
 				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, t_sprite.global_position)
+
+
+func _try_play_formation_sfx(formation_key: String) -> bool:
+	"""Try to play a formation-specific SFX. Returns true if found in manifest."""
+	if SoundManager._sfx_manifest.has(formation_key):
+		SoundManager.play_battle(formation_key)
+		return true
+	return false
 
 
 func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0) -> void:

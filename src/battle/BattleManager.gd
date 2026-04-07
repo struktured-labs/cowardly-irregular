@@ -20,7 +20,7 @@ signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
 signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
-signal group_attack_executing(participants: Array, group_type: String, targets: Array)
+signal group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String)
 
 enum BattleState {
 	INACTIVE,
@@ -1582,7 +1582,8 @@ func _execute_group_action(action: Dictionary) -> void:
 		_execute_next_action()
 		return
 
-	group_attack_executing.emit(participants, group_type, alive_enemies)
+	var _formation_id: String = action.get("formation_id", "")
+	group_attack_executing.emit(participants, group_type, alive_enemies, _formation_id)
 	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
 		group_type, participants.size(), alive_enemies.size()])
 
