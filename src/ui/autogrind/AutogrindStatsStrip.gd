@@ -147,30 +147,31 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	if not is_inside_tree():
 		return
 
-	var csi = AutogrindSystem.compute_csi(region_id) if region_id != "" else 0.0
+	# CSI is now 0.0-1.0 range (from get_csi or stats dict)
+	var csi = stats.get("csi", AutogrindSystem.get_csi(region_id) if region_id != "" else 0.0)
 	if _csi_label:
-		_csi_label.text = "%.3f" % csi
+		_csi_label.text = "%.0f%%" % (csi * 100.0)
 	if _csi_bar_fill:
-		var bar_pct = clampf(csi / 5.0, 0.0, 1.0)
+		var bar_pct = clampf(csi, 0.0, 1.0)
 		_csi_bar_fill.size.x = bar_pct * 140.0
-		if csi < 1.5:
+		if csi < 0.4:
 			_csi_bar_fill.color = CSI_COLOR_LOW
-		elif csi < 3.0:
+		elif csi < 0.7:
 			_csi_bar_fill.color = CSI_COLOR_MID
 		else:
 			_csi_bar_fill.color = CSI_COLOR_HIGH
 
-	var yield_mult = stats.get("efficiency", 1.0)
+	var yield_mult = stats.get("yield_multiplier", stats.get("efficiency", 1.0))
 	if _yield_label:
 		_yield_label.text = "%.0f%%" % (yield_mult * 100.0)
-		if yield_mult >= 1.0:
+		if yield_mult >= 0.8:
 			_yield_label.add_theme_color_override("font_color", COLOR_GOOD)
 		elif yield_mult >= 0.5:
 			_yield_label.add_theme_color_override("font_color", COLOR_WARN)
 		else:
 			_yield_label.add_theme_color_override("font_color", COLOR_BAD)
 
-	var aa = AutogrindSystem.automation_affinity if "automation_affinity" in AutogrindSystem else 0.0
+	var aa = stats.get("automation_affinity", 0.0)
 	if _aa_label:
 		_aa_label.text = "%.3f" % aa
 
