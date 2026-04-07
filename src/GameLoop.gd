@@ -132,6 +132,12 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# F12 screenshot — always available, any state
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F12:
+		_take_screenshot()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Block input handling during title screen or character creation
 	if current_state == LoopState.TITLE or _character_creation_screen:
 		return
@@ -1848,6 +1854,29 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 			if child != _area_fade_rect:
 				child.queue_free()
 	_transition_in_progress = false
+
+
+func _take_screenshot() -> void:
+	"""Save a screenshot to user://screenshots/ with timestamp"""
+	var img = get_viewport().get_texture().get_image()
+	if not img:
+		print("[SCREENSHOT] Failed to capture viewport")
+		return
+	DirAccess.make_dir_recursive_absolute("user://screenshots")
+	var timestamp = Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
+	var path = "user://screenshots/screenshot_%s.png" % timestamp
+	img.save_png(path)
+	var abs_path = ProjectSettings.globalize_path(path)
+	print("[SCREENSHOT] Saved: %s" % abs_path)
+	# Flash feedback
+	var flash = ColorRect.new()
+	flash.color = Color(1, 1, 1, 0.5)
+	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween = create_tween()
+	tween.tween_property(flash, "color:a", 0.0, 0.2)
+	tween.tween_callback(flash.queue_free)
 
 
 func _get_terrain_for_map(map_id: String) -> String:
