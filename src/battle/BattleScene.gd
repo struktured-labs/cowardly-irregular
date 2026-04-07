@@ -160,6 +160,9 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
 
+## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array})
+var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -1789,6 +1792,9 @@ func _process_idle_animations(delta: float) -> void:
 		var breathe = sin(_idle_time * freq * TAU + phase) * 2.0
 		sprite.position.y = _party_base_positions[i].y + breathe
 
+	# Update buff/debuff visual overlays for all combatants
+	_update_buff_debuff_visuals(delta)
+
 
 func _open_autobattle_editor_for(combatant: Combatant) -> void:
 	"""Open autobattle editor for a specific combatant"""
@@ -2306,6 +2312,111 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 				return
 	# Unknown status — leave tint neutral
 	sprite.modulate = Color.WHITE
+
+
+## Buff/debuff visual overlay system
+func _update_buff_debuff_visuals(_delta: float) -> void:
+	"""Check all combatants for active buffs/debuffs and show/hide visual overlays"""
+	var all_combatants: Array = []
+	all_combatants.append_array(BattleManager.player_party)
+	all_combatants.append_array(BattleManager.enemy_party)
+
+	for combatant in all_combatants:
+		if not (combatant is Combatant) or not combatant.is_alive:
+			_remove_buff_visual(combatant)
+			continue
+
+		var has_buffs = "active_buffs" in combatant and combatant.active_buffs.size() > 0
+		var has_debuffs = "active_debuffs" in combatant and combatant.active_debuffs.size() > 0
+
+		if not has_buffs and not has_debuffs:
+			_remove_buff_visual(combatant)
+			continue
+
+		var sprite = _get_combatant_sprite(combatant)
+		if not sprite or not is_instance_valid(sprite):
+			continue
+
+		# Create or update visual overlay
+		if combatant not in _buff_visual_nodes:
+			_create_buff_visual(combatant, sprite)
+
+		var visuals = _buff_visual_nodes.get(combatant, {})
+		if visuals.is_empty():
+			continue
+
+		# Update glow color based on buff/debuff state
+		var glow: ColorRect = visuals.get("glow")
+		if glow and is_instance_valid(glow):
+			var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
+			if has_buffs and has_debuffs:
+				# Mixed: yellow pulse
+				glow.color = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
+			elif has_buffs:
+				# Buff: cyan-green pulse
+				glow.color = Color(0.2, 0.9, 0.7, 0.1 + pulse * 0.08)
+			else:
+				# Debuff: red pulse
+				glow.color = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
+
+		# Animate particles
+		var particles: Array = visuals.get("particles", [])
+		for p_node in particles:
+			if not is_instance_valid(p_node):
+				continue
+			# Drift upward for buffs, downward for debuffs
+			var drift_dir = -1.0 if has_buffs else 1.0
+			p_node.position.y += drift_dir * 20.0 * _delta
+			p_node.modulate.a -= 0.8 * _delta  # Fade out
+			# Reset when faded
+			if p_node.modulate.a <= 0.0:
+				p_node.position.y = 0.0 if has_buffs else -40.0
+				p_node.position.x = randf_range(-15.0, 15.0)
+				p_node.modulate.a = 0.6 + randf() * 0.4
+
+
+func _create_buff_visual(combatant: Combatant, sprite: Node2D) -> void:
+	"""Create glow + particle overlay for a buffed/debuffed combatant"""
+	var has_buffs = "active_buffs" in combatant and combatant.active_buffs.size() > 0
+
+	# Glow rectangle behind sprite
+	var glow = ColorRect.new()
+	glow.name = "BuffGlow"
+	glow.size = Vector2(40, 50)
+	glow.position = Vector2(-20, -40)
+	glow.color = Color(0.2, 0.9, 0.7, 0.1)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.z_index = -1
+	sprite.add_child(glow)
+
+	# Small floating particles (4 total)
+	var particles: Array = []
+	var p_color = Color(0.3, 1.0, 0.7, 0.7) if has_buffs else Color(1.0, 0.3, 0.3, 0.7)
+	for i in range(4):
+		var p = ColorRect.new()
+		p.size = Vector2(3, 3)
+		p.position = Vector2(randf_range(-15, 15), randf_range(-40, 0) if has_buffs else randf_range(-40, 0))
+		p.color = p_color
+		p.modulate.a = randf_range(0.3, 1.0)
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sprite.add_child(p)
+		particles.append(p)
+
+	_buff_visual_nodes[combatant] = {"glow": glow, "particles": particles}
+
+
+func _remove_buff_visual(combatant) -> void:
+	"""Remove buff/debuff visual overlay for a combatant"""
+	if combatant not in _buff_visual_nodes:
+		return
+	var visuals = _buff_visual_nodes[combatant]
+	var glow = visuals.get("glow")
+	if glow and is_instance_valid(glow):
+		glow.queue_free()
+	for p in visuals.get("particles", []):
+		if is_instance_valid(p):
+			p.queue_free()
+	_buff_visual_nodes.erase(combatant)
 
 
 func _on_summon_hp_changed(enemy: Combatant, old_value: int, new_value: int) -> void:
