@@ -125,13 +125,13 @@
           "speaker": "Bard",
           "text": "A party of five! A valiant fighter, a servant of the cloth, a scholar of arcane learning, a rogue of disputed virtue, and a humble bard whose chronicles will outlast you all. What a tale this shall be!",
           "theme": "bard",
-          "portrait": "bard"
+          "portrait": "bard_happy"
         },
         {
           "speaker": "Rogue",
           "text": "What a tale it shall be... if you don't stop talking about it and actually help carry something.",
           "theme": "rogue",
-          "portrait": "rogue"
+          "portrait": "rogue_angry"
         }
       ]
     },
