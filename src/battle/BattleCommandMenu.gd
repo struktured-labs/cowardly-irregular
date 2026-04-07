@@ -400,6 +400,22 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"data": {"group_type": "limit_break"},
 			"disabled": not can_limit
 		})
+		# Formation Special — unlocked by specific party job compositions
+		var formation = _detect_formation(alive_party)
+		if not formation.is_empty():
+			var can_formation = true
+			for m in alive_party:
+				var effective_ap = m.current_ap + (1 if m == combatant else 0)
+				if effective_ap < formation.get("ap_cost", 2):
+					can_formation = false
+					break
+			group_items.append({
+				"id": "group_formation",
+				"label": formation["name"],
+				"tooltip": formation["tooltip"],
+				"data": {"group_type": "formation", "formation_id": formation["id"]},
+				"disabled": not can_formation
+			})
 		items.append({
 			"id": "group_menu",
 			"label": "Group",
@@ -571,13 +587,19 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			_scene.log_message("No valid targets!")
 		return
 
-	# Group attack (All-Out Attack / Combo Magic / Limit Break)
+	# Group attack (All-Out Attack / Combo Magic / Limit Break / Formation Special)
 	if item_id.begins_with("group_") and item_data is Dictionary:
 		var group_type: String = item_data.get("group_type", "all_out_attack")
-		var label = "Limit Break" if group_type == "limit_break" else ("Combo Magic" if group_type == "combo_magic" else "All-Out Attack")
-		var color = "magenta" if group_type == "combo_magic" else "orange"
+		var formation_id: String = item_data.get("formation_id", "")
+		var label = item_data.get("group_type", "All-Out Attack")
+		match group_type:
+			"limit_break": label = "Limit Break"
+			"combo_magic": label = "Combo Magic"
+			"formation": label = formation_id.replace("_", " ").capitalize()
+			_: label = "All-Out Attack"
+		var color = "magenta" if group_type == "combo_magic" else ("cyan" if group_type == "formation" else "orange")
 		_scene.log_message("[color=%s]★ %s initiated! ★[/color]" % [color, label])
-		BattleManager.player_group_attack(group_type)
+		BattleManager.player_group_attack(group_type, formation_id)
 		_scene._update_ui()
 		return
 
@@ -721,3 +743,79 @@ func close_win98_menu() -> void:
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
+
+
+## Formation Special detection — checks party job composition for known combos
+const FORMATIONS = [
+	{
+		"id": "four_heroes",
+		"name": "Four Heroes",
+		"tooltip": "Classic party — balanced strike + party heal 25% (2 AP each)",
+		"required_jobs": ["fighter", "cleric", "mage", "rogue"],
+		"min_members": 4,
+		"ap_cost": 2,
+	},
+	{
+		"id": "arcane_tempest",
+		"name": "Arcane Tempest",
+		"tooltip": "Triple casters — massive AoE magic ignoring resistances (3 AP each)",
+		"required_jobs": ["mage", "cleric", "bard"],
+		"min_members": 3,
+		"ap_cost": 3,
+	},
+	{
+		"id": "blade_storm",
+		"name": "Blade Storm",
+		"tooltip": "Speed blitz — multi-hit physical, each hit can crit (2 AP each)",
+		"required_jobs": ["fighter", "rogue", "ninja"],
+		"min_members": 3,
+		"ap_cost": 2,
+	},
+	{
+		"id": "iron_wall",
+		"name": "Iron Wall",
+		"tooltip": "Fortress — party-wide DEF+50% buff (3 turns) + crushing AoE (2 AP each)",
+		"required_jobs": ["fighter", "guardian", "cleric"],
+		"min_members": 3,
+		"ap_cost": 2,
+	},
+	{
+		"id": "shadow_strike",
+		"name": "Shadow Strike",
+		"tooltip": "Ambush — ignores defense, 2x damage vs full-HP targets (2 AP each)",
+		"required_jobs": ["rogue", "ninja"],
+		"min_members": 2,
+		"ap_cost": 2,
+	},
+	{
+		"id": "chaos_theory",
+		"name": "Chaos Theory",
+		"tooltip": "Wild card — random massive effect, could backfire! (3 AP each)",
+		"required_jobs": ["speculator", "bard"],
+		"min_members": 2,
+		"ap_cost": 3,
+	},
+]
+
+
+func _detect_formation(alive_party: Array[Combatant]) -> Dictionary:
+	"""Check if the alive party's jobs match any known formation. Returns the best match."""
+	var party_jobs: Array[String] = []
+	for m in alive_party:
+		var job_id = m.job.get("id", "") if m.job else ""
+		if job_id != "" and job_id not in party_jobs:
+			party_jobs.append(job_id)
+
+	# Check formations in order (most specific first — FORMATIONS is ordered by min_members desc)
+	for formation in FORMATIONS:
+		if alive_party.size() < formation["min_members"]:
+			continue
+		var all_present = true
+		for req_job in formation["required_jobs"]:
+			if req_job not in party_jobs:
+				all_present = false
+				break
+		if all_present:
+			return formation
+
+	return {}
