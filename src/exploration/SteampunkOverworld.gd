@@ -132,14 +132,34 @@ func _place_landmarks() -> void:
 
 func _place_wanderers() -> void:
 	var wanderers = [
-		{"name": "Clockwinder", "dialogue": "If I stop winding, the whole district stops.", "color": Color(0.55, 0.4, 0.25), "path": [Vector2(25, 20), Vector2(30, 20), Vector2(30, 25), Vector2(25, 25)]},
-		{"name": "Steam Collector", "dialogue": "Good steam is hard to find these days.", "color": Color(0.5, 0.5, 0.5), "path": [Vector2(40, 10), Vector2(45, 10), Vector2(45, 15), Vector2(40, 15)]},
+		{
+			"name": "Clockwinder",
+			"dialogue": "If I stop winding, the whole district stops.",
+			"color": Color(0.55, 0.4, 0.25),
+			"path": [Vector2(25, 20), Vector2(30, 20), Vector2(30, 25), Vector2(25, 25)],
+			"hints": [
+				{"flag": "w3_entered", "text": "Brasston is west of here. The Grand Mechanism runs everything."},
+				{"flag": "w3_boss_defeated", "text": "The mechanism broke. Something opened up... smells like soot and iron."},
+			],
+		},
+		{
+			"name": "Steam Collector",
+			"dialogue": "Good steam is hard to find these days.",
+			"color": Color(0.5, 0.5, 0.5),
+			"path": [Vector2(40, 10), Vector2(45, 10), Vector2(45, 15), Vector2(40, 15)],
+			"hints": [
+				{"flag": "w3_entered", "text": "The pipes all lead to the Mechanism. Follow them if you're brave."},
+				{"flag": "w3_boss_defeated", "text": "Beyond the Dominion lies a world of pure industry. No craftsmanship. Just output."},
+			],
+		},
 	]
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))

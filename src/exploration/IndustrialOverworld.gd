@@ -131,14 +131,34 @@ func _place_landmarks() -> void:
 
 func _place_wanderers() -> void:
 	var wanderers = [
-		{"name": "Shift Worker", "dialogue": "Break's over in five minutes. Always five minutes.", "color": Color(0.45, 0.4, 0.35), "path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)]},
-		{"name": "Inspector", "dialogue": "Everything here is up to code. Technically.", "color": Color(0.3, 0.3, 0.35), "path": [Vector2(35, 25), Vector2(40, 25), Vector2(40, 30), Vector2(35, 30)]},
+		{
+			"name": "Shift Worker",
+			"dialogue": "Break's over in five minutes. Always five minutes.",
+			"color": Color(0.45, 0.4, 0.35),
+			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
+			"hints": [
+				{"flag": "w4_entered", "text": "Rivet Row is east — the worker housing. The Director watches everything."},
+				{"flag": "w4_boss_defeated", "text": "The Assembly Line stopped. There's a rift where the furnace was... glowing blue."},
+			],
+		},
+		{
+			"name": "Inspector",
+			"dialogue": "Everything here is up to code. Technically.",
+			"color": Color(0.3, 0.3, 0.35),
+			"path": [Vector2(35, 25), Vector2(40, 25), Vector2(40, 30), Vector2(35, 30)],
+			"hints": [
+				{"flag": "w4_entered", "text": "The factory floor runs north to south. Watch for chemical barrels."},
+				{"flag": "w4_boss_defeated", "text": "Past the rift... it's all data. Numbers. Like the world forgot how to be real."},
+			],
+		},
 	]
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))

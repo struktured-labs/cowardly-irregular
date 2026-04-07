@@ -136,14 +136,34 @@ func _place_landmarks() -> void:
 
 func _place_wanderers() -> void:
 	var wanderers = [
-		{"name": "Process_42", "dialogue": "I'm just passing through. Literally. I'm a process.", "color": Color(0.2, 0.5, 0.6), "path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)]},
-		{"name": "Legacy Code", "dialogue": "They keep trying to deprecate me. I keep running.", "color": Color(0.4, 0.6, 0.3), "path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)]},
+		{
+			"name": "Process_42",
+			"dialogue": "I'm just passing through. Literally. I'm a process.",
+			"color": Color(0.2, 0.5, 0.6),
+			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
+			"hints": [
+				{"flag": "w5_entered", "text": "Node Prime is east. The core processes run there. Don't benchmark them."},
+				{"flag": "w5_boss_defeated", "text": "The Source Layer is dissolving. Something beyond the code... the Remainder."},
+			],
+		},
+		{
+			"name": "Legacy Code",
+			"dialogue": "They keep trying to deprecate me. I keep running.",
+			"color": Color(0.4, 0.6, 0.3),
+			"path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)],
+			"hints": [
+				{"flag": "w5_entered", "text": "The Masterites built all of this. Or compiled it. Same thing here."},
+				{"flag": "w5_boss_defeated", "text": "Beyond the code there's... nothing? Everything? I can't parse it."},
+			],
+		},
 	]
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
