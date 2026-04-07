@@ -107,17 +107,20 @@ func _flash_effect() -> void:
 
 
 func _crit_wobble_effect() -> void:
-	"""Crit numbers get a rotation wobble of ±10 degrees"""
+	"""Crit numbers get a dramatic rotation wobble + color cycle"""
 	if _polish_tween and _polish_tween.is_valid():
 		_polish_tween.kill()
 	_polish_tween = create_tween()
-	var wobble_deg = deg_to_rad(10.0)
-	# Quick wobble: 0 -> +10 -> -10 -> +6 -> -6 -> 0 over lifetime
-	_polish_tween.tween_property(_label, "rotation", wobble_deg, 0.08)
-	_polish_tween.tween_property(_label, "rotation", -wobble_deg, 0.12)
-	_polish_tween.tween_property(_label, "rotation", deg_to_rad(6.0), 0.1)
-	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-6.0), 0.1)
-	_polish_tween.tween_property(_label, "rotation", 0.0, 0.12)
+	var wobble_deg = deg_to_rad(15.0)
+	# Quick wobble: 0 -> +15 -> -15 -> +8 -> -8 -> 0 over lifetime
+	_polish_tween.tween_property(_label, "rotation", wobble_deg, 0.06)
+	_polish_tween.tween_property(_label, "rotation", -wobble_deg, 0.10)
+	_polish_tween.tween_property(_label, "rotation", deg_to_rad(8.0), 0.08)
+	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-8.0), 0.08)
+	_polish_tween.tween_property(_label, "rotation", 0.0, 0.10)
+	# Color cycle: orange -> yellow-white -> orange for extra punch
+	_polish_tween.parallel().tween_property(_label, "theme_override_colors/font_color", Color(1.0, 1.0, 0.7), 0.08)
+	_polish_tween.tween_property(_label, "theme_override_colors/font_color", Color.ORANGE, 0.15)
 
 
 func _heal_bounce_effect() -> void:

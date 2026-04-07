@@ -2424,7 +2424,7 @@ func _close_win98_menu() -> void:
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
 	if is_crit:
-		_flash_screen(Color(1.0, 0.9, 0.3, 0.4), 0.15)  # Gold flash for crits
+		_crit_visual_burst(target, amount)
 	if elemental_mod != 1.0 and element != "":
 		_spawn_elemental_indicator(target, element, elemental_mod)
 	# Skip hit sounds for abilities — ability sound already played at cast time
@@ -2481,6 +2481,58 @@ func _on_attack_missed(target: Combatant) -> void:
 func _on_healing_done(target: Combatant, amount: int) -> void:
 	_results_display.on_healing_done(target, amount)
 	SoundManager.play_battle("heal")
+
+
+func _crit_visual_burst(target: Combatant, _amount: int) -> void:
+	"""Full critical hit visual package — screen flash, hitlag, sprite flash, banner"""
+	# 1. Bright white-gold screen flash (more dramatic than normal hit)
+	_flash_screen(Color(1.0, 0.95, 0.6, 0.5), 0.2)
+
+	# 2. Hitlag — brief time freeze for impact (80ms at 10% speed)
+	var prev_scale = Engine.time_scale
+	Engine.time_scale = 0.1
+	var hitlag_tween = create_tween()
+	hitlag_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	hitlag_tween.tween_callback(func(): Engine.time_scale = prev_scale).set_delay(0.008)  # 80ms real time at 0.1x
+
+	# 3. Target sprite white flash
+	var sprite = _get_combatant_sprite(target)
+	if sprite and is_instance_valid(sprite):
+		var orig_modulate = sprite.modulate
+		sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)  # Bright white flash (HDR)
+		var flash_tween = create_tween()
+		flash_tween.tween_property(sprite, "modulate", orig_modulate, 0.15).set_delay(0.05)
+
+	# 4. "CRITICAL!" banner above target
+	var pos = _results_display._get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		_spawn_crit_banner(pos)
+
+
+func _spawn_crit_banner(pos: Vector2) -> void:
+	"""Spawn a large 'CRITICAL!' text that scales up and fades"""
+	var label = Label.new()
+	label.text = "CRITICAL!"
+	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.1))
+	label.add_theme_constant_override("outline_size", 3)
+	label.add_theme_color_override("font_outline_color", Color(0.6, 0.2, 0.0))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = pos + Vector2(-45, -70)
+	label.z_index = 110
+	label.pivot_offset = Vector2(45, 10)  # Center pivot for scale
+	label.scale = Vector2(0.3, 0.3)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(label)
+
+	var tween = create_tween()
+	# Pop in: scale 0.3 -> 1.2 -> 1.0
+	tween.tween_property(label, "scale", Vector2(1.2, 1.2), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.06)
+	# Hold, then float up and fade
+	tween.tween_property(label, "position:y", pos.y - 100, 0.6).set_delay(0.2)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.4)
+	tween.tween_callback(label.queue_free)
 
 
 func _flash_screen(color: Color, duration: float) -> void:
