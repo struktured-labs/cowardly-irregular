@@ -1094,13 +1094,8 @@ func _on_battle_ended(victory: bool) -> void:
 		await _wait_for_confirm()
 		_return_to_exploration()
 	else:
-		# Game over - wait for confirm then restart
-		await _wait_for_confirm()
-		_create_party()
-		battles_won = 0
-		_current_map_id = "overworld"
-		_spawn_point = "default"
-		_start_exploration()
+		# Game over — show dramatic screen with retry/continue options
+		await _show_game_over_screen()
 
 
 func _wait_for_confirm() -> void:
@@ -1113,6 +1108,48 @@ func _wait_for_confirm() -> void:
 			break
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
+
+
+func _show_game_over_screen() -> void:
+	"""Show the game over screen and handle retry/continue."""
+	var game_over = GameOverScreen.new()
+	add_child(game_over)
+
+	# Check if a save exists
+	var has_save = SaveSystem != null and SaveSystem.has_method("has_save") and SaveSystem.has_save()
+
+	var choice_made = false
+	var retry = true
+
+	game_over.retry_selected.connect(func():
+		choice_made = true
+		retry = true
+	)
+	game_over.continue_selected.connect(func():
+		choice_made = true
+		retry = false
+	)
+
+	await game_over.show_game_over(has_save)
+
+	# Wait for player choice
+	while not choice_made:
+		await get_tree().process_frame
+
+	game_over.queue_free()
+
+	if retry:
+		_create_party()
+		battles_won = 0
+		_current_map_id = "overworld"
+		_spawn_point = "default"
+		_start_exploration()
+	else:
+		# Load saved game
+		if SaveSystem and SaveSystem.has_method("load_game"):
+			SaveSystem.load_game()
+		_create_party()
+		_start_exploration()
 
 
 ## Exploration Management
