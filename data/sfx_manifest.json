@@ -248,6 +248,63 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
     },
+    "footstep_snow": {
+      "file": "assets/audio/sfx/footstep_snow.ogg",
+      "prompt": "Single footstep crunching fresh snow, quiet boot compressing powder, crisp cold winter step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_snow_v2", "footstep_snow_v3"]
+    },
+    "footstep_snow_v2": {
+      "file": "assets/audio/sfx/footstep_snow_v2.ogg",
+      "prompt": "Single boot step in deep snow, muffled crunch of packed ice crystals, heavy winter footfall",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_snow_v3": {
+      "file": "assets/audio/sfx/footstep_snow_v3.ogg",
+      "prompt": "Single light step on icy snow crust, thin crackle of frozen surface breaking, delicate winter step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_metal": {
+      "file": "assets/audio/sfx/footstep_metal.ogg",
+      "prompt": "Single boot step on metal grate, industrial steel floor clang, short hollow metallic footfall",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_metal_v2", "footstep_metal_v3"]
+    },
+    "footstep_metal_v2": {
+      "file": "assets/audio/sfx/footstep_metal_v2.ogg",
+      "prompt": "Single step on metal catwalk, light ringing steel platform footstep, factory floor tap",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_metal_v3": {
+      "file": "assets/audio/sfx/footstep_metal_v3.ogg",
+      "prompt": "Single heavy boot on iron plate, deep dull metallic thud, industrial walkway step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_wood": {
+      "file": "assets/audio/sfx/footstep_wood.ogg",
+      "prompt": "Single footstep on wooden floorboard, warm hollow wood tap, tavern floor step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_wood_v2", "footstep_wood_v3"]
+    },
+    "footstep_wood_v2": {
+      "file": "assets/audio/sfx/footstep_wood_v2.ogg",
+      "prompt": "Single step on creaky wooden plank, old floorboard groaning softly, rustic cabin step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_wood_v3": {
+      "file": "assets/audio/sfx/footstep_wood_v3.ogg",
+      "prompt": "Single boot on wooden deck, solid timber thump, ship deck or bridge footstep",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
     "weather_rain": {
       "file": "assets/audio/sfx/weather_rain.ogg",
       "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",
