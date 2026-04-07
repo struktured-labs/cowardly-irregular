@@ -273,9 +273,10 @@ func update_csi(region_id: String, encounter_type: String = "normal") -> void:
 
 	var delta_csi: float = CSI_BASE_GROWTH * encounter_weight * mode_weight * level_weight
 
-	# Apply diminishing returns near cap
-	if _region_csi[region_id] > 0.7:
-		delta_csi *= 0.5  # Halved growth above 70%
+	# Smooth diminishing returns: growth scales down as CSI approaches 1.0
+	# At CSI 0.0 = full growth, CSI 0.5 = 75% growth, CSI 0.8 = 36% growth, CSI 0.95 = 10% growth
+	var current_csi = _region_csi[region_id]
+	delta_csi *= (1.0 - current_csi * current_csi)
 
 	_region_csi[region_id] = clampf(_region_csi[region_id] + delta_csi, 0.0, 1.0)
 
@@ -305,9 +306,10 @@ func decay_all_csi(hours_elapsed: float) -> void:
 func decay_csi(delta_seconds: float) -> void:
 	if is_grinding:
 		return
-	var decay_rate = 0.001  # Per second
+	# Real-time decay should match offline rate: CSI_DECAY_RATE per hour = CSI_DECAY_RATE/3600 per second
+	var decay_per_sec = CSI_DECAY_RATE / 3600.0
 	for region_id in _region_csi.keys():
-		_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - decay_rate * delta_seconds)
+		_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - decay_per_sec * delta_seconds)
 
 
 func get_csi(region_id: String) -> float:
@@ -381,6 +383,9 @@ func get_grind_stats() -> Dictionary:
 
 	var minutes: float = maxf(elapsed / 60.0, 0.0001)  # Avoid division by zero
 
+	var csi_val = get_csi(current_region_id) if not current_region_id.is_empty() else 0.0
+	var yield_val = get_yield_multiplier(current_region_id) if not current_region_id.is_empty() else 1.0
+
 	return {
 		"exp_per_min": _grind_stats["total_exp"] / minutes,
 		"gold_per_min": _grind_stats["total_gold"] / minutes,
@@ -390,7 +395,10 @@ func get_grind_stats() -> Dictionary:
 		"total_gold": _grind_stats["total_gold"],
 		"total_encounters": _grind_stats["total_encounters"],
 		"elapsed_seconds": elapsed,
-		"fatigue_events_triggered": fatigue_events_triggered
+		"fatigue_events_triggered": fatigue_events_triggered,
+		"csi": csi_val,
+		"yield_multiplier": yield_val,
+		"automation_affinity": _automation_affinity,
 	}
 
 
