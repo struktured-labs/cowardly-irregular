@@ -254,6 +254,24 @@
       "duration_seconds": 5.0,
       "prompt_influence": 0.6
     },
+    "level_up": {
+      "file": "assets/audio/sfx/level_up.ogg",
+      "prompt": "Triumphant ascending chime cascade, bright crystalline notes climbing upward like a classic RPG level up jingle, magical sparkle reaching a satisfying peak note",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "gold_pickup": {
+      "file": "assets/audio/sfx/gold_pickup.ogg",
+      "prompt": "Handful of gold coins clinking together, bright metallic jingling of treasure being collected, satisfying coin cascade into a pouch",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "exp_tick": {
+      "file": "assets/audio/sfx/exp_tick.ogg",
+      "prompt": "Ultra short soft digital pip, tiny progress bar increment tick, minimal quiet blip like a meter filling up one notch",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.8
+    },
     "boss_intro_stinger": {
       "file": "assets/audio/sfx/boss_intro_stinger.ogg",
       "prompt": "Dramatic orchestral hit with deep timpani slam, ominous brass stab announcing danger, dark foreboding impact like a boss appearing in an RPG, reverberating doom chord",

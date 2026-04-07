@@ -229,6 +229,10 @@ func show_victory_results() -> void:
 			var char_delay = bar_fill_delay + char_idx * 0.3
 			var fill_duration = 0.8
 
+			# Tick sound when bar starts filling
+			if exp_gained > 0:
+				anim_tween.tween_callback(func(): SoundManager.play_ui("exp_tick")).set_delay(char_delay)
+
 			if leveled_up:
 				# Two-phase: fill to 100%, flash, then fill from 0% to new amount
 				var remaining_to_full = exp_to_next - exp_before
@@ -275,6 +279,7 @@ func show_victory_results() -> void:
 			var lvl_delay = bar_fill_delay + char_idx * 0.3 + 0.5
 			anim_tween.tween_property(lvl_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay)
 			anim_tween.tween_callback(func(): SoundManager.play_music("stinger_level_up")).set_delay(lvl_delay)
+			anim_tween.tween_callback(func(): SoundManager.play_battle("level_up")).set_delay(lvl_delay)
 			# Pulse effect
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.15, 1.15), 0.1).set_delay(lvl_delay)
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.0, 1.0), 0.15).set_delay(lvl_delay + 0.1)
@@ -305,7 +310,7 @@ func show_victory_results() -> void:
 			var display_gold = int(float(total_gold) * step / gold_steps)
 			anim_tween.tween_callback(func(): gold_label.text = "%d G" % display_gold).set_delay(gold_delay + gold_step_delay * step)
 		# Play coin sound at start of gold count
-		anim_tween.tween_callback(func(): SoundManager.play_ui("confirm")).set_delay(gold_delay)
+		anim_tween.tween_callback(func(): SoundManager.play_battle("gold_pickup")).set_delay(gold_delay)
 
 	# Bonuses section
 	if bonuses.size() > 0:
