@@ -41,6 +41,8 @@ var _next_battle_enemy_boost: float = 0.0
 var _next_battle_exp_bonus: float = 0.0
 
 func _get_between_battle_delay() -> float:
+	if headless_mode:
+		return 0.0  # Ludicrous speed: no delay between battles
 	match _current_tier:
 		GrindTier.ACCELERATED:
 			return 0.1
@@ -93,6 +95,7 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	_terrain = terrain
 	var tier_val = config.get("tier", 0)
 	_current_tier = tier_val as GrindTier
+	headless_mode = config.get("ludicrous_speed", false)
 
 	# Save and force autobattle states
 	_save_autobattle_states()
@@ -112,12 +115,14 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 		AutogrindSystem.set_current_region(region)
 
 	# Apply current battle speed setting (persisted across battles in BattleScene)
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	var speed_idx = BattleSceneScript._battle_speed_index
-	if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
-		Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
-	else:
-		Engine.time_scale = 2.0
+	# Headless mode doesn't need engine time scaling since battles are pure math
+	if not headless_mode:
+		var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+		var speed_idx = BattleSceneScript._battle_speed_index
+		if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
+			Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
+		else:
+			Engine.time_scale = 2.0
 
 	print("[AUTOGRIND] Controller started, requesting first battle")
 	_state = State.PRE_BATTLE

@@ -2117,9 +2117,15 @@ func _start_autogrind(config: Dictionary) -> void:
 	SoundManager.reset_corruption()
 	SoundManager.play_music("autogrind")
 
-	_show_controller_overlay(ControllerOverlay.autogrind_context())
+	# Show appropriate controller overlay
+	if _autogrind_controller.headless_mode:
+		_show_controller_overlay(ControllerOverlay.autogrind_ludicrous_context())
+		# Ludicrous speed auto-shows dashboard since there are no visible battles
+		_show_autogrind_dashboard()
+	else:
+		_show_controller_overlay(ControllerOverlay.autogrind_context())
 
-	print("[AUTOGRIND] Session started")
+	print("[AUTOGRIND] Session started%s" % (" (LUDICROUS SPEED)" if _autogrind_controller.headless_mode else ""))
 
 
 func _on_autogrind_stop_requested() -> void:

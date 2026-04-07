@@ -46,6 +46,9 @@ var _permadeath_label: Label = null
 ## Stats strip
 var _stats_strip: AutogrindStatsStrip = null
 
+## Ludicrous speed indicator
+var _ludicrous_label: Label = null
+
 ## Tracking for projections
 var _session_start_time: float = 0.0
 var _battles_completed: int = 0
@@ -160,6 +163,14 @@ func _build_header(vp_size: Vector2) -> void:
 	tier_lbl.add_theme_font_size_override("font_size", 13)
 	tier_lbl.add_theme_color_override("font_color", COLOR_WARN)
 	add_child(tier_lbl)
+
+	_ludicrous_label = Label.new()
+	_ludicrous_label.text = ""
+	_ludicrous_label.position = Vector2(vp_size.x - 380, 14)
+	_ludicrous_label.add_theme_font_size_override("font_size", 13)
+	_ludicrous_label.add_theme_color_override("font_color", Color(0.8, 0.4, 1.0))
+	_ludicrous_label.visible = false
+	add_child(_ludicrous_label)
 
 	_elapsed_label = Label.new()
 	_elapsed_label.text = "00:00:00"
@@ -635,6 +646,12 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 		_stats_strip.refresh(stats, region_id)
 
 	_update_corruption_tint(stats)
+
+
+func set_ludicrous_mode(enabled: bool) -> void:
+	if _ludicrous_label and is_instance_valid(_ludicrous_label):
+		_ludicrous_label.text = "LUDICROUS SPEED" if enabled else ""
+		_ludicrous_label.visible = enabled
 
 
 func add_highlight(_text: String, _severity: String = "info") -> void:
