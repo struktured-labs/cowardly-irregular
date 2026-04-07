@@ -6,6 +6,7 @@ extends Node
 signal grind_battle_requested(enemies: Array, terrain: String)
 signal grind_complete(reason: String)
 signal tier_changed(new_tier: int)
+signal region_advanced(from_region: String, to_region: String, world_num: int)
 
 enum State {
 	IDLE,
@@ -37,6 +38,7 @@ var _current_battle_is_meta_boss: bool = false
 var _current_battle_is_collapse_boss: bool = false
 var _current_meta_boss_data: Dictionary = {}
 
+var _auto_advance_regions: bool = true  # Auto-advance to next world when region cracked
 var _next_battle_enemy_boost: float = 0.0
 var _next_battle_exp_bonus: float = 0.0
 
@@ -113,6 +115,13 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	var region = config.get("region", "")
 	if region != "":
 		AutogrindSystem.set_current_region(region)
+
+	# Read auto-advance setting (defaults to true)
+	_auto_advance_regions = config.get("auto_advance", true)
+
+	# Connect region_cracked signal for world progression
+	if not AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
+		AutogrindSystem.region_cracked.connect(_on_region_cracked)
 
 	# Apply current battle speed setting (persisted across battles in BattleScene)
 	# Headless mode doesn't need engine time scaling since battles are pure math
@@ -360,6 +369,25 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 			stop_grind("Party defeated")
 
 
+## Handle region cracked — auto-advance to next world if enabled
+func _on_region_cracked(region_id: String, crack_level: int) -> void:
+	if not _auto_advance_regions:
+		print("[AUTOGRIND] Region %s cracked (level %d), auto-advance disabled" % [region_id, crack_level])
+		return
+
+	if crack_level < 1:
+		return  # Only advance on first crack
+
+	var next = AutogrindSystem.advance_to_next_region()
+	if next.is_empty():
+		print("[AUTOGRIND] Region cracked but no next world available (end of progression or locked)")
+		return
+
+	_terrain = next["region"]
+	region_advanced.emit(region_id, next["region"], next["world"])
+	print("[AUTOGRIND] Auto-advancing to %s (World %d)" % [next["name"], next["world"]])
+
+
 ## Stop the grind session
 func stop_grind(reason: String = "Manual stop") -> void:
 	if _state == State.IDLE:
@@ -370,6 +398,10 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	_pending_tier_switch = -1
+
+	# Disconnect region_cracked signal
+	if AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
+		AutogrindSystem.region_cracked.disconnect(_on_region_cracked)
 
 	# Restore autobattle states
 	_restore_autobattle_states()
