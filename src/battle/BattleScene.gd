@@ -1823,10 +1823,11 @@ func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
 func cycle_formation() -> void:
 	"""Cycle to the next party formation and reposition sprites"""
 	current_formation = (current_formation + 1) % PartyFormation.size()
-	var name = FORMATION_NAMES[current_formation]
+	var fname = FORMATION_NAMES[current_formation]
 	var desc = FORMATION_DESCRIPTIONS[current_formation]
-	log_message("[color=cyan]Formation: %s — %s[/color]" % [name, desc])
+	log_message("[color=cyan]Formation: %s — %s[/color]" % [fname, desc])
 	SoundManager.play_ui("menu_move")
+	TutorialHints.show(self, "first_formation")
 
 	# Smoothly reposition party sprites
 	for i in range(party_sprite_nodes.size()):
