@@ -527,18 +527,38 @@ func _place_wanderers() -> void:
 			"dialogue": "Harmonia's got the best prices... if you can find it.",
 			"color": Color(0.5, 0.35, 0.2),
 			"path": [Vector2(30, 23), Vector2(20, 23), Vector2(20, 26), Vector2(30, 26)],
+			"hints": [
+				{"flag": "", "text": "Head west across the bridges — Harmonia Village is just past them."},
+				{"flag": "prologue_complete", "text": "Elder Theron mentioned a cave northwest of the village. Sounds dangerous."},
+				{"flag": "chapter1_complete", "text": "The Whispering Cave? Northwest of here. Bring potions."},
+				{"flag": "rat_king_defeated", "text": "A strange light appeared to the south... some kind of portal?"},
+				{"flag": "w1_boss_defeated", "text": "That portal south of the bridge leads somewhere... different."},
+			],
 		},
 		{
 			"name": "Lost Pilgrim",
 			"dialogue": "I've been walking north for hours... is there a village up here?",
 			"color": Color(0.4, 0.4, 0.6),
 			"path": [Vector2(28, 10), Vector2(28, 14), Vector2(30, 14), Vector2(30, 10)],
+			"hints": [
+				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},
+				{"flag": "prologue_complete", "text": "Frosthold is up north in the ice fields. Eldertree is in the forest."},
+				{"flag": "chapter3_complete", "text": "Something terrible lurks in that cave... the ground shakes at night."},
+				{"flag": "w1_boss_defeated", "text": "The world feels... wider now. Like a door opened somewhere."},
+			],
 		},
 		{
 			"name": "Retired Guard",
 			"dialogue": "Don't go near the cave. Trust me on this one.",
 			"color": Color(0.55, 0.45, 0.35),
 			"path": [Vector2(12, 20), Vector2(12, 24), Vector2(8, 24), Vector2(8, 20)],
+			"hints": [
+				{"flag": "", "text": "Harmonia Village is just south of here. Talk to Elder Theron."},
+				{"flag": "prologue_complete", "text": "The cave northwest of the village... it whispers at night."},
+				{"flag": "chapter1_complete", "text": "That cave goes deep. Five floors, they say. A king of rats at the bottom."},
+				{"flag": "rat_king_defeated", "text": "You actually beat it? Head south — a portal appeared near the river."},
+				{"flag": "w1_boss_defeated", "text": "Beyond the portal... they say the world looks completely different."},
+			],
 		},
 	]
 	for w in wanderers:
@@ -546,6 +566,8 @@ func _place_wanderers() -> void:
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))

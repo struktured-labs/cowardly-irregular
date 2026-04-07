@@ -15,6 +15,11 @@ const ANIM_FPS: float = 4.0
 @export var dialogue: String = "The road stretches on..."
 @export var sprite_color: Color = Color(0.6, 0.5, 0.4)
 
+## Story-aware dialogue hints — checked in order, last matching flag wins.
+## Format: [{"flag": "story_flag", "text": "dialogue"}, ...]
+## If empty, falls back to static dialogue.
+var dialogue_hints: Array = []
+
 var _sprite: Sprite2D
 var _label: Label
 var _player_nearby: bool = false
@@ -145,9 +150,21 @@ func _setup_label() -> void:
 	add_child(_label)
 
 
+func _get_current_dialogue() -> String:
+	if dialogue_hints.is_empty():
+		return dialogue
+	var best = dialogue
+	for hint in dialogue_hints:
+		var flag = hint.get("flag", "")
+		if flag == "" or GameState.get_story_flag(flag):
+			best = hint["text"]
+	return best
+
+
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_nearby = true
+		_label.text = "%s: \"%s\"" % [npc_name, _get_current_dialogue()]
 		_label.visible = true
 
 
