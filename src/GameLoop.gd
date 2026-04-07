@@ -2544,17 +2544,17 @@ func _on_autogrind_region_advanced(from_region: String, to_region: String, world
 	"""Handle auto-advance to next world region during autogrind."""
 	_current_map_id = to_region
 	_current_terrain = to_region
-	# Update world state
 	if has_node("/root/GameState"):
 		GameState.current_world = world_num
 
-	# Show region advancement toast
 	var world_names = {
 		1: "Medieval", 2: "Suburban", 3: "Steampunk",
 		4: "Industrial", 5: "Futuristic", 6: "Abstract"
 	}
 	var world_name = world_names.get(world_num, "World %d" % world_num)
-	_show_autogrind_toast("REGION CRACKED! Advancing to World %d: %s" % [world_num, world_name])
+
+	# Visual warp transition
+	_show_region_warp_transition(world_num, world_name)
 
 	# Add to battle log
 	_autogrind_battle_summaries.append("[color=#ff88ff]>>> ADVANCED TO WORLD %d: %s <<<[/color]" % [world_num, world_name.to_upper()])
@@ -2566,7 +2566,87 @@ func _on_autogrind_region_advanced(from_region: String, to_region: String, world
 		var stats = _autogrind_controller.get_grind_stats() if _autogrind_controller and is_instance_valid(_autogrind_controller) else {}
 		_autogrind_dashboard.refresh(stats, to_region)
 
+	# Play tier transition sound for the warp feel
+	SoundManager.play_ui("tier_zoom_out")
+
 	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
+
+
+func _show_region_warp_transition(world_num: int, world_name: String) -> void:
+	"""Cinematic warp overlay when auto-advancing to a new world region."""
+	var layer = CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+
+	var vp_size = get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+
+	# Flash overlay
+	var flash = ColorRect.new()
+	flash.color = Color(1.0, 1.0, 1.0, 0.0)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(flash)
+
+	# Dark backdrop for text
+	var backdrop = ColorRect.new()
+	backdrop.color = Color(0.02, 0.01, 0.05, 0.0)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(backdrop)
+
+	# "REGION CRACKED" title
+	var title = Label.new()
+	title.text = "REGION CRACKED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(0, vp_size.y * 0.35)
+	title.size = Vector2(vp_size.x, 40)
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	title.modulate.a = 0.0
+	layer.add_child(title)
+
+	# World name subtitle
+	var subtitle = Label.new()
+	subtitle.text = "Warping to World %d: %s" % [world_num, world_name]
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.position = Vector2(0, vp_size.y * 0.35 + 40)
+	subtitle.size = Vector2(vp_size.x, 30)
+	subtitle.add_theme_font_size_override("font_size", 18)
+	subtitle.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	subtitle.modulate.a = 0.0
+	layer.add_child(subtitle)
+
+	# "Enemies reset for new region" hint
+	var hint = Label.new()
+	hint.text = "Enemy adaptation reset — fresh hunting grounds!"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.position = Vector2(0, vp_size.y * 0.35 + 76)
+	hint.size = Vector2(vp_size.x, 24)
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", Color(0.5, 0.9, 0.5))
+	hint.modulate.a = 0.0
+	layer.add_child(hint)
+
+	# Animation: flash → dark → text → fade out
+	var tween = create_tween()
+	# White flash (0.15s)
+	tween.tween_property(flash, "color:a", 0.7, 0.15)
+	tween.tween_property(flash, "color:a", 0.0, 0.2)
+	# Dark backdrop fades in
+	tween.parallel().tween_property(backdrop, "color:a", 0.85, 0.3)
+	# Text fades in
+	tween.tween_property(title, "modulate:a", 1.0, 0.3)
+	tween.parallel().tween_property(subtitle, "modulate:a", 1.0, 0.3)
+	tween.tween_property(hint, "modulate:a", 1.0, 0.2)
+	# Hold (1.5s)
+	tween.tween_interval(1.5)
+	# Fade everything out
+	tween.tween_property(title, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(subtitle, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(hint, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(backdrop, "color:a", 0.0, 0.4)
+	# Cleanup
+	tween.tween_callback(layer.queue_free)
 
 
 func _create_autogrind_overlay() -> void:
