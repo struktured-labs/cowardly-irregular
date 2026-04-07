@@ -120,6 +120,7 @@ func _setup_sprite() -> void:
 
 	_sprite.texture = ImageTexture.create_from_image(img)
 	_sprite.centered = true
+	_sprite.scale = Vector2(3.0, 3.0)  # Scale up for Mode 7 visibility
 	add_child(_sprite)
 
 
@@ -130,7 +131,7 @@ func _setup_collision() -> void:
 
 	var col = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 28.0
+	shape.radius = 48.0  # Wider detection for scaled-up sprites
 	col.shape = shape
 	add_child(col)
 
@@ -139,8 +140,9 @@ func _setup_label() -> void:
 	_label = Label.new()
 	_label.text = "%s: \"%s\"" % [npc_name, dialogue]
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.position = Vector2(-60, -32)
-	_label.add_theme_font_size_override("font_size", 9)
+	_label.position = Vector2(-100, -60)
+	_label.size = Vector2(200, 40)
+	_label.add_theme_font_size_override("font_size", 12)
 	_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
 	_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	_label.add_theme_constant_override("shadow_offset_x", 1)
