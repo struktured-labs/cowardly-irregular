@@ -32,6 +32,18 @@ const BOX_HEIGHT = 120
 const PORTRAIT_SIZE = 80
 const MARGIN = 16
 
+## Expression tints — applied to portrait modulate for emotional coloring
+## Usage in cutscene JSON: "portrait": "fighter_angry" or "cleric_sad"
+const EXPRESSION_TINTS = {
+	"angry": Color(1.3, 0.8, 0.8),       # Red-warm tint
+	"sad": Color(0.8, 0.85, 1.2),         # Blue-cool tint
+	"happy": Color(1.2, 1.15, 0.9),       # Warm gold tint
+	"surprised": Color(1.3, 1.3, 1.1),    # Bright flash
+	"worried": Color(0.9, 0.9, 1.1),      # Slight cool desaturation
+	"determined": Color(1.1, 1.0, 0.85),  # Warm focused
+	"mysterious": Color(0.85, 0.8, 1.15), # Purple-ish mystery
+}
+
 ## Character color themes - extended for cutscene NPCs
 const CHARACTER_THEMES = {
 	"hero": {
@@ -338,9 +350,19 @@ func _show_current_line() -> void:
 
 	_speaker_label.text = entry.get("speaker", "")
 
-	# Set portrait
-	var portrait_type = entry.get("portrait", theme_name)
+	# Set portrait (supports expression suffix: "fighter_angry", "cleric_sad")
+	var portrait_raw = entry.get("portrait", theme_name)
+	var portrait_type = portrait_raw
+	var expression = ""
+	# Parse expression suffix
+	for expr in EXPRESSION_TINTS.keys():
+		if portrait_raw.ends_with("_" + expr):
+			portrait_type = portrait_raw.substr(0, portrait_raw.length() - expr.length() - 1)
+			expression = expr
+			break
 	_portrait_image.texture = _create_portrait(portrait_type)
+	# Apply expression tint to portrait
+	_portrait_image.modulate = EXPRESSION_TINTS.get(expression, Color.WHITE)
 
 	# Hide portrait frame for narrator (no-portrait mode)
 	var hide_portrait = entry.get("hide_portrait", false)

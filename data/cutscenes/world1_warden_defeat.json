@@ -103,7 +103,7 @@
           "speaker": "Fighter",
           "text": "I will.",
           "theme": "fighter",
-          "portrait": "fighter"
+          "portrait": "fighter_determined"
         }
       ]
     },
@@ -157,7 +157,7 @@
           "speaker": "Cleric",
           "text": "...",
           "theme": "cleric",
-          "portrait": "cleric"
+          "portrait": "cleric_sad"
         },
         {
           "speaker": "Warden",
@@ -190,7 +190,7 @@
           "speaker": "Bard",
           "text": "Me?",
           "theme": "bard",
-          "portrait": "bard"
+          "portrait": "bard_surprised"
         },
         {
           "speaker": "Warden",
