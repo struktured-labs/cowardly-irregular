@@ -385,6 +385,11 @@ func _on_region_cracked(region_id: String, crack_level: int) -> void:
 
 	_terrain = next["region"]
 	region_advanced.emit(region_id, next["region"], next["world"])
+
+	# Give extra delay for the warp transition to play (~3s animation)
+	if _state == State.BETWEEN_BATTLES:
+		_between_battle_timer = maxf(_between_battle_timer, 3.5)
+
 	print("[AUTOGRIND] Auto-advancing to %s (World %d)" % [next["name"], next["world"]])
 
 
