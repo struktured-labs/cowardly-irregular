@@ -2013,6 +2013,9 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 		"combo_magic":
 			shake_intensity = 14.0
 			shake_duration = 0.5
+		"formation":
+			shake_intensity = 12.0
+			shake_duration = 0.45
 		_:
 			shake_intensity = 10.0
 			shake_duration = 0.35
@@ -2025,6 +2028,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			flash_color = Color(1.0, 0.85, 0.0, 0.55)  # Gold
 		"combo_magic":
 			flash_color = Color(0.7, 0.2, 1.0, 0.5)     # Purple
+		"formation":
+			flash_color = Color(0.2, 0.9, 1.0, 0.45)     # Cyan
 		_:
 			flash_color = Color(1.0, 0.5, 0.0, 0.4)      # Orange
 	_spawn_screen_flash(flash_color, 0.55 if group_type == "combo_magic" else 0.45)

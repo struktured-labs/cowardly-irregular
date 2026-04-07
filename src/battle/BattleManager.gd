@@ -564,9 +564,9 @@ func player_brave(actions: Array[Dictionary]) -> void:
 	player_advance(actions)
 
 
-func player_group_attack(group_type: String) -> void:
+func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	"""Initiate a group attack — all alive party members pool AP for a combined strike.
-	group_type: "all_out_attack", "limit_break", or "combo_magic"
+	group_type: "all_out_attack", "limit_break", "combo_magic", or "formation"
 	Limit Break requires every participant to have >= 4 AP.
 	Combo Magic requires >= 2 AP each and >= 2 distinct magic elements across party.
 	The calling combatant's action is queued immediately; remaining alive players are
@@ -616,6 +616,7 @@ func player_group_attack(group_type: String) -> void:
 		"type": "group",
 		"combatant": current_combatant,
 		"group_type": group_type,
+		"formation_id": formation_id,
 		"participants": participants,
 		"speed": _compute_action_speed(current_combatant, "attack")
 	}
@@ -1590,6 +1591,9 @@ func _execute_group_action(action: Dictionary) -> void:
 
 	if group_type == "combo_magic":
 		_execute_combo_magic(participants, alive_enemies, ap_cost)
+	elif group_type == "formation":
+		var formation_id: String = action.get("formation_id", "")
+		_execute_formation_special(participants, alive_enemies, formation_id)
 	else:
 		_execute_physical_group(participants, alive_enemies, group_type, ap_cost)
 
@@ -1694,6 +1698,152 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 		damage_dealt.emit(enemy, final_damage, false, combo_element, elemental_mod)
 		battle_log_message.emit("[color=magenta]%s blasts %s for %d![/color]" % [
 			combo_name, enemy.combatant_name, final_damage])
+
+
+func _execute_formation_special(participants: Array, alive_enemies: Array[Combatant], formation_id: String) -> void:
+	"""Execute a Formation Special — unique effect based on party job composition"""
+	# Spend AP (2 per participant for most formations, 3 for arcane_tempest/chaos_theory)
+	var ap_cost = 3 if formation_id in ["arcane_tempest", "chaos_theory"] else 2
+	for p in participants:
+		if p is Combatant and p.is_alive:
+			p.spend_ap(ap_cost)
+
+	var scale: float = pow(participants.size(), 1.5)
+
+	match formation_id:
+		"four_heroes":
+			# Balanced strike + party heal 25%
+			var total_power = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_power += (p.attack + p.get_buffed_stat("magic", p.magic)) * 0.5
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size())) - enemy.defense * 0.5))
+				enemy.take_damage(damage)
+				damage_dealt.emit(enemy, damage, false, "", 1.0)
+			# Heal party 25%
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					var heal_amount = int(p.max_hp * 0.25)
+					p.heal(heal_amount)
+					healing_done.emit(p, heal_amount)
+			battle_log_message.emit("[color=cyan]★ Four Heroes — balanced strike + party healed 25%! ★[/color]")
+
+		"arcane_tempest":
+			# Massive AoE magic, ignores resistances
+			var total_magic = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_magic += p.get_buffed_stat("magic", p.magic)
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				# Ignore resistance — raw magic damage
+				var damage = max(1, int(total_magic * scale / max(1.0, float(alive_enemies.size()))))
+				enemy.take_damage(damage, true)
+				damage_dealt.emit(enemy, damage, false, "arcane", 1.0)
+			battle_log_message.emit("[color=magenta]★ Arcane Tempest — raw magic storm ignores all resistances! ★[/color]")
+
+		"blade_storm":
+			# Multi-hit physical, each can crit
+			var hit_count = participants.size() * 2  # 2 hits per participant
+			for _hit in range(hit_count):
+				var attacker = participants[randi() % participants.size()]
+				if not (attacker is Combatant) or not attacker.is_alive: continue
+				var target = alive_enemies[randi() % alive_enemies.size()]
+				if not target.is_alive: continue
+				var base_dmg = int(attacker.attack * 0.7)
+				var is_crit = randf() < 0.3  # 30% crit chance per hit
+				if is_crit:
+					base_dmg = int(base_dmg * 1.5)
+				var damage = max(1, base_dmg - target.defense / 2)
+				target.take_damage(damage)
+				damage_dealt.emit(target, damage, is_crit, "", 1.0)
+			battle_log_message.emit("[color=orange]★ Blade Storm — %d rapid strikes! ★[/color]" % hit_count)
+
+		"iron_wall":
+			# Party-wide DEF buff + crushing AoE
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					p.add_buff("iron_wall_def", "defense", 1.5, 3)
+			var total_atk = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_atk += p.attack
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+				enemy.take_damage(damage)
+				damage_dealt.emit(enemy, damage, false, "", 1.0)
+			battle_log_message.emit("[color=cyan]★ Iron Wall — party DEF +50%% (3 turns) + crushing blow! ★[/color]")
+
+		"shadow_strike":
+			# Ignores defense, 2x vs full-HP targets
+			var total_atk = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_atk += p.attack
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
+				var damage = int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size())))
+				damage = max(1, damage)  # Defense ignored
+				enemy.take_damage(damage)
+				damage_dealt.emit(enemy, damage, false, "", 1.0)
+			battle_log_message.emit("[color=purple]★ Shadow Strike — defense ignored! 2x on full HP targets! ★[/color]")
+
+		"chaos_theory":
+			# Random massive effect — could buff party, could nuke enemies, could backfire
+			var roll = randf()
+			if roll < 0.4:
+				# Jackpot: massive damage to all enemies
+				var total_power = 0.0
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						total_power += (p.attack + p.get_buffed_stat("magic", p.magic))
+				for enemy in alive_enemies:
+					if not enemy.is_alive: continue
+					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
+					enemy.take_damage(damage, true)
+					damage_dealt.emit(enemy, damage, false, "", 1.0)
+				battle_log_message.emit("[color=gold]★ Chaos Theory — JACKPOT! Massive damage! ★[/color]")
+			elif roll < 0.7:
+				# Party buff: all stats +30% for 3 turns
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						p.add_buff("chaos_atk", "attack", 1.3, 3)
+						p.add_buff("chaos_def", "defense", 1.3, 3)
+						p.add_buff("chaos_spd", "speed", 1.3, 3)
+				battle_log_message.emit("[color=gold]★ Chaos Theory — party buffed! ATK/DEF/SPD +30%%! ★[/color]")
+			elif roll < 0.9:
+				# Moderate damage + heal
+				var total_power = 0.0
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						total_power += p.attack
+				for enemy in alive_enemies:
+					if not enemy.is_alive: continue
+					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+					enemy.take_damage(damage)
+					damage_dealt.emit(enemy, damage, false, "", 1.0)
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						var heal = int(p.max_hp * 0.15)
+						p.heal(heal)
+				battle_log_message.emit("[color=yellow]★ Chaos Theory — moderate damage + party heal! ★[/color]")
+			else:
+				# Backfire: damage own party lightly
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						var self_dmg = int(p.max_hp * 0.1)
+						p.take_damage(self_dmg)
+						damage_dealt.emit(p, self_dmg, false, "", 1.0)
+				battle_log_message.emit("[color=red]★ Chaos Theory — BACKFIRE! Party takes recoil damage! ★[/color]")
+
+		_:
+			# Unknown formation — fallback to physical group
+			_execute_physical_group(participants, alive_enemies, "all_out_attack", ap_cost)
+			battle_log_message.emit("[color=orange]★ Formation attack! ★[/color]")
 
 
 func _apply_vulnerability_window(participants: Array) -> void:
