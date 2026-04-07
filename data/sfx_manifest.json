@@ -5,9 +5,9 @@
   "sfx": {
     "menu_move": {
       "file": "assets/audio/sfx/menu_move.ogg",
-      "prompt": "Ultra short crisp digital tick, snappy cursor blip like a SNES menu highlight moving, tight clean pixel-perfect click",
+      "prompt": "Very short soft electronic pip, gentle digital cursor tick like scrolling through a retro game menu, quiet and clean",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.9
     },
     "menu_select": {
       "file": "assets/audio/sfx/menu_select.ogg",
