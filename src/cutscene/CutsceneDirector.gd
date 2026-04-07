@@ -472,7 +472,7 @@ func _step_chapter_title(step: Dictionary) -> void:
 	if _skipping:
 		return
 
-	var screen_size = get_viewport_rect().size
+	var screen_size = get_viewport().get_visible_rect().size
 
 	# Container for the title card
 	var container = Control.new()
