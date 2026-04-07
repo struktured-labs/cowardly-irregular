@@ -7,6 +7,20 @@ class_name HeadlessBattleResolver
 const MAX_ROUNDS = 50
 const ACTION_SPEEDS = {"attack": 5, "ability": 10, "item": 8, "defend": 0, "defer": 0}
 
+## Formation definitions (mirrored from BattleCommandMenu.FORMATIONS)
+const FORMATIONS = [
+	{"id": "four_heroes", "required_jobs": ["fighter", "cleric", "mage", "rogue"], "min_members": 4, "ap_cost": 2},
+	{"id": "arcane_tempest", "required_jobs": ["mage", "cleric", "bard"], "min_members": 3, "ap_cost": 3},
+	{"id": "blade_storm", "required_jobs": ["fighter", "rogue", "ninja"], "min_members": 3, "ap_cost": 2},
+	{"id": "iron_wall", "required_jobs": ["fighter", "guardian", "cleric"], "min_members": 3, "ap_cost": 2},
+	{"id": "shadow_strike", "required_jobs": ["rogue", "ninja"], "min_members": 2, "ap_cost": 2},
+	{"id": "chaos_theory", "required_jobs": ["speculator", "bard"], "min_members": 2, "ap_cost": 3},
+]
+
+## Group attack cooldown — don't spam every round
+const GROUP_ATTACK_COOLDOWN = 3
+var _rounds_since_group_attack: int = 99
+
 var _player_party: Array = []
 var _enemy_party: Array = []
 var _current_round: int = 0
@@ -18,6 +32,7 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_enemy_party = enemy_party
 	_current_round = 0
 	_battle_log.clear()
+	_rounds_since_group_attack = 99
 
 	# Edge case: empty or all-dead party = immediate defeat
 	var alive_players = _player_party.filter(func(c): return c.is_alive)
@@ -101,6 +116,30 @@ func _tick_round_start() -> void:
 
 func _selection_phase() -> Array[Dictionary]:
 	var actions: Array[Dictionary] = []
+	_rounds_since_group_attack += 1
+
+	# Try group attack first (cooldown, AP check, formation match)
+	var group_action = _try_group_attack()
+	if not group_action.is_empty():
+		actions.append(group_action)
+		# Group attack consumes all players' turns — skip to enemies
+		for enemy in _enemy_party:
+			if not enemy.is_alive:
+				continue
+			enemy.gain_ap(1)
+			var skip = _check_status_skip(enemy)
+			if skip != "":
+				if skip == "confuse_attack":
+					var confused_action = _confused_attack(enemy)
+					confused_action["combatant"] = enemy
+					confused_action["speed"] = _speed_for(confused_action, enemy)
+					actions.append(confused_action)
+				continue
+			var a = _select_enemy_action(enemy)
+			a["combatant"] = enemy
+			a["speed"] = _speed_for(a, enemy)
+			actions.append(a)
+		return actions
 
 	for combatant in _player_party:
 		if not combatant.is_alive:
@@ -175,6 +214,208 @@ func _speed_for(action: Dictionary, combatant) -> int:
 
 ## Check status effects that skip a combatant's turn.
 ## Returns "" if no skip, "skip" to skip silently, "confuse_attack" for confusion.
+## ═══════════════════════════════════════════════════════════════════════
+## GROUP ATTACKS
+## ═══════════════════════════════════════════════════════════════════════
+
+func _try_group_attack() -> Dictionary:
+	"""Attempt a group attack if conditions are met. Returns action dict or empty."""
+	if _rounds_since_group_attack < GROUP_ATTACK_COOLDOWN:
+		return {}
+
+	var alive = _player_party.filter(func(c): return c.is_alive)
+	if alive.size() < 2:
+		return {}
+
+	# Check for formation special first (most powerful)
+	var formation = _detect_formation(alive)
+	if not formation.is_empty():
+		var ap_cost = formation["ap_cost"]
+		if alive.all(func(c): return c.current_ap >= ap_cost):
+			_rounds_since_group_attack = 0
+			return _execute_group_formation(alive, formation)
+
+	# Check for all-out attack (any 2+ alive party, 1 AP each)
+	if alive.size() >= 2 and alive.all(func(c): return c.current_ap >= 1):
+		# Only use all-out if multiple enemies alive (AoE value)
+		var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
+		if alive_enemies.size() >= 2:
+			_rounds_since_group_attack = 0
+			return _execute_group_physical(alive, "all_out_attack")
+
+	return {}
+
+
+func _detect_formation(alive_party: Array) -> Dictionary:
+	"""Check if party jobs match any formation. Returns best match or empty."""
+	var party_jobs: Array = []
+	for m in alive_party:
+		var job_id = m.job.get("id", "") if m.job else ""
+		if job_id != "" and job_id not in party_jobs:
+			party_jobs.append(job_id)
+
+	for formation in FORMATIONS:
+		if alive_party.size() < formation["min_members"]:
+			continue
+		var all_present = true
+		for req_job in formation["required_jobs"]:
+			if req_job not in party_jobs:
+				all_present = false
+				break
+		if all_present:
+			return formation
+	return {}
+
+
+func _execute_group_physical(participants: Array, group_type: String) -> Dictionary:
+	"""Execute all-out attack — AoE physical damage to all enemies."""
+	var total_power = 0.0
+	for p in participants:
+		if p is Combatant and p.is_alive:
+			p.spend_ap(1)
+			total_power += p.attack
+
+	var scale = pow(participants.size(), 1.5)
+	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
+
+	for enemy in alive_enemies:
+		var raw_damage = int(total_power * scale / max(1.0, float(alive_enemies.size())))
+		var mitigated = max(1, raw_damage - enemy.defense)
+		enemy.take_damage(mitigated)
+		_log("%s hits %s for %d!" % [group_type, enemy.combatant_name, mitigated])
+
+	_log("GROUP: %s with %d participants!" % [group_type, participants.size()])
+	return {"type": "group_done", "combatant": participants[0], "speed": -99}
+
+
+func _execute_group_formation(participants: Array, formation: Dictionary) -> Dictionary:
+	"""Execute a formation special based on party composition."""
+	var formation_id = formation["id"]
+	var ap_cost = formation["ap_cost"]
+	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
+
+	for p in participants:
+		if p is Combatant and p.is_alive:
+			p.spend_ap(ap_cost)
+
+	var scale = pow(participants.size(), 1.5)
+
+	match formation_id:
+		"four_heroes":
+			var total_power = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_power += (p.attack + p.get_buffed_stat("magic", p.magic)) * 0.5
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size())) - enemy.defense * 0.5))
+				enemy.take_damage(damage)
+				_log("Four Heroes strikes %s for %d!" % [enemy.combatant_name, damage])
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					p.heal(int(p.max_hp * 0.25))
+			_log("FORMATION: Four Heroes — balanced strike + 25% party heal!")
+
+		"arcane_tempest":
+			var total_magic = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_magic += p.get_buffed_stat("magic", p.magic)
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				var damage = max(1, int(total_magic * scale / max(1.0, float(alive_enemies.size()))))
+				enemy.take_damage(damage, true)
+				_log("Arcane Tempest blasts %s for %d!" % [enemy.combatant_name, damage])
+			_log("FORMATION: Arcane Tempest — raw magic ignores resistances!")
+
+		"blade_storm":
+			var hit_count = participants.size() * 2
+			for _hit in range(hit_count):
+				var attacker = participants[randi() % participants.size()]
+				if not (attacker is Combatant) or not attacker.is_alive: continue
+				if alive_enemies.is_empty(): break
+				var target = alive_enemies[randi() % alive_enemies.size()]
+				if not target.is_alive: continue
+				var base_dmg = int(attacker.attack * 0.7)
+				if randf() < 0.3:
+					base_dmg = int(base_dmg * 1.5)
+				var damage = max(1, base_dmg - target.defense / 2)
+				target.take_damage(damage)
+				_log("Blade Storm hits %s for %d!" % [target.combatant_name, damage])
+			_log("FORMATION: Blade Storm — %d rapid strikes!" % hit_count)
+
+		"iron_wall":
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					p.add_buff("iron_wall_def", "defense", 1.5, 3)
+			var total_atk = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_atk += p.attack
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+				enemy.take_damage(damage)
+				_log("Iron Wall crushes %s for %d!" % [enemy.combatant_name, damage])
+			_log("FORMATION: Iron Wall — DEF +50%% (3 turns) + crushing blow!")
+
+		"shadow_strike":
+			var total_atk = 0.0
+			for p in participants:
+				if p is Combatant and p.is_alive:
+					total_atk += p.attack
+			for enemy in alive_enemies:
+				if not enemy.is_alive: continue
+				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
+				var damage = max(1, int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size()))))
+				enemy.take_damage(damage)
+				_log("Shadow Strike hits %s for %d!" % [enemy.combatant_name, damage])
+			_log("FORMATION: Shadow Strike — defense ignored, 2x on full HP!")
+
+		"chaos_theory":
+			var roll = randf()
+			if roll < 0.4:
+				var total_power = 0.0
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						total_power += (p.attack + p.get_buffed_stat("magic", p.magic))
+				for enemy in alive_enemies:
+					if not enemy.is_alive: continue
+					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
+					enemy.take_damage(damage, true)
+				_log("FORMATION: Chaos Theory — JACKPOT! Massive damage!")
+			elif roll < 0.7:
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						p.add_buff("chaos_atk", "attack", 1.3, 3)
+						p.add_buff("chaos_def", "defense", 1.3, 3)
+						p.add_buff("chaos_spd", "speed", 1.3, 3)
+				_log("FORMATION: Chaos Theory — party buffed! ATK/DEF/SPD +30%%!")
+			elif roll < 0.9:
+				var total_power = 0.0
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						total_power += p.attack
+				for enemy in alive_enemies:
+					if not enemy.is_alive: continue
+					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+					enemy.take_damage(damage)
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						p.heal(int(p.max_hp * 0.15))
+				_log("FORMATION: Chaos Theory — moderate damage + party heal!")
+			else:
+				for p in participants:
+					if p is Combatant and p.is_alive:
+						p.take_damage(int(p.max_hp * 0.1))
+				_log("FORMATION: Chaos Theory — BACKFIRE! Party takes recoil!")
+
+		_:
+			return _execute_group_physical(participants, "formation")
+
+	return {"type": "group_done", "combatant": participants[0], "speed": -99}
+
+
 func _check_status_skip(combatant) -> String:
 	if combatant.has_status("stun"):
 		combatant.remove_status("stun")
@@ -321,6 +562,9 @@ func _execute_action(action: Dictionary) -> void:
 		"defer":
 			combatant.is_defending = true
 			_log("%s defers" % combatant.combatant_name)
+
+		"group_done":
+			pass  # Already executed during selection phase
 
 
 func _resolve_attack(attacker, target) -> int:

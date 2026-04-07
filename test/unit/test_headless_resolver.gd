@@ -133,3 +133,60 @@ func test_result_has_battle_log() -> void:
 	var result = resolver.resolve_battle([player], [enemy])
 	assert_true(result.has("log"), "Result should include battle log")
 	assert_gt(result["log"].size(), 0, "Log should have entries")
+
+
+## Group attack tests
+
+func test_formations_constant_has_6() -> void:
+	assert_eq(HeadlessBattleResolver.FORMATIONS.size(), 6, "Should have 6 formations")
+
+
+func test_detect_formation_empty_party() -> void:
+	var resolver = HeadlessBattleResolver.new()
+	var result = resolver._detect_formation([])
+	assert_true(result.is_empty(), "Empty party should not match any formation")
+
+
+func test_detect_formation_four_heroes() -> void:
+	var resolver = HeadlessBattleResolver.new()
+	var fighter = _make_combatant("Fighter", 100)
+	fighter.job = {"id": "fighter"}
+	var cleric = _make_combatant("Cleric", 100)
+	cleric.job = {"id": "cleric"}
+	var mage = _make_combatant("Mage", 100)
+	mage.job = {"id": "mage"}
+	var rogue = _make_combatant("Rogue", 100)
+	rogue.job = {"id": "rogue"}
+	var result = resolver._detect_formation([fighter, cleric, mage, rogue])
+	assert_false(result.is_empty(), "Four heroes should match")
+	assert_eq(result["id"], "four_heroes", "Should detect four_heroes formation")
+
+
+func test_detect_formation_shadow_strike() -> void:
+	var resolver = HeadlessBattleResolver.new()
+	var rogue = _make_combatant("Rogue", 100)
+	rogue.job = {"id": "rogue"}
+	var ninja = _make_combatant("Ninja", 100)
+	ninja.job = {"id": "ninja"}
+	var result = resolver._detect_formation([rogue, ninja])
+	assert_false(result.is_empty(), "Rogue+Ninja should match shadow_strike")
+	assert_eq(result["id"], "shadow_strike", "Should detect shadow_strike")
+
+
+func test_group_attack_cooldown() -> void:
+	assert_eq(HeadlessBattleResolver.GROUP_ATTACK_COOLDOWN, 3, "Cooldown should be 3 rounds")
+
+
+func test_try_group_attack_respects_cooldown() -> void:
+	var resolver = HeadlessBattleResolver.new()
+	var p1 = _make_combatant("Fighter", 200, 20)
+	p1.job = {"id": "fighter"}
+	p1.current_ap = 2
+	var p2 = _make_combatant("Rogue", 200, 20)
+	p2.job = {"id": "rogue"}
+	p2.current_ap = 2
+	resolver._player_party = [p1, p2]
+	resolver._enemy_party = [_make_combatant("Slime", 50), _make_combatant("Bat", 50)]
+	resolver._rounds_since_group_attack = 1  # Under cooldown
+	var result = resolver._try_group_attack()
+	assert_true(result.is_empty(), "Should not group attack during cooldown")
