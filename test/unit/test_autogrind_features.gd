@@ -104,3 +104,61 @@ func test_milestone_battles_are_defined() -> void:
 func test_dashboard_battle_log_class_exists() -> void:
 	var script = load("res://src/ui/autogrind/AutogrindDashboard.gd")
 	assert_not_null(script, "AutogrindDashboard script should load")
+
+
+## Ludicrous speed (headless resolver) tests
+
+func test_headless_resolver_class_exists() -> void:
+	var script = load("res://src/autogrind/HeadlessBattleResolver.gd")
+	assert_not_null(script, "HeadlessBattleResolver script should load")
+
+
+func test_headless_resolver_is_refcounted() -> void:
+	var resolver = HeadlessBattleResolver.new()
+	assert_not_null(resolver, "Should instantiate HeadlessBattleResolver")
+
+
+func test_headless_resolver_max_rounds() -> void:
+	assert_eq(HeadlessBattleResolver.MAX_ROUNDS, 50, "MAX_ROUNDS should be 50")
+
+
+func test_controller_headless_mode_default_false() -> void:
+	var ctrl_script = load("res://src/autogrind/AutogrindController.gd")
+	var ctrl = ctrl_script.new()
+	add_child_autofree(ctrl)
+	assert_false(ctrl.headless_mode, "headless_mode should default to false")
+
+
+func test_controller_headless_zero_delay() -> void:
+	var ctrl_script = load("res://src/autogrind/AutogrindController.gd")
+	var ctrl = ctrl_script.new()
+	add_child_autofree(ctrl)
+	ctrl.headless_mode = true
+	assert_eq(ctrl._get_between_battle_delay(), 0.0, "Headless mode should have zero delay")
+
+
+func test_controller_normal_nonzero_delay() -> void:
+	var ctrl_script = load("res://src/autogrind/AutogrindController.gd")
+	var ctrl = ctrl_script.new()
+	add_child_autofree(ctrl)
+	ctrl.headless_mode = false
+	assert_gt(ctrl._get_between_battle_delay(), 0.0, "Normal mode should have nonzero delay")
+
+
+func test_autogrind_ui_ludicrous_config_key() -> void:
+	# Verify the config includes ludicrous_speed key
+	var source = FileAccess.open("res://src/ui/autogrind/AutogrindUI.gd", FileAccess.READ)
+	if not source:
+		pending("Cannot read AutogrindUI.gd")
+		return
+	var text = source.get_as_text()
+	source.close()
+	assert_true(text.contains("\"ludicrous_speed\""), "Config should include ludicrous_speed key")
+
+
+func test_controller_overlay_ludicrous_context() -> void:
+	var ctx = ControllerOverlay.autogrind_ludicrous_context()
+	assert_true(ctx.has("b"), "Ludicrous context should have exit button")
+	assert_true(ctx.has("select"), "Ludicrous context should have pause button")
+	assert_false(ctx.has("y"), "Ludicrous context should not have turbo (no visual battles)")
+	assert_false(ctx.has("plus"), "Ludicrous context should not have speed+ (no visual battles)")

@@ -171,6 +171,15 @@ static func autogrind_context() -> Dictionary:
 		"dpad": "Navigate",
 	}
 
+static func autogrind_ludicrous_context() -> Dictionary:
+	return {
+		"b": "Exit",
+		"l": "Tier",
+		"r": "Tier",
+		"select": "Pause",
+		"start": "Rules",
+	}
+
 static func battle_context() -> Dictionary:
 	return {
 		"a": "Confirm",

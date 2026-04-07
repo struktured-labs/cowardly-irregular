@@ -76,6 +76,9 @@ var _corruption: float = 0.0
 ## Permadeath staking toggle state
 var _permadeath_staking_enabled: bool = false
 
+## Ludicrous speed (headless resolver) toggle
+var _ludicrous_speed_enabled: bool = false
+
 ## UI nodes
 var _grid_container: Control
 var _cursor: Control
@@ -84,6 +87,7 @@ var _battle_log: RichTextLabel
 var _start_button: Control
 var _monitor: AutogrindMonitor
 var _permadeath_toggle_label: Label
+var _ludicrous_toggle_label: Label
 
 ## Region ID for CSI lookups (derived from _region_name)
 var _region_id: String = ""
@@ -399,13 +403,40 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 
 
 func _build_footer(vp_size: Vector2) -> void:
-	"""Build footer with controls help and permadeath staking toggle"""
+	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Save  Select:Start/Stop  P:Permadeath"
+	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Start/Stop  X/H:Ludicrous  P:Permadeath"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
+
+	# Ludicrous speed toggle button
+	var ls_btn := Control.new()
+	ls_btn.size = Vector2(200, 28)
+	ls_btn.position = Vector2(vp_size.x - 420, vp_size.y - 32)
+
+	var ls_bg := ColorRect.new()
+	ls_bg.size = ls_btn.size
+	ls_bg.color = Color(0.6, 0.2, 0.8) if _ludicrous_speed_enabled else Color(0.1, 0.08, 0.15)
+	ls_btn.add_child(ls_bg)
+
+	_add_pixel_border(ls_btn, ls_btn.size)
+
+	_ludicrous_toggle_label = Label.new()
+	_ludicrous_toggle_label.text = "[H] LUDICROUS: %s" % ("ON" if _ludicrous_speed_enabled else "OFF")
+	_ludicrous_toggle_label.position = Vector2(8, 6)
+	_ludicrous_toggle_label.add_theme_font_size_override("font_size", 11)
+	_ludicrous_toggle_label.add_theme_color_override(
+		"font_color",
+		Color.WHITE if _ludicrous_speed_enabled else DISABLED_COLOR
+	)
+	ls_btn.add_child(_ludicrous_toggle_label)
+
+	MenuMouseHelper.make_clickable(ls_btn, 0, ls_btn.size.x, ls_btn.size.y,
+		func() -> void: _toggle_ludicrous_speed(),
+		func() -> void: pass)
+	add_child(ls_btn)
 
 	# Permadeath staking toggle button
 	var pd_btn := Control.new()
@@ -1008,6 +1039,14 @@ func _input(event: InputEvent) -> void:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
+		_toggle_ludicrous_speed()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_H and not event.is_echo():
+		_toggle_ludicrous_speed()
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
 		_toggle_permadeath_staking()
 		get_viewport().set_input_as_handled()
@@ -1265,8 +1304,24 @@ func _get_grind_config() -> Dictionary:
 	return {
 		"region": _region_name,
 		"rules": rules.duplicate(true),
-		"permadeath_staking": _permadeath_staking_enabled
+		"permadeath_staking": _permadeath_staking_enabled,
+		"ludicrous_speed": _ludicrous_speed_enabled
 	}
+
+
+func _toggle_ludicrous_speed() -> void:
+	"""Toggle ludicrous speed (headless battle resolver)."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change speed mode while grinding.[/color]")
+		return
+
+	_ludicrous_speed_enabled = not _ludicrous_speed_enabled
+	if _ludicrous_speed_enabled:
+		_log_message("[color=magenta]LUDICROUS SPEED enabled! Battles resolve instantly via math.[/color]")
+	else:
+		_log_message("[color=lime]Ludicrous speed disabled. Normal battle rendering.[/color]")
+	_build_ui()
+	SoundManager.play_ui("menu_select")
 
 
 func _toggle_permadeath_staking() -> void:

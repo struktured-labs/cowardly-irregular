@@ -2109,9 +2109,15 @@ func _start_autogrind(config: Dictionary) -> void:
 	SoundManager.reset_corruption()
 	SoundManager.play_music("autogrind")
 
-	_show_controller_overlay(ControllerOverlay.autogrind_context())
+	# Show appropriate controller overlay
+	if _autogrind_controller.headless_mode:
+		_show_controller_overlay(ControllerOverlay.autogrind_ludicrous_context())
+		# Ludicrous speed auto-shows dashboard since there are no visible battles
+		_show_autogrind_dashboard()
+	else:
+		_show_controller_overlay(ControllerOverlay.autogrind_context())
 
-	print("[AUTOGRIND] Session started")
+	print("[AUTOGRIND] Session started%s" % (" (LUDICROUS SPEED)" if _autogrind_controller.headless_mode else ""))
 
 
 func _on_autogrind_stop_requested() -> void:
@@ -2211,11 +2217,59 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		enemies.append(enemy)
 
 	var result = resolver.resolve_battle(party, enemies)
+	var victory = result.get("victory", false)
+	var exp_gained = result.get("exp_gained", 0)
+	var rounds = result.get("rounds", 0)
 
 	for e in enemies:
 		e.free()
 
-	_on_autogrind_battle_ended(result["victory"])
+	# Heal party using items (same as visual battle path)
+	if victory:
+		for member in party:
+			member.current_ap = 0
+			if member.is_alive and member.current_hp < member.max_hp:
+				_autogrind_heal_member(member)
+			if member.is_alive and member.current_mp < member.max_mp * 0.5:
+				_autogrind_restore_mp(member)
+
+	# Forward to controller with headless-computed EXP
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.on_battle_ended(victory, exp_gained, {})
+
+		var stats = _autogrind_controller.get_grind_stats()
+
+		# Build summary for console ring buffer
+		var summary_text: String
+		if victory:
+			summary_text = "[color=#44ff44]#%d Victory[/color] +%d EXP (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), exp_gained, rounds]
+		else:
+			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append(summary_text)
+		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+
+		# Update UI with latest stats
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			_autogrind_ui.update_stats(stats)
+			_autogrind_ui.update_party_status()
+
+		# Update dashboard if in Tier 2
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+			var region_id = _current_map_id.replace(" ", "_").to_lower()
+			_autogrind_dashboard.refresh(stats, region_id)
+			_autogrind_dashboard.add_battle_result(victory, rounds, exp_gained)
+
+		# Corruption audio degradation
+		var corruption_raw = AutogrindSystem.meta_corruption_level
+		var corruption_threshold = AutogrindSystem.corruption_threshold
+		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
+		SoundManager.set_corruption_intensity(corruption_norm)
+
+		# Milestone toasts
+		var battles = stats.get("battles_won", 0)
+		if battles in [10, 20, 30, 50, 100]:
+			_show_autogrind_toast(_get_milestone_text(battles))
 
 
 func _show_autogrind_transition() -> void:
@@ -2619,6 +2673,10 @@ func _show_autogrind_dashboard() -> void:
 		if _autogrind_controller and is_instance_valid(_autogrind_controller):
 			_autogrind_controller.cycle_tier()
 	)
+
+	# Show ludicrous speed indicator if headless mode is active
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_dashboard.set_ludicrous_mode(_autogrind_controller.headless_mode)
 
 	print("[AUTOGRIND] Dashboard shown (Tier 2)")
 
