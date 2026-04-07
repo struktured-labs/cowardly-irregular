@@ -1293,6 +1293,48 @@
       "duration": 7.16,
       "loop": true,
       "generated_at": "2026-03-23"
+    },
+    "victory_medieval": {
+      "file": "assets/audio/music/victory_medieval.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Van Halen Victory",
+      "loop": false
+    },
+    "victory_suburban": {
+      "file": "assets/audio/music/victory_suburban.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Funky Celebration",
+      "loop": false
+    },
+    "victory_steampunk": {
+      "file": "assets/audio/music/victory_steampunk.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Clockwork Triumph",
+      "loop": false
+    },
+    "victory_industrial": {
+      "file": "assets/audio/music/victory_industrial.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Factory Sirens",
+      "loop": false
+    },
+    "victory_digital": {
+      "file": "assets/audio/music/victory_digital.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Achievement Unlocked",
+      "loop": false
+    },
+    "victory_abstract": {
+      "file": "assets/audio/music/victory_abstract.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Convergence",
+      "loop": false
     }
   },
   "tier_priority": [
