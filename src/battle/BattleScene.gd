@@ -133,6 +133,18 @@ var _idle_time: float = 0.0
 var _enemy_base_positions: Array[Vector2] = []
 var _party_base_positions: Array[Vector2] = []
 
+## Party formation system
+enum PartyFormation { V_FORMATION, FRONT_LINE, BACK_ROW, DIAMOND, SPREAD }
+const FORMATION_NAMES = ["V-Formation", "Front Line", "Back Row", "Diamond", "Spread"]
+const FORMATION_DESCRIPTIONS = [
+	"Balanced positioning",
+	"+10% ATK, -10% DEF",
+	"+10% DEF, -10% ATK",
+	"Tank absorbs hits",
+	"Resist AoE attacks",
+]
+static var current_formation: int = PartyFormation.V_FORMATION  # Persists across battles
+
 ## Dialogue system
 var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
@@ -708,12 +720,10 @@ func _create_battle_sprites() -> void:
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
-		# V-formation depth stagger: front members (index 0,1) lower, back members higher
-		# Stagger: i=0 -> +10px, i=1 -> +5px, i=2 -> -5px, i=3 -> -10px
-		var party_y_offsets: Array[float] = [10.0, 5.0, -5.0, -10.0]
+		# Position based on current formation
 		var base_pos = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
-		var party_y_stagger = party_y_offsets[i] if i < party_y_offsets.size() else 0.0
-		base_pos.y += party_y_stagger
+		var offset = _get_formation_offset(i, party_members.size())
+		base_pos += offset
 		sprite.position = base_pos
 		_party_base_positions.append(base_pos)
 
@@ -1764,6 +1774,98 @@ func _process_hold_a(delta: float) -> void:
 		_hold_timer = 0.0
 
 
+func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
+	"""Calculate position offset for a party member based on current formation"""
+	match current_formation:
+		PartyFormation.V_FORMATION:
+			# Classic JRPG V-shape: front members lower, back higher
+			var y_offsets = [10.0, 5.0, -5.0, -10.0]
+			return Vector2(0, y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0)
+
+		PartyFormation.FRONT_LINE:
+			# All in a row, pushed forward (left toward enemies)
+			var y_spread = [-15.0, -5.0, 5.0, 15.0]
+			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
+			return Vector2(-30, y)
+
+		PartyFormation.BACK_ROW:
+			# All pushed back (right away from enemies)
+			var y_spread = [-15.0, -5.0, 5.0, 15.0]
+			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
+			return Vector2(30, y)
+
+		PartyFormation.DIAMOND:
+			# 1 front, 2 mid, 1 back — tank formation
+			match member_idx:
+				0: return Vector2(-25, 0)    # Front (tank)
+				1: return Vector2(0, -20)    # Mid-top
+				2: return Vector2(0, 20)     # Mid-bottom
+				3: return Vector2(25, 0)     # Back
+				_: return Vector2.ZERO
+
+		PartyFormation.SPREAD:
+			# Wide spacing to resist AoE
+			var y_offsets = [-30.0, -10.0, 10.0, 30.0]
+			var x_offsets = [-10.0, 10.0, -10.0, 10.0]
+			var y = y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0
+			var x = x_offsets[member_idx] if member_idx < x_offsets.size() else 0.0
+			return Vector2(x, y)
+
+	return Vector2.ZERO
+
+
+func cycle_formation() -> void:
+	"""Cycle to the next party formation and reposition sprites"""
+	current_formation = (current_formation + 1) % PartyFormation.size()
+	var name = FORMATION_NAMES[current_formation]
+	var desc = FORMATION_DESCRIPTIONS[current_formation]
+	log_message("[color=cyan]Formation: %s — %s[/color]" % [name, desc])
+	SoundManager.play_ui("menu_move")
+
+	# Smoothly reposition party sprites
+	for i in range(party_sprite_nodes.size()):
+		if i >= party_positions.size():
+			break
+		var sprite = party_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		var base_pos = party_positions[i].global_position
+		var offset = _get_formation_offset(i, party_members.size())
+		var new_pos = base_pos + offset
+		_party_base_positions[i] = new_pos
+
+		var tween = create_tween()
+		tween.tween_property(sprite, "position", new_pos, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+	# Apply formation stat modifiers via BattleManager
+	_apply_formation_stats()
+
+
+func _apply_formation_stats() -> void:
+	"""Apply stat modifiers based on current formation"""
+	# Clear previous formation buffs
+	for member in party_members:
+		if not is_instance_valid(member):
+			continue
+		# Remove any existing formation buffs
+		for buff_idx in range(member.active_buffs.size() - 1, -1, -1):
+			if member.active_buffs[buff_idx].get("effect", "").begins_with("formation_"):
+				member.active_buffs.remove_at(buff_idx)
+
+	match current_formation:
+		PartyFormation.FRONT_LINE:
+			for member in party_members:
+				if is_instance_valid(member) and member.is_alive:
+					member.add_buff("formation_atk", "attack", 1.1, 999)
+					member.add_debuff("formation_def", "defense", 0.9, 999)
+		PartyFormation.BACK_ROW:
+			for member in party_members:
+				if is_instance_valid(member) and member.is_alive:
+					member.add_buff("formation_def", "defense", 1.1, 999)
+					member.add_debuff("formation_atk", "attack", 0.9, 999)
+		# V_FORMATION, DIAMOND, SPREAD: no flat stat modifiers (effects are situational)
+
+
 func _process_idle_animations(delta: float) -> void:
 	"""Apply subtle idle sway to enemies and breathing to party sprites"""
 	if _battle_ended:
@@ -2522,6 +2624,11 @@ func _input(event: InputEvent) -> void:
 		# Y key to repeat previous actions
 		elif event.keycode == KEY_Y:
 			_repeat_previous_actions()
+			get_viewport().set_input_as_handled()
+			return
+		# F key to cycle party formation
+		elif event.keycode == KEY_F:
+			cycle_formation()
 			get_viewport().set_input_as_handled()
 			return
 
