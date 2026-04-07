@@ -369,7 +369,7 @@ func _generate_map() -> void:
 		"fffwffffffffffffffwfffffffffffffffwffffffffffffffwffffffffff",
 		# Row 32: Gate approach
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 33: Fence line before checkpoint (gap at cols 29-30 = checkpoint gate)
+		# Row 33: Fence line before checkpoint (gate at cols 29-30)
 		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkffkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
 		# Row 34: Checkpoint area
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
