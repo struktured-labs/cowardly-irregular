@@ -19,6 +19,17 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_current_round = 0
 	_battle_log.clear()
 
+	# Edge case: empty or all-dead party = immediate defeat
+	var alive_players = _player_party.filter(func(c): return c.is_alive)
+	if alive_players.is_empty():
+		_log("No alive party members — immediate defeat")
+		return _build_results(false)
+
+	# Edge case: no enemies = immediate victory with 0 EXP
+	if _enemy_party.is_empty():
+		_log("No enemies — immediate victory")
+		return _build_results(true)
+
 	# Temporarily register parties in BattleManager so AutobattleSystem
 	# target-resolution (_get_enemies_for / _get_allies_for) works correctly.
 	var bm = Engine.get_singleton("BattleManager") if Engine.has_singleton("BattleManager") else null
@@ -96,6 +107,17 @@ func _selection_phase() -> Array[Dictionary]:
 			continue
 		combatant.gain_ap(1)
 
+		# Status effect checks — match BattleManager behavior
+		var skip = _check_status_skip(combatant)
+		if skip != "":
+			if skip == "confuse_attack":
+				# Confused: attack random target (ally or enemy)
+				var confused_action = _confused_attack(combatant)
+				confused_action["combatant"] = combatant
+				confused_action["speed"] = _speed_for(confused_action, combatant)
+				actions.append(confused_action)
+			continue
+
 		var abs_node = _get_autoload("AutobattleSystem")
 		var raw: Array[Dictionary] = []
 		if abs_node:
@@ -127,6 +149,17 @@ func _selection_phase() -> Array[Dictionary]:
 		if not enemy.is_alive:
 			continue
 		enemy.gain_ap(1)
+
+		# Status effect checks for enemies too
+		var skip = _check_status_skip(enemy)
+		if skip != "":
+			if skip == "confuse_attack":
+				var confused_action = _confused_attack(enemy)
+				confused_action["combatant"] = enemy
+				confused_action["speed"] = _speed_for(confused_action, enemy)
+				actions.append(confused_action)
+			continue
+
 		var a = _select_enemy_action(enemy)
 		a["combatant"] = enemy
 		a["speed"] = _speed_for(a, enemy)
@@ -138,6 +171,59 @@ func _selection_phase() -> Array[Dictionary]:
 func _speed_for(action: Dictionary, combatant) -> int:
 	var base = ACTION_SPEEDS.get(action.get("type", "attack"), 5)
 	return base - combatant.speed
+
+
+## Check status effects that skip a combatant's turn.
+## Returns "" if no skip, "skip" to skip silently, "confuse_attack" for confusion.
+func _check_status_skip(combatant) -> String:
+	if combatant.has_status("stun"):
+		combatant.remove_status("stun")
+		_log("%s is stunned and cannot act!" % combatant.combatant_name)
+		return "skip"
+
+	if combatant.has_status("sleep"):
+		if randf() < 0.3:
+			combatant.remove_status("sleep")
+			_log("%s woke up!" % combatant.combatant_name)
+			return ""
+		else:
+			_log("%s is asleep..." % combatant.combatant_name)
+			return "skip"
+
+	if combatant.has_status("confuse"):
+		if randf() < 0.4:
+			combatant.remove_status("confuse")
+			_log("%s snapped out of confusion!" % combatant.combatant_name)
+			return ""
+		else:
+			_log("%s is confused and attacks wildly!" % combatant.combatant_name)
+			return "confuse_attack"
+
+	if combatant.has_status("fear"):
+		if randf() < 0.25:
+			combatant.remove_status("fear")
+			_log("%s overcame their fear!" % combatant.combatant_name)
+			return ""
+		elif randf() < 0.5:
+			_log("%s is paralyzed with fear!" % combatant.combatant_name)
+			return "skip"
+
+	return ""
+
+
+## Confused attack: hit a random target from either side.
+func _confused_attack(combatant) -> Dictionary:
+	var all_alive: Array = []
+	for p in _player_party:
+		if p.is_alive:
+			all_alive.append(p)
+	for e in _enemy_party:
+		if e.is_alive:
+			all_alive.append(e)
+	if all_alive.is_empty():
+		return {"type": "defer"}
+	var target = all_alive[randi() % all_alive.size()]
+	return {"type": "attack", "target": target}
 
 
 func _default_attack_action(combatant, enemies: Array) -> Dictionary:
@@ -378,14 +464,17 @@ func _all_dead(party: Array) -> bool:
 
 func _build_results(victory: bool) -> Dictionary:
 	var exp = 0
+	var gold = 0
 	if victory:
 		for enemy in _enemy_party:
 			exp += int(enemy.max_hp * 0.5 + enemy.attack * 2)
+			gold += int(enemy.max_hp * 0.3 + enemy.defense)
 
 	return {
 		"victory": victory,
 		"rounds": _current_round,
 		"exp_gained": exp,
+		"gold_gained": gold,
 		"log": _battle_log.duplicate(),
 		"player_party": _player_party,
 		"enemy_party": _enemy_party,
