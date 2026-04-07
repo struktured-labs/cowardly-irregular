@@ -2731,7 +2731,7 @@ func _create_autogrind_overlay() -> void:
 	if vp_size.x == 0 or vp_size.y == 0:
 		vp_size = Vector2(1280, 720)
 
-	var bar_height = 120.0
+	var bar_height = 148.0
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.03, 0.02, 0.06, 0.85)
 	bar_bg.position = Vector2(0, vp_size.y - bar_height)
@@ -2748,24 +2748,78 @@ func _create_autogrind_overlay() -> void:
 	var summary = Label.new()
 	summary.name = "SummaryLabel"
 	summary.text = "Battle #1 | EXP: 0 | Streak: 0 | Efficiency: 1.0x"
-	summary.position = Vector2(16, vp_size.y - bar_height + 8)
-	summary.size = Vector2(vp_size.x - 32, 28)
-	summary.add_theme_font_size_override("font_size", 18)
+	summary.position = Vector2(16, vp_size.y - bar_height + 6)
+	summary.size = Vector2(vp_size.x - 32, 24)
+	summary.add_theme_font_size_override("font_size", 16)
 	summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 	_autogrind_overlay.add_child(summary)
 
-	# Stats strip — full width, taller
+	# Party HP/MP bars — compact row
+	var party_container = Control.new()
+	party_container.name = "PartyBars"
+	party_container.position = Vector2(12, vp_size.y - bar_height + 30)
+	party_container.size = Vector2(vp_size.x - 24, 28)
+	_autogrind_overlay.add_child(party_container)
+
+	var slot_w = (vp_size.x - 32) / max(party.size(), 1)
+	for i in range(min(party.size(), 4)):
+		var member = party[i]
+		if not member is Combatant:
+			continue
+
+		var x = i * slot_w
+		# Name
+		var name_lbl = Label.new()
+		name_lbl.name = "Name_%d" % i
+		name_lbl.text = member.combatant_name.left(8)
+		name_lbl.position = Vector2(x, 0)
+		name_lbl.add_theme_font_size_override("font_size", 10)
+		name_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+		party_container.add_child(name_lbl)
+
+		# HP bar background
+		var bar_w = slot_w - 12
+		var hp_bg = ColorRect.new()
+		hp_bg.color = Color(0.15, 0.05, 0.05)
+		hp_bg.position = Vector2(x, 14)
+		hp_bg.size = Vector2(bar_w, 6)
+		party_container.add_child(hp_bg)
+
+		# HP bar fill
+		var hp_fill = ColorRect.new()
+		hp_fill.name = "HP_%d" % i
+		hp_fill.color = Color(0.2, 0.8, 0.2)
+		hp_fill.position = Vector2(x, 14)
+		hp_fill.size = Vector2(bar_w, 6)
+		party_container.add_child(hp_fill)
+
+		# MP bar background
+		var mp_bg = ColorRect.new()
+		mp_bg.color = Color(0.05, 0.05, 0.15)
+		mp_bg.position = Vector2(x, 22)
+		mp_bg.size = Vector2(bar_w, 4)
+		party_container.add_child(mp_bg)
+
+		# MP bar fill
+		var mp_fill = ColorRect.new()
+		mp_fill.name = "MP_%d" % i
+		mp_fill.color = Color(0.3, 0.4, 0.9)
+		mp_fill.position = Vector2(x, 22)
+		mp_fill.size = Vector2(bar_w, 4)
+		party_container.add_child(mp_fill)
+
+	# Stats strip
 	var strip = AutogrindStatsStrip.new()
 	strip.name = "StatsStrip"
-	strip.position = Vector2(4, vp_size.y - bar_height + 38)
+	strip.position = Vector2(4, vp_size.y - bar_height + 62)
 	strip.size = Vector2(vp_size.x - 8, 42)
 	_autogrind_overlay.add_child(strip)
 
-	# Control hints — clearer
+	# Control hints
 	var hints = Label.new()
 	hints.name = "HintsLabel"
 	hints.text = "Y: Turbo    +/-: Speed    T: Dashboard    B: Exit"
-	hints.position = Vector2(16, vp_size.y - bar_height + 88)
+	hints.position = Vector2(16, vp_size.y - bar_height + 112)
 	hints.size = Vector2(vp_size.x - 32, 24)
 	hints.add_theme_font_size_override("font_size", 13)
 	hints.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
@@ -2785,6 +2839,33 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 		var eff = stats.get("efficiency", 1.0)
 		var turbo_txt = " TURBO" if BattleManager.turbo_mode else ""
 		summary.text = "Battle #%d | EXP: %d | Streak: %d | Efficiency: %.1fx%s" % [battles, exp, wins, eff, turbo_txt]
+
+	# Update party HP/MP bars
+	var party_bars = _autogrind_overlay.get_node_or_null("PartyBars")
+	if party_bars:
+		var vp_size = get_viewport().get_visible_rect().size
+		if vp_size.x == 0:
+			vp_size = Vector2(1280, 720)
+		var slot_w = (vp_size.x - 32) / max(party.size(), 1)
+		var bar_w = slot_w - 12
+		for i in range(min(party.size(), 4)):
+			var member = party[i]
+			if not member is Combatant:
+				continue
+			var hp_fill = party_bars.get_node_or_null("HP_%d" % i)
+			if hp_fill:
+				var hp_pct = member.current_hp / max(float(member.max_hp), 1.0)
+				hp_fill.size.x = bar_w * hp_pct
+				if hp_pct > 0.5:
+					hp_fill.color = Color(0.2, 0.8, 0.2)
+				elif hp_pct > 0.25:
+					hp_fill.color = Color(0.8, 0.7, 0.1)
+				else:
+					hp_fill.color = Color(0.9, 0.2, 0.2)
+			var mp_fill = party_bars.get_node_or_null("MP_%d" % i)
+			if mp_fill:
+				var mp_pct = member.current_mp / max(float(member.max_mp), 1.0)
+				mp_fill.size.x = bar_w * mp_pct
 
 	var strip = _autogrind_overlay.get_node_or_null("StatsStrip")
 	if strip and strip.has_method("refresh"):
