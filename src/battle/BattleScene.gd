@@ -326,22 +326,37 @@ const HOLD_DURATION: float = 1.5  # Seconds to hold for editor (1.5s feels respo
 
 
 func _create_speed_indicator() -> void:
-	"""Create battle speed indicator in top-left corner"""
+	"""Create battle speed indicator in top-left corner with background panel"""
+	# Background panel for readability
+	var panel = PanelContainer.new()
+	panel.name = "SpeedPanel"
+	panel.position = Vector2(8, 8)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	panel.add_theme_stylebox_override("panel", style)
+	$UI.add_child(panel)
+
 	_speed_indicator = RichTextLabel.new()
 	_speed_indicator.name = "SpeedIndicator"
 	_speed_indicator.bbcode_enabled = true
 	_speed_indicator.fit_content = true
 	_speed_indicator.scroll_active = false
 	_speed_indicator.custom_minimum_size = Vector2(80, 24)
+	_speed_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Style it
 	_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
 
-	# Position in top-left corner
-	_speed_indicator.position = Vector2(8, 8)
-
-	# Add to UI layer
-	$UI.add_child(_speed_indicator)
+	panel.add_child(_speed_indicator)
 
 	# Battle counter (shown during autogrind)
 	_battle_counter_label = RichTextLabel.new()
@@ -435,8 +450,29 @@ func _toggle_battle_speed() -> void:
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
 	Engine.time_scale = speed
 	_update_speed_indicator()
+	_animate_speed_change()
 	SoundManager.play_ui("speed_change")
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
+	_show_hint("speed_toggle", "Press +/- to change battle speed. Higher speeds skip animations for faster grinding.")
+
+
+func _animate_speed_change() -> void:
+	"""Pop animation on the speed indicator when toggled"""
+	var panel = $UI.get_node_or_null("SpeedPanel")
+	if not panel:
+		return
+	# Scale pop: 1.0 -> 1.25 -> 1.0
+	var tween = create_tween()
+	tween.tween_property(panel, "scale", Vector2(1.25, 1.25), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.12)
+	# Ensure full opacity when changed
+	panel.modulate.a = 1.0
+	# Auto-fade at normal speed (1x) after 3 seconds
+	if _battle_speed_index == 2:  # 1x = normal
+		var fade_tween = create_tween()
+		fade_tween.tween_property(panel, "modulate:a", 0.3, 0.5).set_delay(3.0)
+	else:
+		panel.modulate.a = 1.0
 
 
 # Duplicate _input function removed - merged with the one at line 2250
