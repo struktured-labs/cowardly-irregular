@@ -1153,7 +1153,7 @@ func _show_game_over_screen() -> void:
 	else:
 		# Load saved game
 		if SaveSystem and SaveSystem.has_method("load_game"):
-			SaveSystem.load_game()
+			SaveSystem.load_game(0)  # Default to slot 0
 		_create_party()
 		_start_exploration()
 
