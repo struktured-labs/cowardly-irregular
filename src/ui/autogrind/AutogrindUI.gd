@@ -409,7 +409,7 @@ func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
 	var auto_adv_txt = "ON" if _auto_advance_enabled else "OFF"
-	footer.text = "D-Pad:Navigate  A:Edit  B:Close  Start:Go  X:Ludicrous  W:AutoAdv(%s)  P:Permadeath" % auto_adv_txt
+	footer.text = "A:Edit  B:Close  Start:Go  X:Ludicrous  E:Export  I:Import  W:Adv(%s)  P:Perma" % auto_adv_txt
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1055,6 +1055,14 @@ func _input(event: InputEvent) -> void:
 		_toggle_auto_advance()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.is_echo():
+		_export_scripts()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and not event.is_echo():
+		_import_scripts()
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
 		_toggle_permadeath_staking()
 		get_viewport().set_input_as_handled()
@@ -1345,6 +1353,75 @@ func _toggle_auto_advance() -> void:
 	else:
 		_log_message("[color=yellow]Auto-advance OFF: staying in current region after crack.[/color]")
 	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _export_scripts() -> void:
+	"""Export autobattle scripts + autogrind rules to JSON files."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot export while grinding.[/color]")
+		return
+
+	var exported = 0
+
+	# Export party autobattle scripts as a bundle
+	if _party.size() > 0:
+		var path = ScriptShareManager.export_all_scripts(_party)
+		if path != "":
+			exported += 1
+			_log_message("[color=lime]Exported party autobattle scripts[/color]")
+
+	# Export autogrind rules
+	var rules_path = ScriptShareManager.export_autogrind_rules()
+	if rules_path != "":
+		exported += 1
+		_log_message("[color=lime]Exported autogrind rules[/color]")
+
+	if exported == 0:
+		_log_message("[color=yellow]Nothing to export.[/color]")
+	else:
+		_log_message("[color=lime]%d file(s) exported to script_exports/[/color]" % exported)
+	SoundManager.play_ui("menu_select")
+
+
+func _import_scripts() -> void:
+	"""Import autobattle scripts and autogrind rules from export files."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot import while grinding.[/color]")
+		return
+
+	var files = ScriptShareManager.list_exports()
+	if files.is_empty():
+		_log_message("[color=yellow]No export files found. Export first with [E].[/color]")
+		return
+
+	var imported = 0
+	for filename in files:
+		var data = ScriptShareManager.import_file(filename)
+		if data.is_empty():
+			continue
+		match data.get("type", ""):
+			"autobattle_bundle":
+				var count = ScriptShareManager.apply_script_bundle(data)
+				if count > 0:
+					imported += count
+					_log_message("[color=lime]Imported %d autobattle scripts from %s[/color]" % [count, filename])
+			"autobattle_script":
+				var char_id = data.get("character_id", "")
+				if char_id != "" and ScriptShareManager.apply_character_script(char_id, data):
+					imported += 1
+					_log_message("[color=lime]Imported script for %s[/color]" % char_id)
+			"autogrind_rules":
+				if ScriptShareManager.apply_autogrind_rules(data):
+					imported += 1
+					rules = AutogrindSystem.get_autogrind_rules()
+					_log_message("[color=lime]Imported autogrind rules from %s[/color]" % filename)
+
+	if imported == 0:
+		_log_message("[color=yellow]No compatible files to import.[/color]")
+	else:
+		_build_ui()
+
 	SoundManager.play_ui("menu_select")
 
 
