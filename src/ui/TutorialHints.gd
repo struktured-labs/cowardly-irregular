@@ -53,6 +53,10 @@ const HINTS = {
 		"title": "New World",
 		"body": "Each world transforms your party — new costumes, new abilities, same skills underneath. The Masterites here follow the same four archetypes: Warden, Arbiter, Tempo, Curator.",
 	},
+	"ludicrous_speed": {
+		"title": "Ludicrous Speed",
+		"body": "Battles now resolve instantly via pure math — no animations, no rendering. Your autobattle scripts and formation specials still execute faithfully. Watch the dashboard for throughput stats.",
+	},
 }
 
 
