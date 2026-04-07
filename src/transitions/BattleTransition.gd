@@ -256,6 +256,107 @@ void fragment() {
 	transition_finished.emit()
 
 
+func play_exit_transition(victory: bool = true) -> void:
+	"""Play transition when leaving battle — iris-close for victory, fade for defeat"""
+	if _is_transitioning:
+		_cleanup_effects()
+	_is_transitioning = true
+	_viewport_size = get_viewport().get_visible_rect().size
+
+	if victory:
+		await _play_victory_exit()
+	else:
+		await _play_defeat_exit()
+
+	if not is_instance_valid(self):
+		return
+	_is_transitioning = false
+
+
+func _play_victory_exit() -> void:
+	"""Iris-close centered on party side of screen, with gold flash"""
+	# Brief gold flash for victory feel
+	_overlay.color = Color(1.0, 0.9, 0.3, 0.0)
+	_overlay.modulate.a = 1.0
+	var flash_tween = create_tween()
+	flash_tween.tween_property(_overlay, "color:a", 0.4, 0.1)
+	flash_tween.tween_property(_overlay, "color:a", 0.0, 0.2)
+	await flash_tween.finished
+
+	if not is_instance_valid(self):
+		return
+
+	# Iris-close: black circle shrinks from full to zero
+	var shader_code = """
+shader_type canvas_item;
+uniform float radius : hint_range(0.0, 1.5) = 1.2;
+uniform vec2 center = vec2(0.65, 0.5);
+
+void fragment() {
+    vec2 uv = UV - center;
+    uv.x *= SCREEN_PIXEL_SIZE.x / SCREEN_PIXEL_SIZE.y;
+    float dist = length(uv);
+    float edge = smoothstep(radius - 0.02, radius + 0.02, dist);
+    COLOR = vec4(0.0, 0.0, 0.0, edge);
+}
+"""
+	var shader = Shader.new()
+	shader.code = shader_code
+	_iris_shader = ShaderMaterial.new()
+	_iris_shader.shader = shader
+	_iris_shader.set_shader_parameter("radius", 1.3)
+	_iris_shader.set_shader_parameter("center", Vector2(0.65, 0.5))  # Party side
+
+	_overlay.material = _iris_shader
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+
+	# Shrink iris from 1.3 to 0 over 0.5s
+	var tween = create_tween()
+	tween.tween_method(
+		func(r: float) -> void:
+			if is_instance_valid(_iris_shader):
+				_iris_shader.set_shader_parameter("radius", r),
+		1.3, 0.0, 0.5
+	).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	await tween.finished
+
+	if not is_instance_valid(self):
+		return
+
+	# Screen is now fully black — hold briefly
+	_overlay.material = null
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+	await get_tree().create_timer(0.2).timeout
+
+
+func _play_defeat_exit() -> void:
+	"""Simple fade to black for defeat"""
+	_overlay.color = Color(0.0, 0.0, 0.0, 0.0)
+	_overlay.modulate.a = 1.0
+	var tween = create_tween()
+	tween.tween_property(_overlay, "color:a", 1.0, 0.5)
+	await tween.finished
+
+	if not is_instance_valid(self):
+		return
+	await get_tree().create_timer(0.3).timeout
+
+
+func reveal_exploration() -> void:
+	"""Fade from black to reveal the exploration scene after battle exit"""
+	if not _overlay:
+		return
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+	var tween = create_tween()
+	tween.tween_property(_overlay, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await tween.finished
+	if is_instance_valid(self):
+		_cleanup_effects()
+
+
 func _get_transition_for_enemies(enemy_types: Array) -> TransitionType:
 	if enemy_types.is_empty():
 		return TransitionType.SHAKE_FLASH
