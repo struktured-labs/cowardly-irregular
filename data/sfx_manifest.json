@@ -366,17 +366,56 @@
       "file": "assets/audio/sfx/ability_fire.ogg",
       "prompt": "Roaring campfire erupting, warm crackling flames whooshing upward, deep orange fire with wood pops and snaps, cozy but powerful",
       "duration_seconds": 1.2,
+      "prompt_influence": 0.7,
+      "variants": ["ability_fire_v2", "ability_fire_v3"]
+    },
+    "ability_fire_v2": {
+      "file": "assets/audio/sfx/ability_fire_v2.ogg",
+      "prompt": "Explosive fireball detonation, quick burst of intense flame with a deep bass boom, magical fire igniting in a flash",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_fire_v3": {
+      "file": "assets/audio/sfx/ability_fire_v3.ogg",
+      "prompt": "Dragon breath flame jet, sustained roaring fire stream with crackling embers trailing off, fierce heat wave",
+      "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
     "ability_ice": {
       "file": "assets/audio/sfx/ability_ice.ogg",
       "prompt": "Cracking frozen lake, sharp crystalline ice forming rapidly, cold brittle snapping with frosty wind howl, winter blizzard",
       "duration_seconds": 1.2,
+      "prompt_influence": 0.7,
+      "variants": ["ability_ice_v2", "ability_ice_v3"]
+    },
+    "ability_ice_v2": {
+      "file": "assets/audio/sfx/ability_ice_v2.ogg",
+      "prompt": "Ice lance shattering on impact, sharp crystalline explosion of frozen shards scattering, brittle glass-like breaking with cold reverb",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_ice_v3": {
+      "file": "assets/audio/sfx/ability_ice_v3.ogg",
+      "prompt": "Freezing spell encasing target, rapid frost spreading with crackling crystallization, deep cold whoosh as ice solidifies",
+      "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
     "ability_lightning": {
       "file": "assets/audio/sfx/ability_lightning.ogg",
       "prompt": "Close thunderclap with electric buzzing aftermath, raw thunder strike with static discharge crackling, stormy atmospheric",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7,
+      "variants": ["ability_lightning_v2", "ability_lightning_v3"]
+    },
+    "ability_lightning_v2": {
+      "file": "assets/audio/sfx/ability_lightning_v2.ogg",
+      "prompt": "Sharp electric bolt striking ground, quick bright zap with sizzling aftermath, concentrated lightning discharge with ozone crackle",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "ability_lightning_v3": {
+      "file": "assets/audio/sfx/ability_lightning_v3.ogg",
+      "prompt": "Chain lightning arcing between targets, rapid succession of electrical snaps and pops, crackling energy bouncing with fading static",
       "duration_seconds": 1.0,
       "prompt_influence": 0.7
     },
