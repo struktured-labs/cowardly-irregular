@@ -2817,6 +2817,18 @@ func _create_autogrind_overlay() -> void:
 		mp_fill.size = Vector2(bar_w, 4)
 		party_container.add_child(mp_fill)
 
+	# Battle log — last 5 outcomes, right side of party bars row
+	var log_rtl = RichTextLabel.new()
+	log_rtl.name = "BattleLog"
+	log_rtl.bbcode_enabled = true
+	log_rtl.scroll_following = true
+	log_rtl.position = Vector2(vp_size.x * 0.55, vp_size.y - bar_height + 30)
+	log_rtl.size = Vector2(vp_size.x * 0.43, 28)
+	log_rtl.add_theme_font_size_override("normal_font_size", 9)
+	log_rtl.add_theme_color_override("default_color", Color(0.7, 0.7, 0.8))
+	log_rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_autogrind_overlay.add_child(log_rtl)
+
 	# Stats strip
 	var strip = AutogrindStatsStrip.new()
 	strip.name = "StatsStrip"
@@ -2875,6 +2887,15 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 			if mp_fill:
 				var mp_pct = member.current_mp / max(float(member.max_mp), 1.0)
 				mp_fill.size.x = bar_w * mp_pct
+
+	# Update battle log with last 5 summaries
+	var log_rtl = _autogrind_overlay.get_node_or_null("BattleLog")
+	if log_rtl and log_rtl is RichTextLabel:
+		log_rtl.clear()
+		var show_count = min(_autogrind_battle_summaries.size(), 5)
+		var start_idx = _autogrind_battle_summaries.size() - show_count
+		for i in range(start_idx, _autogrind_battle_summaries.size()):
+			log_rtl.append_text(_autogrind_battle_summaries[i] + "\n")
 
 	var strip = _autogrind_overlay.get_node_or_null("StatsStrip")
 	if strip and strip.has_method("refresh"):
