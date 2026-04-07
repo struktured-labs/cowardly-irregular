@@ -37,21 +37,26 @@ const MAX_ACTIONS = 2
 
 ## Condition types for autogrind rules
 const CONDITION_TYPES = [
-	{"id": "party_hp_avg", "label": "Party HP", "has_value": true, "default_op": "<", "default_value": 30},
+	{"id": "party_hp_avg", "label": "Party HP%", "has_value": true, "default_op": "<", "default_value": 30},
+	{"id": "party_hp_min", "label": "Lowest HP%", "has_value": true, "default_op": "<", "default_value": 20},
+	{"id": "party_mp_avg", "label": "Party MP%", "has_value": true, "default_op": "<", "default_value": 20},
 	{"id": "alive_count", "label": "Alive", "has_value": true, "default_op": "<=", "default_value": 2},
+	{"id": "member_dead", "label": "Any Dead", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "battles_done", "label": "Battles", "has_value": true, "default_op": ">=", "default_value": 50},
-	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 4.0},
+	{"id": "win_streak", "label": "Win Streak", "has_value": true, "default_op": ">=", "default_value": 20},
+	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
 	{"id": "efficiency", "label": "Efficiency", "has_value": true, "default_op": ">=", "default_value": 5.0},
-	{"id": "member_dead", "label": "Member Dead", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "time_elapsed", "label": "Minutes", "has_value": true, "default_op": ">=", "default_value": 30},
 	{"id": "always", "label": "ALWAYS", "has_value": false, "default_op": "==", "default_value": 0},
 ]
 
 ## Action types for autogrind rules
 const ACTION_TYPES = [
 	{"id": "stop_grinding", "label": "Stop Grind"},
-	{"id": "switch_profile", "label": "Switch Profile", "has_target": true},
-	{"id": "heal_party", "label": "Use Healing Items"},
+	{"id": "heal_party", "label": "Use Potions"},
+	{"id": "restore_mp", "label": "Use Ethers"},
 	{"id": "flee_battle", "label": "Flee Next Battle"},
+	{"id": "switch_profile", "label": "Switch Profile", "has_target": true},
 ]
 
 ## Quick-start presets
@@ -82,11 +87,16 @@ const GRIND_PRESETS = {
 	},
 	"standard": {
 		"label": "Standard",
-		"description": "Balanced grind. Heals, stops on 2+ deaths or high corruption.",
+		"description": "Balanced grind. Heals HP+MP, stops on 2+ deaths or high corruption.",
 		"rules": [
 			{
 				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}],
 				"actions": [{"type": "heal_party"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "party_mp_avg", "op": "<", "value": 20}],
+				"actions": [{"type": "restore_mp"}],
 				"enabled": true
 			},
 			{

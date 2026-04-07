@@ -1587,6 +1587,23 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 		"efficiency":
 			return _compare_op(efficiency_multiplier, op, value)
 
+		"member_dead":
+			var total = 0
+			var alive = _get_alive_count(party)
+			for m in party:
+				if m is Combatant:
+					total += 1
+			return total > alive  # True if any member is dead
+
+		"win_streak":
+			return _compare_op(consecutive_wins, op, value)
+
+		"time_elapsed":
+			var elapsed_min = 0.0
+			if is_grinding and _grind_stats["start_time"] > 0.0:
+				elapsed_min = (Time.get_unix_time_from_system() - _grind_stats["start_time"]) / 60.0
+			return _compare_op(elapsed_min, op, value)
+
 		"always":
 			return true
 
@@ -1673,6 +1690,22 @@ func apply_autogrind_actions(actions: Array) -> void:
 						member.current_hp = min(member.current_hp + hp_restore, member.max_hp)
 						member.current_mp = min(member.current_mp + mp_restore, member.max_mp)
 				print("[AUTOGRIND] heal_party: restored %.0f%% HP/MP to living party members" % (heal_pct * 100.0))
+
+			"restore_mp":
+				# Restore MP using ethers from inventory, or flat 30% if no items
+				for member in grind_party:
+					if member is Combatant and member.is_alive and member.current_mp < member.max_mp * 0.5:
+						var restored = false
+						for item_pair in [["hi_ether", 100], ["ether", 30]]:
+							if member.get_item_count(item_pair[0]) > 0:
+								member.remove_item(item_pair[0], 1)
+								member.current_mp = min(member.current_mp + item_pair[1], member.max_mp)
+								restored = true
+								break
+						if not restored:
+							var mp_restore = int(member.max_mp * 0.3)
+							member.current_mp = min(member.current_mp + mp_restore, member.max_mp)
+				print("[AUTOGRIND] restore_mp: restored MP to party members")
 
 			"flee_battle":
 				# flee_battle is handled by AutogrindController (_skip_next_battle flag).
