@@ -481,6 +481,7 @@ func _update_encounter_zone(pos: Vector2) -> void:
 			_zone_popup.show_zone(new_zone)
 		if _zone_particles:
 			_zone_particles.update_zone(new_zone)
+		_update_zone_ambient(new_zone)
 
 
 func _get_zone_for_tile(tx: int, ty: int) -> String:
@@ -620,6 +621,24 @@ func _place_ambient_effects() -> void:
 		smoke.color = Color(0.6, 0.6, 0.6, 0.25)
 		smoke.z_index = 2
 		add_child(smoke)
+
+
+func _update_zone_ambient(zone: String) -> void:
+	if not SoundManager:
+		return
+	var ambient_key = ""
+	match zone:
+		"forest": ambient_key = "ambient_forest"
+		"ice": ambient_key = "ambient_cave"
+		"coast": ambient_key = "ambient_coast"
+		"central": ambient_key = "ambient_plains"
+		"desert": ambient_key = "ambient_plains"
+		"swamp": ambient_key = "ambient_forest"
+		"volcanic": ambient_key = "ambient_dungeon"
+	if ambient_key != "":
+		SoundManager.play_ambient(ambient_key)
+	else:
+		SoundManager.stop_ambient()
 
 
 func _place_landmarks() -> void:
