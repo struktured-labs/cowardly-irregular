@@ -1646,6 +1646,7 @@ func _on_battle_ended(victory: bool) -> void:
 			SoundManager.play_battle("victory_stinger")
 			_play_staggered_victory_animations()
 			if _check_for_boss():
+				SoundManager.play_battle("boss_defeat_stinger")
 				SoundManager.play_music("stinger_boss_defeated")
 			else:
 				SoundManager.play_music("victory")

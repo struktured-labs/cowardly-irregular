@@ -296,6 +296,12 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.8
     },
+    "boss_defeat_stinger": {
+      "file": "assets/audio/sfx/boss_defeat_stinger.ogg",
+      "prompt": "Epic triumphant orchestral explosion, massive brass fanfare with cymbal crash and deep bass resolve, victorious final blow shockwave dissolving into golden sparkles",
+      "duration_seconds": 2.5,
+      "prompt_influence": 0.7
+    },
     "boss_intro_stinger": {
       "file": "assets/audio/sfx/boss_intro_stinger.ogg",
       "prompt": "Dramatic orchestral hit with deep timpani slam, ominous brass stab announcing danger, dark foreboding impact like a boss appearing in an RPG, reverberating doom chord",
