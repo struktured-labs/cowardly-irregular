@@ -741,6 +741,14 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_world4_chapter1_complete", false) and not flags.get("cutscene_flag_world4_guidance_director_shown", false):
 		if _current_map_id == "rivet_row_village":
 			return "world4_guidance_director"
+	# W5: navigate to the core
+	if flags.get("cutscene_flag_world5_chapter1_complete", false) and not flags.get("cutscene_flag_world5_guidance_core_shown", false):
+		if _current_map_id == "node_prime_village":
+			return "world5_guidance_core"
+	# W6: the question awaits
+	if flags.get("cutscene_flag_world6_chapter1_complete", false) and not flags.get("cutscene_flag_world6_guidance_question_shown", false):
+		if _current_map_id == "vertex_village":
+			return "world6_guidance_question"
 	return ""
 
 

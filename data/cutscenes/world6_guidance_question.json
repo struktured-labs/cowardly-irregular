@@ -1,0 +1,47 @@
+{
+  "id": "world6_guidance_question",
+  "title": "The Vertex Guidance — The Question",
+  "world": 6,
+  "trigger": "world6_guidance_question",
+  "background": "vertex_village",
+  "description": "In The Vertex, the party reflects on what lies ahead. The Calibrant is waiting with a question.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "This is the last world. I can feel it. There's nothing beyond this except the question.",
+        "theme": "bard",
+        "portrait": "bard"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The Calibrant said the last world is a question. Not a challenge. Not a test.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "Then we go find the question. And we answer it.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "What if we don't like the answer?",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "Then we find a better one. That's what we've been doing since Harmonia.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world6_guidance_question_shown", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
