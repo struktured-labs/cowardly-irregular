@@ -2097,10 +2097,11 @@ func _start_autogrind(config: Dictionary) -> void:
 	# Connect controller signals
 	_autogrind_controller.grind_battle_requested.connect(_on_grind_battle_requested)
 	_autogrind_controller.grind_complete.connect(_on_grind_complete)
+	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
+	_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
-	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
 
 	# Clear battle summary ring buffer for new session
 	_autogrind_battle_summaries.clear()
@@ -2529,6 +2530,35 @@ func _on_autogrind_tier_changed(new_tier: int) -> void:
 
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		_autogrind_ui.on_tier_changed(new_tier)
+
+
+func _on_autogrind_region_advanced(from_region: String, to_region: String, world_num: int) -> void:
+	"""Handle auto-advance to next world region during autogrind."""
+	_current_map_id = to_region
+	_current_terrain = to_region
+	# Update world state
+	if has_node("/root/GameState"):
+		GameState.current_world = world_num
+
+	# Show region advancement toast
+	var world_names = {
+		1: "Medieval", 2: "Suburban", 3: "Steampunk",
+		4: "Industrial", 5: "Futuristic", 6: "Abstract"
+	}
+	var world_name = world_names.get(world_num, "World %d" % world_num)
+	_show_autogrind_toast("REGION CRACKED! Advancing to World %d: %s" % [world_num, world_name])
+
+	# Add to battle log
+	_autogrind_battle_summaries.append("[color=#ff88ff]>>> ADVANCED TO WORLD %d: %s <<<[/color]" % [world_num, world_name.to_upper()])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+	# Update dashboard if active
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		var stats = _autogrind_controller.get_grind_stats() if _autogrind_controller and is_instance_valid(_autogrind_controller) else {}
+		_autogrind_dashboard.refresh(stats, to_region)
+
+	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
 
 
 func _create_autogrind_overlay() -> void:

@@ -17,9 +17,20 @@ signal interrupt_triggered(reason: String)
 signal meta_boss_spawned(boss_name: String)
 signal system_collapse()
 signal region_cracked(region_id: String, crack_level: int)
+signal region_advanced(from_region: String, to_region: String, world_num: int)
 signal autobattle_interrupted(reason: String)
 signal autogrind_rules_changed()
 signal fatigue_event(event_type: String, description: String)
+
+## World region progression order (world_num -> overworld map_id)
+const WORLD_REGIONS: Array[Dictionary] = [
+	{"world": 1, "region": "overworld", "name": "Medieval Overworld"},
+	{"world": 2, "region": "suburban_overworld", "name": "Suburban Overworld"},
+	{"world": 3, "region": "steampunk_overworld", "name": "Steampunk Overworld"},
+	{"world": 4, "region": "industrial_overworld", "name": "Industrial Overworld"},
+	{"world": 5, "region": "futuristic_overworld", "name": "Futuristic Overworld"},
+	{"world": 6, "region": "abstract_overworld", "name": "Abstract Overworld"},
+]
 
 ## System fatigue
 var fatigue_events_triggered: int = 0
@@ -1258,6 +1269,41 @@ func get_region_crack_level(region_id: String) -> int:
 func is_region_cracked(region_id: String) -> bool:
 	"""Check if a region is cracked"""
 	return region_crack_levels.get(region_id, 0) > 0
+
+
+func get_current_world_index() -> int:
+	"""Get the WORLD_REGIONS index for the current region."""
+	for i in range(WORLD_REGIONS.size()):
+		if WORLD_REGIONS[i]["region"] == current_region_id:
+			return i
+	return 0
+
+
+func get_next_region() -> Dictionary:
+	"""Get the next region in world progression order. Returns empty if at end or locked."""
+	var current_idx = get_current_world_index()
+	var next_idx = current_idx + 1
+	if next_idx >= WORLD_REGIONS.size():
+		return {}  # Already at final world
+	var next = WORLD_REGIONS[next_idx]
+	# Check if the world is unlocked
+	if has_node("/root/GameState"):
+		var gs = get_node("/root/GameState")
+		if not gs.is_world_unlocked(next["world"]):
+			return {}  # World not unlocked yet
+	return next
+
+
+func advance_to_next_region() -> Dictionary:
+	"""Advance to the next region if available. Returns the new region info or empty."""
+	var next = get_next_region()
+	if next.is_empty():
+		return {}
+	var old_region = current_region_id
+	set_current_region(next["region"])
+	region_advanced.emit(old_region, next["region"], next["world"])
+	print("[AUTOGRIND] Advanced from %s to %s (World %d)" % [old_region, next["region"], next["world"]])
+	return next
 
 
 ## Autobattle interrupt system

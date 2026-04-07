@@ -79,6 +79,9 @@ var _permadeath_staking_enabled: bool = false
 ## Ludicrous speed (headless resolver) toggle
 var _ludicrous_speed_enabled: bool = false
 
+## Auto-advance regions when cracked
+var _auto_advance_enabled: bool = true
+
 ## UI nodes
 var _grid_container: Control
 var _cursor: Control
@@ -405,7 +408,8 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Start/Stop  X/H:Ludicrous  P:Permadeath"
+	var auto_adv_txt = "ON" if _auto_advance_enabled else "OFF"
+	footer.text = "D-Pad:Navigate  A:Edit  B:Close  Start:Go  X:Ludicrous  W:AutoAdv(%s)  P:Permadeath" % auto_adv_txt
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1047,6 +1051,10 @@ func _input(event: InputEvent) -> void:
 		_toggle_ludicrous_speed()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_W and not event.is_echo():
+		_toggle_auto_advance()
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
 		_toggle_permadeath_staking()
 		get_viewport().set_input_as_handled()
@@ -1305,7 +1313,8 @@ func _get_grind_config() -> Dictionary:
 		"region": _region_name,
 		"rules": rules.duplicate(true),
 		"permadeath_staking": _permadeath_staking_enabled,
-		"ludicrous_speed": _ludicrous_speed_enabled
+		"ludicrous_speed": _ludicrous_speed_enabled,
+		"auto_advance": _auto_advance_enabled
 	}
 
 
@@ -1320,6 +1329,21 @@ func _toggle_ludicrous_speed() -> void:
 		_log_message("[color=magenta]LUDICROUS SPEED enabled! Battles resolve instantly via math.[/color]")
 	else:
 		_log_message("[color=lime]Ludicrous speed disabled. Normal battle rendering.[/color]")
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _toggle_auto_advance() -> void:
+	"""Toggle auto-advance to next world when region is cracked."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change auto-advance while grinding.[/color]")
+		return
+
+	_auto_advance_enabled = not _auto_advance_enabled
+	if _auto_advance_enabled:
+		_log_message("[color=cyan]Auto-advance ON: will advance to next world when region cracked.[/color]")
+	else:
+		_log_message("[color=yellow]Auto-advance OFF: staying in current region after crack.[/color]")
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 
