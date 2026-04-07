@@ -162,3 +162,75 @@ func test_controller_overlay_ludicrous_context() -> void:
 	assert_true(ctx.has("select"), "Ludicrous context should have pause button")
 	assert_false(ctx.has("y"), "Ludicrous context should not have turbo (no visual battles)")
 	assert_false(ctx.has("plus"), "Ludicrous context should not have speed+ (no visual battles)")
+
+
+## World progression tests
+
+func test_world_regions_constant_has_6_worlds() -> void:
+	assert_eq(_system.WORLD_REGIONS.size(), 6, "Should have 6 world regions")
+
+
+func test_world_regions_order() -> void:
+	assert_eq(_system.WORLD_REGIONS[0]["region"], "overworld", "World 1 should be overworld")
+	assert_eq(_system.WORLD_REGIONS[1]["region"], "suburban_overworld", "World 2 should be suburban")
+	assert_eq(_system.WORLD_REGIONS[5]["region"], "abstract_overworld", "World 6 should be abstract")
+
+
+func test_world_regions_world_numbers() -> void:
+	for i in range(_system.WORLD_REGIONS.size()):
+		assert_eq(_system.WORLD_REGIONS[i]["world"], i + 1, "World number should match index + 1")
+
+
+func test_get_current_world_index_default() -> void:
+	_system.current_region_id = "overworld"
+	assert_eq(_system.get_current_world_index(), 0, "overworld should be index 0")
+
+
+func test_get_current_world_index_suburban() -> void:
+	_system.current_region_id = "suburban_overworld"
+	assert_eq(_system.get_current_world_index(), 1, "suburban should be index 1")
+
+
+func test_get_next_region_from_overworld() -> void:
+	_system.current_region_id = "overworld"
+	var next = _system.get_next_region()
+	assert_false(next.is_empty(), "Should have a next region from overworld")
+	assert_eq(next["region"], "suburban_overworld", "Next after overworld should be suburban")
+	assert_eq(next["world"], 2, "Next world number should be 2")
+
+
+func test_get_next_region_from_last_world() -> void:
+	_system.current_region_id = "abstract_overworld"
+	var next = _system.get_next_region()
+	assert_true(next.is_empty(), "Should return empty at last world")
+
+
+func test_advance_to_next_region() -> void:
+	_system.current_region_id = "overworld"
+	var next = _system.advance_to_next_region()
+	assert_false(next.is_empty(), "Should advance successfully")
+	assert_eq(_system.current_region_id, "suburban_overworld", "Should now be in suburban")
+
+
+func test_controller_auto_advance_default_true() -> void:
+	var ctrl_script = load("res://src/autogrind/AutogrindController.gd")
+	var ctrl = ctrl_script.new()
+	add_child_autofree(ctrl)
+	assert_true(ctrl._auto_advance_regions, "Auto-advance should default to true")
+
+
+func test_controller_has_region_advanced_signal() -> void:
+	var ctrl_script = load("res://src/autogrind/AutogrindController.gd")
+	var ctrl = ctrl_script.new()
+	add_child_autofree(ctrl)
+	assert_true(ctrl.has_signal("region_advanced"), "Controller should have region_advanced signal")
+
+
+func test_autogrind_ui_auto_advance_config_key() -> void:
+	var source = FileAccess.open("res://src/ui/autogrind/AutogrindUI.gd", FileAccess.READ)
+	if not source:
+		pending("Cannot read AutogrindUI.gd")
+		return
+	var text = source.get_as_text()
+	source.close()
+	assert_true(text.contains("\"auto_advance\""), "Config should include auto_advance key")
