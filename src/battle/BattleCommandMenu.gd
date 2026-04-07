@@ -262,6 +262,34 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						"data": {"ability_id": ability_id},
 						"disabled": true
 					})
+			elif target_type == "all_enemies" and can_afford:
+				# AoE ability — show [AoE] tag with total estimated damage
+				var aoe_label = "%s (%d) [AoE]" % [ability["name"], mp_cost]
+				if alive_enemies.size() > 0:
+					var total_est = 0
+					for enemy in alive_enemies:
+						total_est += BattleManager.estimate_ability_damage(combatant, enemy, ability)
+					aoe_label = "%s (%d) [AoE] ~%d total" % [ability["name"], mp_cost, total_est]
+				ability_items.append({
+					"id": "ability_" + ability_id,
+					"label": aoe_label,
+					"tooltip": ability_tooltip + " (hits all enemies)",
+					"data": {"ability_id": ability_id},
+					"disabled": not can_afford
+				})
+			elif target_type == "all_allies" and can_afford:
+				# Party-wide buff/heal — show [All] tag
+				var all_label = "%s (%d) [All]" % [ability["name"], mp_cost]
+				if ability.has("heal_amount"):
+					var est_heal = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
+					all_label = "%s (%d) [All] ~+%d each" % [ability["name"], mp_cost, est_heal]
+				ability_items.append({
+					"id": "ability_" + ability_id,
+					"label": all_label,
+					"tooltip": ability_tooltip + " (affects all allies)",
+					"data": {"ability_id": ability_id},
+					"disabled": not can_afford
+				})
 			else:
 				ability_items.append({
 					"id": "ability_" + ability_id,
