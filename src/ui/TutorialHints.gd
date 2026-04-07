@@ -53,6 +53,10 @@ const HINTS = {
 		"title": "New World",
 		"body": "Each world transforms your party — new costumes, new abilities, same skills underneath. The Masterites here follow the same four archetypes: Warden, Arbiter, Tempo, Curator.",
 	},
+	"first_formation": {
+		"title": "Party Formations",
+		"body": "Press F to cycle formations. Front Line boosts ATK, Back Row boosts DEF, Diamond protects with a tank, Spread resists AoE. Formations pair with Formation Specials for devastating combos.",
+	},
 }
 
 
