@@ -9,7 +9,7 @@ signal interaction_requested()
 signal menu_requested()
 
 ## Movement configuration
-@export var move_speed: float = 180.0  # Slightly faster to compensate for Mode 7 perspective compression
+@export var move_speed: float = 240.0  # Fast enough to feel responsive through Mode 7 compression
 
 ## Direction enum
 enum Direction { DOWN, UP, LEFT, RIGHT }
@@ -208,7 +208,7 @@ func _ready() -> void:
 	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	wall_min_slide_angle = 0.0  # Always allow wall sliding, even head-on
-	safe_margin = 1.0  # Prevents getting stuck on tile collision seams
+	safe_margin = 2.0  # Generous margin prevents stuck-on-edge and improves wall sliding
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
@@ -223,7 +223,7 @@ func _setup_sprite() -> void:
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
 	var shape = CircleShape2D.new()
-	shape.radius = 7.0  # Small radius prevents getting stuck on tile edges
+	shape.radius = 5.0  # Smaller radius for smoother wall sliding and edge navigation
 	collision.shape = shape
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)
@@ -267,10 +267,8 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		# Compensate for Mode 7 horizontal compression before normalizing.
-		# Shader x_width = near_scale/h = 0.45/0.75 = 0.6 at player feet.
-		# Boost horizontal input by 1/0.6 = 1.667x, then renormalize.
-		# This makes horizontal movement LOOK equal to vertical on Mode 7 view.
-		input_dir.x *= 1.667
+		# Shader compresses horizontal visually — boost X to feel equal to vertical.
+		input_dir.x *= 2.0
 		input_dir = input_dir.normalized()
 		# Instant velocity — classic JRPG snap, no slide
 		velocity = input_dir * move_speed
