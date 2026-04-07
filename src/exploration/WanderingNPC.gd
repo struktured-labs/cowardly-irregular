@@ -23,6 +23,12 @@ var dialogue_hints: Array = []
 var _sprite: Sprite2D
 var _label: Label
 var _player_nearby: bool = false
+var _npc_dialogue: Node = null  # NPCDialogue instance for proper dialogue boxes
+var _in_conversation: bool = false
+
+## NPC theme/portrait for dialogue boxes (defaults to "mysterious")
+@export var dialogue_theme: String = "mysterious"
+@export var dialogue_portrait: String = "mysterious"
 
 # Patrol state
 var _patrol_points: Array[Vector2] = []
@@ -166,7 +172,7 @@ func _get_current_dialogue() -> String:
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_nearby = true
-		_label.text = "%s: \"%s\"" % [npc_name, _get_current_dialogue()]
+		_label.text = "[A] %s" % npc_name
 		_label.visible = true
 
 
@@ -174,3 +180,52 @@ func _on_body_exited(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_nearby = false
 		_label.visible = false
+
+
+func _input(event: InputEvent) -> void:
+	if not _player_nearby or _in_conversation:
+		return
+
+	if event.is_action_pressed("ui_accept"):
+		_start_conversation()
+		get_viewport().set_input_as_handled()
+
+
+func _start_conversation() -> void:
+	"""Open a proper dialogue box for this NPC."""
+	_in_conversation = true
+	_label.visible = false
+
+	# Freeze player during conversation
+	var player = _get_player()
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(false)
+
+	# Create NPCDialogue if needed
+	if not _npc_dialogue or not is_instance_valid(_npc_dialogue):
+		var NPCDialogueClass = load("res://src/cutscene/NPCDialogue.gd")
+		_npc_dialogue = NPCDialogueClass.new()
+		add_child(_npc_dialogue)
+
+	var text = _get_current_dialogue()
+	await _npc_dialogue.say(npc_name, text, dialogue_theme, dialogue_portrait)
+
+	# Unfreeze player
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(true)
+
+	_in_conversation = false
+	if _player_nearby:
+		_label.text = "[A] %s" % npc_name
+		_label.visible = true
+
+
+func _get_player() -> Node:
+	"""Find the player node."""
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		return players[0]
+	# Try MapSystem
+	if Engine.has_singleton("MapSystem"):
+		return Engine.get_singleton("MapSystem").get_player()
+	return null
