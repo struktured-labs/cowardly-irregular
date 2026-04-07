@@ -134,6 +134,11 @@ var _grind_stats: Dictionary = {
 	"elapsed_seconds": 0.0
 }
 
+## Session history — last N completed grind sessions (persisted)
+const MAX_SESSION_HISTORY: int = 10
+const SESSION_HISTORY_PATH: String = "user://autogrind_history.json"
+var session_history: Array = []  # Array of session summary dicts
+
 ## ═══════════════════════════════════════════════════════════════════════
 ## ADAPTIVE AI - Pattern Learning & Counter Strategy
 ## ═══════════════════════════════════════════════════════════════════════
@@ -598,6 +603,7 @@ func _ready() -> void:
 	_load_learned_patterns()
 	_load_csi_data()
 	_load_permadead_characters()
+	_load_session_history()
 
 
 ## Autogrind control
@@ -683,6 +689,10 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 	}
 
 	grind_stopped.emit(results)
+
+	# Record session in history
+	_record_session(results, stats)
+
 	print("=== AUTOGRIND STOPPED ===")
 	print("Reason: %s" % reason)
 	print("Battles: %d | EXP: %d | Efficiency: %.1fx" % [
@@ -1863,3 +1873,56 @@ func load_data(data: Dictionary) -> void:
 	print("Loaded autogrind data (AA: %.3f, CSI regions: %d)" % [
 		_automation_affinity, _region_csi.size()
 	])
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## SESSION HISTORY
+## ═══════════════════════════════════════════════════════════════════════
+
+func _record_session(results: Dictionary, stats: Dictionary) -> void:
+	"""Record a completed grind session to history."""
+	var entry = {
+		"timestamp": Time.get_datetime_string_from_system(),
+		"battles": results.get("battles_completed", 0),
+		"total_exp": results.get("total_exp_gained", 0),
+		"efficiency": results.get("final_efficiency", 1.0),
+		"corruption": results.get("corruption_level", 0.0),
+		"region": current_region_id,
+		"reason": results.get("stop_reason", "Unknown"),
+		"duration_sec": stats.get("elapsed_seconds", _grind_stats.get("elapsed_seconds", 0.0)),
+		"exp_per_min": stats.get("exp_per_min", 0.0),
+		"gold": stats.get("total_gold", 0),
+		"collapses": collapse_count,
+		"permadeaths": permadead_characters.size(),
+	}
+	session_history.append(entry)
+	if session_history.size() > MAX_SESSION_HISTORY:
+		session_history.remove_at(0)
+	_save_session_history()
+
+
+func get_session_history() -> Array:
+	"""Get the session history array (most recent last)."""
+	return session_history
+
+
+func _save_session_history() -> void:
+	"""Persist session history to file."""
+	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(session_history, "\t"))
+		file.close()
+
+
+func _load_session_history() -> void:
+	"""Load session history from file."""
+	if not FileAccess.file_exists(SESSION_HISTORY_PATH):
+		return
+	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.READ)
+	if not file:
+		return
+	var json = JSON.new()
+	if json.parse(file.get_as_text()) == OK and json.data is Array:
+		session_history = json.data
+		print("[AUTOGRIND] Loaded %d session history entries" % session_history.size())
+	file.close()

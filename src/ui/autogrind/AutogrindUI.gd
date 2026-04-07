@@ -54,6 +54,77 @@ const ACTION_TYPES = [
 	{"id": "flee_battle", "label": "Flee Next Battle"},
 ]
 
+## Quick-start presets
+const GRIND_PRESETS = {
+	"casual": {
+		"label": "Casual",
+		"description": "Safe grind. Stops on low HP or any death.",
+		"rules": [
+			{
+				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 40}],
+				"actions": [{"type": "heal_party"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "member_dead", "op": "==", "value": 0}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "battles_done", "op": ">=", "value": 20}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+		],
+		"ludicrous": false,
+		"permadeath": false,
+		"auto_advance": false,
+	},
+	"standard": {
+		"label": "Standard",
+		"description": "Balanced grind. Heals, stops on 2+ deaths or high corruption.",
+		"rules": [
+			{
+				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}],
+				"actions": [{"type": "heal_party"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "alive_count", "op": "<=", "value": 2}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "corruption", "op": ">=", "value": 3.0}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+		],
+		"ludicrous": false,
+		"permadeath": false,
+		"auto_advance": true,
+	},
+	"hardcore": {
+		"label": "Hardcore",
+		"description": "Ludicrous speed. Only stops on party wipe or collapse.",
+		"rules": [
+			{
+				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 20}],
+				"actions": [{"type": "heal_party"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "alive_count", "op": "<=", "value": 1}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+		],
+		"ludicrous": true,
+		"permadeath": false,
+		"auto_advance": true,
+	},
+}
+
 ## State
 var _is_grinding: bool = false
 var _party: Array = []
@@ -408,8 +479,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	var auto_adv_txt = "ON" if _auto_advance_enabled else "OFF"
-	footer.text = "A:Edit  B:Close  Start:Go  X:Ludicrous  E:Export  I:Import  W:Adv(%s)  P:Perma" % auto_adv_txt
+	footer.text = "A:Edit  B:Close  Start:Go  1:Casual  2:Standard  3:Hardcore  E:Export  I:Import"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1063,6 +1133,18 @@ func _input(event: InputEvent) -> void:
 		_import_scripts()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_1 and not event.is_echo():
+		_apply_preset("casual")
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_2 and not event.is_echo():
+		_apply_preset("standard")
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_3 and not event.is_echo():
+		_apply_preset("hardcore")
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
 		_toggle_permadeath_staking()
 		get_viewport().set_input_as_handled()
@@ -1337,6 +1419,31 @@ func _toggle_ludicrous_speed() -> void:
 		_log_message("[color=magenta]LUDICROUS SPEED enabled! Battles resolve instantly via math.[/color]")
 	else:
 		_log_message("[color=lime]Ludicrous speed disabled. Normal battle rendering.[/color]")
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _apply_preset(preset_id: String) -> void:
+	"""Apply a quick-start preset configuration."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change preset while grinding.[/color]")
+		return
+
+	if not GRIND_PRESETS.has(preset_id):
+		return
+
+	var preset = GRIND_PRESETS[preset_id]
+	rules = preset["rules"].duplicate(true)
+	_ludicrous_speed_enabled = preset.get("ludicrous", false)
+	_permadeath_staking_enabled = preset.get("permadeath", false)
+	_auto_advance_enabled = preset.get("auto_advance", true)
+
+	if _permadeath_staking_enabled:
+		AutogrindSystem.enable_permadeath_staking(true)
+	else:
+		AutogrindSystem.enable_permadeath_staking(false)
+
+	_log_message("[color=cyan]Preset: %s — %s[/color]" % [preset["label"], preset["description"]])
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 
