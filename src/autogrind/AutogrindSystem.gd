@@ -42,6 +42,7 @@ var is_grinding: bool = false
 var battles_completed: int = 0
 var total_exp_gained: int = 0
 var total_items_gained: Dictionary = {}
+var items_consumed: Dictionary = {}  # {item_id: count} — tracks items used during grind session
 
 ## Efficiency system
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
@@ -399,6 +400,7 @@ func get_grind_stats() -> Dictionary:
 		"csi": csi_val,
 		"yield_multiplier": yield_val,
 		"automation_affinity": _automation_affinity,
+		"items_consumed": items_consumed.duplicate(),
 	}
 
 
@@ -625,6 +627,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	battles_completed = 0
 	total_exp_gained = 0
 	total_items_gained.clear()
+	items_consumed.clear()
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
 	meta_corruption_level = 0.0
@@ -1689,6 +1692,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 							if member.get_item_count(item_pair[0]) > 0:
 								member.remove_item(item_pair[0], 1)
 								member.heal(item_pair[1])
+								_track_item_consumed(item_pair[0])
 								healed_count += 1
 								break
 				if healed_count > 0:
@@ -1705,6 +1709,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 							if member.get_item_count(item_pair[0]) > 0:
 								member.remove_item(item_pair[0], 1)
 								member.restore_mp(item_pair[1])
+								_track_item_consumed(item_pair[0])
 								restored_count += 1
 								break
 				if restored_count > 0:
@@ -1718,6 +1723,27 @@ func apply_autogrind_actions(actions: Array) -> void:
 				# fall back to stopping the grind so the action is never silently ignored.
 				print("[AUTOGRIND] flee_battle action reached AutogrindSystem directly — stopping grind as fallback")
 				stop_autogrind("Flee triggered by autogrind rule")
+
+
+func _track_item_consumed(item_id: String) -> void:
+	"""Track an item consumed during the grind session."""
+	items_consumed[item_id] = items_consumed.get(item_id, 0) + 1
+
+
+func track_item_consumed(item_id: String) -> void:
+	"""Public API for external callers (GameLoop between-battle healing)."""
+	_track_item_consumed(item_id)
+
+
+func get_items_consumed_summary() -> String:
+	"""Get a human-readable summary of items consumed."""
+	if items_consumed.is_empty():
+		return "None"
+	var parts: Array = []
+	for item_id in items_consumed:
+		var name = item_id.replace("_", " ").capitalize()
+		parts.append("%s x%d" % [name, items_consumed[item_id]])
+	return ", ".join(parts)
 
 
 ## ═══════════════════════════════════════════════════════════════════════
@@ -1940,6 +1966,7 @@ func _record_session(results: Dictionary, stats: Dictionary) -> void:
 		"gold": stats.get("total_gold", 0),
 		"collapses": collapse_count,
 		"permadeaths": permadead_characters.size(),
+		"items_consumed": items_consumed.duplicate(),
 	}
 	session_history.append(entry)
 	if session_history.size() > MAX_SESSION_HISTORY:
