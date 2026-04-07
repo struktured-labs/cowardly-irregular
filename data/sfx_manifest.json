@@ -305,6 +305,42 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
     },
+    "ambient_forest": {
+      "file": "assets/audio/sfx/ambient_forest.ogg",
+      "prompt": "Peaceful forest ambience, birds singing in canopy, gentle breeze through leaves, distant woodpecker tapping, tranquil woodland atmosphere",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_plains": {
+      "file": "assets/audio/sfx/ambient_plains.ogg",
+      "prompt": "Open grassland wind ambience, steady breeze across flat terrain, distant meadow birds, rustling tall grass, wide open plains atmosphere",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_cave": {
+      "file": "assets/audio/sfx/ambient_cave.ogg",
+      "prompt": "Dark cave ambience, slow water dripping echoing off stone walls, distant underground stream, hollow wind draft through tunnels",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_village": {
+      "file": "assets/audio/sfx/ambient_village.ogg",
+      "prompt": "Quiet medieval village ambience, distant blacksmith hammering, chickens clucking, murmur of townsfolk, gentle wind through thatched roofs",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_dungeon": {
+      "file": "assets/audio/sfx/ambient_dungeon.ogg",
+      "prompt": "Eerie dungeon ambience, creaking chains, distant moaning wind, dripping water echoing, rat scurrying sounds, oppressive underground atmosphere",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_coast": {
+      "file": "assets/audio/sfx/ambient_coast.ogg",
+      "prompt": "Gentle ocean waves lapping on shore, seagulls calling overhead, light coastal breeze, peaceful seaside ambience",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
     "weather_rain": {
       "file": "assets/audio/sfx/weather_rain.ogg",
       "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",
