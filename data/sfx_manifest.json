@@ -5,9 +5,9 @@
   "sfx": {
     "menu_move": {
       "file": "assets/audio/sfx/menu_move.ogg",
-      "prompt": "Very short soft electronic pip, gentle digital cursor tick like scrolling through a retro game menu, quiet and clean",
+      "prompt": "Very short low bubbly boing tick, quick wobbly digital dink with a silly wah bend, playful retro menu cursor — dampened highs, pitched up 50%",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.9
+      "prompt_influence": 0.95
     },
     "menu_select": {
       "file": "assets/audio/sfx/menu_select.ogg",
