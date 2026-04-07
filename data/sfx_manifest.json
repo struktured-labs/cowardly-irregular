@@ -83,9 +83,21 @@
     },
     "chest_open": {
       "file": "assets/audio/sfx/chest_open.ogg",
-      "prompt": "Treasure chest unlatching and creaking open, cascade of gold coins jingling inside, slot machine jackpot payout, rewarding",
+      "prompt": "Wooden treasure chest lid creaking open with rusty hinges, satisfying latch clunk then magical shimmer of treasure revealed, classic RPG chest",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.7
+    },
+    "door_open": {
+      "file": "assets/audio/sfx/door_open.ogg",
+      "prompt": "Heavy wooden door creaking open, old iron hinges groaning, medieval dungeon door swinging with a deep resonant creak",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "door_close": {
+      "file": "assets/audio/sfx/door_close.ogg",
+      "prompt": "Heavy wooden door shutting firmly, solid thud of thick oak closing with a deep latch click, dungeon door sealing",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
     },
     "tier_zoom_out": {
       "file": "assets/audio/sfx/tier_zoom_out.ogg",
@@ -366,17 +378,56 @@
       "file": "assets/audio/sfx/ability_fire.ogg",
       "prompt": "Roaring campfire erupting, warm crackling flames whooshing upward, deep orange fire with wood pops and snaps, cozy but powerful",
       "duration_seconds": 1.2,
+      "prompt_influence": 0.7,
+      "variants": ["ability_fire_v2", "ability_fire_v3"]
+    },
+    "ability_fire_v2": {
+      "file": "assets/audio/sfx/ability_fire_v2.ogg",
+      "prompt": "Explosive fireball detonation, quick burst of intense flame with a deep bass boom, magical fire igniting in a flash",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_fire_v3": {
+      "file": "assets/audio/sfx/ability_fire_v3.ogg",
+      "prompt": "Dragon breath flame jet, sustained roaring fire stream with crackling embers trailing off, fierce heat wave",
+      "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
     "ability_ice": {
       "file": "assets/audio/sfx/ability_ice.ogg",
       "prompt": "Cracking frozen lake, sharp crystalline ice forming rapidly, cold brittle snapping with frosty wind howl, winter blizzard",
       "duration_seconds": 1.2,
+      "prompt_influence": 0.7,
+      "variants": ["ability_ice_v2", "ability_ice_v3"]
+    },
+    "ability_ice_v2": {
+      "file": "assets/audio/sfx/ability_ice_v2.ogg",
+      "prompt": "Ice lance shattering on impact, sharp crystalline explosion of frozen shards scattering, brittle glass-like breaking with cold reverb",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_ice_v3": {
+      "file": "assets/audio/sfx/ability_ice_v3.ogg",
+      "prompt": "Freezing spell encasing target, rapid frost spreading with crackling crystallization, deep cold whoosh as ice solidifies",
+      "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
     "ability_lightning": {
       "file": "assets/audio/sfx/ability_lightning.ogg",
       "prompt": "Close thunderclap with electric buzzing aftermath, raw thunder strike with static discharge crackling, stormy atmospheric",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7,
+      "variants": ["ability_lightning_v2", "ability_lightning_v3"]
+    },
+    "ability_lightning_v2": {
+      "file": "assets/audio/sfx/ability_lightning_v2.ogg",
+      "prompt": "Sharp electric bolt striking ground, quick bright zap with sizzling aftermath, concentrated lightning discharge with ozone crackle",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "ability_lightning_v3": {
+      "file": "assets/audio/sfx/ability_lightning_v3.ogg",
+      "prompt": "Chain lightning arcing between targets, rapid succession of electrical snaps and pops, crackling energy bouncing with fading static",
       "duration_seconds": 1.0,
       "prompt_influence": 0.7
     },

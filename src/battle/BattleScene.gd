@@ -2425,8 +2425,16 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	_results_display.on_damage_dealt(target, amount, is_crit)
 	if is_crit:
 		_crit_visual_burst(target, amount)
+		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
 	if elemental_mod != 1.0 and element != "":
 		_spawn_elemental_indicator(target, element, elemental_mod)
+		# Tutorial hints for elemental interactions
+		if elemental_mod > 1.0:
+			_show_hint("weakness_exploit", "That enemy is WEAK to %s! Elemental weaknesses deal bonus damage. Use Combo Magic to stack multiple elements!" % element.capitalize())
+		elif elemental_mod < 1.0 and elemental_mod > 0.0:
+			_show_hint("elemental_resist", "That enemy RESISTS %s. Try a different element or use physical attacks." % element.capitalize())
+		elif elemental_mod == 0.0:
+			_show_hint("elemental_immune", "That enemy is IMMUNE to %s! Switch to a different element or physical attacks." % element.capitalize())
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
