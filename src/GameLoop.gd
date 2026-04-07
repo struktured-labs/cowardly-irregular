@@ -2196,10 +2196,13 @@ func _start_autogrind(config: Dictionary) -> void:
 	# Show appropriate controller overlay
 	if _autogrind_controller.headless_mode:
 		_show_controller_overlay(ControllerOverlay.autogrind_ludicrous_context())
-		# Ludicrous speed auto-shows dashboard since there are no visible battles
 		_show_autogrind_dashboard()
+		TutorialHints.show(self, "ludicrous_speed")
 	else:
 		_show_controller_overlay(ControllerOverlay.autogrind_context())
+
+	# Tutorial hint on first autogrind session
+	TutorialHints.show(self, "autogrind")
 
 	print("[AUTOGRIND] Session started%s" % (" (LUDICROUS SPEED)" if _autogrind_controller.headless_mode else ""))
 
@@ -2643,6 +2646,9 @@ func _on_autogrind_region_advanced(from_region: String, to_region: String, world
 
 	# Play tier transition sound for the warp feel
 	SoundManager.play_ui("tier_zoom_out")
+
+	# Tutorial hint on first world transition
+	TutorialHints.show(self, "world_transition")
 
 	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
 

@@ -57,6 +57,10 @@ const HINTS = {
 		"title": "Party Formations",
 		"body": "Press F to cycle formations. Front Line boosts ATK, Back Row boosts DEF, Diamond protects with a tank, Spread resists AoE. Formations pair with Formation Specials for devastating combos.",
 	},
+	"ludicrous_speed": {
+		"title": "Ludicrous Speed",
+		"body": "Battles now resolve instantly via pure math — no animations, no rendering. Your autobattle scripts and formation specials still execute faithfully. Watch the dashboard for throughput stats.",
+	},
 }
 
 
