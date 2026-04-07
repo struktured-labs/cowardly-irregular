@@ -11,13 +11,18 @@ const TILE_SIZE: int = 32
 var _sprite: Sprite2D
 var _glow_timer: float = 0.0
 var _indicator: Label
+var _confirm_label: Label
 var _player_in_zone: bool = false
+var _saving: bool = false
+var _sparkles: CPUParticles2D
 
 
 func _ready() -> void:
 	_setup_sprite()
+	_setup_sparkles()
 	_setup_collision()
 	_setup_indicator()
+	_setup_confirm_label()
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	add_to_group("interactables")
@@ -69,16 +74,53 @@ func _setup_collision() -> void:
 	add_child(col)
 
 
+func _setup_sparkles() -> void:
+	_sparkles = CPUParticles2D.new()
+	_sparkles.name = "Sparkles"
+	_sparkles.emitting = false
+	_sparkles.one_shot = true
+	_sparkles.amount = 12
+	_sparkles.lifetime = 0.8
+	_sparkles.explosiveness = 0.9
+	_sparkles.randomness = 0.5
+	_sparkles.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	_sparkles.emission_sphere_radius = 8.0
+	_sparkles.gravity = Vector2(0, -30)
+	_sparkles.initial_velocity_min = 20.0
+	_sparkles.initial_velocity_max = 50.0
+	_sparkles.color = Color(0.6, 0.8, 1.0, 0.8)
+	_sparkles.scale_amount_min = 0.3
+	_sparkles.scale_amount_max = 0.8
+	add_child(_sparkles)
+
+
 func _setup_indicator() -> void:
 	_indicator = Label.new()
-	_indicator.text = "Save"
+	_indicator.text = "[A] Save"
 	_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_indicator.position = Vector2(-16, -28)
+	_indicator.position = Vector2(-24, -28)
+	_indicator.size = Vector2(48, 16)
 	_indicator.add_theme_font_size_override("font_size", 10)
 	_indicator.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_indicator.visible = false
 	_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_indicator)
+
+
+func _setup_confirm_label() -> void:
+	_confirm_label = Label.new()
+	_confirm_label.text = "Game Saved!"
+	_confirm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_confirm_label.position = Vector2(-30, -44)
+	_confirm_label.size = Vector2(60, 16)
+	_confirm_label.add_theme_font_size_override("font_size", 11)
+	_confirm_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.5))
+	_confirm_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_confirm_label.add_theme_constant_override("shadow_offset_x", 1)
+	_confirm_label.add_theme_constant_override("shadow_offset_y", 1)
+	_confirm_label.visible = false
+	_confirm_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_confirm_label)
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -94,6 +136,47 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if _player_in_zone and event.is_action_pressed("ui_accept"):
-		save_requested.emit()
+	if _player_in_zone and not _saving and event.is_action_pressed("ui_accept"):
+		_trigger_save()
 		get_viewport().set_input_as_handled()
+
+
+func _trigger_save() -> void:
+	_saving = true
+
+	# Play save chime
+	if SoundManager:
+		SoundManager.play_ui("save_crystal")
+
+	# Crystal flash — bright white then back to blue
+	if _sprite:
+		var tween = create_tween()
+		tween.tween_property(_sprite, "modulate", Color(2.0, 2.0, 2.5, 1.0), 0.15)
+		tween.tween_property(_sprite, "modulate", Color(0.7, 0.7, 1.0, 1.0), 0.4)
+
+	# Sparkle burst
+	if _sparkles:
+		_sparkles.restart()
+		_sparkles.emitting = true
+
+	# Show confirmation
+	_confirm_label.visible = true
+	_confirm_label.modulate.a = 1.0
+	_indicator.visible = false
+
+	# Emit save signal
+	save_requested.emit()
+
+	# Fade out confirmation after delay
+	await get_tree().create_timer(1.5).timeout
+	if not is_instance_valid(self):
+		return
+	var fade = create_tween()
+	fade.tween_property(_confirm_label, "modulate:a", 0.0, 0.5)
+	await fade.finished
+	if not is_instance_valid(self):
+		return
+	_confirm_label.visible = false
+	if _player_in_zone:
+		_indicator.visible = true
+	_saving = false
