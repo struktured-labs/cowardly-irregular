@@ -1464,6 +1464,7 @@ func _enable_all_autobattle() -> void:
 	"""Enable autobattle for ALL players and immediately execute all remaining turns"""
 	_all_autobattle_enabled = true
 	AutobattleSystem.cancel_all_next_turn = false
+	TutorialHints.show(self, "autobattle_toggle")
 
 	# Enable autobattle for every party member
 	for member in party_members:
@@ -1568,6 +1569,11 @@ func _on_battle_started() -> void:
 	log_message("[color=yellow]>>> Battle commenced![/color]")
 	_show_hint("autobattle", "Press Select or F6 to enable Autobattle for all characters!")
 	_show_hint("controls", "L = Defer (skip, +1 AP) | R = Advance (queue extra actions)")
+
+	# Tutorial popups (fire once per save)
+	TutorialHints.show(self, "first_battle")
+	if _check_for_boss():
+		TutorialHints.show(self, "first_boss")
 
 	# Restore persisted battle speed
 	Engine.time_scale = BATTLE_SPEEDS[_battle_speed_index]
@@ -2023,6 +2029,7 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 		SoundManager.play_ui("player_turn")
 		if combatant.current_ap > 0:
 			_show_hint("advance", "You have %d AP! Press R to queue extra actions." % combatant.current_ap)
+			TutorialHints.show(self, "advance_defer")
 	if use_win98_menus and is_player:
 		_show_win98_command_menu(combatant)
 
@@ -2105,6 +2112,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 func _on_group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String = "") -> void:
 	"""Play simultaneous attack animations on all party members for group actions"""
 	_update_turn_info()
+	TutorialHints.show(self, "group_attacks")
 
 	# Group attack SFX — per-formation sounds when available
 	if group_type == "formation" and formation_id != "":
