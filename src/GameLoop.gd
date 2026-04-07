@@ -2109,6 +2109,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
 	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
+	if _autogrind_controller.has_signal("region_advanced"):
+		_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
 
 	# Clear battle summary ring buffer for new session
 	_autogrind_battle_summaries.clear()
@@ -2225,11 +2227,59 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		enemies.append(enemy)
 
 	var result = resolver.resolve_battle(party, enemies)
+	var victory = result.get("victory", false)
+	var exp_gained = result.get("exp_gained", 0)
+	var rounds = result.get("rounds", 0)
 
 	for e in enemies:
 		e.free()
 
-	_on_autogrind_battle_ended(result["victory"])
+	# Heal party using items (same as visual battle path)
+	if victory:
+		for member in party:
+			member.current_ap = 0
+			if member.is_alive and member.current_hp < member.max_hp:
+				_autogrind_heal_member(member)
+			if member.is_alive and member.current_mp < member.max_mp * 0.5:
+				_autogrind_restore_mp(member)
+
+	# Forward to controller with headless-computed EXP
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.on_battle_ended(victory, exp_gained, {})
+
+		var stats = _autogrind_controller.get_grind_stats()
+
+		# Build summary for console ring buffer
+		var summary_text: String
+		if victory:
+			summary_text = "[color=#44ff44]#%d Victory[/color] +%d EXP (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), exp_gained, rounds]
+		else:
+			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append(summary_text)
+		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+
+		# Update UI with latest stats
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			_autogrind_ui.update_stats(stats)
+			_autogrind_ui.update_party_status()
+
+		# Update dashboard if in Tier 2
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+			var region_id = _current_map_id.replace(" ", "_").to_lower()
+			_autogrind_dashboard.refresh(stats, region_id)
+			_autogrind_dashboard.add_battle_result(victory, rounds, exp_gained)
+
+		# Corruption audio degradation
+		var corruption_raw = AutogrindSystem.meta_corruption_level
+		var corruption_threshold = AutogrindSystem.corruption_threshold
+		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
+		SoundManager.set_corruption_intensity(corruption_norm)
+
+		# Milestone toasts
+		var battles = stats.get("battles_won", 0)
+		if battles in [10, 20, 30, 50, 100]:
+			_show_autogrind_toast(_get_milestone_text(battles))
 
 
 func _show_autogrind_transition() -> void:
@@ -2634,6 +2684,11 @@ func _show_autogrind_dashboard() -> void:
 			_autogrind_controller.cycle_tier()
 	)
 
+	# Show ludicrous speed indicator if headless mode is active
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		if _autogrind_dashboard.has_method("set_ludicrous_mode"):
+			_autogrind_dashboard.set_ludicrous_mode(_autogrind_controller.headless_mode)
+
 	print("[AUTOGRIND] Dashboard shown (Tier 2)")
 
 
@@ -2647,6 +2702,31 @@ func _hide_autogrind_dashboard() -> void:
 func _on_ui_tier_cycle_requested() -> void:
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.cycle_tier()
+
+
+func _on_autogrind_region_advanced(from_region: String, to_region: String, world_num: int) -> void:
+	"""Handle auto-advance to next world region during autogrind."""
+	_current_map_id = to_region
+	_current_terrain = to_region
+	if has_node("/root/GameState"):
+		GameState.current_world = world_num
+
+	var world_names = {
+		1: "Medieval", 2: "Suburban", 3: "Steampunk",
+		4: "Industrial", 5: "Futuristic", 6: "Abstract"
+	}
+	var world_name = world_names.get(world_num, "World %d" % world_num)
+	_show_autogrind_toast("REGION CRACKED! Advancing to World %d: %s" % [world_num, world_name])
+
+	_autogrind_battle_summaries.append("[color=#ff88ff]>>> ADVANCED TO WORLD %d: %s <<<[/color]" % [world_num, world_name.to_upper()])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		var stats = _autogrind_controller.get_grind_stats() if _autogrind_controller and is_instance_valid(_autogrind_controller) else {}
+		_autogrind_dashboard.refresh(stats, to_region)
+
+	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
 
 
 func _autogrind_heal_member(member: Combatant) -> void:
