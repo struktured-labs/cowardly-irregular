@@ -216,7 +216,7 @@ func _generate_map() -> void:
 		# Row 20-29: Central grassland (Harmonia Village + Whispering Cave)
 		"~~MMMMM~~~~~~~~~~~~~~~~~~~~~~~....gggggggggggg.........gggggg......................................",  # 20
 		"~~.C..........~~~~~~~~~~~~~~~~~...ggggggggggggg........gggggggg.....................................",  # 21
-		"~~M...~~~~~~~~~~~~~~~~~~~~~~~~....ggggggggggggggg.....gggggggggg...................................",  # 22
+		"~~M...........~~~~~~~~~~~~~~~~....ggggggggggggggg.....gggggggggg...................................",  # 22
 		"~~~~.............BB........BB.....ggggggggggggggg....ggggggggggg................................ccc",  # 23
 		"~~~~.............BB........BB.....gggggggggggggg....gggggggggggg...............................cccc",  # 24
 		"~~~~...V.........BB........BB.....ggggggggggggg....ggggggggggg................................ccccc",  # 25
