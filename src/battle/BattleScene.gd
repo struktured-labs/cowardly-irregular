@@ -1697,6 +1697,17 @@ func _on_battle_ended(victory: bool) -> void:
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
+	# Clear formation stat buffs (duration 999 shouldn't persist across battles)
+	for member in party_members:
+		if not is_instance_valid(member):
+			continue
+		for buff_idx in range(member.active_buffs.size() - 1, -1, -1):
+			if member.active_buffs[buff_idx].get("effect", "").begins_with("formation_"):
+				member.active_buffs.remove_at(buff_idx)
+		for debuff_idx in range(member.active_debuffs.size() - 1, -1, -1):
+			if member.active_debuffs[debuff_idx].get("effect", "").begins_with("formation_"):
+				member.active_debuffs.remove_at(debuff_idx)
+
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
 		_battle_victory = true
@@ -2345,8 +2356,9 @@ func _on_round_ended(round_num: int) -> void:
 	log_message("[color=gray]--- Round %d complete ---[/color]" % round_num)
 	_update_ui()
 	# Refresh status icons to update turn counters after duration ticks
-	for combatant in _status_icon_containers:
-		_refresh_status_icons(combatant)
+	for combatant in _status_icon_containers.keys():
+		if is_instance_valid(combatant) and combatant.is_alive:
+			_refresh_status_icons(combatant)
 
 
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
@@ -2581,6 +2593,14 @@ func _on_enemy_died(enemy_idx: int) -> void:
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
 		log_message("[color=yellow]%s has been defeated![/color]" % enemy.combatant_name)
+
+		# Clean up status icons and buff visuals for dead enemy
+		if enemy in _status_icon_containers:
+			var container = _status_icon_containers[enemy]
+			if is_instance_valid(container):
+				container.queue_free()
+			_status_icon_containers.erase(enemy)
+		_remove_buff_visual(enemy)
 
 		if enemy_idx < enemy_animators.size() and enemy_idx < enemy_sprite_nodes.size():
 			var animator = enemy_animators[enemy_idx]
