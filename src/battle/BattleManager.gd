@@ -21,6 +21,7 @@ signal monster_summoned(monster_type: String, summoner: Combatant)
 signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
 signal group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String)
+signal advance_trash_talk(combatant: Combatant, line: String)
 
 enum BattleState {
 	INACTIVE,
@@ -1938,11 +1939,32 @@ func _resolve_combo_element(elements: Array[String]) -> Dictionary:
 	return {"name": "Magic Burst", "element": "", "bonus_effect": ""}
 
 
+## Trash talk lines per job (triggered on 3+ action Advance, 20% chance)
+const ADVANCE_TRASH_TALK = {
+	"fighter": ["Time to go all out!", "You picked the wrong fight!", "Three hits? Let's make them count!", "No mercy!"],
+	"cleric": ["Divine judgment!", "May the light consume you!", "Repent!", "The heavens demand it!"],
+	"mage": ["Witness true power!", "Let's light it up!", "Feel the arcane fury!", "You're in for a shock!"],
+	"rogue": ["Watch this...", "Too slow!", "Blink and you'll miss it!", "Catch me if you can!"],
+	"bard": ["Time for an encore!", "This one's a showstopper!", "Hit it!", "Grand finale!"],
+	"guardian": ["Brace yourself!", "The wall strikes back!", "You can't break through!", "For the party!"],
+	"ninja": ["Shadow combo!", "You won't see this coming!", "Swift as the wind!", "Vanishing strike!"],
+	"summoner": ["All of us, together!", "Lend me your power!", "Convergence!", "United we strike!"],
+	"speculator": ["All in!", "High risk, high reward!", "The market favors the bold!", "Leveraged to the max!"],
+}
+
+
 func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	"""Execute advance action - all queued actions in sequence (each costs 1 AP)"""
 	var actions = advance_action.get("actions", []) as Array
 	if actions.is_empty():
 		return
+
+	# Trash talk on 3+ action Advance from player characters (20% chance)
+	if actions.size() >= 3 and combatant in player_party and randf() < 0.2:
+		var job_id = combatant.job.get("id", "fighter") if combatant.job else "fighter"
+		var lines = ADVANCE_TRASH_TALK.get(job_id, ADVANCE_TRASH_TALK["fighter"])
+		var line = lines[randi() % lines.size()]
+		advance_trash_talk.emit(combatant, line)
 
 	# Note: Each action costs 1 AP during execution.
 	# Grant +1 AP upfront to represent the natural turn gain — this offsets the cost
