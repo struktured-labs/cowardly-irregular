@@ -2231,6 +2231,10 @@ func _stop_autogrind(reason: String) -> void:
 	# Clear snapshot on clean stop (user chose to stop)
 	AutogrindSystem.clear_grind_snapshot()
 
+	# Disconnect stale battle_ended signal if we stopped mid-battle
+	if BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_autogrind_battle_ended)
+
 	# Stop controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.stop_grind(reason)
@@ -2580,6 +2584,10 @@ func _on_grind_complete(reason: String) -> void:
 	_is_autogrinding = false
 	current_state = LoopState.EXPLORATION
 	InputLockManager.pop_all()  # Clear any leaked locks
+
+	# Disconnect stale battle_ended signal if grind ended mid-battle
+	if BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_autogrind_battle_ended)
 
 	# Capture stats before controller is freed
 	var final_stats = {}
