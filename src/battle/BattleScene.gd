@@ -1861,14 +1861,16 @@ func cycle_formation() -> void:
 
 func _apply_formation_stats() -> void:
 	"""Apply stat modifiers based on current formation"""
-	# Clear previous formation buffs
+	# Clear previous formation buffs and debuffs
 	for member in party_members:
 		if not is_instance_valid(member):
 			continue
-		# Remove any existing formation buffs
 		for buff_idx in range(member.active_buffs.size() - 1, -1, -1):
 			if member.active_buffs[buff_idx].get("effect", "").begins_with("formation_"):
 				member.active_buffs.remove_at(buff_idx)
+		for debuff_idx in range(member.active_debuffs.size() - 1, -1, -1):
+			if member.active_debuffs[debuff_idx].get("effect", "").begins_with("formation_"):
+				member.active_debuffs.remove_at(debuff_idx)
 
 	match current_formation:
 		PartyFormation.FRONT_LINE:
