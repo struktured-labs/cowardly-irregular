@@ -587,6 +587,13 @@ func _on_chapter1_finished(_cutscene_id: String) -> void:
 	_start_exploration()
 
 
+func check_pending_cutscene() -> void:
+	"""Public: called by NPCs after setting story flags to trigger pending cutscenes."""
+	var pending = _get_pending_story_cutscene()
+	if pending != "":
+		_play_story_cutscene(pending)
+
+
 func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""

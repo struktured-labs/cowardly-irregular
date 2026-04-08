@@ -584,9 +584,15 @@ func _start_dialogue() -> void:
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
 
-	# Set story flags for key NPC interactions
+	# Set story flags for key NPC interactions and trigger pending cutscenes
 	if npc_name == "Elder Theron" and GameState:
 		GameState.game_constants["talked_to_theron"] = true
+		# Notify GameLoop to check for pending cutscenes after dialogue finishes
+		dialogue_ended.connect(func(_name):
+			var game_loop = get_node_or_null("/root/GameLoop")
+			if game_loop and game_loop.has_method("check_pending_cutscene"):
+				game_loop.check_pending_cutscene()
+		, CONNECT_ONE_SHOT)
 
 	# Dancer starts dancing when talked to
 	if npc_type == "dancer":
