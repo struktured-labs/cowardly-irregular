@@ -166,6 +166,17 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	ap_label.text = "AP: 0"
 	box.add_child(ap_label)
 
+	# Equipment/Buff stat modifiers line
+	var stat_label = RichTextLabel.new()
+	stat_label.name = "StatMods"
+	stat_label.bbcode_enabled = true
+	stat_label.fit_content = true
+	stat_label.custom_minimum_size = Vector2(0, 16)
+	stat_label.add_theme_font_size_override("normal_font_size", 10)
+	stat_label.text = ""
+	box.add_child(stat_label)
+	_update_stat_mods_label(stat_label, member)
+
 	return box
 
 
@@ -318,6 +329,55 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				ap_label.text = "AP: %+d (-%d)" % [ap_value, committed_count]
 			else:
 				ap_label.text = "AP: %+d" % ap_value
+
+	# Update equipment/buff stat modifiers
+	var stat_label = box.get_node_or_null("StatMods")
+	if stat_label:
+		_update_stat_mods_label(stat_label, member)
+
+
+func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
+	"""Build compact equipment + buff stat modifier display"""
+	var parts: Array[String] = []
+
+	# Equipment bonuses (flat numbers)
+	if EquipmentSystem:
+		var equip_mods = EquipmentSystem.get_equipment_mods(member)
+		var equip_parts: Array[String] = []
+		for stat in ["attack", "defense", "magic", "speed"]:
+			var val = equip_mods.get(stat, 0)
+			if val != 0:
+				var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}[stat]
+				var color = "lime" if val > 0 else "red"
+				equip_parts.append("[color=%s]%s%+d[/color]" % [color, abbrev, val])
+		if equip_parts.size() > 0:
+			parts.append(" ".join(equip_parts))
+
+	# Active buff/debuff indicators (multipliers with turn counters)
+	if "active_buffs" in member and member.active_buffs.size() > 0:
+		for buff in member.active_buffs:
+			var stat_name: String = buff.get("stat", "")
+			var modifier: float = buff.get("modifier", 1.0)
+			var turns: int = buff.get("remaining_turns", 0)
+			if stat_name == "" or modifier == 1.0:
+				continue
+			var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}.get(stat_name, stat_name.substr(0, 3).to_upper())
+			var pct = int((modifier - 1.0) * 100)
+			var color = "aqua" if pct > 0 else "orange"
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [color, abbrev, pct, turns])
+
+	if "active_debuffs" in member and member.active_debuffs.size() > 0:
+		for debuff in member.active_debuffs:
+			var stat_name: String = debuff.get("stat", "")
+			var modifier: float = debuff.get("modifier", 1.0)
+			var turns: int = debuff.get("remaining_turns", 0)
+			if stat_name == "" or modifier == 1.0:
+				continue
+			var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}.get(stat_name, stat_name.substr(0, 3).to_upper())
+			var pct = int((modifier - 1.0) * 100)
+			parts.append("[color=red]%s%+d%%(%d)[/color]" % [abbrev, pct, turns])
+
+	label.text = " ".join(parts) if parts.size() > 0 else ""
 
 
 func _get_status_modulate(status_effects: Array) -> Color:

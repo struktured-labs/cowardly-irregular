@@ -22,6 +22,11 @@
       "duration": 0.8
     },
     {
+      "type": "boss_intro",
+      "name": "The Calibrant",
+      "title": "The One Who Calibrates"
+    },
+    {
       "type": "fade_from_black",
       "duration": 2.0
     },

@@ -148,7 +148,7 @@ var _frames_in_tree: int = 0  # Safety counter for background draw retry
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = -100  # Render behind everything
 	_setup_layers()
@@ -157,19 +157,19 @@ func _ready() -> void:
 func _setup_layers() -> void:
 	"""Create the 3-layer depth system"""
 	_layer_far = Control.new()
-	_layer_far.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_layer_far.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_layer_far.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer_far.z_index = -100
 	add_child(_layer_far)
 
 	_layer_mid = Control.new()
-	_layer_mid.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_layer_mid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_layer_mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer_mid.z_index = -50
 	add_child(_layer_mid)
 
 	_layer_near = Control.new()
-	_layer_near.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_layer_near.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_layer_near.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer_near.z_index = -10
 	add_child(_layer_near)
@@ -337,13 +337,18 @@ func _draw_background_immediate() -> void:
 	if not _layer_far:
 		_setup_layers()
 
+	# Ensure this control fills its parent (belt-and-suspenders for code-created Controls)
+	var vp = get_viewport_rect().size
+	if vp.x > 0 and vp.y > 0:
+		size = vp
+
 	# Try artist backdrop first — if available, skip procedural generation
 	if _try_load_artist_backdrop():
-		print("[BG] Artist backdrop loaded for terrain %d" % current_terrain)
+		print("[BG] Artist backdrop loaded for terrain %d, size=%s" % [current_terrain, size])
 		return
 
 	var viewport_size = get_viewport_rect().size
-	print("[BG] Drawing procedural background — terrain=%d, viewport=%s" % [current_terrain, viewport_size])
+	print("[BG] Drawing procedural background — terrain=%d, viewport=%s, bg_size=%s" % [current_terrain, viewport_size, size])
 	if viewport_size.x == 0 or viewport_size.y == 0:
 		# Viewport not ready yet — retry next frame
 		print("[BG] Viewport size is zero, deferring draw")
@@ -392,7 +397,7 @@ func _try_load_artist_backdrop() -> bool:
 
 	_artist_backdrop_rect = TextureRect.new()
 	_artist_backdrop_rect.texture = tex
-	_artist_backdrop_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_artist_backdrop_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_artist_backdrop_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_artist_backdrop_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_artist_backdrop_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE

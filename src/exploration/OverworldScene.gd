@@ -48,6 +48,8 @@ var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
 
 
 func _ready() -> void:
@@ -100,17 +102,37 @@ func _ready() -> void:
 	add_child(_weather)
 	_weather.setup(self, player, "medieval")
 
+	# Map edge indicators
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	# Objective arrow (screen-edge directional indicator)
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	# Signposts at key intersections for navigation
 	_place_signposts()
 
 	# Visual landmarks between towns
 	_place_landmarks()
 
+	# Village markers (visible building clusters at entrances)
+	_place_village_markers()
+
 	# Wandering NPCs on paths between towns
 	_place_wanderers()
 
+	# Ambient details (chimney smoke, campfire glow)
+	_place_ambient_effects()
+
 	if SoundManager:
 		SoundManager.play_area_music("overworld")
+
+	# First-time tutorial hints
+	TutorialHints.show(self, "quest_log")
 
 	exploration_ready.emit()
 
@@ -120,8 +142,12 @@ func _process(_delta: float) -> void:
 		_update_encounter_zone(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
 		if _zone_particles:
 			_zone_particles.update_position(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
 	if _danger_zone:
 		_danger_zone.process(_delta)
 	if _quest_tracker:
@@ -200,21 +226,21 @@ func _generate_map() -> void:
 		"~~~~MMMii~~~~~..B..~~g..............gFFFFFFF~~~~~~~~~~~~~~~~~~~Sddddd......ddddddd~~~~~~~~~~~~~~~~~~",  # 12
 		"~~~~~MMi~~~~~~.....~~g..............gFFFFFF~~~~~~~~~~~~~~~~~~~~SSddd.....ddddddd~~~~~~~~~~~~~~~~~~~~",  # 13
 		"~~~~~~M~~~~~~~..B..~~................FFFFF~~~~~~~~~~~~~~~~~~~~~SSdd....ddddddd~~~~~~~~~~~~~~~~~~~~~~",  # 14
-		"~~~~~~~~~~~~~~~~~~~~~~~~~.........................................dd..ddddd~~~~~~~~~~~~~~~~~~~~~~~~~",  # 15
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 16
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 17
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 18
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 19
+		"..........................................................................................dd..ddddd",  # 15
+		"....................................................................................................",  # 16
+		"....................................................................................................",  # 17
+		"....................................................................................................",  # 18
+		"....................................................................................................",  # 19
 		# Row 20-29: Central grassland (Harmonia Village + Whispering Cave)
-		"~~MMMMM~~~~~~~~~~~~~~~~~~~~~~~....gggggggggggg.........gggggg......................................",  # 20
-		"~~.C..........~~~~~~~~~~~~~~~~~...ggggggggggggg........gggggggg.....................................",  # 21
-		"~~M...~~~~~~~~~~~~~~~~~~~~~~~~....ggggggggggggggg.....gggggggggg...................................",  # 22
-		"~~~~.............BB........BB.....ggggggggggggggg....ggggggggggg................................ccc",  # 23
-		"~~~~.............BB........BB.....gggggggggggggg....gggggggggggg...............................cccc",  # 24
-		"~~~~...V.........BB........BB.....ggggggggggggg....ggggggggggg................................ccccc",  # 25
-		"~~~~~~~..........BB........BB.....gggggggggggg....gggggggggg.................................cccccc",  # 26
-		"~~~~~~~........~~~~~~~~~~~~~~~~...ggggggggggg....ggggggggg..................................ccccccc",  # 27
-		"~~~~~~~.......gggggg...............gggggggggg...gggggggg...................................cccccccc",  # 28
+		"...C..........................gggggggggggggg.........gggggg........................................",  # 20
+		"..C...........................ggggggggggggggg........gggggggg....................................",  # 21
+		"..............................ggggggggggggggggg.....gggggggggg...................................",  # 22
+		".............BB........BB.....ggggggggggggggggg....ggggggggggg................................ccc",  # 23
+		".............BB........BB.....gggggggggggggggg....gggggggggggg...............................cccc",  # 24
+		"....V........BB........BB.....ggggggggggggggg....ggggggggggg................................ccccc",  # 25
+		".............BB........BB.....gggggggggggggg....gggggggggg..................................cccccc",  # 26
+		"..............................ggggggggggggg....ggggggggg....................................ccccccc",  # 27
+		"..........gggggg..............ggggggggggg....gggggggg......................................cccccccc",  # 28
 		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................ccccccccc",  # 29
 		# Row 30-39: Central-south transition
 		"~~~~~~~~....ggggggggggg.............gggggggg..ggggggg....................................cccccccccc",  # 30
@@ -384,10 +410,10 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	trans.name = trans_name
 	trans.target_map = target_map
 	trans.target_spawn = target_spawn
-	trans.require_interaction = false  # Auto-enter on contact (no button press needed)
+	trans.require_interaction = true  # Press A to enter — prevents accidental teleportation
 	trans.indicator_text = indicator
 	trans.position = pos
-	_setup_transition_collision(trans, Vector2(TILE_SIZE * 5, TILE_SIZE * 5))  # 5x5 tiles for generous entry
+	_setup_transition_collision(trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))  # 2x2 tiles — tight entry zone
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
 
@@ -467,6 +493,7 @@ func _update_encounter_zone(pos: Vector2) -> void:
 			_zone_popup.show_zone(new_zone)
 		if _zone_particles:
 			_zone_particles.update_zone(new_zone)
+		_update_zone_ambient(new_zone)
 
 
 func _get_zone_for_tile(tx: int, ty: int) -> String:
@@ -527,18 +554,38 @@ func _place_wanderers() -> void:
 			"dialogue": "Harmonia's got the best prices... if you can find it.",
 			"color": Color(0.5, 0.35, 0.2),
 			"path": [Vector2(30, 23), Vector2(20, 23), Vector2(20, 26), Vector2(30, 26)],
+			"hints": [
+				{"flag": "", "text": "Head west across the bridges — Harmonia Village is just past them."},
+				{"flag": "prologue_complete", "text": "Elder Theron mentioned a cave northwest of the village. Sounds dangerous."},
+				{"flag": "chapter1_complete", "text": "The Whispering Cave? Northwest of here. Bring potions."},
+				{"flag": "rat_king_defeated", "text": "A strange light appeared to the south... some kind of portal?"},
+				{"flag": "w1_boss_defeated", "text": "That portal south of the bridge leads somewhere... different."},
+			],
 		},
 		{
 			"name": "Lost Pilgrim",
 			"dialogue": "I've been walking north for hours... is there a village up here?",
 			"color": Color(0.4, 0.4, 0.6),
 			"path": [Vector2(28, 10), Vector2(28, 14), Vector2(30, 14), Vector2(30, 10)],
+			"hints": [
+				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},
+				{"flag": "prologue_complete", "text": "Frosthold is up north in the ice fields. Eldertree is in the forest."},
+				{"flag": "chapter3_complete", "text": "Something terrible lurks in that cave... the ground shakes at night."},
+				{"flag": "w1_boss_defeated", "text": "The world feels... wider now. Like a door opened somewhere."},
+			],
 		},
 		{
 			"name": "Retired Guard",
 			"dialogue": "Don't go near the cave. Trust me on this one.",
 			"color": Color(0.55, 0.45, 0.35),
 			"path": [Vector2(12, 20), Vector2(12, 24), Vector2(8, 24), Vector2(8, 20)],
+			"hints": [
+				{"flag": "", "text": "Harmonia Village is just south of here. Talk to Elder Theron."},
+				{"flag": "prologue_complete", "text": "The cave northwest of the village... it whispers at night."},
+				{"flag": "chapter1_complete", "text": "That cave goes deep. Five floors, they say. A king of rats at the bottom."},
+				{"flag": "rat_king_defeated", "text": "You actually beat it? Head south — a portal appeared near the river."},
+				{"flag": "w1_boss_defeated", "text": "Beyond the portal... they say the world looks completely different."},
+			],
 		},
 	]
 	for w in wanderers:
@@ -546,11 +593,84 @@ func _place_wanderers() -> void:
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
+
+
+func _place_village_markers() -> void:
+	var villages = [
+		{"key": "village_entrance", "name": "HARMONIA", "roof": Color(0.65, 0.2, 0.15)},
+		{"key": "frosthold_entrance", "name": "FROSTHOLD", "roof": Color(0.3, 0.4, 0.6)},
+		{"key": "eldertree_entrance", "name": "ELDERTREE", "roof": Color(0.25, 0.45, 0.2)},
+		{"key": "grimhollow_entrance", "name": "GRIMHOLLOW", "roof": Color(0.3, 0.2, 0.35)},
+		{"key": "sandrift_entrance", "name": "SANDRIFT", "roof": Color(0.65, 0.5, 0.25)},
+		{"key": "ironhaven_entrance", "name": "IRONHAVEN", "roof": Color(0.4, 0.35, 0.3)},
+	]
+	for v in villages:
+		var pos = spawn_points.get(v["key"], Vector2.ZERO)
+		if pos == Vector2.ZERO:
+			continue
+		var marker = VillageMarker.new()
+		marker.village_name = v["name"]
+		marker.roof_color = v["roof"]
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_ambient_effects() -> void:
+	## Chimney smoke at village locations + campfire flicker at rest areas
+	var smoke_positions = [
+		spawn_points.get("village_entrance", Vector2.ZERO),
+		spawn_points.get("frosthold_entrance", Vector2.ZERO),
+		spawn_points.get("eldertree_entrance", Vector2.ZERO),
+		spawn_points.get("grimhollow_entrance", Vector2.ZERO),
+		spawn_points.get("sandrift_entrance", Vector2.ZERO),
+		spawn_points.get("ironhaven_entrance", Vector2.ZERO),
+	]
+	for pos in smoke_positions:
+		if pos == Vector2.ZERO:
+			continue
+		var smoke = CPUParticles2D.new()
+		smoke.name = "ChimneySmoke"
+		smoke.position = pos + Vector2(0, -12)
+		smoke.amount = 6
+		smoke.lifetime = 2.5
+		smoke.one_shot = false
+		smoke.explosiveness = 0.0
+		smoke.randomness = 0.4
+		smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+		smoke.emission_rect_extents = Vector2(8, 2)
+		smoke.gravity = Vector2(3.0, -18.0)
+		smoke.initial_velocity_min = 2.0
+		smoke.initial_velocity_max = 6.0
+		smoke.scale_amount_min = 0.4
+		smoke.scale_amount_max = 1.0
+		smoke.color = Color(0.6, 0.6, 0.6, 0.25)
+		smoke.z_index = 2
+		add_child(smoke)
+
+
+func _update_zone_ambient(zone: String) -> void:
+	if not SoundManager:
+		return
+	var ambient_key = ""
+	match zone:
+		"forest": ambient_key = "ambient_forest"
+		"ice": ambient_key = "ambient_cave"
+		"coast": ambient_key = "ambient_coast"
+		"central": ambient_key = "ambient_plains"
+		"desert": ambient_key = "ambient_plains"
+		"swamp": ambient_key = "ambient_forest"
+		"volcanic": ambient_key = "ambient_dungeon"
+	if ambient_key != "":
+		SoundManager.play_ambient(ambient_key)
+	else:
+		SoundManager.stop_ambient()
 
 
 func _place_landmarks() -> void:

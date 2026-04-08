@@ -954,6 +954,8 @@ func play_music(track: String) -> void:
 			manifest_track_id = "boss_" + _current_world_suffix
 		"danger":
 			manifest_track_id = "danger_" + _current_world_suffix
+		"victory":
+			manifest_track_id = "victory_" + _current_world_suffix
 	# Monster-specific battle tracks (battle_snake, battle_slime, etc.)
 	# fall back to world battle track when no monster-specific manifest entry
 	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_"):

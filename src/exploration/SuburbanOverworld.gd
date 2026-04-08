@@ -100,6 +100,7 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
 
 
@@ -133,14 +134,34 @@ func _place_landmarks() -> void:
 
 func _place_wanderers() -> void:
 	var wanderers = [
-		{"name": "Dog Walker", "dialogue": "Beautiful day for a walk. If you ignore the monsters.", "color": Color(0.6, 0.45, 0.3), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)]},
-		{"name": "Mail Carrier", "dialogue": "Nobody reads mail anymore. Nobody reads anything anymore.", "color": Color(0.3, 0.3, 0.65), "path": [Vector2(30, 10), Vector2(35, 10), Vector2(35, 15), Vector2(30, 15)]},
+		{
+			"name": "Dog Walker",
+			"dialogue": "Beautiful day for a walk. If you ignore the monsters.",
+			"color": Color(0.6, 0.45, 0.3),
+			"path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)],
+			"hints": [
+				{"flag": "w2_entered", "text": "Maple Heights is up north — nice neighborhood if you like picket fences."},
+				{"flag": "w2_boss_defeated", "text": "Something weird opened up south of the park. Like a... gear-shaped hole?"},
+			],
+		},
+		{
+			"name": "Mail Carrier",
+			"dialogue": "Nobody reads mail anymore. Nobody reads anything anymore.",
+			"color": Color(0.3, 0.3, 0.65),
+			"path": [Vector2(30, 10), Vector2(35, 10), Vector2(35, 15), Vector2(30, 15)],
+			"hints": [
+				{"flag": "w2_entered", "text": "The strip mall south of the main road has everything. Well, five stores."},
+				{"flag": "w2_boss_defeated", "text": "Past the portal it smells like copper and oil. Not my kind of neighborhood."},
+			],
+		},
 	]
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
@@ -357,7 +378,7 @@ func _generate_map() -> void:
 	# Spawn point for returning from industrial world (east side of map)
 	spawn_points["from_industrial"] = Vector2(46 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for Maple Heights village — in open lawn east of house rows (was inside house wall)
-	spawn_points["maple_heights_entrance"] = Vector2(44 * TILE_SIZE + TILE_SIZE / 2, 5 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["maple_heights_entrance"] = Vector2(43 * TILE_SIZE + TILE_SIZE / 2, 10 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:

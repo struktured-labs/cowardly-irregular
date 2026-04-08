@@ -460,7 +460,10 @@ func _build_menu() -> void:
 			label_text += " >"
 		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 		max_label_width = max(max_label_width, text_width)
-	var menu_width = max(210, int(max_label_width) + content_padding)
+	var viewport_width = 1280
+	if is_inside_tree():
+		viewport_width = int(get_viewport_rect().size.x)
+	var menu_width = clampi(max(210, int(max_label_width) + content_padding), 210, viewport_width / 2)
 
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
@@ -647,6 +650,9 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var text_label = Label.new()
 	text_label.name = "Label"
 	text_label.position = Vector2(10, 0)
+	text_label.size = Vector2(content_width - 14, ITEM_HEIGHT)
+	text_label.clip_text = true
+	text_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if has_submenu:
 		text_label.text = label + " >"
 	else:

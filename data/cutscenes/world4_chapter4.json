@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 4",
+      "subtitle": "The Name"
+    },
+    {
       "type": "stop_music"
     },
     {
@@ -59,7 +64,7 @@
           "speaker": "Fighter",
           "text": "You.",
           "theme": "fighter",
-          "portrait": "fighter"
+          "portrait": "fighter_determined"
         }
       ]
     },

@@ -22,6 +22,11 @@
       "duration": 0.5
     },
     {
+      "type": "boss_intro",
+      "name": "Warden of the Old Guard",
+      "title": "Masterite \u2014 Medieval"
+    },
+    {
       "type": "fade_from_black",
       "duration": 1.0
     },

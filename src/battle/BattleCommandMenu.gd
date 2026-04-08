@@ -54,11 +54,11 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	var canvas_transform = _scene.get_viewport().get_canvas_transform()
 	var screen_pos = canvas_transform * sprite.global_position
 
-	# Position menu on the left side of screen so no party sprites are obscured
-	# Party sprites are on the right (~600px+), enemies on the left (~200px+)
-	# Place menu at ~20% from left edge — visible but clear of all characters
-	var menu_x = clamp(viewport_size.x * 0.15, 10, viewport_size.x * 0.3)
-	var menu_y = clamp(viewport_size.y * 0.3, 10, viewport_size.y - 120)
+	# Position menu centered horizontally, vertically aligned to acting player
+	# Party sprites are on the right (~65%+), enemies on the left (~20-35%)
+	var menu_x = clamp(viewport_size.x * 0.42, 10, viewport_size.x * 0.55)
+	# Vertically track the acting player's sprite position (clamped to safe range)
+	var menu_y = clamp(screen_pos.y - 60, 30, viewport_size.y - 180)
 	var menu_pos = Vector2(menu_x, menu_y)
 
 	# Get character class for styling
@@ -137,9 +137,10 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				var s = _scene.enemy_sprite_nodes[enemy_idx]
 				if is_instance_valid(s):
 					target_pos = canvas_transform * s.global_position
+			var est_dmg = BattleManager.estimate_attack_damage(combatant, enemy)
 			enemy_targets.append({
 				"id": "attack_" + str(enemy_idx),
-				"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
+				"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_dmg],
 				"data": {"target_idx": enemy_idx, "action": "attack", "target_pos": target_pos}
 			})
 		items.append({
@@ -184,9 +185,10 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						var s = _scene.enemy_sprite_nodes[enemy_idx]
 						if is_instance_valid(s):
 							target_pos = canvas_transform * s.global_position
+					var est_ability_dmg = BattleManager.estimate_ability_damage(combatant, enemy, ability)
 					enemy_targets.append({
 						"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
-						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
+						"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg],
 						"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 					})
 				ability_items.append({
@@ -208,9 +210,14 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						var s = _scene.party_sprite_nodes[i]
 						if is_instance_valid(s):
 							target_pos = canvas_transform * s.global_position
+					# Add heal preview for healing abilities
+					var heal_preview = ""
+					if ability.get("type", "") == "healing" and ability.has("heal_amount"):
+						var est_heal = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
+						heal_preview = " ~+%d" % est_heal
 					ally_targets.append({
 						"id": "ability_" + ability_id + "_ally_" + str(i),
-						"label": "%s (%d/%d HP)" % [member.combatant_name, member.current_hp, member.max_hp],
+						"label": "%s (%d/%d HP)%s" % [member.combatant_name, member.current_hp, member.max_hp, heal_preview],
 						"data": {"ability_id": ability_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
 					})
 				ability_items.append({
@@ -255,6 +262,34 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						"data": {"ability_id": ability_id},
 						"disabled": true
 					})
+			elif target_type == "all_enemies" and can_afford:
+				# AoE ability — show [AoE] tag with total estimated damage
+				var aoe_label = "%s (%d) [AoE]" % [ability["name"], mp_cost]
+				if alive_enemies.size() > 0:
+					var total_est = 0
+					for enemy in alive_enemies:
+						total_est += BattleManager.estimate_ability_damage(combatant, enemy, ability)
+					aoe_label = "%s (%d) [AoE] ~%d total" % [ability["name"], mp_cost, total_est]
+				ability_items.append({
+					"id": "ability_" + ability_id,
+					"label": aoe_label,
+					"tooltip": ability_tooltip + " (hits all enemies)",
+					"data": {"ability_id": ability_id},
+					"disabled": not can_afford
+				})
+			elif target_type == "all_allies" and can_afford:
+				# Party-wide buff/heal — show [All] tag
+				var all_label = "%s (%d) [All]" % [ability["name"], mp_cost]
+				if ability.has("heal_amount"):
+					var est_heal = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
+					all_label = "%s (%d) [All] ~+%d each" % [ability["name"], mp_cost, est_heal]
+				ability_items.append({
+					"id": "ability_" + ability_id,
+					"label": all_label,
+					"tooltip": ability_tooltip + " (affects all allies)",
+					"data": {"ability_id": ability_id},
+					"disabled": not can_afford
+				})
 			else:
 				ability_items.append({
 					"id": "ability_" + ability_id,
@@ -400,6 +435,22 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"data": {"group_type": "limit_break"},
 			"disabled": not can_limit
 		})
+		# Formation Special — unlocked by specific party job compositions
+		var formation = _detect_formation(alive_party)
+		if not formation.is_empty():
+			var can_formation = true
+			for m in alive_party:
+				var effective_ap = m.current_ap + (1 if m == combatant else 0)
+				if effective_ap < formation.get("ap_cost", 2):
+					can_formation = false
+					break
+			group_items.append({
+				"id": "group_formation",
+				"label": formation["name"],
+				"tooltip": formation["tooltip"],
+				"data": {"group_type": "formation", "formation_id": formation["id"]},
+				"disabled": not can_formation
+			})
 		items.append({
 			"id": "group_menu",
 			"label": "Group",
@@ -571,13 +622,19 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			_scene.log_message("No valid targets!")
 		return
 
-	# Group attack (All-Out Attack / Combo Magic / Limit Break)
+	# Group attack (All-Out Attack / Combo Magic / Limit Break / Formation Special)
 	if item_id.begins_with("group_") and item_data is Dictionary:
 		var group_type: String = item_data.get("group_type", "all_out_attack")
-		var label = "Limit Break" if group_type == "limit_break" else ("Combo Magic" if group_type == "combo_magic" else "All-Out Attack")
-		var color = "magenta" if group_type == "combo_magic" else "orange"
+		var formation_id: String = item_data.get("formation_id", "")
+		var label = item_data.get("group_type", "All-Out Attack")
+		match group_type:
+			"limit_break": label = "Limit Break"
+			"combo_magic": label = "Combo Magic"
+			"formation": label = formation_id.replace("_", " ").capitalize()
+			_: label = "All-Out Attack"
+		var color = "magenta" if group_type == "combo_magic" else ("cyan" if group_type == "formation" else "orange")
 		_scene.log_message("[color=%s]★ %s initiated! ★[/color]" % [color, label])
-		BattleManager.player_group_attack(group_type)
+		BattleManager.player_group_attack(group_type, formation_id)
 		_scene._update_ui()
 		return
 
@@ -721,3 +778,79 @@ func close_win98_menu() -> void:
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
+
+
+## Formation Special detection — checks party job composition for known combos
+const FORMATIONS = [
+	{
+		"id": "four_heroes",
+		"name": "Four Heroes",
+		"tooltip": "Classic party — balanced strike + party heal 25% (2 AP each)",
+		"required_jobs": ["fighter", "cleric", "mage", "rogue"],
+		"min_members": 4,
+		"ap_cost": 2,
+	},
+	{
+		"id": "arcane_tempest",
+		"name": "Arcane Tempest",
+		"tooltip": "Triple casters — massive AoE magic ignoring resistances (3 AP each)",
+		"required_jobs": ["mage", "cleric", "bard"],
+		"min_members": 3,
+		"ap_cost": 3,
+	},
+	{
+		"id": "blade_storm",
+		"name": "Blade Storm",
+		"tooltip": "Speed blitz — multi-hit physical, each hit can crit (2 AP each)",
+		"required_jobs": ["fighter", "rogue", "ninja"],
+		"min_members": 3,
+		"ap_cost": 2,
+	},
+	{
+		"id": "iron_wall",
+		"name": "Iron Wall",
+		"tooltip": "Fortress — party-wide DEF+50% buff (3 turns) + crushing AoE (2 AP each)",
+		"required_jobs": ["fighter", "guardian", "cleric"],
+		"min_members": 3,
+		"ap_cost": 2,
+	},
+	{
+		"id": "shadow_strike",
+		"name": "Shadow Strike",
+		"tooltip": "Ambush — ignores defense, 2x damage vs full-HP targets (2 AP each)",
+		"required_jobs": ["rogue", "ninja"],
+		"min_members": 2,
+		"ap_cost": 2,
+	},
+	{
+		"id": "chaos_theory",
+		"name": "Chaos Theory",
+		"tooltip": "Wild card — random massive effect, could backfire! (3 AP each)",
+		"required_jobs": ["speculator", "bard"],
+		"min_members": 2,
+		"ap_cost": 3,
+	},
+]
+
+
+func _detect_formation(alive_party: Array[Combatant]) -> Dictionary:
+	"""Check if the alive party's jobs match any known formation. Returns the best match."""
+	var party_jobs: Array[String] = []
+	for m in alive_party:
+		var job_id = m.job.get("id", "") if m.job else ""
+		if job_id != "" and job_id not in party_jobs:
+			party_jobs.append(job_id)
+
+	# Check formations in order (most specific first — FORMATIONS is ordered by min_members desc)
+	for formation in FORMATIONS:
+		if alive_party.size() < formation["min_members"]:
+			continue
+		var all_present = true
+		for req_job in formation["required_jobs"]:
+			if req_job not in party_jobs:
+				all_present = false
+				break
+		if all_present:
+			return formation
+
+	return {}

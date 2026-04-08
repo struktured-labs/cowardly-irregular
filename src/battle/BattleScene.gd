@@ -19,10 +19,10 @@ const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay
 
 const JOB_DISPLAY_HEIGHTS: Dictionary = {
 	"fighter": 375.0,
-	"cleric": 375.0,
+	"cleric": 350.0,
 	"mage": 300.0,
-	"rogue": 300.0,
-	"bard": 300.0,
+	"rogue": 260.0,
+	"bard": 280.0,
 }
 
 ## UI References
@@ -133,6 +133,18 @@ var _idle_time: float = 0.0
 var _enemy_base_positions: Array[Vector2] = []
 var _party_base_positions: Array[Vector2] = []
 
+## Party formation system
+enum PartyFormation { V_FORMATION, FRONT_LINE, BACK_ROW, DIAMOND, SPREAD }
+const FORMATION_NAMES = ["V-Formation", "Front Line", "Back Row", "Diamond", "Spread"]
+const FORMATION_DESCRIPTIONS = [
+	"Balanced positioning",
+	"+10% ATK, -10% DEF",
+	"+10% DEF, -10% ATK",
+	"Tank absorbs hits",
+	"Resist AoE attacks",
+]
+static var current_formation: int = PartyFormation.V_FORMATION  # Persists across battles
+
 ## Dialogue system
 var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
@@ -159,6 +171,9 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
+
+## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array})
+var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
 
 
 func set_player(player: Combatant) -> void:
@@ -326,22 +341,37 @@ const HOLD_DURATION: float = 1.5  # Seconds to hold for editor (1.5s feels respo
 
 
 func _create_speed_indicator() -> void:
-	"""Create battle speed indicator in top-left corner"""
+	"""Create battle speed indicator in top-left corner with background panel"""
+	# Background panel for readability
+	var panel = PanelContainer.new()
+	panel.name = "SpeedPanel"
+	panel.position = Vector2(8, 8)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	panel.add_theme_stylebox_override("panel", style)
+	$UI.add_child(panel)
+
 	_speed_indicator = RichTextLabel.new()
 	_speed_indicator.name = "SpeedIndicator"
 	_speed_indicator.bbcode_enabled = true
 	_speed_indicator.fit_content = true
 	_speed_indicator.scroll_active = false
 	_speed_indicator.custom_minimum_size = Vector2(80, 24)
+	_speed_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Style it
 	_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
 
-	# Position in top-left corner
-	_speed_indicator.position = Vector2(8, 8)
-
-	# Add to UI layer
-	$UI.add_child(_speed_indicator)
+	panel.add_child(_speed_indicator)
 
 	# Battle counter (shown during autogrind)
 	_battle_counter_label = RichTextLabel.new()
@@ -435,8 +465,29 @@ func _toggle_battle_speed() -> void:
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
 	Engine.time_scale = speed
 	_update_speed_indicator()
+	_animate_speed_change()
 	SoundManager.play_ui("speed_change")
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
+	_show_hint("speed_toggle", "Press +/- to change battle speed. Higher speeds skip animations for faster grinding.")
+
+
+func _animate_speed_change() -> void:
+	"""Pop animation on the speed indicator when toggled"""
+	var panel = $UI.get_node_or_null("SpeedPanel")
+	if not panel:
+		return
+	# Scale pop: 1.0 -> 1.25 -> 1.0
+	var tween = create_tween()
+	tween.tween_property(panel, "scale", Vector2(1.25, 1.25), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.12)
+	# Ensure full opacity when changed
+	panel.modulate.a = 1.0
+	# Auto-fade at normal speed (1x) after 3 seconds
+	if _battle_speed_index == 2:  # 1x = normal
+		var fade_tween = create_tween()
+		fade_tween.tween_property(panel, "modulate:a", 0.3, 0.5).set_delay(3.0)
+	else:
+		panel.modulate.a = 1.0
 
 
 # Duplicate _input function removed - merged with the one at line 2250
@@ -669,12 +720,10 @@ func _create_battle_sprites() -> void:
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
-		# V-formation depth stagger: front members (index 0,1) lower, back members higher
-		# Stagger: i=0 -> +10px, i=1 -> +5px, i=2 -> -5px, i=3 -> -10px
-		var party_y_offsets: Array[float] = [10.0, 5.0, -5.0, -10.0]
+		# Position based on current formation
 		var base_pos = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
-		var party_y_stagger = party_y_offsets[i] if i < party_y_offsets.size() else 0.0
-		base_pos.y += party_y_stagger
+		var offset = _get_formation_offset(i, party_members.size())
+		base_pos += offset
 		sprite.position = base_pos
 		_party_base_positions.append(base_pos)
 
@@ -904,7 +953,11 @@ func _refresh_status_icons(combatant: Combatant) -> void:
 			continue
 
 		var config = STATUS_ICON_CONFIG.get(status, {"label": status.substr(0, 3).to_upper(), "color": Color(0.7, 0.7, 0.7)})
-		var icon = _create_status_icon_label(config["label"], config["color"])
+		var turns_left: int = combatant.status_durations.get(status, -1)
+		var display_text: String = config["label"]
+		if turns_left > 0:
+			display_text += " %d" % turns_left  # e.g. "STUN 2"
+		var icon = _create_status_icon_label(display_text, config["color"])
 		container.add_child(icon)
 
 
@@ -1411,6 +1464,7 @@ func _enable_all_autobattle() -> void:
 	"""Enable autobattle for ALL players and immediately execute all remaining turns"""
 	_all_autobattle_enabled = true
 	AutobattleSystem.cancel_all_next_turn = false
+	TutorialHints.show(self, "autobattle_toggle")
 
 	# Enable autobattle for every party member
 	for member in party_members:
@@ -1515,6 +1569,11 @@ func _on_battle_started() -> void:
 	log_message("[color=yellow]>>> Battle commenced![/color]")
 	_show_hint("autobattle", "Press Select or F6 to enable Autobattle for all characters!")
 	_show_hint("controls", "L = Defer (skip, +1 AP) | R = Advance (queue extra actions)")
+
+	# Tutorial popups (fire once per save)
+	TutorialHints.show(self, "first_battle")
+	if _check_for_boss():
+		TutorialHints.show(self, "first_boss")
 
 	# Restore persisted battle speed
 	Engine.time_scale = BATTLE_SPEEDS[_battle_speed_index]
@@ -1638,6 +1697,17 @@ func _on_battle_ended(victory: bool) -> void:
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
+	# Clear formation stat buffs (duration 999 shouldn't persist across battles)
+	for member in party_members:
+		if not is_instance_valid(member):
+			continue
+		for buff_idx in range(member.active_buffs.size() - 1, -1, -1):
+			if member.active_buffs[buff_idx].get("effect", "").begins_with("formation_"):
+				member.active_buffs.remove_at(buff_idx)
+		for debuff_idx in range(member.active_debuffs.size() - 1, -1, -1):
+			if member.active_debuffs[debuff_idx].get("effect", "").begins_with("formation_"):
+				member.active_debuffs.remove_at(debuff_idx)
+
 	if victory:
 		log_message("\n[color=lime]=== VICTORY ===[/color]")
 		_battle_victory = true
@@ -1721,6 +1791,99 @@ func _process_hold_a(delta: float) -> void:
 		_hold_timer = 0.0
 
 
+func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
+	"""Calculate position offset for a party member based on current formation"""
+	match current_formation:
+		PartyFormation.V_FORMATION:
+			# Classic JRPG V-shape: front members lower, back higher
+			var y_offsets = [10.0, 5.0, -5.0, -10.0]
+			return Vector2(0, y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0)
+
+		PartyFormation.FRONT_LINE:
+			# All in a row, pushed forward (left toward enemies)
+			var y_spread = [-15.0, -5.0, 5.0, 15.0]
+			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
+			return Vector2(-30, y)
+
+		PartyFormation.BACK_ROW:
+			# All pushed back (right away from enemies)
+			var y_spread = [-15.0, -5.0, 5.0, 15.0]
+			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
+			return Vector2(30, y)
+
+		PartyFormation.DIAMOND:
+			# 1 front, 2 mid, 1 back — tank formation
+			match member_idx:
+				0: return Vector2(-25, 0)    # Front (tank)
+				1: return Vector2(0, -20)    # Mid-top
+				2: return Vector2(0, 20)     # Mid-bottom
+				3: return Vector2(25, 0)     # Back
+				_: return Vector2.ZERO
+
+		PartyFormation.SPREAD:
+			# Wide spacing to resist AoE
+			var y_offsets = [-30.0, -10.0, 10.0, 30.0]
+			var x_offsets = [-10.0, 10.0, -10.0, 10.0]
+			var y = y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0
+			var x = x_offsets[member_idx] if member_idx < x_offsets.size() else 0.0
+			return Vector2(x, y)
+
+	return Vector2.ZERO
+
+
+func cycle_formation() -> void:
+	"""Cycle to the next party formation and reposition sprites"""
+	current_formation = (current_formation + 1) % PartyFormation.size()
+	var fname = FORMATION_NAMES[current_formation]
+	var desc = FORMATION_DESCRIPTIONS[current_formation]
+	log_message("[color=cyan]Formation: %s — %s[/color]" % [fname, desc])
+	SoundManager.play_ui("menu_move")
+	TutorialHints.show(self, "first_formation")
+
+	# Smoothly reposition party sprites
+	for i in range(party_sprite_nodes.size()):
+		if i >= party_positions.size():
+			break
+		var sprite = party_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		var base_pos = party_positions[i].global_position
+		var offset = _get_formation_offset(i, party_members.size())
+		var new_pos = base_pos + offset
+		_party_base_positions[i] = new_pos
+
+		var tween = create_tween()
+		tween.tween_property(sprite, "position", new_pos, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+	# Apply formation stat modifiers via BattleManager
+	_apply_formation_stats()
+
+
+func _apply_formation_stats() -> void:
+	"""Apply stat modifiers based on current formation"""
+	# Clear previous formation buffs
+	for member in party_members:
+		if not is_instance_valid(member):
+			continue
+		# Remove any existing formation buffs
+		for buff_idx in range(member.active_buffs.size() - 1, -1, -1):
+			if member.active_buffs[buff_idx].get("effect", "").begins_with("formation_"):
+				member.active_buffs.remove_at(buff_idx)
+
+	match current_formation:
+		PartyFormation.FRONT_LINE:
+			for member in party_members:
+				if is_instance_valid(member) and member.is_alive:
+					member.add_buff("formation_atk", "attack", 1.1, 999)
+					member.add_debuff("formation_def", "defense", 0.9, 999)
+		PartyFormation.BACK_ROW:
+			for member in party_members:
+				if is_instance_valid(member) and member.is_alive:
+					member.add_buff("formation_def", "defense", 1.1, 999)
+					member.add_debuff("formation_atk", "attack", 0.9, 999)
+		# V_FORMATION, DIAMOND, SPREAD: no flat stat modifiers (effects are situational)
+
+
 func _process_idle_animations(delta: float) -> void:
 	"""Apply subtle idle sway to enemies and breathing to party sprites"""
 	if _battle_ended:
@@ -1752,6 +1915,9 @@ func _process_idle_animations(delta: float) -> void:
 		var phase = float(i) * 0.9
 		var breathe = sin(_idle_time * freq * TAU + phase) * 2.0
 		sprite.position.y = _party_base_positions[i].y + breathe
+
+	# Update buff/debuff visual overlays for all combatants
+	_update_buff_debuff_visuals(delta)
 
 
 func _open_autobattle_editor_for(combatant: Combatant) -> void:
@@ -1875,6 +2041,7 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 		SoundManager.play_ui("player_turn")
 		if combatant.current_ap > 0:
 			_show_hint("advance", "You have %d AP! Press R to queue extra actions." % combatant.current_ap)
+			TutorialHints.show(self, "advance_defer")
 	if use_win98_menus and is_player:
 		_show_win98_command_menu(combatant)
 
@@ -1954,18 +2121,24 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			animator.play_named_animation("defer")
 
 
-func _on_group_attack_executing(participants: Array, group_type: String, targets: Array) -> void:
+func _on_group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String = "") -> void:
 	"""Play simultaneous attack animations on all party members for group actions"""
 	_update_turn_info()
+	TutorialHints.show(self, "group_attacks")
 
-	# Group attack SFX
-	match group_type:
-		"limit_break":
-			SoundManager.play_battle("group_limit_break")
-		"combo_magic":
-			SoundManager.play_battle("group_combo_magic")
-		_:
-			SoundManager.play_battle("group_all_out")
+	# Group attack SFX — per-formation sounds when available
+	if group_type == "formation" and formation_id != "":
+		var formation_key = "formation_" + formation_id
+		if not _try_play_formation_sfx(formation_key):
+			SoundManager.play_battle("group_formation")
+	else:
+		match group_type:
+			"limit_break":
+				SoundManager.play_battle("group_limit_break")
+			"combo_magic":
+				SoundManager.play_battle("group_combo_magic")
+			_:
+				SoundManager.play_battle("group_all_out")
 
 	# Screen shake — intensity scales with group type
 	var shake_intensity: float
@@ -1977,6 +2150,9 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 		"combo_magic":
 			shake_intensity = 14.0
 			shake_duration = 0.5
+		"formation":
+			shake_intensity = 12.0
+			shake_duration = 0.45
 		_:
 			shake_intensity = 10.0
 			shake_duration = 0.35
@@ -1989,6 +2165,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			flash_color = Color(1.0, 0.85, 0.0, 0.55)  # Gold
 		"combo_magic":
 			flash_color = Color(0.7, 0.2, 1.0, 0.5)     # Purple
+		"formation":
+			flash_color = Color(0.2, 0.9, 1.0, 0.45)     # Cyan
 		_:
 			flash_color = Color(1.0, 0.5, 0.0, 0.4)      # Orange
 	_spawn_screen_flash(flash_color, 0.55 if group_type == "combo_magic" else 0.45)
@@ -2045,6 +2223,14 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			var t_sprite = _get_combatant_sprite(target as Combatant)
 			if t_sprite:
 				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, t_sprite.global_position)
+
+
+func _try_play_formation_sfx(formation_key: String) -> bool:
+	"""Try to play a formation-specific SFX. Returns true if found in manifest."""
+	if SoundManager._sfx_manifest.has(formation_key):
+		SoundManager.play_battle(formation_key)
+		return true
+	return false
 
 
 func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0) -> void:
@@ -2169,6 +2355,10 @@ func _on_round_ended(round_num: int) -> void:
 	"""Handle round end"""
 	log_message("[color=gray]--- Round %d complete ---[/color]" % round_num)
 	_update_ui()
+	# Refresh status icons to update turn counters after duration ticks
+	for combatant in _status_icon_containers.keys():
+		if is_instance_valid(combatant) and combatant.is_alive:
+			_refresh_status_icons(combatant)
 
 
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
@@ -2272,6 +2462,111 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 	sprite.modulate = Color.WHITE
 
 
+## Buff/debuff visual overlay system
+func _update_buff_debuff_visuals(_delta: float) -> void:
+	"""Check all combatants for active buffs/debuffs and show/hide visual overlays"""
+	var all_combatants: Array = []
+	all_combatants.append_array(BattleManager.player_party)
+	all_combatants.append_array(BattleManager.enemy_party)
+
+	for combatant in all_combatants:
+		if not (combatant is Combatant) or not combatant.is_alive:
+			_remove_buff_visual(combatant)
+			continue
+
+		var has_buffs = "active_buffs" in combatant and combatant.active_buffs.size() > 0
+		var has_debuffs = "active_debuffs" in combatant and combatant.active_debuffs.size() > 0
+
+		if not has_buffs and not has_debuffs:
+			_remove_buff_visual(combatant)
+			continue
+
+		var sprite = _get_combatant_sprite(combatant)
+		if not sprite or not is_instance_valid(sprite):
+			continue
+
+		# Create or update visual overlay
+		if combatant not in _buff_visual_nodes:
+			_create_buff_visual(combatant, sprite)
+
+		var visuals = _buff_visual_nodes.get(combatant, {})
+		if visuals.is_empty():
+			continue
+
+		# Update glow color based on buff/debuff state
+		var glow: ColorRect = visuals.get("glow")
+		if glow and is_instance_valid(glow):
+			var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
+			if has_buffs and has_debuffs:
+				# Mixed: yellow pulse
+				glow.color = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
+			elif has_buffs:
+				# Buff: cyan-green pulse
+				glow.color = Color(0.2, 0.9, 0.7, 0.1 + pulse * 0.08)
+			else:
+				# Debuff: red pulse
+				glow.color = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
+
+		# Animate particles
+		var particles: Array = visuals.get("particles", [])
+		for p_node in particles:
+			if not is_instance_valid(p_node):
+				continue
+			# Drift upward for buffs, downward for debuffs
+			var drift_dir = -1.0 if has_buffs else 1.0
+			p_node.position.y += drift_dir * 20.0 * _delta
+			p_node.modulate.a -= 0.8 * _delta  # Fade out
+			# Reset when faded
+			if p_node.modulate.a <= 0.0:
+				p_node.position.y = 0.0 if has_buffs else -40.0
+				p_node.position.x = randf_range(-15.0, 15.0)
+				p_node.modulate.a = 0.6 + randf() * 0.4
+
+
+func _create_buff_visual(combatant: Combatant, sprite: Node2D) -> void:
+	"""Create glow + particle overlay for a buffed/debuffed combatant"""
+	var has_buffs = "active_buffs" in combatant and combatant.active_buffs.size() > 0
+
+	# Glow rectangle behind sprite
+	var glow = ColorRect.new()
+	glow.name = "BuffGlow"
+	glow.size = Vector2(40, 50)
+	glow.position = Vector2(-20, -40)
+	glow.color = Color(0.2, 0.9, 0.7, 0.1)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.z_index = -1
+	sprite.add_child(glow)
+
+	# Small floating particles (4 total)
+	var particles: Array = []
+	var p_color = Color(0.3, 1.0, 0.7, 0.7) if has_buffs else Color(1.0, 0.3, 0.3, 0.7)
+	for i in range(4):
+		var p = ColorRect.new()
+		p.size = Vector2(3, 3)
+		p.position = Vector2(randf_range(-15, 15), randf_range(-40, 0) if has_buffs else randf_range(-40, 0))
+		p.color = p_color
+		p.modulate.a = randf_range(0.3, 1.0)
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sprite.add_child(p)
+		particles.append(p)
+
+	_buff_visual_nodes[combatant] = {"glow": glow, "particles": particles}
+
+
+func _remove_buff_visual(combatant) -> void:
+	"""Remove buff/debuff visual overlay for a combatant"""
+	if combatant not in _buff_visual_nodes:
+		return
+	var visuals = _buff_visual_nodes[combatant]
+	var glow = visuals.get("glow")
+	if glow and is_instance_valid(glow):
+		glow.queue_free()
+	for p in visuals.get("particles", []):
+		if is_instance_valid(p):
+			p.queue_free()
+	_buff_visual_nodes.erase(combatant)
+
+
 func _on_summon_hp_changed(enemy: Combatant, old_value: int, new_value: int) -> void:
 	var idx = test_enemies.find(enemy)
 	if idx >= 0:
@@ -2298,6 +2593,14 @@ func _on_enemy_died(enemy_idx: int) -> void:
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
 		log_message("[color=yellow]%s has been defeated![/color]" % enemy.combatant_name)
+
+		# Clean up status icons and buff visuals for dead enemy
+		if enemy in _status_icon_containers:
+			var container = _status_icon_containers[enemy]
+			if is_instance_valid(container):
+				container.queue_free()
+			_status_icon_containers.erase(enemy)
+		_remove_buff_visual(enemy)
 
 		if enemy_idx < enemy_animators.size() and enemy_idx < enemy_sprite_nodes.size():
 			var animator = enemy_animators[enemy_idx]
@@ -2350,6 +2653,11 @@ func _input(event: InputEvent) -> void:
 		# Y key to repeat previous actions
 		elif event.keycode == KEY_Y:
 			_repeat_previous_actions()
+			get_viewport().set_input_as_handled()
+			return
+		# F key to cycle party formation
+		elif event.keycode == KEY_F:
+			cycle_formation()
 			get_viewport().set_input_as_handled()
 			return
 
@@ -2424,9 +2732,17 @@ func _close_win98_menu() -> void:
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
 	if is_crit:
-		_flash_screen(Color(1.0, 0.9, 0.3, 0.4), 0.15)  # Gold flash for crits
+		_crit_visual_burst(target, amount)
+		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
 	if elemental_mod != 1.0 and element != "":
 		_spawn_elemental_indicator(target, element, elemental_mod)
+		# Tutorial hints for elemental interactions
+		if elemental_mod > 1.0:
+			_show_hint("weakness_exploit", "That enemy is WEAK to %s! Elemental weaknesses deal bonus damage. Use Combo Magic to stack multiple elements!" % element.capitalize())
+		elif elemental_mod < 1.0 and elemental_mod > 0.0:
+			_show_hint("elemental_resist", "That enemy RESISTS %s. Try a different element or use physical attacks." % element.capitalize())
+		elif elemental_mod == 0.0:
+			_show_hint("elemental_immune", "That enemy is IMMUNE to %s! Switch to a different element or physical attacks." % element.capitalize())
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
@@ -2481,6 +2797,58 @@ func _on_attack_missed(target: Combatant) -> void:
 func _on_healing_done(target: Combatant, amount: int) -> void:
 	_results_display.on_healing_done(target, amount)
 	SoundManager.play_battle("heal")
+
+
+func _crit_visual_burst(target: Combatant, _amount: int) -> void:
+	"""Full critical hit visual package — screen flash, hitlag, sprite flash, banner"""
+	# 1. Bright white-gold screen flash (more dramatic than normal hit)
+	_flash_screen(Color(1.0, 0.95, 0.6, 0.5), 0.2)
+
+	# 2. Hitlag — brief time freeze for impact (80ms at 10% speed)
+	var prev_scale = Engine.time_scale
+	Engine.time_scale = 0.1
+	var hitlag_tween = create_tween()
+	hitlag_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	hitlag_tween.tween_callback(func(): Engine.time_scale = prev_scale).set_delay(0.008)  # 80ms real time at 0.1x
+
+	# 3. Target sprite white flash
+	var sprite = _get_combatant_sprite(target)
+	if sprite and is_instance_valid(sprite):
+		var orig_modulate = sprite.modulate
+		sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)  # Bright white flash (HDR)
+		var flash_tween = create_tween()
+		flash_tween.tween_property(sprite, "modulate", orig_modulate, 0.15).set_delay(0.05)
+
+	# 4. "CRITICAL!" banner above target
+	var pos = _results_display._get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		_spawn_crit_banner(pos)
+
+
+func _spawn_crit_banner(pos: Vector2) -> void:
+	"""Spawn a large 'CRITICAL!' text that scales up and fades"""
+	var label = Label.new()
+	label.text = "CRITICAL!"
+	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.1))
+	label.add_theme_constant_override("outline_size", 3)
+	label.add_theme_color_override("font_outline_color", Color(0.6, 0.2, 0.0))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = pos + Vector2(-45, -70)
+	label.z_index = 110
+	label.pivot_offset = Vector2(45, 10)  # Center pivot for scale
+	label.scale = Vector2(0.3, 0.3)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(label)
+
+	var tween = create_tween()
+	# Pop in: scale 0.3 -> 1.2 -> 1.0
+	tween.tween_property(label, "scale", Vector2(1.2, 1.2), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.06)
+	# Hold, then float up and fade
+	tween.tween_property(label, "position:y", pos.y - 100, 0.6).set_delay(0.2)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.4)
+	tween.tween_callback(label.queue_free)
 
 
 func _flash_screen(color: Color, duration: float) -> void:

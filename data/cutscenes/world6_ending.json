@@ -11,6 +11,11 @@
       "duration": 0.6
     },
     {
+      "type": "chapter_title",
+      "title": "Epilogue",
+      "subtitle": "Calibration Complete"
+    },
+    {
       "type": "stop_music"
     },
     {
@@ -190,7 +195,7 @@
           "speaker": "Bard",
           "text": "We'd design something with room in it. Room for the moments that weren't designed. Room for the goblins to finish their loops and the Masterites to ask their questions and the players to be present in the gaps.",
           "theme": "bard",
-          "portrait": "bard"
+          "portrait": "bard_happy"
         }
       ]
     },

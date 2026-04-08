@@ -24,20 +24,20 @@ layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 100.0
+offset_left = 40.0
 offset_top = -200.0
-offset_right = 500.0
+offset_right = 380.0
 offset_bottom = 200.0
 grow_vertical = 2
 
 [node name="Enemy1Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(150, 100)
+position = Vector2(120, 100)
 
 [node name="Enemy2Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(200, 200)
+position = Vector2(170, 200)
 
 [node name="Enemy3Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(100, 300)
+position = Vector2(70, 300)
 
 [node name="PartyArea" type="Control" parent="BattleField"]
 layout_mode = 1

@@ -367,7 +367,10 @@ func _get_tile_order() -> Array:
 	]
 
 func _get_impassable_types() -> Array:
-	return [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.VILLAGE_HEDGE]
+	# Only block truly dangerous/boundary tiles. Forest, mountains, and water
+	# are passable (with speed penalty) because Mode 7 warps visuals vs collision,
+	# making standard tile blocking feel like invisible walls.
+	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA]
 
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(5, 8)

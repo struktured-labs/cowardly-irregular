@@ -1,0 +1,41 @@
+{
+  "id": "world5_guidance_core",
+  "title": "Digital Guidance — The Core",
+  "world": 5,
+  "trigger": "world5_guidance_core",
+  "background": "node_prime",
+  "description": "After arriving in the digital world, a process explains how to reach the Calibrant's workspace.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Firewall Attendant",
+        "text": "You're looking for the core. Everyone who gets this far is looking for the core.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "Firewall Attendant",
+        "text": "Navigate deeper into the network. Past the processing nodes. Past the encounter engine. Past everything that was designed to keep you out.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "Firewall Attendant",
+        "text": "At the end of it all, there's a desk. Just a desk. That's where the one who built everything works.",
+        "theme": "system",
+        "portrait": "system"
+      },
+      {
+        "speaker": "Firewall Attendant",
+        "text": "Fair warning — the Masterites here don't just fight. They measure. The Arbiter benchmarks you. The Tempo lives in the gaps between clock cycles. The Curator tries to delete your memories.",
+        "theme": "system",
+        "portrait": "system"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world5_guidance_core_shown", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}

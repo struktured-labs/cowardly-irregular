@@ -2,7 +2,7 @@ extends Node
 class_name Mode7Overlay
 
 var enabled: bool = true
-var player_display_size: float = 160.0
+var player_display_size: float = 120.0  # Scaled down from 160 — less oversized on Mode 7
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0

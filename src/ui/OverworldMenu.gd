@@ -15,6 +15,7 @@ const AbilitiesMenuClass = preload("res://src/ui/AbilitiesMenu.gd")
 const StatusMenuClass = preload("res://src/ui/StatusMenu.gd")
 const JobMenuClass = preload("res://src/ui/JobMenu.gd")
 const QuestLogClass = preload("res://src/ui/QuestLog.gd")
+const CutsceneGalleryClass = preload("res://src/ui/CutsceneGallery.gd")
 
 signal closed()
 signal menu_action(action: String, target: Combatant)
@@ -35,6 +36,7 @@ const BASE_MENU_OPTIONS = [
 	{"id": "abilities", "label": "Abilities", "enabled": true},
 	{"id": "autobattle", "label": "Autobattle", "enabled": true},
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
+	{"id": "cutscene_gallery", "label": "Cutscene Gallery", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
 	{"id": "settings", "label": "Settings", "enabled": true},
@@ -604,10 +606,21 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_save_screen(SaveScreenClass.Mode.SAVE)
 		"load":
 			_open_save_screen(SaveScreenClass.Mode.LOAD)
+		"cutscene_gallery":
+			_open_cutscene_gallery()
 		"settings":
 			_open_settings()
 		"teleport":
 			_open_teleport_menu()
+
+
+func _open_cutscene_gallery() -> void:
+	_submenu_open = true
+	var gallery = CutsceneGalleryClass.new()
+	gallery.set_anchors_preset(Control.PRESET_FULL_RECT)
+	gallery.closed.connect(_on_submenu_closed)
+	add_child(gallery)
+	_hide_main_ui(gallery)
 
 
 func _open_quest_log() -> void:

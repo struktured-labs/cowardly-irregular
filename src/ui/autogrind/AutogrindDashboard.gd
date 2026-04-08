@@ -46,6 +46,9 @@ var _permadeath_label: Label = null
 ## Stats strip
 var _stats_strip: AutogrindStatsStrip = null
 
+## Ludicrous speed indicator
+var _ludicrous_label: Label = null
+
 ## Tracking for projections
 var _session_start_time: float = 0.0
 var _battles_completed: int = 0
@@ -160,6 +163,14 @@ func _build_header(vp_size: Vector2) -> void:
 	tier_lbl.add_theme_font_size_override("font_size", 13)
 	tier_lbl.add_theme_color_override("font_color", COLOR_WARN)
 	add_child(tier_lbl)
+
+	_ludicrous_label = Label.new()
+	_ludicrous_label.text = ""
+	_ludicrous_label.position = Vector2(vp_size.x - 380, 14)
+	_ludicrous_label.add_theme_font_size_override("font_size", 13)
+	_ludicrous_label.add_theme_color_override("font_color", Color(0.8, 0.4, 1.0))
+	_ludicrous_label.visible = false
+	add_child(_ludicrous_label)
 
 	_elapsed_label = Label.new()
 	_elapsed_label.text = "00:00:00"
@@ -338,8 +349,11 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var stats = [
 		{"key": "battles", "label": "Battles:", "default": "0"},
 		{"key": "total_exp", "label": "Total EXP:", "default": "0"},
-		{"key": "win_rate", "label": "Win Rate:", "default": "100%"},
 		{"key": "total_gold", "label": "Total Gold:", "default": "0"},
+		{"key": "win_rate", "label": "Win Rate:", "default": "100%"},
+		{"key": "csi", "label": "Saturation:", "default": "0%"},
+		{"key": "yield", "label": "Yield:", "default": "100%"},
+		{"key": "items_used", "label": "Items Used:", "default": "0"},
 		{"key": "collapses", "label": "Collapses:", "default": "0"},
 		{"key": "time_mult", "label": "Time Bonus:", "default": "1.0x"},
 	]
@@ -396,6 +410,7 @@ func _build_projections_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var projs = [
 		{"key": "avg_exp_battle", "label": "Avg EXP/battle:", "default": "--"},
 		{"key": "battles_per_min", "label": "Battles/min:", "default": "--"},
+		{"key": "battles_per_sec", "label": "Battles/sec:", "default": "--"},
 		{"key": "projected_exp_10m", "label": "EXP in 10min:", "default": "--"},
 		{"key": "projected_gold_10m", "label": "Gold in 10min:", "default": "--"},
 		{"key": "accuracy", "label": "Accuracy:", "default": "--"},
@@ -593,8 +608,17 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 
 	_update_stat("battles", str(_battles_completed))
 	_update_stat("total_exp", str(_total_exp))
-	_update_stat("win_rate", "%.0f%%" % win_rate)
 	_update_stat("total_gold", str(_total_gold))
+	_update_stat("win_rate", "%.0f%%" % win_rate)
+	var csi_val = stats.get("csi", 0.0)
+	_update_stat("csi", "%.0f%%" % (csi_val * 100.0))
+	var yield_val = stats.get("yield_multiplier", 1.0)
+	_update_stat("yield", "%.0f%%" % (yield_val * 100.0))
+	var consumed = stats.get("items_consumed", {})
+	var total_consumed = 0
+	for key in consumed:
+		total_consumed += consumed[key]
+	_update_stat("items_used", str(total_consumed) if total_consumed > 0 else "0")
 	_update_stat("collapses", str(stats.get("collapse_count", 0)))
 	var time_mult = stats.get("time_multiplier", 1.0)
 	_update_stat("time_mult", "%.1fx" % time_mult)
@@ -607,6 +631,8 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	var avg_label := "~%d" % int(avg_exp_per_battle) if _exp_history.size() > 0 else ("~%d" % int(avg_exp_per_battle) if _battles_completed >= 3 else "--")
 	_update_projection("avg_exp_battle", avg_label)
 	_update_projection("battles_per_min", "%.1f" % battles_per_min if battles_per_min > 0 else "--")
+	var bps = battles_per_min / 60.0
+	_update_projection("battles_per_sec", "%.1f" % bps if bps >= 1.0 else ("--" if bps <= 0 else "%.2f" % bps))
 	_update_projection("projected_exp_10m", "~%d" % int(avg_exp_per_battle * battles_per_min * 10) if battles_per_min > 0 else "--")
 	_update_projection("projected_gold_10m", "~%d" % int(gold_per_min * 10) if battles_per_min > 0 else "--")
 
@@ -635,6 +661,12 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 		_stats_strip.refresh(stats, region_id)
 
 	_update_corruption_tint(stats)
+
+
+func set_ludicrous_mode(enabled: bool) -> void:
+	if _ludicrous_label and is_instance_valid(_ludicrous_label):
+		_ludicrous_label.text = "LUDICROUS SPEED" if enabled else ""
+		_ludicrous_label.visible = enabled
 
 
 func add_highlight(_text: String, _severity: String = "info") -> void:

@@ -132,6 +132,12 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# F12 screenshot — always available, any state
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F12:
+		_take_screenshot()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Block input handling during title screen or character creation
 	if current_state == LoopState.TITLE or _character_creation_screen:
 		return
@@ -741,6 +747,14 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_world4_chapter1_complete", false) and not flags.get("cutscene_flag_world4_guidance_director_shown", false):
 		if _current_map_id == "rivet_row_village":
 			return "world4_guidance_director"
+	# W5: navigate to the core
+	if flags.get("cutscene_flag_world5_chapter1_complete", false) and not flags.get("cutscene_flag_world5_guidance_core_shown", false):
+		if _current_map_id == "node_prime_village":
+			return "world5_guidance_core"
+	# W6: the question awaits
+	if flags.get("cutscene_flag_world6_chapter1_complete", false) and not flags.get("cutscene_flag_world6_guidance_question_shown", false):
+		if _current_map_id == "vertex_village":
+			return "world6_guidance_question"
 	return ""
 
 
@@ -1084,15 +1098,19 @@ func _on_battle_ended(victory: bool) -> void:
 
 		# Wait for player to confirm before leaving victory screen
 		await _wait_for_confirm()
+
+		# Play exit transition (iris-close) before returning to overworld
+		if BattleTransition:
+			await BattleTransition.play_exit_transition(true)
+
 		_return_to_exploration()
+
+		# Reveal the overworld with a smooth fade
+		if BattleTransition:
+			await BattleTransition.reveal_exploration()
 	else:
-		# Game over - wait for confirm then restart
-		await _wait_for_confirm()
-		_create_party()
-		battles_won = 0
-		_current_map_id = "overworld"
-		_spawn_point = "default"
-		_start_exploration()
+		# Game over — show dramatic screen with retry/continue options
+		await _show_game_over_screen()
 
 
 func _wait_for_confirm() -> void:
@@ -1105,6 +1123,50 @@ func _wait_for_confirm() -> void:
 			break
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
+
+
+func _show_game_over_screen() -> void:
+	"""Show the game over screen and handle retry/continue."""
+	var game_over = GameOverScreen.new()
+	add_child(game_over)
+
+	# Check if a save exists
+	var has_save = SaveSystem != null and SaveSystem.has_method("has_save") and SaveSystem.has_save()
+
+	var choice_made = false
+	var retry = true
+
+	game_over.retry_selected.connect(func():
+		choice_made = true
+		retry = true
+	)
+	game_over.continue_selected.connect(func():
+		choice_made = true
+		retry = false
+	)
+
+	await game_over.show_game_over(has_save)
+
+	# Wait for player choice
+	while not choice_made:
+		await get_tree().process_frame
+
+	game_over.queue_free()
+
+	if retry:
+		_create_party()
+		battles_won = 0
+		_current_map_id = "overworld"
+		_spawn_point = "default"
+		_start_exploration()
+	else:
+		# Load most recent save
+		if SaveSystem and SaveSystem.has_method("load_game"):
+			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else 0
+			if slot >= 0:
+				SaveSystem.load_game(slot)
+		_create_party()
+		_start_exploration()
 
 
 ## Exploration Management
@@ -1842,6 +1904,29 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	_transition_in_progress = false
 
 
+func _take_screenshot() -> void:
+	"""Save a screenshot to user://screenshots/ with timestamp"""
+	var img = get_viewport().get_texture().get_image()
+	if not img:
+		print("[SCREENSHOT] Failed to capture viewport")
+		return
+	DirAccess.make_dir_recursive_absolute("user://screenshots")
+	var timestamp = Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
+	var path = "user://screenshots/screenshot_%s.png" % timestamp
+	img.save_png(path)
+	var abs_path = ProjectSettings.globalize_path(path)
+	print("[SCREENSHOT] Saved: %s" % abs_path)
+	# Flash feedback
+	var flash = ColorRect.new()
+	flash.color = Color(1, 1, 1, 0.5)
+	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween = create_tween()
+	tween.tween_property(flash, "color:a", 0.0, 0.2)
+	tween.tween_callback(flash.queue_free)
+
+
 func _get_terrain_for_map(map_id: String) -> String:
 	"""Get the terrain type for a given map ID"""
 	match map_id:
@@ -2062,6 +2147,7 @@ func _open_autogrind_ui() -> void:
 	# Connect signals
 	_autogrind_ui.closed.connect(_on_autogrind_ui_closed)
 	_autogrind_ui.grind_requested.connect(_start_autogrind)
+	_autogrind_ui.grind_resume_requested.connect(_resume_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
 	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
 
@@ -2097,10 +2183,11 @@ func _start_autogrind(config: Dictionary) -> void:
 	# Connect controller signals
 	_autogrind_controller.grind_battle_requested.connect(_on_grind_battle_requested)
 	_autogrind_controller.grind_complete.connect(_on_grind_complete)
+	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
+	_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
-	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
 
 	# Clear battle summary ring buffer for new session
 	_autogrind_battle_summaries.clear()
@@ -2109,9 +2196,18 @@ func _start_autogrind(config: Dictionary) -> void:
 	SoundManager.reset_corruption()
 	SoundManager.play_music("autogrind")
 
-	_show_controller_overlay(ControllerOverlay.autogrind_context())
+	# Show appropriate controller overlay
+	if _autogrind_controller.headless_mode:
+		_show_controller_overlay(ControllerOverlay.autogrind_ludicrous_context())
+		_show_autogrind_dashboard()
+		TutorialHints.show(self, "ludicrous_speed")
+	else:
+		_show_controller_overlay(ControllerOverlay.autogrind_context())
 
-	print("[AUTOGRIND] Session started")
+	# Tutorial hint on first autogrind session
+	TutorialHints.show(self, "autogrind")
+
+	print("[AUTOGRIND] Session started%s" % (" (LUDICROUS SPEED)" if _autogrind_controller.headless_mode else ""))
 
 
 func _on_autogrind_stop_requested() -> void:
@@ -2130,6 +2226,9 @@ func _stop_autogrind(reason: String) -> void:
 	var final_stats = {}
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		final_stats = _autogrind_controller.get_grind_stats()
+
+	# Clear snapshot on clean stop (user chose to stop)
+	AutogrindSystem.clear_grind_snapshot()
 
 	# Stop controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -2211,11 +2310,71 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		enemies.append(enemy)
 
 	var result = resolver.resolve_battle(party, enemies)
+	var victory = result.get("victory", false)
+	var exp_gained = result.get("exp_gained", 0)
+	var rounds = result.get("rounds", 0)
 
 	for e in enemies:
 		e.free()
 
-	_on_autogrind_battle_ended(result["victory"])
+	# Heal party using items (same as visual battle path)
+	if victory:
+		for member in party:
+			member.current_ap = 0
+			if member.is_alive and member.current_hp < member.max_hp:
+				_autogrind_heal_member(member)
+			if member.is_alive and member.current_mp < member.max_mp * 0.5:
+				_autogrind_restore_mp(member)
+
+	# Track per-character EXP distribution (headless path)
+	if victory and exp_gained > 0:
+		var alive_count = 0
+		for member in party:
+			if member is Combatant and member.is_alive:
+				alive_count += 1
+		if alive_count > 0:
+			var per_char_exp = exp_gained / alive_count
+			for member in party:
+				if member is Combatant and member.is_alive:
+					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+
+	# Forward to controller with headless-computed EXP
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.on_battle_ended(victory, exp_gained, {})
+
+		var stats = _autogrind_controller.get_grind_stats()
+
+		# Build summary for console ring buffer
+		var summary_text: String
+		if victory:
+			summary_text = "[color=#44ff44]#%d Victory[/color] +%d EXP (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), exp_gained, rounds]
+		else:
+			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append(summary_text)
+		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+
+		# Update UI with latest stats
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			_autogrind_ui.update_stats(stats)
+			_autogrind_ui.update_party_status()
+
+		# Update dashboard if in Tier 2
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+			var region_id = _current_map_id.replace(" ", "_").to_lower()
+			_autogrind_dashboard.refresh(stats, region_id)
+			_autogrind_dashboard.add_battle_result(victory, rounds, exp_gained)
+
+		# Corruption audio degradation
+		var corruption_raw = AutogrindSystem.meta_corruption_level
+		var corruption_threshold = AutogrindSystem.corruption_threshold
+		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
+		SoundManager.set_corruption_intensity(corruption_norm)
+
+		# Milestone toasts
+		var battles = stats.get("battles_won", 0)
+		if battles in [10, 20, 30, 50, 100]:
+			_show_autogrind_toast(_get_milestone_text(battles))
 
 
 func _show_autogrind_transition() -> void:
@@ -2348,6 +2507,18 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
 
+	# Track per-character EXP distribution
+	if victory and exp_gained > 0:
+		var alive_count = 0
+		for member in party:
+			if member is Combatant and member.is_alive:
+				alive_count += 1
+		if alive_count > 0:
+			var per_char_exp = exp_gained / alive_count
+			for member in party:
+				if member is Combatant and member.is_alive:
+					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
@@ -2387,6 +2558,10 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		var battles = stats.get("battles_won", 0)
 		if battles in [10, 20, 30, 50, 100]:
 			_show_autogrind_toast(_get_milestone_text(battles))
+
+		# Auto-save snapshot every 5 battles for crash recovery
+		if battles > 0 and battles % 5 == 0:
+			_autogrind_save_snapshot()
 
 		# Log any fatigue event that fired this cycle to the console
 		if AutogrindSystem.fatigue_events_triggered > 0:
@@ -2477,6 +2652,118 @@ func _on_autogrind_tier_changed(new_tier: int) -> void:
 		_autogrind_ui.on_tier_changed(new_tier)
 
 
+func _on_autogrind_region_advanced(from_region: String, to_region: String, world_num: int) -> void:
+	"""Handle auto-advance to next world region during autogrind."""
+	_current_map_id = to_region
+	_current_terrain = to_region
+	if has_node("/root/GameState"):
+		GameState.current_world = world_num
+
+	var world_names = {
+		1: "Medieval", 2: "Suburban", 3: "Steampunk",
+		4: "Industrial", 5: "Futuristic", 6: "Abstract"
+	}
+	var world_name = world_names.get(world_num, "World %d" % world_num)
+
+	# Visual warp transition
+	_show_region_warp_transition(world_num, world_name)
+
+	# Add to battle log
+	_autogrind_battle_summaries.append("[color=#ff88ff]>>> ADVANCED TO WORLD %d: %s <<<[/color]" % [world_num, world_name.to_upper()])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+	# Update dashboard if active
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		var stats = _autogrind_controller.get_grind_stats() if _autogrind_controller and is_instance_valid(_autogrind_controller) else {}
+		_autogrind_dashboard.refresh(stats, to_region)
+
+	# Play tier transition sound for the warp feel
+	SoundManager.play_ui("tier_zoom_out")
+
+	# Tutorial hint on first world transition
+	TutorialHints.show(self, "world_transition")
+
+	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
+
+
+func _show_region_warp_transition(world_num: int, world_name: String) -> void:
+	"""Cinematic warp overlay when auto-advancing to a new world region."""
+	var layer = CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+
+	var vp_size = get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+
+	# Flash overlay
+	var flash = ColorRect.new()
+	flash.color = Color(1.0, 1.0, 1.0, 0.0)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(flash)
+
+	# Dark backdrop for text
+	var backdrop = ColorRect.new()
+	backdrop.color = Color(0.02, 0.01, 0.05, 0.0)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(backdrop)
+
+	# "REGION CRACKED" title
+	var title = Label.new()
+	title.text = "REGION CRACKED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(0, vp_size.y * 0.35)
+	title.size = Vector2(vp_size.x, 40)
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	title.modulate.a = 0.0
+	layer.add_child(title)
+
+	# World name subtitle
+	var subtitle = Label.new()
+	subtitle.text = "Warping to World %d: %s" % [world_num, world_name]
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.position = Vector2(0, vp_size.y * 0.35 + 40)
+	subtitle.size = Vector2(vp_size.x, 30)
+	subtitle.add_theme_font_size_override("font_size", 18)
+	subtitle.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	subtitle.modulate.a = 0.0
+	layer.add_child(subtitle)
+
+	# "Enemies reset for new region" hint
+	var hint = Label.new()
+	hint.text = "Enemy adaptation reset — fresh hunting grounds!"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.position = Vector2(0, vp_size.y * 0.35 + 76)
+	hint.size = Vector2(vp_size.x, 24)
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", Color(0.5, 0.9, 0.5))
+	hint.modulate.a = 0.0
+	layer.add_child(hint)
+
+	# Animation: flash → dark → text → fade out
+	var tween = create_tween()
+	# White flash (0.15s)
+	tween.tween_property(flash, "color:a", 0.7, 0.15)
+	tween.tween_property(flash, "color:a", 0.0, 0.2)
+	# Dark backdrop fades in
+	tween.parallel().tween_property(backdrop, "color:a", 0.85, 0.3)
+	# Text fades in
+	tween.tween_property(title, "modulate:a", 1.0, 0.3)
+	tween.parallel().tween_property(subtitle, "modulate:a", 1.0, 0.3)
+	tween.tween_property(hint, "modulate:a", 1.0, 0.2)
+	# Hold (1.5s)
+	tween.tween_interval(1.5)
+	# Fade everything out
+	tween.tween_property(title, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(subtitle, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(hint, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(backdrop, "color:a", 0.0, 0.4)
+	# Cleanup
+	tween.tween_callback(layer.queue_free)
+
+
 func _create_autogrind_overlay() -> void:
 	if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
 		return
@@ -2493,7 +2780,7 @@ func _create_autogrind_overlay() -> void:
 	if vp_size.x == 0 or vp_size.y == 0:
 		vp_size = Vector2(1280, 720)
 
-	var bar_height = 120.0
+	var bar_height = 148.0
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.03, 0.02, 0.06, 0.85)
 	bar_bg.position = Vector2(0, vp_size.y - bar_height)
@@ -2510,24 +2797,90 @@ func _create_autogrind_overlay() -> void:
 	var summary = Label.new()
 	summary.name = "SummaryLabel"
 	summary.text = "Battle #1 | EXP: 0 | Streak: 0 | Efficiency: 1.0x"
-	summary.position = Vector2(16, vp_size.y - bar_height + 8)
-	summary.size = Vector2(vp_size.x - 32, 28)
-	summary.add_theme_font_size_override("font_size", 18)
+	summary.position = Vector2(16, vp_size.y - bar_height + 6)
+	summary.size = Vector2(vp_size.x - 32, 24)
+	summary.add_theme_font_size_override("font_size", 16)
 	summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 	_autogrind_overlay.add_child(summary)
 
-	# Stats strip — full width, taller
+	# Party HP/MP bars — compact row
+	var party_container = Control.new()
+	party_container.name = "PartyBars"
+	party_container.position = Vector2(12, vp_size.y - bar_height + 30)
+	party_container.size = Vector2(vp_size.x - 24, 28)
+	_autogrind_overlay.add_child(party_container)
+
+	var slot_w = (vp_size.x - 32) / max(party.size(), 1)
+	for i in range(min(party.size(), 4)):
+		var member = party[i]
+		if not member is Combatant:
+			continue
+
+		var x = i * slot_w
+		# Name
+		var name_lbl = Label.new()
+		name_lbl.name = "Name_%d" % i
+		name_lbl.text = member.combatant_name.left(8)
+		name_lbl.position = Vector2(x, 0)
+		name_lbl.add_theme_font_size_override("font_size", 10)
+		name_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+		party_container.add_child(name_lbl)
+
+		# HP bar background
+		var bar_w = slot_w - 12
+		var hp_bg = ColorRect.new()
+		hp_bg.color = Color(0.15, 0.05, 0.05)
+		hp_bg.position = Vector2(x, 14)
+		hp_bg.size = Vector2(bar_w, 6)
+		party_container.add_child(hp_bg)
+
+		# HP bar fill
+		var hp_fill = ColorRect.new()
+		hp_fill.name = "HP_%d" % i
+		hp_fill.color = Color(0.2, 0.8, 0.2)
+		hp_fill.position = Vector2(x, 14)
+		hp_fill.size = Vector2(bar_w, 6)
+		party_container.add_child(hp_fill)
+
+		# MP bar background
+		var mp_bg = ColorRect.new()
+		mp_bg.color = Color(0.05, 0.05, 0.15)
+		mp_bg.position = Vector2(x, 22)
+		mp_bg.size = Vector2(bar_w, 4)
+		party_container.add_child(mp_bg)
+
+		# MP bar fill
+		var mp_fill = ColorRect.new()
+		mp_fill.name = "MP_%d" % i
+		mp_fill.color = Color(0.3, 0.4, 0.9)
+		mp_fill.position = Vector2(x, 22)
+		mp_fill.size = Vector2(bar_w, 4)
+		party_container.add_child(mp_fill)
+
+	# Battle log — last 5 outcomes, right side of party bars row
+	var log_rtl = RichTextLabel.new()
+	log_rtl.name = "BattleLog"
+	log_rtl.bbcode_enabled = true
+	log_rtl.scroll_following = true
+	log_rtl.position = Vector2(vp_size.x * 0.55, vp_size.y - bar_height + 30)
+	log_rtl.size = Vector2(vp_size.x * 0.43, 28)
+	log_rtl.add_theme_font_size_override("normal_font_size", 9)
+	log_rtl.add_theme_color_override("default_color", Color(0.7, 0.7, 0.8))
+	log_rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_autogrind_overlay.add_child(log_rtl)
+
+	# Stats strip
 	var strip = AutogrindStatsStrip.new()
 	strip.name = "StatsStrip"
-	strip.position = Vector2(4, vp_size.y - bar_height + 38)
+	strip.position = Vector2(4, vp_size.y - bar_height + 62)
 	strip.size = Vector2(vp_size.x - 8, 42)
 	_autogrind_overlay.add_child(strip)
 
-	# Control hints — clearer
+	# Control hints
 	var hints = Label.new()
 	hints.name = "HintsLabel"
 	hints.text = "Y: Turbo    +/-: Speed    T: Dashboard    B: Exit"
-	hints.position = Vector2(16, vp_size.y - bar_height + 88)
+	hints.position = Vector2(16, vp_size.y - bar_height + 112)
 	hints.size = Vector2(vp_size.x - 32, 24)
 	hints.add_theme_font_size_override("font_size", 13)
 	hints.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
@@ -2547,6 +2900,51 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 		var eff = stats.get("efficiency", 1.0)
 		var turbo_txt = " TURBO" if BattleManager.turbo_mode else ""
 		summary.text = "Battle #%d | EXP: %d | Streak: %d | Efficiency: %.1fx%s" % [battles, exp, wins, eff, turbo_txt]
+
+	# Update party HP/MP bars
+	var party_bars = _autogrind_overlay.get_node_or_null("PartyBars")
+	if party_bars:
+		var vp_size = get_viewport().get_visible_rect().size
+		if vp_size.x == 0:
+			vp_size = Vector2(1280, 720)
+		var slot_w = (vp_size.x - 32) / max(party.size(), 1)
+		var bar_w = slot_w - 12
+		var char_exp = stats.get("per_character_exp", {})
+		for i in range(min(party.size(), 4)):
+			var member = party[i]
+			if not member is Combatant:
+				continue
+			# Update name with session EXP total
+			var name_lbl = party_bars.get_node_or_null("Name_%d" % i)
+			if name_lbl:
+				var member_exp = char_exp.get(member.combatant_name, 0)
+				if member_exp > 0:
+					name_lbl.text = "%s +%d" % [member.combatant_name.left(6), member_exp]
+				else:
+					name_lbl.text = member.combatant_name.left(8)
+			var hp_fill = party_bars.get_node_or_null("HP_%d" % i)
+			if hp_fill:
+				var hp_pct = member.current_hp / max(float(member.max_hp), 1.0)
+				hp_fill.size.x = bar_w * hp_pct
+				if hp_pct > 0.5:
+					hp_fill.color = Color(0.2, 0.8, 0.2)
+				elif hp_pct > 0.25:
+					hp_fill.color = Color(0.8, 0.7, 0.1)
+				else:
+					hp_fill.color = Color(0.9, 0.2, 0.2)
+			var mp_fill = party_bars.get_node_or_null("MP_%d" % i)
+			if mp_fill:
+				var mp_pct = member.current_mp / max(float(member.max_mp), 1.0)
+				mp_fill.size.x = bar_w * mp_pct
+
+	# Update battle log with last 5 summaries
+	var log_rtl = _autogrind_overlay.get_node_or_null("BattleLog")
+	if log_rtl and log_rtl is RichTextLabel:
+		log_rtl.clear()
+		var show_count = min(_autogrind_battle_summaries.size(), 5)
+		var start_idx = _autogrind_battle_summaries.size() - show_count
+		for i in range(start_idx, _autogrind_battle_summaries.size()):
+			log_rtl.append_text(_autogrind_battle_summaries[i] + "\n")
 
 	var strip = _autogrind_overlay.get_node_or_null("StatsStrip")
 	if strip and strip.has_method("refresh"):
@@ -2620,6 +3018,11 @@ func _show_autogrind_dashboard() -> void:
 			_autogrind_controller.cycle_tier()
 	)
 
+	# Show ludicrous speed indicator if headless mode is active
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		if _autogrind_dashboard.has_method("set_ludicrous_mode"):
+			_autogrind_dashboard.set_ludicrous_mode(_autogrind_controller.headless_mode)
+
 	print("[AUTOGRIND] Dashboard shown (Tier 2)")
 
 
@@ -2643,6 +3046,7 @@ func _autogrind_heal_member(member: Combatant) -> void:
 		if member.get_item_count(item_id) > 0:
 			member.remove_item(item_id, 1)
 			member.heal(heal_amount)
+			AutogrindSystem.track_item_consumed(item_id)
 			print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, heal_amount])
 			return
 
@@ -2655,12 +3059,51 @@ func _autogrind_restore_mp(member: Combatant) -> void:
 		if member.get_item_count(item_id) > 0:
 			member.remove_item(item_id, 1)
 			member.restore_mp(restore)
+			AutogrindSystem.track_item_consumed(item_id)
 			print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, restore])
 			return
 
 
+func _autogrind_save_snapshot() -> void:
+	"""Save a grind snapshot for pause/resume recovery."""
+	if not _autogrind_controller or not is_instance_valid(_autogrind_controller):
+		return
+	var ctrl_snapshot = _autogrind_controller.serialize_snapshot()
+	AutogrindSystem.save_grind_snapshot(ctrl_snapshot)
+
+
+func _resume_autogrind() -> void:
+	"""Resume a previously saved autogrind session."""
+	var snapshot = AutogrindSystem.load_grind_snapshot()
+	if snapshot.is_empty():
+		print("[AUTOGRIND] No snapshot to resume")
+		return
+
+	var ctrl_data = snapshot.get("controller", {})
+	var sys_data = snapshot.get("system", {})
+	var config = ctrl_data.get("config", {})
+
+	# Restore system state before starting grind
+	AutogrindSystem.restore_system_from_snapshot(sys_data)
+
+	# Start autogrind with the saved config (this creates the controller)
+	_start_autogrind(config)
+
+	# Restore controller-specific state after start
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.restore_from_snapshot(ctrl_data)
+
+	# Clear the snapshot now that we've successfully resumed
+	AutogrindSystem.clear_grind_snapshot()
+
+	print("[AUTOGRIND] Session resumed from snapshot")
+
+
 func _exit_tree() -> void:
-	"""Disconnect signals on cleanup to prevent dangling connections"""
+	"""Save snapshot on exit if grinding, then disconnect signals"""
+	if _is_autogrinding and _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_save_snapshot()
+		print("[AUTOGRIND] Snapshot saved on exit")
 	if _exploration_scene and is_instance_valid(_exploration_scene):
 		if _exploration_scene.has_signal("battle_triggered") and _exploration_scene.is_connected("battle_triggered", _on_exploration_battle_triggered):
 			_exploration_scene.disconnect("battle_triggered", _on_exploration_battle_triggered)

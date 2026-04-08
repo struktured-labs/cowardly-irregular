@@ -6,6 +6,7 @@ extends Control
 
 signal closed()
 signal grind_requested(config: Dictionary)
+signal grind_resume_requested()
 signal grind_stop_requested()
 signal tier_cycle_requested()
 
@@ -37,22 +38,103 @@ const MAX_ACTIONS = 2
 
 ## Condition types for autogrind rules
 const CONDITION_TYPES = [
-	{"id": "party_hp_avg", "label": "Party HP", "has_value": true, "default_op": "<", "default_value": 30},
+	{"id": "party_hp_avg", "label": "Party HP%", "has_value": true, "default_op": "<", "default_value": 30},
+	{"id": "party_hp_min", "label": "Lowest HP%", "has_value": true, "default_op": "<", "default_value": 20},
+	{"id": "party_mp_avg", "label": "Party MP%", "has_value": true, "default_op": "<", "default_value": 20},
 	{"id": "alive_count", "label": "Alive", "has_value": true, "default_op": "<=", "default_value": 2},
+	{"id": "member_dead", "label": "Any Dead", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "battles_done", "label": "Battles", "has_value": true, "default_op": ">=", "default_value": 50},
-	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 4.0},
+	{"id": "win_streak", "label": "Win Streak", "has_value": true, "default_op": ">=", "default_value": 20},
+	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
 	{"id": "efficiency", "label": "Efficiency", "has_value": true, "default_op": ">=", "default_value": 5.0},
-	{"id": "member_dead", "label": "Member Dead", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "time_elapsed", "label": "Minutes", "has_value": true, "default_op": ">=", "default_value": 30},
 	{"id": "always", "label": "ALWAYS", "has_value": false, "default_op": "==", "default_value": 0},
 ]
 
 ## Action types for autogrind rules
 const ACTION_TYPES = [
 	{"id": "stop_grinding", "label": "Stop Grind"},
-	{"id": "switch_profile", "label": "Switch Profile", "has_target": true},
-	{"id": "heal_party", "label": "Use Healing Items"},
+	{"id": "heal_party", "label": "Use Potions"},
+	{"id": "restore_mp", "label": "Use Ethers"},
 	{"id": "flee_battle", "label": "Flee Next Battle"},
+	{"id": "switch_profile", "label": "Switch Profile", "has_target": true},
 ]
+
+## Quick-start presets
+const GRIND_PRESETS = {
+	"casual": {
+		"label": "Casual",
+		"description": "Safe grind. Stops on low HP or any death.",
+		"rules": [
+			{
+				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 40}],
+				"actions": [{"type": "heal_party"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "member_dead", "op": "==", "value": 0}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "battles_done", "op": ">=", "value": 20}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+		],
+		"ludicrous": false,
+		"permadeath": false,
+		"auto_advance": false,
+	},
+	"standard": {
+		"label": "Standard",
+		"description": "Balanced grind. Heals HP+MP, stops on 2+ deaths or high corruption.",
+		"rules": [
+			{
+				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}],
+				"actions": [{"type": "heal_party"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "party_mp_avg", "op": "<", "value": 20}],
+				"actions": [{"type": "restore_mp"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "alive_count", "op": "<=", "value": 2}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "corruption", "op": ">=", "value": 3.0}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+		],
+		"ludicrous": false,
+		"permadeath": false,
+		"auto_advance": true,
+	},
+	"hardcore": {
+		"label": "Hardcore",
+		"description": "Ludicrous speed. Only stops on party wipe or collapse.",
+		"rules": [
+			{
+				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 20}],
+				"actions": [{"type": "heal_party"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "alive_count", "op": "<=", "value": 1}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+		],
+		"ludicrous": true,
+		"permadeath": false,
+		"auto_advance": true,
+	},
+}
 
 ## State
 var _is_grinding: bool = false
@@ -76,6 +158,12 @@ var _corruption: float = 0.0
 ## Permadeath staking toggle state
 var _permadeath_staking_enabled: bool = false
 
+## Ludicrous speed (headless resolver) toggle
+var _ludicrous_speed_enabled: bool = false
+
+## Auto-advance regions when cracked
+var _auto_advance_enabled: bool = true
+
 ## UI nodes
 var _grid_container: Control
 var _cursor: Control
@@ -84,6 +172,7 @@ var _battle_log: RichTextLabel
 var _start_button: Control
 var _monitor: AutogrindMonitor
 var _permadeath_toggle_label: Label
+var _ludicrous_toggle_label: Label
 
 ## Region ID for CSI lookups (derived from _region_name)
 var _region_id: String = ""
@@ -105,6 +194,12 @@ func setup(party: Array, region_name: String = "") -> void:
 	_load_rules()
 	_connect_autogrind_signals()
 	call_deferred("_build_ui")
+
+	# Tutorial: first time opening autogrind menu
+	TutorialHints.show(self, "autogrind_menu")
+	# Tutorial: show resume hint if snapshot exists
+	if AutogrindSystem.has_grind_snapshot():
+		TutorialHints.show(self, "autogrind_resume")
 
 
 func _load_rules() -> void:
@@ -269,6 +364,12 @@ func _build_grid_panel(panel_size: Vector2) -> Control:
 	_cursor.z_index = 10
 	panel.add_child(_cursor)
 
+	# Resume button (only if snapshot exists and not grinding)
+	if not _is_grinding and AutogrindSystem.has_grind_snapshot():
+		var resume_btn = _create_resume_button(panel_size)
+		resume_btn.position = Vector2(8, panel_size.y - 82)
+		panel.add_child(resume_btn)
+
 	# Start/Stop button at bottom
 	_start_button = _create_start_stop_button(panel_size)
 	_start_button.position = Vector2(8, panel_size.y - 44)
@@ -310,6 +411,40 @@ func _create_start_stop_button(panel_size: Vector2) -> Control:
 	return btn
 
 
+func _create_resume_button(panel_size: Vector2) -> Control:
+	"""Create resume button for saved grind sessions."""
+	var btn = Control.new()
+	btn.size = Vector2(panel_size.x - 16, 32)
+
+	var bg = ColorRect.new()
+	bg.color = Color(0.15, 0.3, 0.5)
+	bg.size = btn.size
+	btn.add_child(bg)
+
+	_add_pixel_border(btn, btn.size)
+
+	var snapshot = AutogrindSystem.load_grind_snapshot()
+	var sys_data = snapshot.get("system", {})
+	var battles = sys_data.get("battles_completed", 0)
+	var exp = sys_data.get("total_exp_gained", 0)
+
+	var label = Label.new()
+	label.text = "RESUME (%d battles, %d EXP)" % [battles, exp]
+	label.position = Vector2(btn.size.x / 2 - 100, 6)
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
+	btn.add_child(label)
+
+	MenuMouseHelper.make_clickable(btn, 0, btn.size.x, btn.size.y,
+		func() -> void:
+			_log_message("[color=cyan]Resuming saved grind session...[/color]")
+			grind_resume_requested.emit()
+			visible = false,
+		func() -> void: pass)
+
+	return btn
+
+
 func _build_status_panel(panel_size: Vector2) -> Control:
 	"""Build status and log panel"""
 	var panel = Control.new()
@@ -337,6 +472,38 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 			row.position = Vector2(8, y)
 			panel.add_child(row)
 			y += 24
+
+	# Session history (last 5 sessions)
+	var history = AutogrindSystem.get_session_history()
+	if history.size() > 0:
+		y += 4
+		var hist_label = Label.new()
+		hist_label.text = "RECENT SESSIONS"
+		hist_label.position = Vector2(8, y)
+		hist_label.add_theme_font_size_override("font_size", 10)
+		hist_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		panel.add_child(hist_label)
+		y += 14
+
+		var show_count = min(history.size(), 5)
+		for i in range(show_count):
+			var entry = history[history.size() - show_count + i]
+			var dur_min = int(entry.get("duration_sec", 0)) / 60
+			var dur_sec = int(entry.get("duration_sec", 0)) % 60
+			var line_text = "#%d  %db  %dxp  %d:%02d  %s" % [
+				history.size() - show_count + i + 1,
+				entry.get("battles", 0),
+				entry.get("total_exp", 0),
+				dur_min, dur_sec,
+				entry.get("reason", "?"),
+			]
+			var line = Label.new()
+			line.text = line_text
+			line.position = Vector2(12, y)
+			line.add_theme_font_size_override("font_size", 9)
+			line.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
+			panel.add_child(line)
+			y += 12
 
 	# Battle log
 	y += 8
@@ -399,13 +566,40 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 
 
 func _build_footer(vp_size: Vector2) -> void:
-	"""Build footer with controls help and permadeath staking toggle"""
+	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "D-Pad:Navigate  A:Edit  B:Delete/Close  Tab:Toggle  Start:Save  Select:Start/Stop  P:Permadeath"
+	footer.text = "A:Edit  B:Close  Start:Go  1:Casual  2:Standard  3:Hardcore  E:Export  I:Import"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
+
+	# Ludicrous speed toggle button
+	var ls_btn := Control.new()
+	ls_btn.size = Vector2(200, 28)
+	ls_btn.position = Vector2(vp_size.x - 420, vp_size.y - 32)
+
+	var ls_bg := ColorRect.new()
+	ls_bg.size = ls_btn.size
+	ls_bg.color = Color(0.6, 0.2, 0.8) if _ludicrous_speed_enabled else Color(0.1, 0.08, 0.15)
+	ls_btn.add_child(ls_bg)
+
+	_add_pixel_border(ls_btn, ls_btn.size)
+
+	_ludicrous_toggle_label = Label.new()
+	_ludicrous_toggle_label.text = "[H] LUDICROUS: %s" % ("ON" if _ludicrous_speed_enabled else "OFF")
+	_ludicrous_toggle_label.position = Vector2(8, 6)
+	_ludicrous_toggle_label.add_theme_font_size_override("font_size", 11)
+	_ludicrous_toggle_label.add_theme_color_override(
+		"font_color",
+		Color.WHITE if _ludicrous_speed_enabled else DISABLED_COLOR
+	)
+	ls_btn.add_child(_ludicrous_toggle_label)
+
+	MenuMouseHelper.make_clickable(ls_btn, 0, ls_btn.size.x, ls_btn.size.y,
+		func() -> void: _toggle_ludicrous_speed(),
+		func() -> void: pass)
+	add_child(ls_btn)
 
 	# Permadeath staking toggle button
 	var pd_btn := Control.new()
@@ -1008,6 +1202,38 @@ func _input(event: InputEvent) -> void:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
+		_toggle_ludicrous_speed()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_H and not event.is_echo():
+		_toggle_ludicrous_speed()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_W and not event.is_echo():
+		_toggle_auto_advance()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.is_echo():
+		_export_scripts()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and not event.is_echo():
+		_import_scripts()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_1 and not event.is_echo():
+		_apply_preset("casual")
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_2 and not event.is_echo():
+		_apply_preset("standard")
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_3 and not event.is_echo():
+		_apply_preset("hardcore")
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
 		_toggle_permadeath_staking()
 		get_viewport().set_input_as_handled()
@@ -1265,8 +1491,136 @@ func _get_grind_config() -> Dictionary:
 	return {
 		"region": _region_name,
 		"rules": rules.duplicate(true),
-		"permadeath_staking": _permadeath_staking_enabled
+		"permadeath_staking": _permadeath_staking_enabled,
+		"ludicrous_speed": _ludicrous_speed_enabled,
+		"auto_advance": _auto_advance_enabled
 	}
+
+
+func _toggle_ludicrous_speed() -> void:
+	"""Toggle ludicrous speed (headless battle resolver)."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change speed mode while grinding.[/color]")
+		return
+
+	_ludicrous_speed_enabled = not _ludicrous_speed_enabled
+	if _ludicrous_speed_enabled:
+		_log_message("[color=magenta]LUDICROUS SPEED enabled! Battles resolve instantly via math.[/color]")
+	else:
+		_log_message("[color=lime]Ludicrous speed disabled. Normal battle rendering.[/color]")
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _apply_preset(preset_id: String) -> void:
+	"""Apply a quick-start preset configuration."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change preset while grinding.[/color]")
+		return
+
+	if not GRIND_PRESETS.has(preset_id):
+		return
+
+	var preset = GRIND_PRESETS[preset_id]
+	rules = preset["rules"].duplicate(true)
+	_ludicrous_speed_enabled = preset.get("ludicrous", false)
+	_permadeath_staking_enabled = preset.get("permadeath", false)
+	_auto_advance_enabled = preset.get("auto_advance", true)
+
+	if _permadeath_staking_enabled:
+		AutogrindSystem.enable_permadeath_staking(true)
+	else:
+		AutogrindSystem.enable_permadeath_staking(false)
+
+	_log_message("[color=cyan]Preset: %s — %s[/color]" % [preset["label"], preset["description"]])
+	TutorialHints.show(self, "autogrind_presets")
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _toggle_auto_advance() -> void:
+	"""Toggle auto-advance to next world when region is cracked."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change auto-advance while grinding.[/color]")
+		return
+
+	_auto_advance_enabled = not _auto_advance_enabled
+	if _auto_advance_enabled:
+		_log_message("[color=cyan]Auto-advance ON: will advance to next world when region cracked.[/color]")
+	else:
+		_log_message("[color=yellow]Auto-advance OFF: staying in current region after crack.[/color]")
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _export_scripts() -> void:
+	"""Export autobattle scripts + autogrind rules to JSON files."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot export while grinding.[/color]")
+		return
+
+	var exported = 0
+
+	# Export party autobattle scripts as a bundle
+	if _party.size() > 0:
+		var path = ScriptShareManager.export_all_scripts(_party)
+		if path != "":
+			exported += 1
+			_log_message("[color=lime]Exported party autobattle scripts[/color]")
+
+	# Export autogrind rules
+	var rules_path = ScriptShareManager.export_autogrind_rules()
+	if rules_path != "":
+		exported += 1
+		_log_message("[color=lime]Exported autogrind rules[/color]")
+
+	if exported == 0:
+		_log_message("[color=yellow]Nothing to export.[/color]")
+	else:
+		_log_message("[color=lime]%d file(s) exported to script_exports/[/color]" % exported)
+		TutorialHints.show(self, "autogrind_export")
+	SoundManager.play_ui("menu_select")
+
+
+func _import_scripts() -> void:
+	"""Import autobattle scripts and autogrind rules from export files."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot import while grinding.[/color]")
+		return
+
+	var files = ScriptShareManager.list_exports()
+	if files.is_empty():
+		_log_message("[color=yellow]No export files found. Export first with [E].[/color]")
+		return
+
+	var imported = 0
+	for filename in files:
+		var data = ScriptShareManager.import_file(filename)
+		if data.is_empty():
+			continue
+		match data.get("type", ""):
+			"autobattle_bundle":
+				var count = ScriptShareManager.apply_script_bundle(data)
+				if count > 0:
+					imported += count
+					_log_message("[color=lime]Imported %d autobattle scripts from %s[/color]" % [count, filename])
+			"autobattle_script":
+				var char_id = data.get("character_id", "")
+				if char_id != "" and ScriptShareManager.apply_character_script(char_id, data):
+					imported += 1
+					_log_message("[color=lime]Imported script for %s[/color]" % char_id)
+			"autogrind_rules":
+				if ScriptShareManager.apply_autogrind_rules(data):
+					imported += 1
+					rules = AutogrindSystem.get_autogrind_rules()
+					_log_message("[color=lime]Imported autogrind rules from %s[/color]" % filename)
+
+	if imported == 0:
+		_log_message("[color=yellow]No compatible files to import.[/color]")
+	else:
+		_build_ui()
+
+	SoundManager.play_ui("menu_select")
 
 
 func _toggle_permadeath_staking() -> void:

@@ -63,7 +63,8 @@
       "model": "suno-v4",
       "duration": 147.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_suburban": {
       "file": "assets/audio/music/overworld_suburban.ogg",
@@ -114,7 +115,8 @@
       "model": "suno-v4",
       "duration": 94.48,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_digital": {
       "file": "assets/audio/music/village_digital.ogg",
@@ -152,7 +154,8 @@
       "model": "suno-v4",
       "duration": 163.0,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "village_steampunk": {
       "file": "assets/audio/music/village_steampunk.ogg",
@@ -229,7 +232,8 @@
       "model": "suno-v4",
       "duration": 144.84,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_digital": {
       "file": "assets/audio/music/overworld_digital.ogg",
@@ -267,7 +271,8 @@
       "model": "suno-v4",
       "duration": 157.2,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "overworld_abstract": {
       "file": "assets/audio/music/overworld_abstract.ogg",
@@ -318,7 +323,8 @@
       "model": "suno-v4",
       "duration": 224.96,
       "loop": true,
-      "generated_at": "2026-03-21"
+      "generated_at": "2026-03-21",
+      "pinned": true
     },
     "victory": {
       "file": "assets/audio/music/victory.ogg",
@@ -1292,73 +1298,43 @@
       "file": "assets/audio/music/victory_medieval.ogg",
       "tier": "T1",
       "provider": "suno",
-      "title": "Glory of the Realm",
-      "prompt": "EXPLOSIVE medieval victory fanfare with VAN HALEN finger-tapping electric guitar energy over triumphant orchestral brass. Shredding guitar solo that screams triumph, pounding drums, the absolute RUSH of winning a hard fight. 80s rock meets JRPG fanfare \u2014 Eddie Van Halen playing the Final Fantasy victory theme. Blazing fast, exhilarating, fist-pumping. 20-25 seconds of pure adrenaline.",
-      "style": "80s rock victory, Van Halen, finger-tapping guitar, triumphant brass, shredding solo, JRPG fanfare, 160 BPM",
-      "model": "suno-v4",
-      "duration": 24.48,
-      "loop": true,
-      "generated_at": "2026-04-06"
+      "title": "Van Halen Victory",
+      "loop": false
     },
     "victory_suburban": {
       "file": "assets/audio/music/victory_suburban.ogg",
       "tier": "T1",
       "provider": "suno",
-      "title": "Nailed It",
-      "prompt": "Funky suburban victory fanfare \u2014 slap bass groove with punchy synth brass hits, quirky EarthBound celebration energy. The satisfying feeling of beating something absurd. Funky guitar licks, hand claps, a melody that sounds like high-fiving after defeating a possessed lawn ornament. Triumphant but weird. 15-20 seconds.",
-      "style": "funky victory, slap bass, synth brass, EarthBound celebration, quirky triumphant, 140 BPM",
-      "model": "suno-v4",
-      "duration": 10.36,
-      "loop": true,
-      "generated_at": "2026-04-06"
+      "title": "Funky Celebration",
+      "loop": false
     },
     "victory_steampunk": {
       "file": "assets/audio/music/victory_steampunk.ogg",
       "tier": "T1",
       "provider": "suno",
-      "title": "Gears of Glory",
-      "prompt": "Steampunk victory fanfare \u2014 triumphant brass fanfare over clockwork percussion, steam whistles blasting in celebration. A victorious waltz that builds to a soaring brass climax with gear-grinding bass and clanging bells. Mechanical triumph \u2014 the factory celebrates. 20 seconds.",
-      "style": "steampunk victory, brass fanfare, clockwork percussion, steam whistle, triumphant waltz, 150 BPM",
-      "model": "suno-v4",
-      "duration": 15.44,
-      "loop": true,
-      "generated_at": "2026-04-06"
+      "title": "Clockwork Triumph",
+      "loop": false
     },
     "victory_industrial": {
       "file": "assets/audio/music/victory_industrial.ogg",
       "tier": "T1",
       "provider": "suno",
-      "title": "Shift Complete",
-      "prompt": "Industrial victory fanfare \u2014 factory sirens repurposed as triumphant horns, heavy stamping percussion like a machine celebrating, distorted power chords resolving into a brief moment of human warmth underneath the steel. The sound of punching out after the hardest shift. Brief, hard, earned. 15 seconds.",
-      "style": "industrial victory, heavy percussion, siren fanfare, distorted triumph, aggressive celebration, 130 BPM",
-      "model": "suno-v4",
-      "duration": 35.56,
-      "loop": true,
-      "generated_at": "2026-04-06"
+      "title": "Factory Sirens",
+      "loop": false
     },
     "victory_digital": {
       "file": "assets/audio/music/victory_digital.ogg",
       "tier": "T1",
       "provider": "suno",
       "title": "Achievement Unlocked",
-      "prompt": "Digital victory fanfare \u2014 rapid ascending chiptune arpeggios, glitchy celebration sounds, the EXACT feeling of an achievement unlocking. 8-bit trumpet melody over synthwave bass, cascading data-stream sparkles. Quick, satisfying, dopamine hit. 15 seconds.",
-      "style": "digital victory, chiptune fanfare, glitch celebration, ascending arpeggios, level-up energy, 155 BPM",
-      "model": "suno-v4",
-      "duration": 13.68,
-      "loop": true,
-      "generated_at": "2026-04-06"
+      "loop": false
     },
     "victory_abstract": {
       "file": "assets/audio/music/victory_abstract.ogg",
       "tier": "T1",
       "provider": "suno",
-      "title": "Understanding",
-      "prompt": "Abstract victory fanfare \u2014 all six worlds' musical signatures converging into a single transcendent chord. Not loud celebration but profound UNDERSTANDING. Medieval strings, suburban funk, clockwork brass, industrial percussion, digital chiptune, and abstract silence all resolving together. Earned, vast, the sound of something finally making sense. 20 seconds.",
-      "style": "abstract victory, all genres merging, transcendent chord, earned silence, profound, 100 BPM",
-      "model": "suno-v4",
-      "duration": 27.08,
-      "loop": true,
-      "generated_at": "2026-04-06"
+      "title": "Convergence",
+      "loop": false
     }
   },
   "tier_priority": [

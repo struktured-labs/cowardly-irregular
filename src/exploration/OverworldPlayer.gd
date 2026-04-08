@@ -9,7 +9,7 @@ signal interaction_requested()
 signal menu_requested()
 
 ## Movement configuration
-@export var move_speed: float = 180.0  # Slightly faster to compensate for Mode 7 perspective compression
+@export var move_speed: float = 240.0  # Fast enough to feel responsive through Mode 7 compression
 
 ## Direction enum
 enum Direction { DOWN, UP, LEFT, RIGHT }
@@ -208,7 +208,7 @@ func _ready() -> void:
 	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	wall_min_slide_angle = 0.0  # Always allow wall sliding, even head-on
-	safe_margin = 1.0  # Prevents getting stuck on tile collision seams
+	safe_margin = 4.0  # Extra generous — Mode 7 visual mismatch needs maximum forgiveness
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
@@ -223,7 +223,7 @@ func _setup_sprite() -> void:
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
 	var shape = CircleShape2D.new()
-	shape.radius = 7.0  # Small radius prevents getting stuck on tile edges
+	shape.radius = 4.0  # Tiny collision for maximum Mode 7 navigation forgiveness
 	collision.shape = shape
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)
@@ -231,6 +231,29 @@ func _setup_sprite() -> void:
 	# Set collision layers: layer 1 = walls, layer 2 = player (for NPC detection)
 	collision_layer = 2  # Player is on layer 2 so NPCs can detect us
 	collision_mask = 1   # Player collides with walls (layer 1)
+
+
+func _get_terrain_speed_modifier() -> float:
+	"""Check tile under player and apply speed penalty for rough terrain."""
+	var parent = get_parent()
+	if not parent or not parent.has_node("TileMap"):
+		return 1.0
+	var tile_map = parent.get_node("TileMap")
+	var tile_size = tile_map.tile_set.tile_size.x if tile_map.tile_set else 16
+	var tile_pos = Vector2i(int(position.x) / tile_size, int(position.y) / tile_size)
+	var tile_data = tile_map.get_cell_tile_data(tile_pos)
+	if not tile_data:
+		return 1.0
+	# Check atlas coords to determine tile type — rough terrain = slower
+	var atlas_coords = tile_map.get_cell_atlas_coords(tile_pos)
+	var tile_id = atlas_coords.y * 5 + atlas_coords.x  # 5 columns in atlas
+	# TileGenerator tile order: GRASS=0, FOREST=1, MOUNTAIN=2, WATER=3, PATH=4, ...
+	# Forest/Mountain/Water = slower instead of blocked (Mode 7 invisible wall fix)
+	match tile_id:
+		1: return 0.5   # Forest — half speed
+		2: return 0.4   # Mountain — very slow
+		3: return 0.5   # Water — half speed (wading)
+		_: return 1.0
 
 
 func _can_move() -> bool:
@@ -267,13 +290,12 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		# Compensate for Mode 7 horizontal compression before normalizing.
-		# Shader x_width = near_scale/h = 0.45/0.75 = 0.6 at player feet.
-		# Boost horizontal input by 1/0.6 = 1.667x, then renormalize.
-		# This makes horizontal movement LOOK equal to vertical on Mode 7 view.
-		input_dir.x *= 1.667
+		# Shader compresses horizontal visually — boost X to feel equal to vertical.
+		input_dir.x *= 2.0
 		input_dir = input_dir.normalized()
-		# Instant velocity — classic JRPG snap, no slide
-		velocity = input_dir * move_speed
+		# Terrain speed modifier — rough terrain slows you down instead of blocking
+		var terrain_speed = _get_terrain_speed_modifier()
+		velocity = input_dir * move_speed * terrain_speed
 		is_moving = true
 
 		if abs(input_dir.x) > abs(input_dir.y):
@@ -287,9 +309,22 @@ func _physics_process(delta: float) -> void:
 
 	# Track distance for step counting
 	var old_pos = position
+	var pre_vel = velocity
 	move_and_slide()
 	var moved_dist = position.distance_to(old_pos)
 	distance_walked += moved_dist
+
+	# Debug: detect when player is trying to move but blocked
+	if pre_vel.length() > 10.0 and moved_dist < 0.5:
+		var slide_count = get_slide_collision_count()
+		if slide_count > 0:
+			var col = get_slide_collision(0)
+			var collider = col.get_collider()
+			var cname = collider.name if collider else "unknown"
+			var cclass = collider.get_class() if collider else "?"
+			print("[STUCK] pos=%s vel=%s collider=%s(%s) normal=%s" % [position, pre_vel, cname, cclass, col.get_normal()])
+		else:
+			print("[STUCK] pos=%s vel=%s NO COLLISION (possible clamp?)" % [position, pre_vel])
 
 	# Emit step signal every STEP_DISTANCE pixels
 	while distance_walked >= STEP_DISTANCE:
@@ -894,36 +929,42 @@ func _draw_chibi_torso_side(img: Image, p: Dictionary, cx: int, ty: int, face_ri
 
 
 func _draw_chibi_arms_front(img: Image, p: Dictionary, cx: int, ty: int, la: int, ra: int) -> void:
-	# Arms hanging from shoulder tops; la/ra = vertical swing offset
+	# Arms with slight outward angle and elbow taper for natural silhouette
 	var ol = p["outline"]
 	var bs = p["body_s"]; var b = p["body"]; var bh = p["body_h"]
 	var sk = p["skin"]; var sks = p["skin_s"]
-	# Left arm (at cx-6)
-	var lax = cx - 6
+	# Left arm — angled slightly outward, tapers at wrist
 	var lay_start = ty + la
-	for i in range(5):
-		_px(img, lax - 1, lay_start + i, ol)
-		_px(img, lax,     lay_start + i, bs)
-		_px(img, lax + 1, lay_start + i, b)
-		_px(img, lax + 2, lay_start + i, ol)
+	for i in range(6):
+		var spread = -i / 3  # Gradual outward angle
+		var ax = cx - 6 + spread
+		var w = 3 if i < 3 else 2  # Wider at shoulder, narrower at wrist
+		_px(img, ax - 1, lay_start + i, ol)
+		for j in range(w):
+			_px(img, ax + j, lay_start + i, bs if j == 0 else b)
+		_px(img, ax + w, lay_start + i, ol)
 	# Left hand
-	_px(img, lax - 1, lay_start + 5, ol)
-	_px(img, lax,     lay_start + 5, sks)
-	_px(img, lax + 1, lay_start + 5, sk)
-	_px(img, lax + 2, lay_start + 5, ol)
-	# Right arm (at cx+6)
-	var rax = cx + 5
+	var lhx = cx - 6 - 2
+	_px(img, lhx, lay_start + 6, ol)
+	_px(img, lhx + 1, lay_start + 6, sks)
+	_px(img, lhx + 2, lay_start + 6, sk)
+	_px(img, lhx + 3, lay_start + 6, ol)
+	# Right arm — mirror angle
 	var ray_start = ty + ra
-	for i in range(5):
-		_px(img, rax - 1, ray_start + i, ol)
-		_px(img, rax,     ray_start + i, b)
-		_px(img, rax + 1, ray_start + i, bh)
-		_px(img, rax + 2, ray_start + i, ol)
+	for i in range(6):
+		var spread = i / 3
+		var ax = cx + 5 + spread
+		var w = 3 if i < 3 else 2
+		_px(img, ax - 1, ray_start + i, ol)
+		for j in range(w):
+			_px(img, ax + j, ray_start + i, b if j == 0 else bh)
+		_px(img, ax + w, ray_start + i, ol)
 	# Right hand
-	_px(img, rax - 1, ray_start + 5, ol)
-	_px(img, rax,     ray_start + 5, sk)
-	_px(img, rax + 1, ray_start + 5, sk)
-	_px(img, rax + 2, ray_start + 5, ol)
+	var rhx = cx + 5 + 2
+	_px(img, rhx - 1, ray_start + 6, ol)
+	_px(img, rhx, ray_start + 6, sk)
+	_px(img, rhx + 1, ray_start + 6, sk)
+	_px(img, rhx + 2, ray_start + 6, ol)
 
 
 func _draw_chibi_arms_back(img: Image, p: Dictionary, cx: int, ty: int, la: int, ra: int) -> void:
@@ -933,32 +974,36 @@ func _draw_chibi_arms_back(img: Image, p: Dictionary, cx: int, ty: int, la: int,
 
 func _draw_chibi_arms_side(img: Image, p: Dictionary, cx: int, ty: int,
 		front_arm: int, back_arm: int, face_right: bool) -> void:
-	# Side view: two arms stacked, back arm behind body, front arm in front
+	# Side view: arms with natural bend, back arm darker/thinner
 	var ol = p["outline"]
 	var bs = p["body_s"]; var b = p["body"]; var bh = p["body_h"]
 	var sk = p["skin"]; var sks = p["skin_s"]
 	var fd = 1 if face_right else -1
 
-	# Back arm (body-width side, darker)
+	# Back arm (darker, thinner — partially occluded by body)
 	var bax = cx - fd * 3
-	for i in range(5):
+	for i in range(6):
 		var ay = ty + 1 - back_arm + i
-		_px(img, bax - 1, ay, ol)
-		_px(img, bax,     ay, bs)
-		_px(img, bax + 1, ay, ol)
-	_px(img, bax, ty + 6 - back_arm, sks)  # back hand
+		var bend = fd * (1 if i >= 3 else 0)  # Slight elbow bend
+		_px(img, bax - 1 + bend, ay, ol)
+		_px(img, bax + bend,     ay, bs)
+		_px(img, bax + 1 + bend, ay, ol)
+	_px(img, bax + fd, ty + 7 - back_arm, sks)  # back hand
 
-	# Front arm (face side, lighter)
+	# Front arm (wider, lighter, with elbow angle)
 	var fax = cx + fd * 4
-	for i in range(5):
+	for i in range(6):
 		var ay = ty + 1 - front_arm + i
-		_px(img, fax - 1, ay, ol)
-		_px(img, fax,     ay, b)
-		_px(img, fax + 1, ay, bh)
-		_px(img, fax + 2, ay, ol)
+		var bend = -fd * (1 if i >= 3 else 0)  # Opposite elbow bend
+		var w = 3 if i < 3 else 2  # Taper at forearm
+		_px(img, fax - 1 + bend, ay, ol)
+		for j in range(w):
+			_px(img, fax + j + bend, ay, b if j == 0 else bh)
+		_px(img, fax + w + bend, ay, ol)
 	# Front hand
-	_px(img, fax,     ty + 6 - front_arm, sk)
-	_px(img, fax + 1, ty + 6 - front_arm, sk)
+	var hbend = -fd
+	_px(img, fax + hbend,     ty + 7 - front_arm, sk)
+	_px(img, fax + hbend + 1, ty + 7 - front_arm, sk)
 
 
 func _draw_chibi_legs_front(img: Image, p: Dictionary, cx: int, leg_top: int, ll: int, rl: int) -> void:

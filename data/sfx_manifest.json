@@ -5,9 +5,9 @@
   "sfx": {
     "menu_move": {
       "file": "assets/audio/sfx/menu_move.ogg",
-      "prompt": "Ultra short crisp digital tick, snappy cursor blip like a SNES menu highlight moving, tight clean pixel-perfect click",
+      "prompt": "Very short low bubbly boing tick, quick wobbly digital dink with a silly wah bend, playful retro menu cursor — dampened highs, pitched up 50%",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.95
     },
     "menu_select": {
       "file": "assets/audio/sfx/menu_select.ogg",
@@ -83,9 +83,33 @@
     },
     "chest_open": {
       "file": "assets/audio/sfx/chest_open.ogg",
-      "prompt": "Treasure chest unlatching and creaking open, cascade of gold coins jingling inside, slot machine jackpot payout, rewarding",
+      "prompt": "Wooden treasure chest lid creaking open with rusty hinges, satisfying latch clunk then magical shimmer of treasure revealed, classic RPG chest",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.7
+    },
+    "save_crystal_near": {
+      "file": "assets/audio/sfx/save_crystal_near.ogg",
+      "prompt": "Soft magical crystal hum beginning, gentle ethereal resonance like approaching a glowing gem, quiet mystical proximity chime",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "save_crystal_activate": {
+      "file": "assets/audio/sfx/save_crystal_activate.ogg",
+      "prompt": "Crystal activating with a bright ascending chime cascade, magical save point resonating with pure tones, satisfying confirmation sparkle reaching a clear peak note",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "door_open": {
+      "file": "assets/audio/sfx/door_open.ogg",
+      "prompt": "Heavy wooden door creaking open, old iron hinges groaning, medieval dungeon door swinging with a deep resonant creak",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "door_close": {
+      "file": "assets/audio/sfx/door_close.ogg",
+      "prompt": "Heavy wooden door shutting firmly, solid thud of thick oak closing with a deep latch click, dungeon door sealing",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
     },
     "tier_zoom_out": {
       "file": "assets/audio/sfx/tier_zoom_out.ogg",
@@ -224,6 +248,99 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
     },
+    "footstep_snow": {
+      "file": "assets/audio/sfx/footstep_snow.ogg",
+      "prompt": "Single footstep crunching fresh snow, quiet boot compressing powder, crisp cold winter step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_snow_v2", "footstep_snow_v3"]
+    },
+    "footstep_snow_v2": {
+      "file": "assets/audio/sfx/footstep_snow_v2.ogg",
+      "prompt": "Single boot step in deep snow, muffled crunch of packed ice crystals, heavy winter footfall",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_snow_v3": {
+      "file": "assets/audio/sfx/footstep_snow_v3.ogg",
+      "prompt": "Single light step on icy snow crust, thin crackle of frozen surface breaking, delicate winter step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_metal": {
+      "file": "assets/audio/sfx/footstep_metal.ogg",
+      "prompt": "Single boot step on metal grate, industrial steel floor clang, short hollow metallic footfall",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_metal_v2", "footstep_metal_v3"]
+    },
+    "footstep_metal_v2": {
+      "file": "assets/audio/sfx/footstep_metal_v2.ogg",
+      "prompt": "Single step on metal catwalk, light ringing steel platform footstep, factory floor tap",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_metal_v3": {
+      "file": "assets/audio/sfx/footstep_metal_v3.ogg",
+      "prompt": "Single heavy boot on iron plate, deep dull metallic thud, industrial walkway step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_wood": {
+      "file": "assets/audio/sfx/footstep_wood.ogg",
+      "prompt": "Single footstep on wooden floorboard, warm hollow wood tap, tavern floor step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7,
+      "variants": ["footstep_wood_v2", "footstep_wood_v3"]
+    },
+    "footstep_wood_v2": {
+      "file": "assets/audio/sfx/footstep_wood_v2.ogg",
+      "prompt": "Single step on creaky wooden plank, old floorboard groaning softly, rustic cabin step",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "footstep_wood_v3": {
+      "file": "assets/audio/sfx/footstep_wood_v3.ogg",
+      "prompt": "Single boot on wooden deck, solid timber thump, ship deck or bridge footstep",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "ambient_forest": {
+      "file": "assets/audio/sfx/ambient_forest.ogg",
+      "prompt": "Peaceful forest ambience, birds singing in canopy, gentle breeze through leaves, distant woodpecker tapping, tranquil woodland atmosphere",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_plains": {
+      "file": "assets/audio/sfx/ambient_plains.ogg",
+      "prompt": "Open grassland wind ambience, steady breeze across flat terrain, distant meadow birds, rustling tall grass, wide open plains atmosphere",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_cave": {
+      "file": "assets/audio/sfx/ambient_cave.ogg",
+      "prompt": "Dark cave ambience, slow water dripping echoing off stone walls, distant underground stream, hollow wind draft through tunnels",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_village": {
+      "file": "assets/audio/sfx/ambient_village.ogg",
+      "prompt": "Quiet medieval village ambience, distant blacksmith hammering, chickens clucking, murmur of townsfolk, gentle wind through thatched roofs",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_dungeon": {
+      "file": "assets/audio/sfx/ambient_dungeon.ogg",
+      "prompt": "Eerie dungeon ambience, creaking chains, distant moaning wind, dripping water echoing, rat scurrying sounds, oppressive underground atmosphere",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
+    "ambient_coast": {
+      "file": "assets/audio/sfx/ambient_coast.ogg",
+      "prompt": "Gentle ocean waves lapping on shore, seagulls calling overhead, light coastal breeze, peaceful seaside ambience",
+      "duration_seconds": 5.0,
+      "prompt_influence": 0.6
+    },
     "weather_rain": {
       "file": "assets/audio/sfx/weather_rain.ogg",
       "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",
@@ -254,6 +371,72 @@
       "duration_seconds": 5.0,
       "prompt_influence": 0.6
     },
+    "level_up": {
+      "file": "assets/audio/sfx/level_up.ogg",
+      "prompt": "Triumphant ascending chime cascade, bright crystalline notes climbing upward like a classic RPG level up jingle, magical sparkle reaching a satisfying peak note",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "gold_pickup": {
+      "file": "assets/audio/sfx/gold_pickup.ogg",
+      "prompt": "Handful of gold coins clinking together, bright metallic jingling of treasure being collected, satisfying coin cascade into a pouch",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "exp_tick": {
+      "file": "assets/audio/sfx/exp_tick.ogg",
+      "prompt": "Ultra short soft digital pip, tiny progress bar increment tick, minimal quiet blip like a meter filling up one notch",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.8
+    },
+    "group_formation": {
+      "file": "assets/audio/sfx/group_formation.ogg",
+      "prompt": "Party uniting in formation, synchronized war cry with weapons clashing together, team power combining with a resonant harmonic chord, RPG party unite attack",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_four_heroes": {
+      "file": "assets/audio/sfx/formation_four_heroes.ogg",
+      "prompt": "Four warriors striking as one, balanced sword slash and magic burst and shield bash and arrow combined into a single powerful harmonious impact",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_arcane_tempest": {
+      "file": "assets/audio/sfx/formation_arcane_tempest.ogg",
+      "prompt": "Massive magical storm erupting, swirling arcane energy tornado with multiple spell elements colliding, overwhelming magical vortex explosion",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
+    "formation_blade_storm": {
+      "file": "assets/audio/sfx/formation_blade_storm.ogg",
+      "prompt": "Rapid flurry of blade strikes, dozens of sword slashes in quick succession like a blender of steel, metallic whirlwind of cutting edges",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_iron_wall": {
+      "file": "assets/audio/sfx/formation_iron_wall.ogg",
+      "prompt": "Massive shields slamming together into formation, deep resonant metal wall impact, fortress defense activating with a heavy bass shockwave",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "formation_shadow_strike": {
+      "file": "assets/audio/sfx/formation_shadow_strike.ogg",
+      "prompt": "Silent deadly assassination strike, quick shadow whoosh into a precise lethal impact, ninja vanish and reappear with a sharp finishing blow",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "formation_chaos_theory": {
+      "file": "assets/audio/sfx/formation_chaos_theory.ogg",
+      "prompt": "Slot machine spinning with chaotic energy, random magical effects firing wildly, dice rolling mixed with explosions and sparkles, unpredictable gamble sound",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
+    "boss_defeat_stinger": {
+      "file": "assets/audio/sfx/boss_defeat_stinger.ogg",
+      "prompt": "Epic triumphant orchestral explosion, massive brass fanfare with cymbal crash and deep bass resolve, victorious final blow shockwave dissolving into golden sparkles",
+      "duration_seconds": 2.5,
+      "prompt_influence": 0.7
+    },
     "boss_intro_stinger": {
       "file": "assets/audio/sfx/boss_intro_stinger.ogg",
       "prompt": "Dramatic orchestral hit with deep timpani slam, ominous brass stab announcing danger, dark foreboding impact like a boss appearing in an RPG, reverberating doom chord",
@@ -282,19 +465,58 @@
       "file": "assets/audio/sfx/heal.ogg",
       "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "variants": ["heal_v2", "heal_v3"]
+    },
+    "heal_v2": {
+      "file": "assets/audio/sfx/heal_v2.ogg",
+      "prompt": "Warm golden light materializing, soft ascending harp glissando with crystalline sparkles, gentle magical restoration",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "heal_v3": {
+      "file": "assets/audio/sfx/heal_v3.ogg",
+      "prompt": "Holy water splash with bell chime, purifying droplets with a soft resonant tone, cleansing white magic wash",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
     },
     "buff": {
       "file": "assets/audio/sfx/buff.ogg",
       "prompt": "Quick magical power-up whoosh with rising pitch, energizing upward sweep of warm synth, stat boost activated",
       "duration_seconds": 0.8,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "variants": ["buff_v2", "buff_v3"]
+    },
+    "buff_v2": {
+      "file": "assets/audio/sfx/buff_v2.ogg",
+      "prompt": "Sharp ascending power chord, quick energizing burst with bright harmonics, magical shield activating with a confident snap",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
+    },
+    "buff_v3": {
+      "file": "assets/audio/sfx/buff_v3.ogg",
+      "prompt": "Rapid upward chime sequence like collecting power stars, bright encouraging ascending notes, RPG stat boost jingle",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
     },
     "debuff": {
       "file": "assets/audio/sfx/debuff.ogg",
       "prompt": "Sad descending pitch drop, deflating rubber balloon losing air, comical weakening spiral downward",
       "duration_seconds": 0.8,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "variants": ["debuff_v2", "debuff_v3"]
+    },
+    "debuff_v2": {
+      "file": "assets/audio/sfx/debuff_v2.ogg",
+      "prompt": "Dark descending warble, ominous power drain with a low rumbling fade, curse taking hold with a hollow echo",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
+    },
+    "debuff_v3": {
+      "file": "assets/audio/sfx/debuff_v3.ogg",
+      "prompt": "Quick dissonant chord dissolving downward, shattering glass falling into a pit, stat reduction with sharp negative tone",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
     },
     "victory": {
       "file": "assets/audio/sfx/victory.ogg",
@@ -348,17 +570,56 @@
       "file": "assets/audio/sfx/ability_fire.ogg",
       "prompt": "Roaring campfire erupting, warm crackling flames whooshing upward, deep orange fire with wood pops and snaps, cozy but powerful",
       "duration_seconds": 1.2,
+      "prompt_influence": 0.7,
+      "variants": ["ability_fire_v2", "ability_fire_v3"]
+    },
+    "ability_fire_v2": {
+      "file": "assets/audio/sfx/ability_fire_v2.ogg",
+      "prompt": "Explosive fireball detonation, quick burst of intense flame with a deep bass boom, magical fire igniting in a flash",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_fire_v3": {
+      "file": "assets/audio/sfx/ability_fire_v3.ogg",
+      "prompt": "Dragon breath flame jet, sustained roaring fire stream with crackling embers trailing off, fierce heat wave",
+      "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
     "ability_ice": {
       "file": "assets/audio/sfx/ability_ice.ogg",
       "prompt": "Cracking frozen lake, sharp crystalline ice forming rapidly, cold brittle snapping with frosty wind howl, winter blizzard",
       "duration_seconds": 1.2,
+      "prompt_influence": 0.7,
+      "variants": ["ability_ice_v2", "ability_ice_v3"]
+    },
+    "ability_ice_v2": {
+      "file": "assets/audio/sfx/ability_ice_v2.ogg",
+      "prompt": "Ice lance shattering on impact, sharp crystalline explosion of frozen shards scattering, brittle glass-like breaking with cold reverb",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_ice_v3": {
+      "file": "assets/audio/sfx/ability_ice_v3.ogg",
+      "prompt": "Freezing spell encasing target, rapid frost spreading with crackling crystallization, deep cold whoosh as ice solidifies",
+      "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
     "ability_lightning": {
       "file": "assets/audio/sfx/ability_lightning.ogg",
       "prompt": "Close thunderclap with electric buzzing aftermath, raw thunder strike with static discharge crackling, stormy atmospheric",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7,
+      "variants": ["ability_lightning_v2", "ability_lightning_v3"]
+    },
+    "ability_lightning_v2": {
+      "file": "assets/audio/sfx/ability_lightning_v2.ogg",
+      "prompt": "Sharp electric bolt striking ground, quick bright zap with sizzling aftermath, concentrated lightning discharge with ozone crackle",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "ability_lightning_v3": {
+      "file": "assets/audio/sfx/ability_lightning_v3.ogg",
+      "prompt": "Chain lightning arcing between targets, rapid succession of electrical snaps and pops, crackling energy bouncing with fading static",
       "duration_seconds": 1.0,
       "prompt_influence": 0.7
     },
@@ -384,7 +645,20 @@
       "file": "assets/audio/sfx/ability_heal.ogg",
       "prompt": "Gentle rain on leaves with harp notes, nature healing sounds, birdsong and dewdrops, peaceful restoration",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "variants": ["ability_heal_v2", "ability_heal_v3"]
+    },
+    "ability_heal_v2": {
+      "file": "assets/audio/sfx/ability_heal_v2.ogg",
+      "prompt": "Soft choir voices humming a soothing note, angelic restoration with warm reverb, divine healing magic with gentle bells",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "ability_heal_v3": {
+      "file": "assets/audio/sfx/ability_heal_v3.ogg",
+      "prompt": "Bubbling spring water with gentle flute melody, fresh brook sounds with magical sparkles, nature cure spell",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
     },
 
     "w2_ability_fire": {

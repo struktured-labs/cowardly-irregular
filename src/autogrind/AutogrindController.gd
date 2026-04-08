@@ -6,6 +6,7 @@ extends Node
 signal grind_battle_requested(enemies: Array, terrain: String)
 signal grind_complete(reason: String)
 signal tier_changed(new_tier: int)
+signal region_advanced(from_region: String, to_region: String, world_num: int)
 
 enum State {
 	IDLE,
@@ -37,10 +38,13 @@ var _current_battle_is_meta_boss: bool = false
 var _current_battle_is_collapse_boss: bool = false
 var _current_meta_boss_data: Dictionary = {}
 
+var _auto_advance_regions: bool = true  # Auto-advance to next world when region cracked
 var _next_battle_enemy_boost: float = 0.0
 var _next_battle_exp_bonus: float = 0.0
 
 func _get_between_battle_delay() -> float:
+	if headless_mode:
+		return 0.0  # Ludicrous speed: no delay between battles
 	match _current_tier:
 		GrindTier.ACCELERATED:
 			return 0.1
@@ -93,6 +97,7 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	_terrain = terrain
 	var tier_val = config.get("tier", 0)
 	_current_tier = tier_val as GrindTier
+	headless_mode = config.get("ludicrous_speed", false)
 
 	# Save and force autobattle states
 	_save_autobattle_states()
@@ -111,13 +116,22 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	if region != "":
 		AutogrindSystem.set_current_region(region)
 
+	# Read auto-advance setting (defaults to true)
+	_auto_advance_regions = config.get("auto_advance", true)
+
+	# Connect region_cracked signal for world progression
+	if not AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
+		AutogrindSystem.region_cracked.connect(_on_region_cracked)
+
 	# Apply current battle speed setting (persisted across battles in BattleScene)
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	var speed_idx = BattleSceneScript._battle_speed_index
-	if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
-		Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
-	else:
-		Engine.time_scale = 2.0
+	# Headless mode doesn't need engine time scaling since battles are pure math
+	if not headless_mode:
+		var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+		var speed_idx = BattleSceneScript._battle_speed_index
+		if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
+			Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
+		else:
+			Engine.time_scale = 2.0
 
 	print("[AUTOGRIND] Controller started, requesting first battle")
 	_state = State.PRE_BATTLE
@@ -355,6 +369,30 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 			stop_grind("Party defeated")
 
 
+## Handle region cracked — auto-advance to next world if enabled
+func _on_region_cracked(region_id: String, crack_level: int) -> void:
+	if not _auto_advance_regions:
+		print("[AUTOGRIND] Region %s cracked (level %d), auto-advance disabled" % [region_id, crack_level])
+		return
+
+	if crack_level < 1:
+		return  # Only advance on first crack
+
+	var next = AutogrindSystem.advance_to_next_region()
+	if next.is_empty():
+		print("[AUTOGRIND] Region cracked but no next world available (end of progression or locked)")
+		return
+
+	_terrain = next["region"]
+	region_advanced.emit(region_id, next["region"], next["world"])
+
+	# Give extra delay for the warp transition to play (~3s animation)
+	if _state == State.BETWEEN_BATTLES:
+		_between_battle_timer = maxf(_between_battle_timer, 3.5)
+
+	print("[AUTOGRIND] Auto-advancing to %s (World %d)" % [next["name"], next["world"]])
+
+
 ## Stop the grind session
 func stop_grind(reason: String = "Manual stop") -> void:
 	if _state == State.IDLE:
@@ -365,6 +403,10 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	_pending_tier_switch = -1
+
+	# Disconnect region_cracked signal
+	if AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
+		AutogrindSystem.region_cracked.disconnect(_on_region_cracked)
 
 	# Restore autobattle states
 	_restore_autobattle_states()
@@ -463,3 +505,25 @@ func cycle_tier() -> void:
 ## Check if currently grinding
 func is_grinding() -> bool:
 	return _state != State.IDLE
+
+
+## Serialize controller state for pause/resume snapshot
+func serialize_snapshot() -> Dictionary:
+	return {
+		"config": _config.duplicate(true),
+		"terrain": _terrain,
+		"tier": _current_tier as int,
+		"headless_mode": headless_mode,
+		"auto_advance": _auto_advance_regions,
+		"saved_autobattle_states": _saved_autobattle_states.duplicate(),
+	}
+
+
+## Restore controller from a snapshot (call before start_grind)
+func restore_from_snapshot(snapshot: Dictionary) -> void:
+	_config = snapshot.get("config", {}).duplicate(true)
+	_terrain = snapshot.get("terrain", "plains")
+	_current_tier = snapshot.get("tier", 0) as GrindTier
+	headless_mode = snapshot.get("headless_mode", false)
+	_auto_advance_regions = snapshot.get("auto_advance", true)
+	_saved_autobattle_states = snapshot.get("saved_autobattle_states", {}).duplicate()

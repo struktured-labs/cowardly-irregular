@@ -12,6 +12,7 @@ var _sprite: Sprite2D
 var _glow_timer: float = 0.0
 var _indicator: Label
 var _player_in_zone: bool = false
+var _is_saving: bool = false
 
 
 func _ready() -> void:
@@ -85,6 +86,7 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_in_zone = true
 		_indicator.visible = true
+		SoundManager.play_ui("save_crystal_near")
 
 
 func _on_body_exited(body: Node2D) -> void:
@@ -94,6 +96,40 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if _player_in_zone and event.is_action_pressed("ui_accept"):
+	if _player_in_zone and not _is_saving and event.is_action_pressed("ui_accept"):
+		_is_saving = true
+		SoundManager.play_ui("save_crystal_activate")
 		save_requested.emit()
 		get_viewport().set_input_as_handled()
+		_show_save_confirmation()
+
+
+func _show_save_confirmation() -> void:
+	"""Show 'Game Saved!' confirmation with flash and fade."""
+	# Flash the crystal bright white
+	if _sprite:
+		var flash_tween = create_tween()
+		flash_tween.tween_property(_sprite, "modulate", Color(2.0, 2.0, 2.5, 1.0), 0.1)
+		flash_tween.tween_property(_sprite, "modulate", Color(0.7, 0.7, 1.0, 1.0), 0.4)
+
+	# Create confirmation label
+	var confirm = Label.new()
+	confirm.text = "Game Saved!"
+	confirm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	confirm.position = Vector2(-40, -48)
+	confirm.size = Vector2(80, 20)
+	confirm.add_theme_font_size_override("font_size", 14)
+	confirm.add_theme_color_override("font_color", Color(0.4, 1.0, 0.5))
+	confirm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(confirm)
+
+	# Float up and fade out
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(confirm, "position:y", confirm.position.y - 20, 1.5)
+	tween.tween_property(confirm, "modulate:a", 0.0, 1.5).set_delay(0.5)
+	tween.chain().tween_callback(func():
+		if is_instance_valid(confirm):
+			confirm.queue_free()
+		_is_saving = false
+	)

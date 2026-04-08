@@ -1,104 +1,141 @@
 {
   "id": "world1_rat_king_defeat",
-  "title": "The Cave Rat King — Aftermath",
+  "title": "The Cave Rat King \u2014 Aftermath",
   "world": 1,
   "trigger": "boss_cave_rat_king_defeated",
   "background": "cave_entrance",
   "description": "After defeating the Cave Rat King. He breaks the fourth wall one final time, hinting that the real threat is deeper. The party finds the first signs of deliberate corruption.",
   "steps": [
-    {"type": "stop_music"},
-    {"type": "letterbox_in", "duration": 0.5},
-    {"type": "wait", "duration": 0.8},
-
-    {"type": "narration", "lines": [
-      "The Cave Rat King's crown clattered across the stone floor. It was even smaller up close.",
-      "The throne of cheese wheels had partially collapsed during the fight. The smell was considerable."
-    ]},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Cave Rat King",
-        "text": "Alright, alright. You win THIS encounter. But I want you to know — I saw your autobattle scripts. Derivative.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "You're... critiquing our combat strategy? While defeated?",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "Cave Rat King",
-        "text": "Someone has to have standards. The last party just spammed Attack. At least YOU had conditionals.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Mage",
-        "text": "How does a rat know about conditionals?",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "Cave Rat King",
-        "text": "How does a mage know about rats? We all have our mysteries.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      },
-      {
-        "speaker": "Cave Rat King",
-        "text": "But here's a freebie: I'm not the problem. I'm the DISTRACTION. Something deeper put me here. Something that wanted you busy while it finished... whatever it's finishing.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "What's it finishing?",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "Cave Rat King",
-        "text": "If I knew that, I'd be a king of something more impressive than rats.",
-        "theme": "enemy",
-        "portrait": "goblin"
-      }
-    ]},
-
-    {"type": "screen_shake", "duration": 0.2, "intensity": 2.0},
-
-    {"type": "narration", "text": "The rat vanished in a puff of cheese-scented smoke, leaving behind only scratches on the cave wall — the same court magic sigils Elder Theron had warned about."},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "Well. That was a boss fight. Short, educational, and smelled terrible. Chapter two, everyone.",
-        "theme": "bard",
-        "portrait": "bard"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "Something IS wrong here. Those sigils... that's not cave magic. That's capital magic. Someone with authority did this.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      }
-    ]},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "Behind the collapsed cheese throne, a passage opened deeper into the mountain. The air that came through it was colder, and carried the faint sound of something very large breathing."},
-
-    {"type": "set_flag", "flag": "rat_king_defeated", "value": true},
-    {"type": "letterbox_out", "duration": 0.5}
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Cave Rat King's crown clattered across the stone floor. It was even smaller up close.",
+        "The throne of cheese wheels had partially collapsed during the fight. The smell was considerable."
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cave Rat King",
+          "text": "Alright, alright. You win THIS encounter. But I want you to know \u2014 I saw your autobattle scripts. Derivative.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "You're... critiquing our combat strategy? While defeated?",
+          "theme": "rogue",
+          "portrait": "rogue_surprised"
+        },
+        {
+          "speaker": "Cave Rat King",
+          "text": "Someone has to have standards. The last party just spammed Attack. At least YOU had conditionals.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "How does a rat know about conditionals?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Cave Rat King",
+          "text": "How does a mage know about rats? We all have our mysteries.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        },
+        {
+          "speaker": "Cave Rat King",
+          "text": "But here's a freebie: I'm not the problem. I'm the DISTRACTION. Something deeper put me here. Something that wanted you busy while it finished... whatever it's finishing.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "What's it finishing?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cave Rat King",
+          "text": "If I knew that, I'd be a king of something more impressive than rats.",
+          "theme": "enemy",
+          "portrait": "goblin"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.2,
+      "intensity": 2.0
+    },
+    {
+      "type": "narration",
+      "text": "The rat vanished in a puff of cheese-scented smoke, leaving behind only scratches on the cave wall \u2014 the same court magic sigils Elder Theron had warned about."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "Well. That was a boss fight. Short, educational, and smelled terrible. Chapter two, everyone.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Something IS wrong here. Those sigils... that's not cave magic. That's capital magic. Someone with authority did this.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "Behind the collapsed cheese throne, a passage opened deeper into the mountain. The air that came through it was colder, and carried the faint sound of something very large breathing."
+    },
+    {
+      "type": "set_flag",
+      "flag": "rat_king_defeated",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
   ]
 }

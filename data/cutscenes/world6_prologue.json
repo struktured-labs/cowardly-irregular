@@ -14,6 +14,11 @@
       "duration": 2.0
     },
     {
+      "type": "chapter_title",
+      "title": "World 6",
+      "subtitle": "The Remainder"
+    },
+    {
       "type": "letterbox_in",
       "duration": 0.8
     },

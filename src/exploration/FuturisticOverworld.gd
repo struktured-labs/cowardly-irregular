@@ -103,6 +103,7 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
 
 
@@ -136,14 +137,34 @@ func _place_landmarks() -> void:
 
 func _place_wanderers() -> void:
 	var wanderers = [
-		{"name": "Process_42", "dialogue": "I'm just passing through. Literally. I'm a process.", "color": Color(0.2, 0.5, 0.6), "path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)]},
-		{"name": "Legacy Code", "dialogue": "They keep trying to deprecate me. I keep running.", "color": Color(0.4, 0.6, 0.3), "path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)]},
+		{
+			"name": "Process_42",
+			"dialogue": "I'm just passing through. Literally. I'm a process.",
+			"color": Color(0.2, 0.5, 0.6),
+			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
+			"hints": [
+				{"flag": "w5_entered", "text": "Node Prime is east. The core processes run there. Don't benchmark them."},
+				{"flag": "w5_boss_defeated", "text": "The Source Layer is dissolving. Something beyond the code... the Remainder."},
+			],
+		},
+		{
+			"name": "Legacy Code",
+			"dialogue": "They keep trying to deprecate me. I keep running.",
+			"color": Color(0.4, 0.6, 0.3),
+			"path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)],
+			"hints": [
+				{"flag": "w5_entered", "text": "The Masterites built all of this. Or compiled it. Same thing here."},
+				{"flag": "w5_boss_defeated", "text": "Beyond the code there's... nothing? Everything? I can't parse it."},
+			],
+		},
 	]
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
@@ -284,7 +305,7 @@ func _generate_map() -> void:
 
 	var map_data: Array[String] = [
 		"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
-		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
+		"NcSScvSScvSScvSScvSScvSScvSccvSScvSScvSScvSScvSScvSSccN",
 		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
 		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
 		"NcfffffffffffffffffffffffffffffffffffffffffffffffffffcN",
@@ -359,7 +380,7 @@ func _generate_map() -> void:
 	# Spawn point for arriving from industrial world (south access port)
 	spawn_points["from_industrial"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 40 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from abstract world (north server farm)
-	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from Node Prime village (east residential pods, row 20)
 	spawn_points["node_prime_entrance"] = Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 
@@ -413,7 +434,7 @@ func _setup_transitions() -> void:
 		forward_portal.target_spawn = "from_futuristic"
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "The Remainder"
-		forward_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+		forward_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
 		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
 		forward_portal.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(forward_portal)

@@ -67,6 +67,7 @@ func show_victory_results() -> void:
 	var char_results: Array = results.get("char_results", [])
 	var bonuses: Array = results.get("bonuses", [])
 	var total_gold: int = results.get("total_gold", 0)
+	var item_drops: Array = results.get("item_drops", [])
 
 	# Create results panel overlay
 	var overlay = Control.new()
@@ -93,7 +94,8 @@ func show_victory_results() -> void:
 		if cr.get("leveled_up", false):
 			char_height_total += 22
 	var gold_height = 32 if total_gold > 0 else 0
-	var panel_height = 60 + char_height_total + gold_height + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
+	var items_height = (item_drops.size() * 22 + 8) if item_drops.size() > 0 else 0
+	var panel_height = 60 + char_height_total + gold_height + items_height + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
 	panel.offset_left = -panel_width / 2
 	panel.offset_right = panel_width / 2
 	panel.offset_top = -panel_height / 2
@@ -229,6 +231,10 @@ func show_victory_results() -> void:
 			var char_delay = bar_fill_delay + char_idx * 0.3
 			var fill_duration = 0.8
 
+			# Tick sound when bar starts filling
+			if exp_gained > 0:
+				anim_tween.tween_callback(func(): SoundManager.play_ui("exp_tick")).set_delay(char_delay)
+
 			if leveled_up:
 				# Two-phase: fill to 100%, flash, then fill from 0% to new amount
 				var remaining_to_full = exp_to_next - exp_before
@@ -275,6 +281,7 @@ func show_victory_results() -> void:
 			var lvl_delay = bar_fill_delay + char_idx * 0.3 + 0.5
 			anim_tween.tween_property(lvl_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay)
 			anim_tween.tween_callback(func(): SoundManager.play_music("stinger_level_up")).set_delay(lvl_delay)
+			anim_tween.tween_callback(func(): SoundManager.play_battle("level_up")).set_delay(lvl_delay)
 			# Pulse effect
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.15, 1.15), 0.1).set_delay(lvl_delay)
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.0, 1.0), 0.15).set_delay(lvl_delay + 0.1)
@@ -305,7 +312,32 @@ func show_victory_results() -> void:
 			var display_gold = int(float(total_gold) * step / gold_steps)
 			anim_tween.tween_callback(func(): gold_label.text = "%d G" % display_gold).set_delay(gold_delay + gold_step_delay * step)
 		# Play coin sound at start of gold count
-		anim_tween.tween_callback(func(): SoundManager.play_ui("confirm")).set_delay(gold_delay)
+		anim_tween.tween_callback(func(): SoundManager.play_battle("gold_pickup")).set_delay(gold_delay)
+
+	# Item drops section (animated staggered reveal)
+	if item_drops.size() > 0:
+		var item_sep = HSeparator.new()
+		item_sep.add_theme_constant_override("separation", 4)
+		item_sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(item_sep)
+
+		var items_delay = bar_fill_delay + char_results.size() * 0.3 + (0.9 + 0.6 if total_gold > 0 else 0.0) + 0.3
+		for drop_idx in range(item_drops.size()):
+			var drop = item_drops[drop_idx]
+			var item_label = Label.new()
+			var qty_text = " x%d" % drop["qty"] if drop["qty"] > 1 else ""
+			item_label.text = "  + %s%s" % [drop["name"], qty_text]
+			item_label.add_theme_font_size_override("font_size", 13)
+			item_label.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+			item_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			item_label.modulate.a = 0.0
+			vbox.add_child(item_label)
+
+			# Staggered fade-in per item
+			var reveal_delay = items_delay + drop_idx * 0.2
+			anim_tween.tween_property(item_label, "modulate:a", 1.0, 0.15).set_delay(reveal_delay)
+			anim_tween.tween_property(item_label, "scale", Vector2(1.1, 1.1), 0.08).set_delay(reveal_delay)
+			anim_tween.tween_property(item_label, "scale", Vector2(1.0, 1.0), 0.1).set_delay(reveal_delay + 0.08)
 
 	# Bonuses section
 	if bonuses.size() > 0:
