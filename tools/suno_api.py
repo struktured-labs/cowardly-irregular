@@ -670,12 +670,32 @@ class SunoBrowser:
         _human_delay(HUMAN_FIELD_GAP_MS)
 
         # Clear lyrics (blank for instrumental) and fill style
-        self._react_fill("textarea", "", index=0)  # Lyrics
+        # NOTE: Suno added "Ask me anything" chat textarea at index 0 (2026-04).
+        # Use placeholder-based selectors instead of fragile indices.
+        lyrics_filled = False
+        for sel in ("textarea[placeholder*='lyrics']", "textarea[placeholder*='instrumental']",
+                    "textarea[placeholder*='Leave blank']"):
+            if self._react_fill(sel, "", index=0):
+                lyrics_filled = True
+                break
+        if not lyrics_filled:
+            # Fallback: skip index 0 (chat prompt), use index 1
+            self._react_fill("textarea", "", index=1)
         _human_delay(HUMAN_FIELD_GAP_MS)
-        if self._react_fill("textarea", style, index=1):
-            print(f"  Style: {style[:60]}...")
-        else:
-            print("  Warning: could not fill style textarea")
+
+        style_filled = False
+        for sel in ("textarea[placeholder*='pop']", "textarea[placeholder*='house']",
+                    "textarea[placeholder*='style']", "textarea[placeholder*='genre']"):
+            if self._react_fill(sel, style, index=0):
+                style_filled = True
+                print(f"  Style: {style[:60]}...")
+                break
+        if not style_filled:
+            # Fallback: skip index 0 (chat prompt), use index 2
+            if self._react_fill("textarea", style, index=2):
+                print(f"  Style: {style[:60]}...")
+            else:
+                print("  Warning: could not fill style textarea")
 
         _human_delay(HUMAN_FIELD_GAP_MS)
 
