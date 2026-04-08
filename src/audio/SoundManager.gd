@@ -17,6 +17,7 @@ var _crossfade_tween: Tween = null
 # Music state
 var _music_playing: bool = false
 var _current_music: String = ""
+var _stinger_resume_track: String = ""  # Track to resume after stinger finishes
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
 var _music_base_db: float = -12.0  # Base volume for music
 
@@ -886,17 +887,16 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	var should_loop = entry.get("loop", not is_stinger)
 	if stream is AudioStreamOggVorbis:
 		stream.loop = should_loop
-	# Save previous track for resume after stinger
-	var prev_music = _current_music if is_stinger else ""
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
 	_music_player.play()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s" % [track_id, path, should_loop, is_stinger])
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_track if is_stinger else ""])
 	# Resume previous music after stinger finishes
-	if is_stinger and prev_music != "":
+	if is_stinger and _stinger_resume_track != "" and _stinger_resume_track != track_id:
+		var resume = _stinger_resume_track
 		_music_player.finished.connect(func():
-			play_music(prev_music)
+			play_music(resume)
 		, CONNECT_ONE_SHOT)
 	return true
 
@@ -949,6 +949,7 @@ func play_music(track: String) -> void:
 		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, CROSSFADE_DURATION)
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
+	_stinger_resume_track = _current_music  # Save for stinger resume before overwriting
 	_current_music = track
 
 	# Try manifest first — file-based music always takes priority
