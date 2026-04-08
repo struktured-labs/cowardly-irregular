@@ -495,7 +495,12 @@ static func apply_camera(cam: Camera2D, mode7: bool) -> void:
 
 
 static func apply_camera_limits(cam: Camera2D, map_w: int, map_h: int, tile_size: int) -> void:
-	cam.limit_left = -tile_size * 8
-	cam.limit_top = -tile_size * 12
-	cam.limit_right = map_w * tile_size + tile_size * 8
-	cam.limit_bottom = map_h * tile_size + tile_size * 8
+	# DISABLED for Mode 7: camera limits cause the player to APPEAR stuck
+	# when near map edges. The Mode 7 overlay renders the player at a fixed
+	# screen position, so when the camera hits a limit and stops scrolling,
+	# the world freezes but the player keeps moving invisibly.
+	# Boundary StaticBody2D walls prevent the player from leaving the map.
+	cam.limit_left = -100000
+	cam.limit_top = -100000
+	cam.limit_right = 100000
+	cam.limit_bottom = 100000
