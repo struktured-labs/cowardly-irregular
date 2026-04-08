@@ -892,36 +892,42 @@ func _draw_chibi_torso_side(img: Image, p: Dictionary, cx: int, ty: int, face_ri
 
 
 func _draw_chibi_arms_front(img: Image, p: Dictionary, cx: int, ty: int, la: int, ra: int) -> void:
-	# Arms hanging from shoulder tops; la/ra = vertical swing offset
+	# Arms with slight outward angle and elbow taper for natural silhouette
 	var ol = p["outline"]
 	var bs = p["body_s"]; var b = p["body"]; var bh = p["body_h"]
 	var sk = p["skin"]; var sks = p["skin_s"]
-	# Left arm (at cx-6)
-	var lax = cx - 6
+	# Left arm — angled slightly outward, tapers at wrist
 	var lay_start = ty + la
-	for i in range(5):
-		_px(img, lax - 1, lay_start + i, ol)
-		_px(img, lax,     lay_start + i, bs)
-		_px(img, lax + 1, lay_start + i, b)
-		_px(img, lax + 2, lay_start + i, ol)
+	for i in range(6):
+		var spread = -i / 3  # Gradual outward angle
+		var ax = cx - 6 + spread
+		var w = 3 if i < 3 else 2  # Wider at shoulder, narrower at wrist
+		_px(img, ax - 1, lay_start + i, ol)
+		for j in range(w):
+			_px(img, ax + j, lay_start + i, bs if j == 0 else b)
+		_px(img, ax + w, lay_start + i, ol)
 	# Left hand
-	_px(img, lax - 1, lay_start + 5, ol)
-	_px(img, lax,     lay_start + 5, sks)
-	_px(img, lax + 1, lay_start + 5, sk)
-	_px(img, lax + 2, lay_start + 5, ol)
-	# Right arm (at cx+6)
-	var rax = cx + 5
+	var lhx = cx - 6 - 2
+	_px(img, lhx, lay_start + 6, ol)
+	_px(img, lhx + 1, lay_start + 6, sks)
+	_px(img, lhx + 2, lay_start + 6, sk)
+	_px(img, lhx + 3, lay_start + 6, ol)
+	# Right arm — mirror angle
 	var ray_start = ty + ra
-	for i in range(5):
-		_px(img, rax - 1, ray_start + i, ol)
-		_px(img, rax,     ray_start + i, b)
-		_px(img, rax + 1, ray_start + i, bh)
-		_px(img, rax + 2, ray_start + i, ol)
+	for i in range(6):
+		var spread = i / 3
+		var ax = cx + 5 + spread
+		var w = 3 if i < 3 else 2
+		_px(img, ax - 1, ray_start + i, ol)
+		for j in range(w):
+			_px(img, ax + j, ray_start + i, b if j == 0 else bh)
+		_px(img, ax + w, ray_start + i, ol)
 	# Right hand
-	_px(img, rax - 1, ray_start + 5, ol)
-	_px(img, rax,     ray_start + 5, sk)
-	_px(img, rax + 1, ray_start + 5, sk)
-	_px(img, rax + 2, ray_start + 5, ol)
+	var rhx = cx + 5 + 2
+	_px(img, rhx - 1, ray_start + 6, ol)
+	_px(img, rhx, ray_start + 6, sk)
+	_px(img, rhx + 1, ray_start + 6, sk)
+	_px(img, rhx + 2, ray_start + 6, ol)
 
 
 func _draw_chibi_arms_back(img: Image, p: Dictionary, cx: int, ty: int, la: int, ra: int) -> void:
@@ -931,32 +937,36 @@ func _draw_chibi_arms_back(img: Image, p: Dictionary, cx: int, ty: int, la: int,
 
 func _draw_chibi_arms_side(img: Image, p: Dictionary, cx: int, ty: int,
 		front_arm: int, back_arm: int, face_right: bool) -> void:
-	# Side view: two arms stacked, back arm behind body, front arm in front
+	# Side view: arms with natural bend, back arm darker/thinner
 	var ol = p["outline"]
 	var bs = p["body_s"]; var b = p["body"]; var bh = p["body_h"]
 	var sk = p["skin"]; var sks = p["skin_s"]
 	var fd = 1 if face_right else -1
 
-	# Back arm (body-width side, darker)
+	# Back arm (darker, thinner — partially occluded by body)
 	var bax = cx - fd * 3
-	for i in range(5):
+	for i in range(6):
 		var ay = ty + 1 - back_arm + i
-		_px(img, bax - 1, ay, ol)
-		_px(img, bax,     ay, bs)
-		_px(img, bax + 1, ay, ol)
-	_px(img, bax, ty + 6 - back_arm, sks)  # back hand
+		var bend = fd * (1 if i >= 3 else 0)  # Slight elbow bend
+		_px(img, bax - 1 + bend, ay, ol)
+		_px(img, bax + bend,     ay, bs)
+		_px(img, bax + 1 + bend, ay, ol)
+	_px(img, bax + fd, ty + 7 - back_arm, sks)  # back hand
 
-	# Front arm (face side, lighter)
+	# Front arm (wider, lighter, with elbow angle)
 	var fax = cx + fd * 4
-	for i in range(5):
+	for i in range(6):
 		var ay = ty + 1 - front_arm + i
-		_px(img, fax - 1, ay, ol)
-		_px(img, fax,     ay, b)
-		_px(img, fax + 1, ay, bh)
-		_px(img, fax + 2, ay, ol)
+		var bend = -fd * (1 if i >= 3 else 0)  # Opposite elbow bend
+		var w = 3 if i < 3 else 2  # Taper at forearm
+		_px(img, fax - 1 + bend, ay, ol)
+		for j in range(w):
+			_px(img, fax + j + bend, ay, b if j == 0 else bh)
+		_px(img, fax + w + bend, ay, ol)
 	# Front hand
-	_px(img, fax,     ty + 6 - front_arm, sk)
-	_px(img, fax + 1, ty + 6 - front_arm, sk)
+	var hbend = -fd
+	_px(img, fax + hbend,     ty + 7 - front_arm, sk)
+	_px(img, fax + hbend + 1, ty + 7 - front_arm, sk)
 
 
 func _draw_chibi_legs_front(img: Image, p: Dictionary, cx: int, leg_top: int, ll: int, rl: int) -> void:
