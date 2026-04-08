@@ -36,17 +36,17 @@ func test_take_damage_on_dead_combatant_returns_zero() -> void:
 
 
 func test_take_damage_dead_guard_prevents_double_die_signal() -> void:
-	var die_count = 0
-	_combatant.died.connect(func(): die_count += 1)
+	var die_count = [0]  # Array wrapper for closure capture
+	_combatant.died.connect(func(): die_count[0] += 1)
 
 	# Deal lethal damage
 	_combatant.current_hp = 1
 	_combatant.take_damage(999)
-	assert_eq(die_count, 1, "First lethal hit should emit died once")
+	assert_eq(die_count[0], 1, "First lethal hit should emit died once")
 
 	# Second hit on dead combatant should NOT emit died again
 	_combatant.take_damage(999)
-	assert_eq(die_count, 1, "Second hit on dead combatant should not emit died again")
+	assert_eq(die_count[0], 1, "Second hit on dead combatant should not emit died again")
 
 
 # ---- Bug: Defense debuffs (Armor Break) had no effect ----
@@ -104,17 +104,17 @@ func test_debuff_expires_after_duration() -> void:
 
 
 func test_doom_countdown_kills_at_zero() -> void:
-	var die_count = 0
-	_combatant.died.connect(func(): die_count += 1)
+	var die_count = [0]
+	_combatant.died.connect(func(): die_count[0] += 1)
 	_combatant.doom_counter = 2
 
 	_combatant.update_buff_durations()
 	assert_eq(_combatant.doom_counter, 1, "Doom should tick down to 1")
-	assert_eq(die_count, 0, "Should not die yet")
+	assert_eq(die_count[0], 0, "Should not die yet")
 
 	_combatant.update_buff_durations()
 	assert_eq(_combatant.doom_counter, 0, "Doom should tick down to 0")
-	assert_eq(die_count, 1, "Combatant should die when doom reaches 0")
+	assert_eq(die_count[0], 1, "Combatant should die when doom reaches 0")
 
 
 # ---- Bug: get_buffed_stat was not used for attack in basic attacks ----
@@ -471,8 +471,8 @@ func test_poison_deals_damage_per_turn() -> void:
 
 
 func test_poison_can_kill() -> void:
-	var die_count = 0
-	_combatant.died.connect(func(): die_count += 1)
+	var die_count = [0]
+	_combatant.died.connect(func(): die_count[0] += 1)
 	_combatant.max_hp = 100
 	_combatant.current_hp = 3
 	_combatant.add_status("poison", 5)
@@ -480,7 +480,7 @@ func test_poison_can_kill() -> void:
 	_combatant.update_buff_durations()
 	# Poison deals 5 damage, HP was 3 → should die
 	assert_eq(_combatant.current_hp, 0, "HP should reach 0 from poison")
-	assert_eq(die_count, 1, "Poison should kill combatant at 0 HP")
+	assert_eq(die_count[0], 1, "Poison should kill combatant at 0 HP")
 
 
 func test_poison_minimum_1_damage() -> void:
@@ -496,18 +496,18 @@ func test_poison_minimum_1_damage() -> void:
 # ---- Status signal emissions ----
 
 func test_status_added_signal_fires() -> void:
-	var added_status = ""
-	_combatant.status_added.connect(func(s): added_status = s)
+	var added_status = [""]
+	_combatant.status_added.connect(func(s): added_status[0] = s)
 	_combatant.add_status("sleep", 2)
-	assert_eq(added_status, "sleep", "status_added signal should fire with status name")
+	assert_eq(added_status[0], "sleep", "status_added signal should fire with status name")
 
 
 func test_status_removed_signal_fires() -> void:
-	var removed_status = ""
-	_combatant.status_removed.connect(func(s): removed_status = s)
+	var removed_status = [""]
+	_combatant.status_removed.connect(func(s): removed_status[0] = s)
 	_combatant.add_status("stun", 1)
 	_combatant.update_buff_durations()
-	assert_eq(removed_status, "stun", "status_removed signal should fire when status expires")
+	assert_eq(removed_status[0], "stun", "status_removed signal should fire when status expires")
 
 
 # ---- No duplicate statuses ----
@@ -571,15 +571,15 @@ func test_burning_deals_damage_per_turn() -> void:
 
 
 func test_burning_can_kill() -> void:
-	var die_count = 0
-	_combatant.died.connect(func(): die_count += 1)
+	var die_count = [0]
+	_combatant.died.connect(func(): die_count[0] += 1)
 	_combatant.max_hp = 100
 	_combatant.current_hp = 5
 	_combatant.add_status("burning", 5)
 
 	_combatant.update_buff_durations()
 	assert_eq(_combatant.current_hp, 0, "HP should reach 0 from burning")
-	assert_eq(die_count, 1, "Burning should kill combatant at 0 HP")
+	assert_eq(die_count[0], 1, "Burning should kill combatant at 0 HP")
 
 
 func test_burning_stronger_than_poison() -> void:
@@ -938,8 +938,8 @@ func test_regen_does_not_heal_dead_combatant() -> void:
 
 func test_poison_kills_before_regen_heals() -> void:
 	# If poison kills, regen should not revive
-	var die_count = 0
-	_combatant.died.connect(func(): die_count += 1)
+	var die_count = [0]
+	_combatant.died.connect(func(): die_count[0] += 1)
 	_combatant.max_hp = 100
 	_combatant.current_hp = 3
 	_combatant.add_status("poison", 3)
@@ -947,7 +947,7 @@ func test_poison_kills_before_regen_heals() -> void:
 
 	_combatant.update_buff_durations()
 	# Poison deals 5 damage (kills at 3 HP), regen runs but is_alive check should prevent heal
-	assert_eq(die_count, 1, "Poison should kill before regen can heal")
+	assert_eq(die_count[0], 1, "Poison should kill before regen can heal")
 
 
 func test_regen_minimum_1_heal() -> void:
