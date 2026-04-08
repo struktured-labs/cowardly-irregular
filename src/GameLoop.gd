@@ -768,9 +768,13 @@ func _get_pending_story_cutscene() -> String:
 	return ""
 
 
+## Prevents back-to-back story cutscenes on same map entry
+var _cutscene_cooldown: bool = false
+
 func _play_story_cutscene(cutscene_id: String) -> void:
 	"""Play a story cutscene, then resume exploration."""
 	current_state = LoopState.CUTSCENE
+	_cutscene_cooldown = true  # Suppress next check on same map entry
 	if not _cutscene_director:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
@@ -1184,10 +1188,14 @@ func _show_game_over_screen() -> void:
 func _start_exploration() -> void:
 	"""Start exploration mode (overworld or interior)"""
 	# Check for pending story cutscenes before entering free roam
-	var pending = _get_pending_story_cutscene()
-	if pending != "":
-		await _play_story_cutscene(pending)
-		return
+	# Skip if we just played one (prevents back-to-back on same map entry)
+	if _cutscene_cooldown:
+		_cutscene_cooldown = false
+	else:
+		var pending = _get_pending_story_cutscene()
+		if pending != "":
+			await _play_story_cutscene(pending)
+			return
 
 	current_state = LoopState.EXPLORATION
 	InputLockManager.pop_all()  # Clear any leaked locks from previous state

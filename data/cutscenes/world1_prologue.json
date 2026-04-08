@@ -1,148 +1,106 @@
 {
   "id": "world1_prologue",
-  "title": "The Notice",
+  "title": "Harmonia",
   "world": 1,
-  "trigger": "new_game_start",
+  "trigger": "harmonia_first_entry",
   "background": "prologue_village",
-  "description": "Opening scene: The conscription notice at the Sleepy Slime Inn, party introductions.",
+  "description": "First village entry. Introduce the village, the party, the mood. No quest yet — just arrival.",
   "steps": [
-    {
-      "type": "fade_from_black",
-      "duration": 1.5
-    },
-    {
-      "type": "chapter_title",
-      "title": "Prologue",
-      "subtitle": "The Notice"
-    },
-    {
-      "type": "letterbox_in",
-      "duration": 0.6
-    },
-    {
-      "type": "play_music",
-      "track": "cutscene_w1_conscription"
-    },
-    {
-      "type": "wait",
-      "duration": 0.8
-    },
-    {
-      "type": "narration",
-      "lines": [
-        "The notice was nailed to the door of the Sleepy Slime Inn at dawn, which was unusual, because nothing in Harmonia happened at dawn.",
-        "Things in Harmonia happened at a responsible mid-morning hour, after porridge and before the first ale."
-      ]
-    },
-    {
-      "type": "dialogue",
-      "lines": [
-        {
-          "speaker": "",
-          "text": "BY ORDER OF THE CROWN: All able-bodied citizens are hereby conscripted into auxiliary service for the defense of the realm.",
-          "theme": "system",
-          "portrait": "system"
-        },
-        {
-          "speaker": "",
-          "text": "Report to Elder Theron at the village square. Sincerely, The Royal Bureau of Definitely Real Military Operations.",
-          "theme": "system",
-          "portrait": "system"
-        }
-      ]
-    },
-    {
-      "type": "narration",
-      "lines": [
-        "Nobody in Harmonia had ever seen a Royal Bureau of anything.",
-        "The village was six houses, a chapel, a shop that sold swords it had never tested, and an inn whose slime mascot had been repainted so many times it now resembled a vaguely threatening cloud.",
-        "But the notice was there. And the monsters were getting worse. And the real army was busy in the capital doing whatever it was armies did when chancellors needed protecting.",
-        "So four people showed up. Not because they were brave. Not because they were special. Because they were there, and nobody else was."
-      ]
-    },
-    {
-      "type": "wait",
-      "duration": 0.5
-    },
-    {
-      "type": "dialogue",
-      "lines": [
-        {
-          "speaker": "",
-          "text": "The Fighter came because he had heard there was trouble, and trouble was what fighters were for. He had a sword he'd bought from the untested shop and convictions he'd polished to a shine.",
-          "theme": "narrator",
-          "portrait": "narrator"
-        },
-        {
-          "speaker": "Fighter",
-          "text": "If there's trouble, I'll stand in front of it. That's... what I do.",
-          "theme": "fighter",
-          "portrait": "fighter"
-        },
-        {
-          "speaker": "",
-          "text": "The Cleric came because the chapel had been empty for a week and God, or whatever heard her prayers, had clearly decided someone should investigate.",
-          "theme": "narrator",
-          "portrait": "narrator"
-        },
-        {
-          "speaker": "Cleric",
-          "text": "A calling is a calling. You don't second-guess it. You just... go where it points.",
-          "theme": "cleric",
-          "portrait": "cleric"
-        },
-        {
-          "speaker": "",
-          "text": "The Mage came because the pattern he'd found in the monster attacks was too interesting to ignore. Self-taught, mostly wrong about academic names, and completely correct about practical applications.",
-          "theme": "narrator",
-          "portrait": "narrator"
-        },
-        {
-          "speaker": "Mage",
-          "text": "The attack frequency follows a geometric progression. Someone is designing these encounters. I want to know who.",
-          "theme": "mage",
-          "portrait": "mage"
-        },
-        {
-          "speaker": "",
-          "text": "The Rogue came because Elder Theron had seen a figure sleeping under the inn's eaves and pointed, and it had been that kind of morning.",
-          "theme": "narrator",
-          "portrait": "narrator"
-        },
-        {
-          "speaker": "Rogue",
-          "text": "I was passing through. Made the critical error of still being here.",
-          "theme": "rogue",
-          "portrait": "rogue"
-        },
-        {
-          "speaker": "",
-          "text": "And the Bard came because the Bard went everywhere there was a story.",
-          "theme": "narrator",
-          "portrait": "narrator"
-        },
-        {
-          "speaker": "Bard",
-          "text": "A party of five! A valiant fighter, a servant of the cloth, a scholar of arcane learning, a rogue of disputed virtue, and a humble bard whose chronicles will outlast you all. What a tale this shall be!",
-          "theme": "bard",
-          "portrait": "bard_happy"
-        },
-        {
-          "speaker": "Rogue",
-          "text": "What a tale it shall be... if you don't stop talking about it and actually help carry something.",
-          "theme": "rogue",
-          "portrait": "rogue_angry"
-        }
-      ]
-    },
-    {
-      "type": "set_flag",
-      "flag": "prologue_complete",
-      "value": true
-    },
-    {
-      "type": "letterbox_out",
-      "duration": 0.5
-    }
+    {"type": "fade_from_black", "duration": 1.5},
+    {"type": "chapter_title", "title": "Prologue", "subtitle": "Harmonia"},
+    {"type": "letterbox_in", "duration": 0.6},
+    {"type": "play_music", "track": "village_medieval"},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "lines": [
+      "Harmonia was the kind of village that existed to be left. A waypoint. A place you were from, not a place you stayed.",
+      "Six houses, a chapel, a shop that sold swords it had never tested, and an inn whose slime mascot had been repainted so many times it now resembled a vaguely threatening cloud.",
+      "The monsters were getting worse. The bats were bigger. The slimes were angrier. Traders stopped coming."
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "So four people showed up. Not because they were brave. Not because they were special. Because they were there, and nobody else was."},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "",
+        "text": "The Fighter came because he had heard there was trouble, and trouble was what fighters were for.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      },
+      {
+        "speaker": "Fighter",
+        "text": "If there's trouble, I'll stand in front of it. That's... what I do.",
+        "theme": "fighter",
+        "portrait": "fighter"
+      },
+      {
+        "speaker": "",
+        "text": "The Cleric came because the chapel had been empty for a week and God, or whatever heard her prayers, had clearly decided someone should investigate.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      },
+      {
+        "speaker": "Cleric",
+        "text": "A calling is a calling. You don't second-guess it.",
+        "theme": "cleric",
+        "portrait": "cleric"
+      },
+      {
+        "speaker": "",
+        "text": "The Mage came because the pattern he'd found in the monster attacks was too interesting to ignore.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      },
+      {
+        "speaker": "Mage",
+        "text": "The attack frequency follows a geometric progression. Someone is designing these encounters.",
+        "theme": "mage",
+        "portrait": "mage"
+      },
+      {
+        "speaker": "",
+        "text": "The Rogue came because Elder Theron had seen a figure sleeping under the inn's eaves and pointed.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      },
+      {
+        "speaker": "Rogue",
+        "text": "I was passing through. Made the critical error of still being here.",
+        "theme": "rogue",
+        "portrait": "rogue"
+      },
+      {
+        "speaker": "",
+        "text": "And the Bard came because the Bard went everywhere there was a story.",
+        "theme": "narrator",
+        "portrait": "narrator"
+      },
+      {
+        "speaker": "Bard",
+        "text": "What a tale this shall be!",
+        "theme": "bard",
+        "portrait": "bard_happy"
+      }
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "A notice had been nailed to the door of the Sleepy Slime Inn. It said to report to Elder Theron at the village square."},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Bard",
+        "text": "Elder Theron. Let's find him — he's supposed to be somewhere in the village.",
+        "theme": "bard",
+        "portrait": "bard"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "prologue_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.5}
   ]
 }
