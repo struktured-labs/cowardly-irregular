@@ -496,9 +496,10 @@ func _step_chapter_title(step: Dictionary) -> void:
 	title_label.text = title_text
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	title_label.position.y = screen_size.y * 0.36
+	title_label.position = Vector2(0, screen_size.y * 0.36)
 	title_label.size = Vector2(screen_size.x, 40)
+	title_label.clip_text = false
+	title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	title_label.add_theme_font_size_override("font_size", 28)
 	title_label.add_theme_color_override("font_color", Color(0.95, 0.90, 0.70))
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -510,9 +511,10 @@ func _step_chapter_title(step: Dictionary) -> void:
 		sub_label.text = subtitle_text
 		sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		sub_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		sub_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-		sub_label.position.y = screen_size.y * 0.36 + 44
+		sub_label.position = Vector2(0, screen_size.y * 0.36 + 44)
 		sub_label.size = Vector2(screen_size.x, 30)
+		sub_label.clip_text = false
+		sub_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		sub_label.add_theme_font_size_override("font_size", 18)
 		sub_label.add_theme_color_override("font_color", Color(0.75, 0.72, 0.60))
 		sub_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -562,9 +564,10 @@ func _step_boss_intro(step: Dictionary) -> void:
 	var name_label = Label.new()
 	name_label.text = boss_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	name_label.position.y = screen_size.y * 0.4
+	name_label.position = Vector2(0, screen_size.y * 0.4)
 	name_label.size = Vector2(screen_size.x, 50)
+	name_label.clip_text = false
+	name_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	name_label.add_theme_font_size_override("font_size", 36)
 	name_label.add_theme_color_override("font_color", Color(0.95, 0.3, 0.2))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -577,9 +580,10 @@ func _step_boss_intro(step: Dictionary) -> void:
 		title_label = Label.new()
 		title_label.text = boss_title
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-		title_label.position.y = screen_size.y * 0.4 + 48
+		title_label.position = Vector2(0, screen_size.y * 0.4 + 48)
 		title_label.size = Vector2(screen_size.x, 30)
+		title_label.clip_text = false
+		title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		title_label.add_theme_font_size_override("font_size", 16)
 		title_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.5))
 		title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
