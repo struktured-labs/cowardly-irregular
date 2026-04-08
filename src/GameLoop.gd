@@ -654,8 +654,9 @@ func _get_pending_story_cutscene() -> String:
 	# W2 Chapter 8: Coordinator's memos found
 	if flags.get("cutscene_flag_chapter7_infrastructure_complete", false) and not flags.get("cutscene_flag_chapter8_memos_found", false):
 		return "world2_chapter8_memos"
-	# W2 Chapter 11: incomplete memo + suburb→steampunk transition (after coordinator defeat)
-	if flags.get("cutscene_flag_world2_coordinator_defeated", false) and not flags.get("cutscene_flag_chapter11_complete", false):
+	# W2 Chapter 11: incomplete memo + suburb→steampunk transition
+	# Gates on all W2 Masterites being defeated (memos found = last Masterite chain)
+	if flags.get("cutscene_flag_chapter8_memos_found", false) and not flags.get("cutscene_flag_chapter11_complete", false):
 		return "world2_chapter11"
 
 	# ===== WORLD 3: STEAMPUNK =====
