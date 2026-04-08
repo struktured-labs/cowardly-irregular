@@ -68,7 +68,7 @@ SUNO_API = "https://studio-api.prod.suno.com"
 SUNO_CREATE_URL = "https://suno.com/create"
 
 POLL_INTERVAL = 10
-MAX_POLL_SEC = 300
+MAX_POLL_SEC = 600
 
 # Human-like timing ranges (milliseconds)
 HUMAN_THINK_MS = (1500, 3500)       # Pause before acting (reading the UI)
@@ -630,8 +630,9 @@ class SunoBrowser:
         if self._type_human(page, selector, value, index):
             return True
         # Fallback: JS injection for React controlled inputs
+        escaped_sel = selector.replace("'", "\\'").replace('"', '\\"')
         return page.evaluate(f"""(value) => {{
-            const els = document.querySelectorAll('{selector}');
+            const els = document.querySelectorAll("{escaped_sel}");
             if (els.length <= {index}) return false;
             const el = els[{index}];
             const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
