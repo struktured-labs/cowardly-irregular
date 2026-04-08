@@ -881,15 +881,23 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	if not stream:
 		push_warning("[MUSIC] Failed to load audio: %s (track_id: %s)" % [path, track_id])
 		return false
-	# Set looping based on manifest (default true for music)
-	var should_loop = entry.get("loop", true)
+	# Stingers never loop and resume previous music when done
+	var is_stinger = track_id.begins_with("stinger_")
+	var should_loop = entry.get("loop", not is_stinger)
 	if stream is AudioStreamOggVorbis:
 		stream.loop = should_loop
+	# Save previous track for resume after stinger
+	var prev_music = _current_music if is_stinger else ""
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
 	_music_player.play()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s) loop=%s" % [track_id, path, should_loop])
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s" % [track_id, path, should_loop, is_stinger])
+	# Resume previous music after stinger finishes
+	if is_stinger and prev_music != "":
+		_music_player.finished.connect(func():
+			play_music(prev_music)
+		, CONNECT_ONE_SHOT)
 	return true
 
 
