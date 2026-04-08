@@ -82,8 +82,8 @@ func _update_edge(dir: String, dist: float, pulse: float) -> void:
 	var lbl: Label = _labels.get(dir)
 	if not lbl:
 		return
-	if dist < EDGE_THRESHOLD:
-		var alpha = (1.0 - dist / EDGE_THRESHOLD) * pulse
+	if dist <= EDGE_THRESHOLD:
+		var alpha = (1.0 - dist / maxf(EDGE_THRESHOLD, 1.0)) * pulse
 		lbl.add_theme_color_override("font_color", Color(0.8, 0.7, 0.5, alpha))
 		lbl.visible = true
 	else:

@@ -159,8 +159,8 @@ func _add_dot(world_pos: Vector2, color: Color, label_text: String = "") -> void
 
 
 func _world_to_minimap(world_pos: Vector2) -> Vector2:
-	var nx = world_pos.x / _map_width
-	var ny = world_pos.y / _map_height
+	var nx = world_pos.x / maxf(_map_width, 1.0)
+	var ny = world_pos.y / maxf(_map_height, 1.0)
 	var origin = _bg.position + Vector2(4, 4)
 	return origin + Vector2(nx * MAP_SIZE, ny * MAP_SIZE)
 
