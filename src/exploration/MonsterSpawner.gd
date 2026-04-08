@@ -11,7 +11,7 @@ signal monster_touched(monster_id: String, monster_types: Array)
 const TILE_SIZE: int = 32
 const SPAWN_COUNT_MIN: int = 3
 const SPAWN_COUNT_MAX: int = 5
-const MIN_SPAWN_DIST_FROM_PLAYER: float = 128.0
+const MIN_SPAWN_DIST_FROM_PLAYER: float = 200.0  # Must be >2x CHASE_RADIUS (96) for reaction time
 const MIN_MONSTER_SEPARATION: float = 64.0
 const DESPAWN_DISTANCE: float = 640.0
 const SPAWN_BUFFER: float = 480.0
