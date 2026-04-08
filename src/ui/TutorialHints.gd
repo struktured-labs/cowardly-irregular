@@ -61,6 +61,22 @@ const HINTS = {
 		"title": "Ludicrous Speed",
 		"body": "Battles now resolve instantly via pure math — no animations, no rendering. Your autobattle scripts and formation specials still execute faithfully. Watch the dashboard for throughput stats.",
 	},
+	"autogrind_menu": {
+		"title": "Autogrind Setup",
+		"body": "Configure interrupt rules: IF party HP drops below 30% THEN use potions. IF a member dies THEN stop. Press 1/2/3 for quick presets (Casual/Standard/Hardcore). Press Start to begin grinding.",
+	},
+	"autogrind_presets": {
+		"title": "Quick Presets",
+		"body": "Casual: safe, stops on death. Standard: balanced with auto-advance. Hardcore: ludicrous speed, minimal stops. Presets configure rules + toggles in one keypress.",
+	},
+	"autogrind_export": {
+		"title": "Script Sharing",
+		"body": "Your autobattle scripts and autogrind rules are saved to script_exports/. Share JSON files with other players or back them up. Press I to import shared scripts.",
+	},
+	"autogrind_resume": {
+		"title": "Resume Session",
+		"body": "Your grind progress was saved automatically. Press Resume to continue where you left off — all battles, EXP, and items are preserved.",
+	},
 }
 
 

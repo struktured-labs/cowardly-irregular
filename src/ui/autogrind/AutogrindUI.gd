@@ -195,6 +195,12 @@ func setup(party: Array, region_name: String = "") -> void:
 	_connect_autogrind_signals()
 	call_deferred("_build_ui")
 
+	# Tutorial: first time opening autogrind menu
+	TutorialHints.show(self, "autogrind_menu")
+	# Tutorial: show resume hint if snapshot exists
+	if AutogrindSystem.has_grind_snapshot():
+		TutorialHints.show(self, "autogrind_resume")
+
 
 func _load_rules() -> void:
 	"""Load autogrind rules from AutogrindSystem (active profile)"""
@@ -1527,6 +1533,7 @@ func _apply_preset(preset_id: String) -> void:
 		AutogrindSystem.enable_permadeath_staking(false)
 
 	_log_message("[color=cyan]Preset: %s — %s[/color]" % [preset["label"], preset["description"]])
+	TutorialHints.show(self, "autogrind_presets")
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 
@@ -1571,6 +1578,7 @@ func _export_scripts() -> void:
 		_log_message("[color=yellow]Nothing to export.[/color]")
 	else:
 		_log_message("[color=lime]%d file(s) exported to script_exports/[/color]" % exported)
+		TutorialHints.show(self, "autogrind_export")
 	SoundManager.play_ui("menu_select")
 
 
