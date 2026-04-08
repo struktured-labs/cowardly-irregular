@@ -22,7 +22,11 @@
 		],
 		"visual": {
 			"sprite_type": "armored",
-			"outfit_color": [0.2, 0.4, 0.8],
+			"outfit_color": [
+				0.2,
+				0.4,
+				0.8
+			],
 			"headgear": "helmet_open"
 		},
 		"evolution": {
@@ -57,12 +61,19 @@
 		],
 		"visual": {
 			"sprite_type": "robed",
-			"outfit_color": [0.95, 0.92, 0.85],
+			"outfit_color": [
+				0.95,
+				0.92,
+				0.85
+			],
 			"headgear": "hood"
 		},
 		"evolution": {
 			"target": null,
-			"future_targets": ["high_priestess", "paladin"],
+			"future_targets": [
+				"high_priestess",
+				"paladin"
+			],
 			"description": "Evolution paths coming in a future update"
 		}
 	},
@@ -95,12 +106,19 @@
 		],
 		"visual": {
 			"sprite_type": "dark_robed",
-			"outfit_color": [0.12, 0.1, 0.25],
+			"outfit_color": [
+				0.12,
+				0.1,
+				0.25
+			],
 			"headgear": "pointed_hat"
 		},
 		"evolution": {
 			"target": null,
-			"future_targets": ["wizard", "dark_mage"],
+			"future_targets": [
+				"wizard",
+				"dark_mage"
+			],
 			"description": "Evolution paths coming in a future update"
 		}
 	},
@@ -129,7 +147,11 @@
 		],
 		"visual": {
 			"sprite_type": "cloaked",
-			"outfit_color": [0.35, 0.28, 0.45],
+			"outfit_color": [
+				0.35,
+				0.28,
+				0.45
+			],
 			"headgear": "bandana"
 		},
 		"evolution": {
@@ -162,12 +184,19 @@
 		],
 		"visual": {
 			"sprite_type": "performer",
-			"outfit_color": [0.85, 0.72, 0.2],
+			"outfit_color": [
+				0.85,
+				0.72,
+				0.2
+			],
 			"headgear": "feathered_cap"
 		},
 		"evolution": {
 			"target": null,
-			"future_targets": ["troubadour", "cantor"],
+			"future_targets": [
+				"troubadour",
+				"cantor"
+			],
 			"description": "Evolution paths coming in a future update"
 		}
 	},
@@ -203,7 +232,11 @@
 		},
 		"visual": {
 			"sprite_type": "tech",
-			"outfit_color": [0.2, 0.5, 0.45],
+			"outfit_color": [
+				0.2,
+				0.5,
+				0.45
+			],
 			"headgear": "goggles"
 		},
 		"evolution": {
@@ -243,7 +276,11 @@
 		},
 		"visual": {
 			"sprite_type": "time",
-			"outfit_color": [0.25, 0.2, 0.55],
+			"outfit_color": [
+				0.25,
+				0.2,
+				0.55
+			],
 			"headgear": "astral_circlet"
 		},
 		"evolution": {
@@ -281,7 +318,11 @@
 		},
 		"visual": {
 			"sprite_type": "dark_robed",
-			"outfit_color": [0.25, 0.08, 0.18],
+			"outfit_color": [
+				0.25,
+				0.08,
+				0.18
+			],
 			"headgear": "skull_hood"
 		},
 		"evolution": {
@@ -326,8 +367,17 @@
 		},
 		"visual": {
 			"sprite_type": "armored",
-			"outfit_color": [0.6, 0.55, 0.4],
+			"outfit_color": [
+				0.6,
+				0.55,
+				0.4
+			],
 			"headgear": "full_helmet"
+		},
+		"evolution": {
+			"target": "bossbinder",
+			"level_required": 8,
+			"description": "Master the art of control to become a Bossbinder"
 		}
 	},
 	"ninja": {
@@ -369,8 +419,17 @@
 		},
 		"visual": {
 			"sprite_type": "cloaked",
-			"outfit_color": [0.15, 0.15, 0.22],
+			"outfit_color": [
+				0.15,
+				0.15,
+				0.22
+			],
 			"headgear": "mask"
+		},
+		"evolution": {
+			"target": "skiptrotter",
+			"level_required": 8,
+			"description": "Master shortcuts to become a Skiptrotter"
 		}
 	},
 	"summoner": {
@@ -410,8 +469,17 @@
 		},
 		"visual": {
 			"sprite_type": "robed",
-			"outfit_color": [0.3, 0.7, 0.5],
+			"outfit_color": [
+				0.3,
+				0.7,
+				0.5
+			],
 			"headgear": "circlet"
+		},
+		"evolution": {
+			"target": "necromancer",
+			"level_required": 8,
+			"description": "Master the beyond to become a Necromancer"
 		}
 	},
 	"bossbinder": {
@@ -451,7 +519,11 @@
 		},
 		"visual": {
 			"sprite_type": "tech",
-			"outfit_color": [0.55, 0.2, 0.2],
+			"outfit_color": [
+				0.55,
+				0.2,
+				0.2
+			],
 			"headgear": "visor"
 		},
 		"evolution": {
@@ -496,7 +568,11 @@
 		},
 		"visual": {
 			"sprite_type": "tech",
-			"outfit_color": [0.5, 0.4, 0.15],
+			"outfit_color": [
+				0.5,
+				0.4,
+				0.15
+			],
 			"headgear": "cap"
 		},
 		"evolution": {
@@ -535,8 +611,17 @@
 		"volatility_access": true,
 		"visual": {
 			"sprite_type": "tech",
-			"outfit_color": [0.22, 0.22, 0.25],
+			"outfit_color": [
+				0.22,
+				0.22,
+				0.25
+			],
 			"headgear": "glasses"
+		},
+		"evolution": {
+			"target": "scriptweaver",
+			"level_required": 8,
+			"description": "Master the system to become a Scriptweaver"
 		}
 	}
 }
