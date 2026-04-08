@@ -367,10 +367,10 @@ func _get_tile_order() -> Array:
 	]
 
 func _get_impassable_types() -> Array:
-	# Mode 7 warps visuals but not collision — tile collision creates invisible walls.
-	# Disabled for overworld; map boundaries still constrain the player.
-	# TODO: restore when SubViewport separates render from collision
-	return []
+	# Only block truly dangerous/boundary tiles. Forest, mountains, and water
+	# are passable (with speed penalty) because Mode 7 warps visuals vs collision,
+	# making standard tile blocking feel like invisible walls.
+	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA]
 
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(5, 8)

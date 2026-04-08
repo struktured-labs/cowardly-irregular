@@ -233,6 +233,29 @@ func _setup_sprite() -> void:
 	collision_mask = 1   # Player collides with walls (layer 1)
 
 
+func _get_terrain_speed_modifier() -> float:
+	"""Check tile under player and apply speed penalty for rough terrain."""
+	var parent = get_parent()
+	if not parent or not parent.has_node("TileMap"):
+		return 1.0
+	var tile_map = parent.get_node("TileMap")
+	var tile_size = tile_map.tile_set.tile_size.x if tile_map.tile_set else 16
+	var tile_pos = Vector2i(int(position.x) / tile_size, int(position.y) / tile_size)
+	var tile_data = tile_map.get_cell_tile_data(tile_pos)
+	if not tile_data:
+		return 1.0
+	# Check atlas coords to determine tile type — rough terrain = slower
+	var atlas_coords = tile_map.get_cell_atlas_coords(tile_pos)
+	var tile_id = atlas_coords.y * 5 + atlas_coords.x  # 5 columns in atlas
+	# TileGenerator tile order: GRASS=0, FOREST=1, MOUNTAIN=2, WATER=3, PATH=4, ...
+	# Forest/Mountain/Water = slower instead of blocked (Mode 7 invisible wall fix)
+	match tile_id:
+		1: return 0.5   # Forest — half speed
+		2: return 0.4   # Mountain — very slow
+		3: return 0.5   # Water — half speed (wading)
+		_: return 1.0
+
+
 func _can_move() -> bool:
 	# Layer 1: GameLoop state — only move during EXPLORATION
 	var game_loop = get_node_or_null("/root/GameLoop")
@@ -270,8 +293,9 @@ func _physics_process(delta: float) -> void:
 		# Shader compresses horizontal visually — boost X to feel equal to vertical.
 		input_dir.x *= 2.0
 		input_dir = input_dir.normalized()
-		# Instant velocity — classic JRPG snap, no slide
-		velocity = input_dir * move_speed
+		# Terrain speed modifier — rough terrain slows you down instead of blocking
+		var terrain_speed = _get_terrain_speed_modifier()
+		velocity = input_dir * move_speed * terrain_speed
 		is_moving = true
 
 		if abs(input_dir.x) > abs(input_dir.y):
