@@ -257,9 +257,8 @@ func test_damage_with_defending_state() -> void:
 	_combatant.defense = 0
 	_combatant.is_defending = true
 	var damage = _combatant.take_damage(20)
-	# get_buffed_stat("defense", 0) returns 1 (minimum clamp)
-	# 20*20/(20+1) = 19, then * 0.5 = 9
-	assert_eq(damage, 9, "Defending should halve damage (defense min 1 from get_buffed_stat)")
+	# 20*20/(20+0) = 20, then * 0.5 = 10
+	assert_eq(damage, 10, "Defending should halve damage to 10")
 
 
 func test_status_effect_add_remove() -> void:

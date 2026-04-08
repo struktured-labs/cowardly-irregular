@@ -1753,7 +1753,7 @@
 	"data_absorb": {
 		"id": "data_absorb",
 		"name": "Data Absorb",
-		"type": "magic",
+		"type": "healing",
 		"animation": "cast_dark",
 		"mp_cost": 10,
 		"description": "Absorbs raw data to restore its own HP.",
