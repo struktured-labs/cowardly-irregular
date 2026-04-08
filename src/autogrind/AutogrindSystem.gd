@@ -43,6 +43,7 @@ var battles_completed: int = 0
 var total_exp_gained: int = 0
 var total_items_gained: Dictionary = {}
 var items_consumed: Dictionary = {}  # {item_id: count} — tracks items used during grind session
+var per_character_exp: Dictionary = {}  # {char_name: total_exp_gained} — per-character EXP tracking
 
 ## Efficiency system
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
@@ -401,6 +402,7 @@ func get_grind_stats() -> Dictionary:
 		"yield_multiplier": yield_val,
 		"automation_affinity": _automation_affinity,
 		"items_consumed": items_consumed.duplicate(),
+		"per_character_exp": per_character_exp.duplicate(),
 	}
 
 
@@ -628,6 +630,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	total_exp_gained = 0
 	total_items_gained.clear()
 	items_consumed.clear()
+	per_character_exp.clear()
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
 	meta_corruption_level = 0.0
@@ -1733,6 +1736,11 @@ func _track_item_consumed(item_id: String) -> void:
 func track_item_consumed(item_id: String) -> void:
 	"""Public API for external callers (GameLoop between-battle healing)."""
 	_track_item_consumed(item_id)
+
+
+func track_character_exp(char_name: String, exp_amount: int) -> void:
+	"""Track EXP gained by a specific character during this session."""
+	per_character_exp[char_name] = per_character_exp.get(char_name, 0) + exp_amount
 
 
 func get_items_consumed_summary() -> String:

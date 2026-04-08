@@ -2324,6 +2324,18 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
 
+	# Track per-character EXP distribution (headless path)
+	if victory and exp_gained > 0:
+		var alive_count = 0
+		for member in party:
+			if member is Combatant and member.is_alive:
+				alive_count += 1
+		if alive_count > 0:
+			var per_char_exp = exp_gained / alive_count
+			for member in party:
+				if member is Combatant and member.is_alive:
+					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+
 	# Forward to controller with headless-computed EXP
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, {})
@@ -2492,6 +2504,18 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 				_autogrind_heal_member(member)
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
+
+	# Track per-character EXP distribution
+	if victory and exp_gained > 0:
+		var alive_count = 0
+		for member in party:
+			if member is Combatant and member.is_alive:
+				alive_count += 1
+		if alive_count > 0:
+			var per_char_exp = exp_gained / alive_count
+			for member in party:
+				if member is Combatant and member.is_alive:
+					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
 
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -2883,10 +2907,19 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 			vp_size = Vector2(1280, 720)
 		var slot_w = (vp_size.x - 32) / max(party.size(), 1)
 		var bar_w = slot_w - 12
+		var char_exp = stats.get("per_character_exp", {})
 		for i in range(min(party.size(), 4)):
 			var member = party[i]
 			if not member is Combatant:
 				continue
+			# Update name with session EXP total
+			var name_lbl = party_bars.get_node_or_null("Name_%d" % i)
+			if name_lbl:
+				var member_exp = char_exp.get(member.combatant_name, 0)
+				if member_exp > 0:
+					name_lbl.text = "%s +%d" % [member.combatant_name.left(6), member_exp]
+				else:
+					name_lbl.text = member.combatant_name.left(8)
 			var hp_fill = party_bars.get_node_or_null("HP_%d" % i)
 			if hp_fill:
 				var hp_pct = member.current_hp / max(float(member.max_hp), 1.0)
