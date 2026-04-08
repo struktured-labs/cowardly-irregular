@@ -235,6 +235,7 @@ func _ready() -> void:
 	BattleManager.one_shot_achieved.connect(_on_one_shot_achieved)
 	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
 	BattleManager.group_attack_executing.connect(_on_group_attack_executing)
+	BattleManager.advance_trash_talk.connect(_on_advance_trash_talk)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -303,6 +304,8 @@ func _exit_tree() -> void:
 		BattleManager.autobattle_victory.disconnect(_on_autobattle_victory)
 	if BattleManager.group_attack_executing.is_connected(_on_group_attack_executing):
 		BattleManager.group_attack_executing.disconnect(_on_group_attack_executing)
+	if BattleManager.advance_trash_talk.is_connected(_on_advance_trash_talk):
+		BattleManager.advance_trash_talk.disconnect(_on_advance_trash_talk)
 
 	# Reset engine time scale in case battle speed was altered
 	Engine.time_scale = 1.0
@@ -2868,6 +2871,61 @@ func _on_battle_log_message(message: String) -> void:
 	if battle_log:
 		battle_log.append_text(message + "\n")
 		battle_log.scroll_to_line(battle_log.get_line_count())
+
+
+func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
+	"""Show a brief cocky one-liner before a big Advance combo"""
+	if turbo_mode:
+		return  # Skip in turbo/autogrind
+
+	var sprite = _get_combatant_sprite(combatant)
+	if not sprite or not is_instance_valid(sprite):
+		return
+
+	# Speech bubble above the combatant
+	var bubble = PanelContainer.new()
+	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.75)
+	style.border_color = Color(1.0, 0.85, 0.2)
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	bubble.add_theme_stylebox_override("panel", style)
+
+	var label = Label.new()
+	label.text = '"%s"' % line
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
+	label.add_theme_constant_override("outline_size", 1)
+	label.add_theme_color_override("font_outline_color", Color(0.3, 0.2, 0.0))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bubble.add_child(label)
+
+	bubble.position = sprite.global_position + Vector2(-40, -80)
+	bubble.z_index = 120
+	bubble.modulate.a = 0.0
+	add_child(bubble)
+
+	# Animate: pop in, hold, fade out
+	var tween = create_tween()
+	tween.tween_property(bubble, "modulate:a", 1.0, 0.15)
+	tween.tween_property(bubble, "position:y", bubble.position.y - 10, 0.8)
+	tween.parallel().tween_property(bubble, "modulate:a", 0.0, 0.3).set_delay(1.2)
+	tween.tween_callback(bubble.queue_free)
+
+	# Log it too
+	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
+	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
 
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
