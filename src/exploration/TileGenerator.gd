@@ -367,7 +367,10 @@ func _get_tile_order() -> Array:
 	]
 
 func _get_impassable_types() -> Array:
-	return [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.VILLAGE_HEDGE]
+	# Mode 7 warps visuals but not collision — tile collision creates invisible walls.
+	# Disabled for overworld; map boundaries still constrain the player.
+	# TODO: restore when SubViewport separates render from collision
+	return []
 
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(5, 8)
