@@ -521,7 +521,9 @@ func serialize_snapshot() -> Dictionary:
 
 ## Restore controller from a snapshot (call before start_grind)
 func restore_from_snapshot(snapshot: Dictionary) -> void:
+	_config = snapshot.get("config", {}).duplicate(true)
 	_terrain = snapshot.get("terrain", "plains")
+	_current_tier = snapshot.get("tier", 0) as GrindTier
 	headless_mode = snapshot.get("headless_mode", false)
 	_auto_advance_regions = snapshot.get("auto_advance", true)
 	_saved_autobattle_states = snapshot.get("saved_autobattle_states", {}).duplicate()
