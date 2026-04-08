@@ -555,13 +555,14 @@ func _on_title_new_game() -> void:
 	"""Handle new game selected from title screen"""
 	print("[GAME] New Game selected")
 	_close_title_screen()
-	# Wait for title screen to actually be removed before starting cutscene
+	# Wait for title screen to actually be removed before starting
 	await get_tree().process_frame
 	await get_tree().process_frame
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
-	# Play prologue cutscene, then start exploration
-	_play_new_game_cutscenes()
+	# Go straight to exploration — prologue triggers on first Theron interaction
+	_current_map_id = "overworld"
+	_start_exploration()
 
 
 func _play_new_game_cutscenes() -> void:
@@ -590,6 +591,14 @@ func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""
 	var flags = GameState.game_constants
+	# Prologue: first time entering Harmonia Village (triggered by Theron interaction)
+	if not flags.get("cutscene_flag_prologue_complete", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_prologue"
+	# Chapter 1: chains after prologue on same village visit
+	if flags.get("cutscene_flag_prologue_complete", false) and not flags.get("cutscene_flag_chapter1_complete", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_chapter1"
 	# Chapter 2: plays when entering overworld after chapter1 (road encounters)
 	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):
 		if _current_map_id == "overworld":
