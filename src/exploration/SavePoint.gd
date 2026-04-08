@@ -126,4 +126,7 @@ func _show_save_confirmation() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(confirm, "position:y", confirm.position.y - 20, 1.5)
 	tween.tween_property(confirm, "modulate:a", 0.0, 1.5).set_delay(0.5)
-	tween.chain().tween_callback(confirm.queue_free)
+	tween.chain().tween_callback(func():
+		if is_instance_valid(confirm):
+			confirm.queue_free()
+	)
