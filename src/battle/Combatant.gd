@@ -315,7 +315,10 @@ func get_buffed_stat(stat_name: String, base_value: int) -> int:
 
 	# Cap: buffs can at most 4x a stat, debuffs can at most reduce to 25%
 	final_value = clampf(final_value, base_value * 0.25, base_value * 4.0)
-	return maxi(1, int(final_value))
+	# Minimum 1 only if base stat is positive (defense=0 should stay 0)
+	if base_value > 0:
+		return maxi(1, int(final_value))
+	return int(final_value)
 
 
 func update_buff_durations() -> void:
