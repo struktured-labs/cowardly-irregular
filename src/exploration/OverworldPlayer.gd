@@ -208,7 +208,7 @@ func _ready() -> void:
 	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	wall_min_slide_angle = 0.0  # Always allow wall sliding, even head-on
-	safe_margin = 2.0  # Generous margin prevents stuck-on-edge and improves wall sliding
+	safe_margin = 4.0  # Extra generous — Mode 7 visual mismatch needs maximum forgiveness
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
@@ -223,7 +223,7 @@ func _setup_sprite() -> void:
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
 	var shape = CircleShape2D.new()
-	shape.radius = 5.0  # Smaller radius for smoother wall sliding and edge navigation
+	shape.radius = 4.0  # Tiny collision for maximum Mode 7 navigation forgiveness
 	collision.shape = shape
 	collision.position = Vector2(0, 4)  # Offset down slightly (feet collision)
 	add_child(collision)
