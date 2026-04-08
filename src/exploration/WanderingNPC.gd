@@ -165,7 +165,7 @@ func _get_current_dialogue() -> String:
 	for hint in dialogue_hints:
 		var flag = hint.get("flag", "")
 		if flag == "" or GameState.get_story_flag(flag):
-			best = hint["text"]
+			best = hint.get("text", dialogue)
 	return best
 
 

@@ -12,6 +12,7 @@ var _sprite: Sprite2D
 var _glow_timer: float = 0.0
 var _indicator: Label
 var _player_in_zone: bool = false
+var _is_saving: bool = false
 
 
 func _ready() -> void:
@@ -95,7 +96,8 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if _player_in_zone and event.is_action_pressed("ui_accept"):
+	if _player_in_zone and not _is_saving and event.is_action_pressed("ui_accept"):
+		_is_saving = true
 		SoundManager.play_ui("save_crystal_activate")
 		save_requested.emit()
 		get_viewport().set_input_as_handled()
@@ -126,4 +128,4 @@ func _show_save_confirmation() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(confirm, "position:y", confirm.position.y - 20, 1.5)
 	tween.tween_property(confirm, "modulate:a", 0.0, 1.5).set_delay(0.5)
-	tween.chain().tween_callback(confirm.queue_free)
+	tween.chain().tween_callback(func(): confirm.queue_free(); _is_saving = false)
