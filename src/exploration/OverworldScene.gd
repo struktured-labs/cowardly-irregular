@@ -412,8 +412,11 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	trans.target_spawn = target_spawn
 	trans.require_interaction = true  # Press A to enter — prevents accidental teleportation
 	trans.indicator_text = indicator
-	trans.position = pos
-	_setup_transition_collision(trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))  # 2x2 tiles — tight entry zone
+	# Offset position upward in world space to compensate for Mode 7 visual offset.
+	# Mode 7 renders the player lower on screen than their collision position,
+	# so the player has to walk "above" targets. Shifting zones up fixes the mismatch.
+	trans.position = pos + Vector2(0, -TILE_SIZE)
+	_setup_transition_collision(trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))  # 3x3 tiles — generous for Mode 7
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
 

@@ -139,6 +139,7 @@ func _setup_collision() -> void:
 	var shape = CircleShape2D.new()
 	shape.radius = 48.0  # Wider detection for scaled-up sprites
 	col.shape = shape
+	col.position = Vector2(0, -16)  # Offset up to compensate for Mode 7 visual shift
 	add_child(col)
 
 
