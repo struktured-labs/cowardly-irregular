@@ -253,6 +253,9 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# Speaker name
 	_speaker_label = Label.new()
 	_speaker_label.position = Vector2(text_x, TILE_SIZE * 2)
+	_speaker_label.size = Vector2(text_width, 20)
+	_speaker_label.clip_text = false
+	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	_speaker_label.add_theme_font_size_override("font_size", 14)
 	_speaker_label.add_theme_color_override("font_color", theme["name"])
 	_dialogue_box.add_child(_speaker_label)
