@@ -1237,9 +1237,9 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 			# Phase 3: advance combo — haste + double quick strike
 			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < 0.45:
 				var quick = find_ability.call("masterite_quick_strike")
-				if not quick.is_empty():
+				if not quick.is_empty() and alive_enemies.size() > 0:
 					var t1 = _choose_target(combatant, alive_enemies, {})
-					var t2 = alive_enemies[randi() % alive_enemies.size()]
+					var t2 = alive_enemies[randi() % alive_enemies.size()] if alive_enemies.size() > 0 else t1
 					battle_log_message.emit("[color=gray]The Tempo moves in a blur![/color]")
 					return {"type": "advance", "combatant": combatant, "actions": [
 						{"type": "ability", "ability_id": "masterite_quick_strike", "targets": [t1]},
@@ -1779,12 +1779,15 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 
 		"blade_storm":
 			# Multi-hit physical, each can crit
-			var hit_count = participants.size() * 2  # 2 hits per participant
+			var hit_count = participants.size() * 2 if not participants.is_empty() else 0
 			for _hit in range(hit_count):
-				var attacker = participants[randi() % participants.size()]
-				if not (attacker is Combatant) or not attacker.is_alive: continue
-				var target = alive_enemies[randi() % alive_enemies.size()]
-				if not target.is_alive: continue
+				# Re-filter alive targets each hit (enemies may die mid-storm)
+				var living_enemies = alive_enemies.filter(func(e): return e.is_alive)
+				var living_participants = participants.filter(func(p): return p is Combatant and p.is_alive)
+				if living_participants.is_empty() or living_enemies.is_empty():
+					break
+				var attacker = living_participants[randi() % living_participants.size()]
+				var target = living_enemies[randi() % living_enemies.size()]
 				var base_dmg = int(attacker.attack * 0.7)
 				var is_crit = randf() < 0.3  # 30% crit chance per hit
 				if is_crit:
@@ -2283,7 +2286,7 @@ func estimate_attack_damage(attacker: Combatant, target: Combatant) -> int:
 	"""Estimate basic attack damage (no variance, no crit) for UI preview"""
 	var atk = attacker.get_buffed_stat("attack", attacker.attack)
 	var def_val = target.get_buffed_stat("defense", target.defense)
-	var raw = int((atk * atk) / float(atk + def_val))
+	var raw = int((atk * atk) / float(max(1, atk + def_val)))
 	return max(1, raw)
 
 
@@ -2303,7 +2306,7 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 	var def_val = target.get_buffed_stat("defense", target.defense)
 	if is_magical:
 		def_val = int(def_val * 0.5)
-	var mitigated = int((raw * raw) / float(raw + def_val))
+	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
 
 	# Apply elemental modifier
 	var element = ability.get("element", "")
