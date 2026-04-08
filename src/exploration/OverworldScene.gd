@@ -49,6 +49,7 @@ var _zone_particles: ZoneParticles
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
 var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
 
 
 func _ready() -> void:
@@ -106,11 +107,20 @@ func _ready() -> void:
 	add_child(_border_indicator)
 	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
 
+	# Objective arrow (screen-edge directional indicator)
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	# Signposts at key intersections for navigation
 	_place_signposts()
 
 	# Visual landmarks between towns
 	_place_landmarks()
+
+	# Village markers (visible building clusters at entrances)
+	_place_village_markers()
 
 	# Wandering NPCs on paths between towns
 	_place_wanderers()
@@ -132,6 +142,8 @@ func _process(_delta: float) -> void:
 		_update_encounter_zone(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
 		if _zone_particles:
 			_zone_particles.update_position(player.position)
 		if _border_indicator:
@@ -588,6 +600,26 @@ func _place_wanderers() -> void:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
+
+
+func _place_village_markers() -> void:
+	var villages = [
+		{"key": "village_entrance", "name": "HARMONIA", "roof": Color(0.65, 0.2, 0.15)},
+		{"key": "frosthold_entrance", "name": "FROSTHOLD", "roof": Color(0.3, 0.4, 0.6)},
+		{"key": "eldertree_entrance", "name": "ELDERTREE", "roof": Color(0.25, 0.45, 0.2)},
+		{"key": "grimhollow_entrance", "name": "GRIMHOLLOW", "roof": Color(0.3, 0.2, 0.35)},
+		{"key": "sandrift_entrance", "name": "SANDRIFT", "roof": Color(0.65, 0.5, 0.25)},
+		{"key": "ironhaven_entrance", "name": "IRONHAVEN", "roof": Color(0.4, 0.35, 0.3)},
+	]
+	for v in villages:
+		var pos = spawn_points.get(v["key"], Vector2.ZERO)
+		if pos == Vector2.ZERO:
+			continue
+		var marker = VillageMarker.new()
+		marker.village_name = v["name"]
+		marker.roof_color = v["roof"]
+		marker.position = pos
+		add_child(marker)
 
 
 func _place_ambient_effects() -> void:
