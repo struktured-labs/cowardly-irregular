@@ -3083,20 +3083,26 @@ func _resume_autogrind() -> void:
 	var sys_data = snapshot.get("system", {})
 	var config = ctrl_data.get("config", {})
 
-	# Restore system state before starting grind
-	AutogrindSystem.restore_system_from_snapshot(sys_data)
+	# Inject headless_mode into config so _start_autogrind sets it correctly
+	# (controller reads ludicrous_speed from config during start_grind)
+	if ctrl_data.get("headless_mode", false) and not config.has("ludicrous_speed"):
+		config["ludicrous_speed"] = true
 
-	# Start autogrind with the saved config (this creates the controller)
+	# Start autogrind first (this resets system state to zero)
 	_start_autogrind(config)
 
-	# Restore controller-specific state after start
+	# THEN restore system state on top (overrides the zeros from start_autogrind)
+	AutogrindSystem.restore_system_from_snapshot(sys_data)
+
+	# Restore controller-specific state (tier, headless, terrain)
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.restore_from_snapshot(ctrl_data)
 
 	# Clear the snapshot now that we've successfully resumed
 	AutogrindSystem.clear_grind_snapshot()
 
-	print("[AUTOGRIND] Session resumed from snapshot")
+	print("[AUTOGRIND] Session resumed from snapshot (%d battles, %d EXP)" % [
+		sys_data.get("battles_completed", 0), sys_data.get("total_exp_gained", 0)])
 
 
 func _exit_tree() -> void:
