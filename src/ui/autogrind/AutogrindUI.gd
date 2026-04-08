@@ -6,6 +6,7 @@ extends Control
 
 signal closed()
 signal grind_requested(config: Dictionary)
+signal grind_resume_requested()
 signal grind_stop_requested()
 signal tier_cycle_requested()
 
@@ -357,6 +358,12 @@ func _build_grid_panel(panel_size: Vector2) -> Control:
 	_cursor.z_index = 10
 	panel.add_child(_cursor)
 
+	# Resume button (only if snapshot exists and not grinding)
+	if not _is_grinding and AutogrindSystem.has_grind_snapshot():
+		var resume_btn = _create_resume_button(panel_size)
+		resume_btn.position = Vector2(8, panel_size.y - 82)
+		panel.add_child(resume_btn)
+
 	# Start/Stop button at bottom
 	_start_button = _create_start_stop_button(panel_size)
 	_start_button.position = Vector2(8, panel_size.y - 44)
@@ -393,6 +400,40 @@ func _create_start_stop_button(panel_size: Vector2) -> Control:
 	# Mouse: click to toggle grinding
 	MenuMouseHelper.make_clickable(btn, 0, btn.size.x, btn.size.y,
 		func() -> void: _toggle_grinding(),
+		func() -> void: pass)
+
+	return btn
+
+
+func _create_resume_button(panel_size: Vector2) -> Control:
+	"""Create resume button for saved grind sessions."""
+	var btn = Control.new()
+	btn.size = Vector2(panel_size.x - 16, 32)
+
+	var bg = ColorRect.new()
+	bg.color = Color(0.15, 0.3, 0.5)
+	bg.size = btn.size
+	btn.add_child(bg)
+
+	_add_pixel_border(btn, btn.size)
+
+	var snapshot = AutogrindSystem.load_grind_snapshot()
+	var sys_data = snapshot.get("system", {})
+	var battles = sys_data.get("battles_completed", 0)
+	var exp = sys_data.get("total_exp_gained", 0)
+
+	var label = Label.new()
+	label.text = "RESUME (%d battles, %d EXP)" % [battles, exp]
+	label.position = Vector2(btn.size.x / 2 - 100, 6)
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
+	btn.add_child(label)
+
+	MenuMouseHelper.make_clickable(btn, 0, btn.size.x, btn.size.y,
+		func() -> void:
+			_log_message("[color=cyan]Resuming saved grind session...[/color]")
+			grind_resume_requested.emit()
+			visible = false,
 		func() -> void: pass)
 
 	return btn

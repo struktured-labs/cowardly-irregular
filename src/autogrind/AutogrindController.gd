@@ -505,3 +505,23 @@ func cycle_tier() -> void:
 ## Check if currently grinding
 func is_grinding() -> bool:
 	return _state != State.IDLE
+
+
+## Serialize controller state for pause/resume snapshot
+func serialize_snapshot() -> Dictionary:
+	return {
+		"config": _config.duplicate(true),
+		"terrain": _terrain,
+		"tier": _current_tier as int,
+		"headless_mode": headless_mode,
+		"auto_advance": _auto_advance_regions,
+		"saved_autobattle_states": _saved_autobattle_states.duplicate(),
+	}
+
+
+## Restore controller from a snapshot (call before start_grind)
+func restore_from_snapshot(snapshot: Dictionary) -> void:
+	_terrain = snapshot.get("terrain", "plains")
+	headless_mode = snapshot.get("headless_mode", false)
+	_auto_advance_regions = snapshot.get("auto_advance", true)
+	_saved_autobattle_states = snapshot.get("saved_autobattle_states", {}).duplicate()

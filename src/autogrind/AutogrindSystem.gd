@@ -1948,6 +1948,117 @@ func load_data(data: Dictionary) -> void:
 
 
 ## ═══════════════════════════════════════════════════════════════════════
+## PAUSE/RESUME SNAPSHOT
+## ═══════════════════════════════════════════════════════════════════════
+
+const SNAPSHOT_PATH: String = "user://autogrind_snapshot.json"
+
+
+func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
+	"""Save current grind state for resume after game close."""
+	if not is_grinding:
+		return false
+
+	# Finalize elapsed time for snapshot
+	var elapsed = 0.0
+	if _grind_stats["start_time"] > 0.0:
+		elapsed = Time.get_unix_time_from_system() - _grind_stats["start_time"]
+
+	var snapshot = {
+		"version": 1,
+		"saved_at": Time.get_datetime_string_from_system(),
+		"controller": controller_snapshot,
+		"system": {
+			"battles_completed": battles_completed,
+			"total_exp_gained": total_exp_gained,
+			"total_items_gained": total_items_gained.duplicate(),
+			"items_consumed": items_consumed.duplicate(),
+			"efficiency_multiplier": efficiency_multiplier,
+			"monster_adaptation_level": monster_adaptation_level,
+			"meta_corruption_level": meta_corruption_level,
+			"meta_boss_spawn_chance": meta_boss_spawn_chance,
+			"consecutive_wins": consecutive_wins,
+			"collapse_count": collapse_count,
+			"fatigue_events_triggered": fatigue_events_triggered,
+			"current_region_id": current_region_id,
+			"permadeath_staking_enabled": permadeath_staking_enabled,
+			"elapsed_seconds": elapsed,
+			"grind_stats_gold": _grind_stats.get("total_gold", 0),
+			"grind_stats_encounters": _grind_stats.get("total_encounters", 0),
+		},
+	}
+
+	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.WRITE)
+	if not file:
+		print("[AUTOGRIND] Failed to save snapshot")
+		return false
+	file.store_string(JSON.stringify(snapshot, "\t"))
+	file.close()
+	print("[AUTOGRIND] Grind snapshot saved (%d battles, %d EXP)" % [battles_completed, total_exp_gained])
+	return true
+
+
+func load_grind_snapshot() -> Dictionary:
+	"""Load a saved grind snapshot. Returns empty if none exists."""
+	if not FileAccess.file_exists(SNAPSHOT_PATH):
+		return {}
+	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.READ)
+	if not file:
+		return {}
+	var json = JSON.new()
+	if json.parse(file.get_as_text()) != OK:
+		file.close()
+		return {}
+	file.close()
+	if not json.data is Dictionary or json.data.get("version", 0) != 1:
+		return {}
+	return json.data
+
+
+func has_grind_snapshot() -> bool:
+	"""Check if a grind snapshot exists (for UI 'Resume' button)."""
+	return FileAccess.file_exists(SNAPSHOT_PATH)
+
+
+func clear_grind_snapshot() -> void:
+	"""Delete the snapshot after clean stop or successful resume."""
+	if FileAccess.file_exists(SNAPSHOT_PATH):
+		DirAccess.remove_absolute(SNAPSHOT_PATH)
+		print("[AUTOGRIND] Snapshot cleared")
+
+
+func restore_system_from_snapshot(system_data: Dictionary) -> void:
+	"""Restore AutogrindSystem mid-session state from a snapshot."""
+	battles_completed = system_data.get("battles_completed", 0)
+	total_exp_gained = system_data.get("total_exp_gained", 0)
+	total_items_gained = system_data.get("total_items_gained", {}).duplicate()
+	items_consumed = system_data.get("items_consumed", {}).duplicate()
+	efficiency_multiplier = system_data.get("efficiency_multiplier", 1.0)
+	monster_adaptation_level = system_data.get("monster_adaptation_level", 0.0)
+	meta_corruption_level = system_data.get("meta_corruption_level", 0.0)
+	meta_boss_spawn_chance = system_data.get("meta_boss_spawn_chance", 0.0)
+	consecutive_wins = system_data.get("consecutive_wins", 0)
+	collapse_count = system_data.get("collapse_count", 0)
+	fatigue_events_triggered = system_data.get("fatigue_events_triggered", 0)
+	current_region_id = system_data.get("current_region_id", "")
+	permadeath_staking_enabled = system_data.get("permadeath_staking_enabled", false)
+	permadeath_enabled = permadeath_staking_enabled
+
+	# Reconstruct grind_stats with adjusted start_time
+	var saved_elapsed = system_data.get("elapsed_seconds", 0.0)
+	_grind_stats = {
+		"start_time": Time.get_unix_time_from_system() - saved_elapsed,
+		"total_exp": total_exp_gained,
+		"total_gold": system_data.get("grind_stats_gold", 0),
+		"total_jp": 0,
+		"total_encounters": system_data.get("grind_stats_encounters", 0),
+		"elapsed_seconds": saved_elapsed,
+	}
+
+	print("[AUTOGRIND] System state restored (%d battles, %.1fx efficiency)" % [battles_completed, efficiency_multiplier])
+
+
+## ═══════════════════════════════════════════════════════════════════════
 ## SESSION HISTORY
 ## ═══════════════════════════════════════════════════════════════════════
 
