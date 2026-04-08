@@ -1160,9 +1160,11 @@ func _show_game_over_screen() -> void:
 		_spawn_point = "default"
 		_start_exploration()
 	else:
-		# Load saved game
+		# Load most recent save
 		if SaveSystem and SaveSystem.has_method("load_game"):
-			SaveSystem.load_game(0)  # Default to slot 0
+			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else 0
+			if slot >= 0:
+				SaveSystem.load_game(slot)
 		_create_party()
 		_start_exploration()
 

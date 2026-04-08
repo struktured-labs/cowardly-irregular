@@ -33,6 +33,8 @@ var autobattle_records: Dictionary = {}  # {monster_key: {count: int, best_turns
 func _ready() -> void:
 	# Create save directory if it doesn't exist
 	_ensure_save_directory()
+	# Load persisted settings
+	load_settings()
 
 
 func _process(delta: float) -> void:
@@ -77,6 +79,7 @@ func save_game(slot: int = -1) -> bool:
 
 	if success:
 		current_save_slot = slot
+		save_settings()  # Persist settings alongside save
 		save_completed.emit(slot)
 		print("Game saved to slot %d" % slot)
 		return true
@@ -165,6 +168,36 @@ func save_exists(slot: int) -> bool:
 	"""Check if a save file exists"""
 	var file_path = _get_save_path(slot)
 	return FileAccess.file_exists(file_path)
+
+
+func has_save() -> bool:
+	"""Check if any save file exists (for title screen Continue button)"""
+	for slot in range(MAX_SAVE_SLOTS):
+		if save_exists(slot):
+			return true
+	if save_exists(QUICK_SAVE_SLOT):
+		return true
+	return false
+
+
+func get_most_recent_slot() -> int:
+	"""Find the most recently saved slot. Returns -1 if no saves exist."""
+	var best_slot = -1
+	var best_time = 0.0
+	for slot in range(MAX_SAVE_SLOTS):
+		var info = get_save_info(slot)
+		if not info.is_empty():
+			var save_time = info.get("save_time", 0.0)
+			if save_time > best_time:
+				best_time = save_time
+				best_slot = slot
+	# Also check quick save
+	var qs_info = get_save_info(QUICK_SAVE_SLOT)
+	if not qs_info.is_empty():
+		var qs_time = qs_info.get("save_time", 0.0)
+		if qs_time > best_time:
+			best_slot = QUICK_SAVE_SLOT
+	return best_slot
 
 
 func get_save_info(slot: int) -> Dictionary:
@@ -466,3 +499,57 @@ func get_all_saves() -> Array:
 func set_current_save_slot(slot: int) -> void:
 	"""Set the active save slot"""
 	current_save_slot = slot
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## SETTINGS PERSISTENCE (global, not per-slot)
+## ═══════════════════════════════════════════════════════════════════════
+
+const SETTINGS_PATH = "user://settings.json"
+
+
+func save_settings() -> void:
+	"""Save global game settings (battle speed, audio, display options)."""
+	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+	var settings = {
+		"version": 1,
+		"battle_speed_index": BattleSceneScript._battle_speed_index if BattleSceneScript else 1,
+		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
+		"master_volume": AudioServer.get_bus_volume_db(0),
+	}
+	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(settings, "\t"))
+		file.close()
+
+
+func load_settings() -> void:
+	"""Load and apply global game settings."""
+	if not FileAccess.file_exists(SETTINGS_PATH):
+		return
+	var file = FileAccess.open(SETTINGS_PATH, FileAccess.READ)
+	if not file:
+		return
+	var json = JSON.new()
+	if json.parse(file.get_as_text()) != OK or not json.data is Dictionary:
+		file.close()
+		return
+	file.close()
+
+	var settings = json.data
+	# Battle speed
+	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+	if BattleSceneScript and settings.has("battle_speed_index"):
+		var idx = int(settings["battle_speed_index"])
+		if idx >= 0 and idx < BattleSceneScript.BATTLE_SPEEDS.size():
+			BattleSceneScript._battle_speed_index = idx
+
+	# Controller overlay
+	if GameState and settings.has("show_controller_overlay"):
+		GameState.show_controller_overlay = settings["show_controller_overlay"]
+
+	# Master volume
+	if settings.has("master_volume"):
+		AudioServer.set_bus_volume_db(0, settings["master_volume"])
+
+	print("[SAVE] Settings loaded")
