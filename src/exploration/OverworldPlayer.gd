@@ -309,9 +309,22 @@ func _physics_process(delta: float) -> void:
 
 	# Track distance for step counting
 	var old_pos = position
+	var pre_vel = velocity
 	move_and_slide()
 	var moved_dist = position.distance_to(old_pos)
 	distance_walked += moved_dist
+
+	# Debug: detect when player is trying to move but blocked
+	if pre_vel.length() > 10.0 and moved_dist < 0.5:
+		var slide_count = get_slide_collision_count()
+		if slide_count > 0:
+			var col = get_slide_collision(0)
+			var collider = col.get_collider()
+			var cname = collider.name if collider else "unknown"
+			var cclass = collider.get_class() if collider else "?"
+			print("[STUCK] pos=%s vel=%s collider=%s(%s) normal=%s" % [position, pre_vel, cname, cclass, col.get_normal()])
+		else:
+			print("[STUCK] pos=%s vel=%s NO COLLISION (possible clamp?)" % [position, pre_vel])
 
 	# Emit step signal every STEP_DISTANCE pixels
 	while distance_walked >= STEP_DISTANCE:
