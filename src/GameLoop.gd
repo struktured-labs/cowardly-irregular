@@ -595,8 +595,8 @@ func _get_pending_story_cutscene() -> String:
 	if not flags.get("cutscene_flag_prologue_complete", false):
 		if _current_map_id == "harmonia_village":
 			return "world1_prologue"
-	# Chapter 1: chains after prologue on same village visit
-	if flags.get("cutscene_flag_prologue_complete", false) and not flags.get("cutscene_flag_chapter1_complete", false):
+	# Chapter 1: triggers when player talks to Elder Theron (flag set by NPC interaction)
+	if flags.get("talked_to_theron", false) and not flags.get("cutscene_flag_chapter1_complete", false):
 		if _current_map_id == "harmonia_village":
 			return "world1_chapter1"
 	# Chapter 2: plays when entering overworld after chapter1 (road encounters)

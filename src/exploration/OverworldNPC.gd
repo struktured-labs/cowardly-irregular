@@ -584,6 +584,10 @@ func _start_dialogue() -> void:
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
 
+	# Set story flags for key NPC interactions
+	if npc_name == "Elder Theron" and GameState:
+		GameState.game_constants["talked_to_theron"] = true
+
 	# Dancer starts dancing when talked to
 	if npc_type == "dancer":
 		start_dancing()
