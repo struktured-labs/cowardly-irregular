@@ -2145,6 +2145,7 @@ func _open_autogrind_ui() -> void:
 	# Connect signals
 	_autogrind_ui.closed.connect(_on_autogrind_ui_closed)
 	_autogrind_ui.grind_requested.connect(_start_autogrind)
+	_autogrind_ui.grind_resume_requested.connect(_resume_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
 	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
 
@@ -2223,6 +2224,9 @@ func _stop_autogrind(reason: String) -> void:
 	var final_stats = {}
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		final_stats = _autogrind_controller.get_grind_stats()
+
+	# Clear snapshot on clean stop (user chose to stop)
+	AutogrindSystem.clear_grind_snapshot()
 
 	# Stop controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -2528,6 +2532,10 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		var battles = stats.get("battles_won", 0)
 		if battles in [10, 20, 30, 50, 100]:
 			_show_autogrind_toast(_get_milestone_text(battles))
+
+		# Auto-save snapshot every 5 battles for crash recovery
+		if battles > 0 and battles % 5 == 0:
+			_autogrind_save_snapshot()
 
 		# Log any fatigue event that fired this cycle to the console
 		if AutogrindSystem.fatigue_events_triggered > 0:
@@ -3021,8 +3029,46 @@ func _autogrind_restore_mp(member: Combatant) -> void:
 			return
 
 
+func _autogrind_save_snapshot() -> void:
+	"""Save a grind snapshot for pause/resume recovery."""
+	if not _autogrind_controller or not is_instance_valid(_autogrind_controller):
+		return
+	var ctrl_snapshot = _autogrind_controller.serialize_snapshot()
+	AutogrindSystem.save_grind_snapshot(ctrl_snapshot)
+
+
+func _resume_autogrind() -> void:
+	"""Resume a previously saved autogrind session."""
+	var snapshot = AutogrindSystem.load_grind_snapshot()
+	if snapshot.is_empty():
+		print("[AUTOGRIND] No snapshot to resume")
+		return
+
+	var ctrl_data = snapshot.get("controller", {})
+	var sys_data = snapshot.get("system", {})
+	var config = ctrl_data.get("config", {})
+
+	# Restore system state before starting grind
+	AutogrindSystem.restore_system_from_snapshot(sys_data)
+
+	# Start autogrind with the saved config (this creates the controller)
+	_start_autogrind(config)
+
+	# Restore controller-specific state after start
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.restore_from_snapshot(ctrl_data)
+
+	# Clear the snapshot now that we've successfully resumed
+	AutogrindSystem.clear_grind_snapshot()
+
+	print("[AUTOGRIND] Session resumed from snapshot")
+
+
 func _exit_tree() -> void:
-	"""Disconnect signals on cleanup to prevent dangling connections"""
+	"""Save snapshot on exit if grinding, then disconnect signals"""
+	if _is_autogrinding and _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_save_snapshot()
+		print("[AUTOGRIND] Snapshot saved on exit")
 	if _exploration_scene and is_instance_valid(_exploration_scene):
 		if _exploration_scene.has_signal("battle_triggered") and _exploration_scene.is_connected("battle_triggered", _on_exploration_battle_triggered):
 			_exploration_scene.disconnect("battle_triggered", _on_exploration_battle_triggered)
