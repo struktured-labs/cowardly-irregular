@@ -1593,7 +1593,7 @@
 		],
 		"weaknesses": [],
 		"resistances": [
-			"all"
+			"fire", "ice", "lightning", "dark", "holy", "physical"
 		],
 		"meta_enemy": true,
 		"extremely_dangerous": true,
