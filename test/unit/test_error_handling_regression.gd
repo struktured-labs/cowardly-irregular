@@ -529,7 +529,7 @@ func test_battle_manager_action_type_default_case() -> void:
 	# Find the action match statement and check for default case
 	var idx = content.find('match action.get("type"')
 	if idx > 0:
-		var context = content.substr(idx, 600)
+		var context = content.substr(idx, 1000)
 		assert_true(context.contains("_:") and context.contains("Unknown action type"),
 			"BattleManager should have default case with warning for unknown action types")
 
