@@ -25,6 +25,11 @@ func before_each() -> void:
 	_system.current_region_id = ""
 	_system.region_crack_levels.clear()
 	_system.permadeath_staking_enabled = false
+	_system.permadead_characters.clear()
+	_system.collapse_count = 0
+	_system.fatigue_events_triggered = 0
+	_system.items_consumed.clear()
+	_system.per_character_exp.clear()
 	_system.interrupt_rules = {
 		"hp_threshold": 20.0,
 		"party_death": true,
