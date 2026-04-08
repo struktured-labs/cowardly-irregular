@@ -32,11 +32,14 @@ func say(speaker: String, text: String, theme: String = "narrator", portrait: St
 
 func say_lines(lines: Array) -> void:
 	"""Show multiple lines of dialogue and wait for player to advance through all."""
-	if _active:
+	if _active or lines.is_empty():
 		return
 	_active = true
 
 	_ensure_dialogue()
+	if not _dialogue or not is_instance_valid(_dialogue):
+		_active = false
+		return
 	_dialogue.show_dialogue(lines)
 	await _dialogue.dialogue_finished
 

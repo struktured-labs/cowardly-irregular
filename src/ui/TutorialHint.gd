@@ -106,11 +106,16 @@ func _dismiss() -> void:
 		return
 	_active = false
 
+	if not is_instance_valid(_panel):
+		hint_dismissed.emit(_current_hint_id)
+		return
+
 	var tween = create_tween()
 	tween.tween_property(_panel, "position:y", -80.0, 0.3)
 	await tween.finished
-	visible = false
-	hint_dismissed.emit(_current_hint_id)
+	if is_instance_valid(self):
+		visible = false
+		hint_dismissed.emit(_current_hint_id)
 	_current_hint_id = ""
 
 

@@ -187,8 +187,9 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("ui_accept"):
-		_start_conversation()
 		get_viewport().set_input_as_handled()
+		# Defer conversation start to avoid await inside _input
+		call_deferred("_start_conversation")
 
 
 func _start_conversation() -> void:

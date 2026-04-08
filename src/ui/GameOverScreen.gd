@@ -44,7 +44,7 @@ func _build_ui() -> void:
 	_title_label = Label.new()
 	_title_label.text = "GAME OVER"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_title_label.size = Vector2(screen_size.x, 60)
 	_title_label.add_theme_font_size_override("font_size", 48)
 	_title_label.add_theme_color_override("font_color", Color(0.8, 0.2, 0.15))
 	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -54,7 +54,7 @@ func _build_ui() -> void:
 	_subtitle_label = Label.new()
 	_subtitle_label.text = "The party has fallen."
 	_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_subtitle_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_subtitle_label.size = Vector2(screen_size.x, 25)
 	_subtitle_label.add_theme_font_size_override("font_size", 16)
 	_subtitle_label.add_theme_color_override("font_color", Color(0.6, 0.5, 0.45))
 	_subtitle_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -64,7 +64,7 @@ func _build_ui() -> void:
 	_retry_label = Label.new()
 	_retry_label.text = "> Retry"
 	_retry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_retry_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_retry_label.size = Vector2(screen_size.x, 25)
 	_retry_label.add_theme_font_size_override("font_size", 20)
 	_retry_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))
 	_retry_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -74,7 +74,7 @@ func _build_ui() -> void:
 	_continue_label = Label.new()
 	_continue_label.text = "  Continue"
 	_continue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_continue_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_continue_label.size = Vector2(screen_size.x, 25)
 	_continue_label.add_theme_font_size_override("font_size", 20)
 	_continue_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.45))
 	_continue_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -136,13 +136,17 @@ func _input(event: InputEvent) -> void:
 		_active = false
 		if SoundManager:
 			SoundManager.play_ui("menu_select")
-		# Fade out
-		var tween = create_tween()
-		tween.tween_property(_container, "modulate:a", 0.0, 0.5)
-		await tween.finished
-		visible = false
-		if _selected_index == 0:
-			retry_selected.emit()
-		else:
-			continue_selected.emit()
 		get_viewport().set_input_as_handled()
+		_confirm_selection()
+
+
+func _confirm_selection() -> void:
+	"""Fade out and emit selection signal (separated from _input to avoid await issues)."""
+	var tween = create_tween()
+	tween.tween_property(_container, "modulate:a", 0.0, 0.5)
+	await tween.finished
+	visible = false
+	if _selected_index == 0:
+		retry_selected.emit()
+	else:
+		continue_selected.emit()
