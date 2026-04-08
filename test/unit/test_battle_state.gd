@@ -43,9 +43,11 @@ func test_initial_state_is_inactive() -> void:
 		pending("BattleManager not available")
 		return
 
-	# When no battle is active, state should be INACTIVE
-	assert_eq(_battle_manager.current_state, _battle_manager.BattleState.INACTIVE,
+	# Verify default state — create a fresh instance to avoid test ordering issues
+	var fresh = load("res://src/battle/BattleManager.gd").new()
+	assert_eq(fresh.current_state, fresh.BattleState.INACTIVE,
 		"Initial state should be INACTIVE")
+	fresh.free()
 
 
 ## Battle Signal Tests
