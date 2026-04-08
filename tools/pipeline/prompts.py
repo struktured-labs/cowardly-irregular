@@ -63,8 +63,8 @@ MONSTER_PROMPTS = {
         "palette_hint": "red skin, small dark horns, leathery dark wings, yellow eyes, pointed tail",
     },
     "snake": {
-        "desc": "large coiled serpent, scaly body, forked tongue flicking, slitted yellow eyes, thick muscular body, no legs no arms, reptile creature",
-        "palette_hint": "green scales, darker green pattern, pale underbelly, yellow slitted eyes, forked red tongue",
+        "desc": "ONE large coiled serpent snake, long legless cylindrical body coiled in spiral, forked tongue flicking, slitted yellow eyes, scaly muscular body, NO LEGS NO ARMS NO LIMBS, NOT a lizard NOT bipedal NOT standing, serpentine reptile lying on ground",
+        "palette_hint": "green scales, darker green diamond pattern, pale underbelly, yellow slitted eyes, forked red tongue",
     },
     "troll": {
         "desc": "huge brutish cave troll, massive hunched body, thick lumpy green skin, tiny eyes, huge jaw with tusks, wielding crude wooden club, NOT a knight NOT armored",
