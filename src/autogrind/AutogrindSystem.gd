@@ -1310,11 +1310,13 @@ func get_next_region() -> Dictionary:
 	if next_idx >= WORLD_REGIONS.size():
 		return {}  # Already at final world
 	var next = WORLD_REGIONS[next_idx]
-	# Check if the world is unlocked
-	if has_node("/root/GameState"):
-		var gs = get_node("/root/GameState")
-		if not gs.is_world_unlocked(next["world"]):
-			return {}  # World not unlocked yet
+	# Check if the world is unlocked — require GameState for safety
+	if not has_node("/root/GameState"):
+		push_warning("[AUTOGRIND] GameState not available — cannot verify world unlock")
+		return {}
+	var gs = get_node("/root/GameState")
+	if not gs.is_world_unlocked(next["world"]):
+		return {}  # World not unlocked yet
 	return next
 
 
@@ -1969,7 +1971,7 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 
 	# Finalize elapsed time for snapshot
 	var elapsed = 0.0
-	if _grind_stats["start_time"] > 0.0:
+	if _grind_stats.has("start_time") and _grind_stats["start_time"] > 0.0:
 		elapsed = Time.get_unix_time_from_system() - _grind_stats["start_time"]
 
 	var snapshot = {
@@ -1981,6 +1983,7 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 			"total_exp_gained": total_exp_gained,
 			"total_items_gained": total_items_gained.duplicate(),
 			"items_consumed": items_consumed.duplicate(),
+			"per_character_exp": per_character_exp.duplicate(),
 			"efficiency_multiplier": efficiency_multiplier,
 			"monster_adaptation_level": monster_adaptation_level,
 			"meta_corruption_level": meta_corruption_level,
@@ -2041,6 +2044,7 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	total_exp_gained = system_data.get("total_exp_gained", 0)
 	total_items_gained = system_data.get("total_items_gained", {}).duplicate()
 	items_consumed = system_data.get("items_consumed", {}).duplicate()
+	per_character_exp = system_data.get("per_character_exp", {}).duplicate()
 	efficiency_multiplier = system_data.get("efficiency_multiplier", 1.0)
 	monster_adaptation_level = system_data.get("monster_adaptation_level", 0.0)
 	meta_corruption_level = system_data.get("meta_corruption_level", 0.0)
@@ -2101,9 +2105,11 @@ func get_session_history() -> Array:
 func _save_session_history() -> void:
 	"""Persist session history to file."""
 	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(session_history, "\t"))
-		file.close()
+	if not file:
+		print("[AUTOGRIND] Warning: could not save session history")
+		return
+	file.store_string(JSON.stringify(session_history, "\t"))
+	file.close()
 
 
 func _load_session_history() -> void:
@@ -2113,8 +2119,11 @@ func _load_session_history() -> void:
 	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.READ)
 	if not file:
 		return
+	var text = file.get_as_text()
+	file.close()
 	var json = JSON.new()
-	if json.parse(file.get_as_text()) == OK and json.data is Array:
+	if json.parse(text) == OK and json.data is Array:
 		session_history = json.data
 		print("[AUTOGRIND] Loaded %d session history entries" % session_history.size())
-	file.close()
+	else:
+		print("[AUTOGRIND] Warning: corrupt session history file, starting fresh")
