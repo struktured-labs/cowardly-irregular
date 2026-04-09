@@ -568,7 +568,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "A:Edit  B:Close  Start:Go  1:Casual  2:Standard  3:Hardcore  E:Export  I:Import"
+	footer.text = "D-Pad+A:Navigate/Confirm  Start:Go  B:Close  X:Ludicrous  Y:Resume  1/2/3:Presets"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1016,8 +1016,15 @@ func _update_cursor() -> void:
 
 	_cursor.visible = true
 
-	var cell_pos = target_cell.global_position - _grid_container.global_position + _grid_container.position
-	var cell_size = target_cell.custom_minimum_size if target_cell.custom_minimum_size.x > 0 else Vector2(CELL_WIDTH, CELL_HEIGHT)
+	var cell_pos: Vector2
+	var cell_size: Vector2
+	if target_cell == _start_button:
+		# Start button is a sibling of _grid_container, not a child
+		cell_pos = _start_button.position
+		cell_size = _start_button.size
+	else:
+		cell_pos = target_cell.global_position - _grid_container.global_position + _grid_container.position
+		cell_size = target_cell.custom_minimum_size if target_cell.custom_minimum_size.x > 0 else Vector2(CELL_WIDTH, CELL_HEIGHT)
 
 	var border_width = 3
 	var cursor_color = CURSOR_COLOR if not is_editing else Color.CYAN
@@ -1095,6 +1102,10 @@ func _get_cell_at_cursor() -> Control:
 			if child.has_meta("cell_type") and child.get_meta("cell_type") == "add_rule":
 				return child
 
+	# Check for start/stop button (last navigable row)
+	if cursor_row == rules.size() + 1:
+		return _start_button
+
 	return null
 
 
@@ -1164,7 +1175,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		cursor_row = min(rules.size(), cursor_row + 1)
+		cursor_row = min(rules.size() + 1, cursor_row + 1)  # +1 for start button row
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
@@ -1201,6 +1212,12 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
+
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
+		if not _is_grinding and AutogrindSystem.has_grind_snapshot():
+			grind_resume_requested.emit()
+			visible = false
+			get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_toggle_ludicrous_speed()

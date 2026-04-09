@@ -333,6 +333,21 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# Overwrite confirmation dialog takes priority
+	if _confirm_overlay and is_instance_valid(_confirm_overlay):
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
+			var slot = _confirm_overlay.get_meta("slot")
+			_confirm_overlay.queue_free()
+			_confirm_overlay = null
+			_do_save(slot)
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_confirm_overlay.queue_free()
+			_confirm_overlay = null
+			SoundManager.play_ui("menu_close")
+			get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("ui_up") and not event.is_echo():
 		selected_slot = (selected_slot - 1 + _slot_panels.size()) % _slot_panels.size()
 		_update_selection()
@@ -354,6 +369,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+var _confirm_overlay: Control = null  # Overwrite confirmation dialog
+
+
 func _handle_confirm() -> void:
 	"""Handle slot selection"""
 	if selected_slot >= _slot_panels.size():
@@ -362,16 +380,13 @@ func _handle_confirm() -> void:
 	var slot = panel.get_meta("slot")
 
 	if current_mode == Mode.SAVE:
-		# Save to selected slot
-		if SaveSystem.save_game(slot):
-			SoundManager.play_ui("menu_select")
-			save_completed.emit(slot)
-			_close()
+		# Check if slot already has data — show overwrite confirmation
+		if SaveSystem.save_exists(slot):
+			_show_overwrite_confirmation(slot)
 		else:
-			SoundManager.play_ui("menu_error")
+			_do_save(slot)
 
 	else:  # Mode.LOAD
-		# Check if slot has data
 		if SaveSystem.save_exists(slot):
 			if SaveSystem.load_game(slot):
 				SoundManager.play_ui("menu_select")
@@ -380,8 +395,62 @@ func _handle_confirm() -> void:
 			else:
 				SoundManager.play_ui("menu_error")
 		else:
-			# Can't load empty slot
 			SoundManager.play_ui("menu_error")
+
+
+func _do_save(slot: int) -> void:
+	"""Execute save to slot."""
+	if SaveSystem.save_game(slot):
+		SoundManager.play_ui("menu_select")
+		save_completed.emit(slot)
+		_close()
+	else:
+		SoundManager.play_ui("menu_error")
+
+
+func _show_overwrite_confirmation(slot: int) -> void:
+	"""Show confirmation dialog before overwriting a save."""
+	if _confirm_overlay:
+		return
+
+	_confirm_overlay = Control.new()
+	_confirm_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_confirm_overlay)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0.0, 0.0, 0.0, 0.7)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_confirm_overlay.add_child(dim)
+
+	var vp_size = get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(640, 480)
+
+	var box = ColorRect.new()
+	box.color = PANEL_COLOR
+	box.size = Vector2(320, 120)
+	box.position = Vector2((vp_size.x - 320) / 2, (vp_size.y - 120) / 2)
+	_confirm_overlay.add_child(box)
+	_add_pixel_border(box, box.size)
+
+	var slot_name = "Slot %d" % (slot + 1) if slot < SaveSystem.QUICK_SAVE_SLOT else "Quick Save"
+	var msg = Label.new()
+	msg.text = "Overwrite %s?" % slot_name
+	msg.position = Vector2(box.position.x + 40, box.position.y + 20)
+	msg.add_theme_font_size_override("font_size", 16)
+	msg.add_theme_color_override("font_color", Color.YELLOW)
+	_confirm_overlay.add_child(msg)
+
+	var hint = Label.new()
+	hint.text = "A/Enter: Confirm    B/Esc: Cancel"
+	hint.position = Vector2(box.position.x + 40, box.position.y + 70)
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", DISABLED_COLOR)
+	_confirm_overlay.add_child(hint)
+
+	# Store slot for confirmation handler
+	_confirm_overlay.set_meta("slot", slot)
+	SoundManager.play_ui("menu_select")
 
 
 func _on_save_slot_click(index: int) -> void:
