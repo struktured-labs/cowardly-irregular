@@ -43,6 +43,7 @@ const CONDITION_TYPES = [
 	{"id": "party_mp_avg", "label": "Party MP%", "has_value": true, "default_op": "<", "default_value": 20},
 	{"id": "alive_count", "label": "Alive", "has_value": true, "default_op": "<=", "default_value": 2},
 	{"id": "member_dead", "label": "Any Dead", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "member_injured", "label": "New Injury", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "battles_done", "label": "Battles", "has_value": true, "default_op": ">=", "default_value": 50},
 	{"id": "win_streak", "label": "Win Streak", "has_value": true, "default_op": ">=", "default_value": 20},
 	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
@@ -64,7 +65,7 @@ const ACTION_TYPES = [
 const GRIND_PRESETS = {
 	"casual": {
 		"label": "Casual",
-		"description": "Safe grind. Stops on low HP or any death.",
+		"description": "Safe grind. Stops on death, injury, or 20 battles.",
 		"rules": [
 			{
 				"conditions": [{"type": "party_hp_avg", "op": "<", "value": 40}],
@@ -73,6 +74,11 @@ const GRIND_PRESETS = {
 			},
 			{
 				"conditions": [{"type": "member_dead", "op": "==", "value": 0}],
+				"actions": [{"type": "stop_grinding"}],
+				"enabled": true
+			},
+			{
+				"conditions": [{"type": "member_injured", "op": "==", "value": 0}],
 				"actions": [{"type": "stop_grinding"}],
 				"enabled": true
 			},
