@@ -596,36 +596,63 @@ func update_turn_info() -> void:
 	_update_turn_order_strip()
 
 
-## Turn order timeline strip
-var _turn_order_container: HBoxContainer = null
+## CTB Timeline — vertical turn order display (FFX-style) on right side
+var _ctb_timeline: VBoxContainer = null
+var _ctb_panel: PanelContainer = null
 
 func _update_turn_order_strip() -> void:
-	"""Show upcoming turn order as a horizontal strip of name badges"""
-	# Create container on first call
-	if not _turn_order_container:
-		_turn_order_container = HBoxContainer.new()
-		_turn_order_container.name = "TurnOrderStrip"
-		_turn_order_container.add_theme_constant_override("separation", 4)
-		_turn_order_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		# Position below the turn info panel
-		var turn_panel = _scene.get_node_or_null("UI/TurnInfoPanel")
-		if turn_panel:
-			_turn_order_container.position = Vector2(turn_panel.position.x, turn_panel.position.y + turn_panel.size.y + 4)
-			_scene.get_node("UI").add_child(_turn_order_container)
-		else:
-			return
+	"""Show upcoming turn order as a vertical CTB timeline on the right"""
+	# Create timeline panel on first call
+	if not _ctb_panel:
+		_ctb_panel = PanelContainer.new()
+		_ctb_panel.name = "CTBTimeline"
+		_ctb_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var panel_style = StyleBoxFlat.new()
+		panel_style.bg_color = Color(0.05, 0.03, 0.1, 0.75)
+		panel_style.border_color = Color(0.4, 0.35, 0.6, 0.6)
+		panel_style.border_width_left = 1
+		panel_style.corner_radius_top_left = 4
+		panel_style.corner_radius_bottom_left = 4
+		panel_style.content_margin_left = 6
+		panel_style.content_margin_right = 6
+		panel_style.content_margin_top = 4
+		panel_style.content_margin_bottom = 4
+		_ctb_panel.add_theme_stylebox_override("panel", panel_style)
+		# Right side of screen
+		_ctb_panel.position = Vector2(1280 - 110, 60)
+		_ctb_panel.custom_minimum_size = Vector2(100, 0)
+		_scene.get_node("UI").add_child(_ctb_panel)
 
-	# Clear existing badges
-	for child in _turn_order_container.get_children():
+		# Header
+		var header = Label.new()
+		header.text = "TURN ORDER"
+		header.add_theme_font_size_override("font_size", 9)
+		header.add_theme_color_override("font_color", Color(0.6, 0.55, 0.8))
+		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		_ctb_timeline = VBoxContainer.new()
+		_ctb_timeline.name = "Timeline"
+		_ctb_timeline.add_theme_constant_override("separation", 2)
+		_ctb_timeline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		var vbox = VBoxContainer.new()
+		vbox.add_theme_constant_override("separation", 4)
+		vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(header)
+		vbox.add_child(_ctb_timeline)
+		_ctb_panel.add_child(vbox)
+
+	# Clear existing entries
+	for child in _ctb_timeline.get_children():
 		child.queue_free()
 
-	# Build turn order from selection_order (current round)
+	# Build turn order
 	var order = BattleManager.selection_order
 	var current_idx = BattleManager.selection_index
 	if order.is_empty():
 		return
 
-	# Show up to 8 upcoming turns
 	var shown = 0
 	for i in range(order.size()):
 		if shown >= 8:
@@ -633,53 +660,67 @@ func _update_turn_order_strip() -> void:
 		var combatant = order[i]
 		if not is_instance_valid(combatant) or not combatant.is_alive:
 			continue
+		if i < current_idx:
+			continue
 
 		var is_current = (i == current_idx)
 		var is_player = combatant in BattleManager.player_party
-		var is_past = (i < current_idx)
-
-		if is_past:
-			continue  # Don't show already-acted combatants
-
-		var badge = _create_turn_badge(combatant, is_current, is_player)
-		_turn_order_container.add_child(badge)
+		var entry = _create_ctb_entry(combatant, is_current, is_player, shown)
+		_ctb_timeline.add_child(entry)
 		shown += 1
 
 
-func _create_turn_badge(combatant: Combatant, is_current: bool, is_player: bool) -> PanelContainer:
-	"""Create a small name badge for the turn order strip"""
-	var panel = PanelContainer.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, position_idx: int) -> HBoxContainer:
+	"""Create a single entry in the CTB timeline"""
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var style = StyleBoxFlat.new()
+	# Position indicator (arrow for current, dot for others)
+	var indicator = Label.new()
 	if is_current:
-		style.bg_color = Color(1.0, 0.85, 0.2, 0.9)  # Gold for active
-	elif is_player:
-		style.bg_color = Color(0.15, 0.4, 0.7, 0.8)  # Blue for party
+		indicator.text = "▶"
+		indicator.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	elif position_idx == 1:
+		indicator.text = "·"
+		indicator.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	else:
-		style.bg_color = Color(0.6, 0.15, 0.15, 0.8)  # Red for enemies
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = 3
-	style.corner_radius_bottom_right = 3
-	style.content_margin_left = 4
-	style.content_margin_right = 4
-	style.content_margin_top = 1
-	style.content_margin_bottom = 1
-	panel.add_theme_stylebox_override("panel", style)
+		indicator.text = "·"
+		indicator.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+	indicator.add_theme_font_size_override("font_size", 12)
+	indicator.custom_minimum_size = Vector2(12, 0)
+	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(indicator)
 
-	var label = Label.new()
-	# Abbreviate name: first 4 chars for enemies, full short name for party
+	# Name
+	var name_label = Label.new()
 	var display_name = combatant.combatant_name
-	if display_name.length() > 6:
-		display_name = display_name.substr(0, 5) + "."
-	label.text = display_name
-	label.add_theme_font_size_override("font_size", 10)
-	label.add_theme_color_override("font_color", Color.BLACK if is_current else Color.WHITE)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(label)
+	if display_name.length() > 8:
+		display_name = display_name.substr(0, 7) + "."
+	name_label.text = display_name
+	name_label.custom_minimum_size = Vector2(60, 0)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	return panel
+	var name_size = 11 if is_current else 10
+	name_label.add_theme_font_size_override("font_size", name_size)
+
+	if is_current:
+		name_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
+	elif is_player:
+		name_label.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
+	else:
+		name_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.5))
+	row.add_child(name_label)
+
+	# Speed value (smaller, right-aligned)
+	var spd_label = Label.new()
+	spd_label.text = "%d" % combatant.speed
+	spd_label.add_theme_font_size_override("font_size", 9)
+	spd_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	spd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(spd_label)
+
+	return row
 
 
 func log_message(message: String) -> void:
