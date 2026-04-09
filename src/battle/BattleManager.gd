@@ -89,6 +89,9 @@ var _manual_player_turns: int = 0          # Player turns handled manually
 ## Battle results (populated in end_battle before signal, cleared on next battle)
 var _battle_results: Dictionary = {}  # {exp_per_char: int, bonuses: Array, char_results: Array}
 
+## Permanent injury tracking — party members who were KO'd during battle
+var _ko_this_battle: Array[Combatant] = []
+
 ## Adaptive AI - Action logging
 var _battle_action_log: Array[Dictionary] = []  # Log every player action per battle
 signal battle_actions_logged(summary: Dictionary)
@@ -165,6 +168,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_autobattle_player_turns = 0
 	_manual_player_turns = 0
 	_battle_results = {}
+	_ko_this_battle.clear()
 
 	# Connect to combatant signals
 	for combatant in all_combatants:
@@ -288,12 +292,25 @@ func end_battle(victory: bool) -> void:
 			bonuses.append({"type": "one_shot", "multiplier": one_shot_exp_bonus, "rank": _get_one_shot_rank(_setup_turns_used)})
 		if _full_autobattle and _autobattle_player_turns > 0:
 			bonuses.append({"type": "autobattle", "multiplier": autobattle_exp_bonus, "turns": _autobattle_player_turns})
+		# Check for permanent injuries on KO'd party members (25% chance per KO)
+		var injuries: Array = []
+		for combatant in _ko_this_battle:
+			if not is_instance_valid(combatant):
+				continue
+			if randf() < 0.25:  # 25% chance of injury per KO
+				var injury = _roll_permanent_injury(combatant)
+				combatant.apply_permanent_injury(injury)
+				injuries.append({"name": combatant.combatant_name, "injury": injury})
+				battle_log_message.emit("[color=red]%s sustained a permanent injury: %s (-%d %s)[/color]" % [
+					combatant.combatant_name, injury["description"], injury["penalty"], injury["stat"].capitalize()])
+
 		_battle_results = {
 			"char_results": char_results,
 			"bonuses": bonuses,
 			"base_exp": base_exp,
 			"total_gold": total_gold,
 			"item_drops": item_drops,
+			"injuries": injuries,
 			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus
 		}
 
@@ -2637,8 +2654,40 @@ func _check_victory_conditions() -> bool:
 
 
 ## Signal handlers
+## Permanent injury definitions — weighted by stat, scaled by level
+const INJURY_TYPES = [
+	{"stat": "max_hp", "description": "Fractured ribs", "base_penalty": 8},
+	{"stat": "max_hp", "description": "Internal bleeding", "base_penalty": 12},
+	{"stat": "attack", "description": "Torn muscle", "base_penalty": 2},
+	{"stat": "attack", "description": "Damaged nerve", "base_penalty": 3},
+	{"stat": "defense", "description": "Cracked armor plates", "base_penalty": 2},
+	{"stat": "defense", "description": "Weakened guard", "base_penalty": 3},
+	{"stat": "magic", "description": "Mana channel scarring", "base_penalty": 2},
+	{"stat": "magic", "description": "Arcane burnout", "base_penalty": 3},
+	{"stat": "speed", "description": "Sprained ankle", "base_penalty": 1},
+	{"stat": "speed", "description": "Lingering fatigue", "base_penalty": 2},
+]
+
+
+func _roll_permanent_injury(combatant: Combatant) -> Dictionary:
+	"""Roll a random permanent injury for a KO'd combatant"""
+	var template = INJURY_TYPES[randi() % INJURY_TYPES.size()]
+	# Scale penalty slightly with level (higher level = more to lose)
+	var level_scale = 1.0 + combatant.job_level * 0.05
+	var penalty = int(template["base_penalty"] * level_scale)
+	return {
+		"stat": template["stat"],
+		"description": template["description"],
+		"penalty": max(1, penalty),
+		"battle_round": current_round,
+	}
+
+
 func _on_combatant_died(combatant: Combatant) -> void:
 	print("%s has been defeated!" % combatant.combatant_name)
+	# Track party member KOs for permanent injury system
+	if combatant in player_party and combatant not in _ko_this_battle:
+		_ko_this_battle.append(combatant)
 
 
 ## Utility functions
