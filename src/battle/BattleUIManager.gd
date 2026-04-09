@@ -592,6 +592,95 @@ func update_turn_info() -> void:
 	else:
 		_scene.turn_info.text = "Round %d" % BattleManager.current_round
 
+	# Update turn order strip
+	_update_turn_order_strip()
+
+
+## Turn order timeline strip
+var _turn_order_container: HBoxContainer = null
+
+func _update_turn_order_strip() -> void:
+	"""Show upcoming turn order as a horizontal strip of name badges"""
+	# Create container on first call
+	if not _turn_order_container:
+		_turn_order_container = HBoxContainer.new()
+		_turn_order_container.name = "TurnOrderStrip"
+		_turn_order_container.add_theme_constant_override("separation", 4)
+		_turn_order_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# Position below the turn info panel
+		var turn_panel = _scene.get_node_or_null("UI/TurnInfoPanel")
+		if turn_panel:
+			_turn_order_container.position = Vector2(turn_panel.position.x, turn_panel.position.y + turn_panel.size.y + 4)
+			_scene.get_node("UI").add_child(_turn_order_container)
+		else:
+			return
+
+	# Clear existing badges
+	for child in _turn_order_container.get_children():
+		child.queue_free()
+
+	# Build turn order from selection_order (current round)
+	var order = BattleManager.selection_order
+	var current_idx = BattleManager.selection_index
+	if order.is_empty():
+		return
+
+	# Show up to 8 upcoming turns
+	var shown = 0
+	for i in range(order.size()):
+		if shown >= 8:
+			break
+		var combatant = order[i]
+		if not is_instance_valid(combatant) or not combatant.is_alive:
+			continue
+
+		var is_current = (i == current_idx)
+		var is_player = combatant in BattleManager.player_party
+		var is_past = (i < current_idx)
+
+		if is_past:
+			continue  # Don't show already-acted combatants
+
+		var badge = _create_turn_badge(combatant, is_current, is_player)
+		_turn_order_container.add_child(badge)
+		shown += 1
+
+
+func _create_turn_badge(combatant: Combatant, is_current: bool, is_player: bool) -> PanelContainer:
+	"""Create a small name badge for the turn order strip"""
+	var panel = PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var style = StyleBoxFlat.new()
+	if is_current:
+		style.bg_color = Color(1.0, 0.85, 0.2, 0.9)  # Gold for active
+	elif is_player:
+		style.bg_color = Color(0.15, 0.4, 0.7, 0.8)  # Blue for party
+	else:
+		style.bg_color = Color(0.6, 0.15, 0.15, 0.8)  # Red for enemies
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	style.content_margin_left = 4
+	style.content_margin_right = 4
+	style.content_margin_top = 1
+	style.content_margin_bottom = 1
+	panel.add_theme_stylebox_override("panel", style)
+
+	var label = Label.new()
+	# Abbreviate name: first 4 chars for enemies, full short name for party
+	var display_name = combatant.combatant_name
+	if display_name.length() > 6:
+		display_name = display_name.substr(0, 5) + "."
+	label.text = display_name
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", Color.BLACK if is_current else Color.WHITE)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(label)
+
+	return panel
+
 
 func log_message(message: String) -> void:
 	"""Add a message to the battle log"""
