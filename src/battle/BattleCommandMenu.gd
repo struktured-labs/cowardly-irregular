@@ -457,6 +457,25 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"submenu": group_items
 		})
 
+	# Scan - reveal enemy stats and weaknesses (free action submenu)
+	if alive_enemies.size() > 0:
+		var scan_targets = []
+		for enemy in alive_enemies:
+			var enemy_idx = _scene.test_enemies.find(enemy)
+			var revealed = _scene._ui_manager._revealed_enemies.get(enemy, false)
+			var scan_label = "%s%s" % [enemy.combatant_name, " (scanned)" if revealed else ""]
+			scan_targets.append({
+				"id": "scan_" + str(enemy_idx),
+				"label": scan_label,
+				"data": {"target_idx": enemy_idx, "action": "scan"},
+			})
+		items.append({
+			"id": "scan_menu",
+			"label": "Scan",
+			"tooltip": "Reveal enemy stats, weaknesses, and drops (uses your turn)",
+			"submenu": scan_targets
+		})
+
 	# Defer - skip turn, gain +1 AP (only available if AP < 4 and not exposed)
 	items.append({
 		"id": "defer",
@@ -514,6 +533,19 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			print("[AUTOBATTLE] %s enabled - executing auto turn" % combatant_for_auto.combatant_name)
 			BattleManager.execute_autobattle_for_current()
 			_scene._update_ui()
+		return
+
+	# Scan enemy — reveal stats, weaknesses, drops
+	if item_id.begins_with("scan_") and item_data is Dictionary:
+		var target_idx = item_data.get("target_idx", -1)
+		if target_idx >= 0 and target_idx < _scene.test_enemies.size():
+			var target = _scene.test_enemies[target_idx]
+			if is_instance_valid(target) and target.is_alive:
+				_scene._ui_manager.reveal_enemy_stats(target)
+				_show_scan_popup(target)
+				_scene.log_message("[color=aqua]Scanned %s![/color]" % target.combatant_name)
+				# Scan uses the turn (costs 1 AP via defer-like action)
+				BattleManager.player_defer()
 		return
 
 	# Attack with target from menu tree
@@ -771,6 +803,108 @@ func _on_win98_go_back_requested() -> void:
 			SoundManager.play_ui("autobattle_off")
 			_scene.log_message("[color=gray]%s: Autobattle disabled (manual control)[/color]" % new_current.combatant_name)
 			_scene._update_ui()
+
+
+func _show_scan_popup(enemy: Combatant) -> void:
+	"""Show a detailed info popup for a scanned enemy"""
+	var popup = PanelContainer.new()
+	popup.name = "ScanPopup"
+	popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.05, 0.15, 0.9)
+	style.border_color = Color(0.3, 0.7, 1.0)
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	popup.add_theme_stylebox_override("panel", style)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 3)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	popup.add_child(vbox)
+
+	# Name header
+	var name_label = Label.new()
+	name_label.text = enemy.combatant_name
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(name_label)
+
+	var sep = HSeparator.new()
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(sep)
+
+	# Stats
+	var stats_text = "HP: %d/%d  ATK: %d  DEF: %d\nMAG: %d  SPD: %d  AP: %+d" % [
+		enemy.current_hp, enemy.max_hp, enemy.attack, enemy.defense,
+		enemy.magic, enemy.speed, enemy.current_ap]
+	var stats_label = Label.new()
+	stats_label.text = stats_text
+	stats_label.add_theme_font_size_override("font_size", 11)
+	stats_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+	stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(stats_label)
+
+	# Weaknesses
+	if enemy.elemental_weaknesses.size() > 0:
+		var weak_label = Label.new()
+		weak_label.text = "Weak: %s" % ", ".join(enemy.elemental_weaknesses)
+		weak_label.add_theme_font_size_override("font_size", 11)
+		weak_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.3))
+		weak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(weak_label)
+
+	# Resistances
+	if enemy.elemental_resistances.size() > 0:
+		var resist_label = Label.new()
+		resist_label.text = "Resist: %s" % ", ".join(enemy.elemental_resistances)
+		resist_label.add_theme_font_size_override("font_size", 11)
+		resist_label.add_theme_color_override("font_color", Color(0.3, 0.5, 1.0))
+		resist_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(resist_label)
+
+	# Drop table
+	var mt = enemy.get_meta("monster_type", "")
+	if mt != "" and EncounterSystem and mt in EncounterSystem.monster_database:
+		var drops = EncounterSystem.monster_database[mt].get("drop_table", [])
+		if drops.size() > 0:
+			var drop_names = []
+			for drop in drops:
+				var item_id = drop.get("item", "")
+				var chance = drop.get("chance", 0.0)
+				var item_name = item_id.replace("_", " ").capitalize()
+				drop_names.append("%s (%d%%)" % [item_name, int(chance * 100)])
+			var drop_label = Label.new()
+			drop_label.text = "Drops: %s" % ", ".join(drop_names)
+			drop_label.add_theme_font_size_override("font_size", 10)
+			drop_label.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+			drop_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			vbox.add_child(drop_label)
+
+	# Position centered on screen
+	popup.position = Vector2(440, 250)
+	popup.z_index = 150
+	popup.modulate.a = 0.0
+	_scene.add_child(popup)
+
+	# Animate: fade in, hold, fade out
+	var tween = _scene.create_tween()
+	tween.tween_property(popup, "modulate:a", 1.0, 0.2)
+	tween.tween_property(popup, "modulate:a", 1.0, 2.0)  # Hold 2 seconds
+	tween.tween_property(popup, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(popup.queue_free)
 
 
 func close_win98_menu() -> void:
