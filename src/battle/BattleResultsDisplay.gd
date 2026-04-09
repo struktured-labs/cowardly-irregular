@@ -68,6 +68,7 @@ func show_victory_results() -> void:
 	var bonuses: Array = results.get("bonuses", [])
 	var total_gold: int = results.get("total_gold", 0)
 	var item_drops: Array = results.get("item_drops", [])
+	var injuries: Array = results.get("injuries", [])
 
 	# Create results panel overlay
 	var overlay = Control.new()
@@ -95,7 +96,8 @@ func show_victory_results() -> void:
 			char_height_total += 22
 	var gold_height = 32 if total_gold > 0 else 0
 	var items_height = (item_drops.size() * 22 + 8) if item_drops.size() > 0 else 0
-	var panel_height = 60 + char_height_total + gold_height + items_height + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
+	var injuries_height = (injuries.size() * 22 + 8) if injuries.size() > 0 else 0
+	var panel_height = 60 + char_height_total + gold_height + items_height + injuries_height + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
 	panel.offset_left = -panel_width / 2
 	panel.offset_right = panel_width / 2
 	panel.offset_top = -panel_height / 2
@@ -338,6 +340,30 @@ func show_victory_results() -> void:
 			anim_tween.tween_property(item_label, "modulate:a", 1.0, 0.15).set_delay(reveal_delay)
 			anim_tween.tween_property(item_label, "scale", Vector2(1.1, 1.1), 0.08).set_delay(reveal_delay)
 			anim_tween.tween_property(item_label, "scale", Vector2(1.0, 1.0), 0.1).set_delay(reveal_delay + 0.08)
+
+	# Injuries section (permanent stat penalties from KO)
+	if injuries.size() > 0:
+		var injury_sep = HSeparator.new()
+		injury_sep.add_theme_constant_override("separation", 4)
+		injury_sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(injury_sep)
+
+		var injury_delay = bar_fill_delay + char_results.size() * 0.3 + 1.5
+		for inj_idx in range(injuries.size()):
+			var inj = injuries[inj_idx]
+			var injury_data = inj.get("injury", {})
+			var inj_label = Label.new()
+			inj_label.text = "  ⚠ %s: %s (-%d %s)" % [
+				inj["name"], injury_data.get("description", "Injury"),
+				injury_data.get("penalty", 0), injury_data.get("stat", "").capitalize()]
+			inj_label.add_theme_font_size_override("font_size", 12)
+			inj_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+			inj_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			inj_label.modulate.a = 0.0
+			vbox.add_child(inj_label)
+
+			# Dramatic delayed reveal
+			anim_tween.tween_property(inj_label, "modulate:a", 1.0, 0.2).set_delay(injury_delay + inj_idx * 0.3)
 
 	# Bonuses section
 	if bonuses.size() > 0:
