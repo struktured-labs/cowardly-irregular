@@ -14,6 +14,11 @@
       "duration": 0.6
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 2",
+      "subtitle": "No One"
+    },
+    {
       "type": "wait",
       "duration": 0.8
     },

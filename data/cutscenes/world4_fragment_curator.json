@@ -12,6 +12,10 @@
       "duration": 0.4
     },
     {
+      "type": "play_music",
+      "track": "cutscene_w4_foreman_confession"
+    },
+    {
       "type": "wait",
       "duration": 0.8
     },

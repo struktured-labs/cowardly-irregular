@@ -11,6 +11,11 @@
       "duration": 0.6
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 9",
+      "subtitle": "The Throne"
+    },
+    {
       "type": "play_music",
       "track": "dungeon"
     },

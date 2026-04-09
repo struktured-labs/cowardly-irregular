@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 3",
+      "subtitle": "The Warden of Routine"
+    },
+    {
       "type": "play_music",
       "track": "village_suburban"
     },

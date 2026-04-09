@@ -12,6 +12,10 @@
       "duration": 0.4
     },
     {
+      "type": "play_music",
+      "track": "cutscene_w1_warden_farewell"
+    },
+    {
       "type": "wait",
       "duration": 0.8
     },

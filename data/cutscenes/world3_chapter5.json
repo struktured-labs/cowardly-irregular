@@ -11,6 +11,11 @@
       "duration": 0.6
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 5",
+      "subtitle": "Winding Down"
+    },
+    {
       "type": "stop_music"
     },
     {

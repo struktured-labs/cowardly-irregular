@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 4",
+      "subtitle": "The Arbiter of the Grade"
+    },
+    {
       "type": "play_music",
       "track": "cutscene_w2_coordinator_memo"
     },

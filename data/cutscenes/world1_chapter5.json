@@ -16,6 +16,10 @@
       "subtitle": "The Forest That Remembered"
     },
     {
+      "type": "play_music",
+      "track": "village_medieval"
+    },
+    {
       "type": "narration",
       "lines": [
         "The Corrupted Forest wore its sickness openly. Trees bent at angles wood shouldn't permit.",

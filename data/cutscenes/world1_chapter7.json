@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 7",
+      "subtitle": "The Capital of Comfortable Lies"
+    },
+    {
       "type": "play_music",
       "track": "town_w1"
     },

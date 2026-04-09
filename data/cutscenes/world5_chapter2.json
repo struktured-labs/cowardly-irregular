@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 2",
+      "subtitle": "The Network Border"
+    },
+    {
       "type": "play_music",
       "track": "village_digital"
     },
