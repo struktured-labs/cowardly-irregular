@@ -69,6 +69,10 @@ var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
 var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
 var _current_terrain: String = "plains"  # Current terrain type for battle backgrounds
 
+## Last battle config for retry
+var _last_battle_enemies: Array = []  # Enemy IDs from last battle
+var _last_battle_is_encounter: bool = false  # Was it a random encounter?
+
 ## Area transition fade overlay (reused across all area transitions)
 var _area_fade_layer: CanvasLayer = null
 var _area_fade_rect: ColorRect = null
@@ -1175,11 +1179,25 @@ func _show_game_over_screen() -> void:
 	game_over.queue_free()
 
 	if retry:
-		_create_party()
-		battles_won = 0
-		_current_map_id = "overworld"
-		_spawn_point = "default"
-		_start_exploration()
+		# Retry the same battle with the same enemy formation
+		if _last_battle_enemies.size() > 0:
+			# Heal party to full for retry (no permanent death on retry)
+			for member in party:
+				if is_instance_valid(member):
+					member.is_alive = true
+					member.current_hp = member.max_hp
+					member.current_mp = member.max_mp
+					member.current_ap = 0
+			await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
+			if BattleTransition:
+				await BattleTransition.fade_out()
+		else:
+			# No battle to retry — restart from overworld
+			_create_party()
+			battles_won = 0
+			_current_map_id = "overworld"
+			_spawn_point = "default"
+			_start_exploration()
 	else:
 		# Load most recent save
 		if SaveSystem and SaveSystem.has_method("load_game"):
@@ -1475,6 +1493,10 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
+
+	# Save battle config for retry
+	_last_battle_enemies = specific_enemies.duplicate()
+	_last_battle_is_encounter = is_encounter
 
 	# Remove old scene
 	if current_scene and is_instance_valid(current_scene):
