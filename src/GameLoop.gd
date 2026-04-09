@@ -2567,6 +2567,16 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		if _autogrind_battle_summaries.size() > 50:
 			_autogrind_battle_summaries.remove_at(0)
 
+		# Check for new injuries and warn
+		var prev_injuries = stats.get("injuries_this_session", 0)
+		AutogrindSystem.check_new_injuries()
+		var cur_injuries = AutogrindSystem.injuries_this_session
+		if cur_injuries > prev_injuries:
+			_autogrind_battle_summaries.append("[color=#ff4444]PERMANENT INJURY sustained! Check party status.[/color]")
+			if _autogrind_battle_summaries.size() > 50:
+				_autogrind_battle_summaries.remove_at(0)
+			_show_autogrind_toast("PERMANENT INJURY! A party member took lasting damage.")
+
 		# Update UI with latest stats
 		if _autogrind_ui and is_instance_valid(_autogrind_ui):
 			_autogrind_ui.update_stats(stats)

@@ -44,6 +44,8 @@ var total_exp_gained: int = 0
 var total_items_gained: Dictionary = {}
 var items_consumed: Dictionary = {}  # {item_id: count} — tracks items used during grind session
 var per_character_exp: Dictionary = {}  # {char_name: total_exp_gained} — per-character EXP tracking
+var injuries_this_session: int = 0  # Tracks new injuries sustained during grind
+var _injury_baseline: int = 0  # Total injuries at session start (to detect new ones)
 
 ## Efficiency system
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
@@ -403,6 +405,7 @@ func get_grind_stats() -> Dictionary:
 		"automation_affinity": _automation_affinity,
 		"items_consumed": items_consumed.duplicate(),
 		"per_character_exp": per_character_exp.duplicate(),
+		"injuries_this_session": injuries_this_session,
 	}
 
 
@@ -631,6 +634,12 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	total_items_gained.clear()
 	items_consumed.clear()
 	per_character_exp.clear()
+	injuries_this_session = 0
+	# Capture injury baseline to detect new injuries
+	_injury_baseline = 0
+	for member in party:
+		if member is Combatant:
+			_injury_baseline += member.permanent_injuries.size()
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
 	meta_corruption_level = 0.0
@@ -1603,6 +1612,9 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 					total += 1
 			return total > alive  # True if any member is dead
 
+		"member_injured":
+			return check_new_injuries() > 0  # True if any new injury this session
+
 		"win_streak":
 			return _compare_op(consecutive_wins, op, value)
 
@@ -1743,6 +1755,16 @@ func track_item_consumed(item_id: String) -> void:
 func track_character_exp(char_name: String, exp_amount: int) -> void:
 	"""Track EXP gained by a specific character during this session."""
 	per_character_exp[char_name] = per_character_exp.get(char_name, 0) + exp_amount
+
+
+func check_new_injuries() -> int:
+	"""Count new injuries since session start. Updates injuries_this_session."""
+	var current_total = 0
+	for member in grind_party:
+		if member is Combatant:
+			current_total += member.permanent_injuries.size()
+	injuries_this_session = max(0, current_total - _injury_baseline)
+	return injuries_this_session
 
 
 func get_items_consumed_summary() -> String:
