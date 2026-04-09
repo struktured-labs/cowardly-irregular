@@ -225,7 +225,7 @@ func _setup_sprite() -> void:
 	var shape = CircleShape2D.new()
 	shape.radius = 4.0  # Tiny collision for maximum Mode 7 navigation forgiveness
 	collision.shape = shape
-	collision.position = Vector2(0, -8)  # Offset UP to body center — fixes interaction requiring player to walk past targets
+	collision.position = Vector2(0, 0)  # Center — Mode 7 decouples visual from physics, no offset needed
 	add_child(collision)
 
 	# Set collision layers: layer 1 = walls, layer 2 = player (for NPC detection)
