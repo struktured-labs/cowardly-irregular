@@ -11,6 +11,15 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 1",
+      "subtitle": "Node Prime"
+    },
+    {
+      "type": "play_music",
+      "track": "village_digital"
+    },
+    {
       "type": "narration",
       "text": "The party could see their own stats floating above their heads. Not in a menu. In the air. The game's interface had become the world's atmosphere."
     },

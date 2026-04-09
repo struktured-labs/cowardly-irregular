@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 4",
+      "subtitle": "The Confession"
+    },
+    {
       "type": "play_music",
       "track": "cutscene_w5_calibrant_desk"
     },

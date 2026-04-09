@@ -16,6 +16,10 @@
       "subtitle": "Maple Heights"
     },
     {
+      "type": "play_music",
+      "track": "village_suburban"
+    },
+    {
       "type": "narration",
       "lines": [
         "The suburb existed in a state of aggressive normalcy. Every house was a variation on the same house. Every lawn was the same shade of green.",

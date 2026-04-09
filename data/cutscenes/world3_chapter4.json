@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 4",
+      "subtitle": "The Engineer"
+    },
+    {
       "type": "play_music",
       "track": "cutscene_w3_pattern_recognized"
     },

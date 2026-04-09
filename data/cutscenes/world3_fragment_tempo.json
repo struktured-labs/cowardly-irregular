@@ -12,6 +12,10 @@
       "duration": 0.4
     },
     {
+      "type": "play_music",
+      "track": "cutscene_w3_pattern_recognized"
+    },
+    {
       "type": "wait",
       "duration": 0.8
     },

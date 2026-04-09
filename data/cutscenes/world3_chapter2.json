@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 2",
+      "subtitle": "The Sentinels"
+    },
+    {
       "type": "play_music",
       "track": "village_steampunk"
     },

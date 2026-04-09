@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 1",
+      "subtitle": "The Vertex"
+    },
+    {
       "type": "play_music",
       "track": "cutscene_w6_no_one_speaks"
     },

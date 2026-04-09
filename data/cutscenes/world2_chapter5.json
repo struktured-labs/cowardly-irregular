@@ -11,6 +11,11 @@
       "duration": 0.5
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 5",
+      "subtitle": "The Community Center"
+    },
+    {
       "type": "play_music",
       "track": "cutscene_w2_coordinator_memo"
     },

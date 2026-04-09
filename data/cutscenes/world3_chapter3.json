@@ -11,6 +11,11 @@
       "duration": 0.5
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 3",
+      "subtitle": "Inside the Machine"
+    },
+    {
       "type": "play_music",
       "track": "cutscene_w3_pattern_recognized"
     },

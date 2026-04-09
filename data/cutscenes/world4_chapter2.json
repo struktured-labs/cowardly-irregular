@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 2",
+      "subtitle": "The Assembly"
+    },
+    {
       "type": "play_music",
       "track": "overworld_industrial"
     },

@@ -16,6 +16,10 @@
       "subtitle": "The Road North"
     },
     {
+      "type": "play_music",
+      "track": "village_medieval"
+    },
+    {
       "type": "narration",
       "lines": [
         "Between Harmonia and the Whispering Cave lay two hours of open road and at least three things that wanted to hurt them.",

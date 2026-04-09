@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 5",
+      "subtitle": "The Last Configuration"
+    },
+    {
       "type": "play_music",
       "track": "cutscene_w5_calibrant_desk"
     },

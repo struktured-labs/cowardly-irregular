@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 4",
+      "subtitle": "Garage Sales and Other Hazards"
+    },
+    {
       "type": "play_music",
       "track": "village_suburban"
     },

@@ -4,11 +4,16 @@
   "world": 2,
   "trigger": "world2_coordinator_defeated",
   "background": "suburban_community_center",
-  "description": "After the Coordinator. Surveillance blinks out. A schematic: Phase 3 — Cogsworth Junction. Her final memo, half-written, pen set down. The sentence she never finished. The suburb shifts.",
+  "description": "After the Coordinator. Surveillance blinks out. A schematic: Phase 3 \u2014 Cogsworth Junction. Her final memo, half-written, pen set down. The sentence she never finished. The suburb shifts.",
   "steps": [
     {
       "type": "fade_from_black",
       "duration": 1.0
+    },
+    {
+      "type": "chapter_title",
+      "title": "Chapter 11",
+      "subtitle": "The Incomplete Sentence"
     },
     {
       "type": "letterbox_in",

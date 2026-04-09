@@ -11,6 +11,11 @@
       "duration": 0.4
     },
     {
+      "type": "chapter_title",
+      "title": "Chapter 8",
+      "subtitle": "The Scholar's Reckoning"
+    },
+    {
       "type": "play_music",
       "track": "mystery_w1"
     },
