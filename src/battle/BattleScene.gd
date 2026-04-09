@@ -175,6 +175,9 @@ var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
 ## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array})
 var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
 
+## Enemy floating HP bars (enemy Combatant -> {bar_bg: ColorRect, bar_fill: ColorRect})
+var _enemy_hp_bars: Dictionary = {}  # {Combatant: Dictionary}
+
 
 func set_player(player: Combatant) -> void:
 	"""Set external player from GameLoop (legacy single player)"""
@@ -781,6 +784,48 @@ func _create_battle_sprites() -> void:
 		# Setup status icons for this enemy
 		_setup_status_icons(enemy, sprite)
 
+		# Add floating HP bar below enemy name
+		_create_enemy_hp_bar(enemy, sprite)
+
+
+func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
+	"""Create a small HP bar below the enemy sprite name label"""
+	var bar_bg = ColorRect.new()
+	bar_bg.color = Color(0.2, 0.1, 0.1, 0.7)
+	bar_bg.size = Vector2(40, 4)
+	bar_bg.position = Vector2(-20, 52)  # Below the name label
+	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sprite.add_child(bar_bg)
+
+	var bar_fill = ColorRect.new()
+	bar_fill.color = Color(0.8, 0.2, 0.2)  # Red for enemies
+	bar_fill.size = Vector2(40, 4)
+	bar_fill.position = Vector2(-20, 52)
+	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sprite.add_child(bar_fill)
+
+	_enemy_hp_bars[enemy] = {"bar_bg": bar_bg, "bar_fill": bar_fill}
+
+
+func _update_enemy_hp_bars() -> void:
+	"""Update all enemy floating HP bars"""
+	for enemy in _enemy_hp_bars:
+		if not is_instance_valid(enemy):
+			continue
+		var bars = _enemy_hp_bars[enemy]
+		var bar_fill: ColorRect = bars.get("bar_fill")
+		if not bar_fill or not is_instance_valid(bar_fill):
+			continue
+		var ratio = float(enemy.current_hp) / float(max(1, enemy.max_hp))
+		bar_fill.size.x = 40.0 * ratio
+		# Color: green > 50%, yellow 25-50%, red < 25%
+		if ratio > 0.5:
+			bar_fill.color = Color(0.3, 0.8, 0.3)
+		elif ratio > 0.25:
+			bar_fill.color = Color(0.9, 0.8, 0.2)
+		else:
+			bar_fill.color = Color(0.8, 0.2, 0.2)
+
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	"""Get the appropriate sprite frames for a monster type"""
@@ -998,6 +1043,7 @@ func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
 
 func _update_ui() -> void:
 	_ui_manager.update_ui()
+	_update_enemy_hp_bars()
 
 
 func _update_danger_music() -> void:
