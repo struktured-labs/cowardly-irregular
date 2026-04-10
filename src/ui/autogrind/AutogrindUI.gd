@@ -403,8 +403,11 @@ func _create_start_stop_button(panel_size: Vector2) -> Control:
 	_add_pixel_border(btn, btn.size)
 
 	var label = Label.new()
-	label.text = "<<< STOP GRINDING >>>" if _is_grinding else ">>> START GRINDING <<<"
-	label.position = Vector2(btn.size.x / 2 - 80, 8)
+	if _is_grinding:
+		label.text = "[Start/Select/+] STOP GRINDING"
+	else:
+		label.text = "[Start/Select/+] START GRINDING"
+	label.position = Vector2(btn.size.x / 2 - 120, 8)
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	btn.add_child(label)
@@ -574,7 +577,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "D-Pad+A:Navigate/Confirm  Start:Go  B:Close  X:Ludicrous  Y:Resume  1/2/3:Presets"
+	footer.text = "[Start/Select/+]: Begin Grind   [B]: Close   [X]: Ludicrous   [Y]: Resume   [1/2/3]: Presets"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1216,6 +1219,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
+		_toggle_grinding()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode in [KEY_PLUS, KEY_EQUAL, KEY_KP_ADD]:
+		# "+" key is a natural shortcut — user feedback wanted this
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
