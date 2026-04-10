@@ -1214,16 +1214,14 @@ func _input(event: InputEvent) -> void:
 		_toggle_current_row()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
-		_toggle_grinding()
-		get_viewport().set_input_as_handled()
-
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
+	elif event.is_action_pressed("ui_menu") and not event.is_echo():
+		# Uses ui_menu action (Start + Select on 8BitDo, + on Pro 2)
+		# Profile-aware — works regardless of raw button index
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode in [KEY_PLUS, KEY_EQUAL, KEY_KP_ADD]:
-		# "+" key is a natural shortcut — user feedback wanted this
+		# "+" key fallback for keyboard users
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
