@@ -214,10 +214,18 @@ func play_cutscene(cutscene_id: String) -> void:
 
 	# Execute steps
 	var steps = data.get("steps", [])
+	var step_index := 0
 	for step in steps:
 		if _skipping:
 			break
 		await _execute_step(step)
+		step_index += 1
+
+	# When skipped, still apply all set_flag steps so cutscenes never replay
+	if _skipping:
+		for i in range(step_index, steps.size()):
+			if steps[i].get("type", "") == "set_flag":
+				_step_set_flag(steps[i])
 
 	# Cleanup
 	await _end_cutscene()
@@ -239,10 +247,18 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	_freeze_player()
 
 	var steps = data.get("steps", [])
+	var step_index := 0
 	for step in steps:
 		if _skipping:
 			break
 		await _execute_step(step)
+		step_index += 1
+
+	# When skipped, still apply all set_flag steps so cutscenes never replay
+	if _skipping:
+		for i in range(step_index, steps.size()):
+			if steps[i].get("type", "") == "set_flag":
+				_step_set_flag(steps[i])
 
 	await _end_cutscene()
 
