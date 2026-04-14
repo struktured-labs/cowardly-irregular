@@ -671,8 +671,11 @@ class SunoBrowser:
         _human_delay(HUMAN_FIELD_GAP_MS)
 
         # Clear lyrics (blank for instrumental) and fill style
-        # NOTE: Suno added "Ask me anything" chat textarea at index 0 (2026-04).
-        # Use placeholder-based selectors instead of fragile indices.
+        # Suno UI keeps changing textarea count (4 or 5). Auto-detect layout.
+        ta_count = page.locator("textarea").count()
+        print(f"  Textareas detected: {ta_count}")
+
+        # Try placeholder-based selectors first (most robust)
         lyrics_filled = False
         for sel in ("textarea[placeholder*='lyrics']", "textarea[placeholder*='instrumental']",
                     "textarea[placeholder*='Leave blank']"):
@@ -680,20 +683,23 @@ class SunoBrowser:
                 lyrics_filled = True
                 break
         if not lyrics_filled:
-            # Fallback: skip index 0 (chat prompt), use index 1
-            self._react_fill("textarea", "", index=1)
+            # Fallback: index depends on whether chat prompt exists
+            lyrics_idx = 1 if ta_count >= 5 else 0
+            self._react_fill("textarea", "", index=lyrics_idx)
         _human_delay(HUMAN_FIELD_GAP_MS)
 
         style_filled = False
         for sel in ("textarea[placeholder*='pop']", "textarea[placeholder*='house']",
-                    "textarea[placeholder*='style']", "textarea[placeholder*='genre']"):
+                    "textarea[placeholder*='style']", "textarea[placeholder*='genre']",
+                    "textarea[placeholder*='acoustic']"):
             if self._react_fill(sel, style, index=0):
                 style_filled = True
                 print(f"  Style: {style[:60]}...")
                 break
         if not style_filled:
-            # Fallback: skip index 0 (chat prompt), use index 2
-            if self._react_fill("textarea", style, index=2):
+            # Fallback: index depends on whether chat prompt exists
+            style_idx = 2 if ta_count >= 5 else 1
+            if self._react_fill("textarea", style, index=style_idx):
                 print(f"  Style: {style[:60]}...")
             else:
                 print("  Warning: could not fill style textarea")
