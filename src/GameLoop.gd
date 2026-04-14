@@ -81,6 +81,12 @@ var _area_fade_rect: ColorRect = null
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
 
+## Party Chat (opt-in flavor cutscenes)
+var _party_chat_menu: Control = null
+var _party_chat_menu_layer: CanvasLayer = null
+var _party_chat_indicator: Control = null
+var _party_chat_indicator_layer: CanvasLayer = null
+
 ## Autogrind
 var _autogrind_controller: Node = null
 var _autogrind_ui: Control = null
@@ -238,6 +244,13 @@ func _input(event: InputEvent) -> void:
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
 			_open_overworld_menu()
 			get_viewport().set_input_as_handled()
+
+	# L shoulder / L key = open Party Chat menu (exploration only, opt-in flavor cutscenes)
+	if event.is_action_pressed("party_chat"):
+		if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu:
+			if PartyChatSystem and PartyChatSystem.has_available_chats():
+				_open_party_chat_menu()
+				get_viewport().set_input_as_handled()
 
 
 func _toggle_autobattle_editor() -> void:
@@ -411,6 +424,61 @@ func _on_overworld_menu_closed() -> void:
 		_overworld_menu_layer = null
 
 	# Resume exploration
+	if _exploration_scene and _exploration_scene.has_method("resume"):
+		_exploration_scene.resume()
+
+
+## Party Chat helpers
+
+func _ensure_party_chat_indicator() -> void:
+	"""Show the [L] Party Chat indicator in exploration if any chats are available."""
+	if current_state != LoopState.EXPLORATION:
+		_remove_party_chat_indicator()
+		return
+	if not PartyChatSystem:
+		return
+	# Only mount when needed; the indicator hides itself when empty
+	if _party_chat_indicator and is_instance_valid(_party_chat_indicator):
+		return
+	_party_chat_indicator_layer = CanvasLayer.new()
+	_party_chat_indicator_layer.layer = 45
+	add_child(_party_chat_indicator_layer)
+	var IndicatorScript = load("res://src/ui/PartyChatIndicator.gd")
+	_party_chat_indicator = IndicatorScript.new()
+	_party_chat_indicator_layer.add_child(_party_chat_indicator)
+
+
+func _remove_party_chat_indicator() -> void:
+	if _party_chat_indicator and is_instance_valid(_party_chat_indicator):
+		_party_chat_indicator.queue_free()
+	_party_chat_indicator = null
+	if _party_chat_indicator_layer and is_instance_valid(_party_chat_indicator_layer):
+		_party_chat_indicator_layer.queue_free()
+	_party_chat_indicator_layer = null
+
+
+func _open_party_chat_menu() -> void:
+	if _party_chat_menu and is_instance_valid(_party_chat_menu):
+		return
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+	_party_chat_menu_layer = CanvasLayer.new()
+	_party_chat_menu_layer.layer = 60
+	add_child(_party_chat_menu_layer)
+	var MenuScript = load("res://src/ui/PartyChatMenu.gd")
+	_party_chat_menu = MenuScript.new()
+	_party_chat_menu_layer.add_child(_party_chat_menu)
+	_party_chat_menu.closed.connect(_on_party_chat_closed)
+	SoundManager.play_ui("menu_open")
+
+
+func _on_party_chat_closed(_played_id: String) -> void:
+	if _party_chat_menu and is_instance_valid(_party_chat_menu):
+		_party_chat_menu.queue_free()
+	_party_chat_menu = null
+	if _party_chat_menu_layer and is_instance_valid(_party_chat_menu_layer):
+		_party_chat_menu_layer.queue_free()
+	_party_chat_menu_layer = null
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 
@@ -744,6 +812,7 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 	"""Play a story cutscene, then resume exploration."""
 	current_state = LoopState.CUTSCENE
 	_cutscene_cooldown = true  # Suppress next check on same map entry
+	_remove_party_chat_indicator()
 	if not _cutscene_director:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
@@ -1248,6 +1317,9 @@ func _start_exploration() -> void:
 	current_scene = exploration_scene
 	_exploration_scene = exploration_scene
 
+	# Mount the [L] Party Chat indicator for exploration
+	_ensure_party_chat_indicator()
+
 	# Spawn player at correct position
 	if exploration_scene.has_method("spawn_player_at"):
 		exploration_scene.spawn_player_at(_spawn_point)
@@ -1451,6 +1523,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
+	_remove_party_chat_indicator()
 
 	# Save battle config for retry
 	_last_battle_enemies = specific_enemies.duplicate()
