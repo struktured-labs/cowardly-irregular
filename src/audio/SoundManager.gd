@@ -925,17 +925,19 @@ func _get_current_world_suffix() -> String:
 	When _current_area is empty (cleared by play_music for battle/victory),
 	returns the last known world suffix so battle music stays world-aware."""
 	match _current_area:
-		"overworld", "village", "harmonia_village", "cave", "dungeon", "whispering_cave":
+		"overworld", "village", "harmonia_village", "cave", "whispering_cave":
 			return "medieval"
-		"overworld_suburban", "maple_heights_village":
+		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
+			return "medieval"
+		"overworld_suburban", "maple_heights_village", "suburban_dungeon":
 			return "suburban"
-		"overworld_steampunk", "brasston_village":
+		"overworld_steampunk", "brasston_village", "steampunk_dungeon":
 			return "steampunk"
-		"overworld_industrial", "rivet_row_village":
+		"overworld_industrial", "rivet_row_village", "industrial_dungeon":
 			return "industrial"
-		"overworld_futuristic", "node_prime_village":
+		"overworld_futuristic", "node_prime_village", "digital_dungeon":
 			return "digital"
-		"overworld_abstract", "vertex_village":
+		"overworld_abstract", "vertex_village", "abstract_dungeon":
 			return "abstract"
 		_:
 			# During battles, _current_area is cleared — use persisted suffix
@@ -3886,8 +3888,20 @@ func _start_area_music_deferred(area_type: String) -> void:
 			_start_village_world_music("digital")
 		"vertex_village":
 			_start_village_world_music("abstract")
-		"cave", "dungeon", "whispering_cave":
-			_start_cave_music()
+		"cave", "whispering_cave":
+			_start_dungeon_music("medieval")
+		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
+			_start_dungeon_music("dragon_ice")
+		"suburban_dungeon":
+			_start_dungeon_music("suburban")
+		"steampunk_dungeon":
+			_start_dungeon_music("steampunk")
+		"industrial_dungeon":
+			_start_dungeon_music("industrial")
+		"digital_dungeon":
+			_start_dungeon_music("digital")
+		"abstract_dungeon":
+			_start_dungeon_music("abstract")
 		_:
 			_start_overworld_music()
 
@@ -3938,11 +3952,20 @@ func _start_village_world_music(world_suffix: String) -> void:
 	_start_village_music()
 
 
-func _start_cave_music() -> void:
-	"""Generate mysterious dungeon/cave theme"""
+func _start_dungeon_music(world_id: String) -> void:
+	"""Play dungeon music for the given world. Tries OGG first, falls back to proc-gen cave."""
 	_music_playing = true
-	if _try_play_from_manifest("dungeon_medieval"):
+	if _try_play_from_manifest("dungeon_" + world_id):
 		return
+	# Fall back to generic medieval dungeon if world-specific not found
+	if world_id != "medieval" and _try_play_from_manifest("dungeon_medieval"):
+		return
+	_start_cave_music()
+
+
+func _start_cave_music() -> void:
+	"""Generate mysterious dungeon/cave theme (proc-gen fallback)"""
+	_music_playing = true
 	print("[MUSIC] Playing cave/dungeon theme")
 	if _play_area_wav_cached("cave"):
 		return
