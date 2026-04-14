@@ -21,8 +21,11 @@ var _typing_timer: Timer
 var _voice_blip_player: AudioStreamPlayer = null
 var _voice_blip_stream: AudioStream = null
 var _voice_blip_speaker_key: String = ""
+var _voice_blip_pitch_base: float = 1.0  # Per-speaker deterministic offset
+var _voice_blip_next_char: int = 0        # Index at which next blip fires
 const VOICE_BLIP_DIR := "res://assets/audio/sfx/"
-const VOICE_BLIP_EVERY_N_CHARS := 3
+const VOICE_BLIP_STEP_MIN := 2
+const VOICE_BLIP_STEP_MAX := 4
 const VOICE_BLIP_FALLBACK := "voice_blip_default"
 static var _voice_blip_stream_cache: Dictionary = {}
 static var _voice_blip_missing: Dictionary = {}
@@ -230,13 +233,27 @@ func _resolve_voice_blip_key(portrait_type: String, theme_name: String) -> Strin
 
 func _load_voice_blip(speaker_key: String) -> void:
 	"""Load and cache the voice blip stream for a speaker. Falls back to
-	VOICE_BLIP_FALLBACK if the speaker-specific file is missing."""
+	VOICE_BLIP_FALLBACK if the speaker-specific file is missing. When the
+	fallback is used, derive a deterministic pitch offset from the speaker
+	name so unnamed NPCs still feel distinct."""
 	if speaker_key == _voice_blip_speaker_key and _voice_blip_stream != null:
 		return
 	_voice_blip_speaker_key = speaker_key
 	_voice_blip_stream = _load_voice_blip_stream(speaker_key)
+	_voice_blip_pitch_base = 1.0
 	if _voice_blip_stream == null and speaker_key != VOICE_BLIP_FALLBACK:
 		_voice_blip_stream = _load_voice_blip_stream(VOICE_BLIP_FALLBACK)
+		_voice_blip_pitch_base = _hash_pitch(speaker_key)
+
+
+static func _hash_pitch(key: String) -> float:
+	"""Deterministic pitch multiplier in [0.82, 1.22] from a speaker name."""
+	if key.is_empty():
+		return 1.0
+	var h: int = hash(key)
+	# Map low bits into a ±20% window around 1.0
+	var frac: float = float(h & 0xFFFF) / 65535.0
+	return 0.82 + frac * 0.40
 
 
 static func _load_voice_blip_stream(key: String) -> AudioStream:
@@ -261,7 +278,7 @@ func _play_voice_blip() -> void:
 			SoundManager.play_ui("menu_move")
 		return
 	_voice_blip_player.stream = _voice_blip_stream
-	_voice_blip_player.pitch_scale = randf_range(0.9, 1.1)
+	_voice_blip_player.pitch_scale = _voice_blip_pitch_base * randf_range(0.9, 1.1)
 	_voice_blip_player.play()
 
 
@@ -472,6 +489,7 @@ func _show_current_line() -> void:
 	# Start typing effect
 	_current_text = entry.get("text", "")
 	_displayed_chars = 0
+	_voice_blip_next_char = randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
 	_text_label.text = ""
 	_advance_hint.visible = false
 	_is_typing = true
@@ -486,12 +504,14 @@ func _on_typing_tick() -> void:
 		_displayed_chars += 1
 		_text_label.text = _current_text.substr(0, _displayed_chars)
 
-		# Voice blip every N non-whitespace characters — skip spaces and
-		# punctuation so pauses feel natural (Undertale style).
-		if _displayed_chars % VOICE_BLIP_EVERY_N_CHARS == 0:
-			var ch := _current_text.substr(_displayed_chars - 1, 1)
-			if _is_voiced_char(ch):
+		# Voice blip at jittered cadence (every 2-4 voiced characters) so it
+		# doesn't feel metronomic. Punctuation and whitespace don't advance
+		# the step counter so natural pauses stay silent.
+		var ch := _current_text.substr(_displayed_chars - 1, 1)
+		if _is_voiced_char(ch):
+			if _displayed_chars >= _voice_blip_next_char:
 				_play_voice_blip()
+				_voice_blip_next_char = _displayed_chars + randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
 	else:
 		_finish_typing()
 
