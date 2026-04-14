@@ -2452,6 +2452,12 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 	if new_value < old_value and member_idx < party_animators.size():
 		# Play hit animation when taking damage
 		party_animators[member_idx].play_hit()
+	# Ally KO quip — when a party member drops to 0 HP, a living ally reacts
+	if new_value <= 0 and old_value > 0:
+		var alive_allies = party_members.filter(func(m): return m is Combatant and m.is_alive and party_members.find(m) != member_idx)
+		if alive_allies.size() > 0:
+			var reactor = alive_allies[randi() % alive_allies.size()]
+			_try_combat_quip(ALLY_KO_QUIPS, reactor)
 
 
 func _on_party_ap_changed(old_value: int, new_value: int, member_idx: int) -> void:
@@ -2801,6 +2807,13 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	if is_crit:
 		_crit_visual_burst(target, amount)
 		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
+		# Crit quip from the attacker
+		var attacker = BattleManager.current_combatant
+		if attacker and attacker in BattleManager.player_party:
+			_try_combat_quip(CRIT_QUIPS, attacker)
+			# Overkill check (damage > 2x remaining HP)
+			if amount > target.max_hp * 0.5:
+				_try_combat_quip(OVERKILL_QUIPS, attacker)
 	if elemental_mod != 1.0 and element != "":
 		_spawn_elemental_indicator(target, element, elemental_mod)
 		# Tutorial hints for elemental interactions
@@ -2810,6 +2823,13 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 			_show_hint("elemental_resist", "That enemy RESISTS %s. Try a different element or use physical attacks." % element.capitalize())
 		elif elemental_mod == 0.0:
 			_show_hint("elemental_immune", "That enemy is IMMUNE to %s! Switch to a different element or physical attacks." % element.capitalize())
+	# Party member taking big damage (>30% max HP) — reaction quip
+	if target in BattleManager.player_party and amount > target.max_hp * 0.3:
+		_try_combat_quip(TAKE_BIG_DAMAGE_QUIPS, target)
+	# Low HP warning (dropped below 25%)
+	if target in BattleManager.player_party and target.is_alive and target.get_hp_percentage() < 25.0:
+		_try_combat_quip(LOW_HP_QUIPS, target)
+
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
@@ -2859,6 +2879,9 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 func _on_attack_missed(target: Combatant) -> void:
 	_results_display.on_attack_missed(target)
 	SoundManager.play_battle("attack_miss")
+	# Dodge quip from the target (if party member dodged an enemy attack)
+	if target in BattleManager.player_party:
+		_try_combat_quip(DODGE_QUIPS, target)
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
@@ -3417,6 +3440,73 @@ const BRAVE_QUIPS: Dictionary = {
 	"summoner": ["Spirits, converge!", "All together now!", "Full summoning circle!"],
 	"speculator": ["Going all in!", "Double or nothing!", "Maximum leverage!"],
 }
+
+## Combat reaction quips — triggered by battle events (30% chance each)
+const CRIT_QUIPS: Dictionary = {
+	"fighter": ["That's gonna leave a mark!", "DIRECT HIT!", "Right in the weak spot!"],
+	"cleric": ["The light strikes true!", "Guided by divine aim!", "Precision!"],
+	"mage": ["Critical resonance!", "The formula was perfect!", "Maximum efficiency!"],
+	"rogue": ["Bullseye!", "Right where it hurts!", "Too easy."],
+	"bard": ["♪ And the crowd goes wild! ♪", "Standing ovation!", "Hit the high note!"],
+	"_default": ["Critical hit!", "Nice shot!", "That's a big one!"],
+}
+
+const OVERKILL_QUIPS: Dictionary = {
+	"fighter": ["Overkill? No such thing.", "Rest in pieces.", "Didn't even need that much."],
+	"rogue": ["That was excessive. I love it.", "Wasted resources, but style points.", "Oops. Too hard."],
+	"mage": ["Miscalculated... in our favor.", "Excessive force noted.", "The math says: very dead."],
+	"_default": ["Overkill!", "That was more than enough!", "Obliterated!"],
+}
+
+const TAKE_BIG_DAMAGE_QUIPS: Dictionary = {
+	"fighter": ["Ugh! That stung!", "I can take it!", "Hit me harder!"],
+	"cleric": ["Ouch! I need a moment!", "That really hurt...", "Someone cover me!"],
+	"mage": ["My barrier failed!", "Ow! Physical pain! My weakness!", "I need distance!"],
+	"rogue": ["Should've dodged that!", "Okay, THAT hurt.", "Lucky shot..."],
+	"_default": ["Ow!", "That hurt!", "I'm in trouble!"],
+}
+
+const DODGE_QUIPS: Dictionary = {
+	"fighter": ["Ha! Missed!", "Too slow!", "I saw that coming!"],
+	"rogue": ["Not even close.", "Like I'd stand still.", "You'll have to be faster than THAT."],
+	"ninja": ["Already moved.", "Predictable.", "..."],
+	"_default": ["Missed me!", "Nice try!", "Dodged!"],
+}
+
+const LOW_HP_QUIPS: Dictionary = {
+	"fighter": ["I'm not done yet...", "Just a scratch!", "Still standing!"],
+	"cleric": ["I need healing... ironic.", "My faith is being tested!", "This isn't good..."],
+	"mage": ["Running low on everything...", "My concentration is slipping!", "Need to retreat!"],
+	"rogue": ["Things are looking grim.", "Time to get creative...", "Escape plan forming..."],
+	"_default": ["I'm in trouble...", "Someone help!", "Not looking good..."],
+}
+
+const ALLY_KO_QUIPS: Dictionary = {
+	"fighter": ["No! Get up!", "I'll avenge you!", "You'll pay for that!"],
+	"cleric": ["I failed them...", "Hold on! I'll revive you!", "No... not again!"],
+	"mage": ["We lost one! Recalculating...", "This changes the equation.", "Focus! We must continue!"],
+	"rogue": ["They got one of ours!", "That's gonna cost them.", "Now I'm angry."],
+	"_default": ["We lost someone!", "No!", "Avenge them!"],
+}
+
+const COMBAT_QUIP_CHANCE: float = 0.30  # 30% chance per trigger
+
+
+func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:
+	"""Try to show a combat quip — 30% chance, picks from job-specific or default pool"""
+	if turbo_mode or randf() >= COMBAT_QUIP_CHANCE:
+		return
+	var job_id = combatant.job.get("id", "fighter") if combatant.job else "fighter"
+	var pool = quip_dict.get(job_id, quip_dict.get("_default", []))
+	if pool.is_empty():
+		pool = quip_dict.get("_default", [])
+	if pool.is_empty():
+		return
+	var line = pool[randi() % pool.size()]
+	var sprite = _get_combatant_sprite(combatant)
+	if sprite and is_instance_valid(sprite):
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, Color(0.9, 0.9, 0.9), 1.0)
+
 
 ## Track which monster types the player has encountered (persists in GameState)
 func _is_new_monster(monster_type: String) -> bool:
