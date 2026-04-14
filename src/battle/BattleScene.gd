@@ -2972,7 +2972,12 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 
 
 func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5) -> void:
-	"""Show a speech bubble above a sprite — reused for quips, trash talk, encounter reactions"""
+	"""Show a speech bubble above a sprite — reused for quips, trash talk, encounter reactions.
+	Suppressed at high speed (4x+), during autogrind, or turbo mode."""
+	if turbo_mode or Engine.time_scale >= 2.0:
+		return
+	if autogrind_console_mode:
+		return
 	var bubble = PanelContainer.new()
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style = StyleBoxFlat.new()
