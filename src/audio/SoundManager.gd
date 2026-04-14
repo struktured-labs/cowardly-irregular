@@ -2867,16 +2867,27 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Start monster-specific battle music — unique per monster type"""
+	"""Start monster-specific battle music — unique per monster type.
+	Prefers OGG file from assets/audio/music/ if available, falls back to proc-gen."""
 	_music_playing = true
 
-	# Check cache first (monster-specific proc-gen themes)
+	# Try loading OGG file first (artist/Suno-generated tracks take priority)
+	var ogg_path = "res://assets/audio/music/battle_%s.ogg" % monster_type
+	if ResourceLoader.exists(ogg_path):
+		var stream = load(ogg_path)
+		if stream:
+			_music_player.stream = stream
+			_music_player.play()
+			print("[MUSIC] Loaded OGG: %s" % ogg_path)
+			return
+
+	# Check proc-gen cache
 	if _music_cache.has(monster_type):
 		_music_player.stream = _music_cache[monster_type]
 		_music_player.play()
 		return
 
-	# Generate and cache if not found
+	# Generate and cache if no OGG and not cached
 	var wav = _generate_and_cache_music(monster_type)
 	_music_player.stream = wav
 	_music_player.play()
