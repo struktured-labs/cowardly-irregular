@@ -106,9 +106,10 @@ var encounter_enemies: Array = []  # When set, spawn these encounter enemies fro
 var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies from autogrind system
 
 ## Battle speed settings
+## Battle speed recalibrated: old 0.5x is now labeled "1x" (the comfortable default)
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
-static var _battle_speed_index: int = 1  # Persists across battles (default 0.5x)
+const BATTLE_SPEED_LABELS: Array[String] = ["0.5x", "1x", "2x", "4x", "8x", "16x", "32x"]
+static var _battle_speed_index: int = 1  # Persists across battles (default "1x" = old 0.5x)
 var _speed_indicator: RichTextLabel = null
 var _battle_counter_label: RichTextLabel = null
 
@@ -403,20 +404,20 @@ func _update_speed_indicator() -> void:
 	var text = ""
 
 	match _battle_speed_index:
-		0:  # 0.25x - ultra slow (purple)
+		0:  # 0.5x - slow (purple)
 			text = "[color=#8866aa]▸[/color] [color=#aa88cc]%s[/color] [color=#664488]◂[/color]" % speed_label
-		1:  # 0.5x - slow (blue)
-			text = "[color=#6688aa]▸[/color] [color=#88aacc]%s[/color] [color=#446688]◂[/color]" % speed_label
-		2:  # 1x - normal (white/cyan)
+		1:  # 1x - normal (white/cyan) — the new default
 			text = "[color=#88cccc]▸[/color] [color=#ffffff]%s[/color] [color=#66aaaa]◂[/color]" % speed_label
-		3:  # 2x - fast (yellow)
+		2:  # 2x - fast (yellow)
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
-		4:  # 4x - turbo (orange/red)
+		3:  # 4x - turbo (orange)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
-		5:  # 8x - extreme (red)
+		4:  # 8x - extreme (red)
 			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
-		6:  # 16x - maximum (magenta)
+		5:  # 16x - very extreme (magenta)
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
+		6:  # 32x - maximum (bright magenta)
+			text = "[color=#ff22ff]▸▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂◂[/color]" % speed_label
 
 	if turbo_mode:
 		text += " [color=#ff4444]TURBO[/color]"
