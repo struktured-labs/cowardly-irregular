@@ -1563,11 +1563,13 @@ func _execute_next_action() -> void:
 	_log_player_action(combatant, action)
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
-	# Delay between actions - long enough for animations to complete
+	# Delay between actions — scale with battle speed for snappy feel
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		await get_tree().create_timer(0.7).timeout
+		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
+		var delay = 0.4 / speed_scale  # 0.4s base (was 0.7s), scales with battle speed
+		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()

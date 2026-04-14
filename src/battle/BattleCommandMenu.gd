@@ -771,6 +771,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 
 	if battle_actions.size() > 0:
 		_scene.log_message("[color=yellow]%s advances with %d actions![/color]" % [current.combatant_name, battle_actions.size()])
+		_scene.show_brave_quip(current, battle_actions.size())
 		BattleManager.player_advance(battle_actions)
 		_scene._update_ui()
 

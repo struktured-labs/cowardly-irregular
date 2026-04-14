@@ -1634,6 +1634,8 @@ func _on_battle_started() -> void:
 		_cancel_all_autobattle()
 
 	_update_ui()
+	# Battle start quips — party members react to encounters
+	_show_battle_quip()
 	# Start battle music - use boss music if fighting a miniboss
 	var is_boss_fight = _check_for_boss()
 	var boss_type = _get_boss_type()
@@ -3354,3 +3356,87 @@ func _check_danger_music() -> void:
 		_is_danger_music = false
 		SoundManager.play_music(_base_music_track)
 		print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
+
+
+## ======================== BATTLE QUIPS ========================
+## Party members react to encounters and brave actions with short one-liners.
+
+const BATTLE_START_QUIPS: Dictionary = {
+	"fighter": ["Let's do this!", "Steel meets steel!", "I'll take point!", "Another fight? Good."],
+	"cleric": ["Stay close, everyone.", "I'll keep us standing.", "Light guide our strikes.", "Be careful..."],
+	"mage": ["Fascinating specimens...", "Time for field research!", "Let's see what they're made of.", "Hmm, elemental analysis..."],
+	"rogue": ["Easy pickings.", "Watch and learn.", "I call dibs on loot.", "In and out, no sweat."],
+	"bard": ["This'll make a great verse!", "Music to fight by!", "♪ Here we go again~ ♪", "I feel a ballad coming on!"],
+	"guardian": ["Formation! Now!", "Behind me, all of you.", "Hold the line.", "I won't let them through."],
+	"ninja": ["Already behind them.", "Too slow.", "This ends quickly.", "..."],
+	"summoner": ["I sense their weakness.", "Spirits, attend me!", "The ether stirs...", "Let's call for backup."],
+	"speculator": ["I'm betting on us.", "The odds look good.", "Risk assessment: favorable.", "All in."],
+}
+
+const NEW_MONSTER_QUIPS: Dictionary = {
+	"fighter": ["What IS that thing?!", "Never seen one of those before.", "Huh. Ugly."],
+	"cleric": ["What manner of creature...?", "I don't recognize this one.", "Be on guard — unknown threat!"],
+	"mage": ["Undocumented species! Taking notes.", "Ooh, a new specimen!", "No data on this one... exciting!"],
+	"rogue": ["That's new. I don't like new.", "No intel on this thing.", "Great, surprises."],
+}
+
+const BRAVE_QUIPS: Dictionary = {
+	"fighter": ["All out attack!", "No holding back!", "CHARGE!", "Full power!"],
+	"cleric": ["Channeling everything!", "By the light — SURGE!", "Maximum output!"],
+	"mage": ["Overclocking mana!", "Chain casting!", "UNLIMITED POWER!", "Spell barrage!"],
+	"rogue": ["Combo time!", "Rapid strikes!", "They won't see this coming!", "Flurry!"],
+	"bard": ["Encore! Encore!", "♪ Grand finale~ ♪", "The crescendo!"],
+	"guardian": ["Breaking through!", "FULL ASSAULT!", "No mercy!"],
+	"ninja": ["Shadow rush.", "Multi-strike.", "Vanishing barrage."],
+	"summoner": ["Spirits, converge!", "All together now!", "Full summoning circle!"],
+	"speculator": ["Going all in!", "Double or nothing!", "Maximum leverage!"],
+}
+
+## Track which monster types the player has encountered (persists in GameState)
+func _is_new_monster(monster_type: String) -> bool:
+	var seen = GameState.game_constants.get("seen_monsters", {})
+	return not seen.has(monster_type)
+
+func _mark_monster_seen(monster_type: String) -> void:
+	if not GameState.game_constants.has("seen_monsters"):
+		GameState.game_constants["seen_monsters"] = {}
+	GameState.game_constants["seen_monsters"][monster_type] = true
+
+func _show_battle_quip() -> void:
+	"""Show a party member quip at battle start."""
+	# Pick a random alive party member
+	var alive = party_members.filter(func(m): return m is Combatant and m.is_alive)
+	if alive.is_empty():
+		return
+	var speaker = alive[randi() % alive.size()]
+	var job_id = speaker.get("primary_job", "fighter") if "primary_job" in speaker else "fighter"
+
+	# Check for new monster encounter
+	var has_new = false
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy):
+			var mtype = enemy.get_meta("monster_type", "")
+			if mtype != "" and _is_new_monster(mtype):
+				has_new = true
+				_mark_monster_seen(mtype)
+
+	var quip_pool: Array
+	if has_new and NEW_MONSTER_QUIPS.has(job_id):
+		quip_pool = NEW_MONSTER_QUIPS[job_id]
+	elif BATTLE_START_QUIPS.has(job_id):
+		quip_pool = BATTLE_START_QUIPS[job_id]
+	else:
+		return
+
+	var quip = quip_pool[randi() % quip_pool.size()]
+	log_message("[color=#88ccff]%s:[/color] \"%s\"" % [speaker.combatant_name, quip])
+
+func show_brave_quip(combatant: Combatant, action_count: int) -> void:
+	"""Show a quip when a character queues 3+ brave actions."""
+	if action_count < 3:
+		return
+	var job_id = combatant.get("primary_job", "fighter") if "primary_job" in combatant else "fighter"
+	if BRAVE_QUIPS.has(job_id):
+		var pool = BRAVE_QUIPS[job_id]
+		var quip = pool[randi() % pool.size()]
+		log_message("[color=#ffcc44]%s:[/color] \"%s\"" % [combatant.combatant_name, quip])
