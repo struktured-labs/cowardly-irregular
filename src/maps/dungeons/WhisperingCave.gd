@@ -599,6 +599,8 @@ func _on_boss_defeated() -> void:
 		director.queue_free()
 		# Unlock W2 — Cave Rat King is the W1 gatekeeper boss
 		GameState.set_story_flag("w1_boss_defeated")
+		GameState.set_story_flag("rat_king_defeated")
+		GameState.game_constants["cutscene_flag_rat_king_defeated"] = true
 		GameState.unlock_next_world()
 		# Spawn exit stairs
 		print("Cave Rat King defeated! W2 portal unlocked. Exit stairs appear.")

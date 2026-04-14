@@ -487,8 +487,9 @@ func _get_clothes_color() -> Color:
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE, TILE_SIZE)
+	shape.size = Vector2(64, 160)  # Wide + very tall — compensates for Mode 7 vertical compression
 	collision.shape = shape
+	collision.position = Vector2(0, -48)  # Shifted north — Mode 7 makes objects appear closer than they are
 	add_child(collision)
 
 	# Set collision layer/mask for interaction

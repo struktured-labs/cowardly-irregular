@@ -3409,7 +3409,7 @@ func _show_battle_quip() -> void:
 	if alive.is_empty():
 		return
 	var speaker = alive[randi() % alive.size()]
-	var job_id = speaker.get("primary_job", "fighter") if "primary_job" in speaker else "fighter"
+	var job_id = speaker.job.get("id", "fighter") if speaker.job else "fighter"
 
 	# Check for new monster encounter
 	var has_new = false
@@ -3435,7 +3435,7 @@ func show_brave_quip(combatant: Combatant, action_count: int) -> void:
 	"""Show a quip when a character queues 3+ brave actions."""
 	if action_count < 3:
 		return
-	var job_id = combatant.get("primary_job", "fighter") if "primary_job" in combatant else "fighter"
+	var job_id = combatant.job.get("id", "fighter") if combatant.job else "fighter"
 	if BRAVE_QUIPS.has(job_id):
 		var pool = BRAVE_QUIPS[job_id]
 		var quip = pool[randi() % pool.size()]

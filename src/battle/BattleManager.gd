@@ -1666,7 +1666,9 @@ func _execute_group_action(action: Dictionary) -> void:
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		await get_tree().create_timer(0.7).timeout
+		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
+		var delay = 0.4 / speed_scale
+		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
