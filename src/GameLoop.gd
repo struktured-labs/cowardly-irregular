@@ -1456,8 +1456,9 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		print("[GAMELOOP] BLOCKED — autogrind UI is open")
 		return
 
-	# LoopState.BATTLE blocks player movement — no need to pause exploration.
-	# Pausing here without guaranteed resume caused the 2s freeze bug.
+	# Immediately lock state to BATTLE — prevents player movement, interactions,
+	# and duplicate battle triggers during the transition animation
+	current_state = LoopState.BATTLE
 
 	# NOTE: Do NOT hide the exploration scene here — BattleTransition needs one rendered
 	# frame to capture the overworld screenshot. We hide it at transition_midpoint instead,
