@@ -1456,9 +1456,8 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		print("[GAMELOOP] BLOCKED — autogrind UI is open")
 		return
 
-	# Immediately lock state to BATTLE — prevents player movement, interactions,
-	# and duplicate battle triggers during the transition animation
-	current_state = LoopState.BATTLE
+	# LoopState.BATTLE blocks player movement — set in _start_battle_async after transition.
+	# Do NOT set it here — transition needs EXPLORATION state to render the screenshot.
 
 	# NOTE: Do NOT hide the exploration scene here — BattleTransition needs one rendered
 	# frame to capture the overworld screenshot. We hide it at transition_midpoint instead,
