@@ -9,6 +9,8 @@ var _canvas: CanvasLayer
 var _label: Label
 var _bg: ColorRect
 var _current_objective: String = ""
+var _poll_timer: float = 0.0
+const POLL_INTERVAL: float = 2.0  # Check for flag changes every 2 seconds
 
 ## Objective definitions: flag → objective text (checked in order, first match wins)
 ## Later entries override earlier ones (progression order)
@@ -80,7 +82,9 @@ func _update_objective() -> void:
 
 	for entry in OBJECTIVES:
 		var flag = entry["flag"]
-		if flag == "" or GameState.get_story_flag(flag):
+		if flag == "":
+			best_text = entry["text"]
+		elif GameState.get_story_flag(flag) or GameState.game_constants.get("cutscene_flag_" + flag, false):
 			best_text = entry["text"]
 
 	if best_text != _current_objective:
@@ -90,6 +94,13 @@ func _update_objective() -> void:
 		_bg.offset_right = _label.offset_left + _label.get_theme_font("font").get_string_size(
 			_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
 			_label.get_theme_font_size("font_size")).x + 20 if _label.get_theme_font("font") else 350
+
+
+func _process(delta: float) -> void:
+	_poll_timer += delta
+	if _poll_timer >= POLL_INTERVAL:
+		_poll_timer = 0.0
+		_update_objective()
 
 
 func update() -> void:

@@ -2656,13 +2656,20 @@ func _on_enemy_died(enemy_idx: int) -> void:
 		if enemy_idx < enemy_animators.size() and enemy_idx < enemy_sprite_nodes.size():
 			var animator = enemy_animators[enemy_idx]
 			var sprite = enemy_sprite_nodes[enemy_idx]
-			# Play defeat animation and start fade immediately (don't wait for callback)
+			# Play defeat animation
 			animator.play_defeat()
-			# Fade out sprite
+			# FF-style dissolve: flash white, flicker, then vanish
 			if is_instance_valid(sprite):
 				var tween = create_tween()
-				tween.tween_property(sprite, "modulate:a", 0.0, 0.8)
-				# Hide sprite completely after fade
+				# Flash white briefly
+				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
+				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
+				# Flicker dissolve (rapid on/off while fading)
+				for i in range(6):
+					tween.tween_property(sprite, "modulate:a", 0.1, 0.06)
+					tween.tween_property(sprite, "modulate:a", 0.7 - i * 0.1, 0.06)
+				# Final vanish
+				tween.tween_property(sprite, "modulate:a", 0.0, 0.15)
 				tween.tween_callback(func():
 					if is_instance_valid(sprite):
 						sprite.visible = false

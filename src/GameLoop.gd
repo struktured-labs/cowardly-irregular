@@ -610,36 +610,24 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("talked_to_theron", false) and not flags.get("cutscene_flag_chapter1_complete", false):
 		if _current_map_id == "harmonia_village":
 			return "world1_chapter1"
-	# Chapter 2: plays when entering overworld after chapter1 (road encounters)
+	# Chapter 2: SKIPPED — party road commentary now opt-in
+	# Auto-set the flag so chapter 3 can trigger
 	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):
-		if _current_map_id == "overworld":
-			return "world1_chapter2"
-	# Chapter 3: plays when first entering the cave
+		GameState.game_constants["cutscene_flag_chapter2_complete"] = true
+	# Chapter 3: plays when first entering the cave (key story beat)
 	if flags.get("cutscene_flag_chapter2_complete", false) and not flags.get("cutscene_flag_chapter3_complete", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_chapter3"
-	# Chapter 4: plays after warden/rat king boss defeat, re-entering overworld
+	# Chapter 4: plays after rat king boss defeat (key story beat)
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_chapter4_complete", false):
 		if _current_map_id == "overworld":
 			return "world1_chapter4"
-	# Chapter 5: plays when entering corrupted forest area
-	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter5_complete", false):
-		if _current_map_id == "overworld":
-			return "world1_chapter5"
-	# Chapter 5 Forest: enchanted forest foreshadowing (Tempo chase, old woman)
-	if flags.get("cutscene_flag_chapter5_complete", false) and not flags.get("cutscene_flag_chapter5_forest_entered", false):
-		if _current_map_id == "eldertree_village":
-			return "world1_chapter5_forest"
-	# Chapter 7: entering the capital city Scriptura
-	if flags.get("cutscene_flag_chapter5_forest_entered", false) and not flags.get("cutscene_flag_chapter7_complete", false):
-		if _current_map_id == "overworld":
-			return "world1_chapter7"
-	# Chapter 8: Scholar's Reckoning (auto-chains after chapter 7)
-	if flags.get("cutscene_flag_chapter7_complete", false) and not flags.get("cutscene_flag_chapter8_complete", false):
-		return "world1_chapter8"
-	# Chapter 9: The Throne (King Aldric scene, sets up Mordaine defeat)
-	if flags.get("cutscene_flag_chapter8_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
-		return "world1_chapter9"
+	# Chapters 5-9: auto-set flags — party commentary now opt-in via NPCs
+	# These cutscenes are still available but won't auto-trigger on map entry
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
+		for skip_flag in ["chapter5_complete", "chapter5_forest_entered", "chapter7_complete", "chapter8_complete", "chapter9_complete"]:
+			if not flags.get("cutscene_flag_" + skip_flag, false):
+				GameState.game_constants["cutscene_flag_" + skip_flag] = true
 
 	# ===== WORLD 2: THE MUNDANE SPRAWL (Suburban) =====
 	# W2 Prologue: portal arrival, gear transformation
@@ -743,39 +731,9 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_world6_chapter2_complete", false) and not flags.get("cutscene_flag_world6_chapter3_complete", false):
 		return "world6_chapter3"
 
-	# ===== GUIDANCE HINTS (fire when no story cutscene is pending) =====
-	# W1: point toward cave after chapter1
-	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_world1_guidance_cave_shown", false):
-		if _current_map_id == "harmonia_village":
-			return "world1_guidance_cave"
-	# W1: point toward forest after cave
-	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_guidance_forest_shown", false):
-		if _current_map_id == "harmonia_village":
-			return "world1_guidance_forest"
-	# W1: point toward capital after forest
-	if flags.get("cutscene_flag_chapter5_complete", false) and not flags.get("cutscene_flag_world1_guidance_capital_shown", false):
-		if _current_map_id == "harmonia_village":
-			return "world1_guidance_capital"
-	# W2: explore the neighborhood
-	if flags.get("cutscene_flag_world2_chapter1_complete", false) and not flags.get("cutscene_flag_world2_guidance_explore_shown", false):
-		if _current_map_id == "maple_heights_village":
-			return "world2_guidance_explore"
-	# W3: head toward the Mechanism
-	if flags.get("cutscene_flag_world3_chapter1_complete", false) and not flags.get("cutscene_flag_world3_guidance_mechanism_shown", false):
-		if _current_map_id == "brasston_village":
-			return "world3_guidance_mechanism"
-	# W4: find the Director
-	if flags.get("cutscene_flag_world4_chapter1_complete", false) and not flags.get("cutscene_flag_world4_guidance_director_shown", false):
-		if _current_map_id == "rivet_row_village":
-			return "world4_guidance_director"
-	# W5: navigate to the core
-	if flags.get("cutscene_flag_world5_chapter1_complete", false) and not flags.get("cutscene_flag_world5_guidance_core_shown", false):
-		if _current_map_id == "node_prime_village":
-			return "world5_guidance_core"
-	# W6: the question awaits
-	if flags.get("cutscene_flag_world6_chapter1_complete", false) and not flags.get("cutscene_flag_world6_guidance_question_shown", false):
-		if _current_map_id == "vertex_village":
-			return "world6_guidance_question"
+	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
+	# These were auto-triggering too aggressively. Guidance hints are now
+	# available via NPC dialogue hints instead of forced cutscenes.
 	return ""
 
 
