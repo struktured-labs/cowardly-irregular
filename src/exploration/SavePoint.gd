@@ -64,9 +64,10 @@ func _setup_collision() -> void:
 	monitoring = true
 
 	var col = CollisionShape2D.new()
-	var shape = CircleShape2D.new()
-	shape.radius = 24.0  # Generous interaction radius
+	var shape = RectangleShape2D.new()
+	shape.size = Vector2(48, 128)  # Tall rectangle — compensates for Mode 7 vertical compression
 	col.shape = shape
+	col.position = Vector2(0, -32)  # Shifted north for Mode 7 warp
 	add_child(col)
 
 
