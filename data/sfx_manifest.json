@@ -35,9 +35,10 @@
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
-      "prompt": "Single outdoor gunshot with long reverberating echo, pitched down 25% for deep bass, distant rifle fired in mountains",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "source": "sox_synth",
+      "prompt": "Very short muffled pop — 35ms pink noise burst, double lowpass stacked at 600Hz then 450Hz, highpass 100Hz, -20 LUFS. Soft button tap not a gunshot.",
+      "duration_seconds": 0.035,
+      "prompt_influence": 0.0
     },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
