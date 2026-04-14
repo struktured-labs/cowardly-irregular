@@ -1599,6 +1599,18 @@
       "duration": 4.6,
       "loop": true,
       "generated_at": "2026-04-13"
+    },
+    "dungeon_dragon_fire": {
+      "file": "assets/audio/music/dungeon_dragon_fire.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Ember Depths",
+      "prompt": "Volcanic dragon cave dungeon theme. Deep rumbling bass like magma flowing beneath stone, smoldering string tremolo, oppressive heat in every note. Flickering fire crackle percussion, ominous brass swells. The deeper you go the hotter it gets. SNES-era dungeon atmosphere, tense and foreboding. Looping.",
+      "style": "SNES dungeon, volcanic, deep rumbling bass, smoldering strings, oppressive heat, minor key, 95 BPM",
+      "model": "suno-v4",
+      "duration": 183.6,
+      "loop": true,
+      "generated_at": "2026-04-13"
     }
   },
   "tier_priority": [
