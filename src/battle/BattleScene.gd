@@ -2934,18 +2934,21 @@ func _on_battle_log_message(message: String) -> void:
 func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 	"""Show a brief cocky one-liner before a big Advance combo"""
 	if turbo_mode:
-		return  # Skip in turbo/autogrind
-
-	var sprite = _get_combatant_sprite(combatant)
-	if not sprite or not is_instance_valid(sprite):
 		return
+	var sprite = _get_combatant_sprite(combatant)
+	if sprite and is_instance_valid(sprite):
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line)
+	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
+	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
 
-	# Speech bubble above the combatant
+
+func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5) -> void:
+	"""Show a speech bubble above a sprite — reused for quips, trash talk, encounter reactions"""
 	var bubble = PanelContainer.new()
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.0, 0.0, 0.0, 0.75)
-	style.border_color = Color(1.0, 0.85, 0.2)
+	style.border_color = border_color
 	style.border_width_top = 1
 	style.border_width_bottom = 1
 	style.border_width_left = 1
@@ -2974,16 +2977,11 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 	bubble.modulate.a = 0.0
 	add_child(bubble)
 
-	# Animate: pop in, hold, fade out
 	var tween = create_tween()
 	tween.tween_property(bubble, "modulate:a", 1.0, 0.15)
-	tween.tween_property(bubble, "position:y", bubble.position.y - 10, 0.8)
-	tween.parallel().tween_property(bubble, "modulate:a", 0.0, 0.3).set_delay(1.2)
+	tween.tween_property(bubble, "position:y", bubble.position.y - 10, hold_time * 0.5)
+	tween.parallel().tween_property(bubble, "modulate:a", 0.0, 0.3).set_delay(hold_time)
 	tween.tween_callback(bubble.queue_free)
-
-	# Log it too
-	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
-	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
 
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
@@ -3378,6 +3376,28 @@ const NEW_MONSTER_QUIPS: Dictionary = {
 	"cleric": ["What manner of creature...?", "I don't recognize this one.", "Be on guard — unknown threat!"],
 	"mage": ["Undocumented species! Taking notes.", "Ooh, a new specimen!", "No data on this one... exciting!"],
 	"rogue": ["That's new. I don't like new.", "No intel on this thing.", "Great, surprises."],
+	"bard": ["Ooh, inspiration!", "I've never written a verse about THAT.", "This'll make a great story!"],
+	"guardian": ["Unknown hostile — shields up!", "Unidentified. Stay behind me.", "New threat. Proceed with caution."],
+	"ninja": ["Hmm. Unfamiliar.", "No entry in the bestiary.", "...interesting."],
+	"summoner": ["The spirits don't recognize it either.", "A new entity... fascinating.", "What plane did YOU come from?"],
+	"speculator": ["No market data on this one.", "Unpriced asset. Could be valuable.", "Unknown risk profile."],
+}
+
+## Monster-specific encounter flavor text (shown alongside quips)
+const MONSTER_ENCOUNTER_TEXT: Dictionary = {
+	"slime": "A gelatinous blob jiggles menacingly.",
+	"bat": "Wings flutter in the darkness!",
+	"goblin": "The goblin snarls and brandishes a rusty blade.",
+	"wolf": "Piercing eyes gleam from the shadows.",
+	"spider": "Webs glisten as something skitters closer...",
+	"skeleton": "Bones rattle as the undead rises.",
+	"ghost": "The air turns cold. Something watches.",
+	"snake": "A sinuous shape coils to strike.",
+	"mushroom": "Spores drift lazily in the air...",
+	"imp": "Cackling laughter echoes from a tiny fireball.",
+	"troll": "The ground shakes with heavy footsteps.",
+	"cave_rat": "Beady eyes reflect what little light remains.",
+	"cave_rat_king": "A crown of refuse sits atop this massive rodent.",
 }
 
 const BRAVE_QUIPS: Dictionary = {
@@ -3429,7 +3449,21 @@ func _show_battle_quip() -> void:
 		return
 
 	var quip = quip_pool[randi() % quip_pool.size()]
+
+	# Show monster-specific encounter flavor text first
+	if has_new:
+		var dominant = _get_dominant_monster_type()
+		if dominant in MONSTER_ENCOUNTER_TEXT:
+			log_message("[color=gray][i]%s[/i][/color]" % MONSTER_ENCOUNTER_TEXT[dominant])
+
 	log_message("[color=#88ccff]%s:[/color] \"%s\"" % [speaker.combatant_name, quip])
+
+	# Show as visible speech bubble above the speaker's sprite
+	if not turbo_mode:
+		var sprite = _get_combatant_sprite(speaker)
+		if sprite and is_instance_valid(sprite):
+			var border = Color(0.5, 0.8, 1.0) if has_new else Color(1.0, 0.85, 0.2)
+			_spawn_quip_bubble(sprite, speaker.combatant_name, quip, border, 2.0 if has_new else 1.5)
 
 func show_brave_quip(combatant: Combatant, action_count: int) -> void:
 	"""Show a quip when a character queues 3+ brave actions."""
