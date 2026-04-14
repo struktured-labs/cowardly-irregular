@@ -262,6 +262,8 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 	flash.size = Vector2(flash_size, flash_size)
 	flash.position = Vector2(-flash_size / 2, -flash_size / 2)
 	flash.color = Color(1.0, 0.6, 0.0, 0.0)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash.visible = false  # Hidden until tween starts — prevents 1-frame flash
 	effect.add_child(flash)
 
 	# Screen shake scales with power
@@ -291,8 +293,9 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Flash intensity scales with power
+	# Flash intensity scales with power — show on first frame of tween
 	var flash_alpha = lerp(0.4, 0.8, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	tween.tween_callback(func(): flash.visible = true)
 	tween.tween_property(flash, "color:a", flash_alpha, 0.05)
 	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.05)
 
@@ -523,8 +526,9 @@ func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Intense flash - alpha scales with power
+	# Intense flash - alpha scales with power — show on first frame of tween
 	var flash_alpha = lerp(0.6, 1.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	tween.tween_callback(func(): flash.visible = true)
 	tween.tween_property(flash, "color:a", flash_alpha, 0.03)
 	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.03)
 
