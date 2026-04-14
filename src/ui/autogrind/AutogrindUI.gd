@@ -1503,13 +1503,12 @@ func _toggle_grinding() -> void:
 		# Persist current rules to AutogrindSystem so the controller evaluates them
 		AutogrindSystem.set_autogrind_rules(rules.duplicate(true))
 		_is_grinding = true
-		var config = _get_grind_config()
-		grind_requested.emit(config)
 		_log_message("[color=lime]Autogrind started![/color]")
-		# Don't show the full-screen monitor at start — Tier 1 (ACCELERATED) shows
-		# full-screen battles. The monitor/dashboard is managed by tier switching.
-		# Hide the config UI so battles are visible.
+		# Hide config UI FIRST, then start grinding on next frame
 		visible = false
+		var config = _get_grind_config()
+		await get_tree().process_frame
+		grind_requested.emit(config)
 
 	_build_ui()
 	SoundManager.play_ui("menu_select")

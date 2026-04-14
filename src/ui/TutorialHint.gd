@@ -110,12 +110,9 @@ func _dismiss() -> void:
 		hint_dismissed.emit(_current_hint_id)
 		return
 
-	var tween = create_tween()
-	tween.tween_property(_panel, "position:y", -80.0, 0.3)
-	await tween.finished
-	if is_instance_valid(self):
-		visible = false
-		hint_dismissed.emit(_current_hint_id)
+	# Fast dismiss — no slow animation, just vanish instantly
+	visible = false
+	hint_dismissed.emit(_current_hint_id)
 	_current_hint_id = ""
 
 
