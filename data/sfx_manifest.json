@@ -35,9 +35,10 @@
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
-      "prompt": "Single outdoor gunshot with long reverberating echo, pitched down 25% for deep bass, distant rifle fired in mountains",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "source": "elevenlabs_post",
+      "prompt": "Toned-down gunshot with gamey chorus + phaser + multi-tap reverb: 4:1 compressor + 3.2kHz lowpass, then 2-voice chorus (50/70ms, different sweep speeds), phaser sweep, soft tanh saturation, 4-tap decaying reverb (50/110/200/320ms). -19 LUFS. ~2s total.",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.0
     },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
