@@ -17,6 +17,27 @@ var _current_text: String = ""
 var _displayed_chars: int = 0
 var _typing_timer: Timer
 
+## Voice blip playback (Undertale-style per-character typing sound)
+var _voice_blip_player: AudioStreamPlayer = null
+var _voice_blip_stream: AudioStream = null
+var _voice_blip_speaker_key: String = ""
+const VOICE_BLIP_DIR := "res://assets/audio/sfx/"
+const VOICE_BLIP_EVERY_N_CHARS := 3
+const VOICE_BLIP_FALLBACK := "voice_blip_default"
+static var _voice_blip_stream_cache: Dictionary = {}
+static var _voice_blip_missing: Dictionary = {}
+
+## Alias map: cutscene theme/portrait keys that don't map 1:1 to a file.
+## Left side is the value parsed from entry.theme/entry.portrait, right is the
+## <id> part of voice_blip_<id>.ogg. Anything unmapped uses its raw key.
+const VOICE_BLIP_ALIASES := {
+	"narrator": "narrator",
+	"elder": "theron",
+	"scholar": "scholar",
+	"shopkeeper": "generic_npc",
+	"villager": "generic_npc",
+}
+
 ## UI Elements
 var _background: ColorRect
 var _dialogue_box: Control
@@ -180,6 +201,68 @@ func _setup_typing_timer() -> void:
 	_typing_timer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_typing_timer.timeout.connect(_on_typing_tick)
 	add_child(_typing_timer)
+
+	# Dedicated stream player for voice blips — bypasses SoundManager
+	# cooldown so rapid per-character beeps play cleanly.
+	_voice_blip_player = AudioStreamPlayer.new()
+	_voice_blip_player.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
+	_voice_blip_player.volume_db = -6.0
+	_voice_blip_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_voice_blip_player)
+
+
+func _resolve_voice_blip_key(portrait_type: String, theme_name: String) -> String:
+	"""Pick the voice blip id for the given speaker. Priority:
+	  1. VOICE_BLIP_ALIASES lookup on portrait_type then theme_name
+	  2. raw portrait_type
+	  3. raw theme_name
+	  4. VOICE_BLIP_FALLBACK"""
+	if VOICE_BLIP_ALIASES.has(portrait_type):
+		return VOICE_BLIP_ALIASES[portrait_type]
+	if VOICE_BLIP_ALIASES.has(theme_name):
+		return VOICE_BLIP_ALIASES[theme_name]
+	if portrait_type != "":
+		return portrait_type
+	if theme_name != "":
+		return theme_name
+	return VOICE_BLIP_FALLBACK
+
+
+func _load_voice_blip(speaker_key: String) -> void:
+	"""Load and cache the voice blip stream for a speaker. Falls back to
+	VOICE_BLIP_FALLBACK if the speaker-specific file is missing."""
+	if speaker_key == _voice_blip_speaker_key and _voice_blip_stream != null:
+		return
+	_voice_blip_speaker_key = speaker_key
+	_voice_blip_stream = _load_voice_blip_stream(speaker_key)
+	if _voice_blip_stream == null and speaker_key != VOICE_BLIP_FALLBACK:
+		_voice_blip_stream = _load_voice_blip_stream(VOICE_BLIP_FALLBACK)
+
+
+static func _load_voice_blip_stream(key: String) -> AudioStream:
+	if _voice_blip_stream_cache.has(key):
+		return _voice_blip_stream_cache[key]
+	if _voice_blip_missing.get(key, false):
+		return null
+	var path := VOICE_BLIP_DIR + "voice_blip_" + key + ".ogg"
+	if not ResourceLoader.exists(path):
+		_voice_blip_missing[key] = true
+		return null
+	var stream := load(path) as AudioStream
+	_voice_blip_stream_cache[key] = stream
+	return stream
+
+
+func _play_voice_blip() -> void:
+	if _voice_blip_stream == null or _voice_blip_player == null:
+		# Graceful fallback when no clips are installed yet — matches
+		# the prior menu_move tick so typing still has audible feedback.
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+		return
+	_voice_blip_player.stream = _voice_blip_stream
+	_voice_blip_player.pitch_scale = randf_range(0.9, 1.1)
+	_voice_blip_player.play()
 
 
 func _build_ui() -> void:
@@ -367,6 +450,9 @@ func _show_current_line() -> void:
 	# Apply expression tint to portrait
 	_portrait_image.modulate = EXPRESSION_TINTS.get(expression, Color.WHITE)
 
+	# Load voice blip for this speaker
+	_load_voice_blip(_resolve_voice_blip_key(portrait_type, theme_name))
+
 	# Hide portrait frame for narrator (no-portrait mode)
 	var hide_portrait = entry.get("hide_portrait", false)
 	if portrait_type == "narrator" and entry.get("speaker", "") == "":
@@ -400,10 +486,26 @@ func _on_typing_tick() -> void:
 		_displayed_chars += 1
 		_text_label.text = _current_text.substr(0, _displayed_chars)
 
-		if _displayed_chars % 3 == 0 and SoundManager:
-			SoundManager.play_ui("menu_move")
+		# Voice blip every N non-whitespace characters — skip spaces and
+		# punctuation so pauses feel natural (Undertale style).
+		if _displayed_chars % VOICE_BLIP_EVERY_N_CHARS == 0:
+			var ch := _current_text.substr(_displayed_chars - 1, 1)
+			if _is_voiced_char(ch):
+				_play_voice_blip()
 	else:
 		_finish_typing()
+
+
+static func _is_voiced_char(ch: String) -> bool:
+	if ch.is_empty():
+		return false
+	# Alphanumeric (including accented) = voiced; whitespace/punctuation = silent
+	var c := ch.unicode_at(0)
+	if c >= 0x30 and c <= 0x39: return true   # 0-9
+	if c >= 0x41 and c <= 0x5A: return true   # A-Z
+	if c >= 0x61 and c <= 0x7A: return true   # a-z
+	if c > 0x7F: return true                  # non-ASCII letters (é, ñ, etc.)
+	return false
 
 
 func _finish_typing() -> void:
