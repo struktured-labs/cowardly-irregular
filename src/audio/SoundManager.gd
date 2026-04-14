@@ -68,7 +68,7 @@ const SOUNDS = {
 	"attack_miss": {"freq": 150, "duration": 0.15, "type": "swoosh"},
 	"critical_hit": {"freq": 250, "duration": 0.2, "type": "impact"},
 	"damage_taken": {"freq": 180, "duration": 0.1, "type": "thud"},
-	"enemy_death": {"freq": 180, "duration": 0.35, "type": "dying_fall"},
+	"enemy_death": {"freq": 1200, "duration": 0.5, "type": "vanish_shimmer"},
 	"heal": {"freq": 800, "duration": 0.3, "type": "sparkle"},
 	"buff": {"freq": 600, "duration": 0.25, "type": "ascending"},
 	"debuff": {"freq": 400, "duration": 0.25, "type": "descending"},
@@ -461,6 +461,8 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 			_generate_heal(playback, samples, freq, sample_rate, duration)
 		"dying_fall":
 			_generate_dying_fall(playback, samples, freq, sample_rate, duration)
+		"vanish_shimmer":
+			_generate_vanish_shimmer(playback, samples, freq, sample_rate, duration)
 		"woozy":
 			_generate_woozy(playback, samples, freq, sample_rate, duration)
 		"crackle_lock":
@@ -773,6 +775,23 @@ func _generate_dying_fall(playback: AudioStreamGeneratorPlayback, samples: int, 
 		var noise = randf_range(-0.3, 0.3) * max(0.0, 1.0 - t * 6.0)
 		var sample = (square + noise) * envelope
 		playback.push_frame(Vector2(sample, sample) * 0.35)
+
+
+func _generate_vanish_shimmer(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""FF-style monster vanish: soft high-pitched shimmer that fades to silence"""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Gentle pitch rise then fade
+		var f = freq * (1.0 + progress * 0.3)
+		# Soft sine with slight detuned harmonic for shimmer
+		var sine1 = sin(t * f * TAU) * 0.3
+		var sine2 = sin(t * f * 1.5 * TAU) * 0.15
+		var sine3 = sin(t * f * 2.01 * TAU) * 0.08
+		# Quick fade envelope — sharp start, smooth decay
+		var envelope = pow(1.0 - progress, 2.5) * min(1.0, t * 40.0)
+		var sample = (sine1 + sine2 + sine3) * envelope
+		playback.push_frame(Vector2(sample, sample) * 0.3)
 
 
 func _generate_woozy(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
