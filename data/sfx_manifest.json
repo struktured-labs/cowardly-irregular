@@ -181,9 +181,15 @@
     },
     "enemy_death": {
       "file": "assets/audio/sfx/enemy_death.ogg",
-      "prompt": "Monster dissolving into particles, crackling disintegration with a descending whoosh, defeated enemy vanishing",
+      "prompt": "Gentle organic scorch with a wispy smoke plume, soft ember sizzle as flesh quietly combusts into vapor, warm crackling dissolve with breath-like tail, natural living-thing unraveling into air, no bass no tones",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.4
+    },
+    "enemy_death_industrial": {
+      "file": "assets/audio/sfx/enemy_death_industrial.ogg",
+      "prompt": "Short muffled combustion with a dry fabric ripping tear, crunchy mid-range crackle, paper or cloth being torn apart combined with a soft smothered woof, dry grit and tear texture, minimal bass, no tones, gritty dissolve",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.4
     },
     "victory_stinger": {
       "file": "assets/audio/sfx/victory_stinger.ogg",
