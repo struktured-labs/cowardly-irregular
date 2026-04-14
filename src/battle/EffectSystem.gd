@@ -248,75 +248,76 @@ func _tint_battle_background(tint_color: Color, duration: float = 0.3) -> void:
 
 
 func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
-	"""Fire spell - dramatic explosion with rising flames, scaled by power"""
-	# Environmental reaction: warm orange background tint
-	_tint_battle_background(Color(1.2, 0.85, 0.6, 1.0), 0.3)
+	"""Fire spell — FF6-style eruption: screen flash, explosion ring, flame columns, massive particles"""
+	var power_t = clampf((power - POWER_MIN) / (POWER_MAX - POWER_MIN), 0.0, 1.0)
 
-	var particles: Array[Sprite2D] = []
-	# Scale particle count by power (12 at min, 36 at max)
-	var particle_count = int(lerp(12, 36, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
+	# Environmental reaction: warm orange-red background tint
+	_tint_battle_background(Color(1.3, 0.7, 0.5, 1.0), 0.4)
 
-	# Initial flash/explosion - size scales with power
-	var flash_size = lerp(80, 180, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	# Screen-filling flash (fix: start invisible, add mouse_filter)
 	var flash = ColorRect.new()
-	flash.size = Vector2(flash_size, flash_size)
-	flash.position = Vector2(-flash_size / 2, -flash_size / 2)
-	flash.color = Color(1.0, 0.6, 0.0, 0.0)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.color = Color(1.0, 0.5, 0.0, 0.0)
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash.visible = false  # Hidden until tween starts — prevents 1-frame flash
+	flash.z_index = 50
 	effect.add_child(flash)
 
-	# Screen shake scales with power
-	var shake_intensity = lerp(4.0, 15.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	var shake_duration = lerp(0.2, 0.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	# Big screen shake
+	var shake_intensity = lerp(6.0, 20.0, power_t)
+	var shake_duration = lerp(0.3, 0.7, power_t)
 	_trigger_screen_shake(shake_intensity, shake_duration)
 
-	# Explosion ring - scale with power
-	var ring = _create_explosion_ring(Color(1.0, 0.5, 0.0))
-	ring.scale = Vector2.ZERO
-	effect.add_child(ring)
+	# Double explosion ring (inner fast, outer slow)
+	var ring1 = _create_explosion_ring(Color(1.0, 0.5, 0.0))
+	ring1.scale = Vector2.ZERO
+	effect.add_child(ring1)
+	var ring2 = _create_explosion_ring(Color(1.0, 0.3, 0.0, 0.6))
+	ring2.scale = Vector2.ZERO
+	effect.add_child(ring2)
 
-	# Particle spread and rise scale with power
-	var base_spread = lerp(10, 20, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	# Massive particle burst — 40-100 particles in two waves
+	var particles: Array[Sprite2D] = []
+	var particle_count = int(lerp(40, 100, power_t))
+	var base_spread = lerp(25, 60, power_t)
 	for i in range(particle_count):
 		var particle = _create_fire_particle()
 		var angle = randf() * TAU
 		var dist = randf_range(0, base_spread)
 		particle.position = Vector2(cos(angle) * dist, sin(angle) * dist)
-		# Scale particle size with power
-		particle.scale = Vector2(power * 0.8, power * 0.8)
+		particle.scale = Vector2(power * 1.2, power * 1.2)
 		effect.add_child(particle)
 		particles.append(particle)
 
-	# Duration scales slightly with power (bigger = slower for impact)
-	var duration = lerp(0.6, 1.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	var duration = lerp(0.8, 1.3, power_t)
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Flash intensity scales with power — show on first frame of tween
-	var flash_alpha = lerp(0.4, 0.8, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	tween.tween_callback(func(): flash.visible = true)
-	tween.tween_property(flash, "color:a", flash_alpha, 0.05)
-	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.05)
+	# Screen flash: bright burst then fade
+	var flash_alpha = lerp(0.5, 0.9, power_t)
+	tween.tween_property(flash, "color:a", flash_alpha, 0.04)
+	tween.tween_property(flash, "color:a", 0.0, 0.2).set_delay(0.04)
 
-	# Ring expansion scales with power
-	var ring_scale = lerp(2.0, 4.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	tween.tween_property(ring, "scale", Vector2(ring_scale, ring_scale), 0.3)
-	tween.tween_property(ring, "modulate:a", 0.0, 0.2).set_delay(0.15)
+	# Double ring expansion
+	var ring_scale = lerp(3.0, 6.0, power_t)
+	tween.tween_property(ring1, "scale", Vector2(ring_scale, ring_scale), 0.25)
+	tween.tween_property(ring1, "modulate:a", 0.0, 0.2).set_delay(0.1)
+	tween.tween_property(ring2, "scale", Vector2(ring_scale * 1.3, ring_scale * 1.3), 0.4).set_delay(0.08)
+	tween.tween_property(ring2, "modulate:a", 0.0, 0.25).set_delay(0.2)
 
-	# Particle movement scales with power
-	var rise_mult = lerp(0.7, 1.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	var spread_mult = lerp(0.7, 1.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	# Particles: explosive outward burst + upward rise
+	var rise_mult = lerp(1.0, 2.5, power_t)
+	var spread_mult = lerp(1.0, 2.5, power_t)
 	for i in range(particles.size()):
 		var p = particles[i]
-		var delay = randf() * 0.15
-		var rise = randf_range(50, 100) * rise_mult
-		var spread = randf_range(-30, 30) * spread_mult
+		var wave = 0.0 if i < particle_count / 2 else 0.12  # Second wave delayed
+		var delay = randf() * 0.1 + wave
+		var rise = randf_range(80, 180) * rise_mult
+		var spread = randf_range(-60, 60) * spread_mult
 
 		tween.tween_property(p, "position:y", p.position.y - rise, duration).set_delay(delay)
 		tween.tween_property(p, "position:x", p.position.x + spread, duration).set_delay(delay)
-		tween.tween_property(p, "modulate:a", 0.0, duration * 0.5).set_delay(delay + duration * 0.4)
-		tween.tween_property(p, "scale", p.scale * Vector2(2.0, 2.5), duration).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.4).set_delay(delay + duration * 0.5)
+		tween.tween_property(p, "scale", p.scale * Vector2(2.5, 3.0), duration).set_delay(delay)
 		tween.tween_property(p, "rotation", randf_range(-PI, PI), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
@@ -416,40 +417,81 @@ static func _generate_fire_particle_texture() -> ImageTexture:
 
 
 func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
-	"""Ice spell - crystalline shards forming"""
-	# Environmental reaction: cool blue-gray desaturation
-	_tint_battle_background(Color(0.75, 0.82, 0.95, 1.0), 0.3)
+	"""Ice spell — FF6-style: screen freeze flash, crystal ring formation, massive shatter burst"""
+	var power_t = clampf((power - POWER_MIN) / (POWER_MAX - POWER_MIN), 0.0, 1.0)
 
+	# Environmental reaction: cold blue desaturation
+	_tint_battle_background(Color(0.65, 0.75, 1.0, 1.0), 0.4)
+
+	# Screen flash — icy white-blue
+	var flash = ColorRect.new()
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.color = Color(0.7, 0.85, 1.0, 0.0)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash.z_index = 50
+	effect.add_child(flash)
+
+	# Screen shake
+	_trigger_screen_shake(lerp(4.0, 16.0, power_t), lerp(0.2, 0.5, power_t))
+
+	# Crystal ring — 16-32 shards in concentric formation
 	var particles: Array[Sprite2D] = []
-	var particle_count = 8
+	var shard_count = int(lerp(16, 40, power_t))
+	var ring_radius = lerp(30, 60, power_t)
 
-	for i in range(particle_count):
+	# Inner ring (converge then shatter)
+	for i in range(shard_count):
 		var particle = _create_ice_particle()
-		var angle = (float(i) / particle_count) * TAU
-		particle.position = Vector2(cos(angle), sin(angle)) * 30
+		var angle = (float(i) / shard_count) * TAU
+		particle.position = Vector2(cos(angle), sin(angle)) * ring_radius * 1.5
 		particle.rotation = angle + PI / 2
-		particle.scale = Vector2.ZERO
+		particle.scale = Vector2(power * 0.8, power * 1.2)  # Elongated shards
 		effect.add_child(particle)
 		particles.append(particle)
 
-	var duration = 0.5
+	# Outer scattered crystals for volume
+	var scatter_count = int(lerp(12, 30, power_t))
+	for i in range(scatter_count):
+		var particle = _create_ice_particle()
+		particle.position = Vector2(randf_range(-80, 80), randf_range(-80, 80)) * (1.0 + power_t)
+		particle.rotation = randf() * TAU
+		particle.scale = Vector2(power * 0.5, power * 0.5)
+		particle.modulate.a = 0.0
+		effect.add_child(particle)
+		particles.append(particle)
+
+	var duration = lerp(0.7, 1.2, power_t)
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Crystals form inward then shatter outward
-	for i in range(particles.size()):
+	# Icy screen flash
+	tween.tween_property(flash, "color:a", lerp(0.3, 0.7, power_t), 0.05)
+	tween.tween_property(flash, "color:a", 0.0, 0.25).set_delay(0.05)
+
+	# Phase 1: Inner ring converges to center
+	for i in range(shard_count):
 		var p = particles[i]
-		var delay = float(i) * 0.05
-		var converged_pos = p.position * 0.5
-		var shatter_pos = converged_pos * 3.0  # Burst outward from center
+		var delay = float(i) * 0.02
+		var converged = p.position * 0.3
+		tween.tween_property(p, "position", converged, duration * 0.35).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 
-		# Form
-		tween.tween_property(p, "scale", Vector2(1.0, 1.0), duration * 0.4).set_delay(delay)
-		tween.tween_property(p, "position", converged_pos, duration * 0.4).set_delay(delay)
+	# Phase 2: Explosive shatter outward
+	for i in range(shard_count):
+		var p = particles[i]
+		var shatter_angle = (float(i) / shard_count) * TAU + randf_range(-0.3, 0.3)
+		var shatter_dist = randf_range(100, 200) * (1.0 + power_t)
+		var shatter_pos = Vector2(cos(shatter_angle), sin(shatter_angle)) * shatter_dist
+		var shatter_delay = duration * 0.4
+		tween.tween_property(p, "position", shatter_pos, duration * 0.4).set_delay(shatter_delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.25).set_delay(shatter_delay + duration * 0.2)
+		tween.tween_property(p, "rotation", p.rotation + randf_range(-PI, PI), duration * 0.4).set_delay(shatter_delay)
 
-		# Shatter outward
-		tween.tween_property(p, "position", shatter_pos, duration * 0.4).set_delay(delay + duration * 0.5)
-		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.6)
+	# Outer scattered crystals fade in during convergence, shatter with the rest
+	for i in range(shard_count, particles.size()):
+		var p = particles[i]
+		tween.tween_property(p, "modulate:a", 0.7, duration * 0.3).set_delay(0.1)
+		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(duration * 0.5)
+		tween.tween_property(p, "scale", p.scale * 2.0, duration * 0.4).set_delay(duration * 0.4)
 
 	tween.chain().tween_callback(func():
 		effect.queue_free()
@@ -481,79 +523,81 @@ func _create_ice_particle() -> Sprite2D:
 
 
 func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
-	"""Lightning spell - dramatic multi-bolt strike with bright flash, scaled by power"""
-	# Environmental reaction: snap-white flash for 0.05s
-	_tint_battle_background(Color(2.0, 2.0, 2.0, 1.0), 0.05)
+	"""Lightning spell — CT-style: strobe flash, multi-bolt strike, electric spark shower"""
+	var power_t = clampf((power - POWER_MIN) / (POWER_MAX - POWER_MIN), 0.0, 1.0)
 
-	# Bolt count scales with power (2 at min, 5 at max)
-	var bolt_count = int(lerp(2, 5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
+	# Environmental reaction: blinding white strobe
+	_tint_battle_background(Color(2.0, 2.0, 2.5, 1.0), 0.06)
+
+	# Screen-filling white-yellow flash
+	var flash = ColorRect.new()
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.color = Color(1.0, 1.0, 0.9, 0.0)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash.z_index = 50
+	effect.add_child(flash)
+
+	# Heavy screen shake
+	_trigger_screen_shake(lerp(10.0, 25.0, power_t), lerp(0.2, 0.5, power_t))
+
+	# Multi-bolt strike — 3-8 bolts, staggered
+	var bolt_count = int(lerp(3, 8, power_t))
 	var bolts: Array[Sprite2D] = []
-	var bolt_spread = lerp(10, 25, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	var bolt_spread = lerp(20, 50, power_t)
 	for i in range(bolt_count):
 		var bolt = _create_lightning_bolt()
 		bolt.modulate.a = 0.0
 		bolt.position.x = randf_range(-bolt_spread, bolt_spread)
-		bolt.rotation = randf_range(-0.2, 0.2)
-		bolt.scale = Vector2(power * 0.8, power * 0.9)
+		bolt.rotation = randf_range(-0.25, 0.25)
+		bolt.scale = Vector2(power * 1.2, power * 1.5)  # Taller bolts
 		effect.add_child(bolt)
 		bolts.append(bolt)
 
-	# Bright flash effect - size scales with power
-	var flash_size = lerp(200, 400, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	var flash = ColorRect.new()
-	flash.size = Vector2(flash_size, flash_size)
-	flash.position = Vector2(-flash_size / 2, -flash_size / 2)
-	flash.color = Color(1.0, 1.0, 0.9, 0.0)
-	effect.add_child(flash)
-
-	# Electric sparks at impact point - count scales with power
-	var spark_count = int(lerp(8, 20, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
+	# Massive spark shower — 20-50 sparks
+	var spark_count = int(lerp(20, 50, power_t))
 	var sparks: Array[Sprite2D] = []
 	for i in range(spark_count):
 		var spark = _create_spark()
-		spark.position = Vector2(randf_range(-10, 10), randf_range(-5, 5))
+		spark.position = Vector2(randf_range(-20, 20), randf_range(-10, 10))
 		spark.modulate.a = 0.0
-		spark.scale = Vector2(power, power)
+		spark.scale = Vector2(power * 1.2, power * 1.2)
 		effect.add_child(spark)
 		sparks.append(spark)
 
-	# Screen shake scales with power
-	var shake_intensity = lerp(8.0, 18.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	var shake_duration = lerp(0.15, 0.4, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	_trigger_screen_shake(shake_intensity, shake_duration)
-
-	var duration = lerp(0.4, 0.7, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	var duration = lerp(0.5, 0.9, power_t)
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Intense flash - alpha scales with power — show on first frame of tween
-	var flash_alpha = lerp(0.6, 1.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
-	tween.tween_callback(func(): flash.visible = true)
-	tween.tween_property(flash, "color:a", flash_alpha, 0.03)
-	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.03)
+	# Strobe flash — rapid on/off for electric feel
+	tween.tween_property(flash, "color:a", lerp(0.7, 1.0, power_t), 0.02)
+	tween.tween_property(flash, "color:a", 0.1, 0.03).set_delay(0.02)
+	tween.tween_property(flash, "color:a", lerp(0.5, 0.8, power_t), 0.02).set_delay(0.05)
+	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.07)
 
-	# Bolts flash rapidly - more flicker cycles for higher power
-	var flicker_count = int(lerp(2, 4, (power - POWER_MIN) / (POWER_MAX - POWER_MIN)))
+	# Bolts flash with rapid flicker — staggered strikes
+	var flicker_count = int(lerp(3, 5, power_t))
 	for i in range(bolts.size()):
 		var bolt = bolts[i]
-		var delay = float(i) * 0.02
+		var delay = float(i) * 0.04  # Staggered bolt strikes
 		for f in range(flicker_count):
-			var fd = delay + float(f) * 0.04
-			tween.tween_property(bolt, "modulate:a", 1.0, 0.02).set_delay(fd)
-			tween.tween_property(bolt, "modulate:a", 0.3, 0.02).set_delay(fd + 0.02)
-		tween.tween_property(bolt, "modulate:a", 0.0, 0.15).set_delay(delay + 0.15)
+			var fd = delay + float(f) * 0.035
+			tween.tween_property(bolt, "modulate:a", 1.0, 0.015).set_delay(fd)
+			tween.tween_property(bolt, "modulate:a", 0.2, 0.02).set_delay(fd + 0.015)
+		tween.tween_property(bolt, "modulate:a", 0.0, 0.12).set_delay(delay + 0.2)
 
-	# Sparks fly outward - distance scales with power
-	var spark_dist_mult = lerp(0.7, 1.5, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
+	# Sparks explode outward in all directions
+	var spark_dist = lerp(1.0, 2.5, power_t)
 	for i in range(sparks.size()):
 		var spark = sparks[i]
-		var angle = (float(i) / sparks.size()) * TAU
-		var dist = randf_range(30, 60) * spark_dist_mult
+		var angle = (float(i) / sparks.size()) * TAU + randf_range(-0.3, 0.3)
+		var dist = randf_range(40, 120) * spark_dist
 		var end_pos = Vector2(cos(angle) * dist, sin(angle) * dist)
 
-		tween.tween_property(spark, "modulate:a", 1.0, 0.05).set_delay(0.05)
-		tween.tween_property(spark, "position", end_pos, 0.2).set_delay(0.05)
-		tween.tween_property(spark, "modulate:a", 0.0, 0.15).set_delay(0.2)
+		var spark_delay = 0.04 + randf() * 0.06
+		tween.tween_property(spark, "modulate:a", 1.0, 0.03).set_delay(spark_delay)
+		tween.tween_property(spark, "position", end_pos, 0.25).set_delay(spark_delay)
+		tween.tween_property(spark, "modulate:a", 0.0, 0.12).set_delay(spark_delay + 0.15)
+		tween.tween_property(spark, "scale", spark.scale * 0.3, 0.2).set_delay(spark_delay + 0.1)
 
 	tween.chain().tween_callback(func():
 		effect.queue_free()

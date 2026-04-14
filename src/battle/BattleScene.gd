@@ -2189,6 +2189,12 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 		match group_type:
 			"limit_break":
 				SoundManager.play_battle("group_limit_break")
+				# Play job stinger for party leader on limit break
+				if participants.size() > 0 and participants[0] is Combatant:
+					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
+					var stinger_path = "res://assets/audio/music/job_%s_special.ogg" % job_id
+					if ResourceLoader.exists(stinger_path):
+						SoundManager.play_music("job_%s_special" % job_id)
 			"combo_magic":
 				SoundManager.play_battle("group_combo_magic")
 			_:
