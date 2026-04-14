@@ -2343,8 +2343,10 @@ func _stop_autogrind(reason: String) -> void:
 
 	print("[AUTOGRIND] Session stopped: %s" % reason)
 
-	# Return to exploration if UI is also closed
-	if not _autogrind_ui or not is_instance_valid(_autogrind_ui):
+	# If a BattleScene is still the active scene (grind stopped between/after a battle),
+	# tear it down and return to exploration. The AutogrindUI lives on its own CanvasLayer
+	# and is not indicative of the active scene — during a grind it stays instantiated but hidden.
+	if not _exploration_scene or not is_instance_valid(_exploration_scene):
 		_return_to_exploration()
 	else:
 		current_state = LoopState.EXPLORATION
@@ -2701,11 +2703,14 @@ func _on_grind_complete(reason: String) -> void:
 	# Reset engine speed
 	Engine.time_scale = 1.0
 
-	# Update UI
+	# Update UI state (hidden in background during a session)
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		_autogrind_ui.set_grinding(false)
-	else:
-		# If UI is closed, return to exploration
+
+	# If a BattleScene is still the active scene (rule-triggered stop between battles,
+	# pre_battle_check interrupt, party wipe, etc.), tear it down and return to exploration.
+	# Otherwise the player is stranded in an empty BattleScene with no enemies.
+	if not _exploration_scene or not is_instance_valid(_exploration_scene):
 		_return_to_exploration()
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
