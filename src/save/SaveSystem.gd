@@ -61,7 +61,10 @@ func save_game(slot: int = -1) -> bool:
 	# Gather save data
 	var save_data = _create_save_data()
 
-	# Add metadata
+	# Derive chapter + world from story flags (source of truth is
+	# GameState.game_constants — see src/save/ChapterTitles.gd).
+	var story := ChapterTitles.derive(GameState.game_constants if GameState else {})
+
 	save_data["metadata"] = {
 		"save_slot": slot,
 		"save_time": Time.get_unix_time_from_system(),
@@ -69,7 +72,10 @@ func save_game(slot: int = -1) -> bool:
 		"play_time": GameState.get_play_time() if GameState else 0.0,
 		"play_time_formatted": GameState.get_playtime_formatted() if GameState else "00:00:00",
 		"game_version": "0.1.0",
-		"chapter": GameState.current_chapter if GameState and "current_chapter" in GameState else 1,
+		"chapter": story.chapter,
+		"chapter_title": story.title,
+		"world": story.world,
+		"world_name": story.world_name,
 		"location_name": MapSystem.get_current_location_name() if MapSystem and MapSystem.has_method("get_current_location_name") else "Unknown",
 		"party_summary": _get_party_summary()
 	}
