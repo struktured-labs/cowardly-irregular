@@ -304,6 +304,8 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_chapter_title(step)
 		"boss_intro":
 			await _step_boss_intro(step)
+		"roll_credits":
+			await _step_roll_credits(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -637,6 +639,22 @@ func _step_boss_intro(step: Dictionary) -> void:
 	name_label.queue_free()
 	if title_label:
 		title_label.queue_free()
+
+
+func _step_roll_credits(step: Dictionary) -> void:
+	"""Play the full scrolling credits sequence.
+	Usage: {"type": "roll_credits", "world": 1, "music": "credits_medieval"}
+	The caller is expected to fade out any existing music / letterbox state
+	before issuing this step. Credits manage their own music if `music` is set."""
+	if _skipping:
+		return
+	var world: int = step.get("world", 0)
+	var music: String = step.get("music", "")
+	var CreditsScript = load("res://src/ui/CreditsSequence.gd")
+	var credits = CreditsScript.new()
+	add_child(credits)
+	await credits.play(world, music)
+	credits.queue_free()
 
 
 func _step_branch(step: Dictionary) -> void:
