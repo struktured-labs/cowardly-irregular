@@ -179,6 +179,11 @@
     {
       "type": "letterbox_out",
       "duration": 0.3
+    },
+    {
+      "type": "roll_credits",
+      "world": 4,
+      "music": "credits_industrial"
     }
   ]
 }

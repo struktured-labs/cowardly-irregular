@@ -242,6 +242,11 @@
     {
       "type": "letterbox_out",
       "duration": 0.3
+    },
+    {
+      "type": "roll_credits",
+      "world": 5,
+      "music": "credits_digital"
     }
   ]
 }
