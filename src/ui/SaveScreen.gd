@@ -10,6 +10,18 @@ signal load_completed(slot: int)
 
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 
+## Portrait PNG map — matches CutsceneDialogue's PORTRAIT_SPRITES so party
+## faces on save slots look the same as in dialogue. Unmapped jobs
+## (advanced/meta) auto-crop a bust from the job's idle sheet below.
+const PORTRAIT_PNGS := {
+	"fighter": "res://assets/sprites/portraits/fighter.png",
+	"cleric": "res://assets/sprites/portraits/cleric.png",
+	"mage": "res://assets/sprites/portraits/mage.png",
+	"rogue": "res://assets/sprites/portraits/rogue.png",
+	"bard": "res://assets/sprites/portraits/bard.png",
+}
+const SLOT_PORTRAIT_SIZE := 32
+
 ## Mode
 enum Mode { SAVE, LOAD }
 var current_mode: Mode = Mode.SAVE
@@ -68,7 +80,7 @@ func _build_ui() -> void:
 	add_child(title)
 
 	# Slot panels
-	var slot_height = 100
+	var slot_height = 120
 	var slot_width = vp_size.x - 64
 	var start_y = 60
 
@@ -171,14 +183,39 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	slot_label.add_theme_color_override("font_color", Color.YELLOW)
 	panel.add_child(slot_label)
 
-	# Chapter and location
-	var chapter = save_info.get("chapter", 1)
-	var location = save_info.get("location_name", "Unknown")
+	# World + Chapter name + location (derived from ChapterTitles)
+	var chapter := int(save_info.get("chapter", 0))
+	var chapter_title := String(save_info.get("chapter_title", ""))
+	var world_index := int(save_info.get("world", 1))
+	var world_name := String(save_info.get("world_name", ""))
+	var location := String(save_info.get("location_name", "Unknown"))
+
+	var story_line := ""
+	if world_name != "":
+		story_line = "W%d %s" % [world_index, world_name]
+	if chapter_title != "":
+		story_line += "  ·  Ch.%d  %s" % [chapter, chapter_title]
+	elif chapter > 0:
+		story_line += "  ·  Ch.%d" % chapter
+
+	var story_label = Label.new()
+	story_label.text = story_line
+	story_label.position = Vector2(80, 4)
+	story_label.size = Vector2(panel_size.x - 180, 16)
+	story_label.add_theme_font_size_override("font_size", 12)
+	story_label.add_theme_color_override("font_color", TEXT_COLOR)
+	story_label.clip_text = false
+	story_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	panel.add_child(story_label)
+
 	var loc_label = Label.new()
-	loc_label.text = "Ch.%d - %s" % [chapter, location]
-	loc_label.position = Vector2(80, 4)
-	loc_label.add_theme_font_size_override("font_size", 12)
-	loc_label.add_theme_color_override("font_color", TEXT_COLOR)
+	loc_label.text = location
+	loc_label.position = Vector2(80, 20)
+	loc_label.size = Vector2(panel_size.x - 180, 14)
+	loc_label.add_theme_font_size_override("font_size", 11)
+	loc_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	loc_label.clip_text = false
+	loc_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	panel.add_child(loc_label)
 
 	# Play time (right side)
@@ -203,15 +240,15 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 				date_label.text = "%s/%s %s:%s" % [ymd[1], ymd[2], hms[0], hms[1]]
 		else:
 			date_label.text = save_date.substr(0, 16)
-		date_label.position = Vector2(panel_size.x - 90, 20)
+		date_label.position = Vector2(panel_size.x - 90, 22)
 		date_label.add_theme_font_size_override("font_size", 10)
 		date_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(date_label)
 
-	# Party portraits and info
+	# Party portraits and info (pushed below the story + location rows)
 	var party_summary = save_info.get("party_summary", [])
 	var portrait_x = 16
-	var portrait_y = 28
+	var portrait_y = 44
 
 	for i in range(min(party_summary.size(), 4)):
 		var member = party_summary[i]
@@ -223,7 +260,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	if party_summary.is_empty():
 		var no_party = Label.new()
 		no_party.text = "(No party data)"
-		no_party.position = Vector2(16, 48)
+		no_party.position = Vector2(16, 56)
 		no_party.add_theme_font_size_override("font_size", 11)
 		no_party.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(no_party)
@@ -234,16 +271,8 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	var container = Control.new()
 	container.size = Vector2(130, 60)
 
-	# Portrait
-	var custom = null
-	var custom_data = member.get("customization", null)
-	if custom_data and custom_data is Dictionary:
-		# Would need to reconstruct CharacterCustomization from dict
-		# For now, pass null and show placeholder
-		pass
-
 	var job_id = member.get("job_id", "fighter")
-	var portrait = CharacterPortraitClass.new(custom, job_id, CharacterPortraitClass.PortraitSize.SMALL)
+	var portrait: Control = _make_slot_portrait(job_id)
 	portrait.position = Vector2(0, 0)
 	container.add_child(portrait)
 
@@ -473,3 +502,54 @@ func _close() -> void:
 	SoundManager.play_ui("menu_close")
 	closed.emit()
 	queue_free()
+
+
+func _make_slot_portrait(job_id: String) -> Control:
+	"""Portrait priority: dedicated PNG → auto-cropped bust from
+	assets/sprites/jobs/<id>/idle.png → procedural CharacterPortrait.
+	Matches CutsceneDialogue's resolution so save slots and dialogue
+	show the same face."""
+	var tex: Texture2D = null
+	var png_path: String = PORTRAIT_PNGS.get(job_id, "")
+	if png_path != "" and ResourceLoader.exists(png_path):
+		tex = load(png_path)
+	if tex == null:
+		tex = _bust_from_job_sheet(job_id)
+
+	if tex != null:
+		var rect := TextureRect.new()
+		rect.texture = tex
+		rect.size = Vector2(SLOT_PORTRAIT_SIZE, SLOT_PORTRAIT_SIZE)
+		rect.custom_minimum_size = rect.size
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		return rect
+
+	# Fallback: procedural
+	return CharacterPortraitClass.new(null, job_id, CharacterPortraitClass.PortraitSize.SMALL)
+
+
+static var _bust_cache: Dictionary = {}
+
+static func _bust_from_job_sheet(job_id: String) -> Texture2D:
+	if job_id.is_empty():
+		return null
+	if _bust_cache.has(job_id):
+		return _bust_cache[job_id]
+	var sheet_path := "res://assets/sprites/jobs/%s/idle.png" % job_id
+	if not ResourceLoader.exists(sheet_path):
+		_bust_cache[job_id] = null
+		return null
+	var sheet := load(sheet_path) as Texture2D
+	if sheet == null:
+		_bust_cache[job_id] = null
+		return null
+	var size: Vector2 = sheet.get_size()
+	var frame: int = int(size.y)
+	if frame <= 0:
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = sheet
+	atlas.region = Rect2(0, 0, frame, int(float(frame) * 0.55))
+	_bust_cache[job_id] = atlas
+	return atlas
