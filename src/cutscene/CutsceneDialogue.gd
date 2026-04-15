@@ -596,7 +596,7 @@ var _portrait_cache: Dictionary = {}
 
 
 func _create_portrait(portrait_type: String) -> Texture2D:
-	# Try loading artist sprite portrait first
+	# Try loading artist sprite portrait first (hand-crafted bust art)
 	var sprite_path = PORTRAIT_SPRITES.get(portrait_type, "")
 	if sprite_path != "":
 		if _portrait_cache.has(sprite_path):
@@ -606,6 +606,15 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 			if tex:
 				_portrait_cache[sprite_path] = tex
 				return tex
+
+	# Second: auto-cropped bust from the job's idle sprite sheet.
+	# Covers advanced + meta jobs (guardian, ninja, summoner, speculator,
+	# scriptweaver, time_mage, necromancer, bossbinder, skiptrotter) and
+	# any named speaker that matches a job id, without requiring hand-drawn
+	# portrait art first.
+	var bust = _create_bust_from_job_sheet(portrait_type)
+	if bust != null:
+		return bust
 
 	# Fallback to procedural portrait generation
 	var size = int(PORTRAIT_SIZE - 8)
@@ -639,6 +648,44 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 			_draw_narrator_portrait(img, size)
 
 	return ImageTexture.create_from_image(img)
+
+
+## Bust-crop helper: loads <job>/idle.png and crops the top ~55% of the
+## first frame so we get a head-and-shoulders shot sized for the
+## TextureRect's STRETCH_KEEP_ASPECT_CENTERED stretch mode. Returns null
+## when the job has no idle sheet (caller then falls back to procedural).
+const BUST_CROP_RATIO: float = 0.55
+
+func _create_bust_from_job_sheet(job_id: String) -> Texture2D:
+	if job_id.is_empty():
+		return null
+	var cache_key := "bust:" + job_id
+	if _portrait_cache.has(cache_key):
+		return _portrait_cache[cache_key]
+
+	var sheet_path := "res://assets/sprites/jobs/%s/idle.png" % job_id
+	if not ResourceLoader.exists(sheet_path):
+		_portrait_cache[cache_key] = null
+		return null
+
+	var sheet := load(sheet_path) as Texture2D
+	if sheet == null:
+		_portrait_cache[cache_key] = null
+		return null
+
+	# Frames are square in the canonical layout; use the sheet height as
+	# the frame dimension. First frame lives at x=0, y=0.
+	var size: Vector2 = sheet.get_size()
+	var frame: int = int(size.y)
+	if frame <= 0:
+		return null
+	var crop_h: int = int(float(frame) * BUST_CROP_RATIO)
+
+	var atlas := AtlasTexture.new()
+	atlas.atlas = sheet
+	atlas.region = Rect2(0, 0, frame, crop_h)
+	_portrait_cache[cache_key] = atlas
+	return atlas
 
 
 func _draw_fighter_portrait(img: Image, size: int) -> void:
