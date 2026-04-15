@@ -37,7 +37,7 @@ const BASE_MENU_OPTIONS = [
 	{"id": "abilities", "label": "Abilities", "enabled": true},
 	{"id": "autobattle", "label": "Autobattle", "enabled": true},
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
-	{"id": "cutscene_gallery", "label": "Cutscene Gallery", "enabled": true},
+	{"id": "cutscene_gallery", "label": "Theater", "enabled": true},
 	{"id": "bestiary", "label": "Bestiary", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
