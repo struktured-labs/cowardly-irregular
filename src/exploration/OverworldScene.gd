@@ -50,6 +50,7 @@ var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
 var _border_indicator: MapBorderIndicator
 var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
 
 
 func _ready() -> void:
@@ -97,6 +98,11 @@ func _ready() -> void:
 	add_child(_quest_tracker)
 	_quest_tracker.setup(self)
 
+	# Threat meter (monster proximity)
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
 	# Weather effects (rain, fog, etc.)
 	_weather = WeatherSystem.new()
 	add_child(_weather)
@@ -125,6 +131,9 @@ func _ready() -> void:
 	# Wandering NPCs on paths between towns
 	_place_wanderers()
 
+	# Treasure chests with loot
+	_place_treasure_chests()
+
 	# Ambient details (chimney smoke, campfire glow)
 	_place_ambient_effects()
 
@@ -148,6 +157,8 @@ func _process(_delta: float) -> void:
 			_zone_particles.update_position(player.position)
 		if _border_indicator:
 			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 	if _danger_zone:
 		_danger_zone.process(_delta)
 	if _quest_tracker:
@@ -623,6 +634,41 @@ func _place_village_markers() -> void:
 		marker.roof_color = v["roof"]
 		marker.position = pos
 		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	var chests = [
+		# Near Harmonia Village — early game help
+		{"id": "w1_village_potion", "pos": Vector2(10, 24), "type": "item", "item": "potion", "amount": 3},
+		{"id": "w1_village_gold", "pos": Vector2(12, 27), "type": "gold", "gold": 150},
+		# Forest path — reward for exploring north
+		{"id": "w1_forest_ether", "pos": Vector2(32, 8), "type": "item", "item": "ether", "amount": 2},
+		{"id": "w1_forest_antidote", "pos": Vector2(38, 12), "type": "item", "item": "antidote", "amount": 3},
+		# Near cave entrance — preparation supplies
+		{"id": "w1_cave_hipotion", "pos": Vector2(6, 20), "type": "item", "item": "hi_potion", "amount": 2},
+		# Central crossroads — off the beaten path
+		{"id": "w1_central_gold", "pos": Vector2(45, 18), "type": "gold", "gold": 300},
+		{"id": "w1_central_phoenix", "pos": Vector2(50, 30), "type": "item", "item": "phoenix_down", "amount": 1},
+		# Desert approach — dangerous territory reward
+		{"id": "w1_desert_elixir", "pos": Vector2(18, 48), "type": "item", "item": "elixir", "amount": 1},
+		# Near Ironhaven — endgame area
+		{"id": "w1_iron_gold", "pos": Vector2(80, 56), "type": "gold", "gold": 500},
+		# Swamp region — hidden reward
+		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
 
 
 func _place_ambient_effects() -> void:
