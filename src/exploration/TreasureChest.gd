@@ -37,9 +37,7 @@ func _ready() -> void:
 
 
 func _check_if_opened() -> void:
-	# Check GameState for opened chests (if implemented)
-	# For now, all chests start closed
-	_is_opened = false
+	_is_opened = GameState.get_story_flag("chest_" + chest_id)
 
 
 func _generate_sprite() -> void:
@@ -325,6 +323,7 @@ func interact(player: Node2D) -> void:
 
 func _open_chest(player: Node2D) -> void:
 	_is_opened = true
+	GameState.set_story_flag("chest_" + chest_id)
 
 	# Play sound
 	if SoundManager:
