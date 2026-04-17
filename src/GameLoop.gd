@@ -1038,10 +1038,10 @@ func _create_party() -> void:
 	# Get default customizations
 	var default_customs = CustomizationScript.create_default_party_with_script(CustomizationScript)
 
-	# Create Hero (Fighter / secondary: Rogue)
+	# Create Fighter (primary: Fighter / secondary: Rogue)
 	var hero = Combatant.new()
 	hero.initialize({
-		"name": "Hero",
+		"name": "Fighter",
 		"max_hp": 150,
 		"max_mp": 50,
 		"attack": 25,
@@ -1066,10 +1066,10 @@ func _create_party() -> void:
 	hero.add_item("phoenix_down", 1)
 	party.append(hero)
 
-	# Create Mira (Cleric / secondary: Bard)
+	# Create Cleric (primary: Cleric / secondary: Bard)
 	var mira = Combatant.new()
 	mira.initialize({
-		"name": "Mira",
+		"name": "Cleric",
 		"max_hp": 100,
 		"max_mp": 120,
 		"attack": 10,
@@ -1090,10 +1090,10 @@ func _create_party() -> void:
 	PassiveSystem.equip_passive(mira, "mp_boost")
 	party.append(mira)
 
-	# Create Zack (Rogue / secondary: Fighter)
-	var zack = Combatant.new()
-	zack.initialize({
-		"name": "Zack",
+	# Create Rogue (primary: Rogue / secondary: Fighter)
+	var rogue = Combatant.new()
+	rogue.initialize({
+		"name": "Rogue",
 		"max_hp": 90,
 		"max_mp": 40,
 		"attack": 18,
@@ -1114,10 +1114,10 @@ func _create_party() -> void:
 	PassiveSystem.equip_passive(zack, "speed_boost")
 	party.append(zack)
 
-	# Create Vex (Mage / secondary: Cleric)
+	# Create Mage (primary: Mage / secondary: Cleric)
 	var vex = Combatant.new()
 	vex.initialize({
-		"name": "Vex",
+		"name": "Mage",
 		"max_hp": 80,
 		"max_mp": 150,
 		"attack": 8,

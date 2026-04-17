@@ -487,10 +487,22 @@ func _get_clothes_color() -> Color:
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0  # Compensates for Mode 7 perspective foreshortening
+	shape.radius = 40.0  # Default for villages/interiors
 	collision.shape = shape
-	collision.position = Vector2(0, 0)  # Centered on NPC — no directional bias
+	collision.position = Vector2(0, 0)
 	add_child(collision)
+	# Enlarge for Mode 7 overworld after scene tree is ready
+	call_deferred("_adjust_collision_for_mode7", shape)
+
+
+func _adjust_collision_for_mode7(shape: CircleShape2D) -> void:
+	# Check if we're on a Mode 7 overworld by looking for Mode7Overlay in ancestors
+	var parent = get_parent()
+	while parent:
+		if parent.get("mode7_overlay") != null or parent.name.ends_with("Overworld"):
+			shape.radius = 128.0
+			return
+		parent = parent.get_parent()
 
 	# Set collision layer/mask for interaction
 	# Layer 4 = interactables (NPCs, signs, etc.) - detected by controller queries
