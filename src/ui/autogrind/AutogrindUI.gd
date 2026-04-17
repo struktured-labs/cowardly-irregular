@@ -170,6 +170,10 @@ var _ludicrous_speed_enabled: bool = false
 ## Auto-advance regions when cracked
 var _auto_advance_enabled: bool = true
 
+## Custom presets persistence
+const CUSTOM_PRESETS_PATH: String = "user://autogrind_presets.json"
+var _custom_presets: Array = []  # Array of {name, rules, ludicrous, permadeath, auto_advance}
+
 ## UI nodes
 var _grid_container: Control
 var _cursor: Control
@@ -188,6 +192,7 @@ var _rule_trigger_counts: Dictionary = {}
 
 
 func _ready() -> void:
+	_load_custom_presets()
 	call_deferred("_build_ui")
 
 
@@ -482,6 +487,33 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 			panel.add_child(row)
 			y += 24
 
+	# Custom presets
+	if _custom_presets.size() > 0:
+		y += 4
+		var presets_label = Label.new()
+		presets_label.text = "SAVED PRESETS"
+		presets_label.position = Vector2(8, y)
+		presets_label.add_theme_font_size_override("font_size", 10)
+		presets_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		panel.add_child(presets_label)
+		y += 14
+
+		for i in range(_custom_presets.size()):
+			var preset = _custom_presets[i]
+			var p_label = Label.new()
+			var rule_count = preset.get("rules", []).size()
+			var flags = ""
+			if preset.get("ludicrous", false):
+				flags += " LDC"
+			if preset.get("permadeath", false):
+				flags += " PD"
+			p_label.text = "[%d] %s (%dr%s)" % [i + 4, preset.get("name", "?"), rule_count, flags]
+			p_label.position = Vector2(12, y)
+			p_label.add_theme_font_size_override("font_size", 9)
+			p_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
+			panel.add_child(p_label)
+			y += 12
+
 	# Session history (last 5 sessions)
 	var history = AutogrindSystem.get_session_history()
 	if history.size() > 0:
@@ -577,7 +609,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "[Start/Select/+]: Begin Grind   [B]: Close   [X]: Ludicrous   [Y]: Resume   [1/2/3]: Presets"
+	footer.text = "[Start/+]: Grind  [B]: Close  [1/2/3]: Presets  [4-6]: Custom  [S]: Save  [D]: Del"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1261,6 +1293,26 @@ func _input(event: InputEvent) -> void:
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_3 and not event.is_echo():
 		_apply_preset("hardcore")
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_S and not event.is_echo():
+		_save_current_as_preset()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_4 and not event.is_echo():
+		_apply_custom_preset(0)
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_5 and not event.is_echo():
+		_apply_custom_preset(1)
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_6 and not event.is_echo():
+		_apply_custom_preset(2)
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_D and not event.is_echo():
+		_delete_last_custom_preset()
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
@@ -2148,3 +2200,105 @@ func set_grinding(active: bool) -> void:
 		_hide_monitor()
 		visible = true  # Show config UI again when grinding stops
 	_build_ui()
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## CUSTOM PRESET SAVE/LOAD
+## ═══════════════════════════════════════════════════════════════════════
+
+func _save_current_as_preset() -> void:
+	"""Save current rules as a custom preset (auto-named by slot)."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot save preset while grinding.[/color]")
+		return
+
+	if rules.is_empty():
+		_log_message("[color=yellow]No rules to save.[/color]")
+		return
+
+	var slot = _custom_presets.size()
+	if slot >= 6:
+		_log_message("[color=yellow]Max 6 custom presets. Delete one first ([D] key).[/color]")
+		return
+
+	var preset = {
+		"name": "Custom %d" % (slot + 1),
+		"rules": rules.duplicate(true),
+		"ludicrous": _ludicrous_speed_enabled,
+		"permadeath": _permadeath_staking_enabled,
+		"auto_advance": _auto_advance_enabled,
+	}
+	_custom_presets.append(preset)
+	_persist_custom_presets()
+
+	_log_message("[color=lime]Saved as '%s' (slot [%d])[/color]" % [preset["name"], slot + 4])
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _apply_custom_preset(index: int) -> void:
+	"""Apply a saved custom preset by index."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change preset while grinding.[/color]")
+		return
+
+	if index < 0 or index >= _custom_presets.size():
+		_log_message("[color=yellow]No custom preset in slot %d.[/color]" % (index + 4))
+		return
+
+	var preset = _custom_presets[index]
+	rules = preset["rules"].duplicate(true)
+	_ludicrous_speed_enabled = preset.get("ludicrous", false)
+	_permadeath_staking_enabled = preset.get("permadeath", false)
+	_auto_advance_enabled = preset.get("auto_advance", true)
+
+	if _permadeath_staking_enabled:
+		AutogrindSystem.enable_permadeath_staking(true)
+	else:
+		AutogrindSystem.enable_permadeath_staking(false)
+
+	_log_message("[color=cyan]Loaded preset: %s[/color]" % preset["name"])
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+func _delete_last_custom_preset() -> void:
+	"""Delete the most recent custom preset."""
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot delete preset while grinding.[/color]")
+		return
+
+	if _custom_presets.is_empty():
+		_log_message("[color=yellow]No custom presets to delete.[/color]")
+		return
+
+	var removed = _custom_presets.pop_back()
+	_persist_custom_presets()
+	_log_message("[color=yellow]Deleted preset: %s[/color]" % removed["name"])
+	_build_ui()
+	SoundManager.play_ui("menu_cancel")
+
+
+func _persist_custom_presets() -> void:
+	"""Save custom presets to user://"""
+	var file = FileAccess.open(CUSTOM_PRESETS_PATH, FileAccess.WRITE)
+	if not file:
+		push_warning("[AUTOGRIND] Could not save custom presets")
+		return
+	file.store_string(JSON.stringify(_custom_presets, "\t"))
+	file.close()
+
+
+func _load_custom_presets() -> void:
+	"""Load custom presets from user://"""
+	if not FileAccess.file_exists(CUSTOM_PRESETS_PATH):
+		return
+	var file = FileAccess.open(CUSTOM_PRESETS_PATH, FileAccess.READ)
+	if not file:
+		return
+	var text = file.get_as_text()
+	file.close()
+	var json = JSON.new()
+	if json.parse(text) == OK and json.data is Array:
+		_custom_presets = json.data
+		print("[AUTOGRIND] Loaded %d custom presets" % _custom_presets.size())

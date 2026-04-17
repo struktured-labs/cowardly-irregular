@@ -2341,6 +2341,9 @@ func _stop_autogrind(reason: String) -> void:
 	SoundManager.reset_corruption()
 	SoundManager.play_area_music(_current_map_id)
 
+	# Play interrupt SFX based on stop reason
+	_play_grind_stop_sfx(reason)
+
 	print("[AUTOGRIND] Session stopped: %s" % reason)
 
 	# If a BattleScene is still the active scene (grind stopped between/after a battle),
@@ -2648,6 +2651,23 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
 		SoundManager.set_corruption_intensity(corruption_norm)
 
+		# Monster adaptation feedback — warn when enemies level up
+		var adapt_level = AutogrindSystem.monster_adaptation_level
+		var adapt_battles = AutogrindSystem.battles_completed
+		# Adaptation thresholds: level 1 at 5 battles, level 2 at 10, level 3 at 20
+		if adapt_battles in [5, 10, 20]:
+			var adapt_msg = ""
+			if adapt_battles == 5:
+				adapt_msg = "[color=#ffaa44]Enemies are studying your patterns...[/color]"
+			elif adapt_battles == 10:
+				adapt_msg = "[color=#ff8844]Enemies have adapted! Stats +%.0f%%[/color]" % (adapt_level * 15)
+			elif adapt_battles == 20:
+				adapt_msg = "[color=#ff4444]FULLY ADAPTED! Enemies counter your strategies![/color]"
+			_autogrind_battle_summaries.append(adapt_msg)
+			if _autogrind_battle_summaries.size() > 50:
+				_autogrind_battle_summaries.remove_at(0)
+			SoundManager.play_ui("adaptation_warning")
+
 		# Milestone toast notifications
 		var battles = stats.get("battles_won", 0)
 		if battles in [10, 20, 30, 50, 100]:
@@ -2713,8 +2733,26 @@ func _on_grind_complete(reason: String) -> void:
 	if not _exploration_scene or not is_instance_valid(_exploration_scene):
 		_return_to_exploration()
 
+	# Play interrupt SFX based on stop reason
+	_play_grind_stop_sfx(reason)
+
 	print("[AUTOGRIND] Grind complete: %s" % reason)
 	_show_autogrind_summary(final_stats, reason)
+
+
+func _play_grind_stop_sfx(reason: String) -> void:
+	"""Play an appropriate sound effect for the autogrind stop reason."""
+	var reason_lower = reason.to_lower()
+	if "hp" in reason_lower or "health" in reason_lower:
+		SoundManager.play_ui("grind_stop_hp")
+	elif "died" in reason_lower or "death" in reason_lower or "dead" in reason_lower or "wipe" in reason_lower:
+		SoundManager.play_ui("grind_stop_death")
+	elif "corruption" in reason_lower or "collapse" in reason_lower:
+		SoundManager.play_ui("grind_stop_corruption")
+	elif "manual" in reason_lower:
+		SoundManager.play_ui("grind_stop_manual")
+	else:
+		SoundManager.play_ui("grind_stop_generic")
 
 
 func _show_autogrind_summary(stats: Dictionary, reason: String) -> void:
