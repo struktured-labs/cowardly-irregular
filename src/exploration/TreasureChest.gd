@@ -238,8 +238,8 @@ func _draw_chest(image: Image) -> void:
 
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE, TILE_SIZE)
+	var shape = CircleShape2D.new()
+	shape.radius = 128.0  # Compensates for Mode 7 perspective foreshortening
 	collision.shape = shape
 	add_child(collision)
 
@@ -372,7 +372,8 @@ func _open_chest(player: Node2D) -> void:
 	dialogue_label.text = contents_text
 
 	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
-	SoundManager.play_music("stinger_item_found")
+	# Play item found as a UI sound, not a music stinger — avoids music loop bug
+	SoundManager.play_ui("chest_open")
 
 	# Hide after delay
 	await get_tree().create_timer(2.0).timeout

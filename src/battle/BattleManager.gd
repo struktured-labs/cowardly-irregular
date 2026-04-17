@@ -1568,7 +1568,7 @@ func _execute_next_action() -> void:
 		await get_tree().process_frame
 	else:
 		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.4 / speed_scale  # 0.4s base (was 0.7s), scales with battle speed
+		var delay = 0.2 / speed_scale  # 0.2s base — snappy at all speeds
 		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return
@@ -1667,7 +1667,7 @@ func _execute_group_action(action: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.4 / speed_scale
+		var delay = 0.2 / speed_scale
 		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return

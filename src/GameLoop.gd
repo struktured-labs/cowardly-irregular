@@ -630,6 +630,10 @@ func _on_title_new_game() -> void:
 	# Wait for title screen to actually be removed before starting
 	await get_tree().process_frame
 	await get_tree().process_frame
+	# Clear autobattle state for new game — default to manual combat
+	AutobattleSystem.autobattle_enabled.clear()
+	AutobattleSystem.cancel_all_next_turn = false
+	BattleManager.is_autobattle_enabled = false
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
 	# Go straight to exploration — prologue triggers on first Theron interaction
