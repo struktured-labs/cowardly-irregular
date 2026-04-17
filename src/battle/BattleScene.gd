@@ -2372,6 +2372,28 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			if t_sprite:
 				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, t_sprite.global_position)
 
+	# Safety net: force-reset all party sprites to home positions after rush animations
+	# This catches any case where a return-home tween gets interrupted or killed
+	if group_type in ["all_out_attack", "combo_magic", "limit_break", "formation"]:
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if not is_instance_valid(self): return
+			_snap_party_sprites_home()
+		)
+
+
+func _snap_party_sprites_home() -> void:
+	"""Force all party sprites to their stored home positions — safety net after group attacks"""
+	for i in range(party_sprite_nodes.size()):
+		var sprite = party_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		if sprite.has_meta("home_position"):
+			var home = sprite.get_meta("home_position")
+			# Only snap if significantly displaced (>20px from home)
+			if sprite.position.distance_to(home) > 20:
+				var tween = create_tween()
+				tween.tween_property(sprite, "position", home, 0.15).set_trans(Tween.TRANS_CUBIC)
+
 
 func _try_play_formation_sfx(formation_key: String) -> bool:
 	"""Try to play a formation-specific SFX. Returns true if found in manifest."""
