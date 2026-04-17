@@ -486,10 +486,10 @@ func _get_clothes_color() -> Color:
 
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(64, 160)  # Wide + very tall — compensates for Mode 7 vertical compression
+	var shape = CircleShape2D.new()
+	shape.radius = 128.0  # Compensates for Mode 7 perspective foreshortening
 	collision.shape = shape
-	collision.position = Vector2(0, -48)  # Shifted north — Mode 7 makes objects appear closer than they are
+	collision.position = Vector2(0, 0)  # Centered on NPC — no directional bias
 	add_child(collision)
 
 	# Set collision layer/mask for interaction

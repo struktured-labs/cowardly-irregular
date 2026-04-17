@@ -9,7 +9,17 @@ enum TerrainType {
 	CAVE,     # Dark purple-brown with stalactites
 	FOREST,   # Dark green with tree silhouettes
 	VILLAGE,  # Warm brown with building shapes
-	BOSS      # Red-tinted dramatic lighting
+	BOSS,     # Red-tinted dramatic lighting
+	ICE,      # Frozen tundra - white/blue
+	DESERT,   # Sandy dunes - warm yellows
+	SWAMP,    # Murky wetlands - dark greens/browns
+	COAST,    # Beach/shoreline - sand and blue
+	VOLCANIC, # Lava/fire terrain - reds/oranges
+	SUBURBAN, # Urban neighborhood
+	STEAMPUNK,# Gears and metal
+	INDUSTRIAL,# Factory/warehouse
+	DIGITAL,  # Cyberspace/neon
+	ABSTRACT  # Void/ethereal
 }
 
 enum TimeOfDay {
@@ -105,7 +115,58 @@ const TERRAIN_PALETTES = {
 		"accent": Color(0.48, 0.14, 0.18),
 		"horizon": Color(0.55, 0.15, 0.20),
 		"glow": Color(0.80, 0.25, 0.15)
-	}
+	},
+	TerrainType.ICE: {
+		"sky_top": Color(0.15, 0.20, 0.35),
+		"sky_mid": Color(0.30, 0.40, 0.55),
+		"sky_bottom": Color(0.55, 0.65, 0.75),
+		"ground": Color(0.75, 0.82, 0.90),
+		"ground_dark": Color(0.55, 0.65, 0.78),
+		"ground_light": Color(0.88, 0.92, 0.96),
+		"accent": Color(0.40, 0.60, 0.80),
+		"horizon": Color(0.70, 0.78, 0.88)
+	},
+	TerrainType.DESERT: {
+		"sky_top": Color(0.25, 0.15, 0.05),
+		"sky_mid": Color(0.55, 0.35, 0.15),
+		"sky_bottom": Color(0.75, 0.55, 0.25),
+		"ground": Color(0.72, 0.58, 0.35),
+		"ground_dark": Color(0.55, 0.42, 0.25),
+		"ground_light": Color(0.85, 0.72, 0.48),
+		"accent": Color(0.80, 0.60, 0.30),
+		"horizon": Color(0.85, 0.65, 0.35)
+	},
+	TerrainType.SWAMP: {
+		"sky_top": Color(0.08, 0.12, 0.06),
+		"sky_mid": Color(0.15, 0.22, 0.12),
+		"sky_bottom": Color(0.22, 0.30, 0.18),
+		"ground": Color(0.18, 0.25, 0.12),
+		"ground_dark": Color(0.12, 0.18, 0.08),
+		"ground_light": Color(0.28, 0.35, 0.18),
+		"accent": Color(0.30, 0.38, 0.15),
+		"horizon": Color(0.25, 0.32, 0.15)
+	},
+	TerrainType.COAST: {
+		"sky_top": Color(0.12, 0.18, 0.35),
+		"sky_mid": Color(0.25, 0.40, 0.60),
+		"sky_bottom": Color(0.45, 0.60, 0.75),
+		"ground": Color(0.72, 0.65, 0.48),
+		"ground_dark": Color(0.55, 0.48, 0.35),
+		"ground_light": Color(0.85, 0.78, 0.58),
+		"accent": Color(0.30, 0.50, 0.70),
+		"horizon": Color(0.40, 0.55, 0.72)
+	},
+	TerrainType.VOLCANIC: {
+		"sky_top": Color(0.15, 0.04, 0.02),
+		"sky_mid": Color(0.35, 0.10, 0.05),
+		"sky_bottom": Color(0.55, 0.18, 0.08),
+		"ground": Color(0.25, 0.12, 0.08),
+		"ground_dark": Color(0.15, 0.06, 0.04),
+		"ground_light": Color(0.40, 0.18, 0.10),
+		"accent": Color(0.85, 0.35, 0.10),
+		"horizon": Color(0.70, 0.25, 0.10),
+		"glow": Color(0.95, 0.45, 0.10)
+	},
 }
 
 var current_terrain: TerrainType = TerrainType.PLAINS
@@ -123,6 +184,11 @@ const BACKDROP_PATHS = {
 	TerrainType.FOREST: "res://assets/battle_backdrops/battle_forest.png",
 	TerrainType.VILLAGE: "res://assets/battle_backdrops/battle_village.png",
 	TerrainType.BOSS: "res://assets/battle_backdrops/battle_boss.png",
+	TerrainType.SUBURBAN: "res://assets/sprites/backgrounds/battle_world2_suburban.png",
+	TerrainType.STEAMPUNK: "res://assets/sprites/backgrounds/battle_world3_steampunk.png",
+	TerrainType.INDUSTRIAL: "res://assets/sprites/backgrounds/battle_world4_industrial.png",
+	TerrainType.DIGITAL: "res://assets/sprites/backgrounds/battle_world5_digital.png",
+	TerrainType.ABSTRACT: "res://assets/sprites/backgrounds/battle_world6_abstract.png",
 }
 
 ## Seed-based RNG for reproducible but varied backgrounds
@@ -269,7 +335,7 @@ func set_terrain_from_string(terrain_name: String) -> void:
 	match terrain_name.to_lower():
 		"plains", "overworld":
 			set_terrain(TerrainType.PLAINS)
-		"cave", "dungeon":
+		"cave", "dungeon", "ice_cave", "dark_cave", "storm_cave", "lava_cave":
 			set_terrain(TerrainType.CAVE)
 		"forest", "woods":
 			set_terrain(TerrainType.FOREST)
@@ -277,6 +343,26 @@ func set_terrain_from_string(terrain_name: String) -> void:
 			set_terrain(TerrainType.VILLAGE)
 		"boss":
 			set_terrain(TerrainType.BOSS)
+		"ice", "snow", "frozen":
+			set_terrain(TerrainType.ICE)
+		"desert", "sand":
+			set_terrain(TerrainType.DESERT)
+		"swamp", "marsh", "bog":
+			set_terrain(TerrainType.SWAMP)
+		"coast", "beach", "shore":
+			set_terrain(TerrainType.COAST)
+		"volcanic", "lava", "fire":
+			set_terrain(TerrainType.VOLCANIC)
+		"suburban", "urban":
+			set_terrain(TerrainType.SUBURBAN)
+		"steampunk", "clockwork":
+			set_terrain(TerrainType.STEAMPUNK)
+		"industrial", "factory":
+			set_terrain(TerrainType.INDUSTRIAL)
+		"digital", "cyber", "neon":
+			set_terrain(TerrainType.DIGITAL)
+		"void", "abstract", "ethereal":
+			set_terrain(TerrainType.ABSTRACT)
 		_:
 			set_terrain(TerrainType.PLAINS)
 

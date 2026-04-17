@@ -108,17 +108,17 @@ func _on_interaction_requested() -> void:
 	var space = player.get_world_2d().direct_space_state
 	var query = PhysicsPointQueryParameters2D.new()
 
-	# Check slightly in front of player based on facing direction
+	# Check in front of player based on facing direction — large range for Mode 7 perspective
 	var check_offset = Vector2.ZERO
 	match player.current_direction:
 		OverworldPlayerScript.Direction.DOWN:
-			check_offset = Vector2(0, 20)
+			check_offset = Vector2(0, 80)
 		OverworldPlayerScript.Direction.UP:
-			check_offset = Vector2(0, -20)
+			check_offset = Vector2(0, -80)
 		OverworldPlayerScript.Direction.LEFT:
-			check_offset = Vector2(-20, 0)
+			check_offset = Vector2(-80, 0)
 		OverworldPlayerScript.Direction.RIGHT:
-			check_offset = Vector2(20, 0)
+			check_offset = Vector2(80, 0)
 
 	query.position = player.global_position + check_offset
 	query.collide_with_areas = true

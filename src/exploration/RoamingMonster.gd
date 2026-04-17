@@ -96,8 +96,8 @@ func _apply_frame(row: int, col: int) -> void:
 
 func _setup_collision() -> void:
 	_collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(16.0, 16.0)
+	var shape = CircleShape2D.new()
+	shape.radius = 112.0  # Compensates for Mode 7 perspective foreshortening
 	_collision.shape = shape
 	add_child(_collision)
 

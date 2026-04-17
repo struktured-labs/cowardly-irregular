@@ -136,10 +136,10 @@ func _setup_collision() -> void:
 	monitoring = true
 
 	var col = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(64, 160)  # Wide + very tall — compensates for Mode 7 vertical compression
+	var shape = CircleShape2D.new()
+	shape.radius = 128.0  # Compensates for Mode 7 perspective foreshortening
 	col.shape = shape
-	col.position = Vector2(0, -48)  # Shifted north — Mode 7 log-warp makes objects appear closer than they are
+	col.position = Vector2(0, 0)  # Centered — no directional bias
 	add_child(col)
 
 
