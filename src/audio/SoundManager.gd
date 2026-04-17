@@ -62,6 +62,13 @@ const SOUNDS = {
 	"tier_zoom_out": {"freq": 320, "duration": 0.22, "type": "tier_zoom_out"},   # Tier 1 -> Dashboard
 	"tier_zoom_in": {"freq": 520, "duration": 0.18, "type": "tier_zoom_in"},    # Dashboard -> Tier 1
 	"speed_change": {"freq": 700, "duration": 0.08, "type": "blip"},  # Battle speed toggle
+	# Autogrind interrupt sounds
+	"grind_stop_hp": {"freq": 280, "duration": 0.5, "type": "alarm_low"},       # HP threshold
+	"grind_stop_death": {"freq": 180, "duration": 0.8, "type": "sad"},          # Party death
+	"grind_stop_corruption": {"freq": 150, "duration": 0.6, "type": "glitch"},  # Corruption event
+	"grind_stop_manual": {"freq": 600, "duration": 0.15, "type": "descending"}, # Manual stop
+	"grind_stop_generic": {"freq": 350, "duration": 0.3, "type": "falling"},    # Generic stop
+	"adaptation_warning": {"freq": 500, "duration": 0.35, "type": "woozy"},     # Enemies adapting
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},
@@ -471,6 +478,10 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 			_generate_tier_zoom_out(playback, samples, freq, sample_rate, duration)
 		"tier_zoom_in":
 			_generate_tier_zoom_in(playback, samples, freq, sample_rate, duration)
+		"alarm_low":
+			_generate_alarm_low(playback, samples, freq, sample_rate, duration)
+		"glitch":
+			_generate_glitch(playback, samples, freq, sample_rate, duration)
 		_:
 			_generate_blip(playback, samples, freq, sample_rate, duration)
 
@@ -856,6 +867,36 @@ func _generate_tier_zoom_in(playback: AudioStreamGeneratorPlayback, samples: int
 		# Tight transient click at start
 		var click = randf_range(-0.4, 0.4) * max(0.0, 1.0 - progress * 12.0)
 		var s = (tone + click) * 0.38
+		playback.push_frame(Vector2(s, s))
+
+
+func _generate_alarm_low(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Low repeating alarm — two-tone warble for HP/danger interrupts."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Alternate between two tones every 0.1s
+		var alt_freq = freq if fmod(t, 0.2) < 0.1 else freq * 1.4
+		var envelope = (1.0 - progress) * (0.7 + 0.3 * sin(t * 12.0))
+		var tone = sin(t * alt_freq * TAU) * 0.6 * envelope
+		var s = tone * 0.4
+		playback.push_frame(Vector2(s, s))
+
+
+func _generate_glitch(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Glitchy corruption sound — bitcrushed noise with intermittent tone."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		var envelope = 1.0 - progress * progress
+		# Crushed noise
+		var noise = randf_range(-1.0, 1.0) * 0.4
+		# Quantize to simulate bitcrushing
+		noise = round(noise * 4.0) / 4.0
+		# Intermittent square wave
+		var gate = 1.0 if fmod(t, 0.08) < 0.04 else 0.3
+		var tone = _pulse_wave(t * freq, 0.15) * 0.3 * gate
+		var s = (noise * 0.5 + tone) * envelope * 0.35
 		playback.push_frame(Vector2(s, s))
 
 
