@@ -2266,18 +2266,101 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				# Spawn physical hit effect on impact
 				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
 				continue
-		# Combo Magic: play cast animation + multi-element effects on targets
+		# Combo Magic: casters step forward, cast animation, converging spell effects
 		if group_type == "combo_magic":
-			anim.play_named_animation("cast")
 			if sprite:
+				# Store home and step forward
+				if not sprite.has_meta("home_position"):
+					sprite.set_meta("home_position", sprite.position)
+				var home = sprite.get_meta("home_position")
+				var step_pos = home + Vector2(-30, 0)  # Step toward enemies
+
+				var cast_tween = create_tween()
+				sprite.set_meta("attack_tween", cast_tween)
+
+				# Staggered step forward
+				cast_tween.tween_interval(idx * 0.08)
+				cast_tween.tween_property(sprite, "position", step_pos, 0.15).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+				# Cast animation
+				cast_tween.tween_callback(func():
+					if anim and is_instance_valid(anim):
+						anim.play_named_animation("cast")
+				)
+
+				# Spawn spell effects on targets — each caster contributes one element type
 				var combo_effects = [EffectSystem.EffectType.FIRE, EffectSystem.EffectType.ICE, EffectSystem.EffectType.LIGHTNING]
-				for target in targets:
-					var t_sprite = _get_combatant_sprite(target as Combatant)
-					if t_sprite:
-						for i in range(min(combo_effects.size(), 3)):
-							EffectSystem.spawn_effect(combo_effects[i], t_sprite.global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)))
+				var my_effect = combo_effects[idx % combo_effects.size()]
+				cast_tween.tween_interval(0.15)
+				cast_tween.tween_callback(func():
+					for target in targets:
+						var t_sprite2 = _get_combatant_sprite(target as Combatant)
+						if t_sprite2 and is_instance_valid(t_sprite2):
+							# Spawn from caster's position toward target for "converging" feel
+							var offset = Vector2(randf_range(-15, 15), randf_range(-15, 15))
+							EffectSystem.spawn_effect(my_effect, t_sprite2.global_position + offset, Callable(), 1.5)
+				)
+
+				# Hold then return
+				cast_tween.tween_interval(0.3)
+				cast_tween.tween_property(sprite, "position", home, 0.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+			else:
+				anim.play_named_animation("cast")
 			continue
-		# All-Out Attack: play attack animation in place + physical effects on enemies
+		# All-Out Attack: party rushes in together toward enemies
+		if group_type == "all_out_attack" and sprite and targets.size() > 0:
+			# Calculate center of enemy formation as rush target
+			var enemy_center = Vector2.ZERO
+			var enemy_count = 0
+			for t in targets:
+				var ts = _get_combatant_sprite(t as Combatant)
+				if ts:
+					enemy_center += ts.position
+					enemy_count += 1
+			if enemy_count > 0:
+				enemy_center /= enemy_count
+
+			# Store home position
+			if not sprite.has_meta("home_position"):
+				sprite.set_meta("home_position", sprite.position)
+			var home = sprite.get_meta("home_position")
+
+			# Each member lunges to a slightly offset position near enemy center
+			var direction = (enemy_center - home).normalized()
+			var rush_pos = enemy_center - direction * (50 + idx * 15)  # Stagger depth
+
+			var rush_tween = create_tween()
+			sprite.set_meta("attack_tween", rush_tween)
+
+			# Staggered start (0-0.1s per member)
+			var stagger = idx * 0.05
+			rush_tween.tween_interval(stagger)
+
+			# Rush forward
+			rush_tween.tween_property(sprite, "position", rush_pos, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+			# Attack animation + hit effects on all enemies
+			rush_tween.tween_callback(func():
+				if not is_instance_valid(self): return
+				if anim and is_instance_valid(anim):
+					anim.play_attack()
+				for t in targets:
+					var ts2 = _get_combatant_sprite(t as Combatant)
+					if ts2 and is_instance_valid(ts2):
+						EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, ts2.global_position + Vector2(randf_range(-8, 8), randf_range(-8, 8)))
+						var eidx = BattleManager.enemy_party.find(t)
+						if eidx >= 0 and eidx < enemy_animators.size():
+							enemy_animators[eidx].play_hit()
+			)
+
+			# Hold briefly at impact
+			rush_tween.tween_interval(0.2)
+
+			# Return home
+			rush_tween.tween_property(sprite, "position", home, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+			continue
+
+		# Formation/fallback: play attack animation in place + physical effects
 		anim.play_attack()
 		for target in targets:
 			var t_sprite = _get_combatant_sprite(target as Combatant)
