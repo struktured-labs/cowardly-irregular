@@ -855,6 +855,48 @@
       "prompt": "Dramatic oversized rat squeaking menacingly, deep pitched rodent squeal building to a threatening screech, comically intimidating boss entrance",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7
+    },
+    "voice_blip_fighter": {
+      "file": "assets/audio/sfx/voice_blip_fighter.ogg",
+      "source": "sox_synth",
+      "prompt": "Low G2 square wave + pink noise thump, 65ms, muffled grunt character",
+      "duration_seconds": 0.065,
+      "prompt_influence": 0.0
+    },
+    "voice_blip_cleric": {
+      "file": "assets/audio/sfx/voice_blip_cleric.ogg",
+      "source": "sox_synth",
+      "prompt": "E4 sine + B4 harmonic + triangle, warm choral tone, 90ms",
+      "duration_seconds": 0.09,
+      "prompt_influence": 0.0
+    },
+    "voice_blip_mage": {
+      "file": "assets/audio/sfx/voice_blip_mage.ogg",
+      "source": "sox_synth",
+      "prompt": "A4 sawtooth bandpassed at 1.4kHz, nasal/reedy blip, 70ms",
+      "duration_seconds": 0.07,
+      "prompt_influence": 0.0
+    },
+    "voice_blip_rogue": {
+      "file": "assets/audio/sfx/voice_blip_rogue.ogg",
+      "source": "sox_synth",
+      "prompt": "High filtered white noise tick + A5 square micro-blip, sharp click, 45ms",
+      "duration_seconds": 0.045,
+      "prompt_influence": 0.0
+    },
+    "voice_blip_bard": {
+      "file": "assets/audio/sfx/voice_blip_bard.ogg",
+      "source": "sox_synth",
+      "prompt": "G4/B4/D5 major triad sines + echo, melodic chime, 90ms",
+      "duration_seconds": 0.09,
+      "prompt_influence": 0.0
+    },
+    "voice_blip_default": {
+      "file": "assets/audio/sfx/voice_blip_default.ogg",
+      "source": "sox_synth",
+      "prompt": "C4 triangle wave, generic NPC dialogue blip, 60ms",
+      "duration_seconds": 0.06,
+      "prompt_influence": 0.0
     }
   }
 }
