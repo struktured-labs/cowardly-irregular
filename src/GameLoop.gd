@@ -1259,6 +1259,12 @@ func _start_exploration() -> void:
 	# Ensure normal speed in exploration (battle speed is separate)
 	Engine.time_scale = 1.0
 
+	# Clean up victory overlay before freeing battle scene (prevents persistence)
+	if current_scene and is_instance_valid(current_scene):
+		var victory_overlay = current_scene.get_node_or_null("VictoryResults")
+		if victory_overlay and is_instance_valid(victory_overlay):
+			victory_overlay.free()  # Immediate free, not queue_free
+
 	# Remove old scene
 	if current_scene and is_instance_valid(current_scene):
 		current_scene.queue_free()

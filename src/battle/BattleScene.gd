@@ -314,6 +314,11 @@ func _exit_tree() -> void:
 	# Reset engine time scale in case battle speed was altered
 	Engine.time_scale = 1.0
 
+	# Explicitly free victory results overlay to prevent persistence across scenes
+	var victory_overlay = get_node_or_null("VictoryResults")
+	if victory_overlay and is_instance_valid(victory_overlay):
+		victory_overlay.free()
+
 	# Cleanup popup menu if open
 	_cleanup_popup()
 
