@@ -29,9 +29,17 @@
     },
     "menu_open": {
       "file": "assets/audio/sfx/menu_open.ogg",
-      "prompt": "Satisfying menu open chime, warm ascending three-note jingle like opening the SNES pause menu, inviting and crisp",
-      "duration_seconds": 0.6,
-      "prompt_influence": 0.7
+      "source": "sox_synth",
+      "prompt": "C5-E5-G5 ascending triangle arp (50ms per note) with slight echo, clean retro menu open",
+      "duration_seconds": 0.18,
+      "prompt_influence": 0.0
+    },
+    "menu_close": {
+      "file": "assets/audio/sfx/menu_close.ogg",
+      "source": "sox_synth",
+      "prompt": "C4 triangle wave drop, lowpassed 2kHz, soft dismissive thud, 60ms",
+      "duration_seconds": 0.06,
+      "prompt_influence": 0.0
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
