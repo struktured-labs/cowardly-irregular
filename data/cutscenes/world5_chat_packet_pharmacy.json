@@ -1,0 +1,142 @@
+{
+  "id": "world5_chat_packet_pharmacy",
+  "title": "Drops In, Drops Out",
+  "world": 5,
+  "trigger": "world5_chat_packet_pharmacy",
+  "background": "node_prime",
+  "description": "Packet runs a pharmacy in data-terms. Daemon tries to make sense of it. Affectionate absurdism.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The stall had a faded sign: DROPS, LOST AND FOUND. The proprietor was small, fast, and operated a cash register with six buttons, none of them numbered."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Packet",
+          "text": "Welcome! What's your jitter?",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Daemon",
+          "text": "My... what?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Packet",
+          "text": "Retransmission rate. Or round-trip time if you prefer. I've got tinctures for both.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Daemon",
+          "text": "I'm not sure I have either of those problems.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Packet",
+          "text": "Oh, you have them. Everyone has them. Some people just don't measure.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Packet",
+          "text": "The big sellers this week are the duplicate-ACK salve and the fragmentation tonic.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Debugger",
+          "text": "Those are not medications.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Packet",
+          "text": "They are here.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Packet",
+          "text": "Look, the apothecary on the analog side uses herbs. We use what we have. What we have is protocols.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Payload",
+          "text": "Does any of this work?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Packet",
+          "text": "Placebo has a 34% clinical efficacy. That's in print. I'm not reinventing medicine.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Packet",
+          "text": "Also, I give good advice. Free with purchase of anything over one credit.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Admin",
+          "text": "...What's the advice?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Packet",
+          "text": "Stop retransmitting. The other side hears you the first time. They're just slow.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Admin bought a duplicate-ACK salve. Nobody used it. It sat in the inventory for eleven chapters, occasionally remembered, occasionally inspected, a reminder that the world had edges and some of them ran small shops."
+    },
+    {
+      "type": "set_flag",
+      "flag": "party_chat_viewed_world5_chat_packet_pharmacy",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

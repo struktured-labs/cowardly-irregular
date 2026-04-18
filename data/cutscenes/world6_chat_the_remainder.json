@@ -1,0 +1,157 @@
+{
+  "id": "world6_chat_the_remainder",
+  "title": "A Small Fraction",
+  "world": 6,
+  "trigger": "world6_chat_the_remainder",
+  "background": "vertex_village",
+  "description": "Party speaks with The Remainder. Final-world character beat. Quiet, small, lands.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Remainder sat on something that was not quite a bench. It had the shape of a bench. It was not, on closer inspection, a bench."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Remainder",
+          "text": "I'm 0.00014.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Voice",
+          "text": "Of what?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "Of whoever was standing here before they got rounded down.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "The rest went to Optimization. I'm what's left.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Logic",
+          "text": "That's not how rounding works.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "No. It is how this rounds.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Logic",
+          "text": "...",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "Take your time. I'm not going anywhere. That's why they kept me.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Faith",
+          "text": "Does it hurt. Being 0.00014.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "Only when I try to be the whole number. Which I don't, anymore.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "Sometimes I am the rounding error in someone else's arithmetic. That's the closest thing to company I have.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Edge",
+          "text": "If we fix this. If we put things back.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "Then I become a whole number again. I don't remember being a whole number.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "I'll have to learn.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "The Remainder",
+          "text": "Thank you for asking.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The party moved on. The Remainder stayed on what was not quite a bench. 0.00014 of something that used to be a person, waiting patiently to be math again."
+    },
+    {
+      "type": "set_flag",
+      "flag": "party_chat_viewed_world6_chat_the_remainder",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

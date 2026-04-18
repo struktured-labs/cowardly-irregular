@@ -87,12 +87,42 @@ const REGISTRY := {
 		"world": 3,
 		"unlock": ["cutscene_flag_world3_chapter1_complete"],
 	},
+	"world3_chat_teatime_brasston": {
+		"title": "The 4:07 Event",
+		"world": 3,
+		"unlock": ["cutscene_flag_world3_chapter1_complete"],
+	},
+	"world3_chat_sprocket_drift": {
+		"title": "The Discrepancy Book",
+		"world": 3,
+		"unlock": ["cutscene_flag_world3_chapter2_complete"],
+	},
+	"world3_chat_clockwork_bard": {
+		"title": "A Song for the Schedule",
+		"world": 3,
+		"unlock": ["cutscene_flag_world3_chapter2_complete"],
+	},
 
 	# ===== WORLD 4 =====
 	"world4_guidance_director": {
 		"title": "Find the Director",
 		"world": 4,
 		"unlock": ["cutscene_flag_world4_chapter1_complete"],
+	},
+	"world4_chat_manifest_denial": {
+		"title": "Not on the Manifest",
+		"world": 4,
+		"unlock": ["cutscene_flag_world4_chapter1_complete"],
+	},
+	"world4_chat_union_pamphlet": {
+		"title": "Pamphlet, Unapproved",
+		"world": 4,
+		"unlock": ["cutscene_flag_world4_chapter2_complete"],
+	},
+	"world4_chat_signal_tender": {
+		"title": "Unsolicited Optimization",
+		"world": 4,
+		"unlock": ["cutscene_flag_world4_chapter2_complete"],
 	},
 
 	# ===== WORLD 5 =====
@@ -101,12 +131,42 @@ const REGISTRY := {
 		"world": 5,
 		"unlock": ["cutscene_flag_world5_chapter1_complete"],
 	},
+	"world5_chat_root_access": {
+		"title": "root@localhost",
+		"world": 5,
+		"unlock": ["cutscene_flag_world5_chapter1_complete"],
+	},
+	"world5_chat_memory_leak_npc": {
+		"title": "A Small Leak",
+		"world": 5,
+		"unlock": ["cutscene_flag_world5_chapter2_complete"],
+	},
+	"world5_chat_packet_pharmacy": {
+		"title": "Drops In, Drops Out",
+		"world": 5,
+		"unlock": ["cutscene_flag_world5_chapter2_complete"],
+	},
 
 	# ===== WORLD 6 =====
 	"world6_guidance_question": {
 		"title": "The Question Awaits",
 		"world": 6,
 		"unlock": ["cutscene_flag_world6_chapter1_complete"],
+	},
+	"world6_chat_the_remainder": {
+		"title": "A Small Fraction",
+		"world": 6,
+		"unlock": ["cutscene_flag_world6_chapter1_complete"],
+	},
+	"world6_chat_the_color": {
+		"title": "Defiant Red",
+		"world": 6,
+		"unlock": ["cutscene_flag_world6_chapter2_complete"],
+	},
+	"world6_chat_the_player": {
+		"title": "Who Is Playing Who",
+		"world": 6,
+		"unlock": ["cutscene_flag_world6_chapter2_complete"],
 	},
 }
 
