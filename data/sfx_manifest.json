@@ -92,9 +92,9 @@
     },
     "chest_open": {
       "file": "assets/audio/sfx/chest_open.ogg",
-      "prompt": "Wooden treasure chest lid creaking open with rusty hinges, satisfying latch clunk then magical shimmer of treasure revealed, classic RPG chest",
-      "duration_seconds": 1.0,
-      "prompt_influence": 0.7
+      "prompt": "Satisfying metal latch clicking open on a wooden box, brief pause, then slow wood creak as heavy lid lifts, subtle sparkle shimmer of treasure catching light at the end, physical mechanical feeling, no music",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.6
     },
     "save_crystal_near": {
       "file": "assets/audio/sfx/save_crystal_near.ogg",
@@ -104,8 +104,9 @@
     },
     "save_crystal_activate": {
       "file": "assets/audio/sfx/save_crystal_activate.ogg",
-      "prompt": "Crystal activating with a bright ascending chime cascade, magical save point resonating with pure tones, satisfying confirmation sparkle reaching a clear peak note",
-      "duration_seconds": 1.5,
+      "source": "sox_synth",
+      "prompt": "E major ascending arp (E5-G#5-B5-E6) with triangle shimmer tail + echo, crystalline save point chime",
+      "duration_seconds": 0.7,
       "prompt_influence": 0.7
     },
     "door_open": {
@@ -388,9 +389,10 @@
     },
     "level_up": {
       "file": "assets/audio/sfx/level_up.ogg",
-      "prompt": "Triumphant ascending chime cascade, bright crystalline notes climbing upward like a classic RPG level up jingle, magical sparkle reaching a satisfying peak note",
-      "duration_seconds": 1.5,
-      "prompt_influence": 0.7
+      "source": "sox_synth",
+      "prompt": "C-E-G-C6-E6 ascending triangle arp with sustained E6+G6 chord tail + echo, celebratory level up fanfare",
+      "duration_seconds": 0.65,
+      "prompt_influence": 0.0
     },
     "gold_pickup": {
       "file": "assets/audio/sfx/gold_pickup.ogg",
@@ -839,6 +841,12 @@
       "prompt": "Magical portal opening with swirling energy hum, reality warping distortion building to a resonant tone, interdimensional gateway powering up",
       "duration_seconds": 2.0,
       "prompt_influence": 0.7
+    },
+    "portal_enter": {
+      "file": "assets/audio/sfx/portal_enter.ogg",
+      "prompt": "Quick spatial whoosh of a body being pulled through a dimensional rift, air displacement rushing past ears, brief disorienting warp with a punchy resolve at the end, fast teleport transit not slow",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.6
     },
     "reality_glitch": {
       "file": "assets/audio/sfx/reality_glitch.ogg",
