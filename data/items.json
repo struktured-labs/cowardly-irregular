@@ -8,7 +8,8 @@
 		"effects": {
 			"heal_hp": 50
 		},
-		"cost": 50
+		"cost": 50,
+		"flavor": "A dusty bottle that smells faintly of mint. Every adventurer's first purchase, last resort, and half their inventory weight."
 	},
 	"hi_potion": {
 		"id": "hi_potion",
@@ -19,7 +20,8 @@
 		"effects": {
 			"heal_hp": 200
 		},
-		"cost": 200
+		"cost": 200,
+		"flavor": "A larger bottle with a wax seal bearing a tower insignia. The apothecary's note says: use sparingly. Everyone uses it often."
 	},
 	"mega_potion": {
 		"id": "mega_potion",
@@ -30,7 +32,8 @@
 		"effects": {
 			"heal_hp": 100
 		},
-		"cost": 400
+		"cost": 400,
+		"flavor": "Looks like regular potion, shares like a miracle. The label claims it was blessed. The label is printed. The blessing is questionable."
 	},
 	"elixir": {
 		"id": "elixir",
@@ -42,7 +45,8 @@
 			"heal_hp_percent": 100,
 			"heal_mp_percent": 100
 		},
-		"cost": 1000
+		"cost": 1000,
+		"flavor": "A rare vial of silver liquid, cold to the touch and faintly humming. Wasted on common fights. Exactly correct for the one you barely survive."
 	},
 	"ether": {
 		"id": "ether",
@@ -53,7 +57,8 @@
 		"effects": {
 			"heal_mp": 30
 		},
-		"cost": 150
+		"cost": 150,
+		"flavor": "A pale blue tincture distilled from focused concentration and regrets. Tastes like remembering why you left home."
 	},
 	"hi_ether": {
 		"id": "hi_ether",
@@ -64,7 +69,8 @@
 		"effects": {
 			"heal_mp": 100
 		},
-		"cost": 500
+		"cost": 500,
+		"flavor": "A refined ether in a glass vial with gilt etching. The etching reads, in tiny script: drink now, balance the ledger later."
 	},
 	"antidote": {
 		"id": "antidote",
@@ -75,7 +81,8 @@
 		"effects": {
 			"cure_status": ["poison"]
 		},
-		"cost": 80
+		"cost": 80,
+		"flavor": "Bitter herbs in cloudy water. It will cure the poison. It will not make you happy about having been poisoned."
 	},
 	"echo_herbs": {
 		"id": "echo_herbs",
@@ -86,7 +93,8 @@
 		"effects": {
 			"cure_status": ["silence"]
 		},
-		"cost": 100
+		"cost": 100,
+		"flavor": "A small pouch of crushed leaves. Sprinkled on the tongue, the words come back. Sprinkled in the wind, so does the wind."
 	},
 	"remedy": {
 		"id": "remedy",
@@ -97,7 +105,8 @@
 		"effects": {
 			"cure_all_status": true
 		},
-		"cost": 300
+		"cost": 300,
+		"flavor": "A cure-all tonic from a village apothecary who has seen it all and is, frankly, tired. Cures every status effect. Does not cure despair."
 	},
 	"phoenix_down": {
 		"id": "phoenix_down",
@@ -109,7 +118,8 @@
 			"revive": true,
 			"heal_hp_percent": 25
 		},
-		"cost": 500
+		"cost": 500,
+		"flavor": "A single feather, perpetually warm. It feels impatient to its holder, as if it has somewhere else to be."
 	},
 	"power_drink": {
 		"id": "power_drink",
@@ -124,7 +134,8 @@
 				"duration": 3
 			}
 		},
-		"cost": 200
+		"cost": 200,
+		"flavor": "A vile, muscle-brown concoction that tastes like a grudge. Increases attack. Does not increase judgment."
 	},
 	"speed_tonic": {
 		"id": "speed_tonic",
@@ -139,7 +150,8 @@
 				"duration": 3
 			}
 		},
-		"cost": 200
+		"cost": 200,
+		"flavor": "A carbonated tonic that fizzes louder than it should. Drink it fast, which is the point."
 	},
 	"bomb_fragment": {
 		"id": "bomb_fragment",
@@ -151,7 +163,8 @@
 			"damage": 100,
 			"element": "fire"
 		},
-		"cost": 150
+		"cost": 150,
+		"flavor": "A volatile chunk of compressed heat, wrapped in oiled cloth. Warning: the cloth is decorative, not protective."
 	},
 	"arctic_wind": {
 		"id": "arctic_wind",
@@ -163,7 +176,8 @@
 			"damage": 80,
 			"element": "ice"
 		},
-		"cost": 300
+		"cost": 300,
+		"flavor": "A sealed glass sphere containing a single indignant gust of north wind. Breaks open loud. Ends louder."
 	},
 	"x_potion": {
 		"id": "x_potion",
@@ -174,7 +188,8 @@
 		"effects": {
 			"heal_hp_percent": 100
 		},
-		"cost": 600
+		"cost": 600,
+		"flavor": "A potion so concentrated the apothecary charges by the drop. Fully restores one ally. Also fully depletes one coin purse."
 	},
 	"smoke_bomb": {
 		"id": "smoke_bomb",
@@ -185,7 +200,8 @@
 		"effects": {
 			"escape_battle": true
 		},
-		"cost": 100
+		"cost": 100,
+		"flavor": "A rice-paper ball packed with alchemist's smoke. Throws badly, works perfectly. Will not fool any boss who has read the manual."
 	},
 	"tent": {
 		"id": "tent",
@@ -198,7 +214,8 @@
 			"heal_mp_percent": 50,
 			"save_point_only": true
 		},
-		"cost": 500
+		"cost": 500,
+		"flavor": "Oiled canvas folded to the size of a brick. Rest inside and your body remembers it was alive. Unreasonably heavy considering."
 	},
 	"eye_drops": {
 		"id": "eye_drops",
@@ -209,7 +226,8 @@
 		"effects": {
 			"cure_status": ["blind"]
 		},
-		"cost": 80
+		"cost": 80,
+		"flavor": "A small vial with a dropper made of twisted silver. Clears blindness. Does not clear whatever you were blinded looking at."
 	},
 	"gold_needle": {
 		"id": "gold_needle",
@@ -220,7 +238,8 @@
 		"effects": {
 			"cure_status": ["petrify"]
 		},
-		"cost": 200
+		"cost": 200,
+		"flavor": "A thin needle of gold alloy. Applied to petrified flesh, it reminds the flesh it was flesh. Reusable, though no one tries."
 	},
 	"lightning_bolt": {
 		"id": "lightning_bolt",
@@ -232,7 +251,8 @@
 			"damage": 120,
 			"element": "lightning"
 		},
-		"cost": 250
+		"cost": 250,
+		"flavor": "A slim metal rod that hums if you hold it wrong. Legal in all but three kingdoms. Hurled, not thrown."
 	},
 	"holy_water": {
 		"id": "holy_water",
@@ -245,7 +265,8 @@
 			"element": "holy",
 			"bonus_vs_undead": 2.0
 		},
-		"cost": 200
+		"cost": 200,
+		"flavor": "Spring water blessed at dawn by someone sincere. The water has opinions about the undead. Living things are fine by it."
 	},
 	"defense_tonic": {
 		"id": "defense_tonic",
@@ -260,7 +281,8 @@
 				"duration": 3
 			}
 		},
-		"cost": 200
+		"cost": 200,
+		"flavor": "A thick, pond-colored syrup that coats the throat. Slows nothing. Hardens everything else."
 	},
 	"magic_tonic": {
 		"id": "magic_tonic",
@@ -275,7 +297,8 @@
 				"duration": 3
 			}
 		},
-		"cost": 200
+		"cost": 200,
+		"flavor": "A cobalt potion with a single swirl of silver that refuses to mix. Sharpens the edge of spellwork for a short while."
 	},
 	"repel": {
 		"id": "repel",
@@ -286,7 +309,8 @@
 		"effects": {
 			"repel_steps": 50
 		},
-		"cost": 400
+		"cost": 400,
+		"flavor": "A small paper charm with a faint garlic smell. Keeps monsters incurious for fifty steps. Walk briskly."
 	},
 	"mega_ether": {
 		"id": "mega_ether",
@@ -297,6 +321,7 @@
 		"effects": {
 			"heal_mp": 50
 		},
-		"cost": 600
+		"cost": 600,
+		"flavor": "A bulk-order ether with a sloshing echo. Restores a little to everyone. Nobody is grateful enough for how many there used to be."
 	}
 }

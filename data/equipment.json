@@ -13,7 +13,8 @@
 			},
 			"stat_mods": {
 				"attack": 5
-			}
+			},
+			"flavor": "A starter sword. Dull at the tip, slightly bent in the middle, honestly did its best. Will be replaced within the hour."
 		},
 		"iron_sword": {
 			"id": "iron_sword",
@@ -28,7 +29,8 @@
 			},
 			"stat_mods": {
 				"attack": 12
-			}
+			},
+			"flavor": "A soldier's working blade. Balanced, unfancy, reliable — three virtues that, combined, have outlasted many heroes."
 		},
 		"flame_sword": {
 			"id": "flame_sword",
@@ -49,7 +51,8 @@
 			},
 			"special_effects": {
 				"fire_damage_bonus": 1.5
-			}
+			},
+			"flavor": "A sword whose blade is always a little too warm to sheath. The leather scabbard has been replaced twice."
 		},
 		"wooden_staff": {
 			"id": "wooden_staff",
@@ -64,7 +67,8 @@
 			"stat_mods": {
 				"magic": 8,
 				"attack": 2
-			}
+			},
+			"flavor": "A walking stick that insists it is a weapon. Occasionally, and with enough magic, correct."
 		},
 		"oak_staff": {
 			"id": "oak_staff",
@@ -80,7 +84,8 @@
 				"magic": 12,
 				"attack": 3,
 				"max_mp": 10
-			}
+			},
+			"flavor": "Seasoned oak, oil-rubbed, carved with small marks from the hands of the previous owner. Conducts a little more than wind."
 		},
 		"crystal_staff": {
 			"id": "crystal_staff",
@@ -97,7 +102,8 @@
 			"stat_mods": {
 				"magic": 20,
 				"max_mp": 15
-			}
+			},
+			"flavor": "A staff with a faceted crystal bound at the head. The crystal is always a few degrees colder than the room."
 		},
 		"iron_dagger": {
 			"id": "iron_dagger",
@@ -112,7 +118,8 @@
 			"stat_mods": {
 				"attack": 8,
 				"speed": 5
-			}
+			},
+			"flavor": "A plain blade for plain work. No embellishment. The pommel has a single scratch in it that the thief insists they didn't make."
 		},
 		"shadow_rod": {
 			"id": "shadow_rod",
@@ -129,7 +136,8 @@
 			"stat_mods": {
 				"magic": 15,
 				"attack": 2
-			}
+			},
+			"flavor": "A rod of black wood that seems to drink the light near it. Casters say it is cold. Casters also say it is patient."
 		},
 		"ice_blade": {
 			"id": "ice_blade",
@@ -150,7 +158,8 @@
 			},
 			"special_effects": {
 				"ice_damage_bonus": 1.5
-			}
+			},
+			"flavor": "Translucent at the edge, rimed with frost that never quite melts. Do not rest your hand against the blade to check."
 		},
 		"poison_dagger": {
 			"id": "poison_dagger",
@@ -168,7 +177,8 @@
 			},
 			"special_effects": {
 				"poison_chance": 0.25
-			}
+			},
+			"flavor": "A dagger with a channel in the blade that holds something unpleasant. Re-applied after every fight. Smell before storage."
 		},
 		"holy_staff": {
 			"id": "holy_staff",
@@ -188,7 +198,8 @@
 			},
 			"special_effects": {
 				"holy_damage_bonus": 1.5
-			}
+			},
+			"flavor": "A staff with a relic embedded in its crown — officially blessed, unofficially thrice-blessed because the priest felt strongly."
 		},
 		"assassin_blade": {
 			"id": "assassin_blade",
@@ -206,7 +217,8 @@
 			},
 			"special_effects": {
 				"critical_bonus": 0.15
-			}
+			},
+			"flavor": "A wickedly curved obsidian dagger that is a lot of words to describe a deeply focused piece of volcanic glass."
 		},
 		"steel_sword": {
 			"id": "steel_sword",
@@ -221,7 +233,8 @@
 			},
 			"stat_mods": {
 				"attack": 15
-			}
+			},
+			"flavor": "A smith's pride. The fuller is straight, the hilt is wrapped in real leather, and the edge will hold through the second act."
 		},
 		"mythril_dagger": {
 			"id": "mythril_dagger",
@@ -239,7 +252,8 @@
 				"attack": 13,
 				"speed": 10,
 				"magic": 3
-			}
+			},
+			"flavor": "Light enough to throw, balanced enough to not want to. Hides comfortably inside a sleeve, which is usually the point."
 		},
 		"thunder_rod": {
 			"id": "thunder_rod",
@@ -259,7 +273,8 @@
 			},
 			"special_effects": {
 				"lightning_damage_bonus": 1.5
-			}
+			},
+			"flavor": "A metal rod that crackles faintly when humidity is high. Best used in dry weather. Best dropped in wet."
 		},
 		"war_axe": {
 			"id": "war_axe",
@@ -275,7 +290,8 @@
 			"stat_mods": {
 				"attack": 22,
 				"speed": -4
-			}
+			},
+			"flavor": "Heavy enough to count as a workout. Lands once, lands hard, leaves you breathing. The wielder, and the target, both."
 		},
 		"bone_staff": {
 			"id": "bone_staff",
@@ -293,7 +309,8 @@
 			},
 			"special_effects": {
 				"dark_damage_bonus": 1.3
-			}
+			},
+			"flavor": "A staff made from bones that have kept their opinion of being staves. It clatters when no one is looking."
 		},
 		"sleep_dagger": {
 			"id": "sleep_dagger",
@@ -311,7 +328,8 @@
 			},
 			"special_effects": {
 				"sleep_chance": 0.2
-			}
+			},
+			"flavor": "A curved blade coated in soporific resin. Enemies hit by it sometimes simply lay down. It is polite, in its way."
 		},
 		"mythril_sword": {
 			"id": "mythril_sword",
@@ -329,7 +347,8 @@
 			"stat_mods": {
 				"attack": 20,
 				"speed": 3
-			}
+			},
+			"flavor": "Forged from the silver ore that costs more than villages. Featherlight and mean. Most of its weight is in its reputation."
 		}
 	},
 	"armors": {
@@ -341,7 +360,8 @@
 			"stat_mods": {
 				"defense": 8,
 				"max_hp": 10
-			}
+			},
+			"flavor": "Hardened calfskin over padded linen. Smells like barn. Fights like you spent your last coin on it, because you did."
 		},
 		"iron_armor": {
 			"id": "iron_armor",
@@ -352,7 +372,8 @@
 				"defense": 18,
 				"max_hp": 25,
 				"speed": -3
-			}
+			},
+			"flavor": "A soldier's issue. Loud, inflexible, conclusive. The joints squeak. Tell your healer not to stand downwind."
 		},
 		"cloth_robe": {
 			"id": "cloth_robe",
@@ -363,7 +384,8 @@
 				"defense": 4,
 				"magic": 5,
 				"max_mp": 10
-			}
+			},
+			"flavor": "A simple caster's robe, woven by someone's aunt. The hem has been taken up three times. The inner pocket has a sweet in it, from before."
 		},
 		"thief_garb": {
 			"id": "thief_garb",
@@ -373,7 +395,8 @@
 			"stat_mods": {
 				"defense": 6,
 				"speed": 8
-			}
+			},
+			"flavor": "Black cloth, soft-soled shoes, pockets that are not where you expect. Designed to be forgotten when seen."
 		},
 		"dark_robe": {
 			"id": "dark_robe",
@@ -384,7 +407,8 @@
 				"defense": 5,
 				"magic": 8,
 				"max_mp": 15
-			}
+			},
+			"flavor": "A robe whose dye will not fade, whose stitches cannot be picked out, whose hem seems a little wetter than the weather accounts for."
 		},
 		"mage_robe": {
 			"id": "mage_robe",
@@ -395,7 +419,8 @@
 				"defense": 5,
 				"magic": 10,
 				"max_mp": 20
-			}
+			},
+			"flavor": "Dyed wool robes with silver thread sewn along the lines of a minor ward. The ward is real. The thread is decorative."
 		},
 		"chain_mail": {
 			"id": "chain_mail",
@@ -406,7 +431,8 @@
 				"defense": 12,
 				"max_hp": 15,
 				"speed": -1
-			}
+			},
+			"flavor": "Thousands of interlocking rings. Each is a compromise between protection and shoulder pain. Compromise is working."
 		},
 		"sage_robe": {
 			"id": "sage_robe",
@@ -417,7 +443,8 @@
 				"defense": 7,
 				"magic": 14,
 				"max_mp": 25
-			}
+			},
+			"flavor": "A robe of fine wool, layered with silk, embroidered with a language older than all present. Augments magic. Insists on being folded."
 		},
 		"ninja_garb": {
 			"id": "ninja_garb",
@@ -428,7 +455,8 @@
 				"defense": 8,
 				"speed": 14,
 				"attack": 3
-			}
+			},
+			"flavor": "Lightweight, quiet, the color of shadows at 3am. Prioritizes speed over sense. Sense is overrated anyway."
 		},
 		"mythril_vest": {
 			"id": "mythril_vest",
@@ -439,7 +467,8 @@
 				"defense": 20,
 				"max_hp": 30,
 				"speed": 2
-			}
+			},
+			"flavor": "A woven vest with mythril strands running through it. Weighs nothing. Announces nothing. Saves the day more often than it should."
 		},
 		"bone_armor": {
 			"id": "bone_armor",
@@ -453,7 +482,8 @@
 			},
 			"special_effects": {
 				"dark_resistance": true
-			}
+			},
+			"flavor": "Plates carved from monster bones, bound with sinew, still faintly cold. The bones hold a grudge that is now yours."
 		},
 		"dragon_mail": {
 			"id": "dragon_mail",
@@ -467,7 +497,8 @@
 			},
 			"special_effects": {
 				"fire_resistance": true
-			}
+			},
+			"flavor": "Scales layered over a plate substrate, still faintly warm. The scales remember. The wearer does not ask about what."
 		}
 	},
 	"accessories": {
@@ -478,7 +509,8 @@
 			"cost": 600,
 			"stat_mods": {
 				"attack": 10
-			}
+			},
+			"flavor": "A heavy iron band, larger than it looks. Fingers that wear it often form opinions about door frames."
 		},
 		"magic_ring": {
 			"id": "magic_ring",
@@ -487,7 +519,8 @@
 			"cost": 600,
 			"stat_mods": {
 				"magic": 10
-			}
+			},
+			"flavor": "A thin silver ring etched with a single sigil. The sigil is for focus. The wearer notices the focus but cannot name it."
 		},
 		"speed_boots": {
 			"id": "speed_boots",
@@ -496,7 +529,8 @@
 			"cost": 800,
 			"stat_mods": {
 				"speed": 15
-			}
+			},
+			"flavor": "Boots soled with something that grips more than it should. The laces tie themselves. Nobody has asked why."
 		},
 		"hp_amulet": {
 			"id": "hp_amulet",
@@ -505,7 +539,8 @@
 			"cost": 1200,
 			"stat_mods": {
 				"max_hp": 40
-			}
+			},
+			"flavor": "An amulet that is always slightly warm. Increases maximum HP by the sheer force of insisting you'll be fine."
 		},
 		"mp_amulet": {
 			"id": "mp_amulet",
@@ -514,7 +549,8 @@
 			"cost": 1000,
 			"stat_mods": {
 				"max_mp": 30
-			}
+			},
+			"flavor": "A crystal pendant on a silver chain. It is said the crystal holds a thought. When you cast, the thought leaves. It comes back."
 		},
 		"glass_amulet": {
 			"id": "glass_amulet",
@@ -525,7 +561,8 @@
 				"attack": 15,
 				"magic": 15,
 				"defense": -10
-			}
+			},
+			"flavor": "Brittle, beautiful, impossibly sharp when struck. Boosts damage dramatically. Will crack at the worst moment. This is part of its charm."
 		},
 		"lucky_charm": {
 			"id": "lucky_charm",
@@ -537,7 +574,8 @@
 			},
 			"special_effects": {
 				"critical_bonus": 0.1
-			}
+			},
+			"flavor": "A four-leaf clover pressed under glass, bound to a leather cord. The fourth leaf was, frankly, squint-worthy. It still counts."
 		},
 		"barrier_ring": {
 			"id": "barrier_ring",
@@ -547,7 +585,8 @@
 			"stat_mods": {
 				"defense": 8,
 				"magic": 5
-			}
+			},
+			"flavor": "A plain silver band with a faint hum. The hum is the ring holding back the air in front of you. Do not stop wearing it suddenly."
 		},
 		"resist_ring": {
 			"id": "resist_ring",
@@ -559,7 +598,8 @@
 			},
 			"special_effects": {
 				"status_resistance": 0.3
-			}
+			},
+			"flavor": "A ring of dark iron, cold to the touch. Small comfort against status effects, except on the one day you need it most, when it is large."
 		},
 		"thiefs_glove": {
 			"id": "thiefs_glove",
@@ -571,7 +611,8 @@
 			},
 			"special_effects": {
 				"steal_bonus": 0.5
-			}
+			},
+			"flavor": "A single glove of supple leather, stitched with invisible thread. Whatever you touch leaves a faint impression of being taken."
 		},
 		"warriors_belt": {
 			"id": "warriors_belt",
@@ -581,7 +622,8 @@
 			"stat_mods": {
 				"attack": 6,
 				"max_hp": 15
-			}
+			},
+			"flavor": "Thick tooled leather, worn shiny in the center. The belt holds you upright. The belt, frankly, is the only one in the outfit working."
 		},
 		"elven_cloak": {
 			"id": "elven_cloak",
@@ -594,7 +636,8 @@
 			},
 			"special_effects": {
 				"evasion_bonus": 0.1
-			}
+			},
+			"flavor": "A cloak that shifts color in the light. Spoken of in the villages; never seen when in use. The wearer is harder to hit and harder to remember."
 		}
 	}
 }
