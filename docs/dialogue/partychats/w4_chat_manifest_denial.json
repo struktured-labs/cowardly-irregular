@@ -1,0 +1,45 @@
+{
+  "id": "w4_chat_manifest_denial",
+  "title": "Not on the Manifest",
+  "world": 4,
+  "trigger": "party_chat_w4_manifest",
+  "background": "industrial_warehouse",
+  "description": "Rivet Row clerk refuses the party a pickled egg because the egg is not on the manifest. Character beat.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "The canteen was closed for intake, the clerk explained, because the egg the Chem Tech had requested was not on the manifest, and the manifest was the only authority in this building that mattered."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Chem Tech", "text": "You are holding the egg. I can see it from here.", "theme": "mage", "portrait": "mage"},
+      {"speaker": "Clerk", "text": "Its physical presence is not in dispute.", "theme": "shopkeeper", "portrait": "shopkeeper"},
+      {"speaker": "Chem Tech", "text": "Then what is?", "theme": "mage", "portrait": "mage"},
+      {"speaker": "Clerk", "text": "Its eligibility for transfer.", "theme": "shopkeeper", "portrait": "shopkeeper"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Union Agitator", "text": "Put it on the manifest.", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "Clerk", "text": "Manifest revisions are submitted weekly. On Tuesdays. We are presently on Wednesday.", "theme": "shopkeeper", "portrait": "shopkeeper"},
+      {"speaker": "Union Agitator", "text": "So the egg is unreachable until next Tuesday.", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "Clerk", "text": "Technically, the egg is unreachable until Thursday of next week, as new manifest items are subject to a 48-hour posting requirement.", "theme": "shopkeeper", "portrait": "shopkeeper"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Line Worker", "text": "...Can we have two eggs if we come back on Thursday of next week?", "theme": "fighter", "portrait": "fighter"},
+      {"speaker": "Clerk", "text": "Two eggs would require a separate submission.", "theme": "shopkeeper", "portrait": "shopkeeper"},
+      {"speaker": "Line Worker", "text": "Understood. One egg.", "theme": "fighter", "portrait": "fighter"},
+      {"speaker": "Line Worker", "text": "Thank you for your service.", "theme": "fighter", "portrait": "fighter"}
+    ]},
+
+    {"type": "narration", "text": "The clerk nodded once and returned the egg to its drawer, where it would wait, on paper and off the manifest, for the week it was scheduled to exist."},
+
+    {"type": "set_flag", "flag": "party_chat_viewed_w4_chat_manifest_denial", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
