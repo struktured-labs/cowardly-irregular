@@ -1712,6 +1712,78 @@
       "duration": 168.0,
       "loop": true,
       "generated_at": "2026-04-18"
+    },
+    "credits_medieval": {
+      "file": "assets/audio/music/credits_medieval.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "What We Carried Home",
+      "prompt": "End credits for the medieval world. The Realm Awakens motif returns \u2014 but slower, fuller, richer. Swelling strings take the melody once carried by a lone harp. French horn enters halfway through like a comrade stepping forward. The hopeful adventure-start theme reimagined as a quiet homecoming, remembering everything that happened between the first step and here. Bittersweet, warm, earned. 90-120 seconds.",
+      "style": "16-bit SNES orchestral credits theme, Nobuo Uematsu, Final Fantasy VI ending, swelling strings, French horn, harp, emotional, major key with minor color, 75 BPM",
+      "model": "suno-v4",
+      "duration": 79.88,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "credits_suburban": {
+      "file": "assets/audio/music/credits_suburban.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "After The Barbecue",
+      "prompt": "End credits for the suburban world. The Somewhere Normal theme returns without the unsettling undertones \u2014 just the nostalgia that was always underneath. Piano leads instead of synth lead. Detuned strings that were once creepy become tender. The neighborhood was beautiful even if it was wrong. EarthBound's 'Because I Love You' emotional register. Warm, melancholic, forgiving. 90-120 seconds.",
+      "style": "EarthBound ending theme, emotional lo-fi piano, detuned strings, subtle synth pads, nostalgic melancholy, 80 BPM",
+      "model": "suno-v4",
+      "duration": 152.72,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "credits_steampunk": {
+      "file": "assets/audio/music/credits_steampunk.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Gears Come To Rest",
+      "prompt": "End credits for the steampunk world. The Clockwork City waltz returns but the gears are finally winding down. Brass choir takes the main theme with reverent slowness, strings soar over the top, clockwork percussion ticks softer and softer until it stops on the final downbeat. Studio Ghibli ending warmth \u2014 all this machinery existed to bring us to this quiet moment. Triumphant but gentle. 90-120 seconds.",
+      "style": "orchestral credits, full brass choir, string swell, clockwork percussion slowing, triumphant waltz in 3/4, Studio Ghibli / Joe Hisaishi ending, 70 BPM",
+      "model": "suno-v4",
+      "duration": 114.56,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "credits_industrial": {
+      "file": "assets/audio/music/credits_industrial.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "End Of Shift, Finally",
+      "prompt": "End credits for the industrial world. The Gray Shift theme returns but humanity breaks through the concrete. A single cello sings the melody alone, then strings join, then the full orchestra \u2014 and somewhere around the two-minute mark the factory drone that defined this world finally stops. For the first time we hear silence underneath the music. Mournful, dignified, exhausted relief. 90-120 seconds.",
+      "style": "orchestral industrial credits, warm strings cutting through factory drone that slowly fades, mournful cello solo, brass swell at resolution, 75 BPM",
+      "model": "suno-v4",
+      "duration": 169.76,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "credits_digital": {
+      "file": "assets/audio/music/credits_digital.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "System Shutdown, With Gratitude",
+      "prompt": "End credits for the digital world. The Boot Sequence arpeggio returns but now real orchestra harmonizes with the chiptune \u2014 flesh and silicon in harmony. Graceful glitches resolve into consonance. The grid-floor synthwave feel but emotional, like a machine that learned to feel saying goodbye. Ends with a soft system-shutdown chord progression. 90-120 seconds.",
+      "style": "chiptune orchestral hybrid credits, 8-bit melody over real strings, synth pad warmth, graceful glitches resolving, end-of-boot shutdown tones, 85 BPM",
+      "model": "suno-v4",
+      "duration": 83.12,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "credits_abstract": {
+      "file": "assets/audio/music/credits_abstract.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Answer Was The Question",
+      "prompt": "End credits for the abstract world. The Answered Absence returns but fuller \u2014 still mostly silence, still mostly nothing, but now with emotional weight. A cello drone holds underneath a single sustained piano chord. Choral pads whisper. Long silences between phrases that feel like recognition rather than absence. The game's final statement: there was never anything to solve, only to witness. Eno and Arvo P\u00e4rt writing the end of everything. 90-120 seconds.",
+      "style": "ambient orchestral credits, sustained piano, cello drone, choral pad whisper, near-silence punctuating swells, Eno meets Arvo P\u00e4rt, 60 BPM",
+      "model": "suno-v4",
+      "duration": 159.84,
+      "loop": true,
+      "generated_at": "2026-04-18"
     }
   },
   "tier_priority": [
