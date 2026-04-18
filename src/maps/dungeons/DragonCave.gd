@@ -24,6 +24,7 @@ var cave_name: String = "Dragon Cave"
 var cave_id: String = "dragon_cave"
 var boss_id: String = "dragon"
 var boss_flag_key: String = "dragon_defeated"
+var boss_cutscene_id: String = ""  # Cutscene JSON ID to play before boss fight (empty = console fallback)
 var total_floors: int = 3
 var overworld_exit_spawn: String = "cave_entrance"
 ## Which overworld map this cave exits back to (default = W1 overworld)
@@ -363,12 +364,22 @@ func _update_floor_encounters(floor_num: int) -> void:
 
 func _trigger_boss_battle() -> void:
 	controller.pause_exploration()
-	_show_boss_intro()
-	await get_tree().create_timer(2.0).timeout
+	await _show_boss_intro()
 	battle_triggered.emit([boss_id])
 
 
 func _show_boss_intro() -> void:
+	"""Play boss intro cutscene if available, otherwise print to console"""
+	# Try CutsceneDirector with JSON cutscene
+	if boss_cutscene_id != "":
+		var cutscene_path = "res://data/cutscenes/%s.json" % boss_cutscene_id
+		if FileAccess.file_exists(cutscene_path):
+			var director = get_node_or_null("/root/CutsceneDirector")
+			if director and director.has_method("play_cutscene"):
+				await director.play_cutscene(boss_cutscene_id)
+				return
+
+	# Fallback: console print + brief delay
 	var lines = _get_boss_intro_dialogue()
 	print("")
 	print("=== BOSS ENCOUNTER ===")
@@ -378,6 +389,7 @@ func _show_boss_intro() -> void:
 	print("")
 	print("======================")
 	print("")
+	await get_tree().create_timer(2.0).timeout
 
 
 ## Virtual - subclass MUST override to provide boss dialogue
