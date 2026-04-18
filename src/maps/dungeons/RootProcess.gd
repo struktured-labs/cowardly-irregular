@@ -10,6 +10,7 @@ func _init() -> void:
 	cave_id = "root_process"
 	boss_id = "masterite_arbiter_futuristic"
 	boss_flag_key = "root_process_cleared"
+	boss_cutscene_id = "world5_root_process_boss"
 	total_floors = 3
 	overworld_exit_spawn = "glitch_sector"
 	overworld_exit_map = "futuristic_overworld"

@@ -10,6 +10,7 @@ func _init() -> void:
 	cave_id = "null_chamber"
 	boss_id = "masterite_curator_abstract"
 	boss_flag_key = "null_chamber_cleared"
+	boss_cutscene_id = "world6_null_chamber_boss"
 	total_floors = 3
 	overworld_exit_spawn = "catalog"
 	overworld_exit_map = "abstract_overworld"

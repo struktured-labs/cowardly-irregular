@@ -11,6 +11,7 @@ func _init() -> void:
 	cave_id = "assembly_core"
 	boss_id = "masterite_warden_industrial"
 	boss_flag_key = "assembly_core_cleared"
+	boss_cutscene_id = "world4_assembly_boss"
 	total_floors = 3
 	overworld_exit_spawn = "chemical_zone"
 	overworld_exit_map = "industrial_overworld"
