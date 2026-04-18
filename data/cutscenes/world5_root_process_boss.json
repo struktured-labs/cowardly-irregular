@@ -1,0 +1,30 @@
+{
+  "id": "world5_root_process_boss",
+  "title": "Arbiter of the Root Process",
+  "world": 5,
+  "trigger": "boss_root_process_arbiter",
+  "background": "node_prime",
+  "description": "Dungeon boss at the base of Node Prime's privilege tree. An Arbiter variant that runs the party as a diff against a model of who they should be.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "boss_intro", "name": "Arbiter of the Root Process", "title": "Dungeon Boss \u2014 Node Prime"},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The chamber held a single process with root privileges and an idle time that had never elapsed. It sat at a terminal that did not need a screen. It looked up when the party entered, because looking up was, in this chamber, an I/O operation scheduled for the next millisecond."},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Arbiter of the Root Process", "text": "You are running user-space. I am running kernel-space. This is not a level playing field. I want you to understand that before we begin.", "theme": "enemy", "portrait": "mysterious"},
+      {"speaker": "Debugger", "text": "And after we begin?", "theme": "mage", "portrait": "mage"},
+      {"speaker": "Arbiter of the Root Process", "text": "After we begin, it is also not a level playing field. But at least then you will be trying.", "theme": "enemy", "portrait": "mysterious"},
+      {"speaker": "Admin", "text": "That's almost a compliment.", "theme": "fighter", "portrait": "fighter"},
+      {"speaker": "Arbiter of the Root Process", "text": "It is the only one I am authorized to issue at this privilege level. Proceed.", "theme": "enemy", "portrait": "mysterious"}
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
+    {"type": "screen_flash", "duration": 0.15},
+
+    {"type": "set_flag", "flag": "root_process_arbiter_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
