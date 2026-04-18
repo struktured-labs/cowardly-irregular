@@ -58,6 +58,11 @@ var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Reality distortion effect state
 var _bg_rect: ColorRect
@@ -101,6 +106,9 @@ func _ready() -> void:
 	_place_signposts()
 	_place_landmarks()
 	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
 
 	# Start abstract overworld music
 	if SoundManager:
@@ -110,7 +118,86 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.setup(player, ["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	# W6: The Vertex village is the final destination. Everything before it fades.
+	if GameState.get_story_flag("w6_boss_defeated"):
+		return spawn_points.get("the_question", Vector2.ZERO)
+	return spawn_points.get("vertex_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("vertex_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "THE VERTEX"
+		marker.roof_color = Color(0.92, 0.88, 0.95)  # Near-white with faint lavender
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests — the catalog stores all removed things
+	# Small map (40x35), so tighter placement
+	var chests = [
+		# The Origin Point (south entry) — last structured supplies
+		{"id": "w6_origin_hipotion", "pos": Vector2(18, 28), "type": "item", "item": "hi_potion", "amount": 8},
+		{"id": "w6_origin_ether", "pos": Vector2(22, 28), "type": "item", "item": "ether", "amount": 8},
+		# The Catalog (west) — archived items
+		{"id": "w6_catalog_elixir", "pos": Vector2(3, 12), "type": "item", "item": "elixir", "amount": 3},
+		{"id": "w6_catalog_phoenix", "pos": Vector2(5, 20), "type": "item", "item": "phoenix_down", "amount": 5},
+		{"id": "w6_catalog_gold", "pos": Vector2(3, 8), "type": "gold", "gold": 1500},
+		# Echo Chamber (east) — duplicated rewards
+		{"id": "w6_echo_remedy", "pos": Vector2(35, 12), "type": "item", "item": "remedy", "amount": 6},
+		{"id": "w6_echo_antidote", "pos": Vector2(35, 20), "type": "item", "item": "antidote", "amount": 6},
+		# The Remnant (center) — fragments
+		{"id": "w6_remnant_elixir", "pos": Vector2(19, 14), "type": "item", "item": "elixir", "amount": 2},
+		{"id": "w6_remnant_gold", "pos": Vector2(22, 18), "type": "gold", "gold": 2000},
+		# Threshold (north) — void's edge
+		{"id": "w6_threshold_phoenix", "pos": Vector2(19, 4), "type": "item", "item": "phoenix_down", "amount": 4},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal at The Question (the one spot of color in the nothing)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
 
 
 func _place_signposts() -> void:
@@ -198,6 +285,12 @@ func _process(delta: float) -> void:
 			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:

@@ -46,6 +46,11 @@ var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Smoke effect nodes
 var _smoke_emitters: Array = []
@@ -89,6 +94,9 @@ func _ready() -> void:
 	_place_signposts()
 	_place_landmarks()
 	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
 
 	# Start industrial overworld music
 	if SoundManager:
@@ -98,8 +106,87 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.setup(player, ["conveyor_gremlin", "toxic_sludge", "assembly_line_automaton", "shift_supervisor", "rust_elemental"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	if GameState.get_story_flag("w4_boss_defeated"):
+		return spawn_points.get("rail_yard", Vector2.ZERO)
+	if GameState.get_story_flag("visited_rivet_row"):
+		return spawn_points.get("rail_yard", Vector2.ZERO)
+	return spawn_points.get("rivet_row_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("rivet_row_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "RIVET ROW"
+		marker.roof_color = Color(0.35, 0.3, 0.28)  # Grimy worker-housing gray-brown
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests across rail yard, factory floor, housing, chemical zone, break room
+	var chests = [
+		# Rail yard (north edge) — dropped shipping crates
+		{"id": "w4_rail_hipotion", "pos": Vector2(26, 5), "type": "item", "item": "hi_potion", "amount": 5},
+		{"id": "w4_rail_gold", "pos": Vector2(35, 4), "type": "gold", "gold": 600},
+		# Factory complex — maintenance caches
+		{"id": "w4_factory_ether", "pos": Vector2(22, 16), "type": "item", "item": "ether", "amount": 5},
+		{"id": "w4_factory_elixir", "pos": Vector2(28, 20), "type": "item", "item": "elixir", "amount": 1},
+		{"id": "w4_factory_gold", "pos": Vector2(42, 22), "type": "gold", "gold": 700},
+		# Chemical zone (west) — dangerous area reward
+		{"id": "w4_chem_remedy", "pos": Vector2(5, 20), "type": "item", "item": "remedy", "amount": 4},
+		{"id": "w4_chem_phoenix", "pos": Vector2(10, 25), "type": "item", "item": "phoenix_down", "amount": 2},
+		# Worker housing (east) — stashed supplies
+		{"id": "w4_housing_antidote", "pos": Vector2(50, 20), "type": "item", "item": "antidote", "amount": 5},
+		{"id": "w4_housing_gold", "pos": Vector2(54, 28), "type": "gold", "gold": 400},
+		# Break room / south — last stop before portal
+		{"id": "w4_break_ether", "pos": Vector2(36, 22), "type": "item", "item": "ether", "amount": 4},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal in break room (safer refuge)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(36 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
 
 
 func _place_signposts() -> void:
@@ -218,6 +305,12 @@ func _process(_delta: float) -> void:
 			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
