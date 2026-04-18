@@ -178,6 +178,22 @@ func _setup_buildings() -> void:
 	store.position = Vector2(12.5 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(store)
 
+	# === SHOP FLOOR FORGE (Equipment) ===
+	var forge = VillageShopScript.new()
+	forge.shop_name = "Shop Floor Forge"
+	forge.shop_type = VillageShopScript.ShopType.BLACKSMITH
+	forge.keeper_name = "Mag"
+	forge.position = Vector2(12.5 * TILE_SIZE, 8 * TILE_SIZE)
+	buildings.add_child(forge)
+
+	# === BOILERMAN'S APOTHECARY (Magic) ===
+	var magic = VillageShopScript.new()
+	magic.shop_name = "Boilerman's Apothecary"
+	magic.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
+	magic.keeper_name = "Slag"
+	magic.position = Vector2(6 * TILE_SIZE, 8 * TILE_SIZE)
+	buildings.add_child(magic)
+
 
 func _setup_treasures() -> void:
 	# Contraband stash behind the barracks

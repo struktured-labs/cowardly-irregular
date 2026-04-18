@@ -180,6 +180,22 @@ func _setup_buildings() -> void:
 	cache_store.position = Vector2(10 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(cache_store)
 
+	# === HEAP (Item Shop) ===
+	var heap = VillageShopScript.new()
+	heap.shop_name = "Heap Allocator"
+	heap.shop_type = VillageShopScript.ShopType.ITEM
+	heap.keeper_name = "MALLOC-7"
+	heap.position = Vector2(6 * TILE_SIZE, 3 * TILE_SIZE)
+	buildings.add_child(heap)
+
+	# === KERNEL SMITHY (Equipment) ===
+	var smith = VillageShopScript.new()
+	smith.shop_name = "Kernel Smithy"
+	smith.shop_type = VillageShopScript.ShopType.BLACKSMITH
+	smith.keeper_name = "COMPILE-R"
+	smith.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
+	buildings.add_child(smith)
+
 
 func _setup_treasures() -> void:
 	# Corrupted data packet — unclaimed memory
