@@ -193,6 +193,22 @@ func _setup_buildings() -> void:
 	forge.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(forge)
 
+	# === ITEM SHOP (Brasston Provisions) ===
+	var provisions = VillageShopScript.new()
+	provisions.shop_name = "Brasston Provisions"
+	provisions.shop_type = VillageShopScript.ShopType.ITEM
+	provisions.keeper_name = "Ratchet"
+	provisions.position = Vector2(9 * TILE_SIZE, 3 * TILE_SIZE)
+	buildings.add_child(provisions)
+
+	# === MAGIC (The Whistling Kettle) ===
+	var magic = VillageShopScript.new()
+	magic.shop_name = "The Whistling Kettle"
+	magic.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
+	magic.keeper_name = "Alembic"
+	magic.position = Vector2(11 * TILE_SIZE, 8 * TILE_SIZE)
+	buildings.add_child(magic)
+
 
 func _setup_treasures() -> void:
 	# Locked gear-box behind the inn — clockwork trinket

@@ -178,6 +178,24 @@ func _setup_buildings() -> void:
 	exchange.position = Vector2(11.5 * TILE_SIZE, 4 * TILE_SIZE)
 	buildings.add_child(exchange)
 
+	# === THE RECALL (Magic) ===
+	# Remembers a few spells that used to exist.
+	var recall = VillageShopScript.new()
+	recall.shop_name = "The Recall"
+	recall.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
+	recall.keeper_name = "The Archivist"
+	recall.position = Vector2(7.5 * TILE_SIZE, 4 * TILE_SIZE)
+	buildings.add_child(recall)
+
+	# === THE REMAINDER (Equipment) ===
+	# Sells what wasn't optimized away.
+	var remainder = VillageShopScript.new()
+	remainder.shop_name = "The Remainder"
+	remainder.shop_type = VillageShopScript.ShopType.BLACKSMITH
+	remainder.keeper_name = "The Smith"
+	remainder.position = Vector2(4.5 * TILE_SIZE, 10 * TILE_SIZE)
+	buildings.add_child(remainder)
+
 
 func _setup_treasures() -> void:
 	# Something left behind — no explanation given

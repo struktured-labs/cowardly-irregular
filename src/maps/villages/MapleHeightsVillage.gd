@@ -191,6 +191,22 @@ func _setup_buildings() -> void:
 	shop.position = Vector2(10 * TILE_SIZE, 7 * TILE_SIZE)
 	buildings.add_child(shop)
 
+	# === EQUIPMENT (Handyman's Garage) ===
+	var smith = VillageShopScript.new()
+	smith.shop_name = "Handyman's Garage"
+	smith.shop_type = VillageShopScript.ShopType.BLACKSMITH
+	smith.keeper_name = "Greg"
+	smith.position = Vector2(13 * TILE_SIZE, 7 * TILE_SIZE)
+	buildings.add_child(smith)
+
+	# === MAGIC (Crystal Therapy Studio) ===
+	var magic = VillageShopScript.new()
+	magic.shop_name = "Crystal Therapy Studio"
+	magic.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
+	magic.keeper_name = "Luna"
+	magic.position = Vector2(6 * TILE_SIZE, 7 * TILE_SIZE)
+	buildings.add_child(magic)
+
 
 func _setup_treasures() -> void:
 	# Hidden behind the house — a forgotten lunchbox with supplies
