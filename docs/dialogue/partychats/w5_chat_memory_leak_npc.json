@@ -1,0 +1,53 @@
+{
+  "id": "w5_chat_memory_leak_npc",
+  "title": "A Small Leak",
+  "world": 5,
+  "trigger": "party_chat_w5_leak",
+  "background": "digital_plaza",
+  "description": "Party encounters a non-hostile memory_leak in the plaza. Debugger diagnoses. Gentle.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "The blob was small. Smaller than the hostile ones in the edges of the plaza. It occupied a bench that was designated for process rest, which was not a concept the party had expected to encounter."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "The Leak", "text": "Hello.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "Debugger", "text": "...You're not attacking.", "theme": "mage", "portrait": "mage"},
+      {"speaker": "The Leak", "text": "I'm small. I'm not supposed to be big.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Leak", "text": "The ones at the edge grew. I didn't. I think they were angrier.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Debugger", "text": "Do you... know what you are?", "theme": "mage", "portrait": "mage"},
+      {"speaker": "The Leak", "text": "Memory. A little. That someone forgot to free.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Leak", "text": "I hold a small number. I don't know what the number is for. I just hold it.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Leak", "text": "Sometimes I think about what it was for. Then I think about thinking about it. Then I go quiet again.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Daemon", "text": "We could free you.", "theme": "cleric", "portrait": "cleric"},
+      {"speaker": "The Leak", "text": "You could.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Leak", "text": "But then whatever the number was for — it's gone. Really gone.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "Daemon", "text": "And if we leave you?", "theme": "cleric", "portrait": "cleric"},
+      {"speaker": "The Leak", "text": "I stay here. Small. Holding. Occasionally remembered.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Admin", "text": "We'll leave it.", "theme": "fighter", "portrait": "fighter"},
+      {"speaker": "The Leak", "text": "Thank you for speaking.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "narration", "text": "The Leak settled on the bench. It was doing the only thing it knew how to do — hold. Somewhere, in some program that was not this one, a counter was a little wrong. Forever. Gently."},
+
+    {"type": "set_flag", "flag": "party_chat_viewed_w5_chat_memory_leak_npc", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

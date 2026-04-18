@@ -1,0 +1,51 @@
+{
+  "id": "w4_chat_signal_tender",
+  "title": "Unsolicited Optimization",
+  "world": 4,
+  "trigger": "party_chat_w4_signals",
+  "background": "industrial_warehouse",
+  "description": "Signal Tender explains the rail signal system. Saboteur offers improvements nobody asked for. Comedy beat.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "The signal tower had three levers, two bells, and one lamp. Signal Tender Herta had maintained it for nineteen years. She had pride, but she had more patience, and she was dispensing both."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Herta", "text": "Red lamp, you hold. Green lamp, you go. First bell, the train is approaching. Second bell, the track is cleared.", "theme": "elder", "portrait": "elder"},
+      {"speaker": "Line Worker", "text": "Why two bells?", "theme": "fighter", "portrait": "fighter"},
+      {"speaker": "Herta", "text": "Because one time we only had one bell and there was an incident. The incident is in the manual. The manual recommends two bells.", "theme": "elder", "portrait": "elder"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Saboteur", "text": "You could do it with one bell and two lamps, actually.", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "Herta", "text": "...", "theme": "elder", "portrait": "elder"},
+      {"speaker": "Saboteur", "text": "Redundant channel. Lamp and bell cross-verify. Fewer bell swings per shift. Your arm lasts longer.", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "Herta", "text": "You have been here for six minutes.", "theme": "elder", "portrait": "elder"},
+      {"speaker": "Saboteur", "text": "And I could do the job.", "theme": "rogue", "portrait": "rogue"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Union Agitator", "text": "Don't.", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "Saboteur", "text": "But—", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "Union Agitator", "text": "Nineteen years of her arm. Don't.", "theme": "rogue", "portrait": "rogue"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Herta", "text": "Thank you.", "theme": "elder", "portrait": "elder"},
+      {"speaker": "Herta", "text": "I have heard the two-lamp idea five times before. The arm is, in fact, the point.", "theme": "elder", "portrait": "elder"}
+    ]},
+
+    {"type": "narration", "text": "A bell sounded. Then, forty-one seconds later, a second. The lamp went from red to green. Herta did not react to any of it. She had seen it happen. She would see it happen again."},
+
+    {"type": "set_flag", "flag": "party_chat_viewed_w4_chat_signal_tender", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

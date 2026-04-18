@@ -1,0 +1,53 @@
+{
+  "id": "w6_chat_the_color",
+  "title": "Defiant Red",
+  "world": 6,
+  "trigger": "party_chat_w6_color",
+  "background": "abstract_void",
+  "description": "Party stands near The Color. Quiet, almost reverent.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "There was a splash of red against the white. It should not have been there. Red had been optimized out in the third pass, the Archivist had told them. And yet."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "The Color", "text": "They call me inefficient.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Color", "text": "They are, of course, correct.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "Voice", "text": "Are you — are you holding yourself against the white?", "theme": "bard", "portrait": "bard"},
+      {"speaker": "The Color", "text": "Holding is the wrong word.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Color", "text": "I am simply not cooperating.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Faith", "text": "Does it hurt?", "theme": "cleric", "portrait": "cleric"},
+      {"speaker": "The Color", "text": "Yes. The not-cooperating is expensive.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Color", "text": "I was once many shades. Now I am one. One is cheaper than many. Soon I will be less than one.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Color", "text": "But for today, I am red.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Form", "text": "We're going to try to stop this.", "theme": "fighter", "portrait": "fighter"},
+      {"speaker": "The Color", "text": "I know. I hope you succeed.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Color", "text": "If you don't: know that I was red, for a while, on purpose. That is enough for a thing to have been.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Edge", "text": "...It's a good color.", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "The Color", "text": "Thank you.", "theme": "mysterious", "portrait": "mysterious"},
+      {"speaker": "The Color", "text": "Nobody has told me that in forty-six passes.", "theme": "mysterious", "portrait": "mysterious"}
+    ]},
+
+    {"type": "narration", "text": "The party moved on. The Color stayed where it was, red against white, for as long as it could manage. Which was — all things considered — a long time."},
+
+    {"type": "set_flag", "flag": "party_chat_viewed_w6_chat_the_color", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

@@ -27,12 +27,27 @@ Draft flag names use the existing pattern from PartyChatSystem.gd:
 - `cutscene_flag_worldN_chapterM_complete` — gates a chat to post-chapter
 - `TODO_flag_<name>` — placeholder; cowir-cutscenes to fill in exact flag
 
-## Files
+## Files (3 per world, 12 total)
 
-- `w3_chat_teatime_brasston.json` — Brasston's 4:07pm scheduled teatime (sample)
-- `w4_chat_manifest_denial.json` — Rivet Row manifest bureaucracy (sample)
-- `w5_chat_root_access.json` — Node Prime privilege philosophy (sample)
-- `w6_chat_the_remainder.json` — Abstract's rounding error (sample)
+**World 3 — Brasston / Steampunk**
+- `w3_chat_teatime_brasston.json` — Brasston's 4:07pm synchronized tea
+- `w3_chat_sprocket_drift.json` — Sprocket shares his discrepancy notebook
+- `w3_chat_clockwork_bard.json` — Busker attempts to score Brasston in 47/38
+
+**World 4 — Rivet Row / Industrial**
+- `w4_chat_manifest_denial.json` — Clerk refuses an egg because not on manifest
+- `w4_chat_union_pamphlet.json` — Union Agitator hands out a pamphlet that was never approved
+- `w4_chat_signal_tender.json` — Signal Tender Herta rebuffs Saboteur's unsolicited improvements
+
+**World 5 — Node Prime / Digital**
+- `w5_chat_root_access.json` — root@localhost has all privileges, does nothing
+- `w5_chat_memory_leak_npc.json` — A small memory_leak, non-hostile, holding a forgotten number
+- `w5_chat_packet_pharmacy.json` — Packet runs a pharmacy that dispenses TCP metaphors
+
+**World 6 — The Vertex / Abstract**
+- `w6_chat_the_remainder.json` — 0.00014 of a person, patient, quiet
+- `w6_chat_the_color.json` — One splash of red against the white, defiant by continuing to exist
+- `w6_chat_the_player.json` — NPC grinding levels in an empty spot, waiting for postgame
 
 ## Format reminder
 
