@@ -370,13 +370,20 @@ func _on_autobattle_editor_closed() -> void:
 
 
 func _sync_party_to_game_state() -> void:
-	"""Sync runtime Combatant party into GameState.player_party for leader lookup"""
+	"""Sync runtime Combatant party into GameState.player_party for menus.
+	Includes equipment IDs so shop stat comparison can work."""
 	GameState.player_party.clear()
 	for member in party:
 		var job_id = "fighter"
 		if member.job and member.job is Dictionary:
 			job_id = member.job.get("id", "fighter")
-		GameState.player_party.append({"job_id": job_id, "name": member.combatant_name})
+		GameState.player_party.append({
+			"job_id": job_id,
+			"name": member.combatant_name,
+			"equipped_weapon": member.equipped_weapon if "equipped_weapon" in member else "",
+			"equipped_armor": member.equipped_armor if "equipped_armor" in member else "",
+			"equipped_accessory": member.equipped_accessory if "equipped_accessory" in member else "",
+		})
 	# Clamp leader index in case party size changed
 	if not GameState.player_party.is_empty():
 		GameState.party_leader_index = clampi(GameState.party_leader_index, 0, GameState.player_party.size() - 1)
