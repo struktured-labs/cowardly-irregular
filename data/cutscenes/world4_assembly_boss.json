@@ -1,0 +1,30 @@
+{
+  "id": "world4_assembly_boss",
+  "title": "Warden of the Assembly Core",
+  "world": 4,
+  "trigger": "boss_assembly_core_warden",
+  "background": "industrial_factory",
+  "description": "Dungeon boss at the heart of the Assembly. A Warden variant built from salvaged line parts. Tests load limits by being one.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "boss_intro", "name": "Warden of the Assembly Core", "title": "Dungeon Boss \u2014 Assembly"},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The core chamber was not built. It was accumulated. Forty years of salvaged line parts, stacked and bolted until they remembered how to stand. In the center, a figure that had once been several figures waited with the patience of stockpiled inventory."},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Warden of the Assembly Core", "text": "You are off-manifest. I will require a variance form.", "theme": "enemy", "portrait": "mysterious"},
+      {"speaker": "Line Worker", "text": "We don't have one.", "theme": "fighter", "portrait": "fighter"},
+      {"speaker": "Warden of the Assembly Core", "text": "Then we will fill one out together. The form has fourteen sections. The last section is combat.", "theme": "enemy", "portrait": "mysterious"},
+      {"speaker": "Chem Tech", "text": "What's in the other thirteen sections?", "theme": "mage", "portrait": "mage"},
+      {"speaker": "Warden of the Assembly Core", "text": "Also combat. The paperwork and the process are the same thing here.", "theme": "enemy", "portrait": "mysterious"}
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
+    {"type": "screen_flash", "duration": 0.15},
+
+    {"type": "set_flag", "flag": "assembly_core_warden_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
