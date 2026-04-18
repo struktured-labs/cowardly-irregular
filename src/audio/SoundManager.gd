@@ -3918,17 +3918,19 @@ func _start_area_music_deferred(area_type: String) -> void:
 		"overworld_abstract":
 			_start_abstract_music()
 		"village", "harmonia_village":
-			_start_village_music()
+			_start_village_location_music("harmonia", "medieval")
+		"scriptura_village":
+			_start_village_location_music("scriptura", "medieval")
 		"maple_heights_village":
-			_start_village_world_music("suburban")
+			_start_village_location_music("maple_heights", "suburban")
 		"brasston_village":
-			_start_village_world_music("steampunk")
+			_start_village_location_music("brasston", "steampunk")
 		"rivet_row_village":
-			_start_village_world_music("industrial")
+			_start_village_location_music("rivet_row", "industrial")
 		"node_prime_village":
-			_start_village_world_music("digital")
+			_start_village_location_music("node_prime", "digital")
 		"vertex_village":
-			_start_village_world_music("abstract")
+			_start_village_location_music("vertex", "abstract")
 		"cave", "whispering_cave":
 			_start_dungeon_music("medieval")
 		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
@@ -3983,6 +3985,19 @@ func _start_village_music() -> void:
 
 	_music_buffer = _generate_village_music(sample_rate, total_duration, bpm)
 	_create_and_play_looping_wav(_music_buffer, sample_rate, "village")
+
+
+func _start_village_location_music(location_id: String, world_suffix: String) -> void:
+	"""Play village music: try per-location OGG, then per-world, then generic medieval."""
+	_music_playing = true
+	# Try per-location track (village_harmonia, village_brasston, etc.)
+	if _try_play_from_manifest("village_" + location_id):
+		return
+	# Fall back to per-world track (village_suburban, village_steampunk, etc.)
+	if _try_play_from_manifest("village_" + world_suffix):
+		return
+	# Fall back to generic village
+	_start_village_music()
 
 
 func _start_village_world_music(world_suffix: String) -> void:
