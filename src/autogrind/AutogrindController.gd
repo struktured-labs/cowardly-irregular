@@ -5,6 +5,8 @@ extends Node
 
 signal grind_battle_requested(enemies: Array, terrain: String)
 signal grind_complete(reason: String)
+signal grind_paused()
+signal grind_resumed()
 signal tier_changed(new_tier: int)
 signal region_advanced(from_region: String, to_region: String, world_num: int)
 
@@ -13,7 +15,8 @@ enum State {
 	PRE_BATTLE,
 	BATTLE_RUNNING,
 	POST_BATTLE,
-	BETWEEN_BATTLES
+	BETWEEN_BATTLES,
+	PAUSED
 }
 
 enum GrindTier {
@@ -41,6 +44,7 @@ var _current_meta_boss_data: Dictionary = {}
 var _auto_advance_regions: bool = true  # Auto-advance to next world when region cracked
 var _next_battle_enemy_boost: float = 0.0
 var _next_battle_exp_bonus: float = 0.0
+var _state_before_pause: State = State.IDLE
 
 func _get_between_battle_delay() -> float:
 	if headless_mode:
@@ -368,6 +372,14 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 			# on_battle_defeat may have triggered permadeath and already stopped things
 			stop_grind("Party defeated")
 
+	# Check for deferred pause (requested mid-battle)
+	if _state_before_pause == State.BETWEEN_BATTLES and _state == State.BETWEEN_BATTLES:
+		_state_before_pause = State.IDLE
+		_state = State.PAUSED
+		Engine.time_scale = 1.0
+		print("[AUTOGRIND] Deferred pause activated after battle end")
+		grind_paused.emit()
+
 
 ## Handle region cracked — auto-advance to next world if enabled
 func _on_region_cracked(region_id: String, crack_level: int) -> void:
@@ -421,6 +433,47 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	grind_complete.emit(reason)
 
 
+## Pause the grind — freezes state without stopping. Can only pause between battles.
+func pause_grind() -> void:
+	if _state == State.IDLE or _state == State.PAUSED:
+		return
+
+	# If mid-battle, defer pause until battle ends
+	if _state == State.BATTLE_RUNNING:
+		_state_before_pause = State.BETWEEN_BATTLES
+		print("[AUTOGRIND] Pause queued — will pause after current battle")
+		return
+
+	_state_before_pause = _state
+	_state = State.PAUSED
+	Engine.time_scale = 1.0
+	print("[AUTOGRIND] Controller paused (was %s)" % State.keys()[_state_before_pause])
+	grind_paused.emit()
+
+
+## Resume from pause — restores the pre-pause state
+func resume_grind() -> void:
+	if _state != State.PAUSED:
+		return
+
+	_state = State.BETWEEN_BATTLES
+	_between_battle_timer = _get_between_battle_delay()
+
+	# Restore battle speed
+	if not headless_mode:
+		var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+		var speed_idx = BattleSceneScript._battle_speed_index
+		if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
+			Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
+
+	print("[AUTOGRIND] Controller resumed")
+	grind_resumed.emit()
+
+
+func is_paused() -> bool:
+	return _state == State.PAUSED
+
+
 ## Save current autobattle toggle states for all party members
 func _save_autobattle_states() -> void:
 	_saved_autobattle_states.clear()
@@ -470,7 +523,10 @@ func get_grind_stats() -> Dictionary:
 		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,
 		"permadead": AutogrindSystem.permadead_characters.duplicate(),
 		"time_multiplier": AutogrindSystem.get_time_multiplier(),
-		"fatigue_events_triggered": AutogrindSystem.fatigue_events_triggered
+		"fatigue_events_triggered": AutogrindSystem.fatigue_events_triggered,
+		"per_character_exp": AutogrindSystem.per_character_exp.duplicate(),
+		"items_consumed": AutogrindSystem.items_consumed.duplicate(),
+		"elapsed_seconds": sys_stats.get("elapsed_seconds", 0.0),
 	}
 
 

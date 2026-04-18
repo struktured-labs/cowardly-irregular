@@ -38,8 +38,58 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var panel_w = 500.0
-	var panel_h = 540.0
+	# Build stats data first to compute panel height
+	var elapsed = _stats.get("elapsed_seconds", 0.0)
+	var dur_min = int(elapsed) / 60
+	var dur_sec = int(elapsed) % 60
+	var bpm = _stats.get("battles_won", 0) / maxf(elapsed / 60.0, 0.01)
+
+	var stats_data = [
+		{"label": "Battles Won", "value": str(_stats.get("battles_won", 0)), "color": VALUE_COLOR},
+		{"label": "Total EXP", "value": str(_stats.get("total_exp", 0)), "color": VALUE_COLOR},
+		{"label": "Total Gold", "value": str(_stats.get("total_gold", 0)), "color": VALUE_COLOR},
+		{"label": "Time Elapsed", "value": "%d:%02d" % [dur_min, dur_sec], "color": VALUE_COLOR},
+		{"label": "Battles/Min", "value": "%.1f" % bpm, "color": VALUE_COLOR},
+		{"label": "Consecutive Wins", "value": str(_stats.get("consecutive_wins", 0)), "color": VALUE_COLOR},
+		{"label": "Efficiency", "value": "%.1fx" % _stats.get("efficiency", 1.0), "color": VALUE_COLOR},
+		{"label": "Corruption", "value": "%.2f" % _stats.get("corruption", 0.0), "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
+		{"label": "Adaptation", "value": "%.2f" % _stats.get("adaptation", 0.0), "color": LABEL_COLOR},
+		{"label": "Collapses", "value": str(_stats.get("collapse_count", 0)), "color": BAD_COLOR if _stats.get("collapse_count", 0) > 0 else VALUE_COLOR},
+	]
+
+	# Per-character EXP breakdown
+	var char_exp = _stats.get("per_character_exp", {})
+	if not char_exp.is_empty():
+		for char_name in char_exp:
+			stats_data.append({"label": "  %s EXP" % char_name, "value": "+%d" % char_exp[char_name], "color": Color(0.5, 0.8, 1.0)})
+
+	# Items consumed breakdown
+	var items_consumed = _stats.get("items_consumed", {})
+	if not items_consumed.is_empty():
+		var item_parts: Array = []
+		for item_id in items_consumed:
+			item_parts.append("%s x%d" % [item_id.replace("_", " ").capitalize(), items_consumed[item_id]])
+		stats_data.append({"label": "Items Used", "value": ", ".join(item_parts), "color": LABEL_COLOR})
+	else:
+		stats_data.append({"label": "Items Used", "value": "None", "color": LABEL_COLOR})
+
+	stats_data.append({"label": "Fatigue Events", "value": str(_stats.get("fatigue_events_triggered", 0)), "color": LABEL_COLOR})
+	var time_mult = _stats.get("time_multiplier", 1.0)
+	stats_data.append({"label": "Time Bonus", "value": "%.1fx" % time_mult, "color": VALUE_COLOR})
+
+	var grade = _compute_grade()
+	stats_data.append({"label": "SESSION GRADE", "value": grade["letter"], "color": grade["color"]})
+
+	var permadead = _stats.get("permadead", [])
+	if permadead.size() > 0:
+		stats_data.append({"label": "PERMADEAD", "value": ", ".join(permadead), "color": BAD_COLOR})
+
+	# Compute panel height from row count
+	var row_h = 26.0
+	var panel_w = 520.0
+	var panel_h = 68.0 + stats_data.size() * row_h + 50.0  # header + rows + footer
+	panel_h = min(panel_h, vp_size.y - 40)
+
 	var panel = Control.new()
 	panel.position = Vector2((vp_size.x - panel_w) / 2, (vp_size.y - panel_h) / 2)
 	panel.size = Vector2(panel_w, panel_h)
@@ -71,44 +121,20 @@ func _build_ui() -> void:
 	sep.size = Vector2(panel_w - 32, 1)
 	panel.add_child(sep)
 
-	var stats_data = [
-		{"label": "Battles Won", "value": str(_stats.get("battles_won", 0)), "color": VALUE_COLOR},
-		{"label": "Total EXP", "value": str(_stats.get("total_exp", 0)), "color": VALUE_COLOR},
-		{"label": "Total Gold", "value": str(_stats.get("total_gold", 0)), "color": VALUE_COLOR},
-		{"label": "Consecutive Wins", "value": str(_stats.get("consecutive_wins", 0)), "color": VALUE_COLOR},
-		{"label": "Efficiency", "value": "%.1fx" % _stats.get("efficiency", 1.0), "color": VALUE_COLOR},
-		{"label": "Corruption", "value": "%.2f" % _stats.get("corruption", 0.0), "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
-		{"label": "Adaptation", "value": "%.2f" % _stats.get("adaptation", 0.0), "color": LABEL_COLOR},
-		{"label": "Collapses", "value": str(_stats.get("collapse_count", 0)), "color": BAD_COLOR if _stats.get("collapse_count", 0) > 0 else VALUE_COLOR},
-		{"label": "Items Used", "value": str(_stats.get("total_items", 0)), "color": LABEL_COLOR},
-	]
-
-	stats_data.append({"label": "Fatigue Events", "value": str(_stats.get("fatigue_events_triggered", 0)), "color": LABEL_COLOR})
-	var time_mult = _stats.get("time_multiplier", 1.0)
-	stats_data.append({"label": "Time Bonus", "value": "%.1fx" % time_mult, "color": VALUE_COLOR})
-
-	var grade = _compute_grade()
-	stats_data.append({"label": "SESSION GRADE", "value": grade["letter"], "color": grade["color"]})
-
-	var permadead = _stats.get("permadead", [])
-	if permadead.size() > 0:
-		stats_data.append({"label": "PERMADEAD", "value": ", ".join(permadead), "color": BAD_COLOR})
-
 	var y = 68.0
-	var row_h = 30.0
 	for s in stats_data:
 		var lbl = Label.new()
 		lbl.text = s["label"]
 		lbl.position = Vector2(30, y)
-		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.add_theme_color_override("font_color", LABEL_COLOR)
 		panel.add_child(lbl)
 
 		var val = Label.new()
 		val.text = s["value"]
-		val.position = Vector2(panel_w - 180, y)
-		val.size = Vector2(150, 20)
-		val.add_theme_font_size_override("font_size", 14)
+		val.position = Vector2(panel_w - 200, y)
+		val.size = Vector2(170, 20)
+		val.add_theme_font_size_override("font_size", 13)
 		val.add_theme_color_override("font_color", s["color"])
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		panel.add_child(val)
