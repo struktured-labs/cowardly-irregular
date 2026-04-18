@@ -207,6 +207,8 @@ func _place_signposts() -> void:
 		{"pos": Vector2(42, 15), "text": "→ Industrial District ⚠ Loud machinery"},
 		# Steam pipe area
 		{"pos": Vector2(16, 35), "text": "← Steam Pipes · watch the vents"},
+		# Steampunk Mechanism dungeon
+		{"pos": Vector2(46, 30), "text": "↓ The Grand Mechanism — dungeon ⚙"},
 	]
 	for s in signs:
 		var post = Signpost.new()
@@ -532,6 +534,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(brasston_trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))
 	brasston_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(brasston_trans)
+
+	# Steampunk Mechanism dungeon entrance (industrial district, east)
+	var mechanism_trans = AreaTransitionScript.new()
+	mechanism_trans.name = "SteampunkMechanismEntrance"
+	mechanism_trans.target_map = "steampunk_mechanism"
+	mechanism_trans.target_spawn = "default"
+	mechanism_trans.require_interaction = true
+	mechanism_trans.indicator_text = "Descend into the Grand Mechanism"
+	mechanism_trans.position = Vector2(48 * TILE_SIZE + TILE_SIZE / 2, 30 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(mechanism_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	mechanism_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(mechanism_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
