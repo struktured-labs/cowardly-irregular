@@ -202,10 +202,20 @@ func _place_save_point() -> void:
 
 func _place_signposts() -> void:
 	var signs = [
-		{"pos": Vector2(19, 16), "text": "The Vertex →"},
-		{"pos": Vector2(19, 30), "text": "↓ Return to Source Layer"},
-		{"pos": Vector2(10, 16), "text": "← The Catalog"},
-		{"pos": Vector2(28, 16), "text": "→ Echo Chamber"},
+		# Orientation — even signs here are existential.
+		{"pos": Vector2(19, 28), "text": "W6 · The Absence"},
+		# Return portal (south)
+		{"pos": Vector2(19, 30), "text": "↓ Return  ◉ Source Layer (W5)"},
+		# The Vertex (center)
+		{"pos": Vector2(19, 18), "text": "The Vertex — what remains"},
+		# The Catalog (west)
+		{"pos": Vector2(7, 16), "text": "← The Catalog · removed things"},
+		# Echo Chamber (east)
+		{"pos": Vector2(31, 16), "text": "→ Echo Chamber · identical rooms"},
+		# The Threshold (north)
+		{"pos": Vector2(19, 6), "text": "↑ The Threshold — geometry dissolves"},
+		# The Question (center — no arrow; it's a marker)
+		{"pos": Vector2(16, 19), "text": "The Question ? one spot of color"},
 	]
 	for s in signs:
 		var post = Signpost.new()

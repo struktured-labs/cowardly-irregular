@@ -196,10 +196,18 @@ func _place_save_point() -> void:
 
 func _place_signposts() -> void:
 	var signs = [
-		{"pos": Vector2(40, 20), "text": "→ Node Prime"},
-		{"pos": Vector2(27, 40), "text": "↓ Return Portal"},
-		{"pos": Vector2(27, 4), "text": "↑ Server Farm / Forward"},
-		{"pos": Vector2(45, 32), "text": "→ Glitch Sector ⚠"},
+		# Orientation at entry (south)
+		{"pos": Vector2(27, 35), "text": "W5 · Source Layer"},
+		# Return portal (south)
+		{"pos": Vector2(27, 40), "text": "↓ Return  ⚒ Assembly Line (W4)"},
+		# Forward portal (north server farm)
+		{"pos": Vector2(27, 7), "text": "↑ Server Farm  ∅ The Absence (W6)"},
+		# Node Prime village (east)
+		{"pos": Vector2(45, 20), "text": "→ Node Prime · data village"},
+		# Plaza (central)
+		{"pos": Vector2(27, 20), "text": "Central Plaza · save point"},
+		# Glitch sector warning (SE)
+		{"pos": Vector2(40, 30), "text": "→ Glitch Sector ⚠ corrupted memory"},
 	]
 	for s in signs:
 		var post = Signpost.new()
