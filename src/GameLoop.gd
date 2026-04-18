@@ -30,6 +30,8 @@ const FireDragonCaveScript = preload("res://src/maps/dungeons/FireDragonCave.gd"
 const AssemblyCoreScript = preload("res://src/maps/dungeons/AssemblyCore.gd")
 const RootProcessScript = preload("res://src/maps/dungeons/RootProcess.gd")
 const NullChamberScript = preload("res://src/maps/dungeons/NullChamber.gd")
+const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnderground.gd")
+const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
 const IndustrialOverworldScript = preload("res://src/exploration/IndustrialOverworld.gd")
@@ -1309,6 +1311,10 @@ func _start_exploration() -> void:
 			exploration_scene = _create_dragon_cave_from_script(RootProcessScript)
 		"null_chamber":
 			exploration_scene = _create_dragon_cave_from_script(NullChamberScript)
+		"suburban_underground":
+			exploration_scene = _create_dragon_cave_from_script(SuburbanUndergroundScript)
+		"steampunk_mechanism":
+			exploration_scene = _create_dragon_cave_from_script(SteampunkMechanismScript)
 		"steampunk_overworld":
 			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":
@@ -1442,6 +1448,10 @@ func _prewarm_area_sprites() -> void:
 			common_enemies = ["rogue_process", "memory_leak", "recursive_loop", "data_wraith", "masterite_arbiter_futuristic"]
 		"null_chamber":
 			common_enemies = ["null_entity", "forgotten_variable", "empty_set", "the_absence", "masterite_curator_abstract"]
+		"suburban_underground":
+			common_enemies = ["spiteful_crow", "unassuming_dog", "skate_punk", "cranky_lady", "masterite_warden_suburban"]
+		"steampunk_mechanism":
+			common_enemies = ["steam_rat", "cog_swarm", "clockwork_sentinel", "brass_golem", "meta_knight"]
 		"steampunk_overworld":
 			common_enemies = ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"]
 		"suburban_overworld":
@@ -2063,6 +2073,10 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "digital"
 		"null_chamber":
 			return "void"
+		"suburban_underground":
+			return "cave"
+		"steampunk_mechanism":
+			return "steampunk"
 		"steampunk_overworld":
 			return "steampunk"
 		"suburban_overworld":

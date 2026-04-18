@@ -235,6 +235,8 @@ func _place_signposts() -> void:
 		{"pos": Vector2(22, 17), "text": "→ Strip Mall  Shops here"},
 		# Bus stop marker
 		{"pos": Vector2(40, 30), "text": "Bus Stop — sit and think"},
+		# Suburban Underground dungeon
+		{"pos": Vector2(10, 28), "text": "↓ Suburban Underground — dungeon 🕳"},
 	]
 	for s in signs:
 		var post = Signpost.new()
@@ -576,6 +578,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(maple_heights_trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))
 	maple_heights_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(maple_heights_trans)
+
+	# Suburban Underground dungeon entrance (park area, storm drain)
+	var underground_trans = AreaTransitionScript.new()
+	underground_trans.name = "SuburbanUndergroundEntrance"
+	underground_trans.target_map = "suburban_underground"
+	underground_trans.target_spawn = "default"
+	underground_trans.require_interaction = true
+	underground_trans.indicator_text = "Descend into the Suburban Underground"
+	underground_trans.position = Vector2(10 * TILE_SIZE + TILE_SIZE / 2, 30 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(underground_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	underground_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(underground_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
