@@ -3,7 +3,7 @@
   "title": "A Small Leak",
   "world": 5,
   "trigger": "party_chat_w5_leak",
-  "background": "digital_plaza",
+  "background": "node_prime",
   "description": "Party encounters a non-hostile memory_leak in the plaza. Debugger diagnoses. Gentle.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},

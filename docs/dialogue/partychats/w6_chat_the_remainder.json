@@ -3,7 +3,7 @@
   "title": "A Small Fraction",
   "world": 6,
   "trigger": "party_chat_w6_remainder",
-  "background": "abstract_void",
+  "background": "vertex_village",
   "description": "Party speaks with The Remainder. Final-world character beat. Quiet, small, lands.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},

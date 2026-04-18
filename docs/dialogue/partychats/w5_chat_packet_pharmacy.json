@@ -3,7 +3,7 @@
   "title": "Drops In, Drops Out",
   "world": 5,
   "trigger": "party_chat_w5_packets",
-  "background": "digital_plaza",
+  "background": "node_prime",
   "description": "Packet runs a pharmacy in data-terms. Daemon tries to make sense of it. Affectionate absurdism.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},

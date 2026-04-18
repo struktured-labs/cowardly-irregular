@@ -3,7 +3,7 @@
   "title": "Pamphlet, Unapproved",
   "world": 4,
   "trigger": "party_chat_w4_union",
-  "background": "industrial_warehouse",
+  "background": "rivet_row_factory",
   "description": "Union Agitator hands out a pamphlet that was never cleared. Line Worker reads it. Character beat.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},

@@ -3,7 +3,7 @@
   "title": "Unsolicited Optimization",
   "world": 4,
   "trigger": "party_chat_w4_signals",
-  "background": "industrial_warehouse",
+  "background": "rivet_row_factory",
   "description": "Signal Tender explains the rail signal system. Saboteur offers improvements nobody asked for. Comedy beat.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},

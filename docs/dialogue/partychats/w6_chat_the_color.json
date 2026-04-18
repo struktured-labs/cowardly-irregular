@@ -3,7 +3,7 @@
   "title": "Defiant Red",
   "world": 6,
   "trigger": "party_chat_w6_color",
-  "background": "abstract_void",
+  "background": "vertex_village",
   "description": "Party stands near The Color. Quiet, almost reverent.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},

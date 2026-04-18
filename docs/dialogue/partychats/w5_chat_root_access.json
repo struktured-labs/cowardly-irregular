@@ -3,7 +3,7 @@
   "title": "root@localhost",
   "world": 5,
   "trigger": "party_chat_w5_root",
-  "background": "digital_plaza",
+  "background": "node_prime",
   "description": "Party meets the NPC root@localhost and has a short conversation about privileges. Character beat.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},
