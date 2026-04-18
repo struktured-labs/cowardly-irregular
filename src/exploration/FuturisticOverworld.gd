@@ -47,6 +47,11 @@ var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Glitch effect state
 var _glitch_overlay: ColorRect
@@ -94,6 +99,9 @@ func _ready() -> void:
 	_place_signposts()
 	_place_landmarks()
 	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
 
 	# Start futuristic overworld music
 	if SoundManager:
@@ -103,8 +111,87 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.setup(player, ["memory_leak", "rogue_process", "recursive_loop", "data_wraith", "firewall_sentinel"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	if GameState.get_story_flag("w5_boss_defeated"):
+		return spawn_points.get("server_farm", Vector2.ZERO)
+	if GameState.get_story_flag("visited_node_prime"):
+		return spawn_points.get("server_farm", Vector2.ZERO)
+	return spawn_points.get("node_prime_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("node_prime_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "NODE PRIME"
+		marker.roof_color = Color(0.15, 0.75, 0.85)  # Neon cyan server glow
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests across server farm, plaza, glitch sector, node prime approach
+	var chests = [
+		# Server farm (north) — orphaned data caches
+		{"id": "w5_server_ether", "pos": Vector2(24, 6), "type": "item", "item": "ether", "amount": 6},
+		{"id": "w5_server_gold", "pos": Vector2(30, 8), "type": "gold", "gold": 800},
+		# Plaza — public-facing terminals
+		{"id": "w5_plaza_hipotion", "pos": Vector2(22, 18), "type": "item", "item": "hi_potion", "amount": 5},
+		{"id": "w5_plaza_elixir", "pos": Vector2(32, 18), "type": "item", "item": "elixir", "amount": 2},
+		# Glitch sector — dangerous corrupted loot
+		{"id": "w5_glitch_phoenix", "pos": Vector2(20, 32), "type": "item", "item": "phoenix_down", "amount": 3},
+		{"id": "w5_glitch_remedy", "pos": Vector2(26, 34), "type": "item", "item": "remedy", "amount": 5},
+		{"id": "w5_glitch_gold", "pos": Vector2(45, 32), "type": "gold", "gold": 1000},
+		# Node Prime approach — compressed archives
+		{"id": "w5_node_ether", "pos": Vector2(44, 20), "type": "item", "item": "ether", "amount": 5},
+		{"id": "w5_node_antidote", "pos": Vector2(47, 24), "type": "item", "item": "antidote", "amount": 5},
+		# Southern return portal
+		{"id": "w5_south_gold", "pos": Vector2(30, 36), "type": "gold", "gold": 500},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal at plaza (neutral ground before glitch sector)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
 
 
 func _place_signposts() -> void:
@@ -228,6 +315,12 @@ func _process(delta: float) -> void:
 			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
