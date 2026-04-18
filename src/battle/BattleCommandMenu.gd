@@ -543,6 +543,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			if is_instance_valid(target) and target.is_alive:
 				_scene._ui_manager.reveal_enemy_stats(target)
 				_show_scan_popup(target)
+				_add_scan_indicators_to_sprite(target)
 				_scene.log_message("[color=aqua]Scanned %s![/color]" % target.combatant_name)
 				# Scan uses the turn (costs 1 AP via defer-like action)
 				BattleManager.player_defer()
@@ -858,23 +859,35 @@ func _show_scan_popup(enemy: Combatant) -> void:
 	stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(stats_label)
 
-	# Weaknesses
+	# Weaknesses — visual icon badges
 	if enemy.elemental_weaknesses.size() > 0:
-		var weak_label = Label.new()
-		weak_label.text = "Weak: %s" % ", ".join(enemy.elemental_weaknesses)
-		weak_label.add_theme_font_size_override("font_size", 11)
-		weak_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.3))
-		weak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		vbox.add_child(weak_label)
+		var weak_header = Label.new()
+		weak_header.text = "WEAK"
+		weak_header.add_theme_font_size_override("font_size", 10)
+		weak_header.add_theme_color_override("font_color", Color(1.0, 0.5, 0.3))
+		weak_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(weak_header)
+		var weak_row = HBoxContainer.new()
+		weak_row.add_theme_constant_override("separation", 4)
+		weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for element in enemy.elemental_weaknesses:
+			weak_row.add_child(_create_element_badge(element, true))
+		vbox.add_child(weak_row)
 
-	# Resistances
+	# Resistances — visual icon badges
 	if enemy.elemental_resistances.size() > 0:
-		var resist_label = Label.new()
-		resist_label.text = "Resist: %s" % ", ".join(enemy.elemental_resistances)
-		resist_label.add_theme_font_size_override("font_size", 11)
-		resist_label.add_theme_color_override("font_color", Color(0.3, 0.5, 1.0))
-		resist_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		vbox.add_child(resist_label)
+		var resist_header = Label.new()
+		resist_header.text = "RESIST"
+		resist_header.add_theme_font_size_override("font_size", 10)
+		resist_header.add_theme_color_override("font_color", Color(0.3, 0.5, 1.0))
+		resist_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(resist_header)
+		var resist_row = HBoxContainer.new()
+		resist_row.add_theme_constant_override("separation", 4)
+		resist_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for element in enemy.elemental_resistances:
+			resist_row.add_child(_create_element_badge(element, false))
+		vbox.add_child(resist_row)
 
 	# Drop table
 	var mt = enemy.get_meta("monster_type", "")
@@ -906,6 +919,104 @@ func _show_scan_popup(enemy: Combatant) -> void:
 	tween.tween_property(popup, "modulate:a", 1.0, 2.0)  # Hold 2 seconds
 	tween.tween_property(popup, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(popup.queue_free)
+
+
+func _add_scan_indicators_to_sprite(enemy: Combatant) -> void:
+	"""Add small colored element dots below an enemy sprite after scanning"""
+	var sprite = _scene._get_combatant_sprite(enemy)
+	if not sprite or not is_instance_valid(sprite):
+		return
+	# Don't add twice
+	if sprite.has_node("ScanIndicators"):
+		return
+
+	var indicators = HBoxContainer.new()
+	indicators.name = "ScanIndicators"
+	indicators.add_theme_constant_override("separation", 2)
+	indicators.position = Vector2(-25, 58)  # Below name label and HP bar
+	indicators.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sprite.add_child(indicators)
+
+	# Weakness dots (red-bordered)
+	for element in enemy.elemental_weaknesses:
+		var dot = ColorRect.new()
+		var color = ELEMENT_COLORS.get(element, Color(0.7, 0.7, 0.7))
+		dot.color = color
+		dot.custom_minimum_size = Vector2(6, 6)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		indicators.add_child(dot)
+
+	# Small gap between weaknesses and resistances
+	if enemy.elemental_weaknesses.size() > 0 and enemy.elemental_resistances.size() > 0:
+		var gap = Control.new()
+		gap.custom_minimum_size = Vector2(4, 0)
+		indicators.add_child(gap)
+
+	# Resistance dots (darker, with X overlay feel)
+	for element in enemy.elemental_resistances:
+		var dot = ColorRect.new()
+		var color = ELEMENT_COLORS.get(element, Color(0.7, 0.7, 0.7))
+		dot.color = color.darkened(0.5)
+		dot.custom_minimum_size = Vector2(6, 6)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		indicators.add_child(dot)
+
+
+## Element colors for scan badges
+const ELEMENT_COLORS: Dictionary = {
+	"fire": Color(1.0, 0.4, 0.1),
+	"ice": Color(0.3, 0.7, 1.0),
+	"lightning": Color(1.0, 1.0, 0.3),
+	"dark": Color(0.6, 0.2, 0.8),
+	"holy": Color(1.0, 0.95, 0.7),
+	"physical": Color(0.8, 0.6, 0.4),
+	"wind": Color(0.5, 0.9, 0.5),
+	"earth": Color(0.7, 0.5, 0.3),
+	"water": Color(0.3, 0.5, 0.9),
+	"poison": Color(0.5, 0.8, 0.3),
+}
+
+const ELEMENT_SYMBOLS: Dictionary = {
+	"fire": "🔥", "ice": "❄", "lightning": "⚡", "dark": "🌑",
+	"holy": "✦", "physical": "⚔", "wind": "🌀", "earth": "🪨",
+	"water": "💧", "poison": "☠",
+}
+
+
+func _create_element_badge(element: String, is_weakness: bool) -> PanelContainer:
+	"""Create a colored badge for an element (weakness=red border, resist=blue border)"""
+	var panel = PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var color = ELEMENT_COLORS.get(element, Color(0.7, 0.7, 0.7))
+	var border = Color(1.0, 0.4, 0.3) if is_weakness else Color(0.3, 0.4, 1.0)
+
+	var badge_style = StyleBoxFlat.new()
+	badge_style.bg_color = Color(color.r * 0.3, color.g * 0.3, color.b * 0.3, 0.8)
+	badge_style.border_color = border
+	badge_style.border_width_top = 1
+	badge_style.border_width_bottom = 1
+	badge_style.border_width_left = 1
+	badge_style.border_width_right = 1
+	badge_style.corner_radius_top_left = 3
+	badge_style.corner_radius_top_right = 3
+	badge_style.corner_radius_bottom_left = 3
+	badge_style.corner_radius_bottom_right = 3
+	badge_style.content_margin_left = 4
+	badge_style.content_margin_right = 4
+	badge_style.content_margin_top = 1
+	badge_style.content_margin_bottom = 1
+	panel.add_theme_stylebox_override("panel", badge_style)
+
+	var symbol = ELEMENT_SYMBOLS.get(element, "?")
+	var label = Label.new()
+	label.text = "%s %s" % [symbol, element.capitalize()]
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(label)
+
+	return panel
 
 
 func close_win98_menu() -> void:
