@@ -452,23 +452,30 @@ func _update_description_for_item(item_id: String) -> void:
 	desc += "%s\n" % item_data.get("name", "???")
 	desc += "%s\n\n" % item_data.get("description", "No description")
 
-	# Show stats for equipment (blacksmith) with comparison vs current gear
+	# Show stats + comparison for equipment (blacksmith)
 	if shop_type == ShopType.BLACKSMITH:
 		var stat_mods = item_data.get("stat_mods", {})
 		if not stat_mods.is_empty():
-			desc += "Stats:\n"
-			# Get party leader's current equipment stats for comparison
-			var current_mods = _get_leader_equipment_stats(item_data)
-			for stat in stat_mods:
-				var value = stat_mods[stat]
-				var current_val = current_mods.get(stat, 0)
-				var diff = value - current_val
-				if diff > 0:
-					desc += "  %s: %+d  (+%d)\n" % [stat.capitalize(), value, diff]
-				elif diff < 0:
-					desc += "  %s: %+d  (%d)\n" % [stat.capitalize(), value, diff]
-				else:
-					desc += "  %s: %+d  (=)\n" % [stat.capitalize(), value]
+			var comparison := _compare_equipment(item_id, item_data)
+			if comparison.is_empty():
+				desc += "Stats:\n"
+				for stat in stat_mods:
+					var value = stat_mods[stat]
+					if value != 0:
+						desc += "  %s: %+d\n" % [stat.capitalize(), value]
+			else:
+				desc += "Stats (vs equipped):\n"
+				for stat in stat_mods:
+					var value = stat_mods[stat]
+					if value == 0 and not comparison.has(stat):
+						continue
+					var delta: int = comparison.get(stat, 0)
+					if delta > 0:
+						desc += "  %s: %+d  (+%d)\n" % [stat.capitalize(), value, delta]
+					elif delta < 0:
+						desc += "  %s: %+d  (%d)\n" % [stat.capitalize(), value, delta]
+					elif value != 0:
+						desc += "  %s: %+d  (=)\n" % [stat.capitalize(), value]
 
 	# Show MP cost for magic
 	if _is_magic_shop():
@@ -485,23 +492,46 @@ func _update_description_for_item(item_id: String) -> void:
 	description_label.text = desc
 
 
-func _get_leader_equipment_stats(new_item: Dictionary) -> Dictionary:
-	"""Get the stat_mods of the party leader's currently equipped item in the same slot"""
+func _compare_equipment(item_id: String, item_data: Dictionary) -> Dictionary:
+	"""Compare item_data's stat_mods to the party leader's currently equipped
+	gear in the same slot (weapon vs weapon, armor vs armor). Returns a dict
+	of stat deltas: positive = upgrade, negative = downgrade. Empty if no
+	comparison possible."""
 	if not game_state or game_state.player_party.is_empty():
 		return {}
-	var leader = game_state.player_party[0]
-	# Determine equipment slot from the new item's category
-	var category = new_item.get("category", new_item.get("type", ""))
-	var equipped_id = ""
-	match category:
-		"weapon": equipped_id = leader.get("equipped_weapon", "")
-		"armor": equipped_id = leader.get("equipped_armor", "")
-		"accessory": equipped_id = leader.get("equipped_accessory", "")
-	if equipped_id.is_empty():
+	var leader: Dictionary = game_state.player_party[0]
+	var new_mods: Dictionary = item_data.get("stat_mods", {})
+
+	# Determine which slot this equipment goes in and what's currently equipped
+	var current_id := ""
+	if equipment_system.weapons.has(item_id):
+		current_id = leader.get("equipped_weapon", "")
+	elif equipment_system.armors.has(item_id):
+		current_id = leader.get("equipped_armor", "")
+	elif equipment_system.accessories.has(item_id):
+		current_id = leader.get("equipped_accessory", "")
+	else:
 		return {}
-	# Look up the equipped item's stat_mods
-	var equipped_data = _get_item_data(equipped_id)
-	return equipped_data.get("stat_mods", {})
+
+	# Get current equipment stat mods
+	var current_mods: Dictionary = {}
+	if current_id != "":
+		var current_data: Dictionary = {}
+		if equipment_system.weapons.has(current_id):
+			current_data = equipment_system.weapons[current_id]
+		elif equipment_system.armors.has(current_id):
+			current_data = equipment_system.armors[current_id]
+		elif equipment_system.accessories.has(current_id):
+			current_data = equipment_system.accessories[current_id]
+		current_mods = current_data.get("stat_mods", {})
+
+	# Calculate delta: new - current
+	var delta: Dictionary = {}
+	for stat in new_mods:
+		var new_val: int = new_mods.get(stat, 0)
+		var cur_val: int = current_mods.get(stat, 0)
+		delta[stat] = new_val - cur_val
+	return delta
 
 
 func _flash_gold_label() -> void:
