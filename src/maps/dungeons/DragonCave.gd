@@ -143,13 +143,17 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
 
-	# Treasure chest on floors before the boss (scaling loot)
+	# Treasure chests at each T marker on the floor (plus boss-floor drop)
 	_place_floor_treasure(floor_num)
 
-	# Save crystal on penultimate floor (rest before boss)
-	if floor_num == total_floors - 1:
+	# In-dungeon orientation signposts (floor indicator, stair directions)
+	_place_dungeon_signposts(floor_num)
+
+	# Save crystal on entry floor (floor 1) and penultimate floor (rest before boss)
+	if floor_num == 1 or floor_num == total_floors - 1:
 		var save_pt = SavePoint.new()
-		var pos = spawn_points.get("stairs_up", Vector2(6 * TILE_SIZE, 6 * TILE_SIZE))
+		var anchor = "stairs_up" if floor_num == 1 else "stairs_up"
+		var pos = spawn_points.get(anchor, Vector2(6 * TILE_SIZE, 6 * TILE_SIZE))
 		save_pt.position = pos + Vector2(-TILE_SIZE * 2, 0)
 		save_pt.save_requested.connect(func():
 			if SaveSystem and SaveSystem.has_method("quick_save"):
@@ -380,23 +384,68 @@ func _get_boss_intro_dialogue() -> Array:
 
 
 func _place_floor_treasure(floor_num: int) -> void:
-	"""Place treasure chest on non-boss dragon cave floors"""
-	if floor_num >= total_floors:
-		return  # No chest on boss floor
-	var chest_key = "%s_f%d" % [cave_id, floor_num]
-	if GameState.get_story_flag("chest_" + chest_key):
-		return  # Already opened
-	var gold_reward = 100 + floor_num * 75  # Scaling gold
-	var chest = TreasureChest.new()
-	chest.chest_id = chest_key
-	chest.contents_type = "gold"
-	chest.gold_amount = gold_reward
-	var pos = spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 4 * TILE_SIZE))
-	chest.position = pos + Vector2(TILE_SIZE * 2, TILE_SIZE)
-	chest.chest_opened.connect(func(_contents):
-		GameState.set_story_flag("chest_" + chest_key)
-	)
-	transitions.add_child(chest)
+	"""Place one chest at each T marker on the current floor, plus a boss-floor reward."""
+	# Collect all T-marker positions (named treasure_0, treasure_1, ...)
+	var treasure_positions: Array = []
+	for key in spawn_points:
+		if key.begins_with("treasure_"):
+			treasure_positions.append(spawn_points[key])
+
+	# Fallback: if no T markers, drop one chest near stairs_up (legacy behavior)
+	if treasure_positions.is_empty() and floor_num < total_floors:
+		treasure_positions.append(spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 4 * TILE_SIZE)) + Vector2(TILE_SIZE * 2, TILE_SIZE))
+
+	# Loot variety: alternate gold / item by position index and floor depth
+	var item_pool = ["potion", "ether", "hi_potion", "antidote"]
+	if floor_num >= total_floors - 1:
+		item_pool = ["hi_potion", "ether", "phoenix_down", "elixir"]
+
+	for i in range(treasure_positions.size()):
+		var chest_key = "%s_f%d_c%d" % [cave_id, floor_num, i]
+		if GameState.get_story_flag("chest_" + chest_key):
+			continue  # Already opened
+		var chest = TreasureChest.new()
+		chest.chest_id = chest_key
+		if i % 2 == 0:
+			# Scaling gold — deeper floors and later chests pay more
+			chest.contents_type = "gold"
+			chest.gold_amount = 100 + floor_num * 75 + i * 40
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = item_pool[(i + floor_num) % item_pool.size()]
+			chest.contents_amount = 1 + floor_num
+		chest.position = treasure_positions[i]
+		chest.chest_opened.connect(func(_contents):
+			GameState.set_story_flag("chest_" + chest_key)
+		)
+		transitions.add_child(chest)
+
+
+func _place_dungeon_signposts(floor_num: int) -> void:
+	"""Orientation helpers inside the cave: floor number, stair direction, boss warning."""
+	var floor_label = Signpost.new()
+	floor_label.sign_text = "%s · Floor %d / %d" % [cave_name, floor_num, total_floors]
+	var default_pos = spawn_points.get("default", Vector2(10 * TILE_SIZE, 12 * TILE_SIZE))
+	floor_label.position = default_pos + Vector2(0, -TILE_SIZE)
+	transitions.add_child(floor_label)
+
+	if spawn_points.has("stairs_up"):
+		var up_sign = Signpost.new()
+		if floor_num == total_floors - 1:
+			up_sign.sign_text = "▲ Boss floor ahead ⚠"
+		else:
+			up_sign.sign_text = "▲ Floor %d" % (floor_num + 1)
+		up_sign.position = spawn_points["stairs_up"] + Vector2(-TILE_SIZE * 2, 0)
+		transitions.add_child(up_sign)
+
+	if spawn_points.has("stairs_down"):
+		var down_sign = Signpost.new()
+		if floor_num == 1:
+			down_sign.sign_text = "▼ Exit to Overworld"
+		else:
+			down_sign.sign_text = "▼ Floor %d" % (floor_num - 1)
+		down_sign.position = spawn_points["stairs_down"] + Vector2(-TILE_SIZE * 2, 0)
+		transitions.add_child(down_sign)
 
 
 func _on_boss_defeated() -> void:
