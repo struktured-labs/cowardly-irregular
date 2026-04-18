@@ -210,6 +210,8 @@ func _place_signposts() -> void:
 		{"pos": Vector2(19, 18), "text": "The Vertex — what remains"},
 		# The Catalog (west)
 		{"pos": Vector2(7, 16), "text": "← The Catalog · removed things"},
+		# Null Chamber dungeon
+		{"pos": Vector2(5, 18), "text": "↓ Null Chamber — dungeon ∅"},
 		# Echo Chamber (east)
 		{"pos": Vector2(31, 16), "text": "→ Echo Chamber · identical rooms"},
 		# The Threshold (north)
@@ -495,6 +497,18 @@ func _setup_transitions() -> void:
 	vertex_trans.position = spawn_points.get("vertex_entrance", Vector2(624, 528))
 	_setup_transition_collision(vertex_trans, Vector2(TILE_SIZE, TILE_SIZE))
 	vertex_trans.transition_triggered.connect(_on_transition_triggered)
+
+	# Null Chamber dungeon entrance (west, in The Catalog area)
+	var null_trans = AreaTransitionScript.new()
+	null_trans.name = "NullChamberEntrance"
+	null_trans.target_map = "null_chamber"
+	null_trans.target_spawn = "default"
+	null_trans.require_interaction = true
+	null_trans.indicator_text = "Enter the Null Chamber"
+	null_trans.position = Vector2(5 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(null_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	null_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(null_trans)
 	transitions.add_child(vertex_trans)
 
 

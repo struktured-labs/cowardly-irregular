@@ -208,6 +208,8 @@ func _place_signposts() -> void:
 		{"pos": Vector2(27, 20), "text": "Central Plaza · save point"},
 		# Glitch sector warning (SE)
 		{"pos": Vector2(40, 30), "text": "→ Glitch Sector ⚠ corrupted memory"},
+		# Root Process dungeon
+		{"pos": Vector2(40, 32), "text": "↓ Root Process — dungeon ◉"},
 	]
 	for s in signs:
 		var post = Signpost.new()
@@ -551,6 +553,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(node_prime_trans, Vector2(TILE_SIZE, TILE_SIZE))
 	node_prime_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(node_prime_trans)
+
+	# Root Process dungeon entrance (SE glitch sector)
+	var root_trans = AreaTransitionScript.new()
+	root_trans.name = "RootProcessEntrance"
+	root_trans.target_map = "root_process"
+	root_trans.target_spawn = "default"
+	root_trans.require_interaction = true
+	root_trans.indicator_text = "Descend into the Root Process"
+	root_trans.position = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(root_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	root_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(root_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

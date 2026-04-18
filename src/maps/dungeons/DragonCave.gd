@@ -26,6 +26,8 @@ var boss_id: String = "dragon"
 var boss_flag_key: String = "dragon_defeated"
 var total_floors: int = 3
 var overworld_exit_spawn: String = "cave_entrance"
+## Which overworld map this cave exits back to (default = W1 overworld)
+var overworld_exit_map: String = "overworld"
 ## Optional: story flag and world to unlock on boss defeat (empty = no world unlock)
 var unlock_story_flag: String = ""
 var unlock_world: int = 0
@@ -181,7 +183,7 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		_setup_transition_collision(down_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
 
 		if floor_num == 1:
-			down_trans.target_map = "overworld"
+			down_trans.target_map = overworld_exit_map
 			down_trans.target_spawn = overworld_exit_spawn
 			down_trans.transition_triggered.connect(_on_transition_triggered)
 		else:
