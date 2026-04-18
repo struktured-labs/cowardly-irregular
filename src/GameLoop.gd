@@ -185,6 +185,11 @@ func _input(event: InputEvent) -> void:
 				_autogrind_controller.cycle_tier()
 			get_viewport().set_input_as_handled()
 			return
+		# P key toggles pause/resume
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_P:
+			_toggle_autogrind_pause()
+			get_viewport().set_input_as_handled()
+			return
 		# L+R shoulder together cycles tier
 		if event is InputEventJoypadButton and event.pressed:
 			if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
@@ -2292,6 +2297,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	# Connect controller signals
 	_autogrind_controller.grind_battle_requested.connect(_on_grind_battle_requested)
 	_autogrind_controller.grind_complete.connect(_on_grind_complete)
+	_autogrind_controller.grind_paused.connect(_on_autogrind_paused)
+	_autogrind_controller.grind_resumed.connect(_on_autogrind_resumed)
 	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
 	_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
 
@@ -2822,6 +2829,45 @@ func _on_autogrind_tier_changed(new_tier: int) -> void:
 		_autogrind_ui.on_tier_changed(new_tier)
 
 
+func _toggle_autogrind_pause() -> void:
+	"""Toggle pause/resume on the autogrind session."""
+	if not _autogrind_controller or not is_instance_valid(_autogrind_controller):
+		return
+
+	if _autogrind_controller.is_paused():
+		_autogrind_controller.resume_grind()
+	else:
+		_autogrind_controller.pause_grind()
+
+
+func _on_autogrind_paused() -> void:
+	"""Handle autogrind session pause."""
+	# Return to exploration while paused so the player can move around
+	if not _exploration_scene or not is_instance_valid(_exploration_scene):
+		_return_to_exploration()
+
+	# Update overlay to show paused state
+	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel") if _autogrind_overlay and is_instance_valid(_autogrind_overlay) else null
+	if summary:
+		summary.text = "|| PAUSED — Press P to Resume"
+		summary.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
+
+	_show_autogrind_toast("Autogrind paused. Press P to resume.")
+	SoundManager.play_ui("grind_stop_manual")
+	print("[AUTOGRIND] Session paused")
+
+
+func _on_autogrind_resumed() -> void:
+	"""Handle autogrind session resume."""
+	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel") if _autogrind_overlay and is_instance_valid(_autogrind_overlay) else null
+	if summary:
+		summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+
+	SoundManager.play_ui("autobattle_on")
+	SoundManager.play_music("autogrind")
+	print("[AUTOGRIND] Session resumed")
+
+
 func _on_autogrind_region_advanced(from_region: String, to_region: String, world_num: int) -> void:
 	"""Handle auto-advance to next world region during autogrind."""
 	_current_map_id = to_region
@@ -3049,7 +3095,7 @@ func _create_autogrind_overlay() -> void:
 	# Control hints
 	var hints = Label.new()
 	hints.name = "HintsLabel"
-	hints.text = "Y: Turbo    +/-: Speed    T: Dashboard    B: Exit"
+	hints.text = "Y: Turbo    +/-: Speed    T: Dashboard    P: Pause    B: Exit"
 	hints.position = Vector2(16, vp_size.y - bar_height + 112)
 	hints.size = Vector2(vp_size.x - 32, 24)
 	hints.add_theme_font_size_override("font_size", 13)
@@ -3069,7 +3115,16 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 		var wins = stats.get("consecutive_wins", 0)
 		var eff = stats.get("efficiency", 1.0)
 		var turbo_txt = " TURBO" if BattleManager.turbo_mode else ""
-		summary.text = "Battle #%d | EXP: %d | Streak: %d | Efficiency: %.1fx%s" % [battles, exp, wins, eff, turbo_txt]
+		var tier_txt = ""
+		if _autogrind_controller and is_instance_valid(_autogrind_controller):
+			var tier = _autogrind_controller.get_current_tier()
+			if _autogrind_controller.headless_mode:
+				tier_txt = " [LUDICROUS]"
+			elif tier == 1:  # DASHBOARD
+				tier_txt = " [DASHBOARD]"
+			else:
+				tier_txt = " [ACCELERATED]"
+		summary.text = "Battle #%d | EXP: %d | Streak: %d | Efficiency: %.1fx%s%s" % [battles, exp, wins, eff, turbo_txt, tier_txt]
 
 	# Update party HP/MP bars
 	var party_bars = _autogrind_overlay.get_node_or_null("PartyBars")
@@ -3181,7 +3236,7 @@ func _show_autogrind_dashboard() -> void:
 	else:
 		add_child(_autogrind_dashboard)
 
-	_autogrind_dashboard.pause_requested.connect(func(): _stop_autogrind("Paused"))
+	_autogrind_dashboard.pause_requested.connect(_toggle_autogrind_pause)
 	_autogrind_dashboard.exit_requested.connect(func(): _stop_autogrind("Manual stop"))
 	_autogrind_dashboard.tier_cycle_requested.connect(func():
 		if _autogrind_controller and is_instance_valid(_autogrind_controller):
