@@ -341,7 +341,10 @@ func _register_spawn_point(char: String, x: int, y: int) -> void:
 		"G": spawn_points["grimhollow_entrance"] = pos
 		"D": spawn_points["sandrift_entrance"] = pos
 		"I": spawn_points["ironhaven_entrance"] = pos
-		"P": spawn_points["steampunk_portal"] = pos
+		"P":
+			spawn_points["steampunk_portal"] = pos
+			# Alias: W2's return portal targets "suburban_portal" — same physical spot
+			spawn_points["suburban_portal"] = pos
 
 
 func _char_to_tile_type(char: String) -> int:

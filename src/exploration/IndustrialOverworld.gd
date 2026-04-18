@@ -553,11 +553,11 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Back portal to W3 Steampunk
+	# Back portal to W3 Steampunk — lands at station (south of W3, where the W3→W4 portal sits)
 	var back_portal = AreaTransitionScript.new()
 	back_portal.name = "BackPortal"
 	back_portal.target_map = "steampunk_overworld"
-	back_portal.target_spawn = "entrance"
+	back_portal.target_spawn = "station"
 	back_portal.require_interaction = true
 	back_portal.indicator_text = "Return to the Clockwork Dominion"
 	back_portal.position = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 41 * TILE_SIZE + TILE_SIZE / 2)
