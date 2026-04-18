@@ -550,13 +550,13 @@ func _apply_zone_encounters(zone: String) -> void:
 			controller.set_area_config("overworld_ice", false, 0.06, pool)
 		"swamp":
 			pool = ["snake", "ghost", "imp"]
-			controller.set_area_config("overworld_swamp", false, 0.07, pool)
+			controller.set_area_config("overworld_swamp", false, 0.06, pool)
 		"desert":
 			pool = ["skeleton", "snake", "goblin"]
-			controller.set_area_config("overworld_desert", false, 0.07, pool)
+			controller.set_area_config("overworld_desert", false, 0.06, pool)
 		"volcanic":
 			pool = ["imp", "skeleton", "troll"]
-			controller.set_area_config("overworld_volcanic", false, 0.08, pool)
+			controller.set_area_config("overworld_volcanic", false, 0.065, pool)
 		"coast":
 			pool = ["slime", "bat", "spider"]
 			controller.set_area_config("overworld_coast", false, 0.05, pool)
