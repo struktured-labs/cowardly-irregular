@@ -452,14 +452,23 @@ func _update_description_for_item(item_id: String) -> void:
 	desc += "%s\n" % item_data.get("name", "???")
 	desc += "%s\n\n" % item_data.get("description", "No description")
 
-	# Show stats for equipment (blacksmith)
+	# Show stats for equipment (blacksmith) with comparison vs current gear
 	if shop_type == ShopType.BLACKSMITH:
 		var stat_mods = item_data.get("stat_mods", {})
 		if not stat_mods.is_empty():
 			desc += "Stats:\n"
+			# Get party leader's current equipment stats for comparison
+			var current_mods = _get_leader_equipment_stats(item_data)
 			for stat in stat_mods:
 				var value = stat_mods[stat]
-				desc += "  %s: %+d\n" % [stat.capitalize(), value]
+				var current_val = current_mods.get(stat, 0)
+				var diff = value - current_val
+				if diff > 0:
+					desc += "  %s: %+d  (+%d)\n" % [stat.capitalize(), value, diff]
+				elif diff < 0:
+					desc += "  %s: %+d  (%d)\n" % [stat.capitalize(), value, diff]
+				else:
+					desc += "  %s: %+d  (=)\n" % [stat.capitalize(), value]
 
 	# Show MP cost for magic
 	if _is_magic_shop():
@@ -474,6 +483,25 @@ func _update_description_for_item(item_id: String) -> void:
 		desc += "\nSell: %d G" % int(cost * 0.5)
 
 	description_label.text = desc
+
+
+func _get_leader_equipment_stats(new_item: Dictionary) -> Dictionary:
+	"""Get the stat_mods of the party leader's currently equipped item in the same slot"""
+	if not game_state or game_state.player_party.is_empty():
+		return {}
+	var leader = game_state.player_party[0]
+	# Determine equipment slot from the new item's category
+	var category = new_item.get("category", new_item.get("type", ""))
+	var equipped_id = ""
+	match category:
+		"weapon": equipped_id = leader.get("equipped_weapon", "")
+		"armor": equipped_id = leader.get("equipped_armor", "")
+		"accessory": equipped_id = leader.get("equipped_accessory", "")
+	if equipped_id.is_empty():
+		return {}
+	# Look up the equipped item's stat_mods
+	var equipped_data = _get_item_data(equipped_id)
+	return equipped_data.get("stat_mods", {})
 
 
 func _flash_gold_label() -> void:
