@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""Generates data/bestiary.json from hand-written flavor+epithet table.
+
+Validates against data/monsters.json so every monster_id has an entry and
+no stray entries slip in.
+"""
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+MONSTERS = ROOT / "data" / "monsters.json"
+BESTIARY = ROOT / "data" / "bestiary.json"
+
+ENTRIES: dict[str, dict[str, str]] = {
+    # ── Cave/forest/road early tier ────────────────────────────────────────
+    "slime": {
+        "epithet": "Wobbling Nuisance",
+        "flavor": "The first thing you fight in every JRPG ever made, updated with 21 percent more gelatin. Bouncing serves no evolutionary purpose. Bouncing is who they are.",
+    },
+    "bat": {
+        "epithet": "Cave Ceiling Commuter",
+        "flavor": "Every cave has three of them. Nobody is sure why. They screech at a frequency calibrated specifically to ruin your concentration, and then they keep screeching.",
+    },
+    "mushroom": {
+        "epithet": "Strolling Fungus",
+        "flavor": "A mushroom that has decided, after thousands of years of sitting still, to get up and attack someone. Its spores smell faintly of basement and regret.",
+    },
+    "imp": {
+        "epithet": "Pocket Pyromaniac",
+        "flavor": "A small demon with a big ego and a slightly smaller fireball. Travels in threes because that is what feels dramatic. Hates being called cute.",
+    },
+    "goblin": {
+        "epithet": "Knife-Heavy Pessimist",
+        "flavor": "Short, mean, carries four knives — three of which it refuses to use because they are, quote, for emergencies. The current fight apparently does not count.",
+    },
+    "wolf": {
+        "epithet": "Pack Mathematician",
+        "flavor": "Forest wolves travel in numbers that make statistical sense: always one too many for you to handle comfortably. Their tactics are older than your kingdom.",
+    },
+    "spider": {
+        "epithet": "Eight-Eyed Engineer",
+        "flavor": "A spider whose web, frankly, is better architecture than most castles. It does not enjoy visitors. It does not plan to enjoy you.",
+    },
+    "fungoid": {
+        "epithet": "Ambulatory Fungus",
+        "flavor": "Mushrooms do not usually walk. When they do, you should back up. When they release spores, you should already have backed up, because it is now too late.",
+    },
+    "snake": {
+        "epithet": "Marsh Whisper",
+        "flavor": "The Swamp Viper has mastered the art of arriving before its arrival. By the time you hear the hiss, the venom is already doing its work elsewhere in your body.",
+    },
+    "ghost": {
+        "epithet": "The Unresolved",
+        "flavor": "A spirit who died in the middle of a sentence and has been waiting, with declining patience, for you to help finish it. Swords do not help. Nothing helps.",
+    },
+    "viper": {
+        "epithet": "Sand Ambush",
+        "flavor": "A serpent that trained its entire ancestral line to wait just beneath the dunes. The waiting has made it a little short-tempered about being stepped on.",
+    },
+    "elemental": {
+        "epithet": "Whirling Grit",
+        "flavor": "Old desert magic that was supposed to be a minor ward against pickpockets, and is now, after many centuries of nobody maintaining it, a major problem for everyone.",
+    },
+    "troll": {
+        "epithet": "Lava-Blooded Brute",
+        "flavor": "A troll that grew up inside a volcano and considers room temperature a personal insult. Slow. When it connects, it connects for real.",
+    },
+    "corrupted_sprite": {
+        "epithet": "Rewritten Fae",
+        "flavor": "It used to bless travelers. Something got into the code of it. Now the blessings come out wrong and the greetings come out sharp.",
+    },
+    "glitch_entity": {
+        "epithet": "Artifact Given Teeth",
+        "flavor": "A rendering error that developed opinions. Its outline flickers between three different sprite sheets, none of them quite finished. It is unclear which one is real.",
+    },
+
+    # ── Cave rat dynasty ──────────────────────────────────────────────────
+    "cave_rat": {
+        "epithet": "Underwhelming Local",
+        "flavor": "The starter rat of this particular cave. Has ambitions. Will not realize any of them in the next thirty seconds.",
+    },
+    "giant_bat": {
+        "epithet": "Irresponsibly Sized",
+        "flavor": "A bat whose mother told it to watch its weight. It did not. Now it is here, and now it is your problem specifically.",
+    },
+    "rat_guard": {
+        "epithet": "Conscripted Squeak",
+        "flavor": "A rat that, by some unholy grant of self-importance, has been issued a tabard and a small spear. Guards the Cave Rat King's treasury, which is three coppers and a button.",
+    },
+    "diseased_rat": {
+        "epithet": "Walking Infection",
+        "flavor": "The plague it carries is technically three plagues stacked on top of each other, competing for host cells. The rat itself is fine about this. The rat is, in many senses, beyond fine.",
+    },
+    "cave_rat_king": {
+        "epithet": "Crowned Disappointment",
+        "flavor": "He calls himself king. He has a tiny crown. He has a moat made of spilled mead. He has all the ambition of a real villain and eight percent of the hit points. You will feel a little bad about winning.",
+    },
+
+    # ── Cave/crypt middle tier ────────────────────────────────────────────
+    "skeleton": {
+        "epithet": "Remembered Bone",
+        "flavor": "A warrior who forgot how to stop fighting and kept fighting after there was not enough of him left to fight with. Prefers a polite duel. Offers salutes.",
+    },
+    "ice_wolf": {
+        "epithet": "Frostfang",
+        "flavor": "A wolf whose breath turns the air into tiny daggers. It does not run in packs, because no other wolf can keep up without frostbite.",
+    },
+    "specter": {
+        "epithet": "Half-Phase",
+        "flavor": "Ghost-lite. It is trying its best to be frightening, and some nights it succeeds. Cannot cross running water, but considers that a personal matter.",
+    },
+    "cave_troll": {
+        "epithet": "Chamber Warden",
+        "flavor": "The troll the goblins hired to hold the last room. It does not know what it is guarding. It does not need to.",
+    },
+    "shadow_knight": {
+        "epithet": "Oath-Eater",
+        "flavor": "A knight who broke an important oath, and in the ensuing decades the darkness that was collecting began to collect a body. The armor is more sincere than the person in it ever was.",
+    },
+    "treasure_mimic": {
+        "epithet": "The Chest That Was Listening",
+        "flavor": "It waited fifteen years for this. It watched every adventurer walk past and guessed wrong about each one. It guessed correctly about you.",
+    },
+    "ironback_beetle": {
+        "epithet": "Shelled Juggernaut",
+        "flavor": "Horse-sized, armor-plated, and possessed of the kind of confidence you can only develop by being nothing's prey for a thousand generations.",
+    },
+    "cursed_armor": {
+        "epithet": "Tenant of Regret",
+        "flavor": "Empty armor, animated by the rage of the knight who wore it and was betrayed in it. It cannot speak. It does not need to. The clank says enough.",
+    },
+    "blood_wolf_alpha": {
+        "epithet": "Howl of the Hunt",
+        "flavor": "The alpha of a wolf pack you should have avoided. Its howl has cleared rooms. Its bite has cleared chapters.",
+    },
+    "crystal_golem": {
+        "epithet": "Prismatic Bulwark",
+        "flavor": "Carved from a single piece of geological time, animated by a spell some wizard forgot to un-cast. It reflects magic the way a cathedral reflects candlelight — beautifully, and back at you.",
+    },
+    "rogue_automaton": {
+        "epithet": "Error Walker",
+        "flavor": "A machine whose control script crashed years ago and has been running its exception handler as a personality ever since. Speaks in stack traces.",
+    },
+    "elder_mushroom": {
+        "epithet": "Ancient Cap",
+        "flavor": "A fungoid so old it has forgotten whether it is one mushroom or a nation of mushrooms. The spores it releases will make you question the same about yourself.",
+    },
+
+    # ── Meta / corruption tier ────────────────────────────────────────────
+    "corrupted_guardian": {
+        "epithet": "Malformed Oath",
+        "flavor": "Something the world was supposed to protect you from, now protecting something else. Its behavior does not obey its stats. Its stats do not obey the game. Neither of you asked for this.",
+    },
+    "time_phantom": {
+        "epithet": "Save-State Ghost",
+        "flavor": "A phantom that lives in the moment between saves. When it dies, it undoes its own death. This is why this fight is taking you forty minutes.",
+    },
+    "script_error": {
+        "epithet": "Editor's Revenge",
+        "flavor": "SCRIPT ERROR is what happens when you let the Scriptweaver change one too many damage formulas. It is, technically, your fault. It knows this. You know this.",
+    },
+    "adaptive_slime": {
+        "epithet": "Learning Jelly",
+        "flavor": "A slime that, after weeks of you killing its cousins the same way, has started to notice the pattern. It is no longer wobbling. It is waiting.",
+    },
+    "meta_knight": {
+        "epithet": "The One Who Knows",
+        "flavor": "A knight who has read the manual, seen the sprites, and has opinions on your equipment loadout. Gains +2 damage against any character who quicksaved within the last minute.",
+    },
+    "permadeath_reaper": {
+        "epithet": "The Collector",
+        "flavor": "Appears only to parties running permadeath stakes. It does not fight for XP. Whatever you bet, it has already calculated interest.",
+    },
+
+    # ── Dragons ───────────────────────────────────────────────────────────
+    "fire_dragon": {
+        "epithet": "Pyrroth, the Ember Wyrm",
+        "flavor": "Old enough that his name appears in songs three languages back. Flies slow, strikes fast. The cave where he sleeps has become a lamp. Visible from orbit, if orbit existed here.",
+    },
+    "ice_dragon": {
+        "epithet": "Glacius, the Frozen Sovereign",
+        "flavor": "Entombed in permafrost so long that the glacier has become part of him. His breath does not burn; it skips cause and effect and arrives at aftermath.",
+    },
+    "lightning_dragon": {
+        "epithet": "Voltharion, the Storm's Edge",
+        "flavor": "A dragon made of stored potential, grounded only when he chooses to be. His voice arrives before he does. His strike, after. You hear the thunder last.",
+    },
+    "shadow_dragon": {
+        "epithet": "Umbraxis, the Void Render",
+        "flavor": "An older kind of dragon. He has started asking the party questions between attacks. He does not expect answers. It is not that kind of question.",
+    },
+
+    # ── Suburban (World 2) ────────────────────────────────────────────────
+    "new_age_retro_hippie": {
+        "epithet": "Vibes Warden",
+        "flavor": "He is not angry at you. He is disappointed for you. The crystals are doing more work than you would think. It is embarrassing how much work they are doing.",
+    },
+    "spiteful_crow": {
+        "epithet": "Feathered Grudge",
+        "flavor": "A crow that remembers your face, your inventory, and the incident two parking lots ago with the kicked rock. It is not stealing for food. It is stealing on principle.",
+    },
+    "skate_punk": {
+        "epithet": "Suburban Wingman",
+        "flavor": "He has done this trick before. He will do it again. He is going to land it, and this time, according to his own stated intentions, he is going to land it on you.",
+    },
+    "unassuming_dog": {
+        "epithet": "Very Normal Animal",
+        "flavor": "There is nothing wrong with this dog. It is a regular dog. Its forelimbs end in standard paws. Its attack stat is a coincidence. Please do not alarm it.",
+    },
+    "cranky_lady": {
+        "epithet": "HOA President",
+        "flavor": "She saw you standing on her lawn. She called it in. She is now here, personally, and she is not waiting for civic response time.",
+    },
+
+    # ── Industrial / Steampunk (World 3) ─────────────────────────────────
+    "clockwork_sentinel": {
+        "epithet": "Ticking Bulwark",
+        "flavor": "A brass automaton built to patrol the boardwalk and report violations. It has reported yours. It is now escorting you off the premises with a riveted shield.",
+    },
+    "steam_rat": {
+        "epithet": "Boiler Vermin",
+        "flavor": "A rat that wandered into the wrong machine shop and came out thirty-five percent pipework. The pistons on its back hiss with every step. Something about it is deeply flammable.",
+    },
+    "brass_golem": {
+        "epithet": "Pressure-Plated",
+        "flavor": "A golem that runs on belief in deadlines. Each of its punches is preceded by a whistle. The whistle is the only warning you get. You get one whistle.",
+    },
+    "cog_swarm": {
+        "epithet": "Escaped Tolerance Stack",
+        "flavor": "A thousand tiny machine parts that were supposed to be inside a bigger machine. They are out now. They have opinions about being reinstalled.",
+    },
+    "pipe_phantom": {
+        "epithet": "Exhaust Ghost",
+        "flavor": "Formed from the last breath of a boiler that did not survive its safety inspection. It drifts through the plumbing, wailing a citation someone never filed.",
+    },
+    "assembly_line_automaton": {
+        "epithet": "The Task That Will Not End",
+        "flavor": "A robot whose assigned task is inspect the next unit. Combat has not interrupted this task. You are, procedurally, the next unit.",
+    },
+    "shift_supervisor": {
+        "epithet": "Middle Manager, Armed",
+        "flavor": "He has exactly forty-three motivational slogans, none of them original. Each one buffs an enemy's attack. He calls each one a pivot. You would, too, in his position.",
+    },
+    "rust_elemental": {
+        "epithet": "Neglected Ferrum",
+        "flavor": "Corrosion that achieved structure. It was made by decades of missed maintenance memos. It remembers every one of them by date and signatory.",
+    },
+    "toxic_sludge": {
+        "epithet": "Regulatory Reminder",
+        "flavor": "Industrial waste that gained sentience and, unfortunately, guilt. It apologizes as it poisons you. The apologies are sincere. The poison is worse.",
+    },
+    "conveyor_gremlin": {
+        "epithet": "Line-Speed Imp",
+        "flavor": "A gremlin that has mastered the factory floor. It runs a small racket stealing lunches. When threatened it disappears down the nearest pipe. It always reappears.",
+    },
+
+    # ── Digital / Futuristic (World 4) ───────────────────────────────────
+    "rogue_process": {
+        "epithet": "Forking Menace",
+        "flavor": "A program that was supposed to be a small utility and instead achieved ambition. It forks itself every turn, which would be useful if any of the forks were on your side.",
+    },
+    "memory_leak": {
+        "epithet": "The Growing Hole",
+        "flavor": "An inefficient allocator given form. Each turn it expands, consuming more of the battle's available memory. Fighting it for too long causes surrounding reality to page to disk.",
+    },
+    "firewall_sentinel": {
+        "epithet": "Policy Enforcement Daemon",
+        "flavor": "A security program built to read rules aloud at intruders. It does so unflinchingly. It will also reflect any spell you throw at it, citing bylaw 7.1.3 subsection c.",
+    },
+    "data_wraith": {
+        "epithet": "Unreferenced Spirit",
+        "flavor": "A block of code that outlived its reference and chose violence. It hits hard, but one decisive hit frees it to finally be garbage-collected. It is, honestly, looking forward to that.",
+    },
+    "recursive_loop": {
+        "epithet": "Function That Calls Itself",
+        "flavor": "An entity that exists by calling itself, which exists by calling itself, which exists by — its own self-destruct ability is called Stack Overflow. You will know when it fires.",
+    },
+
+    # ── Abstract / existential (World 6) ──────────────────────────────────
+    "null_entity": {
+        "epithet": "Shape of the Deleted",
+        "flavor": "It is not nothing. Nothing has no shape. This has a shape. The shape is the outline of something that used to be here.",
+    },
+    "forgotten_variable": {
+        "epithet": "Nameless Counter",
+        "flavor": "A value that used to mean something. It kept a count, a score, a state. Someone removed its name. It wanders the memory looking for its purpose. Fighting it feels mean.",
+    },
+    "empty_set": {
+        "epithet": "Contains Nothing",
+        "flavor": "A set with no elements. How do you hit a set with no elements? You do not. It attacks by taking things away from you — buffs, statuses, the certainty you had about your plan.",
+    },
+    "the_absence": {
+        "epithet": "Where Something Was",
+        "flavor": "The outline of a thing deleted so thoroughly that the outline is all that remains. Damaging it fills the hole, which only makes the hole bigger.",
+    },
+    "optimization_itself": {
+        "epithet": "The Final Efficiency",
+        "flavor": "The force that did all of this. Reduced to the purest possible form of itself: remove overhead. It sees your buffs as overhead. It sees you as overhead.",
+    },
+
+    # ── Masterites: World 1 (Medieval) ────────────────────────────────────
+    "masterite_warden_medieval": {
+        "epithet": "The Old Keeper",
+        "flavor": "He has held this pass for three hundred years, counting. You are the thirty-seventh party. He has kept track not because it flatters him but because someone should. He will fight you fairly. He will not tell you why.",
+    },
+    "masterite_arbiter_medieval": {
+        "epithet": "The Measured Blade",
+        "flavor": "A dual-wielding swordmaster who weighs every blow on a scale only he can see. He is not trying to kill you; he is trying to establish, with the precision of court mathematics, whether your technique will hold against his own.",
+    },
+    "masterite_tempo_medieval": {
+        "epithet": "The Swift Ranger",
+        "flavor": "A hunter who has decided the deepest part of this forest is his country. He opens with a courtesy shot — not to hit, to announce. Then he closes. He is fast enough that first and last blur.",
+    },
+    "masterite_curator_medieval": {
+        "epithet": "The Ember Judge",
+        "flavor": "A robed figure wreathed in his own controlled flame. He is counting how many of your spells are redundant. The flames burn more hotly on the third wasted casting.",
+    },
+
+    # ── Masterites: World 2 (Suburban) ────────────────────────────────────
+    "masterite_warden_suburban": {
+        "epithet": "The Hall Monitor Eternal",
+        "flavor": "A hall monitor who, through no fault of his own, became the thing he enforced. Forty years of routine have made his routine an object of power. He does not raise his voice.",
+    },
+    "masterite_arbiter_suburban": {
+        "epithet": "Mrs. Marcotte",
+        "flavor": "A teacher who grades every move you make in real time. She writes her notes on your performance in the air, in red. An A is theoretically available. No one has received one.",
+    },
+    "masterite_tempo_suburban": {
+        "epithet": "Twelve-Minute Courier",
+        "flavor": "A pizza delivery driver whose entire being has been compressed into the gap between an order and its warranty. He is late. He is always late. His speed is the fault of everyone who ordered before you.",
+    },
+    "masterite_curator_suburban": {
+        "epithet": "The Column-Balancer",
+        "flavor": "A very tired accountant in a cardigan. Your MP pool is a balance sheet. Each spell is an expense line item. He keeps receipts, and he keeps them.",
+    },
+
+    # ── Masterites: World 3 (Industrial) ─────────────────────────────────
+    "masterite_warden_industrial": {
+        "epithet": "The Line Enforcer",
+        "flavor": "Built from factory parts and the assumption that structural integrity is the highest virtue. It applies tests. The tests are pressure. You may fail safely; you may not fail creatively.",
+    },
+    "masterite_arbiter_industrial": {
+        "epithet": "The Optimized Fist",
+        "flavor": "A foreman who eliminated every wasted motion from his routine in the decade he watched the line. Every swing is the swing. There is no wind-up. There is no recovery.",
+    },
+    "masterite_tempo_industrial": {
+        "epithet": "The Overtime Clock",
+        "flavor": "A time-and-motion figure who treats your turn counter as a shift bell. When you run long, he charges you for overtime. The bill comes due in hit points.",
+    },
+    "masterite_curator_industrial": {
+        "epithet": "The Supply Chain Hand",
+        "flavor": "Controls what resources can flow, and when. Holds back your healing items the way a warehouse holds back product. Nothing that is not on the manifest is getting through.",
+    },
+
+    # ── Masterites: World 4 (Futuristic) ─────────────────────────────────
+    "masterite_warden_futuristic": {
+        "epithet": "The Firewall Admin",
+        "flavor": "A security process given a skin. Its protocol stack updates mid-fight, patching around your last exploit before you have finished telling yourself it worked.",
+    },
+    "masterite_arbiter_futuristic": {
+        "epithet": "The Benchmark Driver",
+        "flavor": "A performance suite that grades your combat against the ninetieth percentile. If you fall below, it increases the difficulty of its own attacks until you match. It has been doing this for a long time.",
+    },
+    "masterite_tempo_futuristic": {
+        "epithet": "The Scheduler",
+        "flavor": "An entity that decides which actor gets CPU time. It tends to decide itself. It acts twice before you act once. Somewhere, a priority queue is humming.",
+    },
+    "masterite_curator_futuristic": {
+        "epithet": "The Garbage Collector",
+        "flavor": "A memory manager that has expanded its scope. It frees your buffs. It frees your statuses. It frees your MP. It does not consider your feelings on this to be in scope.",
+    },
+
+    # ── Masterites: World 5/6 (Abstract) ─────────────────────────────────
+    "masterite_warden_abstract": {
+        "epithet": "The Form",
+        "flavor": "Not a defender — defense itself, as a shape, as a law. It is the immovability against which movement is defined. Hitting it does not feel like hitting something. It feels like a proof refusing to close.",
+    },
+    "masterite_arbiter_abstract": {
+        "epithet": "The Function",
+        "flavor": "Combat reduced to a single expression: damage(you). It has no other clauses. No mercies. It is not cruel. It is parsimonious.",
+    },
+    "masterite_tempo_abstract": {
+        "epithet": "The Sequence",
+        "flavor": "Sequence itself, given an agenda. It controls what comes first, what follows, and what — after sufficient escalation — is struck from the record entirely.",
+    },
+    "masterite_curator_abstract": {
+        "epithet": "The Entropy",
+        "flavor": "The decay of your reserves, crystallized into a figure that can swing a clock hand. Each turn takes one MP from each party member, not through drain but through the room's declining tolerance for having MP in it.",
+    },
+}
+
+
+def main() -> None:
+    with MONSTERS.open() as f:
+        monsters = json.load(f)
+
+    monster_ids = set(monsters.keys())
+    entry_ids = set(ENTRIES.keys())
+
+    missing = monster_ids - entry_ids
+    extra = entry_ids - monster_ids
+
+    if missing:
+        print(f"WARNING: monsters without bestiary entries ({len(missing)}):")
+        for mid in sorted(missing):
+            print(f"  - {mid}  [{monsters[mid].get('name', '?')}]")
+    if extra:
+        print(f"WARNING: bestiary entries with no matching monster ({len(extra)}):")
+        for mid in sorted(extra):
+            print(f"  - {mid}")
+
+    for mid, entry in ENTRIES.items():
+        assert "epithet" in entry and "flavor" in entry, f"{mid} missing keys"
+        assert 0 < len(entry["epithet"]) <= 60, f"{mid} epithet length"
+        assert 20 < len(entry["flavor"]) <= 400, f"{mid} flavor length ({len(entry['flavor'])})"
+
+    ordered = {mid: ENTRIES[mid] for mid in monsters.keys() if mid in ENTRIES}
+    for mid in entry_ids - monster_ids:
+        ordered[mid] = ENTRIES[mid]
+
+    with BESTIARY.open("w") as f:
+        json.dump(ordered, f, indent="\t", ensure_ascii=False)
+        f.write("\n")
+
+    print(f"Wrote {BESTIARY} with {len(ordered)} entries (of {len(monsters)} monsters).")
+
+
+if __name__ == "__main__":
+    main()
