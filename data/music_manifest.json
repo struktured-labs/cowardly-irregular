@@ -1784,6 +1784,54 @@
       "duration": 159.84,
       "loop": true,
       "generated_at": "2026-04-18"
+    },
+    "boss_phase2_warden": {
+      "file": "assets/audio/music/boss_phase2_warden.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Weariness Breaks",
+      "prompt": "Phase 2 of the Warden boss fight \u2014 HP below 50%, all pretense of weariness gone. The Warden stops holding back. POUNDING timpani, full brass section assault, aggressive string runs, pipe organ throwing its full weight into every note. The tired old boss theme reimagined at 160 BPM with zero restraint. Revo-level intensity. Linked Horizon's Guren no Yumiya energy. The fight gets real. Looping.",
+      "style": "intense orchestral boss phase 2, pounding timpani, full brass assault, aggressive strings, pipe organ menace, 160 BPM, crushing",
+      "model": "suno-v4",
+      "duration": 133.56,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "boss_phase2_arbiter": {
+      "file": "assets/audio/music/boss_phase2_arbiter.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Judgment Accelerates",
+      "prompt": "Phase 2 of the Arbiter boss fight. The Arbiter stops analyzing and starts EXECUTING. Driving 16th-note percussion, dissonant brass stabs stacking into chords, overwhelming string ostinatos that cycle mathematically, pipe organ at full power. Analytical becomes annihilating. Bravely Default final boss intensity meets Persona 5 judgment. Relentless, precise, terrifying. Looping.",
+      "style": "intense boss phase 2, driving percussion, dissonant brass chords, overwhelming string ostinatos, pipe organ at full throat, mathematical precision, 170 BPM",
+      "model": "suno-v4",
+      "duration": 129.0,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "boss_phase2_tempo": {
+      "file": "assets/audio/music/boss_phase2_tempo.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Time Itself Breaks",
+      "prompt": "Phase 2 of the Tempo boss fight. Time becomes a weapon. Polyrhythmic drums at 180 BPM layering impossible syncopations, string section accelerating within each phrase, ticking clock percussion going haywire \u2014 off-beats, missing beats, double-speed beats. Brass fanfares that arrive both early and late. Like Chrono Trigger's Lavos theme if the clock was breaking. Unstable, hallucinatory, impossible to dodge. Looping.",
+      "style": "intense boss phase 2, rapid polyrhythm drums, accelerating strings, ticking clock percussion going haywire, brass fanfare chaos, 180 BPM pushing to 200, unstable",
+      "model": "suno-v4",
+      "duration": 23.48,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "boss_phase2_curator": {
+      "file": "assets/audio/music/boss_phase2_curator.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Library Awakens",
+      "prompt": "Phase 2 of the Curator boss fight. The scholarly warmth is gone \u2014 the library itself has become hostile. Baroque harpsichord playing impossibly fast Bach-fugue runs, screaming string section, choir erupting at climaxes, full orchestra backing it all with pipe organ at maximum weight. Intellectual precision as violence. Like Mozart's Requiem's Dies Irae scaled up for a JRPG final phase. Curious becomes predatory. Looping.",
+      "style": "intense boss phase 2, baroque harpsichord fury, screaming strings, choir bursts, full orchestra with pipe organ, Bach fugue as weapon, 150 BPM",
+      "model": "suno-v4",
+      "duration": 37.16,
+      "loop": true,
+      "generated_at": "2026-04-18"
     }
   },
   "tier_priority": [

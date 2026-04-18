@@ -763,6 +763,26 @@
       "title_template": "The Answer Was The Question",
       "style": "ambient orchestral credits, sustained piano, cello drone, choral pad whisper, near-silence punctuating swells, Eno meets Arvo Pärt, 60 BPM",
       "prompt": "End credits for the abstract world. The Answered Absence returns but fuller — still mostly silence, still mostly nothing, but now with emotional weight. A cello drone holds underneath a single sustained piano chord. Choral pads whisper. Long silences between phrases that feel like recognition rather than absence. The game's final statement: there was never anything to solve, only to witness. Eno and Arvo Pärt writing the end of everything. 90-120 seconds."
+    },
+    "boss_phase2_warden": {
+      "title_template": "The Weariness Breaks",
+      "style": "intense orchestral boss phase 2, pounding timpani, full brass assault, aggressive strings, pipe organ menace, 160 BPM, crushing",
+      "prompt": "Phase 2 of the Warden boss fight — HP below 50%, all pretense of weariness gone. The Warden stops holding back. POUNDING timpani, full brass section assault, aggressive string runs, pipe organ throwing its full weight into every note. The tired old boss theme reimagined at 160 BPM with zero restraint. Revo-level intensity. Linked Horizon's Guren no Yumiya energy. The fight gets real. Looping."
+    },
+    "boss_phase2_arbiter": {
+      "title_template": "The Judgment Accelerates",
+      "style": "intense boss phase 2, driving percussion, dissonant brass chords, overwhelming string ostinatos, pipe organ at full throat, mathematical precision, 170 BPM",
+      "prompt": "Phase 2 of the Arbiter boss fight. The Arbiter stops analyzing and starts EXECUTING. Driving 16th-note percussion, dissonant brass stabs stacking into chords, overwhelming string ostinatos that cycle mathematically, pipe organ at full power. Analytical becomes annihilating. Bravely Default final boss intensity meets Persona 5 judgment. Relentless, precise, terrifying. Looping."
+    },
+    "boss_phase2_tempo": {
+      "title_template": "Time Itself Breaks",
+      "style": "intense boss phase 2, rapid polyrhythm drums, accelerating strings, ticking clock percussion going haywire, brass fanfare chaos, 180 BPM pushing to 200, unstable",
+      "prompt": "Phase 2 of the Tempo boss fight. Time becomes a weapon. Polyrhythmic drums at 180 BPM layering impossible syncopations, string section accelerating within each phrase, ticking clock percussion going haywire — off-beats, missing beats, double-speed beats. Brass fanfares that arrive both early and late. Like Chrono Trigger's Lavos theme if the clock was breaking. Unstable, hallucinatory, impossible to dodge. Looping."
+    },
+    "boss_phase2_curator": {
+      "title_template": "The Library Awakens",
+      "style": "intense boss phase 2, baroque harpsichord fury, screaming strings, choir bursts, full orchestra with pipe organ, Bach fugue as weapon, 150 BPM",
+      "prompt": "Phase 2 of the Curator boss fight. The scholarly warmth is gone — the library itself has become hostile. Baroque harpsichord playing impossibly fast Bach-fugue runs, screaming string section, choir erupting at climaxes, full orchestra backing it all with pipe organ at maximum weight. Intellectual precision as violence. Like Mozart's Requiem's Dies Irae scaled up for a JRPG final phase. Curious becomes predatory. Looping."
     }
   }
 }
