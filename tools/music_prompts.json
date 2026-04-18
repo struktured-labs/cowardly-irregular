@@ -294,7 +294,6 @@
       "style": "JRPG battle, slithering, C minor, sinuous melody, rattling percussion, tense coiling bass, 135 BPM",
       "prompt": "Sinuous slithering battle theme for fighting snakes, coiling bass line that winds and tightens, rattling shaker percussion like a rattlesnake warning, tense melodic line that strikes suddenly, the anxiety of facing something fast and venomous"
     },
-
     "boss_warden_medieval": {
       "title_template": "Three Hundred Years",
       "style": "JRPG boss battle, Linked Horizon, aggressive orchestral, pounding war drums, heavy brass, intense strings, D minor, 145 BPM",
@@ -315,7 +314,6 @@
       "style": "JRPG boss battle, arcane fury, aggressive harp arpeggios, thundering percussion, magical intensity, orchestral, 150 BPM",
       "prompt": "INTENSE boss battle theme for a scholar-mage whose curiosity is WEAPONIZED, furious harp arpeggios cascading over thundering percussion, magical energy crackling through the orchestra. She takes notes while destroying you — the academic detachment makes her MORE terrifying. Soaring strings building to devastating magical crescendos, explosive brass. The flame doesn't illuminate — it INCINERATES. Bravely Default sage boss intensity."
     },
-
     "boss_warden_suburban": {
       "title_template": "Crossing Guard",
       "style": "EarthBound boss, intense suburban horror, distorted whistles, pounding bass, unhinged authority, aggressive synth, 140 BPM",
@@ -336,7 +334,6 @@
       "style": "EarthBound boss, oppressive bureaucratic, heavy bass, sinister calculator, methodical destruction, aggressive, 120 BPM",
       "prompt": "INTENSE boss battle theme, heavy oppressive bass drops on every audit finding, sinister calculator beeps becoming aggressive percussion. Methodical but CRUSHING — she drains you systematically and there is no appeal. The hold music melody twisted into something predatory and suffocating. Every resource you have is being seized with the force of law. EarthBound boss intensity — bureaucratic horror at its most lethal."
     },
-
     "boss_warden_steampunk": {
       "title_template": "847,293 Hours",
       "style": "Steampunk boss battle, aggressive clockwork, crushing brass, obsessive ticking, industrial percussion, intense waltz, 140 BPM",
@@ -347,7 +344,6 @@
       "style": "Steampunk boss battle, frantic clockwork, aggressive stuttering rhythm, steam fury, accelerating intensity, 170 BPM",
       "prompt": "INTENSE boss battle theme, a clockwork construct attacking BEFORE she's dispatched — her panic makes her FASTER and more dangerous. Frantic stuttering rhythm that accelerates throughout, steam explosions and gear shrieks, aggressive brass that arrives too early. She anticipates your moves because she exists slightly ahead of time. Terrifying speed born from existential panic. The fight gets faster every turn. Overwhelming mechanical fury."
     },
-
     "boss_warden_industrial": {
       "title_template": "Awaiting Response",
       "style": "Industrial boss battle, crushing factory percussion, aggressive alarm, heavy mechanical bass, relentless, 135 BPM",
@@ -368,7 +364,6 @@
       "style": "Industrial boss battle, aggressive looping, heavy bass, oppressive circular rhythm, mechanical fury, 130 BPM",
       "prompt": "INTENSE boss battle theme, an auditor whose circular authority becomes a WEAPON. Heavy bass loop that tightens like a noose, oppressive circular rhythm that traps you in bureaucratic hell. Filing sounds as aggressive percussion, each audit finding hits like a hammer. The warm smile is the scariest part — she is genuinely enjoying draining everything you have. The loop gets tighter, the bass gets heavier, there is no way out of the audit."
     },
-
     "boss_warden_digital": {
       "title_template": "Access Denied",
       "style": "Digital boss battle, aggressive cyberpunk, heavy glitch bass, harsh access denial tones, pounding binary rhythm, 155 BPM",
@@ -389,7 +384,6 @@
       "style": "Digital boss battle, aggressive garbage collection, heavy glitch bass, harsh deallocation, relentless data assault, 145 BPM",
       "prompt": "INTENSE boss battle theme, a garbage collector trying to DELETE your memories by force. Heavy glitch bass on every deallocation attempt, harsh electronic percussion, aggressive data streams as weapons. She keeps trying to erase you and FAILING and the failure makes her more desperate and dangerous. Relentless 145 BPM assault — attempted deallocation DENIED, attempted deallocation DENIED. The data fights back and she fights harder."
     },
-
     "boss_warden_abstract": {
       "title_template": ".",
       "style": "Abstract boss battle, overwhelming drone, crushing sustained tone, oppressive presence, massive bass, 80 BPM",
@@ -410,7 +404,6 @@
       "style": "Abstract boss battle, aggressive entropy, crushing decay, distorted dissolution, overwhelming erasure, dark, 90 BPM",
       "prompt": "INTENSE boss battle theme for ENTROPY — not gentle fading but aggressive ERASURE. Crushing distorted bass that corrodes everything it touches, harsh frequencies that strip detail from the music itself. A melody being violently deconstructed in real-time, instruments losing their identity and becoming noise. Dark, oppressive, the sound of being unmade. The most terrifying track in the game — not loud but CORROSIVE. Everything it touches becomes less. Including you."
     },
-
     "cutscene_w1_conscription": {
       "title_template": "Nobody Special",
       "style": "celtic folk, acoustic guitar, recorder, gentle, warm, 90 BPM",
@@ -536,7 +529,6 @@
       "style": "speed metal, chiptune, breakneck, kinetic, aggressive, exhilarating",
       "prompt": "Breakneck tempo from the first note. Speed metal guitar over chiptune bass, relentless drums. The sound of a speedrunner tearing through a game at terminal velocity — skipping cutscenes, attacking mid-dialogue, finding every shortcut. Exhilarating, aggressive, joyful destruction. A system being broken at the speed of thought. 55 seconds."
     },
-
     "ambient_cave": {
       "title_template": "Dripping Stone",
       "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
@@ -572,7 +564,6 @@
       "style": "ambient, digital, static, data flow, electronic hum, cyber, looping",
       "prompt": "Digital ambient loop. Soft electronic hum, data transmission pulses, gentle static crackling, distant server whir, subtle bitcrushed tones. The sound of existing inside a network. Cool blue digital atmosphere. Seamless loop, 60 seconds."
     },
-
     "stinger_level_up": {
       "title_template": "Level Up!",
       "style": "JRPG stinger, ascending chime, triumphant, short, bright, 5 seconds",
@@ -597,6 +588,151 @@
       "title_template": "Safe Haven",
       "style": "JRPG stinger, save point, gentle chime, reassuring, 3 seconds",
       "prompt": "Save point activation sound. Gentle reassuring chime with a soft shimmer — the comfort of knowing your progress is preserved. Warm, brief, safe. 3 seconds."
+    },
+    "dungeon_dragon_fire": {
+      "title_template": "Ember Depths",
+      "style": "SNES dungeon, volcanic, deep rumbling bass, smoldering strings, oppressive heat, minor key, 95 BPM",
+      "prompt": "Volcanic dragon cave dungeon theme. Deep rumbling bass like magma flowing beneath stone, smoldering string tremolo, oppressive heat in every note. Flickering fire crackle percussion, ominous brass swells. The deeper you go the hotter it gets. SNES-era dungeon atmosphere, tense and foreboding. Looping."
+    },
+    "dungeon_dragon_ice": {
+      "title_template": "Frozen Hollow",
+      "style": "SNES dungeon, icy, crystalline chimes, cold wind, sparse piano, haunting, 80 BPM",
+      "prompt": "Frozen dragon cave dungeon theme. Crystalline chime arpeggios echoing off ice walls, cold wind howling through chambers, sparse piano notes that ring and fade in frozen air. Everything is brittle and vast. The cold slows everything down including the music. SNES-era haunting ice dungeon. Looping."
+    },
+    "dungeon_suburban": {
+      "title_template": "Under the Subdivision",
+      "style": "EarthBound dungeon, suburban underground, muffled bass, wrong muzak, pipes dripping, unsettling, 90 BPM",
+      "prompt": "Suburban sewer/basement dungeon theme. Muffled bass through concrete walls, distorted fragments of cheerful muzak leaking down from above, water dripping from pipes. The wrongness of being underneath normalcy. Something is humming down here that shouldn't be. EarthBound underground atmosphere, uncanny and unsettling. Looping."
+    },
+    "dungeon_steampunk": {
+      "title_template": "Inside the Grand Mechanism",
+      "style": "Steampunk dungeon, massive gears, clockwork rhythm, brass resonance, steam pressure, tense, 100 BPM",
+      "prompt": "Interior of a massive clockwork mechanism dungeon theme. Enormous gears turning as rhythm, brass pipes resonating with each rotation, steam pressure building and releasing. The sound of being inside a machine that is larger than you can see. Tense clockwork precision, everything measured and ticking. Steampunk dungeon atmosphere. Looping."
+    },
+    "dungeon_industrial": {
+      "title_template": "Deep Factory",
+      "style": "Industrial dungeon, factory basement, crushing machinery, dark drone, conveyor rhythm, oppressive, 85 BPM",
+      "prompt": "Deep factory floor dungeon theme. Crushing machinery percussion in the distance, dark oppressive drone, conveyor belt rhythm that never stops. Fluorescent buzz and metallic echoes. The lowest level of the assembly line where maintenance never reaches. Industrial dungeon, dehumanizing and relentless. Looping."
+    },
+    "dungeon_digital": {
+      "title_template": "Root Directory",
+      "style": "Digital dungeon, deep code, corrupted chiptune, data corruption, glitch static, tense electronic, 110 BPM",
+      "prompt": "Deep inside the system's root directory dungeon theme. Corrupted chiptune melody that glitches and stutters, data corruption static, tense electronic pulses like heartbeats of dying processes. The code down here is old and unstable. Digital dungeon, cyberpunk tension, the feeling of exploring code that was never meant to be accessed. Looping."
+    },
+    "dungeon_abstract": {
+      "title_template": "The Space Between",
+      "style": "Abstract dungeon, liminal, reverse reverb, near-silence, vast empty drone, existential, 60 BPM",
+      "prompt": "Abstract void dungeon theme. The space between concepts — reverse reverb tails, vast empty drone, sounds that seem to come from impossible distances. Near-silence that is somehow louder than noise. Liminal space music, the dungeon of ideas where nothing is solid. Existential exploration at the edge of meaning. Looping."
+    },
+    "job_fighter_special": {
+      "title_template": "Steel Resolve",
+      "style": "JRPG special attack, aggressive sword strike, driving drums, heroic brass, short, 8 seconds",
+      "prompt": "Fighter special attack stinger. Aggressive driving drums building to a massive sword strike hit, heroic brass fanfare on impact. Raw physical power unleashed. Short, impactful, the sound of steel meeting everything. 8 seconds."
+    },
+    "job_cleric_special": {
+      "title_template": "Divine Light",
+      "style": "JRPG special attack, holy choir, ascending light, warm radiance, healing shimmer, short, 8 seconds",
+      "prompt": "Cleric special attack stinger. Holy choir swelling upward, warm radiant light in sound, healing shimmer cascading outward. Divine power channeled through prayer. Bright, pure, overwhelming warmth. 8 seconds."
+    },
+    "job_mage_special": {
+      "title_template": "Arcane Fury",
+      "style": "JRPG special attack, magical explosion, crackling energy, dramatic orchestral hit, arcane power, short, 8 seconds",
+      "prompt": "Mage special attack stinger. Magical energy crackling and building to a massive arcane explosion — dramatic orchestral hit with magical shimmer aftermath. Raw elemental power unleashed through intellect. 8 seconds."
+    },
+    "job_rogue_special": {
+      "title_template": "Shadow Strike",
+      "style": "JRPG special attack, quick slash, stealthy approach, sudden violence, sharp percussion, short, 6 seconds",
+      "prompt": "Rogue special attack stinger. Silence — then a blindingly fast slash. Sharp percussion hit, the whisper of a blade that was already past you before you heard it. Lethal precision, no wasted motion. 6 seconds."
+    },
+    "job_bard_special": {
+      "title_template": "Crescendo",
+      "style": "JRPG special attack, musical crescendo, instrument swell, party buff fanfare, inspiring, short, 10 seconds",
+      "prompt": "Bard special attack stinger. A musical performance building from a single note to a full ensemble crescendo — every instrument joining in. The party is inspired, buffs stack, morale surges. The power of music as a weapon. 10 seconds."
+    },
+    "job_guardian_special": {
+      "title_template": "Unbreakable Wall",
+      "style": "JRPG special attack, massive impact absorb, deep bass shield, stone wall percussion, immovable, short, 8 seconds",
+      "prompt": "Guardian special attack stinger. Massive deep bass impact absorbed by an immovable shield — stone wall percussion, the sound of an unstoppable force meeting an immovable object. The object wins. 8 seconds."
+    },
+    "job_ninja_special": {
+      "title_template": "Vanishing Point",
+      "style": "JRPG special attack, rapid multi-hit, wind slash, afterimage, blinding speed, short, 6 seconds",
+      "prompt": "Ninja special attack stinger. Rapid-fire multi-hit slashes so fast they overlap — wind cutting, afterimage whooshes, then silence. The attack was over before it started. Blinding speed compressed into 6 seconds."
+    },
+    "job_summoner_special": {
+      "title_template": "The Gate Opens",
+      "style": "JRPG special attack, dimensional rift, deep horn call, otherworldly arrival, massive presence, short, 10 seconds",
+      "prompt": "Summoner special attack stinger. A deep horn call opens a dimensional rift — otherworldly sounds flood in, something MASSIVE arrives. The ground shakes, reality bends, a being of enormous power is here. 10 seconds."
+    },
+    "job_speculator_special": {
+      "title_template": "All In",
+      "style": "JRPG special attack, casino dice roll, slot machine, high risk jackpot, dramatic tension to payout, short, 8 seconds",
+      "prompt": "Speculator special attack stinger. Casino tension — dice rolling, slot machine spinning, dramatic pause — then either JACKPOT explosion of coins and fanfare, or the sound of going bust. High risk high reward in 8 seconds."
+    },
+    "job_scriptweaver_special": {
+      "title_template": "Rewrite Reality",
+      "style": "JRPG special attack, code compilation, keyboard rapid fire, system override, reality glitch, short, 8 seconds",
+      "prompt": "Scriptweaver special attack stinger. Rapid keyboard typing building to a system override — reality glitches, damage formulas rewrite themselves, the rules of the game bend audibly. Code compilation sounds becoming music. 8 seconds."
+    },
+    "job_time_mage_special": {
+      "title_template": "Rewind",
+      "style": "JRPG special attack, time reversal, reverse audio, clock unwinding, temporal distortion, short, 8 seconds",
+      "prompt": "Time Mage special attack stinger. Time reverses — sounds play backward, a clock unwinds, reality stutters and rewinds. The moment before the attack becomes the moment after. Temporal distortion made audible. 8 seconds."
+    },
+    "job_necromancer_special": {
+      "title_template": "From Beyond",
+      "style": "JRPG special attack, dark resurrection, grave rumble, ghostly choir, death magic, ominous, short, 8 seconds",
+      "prompt": "Necromancer special attack stinger. The ground cracks open — grave rumble, ghostly choir rising from below, dark energy crackling. Something dead is being called back. Ominous, powerful, the line between life and death bent. 8 seconds."
+    },
+    "job_bossbinder_special": {
+      "title_template": "Control Shift",
+      "style": "JRPG special attack, dominance assertion, chains rattling, boss corruption, power seizure, dramatic, short, 10 seconds",
+      "prompt": "Bossbinder special attack stinger. Chains of binding rattling into place, a boss-tier power being seized and redirected. The sound of taking control of something that should not be controlled. Dramatic, dangerous, the corruption spreading. 10 seconds."
+    },
+    "job_skiptrotter_special": {
+      "title_template": "Skip",
+      "style": "JRPG special attack, dimensional warp, VHS fast-forward, reality skip, instant teleport, short, 5 seconds",
+      "prompt": "Skiptrotter special attack stinger. VHS fast-forward sound — reality skips ahead, frames drop, the space between here and there just disappears. Instant warp. The shortest stinger in the game because the Skiptrotter doesn't waste time. 5 seconds."
+    },
+    "shop": {
+      "title_template": "The Merchant's Welcome",
+      "style": "16-bit SNES shop theme, cozy, gentle piano and harp, light woodwinds, pizzicato strings, warm, welcoming, medium tempo, loopable",
+      "prompt": "Cozy JRPG merchant's shop, warm interior with hanging lanterns, shelves of potions and gear, welcoming shopkeeper behind a wooden counter. Gentle piano arpeggios over soft harp, light flute melody drifting above, pizzicato strings underneath. Calm and inviting, lets the player browse without pressure, classic FF/Dragon Quest shop-music feel. Loops cleanly."
+    },
+    "village_harmonia": {
+      "title_template": "Harmonia's Morning",
+      "style": "16-bit SNES pastoral folk, gentle lute, pan flute, hand drum, village festival warmth, hopeful, 100 BPM",
+      "prompt": "The starter village where every adventure begins. Rolling green hills, cobblestone paths, smoke rising from chimneys, children chasing chickens. Gentle lute plucking a simple folk melody, pan flute answering overhead, soft hand drum keeping time. Warm, pastoral, earnest — the feeling of a hero's first step out the front door. Loopable."
+    },
+    "village_scriptura": {
+      "title_template": "The Guild's Cathedral",
+      "style": "16-bit SNES regal court music, harpsichord, pipe organ swell, choral pads, orchestral strings, stately, 90 BPM",
+      "prompt": "The capital city of Scriptura. Home to the Scriptweaver's Guild — scholars in long robes, towering bookcases, stained glass casting colored light on marble floors. Harpsichord leads a dignified melody, pipe organ adds gravity on the low end, soft choral pads give it cathedral reverb, orchestral strings soar on the chorus. Regal, intellectual, ancient authority. Loopable."
+    },
+    "village_maple_heights": {
+      "title_template": "Too Perfect",
+      "style": "EarthBound lo-fi suburban, detuned music box, sitcom plucks, ice cream truck melody warped, gentle synth pad, slightly off-key, 95 BPM",
+      "prompt": "A quiet suburban neighborhood where every lawn is too green and every smile too wide. Picket fences, waving mail carriers, kids on bikes who never age. Detuned music box leads a sitcom-ready theme, rubber-band plucked bass, distant ice cream truck melody warped just slightly out of tune, gentle synth pad underneath. Warm and nostalgic with the unmistakable undertone that something is wrong. EarthBound meets Twin Peaks. Loopable."
+    },
+    "village_brasston": {
+      "title_template": "On Schedule",
+      "style": "steampunk clockwork waltz, 3/4 time, brass ensemble, ticking percussion, metronome clicks, harpsichord runs, precise, 120 BPM",
+      "prompt": "The clockwork market town of Brasston, where brass is currency and every citizen runs on schedule. A waltz in 3/4 time, locked perfectly to a metronome click. Brass ensemble carries the melody, harpsichord fills between beats with mechanical runs, ticking percussion layered like gears meshing. Precise, punctual, slightly obsessive. The feeling of a town where being late is illegal. Loopable."
+    },
+    "village_rivet_row": {
+      "title_template": "The Company Store",
+      "style": "industrial blues, lonesome harmonica, slide guitar, factory drone undertone, shuffle drums, minor key, 80 BPM",
+      "prompt": "A workers' settlement on the factory outskirts. Rivet Row. The company provides everything, the company owns everything. Lonesome harmonica leads a blues melody, slide guitar answers, shuffle drums keep a slow shift-change tempo, a low factory drone never quite stops in the background. Minor key. Tired, worn, defiant. The feeling of the last hour of a double shift. Loopable."
+    },
+    "village_node_prime": {
+      "title_template": "Cached & Warm",
+      "style": "digital lounge, synthwave rest stop, lofi drums, glowing pads, chiptune bells, modem hum, 95 BPM",
+      "prompt": "A digital rest stop in the network where data flows like water and programs walk like people. Node Prime. Synthwave chords pulse slowly, lofi drums hold a chill groove, chiptune bells ring in the top end, a warm modem hum anchors the low. Glowing, welcoming, the feeling of a safe zone between scary routes. Loopable."
+    },
+    "village_vertex": {
+      "title_template": "Almost Nothing",
+      "style": "minimalist ambient, single piano notes, long silences, slow breath pad, sub-bass drone, 60 BPM, sparse",
+      "prompt": "The Vertex. A point of convergence in the void. Simple. Quiet. Almost nothing. One piano note. A long silence. Another piano note. A slow breath pad drifts underneath, a sub-bass drone barely there. No melody. No rhythm. Just presence. The last shopkeeper. A traveler. Someone. Brian Eno writing an end-credits theme for the end of all worlds. Loopable."
     }
   }
 }

@@ -1616,6 +1616,102 @@
       "duration": 139.2,
       "loop": true,
       "generated_at": "2026-04-14"
+    },
+    "shop": {
+      "file": "assets/audio/music/shop.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Merchant's Welcome",
+      "prompt": "Cozy JRPG merchant's shop, warm interior with hanging lanterns, shelves of potions and gear, welcoming shopkeeper behind a wooden counter. Gentle piano arpeggios over soft harp, light flute melody drifting above, pizzicato strings underneath. Calm and inviting, lets the player browse without pressure, classic FF/Dragon Quest shop-music feel. Loops cleanly.",
+      "style": "16-bit SNES shop theme, cozy, gentle piano and harp, light woodwinds, pizzicato strings, warm, welcoming, medium tempo, loopable",
+      "model": "suno-v4",
+      "duration": 47.52,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "village_harmonia": {
+      "file": "assets/audio/music/village_harmonia.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Harmonia's Morning",
+      "prompt": "The starter village where every adventure begins. Rolling green hills, cobblestone paths, smoke rising from chimneys, children chasing chickens. Gentle lute plucking a simple folk melody, pan flute answering overhead, soft hand drum keeping time. Warm, pastoral, earnest \u2014 the feeling of a hero's first step out the front door. Loopable.",
+      "style": "16-bit SNES pastoral folk, gentle lute, pan flute, hand drum, village festival warmth, hopeful, 100 BPM",
+      "model": "suno-v4",
+      "duration": 142.52,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "village_scriptura": {
+      "file": "assets/audio/music/village_scriptura.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Guild's Cathedral",
+      "prompt": "The capital city of Scriptura. Home to the Scriptweaver's Guild \u2014 scholars in long robes, towering bookcases, stained glass casting colored light on marble floors. Harpsichord leads a dignified melody, pipe organ adds gravity on the low end, soft choral pads give it cathedral reverb, orchestral strings soar on the chorus. Regal, intellectual, ancient authority. Loopable.",
+      "style": "16-bit SNES regal court music, harpsichord, pipe organ swell, choral pads, orchestral strings, stately, 90 BPM",
+      "model": "suno-v4",
+      "duration": 78.72,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "village_maple_heights": {
+      "file": "assets/audio/music/village_maple_heights.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Too Perfect",
+      "prompt": "A quiet suburban neighborhood where every lawn is too green and every smile too wide. Picket fences, waving mail carriers, kids on bikes who never age. Detuned music box leads a sitcom-ready theme, rubber-band plucked bass, distant ice cream truck melody warped just slightly out of tune, gentle synth pad underneath. Warm and nostalgic with the unmistakable undertone that something is wrong. EarthBound meets Twin Peaks. Loopable.",
+      "style": "EarthBound lo-fi suburban, detuned music box, sitcom plucks, ice cream truck melody warped, gentle synth pad, slightly off-key, 95 BPM",
+      "model": "suno-v4",
+      "duration": 86.0,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "village_brasston": {
+      "file": "assets/audio/music/village_brasston.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "On Schedule",
+      "prompt": "The clockwork market town of Brasston, where brass is currency and every citizen runs on schedule. A waltz in 3/4 time, locked perfectly to a metronome click. Brass ensemble carries the melody, harpsichord fills between beats with mechanical runs, ticking percussion layered like gears meshing. Precise, punctual, slightly obsessive. The feeling of a town where being late is illegal. Loopable.",
+      "style": "steampunk clockwork waltz, 3/4 time, brass ensemble, ticking percussion, metronome clicks, harpsichord runs, precise, 120 BPM",
+      "model": "suno-v4",
+      "duration": 22.04,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "village_rivet_row": {
+      "file": "assets/audio/music/village_rivet_row.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Company Store",
+      "prompt": "A workers' settlement on the factory outskirts. Rivet Row. The company provides everything, the company owns everything. Lonesome harmonica leads a blues melody, slide guitar answers, shuffle drums keep a slow shift-change tempo, a low factory drone never quite stops in the background. Minor key. Tired, worn, defiant. The feeling of the last hour of a double shift. Loopable.",
+      "style": "industrial blues, lonesome harmonica, slide guitar, factory drone undertone, shuffle drums, minor key, 80 BPM",
+      "model": "suno-v4",
+      "duration": 188.4,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "village_node_prime": {
+      "file": "assets/audio/music/village_node_prime.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Cached & Warm",
+      "prompt": "A digital rest stop in the network where data flows like water and programs walk like people. Node Prime. Synthwave chords pulse slowly, lofi drums hold a chill groove, chiptune bells ring in the top end, a warm modem hum anchors the low. Glowing, welcoming, the feeling of a safe zone between scary routes. Loopable.",
+      "style": "digital lounge, synthwave rest stop, lofi drums, glowing pads, chiptune bells, modem hum, 95 BPM",
+      "model": "suno-v4",
+      "duration": 39.88,
+      "loop": true,
+      "generated_at": "2026-04-18"
+    },
+    "village_vertex": {
+      "file": "assets/audio/music/village_vertex.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Almost Nothing",
+      "prompt": "The Vertex. A point of convergence in the void. Simple. Quiet. Almost nothing. One piano note. A long silence. Another piano note. A slow breath pad drifts underneath, a sub-bass drone barely there. No melody. No rhythm. Just presence. The last shopkeeper. A traveler. Someone. Brian Eno writing an end-credits theme for the end of all worlds. Loopable.",
+      "style": "minimalist ambient, single piano notes, long silences, slow breath pad, sub-bass drone, 60 BPM, sparse",
+      "model": "suno-v4",
+      "duration": 168.0,
+      "loop": true,
+      "generated_at": "2026-04-18"
     }
   },
   "tier_priority": [

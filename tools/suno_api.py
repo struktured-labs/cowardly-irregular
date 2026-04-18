@@ -624,15 +624,31 @@ class SunoBrowser:
             return False
 
     def _react_fill(self, selector: str, value: str, index: int = 0) -> bool:
-        """Fill a React controlled input/textarea — tries human typing first, falls back to JS."""
+        """Fill a React controlled input/textarea — tries human typing first, falls back to JS.
+
+        Supports Playwright's `:visible` pseudo-class: if present, the JS fallback
+        strips it from the selector and filters for visible elements in-browser.
+        """
         page = self._page
         # Try human-like typing first (more natural for hCaptcha)
         if self._type_human(page, selector, value, index):
             return True
-        # Fallback: JS injection for React controlled inputs
-        escaped_sel = selector.replace("'", "\\'").replace('"', '\\"')
+        # JS fallback — strip :visible (not valid CSS) and filter in JS.
+        visible_only = ":visible" in selector
+        raw_sel = selector.replace(":visible", "")
+        escaped_sel = raw_sel.replace("'", "\\'").replace('"', '\\"')
         return page.evaluate(f"""(value) => {{
-            const els = document.querySelectorAll("{escaped_sel}");
+            let els = Array.from(document.querySelectorAll("{escaped_sel}"));
+            if ({str(visible_only).lower()}) {{
+                els = els.filter(el => {{
+                    const r = el.getBoundingClientRect();
+                    if (r.width <= 0 || r.height <= 0) return false;
+                    const s = getComputedStyle(el);
+                    if (s.display === 'none' || s.visibility === 'hidden') return false;
+                    if (el.closest('[hidden], [aria-hidden="true"]')) return false;
+                    return true;
+                }});
+            }}
             if (els.length <= {index}) return false;
             const el = els[{index}];
             const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -670,39 +686,46 @@ class SunoBrowser:
 
         _human_delay(HUMAN_FIELD_GAP_MS)
 
-        # Clear lyrics (blank for instrumental) and fill style
-        # Suno UI keeps changing textarea count (4 or 5). Auto-detect layout.
-        ta_count = page.locator("textarea").count()
-        print(f"  Textareas detected: {ta_count}")
+        # Find lyrics + style textareas among VISIBLE textareas by placeholder exclusion.
+        # Suno rotates style-field placeholder keywords ("world music, boom bap...",
+        # "ambient, cinematic..."), so positive keyword matching is unreliable.
+        # Only lyrics has stable keywords ("lyrics" / "instrumental"). Everything
+        # else visible is the style field. Hidden textareas (chat bar, simple-mode
+        # prompt) are skipped automatically by :visible.
+        visible_tas = page.locator("textarea:visible")
+        v_count = visible_tas.count()
+        total_count = page.locator("textarea").count()
+        print(f"  Textareas detected: {total_count} total, {v_count} visible")
 
-        # Try placeholder-based selectors first (most robust)
-        lyrics_filled = False
-        for sel in ("textarea[placeholder*='lyrics']", "textarea[placeholder*='instrumental']",
-                    "textarea[placeholder*='Leave blank']"):
-            if self._react_fill(sel, "", index=0):
-                lyrics_filled = True
-                break
-        if not lyrics_filled:
-            # Fallback: index depends on whether chat prompt exists
-            lyrics_idx = 1 if ta_count >= 5 else 0
-            self._react_fill("textarea", "", index=lyrics_idx)
+        lyrics_ta_idx = -1
+        style_ta_idx = -1
+        for i in range(v_count):
+            ph = (visible_tas.nth(i).get_attribute("placeholder") or "").lower()
+            if lyrics_ta_idx < 0 and ("lyrics" in ph or "instrumental" in ph):
+                lyrics_ta_idx = i
+            elif style_ta_idx < 0 and "lyrics" not in ph and "instrumental" not in ph:
+                style_ta_idx = i
+
+        # Clear lyrics (blank for instrumental)
+        if lyrics_ta_idx >= 0:
+            if not self._react_fill("textarea:visible", "", index=lyrics_ta_idx):
+                self._react_fill("textarea", "", index=lyrics_ta_idx)
+        else:
+            self._react_fill("textarea:visible", "", index=0)
         _human_delay(HUMAN_FIELD_GAP_MS)
 
+        # Fill style
         style_filled = False
-        for sel in ("textarea[placeholder*='pop']", "textarea[placeholder*='house']",
-                    "textarea[placeholder*='style']", "textarea[placeholder*='genre']",
-                    "textarea[placeholder*='acoustic']"):
-            if self._react_fill(sel, style, index=0):
+        if style_ta_idx >= 0:
+            if self._react_fill("textarea:visible", style, index=style_ta_idx):
                 style_filled = True
-                print(f"  Style: {style[:60]}...")
-                break
-        if not style_filled:
-            # Fallback: index depends on whether chat prompt exists
-            style_idx = 2 if ta_count >= 5 else 1
-            if self._react_fill("textarea", style, index=style_idx):
-                print(f"  Style: {style[:60]}...")
-            else:
-                print("  Warning: could not fill style textarea")
+        if not style_filled and v_count > 1:
+            if self._react_fill("textarea:visible", style, index=1):
+                style_filled = True
+        if style_filled:
+            print(f"  Style: {style[:60]}...")
+        else:
+            print("  Warning: could not fill style textarea")
 
         _human_delay(HUMAN_FIELD_GAP_MS)
 
