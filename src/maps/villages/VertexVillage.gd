@@ -227,7 +227,9 @@ func _setup_npcs() -> void:
 	# The Absence (empty NPC slot)
 	var absence = _create_npc("The Absence", "villager", Vector2(9 * TILE_SIZE, 11 * TILE_SIZE), [
 		"There is nothing here.",
-		"That is the point."
+		"That is the point.",
+		"...You're still talking to it, though. Which means it isn't, quite.",
+		"Thank you. That's an odd kind of gift."
 	])
 	npcs.add_child(absence)
 
