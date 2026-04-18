@@ -1,0 +1,30 @@
+{
+  "id": "world6_null_chamber_boss",
+  "title": "Curator of the Null Chamber",
+  "world": 6,
+  "trigger": "boss_null_chamber_curator",
+  "background": "vertex_village",
+  "description": "Dungeon boss at the edge of the Vertex. A Curator variant that runs the void as a resource-management exercise. Quietly terrible.",
+  "steps": [
+    {"type": "stop_music"},
+    {"type": "letterbox_in", "duration": 0.5},
+    {"type": "boss_intro", "name": "Curator of the Null Chamber", "title": "Dungeon Boss \u2014 Abstract"},
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "narration", "text": "The chamber had no inventory, because inventory had been optimized out. What remained was a curator, a ledger with no rows, and a faint readout indicating that the room's MP pool had not been restocked since the third pass."},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Curator of the Null Chamber", "text": "Welcome to the null chamber. It is, as you can see, within budget.", "theme": "enemy", "portrait": "mysterious"},
+      {"speaker": "Voice", "text": "There is nothing here.", "theme": "bard", "portrait": "bard"},
+      {"speaker": "Curator of the Null Chamber", "text": "Correct. The budget was zero. The results are consistent.", "theme": "enemy", "portrait": "mysterious"},
+      {"speaker": "Faith", "text": "Why are you fighting for this?", "theme": "cleric", "portrait": "cleric"},
+      {"speaker": "Curator of the Null Chamber", "text": "I am not fighting for this. I am closing the audit. You are, unfortunately, an open item.", "theme": "enemy", "portrait": "mysterious"}
+    ]},
+
+    {"type": "screen_shake", "duration": 0.3, "intensity": 4.0},
+    {"type": "screen_flash", "duration": 0.15},
+
+    {"type": "set_flag", "flag": "null_chamber_curator_intro_complete", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
