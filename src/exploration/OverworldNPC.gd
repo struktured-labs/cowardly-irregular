@@ -501,6 +501,13 @@ func _adjust_collision_for_mode7(shape: CircleShape2D) -> void:
 	while parent:
 		if parent.get("mode7_overlay") != null or parent.name.ends_with("Overworld"):
 			shape.radius = 128.0
+			# Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
+			var col = shape.get_meta("owner_node", null)
+			if not col:
+				for child in get_children():
+					if child is CollisionShape2D and child.shape == shape:
+						child.scale = Vector2(1.0, 1.67)
+						break
 			return
 		parent = parent.get_parent()
 

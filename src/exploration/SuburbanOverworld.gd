@@ -11,7 +11,7 @@ const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 
 signal exploration_ready()
-signal battle_triggered(enemies: Array)
+signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles)
@@ -45,6 +45,11 @@ var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Rain effect state
 var _rain_particles: CPUParticles2D
@@ -91,6 +96,10 @@ func _ready() -> void:
 	_place_signposts()
 	_place_landmarks()
 	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
+	_place_ambient_effects()
 
 	# Start suburban overworld music
 	if SoundManager:
@@ -100,8 +109,114 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.setup(player, ["spiteful_crow", "new_age_retro_hippie", "skate_punk", "unassuming_dog", "cranky_lady"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	## W2 quest objective: reach steampunk portal (Forward) after exploring
+	if GameState.get_story_flag("w2_boss_defeated"):
+		return spawn_points.get("from_industrial", Vector2.ZERO)
+	if GameState.get_story_flag("visited_maple_heights"):
+		return Vector2(45 * TILE_SIZE, 20 * TILE_SIZE)  # Forward Portal
+	return spawn_points.get("maple_heights_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("maple_heights_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "MAPLE HEIGHTS"
+		marker.roof_color = Color(0.5, 0.35, 0.25)  # Brown suburban rooftops
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests across W2 zones: residential, strip mall, park, playground
+	var chests = [
+		# Residential — backyard loot
+		{"id": "w2_backyard_potion", "pos": Vector2(4, 7), "type": "item", "item": "hi_potion", "amount": 3},
+		{"id": "w2_backyard_gold", "pos": Vector2(44, 4), "type": "gold", "gold": 200},
+		# Strip mall — vending machine finds
+		{"id": "w2_mall_ether", "pos": Vector2(18, 17), "type": "item", "item": "ether", "amount": 3},
+		{"id": "w2_mall_antidote", "pos": Vector2(30, 18), "type": "item", "item": "antidote", "amount": 4},
+		{"id": "w2_mall_gold", "pos": Vector2(42, 17), "type": "gold", "gold": 350},
+		# Park / playground — kid hidden stashes
+		{"id": "w2_park_phoenix", "pos": Vector2(6, 28), "type": "item", "item": "phoenix_down", "amount": 1},
+		{"id": "w2_park_remedy", "pos": Vector2(14, 30), "type": "item", "item": "remedy", "amount": 3},
+		{"id": "w2_court_elixir", "pos": Vector2(22, 28), "type": "item", "item": "elixir", "amount": 1},
+		# South edge — near forward portal
+		{"id": "w2_portal_gold", "pos": Vector2(48, 24), "type": "gold", "gold": 600},
+		# Bus stop hidden
+		{"id": "w2_bus_hipotion", "pos": Vector2(40, 32), "type": "item", "item": "hi_potion", "amount": 4},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save point near main road crossroads
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 14 * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
+
+
+func _place_ambient_effects() -> void:
+	# Chimney smoke over the two house rows
+	var smoke_positions = [
+		Vector2(4, 2), Vector2(14, 2), Vector2(26, 2), Vector2(37, 2),
+		Vector2(4, 7), Vector2(14, 7), Vector2(26, 7), Vector2(37, 7),
+	]
+	for p in smoke_positions:
+		var smoke = CPUParticles2D.new()
+		smoke.name = "ChimneySmoke"
+		smoke.position = Vector2(p.x * TILE_SIZE + TILE_SIZE / 2, p.y * TILE_SIZE - 4)
+		smoke.amount = 5
+		smoke.lifetime = 2.0
+		smoke.one_shot = false
+		smoke.randomness = 0.4
+		smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+		smoke.emission_rect_extents = Vector2(6, 2)
+		smoke.gravity = Vector2(2.0, -15.0)
+		smoke.initial_velocity_min = 2.0
+		smoke.initial_velocity_max = 5.0
+		smoke.scale_amount_min = 0.3
+		smoke.scale_amount_max = 0.9
+		smoke.color = Color(0.7, 0.7, 0.72, 0.22)
+		smoke.z_index = 2
+		add_child(smoke)
 
 
 func _place_signposts() -> void:
@@ -212,6 +327,12 @@ func _process(delta: float) -> void:
 			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
@@ -598,7 +719,17 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 
 func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
+	battle_triggered.emit(enemies, _get_terrain_for_zone())
+
+
+func _get_terrain_for_zone() -> String:
+	# W2 zones: residential / strip mall / park — all map to suburban terrain
+	var player_pos: Vector2 = player.global_position if player else Vector2.ZERO
+	var tile_x: int = int(player_pos.x / TILE_SIZE)
+	# Park/playground zone (leftmost third) → forest (trees, grass feel)
+	if tile_x < MAP_WIDTH / 3:
+		return "suburban"
+	return "suburban"
 
 
 func _on_menu_requested() -> void:
