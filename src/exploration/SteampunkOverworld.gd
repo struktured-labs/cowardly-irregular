@@ -45,6 +45,11 @@ var _zone_particles: ZoneParticles
 
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Steam vent effect state
 var _steam_emitters: Array = []
@@ -90,6 +95,9 @@ func _ready() -> void:
 	_place_signposts()
 	_place_landmarks()
 	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
 
 	# Start steampunk overworld music
 	if SoundManager:
@@ -99,8 +107,88 @@ func _ready() -> void:
 	_minimap = OverworldMinimap.new()
 	add_child(_minimap)
 	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.setup(player, ["steam_rat", "cog_swarm", "clockwork_sentinel", "pipe_phantom", "brass_golem"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	## W3: reach rail station (Forward Portal) after visiting Brasston
+	if GameState.get_story_flag("w3_boss_defeated"):
+		return spawn_points.get("station", Vector2.ZERO)
+	if GameState.get_story_flag("visited_brasston"):
+		return spawn_points.get("station", Vector2.ZERO)
+	return spawn_points.get("brasston_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("brasston_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "BRASSTON"
+		marker.roof_color = Color(0.55, 0.4, 0.2)  # Copper/brass rooftops
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests across plaza, industrial district, rail station, residential
+	var chests = [
+		# Central plaza — fountain / clock tower area
+		{"id": "w3_plaza_ether", "pos": Vector2(18, 18), "type": "item", "item": "ether", "amount": 4},
+		{"id": "w3_plaza_gold", "pos": Vector2(26, 19), "type": "gold", "gold": 400},
+		# Industrial district (NE/SE) — machinery caches
+		{"id": "w3_industrial_hipotion", "pos": Vector2(48, 10), "type": "item", "item": "hi_potion", "amount": 4},
+		{"id": "w3_industrial_elixir", "pos": Vector2(52, 18), "type": "item", "item": "elixir", "amount": 1},
+		{"id": "w3_industrial_gold", "pos": Vector2(45, 30), "type": "gold", "gold": 500},
+		# Rail station approach — commuter lost-and-found
+		{"id": "w3_station_remedy", "pos": Vector2(22, 40), "type": "item", "item": "remedy", "amount": 3},
+		{"id": "w3_station_phoenix", "pos": Vector2(30, 40), "type": "item", "item": "phoenix_down", "amount": 2},
+		# Residential blocks — tenement backyards
+		{"id": "w3_tenement_antidote", "pos": Vector2(8, 22), "type": "item", "item": "antidote", "amount": 4},
+		{"id": "w3_tenement_gold", "pos": Vector2(5, 10), "type": "gold", "gold": 250},
+		# Park / steam pipes
+		{"id": "w3_park_ether", "pos": Vector2(15, 33), "type": "item", "item": "ether", "amount": 3},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal at central plaza (safe hub area)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
 
 
 func _place_signposts() -> void:
@@ -225,6 +313,12 @@ func _process(delta: float) -> void:
 			_zone_particles.update_position(player.position)
 		if _minimap:
 			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
