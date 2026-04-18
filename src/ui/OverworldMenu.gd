@@ -17,6 +17,7 @@ const JobMenuClass = preload("res://src/ui/JobMenu.gd")
 const QuestLogClass = preload("res://src/ui/QuestLog.gd")
 const CutsceneGalleryClass = preload("res://src/ui/CutsceneGallery.gd")
 const BestiaryMenuClass = preload("res://src/ui/BestiaryMenu.gd")
+const WorldMapMenuClass = preload("res://src/ui/WorldMapMenu.gd")
 
 signal closed()
 signal menu_action(action: String, target: Combatant)
@@ -39,6 +40,7 @@ const BASE_MENU_OPTIONS = [
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
 	{"id": "cutscene_gallery", "label": "Theater", "enabled": true},
 	{"id": "bestiary", "label": "Bestiary", "enabled": true},
+	{"id": "world_map", "label": "World Map", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
 	{"id": "settings", "label": "Settings", "enabled": true},
@@ -612,6 +614,8 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_cutscene_gallery()
 		"bestiary":
 			_open_bestiary()
+		"world_map":
+			_open_world_map()
 		"settings":
 			_open_settings()
 		"teleport":
@@ -634,6 +638,15 @@ func _open_bestiary() -> void:
 	bestiary.closed.connect(_on_submenu_closed)
 	add_child(bestiary)
 	_hide_main_ui(bestiary)
+
+
+func _open_world_map() -> void:
+	_submenu_open = true
+	var world_map = WorldMapMenuClass.new()
+	world_map.set_anchors_preset(Control.PRESET_FULL_RECT)
+	world_map.closed.connect(_on_submenu_closed)
+	add_child(world_map)
+	_hide_main_ui(world_map)
 
 
 func _open_quest_log() -> void:
