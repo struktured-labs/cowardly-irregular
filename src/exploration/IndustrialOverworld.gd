@@ -201,6 +201,8 @@ func _place_signposts() -> void:
 		{"pos": Vector2(48, 17), "text": "→ Rivet Row Village"},
 		# Chemical zone warning (west)
 		{"pos": Vector2(12, 17), "text": "← Chemical Zone ⚠ Toxic sludge"},
+		# Assembly Core dungeon
+		{"pos": Vector2(8, 23), "text": "↓ Assembly Core — dungeon ⚒"},
 		# Factory floor & break room
 		{"pos": Vector2(26, 17), "text": "Factory Floor · assembly here"},
 		{"pos": Vector2(36, 22), "text": "Break Room · save crystal"},
@@ -598,6 +600,18 @@ func _setup_transitions() -> void:
 	_setup_transition_collision(rivet_row_trans, Vector2(TILE_SIZE, TILE_SIZE))
 	rivet_row_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(rivet_row_trans)
+
+	# Assembly Core dungeon entrance (west side, chemical zone)
+	var assembly_trans = AreaTransitionScript.new()
+	assembly_trans.name = "AssemblyCoreEntrance"
+	assembly_trans.target_map = "assembly_core"
+	assembly_trans.target_spawn = "default"
+	assembly_trans.require_interaction = true
+	assembly_trans.indicator_text = "Descend into the Assembly Core"
+	assembly_trans.position = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(assembly_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	assembly_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(assembly_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

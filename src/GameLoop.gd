@@ -27,6 +27,9 @@ const IceDragonCaveScript = preload("res://src/maps/dungeons/IceDragonCave.gd")
 const ShadowDragonCaveScript = preload("res://src/maps/dungeons/ShadowDragonCave.gd")
 const LightningDragonCaveScript = preload("res://src/maps/dungeons/LightningDragonCave.gd")
 const FireDragonCaveScript = preload("res://src/maps/dungeons/FireDragonCave.gd")
+const AssemblyCoreScript = preload("res://src/maps/dungeons/AssemblyCore.gd")
+const RootProcessScript = preload("res://src/maps/dungeons/RootProcess.gd")
+const NullChamberScript = preload("res://src/maps/dungeons/NullChamber.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
 const IndustrialOverworldScript = preload("res://src/exploration/IndustrialOverworld.gd")
@@ -1300,6 +1303,12 @@ func _start_exploration() -> void:
 			exploration_scene = _create_dragon_cave_from_script(LightningDragonCaveScript)
 		"fire_dragon_cave":
 			exploration_scene = _create_dragon_cave_from_script(FireDragonCaveScript)
+		"assembly_core":
+			exploration_scene = _create_dragon_cave_from_script(AssemblyCoreScript)
+		"root_process":
+			exploration_scene = _create_dragon_cave_from_script(RootProcessScript)
+		"null_chamber":
+			exploration_scene = _create_dragon_cave_from_script(NullChamberScript)
 		"steampunk_overworld":
 			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":
@@ -1427,6 +1436,12 @@ func _prewarm_area_sprites() -> void:
 			common_enemies = ["goblin", "bat", "lightning_dragon"]
 		"fire_dragon_cave":
 			common_enemies = ["imp", "skeleton", "fire_dragon"]
+		"assembly_core":
+			common_enemies = ["conveyor_gremlin", "toxic_sludge", "assembly_line_automaton", "masterite_warden_industrial"]
+		"root_process":
+			common_enemies = ["rogue_process", "memory_leak", "recursive_loop", "data_wraith", "masterite_arbiter_futuristic"]
+		"null_chamber":
+			common_enemies = ["null_entity", "forgotten_variable", "empty_set", "the_absence", "masterite_curator_abstract"]
 		"steampunk_overworld":
 			common_enemies = ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"]
 		"suburban_overworld":
@@ -2042,6 +2057,12 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "storm_cave"
 		"fire_dragon_cave":
 			return "lava_cave"
+		"assembly_core":
+			return "industrial"
+		"root_process":
+			return "digital"
+		"null_chamber":
+			return "void"
 		"steampunk_overworld":
 			return "steampunk"
 		"suburban_overworld":
