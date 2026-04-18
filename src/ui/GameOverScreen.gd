@@ -4,9 +4,61 @@ class_name GameOverScreen
 ## GameOverScreen — dramatic game over overlay with retry/load options.
 ## Fades in with dramatic text, offers Retry (restart from overworld) or
 ## Continue (if autosave exists).
+## Title + subtitle vary per world (reads GameState.current_world).
 
 signal retry_selected()
 signal continue_selected()
+
+## World-specific titles (falls back to GAME OVER). W6 is the one world
+## whose aesthetic benefits from replacing the title — every other world
+## keeps the classic.
+const TITLES_BY_WORLD := {
+	6: "OPTIMIZED",
+}
+
+## Subtitle pools. One is picked at random on each show_game_over().
+## Entries in world 0 are the universal fallback for pre-W1 / unknown.
+const SUBTITLES_BY_WORLD := {
+	0: [
+		"The party has fallen.",
+	],
+	1: [
+		"The cave claims another expedition.",
+		"Mordaine's ledger has a new entry.",
+		"Someone in Harmonia will pour out a drink tonight.",
+		"The thirty-eighth party did not make it.",
+	],
+	2: [
+		"The neighborhood has taken care of it.",
+		"The HOA will note your absence in the minutes.",
+		"Another retirement. Another pension claim filed.",
+		"The school nurse cannot, in fact, revive you.",
+	],
+	3: [
+		"Scheduled expiration. Thank you for your service.",
+		"The Grand Schedule continues without you.",
+		"The clock tower chimes. It is now 4:08.",
+		"Your downtime has been filed under 'expected'.",
+	],
+	4: [
+		"You are no longer on the manifest.",
+		"Shift concluded. Benefits discontinued.",
+		"Union dues refunded in full.",
+		"A memo regarding your absence has been drafted.",
+	],
+	5: [
+		"Process terminated. Exit code 137.",
+		"Segmentation fault (core dumped).",
+		"Session expired. Please reauthenticate.",
+		"free() called successfully.",
+	],
+	6: [
+		"You have been optimized out.",
+		"The variable is now unused.",
+		"Reduced to nothing. As expected.",
+		"Your function has returned.",
+	],
+}
 
 var _container: Control
 var _title_label: Label
@@ -88,12 +140,29 @@ func show_game_over(has_save: bool = false) -> void:
 	_active = false
 	visible = true
 
+	_apply_world_flavor()
+
 	var screen_size = get_viewport().get_visible_rect().size
 	_title_label.position.y = screen_size.y * 0.3
 	_subtitle_label.position.y = screen_size.y * 0.3 + 60
 	_retry_label.position.y = screen_size.y * 0.55
 	_continue_label.position.y = screen_size.y * 0.55 + 35
 	_continue_label.visible = has_save
+
+
+func _apply_world_flavor() -> void:
+	"""Pick title + subtitle based on GameState.current_world."""
+	var world := 0
+	var gs := get_node_or_null("/root/GameState")
+	if gs and "current_world" in gs:
+		world = int(gs.current_world)
+
+	_title_label.text = TITLES_BY_WORLD.get(world, "GAME OVER")
+
+	var pool: Array = SUBTITLES_BY_WORLD.get(world, SUBTITLES_BY_WORLD[0])
+	if pool.is_empty():
+		pool = SUBTITLES_BY_WORLD[0]
+	_subtitle_label.text = pool[randi() % pool.size()]
 
 	# Fade in
 	_container.modulate.a = 0.0
