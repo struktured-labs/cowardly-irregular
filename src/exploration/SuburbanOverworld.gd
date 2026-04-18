@@ -221,10 +221,20 @@ func _place_ambient_effects() -> void:
 
 func _place_signposts() -> void:
 	var signs = [
-		{"pos": Vector2(25, 10), "text": "↑ Maple Heights"},
-		{"pos": Vector2(25, 36), "text": "↓ Return Portal"},
-		{"pos": Vector2(45, 20), "text": "→ Forward Portal"},
+		# Orientation at main spawn — crossroads at main road
+		{"pos": Vector2(25, 14), "text": "W2 · Mundane Sprawl"},
+		# Maple Heights approach (NE)
+		{"pos": Vector2(38, 10), "text": "→ Maple Heights Village"},
+		# Return portal (south)
+		{"pos": Vector2(25, 34), "text": "↓ Return Portal  ⚔ Overworld (W1)"},
+		# Forward portal (east)
+		{"pos": Vector2(45, 20), "text": "→ Forward Portal  ⚙ Clockwork Dominion (W3)"},
+		# Park / playground (west)
 		{"pos": Vector2(8, 25), "text": "← Park / Playground"},
+		# Strip mall central (mid-map)
+		{"pos": Vector2(22, 17), "text": "→ Strip Mall  Shops here"},
+		# Bus stop marker
+		{"pos": Vector2(40, 30), "text": "Bus Stop — sit and think"},
 	]
 	for s in signs:
 		var post = Signpost.new()

@@ -193,10 +193,20 @@ func _place_save_point() -> void:
 
 func _place_signposts() -> void:
 	var signs = [
-		{"pos": Vector2(10, 26), "text": "← Brasston Village"},
-		{"pos": Vector2(27, 3), "text": "↑ Return Portal"},
-		{"pos": Vector2(27, 43), "text": "↓ Rail Station / Forward"},
-		{"pos": Vector2(22, 17), "text": "→ Central Plaza"},
+		# Orientation at entry
+		{"pos": Vector2(27, 6), "text": "W3 · Clockwork Dominion"},
+		# Brasston village (west)
+		{"pos": Vector2(14, 26), "text": "← Brasston Village"},
+		# Return portal (north)
+		{"pos": Vector2(27, 3), "text": "↑ Return  ⚙ Mundane Sprawl (W2)"},
+		# Forward portal (south)
+		{"pos": Vector2(25, 40), "text": "↓ Rail Station  ⚒ Assembly Line (W4)"},
+		# Central plaza
+		{"pos": Vector2(22, 17), "text": "→ Central Plaza · save crystal here"},
+		# Industrial district warning (east)
+		{"pos": Vector2(42, 15), "text": "→ Industrial District ⚠ Loud machinery"},
+		# Steam pipe area
+		{"pos": Vector2(16, 35), "text": "← Steam Pipes · watch the vents"},
 	]
 	for s in signs:
 		var post = Signpost.new()

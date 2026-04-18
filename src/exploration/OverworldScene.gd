@@ -773,6 +773,15 @@ func _place_signposts() -> void:
 		{"pos": Vector2(40, 48), "text": "↓ Bridge / Portal South"},
 		# Near bridge
 		{"pos": Vector2(38, 52), "text": "← Desert  →Volcanic"},
+		# Dragon cave warnings
+		{"pos": Vector2(14, 10), "text": "⚠ Glacial Sanctum — Ice Dragon"},
+		{"pos": Vector2(72, 14), "text": "⚠ Abyssal Hollow — Shadow Dragon"},
+		{"pos": Vector2(60, 58), "text": "⚠ Stormspire — Lightning Dragon"},
+		{"pos": Vector2(80, 52), "text": "⚠ Infernal Grotto — Fire Dragon"},
+		# Ironhaven approach
+		{"pos": Vector2(78, 58), "text": "→ Ironhaven Village"},
+		# World portal signpost (appears regardless — context clue)
+		{"pos": Vector2(88, 30), "text": "→ World Portal  ⚙ Mundane Sprawl"},
 	]
 	for s in signs:
 		var post = Signpost.new()

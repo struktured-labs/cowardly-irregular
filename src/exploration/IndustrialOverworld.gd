@@ -191,10 +191,19 @@ func _place_save_point() -> void:
 
 func _place_signposts() -> void:
 	var signs = [
-		{"pos": Vector2(45, 17), "text": "→ Rivet Row"},
-		{"pos": Vector2(29, 38), "text": "↓ Return Portal"},
-		{"pos": Vector2(30, 5), "text": "↑ Forward Portal / Rail"},
-		{"pos": Vector2(15, 17), "text": "← Chemical Zone"},
+		# Orientation at entry (south)
+		{"pos": Vector2(30, 34), "text": "W4 · Assembly Line"},
+		# Return portal (south)
+		{"pos": Vector2(29, 38), "text": "↓ Return  ⚙ Clockwork Dominion (W3)"},
+		# Forward portal (north rail yard)
+		{"pos": Vector2(30, 6), "text": "↑ Rail Yard  ◉ Source Layer (W5)"},
+		# Rivet Row village (east)
+		{"pos": Vector2(48, 17), "text": "→ Rivet Row Village"},
+		# Chemical zone warning (west)
+		{"pos": Vector2(12, 17), "text": "← Chemical Zone ⚠ Toxic sludge"},
+		# Factory floor & break room
+		{"pos": Vector2(26, 17), "text": "Factory Floor · assembly here"},
+		{"pos": Vector2(36, 22), "text": "Break Room · save crystal"},
 	]
 	for s in signs:
 		var post = Signpost.new()
