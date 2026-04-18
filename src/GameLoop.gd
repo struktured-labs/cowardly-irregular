@@ -1101,18 +1101,18 @@ func _create_party() -> void:
 		"magic": 8,
 		"speed": 22
 	})
-	add_child(zack)
-	zack.customization = default_customs[2] if default_customs.size() > 2 else null
-	JobSystem.assign_job(zack, "rogue")
-	JobSystem.assign_secondary_job(zack, "fighter")
-	EquipmentSystem.equip_weapon(zack, "iron_dagger")
-	EquipmentSystem.equip_armor(zack, "thief_garb")
-	EquipmentSystem.equip_accessory(zack, "speed_boots")
-	zack.learn_passive("critical_strike")
-	zack.learn_passive("speed_boost")
-	PassiveSystem.equip_passive(zack, "critical_strike")
-	PassiveSystem.equip_passive(zack, "speed_boost")
-	party.append(zack)
+	add_child(rogue)
+	rogue.customization = default_customs[2] if default_customs.size() > 2 else null
+	JobSystem.assign_job(rogue, "rogue")
+	JobSystem.assign_secondary_job(rogue, "fighter")
+	EquipmentSystem.equip_weapon(rogue, "iron_dagger")
+	EquipmentSystem.equip_armor(rogue, "thief_garb")
+	EquipmentSystem.equip_accessory(rogue, "speed_boots")
+	rogue.learn_passive("critical_strike")
+	rogue.learn_passive("speed_boost")
+	PassiveSystem.equip_passive(rogue, "critical_strike")
+	PassiveSystem.equip_passive(rogue, "speed_boost")
+	party.append(rogue)
 
 	# Create Mage (primary: Mage / secondary: Cleric)
 	var vex = Combatant.new()
@@ -2043,7 +2043,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 		"fire_dragon_cave":
 			return "lava_cave"
 		"steampunk_overworld":
-			return "urban"
+			return "steampunk"
 		"suburban_overworld":
 			return "suburban"
 		"industrial_overworld":

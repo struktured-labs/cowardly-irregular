@@ -239,8 +239,9 @@ func _draw_chest(image: Image) -> void:
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0  # Compensates for Mode 7 perspective foreshortening
+	shape.radius = 128.0
 	collision.shape = shape
+	collision.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
 	add_child(collision)
 
 	collision_layer = 4
