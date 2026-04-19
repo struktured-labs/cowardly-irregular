@@ -17,21 +17,10 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
-## Per-job scale correction — accounts for how much of the 256x256 frame
-## each character actually fills. Higher = character is smaller within frame.
-## Calibrated visually: all characters should appear roughly the same height.
-## Applied as multiplier to base 300px target height.
-const JOB_DISPLAY_HEIGHTS: Dictionary = {
-	"fighter": 240.0,
-	"cleric": 240.0,
-	"mage": 240.0,
-	"rogue": 240.0,
-	"bard": 240.0,
-	"guardian": 240.0,
-	"ninja": 240.0,
-	"summoner": 240.0,
-	"speculator": 240.0,
-}
+## Uniform display height for all party sprites (frame height, not character height).
+## All job sprites normalized to 45% frame fill (cowir-sprites 87ab790).
+## At 200px target with 256px frames: scale=0.78, visible char ~90px, 20px gap between.
+const PARTY_SPRITE_HEIGHT: float = 200.0
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -726,7 +715,7 @@ func _create_battle_sprites() -> void:
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
 		# Tune these to align characters visually despite different art sizes within frames.
-		var target_height = JOB_DISPLAY_HEIGHTS.get(job_id, 300.0)
+		var target_height = PARTY_SPRITE_HEIGHT
 
 		# Auto-scale based on frame height and per-job target
 		var _sprite_scale = 3.0
