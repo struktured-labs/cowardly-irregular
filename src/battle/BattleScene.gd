@@ -17,12 +17,20 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
+## Per-job scale correction — accounts for how much of the 256x256 frame
+## each character actually fills. Higher = character is smaller within frame.
+## Calibrated visually: all characters should appear roughly the same height.
+## Applied as multiplier to base 300px target height.
 const JOB_DISPLAY_HEIGHTS: Dictionary = {
-	"fighter": 375.0,
-	"cleric": 350.0,
-	"mage": 300.0,
-	"rogue": 260.0,
-	"bard": 280.0,
+	"fighter": 300.0,    # Reference — fills frame well
+	"cleric": 330.0,     # Slightly smaller in frame, needs boost
+	"mage": 375.0,       # Small figure within frame, significant boost
+	"rogue": 345.0,      # Lean build, moderate boost
+	"bard": 360.0,       # Smaller figure with instrument
+	"guardian": 300.0,    # Large armored figure, same as fighter
+	"ninja": 345.0,      # Lean/crouched pose
+	"summoner": 360.0,   # Robed, smaller
+	"speculator": 345.0, # Medium build
 }
 
 ## UI References
