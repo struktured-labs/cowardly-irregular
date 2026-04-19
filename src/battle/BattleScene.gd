@@ -17,10 +17,12 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
-## Uniform display height for all party sprites (frame height, not character height).
-## All job sprites normalized to 45% frame fill (cowir-sprites 87ab790).
-## At 200px target with 256px frames: scale=0.78, visible char ~90px, 20px gap between.
-const PARTY_SPRITE_HEIGHT: float = 200.0
+## Base display height for party sprites. Most jobs at 67-80% frame fill.
+## Fighter is 39% (artist file, protected) so gets a scale boost.
+const PARTY_SPRITE_HEIGHT: float = 280.0
+const JOB_SCALE_OVERRIDES: Dictionary = {
+	"fighter": 1.7,  # Artist sprite fills only 39% of frame vs 67-80% for others
+}
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
@@ -726,6 +728,9 @@ func _create_battle_sprites() -> void:
 					_sprite_scale = target_height / float(_ftex.get_height())
 				elif _ftex and _ftex.get_height() > 48:
 					_sprite_scale = 144.0 / float(_ftex.get_height())
+		# Apply per-job scale override (fighter fills less of the frame)
+		var scale_mult = JOB_SCALE_OVERRIDES.get(job_id, 1.0)
+		_sprite_scale *= scale_mult
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
