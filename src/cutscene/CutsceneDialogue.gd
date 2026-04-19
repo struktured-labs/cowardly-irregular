@@ -52,7 +52,7 @@ var _advance_hint: Label
 
 ## Styling
 const TILE_SIZE = 4
-const BOX_HEIGHT = 120
+const BOX_HEIGHT = 150
 const PORTRAIT_SIZE = 80
 const MARGIN = 16
 
@@ -300,6 +300,7 @@ func _build_ui() -> void:
 	_dialogue_box = Control.new()
 	_dialogue_box.position = Vector2(MARGIN, box_y)
 	_dialogue_box.size = Vector2(box_width, BOX_HEIGHT)
+	_dialogue_box.clip_contents = true
 	add_child(_dialogue_box)
 
 	# Create initial empty state
@@ -360,12 +361,15 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_speaker_label.add_theme_color_override("font_color", theme["name"])
 	_dialogue_box.add_child(_speaker_label)
 
-	# Dialogue text
+	# Dialogue text — scroll stays off during typing (character-by-character
+	# reveal would fight scrollbar) but enables in _finish_typing so the
+	# player can scroll any overflow before advancing.
 	_text_label = RichTextLabel.new()
 	_text_label.position = Vector2(text_x, TILE_SIZE * 2 + 20)
 	_text_label.size = Vector2(text_width, box_height - TILE_SIZE * 4 - 30)
 	_text_label.bbcode_enabled = true
 	_text_label.scroll_active = false
+	_text_label.clip_contents = true
 	_text_label.add_theme_font_size_override("normal_font_size", 13)
 	_text_label.add_theme_color_override("default_color", theme["text"])
 	_dialogue_box.add_child(_text_label)
@@ -491,6 +495,7 @@ func _show_current_line() -> void:
 	_displayed_chars = 0
 	_voice_blip_next_char = randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
 	_text_label.text = ""
+	_text_label.scroll_active = false  # Disable scroll during typing
 	_advance_hint.visible = false
 	_is_typing = true
 	_typing_timer.start(_typing_speed)
@@ -534,6 +539,8 @@ func _finish_typing() -> void:
 	_is_typing = false
 	if _text_label and is_instance_valid(_text_label):
 		_text_label.text = _current_text
+		# Enable scroll after typing so the player can read overflow
+		_text_label.scroll_active = true
 	if _advance_hint and is_instance_valid(_advance_hint):
 		_advance_hint.visible = true
 
