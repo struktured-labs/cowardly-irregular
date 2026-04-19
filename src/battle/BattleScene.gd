@@ -3074,7 +3074,7 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 		return
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite and is_instance_valid(sprite):
-		_spawn_quip_bubble(sprite, combatant.combatant_name, line)
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant))
 	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
 	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
 
@@ -3086,44 +3086,78 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 		return
 	if autogrind_console_mode:
 		return
+	# Container for bubble + pointer triangle
+	var container = Control.new()
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.z_index = 120
+
 	var bubble = PanelContainer.new()
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.0, 0.0, 0.0, 0.75)
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.8)
 	style.border_color = border_color
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.border_width_left = 1
-	style.border_width_right = 1
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.border_width_left = 2
+	style.border_width_right = 2
 	style.corner_radius_top_left = 4
 	style.corner_radius_top_right = 4
 	style.corner_radius_bottom_left = 4
 	style.corner_radius_bottom_right = 4
 	style.content_margin_left = 8
 	style.content_margin_right = 8
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
 	bubble.add_theme_stylebox_override("panel", style)
 
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 0)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bubble.add_child(vbox)
+
+	# Speaker name header (small, colored)
+	var name_label = Label.new()
+	name_label.text = speaker_name
+	name_label.add_theme_font_size_override("font_size", 9)
+	name_label.add_theme_color_override("font_color", border_color)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(name_label)
+
+	# Quote text
 	var label = Label.new()
 	label.text = '"%s"' % line
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", 13)
 	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
 	label.add_theme_constant_override("outline_size", 1)
-	label.add_theme_color_override("font_outline_color", Color(0.3, 0.2, 0.0))
+	label.add_theme_color_override("font_outline_color", Color(0.2, 0.15, 0.0))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bubble.add_child(label)
+	vbox.add_child(label)
 
-	bubble.position = sprite.global_position + Vector2(-40, -80)
-	bubble.z_index = 120
-	bubble.modulate.a = 0.0
-	add_child(bubble)
+	container.add_child(bubble)
+
+	# Small triangle pointer below bubble pointing to sprite
+	var pointer = Polygon2D.new()
+	pointer.polygon = PackedVector2Array([Vector2(15, 0), Vector2(25, 0), Vector2(20, 8)])
+	pointer.color = border_color
+	pointer.position = Vector2(0, 0)
+	pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE if pointer.has_method("set") else 0
+	container.add_child(pointer)
+
+	container.position = sprite.global_position + Vector2(-40, -90)
+	container.modulate.a = 0.0
+	add_child(container)
+
+	# Position pointer below the bubble panel
+	bubble.ready.connect(func():
+		if is_instance_valid(pointer) and is_instance_valid(bubble):
+			pointer.position.y = bubble.size.y
+	, CONNECT_ONE_SHOT)
 
 	var tween = create_tween()
-	tween.tween_property(bubble, "modulate:a", 1.0, 0.15)
-	tween.tween_property(bubble, "position:y", bubble.position.y - 10, hold_time * 0.5)
-	tween.parallel().tween_property(bubble, "modulate:a", 0.0, 0.3).set_delay(hold_time)
-	tween.tween_callback(bubble.queue_free)
+	tween.tween_property(container, "modulate:a", 1.0, 0.15)
+	tween.tween_property(container, "position:y", container.position.y - 10, hold_time * 0.5)
+	tween.parallel().tween_property(container, "modulate:a", 0.0, 0.3).set_delay(hold_time)
+	tween.tween_callback(container.queue_free)
 
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
@@ -3370,7 +3404,7 @@ func _show_victory_quip() -> void:
 	log_message("[color=lime]%s:[/color] \"%s\"" % [speaker.combatant_name, line])
 	var sprite = _get_combatant_sprite(speaker)
 	if sprite and is_instance_valid(sprite):
-		_spawn_quip_bubble(sprite, speaker.combatant_name, line, Color(0.3, 1.0, 0.5), 2.5)
+		_spawn_quip_bubble(sprite, speaker.combatant_name, line, _get_job_quip_color(speaker), 2.5)
 
 
 func _show_victory_results() -> void:
@@ -3636,6 +3670,25 @@ const VICTORY_QUIPS: Dictionary = {
 }
 
 
+## Per-job bubble colors for quip identity
+const JOB_QUIP_COLORS: Dictionary = {
+	"fighter": Color(0.9, 0.5, 0.2),    # Orange — aggressive
+	"cleric": Color(1.0, 0.95, 0.6),    # Warm gold — holy
+	"mage": Color(0.5, 0.4, 1.0),       # Purple — arcane
+	"rogue": Color(0.4, 0.9, 0.4),      # Green — sneaky
+	"bard": Color(1.0, 0.6, 0.8),       # Pink — performer
+	"guardian": Color(0.6, 0.55, 0.4),   # Bronze — armored
+	"ninja": Color(0.5, 0.5, 0.6),      # Dark gray — shadow
+	"summoner": Color(0.3, 0.8, 0.7),   # Teal — ethereal
+	"speculator": Color(0.3, 0.7, 0.3), # Money green — market
+}
+
+
+func _get_job_quip_color(combatant: Combatant) -> Color:
+	var job_id = combatant.job.get("id", "fighter") if combatant.job else "fighter"
+	return JOB_QUIP_COLORS.get(job_id, Color(0.8, 0.8, 0.8))
+
+
 func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:
 	"""Try to show a combat quip — 30% chance, picks from job-specific or default pool"""
 	if turbo_mode or randf() >= COMBAT_QUIP_CHANCE:
@@ -3649,7 +3702,7 @@ func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:
 	var line = pool[randi() % pool.size()]
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite and is_instance_valid(sprite):
-		_spawn_quip_bubble(sprite, combatant.combatant_name, line, Color(0.9, 0.9, 0.9), 1.0)
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 1.0)
 
 
 ## Track which monster types the player has encountered (persists in GameState)
@@ -3702,7 +3755,7 @@ func _show_battle_quip() -> void:
 	if not turbo_mode:
 		var sprite = _get_combatant_sprite(speaker)
 		if sprite and is_instance_valid(sprite):
-			var border = Color(0.5, 0.8, 1.0) if has_new else Color(1.0, 0.85, 0.2)
+			var border = Color(0.5, 0.8, 1.0) if has_new else _get_job_quip_color(speaker)
 			_spawn_quip_bubble(sprite, speaker.combatant_name, quip, border, 2.0 if has_new else 1.5)
 
 func show_brave_quip(combatant: Combatant, action_count: int) -> void:
