@@ -25,6 +25,8 @@ var _auto_dismiss_timer: float = 0.0
 const AUTO_DISMISS_TIME: float = 8.0
 
 
+var _saved_time_scale: float = 1.0
+
 func _ready() -> void:
 	layer = 98  # Above game, below game over
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -90,14 +92,9 @@ func show_hint(hint_id: String, title: String, body: String) -> void:
 	_title_label.text = title
 	_body_label.text = body
 	_auto_dismiss_timer = AUTO_DISMISS_TIME
-	_active = false
 	visible = true
 
-	# Slide in from top
-	_panel.position.y = -80
-	var tween = create_tween()
-	tween.tween_property(_panel, "position:y", 8.0, 0.4).set_trans(Tween.TRANS_BACK)
-	await tween.finished
+	# Input is blocked by _input consuming all events while _active
 	_active = true
 
 
@@ -106,11 +103,12 @@ func _dismiss() -> void:
 		return
 	_active = false
 
+	# Input unblocked — _active = false stops consuming events
+
 	if not is_instance_valid(_panel):
 		hint_dismissed.emit(_current_hint_id)
 		return
 
-	# Fast dismiss — no slow animation, just vanish instantly
 	visible = false
 	hint_dismissed.emit(_current_hint_id)
 	_current_hint_id = ""
@@ -129,10 +127,11 @@ func _input(event: InputEvent) -> void:
 	if not _active:
 		return
 
+	# Block ALL input while hint is showing — nothing passes to battle
+	get_viewport().set_input_as_handled()
+
 	# Any button press dismisses
 	if event is InputEventKey and event.pressed:
 		_dismiss()
-		get_viewport().set_input_as_handled()
 	elif event is InputEventJoypadButton and event.pressed:
 		_dismiss()
-		get_viewport().set_input_as_handled()

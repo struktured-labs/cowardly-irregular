@@ -9,7 +9,9 @@ signal interaction_requested()
 signal menu_requested()
 
 ## Movement configuration
-@export var move_speed: float = 240.0  # Fast enough to feel responsive through Mode 7 compression
+@export var move_speed: float = 240.0  # Overworld Mode 7 speed
+@export var interior_speed: float = 120.0  # Villages/interiors (no Mode 7)
+var _is_interior: bool = false  # Set by scene setup
 
 ## Direction enum
 enum Direction { DOWN, UP, LEFT, RIGHT }
@@ -295,7 +297,12 @@ func _physics_process(delta: float) -> void:
 		input_dir = input_dir.normalized()
 		# Terrain speed modifier — rough terrain slows you down instead of blocking
 		var terrain_speed = _get_terrain_speed_modifier()
-		velocity = input_dir * move_speed * terrain_speed
+		# Detect interior by checking parent scene name (no Mode 7 = interior)
+		if not _is_interior:
+			var parent = get_parent()
+			_is_interior = parent != null and not parent.name.ends_with("Overworld")
+		var base_speed = interior_speed if _is_interior else move_speed
+		velocity = input_dir * base_speed * terrain_speed
 		is_moving = true
 
 		if abs(input_dir.x) > abs(input_dir.y):
