@@ -243,14 +243,15 @@ func _is_chapter_complete(chapter: Dictionary) -> bool:
 	return true
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_back"):
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_back") or event.is_action_pressed("ui_accept"):
 		closed.emit()
 		queue_free()
 		get_viewport().set_input_as_handled()
+		return
 	elif event.is_action_pressed("ui_up"):
 		if _scroll_offset > 0:
 			_scroll_offset -= 3
