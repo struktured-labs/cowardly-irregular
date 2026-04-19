@@ -1780,6 +1780,7 @@ func _on_battle_ended(victory: bool) -> void:
 			log_message("[color=gray]Press ENTER to continue...[/color]")
 			SoundManager.play_battle("victory_stinger")
 			_play_staggered_victory_animations()
+			_show_victory_quip()
 			if _check_for_boss():
 				SoundManager.play_music("stinger_boss_defeated")
 			else:
@@ -3366,6 +3367,23 @@ func _play_staggered_victory_animations() -> void:
 			Color(1.0, 1.0, 1.0, 1.0), 0.6).set_trans(Tween.TRANS_SINE)
 
 
+func _show_victory_quip() -> void:
+	"""Show a random party member's victory quip as a speech bubble"""
+	var alive = party_members.filter(func(m): return m is Combatant and m.is_alive)
+	if alive.is_empty():
+		return
+	var speaker = alive[randi() % alive.size()]
+	var job_id = speaker.job.get("id", "fighter") if speaker.job else "fighter"
+	var pool = VICTORY_QUIPS.get(job_id, VICTORY_QUIPS.get("_default", []))
+	if pool.is_empty():
+		return
+	var line = pool[randi() % pool.size()]
+	log_message("[color=lime]%s:[/color] \"%s\"" % [speaker.combatant_name, line])
+	var sprite = _get_combatant_sprite(speaker)
+	if sprite and is_instance_valid(sprite):
+		_spawn_quip_bubble(sprite, speaker.combatant_name, line, Color(0.3, 1.0, 0.5), 2.5)
+
+
 func _show_victory_results() -> void:
 	_results_display.show_victory_results()
 
@@ -3613,6 +3631,20 @@ const ALLY_KO_QUIPS: Dictionary = {
 }
 
 const COMBAT_QUIP_CHANCE: float = 0.30  # 30% chance per trigger
+
+
+const VICTORY_QUIPS: Dictionary = {
+	"fighter": ["Another victory!", "They didn't stand a chance.", "Who's next?", "Not even a scratch!"],
+	"cleric": ["Everyone's safe... thank goodness.", "The light prevails.", "We made it through!", "Healing always wins."],
+	"mage": ["Fascinating data collected.", "As my calculations predicted.", "Hypothesis confirmed.", "The arcane triumphs!"],
+	"rogue": ["Easy loot.", "They never saw it coming.", "Dibs on the spoils.", "Too easy."],
+	"bard": ["♪ And another one bites the dust~ ♪", "That's going in the ballad!", "Standing ovation!", "Encore? No? Okay."],
+	"guardian": ["The line held.", "No casualties on my watch.", "Solid defense.", "Mission accomplished."],
+	"ninja": ["Clean.", "Already done.", "Efficient.", "...moving on."],
+	"summoner": ["The spirits are pleased.", "A worthy offering.", "The pact grows stronger.", "Well fought, all of us."],
+	"speculator": ["Profit margins looking good.", "Return on investment: excellent.", "The market rewards the bold.", "Portfolio up."],
+	"_default": ["Victory!", "We did it!", "Well fought!"],
+}
 
 
 func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:
