@@ -88,31 +88,11 @@ func _build_ui() -> void:
 	# Twinkling star particles over the sky area
 	_spawn_stars(vp)
 
-	# Logo overlay centered near top (crisp text over the baked-in title)
-	_logo = TextureRect.new()
-	var logo_tex := load("res://assets/sprites/ui/logo.png") as Texture2D
-	if logo_tex:
-		_logo.texture = logo_tex
-	var logo_w := 480.0
-	var logo_h := 120.0
-	_logo.size = Vector2(logo_w, logo_h)
-	_logo.position = Vector2((vp.x - logo_w) / 2, _logo_base_y())
-	_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_logo.mouse_filter = MOUSE_FILTER_IGNORE
-	add_child(_logo)
+	# Logo disabled — title_screen.png already has the title baked in
+	_logo = null
 
-	# "PRESS START" label at bottom (over the baked-in one)
-	_press_start = Label.new()
-	_press_start.text = "PRESS START"
-	_press_start.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_press_start.position = Vector2(0, vp.y * 0.82)
-	_press_start.size = Vector2(vp.x, 30)
-	_press_start.add_theme_font_size_override("font_size", 20)
-	_press_start.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
-	_press_start.mouse_filter = MOUSE_FILTER_IGNORE
-	add_child(_press_start)
-	_start_press_pulse()
+	# "PRESS START" disabled — already baked into title_screen.png
+	_press_start = null
 
 	# Menu (built hidden, revealed after PRESS START)
 	_menu_container = VBoxContainer.new()
@@ -173,6 +153,8 @@ func _spawn_stars(vp: Vector2) -> void:
 
 
 func _start_press_pulse() -> void:
+	if not _press_start:
+		return
 	_press_tween = create_tween().set_loops()
 	_press_tween.tween_property(_press_start, "modulate:a", 0.3, 1.0).set_trans(Tween.TRANS_SINE)
 	_press_tween.tween_property(_press_start, "modulate:a", 1.0, 1.0).set_trans(Tween.TRANS_SINE)
@@ -255,8 +237,9 @@ func _transition_to_menu() -> void:
 	# Kill press-start pulse, fade it out
 	if _press_tween and _press_tween.is_valid():
 		_press_tween.kill()
-	var fade_out := create_tween()
-	fade_out.tween_property(_press_start, "modulate:a", 0.0, 0.3)
+	if _press_start:
+		var fade_out := create_tween()
+		fade_out.tween_property(_press_start, "modulate:a", 0.0, 0.3)
 	# Fade in menu
 	var fade_in := create_tween()
 	fade_in.tween_property(_menu_container, "modulate:a", 1.0, 0.5).set_delay(0.2)

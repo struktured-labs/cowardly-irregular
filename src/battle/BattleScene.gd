@@ -18,11 +18,11 @@ const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
 const JOB_DISPLAY_HEIGHTS: Dictionary = {
-	"fighter": 375.0,
-	"cleric": 350.0,
+	"fighter": 300.0,
+	"cleric": 300.0,
 	"mage": 300.0,
-	"rogue": 260.0,
-	"bard": 280.0,
+	"rogue": 300.0,
+	"bard": 300.0,
 }
 
 ## UI References

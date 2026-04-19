@@ -297,10 +297,12 @@ func _physics_process(delta: float) -> void:
 		input_dir = input_dir.normalized()
 		# Terrain speed modifier — rough terrain slows you down instead of blocking
 		var terrain_speed = _get_terrain_speed_modifier()
-		# Detect interior by checking parent scene name (no Mode 7 = interior)
+		# Villages use slower speed — detect by parent name containing "Village"
 		if not _is_interior:
 			var parent = get_parent()
-			_is_interior = parent != null and not parent.name.ends_with("Overworld")
+			if parent:
+				var pname = parent.name.to_lower()
+				_is_interior = "village" in pname or "tavern" in pname
 		var base_speed = interior_speed if _is_interior else move_speed
 		velocity = input_dir * base_speed * terrain_speed
 		is_moving = true

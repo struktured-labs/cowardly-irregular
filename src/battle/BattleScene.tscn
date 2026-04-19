@@ -54,16 +54,16 @@ grow_horizontal = 0
 grow_vertical = 2
 
 [node name="Player1Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(100, 50)
+position = Vector2(80, 50)
 
 [node name="Player2Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(50, 150)
+position = Vector2(80, 160)
 
 [node name="Player3Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(100, 250)
+position = Vector2(80, 270)
 
 [node name="Player4Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(50, 350)
+position = Vector2(80, 380)
 
 [node name="EnemySprites" type="Node2D" parent="BattleField"]
 
@@ -183,7 +183,7 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -310.0
-offset_top = -220.0
+offset_top = -130.0
 offset_right = 310.0
 offset_bottom = -10.0
 grow_horizontal = 2
@@ -209,7 +209,7 @@ horizontal_alignment = 1
 layout_mode = 2
 
 [node name="BattleLog" type="RichTextLabel" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 140)
+custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true

@@ -133,7 +133,7 @@ func _setup_audio_players() -> void:
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -14.0  # Battle SFX: audible alongside music
+	_battle_player.volume_db = -6.0  # Battle SFX: punchy alongside music
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
