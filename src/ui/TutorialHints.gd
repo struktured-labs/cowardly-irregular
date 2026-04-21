@@ -25,17 +25,21 @@ const HINTS = {
 		"title": "Save Crystal",
 		"body": "Approach a glowing crystal and press A to save your progress. Save often — the game has real consequences.",
 	},
+	"first_battle": {
+		"title": "Your First Battle",
+		"body": "Combat is turn-based. Watch the Action Gauge (top-right) to see turn order — the icon at the top acts next. On your turn, pick Attack for a basic strike, or open Skills, Magic, or Items from the command menu. A/Z confirms, B/X backs out — the enemy's HP bar tells you how close the fight is to ending.",
+	},
+	"understanding_ap": {
+		"title": "Understanding AP",
+		"body": "Each character has Action Points (AP) from -4 to +4, shown under their name. You gain +1 AP every turn automatically, and you spend AP to take extra actions in a single turn. At 0 AP you act normally; above 0 you can do more at once; below 0 you owe the system. The system always collects.",
+	},
 	"advance_defer": {
-		"title": "Advance & Defer",
-		"body": "Press R to Advance — queue up to 4 actions in one turn (costs AP). Press L to Defer — skip your turn, gain +1 AP, take less damage. Manage your AP for powerful combos.",
+		"title": "Advance and Defer",
+		"body": "Press R to Advance: queue up to 4 actions in one turn, each costing 1 AP. Burn AP for burst damage when you need the fight to end now. Press L to Defer — skip the turn, gain +1 AP, and take less damage. Alternate them: Defer to bank AP, Advance to spend it all at once.",
 	},
 	"group_attacks": {
 		"title": "Group Attacks",
-		"body": "When all party members have AP, you can pool it for devastating group attacks: All-Out Attack, Combo Magic, or Formation Specials. Powerful but leaves everyone exposed next turn.",
-	},
-	"first_battle": {
-		"title": "Battle Controls",
-		"body": "Navigate menus with D-pad. Confirm with A/Z. Cancel with B/X. Use R to queue multiple actions (Advance mode). Use L to skip your turn and build AP (Defer).",
+		"body": "When every party member has enough AP, you can pool it for a Group Attack. All-Out Attack hits the full enemy row; Combo Magic fuses two elements (Fire + Ice = Steam) for elemental combos; Formation Specials unlock with specific party compositions. Group Attacks hit harder than anything else — but every member drops into AP debt afterward. Be ready to Defer.",
 	},
 	"first_boss": {
 		"title": "Boss Fight",
