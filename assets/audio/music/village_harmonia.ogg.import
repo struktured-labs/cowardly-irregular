@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bsideqsqv72fn"
+path="res://.godot/imported/village_harmonia.ogg-28b2f9ce747dc76756c528cf3bab7992.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/village_harmonia.ogg"
+dest_files=["res://.godot/imported/village_harmonia.ogg-28b2f9ce747dc76756c528cf3bab7992.oggvorbisstr"]
 
 [params]
 

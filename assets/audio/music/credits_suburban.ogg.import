@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bbnusbp1x3sql"
+path="res://.godot/imported/credits_suburban.ogg-c36ad6b98f56ff82325fa8038415e420.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/credits_suburban.ogg"
+dest_files=["res://.godot/imported/credits_suburban.ogg-c36ad6b98f56ff82325fa8038415e420.oggvorbisstr"]
 
 [params]
 

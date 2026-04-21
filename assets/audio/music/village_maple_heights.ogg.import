@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://b7x8slmdwcs4h"
+path="res://.godot/imported/village_maple_heights.ogg-c8f9350ffebe10e0ae5ba176060b3bc9.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/village_maple_heights.ogg"
+dest_files=["res://.godot/imported/village_maple_heights.ogg-c8f9350ffebe10e0ae5ba176060b3bc9.oggvorbisstr"]
 
 [params]
 

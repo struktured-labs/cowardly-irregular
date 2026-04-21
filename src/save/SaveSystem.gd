@@ -536,11 +536,19 @@ func save_settings() -> void:
 	"""Save global game settings (battle speed, audio, display options)."""
 	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
 	var settings = {
-		"version": 1,
+		"version": 2,
 		"battle_speed_index": BattleSceneScript._battle_speed_index if BattleSceneScript else 1,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"master_volume": AudioServer.get_bus_volume_db(0),
 	}
+	if GameState:
+		settings["music_volume"] = GameState.music_volume
+		settings["sfx_volume"] = GameState.sfx_volume
+		settings["text_speed"] = GameState.text_speed
+		settings["encounter_rate_multiplier"] = GameState.encounter_rate_multiplier
+		settings["screen_shake_enabled"] = GameState.screen_shake_enabled
+		settings["default_battle_speed"] = GameState.default_battle_speed
+		settings["debug_log_enabled"] = GameState.debug_log_enabled
 	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(settings, "\t"))
@@ -575,5 +583,28 @@ func load_settings() -> void:
 	# Master volume
 	if settings.has("master_volume"):
 		AudioServer.set_bus_volume_db(0, settings["master_volume"])
+
+	# Extended settings
+	if GameState:
+		if settings.has("music_volume"):
+			GameState.music_volume = int(settings["music_volume"])
+			if SoundManager and SoundManager.has_method("set_music_volume"):
+				SoundManager.set_music_volume(GameState.music_volume / 100.0)
+		if settings.has("sfx_volume"):
+			GameState.sfx_volume = int(settings["sfx_volume"])
+			if SoundManager and SoundManager.has_method("set_sfx_volume"):
+				SoundManager.set_sfx_volume(GameState.sfx_volume / 100.0)
+		if settings.has("text_speed"):
+			GameState.text_speed = str(settings["text_speed"])
+		if settings.has("encounter_rate_multiplier"):
+			GameState.encounter_rate_multiplier = float(settings["encounter_rate_multiplier"])
+		if settings.has("screen_shake_enabled"):
+			GameState.screen_shake_enabled = bool(settings["screen_shake_enabled"])
+		if settings.has("default_battle_speed"):
+			GameState.default_battle_speed = float(settings["default_battle_speed"])
+		if settings.has("debug_log_enabled"):
+			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
+			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):
+				DebugLogOverlay.set_enabled(GameState.debug_log_enabled)
 
 	print("[SAVE] Settings loaded")

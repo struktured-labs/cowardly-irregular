@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://d2rde6cy65fwq"
+path="res://.godot/imported/job_cleric_special.ogg-9432612077bb31e128e2b59bc6e558a7.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_cleric_special.ogg"
+dest_files=["res://.godot/imported/job_cleric_special.ogg-9432612077bb31e128e2b59bc6e558a7.oggvorbisstr"]
 
 [params]
 

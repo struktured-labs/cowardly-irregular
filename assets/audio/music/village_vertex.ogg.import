@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://8kp5s5ybtj0e"
+path="res://.godot/imported/village_vertex.ogg-d15b6d0e18c88a60c8ced03053ba9f8c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/village_vertex.ogg"
+dest_files=["res://.godot/imported/village_vertex.ogg-d15b6d0e18c88a60c8ced03053ba9f8c.oggvorbisstr"]
 
 [params]
 

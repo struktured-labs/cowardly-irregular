@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://deijht51wwqn"
+path="res://.godot/imported/job_speculator_special.ogg-6d1a16e3165d3ed62f786735ef28449d.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_speculator_special.ogg"
+dest_files=["res://.godot/imported/job_speculator_special.ogg-6d1a16e3165d3ed62f786735ef28449d.oggvorbisstr"]
 
 [params]
 

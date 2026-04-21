@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://c1l1cq4b1l74s"
+path="res://.godot/imported/job_fighter_special.ogg-929dff63e586b0107670f9f10ec12aba.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_fighter_special.ogg"
+dest_files=["res://.godot/imported/job_fighter_special.ogg-929dff63e586b0107670f9f10ec12aba.oggvorbisstr"]
 
 [params]
 

@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://cdhg2h0c0lxre"
+path="res://.godot/imported/job_bossbinder_special.ogg-27ca0ef0aa21ffea364de8f588b79427.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_bossbinder_special.ogg"
+dest_files=["res://.godot/imported/job_bossbinder_special.ogg-27ca0ef0aa21ffea364de8f588b79427.oggvorbisstr"]
 
 [params]
 

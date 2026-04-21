@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bfhqgpwqobqti"
+path="res://.godot/imported/credits_medieval.ogg-6f4914a12f9299931308281428849f61.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/credits_medieval.ogg"
+dest_files=["res://.godot/imported/credits_medieval.ogg-6f4914a12f9299931308281428849f61.oggvorbisstr"]
 
 [params]
 

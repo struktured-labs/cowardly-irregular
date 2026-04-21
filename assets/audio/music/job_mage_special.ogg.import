@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://ckf44ghwe7y7n"
+path="res://.godot/imported/job_mage_special.ogg-c2ad0cb04265a6b54e119c3300d59a1e.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_mage_special.ogg"
+dest_files=["res://.godot/imported/job_mage_special.ogg-c2ad0cb04265a6b54e119c3300d59a1e.oggvorbisstr"]
 
 [params]
 

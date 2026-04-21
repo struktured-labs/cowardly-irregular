@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://d3dxn426h8pb6"
+path="res://.godot/imported/dungeon_dragon_ice.ogg-8b2b0d46a1b16bfaa6d3a1c368f27747.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/dungeon_dragon_ice.ogg"
+dest_files=["res://.godot/imported/dungeon_dragon_ice.ogg-8b2b0d46a1b16bfaa6d3a1c368f27747.oggvorbisstr"]
 
 [params]
 

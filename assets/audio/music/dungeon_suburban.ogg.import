@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://pjkji6nehbe3"
+path="res://.godot/imported/dungeon_suburban.ogg-2ff8b2aa781f01c4a3d5295fe7713397.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/dungeon_suburban.ogg"
+dest_files=["res://.godot/imported/dungeon_suburban.ogg-2ff8b2aa781f01c4a3d5295fe7713397.oggvorbisstr"]
 
 [params]
 

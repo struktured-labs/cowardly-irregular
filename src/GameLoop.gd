@@ -138,6 +138,11 @@ func _ready() -> void:
 	# Check for existing save to determine if this is first launch
 	_first_launch = not _save_exists()
 
+	# Toast on any save (manual or auto)
+	if SaveSystem and SaveSystem.has_signal("save_completed"):
+		if not SaveSystem.save_completed.is_connected(_on_any_save_completed):
+			SaveSystem.save_completed.connect(_on_any_save_completed)
+
 	# Always show title screen first
 	_show_title_screen()
 
@@ -847,9 +852,12 @@ func _on_title_continue() -> void:
 	"""Handle continue selected from title screen"""
 	print("[GAME] Continue selected")
 	_close_title_screen()
-	# Load saved party and start exploration
+	# Load saved party and start exploration — fade through black for smooth entry
 	_create_party()
-	_start_exploration()
+	if _area_fade_rect:
+		_area_fade_rect.modulate.a = 1.0
+	await _start_exploration()
+	await _area_fade_from_black()
 
 
 func _open_settings_menu() -> void:
@@ -884,6 +892,7 @@ func _on_title_settings() -> void:
 		add_child(settings_layer)
 
 		var settings_menu = SettingsMenuClass.new()
+		settings_menu.from_title = true
 		settings_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 		settings_layer.add_child(settings_menu)
 
@@ -2027,6 +2036,11 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 			if child != _area_fade_rect:
 				child.queue_free()
 	_transition_in_progress = false
+
+	# Auto-save on zone transition (villages/overworld only; dungeons use save points).
+	# SaveSystem.save_completed signal drives the Toast via _on_any_save_completed.
+	if SaveSystem and SaveSystem.has_method("auto_save"):
+		SaveSystem.auto_save()
 
 
 func _take_screenshot() -> void:
@@ -3381,6 +3395,11 @@ func _get_milestone_text(battles: int) -> String:
 		50: return "DEEP GRIND — Maximum adaptation reached!"
 		100: return "LEGENDARY SESSION — Reality is bending..."
 		_: return "Milestone: %d battles!" % battles
+
+
+func _on_any_save_completed(_slot: int) -> void:
+	"""Fire a green 'Game Saved ✓' toast whenever SaveSystem completes a save."""
+	Toast.show_save(self)
 
 
 func _show_autogrind_toast(text: String) -> void:

@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://tplnc41fl8b6"
+path="res://.godot/imported/dungeon_steampunk.ogg-bc5e4711886c695e7b338fc8c2b014e5.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/dungeon_steampunk.ogg"
+dest_files=["res://.godot/imported/dungeon_steampunk.ogg-bc5e4711886c695e7b338fc8c2b014e5.oggvorbisstr"]
 
 [params]
 

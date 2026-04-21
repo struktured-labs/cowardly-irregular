@@ -18,6 +18,7 @@ const QuestLogClass = preload("res://src/ui/QuestLog.gd")
 const CutsceneGalleryClass = preload("res://src/ui/CutsceneGallery.gd")
 const BestiaryMenuClass = preload("res://src/ui/BestiaryMenu.gd")
 const WorldMapMenuClass = preload("res://src/ui/WorldMapMenu.gd")
+const PartyStatusScreenClass = preload("res://src/ui/PartyStatusScreen.gd")
 
 signal closed()
 signal menu_action(action: String, target: Combatant)
@@ -31,6 +32,7 @@ var _menu_options: Array = []
 
 const BASE_MENU_OPTIONS = [
 	{"id": "quest_log", "label": "Quest Log", "enabled": true},
+	{"id": "party", "label": "Party", "enabled": true},
 	{"id": "items", "label": "Items", "enabled": true},
 	{"id": "equipment", "label": "Equipment", "enabled": true},
 	{"id": "jobs", "label": "Jobs", "enabled": true},
@@ -590,6 +592,8 @@ func _handle_menu_action(action_id: String) -> void:
 	match action_id:
 		"quest_log":
 			_open_quest_log()
+		"party":
+			_open_party_status()
 		"items":
 			_open_items_menu()
 		"equipment":
@@ -681,7 +685,7 @@ func _on_save_screen_closed() -> void:
 
 
 func _on_save_completed(_slot: int) -> void:
-	"""Save completed successfully"""
+	"""Save completed - GameLoop listens to SaveSystem.save_completed and fires the toast globally."""
 	pass
 
 
@@ -789,6 +793,17 @@ func _open_jobs_menu(target: Combatant) -> void:
 func _on_job_changed(_combatant: Combatant, _job_id: String, _is_secondary: bool) -> void:
 	"""Handle job change"""
 	pass  # UI will refresh when menu closes
+
+
+func _open_party_status() -> void:
+	"""Open the full-party status screen."""
+	_submenu_open = true
+	var screen = PartyStatusScreenClass.new()
+	screen.set_anchors_preset(Control.PRESET_FULL_RECT)
+	screen.setup(party)
+	screen.closed.connect(_on_submenu_closed)
+	add_child(screen)
+	_hide_main_ui(screen)
 
 
 func _open_status_menu(target: Combatant) -> void:

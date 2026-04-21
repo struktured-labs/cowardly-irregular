@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dpoqdivu7mgd0"
+path="res://.godot/imported/job_ninja_special.ogg-4f18225af9c486eaaba95d83f63164a0.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_ninja_special.ogg"
+dest_files=["res://.godot/imported/job_ninja_special.ogg-4f18225af9c486eaaba95d83f63164a0.oggvorbisstr"]
 
 [params]
 

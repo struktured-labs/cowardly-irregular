@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://57er5qmlsdps"
+path="res://.godot/imported/victory_steampunk.ogg-e239a7aa2e69fca73fea8cdd56471716.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/victory_steampunk.ogg"
+dest_files=["res://.godot/imported/victory_steampunk.ogg-e239a7aa2e69fca73fea8cdd56471716.oggvorbisstr"]
 
 [params]
 

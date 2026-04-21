@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dlb0kgaf8miyl"
+path="res://.godot/imported/victory_suburban.ogg-3f23e424c55cdd3bc106db9386f0e4c7.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/victory_suburban.ogg"
+dest_files=["res://.godot/imported/victory_suburban.ogg-3f23e424c55cdd3bc106db9386f0e4c7.oggvorbisstr"]
 
 [params]
 

@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bsa3p474j1u4n"
+path="res://.godot/imported/job_bard_special.ogg-92694e256cbde69872ed05ed50eaa73c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_bard_special.ogg"
+dest_files=["res://.godot/imported/job_bard_special.ogg-92694e256cbde69872ed05ed50eaa73c.oggvorbisstr"]
 
 [params]
 

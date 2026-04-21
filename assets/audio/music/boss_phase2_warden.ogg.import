@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bem1xid0k0kyh"
+path="res://.godot/imported/boss_phase2_warden.ogg-8073d49fe180f2ec0f5be7a3b243108e.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_phase2_warden.ogg"
+dest_files=["res://.godot/imported/boss_phase2_warden.ogg-8073d49fe180f2ec0f5be7a3b243108e.oggvorbisstr"]
 
 [params]
 

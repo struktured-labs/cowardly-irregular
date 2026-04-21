@@ -37,6 +37,7 @@ var battle_speed: float = 1.0
 var battle_speed_index: int = 2
 var text_speed: String = "normal"
 var text_speed_index: int = 1
+var screen_shake_enabled: bool = true
 
 ## UI State
 var selected_index: int = 0
@@ -44,6 +45,8 @@ var _settings_items: Array = []
 var _controls_submenu_open: bool = false
 var _jukebox_submenu_open: bool = false
 var _boss_submenu_open: bool = false
+## When true, hides the "Quit to Title" action (we're already on the title screen)
+var from_title: bool = false
 
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
@@ -81,6 +84,8 @@ func _ready() -> void:
 			text_speed_index = TEXT_SPEED_PRESETS.find(text_speed)
 			if text_speed_index < 0:
 				text_speed_index = 1
+		if "screen_shake_enabled" in GameState:
+			screen_shake_enabled = GameState.screen_shake_enabled
 	_build_ui()
 	_play_open_animation()
 
@@ -251,17 +256,30 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(text_item, 6, 400, 60,
 		_on_setting_click.bind(6), _on_setting_hover.bind(6))
 
+	# Screen Shake toggle
+	var shake_item = _create_toggle_setting(
+		"Screen Shake",
+		"Enable camera shake on hits and effects",
+		screen_shake_enabled,
+		7
+	)
+	shake_item.position = Vector2(16, 488)
+	panel.add_child(shake_item)
+	_settings_items.append({"control": shake_item, "type": "toggle", "id": "screen_shake"})
+	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
+		_on_setting_click.bind(7), _on_setting_hover.bind(7))
+
 	# Controls button
 	var controls_item = _create_action_button_neutral(
 		"Controls",
 		"Remap gamepad buttons",
-		7
+		8
 	)
-	controls_item.position = Vector2(16, 488)
+	controls_item.position = Vector2(16, 548)
 	panel.add_child(controls_item)
 	_settings_items.append({"control": controls_item, "type": "action", "id": "controls"})
-	MenuMouseHelper.make_clickable(controls_item, 7, 400, 50,
-		_on_setting_click.bind(7), _on_setting_hover.bind(7))
+	MenuMouseHelper.make_clickable(controls_item, 8, 400, 50,
+		_on_setting_click.bind(8), _on_setting_hover.bind(8))
 
 	# Jukebox button (debug-only)
 	if debug_log_enabled:
@@ -271,7 +289,7 @@ func _build_ui() -> void:
 			"[DEBUG] Play any music track",
 			jukebox_idx
 		)
-		jukebox_item.position = Vector2(16, 538)
+		jukebox_item.position = Vector2(16, 598)
 		panel.add_child(jukebox_item)
 		_settings_items.append({"control": jukebox_item, "type": "action", "id": "jukebox"})
 		MenuMouseHelper.make_clickable(jukebox_item, jukebox_idx, 400, 50,
@@ -285,25 +303,26 @@ func _build_ui() -> void:
 			"[DEBUG] Battle a Masterite boss",
 			boss_idx
 		)
-		boss_item.position = Vector2(16, 588)
+		boss_item.position = Vector2(16, 648)
 		panel.add_child(boss_item)
 		_settings_items.append({"control": boss_item, "type": "action", "id": "fight_boss"})
 		MenuMouseHelper.make_clickable(boss_item, boss_idx, 400, 50,
 			_on_setting_click.bind(boss_idx), _on_setting_hover.bind(boss_idx))
 
-	# Quit to Title button
-	var quit_idx = _settings_items.size()
-	var quit_item = _create_action_button(
-		"Quit to Title",
-		"Return to the title screen",
-		quit_idx
-	)
-	var quit_y = 538 + (100 if debug_log_enabled else 0)
-	quit_item.position = Vector2(16, quit_y)
-	panel.add_child(quit_item)
-	_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
-	MenuMouseHelper.make_clickable(quit_item, quit_idx, 400, 50,
-		_on_setting_click.bind(quit_idx), _on_setting_hover.bind(quit_idx))
+	# Quit to Title button (hidden when opened from title screen)
+	if not from_title:
+		var quit_idx = _settings_items.size()
+		var quit_item = _create_action_button(
+			"Quit to Title",
+			"Return to the title screen",
+			quit_idx
+		)
+		var quit_y = 598 + (100 if debug_log_enabled else 0)
+		quit_item.position = Vector2(16, quit_y)
+		panel.add_child(quit_item)
+		_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
+		MenuMouseHelper.make_clickable(quit_item, quit_idx, 400, 50,
+			_on_setting_click.bind(quit_idx), _on_setting_hover.bind(quit_idx))
 
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_settings)
@@ -773,6 +792,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_controller_overlay_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "screen_shake":
+		screen_shake_enabled = not screen_shake_enabled
+		_update_toggle_display(selected_index, screen_shake_enabled)
+		_save_screen_shake_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "music_volume":
 		music_volume_index = clampi(music_volume_index + delta, 0, VOLUME_PRESETS.size() - 1)
 		music_volume = VOLUME_PRESETS[music_volume_index]
@@ -803,12 +828,23 @@ func _adjust_setting(delta: int) -> void:
 			SoundManager.play_ui("menu_move")
 
 
+func _persist_settings() -> void:
+	"""Write all settings to user://settings.json via SaveSystem."""
+	if Engine.has_singleton("SaveSystem"):
+		Engine.get_singleton("SaveSystem").save_settings()
+	else:
+		var ss = get_node_or_null("/root/SaveSystem")
+		if ss and ss.has_method("save_settings"):
+			ss.save_settings()
+
+
 func _save_encounter_rate() -> void:
 	"""Save encounter rate to GameState"""
 	if GameState:
 		GameState.encounter_rate_multiplier = encounter_rate
 	settings_changed.emit("encounter_rate", encounter_rate)
 	DebugLogOverlay.log("[SETTINGS] Encounter rate set to %d%%" % int(encounter_rate * 100))
+	_persist_settings()
 
 
 func _save_debug_log_setting() -> void:
@@ -820,6 +856,7 @@ func _save_debug_log_setting() -> void:
 		DebugLogOverlay.set_enabled(debug_log_enabled)
 	settings_changed.emit("debug_log", debug_log_enabled)
 	print("[SETTINGS] Debug log %s" % ("enabled" if debug_log_enabled else "disabled"))
+	_persist_settings()
 
 
 func _save_controller_overlay_setting() -> void:
@@ -827,6 +864,15 @@ func _save_controller_overlay_setting() -> void:
 		GameState.show_controller_overlay = show_controller_overlay
 	settings_changed.emit("controller_overlay", show_controller_overlay)
 	print("[SETTINGS] Controller overlay %s" % ("enabled" if show_controller_overlay else "disabled"))
+	_persist_settings()
+
+
+func _save_screen_shake_setting() -> void:
+	if GameState:
+		GameState.screen_shake_enabled = screen_shake_enabled
+	settings_changed.emit("screen_shake", screen_shake_enabled)
+	print("[SETTINGS] Screen shake %s" % ("enabled" if screen_shake_enabled else "disabled"))
+	_persist_settings()
 
 
 func _update_volume_display(index: int, option_index: int) -> void:
@@ -869,6 +915,7 @@ func _save_music_volume() -> void:
 		SoundManager.set_music_volume(music_volume / 100.0)
 	settings_changed.emit("music_volume", music_volume)
 	print("[SETTINGS] Music volume set to %d%%" % music_volume)
+	_persist_settings()
 
 
 func _save_sfx_volume() -> void:
@@ -879,14 +926,19 @@ func _save_sfx_volume() -> void:
 		SoundManager.set_sfx_volume(sfx_volume / 100.0)
 	settings_changed.emit("sfx_volume", sfx_volume)
 	print("[SETTINGS] SFX volume set to %d%%" % sfx_volume)
+	_persist_settings()
 
 
 func _save_battle_speed() -> void:
-	"""Save battle speed default setting"""
+	"""Save battle speed default setting + push to BattleScene static."""
 	if GameState:
 		GameState.default_battle_speed = battle_speed
+	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+	if BattleSceneScript:
+		BattleSceneScript._battle_speed_index = battle_speed_index
 	settings_changed.emit("battle_speed", battle_speed)
 	print("[SETTINGS] Default battle speed set to %.2fx" % battle_speed)
+	_persist_settings()
 
 
 func _save_text_speed() -> void:
@@ -895,6 +947,7 @@ func _save_text_speed() -> void:
 		GameState.text_speed = text_speed
 	settings_changed.emit("text_speed", text_speed)
 	print("[SETTINGS] Text speed set to %s" % text_speed)
+	_persist_settings()
 
 
 func _activate_setting() -> void:

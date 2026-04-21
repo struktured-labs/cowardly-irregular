@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://d0quqioy4r52"
+path="res://.godot/imported/job_skiptrotter_special.ogg-220edf8a54ec5b4b7ce40c8fc9d28a63.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_skiptrotter_special.ogg"
+dest_files=["res://.godot/imported/job_skiptrotter_special.ogg-220edf8a54ec5b4b7ce40c8fc9d28a63.oggvorbisstr"]
 
 [params]
 

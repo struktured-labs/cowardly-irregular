@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://5xgu7pttyyt3"
+path="res://.godot/imported/village_scriptura.ogg-be32ac3cd9c4ba8b1d90e6a4f6a56404.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/village_scriptura.ogg"
+dest_files=["res://.godot/imported/village_scriptura.ogg-be32ac3cd9c4ba8b1d90e6a4f6a56404.oggvorbisstr"]
 
 [params]
 

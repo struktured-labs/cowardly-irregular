@@ -26,6 +26,7 @@ var _skip_indicator: Control
 var _skip_label: Label
 var _skip_bar: ColorRect
 var _skip_bar_bg: ColorRect
+var _skip_pill_bg: ColorRect
 
 ## Dialogue reference (created on demand)
 var _dialogue: Node = null
@@ -48,8 +49,10 @@ var _original_camera_position: Vector2 = Vector2.ZERO
 const LETTERBOX_HEIGHT: int = 40
 const LETTERBOX_ANIM_DURATION: float = 0.4
 const SKIP_THRESHOLD: float = 1.5
-const SKIP_BAR_WIDTH: float = 120.0
-const SKIP_BAR_HEIGHT: float = 6.0
+const SKIP_BAR_WIDTH: float = 220.0
+const SKIP_BAR_HEIGHT: float = 10.0
+const SKIP_PILL_PAD: float = 12.0
+const SKIP_PILL_HEIGHT: float = 48.0
 
 ## Per-world backdrop colors (top, bottom gradient) for cutscenes without game scene behind them
 const WORLD_BACKDROP_COLORS = {
@@ -103,24 +106,30 @@ func _build_ui() -> void:
 	_letterbox_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_letterbox_bottom)
 
-	# Skip indicator (top-right corner)
+	# Skip indicator (bottom-center, pill-style)
 	_skip_indicator = Control.new()
 	_skip_indicator.visible = false
 	add_child(_skip_indicator)
 
+	_skip_pill_bg = ColorRect.new()
+	_skip_pill_bg.color = Color(0.05, 0.05, 0.08, 0.82)
+	_skip_pill_bg.size = Vector2(SKIP_BAR_WIDTH + SKIP_PILL_PAD * 2, SKIP_PILL_HEIGHT)
+	_skip_indicator.add_child(_skip_pill_bg)
+
 	_skip_label = Label.new()
-	_skip_label.text = "Hold B to skip..."
-	_skip_label.add_theme_font_size_override("font_size", 11)
-	_skip_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 0.8))
+	_skip_label.text = "Hold B / Esc to skip..."
+	_skip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_skip_label.add_theme_font_size_override("font_size", 14)
+	_skip_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.75, 0.95))
 	_skip_indicator.add_child(_skip_label)
 
 	_skip_bar_bg = ColorRect.new()
-	_skip_bar_bg.color = Color(0.2, 0.2, 0.2, 0.6)
+	_skip_bar_bg.color = Color(0.15, 0.15, 0.20, 0.95)
 	_skip_bar_bg.size = Vector2(SKIP_BAR_WIDTH, SKIP_BAR_HEIGHT)
 	_skip_indicator.add_child(_skip_bar_bg)
 
 	_skip_bar = ColorRect.new()
-	_skip_bar.color = Color(0.8, 0.6, 0.2, 0.9)
+	_skip_bar.color = Color(1.0, 0.75, 0.25, 1.0)
 	_skip_bar.size = Vector2(0, SKIP_BAR_HEIGHT)
 	_skip_indicator.add_child(_skip_bar)
 
@@ -146,10 +155,15 @@ func _update_layout() -> void:
 	_letterbox_bottom.size = Vector2(screen_size.x, LETTERBOX_HEIGHT)
 	_letterbox_bottom.position = Vector2(0, screen_size.y)
 
-	_skip_indicator.position = Vector2(screen_size.x - SKIP_BAR_WIDTH - 16, 8)
-	_skip_label.position = Vector2(0, 0)
-	_skip_bar_bg.position = Vector2(0, 18)
-	_skip_bar.position = Vector2(0, 18)
+	# Bottom-center pill
+	var pill_w: float = SKIP_BAR_WIDTH + SKIP_PILL_PAD * 2.0
+	_skip_indicator.position = Vector2((screen_size.x - pill_w) / 2.0, screen_size.y - SKIP_PILL_HEIGHT - 18)
+	_skip_pill_bg.position = Vector2(0, 0)
+	_skip_pill_bg.size = Vector2(pill_w, SKIP_PILL_HEIGHT)
+	_skip_label.position = Vector2(0, 6)
+	_skip_label.size = Vector2(pill_w, 18)
+	_skip_bar_bg.position = Vector2(SKIP_PILL_PAD, 30)
+	_skip_bar.position = Vector2(SKIP_PILL_PAD, 30)
 
 	_effects_rect.position = Vector2.ZERO
 	_effects_rect.size = screen_size
@@ -421,6 +435,9 @@ func _step_screen_shake(step: Dictionary) -> void:
 	var duration = step.get("duration", 0.3)
 	var intensity = step.get("intensity", 4.0)
 	if _skipping:
+		return
+	# Settings gate - skip entirely if user disabled screen shake
+	if GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
 		return
 
 	var camera = get_viewport().get_camera_2d()

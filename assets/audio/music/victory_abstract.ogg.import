@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dpqi6dkrlshtb"
+path="res://.godot/imported/victory_abstract.ogg-89942bbd2bd987b508b671f6cd6b5e22.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/victory_abstract.ogg"
+dest_files=["res://.godot/imported/victory_abstract.ogg-89942bbd2bd987b508b671f6cd6b5e22.oggvorbisstr"]
 
 [params]
 

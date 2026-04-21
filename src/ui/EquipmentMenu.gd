@@ -457,15 +457,20 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
 	row.add_child(name_label)
 
-	# Stat comparison
+	# Stat comparison (union of old + new stats so we catch drops from stats-only-on-old)
 	var stat_mods = item_data.get("stat_mods", {})
 	var current_mods = _get_current_equipped_mods()
+	var all_stats := {}
+	for s in stat_mods:
+		all_stats[s] = true
+	for s in current_mods:
+		all_stats[s] = true
 	var stat_text = ""
 	var positive_count = 0
 	var negative_count = 0
 
-	for stat_name in stat_mods:
-		var new_val = stat_mods[stat_name]
+	for stat_name in all_stats:
+		var new_val = stat_mods.get(stat_name, 0)
 		var current_val = current_mods.get(stat_name, 0)
 		var diff = new_val - current_val
 

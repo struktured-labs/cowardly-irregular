@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://d04pm7tx431f5"
+path="res://.godot/imported/job_summoner_special.ogg-612192241cdab985d64916fe672da87d.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_summoner_special.ogg"
+dest_files=["res://.godot/imported/job_summoner_special.ogg-612192241cdab985d64916fe672da87d.oggvorbisstr"]
 
 [params]
 

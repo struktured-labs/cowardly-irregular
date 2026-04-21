@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://w2ukms3p5df8"
+path="res://.godot/imported/job_scriptweaver_special.ogg-e1a8a2d54f5d59f7e9cb1ce1bf0c6cb3.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_scriptweaver_special.ogg"
+dest_files=["res://.godot/imported/job_scriptweaver_special.ogg-e1a8a2d54f5d59f7e9cb1ce1bf0c6cb3.oggvorbisstr"]
 
 [params]
 

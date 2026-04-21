@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bwrqvkv1a0h1s"
+path="res://.godot/imported/job_guardian_special.ogg-05ceaad2ab7242ff28119973af459ffa.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_guardian_special.ogg"
+dest_files=["res://.godot/imported/job_guardian_special.ogg-05ceaad2ab7242ff28119973af459ffa.oggvorbisstr"]
 
 [params]
 

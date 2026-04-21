@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://g1tvhn02g2st"
+path="res://.godot/imported/dungeon_industrial.ogg-6977f7ed32e860ec534f37344dd6f05b.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/dungeon_industrial.ogg"
+dest_files=["res://.godot/imported/dungeon_industrial.ogg-6977f7ed32e860ec534f37344dd6f05b.oggvorbisstr"]
 
 [params]
 

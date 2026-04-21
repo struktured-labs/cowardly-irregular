@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bmk03spaky2la"
+path="res://.godot/imported/victory_digital.ogg-e84f808a44ab618cfab747a709d3f3ff.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/victory_digital.ogg"
+dest_files=["res://.godot/imported/victory_digital.ogg-e84f808a44ab618cfab747a709d3f3ff.oggvorbisstr"]
 
 [params]
 

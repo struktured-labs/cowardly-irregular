@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://buyyjutwm1rla"
+path="res://.godot/imported/job_time_mage_special.ogg-afff8b48be3eb87fed2fc56fa45d4424.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_time_mage_special.ogg"
+dest_files=["res://.godot/imported/job_time_mage_special.ogg-afff8b48be3eb87fed2fc56fa45d4424.oggvorbisstr"]
 
 [params]
 

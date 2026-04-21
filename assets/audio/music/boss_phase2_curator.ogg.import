@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dhaasigjcrmbe"
+path="res://.godot/imported/boss_phase2_curator.ogg-e852e8d0a927ec2597270b1db2cb65c0.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_phase2_curator.ogg"
+dest_files=["res://.godot/imported/boss_phase2_curator.ogg-e852e8d0a927ec2597270b1db2cb65c0.oggvorbisstr"]
 
 [params]
 

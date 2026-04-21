@@ -32,6 +32,11 @@ var party_gold: int = 500  # Starting gold
 var encounter_rate_multiplier: float = 1.0  # 0.0 to 2.0, controlled via settings menu
 var debug_log_enabled: bool = true  # Show debug log overlay (default on)
 var show_controller_overlay: bool = true  # Show controller hint overlay during autogrind/battle
+var music_volume: int = 100  # 0-100 percent
+var sfx_volume: int = 100  # 0-100 percent
+var default_battle_speed: float = 1.0  # Default speed index value
+var text_speed: String = "normal"  # slow | normal | fast | instant
+var screen_shake_enabled: bool = true  # Master gate for camera/screen shake effects
 
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {

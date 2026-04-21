@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://cn17fv60mti6j"
+path="res://.godot/imported/job_rogue_special.ogg-1bf6f7f4cfba2270d654aba682a6e166.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_rogue_special.ogg"
+dest_files=["res://.godot/imported/job_rogue_special.ogg-1bf6f7f4cfba2270d654aba682a6e166.oggvorbisstr"]
 
 [params]
 

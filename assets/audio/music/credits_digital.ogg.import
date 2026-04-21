@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://betmia2niqrfu"
+path="res://.godot/imported/credits_digital.ogg-cea3c38cb835c14a9fc150b9a4cd0f81.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/credits_digital.ogg"
+dest_files=["res://.godot/imported/credits_digital.ogg-cea3c38cb835c14a9fc150b9a4cd0f81.oggvorbisstr"]
 
 [params]
 

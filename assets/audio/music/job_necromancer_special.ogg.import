@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://xbk7l8n6qrsj"
+path="res://.godot/imported/job_necromancer_special.ogg-7d491a21694dfc343e9ebdfdf0b78111.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/job_necromancer_special.ogg"
+dest_files=["res://.godot/imported/job_necromancer_special.ogg-7d491a21694dfc343e9ebdfdf0b78111.oggvorbisstr"]
 
 [params]
 

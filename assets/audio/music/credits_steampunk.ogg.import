@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://bmfx6x55io2yy"
+path="res://.godot/imported/credits_steampunk.ogg-7842192fc5c64b3bc06278915f68f65c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/credits_steampunk.ogg"
+dest_files=["res://.godot/imported/credits_steampunk.ogg-7842192fc5c64b3bc06278915f68f65c.oggvorbisstr"]
 
 [params]
 

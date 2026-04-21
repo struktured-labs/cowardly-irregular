@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://g568143tmnon"
+path="res://.godot/imported/victory_medieval.ogg-35112b038148d58c643fa61b9116b35c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/victory_medieval.ogg"
+dest_files=["res://.godot/imported/victory_medieval.ogg-35112b038148d58c643fa61b9116b35c.oggvorbisstr"]
 
 [params]
 

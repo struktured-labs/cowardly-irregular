@@ -350,6 +350,9 @@ func _create_explosion_ring(color: Color) -> Sprite2D:
 
 func _trigger_screen_shake(intensity: float, duration: float) -> void:
 	"""Trigger screen shake effect. Kills any running shake first to prevent camera drift."""
+	# Settings gate - skip entirely if user disabled screen shake
+	if GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
+		return
 	var viewport = get_viewport()
 	if not viewport:
 		return
