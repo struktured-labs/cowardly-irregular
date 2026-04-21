@@ -1,0 +1,25 @@
+{
+  "id": "boss_taunts_warden",
+  "archetype": "warden",
+  "description": "Warden-archetype mid-battle taunts. Voice: procedural, form-bound, literal. Speaker is resolved from the active boss at display time (e.g., Warden of the Assembly Core, Warden of the Mainspring). cowir-battle triggers these when boss HP crosses each threshold, descending.",
+  "theme": "enemy",
+  "portrait": "mysterious",
+  "taunts": [
+    {
+      "threshold": 0.75,
+      "text": "You are making entries outside the designated fields. I will note this. The notation is itself a field."
+    },
+    {
+      "threshold": 0.50,
+      "text": "The variance form has fourteen sections. You have triggered sections one through seven. Please remain still for section eight."
+    },
+    {
+      "threshold": 0.25,
+      "text": "We are in the final section. The final section is always combat. This was disclosed on the first page."
+    },
+    {
+      "threshold": 0.10,
+      "text": "Sign here. Complete the box marked 'outcome'. Do not leave it blank. The form is not valid without an outcome."
+    }
+  ]
+}

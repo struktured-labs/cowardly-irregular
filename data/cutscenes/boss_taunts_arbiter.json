@@ -1,0 +1,25 @@
+{
+  "id": "boss_taunts_arbiter",
+  "archetype": "arbiter",
+  "description": "Arbiter-archetype mid-battle taunts. Voice: judicial, privilege-aware, authoritative. Each line is a ruling or an objection. Speaker is resolved from the active boss at display time (Arbiter of Steel, Arbiter of the Benchmark, Arbiter of the Root Process, etc.).",
+  "theme": "enemy",
+  "portrait": "mysterious",
+  "taunts": [
+    {
+      "threshold": 0.75,
+      "text": "You are running in unprivileged mode. That is not my fault. That is the design of the system. I am merely enforcing it."
+    },
+    {
+      "threshold": 0.50,
+      "text": "I am hearing evidence. The evidence is: you hit less hard than the case predicted. I will lower the bar. Lowering the bar will not change the verdict."
+    },
+    {
+      "threshold": 0.25,
+      "text": "The ruling is being drafted. You will not enjoy the ruling. It is, however, technically correct, which is the ruling I am authorized to issue."
+    },
+    {
+      "threshold": 0.10,
+      "text": "Ruling: insufficient. Costs: awarded against you in full. Appeal: denied. Appeal of the appeal: also denied. Thank you for your time in the matter."
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "boss_taunts_curator",
+  "archetype": "curator",
+  "description": "Curator-archetype mid-battle taunts. Voice: fiscal, budget-driven, inventory-focused. Every line sounds like a line item. Speaker is resolved from the active boss at display time (Curator of the Flame, Curator of the Pipeline, Curator of the Null Chamber, etc.).",
+  "theme": "enemy",
+  "portrait": "mysterious",
+  "taunts": [
+    {
+      "threshold": 0.75,
+      "text": "You are requisitioning more HP than was allocated to you in the current quarter. I will file a variance. The variance will be denied."
+    },
+    {
+      "threshold": 0.50,
+      "text": "Half of you remains. Half of you has been appropriately written down to zero. The loss will be recorded as a non-cash expense. It is essentially a paperwork event."
+    },
+    {
+      "threshold": 0.25,
+      "text": "The budget closes at end of day. You will be zeroed out before it closes. This is not personal. It is consistent. Consistency is the only virtue in the ledger."
+    },
+    {
+      "threshold": 0.10,
+      "text": "Final line item. Expense: you. Coding category: resolved. The books will balance. They always do, in the end."
+    }
+  ]
+}

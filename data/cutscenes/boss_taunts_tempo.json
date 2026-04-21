@@ -1,0 +1,25 @@
+{
+  "id": "boss_taunts_tempo",
+  "archetype": "tempo",
+  "description": "Tempo-archetype mid-battle taunts. Voice: rhythmic, inevitable, step-based. Short sentences, clean cadence. Speaker is resolved from the active boss at display time (Tempo of the Hunt, Tempo of the Rush Hour, Tempo of the Clock Cycle, etc.).",
+  "theme": "enemy",
+  "portrait": "mysterious",
+  "taunts": [
+    {
+      "threshold": 0.75,
+      "text": "One. Two. Three. Do not look at me. Look at the beat. I am only the one who keeps it."
+    },
+    {
+      "threshold": 0.50,
+      "text": "You are off-tempo. The tempo does not adjust for you. Adjusting for you is not in the tempo's function. That is, in fact, the tempo's defining quality."
+    },
+    {
+      "threshold": 0.25,
+      "text": "Four bars remain. Two bars. One. You cannot see the bar line. I have drawn it already. I drew it some measures ago."
+    },
+    {
+      "threshold": 0.10,
+      "text": "Downbeat. Rest. The measure closes. A new measure will begin. You will not be in it."
+    }
+  ]
+}
