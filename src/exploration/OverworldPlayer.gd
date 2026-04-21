@@ -206,6 +206,11 @@ var _use_custom_colors: bool = false
 
 
 func _ready() -> void:
+	# Register to the "player" group so WanderingNPC, SaveSystem, and other
+	# systems can locate us via get_nodes_in_group("player") regardless of
+	# which scene we're spawned into. Previous code required
+	# MapSystem.set_player() which only the legacy PlayerController called.
+	add_to_group("player")
 	# FLOATING mode for top-down — enables wall sliding in all directions
 	# (default GROUNDED mode is for platformers and causes stuck-on-edges)
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING

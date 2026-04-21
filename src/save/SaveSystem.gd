@@ -298,15 +298,17 @@ func _create_save_data() -> Dictionary:
 	"""Create a dictionary of all save data"""
 	var data = {}
 
-	# Player data
-	var player = MapSystem.get_player()
-	if player and player is PlayerController:
+	# Player data — find via group first (OverworldPlayer), fall back to
+	# MapSystem.get_player() for legacy PlayerController compatibility.
+	var player = _find_active_player()
+	if player:
+		var step_count = player.step_count if "step_count" in player else 0
 		data["player"] = {
 			"position": {
 				"x": player.position.x,
 				"y": player.position.y
 			},
-			"step_count": player.step_count
+			"step_count": step_count
 		}
 
 	# Party data (combatants)
@@ -376,15 +378,31 @@ func _serialize_inventory() -> Dictionary:
 	return {}
 
 
+## Find the active player node. Prefers the "player" group (OverworldPlayer),
+## falls back to MapSystem.get_player() (legacy PlayerController path).
+func _find_active_player() -> Node2D:
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree:
+		var in_group = tree.get_nodes_in_group("player")
+		if in_group.size() > 0:
+			return in_group[0] as Node2D
+	if MapSystem:
+		return MapSystem.get_player()
+	return null
+
+
 ## Save data application
 func _apply_save_data(data: Dictionary) -> void:
 	"""Apply loaded save data to game state"""
 	# Apply player position
 	if data.has("player"):
-		var player = MapSystem.get_player()
+		var player = _find_active_player()
 		if player and data["player"].has("position"):
 			var pos = data["player"]["position"]
-			player.teleport(Vector2(pos["x"], pos["y"]))
+			if player.has_method("teleport"):
+				player.teleport(Vector2(pos["x"], pos["y"]))
+			else:
+				player.position = Vector2(pos["x"], pos["y"])
 
 	# Apply map/location
 	if data.has("map"):

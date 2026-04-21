@@ -325,11 +325,14 @@ func process_frame() -> void:
 
 	# _update_compass()  # Disabled — no rotation
 
-	# Sway
+	# Sway — proportional to horizontal velocity instead of binary step.
+	# Smoothly ramps from 0 → ±SWAY_PIXELS based on how fast the player moves
+	# sideways. Feels more natural than a sudden snap at any non-zero speed.
 	var screen_move = move_delta.rotated(-_current_rotation)
 	var sway_x = 0.0
-	if abs(screen_move.x) > 0.5:
-		sway_x = -sign(screen_move.x) * SWAY_PIXELS
+	if abs(screen_move.x) > 0.1:
+		var vel_factor = clampf(screen_move.x / 6.0, -1.0, 1.0)
+		sway_x = -vel_factor * SWAY_PIXELS
 
 	# Bob
 	var bob_y = 0.0

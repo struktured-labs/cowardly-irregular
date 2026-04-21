@@ -17,8 +17,8 @@ signal closed()
 
 const BG_COLOR := Color(0.05, 0.04, 0.08, 0.95)
 const PANEL_COLOR := Color(0.1, 0.1, 0.15)
-const BORDER_LIGHT := Color(0.7, 0.7, 0.85)
-const BORDER_SHADOW := Color(0.25, 0.25, 0.4)
+const BORDER_LIGHT := RetroPanel.BORDER_LIGHT
+const BORDER_SHADOW := RetroPanel.BORDER_SHADOW
 const TEXT_COLOR := Color(1.0, 1.0, 1.0)
 const DIM_COLOR := Color(0.55, 0.55, 0.65)
 const ACCENT := Color(1.0, 0.92, 0.55)

@@ -694,36 +694,19 @@ func _update_projection(key: String, value: String) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
-
-	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
-		pause_requested.emit()
-		get_viewport().set_input_as_handled()
-
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
-		adjust_rules_requested.emit()
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
-		exit_requested.emit()
-		get_viewport().set_input_as_handled()
-
-	elif event is InputEventJoypadButton and event.pressed:
-		if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
-			if Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER):
-				tier_cycle_requested.emit()
-				get_viewport().set_input_as_handled()
-
-	elif event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_P:
-				pause_requested.emit()
-				get_viewport().set_input_as_handled()
-			KEY_R:
-				adjust_rules_requested.emit()
-				get_viewport().set_input_as_handled()
-			KEY_T:
-				tier_cycle_requested.emit()
-				get_viewport().set_input_as_handled()
+	var action = AutogrindInputHelper.classify_event(event)
+	match action:
+		"pause":
+			pause_requested.emit()
+		"adjust_rules":
+			adjust_rules_requested.emit()
+		"exit":
+			exit_requested.emit()
+		"tier_cycle":
+			tier_cycle_requested.emit()
+		_:
+			return
+	get_viewport().set_input_as_handled()
 
 
 ## ═══════════════════════════════════════════════════════════════════════

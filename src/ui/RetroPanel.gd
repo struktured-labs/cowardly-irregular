@@ -6,6 +6,11 @@ class_name RetroPanel
 
 const TILE_SIZE = 4
 
+## Default SNES menu palette (blue family) — used by most overworld menus.
+## Autogrind menus define their own purple variant locally.
+const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
+const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
+
 
 static func create_panel(w: int, h: int, bg_color: Color, border_color: Color, shadow_color: Color) -> Control:
 	"""Create a retro-style panel with beveled pixel tile borders"""

@@ -9,8 +9,8 @@ signal closed()
 
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR = Color(0.1, 0.1, 0.15)
-const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
-const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
+const BORDER_LIGHT = RetroPanel.BORDER_LIGHT
+const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const HEADER_COLOR = Color(0.85, 0.78, 0.45)
 const ACTIVE_COLOR = Color(0.95, 0.9, 0.5)
 const COMPLETE_COLOR = Color(0.45, 0.8, 0.45)
