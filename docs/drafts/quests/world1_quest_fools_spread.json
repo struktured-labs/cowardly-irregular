@@ -1,0 +1,86 @@
+{
+  "_note": "DRAFT SAMPLE — schema proposed by cowir-story, pending cowir-overworld confirmation. If fields rename, I'll refactor before scaling to all 6 worlds.",
+  "id": "world1_quest_fools_spread",
+  "title": "A Fool's Spread",
+  "world": 1,
+  "chain": "traveling_merchant",
+  "chain_step": 1,
+  "giver": {
+    "npc_id": "madame_orrery_w1",
+    "display_name": "Madame Orrery",
+    "location": "overworld_harmonia_east",
+    "spawn_flag": "cutscene_flag_chapter1_complete"
+  },
+  "description": "A traveling fortune teller has parked her wagon outside Harmonia. She offers a reading; one of the cards she turns over doesn't belong to her deck.",
+  "playstyle_tags": ["dialogue_heavy", "completionist"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Madame Orrery", "text": "You have a road behind you and a road ahead of you. I can read both for a small fee. Sit down. Don't touch the cards.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "Five cards. One for your past, three for your present, one for your... what's that word. Outcome.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Madame Orrery", "text": "Good. Hands on the table. Palms down. Try not to think about anything in particular, which of course means you will now think about nothing else.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Madame Orrery", "text": "No? Fair. The cards will keep. They have more patience than I do. Find me when curiosity wins.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Madame Orrery", "text": "The blank card. I still have it on the table. It has not decided yet what to be. If you find a man who talks wrong, ask him if he is missing a piece of paper.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Madame Orrery", "text": "You have it. Put it on the table. Do not unfold it.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Madame Orrery", "text": "This is notation. It is not mine. It is not from any system I know. Which means one of two things: either the system is new, or I am older than I thought.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "Take this card. It is a real card. It is heavy for its size. It will matter, later. I will not tell you how. I do not know how either. I only know that it will.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "Come find me when you have seen more of the world. I would like to compare notes. I travel in directions the maps do not include.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Speak to Madame Orrery outside Harmonia.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w1",
+      "flag_on_complete": "quest_fools_spread_reading_received"
+    },
+    {
+      "step": 2,
+      "description": "Find the man who knows too much and says it wrong (Phil the Lost).",
+      "type": "talk",
+      "target_npc": "phil_the_lost",
+      "required_flag": "quest_fools_spread_reading_received",
+      "flag_on_complete": "quest_fools_spread_paper_obtained"
+    },
+    {
+      "step": 3,
+      "description": "Return the folded paper to Madame Orrery.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w1",
+      "required_flag": "quest_fools_spread_paper_obtained",
+      "flag_on_complete": "quest_fools_spread_complete"
+    }
+  ],
+  "rewards": {
+    "gold": 150,
+    "exp": 300,
+    "items": [
+      {"item_id": "fool_card", "count": 1, "tag": "cross_chain_key_item"},
+      {"item_id": "charm_of_minor_luck", "count": 1}
+    ],
+    "job_variants": {
+      "bard": {
+        "description": "If lead character is Bard, Orrery asks them to 'play something that doesn't exist yet.' Swap charm for unique accessory.",
+        "items": [
+          {"item_id": "fool_card", "count": 1, "tag": "cross_chain_key_item"},
+          {"item_id": "unwritten_chord", "count": 1}
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_fools_spread_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "calibrant", "requires_chain_progress": 6}
+  ],
+  "cross_world_connection": "The symbol on Phil's paper matches the notation on the Calibrant's blueprints in W3."
+}
