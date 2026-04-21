@@ -1,0 +1,12 @@
+{
+  "id": "world1_old_guard_journal",
+  "world": 1,
+  "title": "Training Journal of Ser Gallen, the Old Guard",
+  "source": "A leather-bound notebook found in an abandoned watchtower outside Harmonia.",
+  "category": "masterite_backstory",
+  "pages": [
+    "Day 2,114. The boy today drew the sword wrong. I corrected the grip. He bled a little, but he will remember. Pain is the teacher who does not lie.",
+    "Day 2,117. I was informed today that I have been retired. The kingdom uses new methods. I do not understand the new methods. I asked what I was meant to do. They said: continue. So I continue.",
+    "Day 3,801. A party came to fight me. They were not the king's men. They did not know my name. I fought them. They respected the fight. This is, in the end, all I have asked for. I remain at my post. I do not know where else to be."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "world1_mordaine_ledger",
+  "world": 1,
+  "title": "Mordaine's Ledger, Page 37",
+  "source": "A weathered account book, left open on the desk at the Harmonia inn.",
+  "category": "world_flavor",
+  "pages": [
+    "Party 37 — the cave expedition. Expected losses: 4. Actual losses: 4. As expected. Funds recovered from estates: 12 gold. Insurance premium paid out: 0. Net: positive.",
+    "The cave does not return anyone. It has not returned anyone in six years. The arrangement is understood by everyone involved, including, one assumes, the cave.",
+    "Party 38 has signed up for tomorrow. I have raised the premium to 8 gold per head. They did not negotiate. Nobody ever does."
+  ]
+}

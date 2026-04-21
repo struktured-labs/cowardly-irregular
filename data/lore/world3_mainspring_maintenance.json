@@ -1,0 +1,12 @@
+{
+  "id": "world3_mainspring_maintenance",
+  "world": 3,
+  "title": "Maintenance Log of Halden Brasswright, Master Clockmaker",
+  "source": "A brass-bound workshop journal, clipped with spring-steel to a repair bench in Brasston's clockworks.",
+  "category": "masterite_backstory",
+  "pages": [
+    "Inspection, 4:07 PM. The Mainspring is tense. It has been tense for six years. It will be tense for six hundred. Tension is the Mainspring's way of existing.",
+    "I have come to suspect the Warden and the Tempo of the Mainspring are the same artifact seen from two sides. The Warden enforces the wind. The Tempo enforces the tick. Remove either and the other would be a different mechanism with the same shape.",
+    "I have not shared this theory. The two of them would not agree. They would not disagree. They would regard me for a moment, and then they would return to their work, and the moment they regarded me would be the first and last irregularity on their logs. I prefer my irregularity to remain private."
+  ]
+}

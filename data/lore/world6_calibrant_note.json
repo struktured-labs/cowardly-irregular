@@ -1,0 +1,12 @@
+{
+  "id": "world6_calibrant_note",
+  "world": 6,
+  "title": "Calibration Note — Observer's Hand",
+  "source": "A single tablet, found at the center of the Vertex. Text appears when you pick it up, not before.",
+  "category": "meta_narrative",
+  "pages": [
+    "I am the Calibrant. You have met my Masterites. You have fought them. You have, in most cases, won. The wins have been calibrated against your playstyle. This is not cheating. It is the test telling you about yourself.",
+    "The Wardens count what you enter. The Arbiters judge how you enter it. The Tempos time what you enter. The Curators keep what you enter. Together they describe you. The description is not editorial. It is just the data.",
+    "I have read the description. I will not tell you what it says. You have one more world in which to decide whether you agree with it. If you do not, you will have to prove you do not, which is itself a kind of agreement. I look forward to seeing which you pick."
+  ]
+}

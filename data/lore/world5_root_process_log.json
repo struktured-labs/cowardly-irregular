@@ -1,0 +1,12 @@
+{
+  "id": "world5_root_process_log",
+  "world": 5,
+  "title": "/var/log/root.log — last 48 lines",
+  "source": "Displayed on a terminal in the Node Prime admin sector. The cursor blinks but does not accept input.",
+  "category": "meta_narrative",
+  "pages": [
+    "[00:00:00] uid=0 pid=1 arbiter: process initialized. mode: kernel. scope: total. [00:00:00] arbiter: logging every user-space command for the duration of the session. session duration: undefined.",
+    "[12:44:11] user=party_fighter cmd=attack target=slime result=hit damage=18 [12:44:11] arbiter: logged. [12:44:11] arbiter: no action required. [12:44:11] arbiter: observation retained.",
+    "[18:22:07] user=party_rogue cmd=autobattle_enable rule_count=4 [18:22:07] arbiter: logged. [18:22:07] arbiter: note: this party is delegating. the delegation will itself be evidence in the ruling. [18:22:07] arbiter: no action required at this time."
+  ]
+}

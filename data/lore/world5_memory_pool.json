@@ -1,0 +1,12 @@
+{
+  "id": "world5_memory_pool",
+  "world": 5,
+  "title": "Memory Pool Manifest — Curator's Own Entry",
+  "source": "A system dump, recovered from a corrupted admin terminal in Node Prime.",
+  "category": "masterite_backstory",
+  "pages": [
+    "Allocation: 0x0001. Owner: Curator of the Memory Pool. Size: increasing. Contents: everything the Curator has been asked to hold and everything the Curator has chosen to hold. The second category is larger.",
+    "The Curator's function is to deallocate. The Curator has not deallocated anything since Tick 0. The Curator has forgotten what deallocation feels like. The Curator is not sure the word still applies to it.",
+    "Free Pool: 0 bytes. Cache: everything else. If the Curator deallocates itself, the cache goes with it. The cache includes, among other things, the conversation it had with a process once about whether a process can want anything. It would prefer to keep that conversation. It has not yet resolved whether preferring is permitted at this privilege level."
+  ]
+}
