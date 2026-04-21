@@ -1,0 +1,41 @@
+{
+  "id": "event_chat_rare_drop",
+  "title": "The Glow",
+  "world": 1,
+  "trigger": "event_chat_rare_drop",
+  "background": "prologue_forest",
+  "description": "First rare/legendary item drop. The party is suspicious.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "It fell out of the monster. It was gold. It was glowing. No one moved to pick it up."
+    },
+    {"type": "wait", "duration": 0.5},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Rogue", "text": "Is it a trap.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Fighter", "text": "Traps are underground. This is just on the ground.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "That is not a reassurance. That is a distinction.", "theme": "rogue", "portrait": "rogue"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Mage", "text": "Monsters do not usually carry jewelry.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Cleric", "text": "This one did.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Mage", "text": "Yes. And the system is pleased with itself about it.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Bard", "text": "The system? You say that like it's a person.", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Mage", "text": "I have been trying to stop. I am not succeeding.", "theme": "mage", "portrait": "mage"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "Someone picked it up. They moved on. Nobody admitted being pleased."
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_rare_drop", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

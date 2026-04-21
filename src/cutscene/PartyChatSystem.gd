@@ -168,6 +168,52 @@ const REGISTRY := {
 		"world": 6,
 		"unlock": ["cutscene_flag_world6_chapter2_complete"],
 	},
+
+	# ===== EVENT-TRIGGERED =====
+	# Unlocked by gameplay events, not narrative milestones.
+	# The unlock flags in this section are emitted by cowir-overworld /
+	# cowir-battle when the corresponding event fires for the first time.
+	# world field is the first-natural-unlock-world for menu grouping.
+	"event_chat_first_magic_shop": {
+		"title": "Magic as Merchandise",
+		"world": 1,
+		"unlock": ["event_flag_first_magic_shop_visited"],
+	},
+	"event_chat_first_party_wipe": {
+		"title": "After the First Time",
+		"world": 1,
+		"unlock": ["event_flag_first_party_wipe"],
+	},
+	"event_chat_level_10": {
+		"title": "Double Digits",
+		"world": 1,
+		"unlock": ["event_flag_level_10_reached"],
+	},
+	"event_chat_rare_drop": {
+		"title": "The Glow",
+		"world": 1,
+		"unlock": ["event_flag_rare_drop_found"],
+	},
+	"event_chat_dragon_cave": {
+		"title": "At the Cave Mouth",
+		"world": 3,
+		"unlock": ["event_flag_dragon_cave_entered"],
+	},
+	"event_chat_first_autobattle": {
+		"title": "The Script Runs",
+		"world": 1,
+		"unlock": ["event_flag_first_autobattle_enabled"],
+	},
+	"event_chat_first_group_attack": {
+		"title": "All at Once",
+		"world": 1,
+		"unlock": ["event_flag_first_group_attack"],
+	},
+	"event_chat_one_hp_victory": {
+		"title": "Close",
+		"world": 1,
+		"unlock": ["event_flag_one_hp_victory"],
+	},
 }
 
 
