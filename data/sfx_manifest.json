@@ -357,6 +357,12 @@
       "duration_seconds": 5.0,
       "prompt_influence": 0.6
     },
+    "ambient_dungeon_drip": {
+      "file": "assets/audio/sfx/ambient_dungeon_drip.ogg",
+      "prompt": "Subtle dungeon water drip ambience, sparse slow water droplets falling into still pools, echoing softly in vast stone cavern, distant reverberating drips, damp quiet underground silence, no music no wind no chains, loop-friendly",
+      "duration_seconds": 6.0,
+      "prompt_influence": 0.6
+    },
     "weather_rain": {
       "file": "assets/audio/sfx/weather_rain.ogg",
       "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",
