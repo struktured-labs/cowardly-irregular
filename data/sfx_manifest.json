@@ -359,9 +359,21 @@
     },
     "weather_rain": {
       "file": "assets/audio/sfx/weather_rain.ogg",
-      "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",
-      "duration_seconds": 5.0,
+      "prompt": "Steady consistent rain ambience, evenly spaced patter of raindrops on stone and leaves, calming natural rainfall with no sudden peaks or gaps, uniform texture perfect for looping, no thunder, no wind",
+      "duration_seconds": 6.0,
       "prompt_influence": 0.6
+    },
+    "weather_wind": {
+      "file": "assets/audio/sfx/weather_wind.ogg",
+      "prompt": "Steady atmospheric wind ambience, continuous airflow whistling gently through open terrain, uniform ethereal whoosh with no gusts or sudden changes, even loopable texture, no rain or thunder",
+      "duration_seconds": 6.0,
+      "prompt_influence": 0.6
+    },
+    "weather_thunder": {
+      "file": "assets/audio/sfx/weather_thunder.ogg",
+      "prompt": "Single dramatic thunder crack and rolling rumble, close lightning strike followed by deep bass thunder rolling and fading into distance, cinematic storm one-shot, no rain or wind before or after",
+      "duration_seconds": 2.5,
+      "prompt_influence": 0.7
     },
     "weather_sunny": {
       "file": "assets/audio/sfx/weather_sunny.ogg",
