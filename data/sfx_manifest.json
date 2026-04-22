@@ -478,6 +478,13 @@
       "duration_seconds": 2.5,
       "prompt_influence": 0.7
     },
+    "limit_break_charge": {
+      "file": "assets/audio/sfx/limit_break_charge.ogg",
+      "source": "sox_synth",
+      "prompt": "Ascending C major pentatonic triangle arp (11 notes C4-C6) with octave-up sine shimmer overlay + glissando tail + double echo + reverb, crystalline buildup tension builder for limit gauge fill",
+      "duration_seconds": 1.9,
+      "prompt_influence": 0.0
+    },
     "heal": {
       "file": "assets/audio/sfx/heal.ogg",
       "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",
