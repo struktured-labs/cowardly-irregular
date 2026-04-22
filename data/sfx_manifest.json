@@ -394,6 +394,13 @@
       "duration_seconds": 0.65,
       "prompt_influence": 0.0
     },
+    "quest_complete": {
+      "file": "assets/audio/sfx/quest_complete.ogg",
+      "source": "sox_synth",
+      "prompt": "G major heroic motif — G4-D5-G5-B5 ascending triangle melody + sustained D5+G5+B5 G-major chord tail + double echo, triumphant side quest turn-in jingle (distinct from C-major level_up)",
+      "duration_seconds": 1.35,
+      "prompt_influence": 0.0
+    },
     "gold_pickup": {
       "file": "assets/audio/sfx/gold_pickup.ogg",
       "prompt": "Handful of gold coins clinking together, bright metallic jingling of treasure being collected, satisfying coin cascade into a pouch",
