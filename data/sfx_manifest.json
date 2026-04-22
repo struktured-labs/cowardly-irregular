@@ -109,6 +109,12 @@
       "duration_seconds": 0.7,
       "prompt_influence": 0.7
     },
+    "inn_rest": {
+      "file": "assets/audio/sfx/inn_rest.ogg",
+      "prompt": "Peaceful inn rest ambience, gentle warm magical sparkle chime followed by soft wooden bed frame creak and comfortable sigh, cozy sleepy restoration with a warm glow feeling, tavern fireplace warmth",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.6
+    },
     "door_open": {
       "file": "assets/audio/sfx/door_open.ogg",
       "prompt": "Heavy wooden door creaking open, old iron hinges groaning, medieval dungeon door swinging with a deep resonant creak",
