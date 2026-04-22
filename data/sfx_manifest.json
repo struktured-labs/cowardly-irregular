@@ -456,8 +456,8 @@
     },
     "boss_intro_stinger": {
       "file": "assets/audio/sfx/boss_intro_stinger.ogg",
-      "prompt": "Dramatic orchestral hit with deep timpani slam, ominous brass stab announcing danger, dark foreboding impact like a boss appearing in an RPG, reverberating doom chord",
-      "duration_seconds": 2.0,
+      "prompt": "Dramatic cinematic orchestral stinger, huge timpani slam with ominous minor-key brass chord hit, rising dread surge with deep double-bass rumble, dark FF boss-encounter reveal, thunderous reverberating impact announcing impending doom",
+      "duration_seconds": 2.5,
       "prompt_influence": 0.7
     },
     "group_all_out": {
