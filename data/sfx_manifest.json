@@ -41,6 +41,13 @@
       "duration_seconds": 0.06,
       "prompt_influence": 0.0
     },
+    "ui_text_tick": {
+      "file": "assets/audio/sfx/ui_text_tick.ogg",
+      "source": "sox_synth",
+      "prompt": "Very short subtle pink noise burst (25ms) lowpassed at 1800Hz with quick fade, -6dB attenuated, per-character typing tick for non-dialogue UI text rendering (softer than menu_move)",
+      "duration_seconds": 0.025,
+      "prompt_influence": 0.0
+    },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue.ogg",
       "source": "elevenlabs_post",
