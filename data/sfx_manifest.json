@@ -166,9 +166,10 @@
     },
     "critical_hit": {
       "file": "assets/audio/sfx/critical_hit.ogg",
-      "prompt": "Explosive critical strike with deep bass slam and a sharp crack, bone-crunching power hit with reverb, devastating blow",
-      "duration_seconds": 0.7,
-      "prompt_influence": 0.5
+      "source": "elevenlabs_post",
+      "prompt": "Massive bone-crushing CRUNCH with satisfying meaty impact, sharp high-end crack of weapon cleaving armor, deep sub-bass slam layered underneath, devastating critical blow with reverberating boom, punchy wet thump",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.6
     },
     "damage_taken": {
       "file": "assets/audio/sfx/damage_taken.ogg",
