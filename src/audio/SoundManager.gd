@@ -985,10 +985,14 @@ func _get_current_world_suffix() -> String:
 			return _current_world_suffix
 
 
-func play_music(track: String) -> void:
-	"""Play a music track with crossfade transition"""
+func play_music(track: String, fade_duration: float = -1.0) -> void:
+	"""Play a music track with crossfade transition.
+	   fade_duration < 0 uses CROSSFADE_DURATION default (0.5s).
+	   Pass a larger value (e.g. 2.0) for slower dramatic transitions like boss phase changes."""
 	if _current_music == track and _music_playing:
 		return  # Already playing
+
+	var fade_time: float = fade_duration if fade_duration >= 0.0 else CROSSFADE_DURATION
 
 	# Clear area tracking so play_area_music() doesn't skip after battle/victory
 	_current_area = ""
@@ -1006,9 +1010,11 @@ func play_music(track: String) -> void:
 		_music_player_b.play(_music_player.get_playback_position())
 		_music_player.stop()
 
-		# Fade out old track on B
+		# Fade out old track on B. fade_time can be longer (e.g. 2s) for dramatic
+		# transitions like boss phase changes — the new track then crashes in at
+		# full volume while the old recedes, which matches the "new power" trope.
 		_crossfade_tween = create_tween()
-		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, CROSSFADE_DURATION)
+		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, fade_time)
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
 	_stinger_resume_track = _current_music  # Save for stinger resume before overwriting

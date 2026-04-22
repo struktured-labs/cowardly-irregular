@@ -128,6 +128,9 @@ var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 ## Danger music state
 var _is_danger_music: bool = false
 
+## Boss phase-2 music state (Masterite bosses crossfade to phase2 track at 50% HP)
+var _boss_phase2_active: bool = false
+
 ## Idle animation state (sway/breathing)
 var _idle_time: float = 0.0
 var _enemy_base_positions: Array[Vector2] = []
@@ -151,6 +154,8 @@ var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # "battle" or "boss"
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
+const BOSS_PHASE2_HP_THRESHOLD: float = 0.5  # Switch to phase-2 music below 50% HP (Masterite only)
+const BOSS_PHASE2_FADE_SECONDS: float = 2.0  # Dramatic slow crossfade for phase transition
 
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
@@ -1678,6 +1683,7 @@ func _on_battle_started() -> void:
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
+	_boss_phase2_active = false
 
 
 func _get_dominant_monster_type() -> String:
@@ -1802,6 +1808,9 @@ func _process(delta: float) -> void:
 
 	# Check for danger music (player about to die)
 	_check_danger_music()
+
+	# Check for boss phase-2 music (Masterite boss HP below 50%)
+	_check_boss_phase()
 
 	# Idle sway/breathing animations
 	_process_idle_animations(delta)
@@ -3550,8 +3559,46 @@ func _check_danger_music() -> void:
 			print("[MUSIC] Switched to DANGER music - player critically low!")
 	elif not any_in_danger and _is_danger_music:
 		_is_danger_music = false
-		SoundManager.play_music(_base_music_track)
-		print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
+		# If boss phase 2 is active, return to phase-2 track, not the original boss track
+		var resume_track = _base_music_track
+		if _boss_phase2_active:
+			var masterite_type = _get_masterite_type()
+			if masterite_type != "":
+				resume_track = "boss_phase2_%s" % masterite_type
+		SoundManager.play_music(resume_track)
+		print("[MUSIC] Switched back to %s music - party recovered" % resume_track)
+
+
+func _check_boss_phase() -> void:
+	"""Crossfade to phase-2 music when a Masterite boss drops below 50% HP.
+	   One-way transition: once triggered, stays on phase-2 track until battle ends.
+	   Danger music takes precedence — don't override it."""
+	if _battle_ended:
+		return
+	if _boss_phase2_active:
+		return  # Already in phase 2
+	if _is_danger_music:
+		return  # Danger music already playing, don't override
+
+	var masterite_type = _get_masterite_type()
+	if masterite_type == "":
+		return  # Not a Masterite boss fight
+
+	# Find the Masterite boss and check its HP
+	for enemy in test_enemies:
+		if not (enemy and is_instance_valid(enemy)):
+			continue
+		if not (enemy.has_meta("masterite") and enemy.get_meta("masterite")):
+			continue
+		if not enemy.is_alive:
+			continue
+		var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
+		if hp_percent < BOSS_PHASE2_HP_THRESHOLD:
+			_boss_phase2_active = true
+			var phase2_track = "boss_phase2_%s" % masterite_type
+			SoundManager.play_music(phase2_track, BOSS_PHASE2_FADE_SECONDS)
+			print("[MUSIC] Masterite %s entered PHASE 2 — crossfading to %s over %.1fs" % [masterite_type, phase2_track, BOSS_PHASE2_FADE_SECONDS])
+			return
 
 
 ## ======================== BATTLE QUIPS ========================
