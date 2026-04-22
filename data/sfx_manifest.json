@@ -400,6 +400,12 @@
       "duration_seconds": 1.0,
       "prompt_influence": 0.7
     },
+    "shop_purchase": {
+      "file": "assets/audio/sfx/shop_purchase.ogg",
+      "prompt": "Merchant transaction completed, quick brass coin drop into purse followed by satisfying item bag rustle pickup, warm shop counter feel with a short happy brass register ding at the end",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.6
+    },
     "exp_tick": {
       "file": "assets/audio/sfx/exp_tick.ogg",
       "prompt": "Ultra short soft digital pip, tiny progress bar increment tick, minimal quiet blip like a meter filling up one notch",
