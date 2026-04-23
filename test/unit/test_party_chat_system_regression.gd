@@ -42,6 +42,46 @@ func test_event_chat_registry_entries_have_json_files():
 		)
 
 
+func test_event_chat_json_files_are_valid_cutscene_data():
+	# CutsceneDirector expects each file to parse as a Dictionary with
+	# a `steps` Array of typed step dicts. This catches a whole class
+	# of "story agent shipped a JSON with a typo" bugs at test time
+	# instead of on first player trigger.
+	for id in PartyChatSystem.REGISTRY.keys():
+		if not id.begins_with("event_chat_"):
+			continue
+		var path := "%s/%s.json" % [CUTSCENE_DIR, id]
+		if not FileAccess.file_exists(path):
+			continue  # already flagged by the prior test
+		var f := FileAccess.open(path, FileAccess.READ)
+		assert_not_null(f, "Failed to open %s" % path)
+		if f == null:
+			continue
+		var text := f.get_as_text()
+		f.close()
+		var parsed = JSON.parse_string(text)
+		assert_true(
+			parsed is Dictionary,
+			"%s must parse as a top-level JSON object" % path,
+		)
+		if not (parsed is Dictionary):
+			continue
+		assert_true(parsed.has("steps"), "%s missing required 'steps' array" % path)
+		assert_true(parsed["steps"] is Array, "%s 'steps' must be an Array" % path)
+		# Every step must be a dict with a 'type'.
+		for i in parsed["steps"].size():
+			var step = parsed["steps"][i]
+			assert_true(
+				step is Dictionary,
+				"%s steps[%d] must be a Dictionary" % [path, i],
+			)
+			if step is Dictionary:
+				assert_true(
+					step.has("type") and step["type"] is String,
+					"%s steps[%d] missing 'type' string" % [path, i],
+				)
+
+
 func test_event_chat_json_files_have_registry_entries():
 	# Inverse check — flag orphaned JSON files that ship without a
 	# registry entry (they'd never surface in the menu).
