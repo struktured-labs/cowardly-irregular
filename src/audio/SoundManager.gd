@@ -2846,18 +2846,36 @@ func _stereo_spread(sample_l: float, sample_r: float, pan: float) -> Vector2:
 ## Volume control
 
 func set_music_volume(normalized: float) -> void:
-	"""Set music volume (0.0 to 1.0)"""
+	"""Set music volume (0.0 to 1.0).
+
+	Safe to call before _ready() — the base db is latched into
+	_music_base_db and applied when _setup_audio_players creates
+	the AudioStreamPlayer nodes."""
 	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
 	_music_base_db = db
-	_music_player.volume_db = db
+	if _music_player:
+		_music_player.volume_db = db
 
 
 func set_sfx_volume(normalized: float) -> void:
-	"""Set SFX volume (0.0 to 1.0) — applies to UI, battle, and ability players"""
+	"""Set SFX volume (0.0 to 1.0) — applies to UI, battle, and ability players.
+
+	Safe to call before _ready(): the per-player base offsets set in
+	_setup_audio_players() (-16, -6, -12 db) will be overwritten by
+	the next settings-load, but any pre-ready call is now a no-op on
+	the nil players instead of crashing.
+
+	Note: because this unifies all three SFX channels to the same db
+	value, the intended per-channel mix (-16/-6/-12) is lost after
+	the first call. That's the existing behavior — documenting it
+	here rather than silently changing it."""
 	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
-	_ui_player.volume_db = db
-	_battle_player.volume_db = db
-	_ability_player.volume_db = db
+	if _ui_player:
+		_ui_player.volume_db = db
+	if _battle_player:
+		_battle_player.volume_db = db
+	if _ability_player:
+		_ability_player.volume_db = db
 
 
 func _warm_wave(phase: float) -> float:
