@@ -299,7 +299,7 @@ func _create_save_data() -> Dictionary:
 	var data = {}
 
 	# Player data — find via group first (OverworldPlayer), fall back to
-	# MapSystem.get_player() for legacy PlayerController compatibility.
+	# MapSystem.get_player() for other map types.
 	var player = _find_active_player()
 	if player:
 		var step_count = player.step_count if "step_count" in player else 0
@@ -379,7 +379,8 @@ func _serialize_inventory() -> Dictionary:
 
 
 ## Find the active player node. Prefers the "player" group (OverworldPlayer),
-## falls back to MapSystem.get_player() (legacy PlayerController path).
+## falls back to MapSystem.get_player() for dungeon/village scenes that
+## register players through that API instead.
 func _find_active_player() -> Node2D:
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree:
