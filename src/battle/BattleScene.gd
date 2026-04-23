@@ -1088,9 +1088,8 @@ func _update_danger_music() -> void:
 	# Scale to 0.0 - 1.0 range (danger starts above 25% damage)
 	var intensity = clamp((hp_danger - 25.0) / 75.0, 0.0, 1.0)
 
-	# Apply to music system
-	if has_node("/root/SoundManager"):
-		get_node("/root/SoundManager").set_danger_intensity(intensity)
+	# Apply to music system (SoundManager is a guaranteed autoload).
+	SoundManager.set_danger_intensity(intensity)
 
 
 

@@ -648,27 +648,23 @@ func recalculate_stats() -> void:
 	magic = int(magic * level_mult)
 	speed = int(speed * level_mult)
 
-	# Apply passive modifiers (if PassiveSystem is available)
-	if has_node("/root/PassiveSystem"):
-		var passive_mods = get_node("/root/PassiveSystem").get_passive_mods(self)
+	# Apply passive modifiers (PassiveSystem is a guaranteed autoload).
+	var passive_mods = PassiveSystem.get_passive_mods(self)
+	max_hp = int(max_hp * passive_mods.get("max_hp_multiplier", 1.0))
+	max_mp = int(max_mp * passive_mods.get("max_mp_multiplier", 1.0))
+	attack = int(attack * passive_mods.get("attack_multiplier", 1.0))
+	defense = int(defense * passive_mods.get("defense_multiplier", 1.0))
+	magic = int(magic * passive_mods.get("magic_multiplier", 1.0))
+	speed = int(speed * passive_mods.get("speed_multiplier", 1.0))
 
-		max_hp = int(max_hp * passive_mods.get("max_hp_multiplier", 1.0))
-		max_mp = int(max_mp * passive_mods.get("max_mp_multiplier", 1.0))
-		attack = int(attack * passive_mods.get("attack_multiplier", 1.0))
-		defense = int(defense * passive_mods.get("defense_multiplier", 1.0))
-		magic = int(magic * passive_mods.get("magic_multiplier", 1.0))
-		speed = int(speed * passive_mods.get("speed_multiplier", 1.0))
-
-	# Apply equipment modifiers (if EquipmentSystem is available)
-	if has_node("/root/EquipmentSystem"):
-		var equip_mods = get_node("/root/EquipmentSystem").get_equipment_mods(self)
-
-		max_hp += equip_mods.get("max_hp", 0)
-		max_mp += equip_mods.get("max_mp", 0)
-		attack += equip_mods.get("attack", 0)
-		defense += equip_mods.get("defense", 0)
-		magic += equip_mods.get("magic", 0)
-		speed += equip_mods.get("speed", 0)
+	# Apply equipment modifiers (EquipmentSystem is a guaranteed autoload).
+	var equip_mods = EquipmentSystem.get_equipment_mods(self)
+	max_hp += equip_mods.get("max_hp", 0)
+	max_mp += equip_mods.get("max_mp", 0)
+	attack += equip_mods.get("attack", 0)
+	defense += equip_mods.get("defense", 0)
+	magic += equip_mods.get("magic", 0)
+	speed += equip_mods.get("speed", 0)
 
 	# Apply permanent injuries (reductions)
 	for injury in permanent_injuries:

@@ -79,14 +79,12 @@ func _sort_abilities(a: Dictionary, b: Dictionary) -> bool:
 
 
 func _get_ability_data(ability_id: String) -> Dictionary:
-	"""Get ability data from AbilitySystem or default"""
-	# Try to get from AbilitySystem if it exists
-	if has_node("/root/AbilitySystem"):
-		var ability_sys = get_node("/root/AbilitySystem")
-		if ability_sys.has_method("get_ability"):
-			return ability_sys.get_ability(ability_id)
+	"""Synthesize basic ability data from an id.
 
-	# Fallback: create basic data from ID
+	This previously deferred to a `/root/AbilitySystem` autoload that
+	was never actually registered, so the branch was dead. If that
+	system ever ships, reintroduce it here via the autoload global
+	name rather than a has_node() probe."""
 	return {
 		"id": ability_id,
 		"name": ability_id.replace("_", " ").capitalize(),

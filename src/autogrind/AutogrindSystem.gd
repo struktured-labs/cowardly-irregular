@@ -1319,12 +1319,8 @@ func get_next_region() -> Dictionary:
 	if next_idx >= WORLD_REGIONS.size():
 		return {}  # Already at final world
 	var next = WORLD_REGIONS[next_idx]
-	# Check if the world is unlocked — require GameState for safety
-	if not has_node("/root/GameState"):
-		push_warning("[AUTOGRIND] GameState not available — cannot verify world unlock")
-		return {}
-	var gs = get_node("/root/GameState")
-	if not gs.is_world_unlocked(next["world"]):
+	# GameState is a guaranteed autoload — no defensive probe needed.
+	if not GameState.is_world_unlocked(next["world"]):
 		return {}  # World not unlocked yet
 	return next
 
