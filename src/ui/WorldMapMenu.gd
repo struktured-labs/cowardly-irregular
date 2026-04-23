@@ -145,11 +145,13 @@ func _build_ui() -> void:
 		add_child(card)
 		_world_cards.append(card)
 
-	# Current location
+	# Current location — prefer the current map id, else fall back to a
+	# blank string (the get_current_location_name() API referenced here
+	# historically was never implemented).
 	var loc := Label.new()
 	var loc_name := "Unknown"
-	if MapSystem and MapSystem.has_method("get_current_location_name"):
-		loc_name = MapSystem.get_current_location_name()
+	if MapSystem and MapSystem.current_map_id:
+		loc_name = MapSystem.current_map_id.capitalize()
 	loc.text = "Current: World %d — %s" % [_current_world, loc_name]
 	loc.position = Vector2(24, vp.y - 56)
 	loc.size = Vector2(vp.x - 48, 20)

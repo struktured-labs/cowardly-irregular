@@ -76,7 +76,7 @@ func save_game(slot: int = -1) -> bool:
 		"chapter_title": story.title,
 		"world": story.world,
 		"world_name": story.world_name,
-		"location_name": MapSystem.get_current_location_name() if MapSystem and MapSystem.has_method("get_current_location_name") else "Unknown",
+		"location_name": _current_location_display_name(),
 		"party_summary": _get_party_summary()
 	}
 
@@ -116,24 +116,27 @@ func auto_save() -> bool:
 
 
 func can_quick_save() -> bool:
-	"""Check if quick save is allowed in current location"""
-	var map_type = MapSystem.get_current_map_type()
+	"""Check if quick save is allowed in the current game state.
 
-	# Can quick save on overworld and in villages
-	if map_type in [MapSystem.MapType.OVERWORLD, MapSystem.MapType.VILLAGE]:
-		return true
-
-	# Cannot quick save in dungeons (must use save points)
-	if map_type == MapSystem.MapType.DUNGEON:
-		return false
-
-	# Cannot save during battle
+	Previous versions gated this on MapSystem.get_current_map_type(), but
+	that API relied on an `enter_location`/`current_location_id` system
+	that was never wired up (so it always returned OVERWORLD). Dungeon
+	save points instead call quick_save() directly, meaning the only
+	real gate is "not in a battle"."""
 	if not BattleManager:
 		return false
 	if BattleManager.is_battle_active():
 		return false
-
 	return true
+
+
+## Best-effort human-readable name for the currently loaded map, used
+## in the save slot summary. Defaults to "Unknown" when no map is loaded.
+func _current_location_display_name() -> String:
+	if MapSystem and MapSystem.current_map_id:
+		# Convert snake_case map id to Title Case ("harmonia_village" -> "Harmonia Village").
+		return MapSystem.current_map_id.capitalize()
+	return "Unknown"
 
 
 func save_at_save_point(save_point_id: String) -> bool:
@@ -314,10 +317,10 @@ func _create_save_data() -> Dictionary:
 	# Party data (combatants)
 	data["party"] = _serialize_party()
 
-	# Map/location data
+	# Map data (current_location_id was dropped along with the dead
+	# MapSystem.enter_location() subsystem — it was always "").
 	data["map"] = {
 		"current_map_id": MapSystem.current_map_id,
-		"current_location_id": MapSystem.current_location_id
 	}
 
 	# Inventory (party-wide items)
