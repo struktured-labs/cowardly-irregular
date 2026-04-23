@@ -211,21 +211,15 @@ func _build_mini_battle_panel(panel_size: Vector2, pos: Vector2) -> void:
 	_battle_viewport.transparent_bg = false
 	_battle_viewport_container.add_child(_battle_viewport)
 
-	# CRT scanline overlay — alternating semi-transparent dark bars every 3 pixels
-	var scan_overlay = Control.new()
-	scan_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# CRT scanline overlay — single ColorRect + shader replaces ~120 ColorRect nodes.
+	var scan_overlay = ColorRect.new()
+	scan_overlay.position = _battle_viewport_container.position
+	scan_overlay.size = _battle_viewport_container.size
 	scan_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var vp_h := int(_battle_viewport_container.size.y)
-	var vp_w := _battle_viewport_container.size.x
-	var scan_y := 0
-	while scan_y < vp_h:
-		var line = ColorRect.new()
-		line.color = Color(0.0, 0.0, 0.0, 0.18)
-		line.position = Vector2(0.0, float(scan_y))
-		line.size = Vector2(vp_w, 1.0)
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		scan_overlay.add_child(line)
-		scan_y += 3  # every third row = subtle but visible
+	scan_overlay.color = Color(1, 1, 1, 1)  # shader overrides via COLOR
+	var scan_mat := ShaderMaterial.new()
+	scan_mat.shader = preload("res://src/shaders/crt_scanlines.gdshader")
+	scan_overlay.material = scan_mat
 	panel.add_child(scan_overlay)
 
 	# CRT bezel frame — a colored inner border around the viewport to mimic a monitor bezel

@@ -29,7 +29,7 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 18. DONE — `_check_danger_music` already removed/refactored in earlier work.
 19. DONE — AreaTransition queue_redraw throttled to every 0.1s instead of every frame.
 20. SKIPPED — _process_idle_animations already guards with is_instance_valid, O(n) over 8 sprites, not a hotspot.
-21. TODO — CRT scanline ColorRects are one-time spawn cost, not per-frame. Shader replacement deferred.
+21. DONE — Replaced ~120-node ColorRect scanline overlay in AutogrindDashboard with a single ColorRect + `src/shaders/crt_scanlines.gdshader`. One draw call instead of 120, and `line_spacing`/`line_intensity` uniforms now make the effect tunable.
 22. DONE — `_update_encounter_zone` now skips when player hasn't moved to a new tile (`_last_tile_pos` guard).
 
 ### Tier 5: Polish
