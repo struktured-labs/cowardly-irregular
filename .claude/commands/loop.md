@@ -14,7 +14,7 @@ Self-improvement loop for Cowardly Irregular codebase. Run one cycle per invocat
 7. DONE — Removed dead `_start_battle()` sync version, `_show_menu()`/`LoopState.MENU`, `_on_continue_pressed()`, `_load_battle_behind_transition()`, `MenuSceneRes` preload, `_party_customizations` var. Kept autogrind dashboard/overlay/controller overlay (actually used by autogrind system).
 8. SKIPPED — Legacy pipeline functions are actually used by `create_default_character_script` and default script builders. Not dead code.
 9. DONE — Removed dead `_create_character_sprite`, `_create_enemy_sprite`, `_on_player_hp_changed`, `_on_player_ap_changed` from BattleScene.
-10. DONE — Deleted VirtualGamepad.gd (also removed autoload), AdaptiveAI.gd, OverworldInteractable.gd.
+10. DONE — Deleted AdaptiveAI.gd and OverworldInteractable.gd. Note: VirtualGamepad.gd was NOT actually deleted despite the previous version of this entry claiming otherwise (still in project.godot as an autoload, 281 lines used for web/touch overlay — keep).
 11. DONE — Sprite agent already replaced `_try_load_artist_sprites` with `_try_build_artist_sprites` which has no dead walk_frames code.
 12. SKIPPED — MapSystem.load_map is called from SaveSystem on game load. Transition functions are partially live.
 
