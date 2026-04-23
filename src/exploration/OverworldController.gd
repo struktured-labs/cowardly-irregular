@@ -7,7 +7,6 @@ class_name OverworldController
 const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
 
 signal battle_triggered(enemies: Array)
-signal area_transition_requested(target_map: String, spawn_point: String)
 signal menu_requested()
 
 @export var player: CharacterBody2D  # OverworldPlayer

@@ -3,8 +3,6 @@ extends Node
 ## GameState - Manages save/load, game state, and meta-manipulation
 ## Handles save corruption, time manipulation, and game constant editing
 
-signal save_created(save_name: String)
-signal save_loaded(save_name: String)
 signal save_corrupted(corruption_level: float)
 signal game_constant_modified(constant_name: String, old_value, new_value)
 

@@ -4,8 +4,6 @@ class_name VillageShop
 ## VillageShop - Buy weapons, armor, or items
 ## Different shop types with different inventories
 
-signal item_purchased(item_id: String)
-
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
 @export var shop_name: String = "Shop"

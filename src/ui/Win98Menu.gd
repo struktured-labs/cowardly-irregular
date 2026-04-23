@@ -5,12 +5,10 @@ class_name Win98Menu
 ## Classic pixel-tile borders like FF/DQ style
 
 signal item_selected(item_id: String, item_data: Variant)
-signal item_held(item_id: String, item_data: Variant)  # For long press actions
 signal menu_closed()
 signal actions_submitted(actions: Array)  # For Advance mode - multiple actions
 signal defer_requested()  # L button with no queue - defer turn
 signal go_back_requested()  # B button at root to go back to previous player
-signal confirm_turn_requested()  # L button held - confirm current queue and end turn
 
 
 ## Get currently selected item ID (for hold detection)
@@ -105,9 +103,6 @@ var _l_button_pressed: bool = false  # Track if L button is held
 var _l_button_press_time: float = 0.0  # When L was pressed
 const L_HOLD_CONFIRM_TIME: float = 0.15  # Seconds to hold L for confirm (reduced for snappier response)
 var _tooltip_label: Label = null  # Ability tooltip shown below menu
-
-## Signals for target selection with position
-signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
 
 ## Pixel tile size (scaled 1.5x for readability)
 const TILE_SIZE = 6

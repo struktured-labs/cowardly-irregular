@@ -4,7 +4,6 @@ class_name VillageBar
 ## VillageBar - Classic JRPG bar with dancing girl (FF5 style)
 ## Now triggers transition to TavernInterior scene when entered
 
-signal drink_purchased()
 signal transition_triggered(target_map: String, target_spawn: String)
 
 @export var bar_name: String = "The Dancing Tonberry"
