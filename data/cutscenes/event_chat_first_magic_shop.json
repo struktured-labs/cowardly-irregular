@@ -1,0 +1,40 @@
+{
+  "id": "event_chat_first_magic_shop",
+  "title": "Magic as Merchandise",
+  "world": 1,
+  "trigger": "event_chat_first_magic_shop",
+  "background": "prologue_village",
+  "description": "First time the party enters a shop selling magic scrolls/spells. Short beat, no plot advance.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "The shop sells spells. Not scrolls — spells. Each one is labeled, priced, and wrapped."
+    },
+    {"type": "wait", "duration": 0.4},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Mage", "text": "Fire in a bottle. Twenty gold.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Rogue", "text": "Is that more or less than real fire?", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Mage", "text": "Considerably less, and the shopkeeper knows it.", "theme": "mage", "portrait": "mage"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Cleric", "text": "It feels wrong, buying this.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Fighter", "text": "Why?", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Cleric", "text": "In the temple we prayed for these. For weeks. And here a farmer's son hands one over for coin.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Bard", "text": "Progress is usually a little insulting to whoever came before.", "theme": "bard", "portrait": "bard"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The party bought one spell. They did not, as a group, discuss which."
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_first_magic_shop", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

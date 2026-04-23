@@ -1,0 +1,41 @@
+{
+  "id": "event_chat_level_10",
+  "title": "Double Digits",
+  "world": 1,
+  "trigger": "event_chat_level_10",
+  "background": "prologue_village",
+  "description": "First character hits level 10. The party notices, sort of.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "Somewhere between the tenth slime and the eleventh, something in the air shifted. Nobody mentioned it. They kept walking."
+    },
+    {"type": "wait", "duration": 0.4},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Rogue", "text": "Did anyone else feel that?", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Fighter", "text": "A little.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Mage", "text": "It's the arithmetic. Level ten. There's a numerology about it.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Rogue", "text": "I don't feel stronger. I feel... noted.", "theme": "rogue", "portrait": "rogue"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Cleric", "text": "Something is counting, and it ticked over.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Bard", "text": "Whatever it is, it was counting before we noticed. That's the part I keep coming back to.", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Fighter", "text": "Can we ignore it for a bit?", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Mage", "text": "We can try. The counter has its own schedule.", "theme": "mage", "portrait": "mage"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "They ignored it. The counter ticked anyway."
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_level_10", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

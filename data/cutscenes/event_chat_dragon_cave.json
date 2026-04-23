@@ -1,0 +1,43 @@
+{
+  "id": "event_chat_dragon_cave",
+  "title": "At the Cave Mouth",
+  "world": 3,
+  "trigger": "event_chat_dragon_cave",
+  "background": "cave_entrance",
+  "description": "First time entering a dragon-gated dungeon. Everyone is brave in slightly different ways.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "The air at the cave mouth was warmer than the air behind them by exactly the margin a person should pay attention to."
+    },
+    {"type": "wait", "duration": 0.5},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Fighter", "text": "Does it smell like dragon in there?", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "How does a dragon smell, exactly.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Fighter", "text": "Like a forge left on overnight. And something else. Mint, I think.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "You are inventing this.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Fighter", "text": "I am inventing it confidently.", "theme": "fighter", "portrait": "fighter"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Cleric", "text": "We can come back later.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Mage", "text": "We can, yes.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Cleric", "text": "But we are not going to.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Mage", "text": "We are not, no.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Bard", "text": "I am writing this down in case we do not come out.", "theme": "bard", "portrait": "bard"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "They went in. The air got warmer. The margin widened."
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_dragon_cave", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "id": "event_chat_first_party_wipe",
+  "title": "After the First Time",
+  "world": 1,
+  "trigger": "event_chat_first_party_wipe",
+  "background": "prologue_forest",
+  "description": "First time the party wakes up post-wipe. Short, rueful, no blame. Triggered once per save.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "They came to on the side of the road. Nobody remembered exactly how. Their coin purses were lighter. Their pride was lighter. Everything else was, approximately, still there."
+    },
+    {"type": "wait", "duration": 0.5},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Fighter", "text": "So that happens.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "That happens.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Mage", "text": "I would prefer it not happen again.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Cleric", "text": "The inn is two hours back. We should go. Before our preferences are further consulted.", "theme": "cleric", "portrait": "cleric"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Bard", "text": "For what it's worth — nobody ran.", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Fighter", "text": "We were all unconscious. There was no running option.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Bard", "text": "Still. Technically. Nobody ran.", "theme": "bard", "portrait": "bard"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "They walked back. Slowly. The conversation, for a while, was about other things."
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_first_party_wipe", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
