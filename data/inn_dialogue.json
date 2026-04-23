@@ -1,0 +1,105 @@
+{
+  "description": "Per-village innkeeper dialogue. 11 villages × 7 lines each. Each village has a distinct voice derived from its world's aesthetic and the novella content. Wire from InnScene.gd via village_id → lookup.",
+  "schema_version": 1,
+  "villages": {
+    "harmonia": {
+      "greeting": "Welcome to the Silver Harp, travelers. The hearth is lit and the beds are turned.",
+      "rest_prompt": "A clean room and a warm meal — %d gold, and worth every piece.",
+      "rest_confirm": "Rest easy. I'll keep the lanterns low.",
+      "rest_complete": "Dawn already. You look ten years younger. Best of luck on the road.",
+      "save_prompt": "I'll note your stay in the guest ledger. It stays on record.",
+      "cant_afford": "Coin short? The stable's warm enough for a copper, but I can't do less than that.",
+      "farewell": "May the road rise to meet you. Do come back."
+    },
+    "eldertree": {
+      "greeting": "Oh. You. The bed is too short. The ceiling is too low. Please proceed anyway.",
+      "rest_prompt": "%d gold. The price is higher for mortals. This is not discrimination; it is arithmetic.",
+      "rest_confirm": "Sleep. We will sing about you. You will not understand the song.",
+      "rest_complete": "You slept eight hours. For us, this is a nap. For you, apparently, everything.",
+      "save_prompt": "We will remember you came here. We remember everything. It is our least favorite quality.",
+      "cant_afford": "You brought no gold to Eldertree? How very on-theme for your species.",
+      "farewell": "Go. The trees will watch you leave. They watch everything. It's fine."
+    },
+    "frosthold": {
+      "greeting": "Door shuts behind you. Good.",
+      "rest_prompt": "Bed. Fire. %d gold. Decide.",
+      "rest_confirm": "Sleep. Don't die in it. Drafts from the north.",
+      "rest_complete": "Morning. You're alive. I noted the hour.",
+      "save_prompt": "Your name goes in the book. The book survives fires. It has.",
+      "cant_afford": "No gold, no bed. The ice outside is also a bed.",
+      "farewell": "Leave. Close the door. Hard."
+    },
+    "grimhollow": {
+      "greeting": "A room? Yes. One left. It has always been the last one. Every traveler says so.",
+      "rest_prompt": "%d gold. Don't ask what's in the walls. Don't listen for it either.",
+      "rest_confirm": "Blow out the candle. Please. The thing in the bog can see the light.",
+      "rest_complete": "You woke up. Oh. That's good. That's the preferred outcome.",
+      "save_prompt": "I'll carve your name by the door. Next to the others. Yes, all of them.",
+      "cant_afford": "The swamp takes what the inn can't. Come back when you have coin or courage.",
+      "farewell": "Keep to the path. Don't follow the lights. Especially the kind ones."
+    },
+    "ironhaven": {
+      "greeting": "Inn's above the forge. Warm year-round, whether you asked for warm or not.",
+      "rest_prompt": "%d gold. Room's sooted. Bed's iron-framed. Comes with earplugs.",
+      "rest_confirm": "Forge runs through the night shift. You'll sleep through it. Or you won't.",
+      "rest_complete": "Out of bed. Breakfast's charred. It's all charred. Eat it anyway.",
+      "save_prompt": "Your name goes in the ledger. The ledger is also iron. Don't ask how.",
+      "cant_afford": "Short on gold? Swing a hammer for an hour. Room comes free after.",
+      "farewell": "Mind the cinders on your way out. They stick."
+    },
+    "sandrift": {
+      "greeting": "Caravan rates, no questions. Bed, bath, bean stew. Stew is optional. Bath isn't.",
+      "rest_prompt": "%d gold for the night. Double if you're wanted. Triple if you're wanted here.",
+      "rest_confirm": "Put your blade under the pillow. Everyone does. Don't be the one who didn't.",
+      "rest_complete": "Morning. Your things are still there. I checked. Twice.",
+      "save_prompt": "Names cost extra. Fake names cost the same. I'd go with fake.",
+      "cant_afford": "No gold? The courtyard's free. The scorpions are free too. Negotiate with them.",
+      "farewell": "Water's at the well. Next town's three days. Budget accordingly."
+    },
+    "maple_heights": {
+      "greeting": "Welcome to Maple Heights Extended Stay! Please sign in at the desk. No exceptions.",
+      "rest_prompt": "Room rate: %d gold per night. Amenities include a continental breakfast. Emphasis on continental.",
+      "rest_confirm": "Quiet hours are strictly enforced from 9 PM to 6 AM. That includes sighing.",
+      "rest_complete": "Good morning! Checkout is at 11. We mean it. The HOA means it.",
+      "save_prompt": "I'll register your stay with the neighborhood watch. That's not a metaphor.",
+      "cant_afford": "Payment plans are available. Financing is handled by the HOA. There are terms.",
+      "farewell": "Please complete our exit survey. It is not optional. Have a blessed day."
+    },
+    "brasston": {
+      "greeting": "Welcome to the Brass Cog. Sleep is allotted in standardized increments. You've arrived at 11:47.",
+      "rest_prompt": "Rest cycle: 8 hours, 14 minutes. Fee: %d gold. Surcharge for irregular sleep patterns.",
+      "rest_confirm": "Your bed is calibrated. The mattress has a schedule. Do not argue with it.",
+      "rest_complete": "It is 4:07. You have been woken because it is 4:07. All things happen at 4:07.",
+      "save_prompt": "Your name enters the register. The register updates every hour, on the 07.",
+      "cant_afford": "Insufficient funds detected. The counter requires full payment. The counter does not negotiate.",
+      "farewell": "Departure noted. Next arrival expected at 4:07. Coincidence is not permitted here."
+    },
+    "rivet_row": {
+      "greeting": "Inn's unionized. You're getting the full rate, whether you want it or not.",
+      "rest_prompt": "Rest period: 8 hours. Fee: %d gold. Includes hot water, linens, and a collective breakfast.",
+      "rest_confirm": "Lights out at 22:00 sharp. Overtime sleep is negotiable but requires paperwork.",
+      "rest_complete": "Wake-up whistle at 06:00. You've slept the contracted amount. Productivity noted.",
+      "save_prompt": "Your stay's logged with the shop stewards. They don't forget. They can't, by charter.",
+      "cant_afford": "Can't pay? Join the breakfast line, do a shift, we'll square up after. Nothing's free; everything's earned.",
+      "farewell": "Solidarity on the road. If you see scabs, don't sleep near them."
+    },
+    "node_prime": {
+      "greeting": "$ innd --greet\nINFO: guest allocation available. Press A to continue.",
+      "rest_prompt": "$ rest --duration=8h --cost=%d --unit=gold\nConfirm? [y/N]",
+      "rest_confirm": "$ daemon sleep_cycle.start\nStatus: running. PID: 8047. Do not interrupt.",
+      "rest_complete": "$ daemon sleep_cycle.complete\nHP: restored. MP: restored. AP: reset.\n[Process exited 0]",
+      "save_prompt": "$ savepoint --create --tag=inn_node_prime\nWriting to disk. Do not power off.",
+      "cant_afford": "$ rest --pay=0\nERROR: insufficient funds. Try `grind --target=slime` in the adjacent sector.",
+      "farewell": "$ logout\nSession terminated. State persisted. Safe travels."
+    },
+    "vertex": {
+      "greeting": "You have arrived at the place where rest is possible. This is not a room. It is a permitted pause.",
+      "rest_prompt": "The cost is %d gold. The gold is a formality. The permission is the product.",
+      "rest_confirm": "You are asleep. The Vertex continues without you. This is a gift you did not know to want.",
+      "rest_complete": "You are awake. The world has not moved. Or it has moved exactly as much as it had to.",
+      "save_prompt": "A record is made. Records here are read by someone. We do not say who. We say when: always.",
+      "cant_afford": "The gold is required, even though the gold is pretext. Some rituals cannot be waived.",
+      "farewell": "You leave the place of permitted pause. You carry the permission with you. You will know when to spend it."
+    }
+  }
+}
