@@ -268,7 +268,10 @@ func _can_move() -> bool:
 	if game_loop and game_loop.current_state != game_loop.LoopState.EXPLORATION:
 		return false
 	# Layer 2: Named lock stack — NPC dialogue, shops, etc.
-	if InputLockManager.is_locked():
+	# Runtime lookup: InputLockManager as a global identifier doesn't
+	# resolve in preload() parse contexts (tests that preload this file).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+	if ilm and ilm.is_locked():
 		return false
 	# Layer 3: Legacy flag — kept for compatibility during migration
 	return can_move
@@ -331,7 +334,10 @@ func _physics_process(delta: float) -> void:
 		distance_walked -= STEP_DISTANCE
 		step_count += 1
 		moved.emit(step_count)
-		SoundManager.play_footstep()
+		# Runtime lookup keeps this file preload-safe for the test suite.
+		var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+		if sm:
+			sm.play_footstep()
 
 	# Update animation
 	_update_animation(delta)
