@@ -1,0 +1,111 @@
+{
+  "description": "Environmental examine texts for props the player can interact with in overworld/village/dungeon scenes. 15 entries, 2-3 per world. Each has a scene hint, a prop type, a display name, and the text shown on examine. Voice consistent with novellas and village dialogue.",
+  "schema_version": 1,
+  "examines": {
+    "harmonia_well": {
+      "world": 1,
+      "scene": "village_harmonia",
+      "prop": "well",
+      "name": "Stone Well",
+      "text": "The well is deeper than it looks. The bucket rope keeps going after the bucket is out of sight. You pull it up; the rope is dry the whole way. The well is not about water anymore. It has not been for some time."
+    },
+    "harmonia_statue": {
+      "world": 1,
+      "scene": "village_harmonia",
+      "prop": "statue",
+      "name": "Kneeling Knight",
+      "text": "A stone knight kneels, sword sheathed. The plaque reads: 'He sheathed his sword once, and the kingdom survived one more day. That is all we ask of statues: a day.'"
+    },
+    "eldertree_gravestone": {
+      "world": 1,
+      "scene": "village_eldertree",
+      "prop": "gravestone",
+      "name": "Unmarked Grave",
+      "text": "The stone reads: 'Here lies a fool who asked the trees their names. The trees gave them.' There is no date. The trees nearby lean slightly toward the marker. They are listening to see if you ask."
+    },
+    "frosthold_cairn": {
+      "world": 1,
+      "scene": "village_frosthold",
+      "prop": "monument",
+      "name": "Black Stone Cairn",
+      "text": "A cairn of black stones. Each stone carries a single rune. The runes do not form a word you know. Your party member Rogue says they form a word they know. Rogue will not say what."
+    },
+    "grimhollow_warning": {
+      "world": 1,
+      "scene": "overworld_grimhollow",
+      "prop": "sign",
+      "name": "Waterside Notice",
+      "text": "NOTICE: Do not swim. Do not wade. Do not look into the water for longer than a breath. The sign is old but the paint is fresh. Someone is maintaining it. You do not want to meet them."
+    },
+    "maple_heights_hoa_board": {
+      "world": 2,
+      "scene": "village_maple_heights",
+      "prop": "notice_board",
+      "name": "HOA Notice Board",
+      "text": "NEIGHBORHOOD WATCH: All irregularities must be reported within 24 hours. 'Irregularity' is defined in Appendix C. Appendix C has been classified at the county level. For reporting options, see Appendix D, which is also classified."
+    },
+    "sandrift_caravan_post": {
+      "world": 2,
+      "scene": "overworld_sandrift",
+      "prop": "sign",
+      "name": "Caravan Marker",
+      "text": "A weathered post with three painted arrows. Food: two days' walk. Water: three days' walk. Safety: indefinite. Someone has scratched out 'indefinite' and written 'conditional.' Someone else has scratched that out too."
+    },
+    "brasston_clocktower_plaque": {
+      "world": 3,
+      "scene": "village_brasston",
+      "prop": "plaque",
+      "name": "Clocktower Plaque",
+      "text": "COMMISSIONED AT 4:07. FIRST CHIMED AT 4:07. DEDICATED TO THE TEMPO, WHO KEPT US EARLY. The plaque has three identical lines. Your pocket watch reads 4:07. Your pocket watch did not read 4:07 a moment ago."
+    },
+    "ironhaven_furnace_log": {
+      "world": 3,
+      "scene": "village_ironhaven",
+      "prop": "ledger",
+      "name": "Furnace Log",
+      "text": "FURNACE RECORD: ran continuous from Tick 4 to Tick 2137. No cooldowns. No maintenance. The foreman has been noted for endurance. The foreman has not been seen since Tick 2138."
+    },
+    "rivet_row_union_board": {
+      "world": 4,
+      "scene": "village_rivet_row",
+      "prop": "notice_board",
+      "name": "Union Proposal Board",
+      "text": "DRAFT PROPOSAL 17-C: Revise overtime pay for workers who did not clock in. Rationale: attendance is a spectrum, and management should not benefit from ambiguity that management introduced."
+    },
+    "pipeline_gauge": {
+      "world": 4,
+      "scene": "dungeon_pipeline",
+      "prop": "gauge",
+      "name": "Pressure Gauge",
+      "text": "PRESSURE: within tolerance. TOLERANCE: under review. REVIEWER: also under review. The needle is exactly centered. You have never seen a real gauge exactly centered. You consider this."
+    },
+    "node_prime_terminal": {
+      "world": 5,
+      "scene": "village_node_prime",
+      "prop": "terminal",
+      "name": "Admin Terminal",
+      "text": "$ uptime\nup 2137 days, 11 users, load average: nan, nan, nan\n$ who\nroot pts/0 (since tick 0)\n$ _\n\nThe cursor blinks. It does not accept input. It blinks anyway. It is waiting to be observed."
+    },
+    "node_prime_sticky": {
+      "world": 5,
+      "scene": "village_node_prime",
+      "prop": "note",
+      "name": "Post-It Note",
+      "text": "A sticky note on the monitor: 'DO NOT RESTART. He will notice.' No signature. The ink looks fresh. The ink has always looked fresh."
+    },
+    "vertex_monolith": {
+      "world": 6,
+      "scene": "village_vertex",
+      "prop": "monolith",
+      "name": "Black Tablet",
+      "text": "A smooth black monolith. When you touch it, text appears: 'You are the one who touched it. This is noted.' You withdraw your hand. The text remains. You understand that withdrawing was also noted."
+    },
+    "vertex_footprint": {
+      "world": 6,
+      "scene": "overworld_vertex",
+      "prop": "footprint",
+      "name": "Single Footprint",
+      "text": "A single footprint in the white sand. It is your size exactly. The angle of the toe matches your gait. You have not walked here. Your party agrees. The footprint does not argue."
+    }
+  }
+}
