@@ -137,8 +137,10 @@ func _ready() -> void:
 	# Ambient details (chimney smoke, campfire glow)
 	_place_ambient_effects()
 
-	if SoundManager:
-		SoundManager.play_area_music("overworld")
+	# Runtime lookup keeps this file preload-safe for tests.
+	var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+	if sm:
+		sm.play_area_music("overworld")
 
 	# First-time tutorial hints
 	TutorialHints.show(self, "quest_log")
@@ -410,7 +412,8 @@ func _setup_transitions() -> void:
 
 	# World progression portal — leads to next world (W2 Suburban)
 	# Only visible after W1 boss is defeated (or world 2+ is unlocked)
-	if GameState.is_world_unlocked(2) or GameState.get_story_flag("w1_boss_defeated"):
+	var gs = _get_game_state()
+	if gs and (gs.is_world_unlocked(2) or gs.get_story_flag("w1_boss_defeated")):
 		_add_area_transition("WorldPortal", "suburban_overworld", "entrance",
 			spawn_points.get("steampunk_portal", Vector2.ZERO), "Enter the Mundane Sprawl")
 
@@ -452,7 +455,8 @@ func _setup_player() -> void:
 	player = OverworldPlayerScript.new()
 	player.name = "Player"
 	player.position = spawn_points.get("default", Vector2(320, 256))
-	var leader = GameState.get_party_leader()
+	var gs = _get_game_state()
+	var leader = gs.get_party_leader() if gs else null
 	var job_id = leader.get("job_id", "fighter") if leader else "fighter"
 	player.set_job(job_id)
 	add_child(player)
@@ -708,7 +712,8 @@ func _place_ambient_effects() -> void:
 
 
 func _update_zone_ambient(zone: String) -> void:
-	if not SoundManager:
+	var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+	if sm == null:
 		return
 	var ambient_key = ""
 	match zone:
@@ -719,10 +724,11 @@ func _update_zone_ambient(zone: String) -> void:
 		"desert": ambient_key = "ambient_plains"
 		"swamp": ambient_key = "ambient_forest"
 		"volcanic": ambient_key = "ambient_dungeon"
-	if ambient_key != "":
-		SoundManager.play_ambient(ambient_key)
-	else:
-		SoundManager.stop_ambient()
+	if true:
+		if ambient_key != "":
+			sm.play_ambient(ambient_key)
+		else:
+			sm.stop_ambient()
 
 
 func _place_landmarks() -> void:
@@ -753,11 +759,21 @@ func _place_landmarks() -> void:
 
 func _get_objective_position() -> Vector2:
 	## Return the world position of the current quest objective for minimap highlighting.
-	if GameState.get_story_flag("rat_king_defeated") or GameState.get_story_flag("w1_boss_defeated"):
-		return spawn_points.get("steampunk_portal", Vector2.ZERO)
-	if GameState.get_story_flag("chapter1_complete"):
-		return spawn_points.get("cave_entrance", Vector2.ZERO)
+	var gs = _get_game_state()
+	if gs:
+		if gs.get_story_flag("rat_king_defeated") or gs.get_story_flag("w1_boss_defeated"):
+			return spawn_points.get("steampunk_portal", Vector2.ZERO)
+		if gs.get_story_flag("chapter1_complete"):
+			return spawn_points.get("cave_entrance", Vector2.ZERO)
 	return spawn_points.get("village_entrance", Vector2.ZERO)
+
+
+## Runtime lookup helper — GameState as a global identifier doesn't
+## resolve in preload() parse contexts used by the test suite.
+func _get_game_state() -> Node:
+	if not get_tree():
+		return null
+	return get_tree().root.get_node_or_null("GameState")
 
 
 func _place_signposts() -> void:
@@ -793,9 +809,12 @@ func _place_signposts() -> void:
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 	# Dissolve effect for world-to-world portal transitions
 	if "overworld" in target_map and _mode7:
-		InputLockManager.push_lock("world_transition")
+		var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+		if ilm:
+			ilm.push_lock("world_transition")
 		await _mode7.play_dissolve_out()
-		InputLockManager.pop_lock("world_transition")
+		if ilm:
+			ilm.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 

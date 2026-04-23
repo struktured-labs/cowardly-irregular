@@ -44,8 +44,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not _enabled or not _player or not is_instance_valid(_player):
 		return
-	# Respect encounter rate setting — 0 means no monsters at all
-	if GameState and GameState.encounter_rate_multiplier <= 0.0:
+	# Respect encounter rate setting — runtime lookup for preload safety.
+	var gs = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	if gs and gs.encounter_rate_multiplier <= 0.0:
 		_despawn_all()
 		return
 

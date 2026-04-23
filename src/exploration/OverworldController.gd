@@ -48,10 +48,13 @@ func _on_player_moved(steps: int) -> void:
 
 
 func _check_encounter() -> bool:
-	# Apply settings multiplier from GameState
+	# Apply settings multiplier from GameState — runtime lookup keeps
+	# this file preload-safe for tests (GameState as a global identifier
+	# doesn't resolve in preload() parse contexts).
 	var rate_multiplier = 1.0
-	if GameState:
-		rate_multiplier = GameState.encounter_rate_multiplier
+	var gs = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	if gs:
+		rate_multiplier = gs.encounter_rate_multiplier
 
 	# If multiplier is 0, no encounters
 	if rate_multiplier <= 0.0:
@@ -96,12 +99,20 @@ func _on_menu_requested() -> void:
 	menu_requested.emit()
 
 
+## Runtime lookup helper — DebugLogOverlay as a global identifier
+## doesn't resolve in preload() parse contexts used by the test suite.
+func _dlog(msg: String) -> void:
+	var overlay = get_tree().root.get_node_or_null("DebugLogOverlay") if get_tree() else null
+	if overlay:
+		overlay.log(msg)
+
+
 func _on_interaction_requested() -> void:
 	# Check for nearby interactables
 	if not player:
 		return
 
-	DebugLogOverlay.log("[INTERACT] At pos: %s" % player.global_position)
+	_dlog("[INTERACT] At pos: %s" % player.global_position)
 
 	# Get nearby Area2D nodes and try to interact
 	var space = player.get_world_2d().direct_space_state
@@ -128,7 +139,7 @@ func _on_interaction_requested() -> void:
 	for result in results:
 		var collider = result["collider"]
 		if collider.has_method("interact"):
-			DebugLogOverlay.log("[INTERACT] Found: %s (physics)" % collider.name)
+			_dlog("[INTERACT] Found: %s (physics)" % collider.name)
 			collider.interact(player)
 			return
 
@@ -138,7 +149,7 @@ func _on_interaction_requested() -> void:
 	for result in results:
 		var collider = result["collider"]
 		if collider.has_method("interact"):
-			DebugLogOverlay.log("[INTERACT] Found: %s (standing)" % collider.name)
+			_dlog("[INTERACT] Found: %s (standing)" % collider.name)
 			collider.interact(player)
 			return
 
@@ -149,11 +160,11 @@ func _on_interaction_requested() -> void:
 		if interactable.has_method("interact"):
 			var dist = player.global_position.distance_to(interactable.global_position)
 			if dist <= interaction_range:
-				DebugLogOverlay.log("[INTERACT] Found: %s (dist: %.0f)" % [interactable.name, dist])
+				_dlog("[INTERACT] Found: %s (dist: %.0f)" % [interactable.name, dist])
 				interactable.interact(player)
 				return
 
-	DebugLogOverlay.log("[INTERACT] Nothing found")
+	_dlog("[INTERACT] Nothing found")
 
 
 ## Configure area for encounters
@@ -197,10 +208,15 @@ func _load_enemy_pools() -> Dictionary:
 ## Resume player control after battle or menu
 func resume_exploration() -> void:
 	_paused = false
-	InputLockManager.pop_lock("exploration_paused")
+	# Runtime lookup for preload safety (see _dlog for rationale).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+	if ilm:
+		ilm.pop_lock("exploration_paused")
 
 
 ## Pause player control
 func pause_exploration() -> void:
 	_paused = true
-	InputLockManager.push_lock("exploration_paused")
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+	if ilm:
+		ilm.push_lock("exploration_paused")
