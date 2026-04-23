@@ -35,7 +35,7 @@ var _message_label: Label
 var _gold_label: Label
 var _option_labels: Array[Label] = []
 
-@onready var game_state = get_node("/root/GameState")
+@onready var game_state = GameState
 
 
 func setup(world_index: int = 1) -> void:

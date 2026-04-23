@@ -31,10 +31,10 @@ var description_label: Label
 var current_menu: Win98Menu = null
 
 ## Systems
-@onready var game_state = get_node("/root/GameState")
-@onready var equipment_system = get_node("/root/EquipmentSystem")
-@onready var item_system = get_node("/root/ItemSystem")
-@onready var job_system = get_node("/root/JobSystem")
+@onready var game_state = GameState
+@onready var equipment_system = EquipmentSystem
+@onready var item_system = ItemSystem
+@onready var job_system = JobSystem
 
 
 func _ready() -> void:
