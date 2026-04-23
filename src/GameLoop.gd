@@ -2134,7 +2134,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 
 
 func _create_village_scene() -> Node:
-	"""Create Harmonia Village scene (placeholder until scene file exists)"""
+	"""Create Harmonia Village scene (the starter village, extends BaseVillage)."""
 	return HarmoniaVillageRes.instantiate()
 
 
