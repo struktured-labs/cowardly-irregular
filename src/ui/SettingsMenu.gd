@@ -1163,7 +1163,7 @@ func _show_quit_confirmation() -> void:
 	tween.tween_property(dialog, "modulate:a", 1.0, 0.12)
 
 	confirm.set_script(null)
-	confirm.connect("tree_exiting", func(): _controls_submenu_open = false)
+	confirm.tree_exiting.connect(func(): _controls_submenu_open = false)
 
 	confirm.set_meta("_input_func", func(event: InputEvent):
 		if not confirm.is_inside_tree():
