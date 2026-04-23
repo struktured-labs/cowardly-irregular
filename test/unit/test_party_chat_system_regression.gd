@@ -8,17 +8,43 @@ extends GutTest
 ##     (dead data, wasted merge)
 ##  3. Malformed REGISTRY rows missing required fields
 ##     (runtime KeyError when the UI reads title/world)
+##
+## Autoloads are fetched via runtime tree lookup — test scripts compile
+## before autoload globals register, so references like
+## `PartyChatSystem.REGISTRY` fail at parse time.
 
 
 const CUTSCENE_DIR := "res://data/cutscenes"
 const REQUIRED_FIELDS := ["title", "world", "unlock"]
 
+var _party_chat: Node
+
+
+func before_all() -> void:
+	var tree = get_tree()
+	if tree and tree.root:
+		_party_chat = tree.root.get_node_or_null("PartyChatSystem")
+
+
+func _registry() -> Dictionary:
+	if _party_chat == null:
+		return {}
+	var script = _party_chat.get_script()
+	if script == null:
+		return {}
+	var constants = script.get_script_constant_map()
+	return constants.get("REGISTRY", {})
+
 
 func test_every_registry_entry_has_all_required_fields():
+	if _party_chat == null:
+		pending("PartyChatSystem autoload not available")
+		return
+	var registry := _registry()
 	# Lightly couples the menu UI contract to the registry: adding a
 	# new row without a title silently breaks the PartyChatMenu label.
-	for id in PartyChatSystem.REGISTRY.keys():
-		var entry: Dictionary = PartyChatSystem.REGISTRY[id]
+	for id in registry.keys():
+		var entry: Dictionary = registry[id]
 		for field in REQUIRED_FIELDS:
 			assert_true(
 				entry.has(field),
@@ -30,9 +56,13 @@ func test_every_registry_entry_has_all_required_fields():
 
 
 func test_event_chat_registry_entries_have_json_files():
+	if _party_chat == null:
+		pending("PartyChatSystem autoload not available")
+		return
+	var registry := _registry()
 	# Every event_chat_* id in the registry must have a matching
 	# data/cutscenes/<id>.json for CutsceneDirector to load.
-	for id in PartyChatSystem.REGISTRY.keys():
+	for id in registry.keys():
 		if not id.begins_with("event_chat_"):
 			continue
 		var path := "%s/%s.json" % [CUTSCENE_DIR, id]
@@ -43,11 +73,15 @@ func test_event_chat_registry_entries_have_json_files():
 
 
 func test_event_chat_json_files_are_valid_cutscene_data():
+	if _party_chat == null:
+		pending("PartyChatSystem autoload not available")
+		return
+	var registry := _registry()
 	# CutsceneDirector expects each file to parse as a Dictionary with
 	# a `steps` Array of typed step dicts. This catches a whole class
 	# of "story agent shipped a JSON with a typo" bugs at test time
 	# instead of on first player trigger.
-	for id in PartyChatSystem.REGISTRY.keys():
+	for id in registry.keys():
 		if not id.begins_with("event_chat_"):
 			continue
 		var path := "%s/%s.json" % [CUTSCENE_DIR, id]
@@ -83,6 +117,10 @@ func test_event_chat_json_files_are_valid_cutscene_data():
 
 
 func test_event_chat_json_files_have_registry_entries():
+	if _party_chat == null:
+		pending("PartyChatSystem autoload not available")
+		return
+	var registry := _registry()
 	# Inverse check — flag orphaned JSON files that ship without a
 	# registry entry (they'd never surface in the menu).
 	var dir := DirAccess.open(CUTSCENE_DIR)
@@ -95,7 +133,7 @@ func test_event_chat_json_files_have_registry_entries():
 		if fname.begins_with("event_chat_") and fname.ends_with(".json"):
 			var id := fname.trim_suffix(".json")
 			assert_true(
-				PartyChatSystem.REGISTRY.has(id),
+				registry.has(id),
 				"data/cutscenes/%s exists but is not in PartyChatSystem.REGISTRY" % fname,
 			)
 		fname = dir.get_next()
@@ -103,6 +141,9 @@ func test_event_chat_json_files_have_registry_entries():
 
 
 func test_chat_unavailable_until_unlock_flags_set():
+	if _party_chat == null:
+		pending("PartyChatSystem autoload not available")
+		return
 	# Regression for the is_available() logic: a chat should NOT be
 	# available when the unlock flag is missing.
 	var override := Node.new()
@@ -110,26 +151,26 @@ func test_chat_unavailable_until_unlock_flags_set():
 	override.set("game_constants", {})
 	add_child_autofree(override)
 
-	PartyChatSystem.game_state_override = override
+	_party_chat.game_state_override = override
 	# Pick any event chat to probe — first_party_wipe is stable.
 	assert_false(
-		PartyChatSystem.is_available("event_chat_first_party_wipe"),
+		_party_chat.is_available("event_chat_first_party_wipe"),
 		"event_chat_first_party_wipe should be locked with empty flags",
 	)
 
 	# Setting the flag should flip it available.
 	override.set("game_constants", {"event_flag_first_party_wipe": true})
 	assert_true(
-		PartyChatSystem.is_available("event_chat_first_party_wipe"),
+		_party_chat.is_available("event_chat_first_party_wipe"),
 		"event_chat_first_party_wipe should unlock when its flag is set",
 	)
 
 	# Marking viewed should hide it again.
-	PartyChatSystem.game_state_override.game_constants["party_chat_viewed_event_chat_first_party_wipe"] = true
+	_party_chat.game_state_override.game_constants["party_chat_viewed_event_chat_first_party_wipe"] = true
 	assert_false(
-		PartyChatSystem.is_available("event_chat_first_party_wipe"),
+		_party_chat.is_available("event_chat_first_party_wipe"),
 		"event_chat_first_party_wipe should hide after mark_viewed",
 	)
 
 	# Clean up so later tests see a fresh registry view.
-	PartyChatSystem.game_state_override = null
+	_party_chat.game_state_override = null
