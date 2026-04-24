@@ -986,9 +986,13 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 		for spell in magic_abilities:
 			var element = spell.get("element", "")
 			var score = spell.get("power", 10)
-			# Check if any enemy is weak to this element
+			# Check if any enemy is weak to this element.
+			# Combatant's field is elemental_weaknesses (Array[String]), not
+			# weaknesses — a prior typo silently errored at runtime when
+			# cast by a caster-AI enemy, defeating the weakness-exploit
+			# heuristic.
 			for enemy in alive_enemies:
-				if element != "" and element in enemy.weaknesses:
+				if element != "" and "elemental_weaknesses" in enemy and element in enemy.elemental_weaknesses:
 					score *= 2.0  # Double score for weakness exploitation
 			if score > best_score:
 				best_score = score
