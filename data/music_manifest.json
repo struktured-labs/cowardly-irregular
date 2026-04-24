@@ -1832,6 +1832,18 @@
       "duration": 37.16,
       "loop": true,
       "generated_at": "2026-04-18"
+    },
+    "menu": {
+      "file": "assets/audio/music/menu.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Paused, Somewhere Else",
+      "prompt": "Quirky experimental pause-menu theme for a meta-aware JRPG about automation. A toy piano figure drifts over muted analog synth pads. A ticking mechanical clock rhythm never quite locks with the beat, giving the loop gentle uncertainty. Soft glitchy tape-stop moments appear every 8 bars. Sparse chiptune arpeggios hint at the automation systems running in the background. Harmony drifts between minor modes without resolving. Spooky but playful, futuristic but analog, automated but alive. Like Mother 3's hospital, Undertale's save room, and EarthBound's inventory screen in one. Instrumental, low-velocity, no heavy drums or dramatic builds, loops cleanly.",
+      "style": "Quirky experimental JRPG pause menu, 75 BPM, toy piano, muted analog synth pads, ticking mechanical clock rhythm, subtle chiptune arpeggios, glitchy tape-stops, Mother 3 / Undertale save-room / EarthBound hospital weird-ambient, unresolved minor modes, instrumental, loopable",
+      "model": "suno-v4",
+      "duration": 92.04,
+      "loop": true,
+      "generated_at": "2026-04-23"
     }
   },
   "tier_priority": [
