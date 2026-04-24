@@ -80,6 +80,65 @@ func test_died_signal_still_fires_after_hp_changed_on_lethal_hit() -> void:
 	assert_eq(died_count[0], 1, "died must fire exactly once on lethal hit")
 
 
+# ---- Extension: same ordering fix must apply to poison/burning DOT ticks ----
+# The ORIGINAL fix in take_damage() was mirrored in update_buff_durations()
+# for the poison and burning DOT paths. Without this, a final-party-member
+# KO via DOT tick would also fail to gray out.
+
+func test_poison_lethal_tick_fires_hp_changed_with_is_alive_false() -> void:
+	var observed_is_alive = [true]
+
+	_combatant.max_hp = 100
+	_combatant.current_hp = 3  # 5% of 100 = 5 damage, kills from 3
+	_combatant.add_status("poison", 3)
+
+	_combatant.hp_changed.connect(func(_old, new_hp):
+		if new_hp <= 0:
+			observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.update_buff_durations()
+
+	assert_false(observed_is_alive[0],
+		"is_alive must be false when hp_changed fires on lethal POISON tick (regression: DOT ordering)")
+
+
+func test_burning_lethal_tick_fires_hp_changed_with_is_alive_false() -> void:
+	var observed_is_alive = [true]
+
+	_combatant.max_hp = 100
+	_combatant.current_hp = 5  # 8% of 100 = 8 damage, kills from 5
+	_combatant.add_status("burning", 3)
+
+	_combatant.hp_changed.connect(func(_old, new_hp):
+		if new_hp <= 0:
+			observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.update_buff_durations()
+
+	assert_false(observed_is_alive[0],
+		"is_alive must be false when hp_changed fires on lethal BURNING tick (regression: DOT ordering)")
+
+
+func test_non_lethal_poison_tick_keeps_is_alive_true() -> void:
+	# Sanity check: non-lethal poison ticks should NOT flip is_alive to false
+	var observed_is_alive = [false]
+
+	_combatant.max_hp = 100
+	_combatant.current_hp = 50  # -5 HP -> 45, not lethal
+	_combatant.add_status("poison", 3)
+
+	_combatant.hp_changed.connect(func(_old, _new):
+		observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.update_buff_durations()
+
+	assert_true(observed_is_alive[0],
+		"is_alive should still be true when hp_changed fires on non-lethal poison tick")
+
+
 # ===========================================================================
 # Bug #4: RoamingMonster.deactivate() — menu attack immunity
 # ===========================================================================

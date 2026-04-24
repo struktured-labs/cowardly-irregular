@@ -332,18 +332,27 @@ func get_buffed_stat(stat_name: String, base_value: int) -> int:
 func update_buff_durations() -> void:
 	"""Decrease buff/debuff durations, remove expired ones"""
 	# Process damage-over-time effects
+	# Same ordering fix as take_damage(): flip is_alive BEFORE emitting
+	# hp_changed so UI listeners see the correct state on the lethal tick
+	# and can gray the sprite in a single pass.
 	if "poison" in status_effects and is_alive:
 		var poison_damage = max(1, int(max_hp * 0.05))  # 5% max HP per turn
+		var old_hp_poison = current_hp
 		current_hp = max(0, current_hp - poison_damage)
-		hp_changed.emit(current_hp + poison_damage, current_hp)
+		if current_hp <= 0:
+			is_alive = false
+		hp_changed.emit(old_hp_poison, current_hp)
 		print("%s takes %d poison damage!" % [combatant_name, poison_damage])
 		if current_hp <= 0:
 			die()
 
 	if "burning" in status_effects and is_alive:
 		var burn_damage = max(1, int(max_hp * 0.08))  # 8% max HP per turn (fire burns harder than poison)
+		var old_hp_burn = current_hp
 		current_hp = max(0, current_hp - burn_damage)
-		hp_changed.emit(current_hp + burn_damage, current_hp)
+		if current_hp <= 0:
+			is_alive = false
+		hp_changed.emit(old_hp_burn, current_hp)
 		print("%s takes %d burn damage!" % [combatant_name, burn_damage])
 		if current_hp <= 0:
 			die()
