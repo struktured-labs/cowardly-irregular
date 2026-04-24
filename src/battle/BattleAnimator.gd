@@ -172,6 +172,9 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	"""Play an animation state"""
 	if not sprite:
 		push_warning("BattleAnimator: No sprite assigned!")
+		# Invoke callback so queued action chains don't stall on a missing sprite.
+		if on_complete.is_valid():
+			on_complete.call()
 		return
 
 	current_state = state
@@ -189,6 +192,11 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	else:
 		push_warning("BattleAnimator: Animation '%s' not found!" % anim_name)
 		is_playing = false
+		# Invoke callback synchronously so battle action chains that depend on
+		# on_complete (e.g. "play attack → trigger damage on finish") don't
+		# silently stall when an animation is missing.
+		if on_complete.is_valid():
+			on_complete.call()
 
 
 func stop_animation() -> void:
