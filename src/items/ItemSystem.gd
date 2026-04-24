@@ -303,8 +303,12 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 			print("  → %s cured of %s" % [target.combatant_name, status])
 
 	# Cure all status effects
+	# Clear both arrays to avoid stale status_durations entries that would
+	# tick down indefinitely without ever being removed (remove_status()
+	# short-circuits when the status isn't in status_effects).
 	if effects.has("cure_all_status") and effects["cure_all_status"]:
 		target.status_effects.clear()
+		target.status_durations.clear()
 		print("  → %s cured of all status effects" % target.combatant_name)
 
 	# Revive
