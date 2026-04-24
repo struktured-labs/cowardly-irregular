@@ -783,6 +783,11 @@
       "title_template": "The Library Awakens",
       "style": "intense boss phase 2, baroque harpsichord fury, screaming strings, choir bursts, full orchestra with pipe organ, Bach fugue as weapon, 150 BPM",
       "prompt": "Phase 2 of the Curator boss fight. The scholarly warmth is gone — the library itself has become hostile. Baroque harpsichord playing impossibly fast Bach-fugue runs, screaming string section, choir erupting at climaxes, full orchestra backing it all with pipe organ at maximum weight. Intellectual precision as violence. Like Mozart's Requiem's Dies Irae scaled up for a JRPG final phase. Curious becomes predatory. Looping."
+    },
+    "menu": {
+      "title_template": "Paused, Somewhere Else",
+      "style": "Quirky experimental JRPG pause menu, 75 BPM, toy piano, muted analog synth pads, ticking mechanical clock rhythm, subtle chiptune arpeggios, glitchy tape-stops, Mother 3 / Undertale save-room / EarthBound hospital weird-ambient, unresolved minor modes, instrumental, loopable",
+      "prompt": "Quirky experimental pause-menu theme for a meta-aware JRPG about automation. A toy piano figure drifts over muted analog synth pads. A ticking mechanical clock rhythm never quite locks with the beat, giving the loop gentle uncertainty. Soft glitchy tape-stop moments appear every 8 bars. Sparse chiptune arpeggios hint at the automation systems running in the background. Harmony drifts between minor modes without resolving. Spooky but playful, futuristic but analog, automated but alive. Like Mother 3's hospital, Undertale's save room, and EarthBound's inventory screen in one. Instrumental, low-velocity, no heavy drums or dramatic builds, loops cleanly."
     }
   }
 }

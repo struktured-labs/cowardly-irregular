@@ -1065,6 +1065,13 @@ def main() -> None:
             title = title or template.get("title", "")
             style = style or template.get("style", "")
             prompt = prompt or template.get("prompt", "")
+        else:
+            shared = load_prompts().get("shared_tracks", {})
+            if args.track_id in shared:
+                entry = shared[args.track_id]
+                title = title or entry.get("title_template", "")
+                style = style or entry.get("style", "")
+                prompt = prompt or entry.get("prompt", "")
         # Single track: check if pinned
         if is_pinned(args.track_id):
             die(f"Track '{args.track_id}' is pinned. Use --unpin first.")
