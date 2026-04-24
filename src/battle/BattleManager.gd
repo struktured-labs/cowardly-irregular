@@ -170,6 +170,25 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_battle_results = {}
 	_ko_this_battle.clear()
 
+	# Clear per-battle combatant state: buffs/debuffs/status effects don't
+	# persist across encounters (was a leak — GameLoop reuses party Combatant
+	# instances, so Protect/Shell/Armor Break etc. carried over if untouched).
+	# HP/MP are deliberately NOT reset here — those come from the previous
+	# battle / inn / item usage.
+	for combatant in all_combatants:
+		if "active_buffs" in combatant:
+			combatant.active_buffs.clear()
+		if "active_debuffs" in combatant:
+			combatant.active_debuffs.clear()
+		if "status_effects" in combatant:
+			combatant.status_effects.clear()
+		if "status_durations" in combatant:
+			combatant.status_durations.clear()
+		if "is_defending" in combatant:
+			combatant.is_defending = false
+		if "doom_counter" in combatant:
+			combatant.doom_counter = 0
+
 	# Connect to combatant signals
 	for combatant in all_combatants:
 		if not combatant.died.is_connected(_on_combatant_died):
