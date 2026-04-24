@@ -32,6 +32,8 @@ GAME_JOBS = Path(os.environ.get("GAME_REPO", _DEFAULT_GAME)) / "assets" / "sprit
 ASE_EXPORTS = [
     ("fighter", "idle",   "FIGHTER/Main Fighter animations.aseprite", "IDLE"),
     ("fighter", "attack", "FIGHTER/Main Fighter animations.aseprite", "Attack"),
+    ("cleric",  "idle",   "CLERIC/Cleric Main design.aseprite",       "Idle"),
+    ("cleric",  "cast",   "CLERIC/Cleric Main design.aseprite",       "Cast"),
 ]
 
 # Pre-rendered PNG embeds: (job, dest_anim, png_rel, dup_to_frames)
