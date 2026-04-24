@@ -139,6 +139,44 @@ func test_non_lethal_poison_tick_keeps_is_alive_true() -> void:
 		"is_alive should still be true when hp_changed fires on non-lethal poison tick")
 
 
+# ---- Extension: same ordering fix applies to recalculate_stats clamp ----
+# If max_hp drops below current_hp (e.g. unequip HP-granting item) and the
+# clamp brings current_hp to 0, hp_changed must fire with is_alive=false.
+
+func test_recalculate_stats_lethal_clamp_sets_is_alive_before_hp_changed() -> void:
+	var observed_is_alive = [true]
+	# Setup: character alive with 1 HP and base_max_hp that recalc will clamp
+	_combatant.base_max_hp = 0  # force clamp to 0 during recalculate
+	_combatant.max_hp = 100
+	_combatant.current_hp = 1
+	_combatant.is_alive = true
+
+	_combatant.hp_changed.connect(func(_old, new_hp):
+		if new_hp <= 0:
+			observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.recalculate_stats()
+
+	assert_false(observed_is_alive[0],
+		"is_alive must be false when hp_changed fires on lethal stat-recalc clamp")
+
+
+func test_recalculate_stats_does_not_die_twice_on_already_dead() -> void:
+	# If recalculate_stats is called on an already-dead combatant, it should
+	# NOT re-emit the died signal.
+	var die_count = [0]
+	_combatant.died.connect(func(): die_count[0] += 1)
+
+	# Kill first
+	_combatant.take_damage(9999)
+	assert_eq(die_count[0], 1, "take_damage should have killed once")
+
+	# Now call recalculate_stats — should not fire died again
+	_combatant.recalculate_stats()
+	assert_eq(die_count[0], 1, "recalculate_stats on dead combatant must not re-emit died")
+
+
 # ===========================================================================
 # Bug #4: RoamingMonster.deactivate() — menu attack immunity
 # ===========================================================================

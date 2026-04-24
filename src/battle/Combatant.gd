@@ -703,11 +703,18 @@ func recalculate_stats() -> void:
 					speed = max(1, speed - injury["penalty"])
 
 	# Clamp current HP/MP to new maxes
+	# Same ordering fix as take_damage / update_buff_durations: flip
+	# is_alive BEFORE emitting hp_changed so UI listeners see the correct
+	# state on a stat-recalc that drops HP to 0 (e.g. unequipping an
+	# HP-granting item that would leave current_hp above the new max).
 	var old_hp = current_hp
 	current_hp = min(current_hp, max_hp)
+	var needs_die := current_hp <= 0 and is_alive
+	if needs_die:
+		is_alive = false
 	if current_hp != old_hp:
 		hp_changed.emit(old_hp, current_hp)
-	if current_hp <= 0 and is_alive:
+	if needs_die:
 		die()
 
 	var old_mp = current_mp
