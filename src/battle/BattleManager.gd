@@ -1016,11 +1016,15 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	# 55% chance to debuff, preferring targets without existing debuffs
 	if debuff_abilities.size() > 0 and randf() < 0.55:
 		var debuff = debuff_abilities[randi() % debuff_abilities.size()]
-		# Pick a target that doesn't already have too many statuses
+		# Pick a target that doesn't already have too many statuses.
+		# Field name: Combatant exposes `status_effects` (Array[String]), not
+		# `active_statuses` — the prior code always resolved to 0 and picked
+		# alive_enemies[0] every time, defeating the "prefer clean target"
+		# heuristic.
 		var target = alive_enemies[0]
 		var fewest_statuses = 999
 		for enemy in alive_enemies:
-			var status_count = enemy.active_statuses.size() if "active_statuses" in enemy else 0
+			var status_count = enemy.status_effects.size() if "status_effects" in enemy else 0
 			if status_count < fewest_statuses:
 				fewest_statuses = status_count
 				target = enemy
