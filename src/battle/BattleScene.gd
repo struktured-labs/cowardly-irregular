@@ -219,6 +219,27 @@ func _ready() -> void:
 	# Apply retro font styling
 	RetroFontClass.configure_battle_log(battle_log)
 
+	# Add padding to PartyStatusPanel so labels don't hug the panel
+	# borders. PanelContainer uses its stylebox content_margin_* for
+	# inner padding; the default theme has no left/top margin which
+	# made character names touch the edges.
+	var party_panel = $UI/PartyStatusPanel
+	if party_panel:
+		var party_style = StyleBoxFlat.new()
+		party_style.bg_color = Color(0.08, 0.08, 0.12, 0.85)
+		party_style.border_color = Color(0.35, 0.35, 0.5, 0.7)
+		party_style.border_width_left = 1
+		party_style.border_width_top = 1
+		party_style.border_width_right = 1
+		party_style.border_width_bottom = 1
+		party_style.corner_radius_top_left = 4
+		party_style.corner_radius_bottom_left = 4
+		party_style.content_margin_left = 10
+		party_style.content_margin_right = 8
+		party_style.content_margin_top = 8
+		party_style.content_margin_bottom = 8
+		party_panel.add_theme_stylebox_override("panel", party_style)
+
 	# Connect to BattleManager signals (CTB system)
 	BattleManager.battle_started.connect(_on_battle_started)
 	BattleManager.battle_ended.connect(_on_battle_ended)
