@@ -1536,6 +1536,22 @@ func _execute_next_action() -> void:
 				var random_target = all_alive[randi() % all_alive.size()]
 				battle_log_message.emit("[color=yellow]%s[/color] is [color=purple]confused[/color] and attacks wildly!" % combatant.combatant_name)
 				_execute_attack(combatant, random_target)
+				# Continue the execution chain — without this the battle halts
+				# after a confused character attacks (action_executed fires but
+				# nothing schedules _execute_next_action).
+				if turbo_mode:
+					await get_tree().process_frame
+				else:
+					var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
+					await get_tree().create_timer(0.2 / speed_scale).timeout
+				if not is_instance_valid(self):
+					return
+				_execute_next_action()
+				return
+			else:
+				# No valid targets — skip turn like other status blocks
+				action_executing.emit(combatant, {"type": "confuse_skip"})
+				_execute_next_action()
 				return
 
 	if combatant.has_status("fear"):
