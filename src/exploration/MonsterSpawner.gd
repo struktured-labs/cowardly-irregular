@@ -181,6 +181,11 @@ func _cull_far_monsters() -> void:
 func _despawn_all() -> void:
 	for m in _monsters:
 		if is_instance_valid(m):
+			# Deactivate synchronously so any touch() signal queued
+			# for this physics frame doesn't leak into battle after
+			# exploration was paused (menu opened).
+			if m.has_method("deactivate"):
+				m.deactivate()
 			m.queue_free()
 	_monsters.clear()
 

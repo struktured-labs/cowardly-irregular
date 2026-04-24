@@ -619,14 +619,14 @@ func _update_turn_order_strip() -> void:
 		panel_style.content_margin_bottom = 4
 		_ctb_panel.add_theme_stylebox_override("panel", panel_style)
 		# Bottom-right, anchored so it tracks viewport size instead of
-		# the hardcoded 1280x720. PartyStatusPanel occupies y=60..380 on
-		# the right edge; put TURN ORDER below that with a small gutter.
-		# Width locked to 100 like before, height auto-fits content.
+		# the hardcoded 1280x720. PartyStatusPanel ends at y=460, so
+		# TURN ORDER sits in y=480..710 with a 20px gap above. Height
+		# of 230 fits up to 8 entries comfortably.
 		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 		_ctb_panel.offset_left = -110
 		_ctb_panel.offset_right = -5
 		_ctb_panel.offset_bottom = -10
-		_ctb_panel.offset_top = -220  # Room for up to 8 entries
+		_ctb_panel.offset_top = -240
 		_ctb_panel.custom_minimum_size = Vector2(100, 0)
 		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 		_ctb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN

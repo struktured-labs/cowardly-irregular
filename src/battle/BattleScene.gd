@@ -2403,6 +2403,29 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 		)
 
 
+## Safety-net reset for a single attacker after their action resolves.
+## Restores the sprite to home_position and returns the animator to
+## idle so monsters (or players) can't get stuck frozen at the attack
+## frame/position when the return tween was interrupted.
+func _reset_attacker_home(combatant: Combatant) -> void:
+	if not combatant or not is_instance_valid(combatant):
+		return
+	var sprite = _get_combatant_sprite(combatant)
+	var animator = _get_combatant_animator(combatant)
+	# Give the existing return-home tween a bit of time to complete before
+	# we forcibly snap — otherwise we fight it and look jittery.
+	get_tree().create_timer(0.7).timeout.connect(func():
+		if not is_instance_valid(self):
+			return
+		if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
+			var home = sprite.get_meta("home_position")
+			if sprite.position.distance_to(home) > 2.0:
+				sprite.position = home
+		if animator and is_instance_valid(animator):
+			animator.set_idle()
+	)
+
+
 func _snap_party_sprites_home() -> void:
 	"""Force all party sprites to their stored home positions — safety net after group attacks"""
 	for i in range(party_sprite_nodes.size()):
@@ -2556,6 +2579,12 @@ func _on_round_ended(round_num: int) -> void:
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
 	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
 	_update_ui()
+	# Safety net: if the attacker's melee-attack tween was interrupted
+	# (target died mid-animation, scene refresh, battle-speed change,
+	# etc.), force the sprite back to its stored home position and
+	# reset the animator to idle. Previously monsters could get stuck
+	# at the attack_pos + attack frame when the return-home tween died.
+	_reset_attacker_home(combatant)
 	var action_type = action.get("type", "")
 	if action_type == "ability":
 		var ability_id = action.get("ability_id", "")

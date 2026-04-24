@@ -255,6 +255,19 @@ func _on_body_entered(body: Node2D) -> void:
 		touched.emit(monster_id, monster_types)
 
 
+## Immediately stop the monster from triggering a battle. Called by
+## MonsterSpawner when exploration pauses (menu opens) so queued
+## body_entered signals in the same physics frame don't leak into
+## battle after the player is supposed to be safe.
+func deactivate() -> void:
+	_active = false
+	_fading = false
+	if _collision:
+		_collision.disabled = true
+	if _sprite:
+		_sprite.visible = false
+
+
 func _begin_fade() -> void:
 	_fading = true
 	_fade_timer = 0.0

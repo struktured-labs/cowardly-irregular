@@ -172,6 +172,14 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 
 	var old_hp = current_hp
 	current_hp = max(0, current_hp - actual_damage)
+	# Flip is_alive BEFORE emitting hp_changed so any UI listener (e.g.
+	# BattleUIManager.update_character_status) sees the correct state
+	# and grays out the member on the lethal hit. Previously the ordering
+	# was hp_changed -> die(), so on the last party death the UI sample
+	# happened while is_alive was still true — the last member never
+	# grayed out.
+	if current_hp <= 0:
+		is_alive = false
 	hp_changed.emit(old_hp, current_hp)
 
 	# Taking damage wakes up sleeping targets
