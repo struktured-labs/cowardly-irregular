@@ -715,14 +715,24 @@ func recalculate_stats() -> void:
 
 
 func gain_job_exp(amount: int) -> void:
-	"""Gain job experience and level up if threshold met"""
+	"""Gain job experience and level up if threshold met.
+	Handles multi-level-ups in a single call (e.g. autogrind awards 500+ EXP
+	per battle, enough to cross multiple level thresholds). Previously only
+	one level-up fired per call, leaving excess EXP stalled at the new level."""
+	if amount <= 0:
+		return
 	job_exp += amount
-	var exp_for_next_level = job_level * 100  # Simple formula: level * 100
-
-	if job_exp >= exp_for_next_level:
+	var leveled_up := false
+	# Loop while excess EXP crosses the next-level threshold. Each level
+	# consumes `job_level * 100` before incrementing, so the threshold grows
+	# after each pass. Cap at 99 as a safety (same ceiling used elsewhere).
+	while job_exp >= job_level * 100 and job_level < 99:
+		job_exp -= job_level * 100
 		job_level += 1
-		job_exp -= exp_for_next_level
+		leveled_up = true
 		print("%s reached job level %d!" % [combatant_name, job_level])
+
+	if leveled_up:
 		recalculate_stats()
 
 		# TODO: Unlock new abilities/passives at certain levels
