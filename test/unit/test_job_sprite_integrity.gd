@@ -125,10 +125,13 @@ func test_idle_frames_are_not_fully_transparent() -> void:
 
 
 func test_cleric_has_artist_cast_and_walk() -> void:
-	# Specific regression: cleric now has artist-sourced cast.png and walk.png
-	# from Cleric_extended.aseprite (tags idle/cast/walk). These should be
-	# real N-frame strips, not 1-frame placeholders.
-	for anim in ["cast", "walk"]:
+	# Specific regression: cleric has artist-sourced multi-frame animations
+	# (idle/cast/walk) instead of static placeholders. Frame counts come from
+	# the artist's normalized Cleric Main design.aseprite (idle=7f, cast=9f)
+	# and the older Cleric_extended.aseprite (walk=6f).
+	# Just assert width >= 4 frames (1024px+) to avoid hardcoding artist-sized
+	# numbers that may shift when they ship updates.
+	for anim in ["cast", "walk", "idle"]:
 		var path = "res://assets/sprites/jobs/cleric/%s.png" % anim
 		assert_true(ResourceLoader.exists(path),
 			"cleric/%s.png must exist (artist-extracted from aseprite)" % anim)
@@ -136,9 +139,8 @@ func test_cleric_has_artist_cast_and_walk() -> void:
 		if tex == null:
 			continue
 		var img = tex.get_image()
-		# Should be 6 frames (1536x256) per aseprite walk/cast tags
-		assert_eq(img.get_width(), 1536,
-			"cleric/%s.png should be 6 frames = 1536px wide (regression: aseprite extraction)" % anim)
+		assert_gte(img.get_width(), 1024,
+			"cleric/%s.png should have >= 4 frames (1024px+) — multi-frame artist animation" % anim)
 
 
 func test_mage_attack_is_real_multi_frame_animation() -> void:
