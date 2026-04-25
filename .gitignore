@@ -75,3 +75,6 @@ tools/lora_training/dataset/
 tools/lora_training/dataset_info.json
 tools/__pycache__/
 uv.lock
+
+# Artist source files mirrored from Google Drive (canonical lives on gdrive)
+assets/sprites/drive_archive/

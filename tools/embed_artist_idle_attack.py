@@ -34,14 +34,14 @@ ASE_EXPORTS = [
     ("fighter", "attack", "FIGHTER/Main Fighter animations.aseprite", "Attack"),
     ("cleric",  "idle",   "CLERIC/Cleric Main design.aseprite",       "Idle"),
     ("cleric",  "cast",   "CLERIC/Cleric Main design.aseprite",       "Cast"),
+    ("rogue",   "idle",   "ROGUE/Rogue Main design.aseprite",         "Idle"),
+    ("rogue",   "attack", "ROGUE/Rogue Main design.aseprite",         "ATK"),
 ]
 
 # Pre-rendered PNG embeds: (job, dest_anim, png_rel, dup_to_frames)
 PNG_EMBEDS = [
     ("mage",  "idle",   "MAGE/Mage IDLE.png",                     None),
     ("mage",  "attack", "MAGE/Mage 1st attack_Spell 1.png",       None),
-    ("rogue", "idle",   "ROGUE/Rogue Base sprite.png",            2),
-    ("rogue", "attack", "ROGUE/Rogue_Slashing 1.png",             None),
 ]
 
 
