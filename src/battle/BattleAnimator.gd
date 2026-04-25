@@ -30,6 +30,7 @@ enum AnimState {
 	DEAD,
 	ADVANCE,
 	DEFER,
+	LUNGE,
 	POWER_STRIKE,
 	CLEAVE,
 	PROVOKE,
@@ -419,6 +420,13 @@ func play_defer_anim(on_complete: Callable = Callable()) -> void:
 	play_animation(AnimState.DEFER, false, on_complete)
 
 
+func play_lunge(on_complete: Callable = Callable()) -> void:
+	"""Play windup/lunge animation before an attack lands.
+	   Falls back gracefully when SpriteFrames has no 'lunge' animation —
+	   play_animation invokes on_complete synchronously (commit 0a02aed)."""
+	play_animation(AnimState.LUNGE, false, on_complete)
+
+
 func play_named_animation(anim_name: String, on_complete: Callable = Callable()) -> void:
 	if not sprite:
 		if on_complete.is_valid():
@@ -452,6 +460,10 @@ func play_named_animation(anim_name: String, on_complete: Callable = Callable())
 				play_attack(on_complete)
 			"defer":
 				play_defend(on_complete)
+			"lunge", "dash":
+				# No dedicated lunge anim — fall back to attack so combat flow
+				# continues without stalling. The on_complete still fires.
+				play_attack(on_complete)
 			_:
 				play_cast(on_complete)
 
@@ -470,6 +482,7 @@ func _get_animation_name(state: AnimState) -> String:
 		AnimState.DEAD: return "dead"
 		AnimState.ADVANCE: return "advance"
 		AnimState.DEFER: return "defer"
+		AnimState.LUNGE: return "lunge"
 		AnimState.POWER_STRIKE: return "power_strike"
 		AnimState.CLEAVE: return "cleave"
 		AnimState.PROVOKE: return "provoke"
