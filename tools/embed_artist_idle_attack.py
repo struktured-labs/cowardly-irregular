@@ -38,6 +38,9 @@ ASE_EXPORTS = [
     ("rogue",   "attack", "ROGUE/Rogue Main design.aseprite",         "ATK"),
     ("mage",    "idle",   "MAGE/Mage Main design.aseprite",           "IDLE"),
     ("mage",    "attack", "MAGE/Mage Main design.aseprite",           "Atk 1"),
+    # Pre-attack lunge — cowir-battle wires this into BattleAnimator.
+    # Artist's tag is "Dash"; game-side filename is `lunge.png`.
+    ("fighter", "lunge",  "FIGHTER/Main Fighter animations.aseprite", "Dash"),
 ]
 
 # Pre-rendered PNG embeds: (job, dest_anim, png_rel, dup_to_frames)
