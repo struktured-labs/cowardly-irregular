@@ -9,11 +9,14 @@
       "animations": [
         "attack",
         "cast",
+        "dash",
         "dead",
         "defend",
         "hit",
         "idle",
         "item",
+        "lunge",
+        "slash",
         "victory",
         "walk"
       ],
@@ -76,6 +79,7 @@
         "idle",
         "item",
         "mug",
+        "stab",
         "steal",
         "victory",
         "walk"
