@@ -2487,6 +2487,18 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	tween.set_trans(Tween.TRANS_BACK)
 	tween.set_ease(Tween.EASE_OUT)
 
+	# Play lunge/dash windup animation in parallel with the position tween below.
+	# Falls back gracefully: if no 'lunge' animation exists in SpriteFrames,
+	# play_animation invokes on_complete synchronously (commit 0a02aed) and the
+	# attack chain continues unchanged. We probe directly for the animation to
+	# avoid even firing the warning push when sprites lack lunge frames.
+	if attacker_anim and is_instance_valid(attacker_anim):
+		var attacker_animated_sprite: AnimatedSprite2D = attacker_anim.sprite
+		if attacker_animated_sprite \
+				and attacker_animated_sprite.sprite_frames \
+				and attacker_animated_sprite.sprite_frames.has_animation("lunge"):
+			attacker_anim.play_lunge()
+
 	# Move to target (fast)
 	tween.tween_property(attacker_sprite, "position", attack_pos, 0.15)
 
