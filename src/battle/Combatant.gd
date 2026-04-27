@@ -89,6 +89,13 @@ var last_attack_selection: String = ""  # Attack target if Attack was chosen (e.
 var last_ability_selection: String = ""  # Ability submenu ID if Abilities was chosen
 var last_item_selection: String = ""  # Item submenu ID if Items was chosen
 
+## MRU ability slots — most-recently-used abilities (for top-level quick access).
+## Persists across battles in-session. Pinned abilities take priority over MRU
+## entries; pins are stored separately. Most-recent-first ordering.
+var recent_abilities: Array[String] = []
+var pinned_abilities: Array[String] = []  # Player-pinned, takes priority over MRU
+const MRU_SIZE: int = 2  # Top menu shows 2 quick-access ability slots
+
 
 func _ready() -> void:
 	current_hp = max_hp
@@ -242,6 +249,36 @@ func revive(hp_amount: int = 0) -> void:
 	else:
 		current_hp = max(1, max_hp / 2)  # Ensure minimum 1 HP
 	hp_changed.emit(0, current_hp)
+
+
+## MRU tracking — push an ability to the front of the recent list, dedupe, cap at MRU_SIZE
+func record_ability_use(ability_id: String) -> void:
+	if ability_id == "":
+		return
+	# Pinned abilities don't pollute the MRU list
+	if ability_id in pinned_abilities:
+		return
+	if ability_id in recent_abilities:
+		recent_abilities.erase(ability_id)
+	recent_abilities.push_front(ability_id)
+	if recent_abilities.size() > MRU_SIZE:
+		recent_abilities.resize(MRU_SIZE)
+
+
+## Returns the abilities to show in the top-level quick-access slots:
+## pins first (in pin order), then MRU fills any remaining slots.
+func get_quick_slot_abilities(num_slots: int = MRU_SIZE) -> Array[String]:
+	var result: Array[String] = []
+	for ability_id in pinned_abilities:
+		if result.size() >= num_slots:
+			break
+		result.append(ability_id)
+	for ability_id in recent_abilities:
+		if result.size() >= num_slots:
+			break
+		if ability_id not in result:
+			result.append(ability_id)
+	return result
 
 
 ## Status effects

@@ -115,7 +115,15 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 
 
 func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
-	"""Build command menu with enemy targets as submenus"""
+	"""Build command menu with enemy targets as submenus.
+
+	   New menu shape (2026-04 redesign):
+	     Auto / [MRU/Pin slot 1] / [MRU/Pin slot 2] / Free Move / Ability ▸ / Item ▸ / Group ▸ / Scan ▸ / Defer
+
+	   Per-job 'Free Move' replaces the legacy top-level 'Attack' for everyone.
+	   Fighter/Rogue: basic attack with custom label (Attack / Strike).
+	   Mage/Cleric/Bard: 0-MP self-target ability that restores a small amount of MP.
+	"""
 	var items = []
 	var alive_enemies = get_alive_enemies()
 	var canvas_transform = _scene.get_viewport().get_canvas_transform()
@@ -127,34 +135,18 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		"data": {"action": "autobattle", "combatant": combatant}
 	})
 
-	# Attack -> submenu of enemy targets
-	if alive_enemies.size() > 0:
-		var enemy_targets = []
-		for enemy in alive_enemies:
-			var enemy_idx = _scene.test_enemies.find(enemy)
-			var target_pos = Vector2.ZERO
-			if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
-				var s = _scene.enemy_sprite_nodes[enemy_idx]
-				if is_instance_valid(s):
-					target_pos = canvas_transform * s.global_position
-			var est_dmg = BattleManager.estimate_attack_damage(combatant, enemy)
-			enemy_targets.append({
-				"id": "attack_" + str(enemy_idx),
-				"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_dmg],
-				"data": {"target_idx": enemy_idx, "action": "attack", "target_pos": target_pos}
-			})
-		items.append({
-			"id": "attack_menu",
-			"label": "Attack",
-			"submenu": enemy_targets
-		})
-	else:
-		items.append({
-			"id": "attack",
-			"label": "Attack",
-			"data": null,
-			"disabled": true
-		})
+	# MRU/Pin quick-access ability slots — most-recently-used or player-pinned.
+	# Slot count comes from Combatant.MRU_SIZE (currently 2). Pins take priority.
+	for ability_id in combatant.get_quick_slot_abilities():
+		var quick_item = _build_ability_menu_item(ability_id, combatant, alive_enemies, canvas_transform)
+		if not quick_item.is_empty():
+			items.append(quick_item)
+
+	# Free Move — per-job 0-cost canon action (replaces legacy top-level Attack).
+	# Falls back to a default basic-attack with label "Attack" when the job has no spec.
+	var free_move_item = _build_free_move_item(combatant, alive_enemies, canvas_transform)
+	if not free_move_item.is_empty():
+		items.append(free_move_item)
 
 	# Abilities -> submenu, each ability has enemy targets if offensive
 	var job_abilities = combatant.job.get("abilities", []) if combatant.job else []
@@ -165,139 +157,9 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	if abilities.size() > 0:
 		var ability_items = []
 		for ability_id in abilities:
-			var ability = JobSystem.get_ability(ability_id)
-			if ability.is_empty():
-				continue
-			var mp_cost = ability.get("mp_cost", 0)
-			var can_afford = combatant.current_mp >= mp_cost
-			var target_type = ability.get("target_type", "single_enemy")
-
-			var ability_desc = ability.get("description", "")
-			var ability_tooltip = ability_desc if ability_desc != "" else "MP: %d" % mp_cost
-
-			# For enemy-targeting abilities, add enemy submenu
-			if target_type == "single_enemy" and alive_enemies.size() > 0 and can_afford:
-				var enemy_targets = []
-				for enemy in alive_enemies:
-					var enemy_idx = _scene.test_enemies.find(enemy)
-					var target_pos = Vector2.ZERO
-					if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
-						var s = _scene.enemy_sprite_nodes[enemy_idx]
-						if is_instance_valid(s):
-							target_pos = canvas_transform * s.global_position
-					var est_ability_dmg = BattleManager.estimate_ability_damage(combatant, enemy, ability)
-					enemy_targets.append({
-						"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
-						"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg],
-						"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
-					})
-				ability_items.append({
-					"id": "ability_menu_" + ability_id,
-					"label": "%s (%d)" % [ability["name"], mp_cost],
-					"tooltip": ability_tooltip,
-					"submenu": enemy_targets,
-					"disabled": not can_afford
-				})
-			# For ally-targeting abilities (heal, buff), add party submenu
-			elif target_type == "single_ally" and can_afford:
-				var ally_targets = []
-				for i in range(_scene.party_members.size()):
-					var member = _scene.party_members[i]
-					if not is_instance_valid(member) or not member.is_alive:
-						continue
-					var target_pos = Vector2.ZERO
-					if i < _scene.party_sprite_nodes.size():
-						var s = _scene.party_sprite_nodes[i]
-						if is_instance_valid(s):
-							target_pos = canvas_transform * s.global_position
-					# Add heal preview for healing abilities
-					var heal_preview = ""
-					if ability.get("type", "") == "healing" and ability.has("heal_amount"):
-						var est_heal = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
-						heal_preview = " ~+%d" % est_heal
-					ally_targets.append({
-						"id": "ability_" + ability_id + "_ally_" + str(i),
-						"label": "%s (%d/%d HP)%s" % [member.combatant_name, member.current_hp, member.max_hp, heal_preview],
-						"data": {"ability_id": ability_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
-					})
-				ability_items.append({
-					"id": "ability_menu_" + ability_id,
-					"label": "%s (%d)" % [ability["name"], mp_cost],
-					"tooltip": ability_tooltip,
-					"submenu": ally_targets,
-					"disabled": not can_afford
-				})
-			# For dead ally targeting (Raise, Phoenix Down), show only dead party members
-			elif target_type == "dead_ally" and can_afford:
-				var dead_targets = []
-				for i in range(_scene.party_members.size()):
-					var member = _scene.party_members[i]
-					if not is_instance_valid(member) or member.is_alive:
-						continue  # Skip alive members
-					var target_pos = Vector2.ZERO
-					if i < _scene.party_sprite_nodes.size():
-						var s = _scene.party_sprite_nodes[i]
-						if is_instance_valid(s):
-							target_pos = canvas_transform * s.global_position
-					dead_targets.append({
-						"id": "ability_" + ability_id + "_dead_" + str(i),
-						"label": "%s (KO)" % member.combatant_name,
-						"data": {"ability_id": ability_id, "target_idx": i, "target_type": "dead_ally", "target_pos": target_pos}
-					})
-				# Only show if there are dead allies to revive
-				if dead_targets.size() > 0:
-					ability_items.append({
-						"id": "ability_menu_" + ability_id,
-						"label": "%s (%d)" % [ability["name"], mp_cost],
-						"tooltip": ability_tooltip,
-						"submenu": dead_targets,
-						"disabled": not can_afford
-					})
-				else:
-					# Show disabled if no dead allies
-					ability_items.append({
-						"id": "ability_" + ability_id,
-						"label": "%s (%d)" % [ability["name"], mp_cost],
-						"tooltip": ability_tooltip,
-						"data": {"ability_id": ability_id},
-						"disabled": true
-					})
-			elif target_type == "all_enemies" and can_afford:
-				# AoE ability — show [AoE] tag with total estimated damage
-				var aoe_label = "%s (%d) [AoE]" % [ability["name"], mp_cost]
-				if alive_enemies.size() > 0:
-					var total_est = 0
-					for enemy in alive_enemies:
-						total_est += BattleManager.estimate_ability_damage(combatant, enemy, ability)
-					aoe_label = "%s (%d) [AoE] ~%d total" % [ability["name"], mp_cost, total_est]
-				ability_items.append({
-					"id": "ability_" + ability_id,
-					"label": aoe_label,
-					"tooltip": ability_tooltip + " (hits all enemies)",
-					"data": {"ability_id": ability_id},
-					"disabled": not can_afford
-				})
-			elif target_type == "all_allies" and can_afford:
-				# Party-wide buff/heal — show [All] tag
-				var all_label = "%s (%d) [All]" % [ability["name"], mp_cost]
-				if ability.has("heal_amount"):
-					var est_heal = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
-					all_label = "%s (%d) [All] ~+%d each" % [ability["name"], mp_cost, est_heal]
-				ability_items.append({
-					"id": "ability_" + ability_id,
-					"label": all_label,
-					"tooltip": ability_tooltip + " (affects all allies)",
-					"data": {"ability_id": ability_id},
-					"disabled": not can_afford
-				})
-			else:
-				ability_items.append({
-					"id": "ability_" + ability_id,
-					"label": "%s (%d)" % [ability["name"], mp_cost],
-					"tooltip": ability_tooltip,
-					"data": {"ability_id": ability_id},
-					"disabled": not can_afford
-				})
+			var ability_item = _build_ability_menu_item(ability_id, combatant, alive_enemies, canvas_transform)
+			if not ability_item.is_empty():
+				ability_items.append(ability_item)
 
 		if ability_items.size() > 0:
 			items.append({
@@ -485,6 +347,195 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	})
 
 	return items
+
+
+func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
+	"""Build a single ability menu item (with target submenu if needed).
+	   Returns {} for invalid abilities so callers can skip empty entries."""
+	var ability = JobSystem.get_ability(ability_id)
+	if ability.is_empty():
+		return {}
+	var mp_cost: int = ability.get("mp_cost", 0)
+	var can_afford: bool = combatant.current_mp >= mp_cost
+	var target_type: String = ability.get("target_type", "single_enemy")
+
+	var ability_desc: String = ability.get("description", "")
+	var ability_tooltip: String = ability_desc if ability_desc != "" else "MP: %d" % mp_cost
+
+	# Single-enemy targeting: build per-enemy submenu with damage estimates
+	if target_type == "single_enemy" and alive_enemies.size() > 0 and can_afford:
+		var enemy_targets: Array = []
+		for enemy in alive_enemies:
+			var enemy_idx: int = _scene.test_enemies.find(enemy)
+			var target_pos: Vector2 = Vector2.ZERO
+			if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
+				var s = _scene.enemy_sprite_nodes[enemy_idx]
+				if is_instance_valid(s):
+					target_pos = canvas_transform * s.global_position
+			var est_ability_dmg: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
+			enemy_targets.append({
+				"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
+				"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg],
+				"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
+			})
+		return {
+			"id": "ability_menu_" + ability_id,
+			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"tooltip": ability_tooltip,
+			"submenu": enemy_targets,
+			"disabled": not can_afford
+		}
+
+	# Single-ally targeting (heal/buff) with party submenu
+	if target_type == "single_ally" and can_afford:
+		var ally_targets: Array = []
+		for i in range(_scene.party_members.size()):
+			var member = _scene.party_members[i]
+			if not is_instance_valid(member) or not member.is_alive:
+				continue
+			var target_pos: Vector2 = Vector2.ZERO
+			if i < _scene.party_sprite_nodes.size():
+				var s = _scene.party_sprite_nodes[i]
+				if is_instance_valid(s):
+					target_pos = canvas_transform * s.global_position
+			var heal_preview: String = ""
+			if ability.get("type", "") == "healing" and ability.has("heal_amount"):
+				var est_heal: int = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
+				heal_preview = " ~+%d" % est_heal
+			ally_targets.append({
+				"id": "ability_" + ability_id + "_ally_" + str(i),
+				"label": "%s (%d/%d HP)%s" % [member.combatant_name, member.current_hp, member.max_hp, heal_preview],
+				"data": {"ability_id": ability_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
+			})
+		return {
+			"id": "ability_menu_" + ability_id,
+			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"tooltip": ability_tooltip,
+			"submenu": ally_targets,
+			"disabled": not can_afford
+		}
+
+	# Dead-ally targeting (Raise) — only show when KO'd allies exist
+	if target_type == "dead_ally" and can_afford:
+		var dead_targets: Array = []
+		for i in range(_scene.party_members.size()):
+			var member = _scene.party_members[i]
+			if not is_instance_valid(member) or member.is_alive:
+				continue
+			var target_pos: Vector2 = Vector2.ZERO
+			if i < _scene.party_sprite_nodes.size():
+				var s = _scene.party_sprite_nodes[i]
+				if is_instance_valid(s):
+					target_pos = canvas_transform * s.global_position
+			dead_targets.append({
+				"id": "ability_" + ability_id + "_dead_" + str(i),
+				"label": "%s (KO)" % member.combatant_name,
+				"data": {"ability_id": ability_id, "target_idx": i, "target_type": "dead_ally", "target_pos": target_pos}
+			})
+		if dead_targets.size() > 0:
+			return {
+				"id": "ability_menu_" + ability_id,
+				"label": "%s (%d)" % [ability["name"], mp_cost],
+				"tooltip": ability_tooltip,
+				"submenu": dead_targets,
+				"disabled": not can_afford
+			}
+		return {
+			"id": "ability_" + ability_id,
+			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"tooltip": ability_tooltip,
+			"data": {"ability_id": ability_id},
+			"disabled": true
+		}
+
+	# AoE on all enemies — show [AoE] tag with total estimated damage
+	if target_type == "all_enemies" and can_afford:
+		var aoe_label: String = "%s (%d) [AoE]" % [ability["name"], mp_cost]
+		if alive_enemies.size() > 0:
+			var total_est: int = 0
+			for enemy in alive_enemies:
+				total_est += BattleManager.estimate_ability_damage(combatant, enemy, ability)
+			aoe_label = "%s (%d) [AoE] ~%d total" % [ability["name"], mp_cost, total_est]
+		return {
+			"id": "ability_" + ability_id,
+			"label": aoe_label,
+			"tooltip": ability_tooltip + " (hits all enemies)",
+			"data": {"ability_id": ability_id},
+			"disabled": not can_afford
+		}
+
+	# Party-wide buff/heal — show [All] tag
+	if target_type == "all_allies" and can_afford:
+		var all_label: String = "%s (%d) [All]" % [ability["name"], mp_cost]
+		if ability.has("heal_amount"):
+			var est_heal: int = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
+			all_label = "%s (%d) [All] ~+%d each" % [ability["name"], mp_cost, est_heal]
+		return {
+			"id": "ability_" + ability_id,
+			"label": all_label,
+			"tooltip": ability_tooltip + " (affects all allies)",
+			"data": {"ability_id": ability_id},
+			"disabled": not can_afford
+		}
+
+	# Default: single-target, self, or unaffordable — flat entry
+	return {
+		"id": "ability_" + ability_id,
+		"label": "%s (%d)" % [ability["name"], mp_cost],
+		"tooltip": ability_tooltip,
+		"data": {"ability_id": ability_id},
+		"disabled": not can_afford
+	}
+
+
+func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
+	"""Build the per-job Free Move menu item.
+	   - 'basic_attack' type: enemy submenu mirroring the legacy Attack flow
+	   - 'ability' type: delegates to _build_ability_menu_item with the configured ability
+	   Falls back to an Attack-style basic attack if the job has no free_move spec."""
+	var free_move: Dictionary = combatant.job.get("free_move", {}) if combatant.job else {}
+	var move_type: String = free_move.get("type", "basic_attack")
+	var label: String = free_move.get("label", "Attack")
+
+	if move_type == "ability":
+		var ability_id: String = free_move.get("ability_id", "")
+		if ability_id == "":
+			return {}
+		var item = _build_ability_menu_item(ability_id, combatant, alive_enemies, canvas_transform)
+		if item.is_empty():
+			return {}
+		# Override the label so the per-job free move uses its canon name
+		# (e.g. "Channel" instead of the ability's standard name).
+		item["label"] = label
+		return item
+
+	# Default: basic_attack (Fighter/Rogue path — same data shape as legacy "Attack")
+	if alive_enemies.size() == 0:
+		return {
+			"id": "attack",
+			"label": label,
+			"data": null,
+			"disabled": true
+		}
+	var enemy_targets: Array = []
+	for enemy in alive_enemies:
+		var enemy_idx: int = _scene.test_enemies.find(enemy)
+		var target_pos: Vector2 = Vector2.ZERO
+		if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
+			var s = _scene.enemy_sprite_nodes[enemy_idx]
+			if is_instance_valid(s):
+				target_pos = canvas_transform * s.global_position
+		var est_dmg: int = BattleManager.estimate_attack_damage(combatant, enemy)
+		enemy_targets.append({
+			"id": "attack_" + str(enemy_idx),
+			"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_dmg],
+			"data": {"target_idx": enemy_idx, "action": "attack", "target_pos": target_pos}
+		})
+	return {
+		"id": "attack_menu",
+		"label": label,
+		"submenu": enemy_targets
+	}
 
 
 func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:

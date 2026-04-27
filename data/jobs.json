@@ -20,6 +20,11 @@
 		"passive_abilities": [
 			"weapon_mastery"
 		],
+		"free_move": {
+			"type": "basic_attack",
+			"label": "Attack",
+			"animation": "attack"
+		},
 		"visual": {
 			"sprite_type": "armored",
 			"outfit_color": [
@@ -59,6 +64,12 @@
 		"passive_abilities": [
 			"healing_boost"
 		],
+		"free_move": {
+			"type": "ability",
+			"ability_id": "pray",
+			"label": "Pray",
+			"animation": "pray"
+		},
 		"visual": {
 			"sprite_type": "robed",
 			"outfit_color": [
@@ -104,6 +115,12 @@
 		"passive_abilities": [
 			"magic_boost"
 		],
+		"free_move": {
+			"type": "ability",
+			"ability_id": "channel",
+			"label": "Channel",
+			"animation": "channel"
+		},
 		"visual": {
 			"sprite_type": "dark_robed",
 			"outfit_color": [
@@ -145,6 +162,11 @@
 			"steal_boost",
 			"evasion_up"
 		],
+		"free_move": {
+			"type": "basic_attack",
+			"label": "Strike",
+			"animation": "strike"
+		},
 		"visual": {
 			"sprite_type": "cloaked",
 			"outfit_color": [
@@ -182,6 +204,12 @@
 		"passive_abilities": [
 			"encore"
 		],
+		"free_move": {
+			"type": "ability",
+			"ability_id": "riff",
+			"label": "Riff",
+			"animation": "riff"
+		},
 		"visual": {
 			"sprite_type": "performer",
 			"outfit_color": [

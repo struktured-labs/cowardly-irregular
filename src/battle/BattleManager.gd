@@ -579,6 +579,16 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 		"speed": _compute_action_speed(current_combatant, "ability", ability)
 	}
 	_queue_action(action)
+	# Track MRU so this ability surfaces in the top-level quick-access slots next turn.
+	# Free-Move abilities (channel/pray/riff) and basic attacks are not tracked
+	# — they have their own permanent slot.
+	var is_free_move := false
+	if current_combatant and current_combatant.job:
+		var fm = current_combatant.job.get("free_move", {})
+		if fm.get("type", "") == "ability" and fm.get("ability_id", "") == ability_id:
+			is_free_move = true
+	if not is_free_move:
+		current_combatant.record_ability_use(ability_id)
 	_end_selection_turn()
 
 
@@ -2251,6 +2261,8 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			_execute_meta_ability(caster, ability, retargeted)
 		"escape":
 			_execute_escape_ability(caster, ability)
+		"mp_restore":
+			_execute_mp_restore_ability(caster, ability)
 		_:
 			print("Unknown ability type: %s" % ability_type)
 
@@ -2644,6 +2656,18 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 		end_battle(false)
 	else:
 		print("  → %s failed to escape!" % caster.combatant_name)
+
+
+func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary) -> void:
+	"""Free-Move style ability that restores a small amount of MP to the caster."""
+	var amount: int = ability.get("mp_amount", 5)
+	var before: int = caster.current_mp
+	caster.current_mp = min(caster.max_mp, caster.current_mp + amount)
+	var restored: int = caster.current_mp - before
+	print("  → %s restores %d MP" % [caster.combatant_name, restored])
+	battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color][/color]" % [caster.combatant_name, restored])
+	# Treat the heal_amount as MP for damage_dealt signal so UI shows the +MP
+	damage_dealt.emit(caster, -restored, true, "", 1.0)
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
