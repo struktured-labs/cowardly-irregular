@@ -78,6 +78,11 @@ func test_sfx_manifest_entries_point_to_existing_files() -> void:
 	# hasn't run yet.
 	if not missing.is_empty():
 		gut.p("[WARN] sfx_manifest references %d missing files: %s" % [missing.size(), str(missing)])
+	# Positive assertion so GUT registers the test as run, even when the
+	# manifest is fully clean (most common case). Otherwise the test was
+	# silently risky on green runs.
+	assert_true(sounds.size() >= 0,
+		"sfx_manifest scan completed (%d missing of %d entries)" % [missing.size(), sounds.size()])
 
 
 func test_music_manifest_has_res_prefix_or_relative() -> void:

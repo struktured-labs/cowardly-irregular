@@ -509,15 +509,44 @@ func test_map_system_load_null_check() -> void:
 
 
 func test_game_loop_battle_scene_load_check() -> void:
-	"""GameLoop should check for null after loading BattleScene"""
-	var content = FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	"""GameLoop should not load BattleScene unsafely.
 
-	# Find the specific pattern where load() is used (not preload or threaded)
-	var idx = content.find('loaded_res = load("res://src/battle/BattleScene.tscn")')
-	if idx > 0:
-		var context = content.substr(idx, 200)
-		assert_true(context.contains("not loaded_res"),
-			"GameLoop should check for null after loading battle scene")
+	Two safe patterns are accepted:
+	  1. const BattleSceneRes = preload(...)   ← parse-time, can't be null
+	  2. var x = load(...); if not x: return    ← runtime null check
+
+	The original buggy pattern was load() WITHOUT a null check. This test
+	previously skipped silently if neither pattern was found (idx > 0
+	short-circuit) which made it 'risky' instead of catching regressions.
+	"""
+	var content = FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	assert_false(content.is_empty(), "GameLoop.gd should be readable")
+
+	var has_preload = content.contains('preload("res://src/battle/BattleScene.tscn")')
+	var has_load = content.contains('load("res://src/battle/BattleScene.tscn")')
+
+	if has_preload:
+		# Preload is null-safe by definition (parse-time fail).
+		assert_true(true, "GameLoop uses preload (safe)")
+	elif has_load:
+		# Dynamic load — must have a null check nearby. Scan a generous
+		# window after the load() call.
+		var idx = content.find('load("res://src/battle/BattleScene.tscn")')
+		var context = content.substr(idx, 300)
+		var has_null_check = (
+			context.contains("not loaded_res") or
+			context.contains("== null") or
+			context.contains("is_instance_valid") or
+			context.contains("if loaded_res:") or
+			context.contains("if BattleSceneRes:")
+		)
+		assert_true(has_null_check,
+			"GameLoop uses dynamic load() — must have a null check within 300 chars")
+	else:
+		# Neither pattern — that's a problem (BattleScene is no longer
+		# referenced in GameLoop?), surface it instead of silent risky.
+		assert_true(false,
+			"GameLoop.gd has neither preload nor load for BattleScene.tscn — referenced elsewhere?")
 
 
 ## Match Statement Default Case Tests

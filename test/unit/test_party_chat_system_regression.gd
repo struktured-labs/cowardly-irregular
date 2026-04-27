@@ -20,6 +20,14 @@ const REQUIRED_FIELDS := ["title", "world", "unlock"]
 var _party_chat: Node
 
 
+## Test-only mock for GameState. PartyChatSystem._flags() reads
+## `game_state_override.game_constants` directly — we need a real
+## declared property, not a dynamic Node.set("game_constants", {})
+## (which silently no-ops in GDScript and made an earlier mock break).
+class MockGameState extends RefCounted:
+	var game_constants: Dictionary = {}
+
+
 func before_all() -> void:
 	var tree = get_tree()
 	if tree and tree.root:
@@ -146,10 +154,10 @@ func test_chat_unavailable_until_unlock_flags_set():
 		return
 	# Regression for the is_available() logic: a chat should NOT be
 	# available when the unlock flag is missing.
-	var override := Node.new()
-	override.set_script(null)
-	override.set("game_constants", {})
-	add_child_autofree(override)
+	# (Earlier impl used Node.set("game_constants", {}) which silently
+	# fails for undeclared properties — explicit RefCounted with a real
+	# var fixes the silent breakage.)
+	var override := MockGameState.new()
 
 	_party_chat.game_state_override = override
 	# Pick any event chat to probe — first_party_wipe is stable.
@@ -159,14 +167,14 @@ func test_chat_unavailable_until_unlock_flags_set():
 	)
 
 	# Setting the flag should flip it available.
-	override.set("game_constants", {"event_flag_first_party_wipe": true})
+	override.game_constants = {"event_flag_first_party_wipe": true}
 	assert_true(
 		_party_chat.is_available("event_chat_first_party_wipe"),
 		"event_chat_first_party_wipe should unlock when its flag is set",
 	)
 
 	# Marking viewed should hide it again.
-	_party_chat.game_state_override.game_constants["party_chat_viewed_event_chat_first_party_wipe"] = true
+	override.game_constants["party_chat_viewed_event_chat_first_party_wipe"] = true
 	assert_false(
 		_party_chat.is_available("event_chat_first_party_wipe"),
 		"event_chat_first_party_wipe should hide after mark_viewed",

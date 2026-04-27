@@ -200,7 +200,11 @@ func test_corner_does_not_permanently_stick():
 # collision geometry — not that the visual offsets are invisible.
 # ---------------------------------------------------------------------------
 
-const COLLISION_OFFSET_Y: float = 4.0  # CollisionShape2D position.y in OverworldPlayer
+const COLLISION_OFFSET_Y: float = 0.0  # CollisionShape2D position.y in OverworldPlayer
+# (was 4.0 historically; Mode 7 integration centered the collision shape —
+# OverworldPlayer.gd ~line 234 sets `collision.position = Vector2(0, 0)`.
+# Walls below compensate for this offset, so when offset == 0 they're
+# placed symmetrically around the player center.)
 
 func test_symmetric_wall_grid():
 	gut.p("=== Test 4: Symmetric Wall Grid (4-direction collision parity) ===")

@@ -289,26 +289,31 @@ func test_spend_mp_on_dead_combatant_returns_false() -> void:
 # ---- Bug: Volatility starting bands only had 2 tiers ----
 
 func test_volatility_starting_bands() -> void:
+	# Regression: this test previously assigned `vol.macro_volatility = 0.2`
+	# but VolatilitySystem doesn't expose that property — it reads macro from
+	# GameState. The assignment threw a SCRIPT ERROR and GUT marked the test
+	# "Did not assert" silently. Now we use the explicit `_macro_override`
+	# field VolatilitySystem provides for unit-test injection.
 	var VolatilitySystem = preload("res://src/battle/VolatilitySystem.gd")
 	var vol = VolatilitySystem.new()
 
 	# Low macro → STABLE
-	vol.macro_volatility = 0.2
+	vol._macro_override = 0.2
 	vol.reset_battle()
 	assert_eq(vol.get_band_name(), "Stable", "Low macro should start STABLE")
 
 	# Medium macro → SHIFTING
-	vol.macro_volatility = 0.5
+	vol._macro_override = 0.5
 	vol.reset_battle()
 	assert_eq(vol.get_band_name(), "Shifting", "Medium macro should start SHIFTING")
 
 	# High macro → UNSTABLE
-	vol.macro_volatility = 0.8
+	vol._macro_override = 0.8
 	vol.reset_battle()
 	assert_eq(vol.get_band_name(), "Unstable", "High macro should start UNSTABLE")
 
 	# Very high macro → FRACTURED
-	vol.macro_volatility = 0.95
+	vol._macro_override = 0.95
 	vol.reset_battle()
 	assert_eq(vol.get_band_name(), "Fractured", "Very high macro should start FRACTURED")
 

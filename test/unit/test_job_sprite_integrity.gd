@@ -145,11 +145,17 @@ func test_cleric_has_artist_cast_and_walk() -> void:
 
 func test_mage_attack_is_real_multi_frame_animation() -> void:
 	# Specific regression: mage/attack was previously a 1-frame dupe.
-	# cowir-sprites replaced it with the artist's 8-frame animation.
+	# cowir-sprites first replaced it with the artist's 8-frame animation,
+	# and later (during the purple-bg fix) re-derived it from cast.png as
+	# an alias — so it can grow to whatever cast.png's frame count is.
+	# Only assert "real multi-frame" to keep the test resilient to alias
+	# re-derives, while still catching the 1-frame dupe regression.
 	var path = "res://assets/sprites/jobs/mage/attack.png"
 	var tex = load(path) as Texture2D
 	assert_not_null(tex, "mage/attack.png must exist")
 	var img = tex.get_image()
-	# 8 frames × 256 = 2048
-	assert_eq(img.get_width(), 2048,
-		"mage/attack.png should be 8 frames = 2048px (regression: previously 1-frame dupe)")
+	assert_gte(img.get_width(), 2048,
+		"mage/attack.png should be at least 8 frames (>=2048px) — multi-frame, not a 1-frame dupe")
+	# Also assert width is an exact multiple of 256 to catch corrupt strips.
+	assert_eq(img.get_width() % 256, 0,
+		"mage/attack.png width must be a multiple of 256 (got %d)" % img.get_width())

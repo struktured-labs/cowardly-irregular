@@ -23,6 +23,13 @@ var local_volatility: Dictionary = {}
 ## Global band (0-3)
 var global_band: int = 0
 
+## Test-only macro volatility override.
+## When set to a value in [0.0, 1.0], _get_macro_volatility() returns this
+## instead of reading from GameState. Lets unit tests verify band transitions
+## without standing up a GameState autoload. Set to NAN (default) to use the
+## production GameState path.
+var _macro_override: float = NAN
+
 
 func get_variance_range(combatant) -> Vector2:
 	"""Get (min_mult, max_mult) for damage variance, factoring local x global x macro."""
@@ -114,7 +121,10 @@ func get_tail_event_pct() -> float:
 
 
 func _get_macro_volatility() -> float:
-	"""Read macro volatility from GameState."""
+	"""Read macro volatility from GameState (or test override)."""
+	# Test override path — short-circuit if a unit test has set it.
+	if not is_nan(_macro_override):
+		return _macro_override
 	var game_state = Engine.get_singleton("GameState") if Engine.has_singleton("GameState") else null
 	if game_state == null:
 		# Try node path

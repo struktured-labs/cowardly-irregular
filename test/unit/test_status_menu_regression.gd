@@ -221,14 +221,20 @@ func test_status_menu_uses_job_exp_not_exp() -> void:
 func test_save_system_uses_job_level_not_level() -> void:
 	"""Regression: SaveSystem _get_party_summary used member.level"""
 	var content = FileAccess.get_file_as_string("res://src/save/SaveSystem.gd")
+	assert_false(content.is_empty(), "SaveSystem.gd should be readable")
 
 	var lines = content.split("\n")
+	var violations: Array = []
 	for i in range(lines.size()):
 		var line = lines[i].strip_edges()
 		# Check for member.level that's NOT member.job_level
 		if "member.level" in line and "job_level" not in line:
-			assert_true(false,
-				"SaveSystem line %d uses member.level instead of member.job_level: %s" % [i + 1, line])
+			violations.append("line %d: %s" % [i + 1, line])
+	# Single positive assertion so GUT registers the test as having run.
+	# Previous version asserted only on the failure path — a clean scan
+	# looked like "Did not assert" (risky).
+	assert_eq(violations.size(), 0,
+		"SaveSystem must use member.job_level, not member.level. Found: %s" % str(violations))
 
 
 ## ---- StatusMenu Script Check ----
