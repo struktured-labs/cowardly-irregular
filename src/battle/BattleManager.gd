@@ -175,6 +175,11 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# instances, so Protect/Shell/Armor Break etc. carried over if untouched).
 	# HP/MP are deliberately NOT reset here — those come from the previous
 	# battle / inn / item usage.
+	#
+	# current_ap and queued_actions are also cleared as a defensive guard:
+	# GameLoop already resets current_ap to 0 in normal victory paths, but
+	# having it here means edge cases (load-save mid-battle, flee, debug
+	# warps) can't leak +4 AP into the next encounter.
 	for combatant in all_combatants:
 		if "active_buffs" in combatant:
 			combatant.active_buffs.clear()
@@ -188,6 +193,10 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 			combatant.is_defending = false
 		if "doom_counter" in combatant:
 			combatant.doom_counter = 0
+		if "current_ap" in combatant:
+			combatant.current_ap = 0
+		if "queued_actions" in combatant:
+			combatant.queued_actions.clear()
 
 	# Connect to combatant signals
 	for combatant in all_combatants:

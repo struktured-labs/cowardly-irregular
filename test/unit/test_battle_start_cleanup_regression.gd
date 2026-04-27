@@ -105,3 +105,29 @@ func test_cleanup_uses_defensive_in_guards() -> void:
 	var body = text.substr(idx, 3000)
 	assert_true(body.find('"active_buffs" in combatant') != -1,
 		"Cleanup must guard with \"active_buffs\" in combatant per CLAUDE.md convention")
+
+
+func test_start_battle_resets_current_ap() -> void:
+	# Defensive guard: GameLoop's victory paths reset current_ap to 0, but
+	# edge cases (load-save mid-battle, flee, debug warp) can leave the
+	# party with +4 AP heading into a fresh encounter. start_battle should
+	# normalize AP to 0 as a centralized safety net.
+	var text = _read("res://src/battle/BattleManager.gd")
+	var idx = text.find("func start_battle(")
+	var body = text.substr(idx, 3000)
+	assert_true(body.find("current_ap = 0") != -1,
+		"start_battle must reset current_ap to 0 (regression: AP leak via edge-case battle entry)")
+	# Verify the same `in combatant` defensive guard is applied.
+	assert_true(body.find('"current_ap" in combatant') != -1,
+		"current_ap reset must use the in-combatant guard pattern")
+
+
+func test_start_battle_clears_queued_actions() -> void:
+	# Less critical (queued_actions on Combatant is dead state currently —
+	# the live queue lives in Win98Menu) but unbounded growth is still a
+	# leak. start_battle.clear() prevents accumulation.
+	var text = _read("res://src/battle/BattleManager.gd")
+	var idx = text.find("func start_battle(")
+	var body = text.substr(idx, 3000)
+	assert_true(body.find("queued_actions.clear()") != -1,
+		"start_battle must clear queued_actions (prevent unbounded growth across battles)")
