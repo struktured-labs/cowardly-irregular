@@ -19,7 +19,12 @@ var _music_playing: bool = false
 var _current_music: String = ""
 var _stinger_resume_track: String = ""  # Track to resume after stinger finishes
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
-var _music_base_db: float = -12.0  # Base volume for music
+var _music_base_db: float = -12.0  # Base volume for music (overwritten by set_music_volume)
+# Music ceiling: at slider=100%, music plays at MUSIC_VOLUME_CEILING_DB.
+# -6 dB sits music below the SFX peak so battle hits punch through —
+# without this cap, slider=100% pushed music to 0 dB (12 dB louder
+# than the original design intent of -12 dB) and drowned battle SFX.
+const MUSIC_VOLUME_CEILING_DB: float = -6.0
 
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
@@ -127,7 +132,7 @@ func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -16.0  # Menu blips: present but below music (files at 0dB peak, music at -12dB)
+	_ui_player.volume_db = -16.0  # Menu blips: present but below music (files at 0dB peak, music ceiling at -6dB)
 	_ui_player.bus = "Master"
 	add_child(_ui_player)
 
@@ -2848,10 +2853,16 @@ func _stereo_spread(sample_l: float, sample_r: float, pan: float) -> Vector2:
 func set_music_volume(normalized: float) -> void:
 	"""Set music volume (0.0 to 1.0).
 
+	Slider applies attenuation BELOW MUSIC_VOLUME_CEILING_DB:
+	  - slider 1.00 → -6 dB  (ceiling — battle SFX still punches through)
+	  - slider 0.50 → -12 dB (-6 dB attenuation from ceiling)
+	  - slider 0.10 → -26 dB (-20 dB attenuation)
+
 	Safe to call before _ready() — the base db is latched into
 	_music_base_db and applied when _setup_audio_players creates
 	the AudioStreamPlayer nodes."""
-	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	var attenuation = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	var db = MUSIC_VOLUME_CEILING_DB + attenuation if normalized > 0.01 else -80.0
 	_music_base_db = db
 	if _music_player:
 		_music_player.volume_db = db

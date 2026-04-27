@@ -20,7 +20,10 @@ func test_set_music_volume_safe_before_players_exist():
 	# This would have crashed before the null-guard fix.
 	sm.set_music_volume(0.5)
 	# And the base db should still have been latched.
-	assert_ne(sm._music_base_db, -12.0, "base db should have been updated")
+	# At slider=0.5: db = MUSIC_VOLUME_CEILING_DB (-6) + linear_to_db(0.5) (-6.02) ≈ -12.02
+	# Just assert it changed from the default of exactly -12.0 (ceiling behavior wired up).
+	assert_ne(sm._music_base_db, -12.0, "base db should have been updated by setter")
+	assert_lt(sm._music_base_db, -6.0, "0.5 slider should be below the music ceiling (-6dB)")
 
 
 func test_set_sfx_volume_safe_before_players_exist():
@@ -41,8 +44,28 @@ func test_set_music_volume_normal_path_still_works():
 	add_child_autofree(sm)
 	await get_tree().process_frame
 	sm.set_music_volume(1.0)
-	# 0dB is the loudest the setter emits.
-	assert_almost_eq(sm._music_player.volume_db, 0.0, 0.01, "music volume should hit 0dB at 1.0")
+	# Music ceiling is -6 dB — even at slider=1.0 we cap there so battle SFX
+	# can still punch through. (Was 0 dB before the ceiling was added; that
+	# pushed music 12 dB above the original design intent and drowned SFX.)
+	assert_almost_eq(sm._music_player.volume_db, -6.0, 0.01,
+		"music volume should hit MUSIC_VOLUME_CEILING_DB (-6dB) at slider=1.0")
 
 	sm.set_music_volume(0.0)
 	assert_eq(sm._music_player.volume_db, -80.0, "music volume should hit silence at 0.0")
+
+
+func test_music_ceiling_keeps_music_below_battle_sfx():
+	# Regression: the user reported "battle music is a bit loud compared to sfx".
+	# Root cause was that slider=100% pushed music to 0 dB while battle SFX
+	# also flattened to 0 dB — losing the design intent of battle SFX
+	# punching above music. The MUSIC_VOLUME_CEILING_DB cap restores this.
+	var sm = load("res://src/audio/SoundManager.gd").new()
+	add_child_autofree(sm)
+	await get_tree().process_frame
+	# After _ready, battle player has its design base offset.
+	var battle_db = sm._battle_player.volume_db
+	sm.set_music_volume(1.0)
+	var music_db = sm._music_player.volume_db
+	assert_lte(music_db, battle_db,
+		"At slider=1.0, music (%f dB) must be <= battle SFX (%f dB) so battle hits punch through" %
+		[music_db, battle_db])
