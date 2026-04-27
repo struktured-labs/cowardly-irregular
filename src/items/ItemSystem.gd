@@ -270,14 +270,40 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 	"""Apply item effects to a target"""
 	var effects = item["effects"]
 
-	# HP healing (flat amount)
-	if effects.has("heal_hp"):
+	# Revive MUST come first when it's part of the effect bundle. Otherwise
+	# heal_hp / heal_hp_percent below would no-op against a dead target
+	# (heal() returns 0 if !is_alive), then revive() would set HP to its
+	# 50% default — ignoring the heal_hp_percent the item authored.
+	#
+	# When revive consumes a heal value (Phoenix Down's "25% HP"), we
+	# track it via _heal_consumed_by_revive so the same heal isn't applied
+	# again as a bonus on top of the revived HP.
+	var _heal_consumed_by_revive: bool = false
+
+	# Revive
+	if effects.has("revive") and effects["revive"]:
+		if not target.is_alive:
+			var revive_hp: int = 0  # 0 = revive() default of 50% max_hp
+			if effects.has("heal_hp_percent"):
+				revive_hp = max(1, int(target.max_hp * effects["heal_hp_percent"] / 100.0))
+				_heal_consumed_by_revive = true
+			elif effects.has("heal_hp"):
+				revive_hp = max(1, int(effects["heal_hp"]))
+				_heal_consumed_by_revive = true
+			target.revive(revive_hp)
+			if _heal_consumed_by_revive:
+				print("  → %s was revived with %d HP!" % [target.combatant_name, target.current_hp])
+			else:
+				print("  → %s was revived!" % target.combatant_name)
+
+	# HP healing (flat amount) — skip if revive already consumed it.
+	if effects.has("heal_hp") and not _heal_consumed_by_revive:
 		var heal_amount = effects["heal_hp"]
 		target.heal(heal_amount)
 		print("  → %s recovered %d HP" % [target.combatant_name, heal_amount])
 
-	# HP healing (percentage)
-	if effects.has("heal_hp_percent"):
+	# HP healing (percentage) — skip if revive already consumed it.
+	if effects.has("heal_hp_percent") and not _heal_consumed_by_revive:
 		var heal_percent = effects["heal_hp_percent"]
 		var heal_amount = int(target.max_hp * heal_percent / 100.0)
 		target.heal(heal_amount)
@@ -310,12 +336,6 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		target.status_effects.clear()
 		target.status_durations.clear()
 		print("  → %s cured of all status effects" % target.combatant_name)
-
-	# Revive
-	if effects.has("revive") and effects["revive"]:
-		if not target.is_alive:
-			target.revive()
-			print("  → %s was revived!" % target.combatant_name)
 
 	# Add buff
 	if effects.has("add_buff"):
