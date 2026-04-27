@@ -36,13 +36,12 @@ ASE_EXPORTS = [
     ("cleric",  "cast",   "CLERIC/Cleric Main design.aseprite",       "Cast"),
     ("rogue",   "idle",   "ROGUE/Rogue Main design.aseprite",         "Idle"),
     ("rogue",   "attack", "ROGUE/Rogue Main design.aseprite",         "ATK"),
+    ("mage",    "idle",   "MAGE/Mage Main design.aseprite",           "IDLE"),
+    ("mage",    "attack", "MAGE/Mage Main design.aseprite",           "Atk 1"),
 ]
 
 # Pre-rendered PNG embeds: (job, dest_anim, png_rel, dup_to_frames)
-PNG_EMBEDS = [
-    ("mage",  "idle",   "MAGE/Mage IDLE.png",                     None),
-    ("mage",  "attack", "MAGE/Mage 1st attack_Spell 1.png",       None),
-]
+PNG_EMBEDS = []
 
 
 def load_strip_128(src: Path, dup_to: int | None) -> Image.Image:
