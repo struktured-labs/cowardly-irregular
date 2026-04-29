@@ -1,9 +1,9 @@
 -- Build a tagged overworld walk-cycle aseprite from a 16-frame horizontal strip.
 --
--- Input:  --script-param strip="path/to/strip.png"  (16x32x32 = 512x32 strip)
+-- Input:  --script-param strip="path/to/strip.png"  (16 × N × N strip; N inferred from height)
 --         --script-param out="path/to/out.aseprite"
 --
--- Output: 32x32 canvas, 16 frames, 4 tags:
+-- Output: NxN canvas (N = strip.height), 16 frames, 4 tags:
 --           walk_down  (frames 0-3)
 --           walk_left  (frames 4-7)
 --           walk_right (frames 8-11)
@@ -18,20 +18,21 @@ end
 
 local strip = Image{ fromFile = strip_path }
 if not strip then print("ERROR: failed to load " .. strip_path); return end
-if strip.width ~= 512 or strip.height ~= 32 then
-  print(string.format("ERROR: expected 512x32 strip, got %dx%d", strip.width, strip.height))
+local N = strip.height
+if strip.width ~= N * 16 then
+  print(string.format("ERROR: expected %dx%d strip, got %dx%d", N*16, N, strip.width, strip.height))
   return
 end
 
-local sprite = Sprite(32, 32)
+local sprite = Sprite(N, N)
 sprite:setPalette(Palette(256))
 
--- Build 16 frames, copying each 32x32 tile from the source strip
+-- Build 16 frames, copying each NxN tile from the source strip
 while #sprite.frames < 16 do sprite:newFrame() end
 local layer = sprite.layers[1]
 for i = 0, 15 do
-  local cel_image = Image(32, 32, ColorMode.RGB)
-  cel_image:drawImage(strip, Point(-i * 32, 0))
+  local cel_image = Image(N, N, ColorMode.RGB)
+  cel_image:drawImage(strip, Point(-i * N, 0))
   sprite:newCel(layer, sprite.frames[i + 1], cel_image)
 end
 -- Remove the empty initial frame Aseprite created when newFrame() was first called

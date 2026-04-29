@@ -51,8 +51,39 @@ JOB_SOURCES = {
         "idle_tag": "idle",
         "drive_dir": "FIGHTER/claude",
         "char_desc": (
-            "blonde-haired knight fighter in red tunic, leather belt, brown boots, "
-            "cradling a sword, slightly armored shoulders"
+            "dark-brown-haired knight fighter in deep red tunic with leather/copper "
+            "shoulder armor, cradling a steel sword, dark leather boots and gloves"
+        ),
+    },
+    "cleric": {
+        "ase_rel": "CLERIC/Cleric Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "CLERIC/claude",
+        "char_desc": (
+            "white-robed cleric healer holding EXACTLY ONE ornate golden ankh-tipped "
+            "staff in one hand, soft gentle aura, hooded head, simple boots — only one "
+            "staff, no extra floating staffs or duplicate weapons in the frame"
+        ),
+    },
+    "rogue": {
+        "ase_rel": "ROGUE/Rogue Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "ROGUE/claude",
+        "char_desc": (
+            "agile rogue archer with bow, dark leather armor, slim build, "
+            "brown/gray earth-tone colors, light boots"
+        ),
+    },
+    "mage": {
+        "ase_rel": "MAGE/Mage Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "MAGE/claude",
+        "char_desc": (
+            "young wizard mage with VISIBLE pale skin face and small dark eyes "
+            "(NOT a shadowed silhouette face — face must be clearly drawn with "
+            "skin tones), wearing deep teal/navy robes with purple pointed hat, "
+            "holding a wooden staff topped with a golden flame, friendly JRPG "
+            "chibi style"
         ),
     },
 }
@@ -140,18 +171,46 @@ def upload_to_drive(local_file: Path, drive_subdir: str) -> None:
     )
 
 
-def grid_to_strip(grid_128: Image.Image) -> Image.Image:
-    """Convert a 128x128 4x4 grid to a 512x32 horizontal sequential strip."""
-    strip = Image.new("RGBA", (512, 32))
+def grid_to_strip(grid: Image.Image) -> Image.Image:
+    """Convert an N×4 by N×4 grid (frame size N inferred from height/4) to a (16N)×N strip."""
+    N = grid.height // 4
+    strip = Image.new("RGBA", (16 * N, N))
     for row in range(4):
         for col in range(4):
-            cell = grid_128.crop((col * 32, row * 32, (col + 1) * 32, (row + 1) * 32))
-            strip.paste(cell, ((row * 4 + col) * 32, 0))
+            cell = grid.crop((col * N, row * N, (col + 1) * N, (row + 1) * N))
+            strip.paste(cell, ((row * 4 + col) * N, 0))
     return strip
 
 
-def _cell_to_chibi_32(cell: Image.Image) -> Image.Image:
-    """Square-pad and downscale a per-cell crop to 32x32 chibi (LANCZOS→NEAREST)."""
+def _strip_white_bg(img: Image.Image, threshold: int = 235) -> Image.Image:
+    """Convert near-white opaque pixels to transparent.
+
+    GPT-Image-1 frequently ships an opaque white background even when the prompt
+    requests transparency. Pixels where all of R, G, B are >= threshold are
+    flipped to alpha=0. White character highlights (typically smaller and
+    color-tinted) survive because they have at least one channel below threshold
+    or are preserved by the post-NEAREST step.
+    """
+    pixels = img.load()
+    w, h = img.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = pixels[x, y]
+            if a > 0 and r >= threshold and g >= threshold and b >= threshold:
+                pixels[x, y] = (0, 0, 0, 0)
+    return img
+
+
+def _binarize_alpha(img: Image.Image, threshold: int = 128) -> Image.Image:
+    """Snap alpha to 0 or 255 — kills LANCZOS halos for crisp pixel-art edges."""
+    r, g, b, a = img.split()
+    a = a.point(lambda v: 255 if v >= threshold else 0)
+    return Image.merge("RGBA", (r, g, b, a))
+
+
+def _cell_to_chibi(cell: Image.Image, target: int = 32) -> Image.Image:
+    """Strip near-white BG, square-pad, downscale to target×target chibi (LANCZOS→NEAREST), binarize alpha."""
+    cell = _strip_white_bg(cell.copy())
     bbox = cell.getbbox()
     if bbox:
         cell = cell.crop(bbox)
@@ -159,32 +218,157 @@ def _cell_to_chibi_32(cell: Image.Image) -> Image.Image:
     side = max(cw, ch)
     sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
     sq.paste(cell, ((side - cw) // 2, (side - ch) // 2), cell)
-    return sq.resize((80, 80), Image.LANCZOS).resize((32, 32), Image.NEAREST)
+    intermediate = max(target, target * 2 + target // 2)  # e.g. 80 for target=32, 160 for target=64
+    chibi = sq.resize((intermediate, intermediate), Image.LANCZOS).resize((target, target), Image.NEAREST)
+    return _binarize_alpha(chibi)
 
 
-def assemble_game_grid(raw_1024: Image.Image) -> Image.Image:
+def _cell_to_chibi_32(cell: Image.Image) -> Image.Image:
+    """Backwards-compatible alias for the 32×32 path."""
+    return _cell_to_chibi(cell, 32)
+
+
+def _detect_chibi_x_ranges(row_band: Image.Image, min_blob_width: int = 40) -> list[tuple[int, int]]:
     """
-    GPT-Image-1 reliably produces 3 rows × 4 cols (front / side / back) — east side is
-    omitted because it's the mirror of west. Slice as 3×4, downscale each cell to 32x32,
-    and assemble the game's 4-row 128x128 grid by mirroring the side row to fill east.
+    Find x-ranges of distinct chibis in a horizontal band.
+    Two-stage: try density-gap detection first (works when chibis have gaps); fall
+    back to local-minima split (works when chibis are touching).
+    """
+    import numpy as np
+    arr = np.array(row_band)  # H x W x 4
+    col_density = (arr[:, :, 3] > 0).sum(axis=0).astype(float)
+    smoothed = np.convolve(col_density, np.ones(8) / 8, mode="same")
+    W = len(smoothed)
+
+    # Stage 1: density-gap detection (chibis separated by clear empty gutters)
+    threshold = max(5.0, float(smoothed.max()) * 0.15)
+    gap_blobs: list[tuple[int, int]] = []
+    in_blob, start = False, 0
+    for x in range(W):
+        if smoothed[x] > threshold and not in_blob:
+            start, in_blob = x, True
+        elif smoothed[x] <= threshold and in_blob:
+            if x - start >= min_blob_width:
+                gap_blobs.append((start, x))
+            in_blob = False
+    if in_blob and W - start >= min_blob_width:
+        gap_blobs.append((start, W))
+
+    # If gap detection produced multiple chibis, trust it.
+    if len(gap_blobs) >= 2:
+        return gap_blobs
+
+    # Stage 2: chibis are touching with shallow valleys between them.
+    # Find density peaks (chibi centers) by looking for local maxima, then split
+    # the row at the midpoints between consecutive peaks.
+    if not gap_blobs:
+        return []
+    full = gap_blobs[0]
+    blob_start, blob_end = full
+    inside_density = smoothed[blob_start:blob_end]
+    if len(inside_density) < min_blob_width * 2:
+        return [full]
+
+    big_smooth = np.convolve(col_density, np.ones(40) / 40, mode="same")[blob_start:blob_end]
+    peaks: list[int] = []
+    window = min_blob_width
+    peak_threshold = float(big_smooth.max()) * 0.7
+    for x in range(window, len(big_smooth) - window):
+        if big_smooth[x] < peak_threshold:
+            continue
+        lo, hi = max(0, x - window), min(len(big_smooth), x + window)
+        if big_smooth[x] >= big_smooth[lo:hi].max() - 1e-6:
+            if not peaks or x - peaks[-1] >= min_blob_width:
+                peaks.append(x)
+
+    if len(peaks) < 2:
+        return [full]
+
+    # Cut at midpoints between consecutive peaks
+    cuts = [(peaks[i] + peaks[i + 1]) // 2 for i in range(len(peaks) - 1)]
+
+    out: list[tuple[int, int]] = []
+    prev = 0
+    for c in cuts:
+        if c - prev >= min_blob_width:
+            out.append((blob_start + prev, blob_start + c))
+            prev = c
+    if len(big_smooth) - prev >= min_blob_width:
+        out.append((blob_start + prev, blob_end))
+
+    return out if len(out) >= 2 else [full]
+
+
+def _extract_row_chibis(raw: Image.Image, y0: int, y1: int, target: int = 32) -> list[Image.Image]:
+    """
+    Detect chibi positions in a horizontal band and return a target×target chibi for each.
+    Strips white BG before detection so positions are accurate.
+    """
+    band = raw.crop((0, y0, raw.width, y1))
+    band_stripped = _strip_white_bg(band.copy())
+    ranges = _detect_chibi_x_ranges(band_stripped)
+    chibis: list[Image.Image] = []
+    for x0, x1 in ranges:
+        # Pad a bit horizontally so we don't clip outline edges
+        pad = 8
+        x0p = max(0, x0 - pad)
+        x1p = min(raw.width, x1 + pad)
+        chibis.append(_cell_to_chibi(band.crop((x0p, 0, x1p, band.height)), target))
+    return chibis
+
+
+def _build_4frame_walk(chibis: list[Image.Image]) -> list[Image.Image]:
+    """
+    Pad the detected chibis to a 4-frame walk cycle [F0, F1, F0, F2] — classic
+    stand/right-stride/stand/left-stride. Whatever GPT produced becomes:
+      3 chibis  → [c0, c1, c0, c2]   ← typical case
+      2 chibis  → [c0, c1, c0, c1]
+      1 chibi   → [c0, c0, c0, c0]   ← static, fallback
+      4+ chibis → first 4
+    """
+    if not chibis:
+        empty = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+        return [empty] * 4
+    if len(chibis) == 1:
+        return [chibis[0]] * 4
+    if len(chibis) == 2:
+        return [chibis[0], chibis[1], chibis[0], chibis[1]]
+    if len(chibis) >= 3:
+        return [chibis[0], chibis[1], chibis[0], chibis[2]]
+    return chibis[:4]
+
+
+def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
+    """
+    Build a 4-row N×N walk-cycle grid (N = target * 4) from GPT's 3-row chibi output.
+    Side row is mirrored to fill east. Frames within each row use a
+    [F0, F1, F0, F2] stand/right/stand/left cycle.
     """
     from PIL import ImageOps
-    W, H = raw_1024.size
-    NUM_ROWS, NUM_COLS = 3, 4
-    row_h, col_w = H // NUM_ROWS, W // NUM_COLS
+    H = raw_1024.height
+    NUM_ROWS = 3
+    row_h = H // NUM_ROWS
+    sheet_w = target * 4
+    sheet_h = target * 4
 
-    grid = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    for col in range(4):
-        # row 0: front (walk_down)
-        grid.paste(_cell_to_chibi_32(raw_1024.crop((col*col_w, 0, (col+1)*col_w, row_h))),
-                   (col*32, 0))
-        # rows 1+2: side / mirrored side (walk_left / walk_right)
-        side = _cell_to_chibi_32(raw_1024.crop((col*col_w, row_h, (col+1)*col_w, 2*row_h)))
-        grid.paste(side, (col*32, 32))
-        grid.paste(ImageOps.mirror(side), (col*32, 64))
-        # row 3: back (walk_up)
-        grid.paste(_cell_to_chibi_32(raw_1024.crop((col*col_w, 2*row_h, (col+1)*col_w, 3*row_h))),
-                   (col*32, 96))
+    grid = Image.new("RGBA", (sheet_w, sheet_h), (0, 0, 0, 0))
+
+    # Row 0: walk_down (front)
+    front = _build_4frame_walk(_extract_row_chibis(raw_1024, 0, row_h, target))
+    for col, frame in enumerate(front):
+        grid.paste(frame, (col * target, 0))
+
+    # Rows 1+2: walk_left / walk_right (side, mirrored)
+    side = _build_4frame_walk(_extract_row_chibis(raw_1024, row_h, 2 * row_h, target))
+    for col, frame in enumerate(side):
+        grid.paste(frame, (col * target, target))
+        grid.paste(ImageOps.mirror(frame), (col * target, target * 2))
+
+    # Row 3: walk_up (back)
+    back = _build_4frame_walk(_extract_row_chibis(raw_1024, 2 * row_h, 3 * row_h, target))
+    for col, frame in enumerate(back):
+        grid.paste(frame, (col * target, target * 3))
+
     return grid
 
 
@@ -258,21 +442,31 @@ def main():
     raw_img.save(raw_out)
     print(f"   saved raw: {raw_out}")
 
-    # 3. Slice 3-row GPT output → 4-row game grid (mirror side row for east)
-    print(f"[3] assemble 3-row GPT 1024 → 4-row 128 game grid (mirror east)")
-    grid_128 = assemble_game_grid(raw_img)
-    grid_128.save(grid_out)
-    strip_512 = grid_to_strip(grid_128)
-    strip_512.save(strip_out)
+    # 3. Build TWO outputs: 32px game PNG + 64px high-detail master
+    print(f"[3] assemble dual outputs (32px game + 64px master)")
+    grid_32 = assemble_game_grid(raw_img, target=32)
+    grid_32.save(grid_out)
+    strip_32 = grid_to_strip(grid_32)
+    strip_32.save(strip_out)
 
-    # 4. Build aseprite
-    print(f"[4] build tagged aseprite")
+    grid_64 = assemble_game_grid(raw_img, target=64)
+    grid64_out = job_tmp / f"{args.job}_overworld_grid_64.png"
+    strip64_out = job_tmp / f"{args.job}_overworld_strip_64.png"
+    grid_64.save(grid64_out)
+    strip_64 = grid_to_strip(grid_64)
+    strip_64.save(strip64_out)
+
+    # 4. Build BOTH aseprite files (32px small + 64px master)
+    print(f"[4] build tagged aseprites (32px small + 64px master)")
     build_aseprite_from_strip(strip_out, aseprite_out)
+    aseprite_master = job_tmp / f"{args.job}_overworld_64.aseprite"
+    build_aseprite_from_strip(strip64_out, aseprite_master)
 
-    # 5. Upload to Drive
+    # 5. Upload BOTH aseprites to Drive (small + master)
     if not args.no_upload:
-        print(f"[5] upload {aseprite_out.name} → gdrive: .../{cfg['drive_dir']}/")
+        print(f"[5] upload aseprites → gdrive: .../{cfg['drive_dir']}/")
         upload_to_drive(aseprite_out, cfg["drive_dir"])
+        upload_to_drive(aseprite_master, cfg["drive_dir"])
     else:
         print("[5] skipping upload (--no-upload)")
 
