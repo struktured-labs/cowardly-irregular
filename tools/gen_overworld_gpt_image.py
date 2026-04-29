@@ -96,10 +96,14 @@ Output format — match this exactly:
   - Top-down 3/4 JRPG overworld view (camera angle ~30 degrees above horizon, similar to classic 16-bit RPGs)
 
 Row layout (top to bottom):
-  Row 0: walking SOUTH (facing the viewer, front view)
-  Row 1: walking WEST (side profile facing left)
-  Row 2: walking EAST (side profile facing right, mirror of row 1)
-  Row 3: walking NORTH (facing away from viewer, back view)
+  Row 0: walking SOUTH (facing the viewer, front view — face visible, character's chest/front)
+  Row 1: walking WEST (side profile facing left, only one ear visible)
+  Row 2: walking EAST (side profile facing right, only one ear visible — mirror of row 1)
+  Row 3: walking NORTH (back view — character is FACING AWAY from camera. ONLY the back of
+         the head is visible — NO eyes, NO mouth, NO front-facing facial features. The
+         character's hair/hood/hat is shown from behind. Their back/shoulders are visible,
+         not their chest. Same outfit but viewed from the rear. THIS IS NOT NEGOTIABLE —
+         row 3 MUST show the character from behind, not another front or side view.)
 
 Column layout (left to right) — standard 4-frame walk cycle:
   Col 0: standing pose (legs together)
