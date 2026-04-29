@@ -182,22 +182,34 @@ def grid_to_strip(grid: Image.Image) -> Image.Image:
     return strip
 
 
-def _strip_white_bg(img: Image.Image, threshold: int = 235) -> Image.Image:
-    """Convert near-white opaque pixels to transparent.
+def _strip_white_bg(img: Image.Image, sum_threshold: int = 690, neutral_tol: int = 12) -> Image.Image:
+    """Convert near-white *neutral* opaque pixels to transparent.
 
     GPT-Image-1 frequently ships an opaque white background even when the prompt
-    requests transparency. Pixels where all of R, G, B are >= threshold are
-    flipped to alpha=0. White character highlights (typically smaller and
-    color-tinted) survive because they have at least one channel below threshold
-    or are preserved by the post-NEAREST step.
+    requests transparency. The background may be slightly noisy (e.g. RGBA
+    236,238,234,255 — not pure 255,255,255) so a strict per-channel threshold
+    misses pixels where one channel drops a few values.
+
+    Two-prong test:
+      1. R+G+B sum is high (avg per channel >= sum_threshold/3 ≈ 230)
+      2. The pixel is COLOR-NEUTRAL — max(R,G,B) − min(R,G,B) < neutral_tol
+
+    Both conditions must hold. This catches off-white BG noise while preserving
+    saturated near-white character pixels (skin highlights, golden trim, etc.)
+    which tend to have a clear color tint.
     """
     pixels = img.load()
     w, h = img.size
     for y in range(h):
         for x in range(w):
             r, g, b, a = pixels[x, y]
-            if a > 0 and r >= threshold and g >= threshold and b >= threshold:
-                pixels[x, y] = (0, 0, 0, 0)
+            if a == 0:
+                continue
+            if r + g + b < sum_threshold:
+                continue
+            if max(r, g, b) - min(r, g, b) >= neutral_tol:
+                continue
+            pixels[x, y] = (0, 0, 0, 0)
     return img
 
 
