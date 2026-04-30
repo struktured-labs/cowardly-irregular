@@ -382,20 +382,24 @@ func _on_autobattle_editor_closed() -> void:
 
 
 func _sync_party_to_game_state() -> void:
-	"""Sync runtime Combatant party into GameState.player_party for menus.
-	Includes equipment IDs so shop stat comparison can work."""
+	"""Sync runtime Combatant party into GameState.player_party for menus + saving.
+
+	Bug fix (2026-04-30): previously this synthesized a 5-field dict
+	(name + job_id + equipment IDs only). When SaveSystem serialized
+	GameState.player_party, all level/HP/MP/EXP/abilities were lost.
+	On load, _create_party() then constructed fresh defaults from scratch,
+	silently resetting every saved character to level 1 / starter gear.
+
+	Now uses Combatant.to_dict() (which was also expanded today) so the
+	full character state survives save → load cycles. Companion change:
+	GameLoop.gd added _restore_party_from_save_data() which reconstructs
+	live Combatants from this dict array and is wired into the load paths.
+	"""
 	GameState.player_party.clear()
 	for member in party:
-		var job_id = "fighter"
-		if member.job and member.job is Dictionary:
-			job_id = member.job.get("id", "fighter")
-		GameState.player_party.append({
-			"job_id": job_id,
-			"name": member.combatant_name,
-			"equipped_weapon": member.equipped_weapon if "equipped_weapon" in member else "",
-			"equipped_armor": member.equipped_armor if "equipped_armor" in member else "",
-			"equipped_accessory": member.equipped_accessory if "equipped_accessory" in member else "",
-		})
+		if not is_instance_valid(member) or not (member is Combatant):
+			continue
+		GameState.player_party.append(member.to_dict())
 	# Clamp leader index in case party size changed
 	if not GameState.player_party.is_empty():
 		GameState.party_leader_index = clampi(GameState.party_leader_index, 0, GameState.player_party.size() - 1)
@@ -852,8 +856,19 @@ func _on_title_continue() -> void:
 	"""Handle continue selected from title screen"""
 	print("[GAME] Continue selected")
 	_close_title_screen()
-	# Load saved party and start exploration — fade through black for smooth entry
-	_create_party()
+	# Load most recent save FIRST (writes into GameState), THEN restore the
+	# live party from the loaded GameState. Bug fix (2026-04-30): previously
+	# we went straight to _create_party() (defaults) and ignored the save.
+	var loaded = false
+	if SaveSystem and SaveSystem.has_method("load_game"):
+		var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
+		if slot >= 0:
+			loaded = SaveSystem.load_game(slot)
+	if loaded and _restore_party_from_save_data():
+		print("[GAME] Continue: restored party from save")
+	else:
+		print("[GAME] Continue: no save / restore failed — creating default party")
+		_create_party()
 	if _area_fade_rect:
 		_area_fade_rect.modulate.a = 1.0
 	await _start_exploration()
@@ -1057,6 +1072,84 @@ func _load_customizations() -> Array:
 	return customizations
 
 
+func _restore_party_from_save_data() -> bool:
+	"""Reconstruct runtime party from GameState.player_party (post-load).
+
+	Returns true if a party was restored, false if no save data available
+	(in which case caller should fall back to _create_party() defaults).
+
+	Bug fix (2026-04-30): SaveSystem.load_game wrote into GameState but
+	GameLoop.party was never rehydrated — every Continue / Game Over →
+	Continue from save effectively reset the party to defaults. This
+	function closes the gap. Pairs with the expanded Combatant.to_dict /
+	from_dict and the full-state _sync_party_to_game_state.
+	"""
+	if not GameState or GameState.player_party.is_empty():
+		return false
+
+	# Tear down any existing live party — we're replacing it.
+	for old in party:
+		if is_instance_valid(old):
+			old.queue_free()
+	party.clear()
+
+	for entry in GameState.player_party:
+		if not (entry is Dictionary):
+			continue
+		var c = Combatant.new()
+		add_child(c)
+		c.from_dict(entry)
+		# Reapply job dict + abilities via JobSystem (the dict is data-driven
+		# and not safe to serialize verbatim — we keep job_id and rebuild).
+		var job_id = entry.get("job_id", "fighter")
+		# Legacy saves may have stored the synthetic "job" string instead of "job_id"
+		if job_id == "" and entry.has("job") and entry["job"] is String:
+			job_id = entry["job"]
+		if job_id == "":
+			job_id = "fighter"
+		JobSystem.assign_job(c, job_id)
+		var sec_id = entry.get("secondary_job_id", "")
+		if sec_id != "":
+			JobSystem.assign_secondary_job(c, sec_id)
+		# Re-apply equipment via EquipmentSystem so stat modifiers attach
+		# (from_dict only restored the ID strings).
+		var w = entry.get("equipped_weapon", "")
+		if w != "":
+			EquipmentSystem.equip_weapon(c, w)
+		var a = entry.get("equipped_armor", "")
+		if a != "":
+			EquipmentSystem.equip_armor(c, a)
+		var acc = entry.get("equipped_accessory", "")
+		if acc != "":
+			EquipmentSystem.equip_accessory(c, acc)
+		# Equipped passives — re-apply through PassiveSystem so their
+		# runtime hooks attach.
+		for pid in entry.get("equipped_passives", []):
+			if pid is String:
+				PassiveSystem.equip_passive(c, pid)
+		party.append(c)
+
+	# After equip/passive reapply, restore HP/MP/AP from the saved data
+	# (EquipmentSystem may have bumped max_hp via equipment, which clamps
+	# current_hp upward in some equip paths). We re-clamp to saved values.
+	for i in party.size():
+		if i >= GameState.player_party.size():
+			break
+		var saved = GameState.player_party[i]
+		if not (saved is Dictionary):
+			continue
+		var c: Combatant = party[i]
+		if saved.has("current_hp"):
+			c.current_hp = clampi(saved["current_hp"], 0, c.max_hp)
+		if saved.has("current_mp"):
+			c.current_mp = clampi(saved["current_mp"], 0, c.max_mp)
+		if saved.has("current_ap"):
+			c.current_ap = clampi(saved["current_ap"], -4, 4)
+		if saved.has("is_alive"):
+			c.is_alive = saved["is_alive"]
+	return true
+
+
 func _create_party() -> void:
 	"""Create the persistent party"""
 	party.clear()
@@ -1256,12 +1349,16 @@ func _show_game_over_screen() -> void:
 			_spawn_point = "default"
 			_start_exploration()
 	else:
-		# Load most recent save
+		# Load most recent save and rehydrate the live party from it.
+		# Bug fix (2026-04-30): used to fall through to _create_party()
+		# unconditionally, throwing away the save's level/HP/equipment.
+		var loaded = false
 		if SaveSystem and SaveSystem.has_method("load_game"):
-			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else 0
+			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
 			if slot >= 0:
-				SaveSystem.load_game(slot)
-		_create_party()
+				loaded = SaveSystem.load_game(slot)
+		if not (loaded and _restore_party_from_save_data()):
+			_create_party()
 		_start_exploration()
 
 

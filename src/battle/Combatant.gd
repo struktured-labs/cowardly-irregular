@@ -494,8 +494,13 @@ func get_mp_percentage() -> float:
 
 
 func to_dict() -> Dictionary:
-	"""Serialize combatant state for saving"""
-	return {
+	"""Serialize combatant state for saving.
+	Bug fix (2026-04-30): expanded to include job, secondary_job, level/exp,
+	equipment, inventory, and learned_passives. Previously these were missing,
+	so any save → load cycle reset characters to fresh defaults at level 1
+	with starter equipment. _sync_party_to_game_state in GameLoop.gd was also
+	updated to call this function instead of synthesizing 5 fields by hand."""
+	var data: Dictionary = {
 		"name": combatant_name,
 		"max_hp": max_hp,
 		"max_mp": max_mp,
@@ -506,12 +511,31 @@ func to_dict() -> Dictionary:
 		"defense": defense,
 		"magic": magic,
 		"speed": speed,
+		"job_level": job_level,
+		"job_exp": job_exp,
 		"status_effects": status_effects.duplicate(),
 		"permanent_injuries": permanent_injuries.duplicate(),
 		"is_alive": is_alive,
 		"learned_abilities": learned_abilities.duplicate(),
-		"job_profiles": job_profiles.duplicate(true)
+		"job_profiles": job_profiles.duplicate(true),
+		"secondary_job_id": secondary_job_id,
+		"equipped_weapon": equipped_weapon,
+		"equipped_armor": equipped_armor,
+		"equipped_accessory": equipped_accessory,
+		"learned_passives": learned_passives.duplicate(),
+		"equipped_passives": equipped_passives.duplicate(),
+		"inventory": inventory.duplicate(),
+		"doom_counter": doom_counter,
 	}
+	# Job is a Dictionary; only its id is stable across runs (the full dict
+	# is reconstructed via JobSystem.assign_job in restore).
+	if job and job is Dictionary:
+		data["job_id"] = job.get("id", "")
+	# Synthetic fields for save-slot UI (legacy "level" key, hp pair).
+	data["level"] = job_level
+	data["job"] = data.get("job_id", "")
+	data["hp"] = current_hp
+	return data
 
 
 func from_dict(data: Dictionary) -> void:
@@ -536,6 +560,10 @@ func from_dict(data: Dictionary) -> void:
 		magic = data["magic"]
 	if data.has("speed"):
 		speed = data["speed"]
+	if data.has("job_level"):
+		job_level = data["job_level"]
+	if data.has("job_exp"):
+		job_exp = data["job_exp"]
 	if data.has("status_effects"):
 		status_effects = data["status_effects"].duplicate()
 	if data.has("permanent_injuries"):
@@ -548,6 +576,24 @@ func from_dict(data: Dictionary) -> void:
 			learned_abilities.append(ability_id)
 	if data.has("job_profiles"):
 		job_profiles = data["job_profiles"].duplicate(true)
+	# Equipment + secondary job + inventory/passives (all expanded
+	# 2026-04-30 bug fix — see to_dict comment).
+	if data.has("equipped_weapon"):
+		equipped_weapon = data["equipped_weapon"]
+	if data.has("equipped_armor"):
+		equipped_armor = data["equipped_armor"]
+	if data.has("equipped_accessory"):
+		equipped_accessory = data["equipped_accessory"]
+	if data.has("secondary_job_id"):
+		secondary_job_id = data["secondary_job_id"]
+	if data.has("learned_passives"):
+		learned_passives = data["learned_passives"].duplicate()
+	if data.has("equipped_passives"):
+		equipped_passives = data["equipped_passives"].duplicate()
+	if data.has("inventory"):
+		inventory = data["inventory"].duplicate()
+	if data.has("doom_counter"):
+		doom_counter = data["doom_counter"]
 
 	# Resolve legacy job aliases in loaded data
 	var job_system = get_node_or_null("/root/JobSystem")
