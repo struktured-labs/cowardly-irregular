@@ -162,13 +162,20 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer = Label.new()
-	footer.text = "↑↓: Scroll    B: Close"
+	footer.text = "↑↓ / Wheel: Scroll    B / RClick: Close"
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp_size.y - 28)
 	footer.size = Vector2(vp_size.x, 20)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", LOCKED_COLOR)
 	add_child(footer)
+
+	# Mouse: right-click to close. Added LAST so it sits on top of all
+	# previously-added children (PASS lets clicks bubble to interactive
+	# items; right-click consumed here).
+	MenuMouseHelper.add_right_click_cancel(self, func() -> void:
+		closed.emit()
+		queue_free())
 
 
 func _build_quest_lines() -> Array:
@@ -262,3 +269,15 @@ func _input(event: InputEvent) -> void:
 			_scroll_offset += 3
 			_build_ui()
 		get_viewport().set_input_as_handled()
+	# Mouse wheel scrolling
+	elif event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			if _scroll_offset > 0:
+				_scroll_offset = maxi(0, _scroll_offset - 3)
+				_build_ui()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			if _scroll_offset + _max_visible_lines < _total_lines:
+				_scroll_offset += 3
+				_build_ui()
+			get_viewport().set_input_as_handled()

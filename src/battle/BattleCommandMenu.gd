@@ -120,11 +120,18 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	var alive_enemies = get_alive_enemies()
 	var canvas_transform = _scene.get_viewport().get_canvas_transform()
 
-	# Autobattle option at the top
+	# Autobattle option at the top — runs autobattle for THIS character
 	items.append({
 		"id": "autobattle",
 		"label": "Auto",
 		"data": {"action": "autobattle", "combatant": combatant}
+	})
+	# Edit Autobattle rules — opens the rule grid editor for THIS character.
+	# Mouse-only users need this entry because F5/L+R is keyboard/gamepad only.
+	items.append({
+		"id": "autobattle_edit",
+		"label": "Auto Rules",
+		"data": {"action": "autobattle_edit", "combatant": combatant}
 	})
 
 	# Attack -> submenu of enemy targets
@@ -533,6 +540,16 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			print("[AUTOBATTLE] %s enabled - executing auto turn" % combatant_for_auto.combatant_name)
 			BattleManager.execute_autobattle_for_current()
 			_scene._update_ui()
+		return
+
+	# Edit Autobattle rules - open the rule grid editor (mouse-friendly path,
+	# parallel to F5 / Start / L+R hotkeys). GameLoop._toggle_autobattle_editor()
+	# picks the currently-selecting player automatically when in battle.
+	if item_id == "autobattle_edit":
+		# Runtime lookup — GameLoop is autoloaded at /root/GameLoop
+		var game_loop = _scene.get_tree().root.get_node_or_null("GameLoop") if _scene and _scene.get_tree() else null
+		if game_loop and game_loop.has_method("_toggle_autobattle_editor"):
+			game_loop._toggle_autobattle_editor()
 		return
 
 	# Scan enemy — reveal stats, weaknesses, drops

@@ -144,6 +144,10 @@ func _build_ui() -> void:
 		)
 		add_child(card)
 		_world_cards.append(card)
+		# Mouse: click-to-select, hover-to-highlight
+		MenuMouseHelper.make_clickable(card, i, card_w, card_h,
+			func() -> void: _on_card_clicked(),
+			func() -> void: _on_card_hovered(i))
 
 	# Current location — prefer the current map id, else fall back to a
 	# blank string (the get_current_location_name() API referenced here
@@ -161,7 +165,7 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer := Label.new()
-	footer.text = "↑↓←→: Select   B / Esc: Close"
+	footer.text = "↑↓←→ / Wheel: Select   B / Esc / RClick: Close"
 	footer.position = Vector2(24, vp.y - 32)
 	footer.size = Vector2(vp.x - 48, 20)
 	footer.add_theme_font_size_override("font_size", 13)
@@ -170,6 +174,11 @@ func _build_ui() -> void:
 	add_child(footer)
 
 	_selected = clamp(_current_world - 1, 0, WORLD_DATA.size() - 1)
+
+	# Mouse: right-click anywhere on the panel to close.
+	# Added LAST so it's on top of card click handlers (PASS lets clicks
+	# propagate to cards, but right-click is consumed here).
+	MenuMouseHelper.add_right_click_cancel(self, _close)
 
 
 func _build_card(world: Dictionary, sz: Vector2) -> Control:
@@ -290,6 +299,16 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# Mouse wheel to navigate (wraps via MenuMouseHelper)
+	var wheel_idx := MenuMouseHelper.handle_scroll_wheel(event, _selected, WORLD_DATA.size())
+	if wheel_idx >= 0:
+		_selected = wheel_idx
+		_highlight()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+		return
+
 	var cols := 2
 	var rows := 3
 	var old := _selected
@@ -312,6 +331,22 @@ func _input(event: InputEvent) -> void:
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
+
+
+func _on_card_clicked() -> void:
+	# Display-only menu — clicking a card just plays a small confirm cue,
+	# doesn't navigate. The user closes via right-click / B / Esc.
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
+func _on_card_hovered(idx: int) -> void:
+	if idx == _selected:
+		return
+	_selected = idx
+	_highlight()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
 
 
 func _close() -> void:
