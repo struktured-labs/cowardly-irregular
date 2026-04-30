@@ -484,6 +484,13 @@ func _show_overwrite_confirmation(slot: int) -> void:
 
 func _on_save_slot_click(index: int) -> void:
 	"""Handle mouse click on a save slot"""
+	# Bug fix (2026-04-30): if the overwrite-confirmation overlay is up,
+	# clicks on slots underneath it would change selection AND silently
+	# call _handle_confirm (which short-circuits but only after mutating
+	# selected_slot). Now we ignore slot clicks entirely while the overlay
+	# is visible.
+	if _confirm_overlay and is_instance_valid(_confirm_overlay):
+		return
 	selected_slot = index
 	_update_selection()
 	_handle_confirm()
@@ -491,6 +498,10 @@ func _on_save_slot_click(index: int) -> void:
 
 func _on_save_slot_hover(index: int) -> void:
 	"""Handle mouse hover on a save slot"""
+	# Same overlay gate — hovering shouldn't change selection while a modal
+	# confirm is up.
+	if _confirm_overlay and is_instance_valid(_confirm_overlay):
+		return
 	if index != selected_slot:
 		selected_slot = index
 		_update_selection()

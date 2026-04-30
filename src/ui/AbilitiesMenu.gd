@@ -629,8 +629,9 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	# Tab switching
-	if event.is_action_pressed("ui_left"):
+	# Tab switching — echo-guarded (2026-04-30 fix). Holding Left/Right
+	# was rebuilding the entire UI per echo and spamming menu_move.
+	if event.is_action_pressed("ui_left") and not event.is_echo():
 		if current_tab > 0:
 			current_tab -= 1
 			selected_index = 0
@@ -639,7 +640,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") and not event.is_echo():
 		if current_tab < Tab.PASSIVES:
 			current_tab += 1
 			selected_index = 0

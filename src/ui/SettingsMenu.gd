@@ -1180,17 +1180,21 @@ func _show_quit_confirmation() -> void:
 		var yh = confirm.get_meta("yes_hl")
 		var nh = confirm.get_meta("no_hl")
 		var changed = false
-		if event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right"):
+		# Bug fix (2026-04-30): echo guards on the Quit confirmation. Holding
+		# Left/Right toggled selection per echo; holding Enter could call
+		# do_quit/close repeatedly, double-emitting quit_to_title and
+		# double-queue_free'ing the confirm dialog.
+		if (event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right")) and not event.is_echo():
 			sel = 1 - sel
 			changed = true
-		elif event.is_action_pressed("ui_accept"):
+		elif event.is_action_pressed("ui_accept") and not event.is_echo():
 			if sel == 0:
 				dq.call()
 			else:
 				cd.call()
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_cancel"):
+		elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 			cd.call()
 			get_viewport().set_input_as_handled()
 			return
