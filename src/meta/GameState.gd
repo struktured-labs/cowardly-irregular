@@ -102,12 +102,16 @@ func _ensure_save_directory() -> void:
 
 
 func _create_save_data() -> Dictionary:
-	"""Create save data dictionary"""
+	"""Create save data dictionary.
+	Bug fix (2026-04-30): added macro_volatility and current_save_name —
+	previously these were declared as state but never serialized, so
+	macro_volatility (Speculator drift) reset to 0.0 on every load."""
 	return {
 		"version": "0.1.0",
 		"timestamp": Time.get_unix_time_from_system(),
 		"playtime": playtime_seconds,
 		"corruption_level": corruption_level,
+		"macro_volatility": macro_volatility,
 		"party_gold": party_gold,
 		"player_party": player_party.duplicate(true),
 		"party_leader_index": party_leader_index,
@@ -117,6 +121,7 @@ func _create_save_data() -> Dictionary:
 		"current_world": current_world,
 		"worlds_unlocked": worlds_unlocked,
 		"story_flags": story_flags.duplicate(),
+		"current_save_name": current_save_name,
 	}
 
 
@@ -126,6 +131,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		playtime_seconds = save_data["playtime"]
 	if save_data.has("corruption_level"):
 		corruption_level = save_data["corruption_level"]
+	if save_data.has("macro_volatility"):
+		macro_volatility = float(save_data["macro_volatility"])
 	if save_data.has("party_gold"):
 		party_gold = save_data["party_gold"]
 	if save_data.has("player_party"):
@@ -144,6 +151,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		worlds_unlocked = save_data["worlds_unlocked"]
 	if save_data.has("story_flags"):
 		story_flags = save_data["story_flags"].duplicate()
+	if save_data.has("current_save_name"):
+		current_save_name = save_data["current_save_name"]
 
 
 ## Corruption system

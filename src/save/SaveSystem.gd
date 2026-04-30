@@ -56,6 +56,15 @@ func save_game(slot: int = -1) -> bool:
 		save_failed.emit("No save slot selected")
 		return false
 
+	# Gate on battle state — same as can_quick_save. Pre-fix (2026-04-30),
+	# only quick_save() and auto_save() checked this; save_game(slot)
+	# called from SaveScreen could write transient battle state (queued
+	# actions, mid-animation HP, party still mid-revive) into the save.
+	if not can_quick_save():
+		save_failed.emit("Cannot save during battle")
+		print("[SAVE] save_game refused: battle active")
+		return false
+
 	save_started.emit()
 
 	# Gather save data
@@ -397,8 +406,25 @@ func _find_active_player() -> Node2D:
 
 ## Save data application
 func _apply_save_data(data: Dictionary) -> void:
-	"""Apply loaded save data to game state"""
-	# Apply player position
+	"""Apply loaded save data to game state.
+
+	Apply order matters:
+	  1. Map FIRST — load_map unloads the prior map and re-spawns the player
+	     at its default spawn point. If player position were applied before
+	     load_map, the saved coordinates would be lost on the spawn re-pos.
+	     (Bug fix 2026-04-30 — saved positions never restored when map_id
+	     differed from current.)
+	  2. Player position SECOND — overrides the spawn point with saved coords.
+	  3. Party — rehydrate Combatants from serialized state.
+	  4. Inventory — items, gold.
+	"""
+	# Apply map/location FIRST so player respawn happens cleanly, then teleport.
+	if data.has("map"):
+		var map_data = data["map"]
+		if map_data.has("current_map_id"):
+			MapSystem.load_map(map_data["current_map_id"])
+
+	# Apply player position AFTER map load.
 	if data.has("player"):
 		var player = _find_active_player()
 		if player and data["player"].has("position"):
@@ -407,12 +433,6 @@ func _apply_save_data(data: Dictionary) -> void:
 				player.teleport(Vector2(pos["x"], pos["y"]))
 			else:
 				player.position = Vector2(pos["x"], pos["y"])
-
-	# Apply map/location
-	if data.has("map"):
-		var map_data = data["map"]
-		if map_data.has("current_map_id"):
-			MapSystem.load_map(map_data["current_map_id"])
 
 	# Apply party data
 	if data.has("party"):
@@ -446,9 +466,49 @@ func _apply_save_data(data: Dictionary) -> void:
 
 
 func _deserialize_party(party_data: Array) -> void:
-	"""Deserialize party members"""
-	if GameState and "player_party" in GameState:
-		GameState.player_party = party_data.duplicate(true)
+	"""Deserialize party members.
+
+	Bug fix (2026-04-30): old saves with `white_mage`/`black_mage`/`thief`
+	job IDs were stuffed into player_party verbatim. Combatant.from_dict
+	resolves aliases at the live-Combatant level, but this dict array is
+	consumed by menus / shops / load-time UI before Combatants are
+	constructed — those readers saw the legacy IDs and rendered wrong
+	job sprites/labels. Now we resolve aliases here too so player_party
+	contains canonical IDs.
+	"""
+	if not (GameState and "player_party" in GameState):
+		return
+	var resolved: Array[Dictionary] = []
+	var job_system = get_node_or_null("/root/JobSystem")
+	for entry in party_data:
+		if not (entry is Dictionary):
+			continue
+		var copy = entry.duplicate(true)
+		if job_system:
+			# Top-level job_id (used by both legacy synth and new to_dict).
+			if copy.has("job_id") and copy["job_id"] is String:
+				copy["job_id"] = job_system.resolve_job_id(copy["job_id"])
+			# Legacy "job" string field used by old save metadata.
+			if copy.has("job") and copy["job"] is String:
+				copy["job"] = job_system.resolve_job_id(copy["job"])
+			# Secondary job ID.
+			if copy.has("secondary_job_id") and copy["secondary_job_id"] is String:
+				copy["secondary_job_id"] = job_system.resolve_job_id(copy["secondary_job_id"])
+			# job_profiles keys are "primary:secondary" tuples — re-key under
+			# resolved IDs so per-job memory survives the rename.
+			if copy.has("job_profiles") and copy["job_profiles"] is Dictionary:
+				var resolved_profiles := {}
+				for key in copy["job_profiles"]:
+					var parts = key.split(":")
+					var rk = job_system.resolve_job_id(parts[0])
+					if parts.size() > 1 and parts[1] != "":
+						rk += ":" + job_system.resolve_job_id(parts[1])
+					else:
+						rk += ":"
+					resolved_profiles[rk] = copy["job_profiles"][key]
+				copy["job_profiles"] = resolved_profiles
+		resolved.append(copy)
+	GameState.player_party = resolved
 
 
 func _deserialize_inventory(inventory_data: Dictionary) -> void:
