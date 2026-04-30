@@ -74,8 +74,12 @@ func test_start_battle_resets_doom_counter() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
 	var body = text.substr(idx, 3000)
-	assert_true(body.find("doom_counter = 0") != -1,
-		"start_battle must reset doom_counter")
+	# Updated 2026-04-30: doom_counter is now reset to -1 (the "not doomed"
+	# sentinel from Combatant.gd:84) instead of 0. Setting to 0 was clobbering
+	# the sentinel design even though the >0 guard in update_buff_durations
+	# kept it from crashing.
+	assert_true(body.find("doom_counter = -1") != -1,
+		"start_battle must reset doom_counter to -1 (sentinel for 'not doomed')")
 
 
 func test_start_battle_does_not_reset_hp_or_mp() -> void:
