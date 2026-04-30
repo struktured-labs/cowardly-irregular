@@ -1264,12 +1264,25 @@ func test_combo_resolve_empty_elements() -> void:
 
 # ---- Vulnerability window: AP debt ----
 
-func test_vulnerability_sets_ap_to_negative_two() -> void:
+func test_vulnerability_subtracts_two_ap() -> void:
+	# Bug fix (2026-04-30): _apply_vulnerability_window was setting AP to a
+	# literal -2 (clampi(-2, -4, 4) ignored current_ap). The fix subtracts 2
+	# from current_ap and clamps to [-4, 4]. This means high-AP characters
+	# get penalized correctly and AP-debt characters aren't *healed* up to -2.
 	_combatant.current_ap = 3
 	BattleManager._apply_vulnerability_window([_combatant])
-	assert_eq(_combatant.current_ap, -2, "Vulnerability should set AP to -2")
+	assert_eq(_combatant.current_ap, 1,
+		"Vulnerability should SUBTRACT 2 AP (3 - 2 = 1), not set to literal -2")
 	assert_true(_combatant.has_status("exposed"), "Should have exposed status")
 	assert_true(_combatant.has_status("cannot_defer"), "Should have cannot_defer status")
+
+
+func test_vulnerability_clamps_ap_at_negative_four() -> void:
+	# AP-debt character: -4 stays -4 (clamp prevents going below).
+	_combatant.current_ap = -4
+	BattleManager._apply_vulnerability_window([_combatant])
+	assert_eq(_combatant.current_ap, -4,
+		"Vulnerability AP must clamp at -4 minimum (was being healed to -2)")
 
 
 func test_vulnerability_on_dead_combatant_skips() -> void:

@@ -157,9 +157,16 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	if not is_alive:
 		return 0
 	# Use attack^2 / (attack + defense) formula for smoother scaling
-	# Defense reduces damage but never makes it negligible
+	# Defense reduces damage but never makes it negligible.
+	# Bug fix (2026-04-30): clamp `amount` to non-negative and guard the
+	# divisor so amount=0 + def_value=0 (possible with 0-power debuff
+	# pings or a ProtectAll buff stripping all attack) doesn't divide by
+	# zero. The max(1, ...) below would still return 1, but the divide
+	# itself emits a Godot error and produces NaN.
+	amount = max(0, amount)
 	var def_value = get_buffed_stat("defense", defense) if not is_magical else int(get_buffed_stat("defense", defense) * 0.5)
-	var actual_damage = int((amount * amount) / float(amount + def_value))
+	var denom = max(1, amount + def_value)
+	var actual_damage = int((amount * amount) / float(denom))
 	actual_damage = max(1, actual_damage)  # Always at least 1 damage
 
 	# Defending reduces damage by 50%

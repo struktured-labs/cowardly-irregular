@@ -81,6 +81,13 @@ var _one_shot_achieved: bool = false  # Whether all enemies died in same executi
 var _setup_turns_used: int = 0       # Turns before first damage (for rating)
 var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 
+## Tracks bound `_on_combatant_died` Callables per combatant so we can
+## disconnect them in _cleanup_battle. is_connected/disconnect with the
+## *unbound* Callable always return false on a bound listener — without
+## this map, every start_battle stacked another listener and KO callbacks
+## fanned out N times after N battles.
+var _died_callbacks: Dictionary = {}
+
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
 var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
@@ -192,16 +199,26 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 		if "is_defending" in combatant:
 			combatant.is_defending = false
 		if "doom_counter" in combatant:
-			combatant.doom_counter = 0
+			# -1 is the "not doomed" sentinel (Combatant.gd:84). Setting to 0
+			# was clobbering the sentinel and would have made update_buff_durations
+			# treat the combatant as on the verge of death — but the >0 guard
+			# happens to mask that. Still, sentinel-correct is cheap insurance.
+			combatant.doom_counter = -1
 		if "current_ap" in combatant:
 			combatant.current_ap = 0
 		if "queued_actions" in combatant:
 			combatant.queued_actions.clear()
 
-	# Connect to combatant signals
+	# Connect to combatant signals.
+	# We bind `combatant` because the `died` signal has no args but
+	# _on_combatant_died takes one. is_connected() can't see bound listeners
+	# the same way as unbound ones, so we cache the bound Callable to
+	# allow proper disconnect in _cleanup_battle (preventing listener leak).
+	_died_callbacks.clear()
 	for combatant in all_combatants:
-		if not combatant.died.is_connected(_on_combatant_died):
-			combatant.died.connect(_on_combatant_died.bind(combatant))
+		var cb = _on_combatant_died.bind(combatant)
+		_died_callbacks[combatant] = cb
+		combatant.died.connect(cb)
 
 	# Clear action log for adaptive AI
 	_battle_action_log.clear()
@@ -386,9 +403,14 @@ func _get_battle_reward_multiplier() -> float:
 
 func _cleanup_battle() -> void:
 	"""Clean up battle state"""
+	# Disconnect using the cached bound Callables — see _died_callbacks
+	# comment for why is_connected/disconnect with the unbound method
+	# silently no-ops here.
 	for combatant in all_combatants:
-		if combatant.died.is_connected(_on_combatant_died):
-			combatant.died.disconnect(_on_combatant_died)
+		var cb = _died_callbacks.get(combatant, null)
+		if cb and combatant.died.is_connected(cb):
+			combatant.died.disconnect(cb)
+	_died_callbacks.clear()
 
 	player_party.clear()
 	enemy_party.clear()
@@ -1443,10 +1465,18 @@ func repeat_previous_actions() -> bool:
 			var action = saved_action.duplicate()
 			action["combatant"] = combatant
 
-			# Retarget if target is dead or freed
+			# Retarget if target is dead, freed, or carries over from a
+			# previous battle (target IS valid + alive but belongs to the
+			# stale enemy_party from the prior encounter — Y-button replay
+			# would otherwise hit ghosts of last battle's monsters).
 			if action.has("target"):
 				var target = action["target"]
-				if not is_instance_valid(target) or (target is Combatant and not target.is_alive):
+				var is_stale = (target is Combatant
+					and is_instance_valid(target)
+					and target.is_alive
+					and target not in player_party
+					and target not in enemy_party)
+				if not is_instance_valid(target) or (target is Combatant and not target.is_alive) or is_stale:
 					var alive_enemies = _get_alive_enemies()
 					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
 
@@ -1454,10 +1484,14 @@ func repeat_previous_actions() -> bool:
 			if action.has("targets"):
 				var new_targets = []
 				for target in action["targets"]:
-					if is_instance_valid(target) and target is Combatant and target.is_alive:
+					var is_alive_in_battle = (target is Combatant
+						and is_instance_valid(target)
+						and target.is_alive
+						and (target in player_party or target in enemy_party))
+					if is_alive_in_battle:
 						new_targets.append(target)
 					else:
-						# Replace dead/freed targets with first alive enemy
+						# Replace dead/freed/stale targets with first alive enemy
 						var alive_enemies = _get_alive_enemies()
 						if alive_enemies.size() > 0:
 							new_targets.append(alive_enemies[0])
@@ -1957,14 +1991,22 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 
 
 func _apply_vulnerability_window(participants: Array) -> void:
-	"""After a group attack, all participants become exposed — 1.5x damage, -2 AP, can't defer"""
+	"""After a group attack, all participants become exposed — 1.5x damage, -2 AP, can't defer.
+
+	Bugs fixed (2026-04-30):
+	  1. `clampi(-2, -4, 4)` was setting AP to a literal -2 instead of subtracting 2.
+	     Punished high-AP characters (e.g. 4 → -2) and *healed* AP-debt characters
+	     (e.g. -4 → -2). Now properly subtracts 2 and clamps.
+	  2. Status duration of 1 expired at the very next end_turn (start of next round),
+	     before any enemy could exploit the vulnerability window. Bumped to 2 so
+	     enemies actually get to land hits during the exposed state."""
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
 			continue
-		p.add_status("exposed", 1)
-		p.add_status("cannot_defer", 1)
+		p.add_status("exposed", 2)
+		p.add_status("cannot_defer", 2)
 		var old_ap = p.current_ap
-		p.current_ap = clampi(-2, -4, 4)
+		p.current_ap = clampi(p.current_ap - 2, -4, 4)
 		if p.has_signal("ap_changed"):
 			p.ap_changed.emit(old_ap, p.current_ap)
 	battle_log_message.emit("[color=red]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]")
@@ -2040,9 +2082,12 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		advance_trash_talk.emit(combatant, line)
 
 	# Note: Each action costs 1 AP during execution.
-	# Grant +1 AP upfront to represent the natural turn gain — this offsets the cost
-	# of the first sub-action so only truly extra actions (2nd, 3rd, 4th) go into debt.
-	combatant.gain_ap(1)
+	# The natural +1 turn-gain already happened in selection_phase (line 526)
+	# before this combatant chose Advance — it offsets the cost of the first
+	# sub-action. Granting another +1 here was double-counting and made
+	# 4-action Advances end at -2 instead of -3 (per CLAUDE.md design and
+	# test_advance_ap_cost_calculation comment "3 - 1 natural gain offset = 2 net").
+	# Bug fix (2026-04-30): removed the extra gain_ap(1).
 	print("%s advances with %d actions!" % [combatant.combatant_name, actions.size()])
 
 	# Execute all actions in sequence (each will spend 1 AP)
@@ -2124,14 +2169,17 @@ func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead:
 
 func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	"""Execute a basic physical attack (costs 1 AP)"""
+	# AP is spent FIRST so a fizzled action (e.g. all enemies dead) still
+	# commits the cost. Otherwise an Advance with mixed valid/invalid
+	# targets would leave AP elevated above what the player chose to spend
+	# (bug fix 2026-04-30 — caught by combat audit).
+	attacker.spend_ap(1)
+
 	# Auto-retarget if original target is dead/invalid
 	var actual_target = _retarget_enemy(attacker, target)
 	if not actual_target or not is_instance_valid(actual_target):
 		print("%s's attack fizzles - no valid targets!" % attacker.combatant_name)
 		return
-
-	# Actions cost 1 AP (cancels out natural gain for net 0)
-	attacker.spend_ap(1)
 
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
 

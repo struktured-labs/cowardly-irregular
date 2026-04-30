@@ -1725,10 +1725,14 @@ func _get_highest_hp_enemy(combatant: Combatant) -> Combatant:
 
 
 func _get_lowest_hp_ally(combatant: Combatant) -> Combatant:
-	"""Get ally with lowest HP percentage"""
+	"""Get ally with lowest HP percentage. Returns null if no alive allies
+	(consistent with _get_lowest_hp_enemy at line 1707). Previously returned
+	`combatant` itself, which is misleading when the caller is dead — heal
+	targeting a dead combatant short-circuits in restore_mp / take_damage
+	but the visible "target self" intent was wrong."""
 	var allies = _get_allies_for(combatant)
 	if allies.size() == 0:
-		return combatant
+		return null
 
 	allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
 	return allies[0]
