@@ -584,28 +584,38 @@ func load_settings() -> void:
 	if GameState and settings.has("show_controller_overlay"):
 		GameState.show_controller_overlay = settings["show_controller_overlay"]
 
-	# Master volume
+	# Master volume — clamp to safe range. Pre-fix (2026-04-30) a corrupt
+	# or hand-edited settings.json could push the bus to +60 dB, instant
+	# ear damage. Godot's documented audio bus range is -80..+24 dB; we
+	# cap at +6 dB to leave 18 dB of headroom against clipping.
 	if settings.has("master_volume"):
-		AudioServer.set_bus_volume_db(0, settings["master_volume"])
+		var mv = clampf(float(settings["master_volume"]), -80.0, 6.0)
+		AudioServer.set_bus_volume_db(0, mv)
 
-	# Extended settings
+	# Extended settings — every numeric field clamped to its sane range.
+	const VALID_TEXT_SPEEDS = ["slow", "normal", "fast", "instant"]
 	if GameState:
 		if settings.has("music_volume"):
-			GameState.music_volume = int(settings["music_volume"])
+			GameState.music_volume = clampi(int(settings["music_volume"]), 0, 100)
 			if SoundManager and SoundManager.has_method("set_music_volume"):
 				SoundManager.set_music_volume(GameState.music_volume / 100.0)
 		if settings.has("sfx_volume"):
-			GameState.sfx_volume = int(settings["sfx_volume"])
+			GameState.sfx_volume = clampi(int(settings["sfx_volume"]), 0, 100)
 			if SoundManager and SoundManager.has_method("set_sfx_volume"):
 				SoundManager.set_sfx_volume(GameState.sfx_volume / 100.0)
 		if settings.has("text_speed"):
-			GameState.text_speed = str(settings["text_speed"])
+			var ts = str(settings["text_speed"])
+			GameState.text_speed = ts if ts in VALID_TEXT_SPEEDS else "normal"
 		if settings.has("encounter_rate_multiplier"):
-			GameState.encounter_rate_multiplier = float(settings["encounter_rate_multiplier"])
+			# UI exposes 0.0 (off) to 2.0 (double rate); clamp accordingly.
+			GameState.encounter_rate_multiplier = clampf(float(settings["encounter_rate_multiplier"]), 0.0, 2.0)
 		if settings.has("screen_shake_enabled"):
 			GameState.screen_shake_enabled = bool(settings["screen_shake_enabled"])
 		if settings.has("default_battle_speed"):
-			GameState.default_battle_speed = float(settings["default_battle_speed"])
+			# Validate against actual BATTLE_SPEEDS — fall back to 1.0 if drift.
+			# (BattleSceneScript was already loaded at line 577 in this function.)
+			var raw_speed = float(settings["default_battle_speed"])
+			GameState.default_battle_speed = raw_speed if (BattleSceneScript and raw_speed in BattleSceneScript.BATTLE_SPEEDS) else 1.0
 		if settings.has("debug_log_enabled"):
 			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
 			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):

@@ -321,13 +321,26 @@ func get_playtime_formatted() -> String:
 
 
 func reset_game_state() -> void:
-	"""Reset game state to defaults"""
+	"""Reset game state to defaults.
+	Bug fix (2026-04-30): now also clears story_flags, worlds_unlocked,
+	current_world, meta_features, party_leader_index, macro_volatility,
+	current_save_name. Pre-fix, New Game preserved all these from the
+	prior playthrough, so a second New Game would skip prologue and have
+	all 6 worlds unlocked from the start. Mirrors _create_save_data."""
 	playtime_seconds = 0.0
 	corruption_level = 0.0
+	macro_volatility = 0.0
 	party_gold = 500
 	player_party.clear()
 	corruption_effects.clear()
 	save_history.clear()
+
+	# Story / world progression
+	story_flags.clear()
+	current_world = 1
+	worlds_unlocked = 1
+	current_save_name = ""
+	party_leader_index = 0
 
 	# Reset game constants
 	game_constants = {
@@ -337,6 +350,15 @@ func reset_game_state() -> void:
 		"healing_multiplier": 1.0,
 		"encounter_rate": 1.0,
 		"drop_rate_multiplier": 1.0,
+	}
+
+	# Reset meta features (autosave / rewind / restore points) — start fresh.
+	# Mirror the var-default at GameState.gd:50.
+	meta_features = {
+		"autosave_enabled": false,
+		"rewind_enabled": false,
+		"restore_points_enabled": false,
+		"max_restore_points": 0
 	}
 
 

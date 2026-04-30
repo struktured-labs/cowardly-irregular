@@ -660,6 +660,13 @@ func _on_title_new_game() -> void:
 	AutobattleSystem.autobattle_enabled.clear()
 	AutobattleSystem.cancel_all_next_turn = false
 	BattleManager.is_autobattle_enabled = false
+	# Wipe persistent GameState so a fresh playthrough doesn't inherit
+	# story flags / unlocked worlds / meta features from the prior session.
+	# Bug fix (2026-04-30): pre-fix, New Game on a save where you'd beaten
+	# the game would still show all 6 worlds unlocked and skip the prologue
+	# (since cutscene_flag_prologue_complete persisted in story_flags).
+	if GameState and GameState.has_method("reset_game_state"):
+		GameState.reset_game_state()
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
 	# Go straight to exploration — prologue triggers on first Theron interaction
