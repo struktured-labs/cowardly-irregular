@@ -294,7 +294,12 @@ func _highlight() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+	# Visibility guard — don't process input when the menu is hidden
+	# (still in scene tree but not shown).
+	if not visible:
+		return
+
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close()
 		get_viewport().set_input_as_handled()
 		return
@@ -313,16 +318,18 @@ func _input(event: InputEvent) -> void:
 	var rows := 3
 	var old := _selected
 
-	if event.is_action_pressed("ui_up"):
+	# Echo-guard navigation: holding D-pad otherwise spams `menu_move` and
+	# selection updates every frame at the OS key-repeat rate.
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		if _selected >= cols:
 			_selected -= cols
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if _selected + cols < WORLD_DATA.size():
 			_selected += cols
-	elif event.is_action_pressed("ui_left"):
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		if _selected % cols > 0:
 			_selected -= 1
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") and not event.is_echo():
 		if _selected % cols < cols - 1 and _selected + 1 < WORLD_DATA.size():
 			_selected += 1
 

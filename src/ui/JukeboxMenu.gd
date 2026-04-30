@@ -60,6 +60,11 @@ var _currently_playing: String = ""
 var _generating: bool = false
 var _last_play_time: float = -999.0
 const PLAY_DEBOUNCE_SEC = 0.3
+## Track that was playing when the jukebox opened, so we can resume it
+## on close. Bug fix (2026-04-30): pre-fix, _close_menu unconditionally
+## called SoundManager.stop_music(), leaving the overworld silent until
+## the next area transition.
+var _resume_track: String = ""
 
 ## Node references
 var _panel: Control
@@ -69,6 +74,10 @@ var _now_playing_label: Label
 
 
 func _ready() -> void:
+	# Snapshot the currently-playing music so _close_menu can restore it
+	# instead of leaving silence behind.
+	if SoundManager and "_current_music" in SoundManager:
+		_resume_track = SoundManager._current_music
 	_build_ui()
 
 
@@ -319,7 +328,13 @@ func _on_row_hover(local_row: int) -> void:
 
 func _close_menu() -> void:
 	if SoundManager:
-		SoundManager.stop_music()
+		# Resume the track that was playing before the jukebox opened, if any.
+		# Falls back to stopping music if there was no prior track.
+		if _resume_track != "" and _resume_track != _currently_playing:
+			if SoundManager.has_method("play_music"):
+				SoundManager.play_music(_resume_track)
+		elif _resume_track == "":
+			SoundManager.stop_music()
 		SoundManager.play_ui("menu_close")
 	closed.emit()
 	queue_free()

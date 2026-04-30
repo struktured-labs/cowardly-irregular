@@ -1044,10 +1044,16 @@ func _on_boss_selector_closed() -> void:
 
 
 func _on_boss_selected(boss_id: String) -> void:
-	"""Boss selected - close settings and start battle"""
+	"""Boss selected - close settings and start battle.
+	Bug fix (2026-04-30): emit `closed` BEFORE `start_boss_battle`. The
+	upstream listener (OverworldMenu._on_settings_boss_battle) calls
+	queue_free on OverworldMenu in response. Emitting closed second meant
+	OverworldMenu was already queued-for-free when SettingsMenu fired
+	closed → _on_settings_closed ran on a dying node, triggering tweens
+	and warnings on a freed instance."""
 	_boss_submenu_open = false
-	start_boss_battle.emit(boss_id)
 	closed.emit()
+	start_boss_battle.emit(boss_id)
 	queue_free()
 
 

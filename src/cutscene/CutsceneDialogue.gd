@@ -568,9 +568,13 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	if event.is_action_pressed("ui_accept"):
+	# Bug fix (2026-04-30): added `not event.is_echo()` so holding Enter
+	# doesn't rapid-fire _advance_dialogue at echo rate (was burning past
+	# multiple lines per held key, also spamming the menu_select cue).
+	if event.is_action_pressed("ui_accept") and not event.is_echo():
 		_advance_dialogue()
 		get_viewport().set_input_as_handled()
+		return
 
 	# Left-click to advance dialogue
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
