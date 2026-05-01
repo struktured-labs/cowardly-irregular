@@ -209,6 +209,172 @@ NPC_SOURCES = {
             "a magic staff)"
         ),
     },
+    "innkeeper": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "INNKEEPER/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "middle-aged innkeeper man with rotund belly, brown hair and full "
+            "mustache, white shirt with rolled sleeves, brown leather apron over "
+            "the shirt, dark trousers, sturdy boots, holding a wooden mug, warm "
+            "welcoming smile (NOT a knight, NOT armored, NOT a hero)"
+        ),
+    },
+    "blacksmith": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "BLACKSMITH/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "muscular blacksmith with bare brawny arms, leather work apron over "
+            "a sleeveless tunic, dark trousers, heavy work boots, soot-stained "
+            "face, holding a heavy iron smithing hammer, full dark beard, "
+            "powerful working-class build (NOT a knight, NOT a warrior with armor)"
+        ),
+    },
+    "priestess": {
+        "ase_rel": "CLERIC/Cleric Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "PRIESTESS/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "young priestess with long auburn hair, pure white robe with gold "
+            "trim and a high collar, gold sash at the waist, hands clasped in "
+            "front in prayer (NO staff, NO weapon — empty hands), simple white "
+            "sandals, serene devout posture (visually distinct from any cleric "
+            "with an ankh staff — this priestess holds NOTHING in her hands)"
+        ),
+    },
+    "noble": {
+        "ase_rel": "MAGE/Mage Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "NOBLE/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "young nobleman in a fine deep-purple velvet doublet with gold "
+            "embroidery and silver buttons, white silk shirt visible at collar "
+            "and cuffs, dark slim trousers, polished black leather shoes, "
+            "ringed fingers, refined upright posture, dark hair styled neatly "
+            "(NOT a wizard, NOT holding any staff or magic item)"
+        ),
+    },
+    "noblewoman": {
+        "ase_rel": "MAGE/Mage Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "NOBLEWOMAN/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "elegant noblewoman in a long flowing emerald-green gown with gold "
+            "trim and lace at the neckline, dark hair gathered in an elaborate "
+            "updo, pearl necklace, refined posture, hands folded in front "
+            "(NOT a wizard, NOT holding any staff)"
+        ),
+    },
+    "king": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "KING/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "regal king with full white beard, large ornate gold crown studded "
+            "with red gems, deep crimson royal robe with white ermine fur "
+            "trim, gold-embroidered tunic underneath, holding a tall gold "
+            "scepter topped with a sapphire, commanding broad-shouldered "
+            "posture (NOT a knight in armor — wearing royal robes)"
+        ),
+    },
+    "queen": {
+        "ase_rel": "MAGE/Mage Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "QUEEN/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "regal queen with long dark hair gathered under a gold crown "
+            "studded with blue gems, flowing royal-blue gown with silver "
+            "embroidery and white ermine collar, gold belt, hands folded "
+            "elegantly (NOT a wizard, NOT holding any staff — empty hands)"
+        ),
+    },
+    "soldier": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "SOLDIER/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "uniformed kingdom soldier in a polished steel breastplate over a "
+            "blue tabard with a yellow lion crest, conical steel helmet, "
+            "round wooden shield strapped to back, sheathed sword at hip, "
+            "blue trousers, brown boots, disciplined alert military posture "
+            "(more elite and uniformed than a town guard)"
+        ),
+    },
+    "farmer": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "FARMER/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "weathered peasant farmer with sun-tanned face, plain off-white "
+            "shirt with rolled sleeves, brown suspenders, beige trousers, "
+            "worn boots, wide-brimmed straw hat, holding a wooden hoe over "
+            "one shoulder, friendly hardworking posture (NOT armored, NOT "
+            "carrying any weapon — just a farming tool)"
+        ),
+    },
+    "fisherman": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "FISHERMAN/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "weather-beaten coastal fisherman with grizzled gray beard, navy "
+            "blue knit cap, brown weatherproof oilskin coat over a striped "
+            "shirt, knee-high rubber boots, holding a long bamboo fishing "
+            "rod over one shoulder, leathery tanned face (NOT a sailor "
+            "captain, NOT a pirate — just a humble fisherman)"
+        ),
+    },
+    "monk": {
+        "ase_rel": "CLERIC/Cleric Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "MONK/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "contemplative monk in a simple coarse brown monastic robe with "
+            "the hood pulled up, rope belt at the waist, wooden prayer beads "
+            "around the neck, plain leather sandals, hands folded inside the "
+            "sleeves in front, partially-shaved tonsured head visible inside "
+            "the hood, peaceful meditative posture (NOT holding any staff or "
+            "weapon, NOT a cleric with an ankh — pure ascetic)"
+        ),
+    },
+    "traveler": {
+        "ase_rel": "ROGUE/Rogue Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "TRAVELER/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "weathered wandering traveler with a brown leather travel cloak "
+            "over a green tunic, brown trousers, sturdy boots, large bulging "
+            "leather backpack on shoulders, wide-brimmed brown hat, holding "
+            "a plain wooden walking staff (NOT magical, just for hiking), "
+            "dusty road-worn appearance (NOT an archer, NOT a rogue assassin "
+            "— just a wandering pilgrim)"
+        ),
+    },
 }
 
 PROMPT_TEMPLATE = """Generate a 4-direction walk-cycle sprite sheet for a {char_desc}.
@@ -320,35 +486,65 @@ def grid_to_strip(grid: Image.Image) -> Image.Image:
     return strip
 
 
-def _strip_white_bg(img: Image.Image, sum_threshold: int = 690, neutral_tol: int = 12) -> Image.Image:
-    """Convert near-white *neutral* opaque pixels to transparent.
+def _strip_white_bg(img: Image.Image, color_tol: int = 28) -> Image.Image:
+    """Border-flood chromakey: any pixel reachable from a canvas border via a
+    similar-color flood is treated as background and set to transparent.
 
-    GPT-Image-1 frequently ships an opaque white background even when the prompt
-    requests transparency. The background may be slightly noisy (e.g. RGBA
-    236,238,234,255 — not pure 255,255,255) so a strict per-channel threshold
-    misses pixels where one channel drops a few values.
+    GPT-Image-1 frequently ships an opaque background, sometimes pure white
+    (255,255,255), sometimes off-white (e.g. 221,220,220 or 236,231,221).
+    A simple threshold-based strip can't handle all of these without either
+    leaking BG (when sum is below threshold) or eating valid near-white
+    character pixels (priestess's white robe, queen's white ermine collar).
 
-    Two-prong test:
-      1. R+G+B sum is high (avg per channel >= sum_threshold/3 ≈ 230)
-      2. The pixel is COLOR-NEUTRAL — max(R,G,B) − min(R,G,B) < neutral_tol
+    Border flood is robust:
+      • Sample the actual BG color at each of the 4 corners.
+      • Mark all pixels within `color_tol` per-channel as candidate BG.
+      • Use connected-components labelling; any component that touches a
+        border AND contains a corner-seed color is marked transparent.
+      • Inner near-white pixels (robes, highlights) are surrounded by
+        figure pixels — distinct components — so they survive.
 
-    Both conditions must hold. This catches off-white BG noise while preserving
-    saturated near-white character pixels (skin highlights, golden trim, etc.)
-    which tend to have a clear color tint.
+    `color_tol` is per-channel. 28 is wide enough to handle JPEG-y BG ripples
+    without bleeding into character pixels.
+
+    Also strips any pixels with alpha < 255 already (preserves prior alpha=0).
     """
-    pixels = img.load()
-    w, h = img.size
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = pixels[x, y]
-            if a == 0:
-                continue
-            if r + g + b < sum_threshold:
-                continue
-            if max(r, g, b) - min(r, g, b) >= neutral_tol:
-                continue
-            pixels[x, y] = (0, 0, 0, 0)
-    return img
+    import numpy as np
+    from scipy.ndimage import label
+
+    arr = np.array(img.convert("RGBA"))
+    h, w = arr.shape[:2]
+    rgb = arr[:, :, :3].astype(int)
+    alpha = arr[:, :, 3]
+
+    # Combine: any pixel within `color_tol` of ANY corner is a BG candidate.
+    bg_candidate = np.zeros((h, w), dtype=bool)
+    for sy, sx in [(0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)]:
+        seed_rgb = rgb[sy, sx]
+        diff = np.abs(rgb - seed_rgb).max(axis=2)
+        bg_candidate |= (diff <= color_tol)
+    # Already-transparent pixels are also BG.
+    bg_candidate |= (alpha == 0)
+
+    # Connected components on the BG-candidate mask. 4-connectivity (default).
+    labelled, n_components = label(bg_candidate)
+    if n_components == 0:
+        return img
+
+    # Find every component that touches the canvas border. Those are real BG.
+    border_labels = set()
+    border_labels.update(np.unique(labelled[0, :]))
+    border_labels.update(np.unique(labelled[-1, :]))
+    border_labels.update(np.unique(labelled[:, 0]))
+    border_labels.update(np.unique(labelled[:, -1]))
+    border_labels.discard(0)  # 0 = "not BG candidate"
+
+    if not border_labels:
+        return img
+
+    bg_mask = np.isin(labelled, list(border_labels))
+    arr[bg_mask] = (0, 0, 0, 0)
+    return Image.fromarray(arr, "RGBA")
 
 
 def _binarize_alpha(img: Image.Image, threshold: int = 128) -> Image.Image:
