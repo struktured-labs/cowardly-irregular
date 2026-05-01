@@ -12,6 +12,22 @@ signal dialogue_ended(npc_name: String)
 @export var npc_type: String = "villager"  # villager, elder, shopkeeper, guard
 @export var dialogue_lines: Array = ["Hello, traveler!"]
 @export var facing_direction: int = 0  # 0=down, 1=up, 2=left, 3=right
+## Sprite archetype override. If empty, auto-derived from npc_type.
+## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
+@export var sprite_archetype: String = ""
+
+## Mapping from npc_type → preferred archetype. "" = no mapping (fall back
+## to procedural). For "villager" we alternate young_man/young_woman based
+## on a hash of the npc_name so we get visual variety without explicit picks.
+const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
+	"elder": "",        # picked by name hash → old_man / old_woman
+	"villager": "",     # picked by name hash → young_man / young_woman
+	"shopkeeper": "merchant",
+	"guard": "guard",
+	"scholar": "scholar",
+	"child": "child",
+	# "dancer" stays procedural — it has its own animation system
+}
 
 ## Visual
 var sprite: Sprite2D
@@ -64,14 +80,71 @@ func _process(delta: float) -> void:
 func _generate_sprite() -> void:
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite"
+	sprite.centered = true
+	add_child(sprite)
+
+	# Try archetype sheet first (artist-style 4-row × 4-col 32x32 grid).
+	# Falls back to procedural drawing if no archetype matches.
+	var archetype = _resolve_archetype()
+	if archetype != "" and _try_load_archetype_sprite(archetype):
+		return
 
 	var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 	_draw_npc(image)
+	sprite.texture = ImageTexture.create_from_image(image)
 
-	var texture = ImageTexture.create_from_image(image)
-	sprite.texture = texture
-	sprite.centered = true
-	add_child(sprite)
+
+## Resolve which archetype this NPC should use, falling back to "" if procedural.
+func _resolve_archetype() -> String:
+	# Explicit override wins.
+	if sprite_archetype != "":
+		return sprite_archetype
+	# npc_type → archetype mapping (some types defer to name-hash variants).
+	if npc_type in NPC_TYPE_TO_ARCHETYPE:
+		var mapped = NPC_TYPE_TO_ARCHETYPE[npc_type]
+		if mapped != "":
+			return mapped
+		# "villager" / "elder" — pick old_man/old_woman or young_man/young_woman by name hash.
+		var pair: Array = ["young_man", "young_woman"]
+		if npc_type == "elder":
+			pair = ["old_man", "old_woman"]
+		return pair[hash(npc_name) % 2]
+	return ""
+
+
+## Load the archetype overworld sheet and slice the (facing_direction, frame 0)
+## frame as a static portrait. Returns true on success, false on missing/bad asset.
+func _try_load_archetype_sprite(archetype: String) -> bool:
+	var path = "res://assets/sprites/npcs/%s/overworld.png" % archetype
+	if not ResourceLoader.exists(path):
+		return false
+	var tex = load(path) as Texture2D
+	if not tex:
+		return false
+	var img = tex.get_image()
+	if not img or img.get_width() < 128 or img.get_height() < 128:
+		return false
+	# 4×4 grid, 32x32 frames. Row mapping: 0=down, 1=left, 2=right, 3=up.
+	# OverworldNPC.facing_direction uses: 0=down, 1=up, 2=left, 3=right.
+	# Translate.
+	var sheet_row := 0
+	match facing_direction:
+		0: sheet_row = 0  # down
+		1: sheet_row = 3  # up
+		2: sheet_row = 1  # left
+		3: sheet_row = 2  # right
+	var frame_w := 32
+	var frame_h := 32
+	var col := 0  # frame 0 (idle pose) for static NPCs
+	var region = Rect2i(col * frame_w, sheet_row * frame_h, frame_w, frame_h)
+	var frame_img = img.get_region(region)
+	sprite.texture = ImageTexture.create_from_image(frame_img)
+	# Match the procedural draw path's effective scale (procedural draws at
+	# 32px and renders at 1x; archetype sheets are 32px frames already, so
+	# 1x is correct — but bump slightly to match the 3x scale used elsewhere
+	# when scenes are at small tile sizes. We leave centered=true above.).
+	sprite.scale = Vector2.ONE
+	return true
 
 
 func _safe_pixel(image: Image, x: int, y: int, color: Color) -> void:

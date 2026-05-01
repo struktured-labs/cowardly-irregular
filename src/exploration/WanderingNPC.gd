@@ -14,6 +14,10 @@ const ANIM_FPS: float = 4.0
 @export var npc_name: String = "Traveler"
 @export var dialogue: String = "The road stretches on..."
 @export var sprite_color: Color = Color(0.6, 0.5, 0.4)
+## Optional sprite archetype override. If empty, the NPC uses procedural
+## 1-frame chibi (tinted by sprite_color). Available archetype sheets:
+## old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
+@export var sprite_archetype: String = ""
 
 ## Story-aware dialogue hints — checked in order, last matching flag wins.
 ## Format: [{"flag": "story_flag", "text": "dialogue"}, ...]
@@ -38,6 +42,14 @@ var _pause_timer: float = 0.0
 var _anim_timer: float = 0.0
 var _anim_frame: int = 0
 var _facing_right: bool = true
+
+## Cache of (direction, frame) → texture for archetype sprites.
+## Direction: 0=down, 1=left, 2=right, 3=up (sheet row order).
+## Frame: 0..3 (4-frame walk cycle).
+var _archetype_frames: Dictionary = {}
+var _current_dir: int = 0  # last computed direction (for sheet row pick)
+const ARCHETYPE_FRAME_W: int = 32
+const ARCHETYPE_FRAME_H: int = 32
 
 
 func _ready() -> void:
@@ -78,19 +90,38 @@ func _process(delta: float) -> void:
 	dir = dir.normalized()
 	global_position += dir * WANDER_SPEED * delta
 	_facing_right = dir.x > 0
-	_sprite.flip_h = not _facing_right
+
+	# Pick the dominant axis to set sheet row (0=down, 1=left, 2=right, 3=up).
+	if abs(dir.x) > abs(dir.y):
+		_current_dir = 2 if dir.x > 0 else 1
+	else:
+		_current_dir = 0 if dir.y > 0 else 3
 
 	# Walk animation
 	_anim_timer += delta * ANIM_FPS
 	if _anim_timer >= 1.0:
 		_anim_timer -= 1.0
-		_anim_frame = (_anim_frame + 1) % 2
-		_sprite.modulate.a = 0.95 if _anim_frame == 0 else 1.0  # Subtle bob
+		# 4-frame cycle for archetype path, 2-frame "bob" for procedural.
+		var cycle = 4 if not _archetype_frames.is_empty() else 2
+		_anim_frame = (_anim_frame + 1) % cycle
+		if _archetype_frames.is_empty():
+			# Procedural path: original behavior — flip_h on facing + alpha bob.
+			_sprite.flip_h = not _facing_right
+			_sprite.modulate.a = 0.95 if _anim_frame == 0 else 1.0
+		else:
+			_update_archetype_frame()
 
 
 func _setup_sprite() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
+	# Try archetype sheet first.
+	if sprite_archetype != "" and _try_load_archetype():
+		_sprite.centered = true
+		_sprite.scale = Vector2(3.0, 3.0)  # Match procedural Mode 7 visibility scale
+		add_child(_sprite)
+		_update_archetype_frame()
+		return
 	var img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 
 	var body = sprite_color
@@ -128,6 +159,41 @@ func _setup_sprite() -> void:
 	_sprite.centered = true
 	_sprite.scale = Vector2(3.0, 3.0)  # Scale up for Mode 7 visibility
 	add_child(_sprite)
+
+
+## Slice the archetype sheet into a (direction, frame) cache.
+## Returns true on success, false if asset missing/malformed.
+func _try_load_archetype() -> bool:
+	var path = "res://assets/sprites/npcs/%s/overworld.png" % sprite_archetype
+	if not ResourceLoader.exists(path):
+		return false
+	var tex = load(path) as Texture2D
+	if not tex:
+		return false
+	var img = tex.get_image()
+	if not img or img.get_width() < 128 or img.get_height() < 128:
+		return false
+	# 4×4 grid, 32x32 frames. Sheet rows: 0=down, 1=left, 2=right, 3=up.
+	for row in range(4):
+		for col in range(4):
+			var region = Rect2i(col * ARCHETYPE_FRAME_W, row * ARCHETYPE_FRAME_H,
+				ARCHETYPE_FRAME_W, ARCHETYPE_FRAME_H)
+			var frame_img = img.get_region(region)
+			_archetype_frames["%d_%d" % [row, col]] = ImageTexture.create_from_image(frame_img)
+	return true
+
+
+## Pick the right (direction, frame) from the archetype cache and apply.
+## Direction is derived from current motion (or last facing if paused).
+func _update_archetype_frame() -> void:
+	if _archetype_frames.is_empty():
+		return
+	var key = "%d_%d" % [_current_dir, _anim_frame % 4]
+	if _archetype_frames.has(key):
+		_sprite.texture = _archetype_frames[key]
+		# Disable the procedural-path flip_h since archetype rows already
+		# encode left/right separately.
+		_sprite.flip_h = false
 
 
 func _setup_collision() -> void:

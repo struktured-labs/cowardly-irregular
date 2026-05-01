@@ -574,6 +574,7 @@ func _place_wanderers() -> void:
 			"name": "Merchant",
 			"dialogue": "Harmonia's got the best prices... if you can find it.",
 			"color": Color(0.5, 0.35, 0.2),
+			"archetype": "merchant",
 			"path": [Vector2(30, 23), Vector2(20, 23), Vector2(20, 26), Vector2(30, 26)],
 			"hints": [
 				{"flag": "", "text": "Head west across the bridges — Harmonia Village is just past them."},
@@ -587,6 +588,7 @@ func _place_wanderers() -> void:
 			"name": "Lost Pilgrim",
 			"dialogue": "I've been walking north for hours... is there a village up here?",
 			"color": Color(0.4, 0.4, 0.6),
+			"archetype": "young_man",
 			"path": [Vector2(28, 10), Vector2(28, 14), Vector2(30, 14), Vector2(30, 10)],
 			"hints": [
 				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},
@@ -599,6 +601,7 @@ func _place_wanderers() -> void:
 			"name": "Retired Guard",
 			"dialogue": "Don't go near the cave. Trust me on this one.",
 			"color": Color(0.55, 0.45, 0.35),
+			"archetype": "guard",
 			"path": [Vector2(12, 20), Vector2(12, 24), Vector2(8, 24), Vector2(8, 20)],
 			"hints": [
 				{"flag": "", "text": "Harmonia Village is just south of here. Talk to Elder Theron."},
@@ -614,6 +617,8 @@ func _place_wanderers() -> void:
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		if w.has("archetype"):
+			npc.sprite_archetype = w["archetype"]
 		if w.has("hints"):
 			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
