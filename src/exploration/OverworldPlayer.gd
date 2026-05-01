@@ -304,12 +304,30 @@ func _physics_process(delta: float) -> void:
 		input_dir = input_dir.normalized()
 		# Terrain speed modifier — rough terrain slows you down instead of blocking
 		var terrain_speed = _get_terrain_speed_modifier()
-		# Villages use slower speed — detect by parent name containing "Village"
+		# Villages, taverns, AND dungeons use the slower interior speed.
+		# Dungeons benefit from the slower pace because Mode 7 isn't
+		# active (no horizontal compression) and the corridors are
+		# tight — overworld speed felt twitchy. We match on both the
+		# parent node name (works for .tscn-rooted scenes) and on
+		# MapSystem.current_map_id (works for .gd-only dungeon scripts
+		# whose root node name may not encode the dungeon type).
+		# (User feedback 2026-05-01: "dungeon movement is too quick".)
 		if not _is_interior:
+			const INTERIOR_KEYWORDS = ["village", "tavern", "cave", "dungeon",
+				"chamber", "underground", "mechanism", "process", "core",
+				"sanctum", "vault", "tomb", "ruins"]
+			var pname := ""
 			var parent = get_parent()
 			if parent:
-				var pname = parent.name.to_lower()
-				_is_interior = "village" in pname or "tavern" in pname
+				pname = parent.name.to_lower()
+			var map_id := ""
+			var map_system = get_node_or_null("/root/MapSystem")
+			if map_system and "current_map_id" in map_system:
+				map_id = str(map_system.current_map_id).to_lower()
+			for kw in INTERIOR_KEYWORDS:
+				if kw in pname or kw in map_id:
+					_is_interior = true
+					break
 		var base_speed = interior_speed if _is_interior else move_speed
 		velocity = input_dir * base_speed * terrain_speed
 		is_moving = true
