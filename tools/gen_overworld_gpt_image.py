@@ -20,11 +20,17 @@ Pipeline (mirrors gen_overworld_pixellab.py but uses gpt-image-1):
 
 Cost: ~$0.07 (medium) or ~$0.19 (high) per call. Idempotent unless --force.
 
+Supports both PC jobs (fighter/cleric/rogue/mage) and NPC archetypes
+(old_man/old_woman/young_man/young_woman/child/guard/merchant/scholar).
+NPCs use a PC's battle sprite for palette/style anchoring and a PC's existing
+overworld chibi for scale/angle anchoring; the prompt provides the NPC's
+distinct identity. NPC outputs deploy to assets/sprites/npcs/<name>/.
+
 Usage:
     source setenv.sh
-    uv run python tools/gen_overworld_gpt_image.py --job fighter
-    uv run python tools/gen_overworld_gpt_image.py --job fighter --quality high
-    uv run python tools/gen_overworld_gpt_image.py --job fighter --dry-run
+    uv run python tools/gen_overworld_gpt_image.py --entity fighter
+    uv run python tools/gen_overworld_gpt_image.py --entity old_man --quality medium
+    uv run python tools/gen_overworld_gpt_image.py --entity guard --dry-run
 """
 
 import argparse
@@ -44,6 +50,13 @@ DRIVE_LOCAL = REPO / "assets" / "sprites" / "drive_archive" / "Game graphics - C
 GAME_JOBS = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular")) / "assets" / "sprites" / "jobs"
 TMP = REPO / "tmp" / "overworld_gpt_image"
 TMP.mkdir(parents=True, exist_ok=True)
+
+# Default deploy root under the game repo's `assets/sprites/`.
+# Per-entry override via "dest_root". Drive root is always
+# `cowir/assets/sprites/Game graphics - <DRIVE_ROOT>/<drive_dir>/`.
+DEFAULT_DEST_ROOT = "jobs"
+DEFAULT_DRIVE_ROOT = "Characters"
+
 
 JOB_SOURCES = {
     "fighter": {
@@ -84,6 +97,116 @@ JOB_SOURCES = {
             "skin tones), wearing deep teal/navy robes with purple pointed hat, "
             "holding a wooden staff topped with a golden flame, friendly JRPG "
             "chibi style"
+        ),
+    },
+}
+
+
+# NPC archetypes — no artist-made references yet, so we lean on PC battle
+# sprites for STYLE/PALETTE anchoring and use the prompt to specify the NPC's
+# distinct identity. Each entry picks a PC ref whose palette/silhouette is
+# closest to the target NPC archetype.
+#
+# Game-side deploy:  assets/sprites/npcs/<key>/overworld.png
+# Drive aseprite:    cowir/assets/sprites/Game graphics - NPCs/<NPC>/claude/
+NPC_SOURCES = {
+    "old_man": {
+        "ase_rel": "CLERIC/Cleric Main design.aseprite",  # white robe palette
+        "idle_tag": "idle",
+        "drive_dir": "OLD_MAN/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "elderly village man with long white beard, gray-brown robe, simple "
+            "leather boots, hunched posture, walking stick in one hand, kindly "
+            "weathered face"
+        ),
+    },
+    "old_woman": {
+        "ase_rel": "CLERIC/Cleric Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "OLD_WOMAN/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "elderly village woman with gray hair tied in a bun, blue shawl over "
+            "shoulders, plain dark green dress, simple boots, carrying a wicker "
+            "basket, kindly weathered face"
+        ),
+    },
+    "young_man": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",  # rugged peasant palette
+        "idle_tag": "idle",
+        "drive_dir": "YOUNG_MAN/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "young peasant man, brown hair, simple tan tunic, brown breeches, "
+            "sturdy work boots, friendly open face, plain commoner clothes "
+            "(NOT armored, NOT a knight)"
+        ),
+    },
+    "young_woman": {
+        "ase_rel": "CLERIC/Cleric Main design.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "YOUNG_WOMAN/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "young peasant woman, brown hair pulled back into a low ponytail, "
+            "simple cream-colored dress with brown apron, sturdy boots, friendly "
+            "open face, plain commoner clothes"
+        ),
+    },
+    "child": {
+        "ase_rel": "ROGUE/Rogue Main design.aseprite",  # slim/small palette anchor
+        "idle_tag": "idle",
+        "drive_dir": "CHILD/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "small child of about seven years, tousled brown hair, bright red "
+            "shirt, brown short pants, bare feet, energetic excited posture — "
+            "smaller in stature than adult NPCs (about 75% the height of the "
+            "PC chibi reference)"
+        ),
+    },
+    "guard": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "GUARD/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "town guard in studded leather armor over a dark blue tunic, simple "
+            "iron helmet, holding a wooden spear with a steel tip, brown leather "
+            "boots, sturdy alert posture (NOT a hero or knight — just a town "
+            "watchman)"
+        ),
+    },
+    "merchant": {
+        "ase_rel": "FIGHTER/Main Fighter animations.aseprite",
+        "idle_tag": "idle",
+        "drive_dir": "MERCHANT/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "village merchant in a forest-green vest over white shirt, brown "
+            "leather apron, slightly portly build, dark hair with mustache, "
+            "leather boots, friendly inviting posture (no weapons)"
+        ),
+    },
+    "scholar": {
+        "ase_rel": "MAGE/Mage Main design.aseprite",  # robe palette anchor
+        "idle_tag": "idle",
+        "drive_dir": "SCHOLAR/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "scholarly older man in a dark blue belted robe, round wire-frame "
+            "spectacles, gray hair receding, holding a leather-bound book under "
+            "one arm, simple sandals, contemplative posture (NOT a wizard with "
+            "a magic staff)"
         ),
     },
 }
@@ -167,12 +290,23 @@ def build_aseprite_from_strip(strip_png: Path, out_aseprite: Path) -> None:
     )
 
 
-def upload_to_drive(local_file: Path, drive_subdir: str) -> None:
-    drive_path = f"gdrive: cowir/assets/sprites/Game graphics - Characters/{drive_subdir}"
+def upload_to_drive(local_file: Path, drive_subdir: str, drive_root: str = DEFAULT_DRIVE_ROOT) -> None:
+    drive_path = f"gdrive: cowir/assets/sprites/Game graphics - {drive_root}/{drive_subdir}"
     subprocess.run(
         ["rclone", "copy", str(local_file), drive_path],
         check=True, capture_output=True,
     )
+
+
+def _pc_from_ase_rel(ase_rel: str) -> str:
+    """Extract PC job name from an ase_rel like 'CLERIC/Cleric Main design.aseprite'."""
+    return ase_rel.split("/", 1)[0].lower()
+
+
+# Merged dispatch table — PC jobs first, then NPCs. Names must not collide.
+ENTITY_SOURCES: dict[str, dict] = {**JOB_SOURCES, **NPC_SOURCES}
+assert len(ENTITY_SOURCES) == len(JOB_SOURCES) + len(NPC_SOURCES), \
+    "JOB_SOURCES and NPC_SOURCES must not share keys"
 
 
 def grid_to_strip(grid: Image.Image) -> Image.Image:
@@ -359,6 +493,12 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
     Build a 4-row N×N walk-cycle grid (N = target * 4) from GPT's 3-row chibi output.
     Side row is mirrored to fill east. Frames within each row use a
     [F0, F1, F0, F2] stand/right/stand/left cycle.
+
+    Row mapping (matches game-side OverworldPlayer Direction enum order):
+      row 0 = DOWN  (front)
+      row 1 = LEFT  ← mirrored GPT side row (GPT defaults to right-facing)
+      row 2 = RIGHT ← unmodified GPT side row
+      row 3 = UP    (back)
     """
     from PIL import ImageOps
     H = raw_1024.height
@@ -374,11 +514,14 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
     for col, frame in enumerate(front):
         grid.paste(frame, (col * target, 0))
 
-    # Rows 1+2: walk_left / walk_right (side, mirrored)
+    # Rows 1+2: walk_left / walk_right.
+    # GPT outputs the side view as RIGHT-facing (industry-default chibi
+    # orientation). Game expects row 1 = LEFT, row 2 = RIGHT, so the GPT
+    # frame is *mirrored* into row 1 and placed unmodified into row 2.
     side = _build_4frame_walk(_extract_row_chibis(raw_1024, row_h, 2 * row_h, target))
     for col, frame in enumerate(side):
-        grid.paste(frame, (col * target, target))
-        grid.paste(ImageOps.mirror(frame), (col * target, target * 2))
+        grid.paste(ImageOps.mirror(frame), (col * target, target))
+        grid.paste(frame, (col * target, target * 2))
 
     # Row 3: walk_up (back)
     back = _build_4frame_walk(_extract_row_chibis(raw_1024, 2 * row_h, 3 * row_h, target))
@@ -390,7 +533,11 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--job", required=True, choices=list(JOB_SOURCES.keys()))
+    ap.add_argument(
+        "--entity", "--job", dest="entity", required=True,
+        choices=sorted(ENTITY_SOURCES.keys()),
+        help="PC job (fighter/cleric/...) or NPC archetype (old_man/guard/...)",
+    )
     ap.add_argument("--quality", choices=["low", "medium", "high"], default="medium")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true")
@@ -398,20 +545,24 @@ def main():
                     help="Skip Drive upload (for local testing)")
     args = ap.parse_args()
 
-    cfg = JOB_SOURCES[args.job]
+    cfg = ENTITY_SOURCES[args.entity]
+    dest_root = cfg.get("dest_root", DEFAULT_DEST_ROOT)
+    drive_root = cfg.get("drive_root", DEFAULT_DRIVE_ROOT)
+    is_npc = args.entity in NPC_SOURCES
+
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key and not args.dry_run:
         print("ERROR: OPENAI_API_KEY not set. Run: source setenv.sh")
         sys.exit(1)
 
-    job_tmp = TMP / args.job
-    job_tmp.mkdir(parents=True, exist_ok=True)
-    artist_png = job_tmp / "ref_artist_battle.png"
-    chibi_png = job_tmp / "ref_procgen_chibi.png"
-    raw_out = job_tmp / "gpt_raw_1024.png"
-    grid_out = job_tmp / f"{args.job}_overworld_grid.png"
-    strip_out = job_tmp / f"{args.job}_overworld_strip.png"
-    aseprite_out = job_tmp / f"{args.job}_overworld.aseprite"
+    entity_tmp = TMP / args.entity
+    entity_tmp.mkdir(parents=True, exist_ok=True)
+    artist_png = entity_tmp / "ref_artist_battle.png"
+    chibi_png = entity_tmp / "ref_procgen_chibi.png"
+    raw_out = entity_tmp / "gpt_raw_1024.png"
+    grid_out = entity_tmp / f"{args.entity}_overworld_grid.png"
+    strip_out = entity_tmp / f"{args.entity}_overworld_strip.png"
+    aseprite_out = entity_tmp / f"{args.entity}_overworld.aseprite"
 
     if grid_out.exists() and aseprite_out.exists() and not args.force:
         print("outputs exist — pass --force to regenerate")
@@ -424,8 +575,13 @@ def main():
         print(f"ERROR: artist source missing: {ase_path}")
         sys.exit(1)
     export_idle_frame(ase_path, cfg["idle_tag"], artist_png)
-    if not get_proc_gen_chibi(args.job, chibi_png):
-        print(f"ERROR: cannot recover proc-gen chibi ref for {args.job} from game repo HEAD")
+
+    # NPCs have no proc-gen overworld of their own — borrow the chibi format
+    # reference from the PC whose ase_rel they're anchored to (e.g. old_man
+    # uses cleric's overworld.png as its scale/angle reference).
+    chibi_ref_job = _pc_from_ase_rel(cfg["ase_rel"]) if is_npc else args.entity
+    if not get_proc_gen_chibi(chibi_ref_job, chibi_png):
+        print(f"ERROR: cannot recover proc-gen chibi ref ({chibi_ref_job}) from game repo HEAD")
         sys.exit(1)
 
     artist_bytes = pad_to_square(Image.open(artist_png), 1024)
@@ -434,8 +590,10 @@ def main():
     prompt = PROMPT_TEMPLATE.format(char_desc=cfg["char_desc"])
     if args.dry_run:
         print(f"[dry-run] would call gpt-image-1 (quality={args.quality}) with 2 refs:")
-        print(f"  ref 1: {artist_png}")
-        print(f"  ref 2: {chibi_png}")
+        print(f"  ref 1 (identity): {artist_png}")
+        print(f"  ref 2 (format):   {chibi_png}  ← from PC '{chibi_ref_job}'")
+        print(f"  deploy:           assets/sprites/{dest_root}/{args.entity}/overworld.png")
+        print(f"  drive:            Game graphics - {drive_root}/{cfg['drive_dir']}/")
         print(f"--- prompt ---\n{prompt}\n--- end prompt ---")
         return
 
@@ -466,8 +624,8 @@ def main():
     strip_32.save(strip_out)
 
     grid_64 = assemble_game_grid(raw_img, target=64)
-    grid64_out = job_tmp / f"{args.job}_overworld_grid_64.png"
-    strip64_out = job_tmp / f"{args.job}_overworld_strip_64.png"
+    grid64_out = entity_tmp / f"{args.entity}_overworld_grid_64.png"
+    strip64_out = entity_tmp / f"{args.entity}_overworld_strip_64.png"
     grid_64.save(grid64_out)
     strip_64 = grid_to_strip(grid_64)
     strip_64.save(strip64_out)
@@ -475,19 +633,20 @@ def main():
     # 4. Build BOTH aseprite files (32px small + 64px master)
     print(f"[4] build tagged aseprites (32px small + 64px master)")
     build_aseprite_from_strip(strip_out, aseprite_out)
-    aseprite_master = job_tmp / f"{args.job}_overworld_64.aseprite"
+    aseprite_master = entity_tmp / f"{args.entity}_overworld_64.aseprite"
     build_aseprite_from_strip(strip64_out, aseprite_master)
 
     # 5. Upload BOTH aseprites to Drive (small + master)
     if not args.no_upload:
-        print(f"[5] upload aseprites → gdrive: .../{cfg['drive_dir']}/")
-        upload_to_drive(aseprite_out, cfg["drive_dir"])
-        upload_to_drive(aseprite_master, cfg["drive_dir"])
+        print(f"[5] upload aseprites → gdrive: .../Game graphics - {drive_root}/{cfg['drive_dir']}/")
+        upload_to_drive(aseprite_out, cfg["drive_dir"], drive_root)
+        upload_to_drive(aseprite_master, cfg["drive_dir"], drive_root)
     else:
         print("[5] skipping upload (--no-upload)")
 
     # 6. Deploy to game
-    dest = GAME_JOBS / args.job / "overworld.png"
+    dest = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular")) \
+        / "assets" / "sprites" / dest_root / args.entity / "overworld.png"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(grid_out.read_bytes())
     print(f"[6] deployed → {dest}")
