@@ -588,7 +588,7 @@ func _place_wanderers() -> void:
 			"name": "Lost Pilgrim",
 			"dialogue": "I've been walking north for hours... is there a village up here?",
 			"color": Color(0.4, 0.4, 0.6),
-			"archetype": "young_man",
+			"archetype": "traveler",
 			"path": [Vector2(28, 10), Vector2(28, 14), Vector2(30, 14), Vector2(30, 10)],
 			"hints": [
 				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},

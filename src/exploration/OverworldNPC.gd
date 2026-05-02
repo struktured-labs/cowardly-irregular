@@ -16,16 +16,31 @@ signal dialogue_ended(npc_name: String)
 ## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
 @export var sprite_archetype: String = ""
 
-## Mapping from npc_type → preferred archetype. "" = no mapping (fall back
-## to procedural). For "villager" we alternate young_man/young_woman based
-## on a hash of the npc_name so we get visual variety without explicit picks.
+## Mapping from npc_type → preferred archetype. "" = picked by name hash
+## from a pair (defined in _resolve_archetype). All 20 archetype sheets
+## are now available: old_man, old_woman, young_man, young_woman, child,
+## guard, merchant, scholar, blacksmith, farmer, fisherman, innkeeper,
+## king, monk, noble, noblewoman, priestess, queen, soldier, traveler.
 const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 	"elder": "",        # picked by name hash → old_man / old_woman
 	"villager": "",     # picked by name hash → young_man / young_woman
+	"noble_pair": "",   # picked by name hash → noble / noblewoman
 	"shopkeeper": "merchant",
 	"guard": "guard",
 	"scholar": "scholar",
 	"child": "child",
+	"blacksmith": "blacksmith",
+	"farmer": "farmer",
+	"fisherman": "fisherman",
+	"innkeeper": "innkeeper",
+	"king": "king",
+	"queen": "queen",
+	"monk": "monk",
+	"priestess": "priestess",
+	"soldier": "soldier",
+	"traveler": "traveler",
+	"noble": "noble",
+	"noblewoman": "noblewoman",
 	# "dancer" stays procedural — it has its own animation system
 }
 
@@ -104,10 +119,12 @@ func _resolve_archetype() -> String:
 		var mapped = NPC_TYPE_TO_ARCHETYPE[npc_type]
 		if mapped != "":
 			return mapped
-		# "villager" / "elder" — pick old_man/old_woman or young_man/young_woman by name hash.
+		# Hash-pair fallbacks for gendered villager/elder/noble.
 		var pair: Array = ["young_man", "young_woman"]
 		if npc_type == "elder":
 			pair = ["old_man", "old_woman"]
+		elif npc_type == "noble_pair":
+			pair = ["noble", "noblewoman"]
 		return pair[hash(npc_name) % 2]
 	return ""
 
