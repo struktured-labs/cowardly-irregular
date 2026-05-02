@@ -32,6 +32,7 @@ const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd"
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
+const WanderingNPCScript = preload("res://src/exploration/WanderingNPC.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -167,11 +168,38 @@ func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Arr
 	return npc
 
 
+## Create a WanderingNPC that patrols a small loop. Use for ambient
+## villagers who should walk between landmarks. The sprite_archetype must
+## match an asset in `assets/sprites/npcs/<name>/overworld.png` (one of
+## the 20 GPT-Image-1 archetype sheets shipped in 1557f89). Patrol points
+## describe a closed loop including the starting position.
+##
+## (User feedback 2026-05-02: "village characters should walk around,
+## at least some of them" — head-lock constraints already satisfied by
+## the bb60068 sprite pass.)
+func _create_wandering_npc(npc_name: String, archetype: String, dialogue: String, patrol_loop: Array[Vector2], dialogue_theme: String = "elder", dialogue_portrait: String = "elder") -> Area2D:
+	var w = WanderingNPCScript.new()
+	w.npc_name = npc_name
+	w.dialogue = dialogue
+	w.sprite_archetype = archetype
+	w.dialogue_theme = dialogue_theme
+	w.dialogue_portrait = dialogue_portrait
+	w.set_patrol(patrol_loop)
+	return w
+
+
 func _setup_player() -> void:
 	player = OverworldPlayerScript.new()
 	player.name = "Player"
 	player.position = spawn_points.get("default", _get_player_spawn_fallback())
 	player.set_job("fighter")
+	# Villages always use the slower interior speed (50% of overworld). The
+	# parent-name keyword scan in OverworldPlayer is a defensive heuristic
+	# but isn't guaranteed to fire before the first move (parent assignment
+	# happens after add_child). Set the flag explicitly here so the first
+	# step is at the correct speed. (User feedback 2026-05-02: "village walk
+	# speed should be 50% slower (similar to how we made dungeon walk speed)".)
+	player._is_interior = true
 	add_child(player)
 
 

@@ -1237,7 +1237,7 @@
       "style": "JRPG stinger, ascending chime, triumphant, short, bright, 5 seconds",
       "model": "suno-v4",
       "duration": 8.48,
-      "loop": true,
+      "loop": false,
       "generated_at": "2026-04-14"
     },
     "stinger_item_found": {
@@ -1249,7 +1249,7 @@
       "style": "JRPG stinger, treasure chime, magical shimmer, short, 3 seconds",
       "model": "suno-v4",
       "duration": 4.84,
-      "loop": true,
+      "loop": false,
       "generated_at": "2026-04-14"
     },
     "stinger_boss_defeated": {
@@ -1261,7 +1261,7 @@
       "style": "JRPG stinger, dramatic resolution, brass fanfare, relief, 8 seconds",
       "model": "suno-v4",
       "duration": 9.48,
-      "loop": true,
+      "loop": false,
       "generated_at": "2026-04-14"
     },
     "stinger_quest_complete": {
@@ -1273,7 +1273,7 @@
       "style": "JRPG stinger, quest complete, warm chime, satisfied, short, 4 seconds",
       "model": "suno-v4",
       "duration": 4.92,
-      "loop": true,
+      "loop": false,
       "generated_at": "2026-04-14"
     },
     "stinger_save_point": {
@@ -1285,7 +1285,7 @@
       "style": "JRPG stinger, save point, gentle chime, reassuring, 3 seconds",
       "model": "suno-v4",
       "duration": 7.84,
-      "loop": true,
+      "loop": false,
       "generated_at": "2026-04-14"
     },
     "victory_medieval": {

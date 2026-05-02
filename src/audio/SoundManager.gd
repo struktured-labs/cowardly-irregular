@@ -954,9 +954,18 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	if not stream:
 		push_warning("[MUSIC] Failed to load audio: %s (track_id: %s)" % [path, track_id])
 		return false
-	# Stingers never loop and resume previous music when done
+	# Stingers never loop and resume previous music when done.
+	# Bug fix (2026-05-02): stinger_level_up + 4 other stingers had
+	# loop=true in the manifest, which made them loop forever and never
+	# fire the `finished` signal — so the previous music never resumed
+	# (user: "level up music repeats itself"). Force-override here so a
+	# stinger can never loop regardless of what the manifest says.
 	var is_stinger = track_id.begins_with("stinger_")
-	var should_loop = entry.get("loop", not is_stinger)
+	var should_loop: bool
+	if is_stinger:
+		should_loop = false
+	else:
+		should_loop = entry.get("loop", true)
 	if stream is AudioStreamOggVorbis:
 		stream.loop = should_loop
 	_music_player.stream = stream

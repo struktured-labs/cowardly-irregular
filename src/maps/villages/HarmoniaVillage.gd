@@ -360,3 +360,56 @@ func _setup_npcs() -> void:
 		"Step on the pad and press A to activate. If you dare."
 	])
 	npcs.add_child(temporal)
+
+	# === WANDERING VILLAGERS ===
+	# Three ambient NPCs walk short loops to make the village feel lived-in.
+	# Each uses a 4-frame walk-cycle archetype shipped in bb60068 (head-locked).
+
+	# Wandering merchant — paces between fountain and west market stall
+	var market_loop: Array[Vector2] = [
+		Vector2(11 * TILE_SIZE, 12 * TILE_SIZE),
+		Vector2(13 * TILE_SIZE, 12 * TILE_SIZE),
+		Vector2(13 * TILE_SIZE, 14 * TILE_SIZE),
+		Vector2(11 * TILE_SIZE, 14 * TILE_SIZE),
+	]
+	var merchant = _create_wandering_npc(
+		"Wandering Merchant",
+		"merchant",
+		"Wares! Wonders! Wholly unwise purchases!",
+		market_loop,
+		"merchant",
+		"merchant"
+	)
+	npcs.add_child(merchant)
+
+	# Patrolling guard — paces along the north wall
+	var patrol_loop: Array[Vector2] = [
+		Vector2(7 * TILE_SIZE, 4 * TILE_SIZE),
+		Vector2(15 * TILE_SIZE, 4 * TILE_SIZE),
+	]
+	var patroller = _create_wandering_npc(
+		"Patroller Sven",
+		"guard",
+		"Eyes peeled, traveler. The world isn't getting safer.",
+		patrol_loop,
+		"guard",
+		"guard"
+	)
+	npcs.add_child(patroller)
+
+	# Wandering scholar — paces between the library area and the elder
+	var scholar_loop: Array[Vector2] = [
+		Vector2(9 * TILE_SIZE, 7 * TILE_SIZE),
+		Vector2(14 * TILE_SIZE, 7 * TILE_SIZE),
+		Vector2(14 * TILE_SIZE, 9 * TILE_SIZE),
+		Vector2(9 * TILE_SIZE, 9 * TILE_SIZE),
+	]
+	var wandering_scholar = _create_wandering_npc(
+		"Apprentice Vex",
+		"scholar",
+		"Lost my notes again. Have you seen any loose parchment?",
+		scholar_loop,
+		"scholar",
+		"scholar"
+	)
+	npcs.add_child(wandering_scholar)

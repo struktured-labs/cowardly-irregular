@@ -18,16 +18,52 @@ var _enemy_status_boxes: Array = []
 var _revealed_enemies: Dictionary = {}
 
 
+var _panels_themed: bool = false  # one-shot guard for transparency theming
+
+
 func _init(scene) -> void:
 	_scene = scene
 
 
 func update_ui() -> void:
 	"""Update all UI elements"""
+	if not _panels_themed:
+		_apply_panel_transparency()
+		_panels_themed = true
 	update_character_status()
 	update_enemy_status()
 	update_action_buttons()
 	_scene._update_danger_music()
+
+
+func _apply_panel_transparency() -> void:
+	"""Apply semi-transparent backgrounds to EnemyStatusPanel + PartyStatusPanel.
+	Without this the opaque default PanelContainer styling overlapped enemy
+	sprites awkwardly (panels live in the same screen zone as the BattleField
+	enemy markers, which can't easily move without rebalancing combat
+	choreography). Transparency lets the sprite show through.
+	(User feedback 2026-05-02: 'monster stat screen overlays awkwardly on
+	the monster sprites'.)"""
+	for panel_path in ["UI/EnemyStatusPanel", "UI/PartyStatusPanel"]:
+		var panel = _scene.get_node_or_null(panel_path)
+		if not panel:
+			continue
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.05, 0.04, 0.10, 0.72)  # deep purple, ~72% alpha
+		sb.border_color = Color(0.4, 0.35, 0.6, 0.5)
+		sb.border_width_left = 1
+		sb.border_width_top = 1
+		sb.border_width_right = 1
+		sb.border_width_bottom = 1
+		sb.corner_radius_top_left = 4
+		sb.corner_radius_top_right = 4
+		sb.corner_radius_bottom_left = 4
+		sb.corner_radius_bottom_right = 4
+		sb.content_margin_left = 6
+		sb.content_margin_right = 6
+		sb.content_margin_top = 4
+		sb.content_margin_bottom = 4
+		panel.add_theme_stylebox_override("panel", sb)
 
 
 func update_character_status() -> void:
@@ -620,13 +656,16 @@ func _update_turn_order_strip() -> void:
 		_ctb_panel.add_theme_stylebox_override("panel", panel_style)
 		# Bottom-right, anchored so it tracks viewport size instead of
 		# the hardcoded 1280x720. PartyStatusPanel ends at y=460, so
-		# TURN ORDER sits in y=480..710 with a 20px gap above. Height
-		# of 230 fits up to 8 entries comfortably.
+		# TURN ORDER sits below at y=540..710 with a 80px buffer (was
+		# y=480..710 with 20px buffer — too tight: dynamic content in
+		# the party panel pushed the last member's AP label into the
+		# turn-order area, user feedback 2026-05-02).
+		# Height of 170 fits up to ~6 entries comfortably.
 		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 		_ctb_panel.offset_left = -110
 		_ctb_panel.offset_right = -5
 		_ctb_panel.offset_bottom = -10
-		_ctb_panel.offset_top = -240
+		_ctb_panel.offset_top = -180
 		_ctb_panel.custom_minimum_size = Vector2(100, 0)
 		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 		_ctb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN

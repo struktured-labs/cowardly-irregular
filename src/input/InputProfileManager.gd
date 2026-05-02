@@ -28,65 +28,72 @@ const ACTION_LABELS = {
 }
 
 ## Built-in profile definitions: action -> button index(es)
-## Button indices follow SDL GameController standard:
-##   SN30:  0=A(South), 1=B(East), 2=X(West), 3=Y(North)
-##          4=Back/Select, 6=Guide, 7=Start
-##          9=LeftShoulder(LB/L), 10=RightShoulder(RB/R)
-##          11=DPadUp, 12=DPadDown, 13=DPadLeft, 14=DPadRight
-##   Ultimate Pro 2 (XInput mode):
-##          0=A(South), 1=B(East), 2=X(West), 3=Y(North)
-##          4=LB (Left Bumper), 5=RB (Right Bumper)
-##          6=Back/Select, 7=Start
-##          9=LeftShoulder(L3), 10=RightShoulder(R3)
+## Button indices use the GODOT 4 JoyButton enum (matches SDL2 normalized):
+##   0  = A          (Nintendo B / PS Cross / Xbox A — SOUTH face button)
+##   1  = B          (Nintendo A / PS Circle / Xbox B — EAST face button)
+##   2  = X          (Nintendo Y / PS Square / Xbox X — WEST face button)
+##   3  = Y          (Nintendo X / PS Triangle / Xbox Y — NORTH face button)
+##   4  = BACK       (Nintendo MINUS / PS Select / Xbox Back)
+##   5  = GUIDE      (Nintendo HOME / PS Home / Xbox Guide)
+##   6  = START      (Nintendo PLUS / PS Start / Xbox Start)
+##   7  = LEFT_STICK (L3 click)
+##   8  = RIGHT_STICK (R3 click)
+##   9  = LEFT_SHOULDER  (Nintendo L / PS L1 / Xbox LB)
+##   10 = RIGHT_SHOULDER (Nintendo R / PS R1 / Xbox RB)
+##   11-14 = D-Pad U/D/L/R
+##   Triggers (ZL/ZR / L2/R2 / LT/RT) are AXES 4/5, not buttons —
+##   handled by motion events in project.godot, not here.
+##
+## Bug fix (2026-05-02): the prior PROFILE_ULTIMATE_PRO_2 used Godot 3's
+## button numbers (4=LB, 5=RB, 6=Back, 7=Start) which silently misfired in
+## Godot 4 — Start (button 6) was bound to battle_toggle_auto, so pressing
+## Plus on Switch Pro would auto-enable autobattle every time. Both
+## profiles now use Godot 4 numbers consistently.
 const PROFILE_SN30 = {
-	"ui_accept": [1],        # B (East) = SNES A
-	"ui_cancel": [0],        # A (South) = SNES B
-	"battle_advance": [10],  # RB/R
-	"battle_defer": [9],     # LB/L
-	"battle_toggle_auto": [4], # Select/Back
-	"ui_menu": [6, 7],       # Start (both for compatibility)
+	"ui_accept": [1],          # B (East face)
+	"ui_cancel": [0],          # A (South face)
+	"battle_advance": [10],    # RIGHT_SHOULDER (R)
+	"battle_defer": [9],       # LEFT_SHOULDER (L)
+	"battle_toggle_auto": [4], # BACK (Select/Minus)
+	"ui_menu": [6],            # START (Plus)
 }
 
 const PROFILE_ULTIMATE_PRO_2 = {
-	"ui_accept": [1],          # B (East)
-	"ui_cancel": [0],          # A (South)
-	# Shotgun shoulder mapping: covers SDL2 normalized (4/5) AND Godot 4
-	# canonical JOY_BUTTON_LEFT/RIGHT_SHOULDER (9/10). Some controllers
-	# (Switch Pro via hid-nintendo, generic XInput drivers, etc.) report
-	# 9/10 instead of 4/5 even when the SDL game controller DB has an
-	# entry — binding both prevents the L/R triggers from silently
-	# failing on whichever mapping the driver picks.
-	"battle_advance": [5, 10], # RB / R shoulder
-	"battle_defer": [4, 9],    # LB / L shoulder
-	"battle_toggle_auto": [6], # Back/Select
-	"ui_menu": [7],            # Start
+	"ui_accept": [1],          # B (East face)
+	"ui_cancel": [0],          # A (South face)
+	"battle_advance": [10],    # RIGHT_SHOULDER (R)
+	"battle_defer": [9],       # LEFT_SHOULDER (L)
+	"battle_toggle_auto": [4], # BACK (Select/Minus)
+	"ui_menu": [6],            # START (Plus)
 }
 
 ## Profile names
 const PROFILE_NAMES = ["8BitDo SN30", "8BitDo Ultimate Pro 2", "Custom"]
 
-## Human-readable button labels by index
-## These labels reflect the Ultimate Pro 2 (XInput) layout where buttons 4/5 are
-## LB/RB and 6/7 are Back/Start.  SN30 uses 9/10 for shoulders and 4 for Select.
+## Human-readable button labels by index — Godot 4 JoyButton enum.
+## (Pre-2026-05-02 these labels were transcribed from Godot 3, which silently
+## misled user-facing remap UI when the underlying button numbers shifted.)
 const BUTTON_LABELS = {
-	0: "A (South)",
-	1: "B (East)",
-	2: "X (West)",
-	3: "Y (North)",
-	4: "LB / Select",
-	5: "RB",
-	6: "Back / Select",
-	7: "Start",
-	9: "L3 / LB (SN30)",
-	10: "R3 / RB (SN30)",
+	0: "A / South (Nintendo B)",
+	1: "B / East (Nintendo A)",
+	2: "X / West (Nintendo Y)",
+	3: "Y / North (Nintendo X)",
+	4: "Back / Select / Minus",
+	5: "Guide / Home",
+	6: "Start / Plus",
+	7: "L3 (Left Stick Click)",
+	8: "R3 (Right Stick Click)",
+	9: "L / LB (Left Shoulder)",
+	10: "R / RB (Right Shoulder)",
 	11: "D-Up",
 	12: "D-Down",
 	13: "D-Left",
 	14: "D-Right",
-	15: "Paddle 1",
-	16: "Paddle 2",
-	17: "Paddle 3",
-	18: "Paddle 4",
+	15: "Misc1",
+	16: "Paddle 1",
+	17: "Paddle 2",
+	18: "Paddle 3",
+	19: "Paddle 4",
 }
 
 ## Runtime state

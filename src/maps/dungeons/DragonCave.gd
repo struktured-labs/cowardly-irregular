@@ -511,6 +511,7 @@ func _setup_player() -> void:
 	player.name = "Player"
 	player.position = spawn_points.get("default", Vector2(320, 384))
 	player.set_job("fighter")
+	player._is_interior = true  # Dungeons always use interior speed (50% of overworld)
 	add_child(player)
 
 
