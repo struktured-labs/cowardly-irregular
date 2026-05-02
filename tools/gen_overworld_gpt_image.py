@@ -684,23 +684,20 @@ def _build_4frame_walk(chibis: list[Image.Image]) -> list[Image.Image]:
     return chibis[:4]
 
 
-def head_lock_row(row_frames: list[Image.Image], head_frac: float = 0.45) -> list[Image.Image]:
+def head_lock_row(row_frames: list[Image.Image], head_frac: float = 0.65) -> list[Image.Image]:
     """Lock the upper-body of frames 1+ to match frame 0.
 
-    GPT-Image-1 produces each frame independently, so head/face position
-    drifts subtly from frame to frame. The user (and players) read this as
-    the character "swiveling their head left and right per step" when walking
-    toward the camera — distracting on row 0 (DOWN) and row 3 (UP) where the
-    face is most visible.
-
-    Classic SNES JRPG sprites lock head + torso across the walk cycle and
-    only animate legs. This helper post-processes a single row's 4 frames
-    by replacing the top `head_frac` of each frame's chibi bbox with the
-    same region from frame 0. Pixel-identical heads, free animation on legs.
+    GPT-Image-1 produces each frame independently, so head/torso/arm position
+    drifts subtly from frame to frame. The 45% threshold (initial impl)
+    caught the head but let the chest/shoulders through, which the user
+    reported as "the body kinda swivels a bit too in an unnatural fashion"
+    after the first head-lock pass. Default raised to 65% — locks the full
+    upper body (head + shoulders + torso + arms), animating only the legs.
+    Closer to genuine SNES JRPG sprite convention.
 
     Mirror property: applied BEFORE side-row mirroring in assemble_game_grid,
-    so row 1 = mirror(row 2) still holds after locking (the mirrored heads
-    are themselves identical mirrors of frame 0's mirrored head).
+    so row 1 = mirror(row 2) still holds after locking (the mirrored upper
+    body is itself an identical mirror of frame 0's mirrored upper body).
     """
     import numpy as np
     if len(row_frames) < 2:
@@ -742,9 +739,9 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bo
       row 3 = UP    (back)
 
     head_lock: when True (default), each row's frames 1/2/3 have their
-    upper ~45% replaced with frame 0's upper region — kills the inter-frame
-    head-swivel artefact while preserving leg motion. Side rows are locked
-    BEFORE mirroring so row 1 = mirror(row 2) still holds.
+    upper ~65% replaced with frame 0's upper region — kills the inter-frame
+    head AND body swivel artefacts while preserving leg motion. Side rows
+    are locked BEFORE mirroring so row 1 = mirror(row 2) still holds.
     """
     from PIL import ImageOps
     H = raw_1024.height
@@ -787,7 +784,7 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bo
     return grid
 
 
-def head_lock_existing_grid(grid: Image.Image, head_frac: float = 0.45) -> Image.Image:
+def head_lock_existing_grid(grid: Image.Image, head_frac: float = 0.65) -> Image.Image:
     """Apply head-lock to an already-assembled 4-row N-frame walk grid.
 
     For starters whose canonical PNG is on `main` (e.g. cowir-main re-swapped
