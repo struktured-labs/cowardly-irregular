@@ -21,10 +21,17 @@ var _stinger_resume_track: String = ""  # Track to resume after stinger finishes
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
 var _music_base_db: float = -12.0  # Base volume for music (overwritten by set_music_volume)
 # Music ceiling: at slider=100%, music plays at MUSIC_VOLUME_CEILING_DB.
-# -6 dB sits music below the SFX peak so battle hits punch through —
-# without this cap, slider=100% pushed music to 0 dB (12 dB louder
-# than the original design intent of -12 dB) and drowned battle SFX.
-const MUSIC_VOLUME_CEILING_DB: float = -6.0
+# -10 dB sits music well below the SFX peak so battle hits and footstep
+# clips stay audible. User feedback (2026-05-02): -6 dB still felt too
+# loud relative to SFX, dropped to -10 dB. Slider scales below this.
+const MUSIC_VOLUME_CEILING_DB: float = -10.0
+
+# Per-channel SFX base offsets — restored when set_sfx_volume(1.0) is called.
+# These shape the mix: menu blips quiet, battle hits prominent, abilities mid.
+const SFX_UI_BASE_DB: float = -16.0      # Menu blips: present but below music
+const SFX_BATTLE_BASE_DB: float = -6.0   # Battle SFX: punchy alongside music
+const SFX_ABILITY_BASE_DB: float = -12.0 # Ability SFX: same level as music
+const SFX_AMBIENT_BASE_DB: float = -20.0 # Ambient layer: subtle background
 
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
@@ -132,19 +139,19 @@ func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -16.0  # Menu blips: present but below music (files at 0dB peak, music ceiling at -6dB)
+	_ui_player.volume_db = SFX_UI_BASE_DB  # Menu blips: present but below music
 	_ui_player.bus = "Master"
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -6.0  # Battle SFX: punchy alongside music
+	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
 	_battle_player.bus = "Master"
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -12.0  # Ability SFX: same level as music — spells should be felt
+	_ability_player.volume_db = SFX_ABILITY_BASE_DB  # Ability SFX: same level as music — spells should be felt
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
@@ -2871,22 +2878,25 @@ func set_music_volume(normalized: float) -> void:
 func set_sfx_volume(normalized: float) -> void:
 	"""Set SFX volume (0.0 to 1.0) — applies to UI, battle, and ability players.
 
-	Safe to call before _ready(): the per-player base offsets set in
-	_setup_audio_players() (-16, -6, -12 db) will be overwritten by
-	the next settings-load, but any pre-ready call is now a no-op on
-	the nil players instead of crashing.
+	Each channel's slider value scales attenuation FROM its design-intent
+	base level (defined by SFX_*_BASE_DB constants). At slider=1.0 each
+	channel sits at its base; below 1.0 the slider attenuates uniformly.
+	This preserves the per-channel mix (UI quietest, battle loudest)
+	instead of unifying everything to a single db value.
 
-	Note: because this unifies all three SFX channels to the same db
-	value, the intended per-channel mix (-16/-6/-12) is lost after
-	the first call. That's the existing behavior — documenting it
-	here rather than silently changing it."""
-	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	Bug fix (2026-05-02): pre-fix, slider=1.0 forced all three channels
+	to 0 dB, which drowned music (because music ceiling is -10 dB) and
+	flattened the intended channel hierarchy. Now slider=1.0 reproduces
+	the design-time mix exactly.
+
+	Safe to call before _ready(): writes to nil players are a no-op."""
+	var atten_db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
 	if _ui_player:
-		_ui_player.volume_db = db
+		_ui_player.volume_db = SFX_UI_BASE_DB + atten_db if normalized > 0.01 else -80.0
 	if _battle_player:
-		_battle_player.volume_db = db
+		_battle_player.volume_db = SFX_BATTLE_BASE_DB + atten_db if normalized > 0.01 else -80.0
 	if _ability_player:
-		_ability_player.volume_db = db
+		_ability_player.volume_db = SFX_ABILITY_BASE_DB + atten_db if normalized > 0.01 else -80.0
 
 
 func _warm_wave(phase: float) -> float:

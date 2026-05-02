@@ -66,6 +66,18 @@ var current_world: int = 1  # 1-6
 var worlds_unlocked: int = 1  # Highest world unlocked (1 = only medieval)
 var story_flags: Dictionary = {}  # Generic flag store: "w1_boss_defeated": true, etc.
 
+## Pending boss defeat — set by dungeon scenes before triggering a boss battle.
+## Read by GameLoop._on_battle_ended on victory to apply the appropriate flags.
+## Schema: {
+##   "story_flags": Array[String] (always-set on victory),
+##   "constants": Array[String] (game_constants[k]=true on victory),
+##   "dungeon_flag": String (optional, set on player_party[0].dungeon_flags),
+##   "unlock_world": bool (optional, advance worlds_unlocked once),
+##   "unlock_story_flag": String (optional, set as story flag on victory),
+##   "defeat_cutscene": String (optional, played by dungeon when scene re-instantiates)
+## }
+var pending_boss_defeat: Dictionary = {}
+
 var playtime_paused: bool = false
 
 
@@ -350,6 +362,7 @@ func reset_game_state() -> void:
 	worlds_unlocked = 1
 	current_save_name = ""
 	party_leader_index = 0
+	pending_boss_defeat = {}
 
 	# Reset game constants
 	game_constants = {

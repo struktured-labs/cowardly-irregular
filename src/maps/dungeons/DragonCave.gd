@@ -364,6 +364,22 @@ func _update_floor_encounters(floor_num: int) -> void:
 
 func _trigger_boss_battle() -> void:
 	controller.pause_exploration()
+
+	# Register pending boss defeat so GameLoop._on_battle_ended applies the
+	# flags on victory. The DragonCave instance gets freed during the battle
+	# transition, so any handler attached to `self` would never fire.
+	var spec: Dictionary = {
+		"story_flags": [],
+		"constants": [],
+		"dungeon_flag": boss_flag_key,
+	}
+	if unlock_story_flag != "":
+		spec["story_flags"].append(unlock_story_flag)
+	if unlock_world > 0:
+		spec["unlock_world"] = true
+		spec["unlock_world_target"] = unlock_world
+	GameState.pending_boss_defeat = spec
+
 	await _show_boss_intro()
 	battle_triggered.emit([boss_id])
 

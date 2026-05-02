@@ -547,6 +547,18 @@ func _trigger_boss_battle() -> void:
 	"""Start the Cave Rat King boss battle"""
 	controller.pause_exploration()
 
+	# Register pending boss defeat — GameLoop._on_battle_ended applies these
+	# flags on victory. Without this, the cave instance gets freed by
+	# _return_to_exploration before any defeat handler can fire, so the
+	# Rat King flag silently never gets set.
+	GameState.pending_boss_defeat = {
+		"story_flags": ["rat_king_defeated", "w1_boss_defeated"],
+		"constants": ["cutscene_flag_rat_king_defeated"],
+		"dungeon_flag": "cave_rat_king_defeated",
+		"unlock_world": true,
+		"defeat_cutscene": "world1_rat_king_defeat",
+	}
+
 	# Play boss intro cutscene, then trigger battle
 	var director = CutsceneDirector.new()
 	add_child(director)

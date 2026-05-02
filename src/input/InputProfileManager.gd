@@ -50,8 +50,14 @@ const PROFILE_SN30 = {
 const PROFILE_ULTIMATE_PRO_2 = {
 	"ui_accept": [1],          # B (East)
 	"ui_cancel": [0],          # A (South)
-	"battle_advance": [5],     # RB (Right Bumper)
-	"battle_defer": [4],       # LB (Left Bumper)
+	# Shotgun shoulder mapping: covers SDL2 normalized (4/5) AND Godot 4
+	# canonical JOY_BUTTON_LEFT/RIGHT_SHOULDER (9/10). Some controllers
+	# (Switch Pro via hid-nintendo, generic XInput drivers, etc.) report
+	# 9/10 instead of 4/5 even when the SDL game controller DB has an
+	# entry — binding both prevents the L/R triggers from silently
+	# failing on whichever mapping the driver picks.
+	"battle_advance": [5, 10], # RB / R shoulder
+	"battle_defer": [4, 9],    # LB / L shoulder
 	"battle_toggle_auto": [6], # Back/Select
 	"ui_menu": [7],            # Start
 }

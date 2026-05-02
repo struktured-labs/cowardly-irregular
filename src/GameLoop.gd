@@ -1270,6 +1270,11 @@ func _on_battle_ended(victory: bool) -> void:
 	if victory:
 		battles_won += 1
 
+		# Apply pending boss-defeat flags (set by dungeon._trigger_boss_battle).
+		# Must happen BEFORE _return_to_exploration so the new dungeon instance
+		# can pick up cave_rat_king_defeated / boss_flag_key from dungeon_flags.
+		_apply_pending_boss_defeat()
+
 		# Heal party between battles (rest bonus)
 		for member in party:
 			var heal_amount = int(member.max_hp * 0.25)
@@ -1292,7 +1297,46 @@ func _on_battle_ended(victory: bool) -> void:
 			await BattleTransition.reveal_exploration()
 	else:
 		# Game over — show dramatic screen with retry/continue options
+		# Clear pending boss spec on defeat so a retry doesn't accidentally
+		# fire flags from a battle the player didn't actually win.
+		GameState.pending_boss_defeat = {}
 		await _show_game_over_screen()
+
+
+func _apply_pending_boss_defeat() -> void:
+	"""Apply GameState.pending_boss_defeat on battle victory.
+	Set by dungeon._trigger_boss_battle() before emitting battle_triggered.
+	Without this central handler the cave/dungeon instance gets freed during
+	_return_to_exploration before any local defeat handler could run, so the
+	story flags silently never get set (regression: Rat King quest log)."""
+	var spec: Dictionary = GameState.pending_boss_defeat
+	if spec.is_empty():
+		return
+	# Story flags
+	for flag in spec.get("story_flags", []):
+		GameState.set_story_flag(flag)
+	# Game constants (typically cutscene_flag_*)
+	for c in spec.get("constants", []):
+		GameState.game_constants[c] = true
+	# Dungeon flag — stored on the leader's per-character dict
+	var df: String = spec.get("dungeon_flag", "")
+	if df != "" and GameState.player_party.size() > 0:
+		if not GameState.player_party[0].has("dungeon_flags"):
+			GameState.player_party[0]["dungeon_flags"] = {}
+		GameState.player_party[0]["dungeon_flags"][df] = true
+	# World unlock — either advance once, or to a specific world
+	if spec.get("unlock_world", false):
+		var target: int = spec.get("unlock_world_target", 0)
+		if target > 0:
+			while GameState.worlds_unlocked < target:
+				GameState.unlock_next_world()
+		else:
+			GameState.unlock_next_world()
+	# Defeat cutscene — left for the dungeon to play after re-instantiation
+	# (we don't play it here because the battle scene is still up)
+	print("[BOSS] Applied pending defeat: %s" % spec)
+	# One-shot: clear after applying
+	GameState.pending_boss_defeat = {}
 
 
 func _wait_for_confirm() -> void:
