@@ -684,7 +684,52 @@ def _build_4frame_walk(chibis: list[Image.Image]) -> list[Image.Image]:
     return chibis[:4]
 
 
-def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
+def head_lock_row(row_frames: list[Image.Image], head_frac: float = 0.45) -> list[Image.Image]:
+    """Lock the upper-body of frames 1+ to match frame 0.
+
+    GPT-Image-1 produces each frame independently, so head/face position
+    drifts subtly from frame to frame. The user (and players) read this as
+    the character "swiveling their head left and right per step" when walking
+    toward the camera — distracting on row 0 (DOWN) and row 3 (UP) where the
+    face is most visible.
+
+    Classic SNES JRPG sprites lock head + torso across the walk cycle and
+    only animate legs. This helper post-processes a single row's 4 frames
+    by replacing the top `head_frac` of each frame's chibi bbox with the
+    same region from frame 0. Pixel-identical heads, free animation on legs.
+
+    Mirror property: applied BEFORE side-row mirroring in assemble_game_grid,
+    so row 1 = mirror(row 2) still holds after locking (the mirrored heads
+    are themselves identical mirrors of frame 0's mirrored head).
+    """
+    import numpy as np
+    if len(row_frames) < 2:
+        return row_frames
+    f0_arr = np.array(row_frames[0])
+    if f0_arr.shape[2] != 4:
+        return row_frames
+    alpha0 = f0_arr[:, :, 3] > 0
+    if not alpha0.any():
+        return row_frames
+    ys = np.where(alpha0.any(axis=1))[0]
+    y_top = int(ys.min())
+    y_bot = int(ys.max())
+    head_h = max(1, int((y_bot - y_top + 1) * head_frac))
+    y_lock_end = min(f0_arr.shape[0], y_top + head_h)
+
+    head_slice = f0_arr[y_top:y_lock_end, :, :].copy()
+
+    out = [row_frames[0]]
+    for f in row_frames[1:]:
+        a = np.array(f).copy()
+        # Wholesale replace the head-band region (preserves transparency around
+        # the head from frame 0, doesn't smear with target's existing head).
+        a[y_top:y_lock_end, :, :] = head_slice
+        out.append(Image.fromarray(a, "RGBA"))
+    return out
+
+
+def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bool = True) -> Image.Image:
     """
     Build a 4-row N×N walk-cycle grid (N = target * 4) from GPT's 3-row chibi output.
     Side row is mirrored to fill east. Frames within each row use a
@@ -695,6 +740,11 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
       row 1 = LEFT  ← mirrored GPT side row (GPT defaults to right-facing)
       row 2 = RIGHT ← unmodified GPT side row
       row 3 = UP    (back)
+
+    head_lock: when True (default), each row's frames 1/2/3 have their
+    upper ~45% replaced with frame 0's upper region — kills the inter-frame
+    head-swivel artefact while preserving leg motion. Side rows are locked
+    BEFORE mirroring so row 1 = mirror(row 2) still holds.
     """
     from PIL import ImageOps
     H = raw_1024.height
@@ -707,6 +757,8 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
 
     # Row 0: walk_down (front)
     front = _build_4frame_walk(_extract_row_chibis(raw_1024, 0, row_h, target))
+    if head_lock:
+        front = head_lock_row(front)
     for col, frame in enumerate(front):
         grid.paste(frame, (col * target, 0))
 
@@ -714,17 +766,50 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32) -> Image.Image:
     # GPT outputs the side view as RIGHT-facing (industry-default chibi
     # orientation). Game expects row 1 = LEFT, row 2 = RIGHT, so the GPT
     # frame is *mirrored* into row 1 and placed unmodified into row 2.
+    # Head-lock is applied to the unmirrored row first; the mirroring then
+    # produces a left-row whose head is the mirror of the right-row's head,
+    # which is also pixel-identical across its own frames. Mirror property
+    # asserted by test_overworld_facing_regression.gd is preserved.
     side = _build_4frame_walk(_extract_row_chibis(raw_1024, row_h, 2 * row_h, target))
+    if head_lock:
+        side = head_lock_row(side)
     for col, frame in enumerate(side):
         grid.paste(ImageOps.mirror(frame), (col * target, target))
         grid.paste(frame, (col * target, target * 2))
 
     # Row 3: walk_up (back)
     back = _build_4frame_walk(_extract_row_chibis(raw_1024, 2 * row_h, 3 * row_h, target))
+    if head_lock:
+        back = head_lock_row(back)
     for col, frame in enumerate(back):
         grid.paste(frame, (col * target, target * 3))
 
     return grid
+
+
+def head_lock_existing_grid(grid: Image.Image, head_frac: float = 0.45) -> Image.Image:
+    """Apply head-lock to an already-assembled 4-row N-frame walk grid.
+
+    For starters whose canonical PNG is on `main` (e.g. cowir-main re-swapped
+    rogue/cleric rows manually after my pipeline change), we want to head-lock
+    in place WITHOUT going through the GPT pipeline.
+
+    Splits the input grid into 4 rows, head-locks each row independently,
+    re-pastes. Each row's mirror property must already be correct in the
+    input (we don't re-mirror).
+    """
+    W, H = grid.size
+    target = H // 4
+    out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    for row_idx in range(4):
+        frames = []
+        for col in range(4):
+            cell = grid.crop((col * target, row_idx * target, (col + 1) * target, (row_idx + 1) * target))
+            frames.append(cell)
+        locked = head_lock_row(frames, head_frac=head_frac)
+        for col, f in enumerate(locked):
+            out.paste(f, (col * target, row_idx * target))
+    return out
 
 
 def main():
