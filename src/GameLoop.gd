@@ -373,6 +373,21 @@ func _toggle_all_autobattle() -> void:
 		var char_id = member.combatant_name.to_lower().replace(" ", "_")
 		AutobattleSystem.set_autobattle_enabled(char_id, new_state)
 
+	# Also clear the queue side-effects so the toggle is INSTANT.
+	# Without this, when toggling OFF mid-execution the already-queued
+	# autobattle actions kept playing through the current round before
+	# the user could regain manual control. (User feedback 2026-05-03:
+	# "I pressed start/select etc. and I didn't auto battle disable" —
+	# the disable was registering in state but not visibly stopping
+	# anything.) Clearing the cancel-queue flag and pending player
+	# actions ensures next selection phase is manual immediately.
+	if not new_state:
+		AutobattleSystem.cancel_all_next_turn = false
+		# Strip player actions from the queue. Keep enemy actions —
+		# clearing them would stall the round.
+		if BattleManager and BattleManager.has_method("clear_pending_player_actions"):
+			BattleManager.clear_pending_player_actions()
+
 	var status = "ON" if new_state else "OFF"
 	if new_state:
 		SoundManager.play_ui("autobattle_on")

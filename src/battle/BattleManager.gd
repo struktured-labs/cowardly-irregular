@@ -810,6 +810,35 @@ func _queue_action(action: Dictionary) -> void:
 	pending_actions.append(action)
 
 
+func clear_pending_player_actions() -> void:
+	"""Strip pending + execution-order entries belonging to player party.
+	Used by GameLoop._toggle_all_autobattle when disabling autobattle so
+	the user regains manual control INSTANTLY rather than after the
+	already-queued auto-actions play out. Enemy actions are preserved —
+	stripping them would deadlock the round (BattleManager waits for
+	enemy actions to fire before advancing).
+	(User feedback 2026-05-03: the disable was registering in state but
+	not visibly stopping anything mid-execution.)"""
+	for i in range(pending_actions.size() - 1, -1, -1):
+		var action = pending_actions[i]
+		var c = action.get("combatant", null)
+		if c and c in player_party:
+			pending_actions.remove_at(i)
+	# execution_order is a duplicate built at execution start. If we're
+	# mid-execution it's the live list. Strip player entries from it too,
+	# but leave the action currently being PROCESSED alone — interrupting
+	# mid-tween causes ghosted sprites.
+	if "execution_order" in self:
+		for i in range(execution_order.size() - 1, -1, -1):
+			var action = execution_order[i]
+			var c = action.get("combatant", null)
+			if c and c in player_party:
+				# Skip the head of the queue (currently processing)
+				if i == 0 and current_state == BattleState.PROCESSING_ACTION:
+					continue
+				execution_order.remove_at(i)
+
+
 func _compute_action_speed(combatant: Combatant, action_type: String, ability: Dictionary = {}) -> float:
 	"""Compute action speed value (lower = executes first)"""
 	var base_speed = ACTION_SPEEDS.get(action_type, 10)
