@@ -243,7 +243,14 @@ func _input(event: InputEvent) -> void:
 
 	# Start button = context-dependent:
 	# - Autogrind UI open: consumed here so AutogrindUI handles it (toggle grinding)
-	# - In battle: open autobattle editor
+	# - In battle: SMART — if autobattle is currently ON for any character,
+	#   disable it (matches user expectation that pressing the obvious button
+	#   stops the auto-fighting). If autobattle is OFF, open the editor (the
+	#   pre-2026-05-03 behavior, preserved so existing tutorial hints and
+	#   NPC dialogue references stay accurate).
+	#   User feedback: "I pressed start/select etc. and I didn't auto battle
+	#   disable" — pressing Plus expecting toggle, but it opened the editor
+	#   instead with no obvious way to disable from there.
 	# - In exploration/village/cave: open settings menu
 	if event.is_action_pressed("ui_menu"):
 		if _autogrind_ui and is_instance_valid(_autogrind_ui):
@@ -252,7 +259,17 @@ func _input(event: InputEvent) -> void:
 			pass
 		elif current_state == LoopState.BATTLE:
 			if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
-				_toggle_autobattle_editor()
+				# Decide: toggle off if any party has autobattle on, else open editor
+				var any_auto_on := false
+				for member in party:
+					var char_id := member.combatant_name.to_lower().replace(" ", "_")
+					if AutobattleSystem.is_autobattle_enabled(char_id):
+						any_auto_on = true
+						break
+				if any_auto_on:
+					_toggle_all_autobattle()  # disables (since any was on)
+				else:
+					_toggle_autobattle_editor()
 				get_viewport().set_input_as_handled()
 		elif current_state == LoopState.EXPLORATION:
 			_open_settings_menu()
