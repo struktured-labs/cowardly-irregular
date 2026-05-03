@@ -901,6 +901,10 @@ func _open_settings_menu() -> void:
 				_exploration_scene.resume()
 		)
 		settings_menu.start_boss_battle.connect(_on_settings_boss_battle)
+		# Debug teleport from settings menu — same handler as the OverworldMenu
+		# teleport, which closes the menu first then transitions.
+		if settings_menu.has_signal("teleport_requested"):
+			settings_menu.teleport_requested.connect(_on_settings_teleport_requested)
 
 
 func _on_title_settings() -> void:
@@ -1803,6 +1807,18 @@ func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 	# Close the overworld menu first
 	_on_overworld_menu_closed()
 	# Then transition
+	_on_area_transition(target_map, spawn_point)
+
+
+func _on_settings_teleport_requested(target_map: String, spawn_point: String) -> void:
+	"""Handle debug teleport from settings menu.
+	The settings_menu emits `closed` BEFORE `teleport_requested` (see
+	SettingsMenu._on_teleport_chosen) so its CanvasLayer is already
+	queue-freed by the time we arrive here. We just need to fire the
+	transition. Mirrors _on_teleport_requested but skips the overworld-
+	menu close path."""
+	if _exploration_scene and _exploration_scene.has_method("resume"):
+		_exploration_scene.resume()
 	_on_area_transition(target_map, spawn_point)
 
 

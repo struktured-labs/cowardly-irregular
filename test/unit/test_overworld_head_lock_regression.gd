@@ -28,6 +28,7 @@ const NPC_ARCHETYPES := [
     "guard", "merchant", "scholar",
     "innkeeper", "blacksmith", "priestess", "noble", "noblewoman",
     "king", "queen", "soldier", "farmer", "fisherman", "monk", "traveler",
+    "dr_temporal",
 ]
 
 

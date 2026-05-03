@@ -7,6 +7,7 @@ signal closed()
 signal settings_changed(setting: String, value: Variant)
 signal quit_to_title()
 signal start_boss_battle(boss_id: String)
+signal teleport_requested(map_id: String, spawn_point: String)
 
 ## Encounter rate presets (default 100%)
 const ENCOUNTER_PRESETS = [0.0, 0.25, 0.50, 0.75, 1.0, 1.5, 2.0]
@@ -45,6 +46,7 @@ var _settings_items: Array = []
 var _controls_submenu_open: bool = false
 var _jukebox_submenu_open: bool = false
 var _boss_submenu_open: bool = false
+var _teleport_submenu_open: bool = false
 ## When true, hides the "Quit to Title" action (we're already on the title screen)
 var from_title: bool = false
 
@@ -309,6 +311,21 @@ func _build_ui() -> void:
 		MenuMouseHelper.make_clickable(boss_item, boss_idx, 400, 50,
 			_on_setting_click.bind(boss_idx), _on_setting_hover.bind(boss_idx))
 
+	# Debug Teleport button (debug-only, only when in-game — not from title)
+	# Title-screen has no map context, teleport would be a no-op there.
+	if debug_log_enabled and not from_title:
+		var tp_idx = _settings_items.size()
+		var tp_item = _create_action_button_neutral(
+			"Debug Teleport",
+			"[DEBUG] Warp to any map",
+			tp_idx
+		)
+		tp_item.position = Vector2(16, 698)
+		panel.add_child(tp_item)
+		_settings_items.append({"control": tp_item, "type": "action", "id": "debug_teleport"})
+		MenuMouseHelper.make_clickable(tp_item, tp_idx, 400, 50,
+			_on_setting_click.bind(tp_idx), _on_setting_hover.bind(tp_idx))
+
 	# Quit to Title button (hidden when opened from title screen)
 	if not from_title:
 		var quit_idx = _settings_items.size()
@@ -317,7 +334,10 @@ func _build_ui() -> void:
 			"Return to the title screen",
 			quit_idx
 		)
-		var quit_y = 598 + (100 if debug_log_enabled else 0)
+		# Layout y: bumped to leave room for Debug Teleport when debug is on.
+		var quit_y = 598
+		if debug_log_enabled:
+			quit_y = 748  # below Fight Boss (648) AND Debug Teleport (698)
 		quit_item.position = Vector2(16, quit_y)
 		panel.add_child(quit_item)
 		_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
@@ -729,7 +749,7 @@ func _input(event: InputEvent) -> void:
 	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
-	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open:
+	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -963,6 +983,8 @@ func _activate_setting() -> void:
 			_open_jukebox_menu()
 		elif item["id"] == "fight_boss":
 			_open_boss_selector()
+		elif item["id"] == "debug_teleport":
+			_open_teleport_menu()
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
@@ -1054,6 +1076,36 @@ func _on_boss_selected(boss_id: String) -> void:
 	_boss_submenu_open = false
 	closed.emit()
 	start_boss_battle.emit(boss_id)
+	queue_free()
+
+
+func _open_teleport_menu() -> void:
+	"""Open the debug teleport submenu (debug-only)."""
+	_teleport_submenu_open = true
+	var TeleportMenuScript = load("res://src/ui/TeleportMenu.gd")
+	if TeleportMenuScript:
+		var tp = TeleportMenuScript.new()
+		tp.set_anchors_preset(Control.PRESET_FULL_RECT)
+		tp.teleport_requested.connect(_on_teleport_chosen)
+		tp.closed.connect(_on_teleport_closed)
+		add_child(tp)
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
+
+
+func _on_teleport_closed() -> void:
+	"""Teleport submenu closed without choice — return to settings."""
+	_teleport_submenu_open = false
+
+
+func _on_teleport_chosen(map_id: String, spawn_point: String) -> void:
+	"""Teleport destination chosen — close settings and forward signal.
+	Same emit-order pattern as _on_boss_selected: close BEFORE re-emit so
+	the listener queue_freeing settings doesn't race with the teleport
+	transition starting on a half-freed node."""
+	_teleport_submenu_open = false
+	closed.emit()
+	teleport_requested.emit(map_id, spawn_point)
 	queue_free()
 
 

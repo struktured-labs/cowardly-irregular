@@ -82,11 +82,38 @@ func _build_ui() -> void:
 
 	# Subtitle
 	var subtitle = Label.new()
-	subtitle.text = "Gamepad button remapping"
+	subtitle.text = "Gamepad button remapping — keyboard/mouse bindings shown read-only"
 	subtitle.position = Vector2(16, 30)
 	subtitle.add_theme_font_size_override("font_size", 10)
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(subtitle)
+
+	# Column header — only shown for the action rows so user knows what
+	# the right-hand columns mean. Drawn just above the first action row.
+	var col_header_pad = Label.new()
+	col_header_pad.text = "Action"
+	col_header_pad.position = Vector2(12, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_pad.add_theme_font_size_override("font_size", 10)
+	col_header_pad.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
+	_panel.add_child(col_header_pad)
+	var col_header_pad_btn = Label.new()
+	col_header_pad_btn.text = "Gamepad"
+	col_header_pad_btn.position = Vector2(320, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_pad_btn.add_theme_font_size_override("font_size", 10)
+	col_header_pad_btn.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
+	_panel.add_child(col_header_pad_btn)
+	var col_header_kb = Label.new()
+	col_header_kb.text = "Keyboard"
+	col_header_kb.position = Vector2(490, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_kb.add_theme_font_size_override("font_size", 10)
+	col_header_kb.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
+	_panel.add_child(col_header_kb)
+	var col_header_mouse = Label.new()
+	col_header_mouse.text = "Mouse"
+	col_header_mouse.position = Vector2(610, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_mouse.add_theme_font_size_override("font_size", 10)
+	col_header_mouse.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
+	_panel.add_child(col_header_mouse)
 
 	# Build rows
 	var y = ROW_START_Y
@@ -129,11 +156,11 @@ func _build_ui() -> void:
 	_flash_label.visible = false
 	_panel.add_child(_flash_label)
 
-	# Footer
+	# Footer — list ALL three input methods for transparency
 	var footer = Label.new()
-	footer.text = "Left/Right: Profile  A: Remap  B: Back"
+	footer.text = "Gamepad: ←→ Profile · A Remap · B Back     Keyboard: Z Confirm · X Back · Enter Remap     Mouse: LMB Click · RMB Back"
 	footer.position = Vector2(16, _panel.size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
 
@@ -192,7 +219,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 		arrows_right.add_theme_color_override("font_color", Color.YELLOW)
 		highlight.add_child(arrows_right)
 	elif not is_action_btn and value_text != "":
-		# Dots + value on the right
+		# Dots + gamepad button label
 		var dots = Label.new()
 		var dot_count = max(1, 30 - label_text.length())
 		dots.text = ".".repeat(dot_count)
@@ -204,11 +231,37 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 		var value = Label.new()
 		value.text = value_text
 		value.position = Vector2(320, 4)
-		value.add_theme_font_size_override("font_size", 14)
+		value.size = Vector2(160, ROW_HEIGHT - 8)
+		value.add_theme_font_size_override("font_size", 13)
 		value.add_theme_color_override("font_color", OPTION_SELECTED)
 		value.name = "ValueLabel"
 		highlight.add_child(value)
 		highlight.set_meta("value_label", value)
+
+		# Read-only keyboard binding column (sourced from InputMap)
+		# Look up by InputProfileManager.REMAPPABLE_ACTIONS index — `index`
+		# arg is 1-based for action rows (0 is profile selector).
+		var action_idx: int = index - 1
+		if action_idx >= 0 and action_idx < InputProfileManager.REMAPPABLE_ACTIONS.size():
+			var action_id: String = InputProfileManager.REMAPPABLE_ACTIONS[action_idx]
+			var kb_label_text := InputProfileManager.get_action_key_label(action_id)
+			var kb_label = Label.new()
+			kb_label.text = kb_label_text
+			kb_label.position = Vector2(490, 4)
+			kb_label.size = Vector2(110, ROW_HEIGHT - 8)
+			kb_label.add_theme_font_size_override("font_size", 13)
+			# Slightly muted color since it's not remappable here
+			kb_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
+			highlight.add_child(kb_label)
+
+			var mouse_label_text := InputProfileManager.get_action_mouse_label(action_id)
+			var mouse_label = Label.new()
+			mouse_label.text = mouse_label_text
+			mouse_label.position = Vector2(610, 4)
+			mouse_label.size = Vector2(120, ROW_HEIGHT - 8)
+			mouse_label.add_theme_font_size_override("font_size", 13)
+			mouse_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
+			highlight.add_child(mouse_label)
 
 	# Mouse support
 	MenuMouseHelper.make_clickable(highlight, index, _panel.size.x - 16, ROW_HEIGHT,
