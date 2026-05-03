@@ -823,6 +823,71 @@ func _create_battle_sprites() -> void:
 		# Add floating HP bar below enemy name
 		_create_enemy_hp_bar(enemy, sprite)
 
+		# Mouse click-to-target accessibility (added 2026-05-03 per a11y audit).
+		# Wraps the sprite in an Area2D + RectangleShape2D so the user can click
+		# directly on the enemy in addition to the popup menu. Only fires during
+		# target selection (`is_selecting_target`); ignored otherwise. Uses
+		# input_pickable for cleanest event routing.
+		_add_enemy_click_target(sprite, i)
+
+
+func _add_enemy_click_target(sprite: AnimatedSprite2D, enemy_idx: int) -> void:
+	"""Wrap an enemy sprite in an Area2D so mouse clicks can pick it as a
+	target during the target-selection phase. Click is ignored outside
+	target selection (so wandering clicks during animations don't fire
+	stale target selections).
+
+	Sizing: monster sprites are typically 256×256 source frames, scaled
+	to 144 or 256 in BattleScene. We approximate the picking area as a
+	100x110 rect centered on the sprite. (Slightly tighter than visual
+	bounds so adjacent enemies' click areas don't overlap.) The shape
+	rides with the sprite via parent transforms.
+	(Per accessibility audit 2026-05-03: 'mouse + keyboard fully
+	accessible'.)"""
+	var area = Area2D.new()
+	area.name = "ClickTarget"
+	area.input_pickable = true
+	# Layer 16 = a fresh, non-conflicting bit. We only care about input
+	# pickability; Area2D collision_layer/mask aren't used here.
+	area.collision_layer = 0
+	area.collision_mask = 0
+	sprite.add_child(area)
+
+	var shape = CollisionShape2D.new()
+	var rect = RectangleShape2D.new()
+	rect.size = Vector2(100, 110)
+	shape.shape = rect
+	# Centered on the sprite (Sprite2D/AnimatedSprite2D are centered by default)
+	shape.position = Vector2(0, 0)
+	area.add_child(shape)
+
+	area.input_event.connect(func(_viewport, event: InputEvent, _shape_idx: int) -> void:
+		if not is_selecting_target:
+			return
+		if not (event is InputEventMouseButton):
+			return
+		var mb := event as InputEventMouseButton
+		if not (mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT):
+			return
+		# Build the same alive-enemies array the popup uses, then resolve
+		# enemy_idx through it. (PopupMenu items are keyed by index in the
+		# alive subset, not the full test_enemies array.)
+		var alive_enemies := _get_alive_enemies()
+		if enemy_idx >= test_enemies.size():
+			return
+		var clicked_enemy: Combatant = test_enemies[enemy_idx]
+		if not clicked_enemy or not clicked_enemy.is_alive:
+			return
+		var alive_idx := alive_enemies.find(clicked_enemy)
+		if alive_idx < 0:
+			return
+		# Close any popup menu we opened, then route through the same handler
+		_cleanup_popup()
+		is_selecting_target = false
+		_on_target_selected(alive_idx, alive_enemies)
+		get_viewport().set_input_as_handled()
+	)
+
 
 func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
 	"""Create a small HP bar below the enemy sprite name label"""
