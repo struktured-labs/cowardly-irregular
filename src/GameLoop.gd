@@ -262,7 +262,7 @@ func _input(event: InputEvent) -> void:
 				# Decide: toggle off if any party has autobattle on, else open editor
 				var any_auto_on := false
 				for member in party:
-					var char_id := member.combatant_name.to_lower().replace(" ", "_")
+					var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
 					if AutobattleSystem.is_autobattle_enabled(char_id):
 						any_auto_on = true
 						break
@@ -631,6 +631,11 @@ func _on_overworld_menu_action(action: String, target: Combatant) -> void:
 			if target:
 				var char_id = target.combatant_name.to_lower().replace(" ", "_")
 				_open_autobattle_for_character(char_id, target.combatant_name, target)
+		"autobattle_toggle":
+			# Sticky global toggle from overworld menu (mouse path,
+			# matches Minus button behavior). Toast feedback comes from
+			# _toggle_all_autobattle itself when not in BATTLE state.
+			_toggle_all_autobattle()
 		"autogrind":
 			# Close menu first, then open autogrind config UI
 			_on_overworld_menu_closed()

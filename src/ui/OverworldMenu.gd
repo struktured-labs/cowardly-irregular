@@ -38,7 +38,12 @@ const BASE_MENU_OPTIONS = [
 	{"id": "jobs", "label": "Jobs", "enabled": true},
 	{"id": "status", "label": "Status", "enabled": true},
 	{"id": "abilities", "label": "Abilities", "enabled": true},
-	{"id": "autobattle", "label": "Autobattle", "enabled": true},
+	# Auto Toggle = sticky global on/off (mouse path to the same thing
+	# Minus button does — added per user feedback 2026-05-03 for mouse
+	# users who can't easily tell which gamepad button toggles).
+	# Label updated dynamically in _build_ui based on current state.
+	{"id": "autobattle_toggle", "label": "Auto: …", "enabled": true},
+	{"id": "autobattle", "label": "Auto Rules", "enabled": true},
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
 	{"id": "cutscene_gallery", "label": "Theater", "enabled": true},
 	{"id": "bestiary", "label": "Bestiary", "enabled": true},
@@ -87,6 +92,18 @@ func setup(game_party: Array) -> void:
 	party = game_party
 	# Build menu options (add debug teleport if enabled)
 	_menu_options = BASE_MENU_OPTIONS.duplicate(true)
+	# Render the autobattle toggle label live based on current state.
+	# Walks party[] and asks AutobattleSystem if any are enabled.
+	var any_auto_on := false
+	for member in party:
+		var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(char_id):
+			any_auto_on = true
+			break
+	for opt in _menu_options:
+		if opt.get("id", "") == "autobattle_toggle":
+			opt["label"] = "Auto: ON" if any_auto_on else "Auto: OFF"
+			break
 	if GameState and GameState.debug_log_enabled:
 		_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
 	# Force full rebuild with new party data
@@ -604,6 +621,24 @@ func _handle_menu_action(action_id: String) -> void:
 		"autobattle":
 			menu_action.emit("autobattle", target)
 			_close_menu()
+		"autobattle_toggle":
+			# Mouse path to the global sticky toggle (same effect as Minus).
+			# Don't close the menu — user might want to see the new state in
+			# the label and toggle again or do something else. Refresh UI.
+			menu_action.emit("autobattle_toggle", null)
+			# Re-derive the label without rebuilding the entire menu.
+			var any_auto_on := false
+			for member in party:
+				var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+				if AutobattleSystem.is_autobattle_enabled(char_id):
+					any_auto_on = true
+					break
+			for opt in _menu_options:
+				if opt.get("id", "") == "autobattle_toggle":
+					opt["label"] = "Auto: ON" if any_auto_on else "Auto: OFF"
+					break
+			_ui_built = false
+			_build_ui()
 		"autogrind":
 			menu_action.emit("autogrind", null)
 			_close_menu()

@@ -19,6 +19,7 @@ var _revealed_enemies: Dictionary = {}
 
 
 var _panels_themed: bool = false  # one-shot guard for transparency theming
+var _auto_toggle_button: Button = null  # Clickable global autobattle toggle (mouse path)
 
 
 func _init(scene) -> void:
@@ -30,9 +31,12 @@ func update_ui() -> void:
 	if not _panels_themed:
 		_apply_panel_transparency()
 		_panels_themed = true
+	if not _auto_toggle_button:
+		_create_auto_toggle_button()
 	update_character_status()
 	update_enemy_status()
 	update_action_buttons()
+	_update_auto_toggle_button()
 	_scene._update_danger_music()
 
 
@@ -64,6 +68,84 @@ func _apply_panel_transparency() -> void:
 		sb.content_margin_top = 4
 		sb.content_margin_bottom = 4
 		panel.add_theme_stylebox_override("panel", sb)
+
+
+func _create_auto_toggle_button() -> void:
+	"""Mouse-clickable global autobattle toggle. Pure mouse-path access
+	to the same sticky toggle Minus/F6 trigger from the keyboard/gamepad.
+	(Per user feedback 2026-05-03: 'should be a way to enable/disable
+	w/mouse too'.)
+	Positioned at top-center of the viewport so it's always visible
+	regardless of which battle UI panels are showing. Click to toggle."""
+	var ui = _scene.get_node_or_null("UI")
+	if not ui:
+		return
+	_auto_toggle_button = Button.new()
+	_auto_toggle_button.name = "AutoToggleButton"
+	_auto_toggle_button.text = "AUTO: …"  # Filled in by _update_auto_toggle_button
+	_auto_toggle_button.flat = false
+	_auto_toggle_button.focus_mode = Control.FOCUS_NONE  # Don't steal kb focus
+	_auto_toggle_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	# Sit above the PartyStatusPanel (which starts at y=40, offset_left=-200).
+	# We tuck right of EnemyStatusPanel, hugging the top-right but to the LEFT
+	# of the party panel so it doesn't overlap.
+	_auto_toggle_button.offset_left = -310
+	_auto_toggle_button.offset_top = 8
+	_auto_toggle_button.offset_right = -210
+	_auto_toggle_button.offset_bottom = 32
+	_auto_toggle_button.add_theme_font_size_override("font_size", 12)
+	_auto_toggle_button.pressed.connect(_on_auto_toggle_pressed)
+	ui.add_child(_auto_toggle_button)
+
+
+func _update_auto_toggle_button() -> void:
+	"""Refresh the AUTO toggle button label + colors based on current state."""
+	if not _auto_toggle_button:
+		return
+	var any_on := false
+	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else _scene.party_members
+	for member in members:
+		var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(char_id):
+			any_on = true
+			break
+	if any_on:
+		_auto_toggle_button.text = "AUTO: ON"
+		_auto_toggle_button.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	else:
+		_auto_toggle_button.text = "AUTO: OFF"
+		_auto_toggle_button.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
+
+
+func _on_auto_toggle_pressed() -> void:
+	"""Mouse click on AUTO toggle — same effect as Minus/F6/Plus-when-on."""
+	# Defer one frame so the button's own click sound doesn't collide
+	# with autobattle_on/off SFX.
+	_scene.get_tree().process_frame.connect(func() -> void:
+		if not _auto_toggle_button or not is_instance_valid(_auto_toggle_button):
+			return
+		# Reuse the GameLoop toggle so the path is identical to gamepad/
+		# keyboard. Clears the pending action queue on disable + shows
+		# a Toast in non-battle states. GameLoop is the main scene root.
+		var gl = _scene.get_tree().root.get_node_or_null("GameLoop")
+		if gl and gl.has_method("_toggle_all_autobattle"):
+			gl._toggle_all_autobattle()
+		else:
+			# Fallback: same logic inline (shouldn't fire — GameLoop is
+			# always parent of BattleScene during a battle).
+			var any_on := false
+			for member in _scene.party_members:
+				var char_id = member.combatant_name.to_lower().replace(" ", "_")
+				if AutobattleSystem.is_autobattle_enabled(char_id):
+					any_on = true
+					break
+			for member in _scene.party_members:
+				var char_id = member.combatant_name.to_lower().replace(" ", "_")
+				AutobattleSystem.set_autobattle_enabled(char_id, not any_on)
+			if SoundManager:
+				SoundManager.play_ui("autobattle_off" if any_on else "autobattle_on")
+		_update_auto_toggle_button()
+	, CONNECT_ONE_SHOT)
 
 
 func update_character_status() -> void:
