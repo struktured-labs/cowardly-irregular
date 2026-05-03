@@ -510,11 +510,8 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	# Handle teleport submenu input separately
-	if _submenu_open and _teleport_labels.size() > 0:
-		_handle_teleport_input(event)
-		return
-
+	# Submenus handle their own input now (including the standalone
+	# TeleportMenu that replaced the inline teleport logic). Just bail.
 	if _submenu_open:
 		return
 
@@ -868,154 +865,42 @@ func _on_submenu_closed() -> void:
 	_build_ui()  # Refresh UI to show updated stats
 
 
-## Teleport Menu (debug only)
-
-const TELEPORT_DESTINATIONS = [
-	{"id": "overworld", "label": "Medieval Overworld", "spawn": "default"},
-	{"id": "suburban_overworld", "label": "Suburban (Area 2)", "spawn": "entrance"},
-	{"id": "industrial_overworld", "label": "Industrial (Area 3)", "spawn": "entrance"},
-	{"id": "futuristic_overworld", "label": "Futuristic (Area 4)", "spawn": "entrance"},
-	{"id": "abstract_overworld", "label": "Abstract (Area 5)", "spawn": "entrance"},
-	{"id": "steampunk_overworld", "label": "Steampunk Region", "spawn": "default"},
-	{"id": "harmonia_village", "label": "Harmonia Village", "spawn": "default"},
-	{"id": "maple_heights_village", "label": "Maple Heights", "spawn": "default"},
-	{"id": "brasston_village", "label": "Brasston", "spawn": "default"},
-	{"id": "rivet_row_village", "label": "Rivet Row", "spawn": "default"},
-	{"id": "node_prime_village", "label": "Node Prime", "spawn": "default"},
-	{"id": "vertex_village", "label": "The Vertex", "spawn": "default"},
-]
-
-var _teleport_selected: int = 0
-var _teleport_labels: Array = []
-var _tp_highlight_refs: Array = []
-var _tp_cursor_refs: Array = []
+## Teleport Menu (debug only) — delegates to the standalone TeleportMenu
+## (src/ui/TeleportMenu.gd) so SettingsMenu and OverworldMenu share a
+## single, fully-mouse/kb/gamepad-accessible destination picker. The
+## prior inline implementation was gamepad-only and listed a stale 12
+## destinations vs the shared menu's 28 (every world, village, dungeon,
+## masterite chamber, dragon cave). Refactored 2026-05-03.
 
 func _open_teleport_menu() -> void:
-	"""Open the teleport destination picker"""
+	"""Open the teleport destination picker (standalone TeleportMenu)."""
 	_submenu_open = true
-	_teleport_selected = 0
-	_teleport_labels.clear()
-	_tp_highlight_refs.clear()
-	_tp_cursor_refs.clear()
-
-	var teleport_panel = Control.new()
-	teleport_panel.name = "TeleportMenu"
-	teleport_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	# Background
-	var bg = ColorRect.new()
-	bg.color = BG_COLOR
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	teleport_panel.add_child(bg)
-
-	# Title
-	var title = Label.new()
-	title.text = "DEBUG TELEPORT"
-	title.position = Vector2(24, 16)
-	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color.YELLOW)
-	teleport_panel.add_child(title)
-
-	var subtitle = Label.new()
-	subtitle.text = "Select destination:"
-	subtitle.position = Vector2(24, 38)
-	subtitle.add_theme_font_size_override("font_size", 12)
-	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
-	teleport_panel.add_child(subtitle)
-
-	# Destination list
-	var y_offset = 64
-	for i in range(TELEPORT_DESTINATIONS.size()):
-		var dest = TELEPORT_DESTINATIONS[i]
-		var item = Control.new()
-		item.position = Vector2(24, y_offset + i * 32)
-		item.size = Vector2(300, 28)
-
-		var highlight = ColorRect.new()
-		highlight.color = SELECTED_COLOR if i == 0 else Color.TRANSPARENT
-		highlight.size = Vector2(300, 28)
-		highlight.name = "Highlight"
-		item.add_child(highlight)
-
-		var cursor = Label.new()
-		cursor.text = "▶" if i == 0 else " "
-		cursor.position = Vector2(4, 4)
-		cursor.add_theme_font_size_override("font_size", 14)
-		cursor.add_theme_color_override("font_color", Color.YELLOW)
-		cursor.name = "Cursor"
-		item.add_child(cursor)
-
-		var label = Label.new()
-		label.text = dest["label"]
-		label.position = Vector2(28, 4)
-		label.add_theme_font_size_override("font_size", 14)
-		label.add_theme_color_override("font_color", TEXT_COLOR)
-		label.name = "Label"
-		item.add_child(label)
-
-		teleport_panel.add_child(item)
-		_teleport_labels.append(item)
-		_tp_highlight_refs.append(highlight)
-		_tp_cursor_refs.append(cursor)
-
-	# Footer
-	var footer = Label.new()
-	footer.text = "↑↓: Select  A: Teleport  B: Back"
-	footer.position = Vector2(24, y_offset + TELEPORT_DESTINATIONS.size() * 32 + 16)
-	footer.add_theme_font_size_override("font_size", 12)
-	footer.add_theme_color_override("font_color", DISABLED_COLOR)
-	teleport_panel.add_child(footer)
-
-	add_child(teleport_panel)
-	_hide_main_ui(teleport_panel)
-
-	# Use a deferred input handler for the teleport submenu
-	teleport_panel.set_meta("input_handler", true)
-
-
-func _handle_teleport_input(event: InputEvent) -> void:
-	"""Handle input for the teleport submenu"""
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_teleport_selected = (_teleport_selected - 1 + TELEPORT_DESTINATIONS.size()) % TELEPORT_DESTINATIONS.size()
-		_update_teleport_selection()
-		SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_teleport_selected = (_teleport_selected + 1) % TELEPORT_DESTINATIONS.size()
-		_update_teleport_selection()
-		SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_accept") and not event.is_echo():
-		var dest = TELEPORT_DESTINATIONS[_teleport_selected]
-		print("[TELEPORT] Warping to: %s" % dest["label"])
-		SoundManager.play_ui("menu_select")
-		teleport_requested.emit(dest["id"], dest["spawn"])
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
-		# Close teleport submenu, return to main menu
-		_teleport_labels.clear()
-		_tp_highlight_refs.clear()
-		_tp_cursor_refs.clear()
+	var TeleportMenuScript = load("res://src/ui/TeleportMenu.gd")
+	if not TeleportMenuScript:
 		_submenu_open = false
-		for child in get_children():
-			child.visible = true
-		# Remove teleport panel
-		var tp = get_node_or_null("TeleportMenu")
-		if tp:
-			tp.queue_free()
-		_build_ui()
-		SoundManager.play_ui("menu_cancel")
-		get_viewport().set_input_as_handled()
+		return
+	var tp = TeleportMenuScript.new()
+	tp.name = "TeleportMenu"
+	tp.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tp.teleport_requested.connect(_on_teleport_chosen)
+	tp.closed.connect(_on_teleport_closed)
+	add_child(tp)
+	_hide_main_ui(tp)
 
 
-func _update_teleport_selection() -> void:
-	"""Update teleport menu visual selection using cached references"""
-	for i in range(_tp_highlight_refs.size()):
-		_tp_highlight_refs[i].color = SELECTED_COLOR if i == _teleport_selected else Color.TRANSPARENT
-		_tp_cursor_refs[i].text = "▶" if i == _teleport_selected else " "
+func _on_teleport_chosen(map_id: String, spawn_point: String) -> void:
+	"""Forward the teleport request up to GameLoop. The TeleportMenu
+	already queue_freed itself on pick."""
+	_submenu_open = false
+	teleport_requested.emit(map_id, spawn_point)
+
+
+func _on_teleport_closed() -> void:
+	"""Teleport menu cancelled — restore main menu visibility."""
+	_submenu_open = false
+	for child in get_children():
+		child.visible = true
+	_build_ui()
 
 
 func _on_menu_click(index: int) -> void:
