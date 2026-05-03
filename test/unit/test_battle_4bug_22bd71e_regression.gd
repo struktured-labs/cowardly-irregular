@@ -264,10 +264,16 @@ func test_battle_ui_manager_ctb_panel_bottom_right_anchor() -> void:
 
 	assert_true(text.find("PRESET_BOTTOM_RIGHT") != -1,
 		"BattleUIManager must anchor CTB panel via PRESET_BOTTOM_RIGHT")
-	# offset_top must be -240 (or more negative) to clear party panel gutter
-	var has_240 = text.find("offset_top = -240") != -1 or text.find("offset_top = -241") != -1
-	assert_true(has_240,
-		"BattleUIManager CTB offset_top must be -240 or beyond (regression: CTB/party overlap)")
+	# Updated 2026-05-02: CTB shrunk from offset_top=-240 (height 230)
+	# to offset_top=-180 (height 170) AFTER the user reported that the
+	# turn-order panel still clipped over the last party member when
+	# party content overflowed the 420-tall PartyStatusPanel. Shrinking
+	# the CTB widens the buffer between PartyStatusPanel.bottom (y=460
+	# at 720p) and CTBTimeline.top (y=540 at 720p) from 20px → 80px.
+	# Still must NOT extend above the party panel, so offset_top must
+	# be > -260 (less negative than that = panel starts at y > 460).
+	assert_true(text.find("_ctb_panel.offset_top = -180") != -1,
+		"BattleUIManager CTB offset_top should be -180 (post-2026-05-02 shrink for party-overlap fix)")
 
 
 # ===========================================================================

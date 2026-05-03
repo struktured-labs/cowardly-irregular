@@ -20,10 +20,11 @@ func test_set_music_volume_safe_before_players_exist():
 	# This would have crashed before the null-guard fix.
 	sm.set_music_volume(0.5)
 	# And the base db should still have been latched.
-	# At slider=0.5: db = MUSIC_VOLUME_CEILING_DB (-6) + linear_to_db(0.5) (-6.02) ≈ -12.02
-	# Just assert it changed from the default of exactly -12.0 (ceiling behavior wired up).
+	# Updated 2026-05-02: ceiling lowered -6 → -10 after user said music
+	# was still too loud. At slider=0.5: db = -10 + linear_to_db(0.5) ≈ -16.
 	assert_ne(sm._music_base_db, -12.0, "base db should have been updated by setter")
-	assert_lt(sm._music_base_db, -6.0, "0.5 slider should be below the music ceiling (-6dB)")
+	assert_lt(sm._music_base_db, sm.MUSIC_VOLUME_CEILING_DB,
+		"0.5 slider should be below the music ceiling")
 
 
 func test_set_sfx_volume_safe_before_players_exist():
@@ -44,11 +45,13 @@ func test_set_music_volume_normal_path_still_works():
 	add_child_autofree(sm)
 	await get_tree().process_frame
 	sm.set_music_volume(1.0)
-	# Music ceiling is -6 dB — even at slider=1.0 we cap there so battle SFX
-	# can still punch through. (Was 0 dB before the ceiling was added; that
-	# pushed music 12 dB above the original design intent and drowned SFX.)
-	assert_almost_eq(sm._music_player.volume_db, -6.0, 0.01,
-		"music volume should hit MUSIC_VOLUME_CEILING_DB (-6dB) at slider=1.0")
+	# Music ceiling is the constant — even at slider=1.0 we cap there so
+	# battle SFX punches through. Source value moved -6 → -10 dB on
+	# 2026-05-02 after a second pass of user feedback ("music too loud").
+	# Read the constant rather than hard-coding so the test self-adjusts
+	# if the ceiling is tuned again.
+	assert_almost_eq(sm._music_player.volume_db, sm.MUSIC_VOLUME_CEILING_DB, 0.01,
+		"music volume should hit MUSIC_VOLUME_CEILING_DB at slider=1.0")
 
 	sm.set_music_volume(0.0)
 	assert_eq(sm._music_player.volume_db, -80.0, "music volume should hit silence at 0.0")

@@ -29,12 +29,15 @@ func _make_sound_manager() -> Node:
 func test_load_settings_path_respects_music_ceiling():
 	# This mirrors what SaveSystem.load_settings() does at line ~595:
 	#   SoundManager.set_music_volume(GameState.music_volume / 100.0)
-	# After the v3.23.0-alpha ceiling fix, slider=1.0 → -6 dB, NOT 0 dB.
+	# After the v3.23.0-alpha ceiling fix, slider=1.0 hits the
+	# MUSIC_VOLUME_CEILING_DB cap, not 0 dB. Ceiling moved -6 → -10
+	# on 2026-05-02 after a second pass of user feedback. Read the
+	# constant rather than hard-coding so the test self-adjusts.
 	var sm = _make_sound_manager()
 	await get_tree().process_frame
 	# Simulate "user has saved music_volume=100".
 	sm.set_music_volume(100 / 100.0)
-	assert_almost_eq(sm._music_player.volume_db, -6.0, 0.01,
+	assert_almost_eq(sm._music_player.volume_db, sm.MUSIC_VOLUME_CEILING_DB, 0.01,
 		"music_volume=100 in saved settings must respect MUSIC_VOLUME_CEILING_DB")
 
 
@@ -49,13 +52,15 @@ func test_zero_volume_silences_music():
 
 func test_partial_volume_below_ceiling():
 	# Slider at 50% should give MUSIC_VOLUME_CEILING_DB + linear_to_db(0.5)
-	# = -6 + (-6.02) ≈ -12 dB.
+	# Ceiling is -10 dB (2026-05-02), linear_to_db(0.5) is -6.02 dB,
+	# so expected ≈ -16.02 dB. Use the constant so we don't have to
+	# update this test if the ceiling is tuned again.
 	var sm = _make_sound_manager()
 	await get_tree().process_frame
 	sm.set_music_volume(0.5)
-	# Use a generous tolerance because linear_to_db(0.5) is -6.02 not exactly -6.
-	assert_almost_eq(sm._music_player.volume_db, -12.0, 0.5,
-		"music_volume=50 should land near -12 dB (ceiling -6 + attenuation -6)")
+	var expected = sm.MUSIC_VOLUME_CEILING_DB + (-6.0)  # -6 dB attenuation at half slider
+	assert_almost_eq(sm._music_player.volume_db, expected, 0.5,
+		"music_volume=50 should land near MUSIC_VOLUME_CEILING_DB + (-6 dB)")
 
 
 func test_set_volume_idempotent():
@@ -78,8 +83,9 @@ func test_set_volume_clamps_above_one():
 	var sm = _make_sound_manager()
 	await get_tree().process_frame
 	sm.set_music_volume(2.0)
-	# Even with normalized=2.0, after clamp(0,1) → 1.0 → ceiling -6 dB.
-	assert_almost_eq(sm._music_player.volume_db, -6.0, 0.01,
+	# Even with normalized=2.0, after clamp(0,1) → 1.0 → ceiling.
+	# Read the constant so the test isn't pinned to a stale dB value.
+	assert_almost_eq(sm._music_player.volume_db, sm.MUSIC_VOLUME_CEILING_DB, 0.01,
 		"normalized > 1.0 must be clamped to ceiling, not exceed it")
 
 
