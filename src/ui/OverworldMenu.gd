@@ -700,8 +700,24 @@ func _open_settings() -> void:
 		settings.closed.connect(_on_settings_closed)
 		settings.quit_to_title.connect(_on_quit_to_title)
 		settings.start_boss_battle.connect(_on_settings_boss_battle)
+		# Forward debug-teleport request from Settings → OverworldMenu →
+		# GameLoop. The same teleport_requested signal we already emit
+		# directly from our own teleport submenu (and that GameLoop is
+		# already wired to listen for) — just relayed through. Without
+		# this, the user picking a destination in Settings → Debug
+		# Teleport silently does nothing. Fixed 2026-05-03.
+		if settings.has_signal("teleport_requested"):
+			settings.teleport_requested.connect(_on_settings_teleport_chosen)
 		add_child(settings)
 		_hide_main_ui(settings)
+
+
+func _on_settings_teleport_chosen(map_id: String, spawn_point: String) -> void:
+	"""Forward teleport request from settings up to GameLoop. SettingsMenu
+	already queue_freed itself, so we just need to re-emit on our level."""
+	_submenu_open = false
+	teleport_requested.emit(map_id, spawn_point)
+	queue_free()  # Close OverworldMenu too — GameLoop will transition
 
 
 func _on_quit_to_title() -> void:
