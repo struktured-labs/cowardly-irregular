@@ -140,10 +140,12 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Main panel
+	# Main panel — height bumped to fit all 5 action buttons
+	# (Controls, Jukebox, Fight Boss, Debug Teleport, Quit) when debug is
+	# on, plus the 8 setting rows above them. 0.84 was too tight.
 	var panel = Control.new()
-	panel.position = Vector2(size.x * 0.2, size.y * 0.08)
-	panel.size = Vector2(size.x * 0.6, size.y * 0.84)
+	panel.position = Vector2(size.x * 0.2, size.y * 0.04)
+	panel.size = Vector2(size.x * 0.6, size.y * 0.92)
 	add_child(panel)
 
 	var panel_bg = ColorRect.new()
@@ -271,78 +273,42 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
 
-	# Controls button
-	var controls_item = _create_action_button_neutral(
-		"Controls",
-		"Remap gamepad buttons",
-		8
-	)
-	controls_item.position = Vector2(16, 548)
-	panel.add_child(controls_item)
-	_settings_items.append({"control": controls_item, "type": "action", "id": "controls"})
-	MenuMouseHelper.make_clickable(controls_item, 8, 400, 50,
-		_on_setting_click.bind(8), _on_setting_hover.bind(8))
+	# Action buttons stacked in a VBoxContainer — auto-fits 1 to 5 items
+	# (Controls + Jukebox + Fight Boss + Debug Teleport + Quit when all
+	# debug-only entries are visible) within the panel. Tight stride so
+	# all 5 fit even at 720p.
+	# Position the container right below the last setting row (Screen Shake
+	# ends at ~548) and let the panel scroll if it ever gets longer.
+	var actions_box = VBoxContainer.new()
+	actions_box.position = Vector2(16, 548)
+	actions_box.size = Vector2(400, panel.size.y - 580)
+	actions_box.add_theme_constant_override("separation", 0)
+	panel.add_child(actions_box)
 
-	# Jukebox button (debug-only)
+	# Helper local lambda — append one action button into the VBox and
+	# wire mouse on the index it gets in _settings_items.
+	var add_action := func(label: String, desc: String, id: String, primary: bool = false) -> void:
+		var idx = _settings_items.size()
+		var item = (_create_action_button(label, desc, idx)
+			if primary else _create_action_button_neutral(label, desc, idx))
+		item.custom_minimum_size = Vector2(400, 38)  # Compact action row
+		actions_box.add_child(item)
+		_settings_items.append({"control": item, "type": "action", "id": id})
+		MenuMouseHelper.make_clickable(item, idx, 400, 38,
+			_on_setting_click.bind(idx), _on_setting_hover.bind(idx))
+
+	# Controls (always shown)
+	add_action.call("Controls", "Remap gamepad buttons", "controls")
+	# Debug-only batch
 	if debug_log_enabled:
-		var jukebox_idx = _settings_items.size()
-		var jukebox_item = _create_action_button_neutral(
-			"Jukebox",
-			"[DEBUG] Play any music track",
-			jukebox_idx
-		)
-		jukebox_item.position = Vector2(16, 598)
-		panel.add_child(jukebox_item)
-		_settings_items.append({"control": jukebox_item, "type": "action", "id": "jukebox"})
-		MenuMouseHelper.make_clickable(jukebox_item, jukebox_idx, 400, 50,
-			_on_setting_click.bind(jukebox_idx), _on_setting_hover.bind(jukebox_idx))
-
-	# Fight Boss button (debug-only)
-	if debug_log_enabled:
-		var boss_idx = _settings_items.size()
-		var boss_item = _create_action_button_neutral(
-			"Fight Boss",
-			"[DEBUG] Battle a Masterite boss",
-			boss_idx
-		)
-		boss_item.position = Vector2(16, 648)
-		panel.add_child(boss_item)
-		_settings_items.append({"control": boss_item, "type": "action", "id": "fight_boss"})
-		MenuMouseHelper.make_clickable(boss_item, boss_idx, 400, 50,
-			_on_setting_click.bind(boss_idx), _on_setting_hover.bind(boss_idx))
-
-	# Debug Teleport button (debug-only, only when in-game — not from title)
-	# Title-screen has no map context, teleport would be a no-op there.
-	if debug_log_enabled and not from_title:
-		var tp_idx = _settings_items.size()
-		var tp_item = _create_action_button_neutral(
-			"Debug Teleport",
-			"[DEBUG] Warp to any map",
-			tp_idx
-		)
-		tp_item.position = Vector2(16, 698)
-		panel.add_child(tp_item)
-		_settings_items.append({"control": tp_item, "type": "action", "id": "debug_teleport"})
-		MenuMouseHelper.make_clickable(tp_item, tp_idx, 400, 50,
-			_on_setting_click.bind(tp_idx), _on_setting_hover.bind(tp_idx))
-
-	# Quit to Title button (hidden when opened from title screen)
+		add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
+		add_action.call("Fight Boss", "[DEBUG] Battle a Masterite boss", "fight_boss")
+		if not from_title:
+			# Title-screen has no map context, teleport would be a no-op there.
+			add_action.call("Debug Teleport", "[DEBUG] Warp to any map", "debug_teleport")
+	# Quit to Title (hidden when opened from title screen)
 	if not from_title:
-		var quit_idx = _settings_items.size()
-		var quit_item = _create_action_button(
-			"Quit to Title",
-			"Return to the title screen",
-			quit_idx
-		)
-		# Layout y: bumped to leave room for Debug Teleport when debug is on.
-		var quit_y = 598
-		if debug_log_enabled:
-			quit_y = 748  # below Fight Boss (648) AND Debug Teleport (698)
-		quit_item.position = Vector2(16, quit_y)
-		panel.add_child(quit_item)
-		_settings_items.append({"control": quit_item, "type": "action", "id": "quit_to_title"})
-		MenuMouseHelper.make_clickable(quit_item, quit_idx, 400, 50,
-			_on_setting_click.bind(quit_idx), _on_setting_hover.bind(quit_idx))
+		add_action.call("Quit to Title", "Return to the title screen", "quit_to_title", true)
 
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_settings)
