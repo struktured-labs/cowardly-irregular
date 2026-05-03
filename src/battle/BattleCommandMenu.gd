@@ -529,16 +529,27 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 					current.last_item_selection = item_id
 			print("[CMD MEM] %s -> item_menu / %s (single action)" % [current.combatant_name, current.last_item_selection])
 
-	# Autobattle - toggle autobattle ON for this player and execute their turn
+	# Autobattle menu pick — JUST FOR THIS TURN, not a permanent toggle.
+	# User clarified the model 2026-05-03:
+	#   menu "Auto"     = one-shot per-character auto for current turn
+	#   Minus button    = sticky global toggle (persists across turns + battles)
+	# Save the sticky state, force-enable for this turn, run the autobattle
+	# decision, then restore the sticky state. If sticky was already on,
+	# this is a no-op restore; if sticky was off, character returns to manual
+	# next turn.
 	if item_id == "autobattle" and item_data is Dictionary:
 		var combatant_for_auto = item_data.get("combatant", null)
 		if combatant_for_auto:
 			var char_id = combatant_for_auto.combatant_name.to_lower().replace(" ", "_")
+			var was_enabled = AutobattleSystem.is_autobattle_enabled(char_id)
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
 			SoundManager.play_ui("autobattle_on")
-			_scene.log_message("[color=lime]%s: Autobattle enabled[/color]" % combatant_for_auto.combatant_name)
-			print("[AUTOBATTLE] %s enabled - executing auto turn" % combatant_for_auto.combatant_name)
+			_scene.log_message("[color=lime]%s: Auto (this turn)[/color]" % combatant_for_auto.combatant_name)
+			print("[AUTOBATTLE] %s — one-shot auto turn (sticky was %s)" % [combatant_for_auto.combatant_name, was_enabled])
 			BattleManager.execute_autobattle_for_current()
+			# Restore the sticky state so the [A] indicator and future-turn
+			# behavior follow the user's most recent global choice.
+			AutobattleSystem.set_autobattle_enabled(char_id, was_enabled)
 			_scene._update_ui()
 		return
 

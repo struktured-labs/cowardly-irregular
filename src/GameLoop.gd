@@ -372,7 +372,13 @@ func _set_battle_menu_visible(visible: bool) -> void:
 
 
 func _toggle_all_autobattle() -> void:
-	"""Toggle autobattle for ALL party members at once"""
+	"""Toggle the GLOBAL/STICKY autobattle state for all party members.
+	Persists across turns AND across battles AND in the overworld.
+	(Per user feedback 2026-05-03: 'Minus button = enable for all players,
+	continues for future turns including future battles. Pressing - in
+	the overworld should also disable autobattle.')
+
+	Distinct from the per-character menu 'Auto' pick which is one-shot."""
 	if party.size() == 0:
 		return
 
@@ -393,11 +399,7 @@ func _toggle_all_autobattle() -> void:
 	# Also clear the queue side-effects so the toggle is INSTANT.
 	# Without this, when toggling OFF mid-execution the already-queued
 	# autobattle actions kept playing through the current round before
-	# the user could regain manual control. (User feedback 2026-05-03:
-	# "I pressed start/select etc. and I didn't auto battle disable" —
-	# the disable was registering in state but not visibly stopping
-	# anything.) Clearing the cancel-queue flag and pending player
-	# actions ensures next selection phase is manual immediately.
+	# the user could regain manual control.
 	if not new_state:
 		AutobattleSystem.cancel_all_next_turn = false
 		# Strip player actions from the queue. Keep enemy actions —
@@ -411,6 +413,17 @@ func _toggle_all_autobattle() -> void:
 	else:
 		SoundManager.play_ui("autobattle_off")
 	print("[AUTOBATTLE] All party members: %s (F6/Select to toggle)" % status)
+	# Visual feedback Toast — works in overworld AND battle (battle scene
+	# also has its own log_message but the Toast is more discoverable).
+	# Only show in non-battle states; in battle the existing log_message
+	# from _enable_all_autobattle / _cancel_all_autobattle is enough.
+	if current_state != LoopState.BATTLE:
+		var msg = "Autobattle: %s" % status
+		if Toast:
+			if new_state:
+				Toast.show_success(self, msg)
+			else:
+				Toast.show_warning(self, msg)
 
 
 func _on_autobattle_editor_closed() -> void:
