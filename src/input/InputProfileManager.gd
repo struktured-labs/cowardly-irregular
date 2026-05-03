@@ -170,6 +170,58 @@ func get_action_button_label(action: String) -> String:
 	return " / ".join(labels)
 
 
+## Read-only: derive a human-readable keyboard label for an action by
+## scanning its current InputMap events. Used by ControlsMenu to surface
+## kb bindings alongside gamepad bindings (per user request 2026-05-03:
+## "make sure ... bindings for them is visible in the settings").
+##
+## Returns "—" if the action has no key event. Joins multiple keys with
+## " / " (matches the gamepad label format).
+func get_action_key_label(action: String) -> String:
+	if not InputMap.has_action(action):
+		return "—"
+	var events := InputMap.action_get_events(action)
+	var labels: Array[String] = []
+	for ev in events:
+		if ev is InputEventKey:
+			var ke := ev as InputEventKey
+			# Prefer keycode (logical) over physical_keycode for display so
+			# users see the printed key name, e.g. "L" instead of "OS-keycode-76".
+			var kc: Key = ke.keycode if ke.keycode != 0 else ke.physical_keycode
+			if kc == 0:
+				continue
+			var name := OS.get_keycode_string(kc)
+			if name == "":
+				continue
+			labels.append(name)
+	return " / ".join(labels) if labels.size() > 0 else "—"
+
+
+## Read-only: same idea for mouse bindings. Returns "—" if no mouse event
+## is bound. Most actions in this game don't have explicit mouse bindings
+## (mouse is handled at UI level via MenuMouseHelper), but ui_accept and
+## ui_cancel often map to L/R-click logically; this surfaces anything
+## actually wired up at the InputMap layer.
+func get_action_mouse_label(action: String) -> String:
+	if not InputMap.has_action(action):
+		return "—"
+	var events := InputMap.action_get_events(action)
+	var labels: Array[String] = []
+	for ev in events:
+		if ev is InputEventMouseButton:
+			var mb := ev as InputEventMouseButton
+			match mb.button_index:
+				MOUSE_BUTTON_LEFT:    labels.append("LMB")
+				MOUSE_BUTTON_RIGHT:   labels.append("RMB")
+				MOUSE_BUTTON_MIDDLE:  labels.append("MMB")
+				MOUSE_BUTTON_WHEEL_UP:    labels.append("Wheel↑")
+				MOUSE_BUTTON_WHEEL_DOWN:  labels.append("Wheel↓")
+				MOUSE_BUTTON_XBUTTON1: labels.append("X1")
+				MOUSE_BUTTON_XBUTTON2: labels.append("X2")
+				_: labels.append("Mouse %d" % mb.button_index)
+	return " / ".join(labels) if labels.size() > 0 else "—"
+
+
 func detect_conflicts() -> Array:
 	var bindings = get_profile_bindings(active_profile)
 	var conflicts = []
