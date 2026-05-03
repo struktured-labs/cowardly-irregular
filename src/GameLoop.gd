@@ -158,6 +158,21 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# F2 quick-save / F3 quick-load — global hotkeys, any in-game state.
+	# Skipped during title screen, character creation, and active battles
+	# (SaveSystem.can_quick_save also enforces no-battle, but we early-exit
+	# here too so the toast doesn't try to flash mid-cutscene).
+	# Added 2026-05-03 per QOL audit.
+	if event is InputEventKey and event.pressed and not event.is_echo():
+		if event.keycode == KEY_F2 and current_state != LoopState.TITLE and not _character_creation_screen:
+			_quick_save_with_toast()
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_F3 and current_state != LoopState.TITLE and not _character_creation_screen:
+			_quick_load_with_toast()
+			get_viewport().set_input_as_handled()
+			return
+
 	# Block input handling during title screen or character creation
 	if current_state == LoopState.TITLE or _character_creation_screen:
 		return
@@ -2228,6 +2243,55 @@ func _take_screenshot() -> void:
 	var tween = create_tween()
 	tween.tween_property(flash, "color:a", 0.0, 0.2)
 	tween.tween_callback(flash.queue_free)
+
+
+func _quick_save_with_toast() -> void:
+	"""F2 hotkey: quick-save to the dedicated quicksave slot with toast feedback."""
+	if not SaveSystem:
+		return
+	if not SaveSystem.has_method("quick_save"):
+		return
+	if not SaveSystem.can_quick_save():
+		Toast.show_warning(self, "Cannot quick-save right now")
+		return
+	var ok: bool = SaveSystem.quick_save()
+	if ok:
+		# save_completed signal drives the standard Toast; we add nothing here
+		# to avoid double-toasting. (See _on_any_save_completed connection in _ready.)
+		print("[QUICKSAVE] F2 — quick save committed")
+	else:
+		Toast.show_warning(self, "Quick-save failed")
+
+
+func _quick_load_with_toast() -> void:
+	"""F3 hotkey: load most recent save with toast feedback.
+	Returns to overworld via the same _restore_party_from_save_data path
+	used by Continue. Only works if a save exists."""
+	if not SaveSystem:
+		return
+	if not SaveSystem.has_method("load_game"):
+		return
+	if BattleManager and BattleManager.is_battle_active():
+		Toast.show_warning(self, "Cannot quick-load mid-battle")
+		return
+	var slot: int = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
+	if slot < 0:
+		Toast.show_warning(self, "No save to load")
+		return
+	var ok: bool = SaveSystem.load_game(slot)
+	if not ok:
+		Toast.show_warning(self, "Quick-load failed")
+		return
+	# Rehydrate party + transition into the saved map (mirrors Continue path).
+	if not _restore_party_from_save_data():
+		Toast.show_warning(self, "Save data could not restore party")
+		return
+	Toast.show_success(self, "Loaded slot %d" % slot)
+	# If we're already exploring, restart exploration to teleport the player
+	# to the saved position. If not (e.g. in autogrind UI), do nothing more —
+	# the next exploration entry picks up the loaded state.
+	if current_state == LoopState.EXPLORATION:
+		_start_exploration()
 
 
 func _get_terrain_for_map(map_id: String) -> String:
