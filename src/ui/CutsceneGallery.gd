@@ -148,17 +148,28 @@ func _build_ui() -> void:
 	_count_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	add_child(_count_label)
 
-	# World tab row
+	# World tab row — clickable with hover-to-select
 	var tab_x := 24.0
-	for w in _world_order:
+	for i in _world_order.size():
+		var w: int = _world_order[i]
 		var tab := Label.new()
 		tab.text = "W%d · %s" % [w, WORLD_NAMES.get(w, "?")]
 		tab.position = Vector2(tab_x, 56)
+		tab.size = Vector2(140, 28)
+		tab.mouse_filter = Control.MOUSE_FILTER_STOP
 		tab.add_theme_font_size_override("font_size", 14)
 		tab.clip_text = false
 		tab.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		add_child(tab)
 		_world_tabs.append(tab)
+		# Click switches the active world tab
+		var btn := Button.new()
+		btn.flat = true
+		btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.pressed.connect(_on_tab_click.bind(i))
+		btn.mouse_entered.connect(_on_tab_hover.bind(i))
+		tab.add_child(btn)
 		tab_x += 150.0
 
 	# Scrollable list
@@ -174,7 +185,7 @@ func _build_ui() -> void:
 	_item_scroll.add_child(_item_container)
 
 	_footer = Label.new()
-	_footer.text = "←/→: World   ↑/↓: Select   A: Replay   B: Close"
+	_footer.text = "←/→: World   ↑/↓ / Wheel: Select   A / Enter / Click: Replay   B / Esc / RClick: Close"
 	_footer.position = Vector2(24, viewport.y - 32)
 	_footer.size = Vector2(viewport.x - 48, 20)
 	_footer.add_theme_font_size_override("font_size", 13)
@@ -206,11 +217,22 @@ func _populate_items() -> void:
 		var entry: Dictionary = items[i]
 		var row := Label.new()
 		row.custom_minimum_size = Vector2(0, 28)
+		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.add_theme_font_size_override("font_size", 17)
 		row.clip_text = false
 		row.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		_item_container.add_child(row)
 		_item_rows.append(row)
+		# Click to select+play; hover to select. Locked entries still respond
+		# to hover (so the user sees the name in dim color) but not to click.
+		var btn := Button.new()
+		btn.flat = true
+		btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.disabled = not entry.unlocked
+		btn.mouse_entered.connect(_on_item_hover.bind(i))
+		btn.pressed.connect(_on_item_click.bind(i))
+		row.add_child(btn)
 
 
 func _update_display() -> void:
@@ -271,6 +293,12 @@ func _input(event: InputEvent) -> void:
 	if _playing:
 		return
 
+	# Right-click = back, works regardless of empty list state
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		_close()
+		get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("ui_cancel"):
 		_close()
 		get_viewport().set_input_as_handled()
@@ -308,6 +336,51 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_accept"):
 		_try_replay_selected()
 		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed:
+		# Wheel scroll = move selection within current world
+		var world_items: Array = _items_by_world.get(_world_order[_selected_world_idx], [])
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and not world_items.is_empty():
+			_selected_item_idx = (_selected_item_idx - 1 + world_items.size()) % world_items.size()
+			_update_display()
+			_play_nav_sfx()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and not world_items.is_empty():
+			_selected_item_idx = (_selected_item_idx + 1) % world_items.size()
+			_update_display()
+			_play_nav_sfx()
+			get_viewport().set_input_as_handled()
+
+
+func _on_tab_click(idx: int) -> void:
+	if idx == _selected_world_idx:
+		return
+	_selected_world_idx = idx
+	_selected_item_idx = 0
+	_update_display()
+	_play_nav_sfx()
+
+
+func _on_tab_hover(idx: int) -> void:
+	# Hover doesn't switch tabs (could feel janky for users mousing over)
+	# but plays a soft preview cue. If the user wants hover-to-switch the
+	# code below can be uncommented:
+	#   _on_tab_click(idx)
+	pass
+
+
+func _on_item_click(idx: int) -> void:
+	# Click selects + plays in one shot — same as gamepad A on a row
+	_selected_item_idx = idx
+	_update_display()
+	_try_replay_selected()
+
+
+func _on_item_hover(idx: int) -> void:
+	if idx == _selected_item_idx:
+		return
+	_selected_item_idx = idx
+	_update_display()
+	_play_nav_sfx()
 
 
 func _play_nav_sfx() -> void:
