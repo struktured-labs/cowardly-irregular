@@ -172,6 +172,7 @@ func _build_menu() -> void:
 	menu_items.append({"id": "new_game", "label": "NEW GAME", "enabled": true})
 	menu_items.append({"id": "settings", "label": "SETTINGS", "enabled": true})
 	menu_items.append({"id": "help", "label": "HELP", "enabled": true})
+	menu_items.append({"id": "quit", "label": "QUIT", "enabled": true})
 
 	for i in menu_items.size():
 		_menu_container.add_child(_create_menu_row(i, menu_items[i]))
@@ -316,6 +317,10 @@ func _select_item() -> void:
 			settings_selected.emit()
 		"help":
 			_show_help_overlay()
+		"quit":
+			# Title-screen quit. Skip the in-game "Quit to Title" confirmation
+			# flow — there's no game in progress to lose.
+			get_tree().quit()
 
 
 func _on_menu_hover(index: int) -> void:
@@ -392,14 +397,18 @@ func _show_help_overlay() -> void:
 	content.add_theme_font_size_override("bold_font_size", 14)
 	content.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
 	content.text = """[b][color=yellow]CONTROLS[/color][/b]
-[color=gray]Gamepad          Keyboard[/color]
-D-Pad             Arrow Keys      Navigate
-A Button          Z / Enter       Confirm / Select
-B Button          X / Escape      Cancel / Back
-L Shoulder        L Key           Defer / Party Chat
-R Shoulder        R Key           Advance (queue action)
-Start             F5              Open Autobattle Editor
-Select            F6              Toggle Autobattle
+[color=gray]Gamepad          Keyboard          Mouse[/color]
+D-Pad             Arrow Keys        —                Navigate
+A Button          Z / Enter         L-Click          Confirm / Select
+B Button          X / Escape        R-Click          Cancel / Back
+L Shoulder        L Key             —                Defer / Party Chat
+R Shoulder        R Key             —                Advance (queue action)
+Start (Plus)      F5                —                Open Autobattle Editor
+Back (Minus)      F6                —                Toggle Autobattle
+                  F2                —                Quick Save
+                  F3                —                Quick Load
+                  F12               —                Screenshot
+                  ─                 Wheel            Scroll lists / change selection
 
 [b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
 Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
@@ -427,8 +436,15 @@ optional story conversations. These are flavor, not required.
 - Visit inns to heal and save your progress
 - Check the Bestiary and World Map from the pause menu
 
-[color=gray]Press B / X / Escape to close[/color]"""
+[color=gray]Press B / X / Escape / Right-click to close[/color]"""
 	_help_overlay.add_child(content)
+	# Right-click anywhere closes the overlay (in addition to Esc / B).
+	# Wire on the bg ColorRect we added above.
+	bg.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
+			_close_help_overlay()
+			get_viewport().set_input_as_handled()
+	)
 	await get_tree().create_timer(0.3).timeout
 	_can_input = true
 
@@ -437,3 +453,4 @@ func _close_help_overlay() -> void:
 	if _help_overlay:
 		_help_overlay.queue_free()
 		_help_overlay = null
+		_can_input = true  # Restore input ability after close
