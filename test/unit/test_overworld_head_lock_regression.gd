@@ -1,27 +1,27 @@
 extends GutTest
 
-## Regression test for the inter-frame head-swivel bug.
+## Regression test for the inter-frame upper-body swivel bug.
 ##
 ## Bug history (2026-05-02):
 ##   Players reported the fighter's face "swivels back and forth like he's
 ##   looking left and right per step" when walking south (row 0 / DOWN).
-##   Cause: GPT-Image-1 generates each of the 4 walk-cycle frames as an
-##   independent image, so head/face pixel position drifts subtly per frame.
-##
-##   Fix: the sprite-gen pipeline now applies head-lock per row — frames
-##   1/2/3 of every row have their top ~45% replaced with frame 0's top
-##   pixels. Only legs animate. Matches classic SNES JRPG sprite design.
+##   Initial fix applied a 45% head-lock — heads pixel-identical across the
+##   walk cycle, only legs animated. Same-day playtest revealed the chest
+##   and shoulders were still drifting ("the body kinda swivels a bit too
+##   in an unnatural fashion"). Threshold raised to 65% upper-body lock,
+##   matching classic SNES JRPG sprite convention (head + torso + arms
+##   locked, only legs alternate).
 ##
 ## What we assert:
-##   For each row, the upper 45% of the chibi (head + neck + upper torso)
+##   For each row, the upper 65% of the chibi (head + neck + torso + arms)
 ##   must be pixel-identical across all 4 frames. We detect the chibi's
 ##   vertical bbox per row from frame 0's alpha channel and compare the
-##   head region across frames 1/2/3.
+##   upper-body region across frames 1/2/3.
 ##
 ## Mirror property is checked separately by test_overworld_facing_regression.gd.
 
 const FRAME_SIZE := 32
-const HEAD_FRAC := 0.45
+const HEAD_FRAC := 0.65
 const STARTER_JOBS := ["fighter", "cleric", "rogue", "mage"]
 const NPC_ARCHETYPES := [
     "old_man", "old_woman", "young_man", "young_woman", "child",
