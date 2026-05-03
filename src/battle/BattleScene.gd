@@ -35,7 +35,7 @@ const JOB_SCALE_OVERRIDES: Dictionary = {}
 ## their native frame already fills the intended battle footprint. The
 ## threshold is the same one party-side uses to discriminate artist vs
 ## proc-gen sprite paths.
-const ENEMY_SCALE_BUMP: float = 2.0
+const ENEMY_SCALE_BUMP: float = 2.5
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
 ## UI References
@@ -1865,6 +1865,16 @@ func _on_battle_ended(victory: bool) -> void:
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
+	# Clear any pending autobattle cancel — if the user queued a "cancel
+	# next turn" via Select during execution but the battle ended before
+	# the next turn fired, the queue would otherwise persist into the
+	# next battle and surprise-disable autobattle on the first turn.
+	# (User feedback 2026-05-03: "make sure autobattle state is sticky
+	# between battles". Per-character `autobattle_enabled[char_id]` is
+	# already sticky via the global AutobattleSystem dict; this clear
+	# fixes the cancel-queue leak that was undermining stickiness.)
+	AutobattleSystem.cancel_all_next_turn = false
+
 	# Clear formation stat buffs (duration 999 shouldn't persist across battles)
 	for member in party_members:
 		if not is_instance_valid(member):
@@ -2970,12 +2980,27 @@ func _input(event: InputEvent) -> void:
 						   BattleManager.current_state == BattleManager.BattleState.PROCESSING_ACTION
 
 		if is_player_selecting or is_in_selection_phase:
-			# During selection: Enable autobattle for ALL players
-			_enable_all_autobattle()
+			# During selection: TOGGLE autobattle for ALL players.
+			# Pre-2026-05-03 this branch only ENABLED — pressing Select
+			# again did nothing during the same selection phase, so users
+			# couldn't turn off autobattle without waiting for execution.
+			# Now: if any party member already has autobattle enabled
+			# (the global indicator), disable everybody. Otherwise enable.
+			var any_on := false
+			for member in party_members:
+				var char_id := member.combatant_name.to_lower().replace(" ", "_")
+				if AutobattleSystem.is_autobattle_enabled(char_id):
+					any_on = true
+					break
+			if any_on:
+				_cancel_all_autobattle()
+			else:
+				_enable_all_autobattle()
 			get_viewport().set_input_as_handled()
 			return
 		elif is_executing:
-			# During execution: Toggle autobattle
+			# During execution: queue/revoke a cancel for next turn.
+			# (Mid-execution flip would race with already-running actions.)
 			_toggle_cancel_all_autobattle()
 			get_viewport().set_input_as_handled()
 			return
