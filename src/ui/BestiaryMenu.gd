@@ -104,9 +104,9 @@ func _build_ui() -> void:
 
 	_build_detail(detail_panel)
 
-	# Footer
+	# Footer — list all input methods so mouse/kb users know what works
 	var footer := Label.new()
-	footer.text = "↑↓: Select   B / Esc: Close"
+	footer.text = "↑↓ / Wheel: Select    B / Esc / RClick: Close    (hover to preview)"
 	footer.position = Vector2(24, viewport.y - 32)
 	footer.size = Vector2(viewport.x - 48, 24)
 	footer.add_theme_font_size_override("font_size", 14)
@@ -164,10 +164,22 @@ func _populate_list() -> void:
 		row.add_theme_font_size_override("font_size", 17)
 		row.add_theme_color_override("font_color", TEXT_COLOR)
 		row.custom_minimum_size = Vector2(0, 28)
+		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.clip_text = false
 		row.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		_list_container.add_child(row)
 		_row_nodes.append(row)
+		# Mouse: hover-to-select + click-to-confirm. Use the row index AT
+		# THE TIME OF BUILD, not the live _row_nodes.size() — late-binding
+		# would resolve to the final size for every row.
+		var idx: int = _row_nodes.size() - 1
+		var btn := Button.new()
+		btn.flat = true
+		btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.mouse_entered.connect(_on_row_hover.bind(idx))
+		btn.pressed.connect(_on_row_click.bind(idx))
+		row.add_child(btn)
 
 	_selected = clamp(_selected, 0, _row_nodes.size() - 1)
 	_highlight_row()
@@ -345,6 +357,10 @@ func _input(event: InputEvent) -> void:
 		if event.is_action_pressed("ui_cancel"):
 			_close()
 			get_viewport().set_input_as_handled()
+		# Right-click cancel even with empty list
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+			_close()
+			get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("ui_up"):
 		_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
@@ -359,6 +375,47 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_cancel"):
 		_close()
 		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed:
+		# Wheel scroll moves selection; right-click closes
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
+			_highlight_row()
+			_refresh_detail()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_selected = (_selected + 1) % _row_nodes.size()
+			_highlight_row()
+			_refresh_detail()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			_close()
+			get_viewport().set_input_as_handled()
+
+
+func _on_row_hover(idx: int) -> void:
+	if idx < 0 or idx >= _row_nodes.size():
+		return
+	if idx == _selected:
+		return
+	_selected = idx
+	_highlight_row()
+	_refresh_detail()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
+
+
+func _on_row_click(idx: int) -> void:
+	# Hover already moves selection; click is a confirm — but bestiary
+	# has no "confirm" action, just close on a second click of the same row.
+	if idx < 0 or idx >= _row_nodes.size():
+		return
+	if idx == _selected:
+		# Already selected — could expand detail or do nothing. Nothing for now.
+		pass
+	else:
+		_selected = idx
+		_highlight_row()
+		_refresh_detail()
 
 
 func _close() -> void:

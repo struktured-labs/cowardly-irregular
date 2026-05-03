@@ -260,7 +260,15 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if _phase == Phase.PRESS_START:
-		if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_menu"):
+		# Accept gamepad/keyboard confirm/start, OR a mouse click anywhere
+		# (modern players reach for the mouse before figuring out the
+		# keyboard binding). Fix 2026-05-03 per accessibility audit.
+		var clicked = (event is InputEventMouseButton
+			and event.pressed
+			and event.button_index == MOUSE_BUTTON_LEFT)
+		if (event.is_action_pressed("ui_accept")
+				or event.is_action_pressed("ui_menu")
+				or clicked):
 			_transition_to_menu()
 			get_viewport().set_input_as_handled()
 		return

@@ -374,9 +374,10 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_text_label.add_theme_color_override("default_color", theme["text"])
 	_dialogue_box.add_child(_text_label)
 
-	# Advance hint
+	# Advance hint — list all three input methods so kb/mouse users know
+	# what works. (Pre-2026-05-03 only mentioned gamepad/keyboard.)
 	_advance_hint = Label.new()
-	_advance_hint.text = "Z / A to continue..."
+	_advance_hint.text = "Z / A / Click ▶"
 	_advance_hint.position = Vector2(box_width - 140, box_height - 20)
 	_advance_hint.add_theme_font_size_override("font_size", 10)
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))

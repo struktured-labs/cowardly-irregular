@@ -101,10 +101,10 @@ func _build_panel() -> void:
 	scroll.add_child(_rows_container)
 
 	_hint_label = Label.new()
-	_hint_label.text = "[A] Play   [B] Close"
+	_hint_label.text = "[A/Enter/Click] Play    [B/Esc/RClick] Close    (Wheel scrolls)"
 	_hint_label.position = Vector2(20, PANEL_H - 32)
 	_hint_label.size = Vector2(PANEL_W - 40, 24)
-	_hint_label.add_theme_font_size_override("font_size", 14)
+	_hint_label.add_theme_font_size_override("font_size", 13)
 	_hint_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.85))
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.clip_text = false
@@ -144,10 +144,20 @@ func _populate() -> void:
 		row.add_theme_font_size_override("font_size", 18)
 		row.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 		row.custom_minimum_size = Vector2(0, ROW_H)
+		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.clip_text = false
 		row.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		_rows_container.add_child(row)
 		_row_nodes.append(row)
+		# Mouse: hover to select, click to play
+		var idx_now: int = _row_nodes.size() - 1
+		var btn := Button.new()
+		btn.flat = true
+		btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.mouse_entered.connect(_on_row_hover.bind(idx_now))
+		btn.pressed.connect(_on_row_click.bind(idx_now))
+		row.add_child(btn)
 
 	_selection = clamp(_selection, 0, max(0, _row_nodes.size() - 1))
 
@@ -168,6 +178,11 @@ func _highlight() -> void:
 func _input(event: InputEvent) -> void:
 	if _playing:
 		return
+	# Right-click cancel works whether the list is empty or not
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		_close("")
+		get_viewport().set_input_as_handled()
+		return
 	if _chats.is_empty():
 		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("party_chat"):
 			_close("")
@@ -187,6 +202,36 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_cancel") or event.is_action_pressed("party_chat"):
 		_close("")
 		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed:
+		# Mouse wheel = move selection
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_selection = (_selection - 1 + _row_nodes.size()) % _row_nodes.size()
+			_highlight()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_selection = (_selection + 1) % _row_nodes.size()
+			_highlight()
+			get_viewport().set_input_as_handled()
+
+
+func _on_row_hover(idx: int) -> void:
+	if idx < 0 or idx >= _row_nodes.size():
+		return
+	if idx == _selection:
+		return
+	_selection = idx
+	_highlight()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
+
+
+func _on_row_click(idx: int) -> void:
+	if idx < 0 or idx >= _row_nodes.size():
+		return
+	_selection = idx
+	_highlight()
+	# Click is "play" — same as gamepad A / keyboard Enter
+	_play_selected()
 
 
 func _play_selected() -> void:
