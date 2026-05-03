@@ -118,7 +118,7 @@ func _setup_sprite() -> void:
 	# Try archetype sheet first.
 	if sprite_archetype != "" and _try_load_archetype():
 		_sprite.centered = true
-		_sprite.scale = Vector2(3.0, 3.0)  # Match procedural Mode 7 visibility scale
+		_sprite.scale = Vector2.ONE  # Match stationary OverworldNPC (also 1.0)
 		add_child(_sprite)
 		_update_archetype_frame()
 		return
@@ -157,7 +157,7 @@ func _setup_sprite() -> void:
 
 	_sprite.texture = ImageTexture.create_from_image(img)
 	_sprite.centered = true
-	_sprite.scale = Vector2(3.0, 3.0)  # Scale up for Mode 7 visibility
+	_sprite.scale = Vector2.ONE  # Match stationary OverworldNPC procedural draws
 	add_child(_sprite)
 
 

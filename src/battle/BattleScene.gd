@@ -22,6 +22,11 @@ const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay
 ## another (e.g., fighter at 37%, cleric at 71%), that's the artist's choice
 ## and the battle scene reflects it 1:1 in scale.
 const PARTY_SPRITE_HEIGHT: float = 280.0
+## Constant factor applied to ALL party sprite scales (artist and procedural
+## paths alike). Bumps everyone uniformly without altering intra-roster ratios.
+## 1.5 picked as the visible-but-not-too-big sweet spot after fighter override
+## was removed.
+const SPRITE_SCALE_BUMP: float = 1.5
 const JOB_SCALE_OVERRIDES: Dictionary = {}
 
 ## UI References
@@ -749,9 +754,11 @@ func _create_battle_sprites() -> void:
 					_sprite_scale = target_height / float(_ftex.get_height())
 				elif _ftex and _ftex.get_height() > 48:
 					_sprite_scale = 144.0 / float(_ftex.get_height())
-		# Apply per-job scale override (fighter fills less of the frame)
+		# Apply per-job scale override (currently empty — kept as a hook)
 		var scale_mult = JOB_SCALE_OVERRIDES.get(job_id, 1.0)
 		_sprite_scale *= scale_mult
+		# Constant uniform bump — applies to artist + procedural paths alike.
+		_sprite_scale *= SPRITE_SCALE_BUMP
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
