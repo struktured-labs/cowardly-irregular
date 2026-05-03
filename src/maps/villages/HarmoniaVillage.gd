@@ -367,13 +367,16 @@ func _setup_npcs() -> void:
 	# === WANDERING VILLAGERS ===
 	# Three ambient NPCs walk short loops to make the village feel lived-in.
 	# Each uses a 4-frame walk-cycle archetype shipped in bb60068 (head-locked).
+	# Patrol paths chosen to stay on cobblestone rows 5/11/16/20 which are
+	# clear of buildings (W/H/I/A/P/G/B/F tiles); WanderingNPC has no
+	# collision check, so a path that crosses a wall looks like the NPC
+	# is phasing through it. Fixed 2026-05-03 after audit.
 
-	# Wandering merchant — paces between fountain and west market stall
+	# Wandering merchant — short horizontal patrol on the row-11 path,
+	# between the fountain and the right-side path junction.
 	var market_loop: Array[Vector2] = [
-		Vector2(11 * TILE_SIZE, 12 * TILE_SIZE),
-		Vector2(13 * TILE_SIZE, 12 * TILE_SIZE),
-		Vector2(13 * TILE_SIZE, 14 * TILE_SIZE),
-		Vector2(11 * TILE_SIZE, 14 * TILE_SIZE),
+		Vector2(13 * TILE_SIZE, 11 * TILE_SIZE),
+		Vector2(20 * TILE_SIZE, 11 * TILE_SIZE),
 	]
 	var merchant = _create_wandering_npc(
 		"Wandering Merchant",
@@ -385,10 +388,11 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(merchant)
 
-	# Patrolling guard — paces along the north wall
+	# Patrolling guard — north horizontal path at row 5 (clear from x=10
+	# through x=20 between the magic / armor shops and the weapon shop).
 	var patrol_loop: Array[Vector2] = [
-		Vector2(7 * TILE_SIZE, 4 * TILE_SIZE),
-		Vector2(15 * TILE_SIZE, 4 * TILE_SIZE),
+		Vector2(11 * TILE_SIZE, 5 * TILE_SIZE),
+		Vector2(20 * TILE_SIZE, 5 * TILE_SIZE),
 	]
 	var patroller = _create_wandering_npc(
 		"Patroller Sven",
@@ -400,12 +404,11 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(patroller)
 
-	# Wandering scholar — paces between the library area and the elder
+	# Wandering scholar — south horizontal path at row 16, between the
+	# bottom-row buildings. Clear path from x=10 through x=22.
 	var scholar_loop: Array[Vector2] = [
-		Vector2(9 * TILE_SIZE, 7 * TILE_SIZE),
-		Vector2(14 * TILE_SIZE, 7 * TILE_SIZE),
-		Vector2(14 * TILE_SIZE, 9 * TILE_SIZE),
-		Vector2(9 * TILE_SIZE, 9 * TILE_SIZE),
+		Vector2(13 * TILE_SIZE, 16 * TILE_SIZE),
+		Vector2(20 * TILE_SIZE, 16 * TILE_SIZE),
 	]
 	var wandering_scholar = _create_wandering_npc(
 		"Apprentice Vex",
