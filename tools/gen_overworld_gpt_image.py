@@ -375,6 +375,24 @@ NPC_SOURCES = {
             "— just a wandering pilgrim)"
         ),
     },
+    "dr_temporal": {
+        "ase_rel": "MAGE/Mage Main design.aseprite",  # robed silhouette anchor
+        "idle_tag": "idle",
+        "drive_dir": "DR_TEMPORAL/claude",
+        "drive_root": "NPCs",
+        "dest_root": "npcs",
+        "char_desc": (
+            "eccentric mad-scientist time researcher in a long off-white lab "
+            "coat over a deep purple waistcoat and dark trousers, wild grey "
+            "hair sticking up at odd angles, brass steampunk goggles pushed "
+            "up onto the forehead, holding a glowing brass pocket-watch in "
+            "one hand and a leather notebook tucked under the other arm, "
+            "polished black shoes, slightly hunched scholarly posture, "
+            "ink-stained fingers (NOT a wizard with a magic staff, NOT a "
+            "cleric — pure 19th-century inventor/researcher aesthetic, "
+            "the kind of person who would build a portal in their workshop)"
+        ),
+    },
 }
 
 PROMPT_TEMPLATE = """Generate a 4-direction walk-cycle sprite sheet for a {char_desc}.
