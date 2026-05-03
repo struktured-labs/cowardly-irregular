@@ -16,12 +16,13 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
-## Base display height for party sprites. Most jobs at 67-80% frame fill.
-## Fighter is 39% (artist file, protected) so gets a scale boost.
+## Base display height for party sprites. Aseprite frames are ground truth —
+## we don't compensate for non-uniform character fill within the artist's
+## 256x256 frames. If a job's character occupies less of its frame than
+## another (e.g., fighter at 37%, cleric at 71%), that's the artist's choice
+## and the battle scene reflects it 1:1 in scale.
 const PARTY_SPRITE_HEIGHT: float = 280.0
-const JOB_SCALE_OVERRIDES: Dictionary = {
-	"fighter": 1.7,  # Artist sprite fills only 39% of frame vs 67-80% for others
-}
+const JOB_SCALE_OVERRIDES: Dictionary = {}
 
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
