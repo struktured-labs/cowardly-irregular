@@ -1652,31 +1652,30 @@ func _enable_all_autobattle() -> void:
 
 
 func _toggle_cancel_all_autobattle() -> void:
-	"""Toggle autobattle cancel state (Select button during execution).
-	If autobattle is on, queue cancel. If already pending cancel, revoke it."""
-	if AutobattleSystem.cancel_all_next_turn:
-		# Already pending cancel - re-enable autobattle instead
-		AutobattleSystem.cancel_all_next_turn = false
-		SoundManager.play_ui("autobattle_on")
-		log_message("[color=lime]>>> AUTOBATTLE: Cancel revoked - staying enabled[/color]")
-		_update_ui()
-		return
+	"""Disable autobattle IMMEDIATELY when Select is pressed during execution.
 
-	AutobattleSystem.cancel_all_next_turn = true
+	Pre-2026-05-03 behavior was 'queue cancel for next turn' which felt
+	unresponsive — autobattle would keep running through already-queued
+	actions for the rest of the round before disabling. User feedback:
+	'why cant I disable autobattle anymore — the usual ones dont work'.
 
-	# Play disable sound
+	Now: instantly clears autobattle_enabled[char_id] for every party
+	member. Any action currently animating still finishes (we don't
+	interrupt mid-tween), and any actions ALREADY queued for this round
+	still execute (they're committed in BattleManager's action queue).
+	But no new autobattle decisions fire after this point — next
+	selection phase the player is fully back in manual control."""
+	_cancel_all_autobattle()  # Immediate, sets per-character disabled
 	SoundManager.play_ui("autobattle_off")
-	log_message("[color=orange]>>> AUTOBATTLE: Will disable for all players next turn[/color]")
-	_update_ui()
 
 
 func _cancel_autobattle_during_execution() -> void:
-	"""Cancel autobattle during execution (B button). One-way cancel, no toggle."""
-	if not AutobattleSystem.cancel_all_next_turn:
-		AutobattleSystem.cancel_all_next_turn = true
-		SoundManager.play_ui("autobattle_off")
-		log_message("[color=orange]>>> AUTOBATTLE: Will disable for all players next turn[/color]")
-		_update_ui()
+	"""Cancel autobattle IMMEDIATELY when B is pressed during execution.
+	Same instant-disable semantics as _toggle_cancel_all_autobattle —
+	mirrored here so both Select and B do the same thing during execution
+	(matches user expectation 'press cancel = stop the auto fight')."""
+	_cancel_all_autobattle()
+	SoundManager.play_ui("autobattle_off")
 
 
 func _cancel_all_autobattle() -> void:

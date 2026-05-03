@@ -112,13 +112,41 @@ func _process(delta: float) -> void:
 			_update_archetype_frame()
 
 
+## Returns the sprite scale for our current scene context.
+## Open overworlds use Mode 7 perspective — characters need to be visible
+## at distance, so they render at 3x. Interior scenes (villages, dungeons,
+## taverns) don't use Mode 7 and use 1x to match the stationary OverworldNPCs
+## they share the scene with.
+##
+## (User feedback 2026-05-03: 653eae1 dropped scale 3.0 → 1.0 to fix wandering
+## NPCs being too big in HarmoniaVillage, but that broke the overworld where
+## 1x reads as tiny. Differentiate by parent-name keyword scan.)
+func _get_context_scale() -> Vector2:
+	var p = get_parent()
+	if p:
+		var pname = p.name.to_lower()
+		# Ancestors covering the 6 overworld scenes (OverworldScene,
+		# SuburbanOverworld, IndustrialOverworld, SteampunkOverworld,
+		# FuturisticOverworld, AbstractOverworld). Each scene root contains
+		# "overworld" in its node name.
+		if "overworld" in pname:
+			return Vector2(3.0, 3.0)
+		# Walk up one more level (NPCs are sometimes parented to a
+		# `Wanderers` Node2D which is a child of the overworld scene).
+		var gp = p.get_parent()
+		if gp and "overworld" in gp.name.to_lower():
+			return Vector2(3.0, 3.0)
+	return Vector2.ONE
+
+
 func _setup_sprite() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
+	var ctx_scale := _get_context_scale()
 	# Try archetype sheet first.
 	if sprite_archetype != "" and _try_load_archetype():
 		_sprite.centered = true
-		_sprite.scale = Vector2.ONE  # Match stationary OverworldNPC (also 1.0)
+		_sprite.scale = ctx_scale
 		add_child(_sprite)
 		_update_archetype_frame()
 		return
@@ -157,7 +185,7 @@ func _setup_sprite() -> void:
 
 	_sprite.texture = ImageTexture.create_from_image(img)
 	_sprite.centered = true
-	_sprite.scale = Vector2.ONE  # Match stationary OverworldNPC procedural draws
+	_sprite.scale = ctx_scale
 	add_child(_sprite)
 
 

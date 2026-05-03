@@ -92,10 +92,30 @@ func _process(delta: float) -> void:
 			_update_dance_sprite()
 
 
+## Returns the sprite scale for our current scene context — same logic as
+## WanderingNPC._get_context_scale. Open overworlds need 3x for Mode 7
+## visibility; villages/dungeons use 1x to match the rest of the room.
+## (User feedback 2026-05-03: 653eae1 brought all NPCs down to 1x to fix
+## an in-village size bug, but that broke the open-overworld visibility.)
+func _get_context_scale() -> Vector2:
+	var p = get_parent()
+	if p:
+		var pname = p.name.to_lower()
+		if "overworld" in pname:
+			return Vector2(3.0, 3.0)
+		# Walk up one extra level — some overworlds parent NPCs to a
+		# dedicated `NPCs` Node2D below the scene root.
+		var gp = p.get_parent()
+		if gp and "overworld" in gp.name.to_lower():
+			return Vector2(3.0, 3.0)
+	return Vector2.ONE
+
+
 func _generate_sprite() -> void:
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite"
 	sprite.centered = true
+	sprite.scale = _get_context_scale()
 	add_child(sprite)
 
 	# Try archetype sheet first (artist-style 4-row × 4-col 32x32 grid).
@@ -156,11 +176,9 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 	var region = Rect2i(col * frame_w, sheet_row * frame_h, frame_w, frame_h)
 	var frame_img = img.get_region(region)
 	sprite.texture = ImageTexture.create_from_image(frame_img)
-	# Match the procedural draw path's effective scale (procedural draws at
-	# 32px and renders at 1x; archetype sheets are 32px frames already, so
-	# 1x is correct — but bump slightly to match the 3x scale used elsewhere
-	# when scenes are at small tile sizes. We leave centered=true above.).
-	sprite.scale = Vector2.ONE
+	# Note: scale is set in _generate_sprite() via _get_context_scale()
+	# (3x for open overworld / Mode 7, 1x for village/dungeon).
+	# Don't override here — would clobber the context-aware scale.
 	return true
 
 
