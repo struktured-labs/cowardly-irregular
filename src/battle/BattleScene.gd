@@ -29,6 +29,15 @@ const PARTY_SPRITE_HEIGHT: float = 280.0
 const SPRITE_SCALE_BUMP: float = 1.5
 const JOB_SCALE_OVERRIDES: Dictionary = {}
 
+## Bump applied ONLY to artist-style small-frame enemies (<=128px) so they
+## don't read as half the size of the proc-gen 256x256 monsters they sit
+## next to. Proc-gen monsters at 256 keep depth_scale only (no bump) since
+## their native frame already fills the intended battle footprint. The
+## threshold is the same one party-side uses to discriminate artist vs
+## proc-gen sprite paths.
+const ENEMY_SCALE_BUMP: float = 2.0
+const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
+
 ## UI References
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
 @onready var turn_info: Label = $UI/TurnInfoPanel/TurnInfo
@@ -799,10 +808,18 @@ func _create_battle_sprites() -> void:
 		var enemy_y_stagger = float(i) * -15.0
 		# Scale stagger: 0->1.0x, 1->0.95x, 2->0.9x
 		var depth_scale = 1.0 - float(i) * 0.05
+		# Per-frame-size bump: artist drops at <=128px get ENEMY_SCALE_BUMP so
+		# they don't read as tiny next to proc-gen 256-frame monsters.
+		var size_bump = 1.0
+		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
+			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
+				var _enemy_ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+				if _enemy_ftex and _enemy_ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
+					size_bump = ENEMY_SCALE_BUMP
 		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		base_enemy_pos.y += enemy_y_stagger
 		sprite.position = base_enemy_pos
-		sprite.scale = Vector2(depth_scale, depth_scale)
+		sprite.scale = Vector2(depth_scale * size_bump, depth_scale * size_bump)
 		_enemy_base_positions.append(base_enemy_pos)
 
 		sprite.play("idle")
