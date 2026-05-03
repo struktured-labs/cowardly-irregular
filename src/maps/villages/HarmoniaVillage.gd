@@ -352,11 +352,14 @@ func _setup_npcs() -> void:
 
 	# === PORTAL GUIDE ===
 
-	# Dr. Temporal (near suburban portal)
+	# Dr. Temporal (near suburban portal) — uses dedicated sprite_archetype
+	# rather than the generic "mysterious" NPC type so other mysterious NPCs
+	# (if any) keep their procedural fallback.
 	var temporal = _create_npc("Dr. Temporal", "mysterious", Vector2(18 * TILE_SIZE, 11 * TILE_SIZE), [
 		"This device materialized overnight... it hums with a '16-bit' frequency.",
 		"My instruments detect suburban housing developments on the other side.",
 		"Strip malls. Parking lots. The horror.",
 		"Step on the pad and press A to activate. If you dare."
 	])
+	temporal.sprite_archetype = "dr_temporal"
 	npcs.add_child(temporal)
