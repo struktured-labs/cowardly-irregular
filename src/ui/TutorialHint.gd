@@ -130,8 +130,12 @@ func _input(event: InputEvent) -> void:
 	# Block ALL input while hint is showing — nothing passes to battle
 	get_viewport().set_input_as_handled()
 
-	# Any button press dismisses
+	# Any keyboard / gamepad / mouse button dismisses
+	# (Audit-fix 2026-05-04: mouse-only players had no way to close
+	# tutorial hints — the dismiss handler skipped InputEventMouseButton.)
 	if event is InputEventKey and event.pressed:
 		_dismiss()
 	elif event is InputEventJoypadButton and event.pressed:
+		_dismiss()
+	elif event is InputEventMouseButton and event.pressed:
 		_dismiss()
