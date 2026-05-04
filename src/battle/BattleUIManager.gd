@@ -160,7 +160,10 @@ func _on_auto_toggle_pressed() -> void:
 			AutobattleSystem.set_autobattle_enabled(char_id, not any_on)
 		if SoundManager:
 			SoundManager.play_ui("autobattle_off" if any_on else "autobattle_on")
-	_update_auto_toggle_button()
+	# Full UI refresh — updates the [A] indicators in PartyStatusPanel
+	# AND the AUTO button label. Without this, the [A] indicators were
+	# stale until the next battle event triggered _update_ui.
+	update_ui()
 
 
 func update_character_status() -> void:
