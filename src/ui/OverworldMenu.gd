@@ -644,22 +644,13 @@ func _handle_menu_action(action_id: String) -> void:
 			_close_menu()
 		"autobattle_toggle":
 			# Mouse path to the global sticky toggle (same effect as Minus).
-			# Don't close the menu — user might want to see the new state in
-			# the label and toggle again or do something else. Refresh UI.
+			# Emitting menu_action triggers GameLoop._toggle_all_autobattle,
+			# which already calls refresh_autobattle_label() back into us
+			# (via the audit-fix in 8c58e1b). No need to duplicate the
+			# label-derivation logic here. Don't close the menu — user
+			# might want to see the new state in the label and toggle
+			# again or do something else.
 			menu_action.emit("autobattle_toggle", null)
-			# Re-derive the label without rebuilding the entire menu.
-			var any_auto_on := false
-			for member in party:
-				var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
-				if AutobattleSystem.is_autobattle_enabled(char_id):
-					any_auto_on = true
-					break
-			for opt in _menu_options:
-				if opt.get("id", "") == "autobattle_toggle":
-					opt["label"] = "Auto: ON" if any_auto_on else "Auto: OFF"
-					break
-			_ui_built = false
-			_build_ui()
 		"autogrind":
 			menu_action.emit("autogrind", null)
 			_close_menu()
