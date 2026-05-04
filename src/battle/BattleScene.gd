@@ -886,6 +886,7 @@ func _add_enemy_click_target(sprite: AnimatedSprite2D, enemy_idx: int) -> void:
 	shape.position = Vector2(0, 0)
 	area.add_child(shape)
 
+	# Click handler — fires only during target selection
 	area.input_event.connect(func(_viewport, event: InputEvent, _shape_idx: int) -> void:
 		if not is_selecting_target:
 			return
@@ -911,6 +912,30 @@ func _add_enemy_click_target(sprite: AnimatedSprite2D, enemy_idx: int) -> void:
 		is_selecting_target = false
 		_on_target_selected(alive_idx, alive_enemies)
 		get_viewport().set_input_as_handled()
+	)
+
+	# Hover feedback — highlight the enemy with a yellow tint when the
+	# user hovers during target selection, so they can see which enemy
+	# they'd hit before clicking. Restored on mouse_exited.
+	# (Mild a11y polish 2026-05-04: helps users who can't easily see
+	# the popup-menu's text-based highlight while their cursor is over
+	# a sprite.)
+	area.mouse_entered.connect(func() -> void:
+		if not is_selecting_target:
+			return
+		if not is_instance_valid(sprite):
+			return
+		# Save original modulate once, then apply yellow tint
+		if not sprite.has_meta("orig_modulate"):
+			sprite.set_meta("orig_modulate", sprite.modulate)
+		sprite.modulate = Color(1.4, 1.4, 0.7)
+	)
+	area.mouse_exited.connect(func() -> void:
+		if not is_instance_valid(sprite):
+			return
+		if sprite.has_meta("orig_modulate"):
+			sprite.modulate = sprite.get_meta("orig_modulate")
+			sprite.remove_meta("orig_modulate")
 	)
 
 
