@@ -414,6 +414,15 @@ func _toggle_all_autobattle() -> void:
 		# clearing them would stall the round.
 		if BattleManager and BattleManager.has_method("clear_pending_player_actions"):
 			BattleManager.clear_pending_player_actions()
+	else:
+		# Enabling: if a player is currently in PLAYER_SELECTING, kick off
+		# their autobattle decision immediately so they don't sit waiting
+		# for manual input. Mirrors the BattleScene._enable_all_autobattle
+		# behavior so the AUTO button click feels identical to pressing
+		# Minus on the gamepad. (Audit 2026-05-04 consistency fix.)
+		if BattleManager and BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING:
+			if BattleManager.has_method("execute_autobattle_for_current"):
+				BattleManager.execute_autobattle_for_current()
 
 	var status = "ON" if new_state else "OFF"
 	if new_state:
