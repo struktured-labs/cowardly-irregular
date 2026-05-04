@@ -231,10 +231,20 @@ func _setup_collision() -> void:
 
 	var col = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0
+	# Collision radius matches context: 128 in open overworld (Mode 7
+	# billboard scale), 40 in interiors (matches OverworldNPC interior
+	# default). Without this scaling, village wanderers had a 128-radius
+	# zone but only 1x sprite, so the player got "interaction available"
+	# prompts from way too far away. Audit-fix 2026-05-04.
+	var ctx_scale := _get_context_scale()
+	if ctx_scale.x >= 2.0:
+		shape.radius = 128.0
+		col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio
+	else:
+		shape.radius = 40.0
+		col.scale = Vector2.ONE
 	col.shape = shape
 	col.position = Vector2(0, 0)
-	col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
 	add_child(col)
 
 

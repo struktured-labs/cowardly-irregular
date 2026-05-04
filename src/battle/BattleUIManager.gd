@@ -118,34 +118,29 @@ func _update_auto_toggle_button() -> void:
 
 
 func _on_auto_toggle_pressed() -> void:
-	"""Mouse click on AUTO toggle — same effect as Minus/F6/Plus-when-on."""
-	# Defer one frame so the button's own click sound doesn't collide
-	# with autobattle_on/off SFX.
-	_scene.get_tree().process_frame.connect(func() -> void:
-		if not _auto_toggle_button or not is_instance_valid(_auto_toggle_button):
-			return
-		# Reuse the GameLoop toggle so the path is identical to gamepad/
-		# keyboard. Clears the pending action queue on disable + shows
-		# a Toast in non-battle states. GameLoop is the main scene root.
-		var gl = _scene.get_tree().root.get_node_or_null("GameLoop")
-		if gl and gl.has_method("_toggle_all_autobattle"):
-			gl._toggle_all_autobattle()
-		else:
-			# Fallback: same logic inline (shouldn't fire — GameLoop is
-			# always parent of BattleScene during a battle).
-			var any_on := false
-			for member in _scene.party_members:
-				var char_id = member.combatant_name.to_lower().replace(" ", "_")
-				if AutobattleSystem.is_autobattle_enabled(char_id):
-					any_on = true
-					break
-			for member in _scene.party_members:
-				var char_id = member.combatant_name.to_lower().replace(" ", "_")
-				AutobattleSystem.set_autobattle_enabled(char_id, not any_on)
-			if SoundManager:
-				SoundManager.play_ui("autobattle_off" if any_on else "autobattle_on")
-		_update_auto_toggle_button()
-	, CONNECT_ONE_SHOT)
+	"""Mouse click on AUTO toggle — same effect as Minus/F6/Plus-when-on.
+	Reuses GameLoop._toggle_all_autobattle so the path is identical to
+	gamepad/keyboard: clears pending player actions on disable, plays
+	the autobattle_on/off SFX, and shows a Toast in non-battle states."""
+	if not _auto_toggle_button or not is_instance_valid(_auto_toggle_button):
+		return
+	var gl = _scene.get_tree().root.get_node_or_null("GameLoop")
+	if gl and gl.has_method("_toggle_all_autobattle"):
+		gl._toggle_all_autobattle()
+	else:
+		# Fallback path — should never fire since GameLoop is the main scene.
+		var any_on: bool = false
+		for member in _scene.party_members:
+			var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+			if AutobattleSystem.is_autobattle_enabled(char_id):
+				any_on = true
+				break
+		for member in _scene.party_members:
+			var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+			AutobattleSystem.set_autobattle_enabled(char_id, not any_on)
+		if SoundManager:
+			SoundManager.play_ui("autobattle_off" if any_on else "autobattle_on")
+	_update_auto_toggle_button()
 
 
 func update_character_status() -> void:
