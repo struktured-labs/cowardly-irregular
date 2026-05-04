@@ -854,13 +854,12 @@ func _add_enemy_click_target(sprite: AnimatedSprite2D, enemy_idx: int) -> void:
 	target selection (so wandering clicks during animations don't fire
 	stale target selections).
 
-	Sizing: monster sprites are typically 256×256 source frames, scaled
-	to 144 or 256 in BattleScene. We approximate the picking area as a
-	100x110 rect centered on the sprite. (Slightly tighter than visual
-	bounds so adjacent enemies' click areas don't overlap.) The shape
-	rides with the sprite via parent transforms.
-	(Per accessibility audit 2026-05-03: 'mouse + keyboard fully
-	accessible'.)"""
+	Sizing: clip to ~70% of the actual sprite frame (so adjacent staggered
+	enemies don't have overlapping click areas) and let the parent sprite's
+	scale transform apply. Pre-2026-05-04 the box was a fixed 100x110 which
+	worked OK for the 144px proc-gen sprites (~70% fill) but felt cramped
+	on 256px sprites (~40% fill of the visible silhouette).
+	(Per accessibility audit: 'mouse + keyboard fully accessible'.)"""
 	var area = Area2D.new()
 	area.name = "ClickTarget"
 	area.input_pickable = true
@@ -872,7 +871,16 @@ func _add_enemy_click_target(sprite: AnimatedSprite2D, enemy_idx: int) -> void:
 
 	var shape = CollisionShape2D.new()
 	var rect = RectangleShape2D.new()
-	rect.size = Vector2(100, 110)
+	# Read the frame size from the sprite's idle texture if available;
+	# fall back to 100x110 if we can't introspect.
+	var frame_w := 100.0
+	var frame_h := 110.0
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
+		var tex = sprite.sprite_frames.get_frame_texture("idle", 0)
+		if tex:
+			frame_w = float(tex.get_width()) * 0.70
+			frame_h = float(tex.get_height()) * 0.78
+	rect.size = Vector2(frame_w, frame_h)
 	shape.shape = rect
 	# Centered on the sprite (Sprite2D/AnimatedSprite2D are centered by default)
 	shape.position = Vector2(0, 0)
