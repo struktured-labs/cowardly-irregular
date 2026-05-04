@@ -1712,7 +1712,13 @@ func _cancel_autobattle_during_execution() -> void:
 
 
 func _cancel_all_autobattle() -> void:
-	"""Immediately cancel autobattle for all players"""
+	"""Immediately cancel autobattle for all players AND clear any queued
+	auto-actions, so the disable feels snappy regardless of whether the
+	user was mid-execution or in selection phase.
+	(Audit-fix 2026-05-04: previously this only flipped state, leaving
+	queued auto-actions in BattleManager.execution_order to play out the
+	rest of the round. Felt unresponsive vs. the GameLoop._toggle_all_
+	autobattle path — consistency fix.)"""
 	_all_autobattle_enabled = false
 	AutobattleSystem.cancel_all_next_turn = false
 
@@ -1720,6 +1726,12 @@ func _cancel_all_autobattle() -> void:
 	for member in party_members:
 		var char_id = member.combatant_name.to_lower().replace(" ", "_")
 		AutobattleSystem.set_autobattle_enabled(char_id, false)
+
+	# Strip remaining player auto-actions — same behavior as the
+	# GameLoop._toggle_all_autobattle path, so all disable surfaces feel
+	# identical to the user.
+	if BattleManager and BattleManager.has_method("clear_pending_player_actions"):
+		BattleManager.clear_pending_player_actions()
 
 	log_message("[color=gray]>>> AUTOBATTLE: Disabled for all players[/color]")
 	_update_ui()
