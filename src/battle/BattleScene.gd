@@ -159,6 +159,11 @@ var _all_autobattle_enabled: bool = false  # True when all players are on autoba
 var _current_terrain: String = "plains"
 var _battle_background: BattleBackgroundClass = null
 
+## Mode 7 perspective floor overlay (spike — turn off via _mode7_floor_enabled = false)
+const Mode7FloorClass = preload("res://src/battle/BattleMode7Floor.gd")
+var _mode7_floor: Mode7FloorClass = null
+var _mode7_floor_enabled: bool = true
+
 ## Composed subsystems (extracted from BattleScene)
 var _enemy_spawner: BattleEnemySpawnerClass = null
 var _ui_manager: BattleUIManagerClass = null
@@ -353,6 +358,18 @@ func _create_battle_background() -> void:
 	_battle_background.set_terrain_from_string(_current_terrain)
 	# Give EffectSystem a reference so it can tint the background during spells
 	EffectSystem.battle_background = _battle_background
+
+	# Mode 7 perspective floor overlay — sits BEHIND sprites but on top of the
+	# painted background so the characters appear to be standing on a tilted
+	# plane. This is a spike; gate via _mode7_floor_enabled to disable.
+	if _mode7_floor_enabled:
+		_mode7_floor = Mode7FloorClass.new()
+		_mode7_floor.name = "Mode7Floor"
+		add_child(_mode7_floor)
+		# Place right after the background (index 1) so sprites added later
+		# render on top of it. BattleField/EnemySprites/PartySprites containers
+		# get added/moved later in setup, which keeps them above the floor.
+		move_child(_mode7_floor, 1)
 
 
 func set_command_menu_visible(visible: bool) -> void:
