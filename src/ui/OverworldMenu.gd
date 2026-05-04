@@ -87,6 +87,27 @@ func _ready() -> void:
 	tween.tween_property(self, "modulate:a", 1.0, 0.15).set_ease(Tween.EASE_OUT)
 
 
+## Refresh the autobattle toggle label live based on AutobattleSystem state.
+## Called externally when autobattle is toggled via gamepad/keyboard so the
+## label doesn't go stale while the menu is open. Walks _menu_options and
+## flips the label, then rebuilds the UI.
+func refresh_autobattle_label() -> void:
+	if party.is_empty():
+		return
+	var any_auto_on: bool = false
+	for member in party:
+		var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(char_id):
+			any_auto_on = true
+			break
+	for opt in _menu_options:
+		if opt.get("id", "") == "autobattle_toggle":
+			opt["label"] = "Auto: ON" if any_auto_on else "Auto: OFF"
+			break
+	_ui_built = false
+	_build_ui()
+
+
 func setup(game_party: Array) -> void:
 	"""Initialize menu with party data"""
 	party = game_party

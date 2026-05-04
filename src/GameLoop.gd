@@ -424,6 +424,12 @@ func _toggle_all_autobattle() -> void:
 				Toast.show_success(self, msg)
 			else:
 				Toast.show_warning(self, msg)
+	# Live-refresh the OverworldMenu label if it's open. Without this, the
+	# user could open the menu, hit Minus to toggle, and the menu label
+	# would stay stale until reopened. Audit-fix 2026-05-04.
+	if _overworld_menu and is_instance_valid(_overworld_menu) \
+			and _overworld_menu.has_method("refresh_autobattle_label"):
+		_overworld_menu.refresh_autobattle_label()
 
 
 func _on_autobattle_editor_closed() -> void:
