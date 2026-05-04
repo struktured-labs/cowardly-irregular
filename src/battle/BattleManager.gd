@@ -817,25 +817,25 @@ func clear_pending_player_actions() -> void:
 	already-queued auto-actions play out. Enemy actions are preserved —
 	stripping them would deadlock the round (BattleManager waits for
 	enemy actions to fire before advancing).
-	(User feedback 2026-05-03: the disable was registering in state but
-	not visibly stopping anything mid-execution.)"""
+
+	Note on execution_order: actions are consumed via pop_front() (see
+	~line 1563), so the currently-running action is NOT in execution_order
+	anymore — it was already popped before the tween started. Therefore
+	clearing all player entries from the live execution_order is safe;
+	the running action finishes its tween cleanly without being touched.
+	(Pre-2026-05-04 this function tried to 'skip the head' on the
+	mistaken assumption that the running action was index 0; that was a
+	no-op since it had already been popped.)"""
 	for i in range(pending_actions.size() - 1, -1, -1):
 		var action = pending_actions[i]
 		var c = action.get("combatant", null)
 		if c and c in player_party:
 			pending_actions.remove_at(i)
-	# execution_order is a duplicate built at execution start. If we're
-	# mid-execution it's the live list. Strip player entries from it too,
-	# but leave the action currently being PROCESSED alone — interrupting
-	# mid-tween causes ghosted sprites.
 	if "execution_order" in self:
 		for i in range(execution_order.size() - 1, -1, -1):
 			var action = execution_order[i]
 			var c = action.get("combatant", null)
 			if c and c in player_party:
-				# Skip the head of the queue (currently processing)
-				if i == 0 and current_state == BattleState.PROCESSING_ACTION:
-					continue
 				execution_order.remove_at(i)
 
 
