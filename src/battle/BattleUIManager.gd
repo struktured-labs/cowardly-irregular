@@ -73,8 +73,6 @@ func _apply_panel_transparency() -> void:
 func _create_auto_toggle_button() -> void:
 	"""Mouse-clickable global autobattle toggle. Pure mouse-path access
 	to the same sticky toggle Minus/F6 trigger from the keyboard/gamepad.
-	(Per user feedback 2026-05-03: 'should be a way to enable/disable
-	w/mouse too'.)
 	Positioned at top-center of the viewport so it's always visible
 	regardless of which battle UI panels are showing. Click to toggle."""
 	var ui = _scene.get_node_or_null("UI")
@@ -87,13 +85,35 @@ func _create_auto_toggle_button() -> void:
 	_auto_toggle_button.focus_mode = Control.FOCUS_NONE  # Don't steal kb focus
 	_auto_toggle_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	# Sit above the PartyStatusPanel (which starts at y=40, offset_left=-200).
-	# We tuck right of EnemyStatusPanel, hugging the top-right but to the LEFT
-	# of the party panel so it doesn't overlap.
-	_auto_toggle_button.offset_left = -310
-	_auto_toggle_button.offset_top = 8
+	# Slightly bigger now (was 100×24) for discoverability — wide enough
+	# for "AUTO: OFF" without text clipping at 14pt.
+	_auto_toggle_button.offset_left = -340
+	_auto_toggle_button.offset_top = 6
 	_auto_toggle_button.offset_right = -210
-	_auto_toggle_button.offset_bottom = 32
-	_auto_toggle_button.add_theme_font_size_override("font_size", 12)
+	_auto_toggle_button.offset_bottom = 36
+	_auto_toggle_button.add_theme_font_size_override("font_size", 14)
+	# Themed background so it doesn't fade into the battlefield. Two
+	# styleboxes — one for normal/hover, one for pressed.
+	var sb_normal := StyleBoxFlat.new()
+	sb_normal.bg_color = Color(0.10, 0.10, 0.18, 0.85)
+	sb_normal.border_color = Color(0.5, 0.55, 0.75, 0.9)
+	sb_normal.border_width_left = 1
+	sb_normal.border_width_top = 1
+	sb_normal.border_width_right = 1
+	sb_normal.border_width_bottom = 1
+	sb_normal.corner_radius_top_left = 4
+	sb_normal.corner_radius_top_right = 4
+	sb_normal.corner_radius_bottom_left = 4
+	sb_normal.corner_radius_bottom_right = 4
+	var sb_hover := sb_normal.duplicate()
+	sb_hover.bg_color = Color(0.18, 0.22, 0.32, 0.95)
+	sb_hover.border_color = Color(0.7, 0.78, 1.0, 1.0)
+	var sb_pressed := sb_normal.duplicate()
+	sb_pressed.bg_color = Color(0.22, 0.28, 0.42, 1.0)
+	_auto_toggle_button.add_theme_stylebox_override("normal", sb_normal)
+	_auto_toggle_button.add_theme_stylebox_override("hover", sb_hover)
+	_auto_toggle_button.add_theme_stylebox_override("pressed", sb_pressed)
+	_auto_toggle_button.tooltip_text = "Toggle global autobattle (sticky). Same as Minus / F6."
 	_auto_toggle_button.pressed.connect(_on_auto_toggle_pressed)
 	ui.add_child(_auto_toggle_button)
 
