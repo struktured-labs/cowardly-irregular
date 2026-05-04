@@ -112,14 +112,18 @@ func _build_ui() -> void:
 	_subtitle_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_container.add_child(_subtitle_label)
 
-	# Retry option
+	# Retry option — mouse-clickable. Hover selects, click confirms.
+	# (Audit-fix 2026-05-04: pre-fix this screen was kb/gamepad-only,
+	# leaving mouse-only players stuck after death.)
 	_retry_label = Label.new()
 	_retry_label.text = "> Retry"
 	_retry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_retry_label.size = Vector2(screen_size.x, 25)
 	_retry_label.add_theme_font_size_override("font_size", 20)
 	_retry_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))
-	_retry_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_retry_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_retry_label.gui_input.connect(_on_retry_input)
+	_retry_label.mouse_entered.connect(_on_retry_hover)
 	_container.add_child(_retry_label)
 
 	# Continue option
@@ -129,7 +133,9 @@ func _build_ui() -> void:
 	_continue_label.size = Vector2(screen_size.x, 25)
 	_continue_label.add_theme_font_size_override("font_size", 20)
 	_continue_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.45))
-	_continue_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_continue_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_continue_label.gui_input.connect(_on_continue_input)
+	_continue_label.mouse_entered.connect(_on_continue_hover)
 	_container.add_child(_continue_label)
 
 
@@ -219,3 +225,49 @@ func _confirm_selection() -> void:
 		retry_selected.emit()
 	else:
 		continue_selected.emit()
+
+
+func _on_retry_hover() -> void:
+	if not _active:
+		return
+	if _selected_index != 0:
+		_selected_index = 0
+		_update_selection()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+
+
+func _on_continue_hover() -> void:
+	if not _active:
+		return
+	if not _has_save:
+		return  # Continue is disabled without a save
+	if _selected_index != 1:
+		_selected_index = 1
+		_update_selection()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+
+
+func _on_retry_input(event: InputEvent) -> void:
+	if not _active:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_selected_index = 0
+		_update_selection()
+		_active = false
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
+		_confirm_selection()
+
+
+func _on_continue_input(event: InputEvent) -> void:
+	if not _active or not _has_save:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_selected_index = 1
+		_update_selection()
+		_active = false
+		if SoundManager:
+			SoundManager.play_ui("menu_select")
+		_confirm_selection()
