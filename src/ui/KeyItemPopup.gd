@@ -137,7 +137,16 @@ func _present(item: Dictionary) -> void:
 func _input(event: InputEvent) -> void:
 	if not _dismissable:
 		return
-	if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):
+	# Dismiss on A / B / Esc / left-click / right-click — anywhere is fine,
+	# this is a notification not a choice. (Audit 2026-05-04: pre-fix had
+	# only ui_accept/ui_cancel — mouse-only players had no way to dismiss.)
+	var dismiss_pressed := event.is_action_pressed("ui_accept") \
+		or event.is_action_pressed("ui_cancel")
+	if not dismiss_pressed and event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.pressed and mb.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+			dismiss_pressed = true
+	if dismiss_pressed:
 		_dismiss()
 		get_viewport().set_input_as_handled()
 

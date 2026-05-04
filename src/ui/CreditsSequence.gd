@@ -167,7 +167,14 @@ func _scroll_and_wait() -> void:
 func _input(event: InputEvent) -> void:
 	if _done:
 		return
-	if event.is_action_pressed("ui_cancel"):
+	# Skip on Esc / B / right-click — mouse-friendly. Pre-fix this
+	# screen was kb/gamepad-only (audit 2026-05-04).
+	var skip_pressed := event.is_action_pressed("ui_cancel")
+	if not skip_pressed and event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
+			skip_pressed = true
+	if skip_pressed:
 		_skip_requested = true
 		get_viewport().set_input_as_handled()
 
