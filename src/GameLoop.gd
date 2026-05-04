@@ -233,10 +233,18 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# Gamepad Select button (button 4 on most controllers)
-	# Block when autogrind UI is open — don't toggle autobattle behind it
+	# IMPORTANT: skip in BATTLE state — BattleScene._input has its own
+	# battle_toggle_auto handler that fires on the same Minus press, and
+	# BOTH firing means GameLoop toggles ON→OFF then BattleScene sees OFF
+	# and toggles back to ON. Net effect: nothing. (Audit-fix 2026-05-04
+	# for the persistent "I press Minus, autobattle stays on" bug.)
+	# Block when autogrind UI is open — don't toggle autobattle behind it.
 	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
 		if _autogrind_ui and is_instance_valid(_autogrind_ui):
 			get_viewport().set_input_as_handled()
+		elif current_state == LoopState.BATTLE:
+			# Pass through — BattleScene._input handles it
+			pass
 		else:
 			_toggle_all_autobattle()
 			get_viewport().set_input_as_handled()
