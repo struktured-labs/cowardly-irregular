@@ -467,13 +467,13 @@
       "file": "assets/audio/music/battle_slime.ogg",
       "tier": "T1",
       "provider": "suno",
-      "title": "Gelatinous Threat",
-      "prompt": "Quirky bouncy battle theme for fighting slimes, playful and lighthearted but still exciting, squelchy wobbly bass, boing sound effects woven into the rhythm, comedic energy like fighting a goofy but persistent enemy, 16-bit JRPG charm",
-      "style": "JRPG battle, bouncy, playful, C major, comedic percussion, squelchy synth bass, 128 BPM",
+      "title": "Coiled, Hungry",
+      "prompt": "Starter-monster battle theme for a green snake-slime predator with sharp fangs that rears and strikes from a coiled position. Mid-tempo F minor JRPG battle in 16-bit SNES voicing. Slithering synth bass weaves underneath rather than bouncing. Wet drip percussion (like slime hitting stone) gives the rhythm a damp, hunting quality. A muted brass or pungi/cobra-flute lick threads through the hook, slightly dissonant, suggesting venom. Brief tension-build every 8 bars before reset. Energetic enough to feel like combat, but unsettling \u2014 you're fighting something that wants to eat you, not a goofy blob. Instrumental, loops cleanly.",
+      "style": "16-bit JRPG battle, tense and predatory, F minor, mid-tempo 110 BPM, slithering synth bass, wet drip percussion, dissonant cobra-flute lick suggesting venom, slick and unsettling, NOT comedic, instrumental, loopable",
       "model": "suno-v4",
-      "duration": 49.68,
+      "duration": 60.72,
       "loop": true,
-      "generated_at": "2026-03-21",
+      "generated_at": "2026-05-05",
       "pinned": true
     },
     "battle_bat": {
