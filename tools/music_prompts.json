@@ -250,9 +250,9 @@
       "prompt": "Ambient monitoring loop for automated grinding, hypnotic repetitive synth arpeggios over warm drone, zen-like concentration, the satisfying hum of a well-oiled machine running battles on autopilot, slightly glitchy undertones suggesting system fatigue"
     },
     "battle_slime": {
-      "title_template": "Gelatinous Threat",
-      "style": "JRPG battle, bouncy, playful, C major, comedic percussion, squelchy synth bass, 128 BPM",
-      "prompt": "Quirky bouncy battle theme for fighting slimes, playful and lighthearted but still exciting, squelchy wobbly bass, boing sound effects woven into the rhythm, comedic energy like fighting a goofy but persistent enemy, 16-bit JRPG charm"
+      "title_template": "Coiled, Hungry",
+      "style": "16-bit JRPG battle, tense and predatory, F minor, mid-tempo 110 BPM, slithering synth bass, wet drip percussion, dissonant cobra-flute lick suggesting venom, slick and unsettling, NOT comedic, instrumental, loopable",
+      "prompt": "Starter-monster battle theme for a green snake-slime predator with sharp fangs that rears and strikes from a coiled position. Mid-tempo F minor JRPG battle in 16-bit SNES voicing. Slithering synth bass weaves underneath rather than bouncing. Wet drip percussion (like slime hitting stone) gives the rhythm a damp, hunting quality. A muted brass or pungi/cobra-flute lick threads through the hook, slightly dissonant, suggesting venom. Brief tension-build every 8 bars before reset. Energetic enough to feel like combat, but unsettling — you're fighting something that wants to eat you, not a goofy blob. Instrumental, loops cleanly."
     },
     "battle_bat": {
       "title_template": "Wings in the Dark",
