@@ -243,6 +243,36 @@
 		"target_type": "self",
 		"success_rate": 0.75
 	},
+	"channel": {
+		"id": "channel",
+		"name": "Channel",
+		"type": "mp_restore",
+		"animation": "channel",
+		"mp_cost": 0,
+		"description": "Focus the arcane currents — restore a small amount of MP",
+		"target_type": "self",
+		"mp_amount": 6
+	},
+	"pray": {
+		"id": "pray",
+		"name": "Pray",
+		"type": "mp_restore",
+		"animation": "pray",
+		"mp_cost": 0,
+		"description": "Offer a brief prayer — restore a small amount of MP",
+		"target_type": "self",
+		"mp_amount": 6
+	},
+	"riff": {
+		"id": "riff",
+		"name": "Riff",
+		"type": "mp_restore",
+		"animation": "riff",
+		"mp_cost": 0,
+		"description": "Strike a quick chord — restore a small amount of MP",
+		"target_type": "self",
+		"mp_amount": 6
+	},
 	"backstab": {
 		"id": "backstab",
 		"name": "Backstab",
