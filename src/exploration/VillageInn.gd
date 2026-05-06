@@ -5,9 +5,14 @@ class_name VillageInn
 ## Classic JRPG inn functionality
 
 signal rest_completed()
+signal transition_triggered(target_map: String, target_spawn: String)
 
 @export var inn_name: String = "Inn"
 @export var rest_cost: int = 50  # Gold cost to rest
+
+## Set to "" to keep the legacy outdoor rest menu instead of transitioning
+## to an interior scene. Defaults to the generic InnInterior.
+@export var interior_target: String = "inn_interior"
 
 ## Visual
 var sprite: Sprite2D
@@ -31,6 +36,20 @@ func _ready() -> void:
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+	# Auto-connect to a parent that knows how to relay area transitions
+	# (i.e. the village scene) so the inn can request scene changes without
+	# every village having to wire it up explicitly.
+	call_deferred("_auto_connect_transition_relay")
+
+
+func _auto_connect_transition_relay() -> void:
+	var node = get_parent()
+	while node:
+		if node.has_method("_on_transition_triggered") and not transition_triggered.is_connected(node._on_transition_triggered):
+			transition_triggered.connect(node._on_transition_triggered)
+			return
+		node = node.get_parent()
 
 
 func _generate_sprite() -> void:
@@ -300,6 +319,13 @@ func _on_body_exited(body: Node2D) -> void:
 
 func interact(player: Node2D) -> void:
 	_current_player = player
+	# Prefer transitioning into the interior scene if configured.
+	if interior_target != "":
+		if SoundManager:
+			SoundManager.play_ui("menu_open")
+		transition_triggered.emit(interior_target, "entrance")
+		return
+	# Legacy outdoor rest menu (for installs that prefer the quick path).
 	if _is_showing_menu:
 		_rest_party()
 	else:

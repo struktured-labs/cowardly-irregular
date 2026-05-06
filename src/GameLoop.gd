@@ -13,6 +13,8 @@ const TitleScreenClass = preload("res://src/ui/TitleScreen.gd")
 const HarmoniaVillageRes = preload("res://src/maps/villages/HarmoniaVillage.tscn")
 const WhisperingCaveRes = preload("res://src/maps/dungeons/WhisperingCave.tscn")
 const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd")
+const InnInteriorScript = preload("res://src/maps/interiors/InnInterior.gd")
+const ShopInteriorScript = preload("res://src/maps/interiors/ShopInterior.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
 const GrimhollowVillageScript = preload("res://src/maps/villages/GrimhollowVillage.gd")
@@ -68,6 +70,22 @@ var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 
 ## Exploration state
 var _current_map_id: String = "overworld"
+
+## When entering an interior scene (tavern/inn/shop), the source village id is
+## saved here so the interior's exit door can target "village_return" and we
+## resolve back to where the player came from.
+var _village_origin_id: String = ""
+
+## Set of map IDs that are "interiors entered from a village" — used to know
+## when to capture the origin village and when to resolve village_return.
+const _INTERIOR_MAP_IDS: Array = [
+	"tavern_interior",
+	"inn_interior",
+	"shop_interior_item",
+	"shop_interior_black_magic",
+	"shop_interior_white_magic",
+	"shop_interior_blacksmith",
+]
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
@@ -1299,6 +1317,16 @@ func _start_exploration() -> void:
 			exploration_scene = _create_cave_scene()
 		"tavern_interior":
 			exploration_scene = _create_tavern_scene()
+		"inn_interior":
+			exploration_scene = InnInteriorScript.new()
+		"shop_interior_item":
+			exploration_scene = _create_shop_interior(0)
+		"shop_interior_black_magic":
+			exploration_scene = _create_shop_interior(1)
+		"shop_interior_white_magic":
+			exploration_scene = _create_shop_interior(2)
+		"shop_interior_blacksmith":
+			exploration_scene = _create_shop_interior(3)
 		"frosthold_village":
 			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
@@ -1676,7 +1704,7 @@ func _get_transition_type(map_id: String) -> String:
 			or "prime" in t or "vertex" in t or "brasston" in t \
 			or "harmonia" in t or "tavern" in t or "frosthold" in t \
 			or "eldertree" in t or "grimhollow" in t or "sandrift" in t \
-			or "ironhaven" in t:
+			or "ironhaven" in t or "interior" in t:
 		return "village"
 	if "overworld" in t or t == "overworld":
 		return "overworld"
@@ -1993,6 +2021,28 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	if _transition_in_progress:
 		return
 	_transition_in_progress = true
+
+	# If an interior is asking to "return to the village we came from", resolve
+	# the magic token to the saved origin map. Falls back to overworld if we
+	# somehow never set one (e.g. dev jump).
+	if target_map == "village_return":
+		if _village_origin_id != "":
+			target_map = _village_origin_id
+			# The interior's spawn name (inn_exit / shop_exit / tavern_exit) is
+			# specific to interior types, but villages won't have those spawn
+			# points registered. Substitute a name the village does know.
+			spawn_point = "default"
+		else:
+			target_map = "overworld"
+			spawn_point = "default"
+
+	# Capture origin if entering an interior so its exit can route back.
+	if target_map in _INTERIOR_MAP_IDS:
+		# Don't overwrite if we're already inside an interior (interior→interior
+		# isn't a thing today, but if it ever happens, keep the original village).
+		if not (_current_map_id in _INTERIOR_MAP_IDS):
+			_village_origin_id = _current_map_id
+
 	_current_map_id = target_map
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO
@@ -2168,6 +2218,26 @@ func _create_dragon_cave_from_script(script_res: GDScript) -> Node:
 func _create_tavern_scene() -> Node:
 	"""Create The Dancing Tonberry tavern interior scene"""
 	return TavernInteriorScript.new()
+
+
+func _create_shop_interior(shop_type_value: int) -> Node:
+	"""Instantiate ShopInterior with the right shop_type and a sensible name.
+
+	`shop_type_value` mirrors VillageShop.ShopType:
+	  0 = ITEM, 1 = BLACK_MAGIC, 2 = WHITE_MAGIC, 3 = BLACKSMITH
+	The scene self-themes (palette, decoration, NPCs) from this value.
+	"""
+	var scene = ShopInteriorScript.new()
+	scene.shop_type = shop_type_value
+	# Default per-type names — outdoor shop instances can pass their own
+	# via a future override hook, but for now generic names work everywhere.
+	match shop_type_value:
+		0: scene.shop_name = "Mystic Remedies"
+		1: scene.shop_name = "The Arcanum"
+		2: scene.shop_name = "Chapel of Light"
+		3: scene.shop_name = "Ironclad Arms"
+		_: scene.shop_name = "Shop"
+	return scene
 
 
 ## Equipment Pool Management
