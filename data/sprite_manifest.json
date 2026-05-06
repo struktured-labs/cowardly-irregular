@@ -620,6 +620,76 @@
       "tier": "T2",
       "source": "artist aseprite — Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
     },
+    "slime_suburban": {
+      "path": "res://assets/sprites/monsters/slime_suburban.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {"start": 0, "end": 3},
+        "attack": {"start": 4, "end": 10},
+        "hit": {"start": 8, "end": 10},
+        "dead": {"start": 10, "end": 10}
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 2 (suburban, sky-blue)"
+    },
+    "slime_steampunk": {
+      "path": "res://assets/sprites/monsters/slime_steampunk.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {"start": 0, "end": 3},
+        "attack": {"start": 4, "end": 10},
+        "hit": {"start": 8, "end": 10},
+        "dead": {"start": 10, "end": 10}
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 3 (steampunk, brass)"
+    },
+    "slime_industrial": {
+      "path": "res://assets/sprites/monsters/slime_industrial.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {"start": 0, "end": 3},
+        "attack": {"start": 4, "end": 10},
+        "hit": {"start": 8, "end": 10},
+        "dead": {"start": 10, "end": 10}
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 4 (industrial, rust)"
+    },
+    "slime_digital": {
+      "path": "res://assets/sprites/monsters/slime_digital.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {"start": 0, "end": 3},
+        "attack": {"start": 4, "end": 10},
+        "hit": {"start": 8, "end": 10},
+        "dead": {"start": 10, "end": 10}
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 5 (digital, neon magenta)"
+    },
+    "slime_abstract": {
+      "path": "res://assets/sprites/monsters/slime_abstract.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {"start": 0, "end": 3},
+        "attack": {"start": 4, "end": 10},
+        "hit": {"start": 8, "end": 10},
+        "dead": {"start": 10, "end": 10}
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 6 (abstract, monochrome)"
+    },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
       "frame_width": 256,
