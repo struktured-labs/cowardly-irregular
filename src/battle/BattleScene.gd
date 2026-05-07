@@ -996,7 +996,23 @@ func _update_enemy_hp_bars() -> void:
 
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
-	"""Get the appropriate sprite frames for a monster type"""
+	"""Get the appropriate sprite frames for a monster type.
+
+	Looks for a per-world variant first (e.g. slime_suburban when world
+	suffix == "suburban"), falls back to the bare monster id, then to the
+	procedural _MonsterSprites factory functions. Generic — any monster
+	with <id>_<world> registered in sprite_manifest.json gets the variant
+	automatically. Currently used by the 5 slime palette variants
+	(suburban/steampunk/industrial/digital/abstract); base medieval skips
+	the suffix branch since "slime_medieval" isn't registered.
+	(2026-05-07: wire-up for cowir-sprites' feature/slime-world-variants.)"""
+	var world_suffix = SoundManager._get_current_world_suffix()
+	if world_suffix != "" and world_suffix != "medieval":
+		var variant_id = "%s_%s" % [monster_id, world_suffix]
+		var variant_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(variant_id)
+		if variant_frames:
+			return variant_frames
+
 	var external_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(monster_id)
 	if external_frames:
 		return external_frames
