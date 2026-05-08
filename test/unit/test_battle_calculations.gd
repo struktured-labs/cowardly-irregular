@@ -7,6 +7,11 @@ var _combatant: Combatant
 
 
 func before_each() -> void:
+	# add_child_autofree() schedules synchronous cleanup at end of each test
+	# (GutTest idiom). Avoids the queue_free() defer-to-next-frame trap
+	# that left ~30+ unfreed Combatant nodes between test cases — those
+	# accumulated as "Test script has 43 unfreed children" warnings.
+	# (2026-05-08: orphan-cleanup audit pass.)
 	_combatant = Combatant.new()
 	_combatant.combatant_name = "Test Fighter"
 	_combatant.max_hp = 100
@@ -17,12 +22,7 @@ func before_each() -> void:
 	_combatant.defense = 10
 	_combatant.magic = 15
 	_combatant.speed = 12
-	add_child(_combatant)
-
-
-func after_each() -> void:
-	if is_instance_valid(_combatant):
-		_combatant.queue_free()
+	add_child_autofree(_combatant)
 
 
 ## Damage Formula Tests
@@ -276,7 +276,7 @@ func test_group_attack_scaling_2_members() -> void:
 	var member2 = Combatant.new()
 	member2.combatant_name = "Member2"
 	member2.attack = 20
-	add_child(member2)
+	add_child_autofree(member2)
 
 	_combatant.attack = 20
 	var total_power = _combatant.attack + member2.attack  # 40
@@ -288,8 +288,6 @@ func test_group_attack_scaling_2_members() -> void:
 	assert_between(scale, 2.8, 2.9, "2-member scale is ~2.828")
 	assert_eq(raw, 113, "Group raw damage should be 113")
 	assert_eq(mitigated, 103, "After 10 defense, mitigated = 103")
-
-	member2.queue_free()
 
 
 func test_group_attack_scaling_4_members() -> void:
