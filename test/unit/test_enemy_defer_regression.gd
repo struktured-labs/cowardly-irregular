@@ -63,12 +63,11 @@ func test_execute_defer_sets_defending() -> void:
 	"""execute_defer() must set is_defending=true so the defending damage reduction applies."""
 	var c = Combatant.new()
 	c.combatant_name = "Deferring Player"
-	add_child(c)
+	add_child_autofree(c)
 
 	assert_false(c.is_defending, "Should not be defending before defer")
 	c.execute_defer()
 	assert_true(c.is_defending, "execute_defer() must set is_defending to true")
-	c.queue_free()
 
 
 func test_defending_combatant_takes_half_damage() -> void:
@@ -76,14 +75,14 @@ func test_defending_combatant_takes_half_damage() -> void:
 	var attacker = Combatant.new()
 	attacker.combatant_name = "Enemy"
 	attacker.attack = 30
-	add_child(attacker)
+	add_child_autofree(attacker)
 
 	var defender = Combatant.new()
 	defender.combatant_name = "Deferring Player"
 	defender.max_hp = 1000
 	defender.current_hp = 1000
 	defender.defense = 5
-	add_child(defender)
+	add_child_autofree(defender)
 
 	# Measure damage without defending
 	var hp_before_normal = defender.current_hp
@@ -107,21 +106,17 @@ func test_defending_combatant_takes_half_damage() -> void:
 	assert_almost_eq(float(defending_damage), float(expected), 1.0,
 		"Defending damage should be ~50% of normal damage")
 
-	attacker.queue_free()
-	defender.queue_free()
-
 
 func test_reset_for_new_round_clears_defending() -> void:
 	"""reset_for_new_round() must clear is_defending so the defending bonus doesn't persist."""
 	var c = Combatant.new()
 	c.combatant_name = "Player"
-	add_child(c)
+	add_child_autofree(c)
 
 	c.execute_defer()
 	assert_true(c.is_defending, "Pre-condition: should be defending after defer")
 	c.reset_for_new_round()
 	assert_false(c.is_defending, "is_defending must be cleared by reset_for_new_round()")
-	c.queue_free()
 
 
 ## Design invariant: an enemy that reaches _process_ai_selection with live targets

@@ -12,7 +12,7 @@ func test_win98_menu_non_battle_mode_input() -> void:
 	menu.battle_mode = false
 
 	# Add to scene tree
-	add_child(menu)
+	add_child_autofree(menu)
 
 	# Setup menu with items
 	var items = [
@@ -27,15 +27,13 @@ func test_win98_menu_non_battle_mode_input() -> void:
 	assert_eq(menu.selected_index, 0, "Should start at first item")
 	assert_false(menu.battle_mode, "battle_mode should be false for shop context")
 
-	menu.queue_free()
-
 
 ## Test: Win98Menu _can_accept_input flag should become true after delay
 func test_win98_menu_input_delay_flag() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
 	var menu = Win98MenuScript.new()
 
-	add_child(menu)
+	add_child_autofree(menu)
 
 	# Initially _can_accept_input should be false
 	assert_false(menu._can_accept_input, "_can_accept_input should start false")
@@ -50,15 +48,13 @@ func test_win98_menu_input_delay_flag() -> void:
 	# Now _can_accept_input should be true
 	assert_true(menu._can_accept_input, "_can_accept_input should be true after delay")
 
-	menu.queue_free()
-
 
 ## Test: Win98Menu L button state should reset on close
 func test_win98_menu_l_button_reset_on_close() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
 	var menu = Win98MenuScript.new()
 
-	add_child(menu)
+	add_child_autofree(menu)
 
 	# Simulate L button pressed
 	menu._l_button_pressed = true
@@ -71,17 +67,16 @@ func test_win98_menu_l_button_reset_on_close() -> void:
 
 
 ## Test: Win98Menu should have focus mode set correctly
+
 func test_win98_menu_focus_mode_set_in_ready() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
 	var menu = Win98MenuScript.new()
 
 	# Add to tree triggers _ready()
-	add_child(menu)
+	add_child_autofree(menu)
 
 	# Check focus mode is set for input reception
 	assert_eq(menu.focus_mode, Control.FOCUS_ALL, "Focus mode should be FOCUS_ALL")
-
-	menu.queue_free()
 
 
 ## Test: Win98Menu _is_closing flag prevents double-close
@@ -89,7 +84,7 @@ func test_win98_menu_double_close_prevention() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
 	var menu = Win98MenuScript.new()
 
-	add_child(menu)
+	add_child_autofree(menu)
 
 	# First close sets the flag
 	assert_false(menu._is_closing, "_is_closing should start false")
@@ -104,7 +99,7 @@ func test_win98_menu_selected_item_accessors() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
 	var menu = Win98MenuScript.new()
 
-	add_child(menu)
+	add_child_autofree(menu)
 
 	var items = [
 		{"id": "item1", "label": "Item 1", "data": {"price": 100}},
@@ -120,8 +115,6 @@ func test_win98_menu_selected_item_accessors() -> void:
 	# Move selection
 	menu.selected_index = 1
 	assert_eq(menu.get_selected_item_id(), "item2", "Should return second item id")
-
-	menu.queue_free()
 
 
 ## Test: ShopScene extends Control (for proper input propagation to child menus)
@@ -165,7 +158,7 @@ func test_win98_menu_setup_pattern() -> void:
 	menu.battle_mode = false
 	menu.is_root_menu = true
 
-	add_child(menu)
+	add_child_autofree(menu)
 
 	var items = [{"id": "test", "label": "Test"}]
 	menu.setup("Test", items, Vector2(100, 100), "fighter")
@@ -173,5 +166,3 @@ func test_win98_menu_setup_pattern() -> void:
 	# Verify menu was built correctly
 	assert_eq(menu.menu_items.size(), 1, "Menu should have 1 item")
 	assert_eq(menu.anchor_position, Vector2(100, 100), "Position should be set")
-
-	menu.queue_free()

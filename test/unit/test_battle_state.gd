@@ -230,7 +230,7 @@ func test_ap_range() -> void:
 	"""AP should be within -4 to +4 range per CLAUDE.md"""
 	var combatant = Combatant.new()
 	combatant.current_ap = 0
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	# gain_ap clamps to +4
 	combatant.gain_ap(10)
@@ -255,27 +255,23 @@ func test_ap_range() -> void:
 	assert_false(result, "spend_ap should fail if it would go below -4")
 	assert_gte(combatant.current_ap, -4, "AP should not go below -4")
 
-	combatant.queue_free()
-
 
 func test_defer_sets_defending() -> void:
 	"""Deferring should set is_defending to true"""
 	var combatant = Combatant.new()
 	combatant.current_ap = 0
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	assert_false(combatant.is_defending, "Should not be defending initially")
 	combatant.execute_defer()
 	assert_true(combatant.is_defending, "Defer should set is_defending to true")
-
-	combatant.queue_free()
 
 
 func test_defer_does_not_directly_grant_ap() -> void:
 	"""Deferring does not directly grant AP - natural gain is separate (in BattleManager)"""
 	var combatant = Combatant.new()
 	combatant.current_ap = 0
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	var initial_ap = combatant.current_ap
 	combatant.execute_defer()
@@ -283,18 +279,14 @@ func test_defer_does_not_directly_grant_ap() -> void:
 	# execute_defer() only sets is_defending, does not change AP
 	assert_eq(combatant.current_ap, initial_ap, "Defer should not directly change AP")
 
-	combatant.queue_free()
-
 
 func test_advance_costs_ap() -> void:
 	"""Each queued action should cost 1 AP per CLAUDE.md"""
 	var combatant = Combatant.new()
 	combatant.current_ap = 2
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	var initial_ap = combatant.current_ap
 	combatant.spend_ap(1)
 
 	assert_eq(combatant.current_ap, initial_ap - 1, "Action should cost 1 AP")
-
-	combatant.queue_free()
