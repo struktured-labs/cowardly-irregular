@@ -85,7 +85,7 @@ func test_battle_scene_signal_cleanup() -> void:
 func test_combatant_percentage_functions() -> void:
 	"""Combatant percentage functions should handle edge cases"""
 	var combatant = Combatant.new()
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	# Test with zero max_hp
 	combatant.max_hp = 0
@@ -99,13 +99,11 @@ func test_combatant_percentage_functions() -> void:
 	var mp_pct = combatant.get_mp_percentage()
 	assert_eq(mp_pct, 0.0, "Zero max_mp should return 0% not crash")
 
-	combatant.queue_free()
-
 
 func test_combatant_normal_percentage() -> void:
 	"""Combatant percentage functions work with normal values"""
 	var combatant = Combatant.new()
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	combatant.max_hp = 100
 	combatant.current_hp = 50
@@ -116,8 +114,6 @@ func test_combatant_normal_percentage() -> void:
 	combatant.current_mp = 25
 	var mp_pct = combatant.get_mp_percentage()
 	assert_eq(mp_pct, 50.0, "25/50 MP should be 50%")
-
-	combatant.queue_free()
 
 
 ## Array Bounds Tests
