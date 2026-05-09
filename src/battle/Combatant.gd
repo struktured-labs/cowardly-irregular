@@ -563,6 +563,7 @@ func to_dict() -> Dictionary:
 		"equipped_passives": equipped_passives.duplicate(),
 		"inventory": inventory.duplicate(),
 		"doom_counter": doom_counter,
+		"pinned_abilities": pinned_abilities.duplicate(),
 	}
 	# Job is a Dictionary; only its id is stable across runs (the full dict
 	# is reconstructed via JobSystem.assign_job in restore).
@@ -631,6 +632,8 @@ func from_dict(data: Dictionary) -> void:
 		inventory = data["inventory"].duplicate()
 	if data.has("doom_counter"):
 		doom_counter = data["doom_counter"]
+	if data.has("pinned_abilities"):
+		pinned_abilities = data["pinned_abilities"].duplicate()
 
 	# Resolve legacy job aliases in loaded data
 	var job_system = get_node_or_null("/root/JobSystem")
