@@ -2752,8 +2752,7 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary) -> void
 	var restored: int = caster.current_mp - before
 	print("  → %s restores %d MP" % [caster.combatant_name, restored])
 	battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color][/color]" % [caster.combatant_name, restored])
-	# Treat the heal_amount as MP for damage_dealt signal so UI shows the +MP
-	damage_dealt.emit(caster, -restored, true, "", 1.0)
+	healing_done.emit(caster, restored)
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
