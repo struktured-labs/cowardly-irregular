@@ -165,3 +165,47 @@ func test_bard_has_evolution_data() -> void:
 	assert_true(evo.has("future_targets"), "Bard evolution should have future_targets")
 	assert_true("troubadour" in evo["future_targets"], "Troubadour should be a future target")
 	assert_true("cantor" in evo["future_targets"], "Cantor should be a future target")
+
+
+## ---- Bard Free Move (Riff) ----
+
+func test_bard_has_free_move() -> void:
+	assert_true(_jobs["bard"].has("free_move"), "Bard should have a free_move spec")
+
+
+func test_bard_free_move_is_riff() -> void:
+	var fm = _jobs["bard"]["free_move"]
+	assert_eq(fm.get("type"), "ability", "Bard free_move type should be 'ability'")
+	assert_eq(fm.get("ability_id"), "riff", "Bard free_move ability_id should be 'riff'")
+	assert_eq(fm.get("label"), "Riff", "Bard free_move label should be 'Riff'")
+
+
+func test_riff_ability_is_mp_restore_type() -> void:
+	assert_true(_abilities.has("riff"), "abilities.json should have 'riff'")
+	assert_eq(_abilities["riff"].get("type"), "mp_restore",
+		"Riff ability type must be 'mp_restore' (regression: was showing as crit-damage popup)")
+
+
+func test_riff_ability_has_zero_mp_cost() -> void:
+	assert_eq(_abilities["riff"].get("mp_cost", -1), 0,
+		"Riff should cost 0 MP so Bard can always act")
+
+
+func test_riff_ability_restores_mp() -> void:
+	var mp_amount = _abilities["riff"].get("mp_amount", 0)
+	assert_gt(mp_amount, 0, "Riff should restore at least 1 MP")
+
+
+func test_mp_restore_emits_healing_done_not_damage_dealt() -> void:
+	"""Regression (2026-05-09): _execute_mp_restore_ability was emitting
+	damage_dealt(caster, -restored, true) — showed as a crit-damage popup.
+	Must emit healing_done(caster, restored) instead."""
+	var src = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var fn_idx = src.find("func _execute_mp_restore_ability")
+	assert_gt(fn_idx, -1, "_execute_mp_restore_ability must exist in BattleManager")
+	var next_fn = src.find("\nfunc ", fn_idx + 1)
+	var body = src.substr(fn_idx, next_fn - fn_idx if next_fn > fn_idx else 400)
+	assert_true(body.find("healing_done.emit") != -1,
+		"_execute_mp_restore_ability must emit healing_done (regression: was emitting damage_dealt)")
+	assert_true(body.find("damage_dealt.emit") == -1,
+		"_execute_mp_restore_ability must NOT emit damage_dealt (regression guard)")
