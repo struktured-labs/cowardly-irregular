@@ -442,6 +442,9 @@ func play_named_animation(anim_name: String, on_complete: Callable = Callable())
 		match anim_name:
 			"power_strike", "cleave", "provoke":
 				play_attack(on_complete)
+			"strike":
+				# Rogue free-move — physical attack fallback (not cast)
+				play_attack(on_complete)
 			"cast_fire", "cast_ice", "cast_lightning", "cast_fira":
 				play_cast(on_complete)
 			"heal", "raise", "buff":
@@ -454,7 +457,9 @@ func play_named_animation(anim_name: String, on_complete: Callable = Callable())
 				play_mug(on_complete)
 			"flee":
 				play_item(on_complete)
-			"battle_hymn", "lullaby", "discord", "inspiring_melody":
+			"battle_hymn", "lullaby", "discord", "inspiring_melody", "riff":
+				play_cast(on_complete)
+			"pray", "channel":
 				play_cast(on_complete)
 			"advance":
 				play_attack(on_complete)

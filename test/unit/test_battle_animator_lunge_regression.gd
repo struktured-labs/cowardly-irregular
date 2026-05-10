@@ -142,3 +142,39 @@ func test_play_named_animation_dash_alias_also_works() -> void:
 		"'dash' should also fall back to attack (artist tag alias)")
 	assert_eq(animator.sprite.animation, &"attack",
 		"play_named_animation('dash') should route to attack, not cast")
+
+
+func test_strike_falls_back_to_attack_not_cast() -> void:
+	"""Regression (2026-05-10): Rogue's 'strike' free-move animation fell through
+	to the default _: branch → play_cast(), so the Rogue showed a magic casting
+	animation on physical attacks. 'strike' must route to play_attack()."""
+	var animator = _make_animator_with_anims(["idle", "attack", "cast"])
+	# No dedicated "strike" animation registered
+
+	animator.play_named_animation("strike", func(): pass)
+	assert_true(animator.is_playing, "'strike' fallback should start playing")
+	assert_eq(animator.sprite.animation, &"attack",
+		"'strike' must fall back to attack animation, not cast (Rogue free-move regression)")
+
+
+func test_pray_and_channel_fall_back_to_cast() -> void:
+	"""Cleric 'pray' and Mage 'channel' free-move animations should fall back
+	to cast (not attack) when no dedicated animation exists."""
+	var animator_pray = _make_animator_with_anims(["idle", "attack", "cast"])
+	animator_pray.play_named_animation("pray", func(): pass)
+	assert_eq(animator_pray.sprite.animation, &"cast",
+		"'pray' should fall back to cast animation")
+
+	var animator_channel = _make_animator_with_anims(["idle", "attack", "cast"])
+	animator_channel.play_named_animation("channel", func(): pass)
+	assert_eq(animator_channel.sprite.animation, &"cast",
+		"'channel' should fall back to cast animation")
+
+
+func test_riff_falls_back_to_cast() -> void:
+	"""Bard 'riff' free-move animation should fall back to cast
+	(musical performance = cast-like) when no dedicated animation exists."""
+	var animator = _make_animator_with_anims(["idle", "attack", "cast"])
+	animator.play_named_animation("riff", func(): pass)
+	assert_eq(animator.sprite.animation, &"cast",
+		"'riff' should fall back to cast animation (Bard free-move)")
