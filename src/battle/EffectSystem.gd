@@ -146,8 +146,9 @@ func _get_effect_type_for_ability(ability_id: String) -> EffectType:
 	if ability_id in ["cure", "cura", "curaga", "heal", "regen"]:
 		return EffectType.HEAL
 
-	# MP restore abilities
-	if ability_id in ["ether", "hi_ether", "mega_ether", "elixir", "megalixir"]:
+	# MP restore abilities (items + free-move channel/pray/riff)
+	if ability_id in ["ether", "hi_ether", "mega_ether", "elixir", "megalixir",
+			"channel", "pray", "riff"]:
 		return EffectType.MP_RESTORE
 
 	# Buff abilities
