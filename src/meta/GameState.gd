@@ -148,7 +148,15 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	if save_data.has("party_gold"):
 		party_gold = save_data["party_gold"]
 	if save_data.has("player_party"):
-		player_party = save_data["player_party"].duplicate(true)
+		# JSON.parse returns generic Array — direct assignment to
+		# Array[Dictionary] silently fails (SCRIPT ERROR, no crash) and
+		# leaves player_party at its default []. (2026-05-12 audit:
+		# same root cause as the Combatant.from_dict typed-array fix.)
+		var typed_party: Array[Dictionary] = []
+		for entry in save_data["player_party"]:
+			if entry is Dictionary:
+				typed_party.append(entry.duplicate(true))
+		player_party = typed_party
 	if save_data.has("party_leader_index"):
 		party_leader_index = save_data["party_leader_index"]
 	if save_data.has("game_constants"):
@@ -156,7 +164,10 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	if save_data.has("meta_features"):
 		meta_features = save_data["meta_features"].duplicate()
 	if save_data.has("corruption_effects"):
-		corruption_effects = save_data["corruption_effects"].duplicate()
+		var typed_corruption: Array[String] = []
+		for ce in save_data["corruption_effects"]:
+			typed_corruption.append(str(ce))
+		corruption_effects = typed_corruption
 	if save_data.has("current_world"):
 		current_world = save_data["current_world"]
 	if save_data.has("worlds_unlocked"):

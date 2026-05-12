@@ -147,3 +147,35 @@ func test_from_dict_with_empty_dict_does_not_crash() -> void:
 	s.from_dict({})
 	# Reaching this line without an exception is the test.
 	assert_true(true, "from_dict({}) survived without crash")
+
+
+func test_typed_array_fields_survive_json_roundtrip() -> void:
+	# Regression (2026-05-12): player_party (Array[Dictionary]) and
+	# corruption_effects (Array[String]) had the JSON-roundtrip silent
+	# loss bug. JSON.parse returns generic Array; assigning to a typed
+	# Array[T] is a SCRIPT ERROR that silently keeps the default [].
+	# This test mirrors the actual SaveSystem path (Dict → JSON → Dict).
+	var s = _make_state()
+	var party: Array[Dictionary] = [
+		{"name": "Hero", "job": "fighter", "job_level": 5},
+		{"name": "Cleric", "job": "cleric", "job_level": 3},
+	]
+	s.player_party = party
+	var ce: Array[String] = ["screen_flicker", "save_decay"]
+	s.corruption_effects = ce
+
+	var data = s.to_dict()
+	var json_str = JSON.stringify(data)
+	var parsed = JSON.parse_string(json_str)
+	assert_not_null(parsed, "JSON round-trip should parse cleanly")
+
+	var s2 = _make_state()
+	s2.from_dict(parsed)
+	assert_eq(s2.player_party.size(), 2,
+		"player_party must survive JSON round-trip (regression: silently lost)")
+	assert_eq(s2.player_party[0].get("name", ""), "Hero",
+		"player_party dict content preserved")
+	assert_eq(s2.corruption_effects.size(), 2,
+		"corruption_effects must survive JSON round-trip (regression: silently lost)")
+	assert_true("screen_flicker" in s2.corruption_effects,
+		"corruption_effects content preserved")
