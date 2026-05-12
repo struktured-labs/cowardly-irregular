@@ -70,7 +70,7 @@ func test_combatant_to_dict_includes_full_state() -> void:
 		"equipped_weapon", "equipped_armor", "equipped_accessory",
 		"secondary_job_id", "learned_abilities", "learned_passives",
 		"equipped_passives", "inventory", "doom_counter",
-		"pinned_abilities",
+		"pinned_abilities", "recent_abilities",
 		"status_effects", "permanent_injuries", "job_profiles"]:
 		assert_true(d.has(key),
 			"Combatant.to_dict() must include '%s' (was missing pre-fix)" % key)
@@ -124,6 +124,117 @@ func test_combatant_from_dict_round_trip_restores_state() -> void:
 	assert_eq(b.learned_abilities.size(), 1)
 	assert_eq(b.equipped_passives.size(), 1)
 	assert_eq(b.inventory.get("potion", 0), 3)
+	a.queue_free()
+	b.queue_free()
+
+
+func test_combatant_recent_abilities_persists_across_save_load() -> void:
+	# Regression (2026-05-12): recent_abilities (MRU ability list) was
+	# missing from to_dict/from_dict, so the player's MRU quick-slot
+	# state was lost every save — sibling bug to the pinned_abilities
+	# fix in 24e4b8c.
+	var a = Combatant.new()
+	a.combatant_name = "MRUTest"
+	a.record_ability_use("fire")
+	a.record_ability_use("cure")
+	# After 2 records with MRU_SIZE=2, list should be ["cure", "fire"]
+	# (most-recent-first ordering).
+	assert_eq(a.recent_abilities.size(), 2,
+		"setup: recent_abilities should have 2 entries after 2 record_ability_use calls")
+	assert_eq(a.recent_abilities[0], "cure",
+		"setup: most recent use should be at index 0")
+
+	var dict = a.to_dict()
+	assert_true(dict.has("recent_abilities"),
+		"to_dict() must include recent_abilities key (regression: pre-fix it was missing)")
+	assert_eq(dict["recent_abilities"].size(), 2,
+		"serialized recent_abilities must preserve count")
+
+	var b = Combatant.new()
+	b.from_dict(dict)
+	assert_eq(b.recent_abilities.size(), 2,
+		"restored Combatant must have 2 MRU entries (regression: lost on load)")
+	assert_eq(b.recent_abilities[0], "cure",
+		"MRU order must survive round-trip (most-recent-first)")
+	assert_eq(b.recent_abilities[1], "fire",
+		"MRU order must survive round-trip (older entry at index 1)")
+	a.queue_free()
+	b.queue_free()
+
+
+func test_typed_array_fields_survive_json_roundtrip() -> void:
+	# Bigger regression class (2026-05-12): JSON.parse returns generic
+	# Array, and Combatant.from_dict had .duplicate() assignments to
+	# typed Array[String] / Array[Dictionary] fields which silently
+	# failed (SCRIPT ERROR, no crash — fields stay default []).
+	# This test covers ALL typed-array fields with explicit element
+	# coercion in from_dict, not just recent_abilities.
+	var a = Combatant.new()
+	a.combatant_name = "TypedArrayTest"
+	a.status_effects.append("poison")
+	a.status_effects.append("burning")
+	a.learned_passives.append("hp_boost")
+	a.equipped_passives.append("hp_boost")
+	a.pinned_abilities.append("fire")
+	a.record_ability_use("cure")
+	a.permanent_injuries.append({"name": "scarred", "stat": "speed", "modifier": -2})
+
+	# Simulate the actual save path: dict → JSON → dict.
+	var dict = a.to_dict()
+	var json_str = JSON.stringify(dict)
+	var parsed = JSON.parse_string(json_str)
+
+	var b = Combatant.new()
+	b.from_dict(parsed)
+
+	# Each typed-array field must survive the round-trip.
+	assert_eq(b.status_effects.size(), 2,
+		"status_effects must survive JSON round-trip (regression: silently lost via Array→Array[String] assignment)")
+	assert_true("poison" in b.status_effects,
+		"status_effects content preserved")
+	assert_eq(b.learned_passives.size(), 1,
+		"learned_passives must survive JSON round-trip")
+	assert_eq(b.equipped_passives.size(), 1,
+		"equipped_passives must survive JSON round-trip")
+	assert_eq(b.pinned_abilities.size(), 1,
+		"pinned_abilities must survive JSON round-trip")
+	assert_eq(b.recent_abilities.size(), 1,
+		"recent_abilities must survive JSON round-trip")
+	assert_eq(b.permanent_injuries.size(), 1,
+		"permanent_injuries must survive JSON round-trip (Array[Dictionary])")
+	assert_eq(b.permanent_injuries[0].get("stat", ""), "speed",
+		"permanent_injuries dict content preserved")
+
+	a.queue_free()
+	b.queue_free()
+
+
+func test_combatant_recent_abilities_survives_json_roundtrip() -> void:
+	# JSON.stringify/parse strips typed-array information — the loaded
+	# Array is generic, not Array[String]. from_dict must explicitly
+	# coerce element types or downstream `recent_abilities.has(x)`
+	# checks may fail unexpectedly. This test mirrors the save file
+	# round-trip path (Dict → JSON → Dict).
+	var a = Combatant.new()
+	a.combatant_name = "JSONTest"
+	a.record_ability_use("haste")
+	a.record_ability_use("slow")
+
+	# Simulate the save file path: dict → JSON string → parsed dict.
+	var dict = a.to_dict()
+	var json_str = JSON.stringify(dict)
+	var parsed = JSON.parse_string(json_str)
+	assert_not_null(parsed, "JSON round-trip should parse cleanly")
+
+	var b = Combatant.new()
+	b.from_dict(parsed)
+	assert_eq(b.recent_abilities.size(), 2,
+		"recent_abilities must survive JSON round-trip")
+	# The critical type-coercion check: typed-array contract preserved.
+	assert_true(b.recent_abilities is Array,
+		"recent_abilities should remain an Array post-restore")
+	assert_eq(b.recent_abilities[0], "slow",
+		"MRU values must survive JSON round-trip")
 	a.queue_free()
 	b.queue_free()
 

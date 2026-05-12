@@ -564,6 +564,7 @@ func to_dict() -> Dictionary:
 		"inventory": inventory.duplicate(),
 		"doom_counter": doom_counter,
 		"pinned_abilities": pinned_abilities.duplicate(),
+		"recent_abilities": recent_abilities.duplicate(),
 	}
 	# Job is a Dictionary; only its id is stable across runs (the full dict
 	# is reconstructed via JobSystem.assign_job in restore).
@@ -602,10 +603,25 @@ func from_dict(data: Dictionary) -> void:
 		job_level = data["job_level"]
 	if data.has("job_exp"):
 		job_exp = data["job_exp"]
+	# JSON-roundtrip note: JSON.parse returns generic Array, not Array[T].
+	# Assigning to a typed Array[T] field silently fails with a SCRIPT
+	# ERROR — the field keeps its prior value (default []). For each
+	# Array[String] / Array[Dictionary] field below we coerce element
+	# types explicitly via local typed-array build → assign. (2026-05-12:
+	# parity audit found status_effects, permanent_injuries,
+	# learned_passives, equipped_passives, pinned_abilities, and
+	# recent_abilities were all silently lost on save/load.)
 	if data.has("status_effects"):
-		status_effects = data["status_effects"].duplicate()
+		var typed_status: Array[String] = []
+		for s in data["status_effects"]:
+			typed_status.append(str(s))
+		status_effects = typed_status
 	if data.has("permanent_injuries"):
-		permanent_injuries = data["permanent_injuries"].duplicate()
+		var typed_injuries: Array[Dictionary] = []
+		for inj in data["permanent_injuries"]:
+			if inj is Dictionary:
+				typed_injuries.append(inj.duplicate(true))
+		permanent_injuries = typed_injuries
 	if data.has("is_alive"):
 		is_alive = data["is_alive"]
 	if data.has("learned_abilities"):
@@ -625,15 +641,29 @@ func from_dict(data: Dictionary) -> void:
 	if data.has("secondary_job_id"):
 		secondary_job_id = data["secondary_job_id"]
 	if data.has("learned_passives"):
-		learned_passives = data["learned_passives"].duplicate()
+		var typed_lp: Array[String] = []
+		for p in data["learned_passives"]:
+			typed_lp.append(str(p))
+		learned_passives = typed_lp
 	if data.has("equipped_passives"):
-		equipped_passives = data["equipped_passives"].duplicate()
+		var typed_ep: Array[String] = []
+		for p in data["equipped_passives"]:
+			typed_ep.append(str(p))
+		equipped_passives = typed_ep
 	if data.has("inventory"):
 		inventory = data["inventory"].duplicate()
 	if data.has("doom_counter"):
 		doom_counter = data["doom_counter"]
 	if data.has("pinned_abilities"):
-		pinned_abilities = data["pinned_abilities"].duplicate()
+		var typed_pinned: Array[String] = []
+		for ability_id in data["pinned_abilities"]:
+			typed_pinned.append(str(ability_id))
+		pinned_abilities = typed_pinned
+	if data.has("recent_abilities"):
+		var typed_recent: Array[String] = []
+		for ability_id in data["recent_abilities"]:
+			typed_recent.append(str(ability_id))
+		recent_abilities = typed_recent
 
 	# Resolve legacy job aliases in loaded data
 	var job_system = get_node_or_null("/root/JobSystem")
