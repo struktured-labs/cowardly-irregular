@@ -22,16 +22,15 @@ func test_shop_scene_can_be_instantiated() -> void:
 	var ShopSceneScript = load("res://src/exploration/ShopScene.gd")
 	assert_not_null(ShopSceneScript, "ShopScene script should load")
 
-	var shop = ShopSceneScript.new()
+	var shop = autofree(ShopSceneScript.new())
 	assert_not_null(shop, "ShopScene should instantiate")
 
-	# Cleanup
-	shop.queue_free()
+
 
 
 func test_shop_scene_has_correct_enums() -> void:
 	var ShopSceneScript = load("res://src/exploration/ShopScene.gd")
-	var shop = ShopSceneScript.new()
+	var shop = autofree(ShopSceneScript.new())
 
 	# Test ShopMode enum exists
 	assert_eq(shop.ShopMode.MAIN, 0, "ShopMode.MAIN should be 0")
@@ -44,12 +43,11 @@ func test_shop_scene_has_correct_enums() -> void:
 	assert_eq(shop.ShopType.WHITE_MAGIC, 2, "ShopType.WHITE_MAGIC should be 2")
 	assert_eq(shop.ShopType.BLACKSMITH, 3, "ShopType.BLACKSMITH should be 3")
 
-	shop.queue_free()
 
 
 func test_shop_scene_setup_stores_values() -> void:
 	var ShopSceneScript = load("res://src/exploration/ShopScene.gd")
-	var shop = ShopSceneScript.new()
+	var shop = autofree(ShopSceneScript.new())
 
 	var inventory = ["potion", "hi_potion"]
 	shop.setup(shop.ShopType.ITEM, "Test Shop", inventory, null)
@@ -58,16 +56,14 @@ func test_shop_scene_setup_stores_values() -> void:
 	assert_eq(shop.shop_name, "Test Shop", "shop_name should match")
 	assert_eq(shop.shop_inventory.size(), 2, "inventory should have 2 items")
 
-	shop.queue_free()
 
 
 func test_shop_scene_emits_shop_closed_signal() -> void:
 	var ShopSceneScript = load("res://src/exploration/ShopScene.gd")
-	var shop = ShopSceneScript.new()
+	var shop = autofree(ShopSceneScript.new())
 
 	assert_has_signal(shop, "shop_closed", "ShopScene should have shop_closed signal")
 
-	shop.queue_free()
 
 
 ## VillageShop Tests
@@ -76,32 +72,29 @@ func test_village_shop_can_be_instantiated() -> void:
 	var VillageShopScript = load("res://src/exploration/VillageShop.gd")
 	assert_not_null(VillageShopScript, "VillageShop script should load")
 
-	var shop = VillageShopScript.new()
+	var shop = autofree(VillageShopScript.new())
 	assert_not_null(shop, "VillageShop should instantiate")
 
-	shop.queue_free()
 
 
 func test_village_shop_has_shop_type_enum() -> void:
 	var VillageShopScript = load("res://src/exploration/VillageShop.gd")
-	var shop = VillageShopScript.new()
+	var shop = autofree(VillageShopScript.new())
 
 	assert_eq(shop.ShopType.ITEM, 0, "VillageShop.ShopType.ITEM should be 0")
 	assert_eq(shop.ShopType.BLACKSMITH, 3, "VillageShop.ShopType.BLACKSMITH should be 3")
 
-	shop.queue_free()
 
 
 func test_village_shop_has_inventory_arrays() -> void:
 	var VillageShopScript = load("res://src/exploration/VillageShop.gd")
-	var shop = VillageShopScript.new()
+	var shop = autofree(VillageShopScript.new())
 
 	assert_gt(shop.ITEM_INVENTORY.size(), 0, "ITEM_INVENTORY should have items")
 	assert_gt(shop.BLACK_MAGIC_INVENTORY.size(), 0, "BLACK_MAGIC_INVENTORY should have items")
 	assert_gt(shop.WHITE_MAGIC_INVENTORY.size(), 0, "WHITE_MAGIC_INVENTORY should have items")
 	assert_gt(shop.BLACKSMITH_WEAPONS.size(), 0, "BLACKSMITH_WEAPONS should have items")
 
-	shop.queue_free()
 
 
 func test_village_shop_item_purchased_signal_exists() -> void:
@@ -111,7 +104,7 @@ func test_village_shop_item_purchased_signal_exists() -> void:
 	# Keep the test in pending state until purchase events get a public
 	# signal (useful for quest hooks, achievement triggers, etc.).
 	var VillageShopScript = load("res://src/exploration/VillageShop.gd")
-	var shop = VillageShopScript.new()
+	var shop = autofree(VillageShopScript.new())
 	# Sanity check — script loads and instantiates.
 	assert_not_null(shop, "VillageShop should instantiate")
 	# Document the future API expectation without failing the suite.
@@ -119,7 +112,6 @@ func test_village_shop_item_purchased_signal_exists() -> void:
 		assert_has_signal(shop, "item_purchased", "VillageShop should have item_purchased signal")
 	else:
 		pending("VillageShop.item_purchased signal not implemented yet — purchase events live in ShopScene")
-	shop.queue_free()
 
 
 ## Win98Menu Tests
@@ -128,27 +120,25 @@ func test_win98_menu_can_be_instantiated() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
 	assert_not_null(Win98MenuScript, "Win98Menu script should load")
 
-	var menu = Win98MenuScript.new()
+	var menu = autofree(Win98MenuScript.new())
 	assert_not_null(menu, "Win98Menu should instantiate")
 
-	menu.queue_free()
 
 
 func test_win98_menu_has_signals() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
-	var menu = Win98MenuScript.new()
+	var menu = autofree(Win98MenuScript.new())
 
 	assert_has_signal(menu, "item_selected", "Win98Menu should have item_selected signal")
 	assert_has_signal(menu, "menu_closed", "Win98Menu should have menu_closed signal")
 	assert_has_signal(menu, "actions_submitted", "Win98Menu should have actions_submitted signal")
 	assert_has_signal(menu, "defer_requested", "Win98Menu should have defer_requested signal")
 
-	menu.queue_free()
 
 
 func test_win98_menu_has_battle_mode_property() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
-	var menu = Win98MenuScript.new()
+	var menu = autofree(Win98MenuScript.new())
 
 	# Default should be true (battle mode enabled)
 	assert_true(menu.battle_mode, "battle_mode should default to true")
@@ -157,25 +147,23 @@ func test_win98_menu_has_battle_mode_property() -> void:
 	menu.battle_mode = false
 	assert_false(menu.battle_mode, "battle_mode should be settable to false")
 
-	menu.queue_free()
 
 
 func test_win98_menu_has_focus_mode() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
-	var menu = Win98MenuScript.new()
+	var menu = autofree(Win98MenuScript.new())
 
 	# Add to tree to trigger _ready
-	add_child(menu)
+	add_child_autofree(menu)
 
 	# Menu should be focusable after _ready
 	assert_eq(menu.focus_mode, Control.FOCUS_ALL, "Menu should have FOCUS_ALL")
 
-	menu.queue_free()
 
 
 func test_win98_menu_character_styles_exist() -> void:
 	var Win98MenuScript = load("res://src/ui/Win98Menu.gd")
-	var menu = Win98MenuScript.new()
+	var menu = autofree(Win98MenuScript.new())
 
 	assert_true(menu.CHARACTER_STYLES.has("fighter"), "Should have fighter style")
 	assert_true(menu.CHARACTER_STYLES.has("cleric"), "Should have cleric style")
@@ -183,7 +171,6 @@ func test_win98_menu_character_styles_exist() -> void:
 	assert_true(menu.CHARACTER_STYLES.has("mage"), "Should have mage style")
 	assert_true(menu.CHARACTER_STYLES.has("bard"), "Should have bard style")
 
-	menu.queue_free()
 
 
 ## Regression Tests
