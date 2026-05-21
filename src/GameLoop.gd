@@ -933,6 +933,57 @@ func _get_pending_story_cutscene() -> String:
 ## Prevents back-to-back story cutscenes on same map entry
 var _cutscene_cooldown: bool = false
 
+## Maps cutscene_id → GameState flag that marks it complete.
+## Without this, _get_pending_story_cutscene returns the same id every
+## map-enter forever (talked-to-theron + !chapter1_complete loops).
+## (Bug fix 2026-05-20: cutscene completion flags were never being set
+## by _play_story_cutscene — only chapter2 auto-set itself inline.)
+const _CUTSCENE_COMPLETION_FLAGS := {
+	# World 1 (medieval) — flags drop the "world1_" prefix
+	"world1_prologue":                  "cutscene_flag_prologue_complete",
+	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
+	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
+	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
+	# World 2 (suburban) — irregular naming mirrored from _get_pending
+	"world2_prologue":                  "cutscene_flag_world2_prologue_complete",
+	"world2_chapter1":                  "cutscene_flag_world2_chapter1_complete",
+	"world2_chapter2":                  "cutscene_flag_world2_chapter2_complete",
+	"world2_chapter3":                  "cutscene_flag_world2_chapter3_complete",
+	"world2_chapter4_garage":           "cutscene_flag_chapter4_garage_complete",
+	"world2_chapter4":                  "cutscene_flag_arbiter_suburban_intro_complete",
+	"world2_chapter5":                  "cutscene_flag_world2_chapter5_complete",
+	"world2_chapter7_infrastructure":   "cutscene_flag_chapter7_infrastructure_complete",
+	"world2_chapter8_memos":            "cutscene_flag_chapter8_memos_found",
+	"world2_chapter11":                 "cutscene_flag_chapter11_complete",
+	# World 3 (steampunk)
+	"world3_prologue":                  "cutscene_flag_world3_prologue_complete",
+	"world3_chapter1":                  "cutscene_flag_world3_chapter1_complete",
+	"world3_chapter2":                  "cutscene_flag_world3_chapter2_complete",
+	"world3_chapter3":                  "cutscene_flag_world3_chapter3_complete",
+	"world3_chapter4":                  "cutscene_flag_world3_chapter4_complete",
+	"world3_chapter5":                  "cutscene_flag_world3_chapter5_complete",
+	# World 4 (industrial)
+	"world4_prologue":                  "cutscene_flag_world4_prologue_complete",
+	"world4_chapter1":                  "cutscene_flag_world4_chapter1_complete",
+	"world4_chapter2":                  "cutscene_flag_world4_chapter2_complete",
+	"world4_chapter3":                  "cutscene_flag_world4_chapter3_complete",
+	"world4_chapter4":                  "cutscene_flag_world4_chapter4_complete",
+	"world4_chapter5":                  "cutscene_flag_world4_chapter5_complete",
+	# World 5 (digital/abstract)
+	"world5_prologue":                  "cutscene_flag_world5_prologue_complete",
+	"world5_chapter1":                  "cutscene_flag_world5_chapter1_complete",
+	"world5_chapter2":                  "cutscene_flag_world5_chapter2_complete",
+	"world5_chapter3":                  "cutscene_flag_world5_chapter3_complete",
+	"world5_chapter4":                  "cutscene_flag_world5_chapter4_complete",
+	"world5_chapter5":                  "cutscene_flag_world5_chapter5_complete",
+	# World 6 (vertex/final)
+	"world6_prologue":                  "cutscene_flag_world6_prologue_complete",
+	"world6_chapter1":                  "cutscene_flag_world6_chapter1_complete",
+	"world6_chapter2":                  "cutscene_flag_world6_chapter2_complete",
+	"world6_chapter3":                  "cutscene_flag_world6_chapter3_complete",
+}
+
+
 func _play_story_cutscene(cutscene_id: String) -> void:
 	"""Play a story cutscene, then resume exploration."""
 	current_state = LoopState.CUTSCENE
@@ -942,6 +993,13 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
 	_cutscene_director.cutscene_finished.connect(func(_id: String):
+		# Mark this story cutscene complete so it won't replay.
+		# (Bug 2026-05-20: chapter1_complete was never set, so Elder
+		# Theron's cutscene looped forever and quest log stayed stale.)
+		var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(cutscene_id, "")
+		if completion_flag != "" and GameState:
+			GameState.game_constants[completion_flag] = true
+			print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
 		_start_exploration()
 	, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)
