@@ -103,8 +103,8 @@
         "victory",
         "walk"
       ],
-      "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "artist aseprite — Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
