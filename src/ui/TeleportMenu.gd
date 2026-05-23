@@ -17,6 +17,7 @@ const DESTINATIONS: Array = [
 	{"id": "overworld",              "label": "Medieval Overworld",   "spawn": "default",     "section": "World 1: Medieval"},
 	{"id": "harmonia_village",       "label": "Harmonia Village",     "spawn": "default",     "section": ""},
 	{"id": "whispering_cave",        "label": "Whispering Cave",      "spawn": "default",     "section": ""},
+	{"id": "castle_harmonia",        "label": "Castle Harmonia (Mordaine)", "spawn": "castle_entrance", "section": ""},
 	# --- World 2: Suburban ---
 	{"id": "suburban_overworld",     "label": "Suburban Sprawl",      "spawn": "entrance",    "section": "World 2: Suburban"},
 	{"id": "maple_heights_village",  "label": "Maple Heights",        "spawn": "default",     "section": ""},

@@ -31,6 +31,7 @@ const AssemblyCoreScript = preload("res://src/maps/dungeons/AssemblyCore.gd")
 const RootProcessScript = preload("res://src/maps/dungeons/RootProcess.gd")
 const NullChamberScript = preload("res://src/maps/dungeons/NullChamber.gd")
 const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnderground.gd")
+const CastleHarmoniaScript = preload("res://src/maps/dungeons/CastleHarmonia.gd")
 const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
@@ -1632,6 +1633,8 @@ func _start_exploration() -> void:
 			exploration_scene = _create_dragon_cave_from_script(NullChamberScript)
 		"suburban_underground":
 			exploration_scene = _create_dragon_cave_from_script(SuburbanUndergroundScript)
+		"castle_harmonia":
+			exploration_scene = _create_dragon_cave_from_script(CastleHarmoniaScript)
 		"steampunk_mechanism":
 			exploration_scene = _create_dragon_cave_from_script(SteampunkMechanismScript)
 		"steampunk_overworld":
