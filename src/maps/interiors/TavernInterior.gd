@@ -794,6 +794,13 @@ func _setup_player() -> void:
 	if PlayerScript:
 		player = PlayerScript.new()
 		player.position = spawn_points["entrance"] * TILE_SIZE
+		# Tavern is an interior — use slower speed. Set the flag explicitly
+		# (matching BaseVillage:202) because OverworldPlayer's parent-name
+		# heuristic relies on MapSystem.current_map_id, which is never
+		# wired to actually track transitions — so "tavern" never matched
+		# the keyword scan and the player ran at overworld speed in here.
+		# (User feedback 2026-05-20: "character walks too fast in tavern".)
+		player._is_interior = true
 		add_child(player)
 
 
