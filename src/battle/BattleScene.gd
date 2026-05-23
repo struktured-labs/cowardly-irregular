@@ -260,6 +260,13 @@ func _ready() -> void:
 		party_style.content_margin_bottom = 8
 		party_panel.add_theme_stylebox_override("panel", party_style)
 
+	# Permanent input-hint bar at the bottom of the battle UI. Tutorial
+	# hints fire once and disappear, leaving players who missed them
+	# without any reference for the shoulder shortcuts.
+	# (User feedback 2026-05-20: "I dont know what button defers
+	# (besides the menu option)".)
+	_build_input_hint_bar()
+
 	# Connect to BattleManager signals (CTB system)
 	BattleManager.battle_started.connect(_on_battle_started)
 	BattleManager.battle_ended.connect(_on_battle_ended)
@@ -1287,6 +1294,51 @@ func _show_hint(hint_id: String, text: String) -> void:
 		return
 	_hints_shown[hint_id] = true
 	log_message("[color=gray][i]Tip: %s[/i][/color]" % text)
+
+
+func _build_input_hint_bar() -> void:
+	"""Permanent input-hint bar at the bottom-center of the battle UI.
+	   Shows L1/R1 shoulder shortcuts so players who missed the
+	   transient tutorial hint still know how to Defer/Advance."""
+	var ui_root := get_node_or_null("UI")
+	if not ui_root:
+		return
+
+	var hint_panel := PanelContainer.new()
+	hint_panel.name = "InputHintBar"
+	hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Anchor bottom-center
+	hint_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM, true)
+	hint_panel.offset_left = -260
+	hint_panel.offset_right = 260
+	hint_panel.offset_top = -34
+	hint_panel.offset_bottom = -6
+
+	# Subtle dark style — present but not dominating.
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.06, 0.10, 0.70)
+	style.border_color = Color(0.35, 0.35, 0.50, 0.55)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	hint_panel.add_theme_stylebox_override("panel", style)
+
+	var label := Label.new()
+	label.name = "HintLabel"
+	# Keep the hint text concise; pipe-separated reads quickly.
+	# Use [L]/[R] notation that works for both gamepad (shoulder)
+	# and keyboard (L/R keys per InputMap).
+	label.text = "[L] Defer  ·  [R] Advance  ·  [+/-] Speed  ·  [Select] Auto"
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95, 0.95))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint_panel.add_child(label)
+
+	ui_root.add_child(hint_panel)
 
 
 func enable_autogrind_console() -> void:
