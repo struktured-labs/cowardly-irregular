@@ -1358,6 +1358,12 @@ func enable_autogrind_console() -> void:
 	if turn_info and is_instance_valid(turn_info.get_parent()):
 		turn_info.get_parent().visible = false
 
+	# Hide the input hint bar — it advertises shortcuts that don't
+	# apply during the autogrind autopilot (player isn't selecting).
+	var hint = get_node_or_null("UI/InputHintBar")
+	if hint and is_instance_valid(hint):
+		hint.visible = false
+
 	var log_panel = get_node_or_null("UI/BattleLogPanel")
 	if not log_panel:
 		return
