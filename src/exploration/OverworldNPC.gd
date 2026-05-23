@@ -47,8 +47,14 @@ const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 ## Visual
 var sprite: Sprite2D
 var name_label: Label
+# Legacy local dialogue UI (kept as fallback only — production path uses
+# NPCDialogue/CutsceneDialogue, which is CanvasLayer-anchored and avoids
+# the screen-edge cut-off bug the old Node2D-relative panel caused).
+# (User feedback 2026-05-20: "dialogue boxes get cut off near edges of
+# the screen in the village".)
 var dialogue_box: Control
 var dialogue_label: Label
+var _npc_dialogue: Node = null  # NPCDialogue instance, lazy-init
 
 ## State
 var _current_line: int = 0
@@ -692,22 +698,20 @@ func _input(event: InputEvent) -> void:
 	if not _player_nearby:
 		return
 
-	if event.is_action_pressed("ui_accept"):
-		if _is_talking:
-			_advance_dialogue()
-		else:
-			_start_dialogue()
+	# Only intercept ui_accept to OPEN dialogue. Once open, CutsceneDialogue
+	# (via NPCDialogue) handles ui_accept itself for advance/close.
+	# Defer to the next frame to avoid awaiting inside _input.
+	if event.is_action_pressed("ui_accept") and not _is_talking:
 		get_viewport().set_input_as_handled()
+		call_deferred("_start_dialogue")
 
 
 func _start_dialogue() -> void:
-	if dialogue_lines.is_empty():
+	if dialogue_lines.is_empty() or _is_talking:
 		return
 
 	_is_talking = true
 	_current_line = 0
-	dialogue_box.visible = true
-	dialogue_label.text = dialogue_lines[0]
 	dialogue_started.emit(npc_name)
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
@@ -726,20 +730,65 @@ func _start_dialogue() -> void:
 	if npc_type == "dancer":
 		start_dancing()
 
+	# Production path: delegate to NPCDialogue (CanvasLayer-anchored).
+	# Resolves both the screen-edge cut-off bug AND the gamepad-input
+	# bug (ui_accept now reaches CutsceneDialogue's _input handler
+	# without competing with NPCDialogue's nearby-NPC consumer).
+	# (User feedback 2026-05-20: "dialogue boxes get cut off near edges
+	# of the screen in the village", "gamepad doesn't advance cutscene".)
+	if not _npc_dialogue or not is_instance_valid(_npc_dialogue):
+		var NPCDialogueClass = load("res://src/cutscene/NPCDialogue.gd")
+		_npc_dialogue = NPCDialogueClass.new()
+		add_child(_npc_dialogue)
+
+	# Freeze player while talking (matching WanderingNPC behavior)
+	var player := _get_nearby_player()
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(false)
+
+	# Build dialogue lines list: speaker = npc_name, theme/portrait = npc_type.
+	var lines: Array = []
+	for line_text in dialogue_lines:
+		lines.append({
+			"speaker": npc_name,
+			"text": line_text,
+			"theme": npc_type,
+			"portrait": npc_type,
+		})
+	await _npc_dialogue.say_lines(lines)
+
+	if player and is_instance_valid(player) and player.has_method("set_can_move"):
+		player.set_can_move(true)
+
+	_end_dialogue()
+
 
 func _advance_dialogue() -> void:
+	# Retained for backward compatibility with any direct callers / tests.
+	# Production path uses NPCDialogue/CutsceneDialogue which advances
+	# internally on ui_accept.
 	_current_line += 1
 	if _current_line >= dialogue_lines.size():
 		_end_dialogue()
 	else:
-		dialogue_label.text = dialogue_lines[_current_line]
+		if dialogue_label and is_instance_valid(dialogue_label):
+			dialogue_label.text = dialogue_lines[_current_line]
 		if SoundManager:
 			SoundManager.play_ui("menu_select")
 
 
+func _get_nearby_player() -> Node:
+	"""Find the player node currently inside our trigger Area2D."""
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		return players[0]
+	return null
+
+
 func _end_dialogue() -> void:
 	_is_talking = false
-	dialogue_box.visible = false
+	if dialogue_box and is_instance_valid(dialogue_box):
+		dialogue_box.visible = false
 	_current_line = 0
 	dialogue_ended.emit(npc_name)
 	if SoundManager:
