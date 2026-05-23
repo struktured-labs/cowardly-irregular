@@ -87,6 +87,22 @@ func test_every_monster_ability_resolves_in_job_system() -> void:
 		"All monster abilities must resolve in JobSystem. Broken: %s" % str(bad.slice(0, 10)))
 
 
+func test_every_monster_has_bestiary_flavor() -> void:
+	"""Bestiary parity guard: every monster in monsters.json should have
+	a matching flavor entry in bestiary.json. Without this, the bestiary
+	UI shows a fallback (raw monster description) for any missed entry,
+	silently degrading the curated-lore experience. (2026-05-23: Mordaine
+	scaffold initially missed her bestiary entry — fixed in 075c5d1.)"""
+	var monsters = _read_json("res://data/monsters.json")
+	var bestiary = _read_json("res://data/bestiary.json")
+	var missing: Array = []
+	for mid in monsters:
+		if not bestiary.has(mid):
+			missing.append(mid)
+	assert_eq(missing.size(), 0,
+		"All monsters must have bestiary flavor entries. Missing: %s" % str(missing.slice(0, 10)))
+
+
 func test_every_monster_weakness_and_resistance_is_a_known_element() -> void:
 	"""Elemental tags drive damage modifiers — typo'd elements silently
 	don't apply the 1.5x / 0.5x / 0x multiplier."""
