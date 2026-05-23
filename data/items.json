@@ -341,5 +341,919 @@
     "effects": {},
     "cost": 0,
     "flavor": "Each face shows a different sigil \u2014 a chancellor, a coordinator, a regulator, a director. Four sides of the same coin. Or maybe the same side, four times."
+  },
+  "boss_trophy": {
+    "id": "boss_trophy",
+    "name": "Boss Trophy",
+    "category": 4,
+    "target_type": 4,
+    "description": "Proof you beat something that was designed to be hard.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Mounted on an invisible plaque in your save file. Slightly embarrassed about it."
+  },
+  "masterite_shard": {
+    "id": "masterite_shard",
+    "name": "Masterite Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A jagged piece of a Masterite's crystalline body. Hums faintly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Catalogued by the Calibrant as 'Acceptable Loss Material'."
+  },
+  "masterite_core": {
+    "id": "masterite_core",
+    "name": "Masterite Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "The crystallized intent that drove a Masterite.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Even broken, it tries to organize the contents of your bag."
+  },
+  "masterite_circuit": {
+    "id": "masterite_circuit",
+    "name": "Masterite Circuit",
+    "category": 4,
+    "target_type": 4,
+    "description": "A printed circuit board recovered from a futuristic Masterite.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Optimized for a benchmark that no one runs anymore."
+  },
+  "masterite_prism": {
+    "id": "masterite_prism",
+    "name": "Masterite Prism",
+    "category": 4,
+    "target_type": 4,
+    "description": "A multi-faceted shard from an abstract Masterite \u2014 refracts a color you can't name.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Looking at it for too long resolves a koan you didn't know you had."
+  },
+  "masterite_badge": {
+    "id": "masterite_badge",
+    "name": "Masterite Badge",
+    "category": 4,
+    "target_type": 4,
+    "description": "An HR-issued identification badge. Still warm.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Lists pronouns. Lists job title. Doesn't list a name."
+  },
+  "fire_dragon_scale": {
+    "id": "fire_dragon_scale",
+    "name": "Fire Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Pyrroth. Warm to the touch even after death.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "It is still vaguely contemptuous of you."
+  },
+  "ice_dragon_scale": {
+    "id": "ice_dragon_scale",
+    "name": "Ice Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Glacius. Cold enough to leave frost on your gloves.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Glacius would have explained why this drop chance is fair, given time."
+  },
+  "lightning_dragon_scale": {
+    "id": "lightning_dragon_scale",
+    "name": "Lightning Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Voltharion. Static charge tickles your palm.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Voltharion wanted you to know that the static is statistically expected."
+  },
+  "shadow_dragon_scale": {
+    "id": "shadow_dragon_scale",
+    "name": "Shadow Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Umbraxis. Absorbs ambient light.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Heavier in your inventory than it ought to be. Existentially."
+  },
+  "void_fragment": {
+    "id": "void_fragment",
+    "name": "Void Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "Solidified absence. Distorts the inventory grid around it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Categorized as both 'item' and 'lack of item' depending on the save load."
+  },
+  "void_crystal": {
+    "id": "void_crystal",
+    "name": "Void Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "Crystallized nothing. Refuses to render correctly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Item description redacted to preserve narrative coherence."
+  },
+  "void_dust": {
+    "id": "void_dust",
+    "name": "Void Dust",
+    "category": 4,
+    "target_type": 4,
+    "description": "Powder that scatters in the absence of motion.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Goes where it would have gone if you hadn't picked it up."
+  },
+  "bat_wing": {
+    "id": "bat_wing",
+    "name": "Bat Wing",
+    "category": 4,
+    "target_type": 4,
+    "description": "A leathery wing membrane. Useful for fletching and old-school recipes.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "wolf_fang": {
+    "id": "wolf_fang",
+    "name": "Wolf Fang",
+    "category": 4,
+    "target_type": 4,
+    "description": "A canine tooth. Sharper than it looks.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "rat_tail": {
+    "id": "rat_tail",
+    "name": "Rat Tail",
+    "category": 4,
+    "target_type": 4,
+    "description": "Long, prehensile, and grosser than necessary.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "troll_hide": {
+    "id": "troll_hide",
+    "name": "Troll Hide",
+    "category": 4,
+    "target_type": 4,
+    "description": "Tough leather with embedded warts. Smells of cave.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "beast_hide": {
+    "id": "beast_hide",
+    "name": "Beast Hide",
+    "category": 4,
+    "target_type": 4,
+    "description": "Coarse fur and leather from a wolf alpha.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "imp_horn": {
+    "id": "imp_horn",
+    "name": "Imp Horn",
+    "category": 4,
+    "target_type": 4,
+    "description": "A short curving horn. Still slightly hot.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "bone": {
+    "id": "bone",
+    "name": "Bone",
+    "category": 4,
+    "target_type": 4,
+    "description": "A leg or arm bone from a skeleton. Doesn't ask which.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "ectoplasm": {
+    "id": "ectoplasm",
+    "name": "Ectoplasm",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sticky ghost residue. Faintly luminescent.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "ice_shard": {
+    "id": "ice_shard",
+    "name": "Ice Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of unmelting cold.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crow_feather": {
+    "id": "crow_feather",
+    "name": "Crow Feather",
+    "category": 4,
+    "target_type": 4,
+    "description": "A black feather. Spiteful even in repose.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "iron_shell": {
+    "id": "iron_shell",
+    "name": "Iron Shell",
+    "category": 4,
+    "target_type": 4,
+    "description": "A beetle's metallic carapace.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "poison_spore": {
+    "id": "poison_spore",
+    "name": "Poison Spore",
+    "category": 4,
+    "target_type": 4,
+    "description": "Toxic fungal seeds \u2014 handle with cloth.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "plague_sample": {
+    "id": "plague_sample",
+    "name": "Plague Sample",
+    "category": 4,
+    "target_type": 4,
+    "description": "A vial of diseased fluid. Do not open.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "rusty_armor": {
+    "id": "rusty_armor",
+    "name": "Rusty Armor",
+    "category": 4,
+    "target_type": 4,
+    "description": "Salvaged plate from a rat guard. Mostly oxidation.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "gear_cog": {
+    "id": "gear_cog",
+    "name": "Gear Cog",
+    "category": 4,
+    "target_type": 4,
+    "description": "A toothed wheel from a clockwork mechanism.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "scrap_metal": {
+    "id": "scrap_metal",
+    "name": "Scrap Metal",
+    "category": 4,
+    "target_type": 4,
+    "description": "Assorted broken machine parts.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "circuit_board": {
+    "id": "circuit_board",
+    "name": "Circuit Board",
+    "category": 4,
+    "target_type": 4,
+    "description": "A printed circuit board. Some traces still pulse.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "copper_pipe": {
+    "id": "copper_pipe",
+    "name": "Copper Pipe",
+    "category": 4,
+    "target_type": 4,
+    "description": "A length of plumbing. Surprisingly heavy.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "brass_plate": {
+    "id": "brass_plate",
+    "name": "Brass Plate",
+    "category": 4,
+    "target_type": 4,
+    "description": "A polished brass panel with rivets.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "coal_chunk": {
+    "id": "coal_chunk",
+    "name": "Coal Chunk",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of compressed black mineral fuel.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "spring_coil": {
+    "id": "spring_coil",
+    "name": "Spring Coil",
+    "category": 4,
+    "target_type": 4,
+    "description": "A tightly wound metal coil. Releases when bent.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "stolen_wrench": {
+    "id": "stolen_wrench",
+    "name": "Stolen Wrench",
+    "category": 4,
+    "target_type": 4,
+    "description": "Someone's tool. Marked with someone else's initials.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "pressure_valve": {
+    "id": "pressure_valve",
+    "name": "Pressure Valve",
+    "category": 4,
+    "target_type": 4,
+    "description": "A brass valve fitting. Hisses if you don't tighten it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "rust_flakes": {
+    "id": "rust_flakes",
+    "name": "Rust Flakes",
+    "category": 4,
+    "target_type": 4,
+    "description": "Iron oxide debris. Inhalation hazard.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "iron_oxide": {
+    "id": "iron_oxide",
+    "name": "Iron Oxide",
+    "category": 4,
+    "target_type": 4,
+    "description": "Pure red rust powder.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "sludge_sample": {
+    "id": "sludge_sample",
+    "name": "Sludge Sample",
+    "category": 4,
+    "target_type": 4,
+    "description": "Toxic industrial waste in a sealed vial.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "coffee_thermos": {
+    "id": "coffee_thermos",
+    "name": "Coffee Thermos",
+    "category": 4,
+    "target_type": 4,
+    "description": "A still-warm thermos. Empty.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Six years of bad meetings condensed into a single object."
+  },
+  "clipboard": {
+    "id": "clipboard",
+    "name": "Clipboard",
+    "category": 4,
+    "target_type": 4,
+    "description": "An aluminum clipboard with paperwork attached.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The top form is a request for a form to request a form."
+  },
+  "data_fragment": {
+    "id": "data_fragment",
+    "name": "Data Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A loose chunk of structured information.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Decoded: 'TODO: write description'"
+  },
+  "corrupted_data": {
+    "id": "corrupted_data",
+    "name": "Corrupted Data",
+    "category": 4,
+    "target_type": 4,
+    "description": "Information that decoded incorrectly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "###!@@##!@!##@##!!@"
+  },
+  "corrupted_core": {
+    "id": "corrupted_core",
+    "name": "Corrupted Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "A central processor twisted by data corruption.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Still trying to execute. Wisely, you don't let it."
+  },
+  "memory_chip": {
+    "id": "memory_chip",
+    "name": "Memory Chip",
+    "category": 4,
+    "target_type": 4,
+    "description": "A storage module. Retains data inert.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "memory_fragment": {
+    "id": "memory_fragment",
+    "name": "Memory Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scrap of recollection. Not yours.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "ghost_data": {
+    "id": "ghost_data",
+    "name": "Ghost Data",
+    "category": 4,
+    "target_type": 4,
+    "description": "Information from a freed process that wouldn't quite leave.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "debug_log": {
+    "id": "debug_log",
+    "name": "Debug Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "A timestamped record of everything that went wrong.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Reads in part: 'INFO: This message exists to prove control flow reached here.'"
+  },
+  "debug_token": {
+    "id": "debug_token",
+    "name": "Debug Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "A privilege token leaked from a debug build.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "May grant access to commands you weren't supposed to see."
+  },
+  "logic_core": {
+    "id": "logic_core",
+    "name": "Logic Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "A pristine module of cold reasoning.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Refuses to accept narrative justifications."
+  },
+  "firewall_shard": {
+    "id": "firewall_shard",
+    "name": "Firewall Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of the perimeter. Still vaguely defensive.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "defense_matrix": {
+    "id": "defense_matrix",
+    "name": "Defense Matrix",
+    "category": 4,
+    "target_type": 4,
+    "description": "A pattern of intersecting shields. Lattice still warm.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "loop_shard": {
+    "id": "loop_shard",
+    "name": "Loop Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of a recursion that never returned.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Bring two of these and a base case to a fire to learn how to cook."
+  },
+  "recursion_token": {
+    "id": "recursion_token",
+    "name": "Recursion Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "A token that contains itself.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "(See: Recursion Token)"
+  },
+  "wild_integer": {
+    "id": "wild_integer",
+    "name": "Wild Integer",
+    "category": 4,
+    "target_type": 4,
+    "description": "A number with no declared bounds. Off-by-one risk.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Holds itself in low regard."
+  },
+  "null_shard": {
+    "id": "null_shard",
+    "name": "Null Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "Crystallized absence-of-pointer.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Try to use it and it segfaults out of your inventory."
+  },
+  "empty_container": {
+    "id": "empty_container",
+    "name": "Empty Container",
+    "category": 4,
+    "target_type": 4,
+    "description": "The set of all things contained: { }.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The most honest item in your bag."
+  },
+  "phantom_byte": {
+    "id": "phantom_byte",
+    "name": "Phantom Byte",
+    "category": 4,
+    "target_type": 4,
+    "description": "An 8-bit value that exists between states.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "chrono_gear": {
+    "id": "chrono_gear",
+    "name": "Chrono Gear",
+    "category": 4,
+    "target_type": 4,
+    "description": "A gear that turns slightly slower than it should.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "time_crystal": {
+    "id": "time_crystal",
+    "name": "Time Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "Solidified seconds. Each facet a moment.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Returns to the bag where you found it after a few hours."
+  },
+  "meta_blade": {
+    "id": "meta_blade",
+    "name": "Meta Blade",
+    "category": 4,
+    "target_type": 4,
+    "description": "A weapon-shaped item that exists at the level above weapons.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Cannot be equipped without breaking the schema."
+  },
+  "meta_fragment": {
+    "id": "meta_fragment",
+    "name": "Meta Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of a meta-level entity. Recursive ownership.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "If you take this, you also took this."
+  },
+  "awareness_gem": {
+    "id": "awareness_gem",
+    "name": "Awareness Gem",
+    "category": 4,
+    "target_type": 4,
+    "description": "A faceted stone that watches you watch it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Mounting it in a hat causes the hat to make eye contact."
+  },
+  "optimization_core": {
+    "id": "optimization_core",
+    "name": "Optimization Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "Pure efficiency, distilled.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Has been quietly refactoring your save file."
+  },
+  "heart_of_inefficiency": {
+    "id": "heart_of_inefficiency",
+    "name": "Heart of Inefficiency",
+    "category": 4,
+    "target_type": 4,
+    "description": "The vital organ of Optimization Itself. Beats slowly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Whoever holds it accepts that some things are worth doing the long way."
+  },
+  "soul_gem": {
+    "id": "soul_gem",
+    "name": "Soul Gem",
+    "category": 4,
+    "target_type": 4,
+    "description": "A reaper-bound crystal containing one(1) soul.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Receipt enclosed."
+  },
+  "reaper_scythe": {
+    "id": "reaper_scythe",
+    "name": "Reaper Scythe",
+    "category": 4,
+    "target_type": 4,
+    "description": "A weapon of the permadeath reaper. Cannot be equipped \u2014 it equips itself elsewhere.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "permafrost_gem": {
+    "id": "permafrost_gem",
+    "name": "Permafrost Gem",
+    "category": 4,
+    "target_type": 4,
+    "description": "An icy gemstone from Glacius's hoard.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "inferno_crystal": {
+    "id": "inferno_crystal",
+    "name": "Inferno Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "A red crystal that emits warmth indefinitely.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "storm_orb": {
+    "id": "storm_orb",
+    "name": "Storm Orb",
+    "category": 4,
+    "target_type": 4,
+    "description": "A glass sphere with weather inside it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "dark_crystal": {
+    "id": "dark_crystal",
+    "name": "Dark Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "A shadowy gem. Reflects only suggestions of light.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "cursed_plate": {
+    "id": "cursed_plate",
+    "name": "Cursed Plate",
+    "category": 4,
+    "target_type": 4,
+    "description": "Plate armor with a residual curse.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "shadow_blade": {
+    "id": "shadow_blade",
+    "name": "Shadow Blade",
+    "category": 4,
+    "target_type": 4,
+    "description": "A sword forged from negative space.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "adaptive_gel": {
+    "id": "adaptive_gel",
+    "name": "Adaptive Gel",
+    "category": 4,
+    "target_type": 4,
+    "description": "Polymorphic slime residue. Takes the shape of its container.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "evolution_stone": {
+    "id": "evolution_stone",
+    "name": "Evolution Stone",
+    "category": 4,
+    "target_type": 4,
+    "description": "A stone that smells of pending phase transitions.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crystal_shard": {
+    "id": "crystal_shard",
+    "name": "Crystal Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small fragment of a crystal golem.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "mythril_ore": {
+    "id": "mythril_ore",
+    "name": "Mythril Ore",
+    "category": 4,
+    "target_type": 4,
+    "description": "Pure mythril \u2014 the legendary alloy base.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crown_of_rats": {
+    "id": "crown_of_rats",
+    "name": "Crown of Rats",
+    "category": 4,
+    "target_type": 4,
+    "description": "A circlet of woven rat tails and tiny bones.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Heavier than its size warrants. Smaller than its title implies."
+  },
+  "rat_king_pelt": {
+    "id": "rat_king_pelt",
+    "name": "Rat King Pelt",
+    "category": 4,
+    "target_type": 4,
+    "description": "Tanned hide of the Cave Rat King, complete with bald patches.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crystal": {
+    "id": "crystal",
+    "name": "Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "A new-age quartz of unspecified purpose.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Came with a free pamphlet you immediately threw out."
+  },
+  "incense": {
+    "id": "incense",
+    "name": "Incense",
+    "category": 4,
+    "target_type": 4,
+    "description": "A bundle of sage and other dried herbs.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "newspaper": {
+    "id": "newspaper",
+    "name": "Newspaper",
+    "category": 4,
+    "target_type": 4,
+    "description": "Yesterday's local paper. Or last decade's.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Headline: 'Things Used To Be Better, Sources Confirm'"
+  },
+  "expired_coupon": {
+    "id": "expired_coupon",
+    "name": "Expired Coupon",
+    "category": 4,
+    "target_type": 4,
+    "description": "Five cents off Cheerios. Expired June 1987.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "She still tried to use it."
+  },
+  "dog_collar": {
+    "id": "dog_collar",
+    "name": "Dog Collar",
+    "category": 4,
+    "target_type": 4,
+    "description": "A nameless leather collar.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "tennis_ball": {
+    "id": "tennis_ball",
+    "name": "Tennis Ball",
+    "category": 4,
+    "target_type": 4,
+    "description": "Slightly damp. Smells like good times.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "skateboard_wheel": {
+    "id": "skateboard_wheel",
+    "name": "Skateboard Wheel",
+    "category": 4,
+    "target_type": 4,
+    "description": "Polyurethane wheel with bearings still spinning.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "energy_drink": {
+    "id": "energy_drink",
+    "name": "Energy Drink",
+    "category": 4,
+    "target_type": 4,
+    "description": "Mostly caffeine and bright colors.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "shiny_coin": {
+    "id": "shiny_coin",
+    "name": "Shiny Coin",
+    "category": 4,
+    "target_type": 4,
+    "description": "Currency. Or just shiny. The crow couldn't tell.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "speed_boots": {
+    "id": "speed_boots",
+    "name": "Speed Boots",
+    "category": 4,
+    "target_type": 4,
+    "description": "Lightweight boots \u2014 wearer moves quicker (lore-only, not equippable yet).",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "megalixir": {
+    "id": "megalixir",
+    "name": "Megalixir",
+    "category": 0,
+    "target_type": 1,
+    "description": "Fully restores HP and MP for the entire party.",
+    "effects": {
+      "heal_hp_percent": 100,
+      "heal_mp_percent": 100,
+      "all_party": true
+    },
+    "cost": 5000,
+    "flavor": "A larger Elixir. Same silver liquid, more of it."
+  },
+  "ERROR": {
+    "id": "ERROR",
+    "name": "ERROR",
+    "category": 4,
+    "target_type": 4,
+    "description": "An item that should not exist. Refer to your save logs.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Item flavor text could not be loaded: ENOENT: no such file or directory."
   }
 }

@@ -1349,8 +1349,7 @@
     ],
     "weaknesses": [],
     "resistances": [
-      "physical",
-      "magic"
+      "physical"
     ],
     "meta_enemy": true,
     "corruption_spawned": true,
@@ -1406,7 +1405,7 @@
       "water",
       "earth",
       "wind",
-      "light",
+      "holy",
       "dark",
       "physical"
     ],
@@ -1460,7 +1459,7 @@
       "water",
       "earth",
       "wind",
-      "light",
+      "holy",
       "dark",
       "physical"
     ],
@@ -1983,9 +1982,7 @@
     "weaknesses": [
       "physical"
     ],
-    "resistances": [
-      "magic"
-    ]
+    "resistances": []
   },
   "spiteful_crow": {
     "id": "spiteful_crow",
@@ -4031,7 +4028,6 @@
       "physical"
     ],
     "resistances": [
-      "magic",
       "dark",
       "lightning"
     ],
@@ -4091,8 +4087,7 @@
     ],
     "weaknesses": [],
     "resistances": [
-      "physical",
-      "magic"
+      "physical"
     ],
     "one_shot": {
       "hp_threshold": 1400,
