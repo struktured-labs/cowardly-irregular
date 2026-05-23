@@ -1045,6 +1045,14 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 			return BattleAnimatorClass.create_goblin_sprite_frames()
 		"shadow_knight":
 			return BattleAnimatorClass.create_shadow_knight_sprite_frames()
+		"chancellor_mordaine":
+			# Placeholder: reuse shadow_knight humanoid silhouette until
+			# an artist sheet lands. Mordaine is a sorceress-usurper —
+			# shadow_knight is the closest humanoid in MonsterSprites
+			# (dark robes, vaguely armored). Falling back to slime via
+			# the default branch would be visually nonsensical for the
+			# W1 final boss. Re-tag for artist replacement: tier T1.
+			return BattleAnimatorClass.create_shadow_knight_sprite_frames()
 		"cave_troll":
 			return BattleAnimatorClass.create_cave_troll_sprite_frames()
 		"cave_rat_king":
