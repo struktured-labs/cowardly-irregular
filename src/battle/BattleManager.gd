@@ -2151,15 +2151,23 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		if turbo_mode:
 			await get_tree().process_frame
 		else:
-			await get_tree().create_timer(0.5).timeout  # Time for animation
+			# Time for animation — scale by Engine.time_scale so 2x/4x
+			# battle speed actually feels 2x/4x. Without this scaling,
+			# the 500ms gap persists at every speed, making fast-mode
+			# feel "weirdly paused" between Advance sub-actions.
+			# (User feedback 2026-05-20: "why is there a weird pause
+			# in between turns in the battle?")
+			var speed_scale_sub = Engine.time_scale if Engine.time_scale > 0 else 1.0
+			await get_tree().create_timer(0.5 / speed_scale_sub).timeout
 		if not is_instance_valid(self):
 			return
 
-	# Continue to next action
+	# Continue to next action — same scaling fix as the inner loop above.
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		await get_tree().create_timer(0.5).timeout
+		var speed_scale_post = Engine.time_scale if Engine.time_scale > 0 else 1.0
+		await get_tree().create_timer(0.5 / speed_scale_post).timeout
 	if not is_instance_valid(self):
 		return
 	if _check_victory_conditions():
