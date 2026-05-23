@@ -32,6 +32,13 @@ var overworld_exit_map: String = "overworld"
 ## Optional: story flag and world to unlock on boss defeat (empty = no world unlock)
 var unlock_story_flag: String = ""
 var unlock_world: int = 0
+# Optional list of cutscene_flag_* constants to set on boss defeat. Distinct
+# from boss_flag_key (which writes to player_party[0].dungeon_flags) — these
+# go into GameState.game_constants which is what _get_pending_story_cutscene
+# reads. Required for story-gate flags like cutscene_flag_world1_mordaine_defeated.
+# (2026-05-23: identified after Mordaine scaffold; rat king's WhisperingCave
+# uses a custom pending_boss_defeat spec to bridge the same gap.)
+var defeat_cutscene_flags: Array[String] = []
 
 ## Override in subclass: floor number -> Array of ASCII rows (20 chars × 16 rows)
 var floor_layouts: Dictionary = {}
@@ -375,6 +382,11 @@ func _trigger_boss_battle() -> void:
 	}
 	if unlock_story_flag != "":
 		spec["story_flags"].append(unlock_story_flag)
+	# Push any subclass-declared cutscene_flag_* constants into the
+	# game_constants write set so story-cutscene gates trigger on defeat.
+	for cf in defeat_cutscene_flags:
+		if cf != "":
+			spec["constants"].append(cf)
 	if unlock_world > 0:
 		spec["unlock_world"] = true
 		spec["unlock_world_target"] = unlock_world

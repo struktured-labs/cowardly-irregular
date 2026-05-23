@@ -27,6 +27,14 @@ func _init() -> void:
 	# pending_boss_defeat handler — matches the dragon-cave pattern.
 	unlock_world = 2
 
+	# Critical: also push `cutscene_flag_world1_mordaine_defeated` to
+	# GameState.game_constants on defeat — that's the flag the W2 prologue
+	# cutscene gate reads (line 827 of GameLoop._get_pending_story_cutscene).
+	# Without this, boss_flag_key alone writes to dungeon_flags only and the
+	# gate stays false forever (same class of bug as the rat king fix,
+	# which uses WhisperingCave's custom pending_boss_defeat spec).
+	defeat_cutscene_flags = ["cutscene_flag_world1_mordaine_defeated"]
+
 	# Single floor layout — 20×16 grid. `M`=wall (stone), `.`=floor,
 	# `T`=torch decoration, `B`=boss spawn marker, `D`=down stairs
 	# (exit back to overworld).
