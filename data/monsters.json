@@ -4321,8 +4321,8 @@
       "firaga",
       "blizzaga",
       "thundaga",
-      "drain",
-      "silence"
+      "life_drain",
+      "void_pulse"
     ],
     "exp_reward": 900,
     "gold_reward": 800,
@@ -4332,11 +4332,11 @@
         "chance": 1.0
       },
       {
-        "item": "megalixir",
-        "chance": 0.4
+        "item": "x_potion",
+        "chance": 0.5
       },
       {
-        "item": "boss_trophy",
+        "item": "calibrant_token",
         "chance": 0.25
       }
     ],
