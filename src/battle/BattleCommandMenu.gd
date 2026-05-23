@@ -182,6 +182,15 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			var item = ItemSystem.get_item(item_id)
 			if item.is_empty():
 				continue
+			# Skip META-category items in the battle Use Item menu — boss
+			# trophies / key items / lore drops aren't consumables. They
+			# stack in inventory for the bestiary / endgame economy but
+			# would be useless clutter in the in-battle list otherwise.
+			# (Added 2026-05-23 after the 90-item additions for monster
+			# drop fixes — without this filter players see every shard,
+			# scale, and token as a "use" option that does nothing.)
+			if item.get("category", -1) == ItemSystem.ItemCategory.META:
+				continue
 			var quantity = combatant.inventory[item_id]
 			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
