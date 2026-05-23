@@ -10,6 +10,11 @@ func _init() -> void:
 	cave_id = "suburban_underground"
 	boss_id = "masterite_warden_suburban"
 	boss_flag_key = "suburban_underground_cleared"
+	# Bridge to game_constants — GameLoop:840 gates world2_chapter3 on
+	# `cutscene_flag_warden_suburban_defeated`. Without this declaration
+	# the cutscene never triggers post-victory (same class as the Mordaine
+	# scaffold bug fixed in 40c54ae).
+	defeat_cutscene_flags = ["cutscene_flag_warden_suburban_defeated"]
 	total_floors = 3
 	overworld_exit_spawn = "entrance"
 	overworld_exit_map = "suburban_overworld"

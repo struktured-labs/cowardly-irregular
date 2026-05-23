@@ -16,6 +16,10 @@ func _init() -> void:
 	overworld_exit_spawn = "chemical_zone"
 	overworld_exit_map = "industrial_overworld"
 	unlock_story_flag = "w4_dungeon_cleared"
+	# Bridge to game_constants — GameLoop:876 gates world3_chapter4 on
+	# `cutscene_flag_warden_industrial_defeated`. (Same bridge as
+	# SuburbanUnderground; see 40c54ae for the underlying class of bug.)
+	defeat_cutscene_flags = ["cutscene_flag_warden_industrial_defeated"]
 
 	floor_layouts = {
 		1: [
