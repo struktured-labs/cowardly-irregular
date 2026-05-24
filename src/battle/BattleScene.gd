@@ -1911,6 +1911,15 @@ func _on_battle_started() -> void:
 			_base_music_track = "boss_rat_king"
 			SoundManager.play_music("boss_rat_king")
 			print("[MUSIC] Playing sneaky Rat King theme")
+		elif boss_type == "chancellor_mordaine":
+			# Mordaine has a dedicated track ("The Usurper's Shadow"
+			# / boss_medieval) authored for the W1 final encounter.
+			# Without this branch she would play the generic boss
+			# theme — same audio as random minibosses, blunting the
+			# climax of her cutscene-driven confrontation.
+			_base_music_track = "boss_medieval"
+			SoundManager.play_music("boss_medieval")
+			print("[MUSIC] Playing Mordaine theme — 'The Usurper's Shadow'")
 		else:
 			_base_music_track = "boss"
 			SoundManager.play_music("boss")
