@@ -312,6 +312,10 @@ func _execute_step(step: Dictionary) -> void:
 			_step_play_sfx(step)
 		"set_flag":
 			_step_set_flag(step)
+		"grant_item":
+			await _step_grant_item(step)
+		"give_item":
+			_step_give_item(step)
 		"set_background":
 			_step_set_background(step)
 		"branch":
@@ -499,6 +503,61 @@ func _step_set_flag(step: Dictionary) -> void:
 		# Store cutscene flags in game_constants for now
 		if GameState:
 			GameState.game_constants["cutscene_flag_" + flag] = value
+
+
+func _step_grant_item(step: Dictionary) -> void:
+	## Key/META item grant. Adds to inventory AND shows the gold-bordered
+	## KeyItemPopup with name + description, then awaits dismiss so the
+	## cutscene pauses on the reveal. Skipping the cutscene still adds
+	## the item but skips the popup (player explicitly asked to skip).
+	## Pre-fix this step was silently dropped — 9+ cutscene JSONs award
+	## items via grant_item but the dispatch lacked the case, so the
+	## player saw the "Take this fragment" dialogue and ended up with
+	## nothing in their inventory.
+	var item_id: String = str(step.get("item", ""))
+	if item_id == "":
+		push_warning("CutsceneDirector grant_item: missing 'item' field")
+		return
+	var quantity: int = int(step.get("quantity", 1))
+	_add_item_to_party_leader(item_id, quantity)
+	if _skipping:
+		return
+	var popup_data = {
+		"name": str(step.get("name", item_id)),
+		"description": str(step.get("description", "")),
+		"sprite_path": str(step.get("sprite_path", "")),
+	}
+	var popup = KeyItemPopup.show_item(self, popup_data)
+	if popup:
+		await popup.dismissed
+
+
+func _step_give_item(step: Dictionary) -> void:
+	## Silent item grant — used for ordinary consumables/items within a
+	## cutscene. The cutscene script provides surrounding narrative context
+	## so we don't surface a popup or toast (would clutter the scene).
+	## Pre-fix, like grant_item, this step was silently dropped — items
+	## from cutscenes (e.g. world1_orrery's fool_card + luck_charm_minor)
+	## never reached the player's inventory.
+	var item_id: String = str(step.get("item", ""))
+	if item_id == "":
+		push_warning("CutsceneDirector give_item: missing 'item' field")
+		return
+	var quantity: int = int(step.get("quantity", 1))
+	_add_item_to_party_leader(item_id, quantity)
+
+
+func _add_item_to_party_leader(item_id: String, quantity: int) -> void:
+	## Mirrors TreasureChest's convention of routing item adds through the
+	## party leader's inventory. ItemsMenu aggregates inventory across
+	## all members for display, so leader-only storage is fine. Guards
+	## absent GameLoop / empty party so test contexts that boot without
+	## the full graph don't crash.
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop and "party" in game_loop and game_loop.party.size() > 0:
+		var leader = game_loop.party[0]
+		if leader and leader.has_method("add_item"):
+			leader.add_item(item_id, quantity)
 
 
 func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
