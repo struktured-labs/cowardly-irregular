@@ -21,41 +21,7 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 # Snapshot 2026-05-25 — 29 cutscene-granted items that have no items.json
 # entry. Each is a key item or fragment from a story cutscene. Remove
 # entries from this list as items.json gets authored.
-const KNOWN_ORPHAN_ITEMS := {
-	"annotated_blueprint": true,
-	"arbiter_grade_fragment": true,
-	"arbiters_recognition": true,
-	"cogsworth_calibration_key": true,
-	"compressed_data_object": true,
-	"curator_budget_fragment": true,
-	"enchanted_sweater": true,
-	"fool_card": true,
-	"life_coaching_summary": true,
-	"luck_charm_minor": true,
-	"old_guard_tally": true,
-	"orrery_deviation_report": true,
-	"orrery_pendant": true,
-	"tempo_rush_fragment": true,
-	"tempos_quarry": true,
-	"the_carried_flame": true,
-	"warden_routine_fragment": true,
-	"world3_fragment_arbiter_steampunk": true,
-	"world3_fragment_curator_steampunk": true,
-	"world3_fragment_tempo_steampunk": true,
-	"world3_fragment_warden_steampunk": true,
-	"world4_fragment_arbiter_digital": true,
-	"world4_fragment_curator_digital": true,
-	"world4_fragment_tempo_digital": true,
-	"world4_fragment_warden_digital": true,
-	"world5_fragment_arbiter_abstract": true,
-	"world5_fragment_curator_abstract": true,
-	"world5_fragment_tempo_abstract": true,
-	"world5_fragment_warden_abstract": true,
-	# update_item step's transform target — currently a ghost, but the
-	# cutscene transforms fool_card → wild_card which means wild_card also
-	# needs to exist OR the transform writes a ghost over a ghost.
-	"wild_card": true,
-}
+const KNOWN_ORPHAN_ITEMS := {}
 
 
 func _read_text(path: String) -> String:

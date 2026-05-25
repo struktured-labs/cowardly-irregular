@@ -1246,6 +1246,306 @@
     "cost": 5000,
     "flavor": "A larger Elixir. Same silver liquid, more of it."
   },
+  "fool_card": {
+    "id": "fool_card",
+    "name": "Fool Card",
+    "category": 4,
+    "target_type": 4,
+    "description": "A tarot card from Madame Orrery's deck. Gains a mark each world she finds you in.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Fool. The beginning of a journey before the traveler knows what kind of journey it is. The card you give someone who doesn't know enough yet to be afraid."
+  },
+  "wild_card": {
+    "id": "wild_card",
+    "name": "Wild Card",
+    "category": 4,
+    "target_type": 4,
+    "description": "What the Fool Card became, once all five marks had rearranged themselves into the same symbol.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The symbol the Calibrant had used to sign their work across six worlds and however many years. The card you carry when the building is done and the question is still open."
+  },
+  "luck_charm_minor": {
+    "id": "luck_charm_minor",
+    "name": "Minor Luck Charm",
+    "category": 4,
+    "target_type": 4,
+    "description": "A chip of polished amber with something suspended inside it that isn't quite visible.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Given by a fortune teller who closed her wagon door behind her as the party walked away. When they looked back, the wagon had not moved. It was simply less there than it had been."
+  },
+  "orrery_pendant": {
+    "id": "orrery_pendant",
+    "name": "Orrery's Pendant",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small disc strung on cord, carried across six worlds before it was given. Lets you hear what the Masterites weren't allowed to say.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Everyone deserves to finish what they were saying. Even if it took defeating them first to make enough quiet."
+  },
+  "orrery_deviation_report": {
+    "id": "orrery_deviation_report",
+    "name": "Orrery's Deviation Report",
+    "category": 4,
+    "target_type": 4,
+    "description": "Folded notes in Madame Orrery's hand. Observations from worlds the Calibrant had not designed her to visit.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "She had been writing it for some time. The lamp cast the same shadow it always cast, in a room that had the quality of a place someone had lived in entirely through the act of noticing."
+  },
+  "old_guard_tally": {
+    "id": "old_guard_tally",
+    "name": "Old Guard Tally",
+    "category": 4,
+    "target_type": 4,
+    "description": "A fragment of the Warden's memory, crystallized in stone. Warm to the touch. Someone is still counting.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Thirty-seven turned back. One got through. The tally now reads thirty-eight, and the hand that keeps the count is no longer the one that started it."
+  },
+  "tempos_quarry": {
+    "id": "tempos_quarry",
+    "name": "Tempo's Quarry",
+    "category": 4,
+    "target_type": 4,
+    "description": "A calling card, worn at the edges. The Tempo's mark. The Tempo of the Mainspring has additional dialogue if this is in inventory.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Two words, in a slanted hand that enjoyed itself while writing: Good run."
+  },
+  "arbiters_recognition": {
+    "id": "arbiters_recognition",
+    "name": "Arbiter's Recognition",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of steel that still holds the shape of a blade. The Arbiter's final assessment, material form.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Measured. Found sufficient. The steel remembers the measurement the way a wound remembers the knife."
+  },
+  "the_carried_flame": {
+    "id": "the_carried_flame",
+    "name": "The Carried Flame",
+    "category": 4,
+    "target_type": 4,
+    "description": "A vial of something warm. The Curator's handwriting on the label.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Lit before we arrived. The Curator did not say who lit it. The Curator did not, at the end, say much of anything."
+  },
+  "annotated_blueprint": {
+    "id": "annotated_blueprint",
+    "name": "Annotated Blueprint",
+    "category": 4,
+    "target_type": 4,
+    "description": "A schematic for one of the Calibrant's designs, with margin notes added by a hand that was not on the original drafting team.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Calibrant's lines are precise. The annotations beside them are looser, faster, made by someone who had been reading too long and finally had to argue."
+  },
+  "cogsworth_calibration_key": {
+    "id": "cogsworth_calibration_key",
+    "name": "Cogsworth Calibration Key",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small brass key cut to fit a mechanism that exists somewhere in Cogsworth Junction. Madame Orrery did not say which mechanism.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The teeth of the key are not symmetrical. The asymmetry is the point. Whatever it opens was designed to refuse the obvious keys first."
+  },
+  "compressed_data_object": {
+    "id": "compressed_data_object",
+    "name": "Compressed Data Object",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small dense shard of stored signal. The kind of file you put somewhere the monitors don't reach.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "When you hold it close to your ear, you can almost hear what's inside it. When you stop holding it close to your ear, you wonder if you wanted to."
+  },
+  "enchanted_sweater": {
+    "id": "enchanted_sweater",
+    "name": "Enchanted Sweater",
+    "category": 4,
+    "target_type": 4,
+    "description": "A sweater knitted with a pattern that doesn't quite repeat. Warm. Mildly itchy in the way that earnest gifts often are.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Someone's grandmother made this. Not your grandmother — someone's. Whoever wears it feels, for reasons they can't articulate, that they should call home."
+  },
+  "life_coaching_summary": {
+    "id": "life_coaching_summary",
+    "name": "Life Coaching Summary",
+    "category": 4,
+    "target_type": 4,
+    "description": "A printed handout in friendly serif font: bullet points about goals, accountability, and one thing labeled 'next steps.' Madame Orrery's signature is at the bottom in a hand much older than the typography suggests.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Section 3 says 'Visualize the version of yourself who has already done it.' Section 4 is blank, except for a small handwritten note: 'Section 4 is for you.'"
+  },
+  "warden_routine_fragment": {
+    "id": "warden_routine_fragment",
+    "name": "Routine Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A laminated wallet card from the Warden of Routine. Lists the HOA bylaws on one side and a phone number on the other. Neither has been current for some time.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Bylaw 14.2: 'No deviations from the published schedule shall be tolerated.' Bylaw 14.3 (handwritten, smaller): 'Deviations may, however, be observed.'"
+  },
+  "tempo_rush_fragment": {
+    "id": "tempo_rush_fragment",
+    "name": "Rush Hour Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A snapped piece of vinyl from the Tempo of the Rush Hour's clipboard. Still smells faintly of motor exhaust and burnt coffee.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The fragment shows the start of a route: 'Maple to Eldercrest, left on Birch, hold for the school crossing, do not stop at the —' and then the cut. There was always supposed to be more."
+  },
+  "arbiter_grade_fragment": {
+    "id": "arbiter_grade_fragment",
+    "name": "Grade Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A torn corner of a report card. The Arbiter of the Grade's red pen left a mark that has not faded. The grade itself is illegible.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "There is a comment in the margin: 'Shows potential.' Underneath, in different ink: 'Does not apply themselves.' The two notes are in the same handwriting."
+  },
+  "curator_budget_fragment": {
+    "id": "curator_budget_fragment",
+    "name": "Budget Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A page torn from the Curator of the Budget's spreadsheet binder. Columns of figures, three of which are circled.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The circled rows are: groceries, gas, and a line item labeled 'unforeseen.' The Curator did not believe in 'unforeseen,' which made it the most important line on the page."
+  },
+  "world3_fragment_warden_steampunk": {
+    "id": "world3_fragment_warden_steampunk",
+    "name": "Mainspring Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A brass coil from the Warden of the Mainspring's casing. Slightly warm. Still under tension, despite having nothing to wind anymore.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Warden's job was to hold the spring. The Warden held the spring for as long as the Warden was the Warden. The spring is no longer wound by the Warden. The spring is, somehow, still wound."
+  },
+  "world3_fragment_tempo_steampunk": {
+    "id": "world3_fragment_tempo_steampunk",
+    "name": "Escapement Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single tooth from the Tempo of the Mainspring's escapement wheel. Each tooth was a heartbeat. This one was the last one before the gear stopped.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Tick. The fragment does not tick anymore. The not-ticking is louder than the ticking ever was."
+  },
+  "world3_fragment_arbiter_steampunk": {
+    "id": "world3_fragment_arbiter_steampunk",
+    "name": "Pressure Gauge Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "The needle from a pressure gauge calibrated to enforce a tolerance the Arbiter would not tolerate exceeded.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The needle is stuck at the red line. It has been stuck at the red line for some time. The gauge has not yet decided whether this is a measurement or a statement."
+  },
+  "world3_fragment_curator_steampunk": {
+    "id": "world3_fragment_curator_steampunk",
+    "name": "Steam Ledger Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A water-stained page from the Curator's pressure-and-consumption ledger. The figures are correct. The figures have always been correct.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Column 1: pressure in. Column 2: pressure out. Column 3: where the missing pressure went. Column 3 is blank, except at the bottom, where the Curator wrote 'noted' in their own hand."
+  },
+  "world4_fragment_warden_digital": {
+    "id": "world4_fragment_warden_digital",
+    "name": "Firewall Rule Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single rule file extracted from the Warden of the Firewall. The last entry is unfinished. She stopped writing mid-word.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "ALLOW... the line ends there. The Warden had been writing ALLOW for a long time, and the rules they had been writing had been refusing more than they allowed. The cursor blinks where the next character was supposed to be."
+  },
+  "world4_fragment_tempo_digital": {
+    "id": "world4_fragment_tempo_digital",
+    "name": "Clock Cycle Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single oscillation pulled from the Tempo of the Clock Cycle's signal. The pulse is preserved, but it no longer drives anything.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Held in the hand it has no weight. Held against the ear it has no sound. Held against the wrist it is the small shape of a heartbeat the body knows it is not having."
+  },
+  "world4_fragment_arbiter_digital": {
+    "id": "world4_fragment_arbiter_digital",
+    "name": "Benchmark Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A snippet of the Arbiter of the Benchmark's performance log. The numbers are measurements of measurements. They have always been measurements of measurements.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The last line in the log: 'Pass.' The first line in the log: 'What does pass mean.' Between them are eight thousand intermediate readings, all of which were the Arbiter trying to find out."
+  },
+  "world4_fragment_curator_digital": {
+    "id": "world4_fragment_curator_digital",
+    "name": "Memory Pool Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small dense block from the Curator of the Memory Pool's allocation table. Contains a region of memory that was once assigned and has not yet been freed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Curator did not deallocate it. The Curator had reasons. The Curator's reasons were not written anywhere — they were stored, instead, in the not-being-freed of this block."
+  },
+  "world5_fragment_warden_abstract": {
+    "id": "world5_fragment_warden_abstract",
+    "name": "Form Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A shape that used to be a wall. It is no longer that. It is not yet certain what it is instead.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Warden of Form held the shape. The shape was the holding. When the holding ended, the shape did not collapse — it simply began considering its options. This fragment is one of the options it has not yet chosen."
+  },
+  "world5_fragment_tempo_abstract": {
+    "id": "world5_fragment_tempo_abstract",
+    "name": "Sequence Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single position taken from the Tempo of Sequence's ordering. Was once 'after the previous one.' Is now 'in the place where the previous one no longer is.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Hold this and you will briefly remember the order of every event in your life. You will not be told which order. You will only be told that the order was there."
+  },
+  "world5_fragment_arbiter_abstract": {
+    "id": "world5_fragment_arbiter_abstract",
+    "name": "Function Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "An action taken from the Arbiter of Function's repertoire. The Arbiter no longer performs the action. The action is, regardless, still being performed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "What a function is: a promise from one side of the equation to the other. The Arbiter of Function kept the promise. The fragment is what is left of the promise after the function has ended."
+  },
+  "world5_fragment_curator_abstract": {
+    "id": "world5_fragment_curator_abstract",
+    "name": "Entropy Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small disordered region preserved in a shape that should not be able to preserve disorder. The Curator of Entropy curated it. That is the contradiction the fragment is.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The fragment grows slowly less orderly the longer it is held, then stops, then begins again. It is, at all times, in the middle of becoming what it is."
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",
