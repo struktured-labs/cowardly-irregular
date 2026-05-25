@@ -684,6 +684,19 @@ func _add_item_to_party_leader(item_id: String, quantity: int) -> void:
 	## all members for display, so leader-only storage is fine. Guards
 	## absent GameLoop / empty party so test contexts that boot without
 	## the full graph don't crash.
+	##
+	## Also surfaces a runtime push_warning when ItemSystem doesn't know
+	## about the item ID — pre-fix the item ID would silently land in
+	## inventory as a ghost entry (no name, no description, can't be
+	## used), which is the same silent-failure class as the dispatch
+	## drop the grant_item/give_item handlers were meant to fix. With
+	## the warning, devs see the orphan loud at runtime; the regression
+	## test (test_cutscene_grant_give_item_orphans) catches new orphans
+	## at test time before they reach the player.
+	if ItemSystem and ItemSystem.has_method("get_item"):
+		var existing: Dictionary = ItemSystem.get_item(item_id)
+		if existing.is_empty():
+			push_warning("CutsceneDirector: item '%s' not defined in items.json — will be a ghost inventory entry" % item_id)
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and "party" in game_loop and game_loop.party.size() > 0:
 		var leader = game_loop.party[0]
