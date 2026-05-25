@@ -69,14 +69,42 @@ func test_gamestate_has_debug_all_pcs_unlocked() -> void:
 
 
 func test_cutscene_completion_flag_map_has_5_spotlight_entries() -> void:
+	# Map keys must match the actual cutscene JSON file IDs in
+	# data/cutscenes/world1_spotlight_<job>_ch<n>.json. Without that, the
+	# cutscene_finished handler won't find a match and the reconcile
+	# fallback only fires on next NG+ / save reload.
 	var text = _read(GAMELOOP_PATH)
-	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
-		var slug = "world1_spotlight_" + job_id
+	var slugs = {
+		"fighter": "world1_spotlight_fighter_ch2",
+		"cleric": "world1_spotlight_cleric_ch1",
+		"rogue": "world1_spotlight_rogue_ch3",
+		"mage": "world1_spotlight_mage_ch3",
+		"bard": "world1_spotlight_bard_ch7",
+	}
+	for job_id in slugs:
+		var slug = slugs[job_id]
 		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
 		assert_true(text.find("\"" + slug + "\"") > -1,
 			"_CUTSCENE_COMPLETION_FLAGS must map %s (matches the cutscene JSON file ID)" % slug)
 		assert_true(text.find("\"" + flag + "\"") > -1,
 			"_CUTSCENE_COMPLETION_FLAGS must include %s flag" % flag)
+
+	# Each spotlight cutscene JSON file must exist on disk and its `id`
+	# field must match the map key. This catches the renaming class of
+	# bug that just bit us during integration (story renamed files mid-
+	# branch, my map drifted).
+	for job_id in slugs:
+		var slug = slugs[job_id]
+		var path = "res://data/cutscenes/%s.json" % slug
+		var file = FileAccess.open(path, FileAccess.READ)
+		assert_not_null(file, "cutscene file must exist: %s" % path)
+		if file:
+			var json = JSON.parse_string(file.get_as_text())
+			file.close()
+			assert_true(json is Dictionary, "cutscene JSON must parse: %s" % path)
+			if json is Dictionary:
+				assert_eq(json.get("id", ""), slug,
+					"cutscene JSON id must match file basename: %s" % path)
 
 
 func test_gameloop_has_reconcile_spotlight_locks() -> void:
