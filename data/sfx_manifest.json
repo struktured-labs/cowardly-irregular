@@ -148,22 +148,74 @@
     },
     "attack_hit": {
       "file": "assets/audio/sfx/attack_hit.ogg",
-      "prompt": "Short dull punch landing on flesh, soft meaty thud with zero metallic tone, like a fist hitting a sandbag, completely dry muffled low frequency thump, no ring no kling no brightness",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7,
-      "variants": ["attack_hit_v2", "attack_hit_v3"]
-    },
-    "attack_hit_v2": {
-      "file": "assets/audio/sfx/attack_hit_v2.ogg",
-      "prompt": "Quick heavy body blow, deep gut punch impact with a low bass thump, like a heavyweight boxer landing a body shot on padding, zero brightness zero ring, dry muffled",
+      "prompt": "Generic crispy weapon hit fallback (= attack_hit_sword). Used when no weapon_type is provided. Sharp blade landing with clean mid-range snap, no bass.",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
     },
-    "attack_hit_v3": {
-      "file": "assets/audio/sfx/attack_hit_v3.ogg",
-      "prompt": "Short blunt weapon hitting thick leather armor, dull padded smack with low frequency weight, like a club on a heavy bag, no metallic overtones, completely muted thud",
+    "attack_hit_sword": {
+      "file": "assets/audio/sfx/attack_hit_sword.ogg",
+      "prompt": "Quick sharp sword slice impact, crisp blade landing on target with satisfying anime-style hit, high-end snap, light metallic accent, NO heavy bass, very short",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7
+    },
+    "attack_hit_dagger": {
+      "file": "assets/audio/sfx/attack_hit_dagger.ogg",
+      "prompt": "Sharp whip crack impact, quick snappy leather slap with high-end pop, satisfying crispy hit with NO low-end, very short and dry, anime fighting game style",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "attack_hit_staff": {
+      "file": "assets/audio/sfx/attack_hit_staff.ogg",
+      "prompt": "Quick crunchy mid-range smack of impact, sharp punchy hit with crispy texture, satisfying combat blow with NO bass rumble and NO metallic ring, dry and punchy",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "attack_hit_axe": {
+      "file": "assets/audio/sfx/attack_hit_axe.ogg",
+      "prompt": "Heavy axe cleave impact, dense wood-splitting CHUNK with a deep thud and quick splintering crackle, satisfying chop with brief mid-low body and quick decay, NO metallic ring NO extreme bass",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.8
+    },
+    "attack_hit_piano_scythe": {
+      "file": "assets/audio/sfx/attack_hit_piano_scythe.ogg",
+      "prompt": "Quick metallic scythe swoosh slicing through air combined with a DISSONANT piano chord cluster crash, three or four close piano notes hitting together with brief ring, hybrid music-weapon attack (bard signature weapon), sharp blade cut with musical impact, NO bass rumble",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.85
+    },
+    "attack_hit_sword_crit": {
+      "file": "assets/audio/sfx/attack_hit_sword_crit.ogg",
+      "source": "ffmpeg_derive",
+      "prompt": "Sword crit = attack_hit_sword pitched up 6% + 3-tap echo tail (80/160/280ms) for sustained ring",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.0
+    },
+    "attack_hit_dagger_crit": {
+      "file": "assets/audio/sfx/attack_hit_dagger_crit.ogg",
+      "source": "ffmpeg_derive",
+      "prompt": "Dagger crit = double-tap attack_hit_dagger (2 stabs, 75ms apart) — faster/more notes",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.0
+    },
+    "attack_hit_staff_crit": {
+      "file": "assets/audio/sfx/attack_hit_staff_crit.ogg",
+      "source": "ffmpeg_derive",
+      "prompt": "Staff crit = attack_hit_staff pitched down 8% (heavier) + 3-tap echo tail (90/180/310ms) for sustained thump",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.0
+    },
+    "attack_hit_axe_crit": {
+      "file": "assets/audio/sfx/attack_hit_axe_crit.ogg",
+      "source": "ffmpeg_derive",
+      "prompt": "Axe crit = attack_hit_axe + 3-tap reverberant echo tail (100/200/350ms) for crack aftermath",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.0
+    },
+    "attack_hit_piano_scythe_crit": {
+      "file": "assets/audio/sfx/attack_hit_piano_scythe_crit.ogg",
+      "source": "ffmpeg_derive",
+      "prompt": "Piano-scythe crit = 3-layer dissonant chord (original + 18% up + 16% down) + sustained 3-tap reverb (120/240/380ms) — thicker discord, more notes",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.0
     },
     "attack_miss": {
       "file": "assets/audio/sfx/attack_miss.ogg",
@@ -173,9 +225,9 @@
     },
     "critical_hit": {
       "file": "assets/audio/sfx/critical_hit.ogg",
-      "prompt": "Explosive critical strike with deep bass slam and a sharp crack, bone-crunching power hit with reverb, devastating blow",
-      "duration_seconds": 0.7,
-      "prompt_influence": 0.5
+      "prompt": "Generic crit fallback (= attack_hit_sword_crit). Used when no weapon_type is provided. Crispy sword crit with sustained ring.",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.7
     },
     "damage_taken": {
       "file": "assets/audio/sfx/damage_taken.ogg",
