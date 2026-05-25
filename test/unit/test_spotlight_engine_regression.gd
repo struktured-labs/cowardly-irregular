@@ -71,16 +71,10 @@ func test_gamestate_has_debug_all_pcs_unlocked() -> void:
 func test_cutscene_completion_flag_map_has_5_spotlight_entries() -> void:
 	var text = _read(GAMELOOP_PATH)
 	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
-		var slug = ""
-		match job_id:
-			"cleric": slug = "world1_spotlight_cleric_ch1"
-			"fighter": slug = "world1_spotlight_fighter_ch2"
-			"rogue": slug = "world1_spotlight_rogue_ch3"
-			"mage": slug = "world1_spotlight_mage_ch3"
-			"bard": slug = "world1_spotlight_bard_ch7"
+		var slug = "world1_spotlight_" + job_id
 		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
 		assert_true(text.find("\"" + slug + "\"") > -1,
-			"_CUTSCENE_COMPLETION_FLAGS must map %s" % slug)
+			"_CUTSCENE_COMPLETION_FLAGS must map %s (matches the cutscene JSON file ID)" % slug)
 		assert_true(text.find("\"" + flag + "\"") > -1,
 			"_CUTSCENE_COMPLETION_FLAGS must include %s flag" % flag)
 

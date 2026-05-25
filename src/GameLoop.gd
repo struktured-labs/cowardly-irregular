@@ -948,13 +948,14 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	# W1 spotlight cutscenes — each completion flag also unlocks the
 	# matching PC's manual control + autobattle editor tab via
 	# _reconcile_spotlight_locks(). Trigger schedule (per cowir-story
-	# msg 1766): ch.1 cleric in village, ch.2 fighter on road north,
-	# ch.3 rogue + mage in Whispering Cave, ch.7 bard at capital.
-	"world1_spotlight_cleric_ch1":      "cutscene_flag_spotlight_unlocked_cleric",
-	"world1_spotlight_fighter_ch2":     "cutscene_flag_spotlight_unlocked_fighter",
-	"world1_spotlight_rogue_ch3":       "cutscene_flag_spotlight_unlocked_rogue",
-	"world1_spotlight_mage_ch3":        "cutscene_flag_spotlight_unlocked_mage",
-	"world1_spotlight_bard_ch7":        "cutscene_flag_spotlight_unlocked_bard",
+	# msg 1786): ch.1 cleric (village well), ch.2 fighter (road slime),
+	# ch.3 rogue + mage (Whispering Cave), ch.7 bard (capital gate).
+	# Cutscene JSON IDs match the file basenames in data/cutscenes/.
+	"world1_spotlight_cleric":          "cutscene_flag_spotlight_unlocked_cleric",
+	"world1_spotlight_fighter":         "cutscene_flag_spotlight_unlocked_fighter",
+	"world1_spotlight_rogue":           "cutscene_flag_spotlight_unlocked_rogue",
+	"world1_spotlight_mage":            "cutscene_flag_spotlight_unlocked_mage",
+	"world1_spotlight_bard":            "cutscene_flag_spotlight_unlocked_bard",
 	# World 2 (suburban) — irregular naming mirrored from _get_pending
 	"world2_prologue":                  "cutscene_flag_world2_prologue_complete",
 	"world2_chapter1":                  "cutscene_flag_world2_chapter1_complete",
