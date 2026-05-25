@@ -117,9 +117,33 @@ func _build_ui() -> void:
 	sep.size = Vector2(vp_size.x - 40, 1)
 	add_child(sep)
 
+	# "Next:" banner — surface the active objective right at the top so
+	# players don't have to scroll past completed chapters to figure out
+	# what to do next. Addresses user feedback "I can't figure out what
+	# the hell to actually do." Falls back gracefully if all chapters are
+	# complete or none are unlocked.
+	var next_text = _find_active_objective_text()
+	var banner_h: float = 0.0
+	if next_text != "":
+		var next_bg = ColorRect.new()
+		next_bg.name = "NextBannerBG"
+		next_bg.color = Color(0.14, 0.16, 0.22, 0.92)
+		next_bg.position = Vector2(20, 52)
+		next_bg.size = Vector2(vp_size.x - 40, 28)
+		add_child(next_bg)
+		var next_label = Label.new()
+		next_label.name = "NextBanner"
+		next_label.text = "▶ Next: " + next_text
+		next_label.position = Vector2(32, 56)
+		next_label.size = Vector2(vp_size.x - 64, 20)
+		next_label.add_theme_font_size_override("font_size", 13)
+		next_label.add_theme_color_override("font_color", ACTIVE_COLOR)
+		add_child(next_label)
+		banner_h = 36.0
+
 	# Quest content area
-	var content_y: float = 56.0
-	var content_h: float = vp_size.y - 100.0
+	var content_y: float = 56.0 + banner_h
+	var content_h: float = vp_size.y - 100.0 - banner_h
 	var line_height: float = 20.0
 	_max_visible_lines = int(content_h / line_height)
 
@@ -248,6 +272,27 @@ func _is_chapter_complete(chapter: Dictionary) -> bool:
 		if obj["flag"] != "" and not GameState.get_story_flag(obj["flag"]):
 			return false
 	return true
+
+
+func _find_active_objective_text() -> String:
+	## Walks the chapter list in story order and returns the first
+	## incomplete objective in an unlocked chapter — the "current"
+	## objective the player should be pursuing. Empty string if the
+	## game is fully complete or no chapter is yet unlocked.
+	for chapter in CHAPTERS:
+		var world_flag = chapter["world_flag"]
+		var chapter_unlocked = (world_flag == "" or GameState.get_story_flag(world_flag))
+		if not chapter_unlocked:
+			continue
+		for obj in chapter["objectives"]:
+			var flag = obj["flag"]
+			# Chapter-1 first objective has empty flag and is always "complete"
+			# (it's the implicit starting state), so skip it here.
+			if flag == "":
+				continue
+			if not GameState.get_story_flag(flag):
+				return str(obj["text"])
+	return ""
 
 
 func _input(event: InputEvent) -> void:
