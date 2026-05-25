@@ -44,7 +44,9 @@ const KNOWN_ORPHAN_MUSIC := {
 	"dungeon": true,
 	"mystery_w1": true,
 	"town_w1": true,
-	"world3_overworld": true,  # Likely typo — manifest has `overworld_steampunk`
+	# `world3_overworld` was a typo — cutscene JSON updated to point at the
+	# real manifest entry `overworld_steampunk` (cowir-music's W3 overworld
+	# track). Entry pruned from this allowlist per the self-healing pattern.
 }
 
 

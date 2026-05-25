@@ -389,7 +389,7 @@
     },
     {
       "type": "play_music",
-      "track": "world3_overworld"
+      "track": "overworld_steampunk"
     },
     {
       "type": "fade_to_black",
