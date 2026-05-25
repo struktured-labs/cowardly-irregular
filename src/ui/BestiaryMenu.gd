@@ -28,6 +28,8 @@ var _detail_level: Label = null
 var _detail_stats: Label = null
 var _detail_weak: Label = null
 var _detail_resist: Label = null
+var _detail_rewards: Label = null  # "EXP: N  Gold: G"
+var _detail_drops: Label = null    # "Drops: bone 50%, ether 15%"
 var _detail_flavor: Label = null
 var _detail_sprite: AnimatedSprite2D = null
 var _detail_sprite_bg: ColorRect = null
@@ -281,6 +283,28 @@ func _build_detail(parent: Control) -> void:
 	_detail_resist.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	parent.add_child(_detail_resist)
 
+	# Rewards (EXP + Gold) — high-priority autobattle/autogrind intel so
+	# players can plan farming runs. Amber color matches gold counter in
+	# PartyStatusScreen for visual "progression resources" consistency.
+	_detail_rewards = Label.new()
+	_detail_rewards.position = Vector2(text_x, margin + 188)
+	_detail_rewards.size = Vector2(text_w, 22)
+	_detail_rewards.add_theme_font_size_override("font_size", 14)
+	_detail_rewards.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
+	_detail_rewards.clip_text = false
+	_detail_rewards.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	parent.add_child(_detail_rewards)
+
+	# Drop table with chance percentages, autowrap so a long droplist
+	# wraps below the sprite area instead of overflowing the panel.
+	_detail_drops = Label.new()
+	_detail_drops.position = Vector2(text_x, margin + 212)
+	_detail_drops.size = Vector2(text_w, 32)
+	_detail_drops.add_theme_font_size_override("font_size", 12)
+	_detail_drops.add_theme_color_override("font_color", Color(0.85, 0.9, 0.75))
+	_detail_drops.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	parent.add_child(_detail_drops)
+
 	# Flavor text sits below the sprite & stats, full width
 	_detail_flavor = Label.new()
 	_detail_flavor.position = Vector2(margin, margin + sprite_size + 20)
@@ -300,6 +324,8 @@ func _refresh_detail() -> void:
 		_detail_stats.text = ""
 		_detail_weak.text = ""
 		_detail_resist.text = ""
+		_detail_rewards.text = ""
+		_detail_drops.text = ""
 		_detail_flavor.text = ""
 		_detail_sprite.visible = false
 		_detail_placeholder.visible = true
@@ -322,9 +348,42 @@ func _refresh_detail() -> void:
 
 	_detail_weak.text = "Weak: %s" % (", ".join(entry.weaknesses) if not entry.weaknesses.is_empty() else "—")
 	_detail_resist.text = "Resist: %s" % (", ".join(entry.resistances) if not entry.resistances.is_empty() else "—")
-	_detail_flavor.text = entry.flavor if entry.flavor != "" else "(No lore entry written yet.)"
+
+	# Rewards line — EXP + Gold from victory. Players designing autobattle
+	# scripts use this to plan farming loops.
+	var exp_r: int = int(entry.get("exp_reward", 0))
+	var gold_r: int = int(entry.get("gold_reward", 0))
+	_detail_rewards.text = "EXP: %d   Gold: %d G" % [exp_r, gold_r]
+
+	# Drop table — formatted as "item_name N%" entries, comma-separated.
+	# Handles empty drop tables ("—") and one_shot_reward (rare bonus drop
+	# shown in parentheses to distinguish from regular drops). Names get
+	# the standard snake_case → Title Case treatment used elsewhere in UI.
+	_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
 
 	_load_sprite(entry.id)
+
+
+func _format_drops(drops: Array, one_shot) -> String:
+	var parts: PackedStringArray = []
+	for d in drops:
+		if not d is Dictionary:
+			continue
+		var item: String = str(d.get("item", ""))
+		var chance: float = float(d.get("chance", 0.0))
+		if item == "":
+			continue
+		var pct: int = int(round(chance * 100.0))
+		parts.append("%s %d%%" % [item.replace("_", " ").capitalize(), pct])
+	var base: String = "Drops: %s" % (", ".join(parts) if parts.size() > 0 else "—")
+	# one_shot_reward (rare bonus, set in monsters.json for special enemies)
+	# appended as "(one-shot: <item>)" so it's visually distinct from the
+	# regular percentage drops.
+	if one_shot != null and str(one_shot) != "":
+		var os_str: String = str(one_shot)
+		if os_str != "Null" and os_str != "null":
+			base += "   (One-shot: %s)" % os_str.replace("_", " ").capitalize()
+	return base
 
 
 func _load_sprite(monster_id: String) -> void:
