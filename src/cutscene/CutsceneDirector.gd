@@ -239,11 +239,9 @@ func play_cutscene(cutscene_id: String) -> void:
 		await _execute_step(step)
 		step_index += 1
 
-	# When skipped, still apply all set_flag steps so cutscenes never replay
+	# When skipped, still apply all set_flag steps so cutscenes never replay.
 	if _skipping:
-		for i in range(step_index, steps.size()):
-			if steps[i].get("type", "") == "set_flag":
-				_step_set_flag(steps[i])
+		_apply_remaining_set_flag_steps(steps, step_index)
 
 	# Cleanup
 	await _end_cutscene()
@@ -501,6 +499,18 @@ func _step_set_flag(step: Dictionary) -> void:
 		# Store cutscene flags in game_constants for now
 		if GameState:
 			GameState.game_constants["cutscene_flag_" + flag] = value
+
+
+func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
+	## Walk the steps array starting at `from_index` and fire _step_set_flag
+	## for every set_flag entry. Used when a cutscene is skipped — we still
+	## need to set the completion flag so the cutscene doesn't replay on
+	## the next visit / save load. Extracted from _start_cutscene to be
+	## unit-testable without driving the full UI flow. CRITICAL — silent
+	## failure here means skipped cutscenes replay forever.
+	for i in range(from_index, steps.size()):
+		if steps[i].get("type", "") == "set_flag":
+			_step_set_flag(steps[i])
 
 
 func _step_chapter_title(step: Dictionary) -> void:
