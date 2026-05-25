@@ -3864,8 +3864,15 @@ func _get_milestone_text(battles: int) -> String:
 
 
 func _on_any_save_completed(_slot: int) -> void:
-	"""Fire a green 'Game Saved ✓' toast whenever SaveSystem completes a save."""
-	Toast.show_save(self)
+	"""Fire a green 'Game Saved ✓ — <location>' toast whenever SaveSystem
+	completes a save. The location label is pulled live from MapSystem so the
+	player can confirm WHERE the save landed (matters when juggling multiple
+	slots across worlds). Falls back to the legacy short form when no map is
+	loaded (e.g. saving from the title screen via debug paths)."""
+	var location := ""
+	if MapSystem and "current_map_id" in MapSystem and MapSystem.current_map_id:
+		location = str(MapSystem.current_map_id).capitalize()
+	Toast.show_save(self, location)
 
 
 func _show_autogrind_toast(text: String) -> void:
