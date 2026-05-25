@@ -142,7 +142,10 @@ func _ready() -> void:
 	if sm:
 		sm.play_area_music("overworld")
 
-	# First-time tutorial hints
+	# First-time tutorial hints. Both are idempotent (TutorialHint tracks
+	# _shown_hints statically) so calling them on every overworld load is
+	# safe — only the very first visit per session actually surfaces a hint.
+	TutorialHints.show(self, "movement")
 	TutorialHints.show(self, "quest_log")
 
 	exploration_ready.emit()
