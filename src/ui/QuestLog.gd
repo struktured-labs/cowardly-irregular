@@ -76,6 +76,10 @@ const CHAPTERS: Array = [
 var _scroll_offset: int = 0
 var _max_visible_lines: int = 0
 var _total_lines: int = 0
+## Set true after the first _build_ui run so subsequent rebuilds (triggered
+## by scroll-key input) honor the user's manual scroll instead of snapping
+## back to the active objective every keypress.
+var _initial_scroll_applied: bool = false
 
 
 func _ready() -> void:
@@ -149,6 +153,18 @@ func _build_ui() -> void:
 
 	var lines: Array = _build_quest_lines()
 	_total_lines = lines.size()
+
+	# On first open, snap the scroll viewport so the active objective lands
+	# near the top — saves the player from scrolling past completed chapters
+	# in late-game runs. Subsequent rebuilds (driven by scroll input) skip
+	# this so the user's manual scroll position is preserved.
+	if not _initial_scroll_applied:
+		var active_idx = _find_active_line_index(lines)
+		if active_idx > -1:
+			# Leave ~2 lines of context above the active objective so the
+			# chapter header is still visible.
+			_scroll_offset = maxi(0, active_idx - 2)
+		_initial_scroll_applied = true
 
 	# Clamp scroll
 	_scroll_offset = clampi(_scroll_offset, 0, maxi(0, _total_lines - _max_visible_lines))
@@ -272,6 +288,16 @@ func _is_chapter_complete(chapter: Dictionary) -> bool:
 		if obj["flag"] != "" and not GameState.get_story_flag(obj["flag"]):
 			return false
 	return true
+
+
+func _find_active_line_index(lines: Array) -> int:
+	## Returns the index of the first line painted in ACTIVE_COLOR (the "►"
+	## current-objective line), or -1 if every objective is complete or
+	## locked. Used by _build_ui to auto-scroll the viewport on initial open.
+	for i in range(lines.size()):
+		if lines[i].get("color") == ACTIVE_COLOR:
+			return i
+	return -1
 
 
 func _find_active_objective_text() -> String:
