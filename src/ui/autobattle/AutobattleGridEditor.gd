@@ -1460,8 +1460,17 @@ func _cycle_character(direction: int = 1) -> void:
 	# Save current character's script before switching
 	_save_script()
 
-	# Cycle to next/previous character
-	current_party_index = (current_party_index + direction + party.size()) % party.size()
+	# Cycle to next/previous character. Skip spotlight-locked PCs so the
+	# user can't edit a script they don't yet control. Debug flag override:
+	# GameState.debug_all_pcs_unlocked treats every PC as unlocked. The
+	# guard tolerates an all-locked party (shouldn't happen given the lead
+	# is always unlocked) by breaking after one full lap.
+	var debug_override = GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked
+	for _i in range(party.size()):
+		current_party_index = (current_party_index + direction + party.size()) % party.size()
+		var candidate = party[current_party_index]
+		if debug_override or not ("autobattle_locked" in candidate and candidate.autobattle_locked):
+			break
 	var next_member = party[current_party_index]
 
 	# Setup for new character

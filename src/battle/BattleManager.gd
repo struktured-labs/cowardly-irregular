@@ -558,8 +558,15 @@ func _process_next_selection() -> void:
 	# AI selects automatically for enemies and autobattle players
 	var char_id = _get_character_id(current_combatant)
 	var is_char_autobattle = AutobattleSystem.is_autobattle_enabled(char_id)
+	# Spotlight gate: non-lead PCs route through autobattle until their
+	# spotlight cutscene fires. GameState.debug_all_pcs_unlocked overrides.
+	var is_spotlight_locked = false
+	if "autobattle_locked" in current_combatant and current_combatant.autobattle_locked:
+		is_spotlight_locked = true
+		if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
+			is_spotlight_locked = false
 
-	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle:
+	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle or is_spotlight_locked:
 		_process_ai_selection(current_combatant)
 
 

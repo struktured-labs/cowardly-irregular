@@ -39,6 +39,15 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	# Close any existing menu
 	close_win98_menu()
 
+	# Spotlight gate: locked PCs route through autobattle (BattleManager
+	# handles this in _process_next_selection), but if a manual-control
+	# path slips through, suppress the menu so the player can't issue
+	# orders to a PC they haven't unlocked yet. Debug override wins.
+	if "autobattle_locked" in combatant and combatant.autobattle_locked:
+		var debug_override = GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked
+		if not debug_override:
+			return
+
 	# Get character's sprite position (use BattleManager.player_party for correct object identity)
 	var combatant_idx = BattleManager.player_party.find(combatant)
 	if combatant_idx < 0 or combatant_idx >= _scene.party_sprite_nodes.size():

@@ -945,6 +945,16 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
+	# W1 spotlight cutscenes — each completion flag also unlocks the
+	# matching PC's manual control + autobattle editor tab via
+	# _reconcile_spotlight_locks(). Trigger schedule (per cowir-story
+	# msg 1766): ch.1 cleric in village, ch.2 fighter on road north,
+	# ch.3 rogue + mage in Whispering Cave, ch.7 bard at capital.
+	"world1_spotlight_cleric_ch1":      "cutscene_flag_spotlight_unlocked_cleric",
+	"world1_spotlight_fighter_ch2":     "cutscene_flag_spotlight_unlocked_fighter",
+	"world1_spotlight_rogue_ch3":       "cutscene_flag_spotlight_unlocked_rogue",
+	"world1_spotlight_mage_ch3":        "cutscene_flag_spotlight_unlocked_mage",
+	"world1_spotlight_bard_ch7":        "cutscene_flag_spotlight_unlocked_bard",
 	# World 2 (suburban) — irregular naming mirrored from _get_pending
 	"world2_prologue":                  "cutscene_flag_world2_prologue_complete",
 	"world2_chapter1":                  "cutscene_flag_world2_chapter1_complete",
@@ -1001,6 +1011,11 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		if completion_flag != "" and GameState:
 			GameState.game_constants[completion_flag] = true
 			print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
+			# W1 spotlight completion also unlocks the matching PC's
+			# manual control. Reconcile is idempotent so a no-op for
+			# non-spotlight cutscenes.
+			if completion_flag.begins_with("cutscene_flag_spotlight_unlocked_"):
+				_reconcile_spotlight_locks()
 		_start_exploration()
 	, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)
@@ -1305,6 +1320,10 @@ func _restore_party_from_save_data() -> bool:
 			c.current_ap = clampi(saved["current_ap"], -4, 4)
 		if saved.has("is_alive"):
 			c.is_alive = saved["is_alive"]
+	# Spotlight reconcile after load — flags persist in game_constants
+	# so a save mid-W1 may carry already-unlocked PCs even though the
+	# Combatant.autobattle_locked field is freshly set by from_dict.
+	_reconcile_spotlight_locks()
 	return true
 
 
@@ -1343,6 +1362,14 @@ func _create_party() -> void:
 	hero.add_item("phoenix_down", 1)
 	party.append(hero)
 
+	# Spotlight pattern: party_leader_index=0 (hero/Fighter) is the default
+	# lead PC and is freely controllable. The other 4 PCs join the party
+	# from the prologue (canon-respecting 5-PC roster) but their turns are
+	# routed through autobattle until their spotlight cutscene fires (see
+	# _CUTSCENE_COMPLETION_FLAGS spotlight_unlocked_<job> entries). The
+	# debug flag GameState.debug_all_pcs_unlocked overrides all locks.
+	hero.autobattle_locked = false
+
 	# Create Cleric (primary: Cleric / secondary: Bard)
 	var mira = Combatant.new()
 	mira.initialize({
@@ -1365,6 +1392,7 @@ func _create_party() -> void:
 	mira.learn_passive("mp_boost")
 	PassiveSystem.equip_passive(mira, "magic_boost")
 	PassiveSystem.equip_passive(mira, "mp_boost")
+	mira.autobattle_locked = true  # spotlight unlock via world1_spotlight_cleric_ch1
 	party.append(mira)
 
 	# Create Rogue (primary: Rogue / secondary: Fighter)
@@ -1389,6 +1417,7 @@ func _create_party() -> void:
 	rogue.learn_passive("speed_boost")
 	PassiveSystem.equip_passive(rogue, "critical_strike")
 	PassiveSystem.equip_passive(rogue, "speed_boost")
+	rogue.autobattle_locked = true  # spotlight unlock via world1_spotlight_rogue_ch3
 	party.append(rogue)
 
 	# Create Mage (primary: Mage / secondary: Cleric)
@@ -1413,7 +1442,60 @@ func _create_party() -> void:
 	vex.learn_passive("mp_efficiency")
 	PassiveSystem.equip_passive(vex, "magic_boost")
 	PassiveSystem.equip_passive(vex, "mp_efficiency")
+	vex.autobattle_locked = true  # spotlight unlock via world1_spotlight_mage_ch3
 	party.append(vex)
+
+	# Create Bard (primary: Bard / secondary: Rogue)
+	# Internal ID "bard" matches the job_id — story chose class-title as
+	# placeholder rather than a fantasy codename, may be revisited later.
+	var bard = Combatant.new()
+	bard.initialize({
+		"name": "Bard",
+		"max_hp": 95,
+		"max_mp": 90,
+		"attack": 12,
+		"defense": 9,
+		"magic": 22,
+		"speed": 16
+	})
+	add_child(bard)
+	bard.customization = default_customs[4] if default_customs.size() > 4 else null
+	JobSystem.assign_job(bard, "bard")
+	JobSystem.assign_secondary_job(bard, "rogue")
+	EquipmentSystem.equip_weapon(bard, "piano_scythe")
+	EquipmentSystem.equip_armor(bard, "cloth_robe")
+	EquipmentSystem.equip_accessory(bard, "magic_ring")
+	bard.learn_passive("magic_boost")
+	bard.learn_passive("mp_boost")
+	PassiveSystem.equip_passive(bard, "magic_boost")
+	PassiveSystem.equip_passive(bard, "mp_boost")
+	bard.autobattle_locked = true  # spotlight unlock via world1_spotlight_bard_ch7
+	party.append(bard)
+	# Apply any spotlight unlocks already in flags (relevant for NG+ or
+	# debug fast-travel — usually a no-op on a fresh game).
+	_reconcile_spotlight_locks()
+
+
+func _reconcile_spotlight_locks() -> void:
+	# Walk the party and unlock any PC whose spotlight cutscene flag is
+	# set. Idempotent — safe to call on init, post-load, or after any
+	# cutscene completes. Debug flag is handled at the lock-check sites
+	# (BattleManager turn routing, UI gates) rather than mutating state
+	# here so toggling the debug flag at runtime takes effect immediately.
+	if not GameState:
+		return
+	var flags = GameState.game_constants
+	for member in party:
+		if member == null or not "autobattle_locked" in member:
+			continue
+		if not member.job is Dictionary:
+			continue
+		var job_id: String = member.job.get("id", "")
+		if job_id.is_empty():
+			continue
+		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
+		if flags.get(flag, false):
+			member.autobattle_locked = false
 
 
 func _on_battle_ended(victory: bool) -> void:

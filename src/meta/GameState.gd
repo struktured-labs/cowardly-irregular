@@ -29,6 +29,7 @@ var party_gold: int = 500  # Starting gold
 ## Settings (exposed to UI)
 var encounter_rate_multiplier: float = 1.0  # 0.0 to 2.0, controlled via settings menu
 var debug_log_enabled: bool = true  # Show debug log overlay (default on)
+var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates (autobattle_locked) on all PCs; off by default so the W1 spotlight-unlock arc plays normally
 var show_controller_overlay: bool = true  # Show controller hint overlay during autogrind/battle
 var music_volume: int = 100  # 0-100 percent
 var sfx_volume: int = 100  # 0-100 percent
