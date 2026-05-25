@@ -70,6 +70,17 @@ var _current_world: int = 0
 ## Pre-cutscene music track (restored after cutscene if no explicit music was played)
 var _pre_cutscene_music: String = ""
 
+## HUD countdown timer — driven by cutscene start_timer / stop_timer steps.
+## Spec from cowir-story: atmospheric only, never a fail state. Small
+## corner monospace label that ticks down in real time during cutscene
+## dialogue. The actual underlying duration is intentionally longer than
+## the dialogue's run-length so the countdown stays in the high numbers
+## throughout (W4 orrery: 300s countdown, ~10 lines of dialogue between
+## start_timer/stop_timer = ~30 seconds of player time).
+var _timer_label: Label = null
+var _timer_remaining: float = 0.0
+var _timer_flag: String = ""
+
 
 func _ready() -> void:
 	layer = 95  # Above game (50), below battle transitions (100)
@@ -186,6 +197,15 @@ func _process(delta: float) -> void:
 			_skip_hold_time = 0.0
 			_skip_indicator.visible = false
 			_skip_bar.size.x = 0
+
+	# Tick the cutscene HUD timer (atmospheric only — never a fail state).
+	# Floor at 0 so the display freezes at 0:00 if the cutscene never hits
+	# a stop_timer step (defensive). Real countdown is W4 orrery's 300→0
+	# but the dialogue between start/stop is ~10 lines so the player should
+	# see only the top few seconds of the countdown before stop_timer fires.
+	if _timer_label and is_instance_valid(_timer_label):
+		_timer_remaining = maxf(0.0, _timer_remaining - delta)
+		_timer_label.text = _format_timer_text(_timer_remaining)
 
 
 ## =====================
@@ -318,6 +338,10 @@ func _execute_step(step: Dictionary) -> void:
 			_step_give_item(step)
 		"update_item":
 			_step_update_item(step)
+		"start_timer":
+			_step_start_timer(step)
+		"stop_timer":
+			_step_stop_timer(step)
 		"set_background":
 			_step_set_background(step)
 		"branch":
@@ -547,6 +571,79 @@ func _step_give_item(step: Dictionary) -> void:
 		return
 	var quantity: int = int(step.get("quantity", 1))
 	_add_item_to_party_leader(item_id, quantity)
+
+
+func _step_start_timer(step: Dictionary) -> void:
+	## Show a HUD countdown timer in the upper-right corner. cowir-story
+	## spec: atmospheric only — never a fail state. Display ticks down in
+	## real-time during the surrounding dialogue but the cutscene's
+	## stop_timer step always lands well before the countdown reaches 0.
+	## If somehow the timer DOES reach 0 (cutscene authoring error) the
+	## display freezes at 0:00; no game-over fires.
+	var duration: float = float(step.get("duration", 60))
+	var flag: String = str(step.get("flag", ""))
+	if duration <= 0:
+		push_warning("CutsceneDirector start_timer: non-positive duration %s" % duration)
+		return
+	_timer_remaining = duration
+	_timer_flag = flag
+	_build_timer_hud()
+	# Record `active` state in game_constants so other systems can probe
+	# whether a cutscene timer is currently running. Only meaningful when
+	# flag is non-empty (W4 orrery uses `world4_orrery_timer`).
+	if flag != "" and GameState:
+		GameState.game_constants["timer_active_" + flag] = true
+
+
+func _step_stop_timer(step: Dictionary) -> void:
+	## Clear the HUD timer. Idempotent — safe to call when no timer is
+	## active. Pairs with start_timer's flag bookkeeping if the step
+	## supplies one (matches the flag from the matching start_timer).
+	var flag: String = str(step.get("flag", ""))
+	_clear_timer_hud()
+	if flag != "" and GameState:
+		GameState.game_constants["timer_active_" + flag] = false
+
+
+func _build_timer_hud() -> void:
+	## Renders the timer in the upper-right at large monospace font with
+	## the same warm amber as the gold/EXP UI for visual consistency
+	## (timer = "resource ticking down" feels in the same family).
+	if _timer_label and is_instance_valid(_timer_label):
+		_timer_label.queue_free()
+	_timer_label = Label.new()
+	_timer_label.name = "CutsceneTimerHUD"
+	_timer_label.text = _format_timer_text(_timer_remaining)
+	_timer_label.add_theme_font_size_override("font_size", 22)
+	_timer_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
+	_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var vp_size := Vector2(1280, 720)
+	var vp := get_viewport()
+	if vp:
+		vp_size = vp.get_visible_rect().size
+		if vp_size.x <= 0:
+			vp_size = Vector2(1280, 720)
+	_timer_label.position = Vector2(vp_size.x - 120, 20)
+	_timer_label.size = Vector2(100, 28)
+	add_child(_timer_label)
+
+
+func _clear_timer_hud() -> void:
+	if _timer_label and is_instance_valid(_timer_label):
+		_timer_label.queue_free()
+	_timer_label = null
+	_timer_remaining = 0.0
+	_timer_flag = ""
+
+
+func _format_timer_text(secs: float) -> String:
+	## "M:SS" — leading zero on the seconds, no leading zero on minutes.
+	## Matches the corner-clock convention from classic JRPG timer
+	## moments (FFVII's bomb timer in Mako Reactor, etc.).
+	var s: int = int(maxf(0.0, secs))
+	var minutes: int = s / 60
+	var seconds: int = s % 60
+	return "%d:%02d" % [minutes, seconds]
 
 
 func _step_update_item(step: Dictionary) -> void:
@@ -1097,6 +1194,11 @@ func _end_cutscene() -> void:
 	if _pre_cutscene_music != "" and SoundManager:
 		SoundManager.play_music(_pre_cutscene_music)
 	_pre_cutscene_music = ""
+
+	# Defensive: tear down the HUD timer if a cutscene ended without firing
+	# a matching stop_timer (skip path or malformed cutscene script). Without
+	# this, a lingering _timer_label would float over post-cutscene gameplay.
+	_clear_timer_hud()
 
 	_active = false
 	visible = false
