@@ -4,7 +4,7 @@
   "world": 1,
   "trigger": "harmonia_first_entry",
   "background": "prologue_village",
-  "description": "First village entry. Introduce the village, the party, the mood. No quest yet — just arrival.",
+  "description": "First village entry. Lead-focused intro. The other four are present but unspoken — their introductions land in their respective spotlight chapters.",
   "steps": [
     {"type": "fade_from_black", "duration": 1.5},
     {"type": "chapter_title", "title": "Prologue", "subtitle": "Harmonia"},
@@ -20,85 +20,89 @@
 
     {"type": "wait", "duration": 0.4},
 
-    {"type": "narration", "text": "So four people showed up. Not because they were brave. Not because they were special. Because they were there, and nobody else was."},
+    {"type": "narration", "text": "So five people showed up. Not because they were brave. Not because they were special. Because they were there, and nobody else was."},
 
     {"type": "wait", "duration": 0.3},
 
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "",
-        "text": "The Fighter came because he had heard there was trouble, and trouble was what fighters were for.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Fighter",
-        "text": "If there's trouble, I'll stand in front of it. That's... what I do.",
-        "theme": "fighter",
-        "portrait": "fighter"
-      },
-      {
-        "speaker": "",
-        "text": "The Cleric came because the chapel had been empty for a week and God, or whatever heard her prayers, had clearly decided someone should investigate.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Cleric",
-        "text": "A calling is a calling. You don't second-guess it.",
-        "theme": "cleric",
-        "portrait": "cleric"
-      },
-      {
-        "speaker": "",
-        "text": "The Mage came because the pattern he'd found in the monster attacks was too interesting to ignore.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Mage",
-        "text": "The attack frequency follows a geometric progression. Someone is designing these encounters.",
-        "theme": "mage",
-        "portrait": "mage"
-      },
-      {
-        "speaker": "",
-        "text": "The Rogue came because Elder Theron had seen a figure sleeping under the inn's eaves and pointed.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Rogue",
-        "text": "I was passing through. Made the critical error of still being here.",
-        "theme": "rogue",
-        "portrait": "rogue"
-      },
-      {
-        "speaker": "",
-        "text": "And the Bard came because the Bard went everywhere there was a story.",
-        "theme": "narrator",
-        "portrait": "narrator"
-      },
-      {
-        "speaker": "Bard",
-        "text": "What a tale this shall be!",
-        "theme": "bard",
-        "portrait": "bard_happy"
-      }
-    ]},
+    {"type": "branch", "condition": "lead_job", "cases": {
+      "fighter": [
+        {"type": "narration", "text": "The Fighter came because he had heard there was trouble, and trouble was what fighters were for."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Fighter", "text": "If there's trouble, I'll stand in front of it. That's... what I do.", "theme": "fighter", "portrait": "fighter"}
+        ]}
+      ],
+      "cleric": [
+        {"type": "narration", "text": "The Cleric came because the chapel had been empty for a week and God, or whatever heard her prayers, had clearly decided someone should investigate."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Cleric", "text": "A calling is a calling. You don't second-guess it.", "theme": "cleric", "portrait": "cleric"}
+        ]}
+      ],
+      "mage": [
+        {"type": "narration", "text": "The Mage came because the pattern he'd found in the monster attacks was too interesting to ignore."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Mage", "text": "The attack frequency follows a geometric progression. Someone is designing these encounters.", "theme": "mage", "portrait": "mage"}
+        ]}
+      ],
+      "rogue": [
+        {"type": "narration", "text": "The Rogue had been sleeping under the inn's eaves. Elder Theron saw a figure there, and pointed. It had been that kind of morning."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Rogue", "text": "I was passing through. Made the critical error of still being here.", "theme": "rogue", "portrait": "rogue"}
+        ]}
+      ],
+      "bard": [
+        {"type": "narration", "text": "The Bard came because the Bard went everywhere there was a story. Which was both her gift and everyone's curse."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Bard", "text": "What a tale this shall be!", "theme": "bard", "portrait": "bard_happy"}
+        ]}
+      ],
+      "default": [
+        {"type": "narration", "text": "They had come for their own reasons, this one most of all."}
+      ]
+    }},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "Four others had come too. Each for their own reasons. The Bard would tell you about them later, at length, with footnotes — but for now they kept their distance, waiting to be needed."},
 
     {"type": "wait", "duration": 0.3},
 
     {"type": "narration", "text": "A notice had been nailed to the door of the Sleepy Slime Inn. It said to report to Elder Theron at the village square."},
 
-    {"type": "dialogue", "lines": [
-      {
-        "speaker": "Bard",
-        "text": "Elder Theron. Let's find him — he's supposed to be somewhere in the village.",
-        "theme": "bard",
-        "portrait": "bard"
-      }
-    ]},
+    {"type": "branch", "condition": "lead_job", "cases": {
+      "fighter": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Fighter", "text": "Elder Theron. Square. Let's go.", "theme": "fighter", "portrait": "fighter"}
+        ]}
+      ],
+      "cleric": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Cleric", "text": "Then we should find him. It's the polite thing to do.", "theme": "cleric", "portrait": "cleric"}
+        ]}
+      ],
+      "mage": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Mage", "text": "Elder Theron. Noted. The square is the most efficient meeting point.", "theme": "mage", "portrait": "mage"}
+        ]}
+      ],
+      "rogue": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Rogue", "text": "Square's that way. Let's get this over with.", "theme": "rogue", "portrait": "rogue"}
+        ]}
+      ],
+      "bard": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Bard", "text": "Elder Theron. Let's find him — he's supposed to be somewhere in the village.", "theme": "bard", "portrait": "bard"}
+        ]}
+      ]
+    }},
+
+    {"type": "branch", "condition": "lead_job", "cases": {
+      "fighter": [{"type": "set_flag", "flag": "spotlight_unlocked_fighter", "value": true}],
+      "cleric": [{"type": "set_flag", "flag": "spotlight_unlocked_cleric", "value": true}],
+      "mage": [{"type": "set_flag", "flag": "spotlight_unlocked_mage", "value": true}],
+      "rogue": [{"type": "set_flag", "flag": "spotlight_unlocked_rogue", "value": true}],
+      "bard": [{"type": "set_flag", "flag": "spotlight_unlocked_bard", "value": true}]
+    }},
 
     {"type": "set_flag", "flag": "prologue_complete", "value": true},
     {"type": "letterbox_out", "duration": 0.5}

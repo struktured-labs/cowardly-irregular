@@ -1,0 +1,40 @@
+{
+  "id": "world1_spotlight_bard",
+  "title": "A Stubborn Man",
+  "world": 1,
+  "trigger": "world1_spotlight_bard_trigger",
+  "background": "prologue_village",
+  "description": "The Capital, ch.7. A guard at a gate who has been told to stop people and does not bend to argument. The Bard tries something else.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "The guard at the inner gate was a man whose job was to say no, and whose pride in that job was the kind of pride that calcifies a person from the inside out. Three of the party had tried. Three had failed."},
+
+    {"type": "branch", "condition": "lead_job", "cases": {
+      "bard": [
+        {"type": "narration", "text": "The lead was already at the gate. They had been at the gate for a few minutes. The guard was crying, very gently, and was nodding at something the lead had said, and the lead was already writing a verse about him in the margin of an existing verse, because of course they were."},
+        {"type": "wait", "duration": 0.3},
+        {"type": "narration", "text": "The gate, eventually, opened. The lead never showed anyone what they had said."}
+      ],
+      "default": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Fighter", "text": "We could go around.", "theme": "fighter", "portrait": "fighter"},
+          {"speaker": "Mage", "text": "There is no around. This is the only gate. I checked.", "theme": "mage", "portrait": "mage"}
+        ]},
+        {"type": "narration", "text": "The Bard had been listening. The Bard had also been watching the guard, which was different from listening to him. She stepped up to the gate, leaned on the railing in a way that was structurally unnecessary, and asked the guard a question that had nothing to do with the gate."},
+        {"type": "wait", "duration": 0.3},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Bard", "text": "What's the worst part of standing here all day?", "theme": "bard", "portrait": "bard"}
+        ]},
+        {"type": "narration", "text": "The guard, who had been ready for a bribe and ready for a fight and ready for a forged document, was not ready for this. He answered. He kept answering. Twelve minutes later he was telling her about his daughter, and fifteen minutes later he was unlocking the gate, and seventeen minutes later he was apologizing for the delay."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Bard", "text": "Thank you. I'll remember your daughter's name. I write down the names of people who help me.", "theme": "bard", "portrait": "bard"}
+        ]},
+        {"type": "narration", "text": "She would, in fact, remember. The Bard was, the party would learn, the kind of person whose attention was the rare and dangerous thing that people did not realize they had been waiting for."},
+        {"type": "set_flag", "flag": "spotlight_unlocked_bard", "value": true}
+      ]
+    }},
+
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
