@@ -44,7 +44,13 @@ func play(world: int = 0, music_track: String = "") -> void:
 	if music_track != "" and SoundManager and SoundManager.has_method("play_music"):
 		SoundManager.play_music(music_track)
 	await _scroll_and_wait()
-	if music_track != "" and SoundManager and SoundManager.has_method("stop_music"):
+	# Smooth fade-out instead of hard-cut so the credits→title transition
+	# isn't punctuated by a click/pop in headphones. The caller (typically
+	# CutsceneDirector) may start a new track immediately after `completed`
+	# fires; play_music's crossfade logic kills this tween gracefully if so.
+	if music_track != "" and SoundManager and SoundManager.has_method("fade_out_music"):
+		SoundManager.fade_out_music(0.6)
+	elif music_track != "" and SoundManager and SoundManager.has_method("stop_music"):
 		SoundManager.stop_music()
 	_done = true
 	completed.emit()

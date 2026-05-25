@@ -334,7 +334,15 @@ func _close_menu() -> void:
 			if SoundManager.has_method("play_music"):
 				SoundManager.play_music(_resume_track)
 		elif _resume_track == "":
-			SoundManager.stop_music()
+			# Smooth fade rather than hard cut — the jukebox was playing
+			# but the player opened it from silent context, so we're
+			# returning them to silence. Fade keeps the close from feeling
+			# like a buzz-cut. Falls back to stop_music if fade_out_music
+			# isn't available (defensive — SoundManager may be mid-refactor).
+			if SoundManager.has_method("fade_out_music"):
+				SoundManager.fade_out_music(0.4)
+			else:
+				SoundManager.stop_music()
 		SoundManager.play_ui("menu_close")
 	closed.emit()
 	queue_free()
