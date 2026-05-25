@@ -1486,6 +1486,7 @@ func _reconcile_spotlight_locks() -> void:
 	if not GameState:
 		return
 	var flags = GameState.game_constants
+	var any_flipped: bool = false
 	for member in party:
 		if member == null or not "autobattle_locked" in member:
 			continue
@@ -1495,8 +1496,17 @@ func _reconcile_spotlight_locks() -> void:
 		if job_id.is_empty():
 			continue
 		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
-		if flags.get(flag, false):
+		if flags.get(flag, false) and member.autobattle_locked:
 			member.autobattle_locked = false
+			any_flipped = true
+	# Mid-battle locked → unlocked transition fires the spotlight_unlock
+	# tutorial hint exactly once per session (TutorialHints handles the
+	# session dedupe). Out-of-battle flips are silent — the affordance
+	# only matters while a battle is on screen.
+	if any_flipped and BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		var scene = get_tree().current_scene if get_tree() else null
+		if scene:
+			TutorialHints.show(scene, "spotlight_unlock")
 
 
 func _on_battle_ended(victory: bool) -> void:
