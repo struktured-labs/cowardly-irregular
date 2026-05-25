@@ -316,6 +316,8 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_grant_item(step)
 		"give_item":
 			_step_give_item(step)
+		"update_item":
+			_step_update_item(step)
 		"set_background":
 			_step_set_background(step)
 		"branch":
@@ -545,6 +547,38 @@ func _step_give_item(step: Dictionary) -> void:
 		return
 	var quantity: int = int(step.get("quantity", 1))
 	_add_item_to_party_leader(item_id, quantity)
+
+
+func _step_update_item(step: Dictionary) -> void:
+	## Transforms an item ID in the player's inventory — used by world1_
+	## orrery to convert "fool_card" → "wild_card" mid-cutscene as the
+	## narrative reveals what the card was actually for. Walks all party
+	## members so the swap finds the item even if it ended up on a non-
+	## leader (TreasureChest puts items on leader, but ItemsMenu can move
+	## them around). Removes old item, adds same quantity of new item.
+	## Pre-fix, like grant_item/give_item, this step was silently dropped.
+	var old_id: String = str(step.get("item", ""))
+	var new_id: String = str(step.get("new_id", ""))
+	if old_id == "" or new_id == "":
+		push_warning("CutsceneDirector update_item: missing 'item' or 'new_id' field")
+		return
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop == null or not "party" in game_loop:
+		return
+	for member in game_loop.party:
+		if member == null or not member.has_method("get_item_count"):
+			continue
+		var qty: int = member.get_item_count(old_id)
+		if qty <= 0:
+			continue
+		if member.has_method("remove_item"):
+			member.remove_item(old_id, qty)
+		if member.has_method("add_item"):
+			member.add_item(new_id, qty)
+		return  # First match wins — don't double-swap if item exists in multiple members
+	# Not found anywhere — log so a malformed cutscene script doesn't
+	# silently fail to transform.
+	push_warning("CutsceneDirector update_item: no party member has item '%s' to swap" % old_id)
 
 
 func _add_item_to_party_leader(item_id: String, quantity: int) -> void:
