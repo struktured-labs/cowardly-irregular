@@ -97,8 +97,11 @@ static func discovery_counts() -> Vector2i:
 
 
 static func get_seen_entries_sorted() -> Array:
-	"""All seen monsters as [{id, name, level, stats, flavor, epithet}] sorted
-	by level ascending then name."""
+	"""All seen monsters as [{id, name, level, stats, flavor, epithet,
+	exp_reward, gold_reward, drops, one_shot_reward}] sorted by level
+	ascending then name. Drops + reward fields feed the BestiaryMenu's
+	autobattle-loop intel: players need drop rates to design rules like
+	'farm slime until 5 bone'."""
 	_ensure_loaded()
 	var out: Array = []
 	for id in get_seen_ids():
@@ -114,6 +117,10 @@ static func get_seen_entries_sorted() -> Array:
 			"resistances": data.get("resistances", []),
 			"flavor": get_flavor(id),
 			"epithet": get_epithet(id),
+			"exp_reward": int(data.get("exp_reward", 0)),
+			"gold_reward": int(data.get("gold_reward", 0)),
+			"drops": data.get("drop_table", []),
+			"one_shot_reward": data.get("one_shot_reward", null),
 		})
 	out.sort_custom(func(a, b):
 		if a.level != b.level:
