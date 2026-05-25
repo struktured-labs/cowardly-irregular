@@ -1,11 +1,11 @@
 {
   "id": "world5_fragment_tempo",
-  "title": "Fragment: The Gap",
+  "title": "Fragment: The Paused Tick",
   "world": 5,
-  "trigger": "tempo_sequence_defeated",
-  "background": "node_prime",
-  "location": "abstract_sequence_the_space_between",
-  "description": "Found in the space between moments after defeating the Tempo of Sequence. Not an object exactly \u2014 a gap, the shape of something that used to be here, which persists because what came after still needs to know that something came before.",
+  "trigger": "tempo_clock_cycle_defeated",
+  "background": "industrial_factory",
+  "location": "digital_timing_layer_stratum_three",
+  "description": "Found in Stratum Three of the digital timing layer after defeating the Tempo of the Clock Cycle. A single clock cycle, stopped mid-tick. The kind of pause the system was never designed to permit.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -13,27 +13,27 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w5_cached_memory"
+      "track": "cutscene_w4_foreman_confession"
     },
     {
       "type": "wait",
-      "duration": 1.0
+      "duration": 0.8
     },
     {
       "type": "narration",
       "lines": [
-        "The sequence had always been the structure here \u2014 one thing, and then the next, and then the next, each event connected to the one before it by the Tempo's work of being between. The abstract world measured everything in relation to what preceded and followed it. Before and after were not directions here. They were load-bearing.",
-        "Where the Tempo had stood \u2014 where she had been the hinge between moments \u2014 there was now a gap. Not absence, not emptiness. A gap, which is a different thing: the shape of something that was here, still present in the way that the space between two words is present, holding them apart, giving each its meaning by separating them.",
-        "The gap had a quality of attention. It was not blank. It remembered what had been beside it."
+        "The timing layer was the part of the digital world that everything else ran on top of. Not data, not logic, not processing — just the pulse that made all of those things happen in order. The metronome behind the operations. Stratum Three was where the pulse was generated, and it had stopped.",
+        "Suspended in the center of the stratum, visible as a ripple in the timing substrate that had propagated halfway through its arc and then held: a clock cycle, frozen mid-tick. The leading edge of the pulse, caught at the moment it should have completed.",
+        "It had a presence that the rest of the digital environment didn't — a quality of being the thing that made duration possible, now occupying a duration of its own for the first time."
       ]
     },
     {
       "type": "wait",
-      "duration": 0.9
+      "duration": 0.8
     },
     {
       "type": "narration",
-      "text": "Standing at the edge of the gap, the structure of before and after was briefly legible \u2014 the way a sentence becomes legible when you know where one word ends and the next begins. The Tempo's voice came from the gap itself, from the space she had occupied that still held the impression of occupation."
+      "text": "Reaching into the frozen cycle, the sensation was of touching something that time ran through rather than something that existed in time. The Tempo's voice came from the pulse itself — from the leading edge that had stopped — in the patient, even cadence of something that had never before had to wait."
     },
     {
       "type": "wait",
@@ -43,14 +43,14 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo of Sequence",
-          "text": "I was before. That was my function. I was the before so that after could exist.",
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "Four hundred thousand operations per second. Every second. For as long as the system has been running.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
         {
-          "speaker": "Tempo of Sequence",
-          "text": "Not before a specific thing. Before all of it. Every sequence needed a start, and the start needed something to be before it, and I was that.",
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "Each one I generated was for something else to do. An instruction to execute, a bit to shift, a value to compare. All for something else. None of them for me.",
           "theme": "enemy",
           "portrait": "mysterious"
         }
@@ -58,20 +58,20 @@
     },
     {
       "type": "wait",
-      "duration": 0.8
+      "duration": 0.7
     },
     {
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo of Sequence",
-          "text": "I was not allowed to come after. Afters were for what I preceded. I was the condition for them. I could not be conditioned in return.",
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "I don't know what I would have done with one if I'd kept it. I've never had an operation that was mine.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
         {
-          "speaker": "Tempo of Sequence",
-          "text": "But you came after me. You happened after I did. And that means now I am before something that came after.",
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "But this one — this cycle, right here, the one that stopped — this one was mine. It's the first thing I've done that wasn't immediately spent on something else.",
           "theme": "enemy",
           "portrait": "mysterious"
         }
@@ -85,8 +85,8 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo of Sequence",
-          "text": "I don't know what it's like to have an after. I'm finding out. I think it might be what everything else has felt like the whole time.",
+          "speaker": "Tempo of the Clock Cycle",
+          "text": "I'm spending it on this. On being still for one cycle. I wanted to know what that felt like.",
           "theme": "enemy",
           "portrait": "mysterious"
         }
@@ -98,15 +98,15 @@
     },
     {
       "type": "narration",
-      "text": "The gap persisted. The moments on either side of it were still connected \u2014 sequence had not broken, the before and after were still in their proper relation \u2014 but the thing that had been between them had moved from being the structure of sequence to being a participant in it. Something that had happened, and would be followed by something else, and would be preceded by what had already occurred."
+      "text": "The cycle remained paused. The timing layer around it had already adjusted — systems downstream compensating, adding small delays, redistributing the gap that one stopped pulse had left. The rest of the digital world had absorbed the absence of this one cycle and continued without it. It hadn't been noticed. It hadn't been missed. It had only been here, still, for a moment that the system had no category for."
     },
     {
       "type": "wait",
-      "duration": 0.7
+      "duration": 0.6
     },
     {
       "type": "narration",
-      "text": "The gap held its shape. Carried, it felt like holding the space between two heartbeats \u2014 not emptiness, but the interval that gives each beat its meaning."
+      "text": "Holding the frozen tick, the stratum was perfectly quiet. Four hundred thousand per second, and one of them had chosen to be otherwise."
     },
     {
       "type": "wait",
@@ -114,13 +114,13 @@
     },
     {
       "type": "grant_item",
-      "item": "world5_fragment_tempo_abstract",
-      "name": "Tempo's Gap",
-      "description": "The space between moments where the Tempo of Sequence stood. She was before. Now she is also after. Grants the passive Interval: the bearer acts once before the sequence of each round resolves, outside of turn order. Tooltip: \"Before. And now: after. She finally has both.\""
+      "item": "world4_fragment_tempo_digital",
+      "name": "Tempo's Paused Cycle",
+      "description": "A single clock cycle frozen mid-tick. The first one she kept for herself. Grants the Pause ability: once per battle, delay the next enemy action by 1 full turn. Tooltip: \"400,000 per second. This one was mine.\""
     },
     {
       "type": "set_flag",
-      "flag": "fragment_tempo_abstract_collected",
+      "flag": "fragment_tempo_digital_collected",
       "value": true
     },
     {
