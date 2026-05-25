@@ -89,6 +89,10 @@ func _on_body_entered(body: Node2D) -> void:
 		_player_in_zone = true
 		_indicator.visible = true
 		SoundManager.play_ui("save_crystal_near")
+		# First-time hint explaining the save-crystal interaction. Idempotent
+		# via TutorialHint._shown_hints — only the first crystal-approach
+		# per session surfaces the hint.
+		TutorialHints.show(self, "save_crystal")
 
 
 func _on_body_exited(body: Node2D) -> void:
