@@ -54,8 +54,14 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	tween.tween_callback(layer.queue_free)
 
 
-static func show_save(parent: Node) -> void:
-	show(parent, "Game Saved ✓", SUCCESS_COLOR)
+static func show_save(parent: Node, location: String = "") -> void:
+	## "Game Saved ✓" plus an optional location tag so the player can confirm
+	## WHERE they saved at a glance (useful when juggling multiple save slots
+	## across worlds). Empty location keeps the legacy short form.
+	var text = "Game Saved ✓"
+	if location != "":
+		text = "Game Saved ✓ — " + location
+	show(parent, text, SUCCESS_COLOR)
 
 
 static func show_success(parent: Node, text: String) -> void:
