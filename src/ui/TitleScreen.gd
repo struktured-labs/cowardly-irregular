@@ -168,7 +168,12 @@ func _build_menu() -> void:
 		child.queue_free()
 
 	if _check_for_save():
-		menu_items.append({"id": "continue", "label": "CONTINUE", "enabled": true})
+		menu_items.append({
+			"id": "continue",
+			"label": "CONTINUE",
+			"subtitle": _build_continue_subtitle(),
+			"enabled": true,
+		})
 	menu_items.append({"id": "new_game", "label": "NEW GAME", "enabled": true})
 	menu_items.append({"id": "settings", "label": "SETTINGS", "enabled": true})
 	menu_items.append({"id": "help", "label": "HELP", "enabled": true})
@@ -181,7 +186,12 @@ func _build_menu() -> void:
 
 func _create_menu_row(index: int, item: Dictionary) -> Control:
 	var row := Control.new()
-	row.custom_minimum_size = Vector2(200, 28)
+	# Continue rows surface a save-context subtitle below the main label,
+	# so they need extra vertical room. Other items stay at the original
+	# compact height so the menu reads tightly.
+	var subtitle: String = str(item.get("subtitle", ""))
+	var row_h: int = 44 if subtitle != "" else 28
+	row.custom_minimum_size = Vector2(360, row_h)
 	row.name = "MenuItem_%d" % index
 	row.mouse_filter = MOUSE_FILTER_STOP
 	row.mouse_entered.connect(_on_menu_hover.bind(index))
@@ -206,6 +216,17 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	label.add_theme_color_override("font_color",
 		(MENU_SELECTED if index == selected_index else MENU_COLOR) if item.enabled else MENU_DISABLED)
 	row.add_child(label)
+
+	if subtitle != "":
+		var sub := Label.new()
+		sub.name = "Subtitle"
+		sub.text = subtitle
+		sub.position = Vector2(40, 22)
+		sub.size = Vector2(320, 16)
+		sub.add_theme_font_size_override("font_size", 11)
+		sub.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8, 0.85))
+		sub.mouse_filter = MOUSE_FILTER_IGNORE
+		row.add_child(sub)
 
 	return row
 
@@ -352,6 +373,32 @@ func _check_for_save() -> bool:
 	if FileAccess.file_exists("user://saves/save_00.json"):
 		return true
 	return false
+
+
+func _build_continue_subtitle() -> String:
+	## Peek at the most-recent save's metadata to surface "where will I
+	## resume?" on the title screen. Returns an empty string if the save
+	## is missing, lacks metadata, or SaveSystem isn't available — in
+	## which case the row falls back to the bare "CONTINUE" label.
+	if not SaveSystem or not SaveSystem.has_method("get_most_recent_slot"):
+		return ""
+	var slot: int = SaveSystem.get_most_recent_slot()
+	if slot < 0 or not SaveSystem.has_method("get_save_info"):
+		return ""
+	var info: Dictionary = SaveSystem.get_save_info(slot)
+	if info.is_empty():
+		return ""
+	# Prefer chapter + location together when both exist; degrade gracefully
+	# to whichever piece IS available so the subtitle is never half-formed.
+	var location: String = str(info.get("location_name", "")).strip_edges()
+	var chapter: String = str(info.get("chapter_title", "")).strip_edges()
+	if chapter != "" and location != "":
+		return "%s — %s" % [chapter, location]
+	if location != "":
+		return location
+	if chapter != "":
+		return chapter
+	return ""
 
 
 func _vp_size() -> Vector2:
