@@ -1,11 +1,11 @@
 {
   "id": "world5_fragment_arbiter",
-  "title": "Fragment: The Stopped Question",
+  "title": "Fragment: Simulation 4001",
   "world": 5,
-  "trigger": "arbiter_function_defeated",
-  "background": "node_prime",
-  "location": "abstract_evaluation_plane_the_suspended",
-  "description": "Found on the Evaluation Plane after defeating the Arbiter of Function. A question mark, floating where the Arbiter stood, that has stopped asking. Not collapsed into an answer. Simply stopped.",
+  "trigger": "arbiter_benchmark_defeated",
+  "background": "industrial_factory",
+  "location": "digital_performance_chamber_epsilon",
+  "description": "Found in Performance Chamber Epsilon after defeating the Arbiter of the Benchmark. A performance report, still rendering its final summary. The baseline column contains the party's own data. The model was perfect. The model was wrong.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -13,47 +13,18 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w5_cached_memory"
+      "track": "cutscene_w4_foreman_confession"
     },
     {
       "type": "wait",
-      "duration": 1.0
+      "duration": 0.8
     },
     {
       "type": "narration",
       "lines": [
-        "The Evaluation Plane had always had the quality of a space that expected something to be demonstrated. A formality of assessment, a feeling that existence here was provisional until its function had been declared and found sufficient.",
-        "That quality was gone. The plane was still \u2014 not empty, but settled, the way a room feels after the person who made it tense has left. The architecture of judgment remained, but the judgment had been suspended.",
-        "Floating at the center, at exactly the height where the Arbiter had been: a question mark. Curved, pointed, precisely formed, hanging in the abstract air without punctuating anything. Not asking. Not answered. Just present, its purpose intact but its operation arrested."
-      ]
-    },
-    {
-      "type": "wait",
-      "duration": 0.9
-    },
-    {
-      "type": "narration",
-      "text": "The question mark was still. Questions, by their nature, pull toward resolution \u2014 there is a tension in their syntax, an incompleteness that orients everything after them toward an answer. This one had stopped pulling. It simply was, without asking, the way a note can be struck and sustained without demanding response."
-    },
-    {
-      "type": "wait",
-      "duration": 0.6
-    },
-    {
-      "type": "dialogue",
-      "lines": [
-        {
-          "speaker": "Arbiter of Function",
-          "text": "My purpose was to evaluate purpose. Whether a thing was doing what it was for. Whether its function was being discharged correctly, efficiently, with adequate relation to its reason for existing.",
-          "theme": "enemy",
-          "portrait": "mysterious"
-        },
-        {
-          "speaker": "Arbiter of Function",
-          "text": "I evaluated everything that passed through this plane. Found each thing either sufficient or insufficient. Filed the finding. Moved to the next.",
-          "theme": "enemy",
-          "portrait": "mysterious"
-        }
+        "The chamber had been designed for measurement — clean surfaces, controlled variables, the kind of environment where nothing happened by accident and everything that happened was entered into the record. The architecture of objectivity, which is also the architecture of something that has decided in advance what it will find.",
+        "Still suspended in the air at the chamber's center, rendering slowly as if the process that had generated it was still resolving its final columns: a performance report. Rows of metrics, confidence intervals, variance analyses. The comparison table at the bottom was the last thing to finish loading.",
+        "The baseline column was labeled YOUR PARTY. Not a theoretical baseline, not a historical average. The Arbiter had run her simulations against the actual party. Against them, specifically, as the model."
       ]
     },
     {
@@ -61,17 +32,46 @@
       "duration": 0.8
     },
     {
+      "type": "narration",
+      "text": "Reaching into the rendered report, it felt like touching a surface that was still deciding what temperature to be. The Arbiter's voice came from the data itself, from the rendering process, precise and even, the voice of someone whose certainty had recently been revised."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Arbiter of Function",
-          "text": "You did something that made the question irrelevant. Not by answering it \u2014 the question of your function has an answer, and it's complex, and I could evaluate it if you wanted.",
+          "speaker": "Arbiter of the Benchmark",
+          "text": "I ran four thousand simulations before you arrived. Combat simulations, resource allocation simulations, decision-tree modeling for every strategic variable I could parameterize.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
         {
-          "speaker": "Arbiter of Function",
-          "text": "But you made the asking feel beside the point. The question stopped mid-evaluation and I found I didn't need to finish it. The thing the question was for was already happening.",
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The model predicted the outcome of this encounter with 94.7% confidence. Four thousand simulations, and the model was consistent.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "The error was in what I used as the baseline. I built the optimal benchmark from historical data — from every party that had passed through before you. I made a model of what a successful party looked like, and I measured you against it.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Arbiter of the Benchmark",
+          "text": "But the optimal baseline was already your data. You were already in the historical record. The model was predicting you against yourself, and it still got it wrong.",
           "theme": "enemy",
           "portrait": "mysterious"
         }
@@ -85,8 +85,8 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Arbiter of Function",
-          "text": "That is the rarest thing I have ever found in this plane. A thing doing something that made evaluating it feel like looking away.",
+          "speaker": "Arbiter of the Benchmark",
+          "text": "A perfect model of the wrong question. Simulation 4001 was the only one that ran in reality.",
           "theme": "enemy",
           "portrait": "mysterious"
         }
@@ -94,11 +94,11 @@
     },
     {
       "type": "wait",
-      "duration": 1.2
+      "duration": 1.1
     },
     {
       "type": "narration",
-      "text": "The question mark floated, patient and unasking. Taken from the air, it had no weight \u2014 it was pure form, pure intention without demand, a question that had discovered it could exist without needing to be answered. Whether that was wisdom or resignation was itself a question the mark had stopped putting."
+      "text": "The report finished rendering. The summary row at the bottom showed a confidence interval that now contained the actual outcome — updated, post-hoc, the model correcting itself in the only direction left available to it. The baseline column still said YOUR PARTY, but the data in it was slightly different from before. She had updated the model with what had actually happened."
     },
     {
       "type": "wait",
@@ -106,7 +106,7 @@
     },
     {
       "type": "narration",
-      "text": "The sensation of being evaluated and found sufficient not by the answer but by the fact of being looked at with attention."
+      "text": "The sensation of being measured by something that learned from the measurement."
     },
     {
       "type": "wait",
@@ -114,13 +114,13 @@
     },
     {
       "type": "grant_item",
-      "item": "world5_fragment_arbiter_abstract",
-      "name": "Arbiter's Stopped Question",
-      "description": "A question mark that has stopped asking. Grants +12 MP and the passive Sufficient: the bearer's spells always meet their minimum damage threshold regardless of resistance. The Arbiter found the function. She stopped asking whether it was enough. Tooltip: \"Evaluation: suspended. Reason: unnecessary.\""
+      "item": "world4_fragment_arbiter_digital",
+      "name": "Arbiter's Performance Report",
+      "description": "A benchmark report where the optimal baseline is the party's own data. The model was wrong once. Grants +5% to all stats — the Arbiter's post-hoc update to the model. Tooltip: \"Simulation 4001. Sample size: 1. Confidence: 100%.\""
     },
     {
       "type": "set_flag",
-      "flag": "fragment_arbiter_abstract_collected",
+      "flag": "fragment_arbiter_digital_collected",
       "value": true
     },
     {
