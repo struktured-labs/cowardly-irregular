@@ -355,9 +355,33 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		elif target.elemental_resistances.has(element):
 			multiplier = 0.5
 
+		# Bonus damage vs undead — items like holy_water carry this flag and
+		# expect 2x damage against monsters flagged `undead: true` in the
+		# bestiary (skeleton, specter, cursed_armor, pipe_phantom, data_
+		# wraith). Pre-fix this flag was in items.json but use_item never
+		# checked it — holy_water dealt flat damage regardless of target,
+		# making the item identical to a generic damage potion.
+		if effects.get("bonus_vs_undead", false) and _is_target_undead(target):
+			multiplier *= 2.0
+
 		damage = int(damage * multiplier)
 		target.take_damage(damage)
 		print("  → %s took %d %s damage" % [target.combatant_name, damage, element])
+
+
+func _is_target_undead(target) -> bool:
+	## Looks up the target's monster_type meta (set by BattleEnemySpawner
+	## from the monsters_data JSON) and asks the bestiary whether that
+	## monster has `undead: true`. Returns false safely when target is
+	## null, not a monster (PC), or the bestiary doesn't know the id.
+	## Used by the damage path to apply the bonus_vs_undead 2x multiplier.
+	if target == null or not target.has_meta("monster_type"):
+		return false
+	var monster_id: String = str(target.get_meta("monster_type"))
+	if monster_id == "":
+		return false
+	var data: Dictionary = BestiarySystem.get_monster_data(monster_id)
+	return bool(data.get("undead", false))
 
 
 func get_item(item_id: String) -> Dictionary:
