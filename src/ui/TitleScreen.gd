@@ -104,7 +104,7 @@ func _build_ui() -> void:
 
 	# Version
 	_version_label = Label.new()
-	_version_label.text = "v0.5.0"
+	_version_label.text = Version.display()
 	_version_label.position = Vector2(vp.x - 80, vp.y - 28)
 	_version_label.add_theme_font_size_override("font_size", 10)
 	_version_label.add_theme_color_override("font_color", Color(0.4, 0.35, 0.5, 0.6))

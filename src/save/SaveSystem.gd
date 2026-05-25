@@ -80,7 +80,7 @@ func save_game(slot: int = -1) -> bool:
 		"save_date": Time.get_datetime_string_from_system(),
 		"play_time": GameState.get_play_time() if GameState else 0.0,
 		"play_time_formatted": GameState.get_playtime_formatted() if GameState else "00:00:00",
-		"game_version": "0.1.0",
+		"game_version": Version.semver(),
 		"chapter": story.chapter,
 		"chapter_title": story.title,
 		"world": story.world,
