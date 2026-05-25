@@ -700,6 +700,22 @@ func _step_branch(step: Dictionary) -> void:
 			if _skipping:
 				break
 			await _execute_step(sub_step)
+	elif step.get("condition", "") == "lead_job":
+		# Lead-job branching: pick steps based on the party leader's job_id.
+		# Used by W1 spotlight cutscenes to swap trope-demonstrating beats
+		# based on who the player picked as lead. Falls back to "default"
+		# case if leader's job has no explicit case or no leader is set.
+		var lead_job = ""
+		if GameState:
+			var leader = GameState.get_party_leader()
+			if leader is Dictionary:
+				lead_job = leader.get("job_id", "")
+		var cases = step.get("cases", {})
+		var branch_steps = cases.get(lead_job, cases.get("default", []))
+		for sub_step in branch_steps:
+			if _skipping:
+				break
+			await _execute_step(sub_step)
 
 
 func _detect_playstyle() -> String:
