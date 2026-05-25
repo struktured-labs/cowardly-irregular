@@ -21,8 +21,9 @@
           {"speaker": "Fighter", "text": "We could go around.", "theme": "fighter", "portrait": "fighter"},
           {"speaker": "Mage", "text": "There is no around. This is the only gate. I checked.", "theme": "mage", "portrait": "mage"}
         ]},
-        {"type": "narration", "text": "The Bard had been listening. The Bard had also been watching the guard, which was different from listening to him. She stepped up to the gate, leaned on the railing in a way that was structurally unnecessary, and asked the guard a question that had nothing to do with the gate."},
+        {"type": "narration", "text": "The Bard had been listening. The Bard had been listening for a long time, in fact — she had been listening since before the Fighter started arguing with the guard, and through the Mage's appeal to procedure, and through the Rogue's quiet survey of which crates might be climbable. She had not interrupted any of it. She had been listening."},
         {"type": "wait", "duration": 0.3},
+        {"type": "narration", "text": "She stepped up to the gate, leaned on the railing in a way that was structurally unnecessary, and said one thing."},
         {"type": "dialogue", "lines": [
           {"speaker": "Bard", "text": "What's the worst part of standing here all day?", "theme": "bard", "portrait": "bard"}
         ]},
@@ -30,7 +31,7 @@
         {"type": "dialogue", "lines": [
           {"speaker": "Bard", "text": "Thank you. I'll remember your daughter's name. I write down the names of people who help me.", "theme": "bard", "portrait": "bard"}
         ]},
-        {"type": "narration", "text": "She would, in fact, remember. The Bard was, the party would learn, the kind of person whose attention was the rare and dangerous thing that people did not realize they had been waiting for."},
+        {"type": "narration", "text": "She would, in fact, remember. She had listened first. She had spoken once. The Bard was, the party would learn, the kind of person whose attention was the rare and dangerous thing that people did not realize they had been waiting for."},
         {"type": "set_flag", "flag": "spotlight_unlocked_bard", "value": true}
       ]
     }},

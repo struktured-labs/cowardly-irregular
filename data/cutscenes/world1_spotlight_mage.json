@@ -28,7 +28,13 @@
           {"speaker": "Mage", "text": "It's not a language. It's a notation. There's a difference.", "theme": "mage", "portrait": "mage"},
           {"speaker": "Mage", "text": "Languages tell you what something *means.* Notations tell you what something *is.* This one says: the cave was measured. Recently. By someone who already knew the answer.", "theme": "mage", "portrait": "mage"}
         ]},
-        {"type": "narration", "text": "Nobody quite knew what to do with that, including the Mage. He wrote it down anyway. The Mage was, the party would learn, the kind of person who would rather have the wrong question written correctly than the right question forgotten."},
+        {"type": "wait", "duration": 0.3},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Mage", "text": "No — wait. The third symbol. I had it as a constant. It's a *variable*.", "theme": "mage", "portrait": "mage"},
+          {"speaker": "Mage", "text": "Then it's the other thing. Someone wasn't measuring the cave. Someone was *defining* it.", "theme": "mage", "portrait": "mage"}
+        ]},
+        {"type": "narration", "text": "He did not flinch when he revised himself. He did not apologize for the first reading. He simply wrote the second one underneath, and the first one was a step on the way to the second one, and both were in the journal."},
+        {"type": "narration", "text": "The Mage was, the party would learn, the kind of person who would rather have the wrong question written correctly than the right question forgotten."},
         {"type": "set_flag", "flag": "spotlight_unlocked_mage", "value": true}
       ]
     }},

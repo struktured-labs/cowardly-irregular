@@ -24,7 +24,8 @@
         ]},
         {"type": "narration", "text": "She didn't ask permission. She didn't introduce herself. She knelt — her sandals were impractical for kneeling — and put her hands on the woman's shin and closed her eyes."},
         {"type": "wait", "duration": 0.4},
-        {"type": "narration", "text": "The bleeding stopped. The woman's breath caught. The cut was not gone — healing didn't make wounds disappear, the Cleric would later explain, it simply taught them to be over with — but it was closed."},
+        {"type": "narration", "text": "For half a second she paused. The kind of half-second nobody would have noticed if they hadn't been looking at her hands. Then the prayer came. The bleeding stopped. The woman's breath caught."},
+        {"type": "narration", "text": "The cut was not gone — healing didn't make wounds disappear, the Cleric would later explain, it simply taught them to be over with — but it was closed."},
         {"type": "dialogue", "lines": [
           {"speaker": "Cleric", "text": "Walk on it tomorrow. Today, sit.", "theme": "cleric", "portrait": "cleric"},
           {"speaker": "Cleric", "text": "Tell me if it hurts in the night. I'll come back.", "theme": "cleric", "portrait": "cleric"}

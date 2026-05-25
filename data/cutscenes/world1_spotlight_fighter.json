@@ -25,7 +25,10 @@
           {"speaker": "Fighter", "text": "It's fine. I'm fine. Anyone hurt?", "theme": "fighter", "portrait": "fighter"},
           {"speaker": "Fighter", "text": "Good. Keep moving.", "theme": "fighter", "portrait": "fighter"}
         ]},
-        {"type": "narration", "text": "He had not looked at anyone while he asked, because looking would have meant taking his eyes off the road. The Fighter was, the party would learn, the kind of person who counted what mattered and trusted the rest."},
+        {"type": "narration", "text": "He had not looked at anyone while he asked, because looking would have meant taking his eyes off the road."},
+        {"type": "wait", "duration": 0.4},
+        {"type": "narration", "text": "Later, when the others were checking the slime remains and arguing about iridescence, the Fighter looked at his own hands. They were shaking. He watched them for the space of a breath. Then he set them on the pommel of the sword and they were not shaking. He had not decided to do that. It was simply what the hands did when they were told."},
+        {"type": "narration", "text": "The Fighter was, the party would learn, the kind of person who counted what mattered and trusted the rest."},
         {"type": "set_flag", "flag": "spotlight_unlocked_fighter", "value": true}
       ]
     }},

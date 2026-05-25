@@ -27,7 +27,10 @@
           {"speaker": "Rogue", "text": "It's open.", "theme": "rogue", "portrait": "rogue"},
           {"speaker": "Rogue", "text": "Don't ask how. You won't like the answer.", "theme": "rogue", "portrait": "rogue"}
         ]},
-        {"type": "narration", "text": "The Rogue had a way of telling you a thing was done without explaining how the thing got done. The Rogue was, the party would learn, the kind of person who found the second way through every door."},
+        {"type": "narration", "text": "The party crowded the chest. Coins. A potion. A small dagger, dull. The usual."},
+        {"type": "wait", "duration": 0.3},
+        {"type": "narration", "text": "While they argued about the split, the Rogue noticed the seam. The chest had a false bottom. It was the kind of thing nobody put a false bottom in unless they expected someone to look. The Rogue lifted it without making the lifting visible, removed the folded paper underneath, and put it in a pocket that already had three other folded papers in it. The chest looked the same as it had before."},
+        {"type": "narration", "text": "The Rogue had a way of telling you a thing was done without explaining how the thing got done. The Rogue was, the party would learn, the kind of person who saw the second thing in the room."},
         {"type": "set_flag", "flag": "spotlight_unlocked_rogue", "value": true}
       ]
     }},
