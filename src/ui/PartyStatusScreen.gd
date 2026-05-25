@@ -68,6 +68,25 @@ func _build_ui() -> void:
 	title.add_theme_color_override("font_color", TEXT)
 	add_child(title)
 
+	# Gold counter, right-justified next to the title bar. Pulled live from
+	# GameState.party_gold so it always reflects current state — useful when
+	# the player is checking before a shop trip or after a battle. JRPG-
+	# standard placement (FF-style). Guards GameState presence so unit tests
+	# that boot without the autoload graph still render the rest of the
+	# screen cleanly.
+	var gold_amount: int = 0
+	if GameState and "party_gold" in GameState:
+		gold_amount = int(GameState.party_gold)
+	var gold_label := Label.new()
+	gold_label.name = "GoldLabel"
+	gold_label.text = "Gold: %d G" % gold_amount
+	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	gold_label.position = Vector2(vp.x - 200, 18)
+	gold_label.size = Vector2(180, 20)
+	gold_label.add_theme_font_size_override("font_size", 14)
+	gold_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
+	add_child(gold_label)
+
 	# Layout: 4 compact party cards on top, detail panel below
 	var card_w := (vp.x - 120.0) / 4.0
 	var card_h := 184.0  # Bumped from 160 to fit the EXP bar between MP and stats.
