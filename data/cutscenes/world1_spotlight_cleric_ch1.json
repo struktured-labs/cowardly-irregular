@@ -1,0 +1,40 @@
+{
+  "id": "world1_spotlight_cleric_ch1",
+  "title": "Hands on the Hurt",
+  "world": 1,
+  "trigger": "world1_spotlight_cleric_trigger",
+  "background": "prologue_village",
+  "description": "Harmonia, ch.1. A villager has been hurt. The Cleric steps forward without being asked.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "An old woman sat on the edge of the well, holding her shin. A scrape — not deep, but the wrong shape of dark, and the kind of fall that doesn't stop being a fall when you stand up."},
+
+    {"type": "branch", "condition": "lead_job", "cases": {
+      "cleric": [
+        {"type": "narration", "text": "The lead was already there. They had been there before anyone noticed the woman was hurt."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Cleric", "text": "Sit. Let me see it.", "theme": "cleric", "portrait": "cleric"}
+        ]},
+        {"type": "narration", "text": "Their hands were steady. The cut was closed before the woman finished saying she was fine. This is what the lead does. This is what the lead has always done."}
+      ],
+      "default": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Cleric", "text": "Sit. Let me see it.", "theme": "cleric", "portrait": "cleric"}
+        ]},
+        {"type": "narration", "text": "She didn't ask permission. She didn't introduce herself. She knelt — her sandals were impractical for kneeling — and put her hands on the woman's shin and closed her eyes."},
+        {"type": "wait", "duration": 0.4},
+        {"type": "narration", "text": "For half a second she paused. The kind of half-second nobody would have noticed if they hadn't been looking at her hands. Then the prayer came. The bleeding stopped. The woman's breath caught."},
+        {"type": "narration", "text": "The cut was not gone — healing didn't make wounds disappear, the Cleric would later explain, it simply taught them to be over with — but it was closed."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Cleric", "text": "Walk on it tomorrow. Today, sit.", "theme": "cleric", "portrait": "cleric"},
+          {"speaker": "Cleric", "text": "Tell me if it hurts in the night. I'll come back.", "theme": "cleric", "portrait": "cleric"}
+        ]},
+        {"type": "narration", "text": "She meant it. She would come back. The Cleric was, the party would learn, the kind of person who said things and then did them."},
+        {"type": "set_flag", "flag": "spotlight_unlocked_cleric", "value": true}
+      ]
+    }},
+
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

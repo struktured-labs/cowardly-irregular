@@ -1,0 +1,40 @@
+{
+  "id": "world1_spotlight_rogue_ch3",
+  "title": "The Lock and the Other Way",
+  "world": 1,
+  "trigger": "world1_spotlight_rogue_trigger",
+  "background": "cave_entrance",
+  "description": "Whispering Cave, ch.3. A locked chest. The Rogue finds the way through without making it look like effort.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "Three chambers in, there was a chest. The lock was the kind that announced itself: brass, oversized, with a keyhole shaped like a question."},
+
+    {"type": "branch", "condition": "lead_job", "cases": {
+      "rogue": [
+        {"type": "narration", "text": "The lead was already crouched beside it. They had been crouched beside it for a while. They had a thin piece of wire and were not explaining what they were doing."},
+        {"type": "wait", "duration": 0.3},
+        {"type": "narration", "text": "The lock clicked. The lid lifted. The lead did not look up. They never did."}
+      ],
+      "default": [
+        {"type": "dialogue", "lines": [
+          {"speaker": "Fighter", "text": "We could break it.", "theme": "fighter", "portrait": "fighter"}
+        ]},
+        {"type": "narration", "text": "The Rogue did not say anything. The Rogue was already kneeling beside the lock, a thin piece of wire in one hand, the other resting flat on the chest's lid the way a doctor rests a hand on a patient."},
+        {"type": "wait", "duration": 0.4},
+        {"type": "narration", "text": "Three seconds. Four. The lock clicked — not loud, not satisfying, just *over.* The Rogue stood up and stepped back."},
+        {"type": "dialogue", "lines": [
+          {"speaker": "Rogue", "text": "It's open.", "theme": "rogue", "portrait": "rogue"},
+          {"speaker": "Rogue", "text": "Don't ask how. You won't like the answer.", "theme": "rogue", "portrait": "rogue"}
+        ]},
+        {"type": "narration", "text": "The party crowded the chest. Coins. A potion. A small dagger, dull. The usual."},
+        {"type": "wait", "duration": 0.3},
+        {"type": "narration", "text": "While they argued about the split, the Rogue noticed the seam. The chest had a false bottom. It was the kind of thing nobody put a false bottom in unless they expected someone to look. The Rogue lifted it without making the lifting visible, removed the folded paper underneath, and put it in a pocket that already had three other folded papers in it. The chest looked the same as it had before."},
+        {"type": "narration", "text": "The Rogue had a way of telling you a thing was done without explaining how the thing got done. The Rogue was, the party would learn, the kind of person who saw the second thing in the room."},
+        {"type": "set_flag", "flag": "spotlight_unlocked_rogue", "value": true}
+      ]
+    }},
+
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
