@@ -73,10 +73,17 @@ func _setup_collision() -> void:
 
 
 func _setup_indicator() -> void:
+	## "[A] Save" prompt floating above the crystal when the player is in
+	## interaction range. Includes the button glyph so players know HOW to
+	## save without having to guess (pre-fix the label just said "Save"
+	## with no action hint — players unfamiliar with JRPG conventions had
+	## to mash buttons to discover the interaction). Width grew to fit
+	## the [A] glyph cleanly without truncation.
 	_indicator = Label.new()
-	_indicator.text = "Save"
+	_indicator.text = "[A] Save"
 	_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_indicator.position = Vector2(-16, -28)
+	_indicator.position = Vector2(-32, -28)
+	_indicator.size = Vector2(64, 14)
 	_indicator.add_theme_font_size_override("font_size", 10)
 	_indicator.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_indicator.visible = false
