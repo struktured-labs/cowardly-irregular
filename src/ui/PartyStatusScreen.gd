@@ -17,6 +17,7 @@ const MUTED := Color(0.55, 0.6, 0.7)
 const LABEL := Color(0.7, 0.85, 1.0)
 const HP_COLOR := Color(0.4, 0.9, 0.4)
 const MP_COLOR := Color(0.4, 0.8, 1.0)
+const EXP_COLOR := Color(0.95, 0.85, 0.45)
 const WEAPON_COLOR := Color(1.0, 0.75, 0.35)
 const ARMOR_COLOR := Color(0.55, 0.75, 1.0)
 const ACCESSORY_COLOR := Color(0.9, 0.6, 0.95)
@@ -69,7 +70,7 @@ func _build_ui() -> void:
 
 	# Layout: 4 compact party cards on top, detail panel below
 	var card_w := (vp.x - 120.0) / 4.0
-	var card_h := 160.0
+	var card_h := 184.0  # Bumped from 160 to fit the EXP bar between MP and stats.
 	var card_y := 48.0
 
 	for i in party.size():
@@ -143,6 +144,15 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	_add_bar(card, 12, 54, w - 24, 10, hp_cur, hp_max, HP_COLOR, "HP")
 	_add_bar(card, 12, 78, w - 24, 10, mp_cur, mp_max, MP_COLOR, "MP")
 
+	# EXP bar — Combatant.gain_job_exp formula tops out at `job_level * 100`
+	# per level, so that's our denominator. Cap level at 99 (same ceiling
+	# Combatant enforces) before rendering to avoid a divide-by-zero edge
+	# if anything ever sets level=0.
+	var exp_cur: int = int(member.job_exp) if "job_exp" in member else 0
+	var exp_lvl: int = lvl if lvl > 0 else 1
+	var exp_max: int = exp_lvl * 100
+	_add_bar(card, 12, 102, w - 24, 10, exp_cur, exp_max, EXP_COLOR, "EXP")
+
 	# Stats (compact)
 	var stats := Label.new()
 	stats.text = "ATK %d  DEF %d\nMAG %d  SPD %d" % [
@@ -151,7 +161,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 		int(member.magic) if "magic" in member else 0,
 		int(member.speed) if "speed" in member else 0,
 	]
-	stats.position = Vector2(12, 100)
+	stats.position = Vector2(12, 124)
 	stats.size = Vector2(w - 24, 40)
 	stats.add_theme_font_size_override("font_size", 11)
 	stats.add_theme_color_override("font_color", TEXT)
