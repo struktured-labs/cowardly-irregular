@@ -349,6 +349,24 @@
 				"speed": 3
 			},
 			"flavor": "Forged from the silver ore that costs more than villages. Featherlight and mean. Most of its weight is in its reputation."
+		},
+		"piano_scythe": {
+			"id": "piano_scythe",
+			"name": "Piano Scythe",
+			"description": "A bard's signature instrument-weapon — sweeps with dissonant chords on every swing",
+			"cost": 450,
+			"weapon_type": "piano_scythe",
+			"visual": {
+				"blade_color": [0.15, 0.15, 0.18],
+				"blade_light": [0.95, 0.95, 0.95],
+				"blade_dark": [0.05, 0.05, 0.08]
+			},
+			"stat_mods": {
+				"attack": 8,
+				"magic": 6,
+				"speed": 2
+			},
+			"flavor": "Eighty-eight keys, one curved edge. Hums when carried, sings when swung, screams when it lands. Refuses to be tuned."
 		}
 	},
 	"armors": {

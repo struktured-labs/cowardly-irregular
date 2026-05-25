@@ -85,6 +85,47 @@ func test_sfx_manifest_entries_point_to_existing_files() -> void:
 		"sfx_manifest scan completed (%d missing of %d entries)" % [missing.size(), sounds.size()])
 
 
+const EQUIPMENT_PATH := "res://data/equipment.json"
+
+
+func test_per_weapon_attack_hit_sfx_coverage() -> void:
+	# Every weapon_type referenced in equipment.json must have a matching
+	# attack_hit_<type> AND attack_hit_<type>_crit entry in sfx_manifest.
+	# Otherwise the per-weapon lookup in SoundManager.play_attack_hit
+	# silently falls back to the generic sword sound for that weapon class.
+	var eq = _load_json(EQUIPMENT_PATH)
+	var sfx = _load_json(SFX_MANIFEST_PATH)
+	if eq.is_empty() or not eq.has("weapons") or sfx.is_empty() or not sfx.has("sfx"):
+		pending("equipment.json or sfx_manifest.json failed to load")
+		return
+	var sounds: Dictionary = sfx["sfx"]
+	var weapon_types: Dictionary = {}
+	for weapon_id in eq["weapons"].keys():
+		var w = eq["weapons"][weapon_id]
+		if w is Dictionary and w.has("weapon_type"):
+			weapon_types[w["weapon_type"]] = true
+	var missing: Array = []
+	for wt in weapon_types.keys():
+		if not sounds.has("attack_hit_%s" % wt):
+			missing.append("attack_hit_%s" % wt)
+		if not sounds.has("attack_hit_%s_crit" % wt):
+			missing.append("attack_hit_%s_crit" % wt)
+	assert_true(missing.is_empty(),
+		"weapon_type(s) in equipment.json lack matching SFX entries: %s" % str(missing))
+
+
+func test_attack_hit_fallbacks_exist() -> void:
+	# play_attack_hit falls back to "attack_hit" / "critical_hit" when the
+	# per-weapon entry is missing. Those generic keys must always resolve.
+	var sfx = _load_json(SFX_MANIFEST_PATH)
+	if sfx.is_empty() or not sfx.has("sfx"):
+		pending("sfx_manifest failed to load")
+		return
+	var sounds: Dictionary = sfx["sfx"]
+	assert_true(sounds.has("attack_hit"), "attack_hit fallback missing from sfx_manifest")
+	assert_true(sounds.has("critical_hit"), "critical_hit fallback missing from sfx_manifest")
+
+
 func test_music_manifest_has_res_prefix_or_relative() -> void:
 	# SoundManager has a "res://" prefix fix — ensure all paths are either
 	# already prefixed or relative (which the loader can fix up).

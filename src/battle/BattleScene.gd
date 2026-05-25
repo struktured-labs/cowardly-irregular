@@ -3273,11 +3273,9 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
-	if is_crit:
-		# Critical hit: louder impact with raised pitch for extra punch
-		SoundManager.play_battle_scaled("critical_hit", 2.0, 1.3)
-	else:
-		SoundManager.play_battle("attack_hit")
+	var attacker = BattleManager.current_combatant
+	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
+	SoundManager.play_attack_hit(weapon_type, is_crit)
 
 
 func _spawn_elemental_indicator(target: Combatant, element: String, modifier: float) -> void:

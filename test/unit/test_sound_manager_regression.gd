@@ -72,3 +72,29 @@ func test_music_ceiling_keeps_music_below_battle_sfx():
 	assert_lte(music_db, battle_db,
 		"At slider=1.0, music (%f dB) must be <= battle SFX (%f dB) so battle hits punch through" %
 		[music_db, battle_db])
+
+
+func test_play_attack_hit_handles_empty_and_unknown_weapon():
+	# play_attack_hit must not crash for empty weapon_type (no weapon
+	# equipped) or for an unknown weapon_type. Both should silently fall
+	# back to the generic attack_hit / critical_hit entry.
+	var sm = load("res://src/audio/SoundManager.gd").new()
+	add_child_autofree(sm)
+	await get_tree().process_frame
+	sm.play_attack_hit("", false)
+	sm.play_attack_hit("", true)
+	sm.play_attack_hit("nonexistent_weapon_type", false)
+	sm.play_attack_hit("nonexistent_weapon_type", true)
+	pass_test("play_attack_hit handled empty + unknown weapon types without crashing")
+
+
+func test_play_attack_hit_resolves_known_weapon_types():
+	# Known weapon_types from equipment.json must resolve via the manifest
+	# (or the procedural fallback) without raising.
+	var sm = load("res://src/audio/SoundManager.gd").new()
+	add_child_autofree(sm)
+	await get_tree().process_frame
+	for wt in ["sword", "dagger", "staff", "axe", "piano_scythe"]:
+		sm.play_attack_hit(wt, false)
+		sm.play_attack_hit(wt, true)
+	pass_test("play_attack_hit resolved all 5 known weapon_types")

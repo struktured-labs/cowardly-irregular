@@ -307,6 +307,15 @@ func get_weapon(weapon_id: String) -> Dictionary:
 	return weapons.get(weapon_id, {})
 
 
+func get_weapon_type(combatant) -> String:
+	if combatant == null or not "equipped_weapon" in combatant:
+		return ""
+	if combatant.equipped_weapon.is_empty():
+		return ""
+	var weapon = weapons.get(combatant.equipped_weapon, {})
+	return weapon.get("weapon_type", "")
+
+
 func get_armor(armor_id: String) -> Dictionary:
 	return armors.get(armor_id, {})
 

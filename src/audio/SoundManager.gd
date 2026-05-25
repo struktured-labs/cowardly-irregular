@@ -322,6 +322,30 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 	_play_sound(_battle_player, params)
 
 
+func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
+	# Per-weapon OGGs from cowir-sfx have the crit identity (pitch shift,
+	# echo) baked in, so we don't pile additional volume/pitch on top.
+	# The procedural fallback still gets the old crit boost.
+	var suffix = "_crit" if is_crit else ""
+	var generic_key = "critical_hit" if is_crit else "attack_hit"
+	if not weapon_type.is_empty():
+		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
+		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key):
+			return
+	if _try_play_sfx_from_manifest(_battle_player, generic_key):
+		return
+	if not SOUNDS.has(generic_key):
+		return
+	if is_crit:
+		var params = SOUNDS[generic_key].duplicate()
+		params["volume_db"] = 2.0
+		if params.has("freq"):
+			params["freq"] = params["freq"] * 1.3
+		_play_sound(_battle_player, params)
+	else:
+		_play_sound(_battle_player, SOUNDS[generic_key])
+
+
 func play_ability(ability_id: String) -> void:
 	"""Play sound for an ability — tries world-variant first, then default"""
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
