@@ -514,6 +514,30 @@ The Tempo knelt with the grace of something that has never been forced to kneel 
 
 With the Tempo broken and the palace district accessible, there was nothing left but the throne room.
 
+That night, in a room above a bakery that smelled of yeast and old butter, the Bard sat at the writing desk by lamplight while the others slept. She opened her journal to a clean spread and wrote across the top of the left page: *Things noticed on the road. To be considered later, when there is later.*
+
+She did not name what she was doing. She did not yet have the word for it. She only knew that there were five people she had been traveling with, and there were five things she had seen them do that had not gone in the daily record — not because they were unimportant, but because they were the kind of important that only made sense when you laid them next to each other and let them argue.
+
+She wrote them in the order they had happened.
+
+*The Fighter, after the slimes on the road. Hands shaking. Set them on the pommel and they were not shaking. Did not decide to. The hands did it on their own, having been told. The fighting is the easy part. The standing afterward is what costs.*
+
+*The Cleric, at the well in Harmonia. The half-second before the prayer. Not hesitation in the way the word usually means — more like a small door she had to open before the rest could happen. Every time. Even now. She has not stopped paying for the thing she does. She has only stopped mentioning that she pays.*
+
+*The Mage, at the carved wall in the cave. The second reading on top of the first. He did not flinch. He did not apologize. The first reading was a step toward the second one and both went in the book. There is a kind of being right that begins with being wrong on purpose. He does not call it that. I will not tell him I have a name for it.*
+
+*The Rogue, after the false-bottom chest in the third chamber. Pocketed the folded paper while we were arguing about coins. I did not see it; I noticed the moment afterward in which they were already standing somewhere different from where the noticing of the paper would have been done. There is a second room in every room they enter. I have not asked what is in the pocket.*
+
+She paused. The fifth was hers. She had not been sure whether to write her own.
+
+*The Bard, at the inner gate today. Listened. Listened for a long time. Spoke once. The thing she said was the thing the guard had been waiting to be asked. It was not the cleverness of the line that opened the gate. It was the having-been-listened-to. I did not know I knew that until I wrote it down. I am writing it down so I will know it next time.*
+
+She set the quill in its rest and looked at the page for a while. She did not yet understand what she was looking at. She only understood that the five entries belonged on the same page, and that putting them there had taken something out of her that she did not, until now, know she had been carrying.
+
+She turned to a fresh page and wrote at the top of it: *To return to. Possibly the most important thing in the journal.* Then she closed the journal and went to bed.
+
+She would, later, return to it. She did not yet know how late later would be.
+
 ---
 
 ### Chapter 8: The Scholar's Reckoning
