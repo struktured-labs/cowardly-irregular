@@ -1,0 +1,129 @@
+extends GutTest
+
+## Regression: when a cutscene is skipped, every remaining set_flag step
+## MUST still fire — otherwise the cutscene's completion flag isn't set
+## and the cutscene replays forever on every save load / area re-enter.
+## This is a silent failure mode (no error, just bad UX), so the test
+## guards both:
+##   1. The helper exists and is called from the skip path
+##   2. It correctly walks the remaining steps and fires set_flag entries
+##      while skipping non-flag entries
+##
+## Behavioral test exercises the extracted helper directly so it doesn't
+## depend on driving the full UI / async cutscene flow.
+
+const DIRECTOR_PATH := "res://src/cutscene/CutsceneDirector.gd"
+
+
+const _TOUCHED_FLAGS := [
+	"cutscene_flag_test_flag_a",
+	"cutscene_flag_test_flag_b",
+	"cutscene_flag_test_flag_c",
+	"cutscene_flag_test_flag_d",
+]
+var _saved_flags: Dictionary = {}
+
+
+func before_each() -> void:
+	_saved_flags.clear()
+	if GameState:
+		for f in _TOUCHED_FLAGS:
+			_saved_flags[f] = GameState.game_constants.get(f, null)
+			GameState.game_constants.erase(f)
+
+
+func after_each() -> void:
+	if GameState:
+		for f in _TOUCHED_FLAGS:
+			GameState.game_constants.erase(f)
+			if _saved_flags.get(f) != null:
+				GameState.game_constants[f] = _saved_flags[f]
+
+
+func _read(path: String) -> String:
+	var file = FileAccess.open(path, FileAccess.READ)
+	assert_not_null(file, "file should exist: %s" % path)
+	var text = file.get_as_text()
+	file.close()
+	return text
+
+
+func test_skip_path_calls_apply_remaining_set_flag_steps() -> void:
+	# Source-level: the skip branch in _start_cutscene must call the
+	# extracted helper (not be inlined). Catches anyone re-inlining the
+	# loop, which is fine logically but loses the unit-test surface and
+	# makes future refactors riskier.
+	var text = _read(DIRECTOR_PATH)
+	var skip_idx = text.find("if _skipping:")
+	assert_true(skip_idx > -1, "_start_cutscene must still have an `if _skipping:` block after the step loop")
+	# Need to find the right one — there are multiple. Look for the one
+	# that's followed by the helper call within ~200 chars.
+	while skip_idx > -1:
+		var window = text.substr(skip_idx, 200)
+		if window.find("_apply_remaining_set_flag_steps(steps") > -1:
+			# Found it.
+			return
+		skip_idx = text.find("if _skipping:", skip_idx + 1)
+	assert_true(false,
+		"No `if _skipping:` block calls _apply_remaining_set_flag_steps(steps, ...) — helper is orphaned")
+
+
+func test_helper_fires_set_flag_for_each_remaining_set_flag_step() -> void:
+	# Behavioral: a steps array with mixed types from index N onwards,
+	# helper fires _step_set_flag for each set_flag entry.
+	var script = load(DIRECTOR_PATH)
+	var d = script.new()
+	add_child_autofree(d)
+
+	var steps: Array = [
+		{"type": "dialogue", "speaker": "Hero", "text": "Hello"},
+		{"type": "dialogue", "speaker": "Hero", "text": "World"},
+		{"type": "set_flag", "flag": "test_flag_a", "value": true},
+		{"type": "play_music", "track": "battle"},
+		{"type": "set_flag", "flag": "test_flag_b", "value": true},
+		{"type": "set_flag", "flag": "test_flag_c", "value": true},
+	]
+	# Skip the first 2 dialogue steps (already executed before the skip
+	# triggered). The remaining 4 contain 3 set_flag entries.
+	d._apply_remaining_set_flag_steps(steps, 2)
+	assert_true(GameState.game_constants.get("cutscene_flag_test_flag_a", false),
+		"set_flag at index 2 must fire (helper starts at from_index)")
+	assert_true(GameState.game_constants.get("cutscene_flag_test_flag_b", false),
+		"set_flag at index 4 must fire (helper walks past non-set_flag entries)")
+	assert_true(GameState.game_constants.get("cutscene_flag_test_flag_c", false),
+		"set_flag at index 5 must fire (helper continues to end of array)")
+
+
+func test_helper_skips_set_flag_entries_before_from_index() -> void:
+	# Set_flag at index 0 should NOT fire when from_index=2.
+	var script = load(DIRECTOR_PATH)
+	var d = script.new()
+	add_child_autofree(d)
+
+	var steps: Array = [
+		{"type": "set_flag", "flag": "test_flag_a", "value": true},  # skipped (already-executed)
+		{"type": "dialogue", "speaker": "Hero", "text": "ok"},
+		{"type": "set_flag", "flag": "test_flag_b", "value": true},  # should fire
+	]
+	d._apply_remaining_set_flag_steps(steps, 2)
+	assert_false(GameState.game_constants.has("cutscene_flag_test_flag_a"),
+		"set_flag before from_index must NOT fire — already executed in pre-skip phase")
+	assert_true(GameState.game_constants.get("cutscene_flag_test_flag_b", false),
+		"set_flag at from_index must fire")
+
+
+func test_helper_handles_empty_remaining_steps() -> void:
+	# Edge case: from_index >= steps.size() — no remaining steps. Must
+	# not crash, must not flip any flags.
+	var script = load(DIRECTOR_PATH)
+	var d = script.new()
+	add_child_autofree(d)
+
+	var steps: Array = [{"type": "set_flag", "flag": "test_flag_d", "value": true}]
+	d._apply_remaining_set_flag_steps(steps, 1)  # past the end
+	assert_false(GameState.game_constants.has("cutscene_flag_test_flag_d"),
+		"from_index past end must be a clean no-op — no flag fires")
+
+	# Empty steps array entirely
+	d._apply_remaining_set_flag_steps([], 0)
+	# No crash → pass
