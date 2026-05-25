@@ -364,14 +364,17 @@ func _open_chest(player: Node2D) -> void:
 		"equipment":
 			var equip_name = contents_id.replace("_", " ").capitalize()
 			contents_text = "Found %s!" % equip_name
-			# Add to equipment pool
+			# Add to equipment pool. Slot is resolved against EquipmentSystem's
+			# weapons/armors/accessories dicts so the categorization is correct
+			# regardless of naming convention. Pre-fix used keyword heuristics
+			# ("armor" or "robe" or "mail" → armors) which misclassified items
+			# like "iron_breastplate" or "obsidian_cuirass" into the weapons
+			# pool, leaving them stuck and un-equippable as armor. Falls back
+			# to "weapons" only when EquipmentSystem can't resolve the ID at
+			# all (genuinely unknown item — better than dropping silently).
 			var game_loop = get_tree().root.get_node_or_null("GameLoop")
 			if game_loop:
-				var pool_key = "weapons"  # Default, should determine from item
-				if "armor" in contents_id or "robe" in contents_id or "mail" in contents_id:
-					pool_key = "armors"
-				elif "ring" in contents_id or "amulet" in contents_id or "boots" in contents_id:
-					pool_key = "accessories"
+				var pool_key = _resolve_equipment_pool(contents_id)
 				if not game_loop.equipment_pool.has(pool_key):
 					game_loop.equipment_pool[pool_key] = []
 				game_loop.equipment_pool[pool_key].append(contents_id)
@@ -389,3 +392,30 @@ func _open_chest(player: Node2D) -> void:
 	if not is_instance_valid(self) or not is_instance_valid(dialogue_box):
 		return
 	dialogue_box.visible = false
+
+
+func _resolve_equipment_pool(item_id: String) -> String:
+	## Returns "weapons" / "armors" / "accessories" based on which
+	## EquipmentSystem dict actually contains the item ID. Falls back to
+	## "weapons" only when EquipmentSystem isn't available or genuinely
+	## doesn't know the item — better than silently dropping the chest
+	## reward. The fallback matches pre-fix default behavior so existing
+	## save data with mis-pooled items doesn't change shape.
+	if Engine.has_singleton("EquipmentSystem"):
+		var eq = Engine.get_singleton("EquipmentSystem")
+		if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+			return "weapons"
+		if eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+			return "armors"
+		if eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+			return "accessories"
+	# EquipmentSystem also lives as an autoload on /root in many contexts.
+	var eq_node = get_node_or_null("/root/EquipmentSystem")
+	if eq_node:
+		if eq_node.has_method("get_weapon") and not eq_node.get_weapon(item_id).is_empty():
+			return "weapons"
+		if eq_node.has_method("get_armor") and not eq_node.get_armor(item_id).is_empty():
+			return "armors"
+		if eq_node.has_method("get_accessory") and not eq_node.get_accessory(item_id).is_empty():
+			return "accessories"
+	return "weapons"
