@@ -16,7 +16,7 @@ Nobody in Harmonia had ever seen a Royal Bureau of anything. The village was six
 
 But the notice was there. And the monsters were getting worse. And the real army — the one with matching armor and a pension plan — was busy in the capital doing whatever it was armies did when chancellors needed protecting.
 
-So four people showed up.
+So five people showed up.
 
 Not because they were brave. Not because they were special. Because they were there, and nobody else was, and Elder Theron had that look on his face — the one old men get when they've decided something is your problem now.
 
