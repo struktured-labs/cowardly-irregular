@@ -169,6 +169,19 @@ func _get_effect_type_for_ability(ability_id: String) -> EffectType:
 
 func _play_effect_sound(effect_type: EffectType, power: float = 1.0) -> void:
 	"""Play appropriate sound for effect with power-based volume and pitch"""
+	# PHYSICAL effects route through SoundManager.play_attack_hit so the
+	# per-weapon SFX from cowir-sfx's b6f3f00 fires here too. Other effect
+	# types use the plain manifest lookup as before.
+	if effect_type == EffectType.PHYSICAL and SoundManager:
+		var weapon_type = ""
+		var battle_mgr = get_node_or_null("/root/BattleManager")
+		if battle_mgr and battle_mgr.current_combatant:
+			var equipment = get_node_or_null("/root/EquipmentSystem")
+			if equipment and equipment.has_method("get_weapon_type"):
+				weapon_type = equipment.get_weapon_type(battle_mgr.current_combatant)
+		SoundManager.play_attack_hit(weapon_type, false)
+		return
+
 	var sound_key = ""
 	match effect_type:
 		EffectType.FIRE:
@@ -191,8 +204,6 @@ func _play_effect_sound(effect_type: EffectType, power: float = 1.0) -> void:
 			sound_key = "debuff"
 		EffectType.POISON:
 			sound_key = "ability_dark"
-		EffectType.PHYSICAL:
-			sound_key = "attack_hit"
 
 	if sound_key != "" and SoundManager:
 		# Scale volume based on power (more powerful = slightly louder)

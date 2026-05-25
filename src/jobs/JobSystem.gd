@@ -318,6 +318,16 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 	combatant.job = job
 	_apply_job_stats(combatant, job)
 
+	# Bard joins with their signature piano_scythe if they don't already
+	# have a weapon equipped. Doesn't override existing equipment — the
+	# player keeps whatever they had on a Bard pick. Inverse (leaving
+	# bard) is intentionally a no-op; the scythe stays equipped if the
+	# player liked it.
+	if job_id == "bard" and combatant.equipped_weapon.is_empty():
+		var equipment = get_node_or_null("/root/EquipmentSystem")
+		if equipment and equipment.weapons.has("piano_scythe"):
+			equipment.equip_weapon(combatant, "piano_scythe")
+
 	job_changed.emit(combatant, old_job, job)
 	return true
 
