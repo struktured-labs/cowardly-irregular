@@ -77,6 +77,10 @@ const HINTS = {
 		"title": "Resume Session",
 		"body": "Your grind progress was saved automatically. Press Resume to continue where you left off — all battles, EXP, and items are preserved.",
 	},
+	"spotlight_unlock": {
+		"title": "Spotlight Unlocked",
+		"body": "This party member just stepped out from autopilot — you now have direct control of their turn. Locked members still follow their autobattle rules until their spotlight scene plays.",
+	},
 }
 
 

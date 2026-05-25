@@ -39,6 +39,7 @@ var battle_speed_index: int = 2
 var text_speed: String = "normal"
 var text_speed_index: int = 1
 var screen_shake_enabled: bool = true
+var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible when debug_log_enabled
 
 ## UI State
 var selected_index: int = 0
@@ -88,6 +89,8 @@ func _ready() -> void:
 				text_speed_index = 1
 		if "screen_shake_enabled" in GameState:
 			screen_shake_enabled = GameState.screen_shake_enabled
+		if "debug_all_pcs_unlocked" in GameState:
+			debug_all_pcs_unlocked = GameState.debug_all_pcs_unlocked
 	_build_ui()
 	_play_open_animation()
 
@@ -273,15 +276,37 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
 
+	# Debug-only: Unlock All Party toggle — bypasses every PC's autobattle_locked
+	# spotlight gate. Honored at BattleManager / BattleCommandMenu / UI gates,
+	# not by mutating Combatant state, so flips here take effect immediately.
+	var actions_box_y: float = 548
+	var actions_box_h_offset: float = 580
+	if debug_log_enabled:
+		var debug_unlock_idx: int = _settings_items.size()
+		var debug_unlock_item = _create_toggle_setting(
+			"Debug: Unlock All Party",
+			"Bypass spotlight gates — every PC is player-controlled",
+			debug_all_pcs_unlocked,
+			debug_unlock_idx
+		)
+		debug_unlock_item.position = Vector2(16, 548)
+		panel.add_child(debug_unlock_item)
+		_settings_items.append({"control": debug_unlock_item, "type": "toggle", "id": "debug_all_pcs_unlocked"})
+		MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
+			_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
+		actions_box_y = 608
+		actions_box_h_offset = 640
+
 	# Action buttons stacked in a VBoxContainer — auto-fits 1 to 5 items
 	# (Controls + Jukebox + Fight Boss + Debug Teleport + Quit when all
 	# debug-only entries are visible) within the panel. Tight stride so
 	# all 5 fit even at 720p.
 	# Position the container right below the last setting row (Screen Shake
-	# ends at ~548) and let the panel scroll if it ever gets longer.
+	# ends at ~548; debug toggle if present pushes start to ~608) and let
+	# the panel scroll if it ever gets longer.
 	var actions_box = VBoxContainer.new()
-	actions_box.position = Vector2(16, 548)
-	actions_box.size = Vector2(400, panel.size.y - 580)
+	actions_box.position = Vector2(16, actions_box_y)
+	actions_box.size = Vector2(400, panel.size.y - actions_box_h_offset)
 	actions_box.add_theme_constant_override("separation", 0)
 	panel.add_child(actions_box)
 
@@ -784,6 +809,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_screen_shake_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "debug_all_pcs_unlocked":
+		debug_all_pcs_unlocked = not debug_all_pcs_unlocked
+		_update_toggle_display(selected_index, debug_all_pcs_unlocked)
+		_save_debug_all_pcs_unlocked_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "music_volume":
 		music_volume_index = clampi(music_volume_index + delta, 0, VOLUME_PRESETS.size() - 1)
 		music_volume = VOLUME_PRESETS[music_volume_index]
@@ -858,6 +889,14 @@ func _save_screen_shake_setting() -> void:
 		GameState.screen_shake_enabled = screen_shake_enabled
 	settings_changed.emit("screen_shake", screen_shake_enabled)
 	print("[SETTINGS] Screen shake %s" % ("enabled" if screen_shake_enabled else "disabled"))
+	_persist_settings()
+
+
+func _save_debug_all_pcs_unlocked_setting() -> void:
+	if GameState:
+		GameState.debug_all_pcs_unlocked = debug_all_pcs_unlocked
+	settings_changed.emit("debug_all_pcs_unlocked", debug_all_pcs_unlocked)
+	print("[SETTINGS] Debug unlock all party %s" % ("enabled" if debug_all_pcs_unlocked else "disabled"))
 	_persist_settings()
 
 

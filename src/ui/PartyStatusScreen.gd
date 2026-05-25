@@ -20,6 +20,8 @@ const MP_COLOR := Color(0.4, 0.8, 1.0)
 const WEAPON_COLOR := Color(1.0, 0.75, 0.35)
 const ARMOR_COLOR := Color(0.55, 0.75, 1.0)
 const ACCESSORY_COLOR := Color(0.9, 0.6, 0.95)
+const AUTO_BADGE_BG := Color(0.20, 0.22, 0.28, 0.95)
+const AUTO_BADGE_TEXT := Color(0.78, 0.80, 0.86)
 
 var party: Array = []
 var focused_index: int = 0
@@ -155,7 +157,39 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	stats.add_theme_color_override("font_color", TEXT)
 	card.add_child(stats)
 
+	# AUTO badge in card top-right — reflects spotlight engine's autobattle_locked.
+	# Debug override (GameState.debug_all_pcs_unlocked) is honored at the UI gate
+	# (mirroring BattleManager/BattleCommandMenu) so toggling debug at runtime
+	# updates display without round-tripping through _reconcile_spotlight_locks.
+	if _is_member_auto_locked(member):
+		var badge_bg := ColorRect.new()
+		badge_bg.name = "AutoBadgeBG"
+		badge_bg.color = AUTO_BADGE_BG
+		badge_bg.position = Vector2(w - 50, 4)
+		badge_bg.size = Vector2(46, 14)
+		card.add_child(badge_bg)
+		var badge := Label.new()
+		badge.name = "AutoBadge"
+		badge.text = "AUTO"
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.position = Vector2(w - 50, 4)
+		badge.size = Vector2(46, 14)
+		badge.add_theme_font_size_override("font_size", 9)
+		badge.add_theme_color_override("font_color", AUTO_BADGE_TEXT)
+		card.add_child(badge)
+
 	return card
+
+
+func _is_member_auto_locked(member) -> bool:
+	if member == null or not "autobattle_locked" in member:
+		return false
+	if not bool(member.autobattle_locked):
+		return false
+	if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
+		return false
+	return true
 
 
 func _add_bar(parent: Control, x: float, y: float, w: float, h: float, cur: int, max_v: int, color: Color, label: String) -> void:
