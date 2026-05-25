@@ -17,6 +17,17 @@ var _current_text: String = ""
 var _displayed_chars: int = 0
 var _typing_timer: Timer
 
+## Typewriter speed per GameState.text_speed setting. "instant" returns 0.0
+## which the dialogue start path interprets as "skip the typewriter entirely
+## and reveal the full line at once". Values picked for JRPG dialogue feel:
+## slow ≈ 16 cps, normal ≈ 33 cps, fast ≈ 67 cps.
+const TYPING_SPEED_PRESETS := {
+	"slow": 0.06,
+	"normal": 0.03,
+	"fast": 0.015,
+	"instant": 0.0,
+}
+
 ## Voice blip playback (Undertale-style per-character typing sound)
 var _voice_blip_player: AudioStreamPlayer = null
 var _voice_blip_stream: AudioStream = null
@@ -491,15 +502,40 @@ func _show_current_line() -> void:
 	else:
 		_portrait_frame.visible = true
 
-	# Start typing effect
+	# Start typing effect — pull the resolved speed FROM SETTINGS each line
+	# so a toggle through the in-cutscene settings menu takes effect at the
+	# next box, not the next cutscene.
 	_current_text = entry.get("text", "")
 	_displayed_chars = 0
 	_voice_blip_next_char = randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
 	_text_label.text = ""
 	_text_label.scroll_active = false  # Disable scroll during typing
 	_advance_hint.visible = false
+	_typing_speed = _resolve_typing_speed()
+	if _typing_speed <= 0.0:
+		# "Instant" — bypass the typewriter, reveal the full line, fall
+		# straight into _finish_typing so scroll/advance hint come up
+		# without waiting on a single timer tick.
+		_displayed_chars = _current_text.length()
+		_text_label.text = _current_text
+		_is_typing = true
+		_finish_typing()
+		return
 	_is_typing = true
 	_typing_timer.start(_typing_speed)
+
+
+func _resolve_typing_speed() -> float:
+	# Read GameState.text_speed live so changes through SettingsMenu apply on
+	# the very next dialogue line. Falls back to normal cadence when GameState
+	# or the field is missing (which matters in unit-test contexts that don't
+	# spin up the full autoload graph).
+	var key: String = "normal"
+	if GameState and "text_speed" in GameState:
+		key = str(GameState.text_speed)
+	if TYPING_SPEED_PRESETS.has(key):
+		return TYPING_SPEED_PRESETS[key]
+	return TYPING_SPEED_PRESETS["normal"]
 
 
 func _on_typing_tick() -> void:
