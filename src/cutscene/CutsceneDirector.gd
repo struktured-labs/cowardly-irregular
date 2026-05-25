@@ -215,10 +215,14 @@ func play_cutscene(cutscene_id: String) -> void:
 	if not _try_load_backdrop_image(data):
 		await _capture_background()
 
-	# Fade out current music before cutscene begins (smooth transition)
+	# Fade out current music before cutscene begins (smooth transition).
+	# fade_out_music tweens volume_db → -40 over the supplied duration so the
+	# cutscene's first dialogue / cue isn't preceded by a hard cut. The
+	# matching await lets the fade complete before the cutscene starts
+	# emitting its own audio.
 	if SoundManager and SoundManager._music_playing:
 		_pre_cutscene_music = SoundManager._current_music
-		SoundManager.stop_music()
+		SoundManager.fade_out_music(0.3)
 		await get_tree().create_timer(0.3).timeout
 
 	cutscene_started.emit(cutscene_id)

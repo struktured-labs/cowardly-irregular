@@ -1171,6 +1171,26 @@ func stop_music() -> void:
 		_music_player_b.stop()
 
 
+func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
+	"""Smoothly fade out currently-playing music over `duration` seconds, then
+	stop. No-op when no music is playing. Used by CutsceneDirector to avoid
+	the abrupt hard-cut at cutscene start; the eventual play_music() for any
+	cutscene-specific track will crossfade on top of the fading stream
+	cleanly via the existing tween-kill path in play_music().
+	"""
+	if not _music_playing or not _music_player:
+		return
+	if _crossfade_tween and _crossfade_tween.is_valid():
+		_crossfade_tween.kill()
+	_crossfade_tween = create_tween()
+	_crossfade_tween.tween_property(_music_player, "volume_db", -40.0, duration)
+	_crossfade_tween.tween_callback(func() -> void:
+		if _music_player:
+			_music_player.stop()
+		_music_playing = false
+		_current_music = "")
+
+
 func is_music_playing() -> bool:
 	return _music_playing
 
