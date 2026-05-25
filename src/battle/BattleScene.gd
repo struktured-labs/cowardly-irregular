@@ -658,6 +658,7 @@ func _create_default_party() -> void:
 	mira.learn_passive("mp_boost")
 	PassiveSystem.equip_passive(mira, "magic_boost")
 	PassiveSystem.equip_passive(mira, "mp_boost")
+	mira.autobattle_locked = true
 	party_members.append(mira)
 
 	# Create Zack (Rogue)
@@ -680,6 +681,7 @@ func _create_default_party() -> void:
 	zack.learn_passive("speed_boost")
 	PassiveSystem.equip_passive(zack, "critical_strike")
 	PassiveSystem.equip_passive(zack, "speed_boost")
+	zack.autobattle_locked = true
 	party_members.append(zack)
 
 	# Create Vex (Mage)
@@ -702,7 +704,30 @@ func _create_default_party() -> void:
 	vex.learn_passive("mp_efficiency")
 	PassiveSystem.equip_passive(vex, "magic_boost")
 	PassiveSystem.equip_passive(vex, "mp_efficiency")
+	vex.autobattle_locked = true
 	party_members.append(vex)
+
+	var bard = Combatant.new()
+	bard.initialize({
+		"name": "Bard",
+		"max_hp": 95,
+		"max_mp": 90,
+		"attack": 12,
+		"defense": 9,
+		"magic": 22,
+		"speed": 16
+	})
+	add_child(bard)
+	JobSystem.assign_job(bard, "bard")
+	EquipmentSystem.equip_weapon(bard, "piano_scythe")
+	EquipmentSystem.equip_armor(bard, "cloth_robe")
+	EquipmentSystem.equip_accessory(bard, "magic_ring")
+	bard.learn_passive("magic_boost")
+	bard.learn_passive("mp_boost")
+	PassiveSystem.equip_passive(bard, "magic_boost")
+	PassiveSystem.equip_passive(bard, "mp_boost")
+	bard.autobattle_locked = true
+	party_members.append(bard)
 
 
 ## Monster type constants (delegated to BattleEnemySpawner)

@@ -282,4 +282,18 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	vex.starting_jobs = ["mage", "cleric"]
 	party.append(vex)
 
+	# Bard - Bard/Rogue/Cheerful (performer look)
+	# Internal ID "bard" matches the job_id; see GameLoop._create_party.
+	var bard = script.new("Bard")
+	bard.eye_shape = EyeShape.WIDE
+	bard.eyebrow_style = EyebrowStyle.ARCHED
+	bard.nose_shape = NoseShape.SMALL
+	bard.mouth_style = MouthStyle.SMILE
+	bard.hair_style = HairStyle.LONG
+	bard.hair_color = HAIR_COLORS[5] if HAIR_COLORS.size() > 5 else HAIR_COLORS[2]
+	bard.skin_tone = SKIN_TONES[1]
+	bard.personality = Personality.CHARISMATIC
+	bard.starting_jobs = ["bard", "rogue"]
+	party.append(bard)
+
 	return party

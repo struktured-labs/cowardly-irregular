@@ -613,6 +613,7 @@ func save_settings() -> void:
 		settings["screen_shake_enabled"] = GameState.screen_shake_enabled
 		settings["default_battle_speed"] = GameState.default_battle_speed
 		settings["debug_log_enabled"] = GameState.debug_log_enabled
+		settings["debug_all_pcs_unlocked"] = GameState.debug_all_pcs_unlocked
 	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(settings, "\t"))
@@ -680,5 +681,7 @@ func load_settings() -> void:
 			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
 			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):
 				DebugLogOverlay.set_enabled(GameState.debug_log_enabled)
+		if settings.has("debug_all_pcs_unlocked"):
+			GameState.debug_all_pcs_unlocked = bool(settings["debug_all_pcs_unlocked"])
 
 	print("[SAVE] Settings loaded")

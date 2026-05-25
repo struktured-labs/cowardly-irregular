@@ -63,6 +63,13 @@ var equipped_weapon: String = ""  # Weapon ID
 var equipped_armor: String = ""   # Armor ID
 var equipped_accessory: String = ""  # Accessory ID
 
+## Spotlight gate: when true, this PC's turn is forced through autobattle
+## eval (stock per-job script) and their manual command menu + autobattle
+## editor tab are hidden. Flips to false when their spotlight cutscene
+## fires (see _CUTSCENE_COMPLETION_FLAGS in GameLoop). The debug flag
+## GameState.debug_all_pcs_unlocked overrides this for all PCs at once.
+var autobattle_locked: bool = false
+
 ## Job profiles - saves equipment, passives, and autobattle per job combo
 ## Key format: "primary_job_id:secondary_job_id" (e.g. "fighter:", "fighter:rogue")
 var job_profiles: Dictionary = {}
@@ -565,6 +572,7 @@ func to_dict() -> Dictionary:
 		"doom_counter": doom_counter,
 		"pinned_abilities": pinned_abilities.duplicate(),
 		"recent_abilities": recent_abilities.duplicate(),
+		"autobattle_locked": autobattle_locked,
 	}
 	# Job is a Dictionary; only its id is stable across runs (the full dict
 	# is reconstructed via JobSystem.assign_job in restore).
@@ -664,6 +672,8 @@ func from_dict(data: Dictionary) -> void:
 		for ability_id in data["recent_abilities"]:
 			typed_recent.append(str(ability_id))
 		recent_abilities = typed_recent
+	if data.has("autobattle_locked"):
+		autobattle_locked = bool(data["autobattle_locked"])
 
 	# Resolve legacy job aliases in loaded data
 	var job_system = get_node_or_null("/root/JobSystem")
