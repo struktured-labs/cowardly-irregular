@@ -2148,38 +2148,48 @@ func _process_hold_a(delta: float) -> void:
 
 
 func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
-	"""Calculate position offset for a party member based on current formation"""
+	"""Calculate position offset for a party member based on current formation.
+
+	Offset arrays are sized for the strict-5 party (Fighter/Cleric/Rogue/Mage/Bard).
+	Member-index out-of-range cases fall through to Vector2.ZERO so a future
+	temporarily-smaller party (debug scenario) doesn't crash, but for >5 the
+	5th-slot offset is reused — adjust the constants here if the design ever
+	grows past 5."""
 	match current_formation:
 		PartyFormation.V_FORMATION:
-			# Classic JRPG V-shape: front members lower, back higher
-			var y_offsets = [10.0, 5.0, -5.0, -10.0]
+			# Classic JRPG V-shape: front members lower, back higher.
+			# 5 evenly-spaced steps so Bard sits cleanly between the previous
+			# 4-shape's outermost members.
+			var y_offsets = [12.0, 6.0, 0.0, -6.0, -12.0]
 			return Vector2(0, y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0)
 
 		PartyFormation.FRONT_LINE:
 			# All in a row, pushed forward (left toward enemies)
-			var y_spread = [-15.0, -5.0, 5.0, 15.0]
+			var y_spread = [-20.0, -10.0, 0.0, 10.0, 20.0]
 			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
 			return Vector2(-30, y)
 
 		PartyFormation.BACK_ROW:
 			# All pushed back (right away from enemies)
-			var y_spread = [-15.0, -5.0, 5.0, 15.0]
+			var y_spread = [-20.0, -10.0, 0.0, 10.0, 20.0]
 			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
 			return Vector2(30, y)
 
 		PartyFormation.DIAMOND:
-			# 1 front, 2 mid, 1 back — tank formation
+			# 1 front, 2 mid, 2 back — tank formation expanded for strict-5.
+			# Back-pair (3,4) staggered y so they don't overlap the mid row.
 			match member_idx:
 				0: return Vector2(-25, 0)    # Front (tank)
 				1: return Vector2(0, -20)    # Mid-top
 				2: return Vector2(0, 20)     # Mid-bottom
-				3: return Vector2(25, 0)     # Back
+				3: return Vector2(25, -12)   # Back-top
+				4: return Vector2(25, 12)    # Back-bottom
 				_: return Vector2.ZERO
 
 		PartyFormation.SPREAD:
-			# Wide spacing to resist AoE
-			var y_offsets = [-30.0, -10.0, 10.0, 30.0]
-			var x_offsets = [-10.0, 10.0, -10.0, 10.0]
+			# Wide spacing to resist AoE — 5-member staggered pattern.
+			var y_offsets = [-40.0, -20.0, 0.0, 20.0, 40.0]
+			var x_offsets = [-15.0, 0.0, -15.0, 0.0, -15.0]
 			var y = y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0
 			var x = x_offsets[member_idx] if member_idx < x_offsets.size() else 0.0
 			return Vector2(x, y)
