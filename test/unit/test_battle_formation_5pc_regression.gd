@@ -116,6 +116,23 @@ func test_spread_has_5_x_and_y_offsets() -> void:
 		"SPREAD x_offsets must have 5 entries")
 
 
+func test_party_positions_array_and_scene_have_5_slots() -> void:
+	# party_positions is a typed Array[Marker2D] populated @onready from
+	# the scene. Pre-fix it only listed 4 entries (Player1..4Pos), so
+	# party_size=5 fell through to a hardcoded Vector2(600, 100 + i*100)
+	# fallback at the sprite-placement site — Bard landed off-grid.
+	# Pin: both the script array AND the scene file must include 5 slots.
+	var script_text = _read(BATTLE_SCENE_PATH)
+	for n in [1, 2, 3, 4, 5]:
+		assert_true(script_text.find("$BattleField/PartyArea/Player%dPos" % n) > -1,
+			"party_positions must include Player%dPos so strict-5 party doesn't fall through to fallback positions" % n)
+
+	var scene_text = _read("res://src/battle/BattleScene.tscn")
+	for n in [1, 2, 3, 4, 5]:
+		assert_true(scene_text.find("Player%dPos" % n) > -1,
+			"BattleScene.tscn must declare Player%dPos under BattleField/PartyArea" % n)
+
+
 func test_character_creation_screen_tabs_dynamic() -> void:
 	# CharacterCreationScreen used to hardcode `range(4)` for tab construction.
 	# Source-pin that it now uses party_customizations.size() so the strict-5

@@ -77,7 +77,8 @@ var use_win98_menus: bool = true  # Toggle for Win98 style menus
 	$BattleField/PartyArea/Player1Pos,
 	$BattleField/PartyArea/Player2Pos,
 	$BattleField/PartyArea/Player3Pos,
-	$BattleField/PartyArea/Player4Pos
+	$BattleField/PartyArea/Player4Pos,
+	$BattleField/PartyArea/Player5Pos,
 ]
 
 ## Test combatants
