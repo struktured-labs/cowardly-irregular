@@ -133,6 +133,25 @@ func test_party_positions_array_and_scene_have_5_slots() -> void:
 			"BattleScene.tscn must declare Player%dPos under BattleField/PartyArea" % n)
 
 
+func test_party_status_screen_card_width_dynamic() -> void:
+	# Pre-fix: card_w := (vp.x - 120.0) / 4.0 — hardcoded /4 meant 5-PC
+	# builds rendered 5 cards at 4-card width, clipping Bard off-screen.
+	# Pin: must divide by party.size() (or a derived count variable), not 4.
+	var text = _read("res://src/ui/PartyStatusScreen.gd")
+	# Anti-pattern: the old hardcoded /4.0 must be gone.
+	assert_eq(text.find("(vp.x - 120.0) / 4.0"), -1,
+		"card_w must not hardcode /4.0 — should scale with party.size()")
+	# Confirmation: the new formula references party.size() (via a card_count
+	# var or directly) in the card_w computation.
+	var card_w_idx = text.find("var card_w :=")
+	assert_gt(card_w_idx, -1, "card_w must be declared")
+	var card_w_line_end = text.find("\n", card_w_idx)
+	var card_w_line = text.substr(card_w_idx, card_w_line_end - card_w_idx)
+	assert_true(card_w_line.find("card_count") > -1
+		or card_w_line.find("party.size()") > -1,
+		"card_w must scale by party.size()/card_count, got: %s" % card_w_line)
+
+
 func test_character_creation_screen_tabs_dynamic() -> void:
 	# CharacterCreationScreen used to hardcode `range(4)` for tab construction.
 	# Source-pin that it now uses party_customizations.size() so the strict-5
