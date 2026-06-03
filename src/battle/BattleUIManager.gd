@@ -219,7 +219,17 @@ func _ensure_party_status_boxes() -> void:
 
 
 func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
-	"""Create a status box for a party member"""
+	"""Create a status box for a party member.
+
+	HP/MP bar heights shrink slightly when the party has 5+ members so all
+	status boxes fit inside the PartyStatusPanel's fixed 420px tall slot.
+	Pre-fix: 4-shaped heights at 5-PC overflowed the panel and clipped the
+	Bard box (or pushed it over the CTB timeline). The PartyStatusPanel
+	offset_bottom=460 is pinned by test_battle_4bug_22bd71e_regression to
+	prevent CTB overlap, so the fix has to be on the per-box side."""
+	var party_size: int = BattleManager.player_party.size() if BattleManager.player_party.size() > 0 else _scene.party_members.size()
+	var hp_bar_h: int = 22 if party_size <= 4 else 18
+	var mp_bar_h: int = 18 if party_size <= 4 else 14
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
@@ -256,7 +266,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	# HP bar
 	var hp_bar = ProgressBar.new()
 	hp_bar.name = "HP"
-	hp_bar.custom_minimum_size = Vector2(0, 22)
+	hp_bar.custom_minimum_size = Vector2(0, hp_bar_h)
 	hp_bar.max_value = member.max_hp
 	hp_bar.value = member.current_hp
 	hp_bar.show_percentage = false
@@ -275,7 +285,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	# MP bar
 	var mp_bar = ProgressBar.new()
 	mp_bar.name = "MP"
-	mp_bar.custom_minimum_size = Vector2(0, 18)
+	mp_bar.custom_minimum_size = Vector2(0, mp_bar_h)
 	mp_bar.max_value = member.max_mp
 	mp_bar.value = member.current_mp
 	mp_bar.show_percentage = false

@@ -152,6 +152,25 @@ func test_party_status_screen_card_width_dynamic() -> void:
 		"card_w must scale by party.size()/card_count, got: %s" % card_w_line)
 
 
+func test_status_box_height_shrinks_for_5pc_party() -> void:
+	# Pre-fix: HP bar 22px + MP bar 18px were unconditional, so 5 status
+	# boxes overflowed the PartyStatusPanel's fixed 420px slot (panel
+	# offset_bottom=460 is pinned by test_battle_4bug_22bd71e to prevent
+	# CTB-timeline overlap, so we can't enlarge the panel — we shrink
+	# the per-box bars instead).
+	# Pin: _create_character_status_box must size HP/MP bars conditionally
+	# on party_size so 5-PC fits the same panel.
+	var text = _read("res://src/battle/BattleUIManager.gd")
+	assert_true(text.find("var hp_bar_h: int = 22 if party_size <= 4 else 18") > -1,
+		"HP bar height must shrink to 18 when party_size > 4 (strict-5 layout)")
+	assert_true(text.find("var mp_bar_h: int = 18 if party_size <= 4 else 14") > -1,
+		"MP bar height must shrink to 14 when party_size > 4 (strict-5 layout)")
+	# Anti-pattern: the old unconditional `custom_minimum_size = Vector2(0, 22)`
+	# must NOT appear for the HP bar (would re-introduce the overflow).
+	assert_eq(text.find("hp_bar.custom_minimum_size = Vector2(0, 22)"), -1,
+		"HP bar must not hardcode 22 — should use hp_bar_h")
+
+
 func test_character_creation_screen_tabs_dynamic() -> void:
 	# CharacterCreationScreen used to hardcode `range(4)` for tab construction.
 	# Source-pin that it now uses party_customizations.size() so the strict-5
