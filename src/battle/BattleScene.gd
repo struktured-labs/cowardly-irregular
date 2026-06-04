@@ -802,7 +802,14 @@ func _create_battle_sprites() -> void:
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
 		# Tune these to align characters visually despite different art sizes within frames.
-		var target_height = PARTY_SPRITE_HEIGHT
+		# Sprites shrink when the party has 5+ members so the Bard column fits the
+		# 75px-spaced Y stagger (vs 100px for 4-PC). The ratio target_height / Y_gap
+		# stays consistent with the prior 4-PC look. Procedural-fallback path
+		# (144px target) gets the same proportional shrink.
+		var _party_size: int = party_members.size()
+		var _density_scale: float = 1.0 if _party_size <= 4 else 0.75
+		var target_height = PARTY_SPRITE_HEIGHT * _density_scale
+		var proc_target_height = 144.0 * _density_scale
 
 		# Auto-scale based on frame height and per-job target
 		var _sprite_scale = 3.0
@@ -812,7 +819,7 @@ func _create_battle_sprites() -> void:
 				if _ftex and _ftex.get_height() > 128:
 					_sprite_scale = target_height / float(_ftex.get_height())
 				elif _ftex and _ftex.get_height() > 48:
-					_sprite_scale = 144.0 / float(_ftex.get_height())
+					_sprite_scale = proc_target_height / float(_ftex.get_height())
 		# Apply per-job scale override (currently empty — kept as a hook)
 		var scale_mult = JOB_SCALE_OVERRIDES.get(job_id, 1.0)
 		_sprite_scale *= scale_mult

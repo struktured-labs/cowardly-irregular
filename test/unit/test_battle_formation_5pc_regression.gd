@@ -171,6 +171,20 @@ func test_status_box_height_shrinks_for_5pc_party() -> void:
 		"HP bar must not hardcode 22 — should use hp_bar_h")
 
 
+func test_sprite_target_height_shrinks_for_5pc() -> void:
+	# Pre-fix: target_height was unconditional PARTY_SPRITE_HEIGHT (280px ×
+	# SPRITE_SCALE_BUMP 1.5 = 420px effective). With the new 5-PC Y stagger
+	# at 75px gaps (vs 100px for 4-PC), 420px sprites overlapped beyond the
+	# screen and the Bard column ran past the panel edge.
+	# Pin: sprite_scale must apply a density_scale factor (0.75 for 5-PC,
+	# 1.0 for 4-PC) so the target_height / Y_gap ratio stays consistent.
+	var text = _read(BATTLE_SCENE_PATH)
+	assert_true(text.find("_density_scale") > -1,
+		"BattleScene sprite scaling must derive a _density_scale factor for 5-PC")
+	assert_true(text.find("if _party_size <= 4 else 0.75") > -1,
+		"_density_scale must drop to 0.75 when party_size > 4")
+
+
 func test_character_creation_screen_tabs_dynamic() -> void:
 	# CharacterCreationScreen used to hardcode `range(4)` for tab construction.
 	# Source-pin that it now uses party_customizations.size() so the strict-5
