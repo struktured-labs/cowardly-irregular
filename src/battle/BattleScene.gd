@@ -21,7 +21,11 @@ const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay
 ## 256x256 frames. If a job's character occupies less of its frame than
 ## another (e.g., fighter at 37%, cleric at 71%), that's the artist's choice
 ## and the battle scene reflects it 1:1 in scale.
-const PARTY_SPRITE_HEIGHT: float = 280.0
+## Per BDFFHD-layout design lock (2026-06-03): reduced from 280→210 to
+## accommodate the strict-5 party without crowding the screen. User may
+## revisit later if they ship larger artist sprites. Effective on-screen
+## height with SPRITE_SCALE_BUMP=1.5 is ~315px.
+const PARTY_SPRITE_HEIGHT: float = 210.0
 ## Constant factor applied to ALL party sprite scales (artist and procedural
 ## paths alike). Bumps everyone uniformly without altering intra-roster ratios.
 ## 1.5 picked as the visible-but-not-too-big sweet spot after fighter override
@@ -175,10 +179,13 @@ var _all_autobattle_enabled: bool = false  # True when all players are on autoba
 var _current_terrain: String = "plains"
 var _battle_background: BattleBackgroundClass = null
 
-## Mode 7 perspective floor overlay (spike — turn off via _mode7_floor_enabled = false)
+## Mode 7 perspective floor overlay. Disabled by default per BDFFHD-layout
+## design lock (2026-06-03) — user found it spatially confusing in regular
+## battles. File kept in tree for future revisit on boss arenas + phase-2
+## emphasis stack.
 const Mode7FloorClass = preload("res://src/battle/BattleMode7Floor.gd")
 var _mode7_floor: Mode7FloorClass = null
-var _mode7_floor_enabled: bool = true
+var _mode7_floor_enabled: bool = false
 
 ## Composed subsystems (extracted from BattleScene)
 var _enemy_spawner: BattleEnemySpawnerClass = null
@@ -801,15 +808,11 @@ func _create_battle_sprites() -> void:
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
-		# Tune these to align characters visually despite different art sizes within frames.
-		# Sprites shrink when the party has 5+ members so the Bard column fits the
-		# 75px-spaced Y stagger (vs 100px for 4-PC). The ratio target_height / Y_gap
-		# stays consistent with the prior 4-PC look. Procedural-fallback path
-		# (144px target) gets the same proportional shrink.
-		var _party_size: int = party_members.size()
-		var _density_scale: float = 1.0 if _party_size <= 4 else 0.75
-		var target_height = PARTY_SPRITE_HEIGHT * _density_scale
-		var proc_target_height = 144.0 * _density_scale
+		# PARTY_SPRITE_HEIGHT is the strict-5 base (210px, lowered from 280
+		# per BDFFHD layout design). No further density scaling — the base
+		# was tuned for the strict-5 layout directly.
+		var target_height = PARTY_SPRITE_HEIGHT
+		var proc_target_height = 108.0  # was 144 — proportional shrink with target_height
 
 		# Auto-scale based on frame height and per-job target
 		var _sprite_scale = 3.0
