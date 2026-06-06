@@ -799,6 +799,12 @@ func go_back_to_previous_player() -> void:
 		print("Cannot go back - no previous player available")
 		# Restore current player's AP since we couldn't go back
 		current_combatant.gain_ap(1)
+		# Re-emit the turn signal so the command menu re-opens. Without this,
+		# the caller in BattleCommandMenu._on_win98_go_back_requested has
+		# already force-closed the menu, leaving the game in PLAYER_SELECTING
+		# state with no input surface — player is stuck unless they toggle
+		# autobattle on. (Bug 2026-06-04: user reported "stuck after B".)
+		selection_turn_started.emit(current_combatant)
 		return
 
 	# Re-emit the selection turn started signal (menu will be shown again)
