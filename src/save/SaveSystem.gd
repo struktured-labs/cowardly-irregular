@@ -601,7 +601,7 @@ func save_settings() -> void:
 	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
 	var settings = {
 		"version": 2,
-		"battle_speed_index": BattleSceneScript._battle_speed_index if BattleSceneScript else 1,
+		"battle_speed_index": BattleSceneScript._battle_speed_index if BattleSceneScript else 2,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"master_volume": AudioServer.get_bus_volume_db(0),
 	}

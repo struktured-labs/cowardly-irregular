@@ -127,7 +127,7 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 ## Battle speed recalibrated: old 0.5x is now labeled "1x" (the comfortable default)
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const BATTLE_SPEED_LABELS: Array[String] = ["0.5x", "1x", "2x", "4x", "8x", "16x", "32x"]
-static var _battle_speed_index: int = 1  # Persists across battles (default "1x" = old 0.5x)
+static var _battle_speed_index: int = 2  # Persists across battles; default is 1x (BATTLE_SPEEDS[2]). Per user feedback 2026-06-04: new-game default must be 1.0x, was incorrectly 1 (= 0.5x).
 var _speed_indicator: RichTextLabel = null
 var _battle_counter_label: RichTextLabel = null
 
