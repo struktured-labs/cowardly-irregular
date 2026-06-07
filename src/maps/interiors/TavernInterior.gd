@@ -829,6 +829,22 @@ func spawn_player_at(spawn_name: String) -> void:
 		player.position = spawn_points[spawn_name] * TILE_SIZE
 
 
+## Pause exploration input — mirrors BaseVillage's pattern so the
+## OverworldMenu (GameLoop._open_overworld_menu) can suspend player
+## movement and area-transition firing while a submenu is open.
+## Bug 2026-06-04: without this method, opening Equipment from a
+## tavern left the underlying controller live — player could trigger
+## the tavern→village exit transition while the equipment menu was up.
+func pause() -> void:
+	if controller and controller.has_method("pause_exploration"):
+		controller.pause_exploration()
+
+
+func resume() -> void:
+	if controller and controller.has_method("resume_exploration"):
+		controller.resume_exploration()
+
+
 func _setup_controller() -> void:
 	var ControllerScript = load("res://src/exploration/OverworldController.gd")
 	if ControllerScript and player:
