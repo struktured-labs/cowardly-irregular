@@ -1638,7 +1638,7 @@ func _execute_next_action() -> void:
 					await get_tree().process_frame
 				else:
 					var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-					await get_tree().create_timer(0.2 / speed_scale).timeout
+					await get_tree().create_timer(0.1 / speed_scale).timeout
 				if not is_instance_valid(self):
 					return
 				_execute_next_action()
@@ -1701,12 +1701,15 @@ func _execute_next_action() -> void:
 	_log_player_action(combatant, action)
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
-	# Delay between actions — scale with battle speed for snappy feel
+	# Delay between actions — scale with battle speed for snappy feel.
+	# 0.1s base lets each action's animation breathe but doesn't add dead
+	# air after the tween finishes. Was 0.2s; user reported awkward pauses
+	# between monster attacks (2026-06-04).
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
 		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.2 / speed_scale  # 0.2s base — snappy at all speeds
+		var delay = 0.1 / speed_scale
 		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return
@@ -1805,7 +1808,7 @@ func _execute_group_action(action: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.2 / speed_scale
+		var delay = 0.1 / speed_scale
 		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return
@@ -2171,7 +2174,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			# (User feedback 2026-05-20: "why is there a weird pause
 			# in between turns in the battle?")
 			var speed_scale_sub = Engine.time_scale if Engine.time_scale > 0 else 1.0
-			await get_tree().create_timer(0.5 / speed_scale_sub).timeout
+			# Was 0.5s — tightened to 0.3s 2026-06-04 per user feedback that
+			# Advance-mode sub-actions had awkward pauses at 1x battle speed.
+			await get_tree().create_timer(0.3 / speed_scale_sub).timeout
 		if not is_instance_valid(self):
 			return
 
@@ -2180,7 +2185,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		var speed_scale_post = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		await get_tree().create_timer(0.5 / speed_scale_post).timeout
+		await get_tree().create_timer(0.3 / speed_scale_post).timeout
 	if not is_instance_valid(self):
 		return
 	if _check_victory_conditions():
