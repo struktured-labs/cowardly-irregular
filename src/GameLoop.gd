@@ -1011,6 +1011,15 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(cutscene_id, "")
 		if completion_flag != "" and GameState:
 			GameState.game_constants[completion_flag] = true
+			# Mirror into story_flags under the bare name so QuestLog
+			# (which reads via GameState.get_story_flag) sees the
+			# objective complete. Without this mirror, "Speak with
+			# Elder Theron" and other chapter-gated quest log lines
+			# stay yellow forever even when the cutscene played and
+			# set its game_constants flag. Bug user-reported 2026-06-04.
+			if completion_flag.begins_with("cutscene_flag_"):
+				var bare = completion_flag.substr("cutscene_flag_".length())
+				GameState.set_story_flag(bare)
 			print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
 			# W1 spotlight completion also unlocks the matching PC's
 			# manual control. Reconcile is idempotent so a no-op for

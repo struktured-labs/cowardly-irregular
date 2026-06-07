@@ -613,6 +613,15 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# ui_cancel (B / Esc): skip the rest of the dialogue queue. For story
+	# cutscenes CutsceneDirector renders a hold-B-to-skip pill — for plain
+	# NPC dialogue (no Director) this is the only way to fast-exit.
+	# Bug user-reported 2026-06-04: "can't skip Elder Theron dialogue."
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
+		_finish_dialogue()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Left-click to advance dialogue
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_advance_dialogue()

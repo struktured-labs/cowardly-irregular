@@ -184,8 +184,10 @@ func test_party_sprite_height_set_for_5pc() -> void:
 	var line_end = text.find("\n", idx)
 	var line = text.substr(idx, line_end - idx)
 	# Extract number after `=`.
-	var val_str = line.substr(line.find("=") + 1).strip_edges().rstrip(".0")
-	# Use simple regex-free extraction since formatting is well-known.
+	# Parse the numeric value after `=`. Don't rstrip ".0" — that strips
+	# the trailing 0 from "210.0" → "21". The .to_float() handles trailing
+	# whitespace + comment text fine on its own.
+	var val_str = line.substr(line.find("=") + 1).strip_edges()
 	var val = val_str.split(" ")[0].to_float()
 	assert_gte(val, 200.0, "PARTY_SPRITE_HEIGHT must be >= 200 (BDFFHD layout target); got: %f" % val)
 	assert_lte(val, 220.0, "PARTY_SPRITE_HEIGHT must be <= 220 (BDFFHD layout target); got: %f" % val)
