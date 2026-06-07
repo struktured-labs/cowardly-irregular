@@ -8,6 +8,10 @@ signal settings_changed(setting: String, value: Variant)
 signal quit_to_title()
 signal start_boss_battle(boss_id: String)
 signal teleport_requested(map_id: String, spawn_point: String)
+## Fire the next still-locked PC's spotlight cutscene. GameLoop listens
+## and calls _play_story_cutscene, which sets the unlock flag via the
+## existing completion-handler wiring → PC becomes manually controllable.
+signal play_next_spotlight_requested()
 
 ## Encounter rate presets (default 100%)
 const ENCOUNTER_PRESETS = [0.0, 0.25, 0.50, 0.75, 1.0, 1.5, 2.0]
@@ -276,26 +280,26 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
 
-	# Debug-only: Unlock All Party toggle — bypasses every PC's autobattle_locked
+	# Debug: Unlock All Party toggle — bypasses every PC's autobattle_locked
 	# spotlight gate. Honored at BattleManager / BattleCommandMenu / UI gates,
 	# not by mutating Combatant state, so flips here take effect immediately.
-	var actions_box_y: float = 548
-	var actions_box_h_offset: float = 580
-	if debug_log_enabled:
-		var debug_unlock_idx: int = _settings_items.size()
-		var debug_unlock_item = _create_toggle_setting(
-			"Debug: Unlock All Party",
-			"Bypass spotlight gates — every PC is player-controlled",
-			debug_all_pcs_unlocked,
-			debug_unlock_idx
-		)
-		debug_unlock_item.position = Vector2(16, 548)
-		panel.add_child(debug_unlock_item)
-		_settings_items.append({"control": debug_unlock_item, "type": "toggle", "id": "debug_all_pcs_unlocked"})
-		MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
-			_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
-		actions_box_y = 608
-		actions_box_h_offset = 640
+	# Always visible (was gated behind debug_log_enabled but users couldn't
+	# find it; user feedback 2026-06-04 "couldn't find settings/debug menu
+	# where to unlock entire party").
+	var actions_box_y: float = 608
+	var actions_box_h_offset: float = 640
+	var debug_unlock_idx: int = _settings_items.size()
+	var debug_unlock_item = _create_toggle_setting(
+		"Debug: Unlock All Party",
+		"Bypass spotlight gates — every PC is player-controlled",
+		debug_all_pcs_unlocked,
+		debug_unlock_idx
+	)
+	debug_unlock_item.position = Vector2(16, 548)
+	panel.add_child(debug_unlock_item)
+	_settings_items.append({"control": debug_unlock_item, "type": "toggle", "id": "debug_all_pcs_unlocked"})
+	MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
+		_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
 
 	# Action buttons stacked in a VBoxContainer — auto-fits 1 to 5 items
 	# (Controls + Jukebox + Fight Boss + Debug Teleport + Quit when all
@@ -324,13 +328,20 @@ func _build_ui() -> void:
 
 	# Controls (always shown)
 	add_action.call("Controls", "Remap gamepad buttons", "controls")
-	# Debug-only batch
-	if debug_log_enabled:
-		add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
-		add_action.call("Fight Boss", "[DEBUG] Battle a Masterite boss", "fight_boss")
-		if not from_title:
-			# Title-screen has no map context, teleport would be a no-op there.
-			add_action.call("Debug Teleport", "[DEBUG] Warp to any map", "debug_teleport")
+	# Debug batch — shown unconditionally for now (was gated behind
+	# debug_log_enabled but users couldn't find the spotlight/unlock entry
+	# points; user feedback 2026-06-04). All actions clearly prefixed
+	# with [DEBUG] so they're self-documenting.
+	add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
+	add_action.call("Fight Boss", "[DEBUG] Battle a Masterite boss", "fight_boss")
+	if not from_title:
+		# Title-screen has no map context, teleport would be a no-op there.
+		add_action.call("Debug Teleport", "[DEBUG] Warp to any map", "debug_teleport")
+		# Fires the next still-locked PC's spotlight cutscene in canonical
+		# order (cleric → fighter → rogue → mage → bard). Each press fires
+		# one. cowir-overworld hasn't wired in-world triggers yet, so this
+		# is currently the way to advance the spotlight unlock arc.
+		add_action.call("Play Spotlight", "[DEBUG] Play next still-locked PC's spotlight cutscene", "play_next_spotlight")
 	# Quit to Title (hidden when opened from title screen)
 	if not from_title:
 		add_action.call("Quit to Title", "Return to the title screen", "quit_to_title", true)
@@ -990,6 +1001,11 @@ func _activate_setting() -> void:
 			_open_boss_selector()
 		elif item["id"] == "debug_teleport":
 			_open_teleport_menu()
+		elif item["id"] == "play_next_spotlight":
+			if SoundManager:
+				SoundManager.play_ui("menu_select")
+			play_next_spotlight_requested.emit()
+			_close_settings()
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")

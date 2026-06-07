@@ -518,6 +518,8 @@ func _open_overworld_menu() -> void:
 		_overworld_menu.start_boss_battle.connect(_on_settings_boss_battle)
 	if _overworld_menu.has_signal("teleport_requested"):
 		_overworld_menu.teleport_requested.connect(_on_teleport_requested)
+	if _overworld_menu.has_signal("play_next_spotlight_requested"):
+		_overworld_menu.play_next_spotlight_requested.connect(_on_play_next_spotlight_requested)
 	if _overworld_menu.has_signal("party_leader_changed"):
 		_overworld_menu.party_leader_changed.connect(_on_party_leader_changed)
 	SoundManager.play_ui("menu_open")
@@ -2059,6 +2061,51 @@ func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 	_on_overworld_menu_closed()
 	# Then transition
 	_on_area_transition(target_map, spawn_point)
+
+
+## Spotlight cutscene IDs in canonical play order (story-locked sequence).
+## Maps each job_id → its W1 spotlight cutscene basename in data/cutscenes/.
+## Used by _on_play_next_spotlight_requested to pick the next still-locked
+## PC's cutscene to fire.
+const _SPOTLIGHT_CUTSCENES_BY_JOB := {
+	"cleric":  "world1_spotlight_cleric_ch1",
+	"fighter": "world1_spotlight_fighter_ch2",
+	"rogue":   "world1_spotlight_rogue_ch3",
+	"mage":    "world1_spotlight_mage_ch3",
+	"bard":    "world1_spotlight_bard_ch7",
+}
+## Canonical PLAY ORDER (independent of party member order). Matches the
+## chapter sequence cowir-story authored against.
+const _SPOTLIGHT_PLAY_ORDER := ["cleric", "fighter", "rogue", "mage", "bard"]
+
+
+func _on_play_next_spotlight_requested() -> void:
+	"""Pick the first still-locked PC in canonical play order and fire that
+	PC's spotlight cutscene. The cutscene's set_flag step (plus the
+	completion handler in _play_story_cutscene) sets cutscene_flag_
+	spotlight_unlocked_<job>, and _reconcile_spotlight_locks flips the
+	matching Combatant.autobattle_locked to false automatically.
+
+	Added 2026-06-04 because in-world triggers (NPC interactions in the
+	village/cave/capital) for these cutscenes aren't wired yet —
+	cowir-overworld's pending work."""
+	# Close the menu first so the cutscene plays cleanly over exploration.
+	_on_overworld_menu_closed()
+
+	if not GameState:
+		return
+	var flags = GameState.game_constants
+	for job_id in _SPOTLIGHT_PLAY_ORDER:
+		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
+		if flags.get(flag, false):
+			continue  # Already unlocked, skip to next.
+		var cutscene_id: String = _SPOTLIGHT_CUTSCENES_BY_JOB.get(job_id, "")
+		if cutscene_id != "":
+			print("[SPOTLIGHT] Firing %s for %s (debug menu)" % [cutscene_id, job_id])
+			_play_story_cutscene(cutscene_id)
+		return
+	# All 5 already unlocked.
+	print("[SPOTLIGHT] All party members already unlocked — no spotlight to fire.")
 
 
 func _on_settings_teleport_requested(target_map: String, spawn_point: String) -> void:
