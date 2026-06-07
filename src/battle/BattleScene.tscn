@@ -54,19 +54,19 @@ grow_horizontal = 0
 grow_vertical = 2
 
 [node name="Player1Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(100, 10)
+position = Vector2(120, 0)
 
 [node name="Player2Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(50, 100)
+position = Vector2(40, 110)
 
 [node name="Player3Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(100, 190)
+position = Vector2(120, 220)
 
 [node name="Player4Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(50, 280)
+position = Vector2(40, 330)
 
 [node name="Player5Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(100, 370)
+position = Vector2(120, 440)
 
 [node name="EnemySprites" type="Node2D" parent="BattleField"]
 

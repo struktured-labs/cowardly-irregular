@@ -26,6 +26,13 @@ func _input(event: InputEvent) -> void:
 				right_stick_x = e.axis_value
 			else:
 				right_stick_x = 0.0
+	# Debug: log every gamepad button press so we can identify which physical
+	# button maps to which Godot index. Important for the 8BitDo Ultimate 2
+	# (non-Pro) controller where the L shoulder may not report as button 9.
+	# Bug-tracking-aid 2026-06-04 user playtest.
+	elif event is InputEventJoypadButton and event.pressed:
+		var jb = event as InputEventJoypadButton
+		print("[GAMEPAD-DEBUG] JoyButton press: device=%d index=%d" % [jb.device, jb.button_index])
 
 
 func _process(_delta: float) -> void:
