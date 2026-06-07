@@ -150,9 +150,11 @@ func _build_ui() -> void:
 	# Main panel — height bumped to fit all 5 action buttons
 	# (Controls, Jukebox, Fight Boss, Debug Teleport, Quit) when debug is
 	# on, plus the 8 setting rows above them. 0.84 was too tight.
+	# 2026-06-04: bumped 0.92 → 0.96 because the unlock-toggle row plus the
+	# Play Spotlight debug action plus footer were clipping at the bottom.
 	var panel = Control.new()
-	panel.position = Vector2(size.x * 0.2, size.y * 0.04)
-	panel.size = Vector2(size.x * 0.6, size.y * 0.92)
+	panel.position = Vector2(size.x * 0.2, size.y * 0.02)
+	panel.size = Vector2(size.x * 0.6, size.y * 0.96)
 	add_child(panel)
 
 	var panel_bg = ColorRect.new()
@@ -320,10 +322,10 @@ func _build_ui() -> void:
 		var idx = _settings_items.size()
 		var item = (_create_action_button(label, desc, idx)
 			if primary else _create_action_button_neutral(label, desc, idx))
-		item.custom_minimum_size = Vector2(400, 38)  # Compact action row
+		item.custom_minimum_size = Vector2(400, 32)  # Compact action row
 		actions_box.add_child(item)
 		_settings_items.append({"control": item, "type": "action", "id": id})
-		MenuMouseHelper.make_clickable(item, idx, 400, 38,
+		MenuMouseHelper.make_clickable(item, idx, 400, 32,
 			_on_setting_click.bind(idx), _on_setting_hover.bind(idx))
 
 	# Controls (always shown)
@@ -353,10 +355,14 @@ func _build_ui() -> void:
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_settings)
 
-	# Footer
+	# Footer hint text — anchored to the actions box's TOP edge (just above
+	# the action buttons) instead of the panel bottom. The bottom-anchor
+	# layout collided with the actions row when debug entries pushed the
+	# action list past `panel.size.y - 32`. Placing the hint right above
+	# the action list separates settings from actions visually too.
 	var footer = Label.new()
 	footer.text = "←→: Adjust  A/Click: Select  B/RClick: Back"
-	footer.position = Vector2(16, panel.size.y - 32)
+	footer.position = Vector2(16, actions_box_y - 22)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(footer)
