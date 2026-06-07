@@ -328,20 +328,24 @@ func _build_ui() -> void:
 
 	# Controls (always shown)
 	add_action.call("Controls", "Remap gamepad buttons", "controls")
-	# Debug batch — shown unconditionally for now (was gated behind
-	# debug_log_enabled but users couldn't find the spotlight/unlock entry
-	# points; user feedback 2026-06-04). All actions clearly prefixed
-	# with [DEBUG] so they're self-documenting.
-	add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
-	add_action.call("Fight Boss", "[DEBUG] Battle a Masterite boss", "fight_boss")
+	# Always-visible debug action: fires the next still-locked PC's spotlight
+	# cutscene in canonical order (cleric → fighter → rogue → mage → bard).
+	# Each press fires one. cowir-overworld hasn't wired in-world triggers
+	# yet, so this is currently the way to advance the spotlight unlock arc.
+	# Kept unconditional (vs. Jukebox / Fight Boss / Debug Teleport below)
+	# because the user can't unlock the party without it.
 	if not from_title:
-		# Title-screen has no map context, teleport would be a no-op there.
-		add_action.call("Debug Teleport", "[DEBUG] Warp to any map", "debug_teleport")
-		# Fires the next still-locked PC's spotlight cutscene in canonical
-		# order (cleric → fighter → rogue → mage → bard). Each press fires
-		# one. cowir-overworld hasn't wired in-world triggers yet, so this
-		# is currently the way to advance the spotlight unlock arc.
 		add_action.call("Play Spotlight", "[DEBUG] Play next still-locked PC's spotlight cutscene", "play_next_spotlight")
+	# Debug-only batch (Jukebox / Fight Boss / Debug Teleport) stays gated
+	# behind debug_log_enabled so the panel doesn't overflow at typical
+	# resolutions. User feedback 2026-06-04: the unconditional layout
+	# clipped the last 2-3 actions off the bottom of the panel.
+	if debug_log_enabled:
+		add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
+		add_action.call("Fight Boss", "[DEBUG] Battle a Masterite boss", "fight_boss")
+		if not from_title:
+			# Title-screen has no map context, teleport would be a no-op there.
+			add_action.call("Debug Teleport", "[DEBUG] Warp to any map", "debug_teleport")
 	# Quit to Title (hidden when opened from title screen)
 	if not from_title:
 		add_action.call("Quit to Title", "Return to the title screen", "quit_to_title", true)
