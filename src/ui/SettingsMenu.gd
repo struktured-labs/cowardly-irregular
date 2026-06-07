@@ -303,18 +303,24 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
 		_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
 
-	# Action buttons stacked in a VBoxContainer — auto-fits 1 to 5 items
-	# (Controls + Jukebox + Fight Boss + Debug Teleport + Quit when all
-	# debug-only entries are visible) within the panel. Tight stride so
-	# all 5 fit even at 720p.
-	# Position the container right below the last setting row (Screen Shake
-	# ends at ~548; debug toggle if present pushes start to ~608) and let
-	# the panel scroll if it ever gets longer.
+	# Action buttons live inside a ScrollContainer so the list can grow
+	# past the panel bottom without clipping (Debug Log ON exposes
+	# Jukebox / Fight Boss / Debug Teleport on top of the always-visible
+	# Controls / Play Spotlight / Quit, which doesn't fit at 720p without
+	# scrolling). User feedback 2026-06-04: 6 actions clipped at the
+	# bottom even with the taller panel + footer relocation.
+	var actions_scroll = ScrollContainer.new()
+	actions_scroll.position = Vector2(16, actions_box_y)
+	# Reserve a small margin below for the panel border (16px).
+	actions_scroll.size = Vector2(404, max(96.0, panel.size.y - actions_box_y - 16))
+	actions_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	actions_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	panel.add_child(actions_scroll)
+
 	var actions_box = VBoxContainer.new()
-	actions_box.position = Vector2(16, actions_box_y)
-	actions_box.size = Vector2(400, panel.size.y - actions_box_h_offset)
+	actions_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions_box.add_theme_constant_override("separation", 0)
-	panel.add_child(actions_box)
+	actions_scroll.add_child(actions_box)
 
 	# Helper local lambda — append one action button into the VBox and
 	# wire mouse on the index it gets in _settings_items.
