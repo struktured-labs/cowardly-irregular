@@ -2406,6 +2406,32 @@ func _on_selection_phase_started() -> void:
 	_update_ui()
 
 
+## BDFFHD signature: the active PC sprite slides slightly toward the
+## enemies (left, since the party is anchored on the right) at the start
+## of their selection turn, then slides back into formation when the
+## turn ends. Clear who's-up signal without needing a portrait highlight
+## or arrow indicator. Per cowir-battle's design lock 2026-06-04.
+const ACTIVE_PC_STEP_OUT_OFFSET: float = -42.0
+const ACTIVE_PC_STEP_TWEEN_TIME: float = 0.18
+
+
+func _step_active_pc(combatant: Combatant, step_out: bool) -> void:
+	if combatant == null or not (combatant in BattleManager.player_party):
+		return
+	var idx: int = BattleManager.player_party.find(combatant)
+	if idx < 0 or idx >= party_sprite_nodes.size() or idx >= _party_base_positions.size():
+		return
+	var sprite = party_sprite_nodes[idx]
+	if not is_instance_valid(sprite):
+		return
+	var base: Vector2 = _party_base_positions[idx]
+	var target: Vector2 = base + Vector2(ACTIVE_PC_STEP_OUT_OFFSET, 0.0) if step_out else base
+	var tween = create_tween()
+	tween.tween_property(sprite, "position", target, ACTIVE_PC_STEP_TWEEN_TIME) \
+		.set_trans(Tween.TRANS_QUAD) \
+		.set_ease(Tween.EASE_OUT if step_out else Tween.EASE_IN)
+
+
 func _on_selection_turn_started(combatant: Combatant) -> void:
 	"""Handle selection turn start - show menu for player"""
 	_command_menu.invalidate_alive_cache()
@@ -2421,6 +2447,8 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 		if combatant.current_ap > 0:
 			_show_hint("advance", "You have %d AP! Press R to queue extra actions." % combatant.current_ap)
 			TutorialHints.show(self, "advance_defer")
+		# BDFFHD signature step-out toward the enemies — clear who's-up cue.
+		_step_active_pc(combatant, true)
 	if use_win98_menus and is_player:
 		_show_win98_command_menu(combatant)
 
@@ -2428,6 +2456,8 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 func _on_selection_turn_ended(combatant: Combatant) -> void:
 	"""Handle selection turn end"""
 	_close_win98_menu()
+	# Return the active PC to formation (no-op for enemies).
+	_step_active_pc(combatant, false)
 	_update_ui()
 
 
