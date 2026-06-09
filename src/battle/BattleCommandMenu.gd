@@ -150,6 +150,19 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		"label": "Auto Rules",
 		"data": {"action": "autobattle_edit", "combatant": combatant}
 	})
+	# Trust — per-PC delegation. Toggling ON sets autobattle_locked=true so
+	# the PC's stock script handles every future turn (not just this one,
+	# like Auto). User vocabulary from playtest 2026-06-04: "I thought
+	# 'Trust' was the menu option to make the character act autonomously."
+	# The menu only opens for unlocked PCs, so this toggle is one-way
+	# (untrust requires the Debug: Unlock All Party Settings toggle until
+	# the BDFFHD bottom HUD strip ships a persistent surface).
+	var trust_label: String = "Trust: ON" if combatant.autobattle_locked else "Trust: OFF"
+	items.append({
+		"id": "trust_toggle",
+		"label": trust_label,
+		"data": {"action": "trust_toggle", "combatant": combatant}
+	})
 
 	# MRU/Pin quick-access ability slots — most-recently-used or player-pinned.
 	# Slot count comes from Combatant.MRU_SIZE (currently 2). Pins take priority.
@@ -619,6 +632,27 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			# Restore the sticky state so the [A] indicator and future-turn
 			# behavior follow the user's most recent global choice.
 			AutobattleSystem.set_autobattle_enabled(char_id, was_enabled)
+			_scene._update_ui()
+		return
+
+	# Trust toggle — flip the per-PC autobattle_locked flag. The same field
+	# that gates spotlight unlocks (BattleManager turn routing, BattleCommandMenu
+	# UI suppression, AutobattleGridEditor tab visibility all key off it). One-
+	# way flip from the menu context (menu doesn't open for locked PCs). Closes
+	# the menu after flipping so the next-turn routing picks up the new state.
+	if item_id == "trust_toggle" and item_data is Dictionary:
+		var combatant_for_trust = item_data.get("combatant", null)
+		if combatant_for_trust and "autobattle_locked" in combatant_for_trust:
+			combatant_for_trust.autobattle_locked = not combatant_for_trust.autobattle_locked
+			var new_state = "ON" if combatant_for_trust.autobattle_locked else "OFF"
+			SoundManager.play_ui("autobattle_on" if combatant_for_trust.autobattle_locked else "autobattle_off")
+			_scene.log_message("[color=cyan]%s: Trust %s[/color]" % [combatant_for_trust.combatant_name, new_state])
+			close_win98_menu()
+			# Force the current selection to proceed via AI when Trust ON
+			# was just set — caller of the menu was the in-flight selection
+			# for this combatant, so the AI eval should kick in now.
+			if combatant_for_trust.autobattle_locked:
+				BattleManager.execute_autobattle_for_current()
 			_scene._update_ui()
 		return
 
