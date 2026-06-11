@@ -15,6 +15,7 @@ const BattleEnemySpawnerClass = preload("res://src/battle/BattleEnemySpawner.gd"
 const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
+const BattleBDFFHDHudStripClass = preload("res://src/ui/autogrind/BattleBDFFHDHudStrip.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
 ## we don't compensate for non-uniform character fill within the artist's
@@ -58,13 +59,9 @@ const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 var active_win98_menu: Win98MenuClass = null
 var use_win98_menus: bool = true  # Toggle for Win98 style menus
 
-## Party status UI
-@onready var char1_name: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/Name
-@onready var char1_hp: ProgressBar = $UI/PartyStatusPanel/VBoxContainer/Character1/HP
-@onready var char1_hp_label: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/HP/HPLabel
-@onready var char1_mp: ProgressBar = $UI/PartyStatusPanel/VBoxContainer/Character1/MP
-@onready var char1_mp_label: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/MP/MPLabel
-@onready var char1_ap: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/AP
+## BDFFHD Bottom HUD Strip — replaces the legacy per-character status panel.
+## The scene node is registered in BattleScene.tscn; we grab it via @onready.
+@onready var _hud_strip: BattleBDFFHDHudStripClass = $UI/BottomHUDStrip
 
 ## Sprite containers
 @onready var enemy_sprites: Node2D = $BattleField/EnemySprites
@@ -247,26 +244,11 @@ func _ready() -> void:
 	# Apply retro font styling
 	RetroFontClass.configure_battle_log(battle_log)
 
-	# Add padding to PartyStatusPanel so labels don't hug the panel
-	# borders. PanelContainer uses its stylebox content_margin_* for
-	# inner padding; the default theme has no left/top margin which
-	# made character names touch the edges.
-	var party_panel = $UI/PartyStatusPanel
+	# Legacy PartyStatusPanel is hidden in the tscn (replaced by BottomHUDStrip).
+	# Kept here as a guard so nothing silently crashes if the node still exists.
+	var party_panel = get_node_or_null("UI/PartyStatusPanel")
 	if party_panel:
-		var party_style = StyleBoxFlat.new()
-		party_style.bg_color = Color(0.08, 0.08, 0.12, 0.85)
-		party_style.border_color = Color(0.35, 0.35, 0.5, 0.7)
-		party_style.border_width_left = 1
-		party_style.border_width_top = 1
-		party_style.border_width_right = 1
-		party_style.border_width_bottom = 1
-		party_style.corner_radius_top_left = 4
-		party_style.corner_radius_bottom_left = 4
-		party_style.content_margin_left = 10
-		party_style.content_margin_right = 8
-		party_style.content_margin_top = 8
-		party_style.content_margin_bottom = 8
-		party_panel.add_theme_stylebox_override("panel", party_style)
+		party_panel.visible = false
 
 	# Permanent input-hint bar at the bottom of the battle UI. Tutorial
 	# hints fire once and disappear, leaving players who missed them
@@ -1279,6 +1261,10 @@ func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
 func _update_ui() -> void:
 	_ui_manager.update_ui()
 	_update_enemy_hp_bars()
+	# Update the BDFFHD bottom HUD strip with current party state
+	if _hud_strip and is_instance_valid(_hud_strip):
+		var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else party_members
+		_hud_strip.update_hud(members)
 
 
 func _update_danger_music() -> void:
@@ -3546,7 +3532,9 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	pointer.polygon = PackedVector2Array([Vector2(15, 0), Vector2(25, 0), Vector2(20, 8)])
 	pointer.color = border_color
 	pointer.position = Vector2(0, 0)
-	pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE if pointer.has_method("set") else 0
+	# Polygon2D doesn't inherit from Control, so it has no mouse_filter property.
+	# We can't assign mouse_filter directly to Polygon2D. Instead, we skip assigning it entirely since polygons don't consume mouse events by default.
+	# pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE if pointer.has_method("set") else 0
 	container.add_child(pointer)
 
 	container.position = sprite.global_position + Vector2(-40, -90)

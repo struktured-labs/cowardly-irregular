@@ -41,16 +41,15 @@ func update_ui() -> void:
 
 
 func _apply_panel_transparency() -> void:
-	"""Apply semi-transparent backgrounds to EnemyStatusPanel + PartyStatusPanel.
-	Without this the opaque default PanelContainer styling overlapped enemy
-	sprites awkwardly (panels live in the same screen zone as the BattleField
-	enemy markers, which can't easily move without rebalancing combat
-	choreography). Transparency lets the sprite show through.
-	(User feedback 2026-05-02: 'monster stat screen overlays awkwardly on
-	the monster sprites'.)"""
-	for panel_path in ["UI/EnemyStatusPanel", "UI/PartyStatusPanel"]:
+	"""Apply semi-transparent backgrounds to EnemyStatusPanel.
+	PartyStatusPanel is hidden (replaced by BottomHUDStrip) — skip it.
+	(Original user feedback 2026-05-02: 'monster stat screen overlays
+	awkwardly on the monster sprites'; BDFFHD integration 2026-06-09:
+	PartyStatusPanel retired in favour of BattleBDFFHDHudStrip.)"""
+	# Only theme the EnemyStatusPanel; guard with visibility check.
+	for panel_path in ["UI/EnemyStatusPanel"]:
 		var panel = _scene.get_node_or_null(panel_path)
-		if not panel:
+		if not panel or not panel.visible:
 			continue
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(0.05, 0.04, 0.10, 0.72)  # deep purple, ~72% alpha
@@ -184,8 +183,15 @@ func update_character_status() -> void:
 
 
 func _ensure_party_status_boxes() -> void:
-	"""Ensure we have status boxes for all party members (only creates once)"""
+	"""Ensure we have status boxes for all party members (only creates once).
+	When PartyStatusPanel is hidden (BottomHUDStrip active), this is a no-op."""
 	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else _scene.party_members
+
+	# Guard: if the legacy PartyStatusPanel is hidden, BottomHUDStrip owns the
+	# party status display. Nothing to do here.
+	var legacy_panel = _scene.get_node_or_null("UI/PartyStatusPanel")
+	if not legacy_panel or not legacy_panel.visible:
+		return
 
 	# Skip if already created for this party
 	if _party_status_boxes.size() == members.size():
