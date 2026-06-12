@@ -28,6 +28,7 @@ var _sprite: Sprite2D
 var _label: Label
 var _player_nearby: bool = false
 var _npc_dialogue: Node = null  # NPCDialogue instance for proper dialogue boxes
+var _dynamic_conv: DynamicConversation = null  # LLM-driven conversation, lazy-init
 var _in_conversation: bool = false
 
 ## NPC theme/portrait for dialogue boxes (defaults to "mysterious")
@@ -303,8 +304,19 @@ func _start_conversation() -> void:
 	_in_conversation = true
 	_label.visible = false
 
-	# Freeze player during conversation
 	var player = _get_player()
+
+	# ── LLM-driven path: use DynamicConversation when LLMService is available. ──
+	if _llm_conversation_available():
+		await _run_dynamic_conversation(player)
+		_in_conversation = false
+		if _player_nearby:
+			_label.text = "[A] %s" % npc_name
+			_label.visible = true
+		return
+
+	# ── Static path: single-line NPCDialogue box. ──
+	# Freeze player during conversation
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
 
@@ -336,3 +348,52 @@ func _get_player() -> Node:
 	if Engine.has_singleton("MapSystem"):
 		return Engine.get_singleton("MapSystem").get_player()
 	return null
+
+
+func _llm_conversation_available() -> bool:
+	"""Returns true when LLMService is present and reporting availability."""
+	if not Engine.has_singleton("LLMService"):
+		return false
+	var svc = Engine.get_singleton("LLMService")
+	return svc != null and svc.is_available()
+
+
+func _run_dynamic_conversation(player: Node) -> void:
+	"""Spin up (or reuse) a DynamicConversation and run a full LLM-driven exchange."""
+	if not _dynamic_conv or not is_instance_valid(_dynamic_conv):
+		_dynamic_conv = DynamicConversation.new()
+		_dynamic_conv.name = "DynamicConversation"
+		add_child(_dynamic_conv)
+
+	# Resolve EventLog from GameState singleton.
+	var event_log: EventLog = null
+	if Engine.has_singleton("GameState"):
+		var gs = Engine.get_singleton("GameState")
+		if gs != null and "event_log" in gs:
+			event_log = gs.event_log
+
+	# Resolve location name from parent scene.
+	var location: String = _resolve_location_name()
+
+	# WanderingNPCs have a single dialogue line — wrap it as the fallback array.
+	var fallback_lines: Array = [_get_current_dialogue()]
+
+	# Use the dialogue_theme as a loose persona description.
+	var persona: String = "%s who travels the roads" % dialogue_theme
+
+	_dynamic_conv.setup(npc_name, persona, location, event_log, fallback_lines)
+	await _dynamic_conv.run(player)
+
+
+func _resolve_location_name() -> String:
+	var p = get_parent()
+	if p:
+		var n: String = p.name
+		if n != "" and n != "Node":
+			return n
+		var gp = p.get_parent()
+		if gp:
+			var gn: String = gp.name
+			if gn != "" and gn != "Node":
+				return gn
+	return "Unknown Land"

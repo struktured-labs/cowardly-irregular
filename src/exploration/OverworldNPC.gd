@@ -55,6 +55,7 @@ var name_label: Label
 var dialogue_box: Control
 var dialogue_label: Label
 var _npc_dialogue: Node = null  # NPCDialogue instance, lazy-init
+var _dynamic_conv: DynamicConversation = null  # LLM-driven conversation, lazy-init
 
 ## State
 var _current_line: int = 0
@@ -730,7 +731,15 @@ func _start_dialogue() -> void:
 	if npc_type == "dancer":
 		start_dancing()
 
-	# Production path: delegate to NPCDialogue (CanvasLayer-anchored).
+	# ── LLM-driven path: use DynamicConversation when LLMService is available. ──
+	# Falls back to the static dialogue_lines path below when LLM is off.
+	if _llm_conversation_available():
+		var player := _get_nearby_player()
+		await _run_dynamic_conversation(player)
+		_end_dialogue()
+		return
+
+	# ── Static path (NPCDialogue, CanvasLayer-anchored). ──
 	# Resolves both the screen-edge cut-off bug AND the gamepad-input
 	# bug (ui_accept now reaches CutsceneDialogue's _input handler
 	# without competing with NPCDialogue's nearby-NPC consumer).
@@ -783,6 +792,70 @@ func _get_nearby_player() -> Node:
 	if players.size() > 0:
 		return players[0]
 	return null
+
+
+func _llm_conversation_available() -> bool:
+	"""Returns true when LLMService is present and reporting availability."""
+	if not Engine.has_singleton("LLMService"):
+		return false
+	var svc = Engine.get_singleton("LLMService")
+	return svc != null and svc.is_available()
+
+
+func _run_dynamic_conversation(player: Node) -> void:
+	"""Spin up (or reuse) a DynamicConversation and run a full LLM-driven exchange."""
+	if not _dynamic_conv or not is_instance_valid(_dynamic_conv):
+		_dynamic_conv = DynamicConversation.new()
+		_dynamic_conv.name = "DynamicConversation"
+		add_child(_dynamic_conv)
+
+	# Derive a persona blurb from npc_type so the LLM has character guidance.
+	var persona: String = _persona_for_type(npc_type)
+
+	# Resolve EventLog: try GameState singleton; fall back to null gracefully.
+	var event_log: EventLog = null
+	if Engine.has_singleton("GameState"):
+		var gs = Engine.get_singleton("GameState")
+		if gs != null and "event_log" in gs:
+			event_log = gs.event_log
+
+	# Resolve location name from parent scene.
+	var location: String = _resolve_location_name()
+
+	_dynamic_conv.setup(npc_name, persona, location, event_log, dialogue_lines)
+	await _dynamic_conv.run(player)
+
+
+func _persona_for_type(t: String) -> String:
+	match t:
+		"elder":      return "wise elder who speaks formally and shares old lore"
+		"shopkeeper": return "cheerful merchant eager to make a sale"
+		"guard":      return "dutiful guard, terse and watchful"
+		"innkeeper":  return "warm innkeeper, welcoming and full of local gossip"
+		"scholar":    return "bookish scholar who speaks in long sentences"
+		"blacksmith": return "gruff blacksmith, speaks plainly about craft"
+		"farmer":     return "hardworking farmer, worried about the harvest"
+		"fisherman":  return "weathered fisherman with sea stories"
+		"monk":       return "serene monk who speaks in gentle parables"
+		"soldier":    return "disciplined soldier loyal to the kingdom"
+		"traveler":   return "weary traveler full of road tales"
+		"bard":       return "theatrical bard who speaks in dramatic flourishes"
+		"mysterious": return "cryptic stranger whose words carry hidden meaning"
+		_:            return "friendly villager going about their day"
+
+
+func _resolve_location_name() -> String:
+	var p = get_parent()
+	if p:
+		var n: String = p.name
+		if n != "" and n != "Node":
+			return n
+		var gp = p.get_parent()
+		if gp:
+			var gn: String = gp.name
+			if gn != "" and gn != "Node":
+				return gn
+	return "Unknown Land"
 
 
 func _end_dialogue() -> void:
