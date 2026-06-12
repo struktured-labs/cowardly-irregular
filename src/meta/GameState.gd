@@ -81,6 +81,10 @@ var pending_boss_defeat: Dictionary = {}
 
 var playtime_paused: bool = false
 
+## LLM event log — append-only ring buffer of deterministic game facts.
+## Instantiated in _ready() so it is always available to LLM subsystems.
+var event_log: EventLog = null
+
 
 ## Story flag helpers
 func set_story_flag(flag_name: String, value: bool = true) -> void:
@@ -100,6 +104,7 @@ func is_world_unlocked(world_num: int) -> bool:
 
 func _ready() -> void:
 	_ensure_save_directory()
+	event_log = EventLog.new()
 
 
 func _process(delta: float) -> void:

@@ -1544,6 +1544,29 @@ func _on_battle_ended(victory: bool) -> void:
 		# Clear pending boss spec on defeat so a retry doesn't accidentally
 		# fire flags from a battle the player didn't actually win.
 		GameState.pending_boss_defeat = {}
+		# ── EventLog: record party wipe fact ─────────────────────────────────
+		if GameState and "event_log" in GameState and GameState.event_log != null:
+			var survivors: int = 0
+			for m in party:
+				if m is Combatant and m.is_alive:
+					survivors += 1
+			var enemy_names: Array = []
+			for e in BattleManager.enemy_party:
+				if e is Combatant:
+					var etype: String = e.get_meta("monster_type", e.combatant_name)
+					if etype not in enemy_names:
+						enemy_names.append(etype)
+			GameState.event_log.record(
+				EventLog.TYPE_PARTY_WIPE,
+				"Party wiped in %s" % _current_map_id.replace("_", " ").capitalize(),
+				{
+					"map_id":      _current_map_id,
+					"survivors":   survivors,
+					"party_size":  party.size(),
+					"enemy_types": enemy_names,
+					"world":       GameState.worlds_unlocked,
+				}
+			)
 		await _show_game_over_screen()
 
 
@@ -1579,6 +1602,23 @@ func _apply_pending_boss_defeat() -> void:
 	# Defeat cutscene — left for the dungeon to play after re-instantiation
 	# (we don't play it here because the battle scene is still up)
 	print("[BOSS] Applied pending defeat: %s" % spec)
+	# ── EventLog: record boss defeat fact ────────────────────────────────────
+	if GameState and "event_log" in GameState and GameState.event_log != null:
+		var boss_id: String = spec.get("dungeon_flag", "")
+		if boss_id.is_empty():
+			var flags: Array = spec.get("story_flags", [])
+			boss_id = flags[0] if flags.size() > 0 else "unknown_boss"
+		var boss_name: String = boss_id.replace("_defeated", "").replace("_", " ").capitalize()
+		GameState.event_log.record(
+			EventLog.TYPE_BOSS_DEFEAT,
+			"Defeated %s" % boss_name,
+			{
+				"boss_id":    boss_id,
+				"boss_name":  boss_name,
+				"map_id":     _current_map_id,
+				"world":      GameState.worlds_unlocked,
+			}
+		)
 	# One-shot: clear after applying
 	GameState.pending_boss_defeat = {}
 
@@ -2442,6 +2482,19 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 			if child != _area_fade_rect:
 				child.queue_free()
 	_transition_in_progress = false
+
+	# ── EventLog: record area transition fact ────────────────────────────────
+	if GameState and "event_log" in GameState and GameState.event_log != null:
+		var display_name: String = _get_location_display_name(target_map)
+		GameState.event_log.record(
+			EventLog.TYPE_AREA_ENTERED,
+			"Entered %s" % display_name,
+			{
+				"map_id":      target_map,
+				"spawn_point": spawn_point,
+				"world":       GameState.worlds_unlocked,
+			}
+		)
 
 	# Auto-save on zone transition (villages/overworld only; dungeons use save points).
 	# SaveSystem.save_completed signal drives the Toast via _on_any_save_completed.
