@@ -2485,10 +2485,10 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 
 	# ── EventLog: record area transition fact ────────────────────────────────
 	if GameState and "event_log" in GameState and GameState.event_log != null:
-		var display_name: String = _get_location_display_name(target_map)
+		var area_display_name: String = _get_location_display_name(target_map)
 		GameState.event_log.record(
 			EventLog.TYPE_AREA_ENTERED,
-			"Entered %s" % display_name,
+			"Entered %s" % area_display_name,
 			{
 				"map_id":      target_map,
 				"spawn_point": spawn_point,
