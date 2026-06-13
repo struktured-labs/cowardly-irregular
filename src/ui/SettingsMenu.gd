@@ -176,7 +176,10 @@ func _build_ui() -> void:
 
 	# Title — pinned above the scroll area
 	const TITLE_H: int = 40
-	const FOOTER_H: int = 36
+	# FOOTER_H enlarged from 36 → 52 so "Quit to Title" / "Return to title
+	# screen" action button has full breathing room above the footer label
+	# and no longer clips at the bottom of the scroll region.
+	const FOOTER_H: int = 52
 	var title = Label.new()
 	title.text = "SETTINGS"
 	title.position = Vector2(16, 8)
@@ -359,7 +362,7 @@ func _build_ui() -> void:
 	# so it is always visible regardless of scroll position.
 	var footer = Label.new()
 	footer.text = "←→: Adjust  A/Click: Select  B/RClick: Back"
-	footer.position = Vector2(16, panel.size.y - FOOTER_H + 4)
+	footer.position = Vector2(16, panel.size.y - FOOTER_H + 18)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(footer)

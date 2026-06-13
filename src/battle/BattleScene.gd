@@ -803,9 +803,9 @@ func _create_battle_sprites() -> void:
 		# Per-job display height targets (in pixels) for battle sprites.
 		# Tune these to align characters visually despite different art sizes within frames.
 		# Sprites shrink when the party has 5+ members so the Bard column fits the
-		# 75px-spaced Y stagger (vs 100px for 4-PC). The ratio target_height / Y_gap
-		# stays consistent with the prior 4-PC look. Procedural-fallback path
-		# (144px target) gets the same proportional shrink.
+		# 110px-spaced Y stagger. The ratio target_height / Y_gap stays consistent
+		# with the wider formation. Procedural-fallback path (144px target) gets
+		# the same proportional shrink.
 		var _party_size: int = party_members.size()
 		var _density_scale: float = 1.0 if _party_size <= 4 else 0.75
 		var target_height = PARTY_SPRITE_HEIGHT * _density_scale
@@ -2166,37 +2166,40 @@ func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
 	match current_formation:
 		PartyFormation.V_FORMATION:
 			# Classic JRPG V-shape: front members lower, back higher.
-			# 5 evenly-spaced steps so Bard sits cleanly between the previous
-			# 4-shape's outermost members.
-			var y_offsets = [12.0, 6.0, 0.0, -6.0, -12.0]
+			# Offsets scaled to 110px Y-gap so the stagger reads cleanly
+			# at the wider party spacing (previously ±12 at 75px gap).
+			var y_offsets = [18.0, 9.0, 0.0, -9.0, -18.0]
 			return Vector2(0, y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0)
 
 		PartyFormation.FRONT_LINE:
-			# All in a row, pushed forward (left toward enemies)
-			var y_spread = [-20.0, -10.0, 0.0, 10.0, 20.0]
+			# All in a row, pushed forward (left toward enemies).
+			# y-spread widened from ±20 to ±30 to match 110px base gap.
+			var y_spread = [-30.0, -15.0, 0.0, 15.0, 30.0]
 			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
 			return Vector2(-30, y)
 
 		PartyFormation.BACK_ROW:
-			# All pushed back (right away from enemies)
-			var y_spread = [-20.0, -10.0, 0.0, 10.0, 20.0]
+			# All pushed back (right away from enemies).
+			# y-spread widened from ±20 to ±30 to match 110px base gap.
+			var y_spread = [-30.0, -15.0, 0.0, 15.0, 30.0]
 			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
 			return Vector2(30, y)
 
 		PartyFormation.DIAMOND:
 			# 1 front, 2 mid, 2 back — tank formation expanded for strict-5.
-			# Back-pair (3,4) staggered y so they don't overlap the mid row.
+			# y offsets scaled to 110px gap (±20→±30, ±12→±18).
 			match member_idx:
 				0: return Vector2(-25, 0)    # Front (tank)
-				1: return Vector2(0, -20)    # Mid-top
-				2: return Vector2(0, 20)     # Mid-bottom
-				3: return Vector2(25, -12)   # Back-top
-				4: return Vector2(25, 12)    # Back-bottom
+				1: return Vector2(0, -30)    # Mid-top
+				2: return Vector2(0, 30)     # Mid-bottom
+				3: return Vector2(25, -18)   # Back-top
+				4: return Vector2(25, 18)    # Back-bottom
 				_: return Vector2.ZERO
 
 		PartyFormation.SPREAD:
 			# Wide spacing to resist AoE — 5-member staggered pattern.
-			var y_offsets = [-40.0, -20.0, 0.0, 20.0, 40.0]
+			# y-spread widened from ±40 to ±55 to match 110px base gap.
+			var y_offsets = [-55.0, -27.0, 0.0, 27.0, 55.0]
 			var x_offsets = [-15.0, 0.0, -15.0, 0.0, -15.0]
 			var y = y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0
 			var x = x_offsets[member_idx] if member_idx < x_offsets.size() else 0.0
