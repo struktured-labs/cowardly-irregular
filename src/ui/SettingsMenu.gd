@@ -333,10 +333,10 @@ func _build_ui() -> void:
 		var idx = _settings_items.size()
 		var item = (_create_action_button(label, desc, idx)
 			if primary else _create_action_button_neutral(label, desc, idx))
-		item.custom_minimum_size = Vector2(400, 38)  # Compact action row
+		item.custom_minimum_size = Vector2(400, 56)  # Action row with breathing room
 		actions_box.add_child(item)
 		_settings_items.append({"control": item, "type": "action", "id": id})
-		MenuMouseHelper.make_clickable(item, idx, 400, 38,
+		MenuMouseHelper.make_clickable(item, idx, 400, 56,
 			_on_setting_click.bind(idx), _on_setting_hover.bind(idx))
 
 	# Controls (always shown)
@@ -625,11 +625,11 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 func _create_action_button_neutral(label_text: String, description: String, index: int) -> Control:
 	"""Create a neutral action button (non-destructive, like Controls)"""
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 50)
+	container.custom_minimum_size = Vector2(400, 56)
 
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 50)
+	highlight.size = Vector2(400, 56)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -649,7 +649,7 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 
 	var hint = Label.new()
 	hint.text = "[Press A]"
-	hint.position = Vector2(8, 36)
+	hint.position = Vector2(310, 16)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
@@ -661,12 +661,12 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 func _create_action_button(label_text: String, description: String, index: int) -> Control:
 	"""Create an action button setting (press A to activate)"""
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 50)
+	container.custom_minimum_size = Vector2(400, 56)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 50)
+	highlight.size = Vector2(400, 56)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -686,10 +686,10 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	desc.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(desc)
 
-	# Action hint
+	# Action hint — right-aligned with the title row, no vertical overlap
 	var hint = Label.new()
 	hint.text = "[Press A]"
-	hint.position = Vector2(8, 36)
+	hint.position = Vector2(310, 16)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
