@@ -132,7 +132,24 @@ func _find_battle_speed_preset(value: float) -> int:
 
 
 func _build_ui() -> void:
-	"""Build the settings UI"""
+	"""Build the settings UI.
+
+	Layout overview (overflow-safe):
+	  panel
+	  ├── panel_bg       (ColorRect, full-rect)
+	  ├── border         (RetroPanel beveled edge)
+	  ├── title          (Label, pinned at y=8, outside scroll)
+	  ├── scroll         (ScrollContainer, fills panel between title and footer)
+	  │   └── vbox       (VBoxContainer — all rows grow downward freely)
+	  │       ├── encounter_item
+	  │       ├── debug_item
+	  │       ├── … (all setting rows)
+	  │       └── actions_box (VBoxContainer for action buttons)
+	  └── footer         (Label, pinned at bottom, outside scroll)
+
+	The ScrollContainer clips and scrolls only the inner VBox, so no
+	matter how many debug action buttons are added the panel never overflows.
+	"""
 	for child in get_children():
 		child.queue_free()
 	_settings_items.clear()
@@ -143,9 +160,7 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Main panel — height bumped to fit all 5 action buttons
-	# (Controls, Jukebox, Fight Boss, Debug Teleport, Quit) when debug is
-	# on, plus the 8 setting rows above them. 0.84 was too tight.
+	# Main panel — fixed frame; content scrolls inside it.
 	var panel = Control.new()
 	panel.position = Vector2(size.x * 0.2, size.y * 0.04)
 	panel.size = Vector2(size.x * 0.6, size.y * 0.92)
@@ -159,13 +174,32 @@ func _build_ui() -> void:
 	# Beveled retro border
 	RetroPanel.add_border(panel, panel.size, BORDER_LIGHT, BORDER_SHADOW)
 
-	# Title
+	# Title — pinned above the scroll area
+	const TITLE_H: int = 40
+	const FOOTER_H: int = 36
 	var title = Label.new()
 	title.text = "SETTINGS"
 	title.position = Vector2(16, 8)
 	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
+
+	# ── ScrollContainer ──────────────────────────────────────────────────
+	# Occupies the space between title and footer; vertical scroll only.
+	var scroll = ScrollContainer.new()
+	scroll.position = Vector2(0, TITLE_H)
+	scroll.size = Vector2(panel.size.x, panel.size.y - TITLE_H - FOOTER_H)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	panel.add_child(scroll)
+
+	# Inner VBoxContainer — rows stack top-to-bottom, no manual y positions.
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 0)
+	scroll.add_child(vbox)
+
+	# ── Setting rows — added in display order to vbox ────────────────────
 
 	# Encounter Rate setting
 	var encounter_item = _create_option_setting(
@@ -175,8 +209,7 @@ func _build_ui() -> void:
 		encounter_preset_index,
 		0
 	)
-	encounter_item.position = Vector2(16, 48)
-	panel.add_child(encounter_item)
+	vbox.add_child(encounter_item)
 	_settings_items.append({"control": encounter_item, "type": "option", "id": "encounter_rate"})
 	MenuMouseHelper.make_clickable(encounter_item, 0, 400, 80,
 		_on_setting_click.bind(0), _on_setting_hover.bind(0))
@@ -188,8 +221,7 @@ func _build_ui() -> void:
 		debug_log_enabled,
 		1
 	)
-	debug_item.position = Vector2(16, 128)
-	panel.add_child(debug_item)
+	vbox.add_child(debug_item)
 	_settings_items.append({"control": debug_item, "type": "toggle", "id": "debug_log"})
 	MenuMouseHelper.make_clickable(debug_item, 1, 400, 60,
 		_on_setting_click.bind(1), _on_setting_hover.bind(1))
@@ -201,8 +233,7 @@ func _build_ui() -> void:
 		show_controller_overlay,
 		2
 	)
-	overlay_item.position = Vector2(16, 188)
-	panel.add_child(overlay_item)
+	vbox.add_child(overlay_item)
 	_settings_items.append({"control": overlay_item, "type": "toggle", "id": "controller_overlay"})
 	MenuMouseHelper.make_clickable(overlay_item, 2, 400, 60,
 		_on_setting_click.bind(2), _on_setting_hover.bind(2))
@@ -215,8 +246,7 @@ func _build_ui() -> void:
 		music_volume_index,
 		3
 	)
-	music_item.position = Vector2(16, 248)
-	panel.add_child(music_item)
+	vbox.add_child(music_item)
 	_settings_items.append({"control": music_item, "type": "volume", "id": "music_volume"})
 	MenuMouseHelper.make_clickable(music_item, 3, 400, 60,
 		_on_setting_click.bind(3), _on_setting_hover.bind(3))
@@ -229,8 +259,7 @@ func _build_ui() -> void:
 		sfx_volume_index,
 		4
 	)
-	sfx_item.position = Vector2(16, 308)
-	panel.add_child(sfx_item)
+	vbox.add_child(sfx_item)
 	_settings_items.append({"control": sfx_item, "type": "volume", "id": "sfx_volume"})
 	MenuMouseHelper.make_clickable(sfx_item, 4, 400, 60,
 		_on_setting_click.bind(4), _on_setting_hover.bind(4))
@@ -243,8 +272,7 @@ func _build_ui() -> void:
 		battle_speed_index,
 		5
 	)
-	speed_item.position = Vector2(16, 368)
-	panel.add_child(speed_item)
+	vbox.add_child(speed_item)
 	_settings_items.append({"control": speed_item, "type": "battle_speed", "id": "battle_speed"})
 	MenuMouseHelper.make_clickable(speed_item, 5, 400, 60,
 		_on_setting_click.bind(5), _on_setting_hover.bind(5))
@@ -257,8 +285,7 @@ func _build_ui() -> void:
 		text_speed_index,
 		6
 	)
-	text_item.position = Vector2(16, 428)
-	panel.add_child(text_item)
+	vbox.add_child(text_item)
 	_settings_items.append({"control": text_item, "type": "text_speed", "id": "text_speed"})
 	MenuMouseHelper.make_clickable(text_item, 6, 400, 60,
 		_on_setting_click.bind(6), _on_setting_hover.bind(6))
@@ -270,8 +297,7 @@ func _build_ui() -> void:
 		screen_shake_enabled,
 		7
 	)
-	shake_item.position = Vector2(16, 488)
-	panel.add_child(shake_item)
+	vbox.add_child(shake_item)
 	_settings_items.append({"control": shake_item, "type": "toggle", "id": "screen_shake"})
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
@@ -279,8 +305,6 @@ func _build_ui() -> void:
 	# Debug-only: Unlock All Party toggle — bypasses every PC's autobattle_locked
 	# spotlight gate. Honored at BattleManager / BattleCommandMenu / UI gates,
 	# not by mutating Combatant state, so flips here take effect immediately.
-	var actions_box_y: float = 548
-	var actions_box_h_offset: float = 580
 	if debug_log_enabled:
 		var debug_unlock_idx: int = _settings_items.size()
 		var debug_unlock_item = _create_toggle_setting(
@@ -289,26 +313,19 @@ func _build_ui() -> void:
 			debug_all_pcs_unlocked,
 			debug_unlock_idx
 		)
-		debug_unlock_item.position = Vector2(16, 548)
-		panel.add_child(debug_unlock_item)
+		vbox.add_child(debug_unlock_item)
 		_settings_items.append({"control": debug_unlock_item, "type": "toggle", "id": "debug_all_pcs_unlocked"})
 		MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
 			_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
-		actions_box_y = 608
-		actions_box_h_offset = 640
 
-	# Action buttons stacked in a VBoxContainer — auto-fits 1 to 5 items
-	# (Controls + Jukebox + Fight Boss + Debug Teleport + Quit when all
-	# debug-only entries are visible) within the panel. Tight stride so
-	# all 5 fit even at 720p.
-	# Position the container right below the last setting row (Screen Shake
-	# ends at ~548; debug toggle if present pushes start to ~608) and let
-	# the panel scroll if it ever gets longer.
+	# ── Action buttons ───────────────────────────────────────────────────
+	# Stacked in their own VBoxContainer inside the scroll area so any
+	# future debug actions automatically extend the scrollable content
+	# without needing panel-height or y-offset tuning.
 	var actions_box = VBoxContainer.new()
-	actions_box.position = Vector2(16, actions_box_y)
-	actions_box.size = Vector2(400, panel.size.y - actions_box_h_offset)
+	actions_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions_box.add_theme_constant_override("separation", 0)
-	panel.add_child(actions_box)
+	vbox.add_child(actions_box)
 
 	# Helper local lambda — append one action button into the VBox and
 	# wire mouse on the index it gets in _settings_items.
@@ -338,10 +355,11 @@ func _build_ui() -> void:
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_settings)
 
-	# Footer
+	# Footer — pinned at the very bottom of the panel, outside the scroll area
+	# so it is always visible regardless of scroll position.
 	var footer = Label.new()
 	footer.text = "←→: Adjust  A/Click: Select  B/RClick: Back"
-	footer.position = Vector2(16, panel.size.y - 32)
+	footer.position = Vector2(16, panel.size.y - FOOTER_H + 4)
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(footer)
@@ -352,7 +370,7 @@ func _build_ui() -> void:
 func _create_option_setting(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
 	"""Create an option selector setting control"""
 	var container = Control.new()
-	container.size = Vector2(400, 80)
+	container.custom_minimum_size = Vector2(400, 80)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
@@ -413,7 +431,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 func _create_volume_setting(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
 	"""Create a volume slider setting control"""
 	var container = Control.new()
-	container.size = Vector2(400, 60)
+	container.custom_minimum_size = Vector2(400, 60)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
@@ -472,7 +490,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 func _create_option_setting_small(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
 	"""Create a smaller option selector setting control"""
 	var container = Control.new()
-	container.size = Vector2(400, 60)
+	container.custom_minimum_size = Vector2(400, 60)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
@@ -531,7 +549,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 func _create_toggle_setting(label_text: String, description: String, is_on: bool, index: int) -> Control:
 	"""Create a toggle (on/off) setting control"""
 	var container = Control.new()
-	container.size = Vector2(400, 60)
+	container.custom_minimum_size = Vector2(400, 60)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
@@ -607,7 +625,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 func _create_action_button_neutral(label_text: String, description: String, index: int) -> Control:
 	"""Create a neutral action button (non-destructive, like Controls)"""
 	var container = Control.new()
-	container.size = Vector2(400, 50)
+	container.custom_minimum_size = Vector2(400, 50)
 
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
@@ -643,7 +661,7 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 func _create_action_button(label_text: String, description: String, index: int) -> Control:
 	"""Create an action button setting (press A to activate)"""
 	var container = Control.new()
-	container.size = Vector2(400, 50)
+	container.custom_minimum_size = Vector2(400, 50)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
