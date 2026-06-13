@@ -501,3 +501,10 @@ func _close_help_overlay() -> void:
 		_help_overlay.queue_free()
 		_help_overlay = null
 		_can_input = true  # Restore input ability after close
+
+
+func _exit_tree() -> void:
+	# Kill any looping press-start pulse tween so it doesn't outlive the node.
+	if _press_tween and _press_tween.is_valid():
+		_press_tween.kill()
+	_press_tween = null

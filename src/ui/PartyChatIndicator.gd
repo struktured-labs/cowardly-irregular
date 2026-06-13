@@ -84,3 +84,8 @@ func _stop_pulse() -> void:
 		_pulse_tween.kill()
 	_pulse_tween = null
 	modulate.a = 1.0
+
+
+func _exit_tree() -> void:
+	# Stop any dangling pulse tween before the node is freed.
+	_stop_pulse()
