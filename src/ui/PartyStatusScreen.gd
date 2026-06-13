@@ -87,8 +87,13 @@ func _build_ui() -> void:
 	gold_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	add_child(gold_label)
 
-	# Layout: 4 compact party cards on top, detail panel below
-	var card_w := (vp.x - 120.0) / 4.0
+	# Layout: party cards on top (one per member), detail panel below.
+	# Width divides evenly across party.size() with an 8px gutter between
+	# each card. Was hardcoded to /4.0 — 5-PC builds overflowed the right
+	# edge of the viewport and Bard's card was clipped off-screen.
+	var card_count: int = max(1, party.size())
+	var total_gutter: float = float(card_count - 1) * 8.0
+	var card_w := (vp.x - 48.0 - total_gutter) / float(card_count)
 	var card_h := 184.0  # Bumped from 160 to fit the EXP bar between MP and stats.
 	var card_y := 48.0
 
