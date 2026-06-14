@@ -39,6 +39,7 @@ var battle_speed_index: int = 2
 var text_speed: String = "normal"
 var text_speed_index: int = 1
 var screen_shake_enabled: bool = true
+var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
 var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible when debug_log_enabled
 
 ## UI State
@@ -89,6 +90,8 @@ func _ready() -> void:
 				text_speed_index = 1
 		if "screen_shake_enabled" in GameState:
 			screen_shake_enabled = GameState.screen_shake_enabled
+		if "llm_enabled" in GameState:
+			llm_enabled = GameState.llm_enabled
 		if "debug_all_pcs_unlocked" in GameState:
 			debug_all_pcs_unlocked = GameState.debug_all_pcs_unlocked
 	_build_ui()
@@ -304,6 +307,23 @@ func _build_ui() -> void:
 	_settings_items.append({"control": shake_item, "type": "toggle", "id": "screen_shake"})
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
+
+	# Wave C: Dynamic Dialogue (experimental) — gates the LLMService master
+	# enable flag. Default ON on desktop, OFF on web (no HTTP backend reachable
+	# inside the WASM sandbox). Even when ON, the HTTPBackend probe must
+	# succeed before any actual LLM call goes out — so toggling this with no
+	# server reachable is harmless (every dialogue silently falls back).
+	var llm_idx: int = _settings_items.size()
+	var llm_item = _create_toggle_setting(
+		"Dynamic Dialogue (experimental)",
+		"Let an LLM steer NPC conversation lines",
+		llm_enabled,
+		llm_idx
+	)
+	vbox.add_child(llm_item)
+	_settings_items.append({"control": llm_item, "type": "toggle", "id": "llm_enabled"})
+	MenuMouseHelper.make_clickable(llm_item, llm_idx, 400, 60,
+		_on_setting_click.bind(llm_idx), _on_setting_hover.bind(llm_idx))
 
 	# Debug-only: Unlock All Party toggle — bypasses every PC's autobattle_locked
 	# spotlight gate. Honored at BattleManager / BattleCommandMenu / UI gates,
@@ -830,6 +850,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_screen_shake_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "llm_enabled":
+		llm_enabled = not llm_enabled
+		_update_toggle_display(selected_index, llm_enabled)
+		_save_llm_enabled_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "debug_all_pcs_unlocked":
 		debug_all_pcs_unlocked = not debug_all_pcs_unlocked
 		_update_toggle_display(selected_index, debug_all_pcs_unlocked)
@@ -868,12 +894,11 @@ func _adjust_setting(delta: int) -> void:
 
 func _persist_settings() -> void:
 	"""Write all settings to user://settings.json via SaveSystem."""
-	if Engine.has_singleton("SaveSystem"):
-		Engine.get_singleton("SaveSystem").save_settings()
-	else:
-		var ss = get_node_or_null("/root/SaveSystem")
-		if ss and ss.has_method("save_settings"):
-			ss.save_settings()
+	# Engine.has_singleton("SaveSystem") is ALWAYS FALSE for autoloads in Godot 4
+	# — the autoload lives on the scene tree root.
+	var ss: Node = get_node_or_null("/root/SaveSystem")
+	if ss and ss.has_method("save_settings"):
+		ss.save_settings()
 
 
 func _save_encounter_rate() -> void:
@@ -910,6 +935,22 @@ func _save_screen_shake_setting() -> void:
 		GameState.screen_shake_enabled = screen_shake_enabled
 	settings_changed.emit("screen_shake", screen_shake_enabled)
 	print("[SETTINGS] Screen shake %s" % ("enabled" if screen_shake_enabled else "disabled"))
+	_persist_settings()
+
+
+## Wave C: flip the LLMService master enable flag and persist it on GameState.
+## Engine.has_singleton(...) is ALWAYS FALSE for autoloads in Godot 4 — we look
+## up /root/LLMService directly instead. When the autoload is missing (unit
+## tests, fresh worktree pre-import) we still persist the choice so it sticks
+## the next launch.
+func _save_llm_enabled_setting() -> void:
+	if GameState:
+		GameState.llm_enabled = llm_enabled
+	var svc: Node = get_node_or_null("/root/LLMService")
+	if svc and "llm_enabled" in svc:
+		svc.llm_enabled = llm_enabled
+	settings_changed.emit("llm_enabled", llm_enabled)
+	print("[SETTINGS] Dynamic dialogue %s" % ("enabled" if llm_enabled else "disabled"))
 	_persist_settings()
 
 

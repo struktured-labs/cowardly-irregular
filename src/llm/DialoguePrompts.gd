@@ -54,6 +54,19 @@ const SCHEMA_PLAYER_CHOICES: Dictionary = {
 	"choices": "Array",
 }
 
+## Schema for NPC follow-up reply (response to the player's chosen line).
+## Expected JSON: { "line": "..." }
+const SCHEMA_NPC_REPLY: Dictionary = {
+	"line": "String",
+}
+
+## Schema for the optional combined NPC-reply + next-choices payload, used
+## when both fit comfortably under the prompt budget. Saves one round trip.
+const SCHEMA_COMBINED_REPLY: Dictionary = {
+	"reply":   "String",
+	"choices": "Array",
+}
+
 
 # ── Fallback constants ────────────────────────────────────────────────────────
 
@@ -66,6 +79,35 @@ const FALLBACK_NPC_OPENING: Dictionary = {
 ## Fallback player choices returned on any failure.
 ## Four generic JRPG conversation openers that are always valid.
 const FALLBACK_PLAYER_CHOICES: Dictionary = {
+	"choices": [
+		"Tell me more.",
+		"What's going on around here?",
+		"Do you need help?",
+		"Farewell.",
+	],
+}
+
+## Generic conversational continuations used when the NPC-reply LLM call
+## fails or returns garbage. Cycled by the caller so successive failures
+## don't repeat the same line.
+const FALLBACK_NPC_REPLY_LINES: Array = [
+	"Hmm... go on.",
+	"I see.",
+	"That's something to think on.",
+	"Is that so?",
+	"You don't say.",
+	"Interesting...",
+	"Perhaps you have a point.",
+]
+
+## Default fallback envelope for a single NPC reply.
+const FALLBACK_NPC_REPLY: Dictionary = {
+	"line": "Hmm... go on.",
+}
+
+## Default fallback envelope for the combined reply+choices payload.
+const FALLBACK_COMBINED_REPLY: Dictionary = {
+	"reply": "Hmm... go on.",
 	"choices": [
 		"Tell me more.",
 		"What's going on around here?",
@@ -124,6 +166,104 @@ static func build_npc_opening_topical(
 ) -> String:
 	var extended_persona: String = "%s — today's topic: %s" % [npc_persona, topic]
 	return build_npc_opening(npc_name, extended_persona, location, recent_events)
+
+
+# ── Prompt builders: NPC follow-up reply ─────────────────────────────────────
+
+## Build a prompt asking the LLM to generate a single NPC follow-up line
+## that responds to the player's most recent dialogue choice.
+##
+## Crucially, this prompt threads BOTH the prior NPC line and the player's
+## chosen response into the context — without this, the call site silently
+## reuses build_npc_opening and the conversation devolves into two
+## interleaved monologues (see plan slice item 5).
+##
+## Parameters:
+##   npc_name       — display name of the NPC
+##   npc_persona    — short personality blurb
+##   location       — current map/area name
+##   recent_events  — Array[Dictionary] from EventLog.recent(); may be empty
+##   last_npc_line  — the NPC's previous spoken line (may be "")
+##   player_line    — the player's chosen response (may be "")
+##
+## Returns a prompt String ready for LLMService.complete_json().
+static func build_npc_reply(
+	npc_name: String,
+	npc_persona: String,
+	location: String,
+	recent_events: Array,
+	last_npc_line: String,
+	player_line: String,
+) -> String:
+	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
+
+	var history_block: String = ""
+	if last_npc_line.strip_edges() != "":
+		history_block += "\nYou previously said:\n  \"%s\"\n" % last_npc_line.strip_edges()
+	if player_line.strip_edges() != "":
+		history_block += "The player just responded:\n  \"%s\"\n" % player_line.strip_edges()
+
+	return (
+		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
+		+ "Generate exactly ONE follow-up line spoken by the NPC, responding directly to what the player just said.\n"
+		+ "\n"
+		+ "NPC: %s\n" % npc_name
+		+ "Persona: %s\n" % npc_persona
+		+ "Location: %s\n" % location
+		+ history_block
+		+ ctx_block
+		+ "\n"
+		+ "Rules:\n"
+		+ "- Acknowledge or react to the player's specific words; do NOT restart the conversation.\n"
+		+ "- Stay in character; no modern slang unless the setting demands it.\n"
+		+ "- Maximum %d characters.\n" % MAX_LINE_CHARS
+		+ "- Do NOT include the NPC name or speaker label in the line.\n"
+		+ "- Respond with ONLY valid JSON: {\"line\": \"<text>\"}\n"
+	)
+
+
+## Build a single-round-trip prompt that asks the LLM for BOTH the NPC's
+## follow-up line AND the next set of player choices in one response.
+## Used when the prompt budget allows — halves the latency.
+##
+## Parameters mirror build_npc_reply plus num_choices.
+##
+## Returns a prompt String ready for LLMService.complete_json().
+static func build_combined_reply(
+	npc_name: String,
+	npc_persona: String,
+	location: String,
+	recent_events: Array,
+	last_npc_line: String,
+	player_line: String,
+	num_choices: int,
+) -> String:
+	var count: int = clampi(num_choices, 1, MAX_CHOICES)
+	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
+
+	var history_block: String = ""
+	if last_npc_line.strip_edges() != "":
+		history_block += "\nYou previously said:\n  \"%s\"\n" % last_npc_line.strip_edges()
+	if player_line.strip_edges() != "":
+		history_block += "The player just responded:\n  \"%s\"\n" % player_line.strip_edges()
+
+	return (
+		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
+		+ "Produce BOTH the NPC's follow-up line AND %d short player dialogue choices in one JSON object.\n" % count
+		+ "\n"
+		+ "NPC: %s\n" % npc_name
+		+ "Persona: %s\n" % npc_persona
+		+ "Location: %s\n" % location
+		+ history_block
+		+ ctx_block
+		+ "\n"
+		+ "Rules:\n"
+		+ "- The NPC reply must react to the player's specific words; max %d characters.\n" % MAX_LINE_CHARS
+		+ "- Each player choice is a first-person statement/question, max %d characters.\n" % MAX_CHOICE_CHARS
+		+ "- Choices should cover a range of tones: curious, cautious, friendly, direct.\n"
+		+ "- Do NOT number the choices or add bullet points.\n"
+		+ "- Respond with ONLY valid JSON: {\"reply\": \"<text>\", \"choices\": [\"...\", \"...\"]}\n"
+	)
 
 
 # ── Prompt builders: player choice menu ──────────────────────────────────────
@@ -256,6 +396,59 @@ static func validate_player_choices(raw: Variant, expected_count: int) -> Dictio
 	return {"choices": out}
 
 
+## Validate and sanitise an LLM-returned NPC reply Dictionary.
+##
+## Accepts the raw Variant from LLMService.complete_json().
+## Returns a safe Dictionary matching SCHEMA_NPC_REPLY, falling back to
+## a cycled FALLBACK_NPC_REPLY_LINES entry on any problem. Never crashes.
+##
+## Clamps line length to MAX_LINE_CHARS.
+static func validate_npc_reply(raw: Variant, cycle_index: int = 0) -> Dictionary:
+	if not (raw is Dictionary):
+		return _fallback_reply(cycle_index)
+
+	var d: Dictionary = raw as Dictionary
+	var line: Variant = d.get("line", null)
+	if not (line is String) or (line as String).strip_edges().is_empty():
+		return _fallback_reply(cycle_index)
+
+	var s: String = (line as String).strip_edges()
+	if s.length() > MAX_LINE_CHARS:
+		s = s.left(MAX_LINE_CHARS)
+
+	return {"line": s}
+
+
+## Validate the combined reply+choices payload from build_combined_reply.
+## On any failure, falls back to a coherent reply + the default choice set.
+static func validate_combined_reply(raw: Variant, expected_count: int, cycle_index: int = 0) -> Dictionary:
+	var count: int = clampi(expected_count, 1, MAX_CHOICES)
+
+	if not (raw is Dictionary):
+		return _fallback_combined(count, cycle_index)
+
+	var d: Dictionary = raw as Dictionary
+	var reply_raw: Variant = d.get("reply", null)
+	var reply: String = ""
+	if reply_raw is String and not (reply_raw as String).strip_edges().is_empty():
+		reply = (reply_raw as String).strip_edges()
+		if reply.length() > MAX_LINE_CHARS:
+			reply = reply.left(MAX_LINE_CHARS)
+	else:
+		reply = _fallback_reply_line(cycle_index)
+
+	# Reuse validate_player_choices for the choices side.
+	var choices_dict: Dictionary = validate_player_choices(
+		{"choices": d.get("choices", [])},
+		count,
+	)
+
+	return {
+		"reply":   reply,
+		"choices": choices_dict.get("choices", []),
+	}
+
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 ## Format recent EventLog entries as a compact context block for inclusion in prompts.
@@ -289,3 +482,27 @@ static func _trimmed_fallback_choices(count: int) -> Dictionary:
 	for i in range(limit):
 		trimmed.append(str(src[i]))
 	return {"choices": trimmed}
+
+
+## Cycle through FALLBACK_NPC_REPLY_LINES so consecutive failures don't
+## repeat the same line back to the player.
+static func _fallback_reply_line(cycle_index: int) -> String:
+	var src: Array = FALLBACK_NPC_REPLY_LINES
+	if src.is_empty():
+		return "..."
+	var idx: int = posmod(cycle_index, src.size())
+	return str(src[idx])
+
+
+## Validated fallback envelope for a single NPC reply.
+static func _fallback_reply(cycle_index: int) -> Dictionary:
+	return {"line": _fallback_reply_line(cycle_index)}
+
+
+## Validated fallback envelope for the combined reply+choices payload.
+static func _fallback_combined(count: int, cycle_index: int) -> Dictionary:
+	var choices_dict: Dictionary = _trimmed_fallback_choices(count)
+	return {
+		"reply":   _fallback_reply_line(cycle_index),
+		"choices": choices_dict.get("choices", []),
+	}

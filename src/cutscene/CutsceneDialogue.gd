@@ -7,6 +7,11 @@ class_name CutsceneDialogue
 
 signal dialogue_finished()
 signal dialogue_advanced()
+## Emitted when the LLM "thinking" indicator activates / deactivates. Lets
+## consumers observe the bridge that DynamicConversation drives during awaited
+## LLM calls (Wave C).
+signal thinking_started()
+signal thinking_ended()
 
 ## Dialogue queue
 var _dialogue_queue: Array = []
@@ -60,6 +65,16 @@ var _portrait_image: TextureRect
 var _speaker_label: Label
 var _text_label: RichTextLabel
 var _advance_hint: Label
+
+## Wave C: thinking indicator. Renders animated dots ("·", "··", "···") in
+## place of the dialogue body while the LLM is fetching a line. The advance
+## hint is hidden and input is swallowed so the player can't blow past an
+## empty box. Toggled by set_thinking(active: bool).
+var _thinking_label: Label
+var _thinking_timer: Timer
+var _thinking_dots_step: int = 0
+const THINKING_FRAMES: Array[String] = ["·", "··", "···"]
+const THINKING_TICK_SEC: float = 0.25
 
 ## Styling
 const TILE_SIZE = 4
@@ -215,6 +230,16 @@ func _setup_typing_timer() -> void:
 	_typing_timer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_typing_timer.timeout.connect(_on_typing_tick)
 	add_child(_typing_timer)
+
+	# Wave C: thinking-indicator tick. Driven only while set_thinking(true)
+	# is active so it doesn't waste frames during normal dialogue. PROCESS_MODE_ALWAYS
+	# so it ticks through pause / input-locked states.
+	_thinking_timer = Timer.new()
+	_thinking_timer.one_shot = false
+	_thinking_timer.wait_time = THINKING_TICK_SEC
+	_thinking_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	_thinking_timer.timeout.connect(_on_thinking_tick)
+	add_child(_thinking_timer)
 
 	# Dedicated stream player for voice blips — bypasses SoundManager
 	# cooldown so rapid per-character beeps play cleanly.
@@ -395,6 +420,22 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_advance_hint.visible = false
 	_dialogue_box.add_child(_advance_hint)
 
+	# Wave C: thinking indicator. Same anchor + size as _text_label so the
+	# animated dots replace the body content without re-flowing the panel.
+	# Hidden by default; surfaced by set_thinking(true) during awaited LLM
+	# calls so the player can see "the NPC is composing a reply" instead of
+	# a blank box (or a stuck player) for the full HTTPRequest timeout.
+	_thinking_label = Label.new()
+	_thinking_label.position = _text_label.position
+	_thinking_label.size = _text_label.size
+	_thinking_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_thinking_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_thinking_label.add_theme_font_size_override("font_size", 18)
+	_thinking_label.add_theme_color_override("font_color", theme["text"].darkened(0.2))
+	_thinking_label.visible = false
+	_thinking_label.text = THINKING_FRAMES[0]
+	_dialogue_box.add_child(_thinking_label)
+
 
 func _draw_retro_border(parent: Control, width: float, height: float, color: Color) -> void:
 	var shadow_color = color.darkened(0.5)
@@ -450,6 +491,64 @@ func show_dialogue(dialogue_lines: Array) -> void:
 func skip_all() -> void:
 	"""Immediately finish all dialogue (for cutscene skip)."""
 	_finish_dialogue()
+
+
+## Wave C: toggle the LLM "thinking" indicator.
+##
+## When active=true:
+##   - the dialogue text + advance hint are hidden
+##   - the typing timer is paused so any in-flight typewriter doesn't race
+##   - an animated "·" / "··" / "···" cycle renders in the body area
+##   - _input() ignores ui_accept / mouse-advance so the player can't blow past
+##
+## When active=false:
+##   - the indicator disappears and the panel returns to its prior state
+##     (the next line is shown by _show_current_line or by the caller)
+##
+## Safe to call before the UI is built; toggles a flag and exits.
+## Idempotent — successive true→true / false→false calls are no-ops.
+func set_thinking(active: bool) -> void:
+	if _thinking_label == null:
+		# UI not built yet (e.g. called before show_dialogue). Defer; the next
+		# show_current_line rebuild will reflect the desired state through the
+		# stored typing-state machinery if needed.
+		return
+	if active == _thinking_label.visible:
+		return  # Idempotent.
+
+	if active:
+		# Pause the typewriter so the line under construction doesn't keep
+		# rendering behind the indicator.
+		if _typing_timer and is_instance_valid(_typing_timer):
+			_typing_timer.stop()
+		# Blank the body and hide the advance hint.
+		if _text_label and is_instance_valid(_text_label):
+			_text_label.text = ""
+		if _advance_hint and is_instance_valid(_advance_hint):
+			_advance_hint.visible = false
+		_thinking_dots_step = 0
+		_thinking_label.text = THINKING_FRAMES[0]
+		_thinking_label.visible = true
+		if _thinking_timer and is_instance_valid(_thinking_timer):
+			_thinking_timer.start()
+		visible = true  # Make sure the dialogue panel is on-screen.
+		thinking_started.emit()
+	else:
+		_thinking_label.visible = false
+		if _thinking_timer and is_instance_valid(_thinking_timer):
+			_thinking_timer.stop()
+		thinking_ended.emit()
+
+
+func is_thinking() -> bool:
+	return _thinking_label != null and _thinking_label.visible
+
+
+func _on_thinking_tick() -> void:
+	if _thinking_label == null or not _thinking_label.visible:
+		return
+	_thinking_dots_step = (_thinking_dots_step + 1) % THINKING_FRAMES.size()
+	_thinking_label.text = THINKING_FRAMES[_thinking_dots_step]
 
 
 ## =====================
@@ -604,6 +703,20 @@ func _finish_dialogue() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+
+	# Wave C: while the LLM "thinking" indicator is active, swallow advance
+	# input so the player can't blow past the empty box. This is the chokepoint
+	# that pairs with set_thinking(true) elsewhere — DynamicConversation toggles
+	# the flag, this guard enforces it. We still apply `not event.is_echo()` to
+	# the ui_accept branch so OS key-repeat doesn't fire menu_select / sfx via
+	# a chained handler — matches the post-2026-04-30 regression bar.
+	if _thinking_label != null and _thinking_label.visible:
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			get_viewport().set_input_as_handled()
+			return
 
 	# Bug fix (2026-04-30): added `not event.is_echo()` so holding Enter
 	# doesn't rapid-fire _advance_dialogue at echo rate (was burning past

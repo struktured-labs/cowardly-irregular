@@ -35,14 +35,77 @@ var _inflight: Dictionary = {}
 # Whether a connection has been confirmed at _ready (set by _probe).
 var _ready_flag: bool = false
 
+# Probe HTTPRequest reference (kept alive until probe completes).
+var _probe_request: HTTPRequest = null
+
+
+# ── Configuration: probe ──────────────────────────────────────────────────────
+## Per-API endpoints used to detect a live server.
+##   ollama → GET /api/tags        (lists installed models)
+##   openai → GET /v1/models       (lists available models)
+##   any    → HEAD on base_url     (generic fallback)
+const PROBE_TIMEOUT_SEC: float = 1.5
+
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 func _ready() -> void:
-	# We don't block on a probe; readiness is assumed once the node is in-tree.
-	# Callers observe is_ready() after construction; a real probe would require
-	# an async ping, which is out of scope for Phase 1.
-	_ready_flag = true
+	# Wave C: start as NOT ready. Spawn an async probe; on a 2xx response we
+	# flip _ready_flag to true. Until the probe finishes, is_ready() returns
+	# false so LLMService routes calls through fallbacks. This eliminates
+	# the stale-true race where every dynamic NPC freezes for 30s during
+	# the first request to a missing server.
+	_ready_flag = false
+	_start_probe()
+
+
+func _start_probe() -> void:
+	if _probe_request != null and is_instance_valid(_probe_request):
+		return
+	_probe_request = HTTPRequest.new()
+	_probe_request.name = "Probe"
+	_probe_request.timeout = PROBE_TIMEOUT_SEC
+	add_child(_probe_request)
+	_probe_request.request_completed.connect(_on_probe_completed)
+
+	var url: String = _probe_url()
+	var method: int = _probe_method()
+	var err: int = _probe_request.request(url, PackedStringArray(), method, "")
+	if err != OK:
+		# Could not even kick off the probe — leave _ready_flag false.
+		_cleanup_probe()
+
+
+func _probe_url() -> String:
+	match api_format:
+		"ollama":
+			return base_url.rstrip("/") + "/api/tags"
+		"openai":
+			return base_url.rstrip("/") + "/v1/models"
+		_:
+			return base_url.rstrip("/")
+
+
+func _probe_method() -> int:
+	match api_format:
+		"ollama", "openai":
+			return HTTPClient.METHOD_GET
+		_:
+			return HTTPClient.METHOD_HEAD
+
+
+func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
+	if result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300:
+		_ready_flag = true
+	else:
+		_ready_flag = false
+	_cleanup_probe()
+
+
+func _cleanup_probe() -> void:
+	if _probe_request != null and is_instance_valid(_probe_request):
+		_probe_request.queue_free()
+	_probe_request = null
 
 
 # ── LLMBackend overrides ──────────────────────────────────────────────────────
@@ -73,8 +136,14 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 
 	var http := HTTPRequest.new()
 	http.name = "Req_" + id
-	if default_timeout_sec > 0.0:
-		http.timeout = opts.get("timeout_sec", default_timeout_sec)
+	# Wave F B15 fix — never let a request run unbounded. Even when
+	# default_timeout_sec is 0 (legacy "no timeout") we set a hard 30s cap
+	# so a hung server can't leak HTTPRequest nodes forever during a long
+	# play session. Tests that need a short timeout pass opts.timeout_sec.
+	var effective_timeout: float = float(opts.get("timeout_sec", default_timeout_sec))
+	if effective_timeout <= 0.0:
+		effective_timeout = 30.0
+	http.timeout = effective_timeout
 	add_child(http)
 	_inflight[id] = http
 

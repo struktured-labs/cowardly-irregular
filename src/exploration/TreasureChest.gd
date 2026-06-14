@@ -401,15 +401,9 @@ func _resolve_equipment_pool(item_id: String) -> String:
 	## doesn't know the item — better than silently dropping the chest
 	## reward. The fallback matches pre-fix default behavior so existing
 	## save data with mis-pooled items doesn't change shape.
-	if Engine.has_singleton("EquipmentSystem"):
-		var eq = Engine.get_singleton("EquipmentSystem")
-		if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
-			return "weapons"
-		if eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
-			return "armors"
-		if eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
-			return "accessories"
-	# EquipmentSystem also lives as an autoload on /root in many contexts.
+	# Engine.has_singleton("EquipmentSystem") is ALWAYS FALSE for autoloads in
+	# Godot 4. The autoload lookup below (eq_node) is the only path that ever
+	# fires; keep it as the sole source of truth.
 	var eq_node = get_node_or_null("/root/EquipmentSystem")
 	if eq_node:
 		if eq_node.has_method("get_weapon") and not eq_node.get_weapon(item_id).is_empty():

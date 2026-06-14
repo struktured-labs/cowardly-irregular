@@ -22,6 +22,15 @@ signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
 signal group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String)
 signal advance_trash_talk(combatant: Combatant, line: String)
+## Wave E — Boss dialogue / jailbreak signals.
+## boss_taunt: emitted when a boss intent picker produces a phase-transition
+## taunt or when a jailbreak narration line is generated. BattleScene listens
+## and pops a small bubble above the enemy sprite (non-blocking).
+signal boss_taunt(boss: Combatant, line: String)
+## boss_jailbreak_landed: emitted after a player directive trips a
+## vulnerability and the consequence has been applied to the boss. The UI
+## shows the diegetic '⚠ DIRECTIVE OVERRIDE ACCEPTED' banner.
+signal boss_jailbreak_landed(boss: Combatant, vulnerability_id: String, consequence: Dictionary)
 
 enum BattleState {
 	INACTIVE,
@@ -114,7 +123,14 @@ const ACTION_SPEEDS = {
 
 
 func _ready() -> void:
-	pass
+	# Wave E — listen for player jailbreak landings so we can apply the
+	# consequence to the live boss combatant. BossDialogue is autoloaded
+	# AFTER BattleManager in project.godot order, so this deferred connect
+	# is guarded by a get_node_or_null pass.
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg and boss_dlg.has_signal("jailbreak_succeeded"):
+		if not boss_dlg.jailbreak_succeeded.is_connected(_on_boss_jailbreak_succeeded):
+			boss_dlg.jailbreak_succeeded.connect(_on_boss_jailbreak_succeeded)
 
 
 func set_terrain(terrain: String) -> void:
@@ -963,6 +979,16 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 			if not ability.is_empty() and combatant.current_mp >= ability.get("mp_cost", 0):
 				available_abilities.append(ability)
 
+	# Wave E — BossDialogue intent picker. Fires for ANY boss with a
+	# data/boss_dialogue.json entry (Masterites OR bespoke bosses like
+	# Mordaine). Scripted-floor deterministic — picks an intent on phase
+	# transition (1→2 at 66% HP, 2→3 at 33% HP), stores it on combatant
+	# meta, and emits a non-blocking boss_taunt for BattleScene to bubble.
+	# Result of pick_intent feeds the existing archetype/masterite match
+	# ladders via combatant.get_meta("llm_intent"); those ladders read
+	# the meta to bias their weighted choices (no abilities invented).
+	_update_boss_dialogue_phase(combatant)
+
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
 		return _make_masterite_decision(combatant, alive_allies, alive_enemies, available_abilities)
@@ -1074,8 +1100,17 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 	"""Caster AI: strongly prefer magic abilities, target weaknesses when possible"""
 	var magic_abilities = abilities.filter(func(a): return a.get("type", "") == "magic")
 
-	# 75% chance to cast a spell if MP allows
-	if magic_abilities.size() > 0 and randf() < 0.75:
+	# Wave E — BossDialogue intent bias. Scales the 75% spell-cast roll
+	# by the intent's "attack_weight" multiplier (default 1.0 = no change).
+	# 'aggress' tilts toward more spells, 'turtle' tilts away. The roll
+	# remains randomized — the LLM never names the spell.
+	var intent_id: String = combatant.get_meta("llm_intent", "")
+	var bias: Dictionary = _bias_by_intent(intent_id)
+	var cast_chance: float = 0.75 * float(bias.get("attack_weight", 1.0))
+	cast_chance = clampf(cast_chance, 0.1, 0.99)
+
+	# 75% chance (intent-biased) to cast a spell if MP allows
+	if magic_abilities.size() > 0 and randf() < cast_chance:
 		# Prefer spells that exploit target weaknesses
 		var best_spell = magic_abilities[0]
 		var best_score = 0.0
@@ -1283,6 +1318,13 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 		if not proc.is_empty():
 			return {"type": "ability", "combatant": combatant, "ability_id": "masterite_proclamation", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability", proc)}
 
+	# Wave E — BossDialogue intent bias. Reads the intent stashed by
+	# `_update_boss_dialogue_phase` and scales the masterite-specific
+	# probability tables below. Default 1.0 keeps the existing weighted
+	# match ladder identical when no intent is active.
+	var llm_intent: String = combatant.get_meta("llm_intent", "")
+	var llm_bias: Dictionary = _bias_by_intent(llm_intent, masterite_type)
+
 	match masterite_type:
 		"warden":
 			# DEFENSIVE WALL — iron guard, endurance test, crushing blow
@@ -1300,14 +1342,17 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_iron_guard", "targets": [combatant]},
 						{"type": "ability", "ability_id": "masterite_crushing_blow", "targets": [target]},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			if hp_pct < warden_guard_threshold and not find_ability.call("masterite_iron_guard").is_empty():
+			# Wave E — bias 'turtle' UP / 'aggress' DOWN on iron_guard threshold.
+			var guard_bias: float = float(llm_bias.get("iron_guard", 1.0))
+			if hp_pct < (warden_guard_threshold * guard_bias) and not find_ability.call("masterite_iron_guard").is_empty():
 				battle_log_message.emit("[color=gray]The Warden raises its shield...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_iron_guard", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability")}
-			var endurance_chance = [0.4, 0.6, 0.85][battle_phase - 1]
+			var endurance_chance = [0.4, 0.6, 0.85][battle_phase - 1] * float(llm_bias.get("endurance_test", 1.0))
 			if randf() < endurance_chance and not find_ability.call("masterite_endurance_test").is_empty():
 				battle_log_message.emit("[color=gray]The Warden tests your resolve...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_endurance_test", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.6 and not find_ability.call("masterite_crushing_blow").is_empty():
+			var crush_chance: float = 0.6 * float(llm_bias.get("crushing_blow", 1.0))
+			if randf() < crush_chance and not find_ability.call("masterite_crushing_blow").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_crushing_blow", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
 			if battle_phase >= 2 and not find_ability.call("masterite_judgment").is_empty():
@@ -1593,6 +1638,23 @@ func _execute_next_action() -> void:
 		combatant.remove_status("stun")
 		battle_log_message.emit("[color=yellow]%s[/color] is [color=orange]stunned[/color] and cannot act!" % combatant.combatant_name)
 		action_executing.emit(combatant, {"type": "stun_skip"})
+		_execute_next_action()
+		return
+
+	# Wave F R1 fix — "cannot_act" is the status applied by landed boss
+	# jailbreaks (skip_turn / lose_buff_or_stagger fallback). Without this
+	# consumer the boss would gain the status but still take its turn
+	# normally, silently dropping the mechanical effect of every landed
+	# jailbreak that maps to skip_turn.
+	if combatant.has_status("cannot_act"):
+		# Tick down — we consume one unit of duration per turn skipped.
+		var remaining: int = int(combatant.status_durations.get("cannot_act", 1))
+		if remaining <= 1:
+			combatant.remove_status("cannot_act")
+		else:
+			combatant.status_durations["cannot_act"] = remaining - 1
+		battle_log_message.emit("[color=yellow]%s[/color] cannot act!" % combatant.combatant_name)
+		action_executing.emit(combatant, {"type": "cannot_act_skip"})
 		_execute_next_action()
 		return
 
@@ -3410,3 +3472,205 @@ func get_autobattle_turns() -> int:
 func get_battle_results() -> Dictionary:
 	"""Get battle results (populated after victory, cleared on next battle start)"""
 	return _battle_results
+
+
+# ── Wave E — BossDialogue glue ───────────────────────────────────────────────
+
+## Detect phase 1→2→3 transitions for ANY boss combatant. Called once at the
+## start of each AI selection turn from `_make_ai_decision`. When a boss has
+## an entry in data/boss_dialogue.json we ask BossDialogue for an intent (the
+## scripted floor is deterministic; the LLM hook is wired but synchronous),
+## stash it on the combatant via set_meta("llm_intent", …), and emit a
+## non-blocking taunt for BattleScene to bubble.
+##
+## STAKES GUARDRAIL: intent_id only biases existing weighted choices in the
+## per-archetype AI ladders — it never invents new abilities or sets story
+## flags. The LLM is never the rules engine here.
+func _update_boss_dialogue_phase(combatant: Combatant) -> void:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return
+	# Persona lookup: explicit override first (set by dungeon subclass via
+	# llm_persona_id meta), else monster_type, else combatant_name.
+	var persona_id: String = combatant.get_meta("llm_persona_id", "")
+	if persona_id == "":
+		persona_id = combatant.get_meta("monster_type", "")
+	if persona_id == "":
+		return
+	if not boss_dlg.has_entry(persona_id):
+		return
+
+	# Compute the current phase (mirrors the Masterite thresholds so
+	# bespoke bosses share the 66% / 33% HP gates).
+	var hp_pct: float = combatant.get_hp_percentage()
+	var new_phase: int = 1
+	if hp_pct < 33.0:
+		new_phase = 3
+	elif hp_pct < 66.0:
+		new_phase = 2
+
+	var last_phase: int = combatant.get_meta("boss_dialogue_phase", 0)
+	if new_phase <= last_phase:
+		return  # No transition this turn — nothing to do.
+
+	combatant.set_meta("boss_dialogue_phase", new_phase)
+	var llm_available: bool = false
+	var llm_node = get_node_or_null("/root/LLMService")
+	if llm_node and llm_node.has_method("is_available"):
+		llm_available = llm_node.is_available()
+	var pick: Dictionary = boss_dlg.pick_intent(persona_id, new_phase, null, llm_available)
+	var intent_id: String = pick.get("intent_id", "")
+	if intent_id != "":
+		combatant.set_meta("llm_intent", intent_id)
+	var taunt: String = pick.get("taunt_line", "")
+	# On the very first phase advance also surface a phase-transition line
+	# from data (if authored) — gives bosses a vocal "you bleed me twice"
+	# moment instead of only an intent taunt.
+	var transition_line: String = boss_dlg.get_phase_transition_line(persona_id, new_phase)
+	if transition_line != "" and last_phase > 0:
+		battle_log_message.emit("[color=red]%s: \"%s\"[/color]" % [combatant.combatant_name, transition_line])
+		boss_taunt.emit(combatant, transition_line)
+	if taunt != "":
+		battle_log_message.emit("[color=red]%s: \"%s\"[/color]" % [combatant.combatant_name, taunt])
+		boss_taunt.emit(combatant, taunt)
+
+
+## Probability multiplier ladder. Returns a Dictionary {ability_id_or_role: float}
+## that ladders downstream of the existing weighted match — _ai_caster /
+## _ai_brute / _make_masterite_decision can call this and multiply their
+## existing roll thresholds. Default of 1.0 (no bias) is returned for any
+## intent/archetype combo we haven't explicitly authored, so the bias is
+## strictly additive — the existing ladder remains the source of truth.
+##
+## DESIGN: LLM picks INTENT (a role direction), code chooses the exact
+## ability. We never let the LLM name an ability.
+func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictionary:
+	if intent_id == "":
+		return {}
+	# Mordaine bias table — applied to *any* boss that uses these intents
+	# (the masterite_type arg is for masterite-specific scaling, optional).
+	match intent_id:
+		"aggress":
+			return {
+				# Heavy hitters get amplified, defensive picks dampened.
+				"attack_weight": 1.4,
+				"crushing_blow": 1.5,
+				"intimidate": 1.3,
+				"iron_guard": 0.4,
+			}
+		"turtle":
+			return {
+				"iron_guard": 1.6,
+				"endurance_test": 1.4,
+				"royal_guard": 1.4,
+				"attack_weight": 0.6,
+			}
+		"exploit_pattern":
+			# Mordaine reading the player's autobattle: bias toward counter
+			# play. The existing _get_counter_action path already exists in
+			# BattleManager; this just nudges its chance up.
+			return {
+				"counter_action_chance": 1.6,
+				"attack_weight": 0.9,
+			}
+		_:
+			return {}
+
+
+## Apply a landed jailbreak consequence to the boss combatant. Connected to
+## BossDialogue.jailbreak_succeeded in `_ready`. STAKES GUARDRAIL: only the
+## allowlisted consequence types are honored — anything else is a no-op.
+func _on_boss_jailbreak_succeeded(boss_id: String, vulnerability_id: String, consequence: Dictionary) -> void:
+	# Find the live boss combatant in enemy_party by persona match.
+	var boss: Combatant = null
+	for e in enemy_party:
+		if not is_instance_valid(e) or not e.is_alive:
+			continue
+		var persona_id: String = e.get_meta("llm_persona_id", "")
+		if persona_id == "":
+			persona_id = e.get_meta("monster_type", "")
+		if persona_id == boss_id:
+			boss = e
+			break
+	if boss == null:
+		print("[BossDialogue] jailbreak landed for %s but no live boss combatant found" % boss_id)
+		return
+
+	var ctype: String = str(consequence.get("type", ""))
+	var params: Dictionary = consequence.get("params", {}) if consequence.has("params") else {}
+	var narration: String = str(params.get("narration", ""))
+
+	match ctype:
+		"skip_turn":
+			# Apply a "cannot_act" status for the configured duration. The
+			# Combatant's existing add_status hooks handle round expiry.
+			var dur: int = int(params.get("duration", 1))
+			boss.add_status("cannot_act", dur)
+			battle_log_message.emit("[color=yellow]%s falters![/color]" % boss.combatant_name)
+		"lose_buff_or_stagger":
+			var buff_id: String = str(params.get("buff_id", ""))
+			var stripped: bool = false
+			if buff_id != "" and "active_buffs" in boss:
+				for i in range(boss.active_buffs.size() - 1, -1, -1):
+					var b: Dictionary = boss.active_buffs[i]
+					if str(b.get("effect", "")) == buff_id:
+						boss.active_buffs.remove_at(i)
+						stripped = true
+						break
+			if not stripped:
+				# Fallback: pop the most recently-added buff (any).
+				if "active_buffs" in boss and boss.active_buffs.size() > 0:
+					boss.active_buffs.pop_back()
+					stripped = true
+			if not stripped:
+				# No buffs to lose — apply a tiny stagger via cannot_act 1.
+				boss.add_status("cannot_act", 1)
+			battle_log_message.emit("[color=yellow]%s is staggered![/color]" % boss.combatant_name)
+		"enrage_briefly":
+			# BACKFIRE — Mordaine seizes the mock. Stack a crit-rate
+			# buff so the next turn hits harder. Wave F B6 fix — guard
+			# the buff so a boss without active_buffs (e.g. a generic
+			# monster used as boss stand-in) doesn't crash on add_buff.
+			var dur: int = int(params.get("duration", 1))
+			if "active_buffs" in boss:
+				boss.add_buff("enraged", "crit_rate", 1.5, dur)
+			else:
+				# Fallback — at least let the player see the narrative beat.
+				boss.add_status("cannot_act", 0)  # no-op status; ensures the path is exercised
+			battle_log_message.emit("[color=red]%s ENRAGES! ★[/color]" % boss.combatant_name)
+		"taunt_softens":
+			# Pure narration; no mechanical change.
+			pass
+		"none":
+			pass
+		_:
+			# Defensive — BossDialogue should already reject unknown types,
+			# but if one slipped through we no-op.
+			push_warning("[BattleManager] unknown jailbreak consequence type '%s' — ignored" % ctype)
+			return
+
+	if narration != "":
+		battle_log_message.emit("[color=#88ccff]%s[/color]" % narration)
+		boss_taunt.emit(boss, narration)
+
+	boss_jailbreak_landed.emit(boss, vulnerability_id, consequence)
+
+
+## Player-callable entry point invoked from BattleScene when the player
+## selects an "Address the Boss" verb directive. Returns true if a
+## vulnerability landed (the consequence has already been applied via the
+## jailbreak_succeeded signal chain).
+func try_player_jailbreak_directive(directive_text: String) -> bool:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return false
+	# Find the first live boss in enemy_party that has a BossDialogue entry.
+	for e in enemy_party:
+		if not is_instance_valid(e) or not e.is_alive:
+			continue
+		var persona_id: String = e.get_meta("llm_persona_id", "")
+		if persona_id == "":
+			persona_id = e.get_meta("monster_type", "")
+		if persona_id != "" and boss_dlg.has_entry(persona_id):
+			return boss_dlg.try_apply_jailbreak(persona_id, directive_text)
+	return false

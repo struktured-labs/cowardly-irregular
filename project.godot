@@ -40,6 +40,8 @@ MouseCursorManager="*res://src/input/MouseCursorManager.gd"
 VirtualGamepad="*res://src/ui/VirtualGamepad.gd"
 InputLockManager="*res://src/input/InputLockManager.gd"
 PartyChatSystem="*res://src/cutscene/PartyChatSystem.gd"
+LLMService="*res://src/llm/LLMService.gd"
+BossDialogue="*res://src/llm/BossDialogue.gd"
 
 [display]
 

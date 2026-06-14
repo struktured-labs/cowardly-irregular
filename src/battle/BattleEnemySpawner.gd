@@ -381,6 +381,19 @@ func spawn_forced_enemies() -> void:
 			enemy.set_meta("masterite_type", monster_data.get("masterite_type", ""))
 			enemy.set_meta("masterite_phase", monster_data.get("masterite_phase", 1))
 
+		# Wave E — BossDialogue persona handle. Source priority:
+		#   1) GameState.pending_boss_defeat.boss_llm_persona_id (dungeon override)
+		#   2) monster_data.boss_llm_persona_id (per-monster data)
+		# Falls back to monster_type at runtime (no meta needed if persona
+		# id equals monster_type, e.g. chancellor_mordaine).
+		var persona_id: String = monster_data.get("boss_llm_persona_id", "")
+		if GameState and GameState.pending_boss_defeat is Dictionary:
+			var pbd_persona: String = str(GameState.pending_boss_defeat.get("boss_llm_persona_id", ""))
+			if pbd_persona != "":
+				persona_id = pbd_persona
+		if persona_id != "":
+			enemy.set_meta("llm_persona_id", persona_id)
+
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))

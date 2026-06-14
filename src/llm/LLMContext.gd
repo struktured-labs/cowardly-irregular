@@ -33,12 +33,19 @@ const MAX_JSON_BYTES:     int = 2048 # ~2 KB JSON budget guard.
 
 ## Build a context Dictionary from the current GameState (must be an autoload).
 ## Returns an empty Dictionary if GameState is unavailable.
+##
+## Note: Engine.has_singleton("GameState") is ALWAYS FALSE in Godot 4 — autoloads
+## live on the SceneTree root, not in the engine-singleton table.  Resolve via
+## the main loop's root node instead.
 static func build() -> Dictionary:
-	if not Engine.has_singleton("GameState"):
-		push_warning("[LLMContext] GameState singleton not found — returning empty context.")
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var gs: Object = null
+	if tree != null and tree.root != null:
+		gs = tree.root.get_node_or_null("GameState")
+	if gs == null:
+		push_warning("[LLMContext] GameState autoload not found — returning empty context.")
 		return {}
 
-	var gs: Object = Engine.get_singleton("GameState")
 	var ctx: Dictionary = {}
 
 	# Party

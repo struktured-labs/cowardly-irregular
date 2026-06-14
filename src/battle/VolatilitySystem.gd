@@ -125,14 +125,12 @@ func _get_macro_volatility() -> float:
 	# Test override path — short-circuit if a unit test has set it.
 	if not is_nan(_macro_override):
 		return _macro_override
-	var game_state = Engine.get_singleton("GameState") if Engine.has_singleton("GameState") else null
-	if game_state == null:
-		# Try node path
-		var tree = Engine.get_main_loop()
-		if tree and tree.has_method("get_root"):
-			var root = tree.get_root()
-			if root:
-				game_state = root.get_node_or_null("GameState")
+	# Engine.has_singleton("GameState") is ALWAYS FALSE for autoloads in
+	# Godot 4 — resolve from the scene tree root directly.
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var game_state: Node = null
+	if tree != null and tree.root != null:
+		game_state = tree.root.get_node_or_null("GameState")
 	if game_state and "macro_volatility" in game_state:
 		return game_state.macro_volatility
 	return 0.0

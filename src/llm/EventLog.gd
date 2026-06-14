@@ -39,21 +39,66 @@ var _entries: Array[Dictionary] = []
 
 ## Append a new event.  Oldest entry is dropped when the cap is exceeded.
 ## `data` is shallow-duplicated to prevent external mutation.
+## Wave F B13 fix — non-JSON-safe values (Object refs, NodePath, RIDs) are
+## stripped at record() time with a push_warning so they don't silently
+## vanish when GameState.to_dict() / JSON.stringify serialises the log.
 func record(type: String, summary: String, data: Dictionary = {}) -> void:
+	# Engine.has_singleton("GameState") is ALWAYS FALSE for autoloads in Godot 4.
+	# Resolve via the main-loop root so playtime stamping actually works.
 	var pt: int = 0
-	if Engine.has_singleton("GameState"):
-		var gs = Engine.get_singleton("GameState")
-		pt = int(gs.playtime_seconds)
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		var gs: Node = tree.root.get_node_or_null("GameState")
+		if gs != null and "playtime_seconds" in gs:
+			pt = int(gs.playtime_seconds)
+	var safe_data: Dictionary = _coerce_json_safe(data, type)
 	var entry: Dictionary = {
 		"t":       int(Time.get_unix_time_from_system()),
 		"pt":      pt,
 		"type":    type,
 		"summary": summary,
-		"data":    data.duplicate(),
+		"data":    safe_data,
 	}
 	_entries.append(entry)
 	if _entries.size() > RING_CAP:
 		_entries.pop_front()
+
+
+## Coerce a Dictionary to JSON-safe primitives. Object refs / RIDs / NodePaths
+## are dropped with a push_warning; nested dicts/arrays recursively scrubbed.
+## This is intentionally permissive — we want to keep as much useful context
+## as possible while guaranteeing the result will round-trip through
+## JSON.stringify cleanly.
+func _coerce_json_safe(data: Dictionary, type: String) -> Dictionary:
+	var out: Dictionary = {}
+	for key in data.keys():
+		var v: Variant = data[key]
+		var scrubbed: Variant = _scrub_value(v, str(key), type)
+		if scrubbed != null or v == null:
+			out[key] = scrubbed
+	return out
+
+
+func _scrub_value(v: Variant, key: String, type: String) -> Variant:
+	# Null and primitives pass straight through.
+	var t: int = typeof(v)
+	if t == TYPE_NIL or t == TYPE_BOOL or t == TYPE_INT or t == TYPE_FLOAT or t == TYPE_STRING or t == TYPE_STRING_NAME:
+		# StringName needs explicit conversion for JSON.stringify cleanliness.
+		if t == TYPE_STRING_NAME:
+			return str(v)
+		return v
+	if t == TYPE_DICTIONARY:
+		return _coerce_json_safe(v as Dictionary, type)
+	if t == TYPE_ARRAY:
+		var arr: Array = []
+		for item in (v as Array):
+			var s: Variant = _scrub_value(item, key, type)
+			if s != null or item == null:
+				arr.append(s)
+		return arr
+	# Anything else (Object, RID, NodePath, Callable, Signal, etc) is dropped.
+	push_warning("[EventLog] dropping non-JSON-safe value at key '%s' (type=%s, event_type=%s)" % [key, t, type])
+	return null
 
 
 ## Return the `n` most-recent entries (newest last, same order as stored).

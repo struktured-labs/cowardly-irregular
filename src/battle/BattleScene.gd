@@ -287,6 +287,11 @@ func _ready() -> void:
 	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
 	BattleManager.group_attack_executing.connect(_on_group_attack_executing)
 	BattleManager.advance_trash_talk.connect(_on_advance_trash_talk)
+	# Wave E — Boss dialogue / jailbreak signals.
+	if BattleManager.has_signal("boss_taunt"):
+		BattleManager.boss_taunt.connect(_on_boss_taunt)
+	if BattleManager.has_signal("boss_jailbreak_landed"):
+		BattleManager.boss_jailbreak_landed.connect(_on_boss_jailbreak_landed)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -3453,6 +3458,81 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant))
 	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
 	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
+
+
+# ── Wave E — Boss dialogue surface ───────────────────────────────────────────
+
+func _on_boss_taunt(boss: Combatant, line: String) -> void:
+	"""Show a non-blocking taunt bubble above the boss sprite. Reuses the
+	existing _spawn_quip_bubble infrastructure (Option A — non-blocking
+	autodismiss; preferred over CutsceneDialogue for mid-battle interrupts
+	per Wave E plan)."""
+	if turbo_mode:
+		return
+	if not is_instance_valid(boss):
+		return
+	# Look up the enemy sprite (enemy_party indexing matches enemy_sprite_nodes).
+	var sprite: Node2D = null
+	var idx = test_enemies.find(boss)
+	if idx >= 0 and idx < enemy_sprite_nodes.size():
+		sprite = enemy_sprite_nodes[idx]
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	# Crimson border distinguishes boss taunts from party quips.
+	_spawn_quip_bubble(sprite, boss.combatant_name, line, Color(0.95, 0.25, 0.25), 2.5)
+
+
+func _on_boss_jailbreak_landed(_boss: Combatant, _vulnerability_id: String, _consequence: Dictionary) -> void:
+	"""Diegetic '⚠ DIRECTIVE OVERRIDE ACCEPTED' banner. Non-blocking
+	autodismiss via tween. Triggered after BattleManager has already
+	applied the consequence — this is purely visual feedback."""
+	_show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
+
+
+func _show_address_banner(text: String) -> void:
+	"""Spawns a transient banner Label centered at the top of the viewport,
+	fades in/holds/fades out via create_tween. Suppressed during turbo /
+	autogrind console (no-op for headless tests)."""
+	if turbo_mode or autogrind_console_mode:
+		return
+	if not is_inside_tree():
+		return
+	var panel = PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.05, 0.08, 0.92)
+	style.border_color = Color(1.0, 0.85, 0.2)
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 18
+	style.content_margin_right = 18
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	panel.add_theme_stylebox_override("panel", style)
+	var label = Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	label.add_theme_font_size_override("font_size", 18)
+	panel.add_child(label)
+	# Anchor at top-center.
+	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	panel.position = Vector2(-150, 60)
+	panel.size = Vector2(300, 0)  # auto-resize via child
+	panel.modulate = Color(1, 1, 1, 0)
+	panel.z_index = 200
+	add_child(panel)
+	var tween = create_tween()
+	tween.set_parallel(false)
+	tween.tween_property(panel, "modulate:a", 1.0, 0.18)
+	tween.tween_interval(1.6)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.35)
+	tween.tween_callback(panel.queue_free)
 
 
 func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5) -> void:

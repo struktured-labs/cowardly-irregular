@@ -263,10 +263,11 @@ func _move_selection(delta: int) -> void:
 		return
 	_selection = (_selection + delta + _choices.size()) % _choices.size()
 	_highlight()
-	if Engine.has_singleton("SoundManager"):
-		var sm = Engine.get_singleton("SoundManager")
-		if sm.has_method("play_ui"):
-			sm.play_ui("menu_move")
+	# Engine.has_singleton("SoundManager") is ALWAYS FALSE for autoloads in
+	# Godot 4 — fetch the autoload from the scene tree root instead.
+	var sm: Node = get_node_or_null("/root/SoundManager")
+	if sm != null and sm.has_method("play_ui"):
+		sm.play_ui("menu_move")
 
 
 func _highlight() -> void:
@@ -286,20 +287,21 @@ func _confirm() -> void:
 	if _selection < 0 or _selection >= _choices.size():
 		return
 	_result = _choices[_selection]
-	if Engine.has_singleton("SoundManager"):
-		var sm = Engine.get_singleton("SoundManager")
-		if sm.has_method("play_ui"):
-			sm.play_ui("menu_confirm")
+	# Bug #4: SoundManager bank has only menu_move/menu_select/menu_cancel,
+	# so "menu_confirm" was silently a no-op (or a missing-key warning).
+	# Use "menu_select" — the canonical confirm sound throughout the project.
+	var sm: Node = get_node_or_null("/root/SoundManager")
+	if sm != null and sm.has_method("play_ui"):
+		sm.play_ui("menu_select")
 	choice_made.emit(_result)
 	_resolve()
 
 
 func _cancel() -> void:
 	_result = CHOICE_CANCELLED
-	if Engine.has_singleton("SoundManager"):
-		var sm = Engine.get_singleton("SoundManager")
-		if sm.has_method("play_ui"):
-			sm.play_ui("menu_cancel")
+	var sm: Node = get_node_or_null("/root/SoundManager")
+	if sm != null and sm.has_method("play_ui"):
+		sm.play_ui("menu_cancel")
 	choice_cancelled.emit()
 	_resolve()
 
@@ -313,10 +315,9 @@ func _on_row_hover(idx: int) -> void:
 		return
 	_selection = idx
 	_highlight()
-	if Engine.has_singleton("SoundManager"):
-		var sm = Engine.get_singleton("SoundManager")
-		if sm.has_method("play_ui"):
-			sm.play_ui("menu_move")
+	var sm: Node = get_node_or_null("/root/SoundManager")
+	if sm != null and sm.has_method("play_ui"):
+		sm.play_ui("menu_move")
 
 
 func _on_row_click(idx: int) -> void:

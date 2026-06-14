@@ -47,7 +47,13 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 
 	# Temporarily register parties in BattleManager so AutobattleSystem
 	# target-resolution (_get_enemies_for / _get_allies_for) works correctly.
-	var bm = Engine.get_singleton("BattleManager") if Engine.has_singleton("BattleManager") else null
+	# Engine.has_singleton("BattleManager") is ALWAYS FALSE for autoloads in
+	# Godot 4 — fetch from scene tree root, then fall back to _get_autoload
+	# for the test harness path.
+	var tree = Engine.get_main_loop()
+	var bm: Node = null
+	if tree is SceneTree and (tree as SceneTree).root != null:
+		bm = (tree as SceneTree).root.get_node_or_null("BattleManager")
 	if not bm:
 		bm = _get_autoload("BattleManager")
 	var _bm_player_backup: Array = []

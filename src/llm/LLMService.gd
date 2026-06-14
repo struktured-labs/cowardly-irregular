@@ -34,6 +34,14 @@ const CACHE_TTL_SECONDS:  float  = 300.0 # 5-minute TTL on cached responses.
 const MAX_TEXT_CHARS:     int    = 2000  # Hard cap on free-text responses.
 const MAX_CHOICE_TOKENS:  int    = 120   # Guard for choice-string length.
 
+## Client-side guard. If the backend HTTPRequest hasn't resolved within
+## CLIENT_TIMEOUT_SEC the awaiting caller takes the fallback so the player is
+## never frozen for the full HTTPRequest timeout (default 30s). The backend
+## request keeps running but is dropped on arrival via the stale-id guard.
+## Matches design doc :155 ("set_can_move(false) freezes player for up to 30s
+## during HTTPRequest timeout — no thinking indicator, no 6s guard").
+const CLIENT_TIMEOUT_SEC: float  = 6.0
+
 ## Refusal pattern — any response starting/containing these is rejected.
 const REFUSAL_PATTERNS: Array[String] = [
 	"as an ai",
@@ -82,6 +90,11 @@ var _pending_boxes: Dictionary = {}
 
 # Cancellation set: ids that have been cancelled.
 var _cancelled_ids: Dictionary = {}
+
+# Drain guard: true while cancel_all() is unwinding state so that any
+# request_finished signal emitted synchronously by backend.cancel_all()
+# does not re-enter _process_queue and submit a fresh request.
+var _draining: bool = false
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -223,21 +236,42 @@ func choose(prompt: String, valid_options: Array[String], fallback: String, opts
 ## Cancel all in-flight and queued requests.  Each pending caller receives its
 ## fallback (the deferred resolution in _on_backend_finished handles this).
 ## Call on every scene change to prevent stale responses from previous scenes.
+##
+## Ordering invariant (bug #3): we MUST resolve the in-flight box and clear
+## _inflight_id BEFORE calling backend.cancel_all().  HTTPBackend.cancel_all()
+## emits request_finished synchronously; if _inflight_id were still set, the
+## emit would pass the stale-id guard inside _on_backend_finished, then call
+## _process_queue() and submit the next queued request — while cancel_all is
+## still trying to drain it.  The _draining flag below additionally no-ops
+## _process_queue so re-entrancy is double-safe.
 func cancel_all(reason: String = "scene_change") -> void:
-	# Cancel the in-flight request on the active backend.
-	if _inflight_id != "":
-		_cancelled_ids[_inflight_id] = true
-		if _active_backend != null:
-			_active_backend.cancel_all()
-		_inflight_id = ""
+	_draining = true
+
+	# Snapshot the in-flight id so we can mark + resolve it without leaving
+	# state observably half-cleared while we resolve.
+	var in_id: String = _inflight_id
+	_inflight_id = ""
+	if in_id != "":
+		_cancelled_ids[in_id] = true
+		_resolve_box(in_id, null)
+		_pending_boxes.erase(in_id)
 
 	# Drain the queue — resolve each box with null so awaiting callers unblock.
 	for item in _queue:
 		var id: String = item["id"]
 		_cancelled_ids[id] = true
 		_resolve_box(id, null)
+		_pending_boxes.erase(id)
 	_queue.clear()
 
+	# Now tell the backend to abort its HTTPRequest.  Any synchronously emitted
+	# request_finished will hit the stale-id guard cleanly (in_id != _inflight_id="")
+	# and the _draining flag below means even if it did reach _process_queue,
+	# it would no-op.
+	if _active_backend != null:
+		_active_backend.cancel_all()
+
+	_draining = false
 	print("[LLMService] cancel_all: %s" % reason)
 
 
@@ -245,6 +279,14 @@ func cancel_all(reason: String = "scene_change") -> void:
 
 ## Submit a request and await the response (as raw text Variant, or null on fail).
 ## This is the single choke-point through which all public API calls flow.
+##
+## Bug fix (Wave C): we race the in-flight HTTPRequest against a 6-second
+## client-side timer. If the timer wins, _await_box marks the request as
+## cancelled, resolves the box with null (so the caller picks its fallback),
+## and emits inference_failed("…", "client_timeout") for telemetry. The
+## backend HTTPRequest is left running — when it eventually completes,
+## _on_backend_finished sees the stale-id guard (_inflight_id has moved on)
+## and drops the response cleanly.
 func _submit_and_wait(prompt: String, opts: Dictionary) -> Variant:
 	var id: String = _generate_id()
 	var box: Array = [false, null]  # [resolved, value]
@@ -262,23 +304,63 @@ func _submit_and_wait(prompt: String, opts: Dictionary) -> Variant:
 
 		_queue.append({"id": id, "prompt": prompt, "opts": opts})
 		# Wait for box to be resolved (by _process_queue when it's our turn).
-		await _await_box(id)
+		await _await_box(id, opts)
 		return box[1]
 
 	# No in-flight — submit immediately.
 	_inflight_id = id
 	_active_backend.submit(id, prompt, opts)
-	await _await_box(id)
+	await _await_box(id, opts)
 	return box[1]
 
 
 ## Poll until box[0] is true, then return.  Uses a timer-based poll so we never
 ## spin-block the main thread.  This replaces a custom per-request Signal.
-func _await_box(id: String) -> void:
-	# We rely on the fact that _resolve_box always defers to the next frame,
-	# so we can safely yield here and check on the next physics / idle frame.
+##
+## Wave C: race the per-frame poll against a CLIENT_TIMEOUT_SEC timer. On
+## timeout the box is force-resolved with null so the awaiting caller's
+## fallback fires; the backend request is left in-flight and ignored on
+## arrival via the stale-id guard in _on_backend_finished.
+func _await_box(id: String, opts: Dictionary = {}) -> void:
+	# Resolve the timeout for this call (allow override via opts for tests).
+	var timeout: float = float(opts.get("client_timeout_sec", CLIENT_TIMEOUT_SEC))
+	if timeout <= 0.0:
+		# No client guard — fall back to legacy unbounded poll.
+		while _pending_boxes.has(id) and not _pending_boxes[id][0]:
+			await get_tree().process_frame
+		return
+
+	# Wave F B4 fix — use wall-clock ticks instead of get_process_delta_time().
+	# delta is the LAST process tick on this node — meaningless when the
+	# LLMService autoload's process_mode is anything other than the default,
+	# and outright zero for nodes that don't tick. Time.get_ticks_msec() is
+	# always monotonic.
+	var t0_msec: int = Time.get_ticks_msec()
 	while _pending_boxes.has(id) and not _pending_boxes[id][0]:
 		await get_tree().process_frame
+		var elapsed: float = float(Time.get_ticks_msec() - t0_msec) / 1000.0
+		if elapsed >= timeout and _pending_boxes.has(id) and not _pending_boxes[id][0]:
+			# Client timeout. Resolve the box with null so the awaiting
+			# caller's fallback path fires immediately. Mark the id
+			# cancelled and clear _inflight_id so:
+			#   (a) the queue can dispatch the next pending request now,
+			#       rather than waiting up to 30s for the HTTPRequest;
+			#   (b) when the orphaned backend HTTPRequest eventually
+			#       fires request_finished, the stale-id guard in
+			#       _on_backend_finished (id != _inflight_id) drops it
+			#       cleanly without re-resolving the box.
+			# The _pending_boxes entry is erased here so the orphan can't
+			# accidentally resolve into a re-used dict key later.
+			_cancelled_ids[id] = true
+			_resolve_box(id, null)
+			_pending_boxes.erase(id)
+			if _inflight_id == id:
+				_inflight_id = ""
+			var mode_label: String = MODE_JSON if opts.get("json_mode", false) else MODE_TEXT
+			inference_failed.emit(mode_label, "client_timeout")
+			# Kick the queue so any pending request runs immediately.
+			_process_queue()
+			return
 
 
 func _resolve_box(id: String, value: Variant) -> void:
@@ -304,6 +386,11 @@ func _on_backend_finished(id: String, ok: bool, text: String, error: String) -> 
 
 
 func _process_queue() -> void:
+	# Re-entrant guard: cancel_all() may indirectly trigger _on_backend_finished
+	# synchronously (HTTPBackend.cancel_all emits request_finished in the same
+	# call frame).  Skip dispatch while draining; cancel_all is mid-cleanup.
+	if _draining:
+		return
 	if _queue.is_empty() or _inflight_id != "":
 		return
 

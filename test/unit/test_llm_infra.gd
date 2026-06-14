@@ -452,22 +452,32 @@ func test_llm_context_max_party_full() -> void:
 	assert_eq(LLMContext.MAX_PARTY_FULL, 4, "MAX_PARTY_FULL should be 4")
 
 
-## build() returns empty dict when GameState singleton is absent.
-func test_llm_context_build_returns_empty_without_game_state() -> void:
-	if Engine.has_singleton("GameState"):
-		pending("GameState autoload present; test requires its absence")
+## build() returns a populated Dictionary when the GameState autoload is live.
+##
+## Wave F rewrite (bug #2): the prior assertion gated on Engine.has_singleton(
+## "GameState"), which is ALWAYS FALSE for autoloads in Godot 4 — so the test
+## passed by short-circuiting through pending(). After the gate-bug fix the
+## correct invariant is: with GameState present (the normal test environment),
+## LLMContext.build() returns a non-empty snapshot. This was a known-liar test
+## per the audit.
+func test_llm_context_build_returns_populated_with_game_state() -> void:
+	var gs: Node = Engine.get_main_loop().root.get_node_or_null("GameState")
+	assert_not_null(gs, "test environment must have GameState autoload")
+	if gs == null:
 		return
 	var ctx: Dictionary = LLMContext.build()
-	assert_true(ctx.is_empty(), "build() without GameState should return {}")
+	assert_false(ctx.is_empty(), "build() with GameState should return a populated snapshot")
 
 
-## build_json() returns '{}' when GameState singleton is absent.
-func test_llm_context_build_json_returns_empty_json_without_game_state() -> void:
-	if Engine.has_singleton("GameState"):
-		pending("GameState autoload present; test requires its absence")
+## build_json() returns a non-empty JSON string when GameState is live.
+func test_llm_context_build_json_returns_populated_with_game_state() -> void:
+	var gs: Node = Engine.get_main_loop().root.get_node_or_null("GameState")
+	assert_not_null(gs, "test environment must have GameState autoload")
+	if gs == null:
 		return
 	var j: String = LLMContext.build_json()
-	assert_eq(j, "{}", "build_json() without GameState should return '{}'")
+	assert_ne(j, "{}", "build_json() with GameState should NOT return '{}'")
+	assert_gt(j.length(), 2, "build_json() output should be a non-trivial JSON object")
 
 
 ## _trim_events keeps the last MAX_EVENTS_TRIMMED entries.

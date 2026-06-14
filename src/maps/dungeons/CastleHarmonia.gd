@@ -18,6 +18,11 @@ func _init() -> void:
 	cave_name = "Castle Harmonia — Throne Room"
 	cave_id = "castle_harmonia"
 	boss_id = "chancellor_mordaine"
+	# Wave E — BossDialogue persona handle. Matches the entry key in
+	# data/boss_dialogue.json so BattleManager._update_boss_dialogue_phase
+	# finds Mordaine's intents/vulnerabilities. Falls back to monster_type
+	# at runtime so this is belt-and-suspenders.
+	boss_llm_persona_id = "chancellor_mordaine"
 	boss_cutscene_id = "world1_mordaine_intro"  # Full intro plays before fight
 	boss_flag_key = "world1_mordaine_defeated"
 	total_floors = 1

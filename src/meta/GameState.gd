@@ -36,6 +36,10 @@ var sfx_volume: int = 100  # 0-100 percent
 var default_battle_speed: float = 1.0  # Default speed index value
 var text_speed: String = "normal"  # slow | normal | fast | instant
 var screen_shake_enabled: bool = true  # Master gate for camera/screen shake effects
+## Wave C: dynamic-dialogue master switch persisted to user settings. Off by
+## default on web (no HTTP backend reachable from WASM); on by default on
+## desktop. SettingsMenu mirrors this to LLMService.llm_enabled at runtime.
+var llm_enabled: bool = not OS.has_feature("web")
 
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {
@@ -140,6 +144,18 @@ func _create_save_data() -> Dictionary:
 		"worlds_unlocked": worlds_unlocked,
 		"story_flags": story_flags.duplicate(),
 		"current_save_name": current_save_name,
+		# Wave C: dynamic-dialogue switch is also written into per-save data so
+		# loading an old save doesn't blow away the user's preference. The
+		# settings.json copy in SaveSystem is the primary store; this is the
+		# secondary so per-save imports stay self-contained.
+		"llm_enabled": llm_enabled,
+		# Wave D: persist EventLog ring buffer (capped at EventLog.RING_CAP = 50
+		# entries). Adds ~1-3 KB to the JSON payload — well under the typed-
+		# array regression threshold. EventLog.serialize() returns a JSON-safe
+		# duplicate; restore on the load side uses the same typed-array-safe
+		# coercion pattern as Combatant.from_dict to survive JSON.parse's
+		# generic-Array return type.
+		"event_log": event_log.serialize() if event_log != null else [],
 	}
 
 
@@ -182,6 +198,18 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		story_flags = save_data["story_flags"].duplicate()
 	if save_data.has("current_save_name"):
 		current_save_name = save_data["current_save_name"]
+	if save_data.has("llm_enabled"):
+		llm_enabled = bool(save_data["llm_enabled"])
+	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
+	# hasn't run yet (defensive — _apply_save_data is normally called via
+	# SaveSystem after autoloads are live). EventLog.restore() handles the
+	# typed-array coercion, so we hand the raw Array straight through.
+	if event_log == null:
+		event_log = EventLog.new()
+	if save_data.has("event_log"):
+		event_log.restore(save_data["event_log"])
+	else:
+		event_log.clear()
 
 
 ## Corruption system
@@ -399,6 +427,13 @@ func reset_game_state() -> void:
 		"restore_points_enabled": false,
 		"max_restore_points": 0
 	}
+
+	# Wave D: drain EventLog so a New Game doesn't bleed prior-run facts
+	# into the next playthrough's LLM prompts. (Without this, a fresh
+	# party would still see "Boss Pyrroth defeated" in their first NPC
+	# conversation.)
+	if event_log != null:
+		event_log.clear()
 
 
 ## Serialization methods for SaveSystem

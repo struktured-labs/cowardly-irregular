@@ -35,6 +35,13 @@ var _in_conversation: bool = false
 @export var dialogue_theme: String = "mysterious"
 @export var dialogue_portrait: String = "mysterious"
 
+## LLM dynamic dialogue opt-in (per docs/llm-integration-design.md:157).
+## Mirrors OverworldNPC: only NPCs with `dynamic = true` AND a non-empty
+## `persona` participate in the LLM-driven DynamicConversation path.
+## Default OFF — ambient wanderers stay on the static single-line path.
+@export var dynamic: bool = false
+@export_multiline var persona: String = ""
+
 # Patrol state
 var _patrol_points: Array[Vector2] = []
 var _current_target: int = 0
@@ -306,8 +313,12 @@ func _start_conversation() -> void:
 
 	var player = _get_player()
 
-	# ── LLM-driven path: use DynamicConversation when LLMService is available. ──
-	if _llm_conversation_available():
+	# ── LLM-driven path: use DynamicConversation when LLMService is available
+	# AND this wanderer is opt-in for dynamic dialogue. Per design doc :157,
+	# only the showcase set takes this branch. Ambient wanderers default
+	# `dynamic = false` and continue through the single-line NPCDialogue
+	# pipeline below. ───────────────────────────────────────────────────────
+	if dynamic and persona != "" and _llm_conversation_available():
 		await _run_dynamic_conversation(player)
 		_in_conversation = false
 		if _player_nearby:
@@ -344,17 +355,17 @@ func _get_player() -> Node:
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		return players[0]
-	# Try MapSystem
-	if Engine.has_singleton("MapSystem"):
-		return Engine.get_singleton("MapSystem").get_player()
+	# Try MapSystem autoload (Engine.has_singleton is ALWAYS FALSE for autoloads
+	# in Godot 4 — look up via the scene tree root).
+	var ms: Node = get_node_or_null("/root/MapSystem")
+	if ms != null and ms.has_method("get_player"):
+		return ms.get_player()
 	return null
 
 
 func _llm_conversation_available() -> bool:
 	"""Returns true when LLMService is present and reporting availability."""
-	if not Engine.has_singleton("LLMService"):
-		return false
-	var svc = Engine.get_singleton("LLMService")
+	var svc: Node = get_node_or_null("/root/LLMService")
 	return svc != null and svc.is_available()
 
 
@@ -365,12 +376,12 @@ func _run_dynamic_conversation(player: Node) -> void:
 		_dynamic_conv.name = "DynamicConversation"
 		add_child(_dynamic_conv)
 
-	# Resolve EventLog from GameState singleton.
+	# Resolve EventLog from the GameState autoload via the scene tree root
+	# (Engine.has_singleton is ALWAYS FALSE for autoloads in Godot 4).
 	var event_log: EventLog = null
-	if Engine.has_singleton("GameState"):
-		var gs = Engine.get_singleton("GameState")
-		if gs != null and "event_log" in gs:
-			event_log = gs.event_log
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and "event_log" in gs:
+		event_log = gs.event_log
 
 	# Resolve location name from parent scene.
 	var location: String = _resolve_location_name()
@@ -378,9 +389,10 @@ func _run_dynamic_conversation(player: Node) -> void:
 	# WanderingNPCs have a single dialogue line — wrap it as the fallback array.
 	var fallback_lines: Array = [_get_current_dialogue()]
 
-	# Use the dialogue_theme as a loose persona description.
-	var persona: String = "%s who travels the roads" % dialogue_theme
-
+	# Use the authored @export persona directly. The caller (`_start_conversation`)
+	# already gated on `dynamic and persona != ""`, so the fake-persona
+	# derivation from dialogue_theme is no longer needed (and was misleading
+	# anyway — dialogue_theme is a portrait key, not a character description).
 	_dynamic_conv.setup(npc_name, persona, location, event_log, fallback_lines)
 	await _dynamic_conv.run(player)
 

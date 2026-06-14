@@ -60,9 +60,10 @@ func _check_encounter() -> bool:
 	if rate_multiplier <= 0.0:
 		return false
 
-	# Use EncounterSystem if available, otherwise simple random
-	if Engine.has_singleton("EncounterSystem"):
-		var es = Engine.get_singleton("EncounterSystem")
+	# Use EncounterSystem autoload if present (Engine.has_singleton is ALWAYS
+	# FALSE for autoloads in Godot 4 — look up via scene tree root).
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if get_tree() else null
+	if es != null:
 		# EncounterSystem should also respect the multiplier
 		return es.check_for_encounter() and randf() < rate_multiplier
 
@@ -77,9 +78,10 @@ func _trigger_battle() -> void:
 
 
 func _generate_enemies() -> Array:
-	# Use EncounterSystem if available
-	if Engine.has_singleton("EncounterSystem"):
-		var es = Engine.get_singleton("EncounterSystem")
+	# Use EncounterSystem autoload if present (Engine.has_singleton is ALWAYS
+	# FALSE for autoloads in Godot 4 — look up via scene tree root).
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if get_tree() else null
+	if es != null:
 		return es.generate_enemy_party()
 
 	# Return empty if no enemies in pool (boss-only floors)

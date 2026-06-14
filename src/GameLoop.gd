@@ -1017,6 +1017,17 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 			# non-spotlight cutscenes.
 			if completion_flag.begins_with("cutscene_flag_spotlight_unlocked_"):
 				_reconcile_spotlight_locks()
+		# Wave D: record cutscene completion in the EventLog so LLM-driven
+		# NPC dialogue can reference recently-witnessed story beats. The
+		# completion_flag is already in game_constants so LLMContext picks
+		# it up — but the EventLog gives the LLM a chronological "what just
+		# happened" rather than a sparse boolean flag soup.
+		if GameState and "event_log" in GameState and GameState.event_log != null:
+			GameState.event_log.record(
+				EventLog.TYPE_STORY_FLAG,
+				"Cutscene complete: %s" % cutscene_id,
+				{"cutscene_id": cutscene_id, "flag": completion_flag}
+			)
 		_start_exploration()
 	, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)

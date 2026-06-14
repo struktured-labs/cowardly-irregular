@@ -236,6 +236,10 @@ func _setup_npcs() -> void:
 	# === STORY/LORE NPCs ===
 
 	# Village Elder (near fountain)
+	# Wave D showcase NPC #1 — lore-load-bearing elder (already gates the
+	# W1 prologue via talked_to_theron). Persona text + fallback lines
+	# live in data/cutscenes/npc_showcase_personas.json and are hydrated
+	# at _ready() via OverworldNPC._setup_persona_data().
 	var elder = _create_npc("Elder Theron", "elder", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Welcome to Harmonia Village, young adventurer.",
 		"Our peaceful village has stood for generations...",
@@ -244,11 +248,14 @@ func _setup_npcs() -> void:
 		"If you seek glory, be warned: the cave adapts to those who challenge it.",
 		"May the light guide your path."
 	])
+	elder.dynamic = true
 	npcs.add_child(elder)
 
 	# === AUTOBATTLE HINT NPCs ===
 
 	# Scholar (hints about automation)
+	# Wave D showcase NPC #2 — fourth-wall-aware autobattle townie.
+	# Persona text + fallback lines hydrated from the same JSON cache.
 	var scholar = _create_npc("Scholar Milo", "villager", Vector2(16 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Ah, a fellow seeker of knowledge!",
 		"I've been studying an ancient art called 'AUTOBATTLE'.",
@@ -257,6 +264,7 @@ func _setup_npcs() -> void:
 		"The system executes your script when it's your turn.",
 		"It's not cheating - it's ENLIGHTENMENT!"
 	])
+	scholar.dynamic = true
 	npcs.add_child(scholar)
 
 	# Retired Adventurer (autogrind hints)
@@ -319,6 +327,9 @@ func _setup_npcs() -> void:
 	# === HELPFUL NPCs ===
 
 	# Guard near exit
+	# Wave D showcase NPC #3 — gruff skeptic guard at the south gate
+	# (foreshadows the Whispering Cave). Persona text + fallback lines
+	# hydrated from npc_showcase_personas.json.
 	var guard = _create_npc("Guard Boris", "guard", Vector2(8 * TILE_SIZE, 21 * TILE_SIZE), [
 		"Halt! ...Oh, you're heading OUT? Carry on then.",
 		"I'm here to keep monsters from getting IN.",
@@ -326,6 +337,7 @@ func _setup_npcs() -> void:
 		"Slimes, bats, goblins - nothing you can't handle.",
 		"But the cave... *shudder* ...don't ask."
 	])
+	guard.dynamic = true
 	npcs.add_child(guard)
 
 	# Kid by fountain

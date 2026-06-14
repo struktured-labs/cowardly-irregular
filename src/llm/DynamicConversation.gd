@@ -48,6 +48,11 @@ const CHOICE_CANCELLED: String = ""
 ## Fallback sign-off line used when the exchange limit is reached.
 const SIGN_OFF_FALLBACK: String = "Take care, traveler. Safe journeys."
 
+## When true, the NPC reply and next player choices are fetched in a single
+## combined LLM call (halves round trips when the prompt budget allows).
+## Flag-gated so both code paths remain testable in isolation.
+const MERGE_REPLY_AND_CHOICES: bool = true
+
 
 # ── State enum ────────────────────────────────────────────────────────────────
 
@@ -67,6 +72,10 @@ var _npc_persona:   String = "friendly villager"
 var _location:      String = "an unknown place"
 var _event_log:     EventLog = null      # May be null — prompts skip context gracefully.
 var _fallback_lines: Array  = []         # Static dialogue_lines from the NPC.
+## Wave F R3 fix — authored "opening" lines from npc_showcase_personas.json.
+## When set and the LLM is unavailable, the opening turn samples from this
+## richer per-character list instead of the flatter fallbacks list.
+var _opening_lines: Array  = []
 
 
 # ── Runtime state ─────────────────────────────────────────────────────────────
@@ -74,9 +83,17 @@ var _fallback_lines: Array  = []         # Static dialogue_lines from the NPC.
 var _state:          State  = State.IDLE
 var _exchange_count: int    = 0
 var _last_npc_line:  String = ""
+var _last_player_line: String = ""   # Most-recent player choice; threaded into NPC-reply prompt.
 var _npc_dialogue:   Node   = null   # NPCDialogue instance (lazy-init).
 var _choice_menu:    DialogueChoiceMenu = null
 var _active:         bool   = false
+
+## Optional staging area used by the combined-call path: when MERGE_REPLY_AND_CHOICES
+## is true, _do_npc_reply fetches both the reply AND the next choices in a
+## single round trip and stashes the choices here for the next PLAYER_TURN to
+## consume (so _fetch_player_choices skips the second call).
+var _pending_choices: Array[String] = []
+var _has_pending_choices: bool = false
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -95,12 +112,16 @@ func setup(
 	location:      String,
 	event_log:     EventLog,
 	fallback_lines: Array,
+	opening_lines: Array = [],
 ) -> void:
 	_npc_name      = npc_name      if npc_name      != "" else "NPC"
 	_npc_persona   = npc_persona   if npc_persona   != "" else "friendly villager"
 	_location      = location      if location      != "" else "an unknown place"
 	_event_log     = event_log
 	_fallback_lines = fallback_lines.duplicate()
+	# Wave F R3 fix — opening_lines is optional; when empty the opening turn
+	# falls back to _fallback_lines (legacy behavior).
+	_opening_lines = opening_lines.duplicate()
 
 
 ## Run the full conversation loop and await its completion.
@@ -113,6 +134,9 @@ func run(player: Node) -> void:
 	_active = true
 	_exchange_count = 0
 	_last_npc_line  = ""
+	_last_player_line = ""
+	_pending_choices.clear()
+	_has_pending_choices = false
 	_state = State.IDLE
 
 	# Freeze the player.
@@ -181,6 +205,13 @@ func _do_player_turn(player: Node) -> void:
 
 	var chosen: String = await _show_choice_menu(choices)
 
+	# Store the chosen line BEFORE the cancel/farewell check so the eventual
+	# sign-off path (or future analytics) still has access to whatever the
+	# player picked. Without this, the player's words were discarded the
+	# moment _do_player_turn returned, leaving _fetch_npc_reply with nothing
+	# to react to (regression noted in plan slice item 5).
+	_last_player_line = chosen if chosen != CHOICE_CANCELLED else ""
+
 	if chosen == CHOICE_CANCELLED or _is_farewell(chosen):
 		_state = State.DONE
 		return
@@ -197,8 +228,32 @@ func _do_npc_reply() -> void:
 		_state = State.DONE
 		return
 
-	# Normal follow-up.
-	var reply: String = await _fetch_npc_opening()   # Reuse opening fetch for context-aware reply.
+	# Normal follow-up — context-aware reply that threads the prior NPC line
+	# and the player's chosen response into the prompt (no more silent reuse
+	# of _fetch_npc_opening — see plan slice item 5).
+	var reply: String = ""
+	if MERGE_REPLY_AND_CHOICES and _llm_available():
+		# Single round trip: get reply + next-turn choices in one call.
+		var combined: Dictionary = await _fetch_combined_reply()
+		reply = str(combined.get("reply", ""))
+		var next_choices: Variant = combined.get("choices", [])
+		_pending_choices.clear()
+		if next_choices is Array:
+			for item in (next_choices as Array):
+				if item is String:
+					_pending_choices.append(item as String)
+		_has_pending_choices = not _pending_choices.is_empty()
+	else:
+		reply = await _fetch_npc_reply()
+
+	# Wave F B10 fix — guard against empty/whitespace-only replies that
+	# would render a blank dialogue panel. Combined-reply fetches can
+	# return {"reply": "", "choices": [...]} when the LLM forgets the
+	# reply field; fall back to the deterministic per-turn line so the
+	# player always sees the NPC say something.
+	if reply.strip_edges() == "":
+		reply = DialoguePrompts._fallback_reply_line(_exchange_count)
+
 	_last_npc_line = reply
 	await _show_npc_line(reply)
 
@@ -215,7 +270,9 @@ func _fetch_npc_opening() -> String:
 
 	# Fast path: LLM unavailable.
 	if not _llm_available():
-		return _fallback_npc_line()
+		# Wave F R3 fix — prefer the authored opening lines when available
+		# (richer voice than the per-turn fallbacks list).
+		return _fallback_opening_line()
 
 	var prompt: String = DialoguePrompts.build_npc_opening(
 		_npc_name,
@@ -224,14 +281,19 @@ func _fetch_npc_opening() -> String:
 		recent,
 	)
 
+	# Wave C: surface the "thinking" indicator while the LLM is composing.
+	# Cleared on BOTH success and fallback so a 6s client timeout doesn't
+	# leave the dots spinning forever (set_thinking is idempotent).
+	_set_thinking(true)
 	var raw: Variant = await _safe_complete_json(
 		prompt,
 		DialoguePrompts.SCHEMA_NPC_OPENING,
 		DialoguePrompts.FALLBACK_NPC_OPENING,
 	)
+	_set_thinking(false)
 
 	var validated: Dictionary = DialoguePrompts.validate_npc_opening(raw)
-	return validated.get("line", _fallback_npc_line())
+	return validated.get("line", _fallback_opening_line())
 
 
 func _fetch_npc_sign_off() -> String:
@@ -251,11 +313,13 @@ func _fetch_npc_sign_off() -> String:
 		recent,
 	)
 
+	_set_thinking(true)
 	var raw: Variant = await _safe_complete_json(
 		prompt,
 		DialoguePrompts.SCHEMA_NPC_OPENING,
 		DialoguePrompts.FALLBACK_NPC_OPENING,
 	)
+	_set_thinking(false)
 
 	var validated: Dictionary = DialoguePrompts.validate_npc_opening(raw)
 	return validated.get("line", SIGN_OFF_FALLBACK)
@@ -268,6 +332,16 @@ func _fetch_player_choices() -> Array[String]:
 	var fallback_arr: Array[String] = []
 	for s in fallback_dict.get("choices", []):
 		fallback_arr.append(str(s))
+
+	# Combined-call shortcut: if _do_npc_reply already fetched the next
+	# choices alongside the reply, consume them now and skip the second
+	# LLM round trip entirely.
+	if _has_pending_choices:
+		var pending: Array[String] = _pending_choices.duplicate()
+		_pending_choices.clear()
+		_has_pending_choices = false
+		if not pending.is_empty():
+			return pending
 
 	if not _llm_available():
 		return fallback_arr
@@ -283,11 +357,13 @@ func _fetch_player_choices() -> Array[String]:
 		recent,
 	)
 
+	_set_thinking(true)
 	var raw: Variant = await _safe_complete_json(
 		prompt,
 		DialoguePrompts.SCHEMA_PLAYER_CHOICES,
 		DialoguePrompts.FALLBACK_PLAYER_CHOICES,
 	)
+	_set_thinking(false)
 
 	var validated: Dictionary = DialoguePrompts.validate_player_choices(
 		raw,
@@ -301,6 +377,78 @@ func _fetch_player_choices() -> Array[String]:
 	if out.is_empty():
 		return fallback_arr
 	return out
+
+
+## Fetch a context-aware follow-up NPC line that responds to the player's
+## most recent chosen line. This is the dedicated reply fetcher — distinct
+## from _fetch_npc_opening which is for greetings.
+func _fetch_npc_reply() -> String:
+	if not _llm_available():
+		return DialoguePrompts._fallback_reply_line(_exchange_count)
+
+	var recent: Array = []
+	if _event_log != null:
+		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
+
+	var prompt: String = DialoguePrompts.build_npc_reply(
+		_npc_name,
+		_npc_persona,
+		_location,
+		recent,
+		_last_npc_line,
+		_last_player_line,
+	)
+
+	_set_thinking(true)
+	var raw: Variant = await _safe_complete_json(
+		prompt,
+		DialoguePrompts.SCHEMA_NPC_REPLY,
+		DialoguePrompts.FALLBACK_NPC_REPLY,
+	)
+	_set_thinking(false)
+
+	var validated: Dictionary = DialoguePrompts.validate_npc_reply(raw, _exchange_count)
+	return str(validated.get("line", DialoguePrompts._fallback_reply_line(_exchange_count)))
+
+
+## Fetch BOTH the NPC reply and the next set of player choices in a single
+## LLM call. Returns the combined dictionary; caller drains the choices
+## into _pending_choices to skip the next _fetch_player_choices round trip.
+func _fetch_combined_reply() -> Dictionary:
+	# Caller pre-checks _llm_available — fast path the unavailable case.
+	if not _llm_available():
+		return DialoguePrompts._fallback_combined(
+			DialoguePrompts.MAX_CHOICES,
+			_exchange_count,
+		)
+
+	var recent: Array = []
+	if _event_log != null:
+		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
+
+	var prompt: String = DialoguePrompts.build_combined_reply(
+		_npc_name,
+		_npc_persona,
+		_location,
+		recent,
+		_last_npc_line,
+		_last_player_line,
+		DialoguePrompts.MAX_CHOICES,
+	)
+
+	_set_thinking(true)
+	var raw: Variant = await _safe_complete_json(
+		prompt,
+		DialoguePrompts.SCHEMA_COMBINED_REPLY,
+		DialoguePrompts.FALLBACK_COMBINED_REPLY,
+	)
+	_set_thinking(false)
+
+	return DialoguePrompts.validate_combined_reply(
+		raw,
+		DialoguePrompts.MAX_CHOICES,
+		_exchange_count,
+	)
 
 
 # ── UI helpers ────────────────────────────────────────────────────────────────
@@ -348,6 +496,18 @@ func _ensure_npc_dialogue() -> void:
 	add_child(_npc_dialogue)
 
 
+## Wave C: toggle the dialogue thinking indicator. Lazy-init's the NPCDialogue
+## so the indicator can flash even before the first line is shown. Safe to call
+## from BOTH success and fallback paths — set_thinking on the dialogue is
+## idempotent.
+func _set_thinking(active: bool) -> void:
+	_ensure_npc_dialogue()
+	if _npc_dialogue == null or not is_instance_valid(_npc_dialogue):
+		return
+	if _npc_dialogue.has_method("set_thinking"):
+		_npc_dialogue.set_thinking(active)
+
+
 func _cleanup_ui() -> void:
 	if _choice_menu != null and is_instance_valid(_choice_menu):
 		_choice_menu.dismiss()
@@ -360,17 +520,16 @@ func _cleanup_ui() -> void:
 # ── Utility ───────────────────────────────────────────────────────────────────
 
 func _llm_available() -> bool:
-	if not Engine.has_singleton("LLMService"):
-		return false
-	var svc = Engine.get_singleton("LLMService")
+	# Engine.has_singleton("LLMService") is ALWAYS FALSE for autoloads in Godot 4
+	# (it only matches native engine singletons). Look up the autoload node via
+	# the scene tree root instead.
+	var svc: Node = get_node_or_null("/root/LLMService")
 	return svc != null and svc.is_available()
 
 
 ## Await a complete_json call on LLMService, guarded against missing singleton.
 func _safe_complete_json(prompt: String, schema: Dictionary, fallback: Variant) -> Variant:
-	if not Engine.has_singleton("LLMService"):
-		return fallback
-	var svc = Engine.get_singleton("LLMService")
+	var svc: Node = get_node_or_null("/root/LLMService")
 	if svc == null:
 		return fallback
 	var result: Variant = await svc.complete_json(prompt, schema, fallback)
@@ -383,6 +542,17 @@ func _fallback_npc_line() -> String:
 	# Cycle through fallback lines using the exchange count to vary them.
 	var idx: int = _exchange_count % _fallback_lines.size()
 	return str(_fallback_lines[idx])
+
+
+## Wave F R3 fix — pick a per-character opening line when the LLM is
+## unavailable. Prefer the richer `openings` list authored in
+## data/cutscenes/npc_showcase_personas.json; only fall through to the
+## flatter `fallbacks` set if openings weren't supplied.
+func _fallback_opening_line() -> String:
+	if not _opening_lines.is_empty():
+		var idx: int = randi() % _opening_lines.size()
+		return str(_opening_lines[idx])
+	return _fallback_npc_line()
 
 
 ## Ensure the choices list always ends with a farewell option.

@@ -363,6 +363,66 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"submenu": scan_targets
 		})
 
+	# Wave E — 'Address' command. Gated on the active boss having an entry
+	# in data/boss_dialogue.json. Opens a verb-picker submenu; selecting a
+	# verb sends a deterministic directive_text to BossDialogue. Mock-class
+	# verbs can BACKFIRE — by design (see jailbreak_vulnerabilities).
+	var boss_dlg = combatant.get_tree().root.get_node_or_null("BossDialogue") if combatant.is_inside_tree() else null
+	if boss_dlg and alive_enemies.size() > 0:
+		var address_targets: Array = []
+		for enemy in alive_enemies:
+			var persona_id: String = enemy.get_meta("llm_persona_id", "")
+			if persona_id == "":
+				persona_id = enemy.get_meta("monster_type", "")
+			if persona_id == "" or not boss_dlg.has_entry(persona_id):
+				continue
+			var verbs = boss_dlg.get_verbs(persona_id)
+			if not (verbs is Array) or verbs.size() == 0:
+				continue
+			var enemy_idx = _scene.test_enemies.find(enemy)
+			var verb_items: Array = []
+			for v in verbs:
+				if not (v is Dictionary):
+					continue
+				var verb_id: String = str(v.get("id", ""))
+				var verb_label: String = str(v.get("label", verb_id.capitalize()))
+				var directive: String = str(v.get("directive", ""))
+				if verb_id == "" or directive == "":
+					continue
+				verb_items.append({
+					"id": "address_" + str(enemy_idx) + "_" + verb_id,
+					"label": verb_label,
+					"data": {
+						"action": "address",
+						"target_idx": enemy_idx,
+						"persona_id": persona_id,
+						"directive": directive,
+					}
+				})
+			if verb_items.size() > 0:
+				if alive_enemies.size() == 1:
+					# Single eligible boss — surface verbs as the submenu.
+					items.append({
+						"id": "address_menu",
+						"label": "Address",
+						"tooltip": "Speak a directive at the boss. Some land — some BACKFIRE.",
+						"submenu": verb_items,
+					})
+					break
+				else:
+					address_targets.append({
+						"id": "address_target_" + str(enemy_idx),
+						"label": enemy.combatant_name,
+						"submenu": verb_items,
+					})
+		if address_targets.size() > 0:
+			items.append({
+				"id": "address_menu",
+				"label": "Address",
+				"tooltip": "Speak a directive at the boss. Some land — some BACKFIRE.",
+				"submenu": address_targets,
+			})
+
 	# Defer - skip turn, gain +1 AP (only available if AP < 4 and not exposed)
 	items.append({
 		"id": "defer",
@@ -765,6 +825,27 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		var color = "magenta" if group_type == "combo_magic" else ("cyan" if group_type == "formation" else "orange")
 		_scene.log_message("[color=%s]★ %s initiated! ★[/color]" % [color, label])
 		BattleManager.player_group_attack(group_type, formation_id)
+		_scene._update_ui()
+		return
+
+	# Wave E — Address the Boss (jailbreak attempt). Sends the deterministic
+	# directive_text to BattleManager.try_player_jailbreak_directive, which
+	# defers to BossDialogue.check_jailbreak (substring keyword match). On
+	# hit, BattleManager applies the consequence — story-flag safe via
+	# CONSEQUENCE_ALLOWLIST. The address action consumes the turn (defer).
+	if item_id.begins_with("address_") and item_data is Dictionary and item_data.get("action", "") == "address":
+		var directive: String = str(item_data.get("directive", ""))
+		var persona_id: String = str(item_data.get("persona_id", ""))
+		_scene.log_message("[color=#88ccff]%s: \"%s\"[/color]" % [current.combatant_name, directive])
+		var landed: bool = BattleManager.try_player_jailbreak_directive(directive)
+		if landed:
+			_scene.log_message("[color=yellow]⚠ DIRECTIVE OVERRIDE ACCEPTED[/color]")
+			if _scene.has_method("_show_address_banner"):
+				_scene._show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
+		else:
+			_scene.log_message("[color=gray]%s does not react.[/color]" % persona_id.replace("_", " ").capitalize())
+		# Address consumes the turn.
+		BattleManager.player_defer()
 		_scene._update_ui()
 		return
 

@@ -614,6 +614,10 @@ func save_settings() -> void:
 		settings["default_battle_speed"] = GameState.default_battle_speed
 		settings["debug_log_enabled"] = GameState.debug_log_enabled
 		settings["debug_all_pcs_unlocked"] = GameState.debug_all_pcs_unlocked
+		# Wave C: persist the dynamic-dialogue master switch alongside other
+		# UX preferences so the SettingsMenu toggle survives a relaunch.
+		if "llm_enabled" in GameState:
+			settings["llm_enabled"] = GameState.llm_enabled
 	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(settings, "\t"))
@@ -683,5 +687,12 @@ func load_settings() -> void:
 				DebugLogOverlay.set_enabled(GameState.debug_log_enabled)
 		if settings.has("debug_all_pcs_unlocked"):
 			GameState.debug_all_pcs_unlocked = bool(settings["debug_all_pcs_unlocked"])
+		# Wave C: dynamic-dialogue preference. Push to LLMService so the
+		# autoload's runtime gate matches the persisted choice.
+		if settings.has("llm_enabled") and "llm_enabled" in GameState:
+			GameState.llm_enabled = bool(settings["llm_enabled"])
+			var svc: Node = get_node_or_null("/root/LLMService")
+			if svc and "llm_enabled" in svc:
+				svc.llm_enabled = GameState.llm_enabled
 
 	print("[SAVE] Settings loaded")

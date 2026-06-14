@@ -16,6 +16,15 @@ signal dialogue_ended(npc_name: String)
 ## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
 @export var sprite_archetype: String = ""
 
+## LLM dynamic dialogue opt-in (per docs/llm-integration-design.md:157).
+## Only NPCs with `dynamic = true` AND a non-empty `persona` participate
+## in the LLM-driven DynamicConversation path. All other NPCs continue
+## using the static dialogue_lines pipeline.
+## Default OFF — design doc explicitly says do NOT retrofit every NPC.
+## Showcase set is the 3 W1 NPCs flagged in scene/spawn code.
+@export var dynamic: bool = false
+@export_multiline var persona: String = ""
+
 ## Mapping from npc_type → preferred archetype. "" = picked by name hash
 ## from a pair (defined in _resolve_archetype). All 20 archetype sheets
 ## are now available: old_man, old_woman, young_man, young_woman, child,
@@ -56,6 +65,11 @@ var dialogue_box: Control
 var dialogue_label: Label
 var _npc_dialogue: Node = null  # NPCDialogue instance, lazy-init
 var _dynamic_conv: DynamicConversation = null  # LLM-driven conversation, lazy-init
+## Wave F R3 fix — authored opening lines from npc_showcase_personas.json,
+## passed to DynamicConversation.setup() so the LLM-off path uses richer
+## per-character voice for the opening turn (the rest of the conversation
+## continues to draw from `dialogue_lines`).
+var _persona_openings: Array = []
 
 ## State
 var _current_line: int = 0
@@ -72,8 +86,24 @@ var _sprite_cache: Dictionary = {}  # frame -> texture
 
 const TILE_SIZE: int = 32
 
+## Persona JSON cache — parsed once per process, shared across all NPC
+## instances. Per CLAUDE.md/plan-risk-4: file read at _ready() per NPC
+## would be wasteful; this static dictionary makes it free after the first
+## opt-in NPC spawns. Map: npc_name → { persona, openings[], fallbacks[] }.
+const PERSONA_DATA_PATH: String = "res://data/cutscenes/npc_showcase_personas.json"
+static var _persona_cache: Dictionary = {}
+static var _persona_cache_loaded: bool = false
+
 
 func _ready() -> void:
+	# Wave D: hydrate persona & fallback lines from data/cutscenes/
+	# npc_showcase_personas.json for dynamic-opt-in showcase NPCs (design
+	# doc :157). Must run BEFORE sprite generation so the resolved persona
+	# is visible to any other _ready-time consumer; ordering chosen to
+	# match the existing static dialogue_lines workflow.
+	if dynamic:
+		_setup_persona_data()
+
 	_generate_sprite()
 	_setup_collision()
 	_setup_name_label()
@@ -88,6 +118,68 @@ func _ready() -> void:
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+
+## Load and apply persona + fallback dialogue for showcase NPCs.
+## Called from _ready() ONLY when @export dynamic is true. The persona
+## text is resolved by `npc_name` lookup; if the name isn't in the JSON
+## the NPC silently falls through to whatever `persona` / `dialogue_lines`
+## were already set on the scene node (so a designer can author one
+## inline without breaking the JSON-driven path for the rest).
+func _setup_persona_data() -> void:
+	if not _persona_cache_loaded:
+		_load_persona_cache()
+	if not _persona_cache.has(npc_name):
+		return  # No JSON entry — keep whatever the scene set inline.
+	var entry: Dictionary = _persona_cache[npc_name]
+	# Persona takes precedence from JSON unless the scene already set
+	# a non-empty one (allowing per-instance overrides for testing).
+	if persona == "" and entry.has("persona"):
+		persona = str(entry["persona"])
+	# Fallback dialogue lines: replace the scene's static list with the
+	# JSON-authored set. These are also what DynamicConversation hands
+	# to LLMService as the deterministic fallback when the null backend
+	# is in use (web build / LLM disabled), so they need to read as
+	# in-character first-line dialogue, not stage directions.
+	if entry.has("fallbacks"):
+		var fb_raw: Variant = entry["fallbacks"]
+		if fb_raw is Array:
+			var typed_lines: Array = []
+			for line in (fb_raw as Array):
+				typed_lines.append(str(line))
+			if typed_lines.size() > 0:
+				dialogue_lines = typed_lines
+	# Wave F R3 fix — capture authored openings; passed to DynamicConversation
+	# via setup() so the LLM-off opening turn uses richer per-character voice.
+	if entry.has("openings"):
+		var op_raw: Variant = entry["openings"]
+		if op_raw is Array:
+			var typed_openings: Array = []
+			for line in (op_raw as Array):
+				typed_openings.append(str(line))
+			_persona_openings = typed_openings
+
+
+static func _load_persona_cache() -> void:
+	_persona_cache_loaded = true  # Set first so a malformed file doesn't retry every NPC.
+	if not FileAccess.file_exists(PERSONA_DATA_PATH):
+		push_warning("[OverworldNPC] persona data missing: %s" % PERSONA_DATA_PATH)
+		return
+	var f := FileAccess.open(PERSONA_DATA_PATH, FileAccess.READ)
+	if f == null:
+		push_warning("[OverworldNPC] could not open persona data: %s" % PERSONA_DATA_PATH)
+		return
+	var text: String = f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		push_warning("[OverworldNPC] persona JSON did not parse to Dictionary")
+		return
+	# Only keep keys that look like NPC entries (have a "persona" subkey).
+	for key in (parsed as Dictionary).keys():
+		var v: Variant = (parsed as Dictionary)[key]
+		if v is Dictionary and (v as Dictionary).has("persona"):
+			_persona_cache[str(key)] = v
 
 
 func _process(delta: float) -> void:
@@ -731,9 +823,12 @@ func _start_dialogue() -> void:
 	if npc_type == "dancer":
 		start_dancing()
 
-	# ── LLM-driven path: use DynamicConversation when LLMService is available. ──
-	# Falls back to the static dialogue_lines path below when LLM is off.
-	if _llm_conversation_available():
+	# ── LLM-driven path: use DynamicConversation when LLMService is available
+	# AND this NPC is opt-in for dynamic dialogue. Per design doc :157, only
+	# the showcase W1 NPCs (dynamic = true with authored persona) take this
+	# branch; every other NPC continues through the static dialogue_lines
+	# pipeline below.
+	if dynamic and persona != "" and _llm_conversation_available():
 		var player := _get_nearby_player()
 		await _run_dynamic_conversation(player)
 		_end_dialogue()
@@ -796,52 +891,37 @@ func _get_nearby_player() -> Node:
 
 func _llm_conversation_available() -> bool:
 	"""Returns true when LLMService is present and reporting availability."""
-	if not Engine.has_singleton("LLMService"):
-		return false
-	var svc = Engine.get_singleton("LLMService")
+	# Engine.has_singleton("LLMService") is ALWAYS FALSE for autoloads in
+	# Godot 4 — look up the autoload via the scene tree root.
+	var svc: Node = get_node_or_null("/root/LLMService")
 	return svc != null and svc.is_available()
 
 
 func _run_dynamic_conversation(player: Node) -> void:
-	"""Spin up (or reuse) a DynamicConversation and run a full LLM-driven exchange."""
+	"""Spin up (or reuse) a DynamicConversation and run a full LLM-driven exchange.
+
+	The caller (`interact()`) must gate on `dynamic and persona != ""` so this
+	path is only taken by opt-in showcase NPCs (design doc :157). The persona
+	is the authored @export string — there is no longer a npc_type → fake
+	persona table.
+	"""
 	if not _dynamic_conv or not is_instance_valid(_dynamic_conv):
 		_dynamic_conv = DynamicConversation.new()
 		_dynamic_conv.name = "DynamicConversation"
 		add_child(_dynamic_conv)
 
-	# Derive a persona blurb from npc_type so the LLM has character guidance.
-	var persona: String = _persona_for_type(npc_type)
-
-	# Resolve EventLog: try GameState singleton; fall back to null gracefully.
+	# Resolve EventLog from the GameState autoload (engine has_singleton check
+	# is ALWAYS FALSE for autoloads in Godot 4 — use scene tree root).
 	var event_log: EventLog = null
-	if Engine.has_singleton("GameState"):
-		var gs = Engine.get_singleton("GameState")
-		if gs != null and "event_log" in gs:
-			event_log = gs.event_log
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and "event_log" in gs:
+		event_log = gs.event_log
 
 	# Resolve location name from parent scene.
 	var location: String = _resolve_location_name()
 
-	_dynamic_conv.setup(npc_name, persona, location, event_log, dialogue_lines)
+	_dynamic_conv.setup(npc_name, persona, location, event_log, dialogue_lines, _persona_openings)
 	await _dynamic_conv.run(player)
-
-
-func _persona_for_type(t: String) -> String:
-	match t:
-		"elder":      return "wise elder who speaks formally and shares old lore"
-		"shopkeeper": return "cheerful merchant eager to make a sale"
-		"guard":      return "dutiful guard, terse and watchful"
-		"innkeeper":  return "warm innkeeper, welcoming and full of local gossip"
-		"scholar":    return "bookish scholar who speaks in long sentences"
-		"blacksmith": return "gruff blacksmith, speaks plainly about craft"
-		"farmer":     return "hardworking farmer, worried about the harvest"
-		"fisherman":  return "weathered fisherman with sea stories"
-		"monk":       return "serene monk who speaks in gentle parables"
-		"soldier":    return "disciplined soldier loyal to the kingdom"
-		"traveler":   return "weary traveler full of road tales"
-		"bard":       return "theatrical bard who speaks in dramatic flourishes"
-		"mysterious": return "cryptic stranger whose words carry hidden meaning"
-		_:            return "friendly villager going about their day"
 
 
 func _resolve_location_name() -> String:

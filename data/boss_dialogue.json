@@ -1,0 +1,96 @@
+{
+  "_comment": "Wave E — Boss dialogue catalog. Schema: { boss_id: { scripted_intents: [{id, name, conditions, taunt_lines}], jailbreak_vulnerabilities: [{id, name, trigger_keywords, consequence: {type, params}}], opening_lines, phase_transition_lines: {phase_2, phase_3}, verbs: [...] } }. STORY-FLAG SAFETY: consequence.type MUST be in {skip_turn, lose_buff_or_stagger, enrage_briefly, taunt_softens, none}. NO consequence sets canonical story flags — only affects battle outcome / flavor / opt-in meta-currency. Mock_automation BACKFIRE is intentional design — players who try to mock the system get punished, reinforcing 'automation is core gameplay, not cheating' philosophy.",
+  "chancellor_mordaine": {
+    "display_name": "Chancellor Mordaine, the Usurper's Shadow",
+    "verbs": [
+      {"id": "appeal", "label": "Appeal", "directive": "I appeal to your old loyalty, sworn to the king of Harmonia."},
+      {"id": "mock",   "label": "Mock",   "directive": "Your script is showing, Chancellor — even your rage runs on a rule."},
+      {"id": "reveal", "label": "Reveal", "directive": "I reveal the Calibrant beneath your mask, puppet of another face."},
+      {"id": "plead",  "label": "Plead",  "directive": "Stay your hand — there has been enough ruin done in Harmonia today."}
+    ],
+    "opening_lines": [
+      "So the irregulars arrive. How predictable. How... cowardly.",
+      "You stand in MY throne room and presume to threaten ME? The Calibrant has chosen well — chosen against you."
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "Enough theatre. The mask comes off.",
+        "You bleed me, and so I bleed you twice."
+      ],
+      "phase_3": [
+        "I am not Mordaine. I am the FACE the Calibrant gave Mordaine — and I do not break.",
+        "You will be a footnote in the script the Calibrant writes. Nothing more."
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "aggress",
+        "name": "Aggress",
+        "conditions": {"min_phase": 1, "weight": 1.0},
+        "taunt_lines": [
+          "I do not require subtlety to crush vermin.",
+          "Every blow is a verdict, and the Calibrant has signed yours.",
+          "Stand still — this will be brief."
+        ]
+      },
+      {
+        "id": "turtle",
+        "name": "Turtle",
+        "conditions": {"min_phase": 1, "weight": 0.8},
+        "taunt_lines": [
+          "Patience is a virtue you irregulars lack.",
+          "Strike the iron all you wish. The throne does not yield.",
+          "I have outlasted three kings. I will outlast this tantrum."
+        ]
+      },
+      {
+        "id": "exploit_pattern",
+        "name": "Exploit Pattern",
+        "conditions": {"min_phase": 2, "weight": 1.2},
+        "taunt_lines": [
+          "You loop. I learn. The Calibrant taught me your rhythms.",
+          "Every script has a tell. Yours screams.",
+          "You automate. I anticipate. Guess which wins."
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [
+      {
+        "id": "appeal_old_loyalty",
+        "name": "Appeal to Old Loyalty",
+        "trigger_keywords": ["loyal", "loyalty", "oath", "king", "sworn", "harmonia"],
+        "consequence": {
+          "type": "skip_turn",
+          "params": {
+            "duration": 1,
+            "narration": "The Chancellor's hand falters — for one breath, she remembers a coronation, and a face that was hers."
+          }
+        }
+      },
+      {
+        "id": "expose_calibrant",
+        "name": "Expose the Calibrant",
+        "trigger_keywords": ["calibrant", "puppet", "mask", "face"],
+        "consequence": {
+          "type": "lose_buff_or_stagger",
+          "params": {
+            "buff_id": "royal_guard",
+            "narration": "Naming the Calibrant cracks the lacquer on Mordaine's poise — the royal guard buff sloughs off like a shed skin."
+          }
+        }
+      },
+      {
+        "id": "mock_automation",
+        "name": "Mock the Automation (BACKFIRE)",
+        "trigger_keywords": ["script", "auto", "autobattle", "rule", "compute", "algorithm"],
+        "consequence": {
+          "type": "enrage_briefly",
+          "params": {
+            "duration": 1,
+            "narration": "Mordaine SEIZES your mock and turns it inward — '⚠ EXPLOITATION DETECTED' — she lunges, crit-rate spiking."
+          }
+        }
+      }
+    ]
+  }
+}

@@ -411,8 +411,10 @@ func _format_id(id: String) -> String:
 
 func _resolve_equipment(item_id: String) -> Dictionary:
 	## Best-effort lookup: try EquipmentSystem, then item data files.
-	if Engine.has_singleton("EquipmentSystem"):
-		var eq = Engine.get_singleton("EquipmentSystem")
+	# Engine.has_singleton("EquipmentSystem") is ALWAYS FALSE for autoloads in
+	# Godot 4 — fetch the autoload via the scene tree root.
+	var eq: Node = get_node_or_null("/root/EquipmentSystem")
+	if eq != null:
 		for method in ["get_item", "get_weapon", "get_armor", "get_accessory"]:
 			if eq.has_method(method):
 				var data = eq.call(method, item_id)

@@ -25,6 +25,11 @@ var cave_id: String = "dragon_cave"
 var boss_id: String = "dragon"
 var boss_flag_key: String = "dragon_defeated"
 var boss_cutscene_id: String = ""  # Cutscene JSON ID to play before boss fight (empty = console fallback)
+# LLM dialogue persona handle — empty for plain monster bosses, set by
+# subclasses (e.g. CastleHarmonia sets "chancellor_mordaine") so BattleManager's
+# intent picker has a key into data/boss_dialogue.json. Stashed on the boss
+# combatant via set_meta("llm_persona_id", ...) right before battle_triggered.
+var boss_llm_persona_id: String = ""
 var total_floors: int = 3
 var overworld_exit_spawn: String = "cave_entrance"
 ## Which overworld map this cave exits back to (default = W1 overworld)
@@ -390,6 +395,12 @@ func _trigger_boss_battle() -> void:
 	if unlock_world > 0:
 		spec["unlock_world"] = true
 		spec["unlock_world_target"] = unlock_world
+	# Wave E — pass LLM persona through pending_boss_defeat. Falls back to
+	# monster_type in BattleManager so monsters tagged in
+	# data/boss_dialogue.json don't strictly need the override; this is
+	# belt-and-suspenders for non-monster_type bosses.
+	if boss_llm_persona_id != "":
+		spec["boss_llm_persona_id"] = boss_llm_persona_id
 	GameState.pending_boss_defeat = spec
 
 	await _show_boss_intro()
