@@ -734,8 +734,40 @@ func _on_save_completed(_slot: int) -> void:
 
 
 func _on_load_completed(_slot: int) -> void:
-	"""Load completed - close menu and refresh game state"""
+	"""Load completed from the in-game Save/Load screen.
+
+	Bug fix (2026-06-14): SaveSystem.load_game(slot) (fired by SaveScreen in
+	Mode.LOAD) writes into GameState — including GameState.player_party (the
+	dict array), gold, story flags and the saved map/position — but it does
+	NOT rebuild GameLoop.party, the live Array[Combatant] that battles and
+	menus consume. The title-screen Continue, Game-Over Continue and F3
+	quick-load paths all call GameLoop._restore_party_from_save_data() after
+	load_game; the in-game menu Load path never did, so the player kept their
+	pre-load Combatants (post-mistake HP/MP/level/job/equipment) while the
+	rest of the world reflected the loaded save — a silent state desync
+	(CLAUDE.md: "silent failures are worse than crashes"). We mirror the
+	quick-load flow here without touching GameLoop: locate the GameLoop scene
+	root and ask it to rehydrate the live party (+ restart exploration so the
+	player warps to the saved position) before closing the menu.
+	"""
+	_rehydrate_party_after_load()
 	_close_menu()
+
+
+func _rehydrate_party_after_load() -> void:
+	"""Rebuild GameLoop.party from the just-loaded GameState and re-enter the
+	saved map. Mirrors GameLoop._quick_load_with_toast. Safe no-op if the
+	GameLoop root can't be reached (e.g. menu opened outside the normal loop).
+	Uses the canonical /root/GameLoop lookup (same idiom as OverworldPlayer)."""
+	var game_loop = get_node_or_null("/root/GameLoop")
+	if game_loop == null or not game_loop.has_method("_restore_party_from_save_data"):
+		return
+	# Rehydrate the live Array[Combatant] from GameState.player_party.
+	game_loop._restore_party_from_save_data()
+	# Restart exploration so the player teleports to the saved map/position,
+	# exactly as the F3 quick-load path does. Only when actually exploring.
+	if game_loop.current_state == game_loop.LoopState.EXPLORATION and game_loop.has_method("_start_exploration"):
+		game_loop._start_exploration()
 
 
 func _open_settings() -> void:

@@ -21,7 +21,11 @@ const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay
 ## 256x256 frames. If a job's character occupies less of its frame than
 ## another (e.g., fighter at 37%, cleric at 71%), that's the artist's choice
 ## and the battle scene reflects it 1:1 in scale.
-const PARTY_SPRITE_HEIGHT: float = 280.0
+## Per BDFFHD-layout design lock (2026-06-03): reduced from 280→210 to
+## accommodate the strict-5 party without crowding the screen. User may
+## revisit later if they ship larger artist sprites. Effective on-screen
+## height with SPRITE_SCALE_BUMP=1.5 is ~315px.
+const PARTY_SPRITE_HEIGHT: float = 210.0
 ## Constant factor applied to ALL party sprite scales (artist and procedural
 ## paths alike). Bumps everyone uniformly without altering intra-roster ratios.
 ## 1.5 picked as the visible-but-not-too-big sweet spot after fighter override
@@ -123,7 +127,7 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 ## Battle speed recalibrated: old 0.5x is now labeled "1x" (the comfortable default)
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const BATTLE_SPEED_LABELS: Array[String] = ["0.5x", "1x", "2x", "4x", "8x", "16x", "32x"]
-static var _battle_speed_index: int = 1  # Persists across battles (default "1x" = old 0.5x)
+static var _battle_speed_index: int = 2  # Persists across battles; default is 1x (BATTLE_SPEEDS[2]). Per user feedback 2026-06-04: new-game default must be 1.0x, was incorrectly 1 (= 0.5x).
 var _speed_indicator: RichTextLabel = null
 var _battle_counter_label: RichTextLabel = null
 
@@ -175,10 +179,13 @@ var _all_autobattle_enabled: bool = false  # True when all players are on autoba
 var _current_terrain: String = "plains"
 var _battle_background: BattleBackgroundClass = null
 
-## Mode 7 perspective floor overlay (spike — turn off via _mode7_floor_enabled = false)
+## Mode 7 perspective floor overlay. Disabled by default per BDFFHD-layout
+## design lock (2026-06-03) — user found it spatially confusing in regular
+## battles. File kept in tree for future revisit on boss arenas + phase-2
+## emphasis stack.
 const Mode7FloorClass = preload("res://src/battle/BattleMode7Floor.gd")
 var _mode7_floor: Mode7FloorClass = null
-var _mode7_floor_enabled: bool = true
+var _mode7_floor_enabled: bool = false
 
 ## Composed subsystems (extracted from BattleScene)
 var _enemy_spawner: BattleEnemySpawnerClass = null
@@ -806,15 +813,11 @@ func _create_battle_sprites() -> void:
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
-		# Tune these to align characters visually despite different art sizes within frames.
-		# Sprites shrink when the party has 5+ members so the Bard column fits the
-		# 110px-spaced Y stagger. The ratio target_height / Y_gap stays consistent
-		# with the wider formation. Procedural-fallback path (144px target) gets
-		# the same proportional shrink.
-		var _party_size: int = party_members.size()
-		var _density_scale: float = 1.0 if _party_size <= 4 else 0.75
-		var target_height = PARTY_SPRITE_HEIGHT * _density_scale
-		var proc_target_height = 144.0 * _density_scale
+		# PARTY_SPRITE_HEIGHT is the strict-5 base (210px, lowered from 280
+		# per BDFFHD layout design). No further density scaling — the base
+		# was tuned for the strict-5 layout directly.
+		var target_height = PARTY_SPRITE_HEIGHT
+		var proc_target_height = 108.0  # was 144 — proportional shrink with target_height
 
 		# Auto-scale based on frame height and per-job target
 		var _sprite_scale = 3.0
@@ -2411,6 +2414,32 @@ func _on_selection_phase_started() -> void:
 	_update_ui()
 
 
+## BDFFHD signature: the active PC sprite slides slightly toward the
+## enemies (left, since the party is anchored on the right) at the start
+## of their selection turn, then slides back into formation when the
+## turn ends. Clear who's-up signal without needing a portrait highlight
+## or arrow indicator. Per cowir-battle's design lock 2026-06-04.
+const ACTIVE_PC_STEP_OUT_OFFSET: float = -42.0
+const ACTIVE_PC_STEP_TWEEN_TIME: float = 0.18
+
+
+func _step_active_pc(combatant: Combatant, step_out: bool) -> void:
+	if combatant == null or not (combatant in BattleManager.player_party):
+		return
+	var idx: int = BattleManager.player_party.find(combatant)
+	if idx < 0 or idx >= party_sprite_nodes.size() or idx >= _party_base_positions.size():
+		return
+	var sprite = party_sprite_nodes[idx]
+	if not is_instance_valid(sprite):
+		return
+	var base: Vector2 = _party_base_positions[idx]
+	var target: Vector2 = base + Vector2(ACTIVE_PC_STEP_OUT_OFFSET, 0.0) if step_out else base
+	var tween = create_tween()
+	tween.tween_property(sprite, "position", target, ACTIVE_PC_STEP_TWEEN_TIME) \
+		.set_trans(Tween.TRANS_QUAD) \
+		.set_ease(Tween.EASE_OUT if step_out else Tween.EASE_IN)
+
+
 func _on_selection_turn_started(combatant: Combatant) -> void:
 	"""Handle selection turn start - show menu for player"""
 	_command_menu.invalidate_alive_cache()
@@ -2426,6 +2455,8 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 		if combatant.current_ap > 0:
 			_show_hint("advance", "You have %d AP! Press R to queue extra actions." % combatant.current_ap)
 			TutorialHints.show(self, "advance_defer")
+		# BDFFHD signature step-out toward the enemies — clear who's-up cue.
+		_step_active_pc(combatant, true)
 	if use_win98_menus and is_player:
 		_show_win98_command_menu(combatant)
 
@@ -2433,6 +2464,8 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 func _on_selection_turn_ended(combatant: Combatant) -> void:
 	"""Handle selection turn end"""
 	_close_win98_menu()
+	# Return the active PC to formation (no-op for enemies).
+	_step_active_pc(combatant, false)
 	_update_ui()
 
 

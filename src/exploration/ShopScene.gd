@@ -30,6 +30,13 @@ var description_panel: Control
 var description_label: Label
 var current_menu: Win98Menu = null
 
+## Last item id whose description we painted, so we only refresh the
+## description panel when the menu cursor actually moves to a new row.
+## Win98Menu emits no cursor-moved signal, so ShopScene polls the menu's
+## selected item id each frame and reacts on change (regression: panel was
+## frozen on item 0 while navigating the buy/sell list).
+var _last_described_item_id: String = ""
+
 ## Systems
 @onready var game_state = GameState
 @onready var equipment_system = EquipmentSystem
@@ -46,6 +53,22 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_ui()
 	_open_main_menu()
+
+
+func _process(_delta: float) -> void:
+	# Win98Menu emits no cursor-moved signal, so poll its selected item id and
+	# refresh the description panel when the highlighted buy/sell row changes.
+	if current_mode != ShopMode.BUY and current_mode != ShopMode.SELL:
+		return
+	if not (current_menu and is_instance_valid(current_menu)):
+		return
+	var item_id: String = current_menu.get_selected_item_id()
+	if item_id == _last_described_item_id:
+		return
+	_last_described_item_id = item_id
+	if item_id.is_empty() or item_id == "none":
+		return
+	_update_description_for_item(item_id)
 
 
 func setup(type: ShopType, name: String, inventory: Array, keeper_custom = null) -> void:
@@ -203,6 +226,9 @@ func _open_buy_menu() -> void:
 		items.append({"id": "none", "label": "(No items available)", "disabled": true})
 
 	_show_menu("Buy", items, Vector2(100, 100))
+	# Sync the poll tracker to the menu's actual first row so the description
+	# stays correct as the cursor moves (and isn't double-painted on open).
+	_last_described_item_id = current_menu.get_selected_item_id()
 	_update_description_for_item(shop_inventory[0] if shop_inventory.size() > 0 else "")
 
 
@@ -234,6 +260,9 @@ func _open_sell_menu() -> void:
 		items.append({"id": "none", "label": "(No items to sell)", "disabled": true})
 
 	_show_menu("Sell", items, Vector2(100, 100))
+	# Sync the poll tracker to the menu's actual first row so the description
+	# stays correct as the cursor moves (and isn't double-painted on open).
+	_last_described_item_id = current_menu.get_selected_item_id()
 	if sellable_items.size() > 0:
 		_update_description_for_item(sellable_items[0]["id"])
 

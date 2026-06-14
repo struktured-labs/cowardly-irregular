@@ -37,7 +37,7 @@ const CHAPTERS: Array = [
 		"world_flag": "w2_entered",
 		"objectives": [
 			{"flag": "w2_entered", "text": "Explore the suburban neighborhood"},
-			{"flag": "w2_boss_defeated", "text": "Find the portal to the Clockwork Dominion"},
+			{"flag": "w2_dungeon_cleared", "text": "Find the portal to the Clockwork Dominion"},
 		]
 	},
 	{
@@ -45,7 +45,7 @@ const CHAPTERS: Array = [
 		"world_flag": "w3_entered",
 		"objectives": [
 			{"flag": "w3_entered", "text": "Explore the steampunk city"},
-			{"flag": "w3_boss_defeated", "text": "Find the portal to the Assembly Line"},
+			{"flag": "w3_dungeon_cleared", "text": "Find the portal to the Assembly Line"},
 		]
 	},
 	{
@@ -53,7 +53,7 @@ const CHAPTERS: Array = [
 		"world_flag": "w4_entered",
 		"objectives": [
 			{"flag": "w4_entered", "text": "Navigate the industrial complex"},
-			{"flag": "w4_boss_defeated", "text": "Find the portal to the Source Layer"},
+			{"flag": "w4_dungeon_cleared", "text": "Find the portal to the Source Layer"},
 		]
 	},
 	{
@@ -61,7 +61,7 @@ const CHAPTERS: Array = [
 		"world_flag": "w5_entered",
 		"objectives": [
 			{"flag": "w5_entered", "text": "Explore the digital realm"},
-			{"flag": "w5_boss_defeated", "text": "Find the portal to the Remainder"},
+			{"flag": "w5_dungeon_cleared", "text": "Find the portal to the Remainder"},
 		]
 	},
 	{

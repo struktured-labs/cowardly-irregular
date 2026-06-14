@@ -22,6 +22,7 @@ var _selected: int = 0
 var _row_nodes: Array = []
 
 var _list_container: VBoxContainer = null
+var _scroll: ScrollContainer = null
 var _detail_name: Label = null
 var _detail_epithet: Label = null
 var _detail_level: Label = null
@@ -43,6 +44,9 @@ func _ready() -> void:
 	_entries = BestiarySystem.get_seen_entries_sorted()
 	_build_ui()
 	_refresh_detail()
+	# Sizes aren't valid during _build_ui, so defer the first scroll-to-selected
+	# until after layout settles to avoid scrolling against zero-size rows.
+	call_deferred("_scroll_to_selected")
 
 
 func _build_ui() -> void:
@@ -83,16 +87,16 @@ func _build_ui() -> void:
 	var list_panel := _make_panel(Vector2(24, 64), Vector2(viewport.x * 0.35, viewport.y - 112))
 	add_child(list_panel)
 
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(12, 12)
-	scroll.size = list_panel.size - Vector2(24, 24)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	list_panel.add_child(scroll)
+	_scroll = ScrollContainer.new()
+	_scroll.position = Vector2(12, 12)
+	_scroll.size = list_panel.size - Vector2(24, 24)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list_panel.add_child(_scroll)
 
 	_list_container = VBoxContainer.new()
 	_list_container.size_flags_horizontal = SIZE_EXPAND_FILL
 	_list_container.add_theme_constant_override("separation", 2)
-	scroll.add_child(_list_container)
+	_scroll.add_child(_list_container)
 
 	_populate_list()
 
@@ -199,6 +203,18 @@ func _highlight_row() -> void:
 		else:
 			row.add_theme_color_override("font_color", TEXT_COLOR)
 			row.text = "  Lv %d  %s" % [entry.level, entry.name]
+
+
+func _scroll_to_selected() -> void:
+	# Keep the highlighted row inside the visible window so keyboard/gamepad
+	# navigation doesn't lose track of the selection as it scrolls off-screen.
+	if _scroll == null:
+		return
+	if _selected < 0 or _selected >= _row_nodes.size():
+		return
+	if not is_instance_valid(_row_nodes[_selected]):
+		return
+	_scroll.ensure_control_visible(_row_nodes[_selected])
 
 
 func _build_detail(parent: Control) -> void:
@@ -421,14 +437,16 @@ func _input(event: InputEvent) -> void:
 			_close()
 			get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
 		_highlight_row()
+		_scroll_to_selected()
 		_refresh_detail()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		_selected = (_selected + 1) % _row_nodes.size()
 		_highlight_row()
+		_scroll_to_selected()
 		_refresh_detail()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
@@ -439,11 +457,13 @@ func _input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
 			_highlight_row()
+			_scroll_to_selected()
 			_refresh_detail()
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_selected = (_selected + 1) % _row_nodes.size()
 			_highlight_row()
+			_scroll_to_selected()
 			_refresh_detail()
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
@@ -458,6 +478,7 @@ func _on_row_hover(idx: int) -> void:
 		return
 	_selected = idx
 	_highlight_row()
+	_scroll_to_selected()
 	_refresh_detail()
 	if SoundManager:
 		SoundManager.play_ui("menu_move")
@@ -474,6 +495,7 @@ func _on_row_click(idx: int) -> void:
 	else:
 		_selected = idx
 		_highlight_row()
+		_scroll_to_selected()
 		_refresh_detail()
 
 

@@ -14,6 +14,11 @@ signal load_failed(reason: String)
 const SAVE_DIR = "user://saves/"
 const MAX_SAVE_SLOTS = 3
 const QUICK_SAVE_SLOT = 99  # Special slot for quick save
+# Dedicated auto-save slot — kept OUT of the user slot range
+# (0..MAX_SAVE_SLOTS-1) so the periodic / zone-transition auto-save never
+# overwrites a manual save. (Bug fix: auto_save() used to write slot 0, which
+# SaveScreen presents as "Slot 1", silently clobbering the player's manual save.)
+const AUTO_SAVE_SLOT = 98
 
 ## Save data
 var current_save_slot: int = -1
@@ -116,12 +121,18 @@ func quick_save() -> bool:
 
 
 func auto_save() -> bool:
-	"""Auto-save (uses slot 0 by default)"""
+	"""Auto-save to the dedicated AUTO_SAVE_SLOT.
+
+	Writes to AUTO_SAVE_SLOT (NOT a manual user slot). Earlier versions
+	wrote to slot 0, which SaveScreen renders as "Slot 1" — so the timed
+	/ zone-transition auto-save silently overwrote whatever the player had
+	manually saved there. Routing to the reserved slot keeps manual saves
+	(0..MAX_SAVE_SLOTS-1) untouched."""
 	if not can_quick_save():
 		return false
 
 	print("Auto-saving...")
-	return save_game(0)
+	return save_game(AUTO_SAVE_SLOT)
 
 
 func can_quick_save() -> bool:
@@ -195,6 +206,8 @@ func has_save() -> bool:
 			return true
 	if save_exists(QUICK_SAVE_SLOT):
 		return true
+	if save_exists(AUTO_SAVE_SLOT):
+		return true
 	return false
 
 
@@ -214,7 +227,16 @@ func get_most_recent_slot() -> int:
 	if not qs_info.is_empty():
 		var qs_time = qs_info.get("save_time", 0.0)
 		if qs_time > best_time:
+			best_time = qs_time
 			best_slot = QUICK_SAVE_SLOT
+	# Also check the dedicated auto-save slot — a fresh launch's "Continue"
+	# should be able to resume from the latest auto-save too.
+	var as_info = get_save_info(AUTO_SAVE_SLOT)
+	if not as_info.is_empty():
+		var as_time = as_info.get("save_time", 0.0)
+		if as_time > best_time:
+			best_time = as_time
+			best_slot = AUTO_SAVE_SLOT
 	return best_slot
 
 
@@ -601,7 +623,7 @@ func save_settings() -> void:
 	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
 	var settings = {
 		"version": 2,
-		"battle_speed_index": BattleSceneScript._battle_speed_index if BattleSceneScript else 1,
+		"battle_speed_index": BattleSceneScript._battle_speed_index if BattleSceneScript else 2,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"master_volume": AudioServer.get_bus_volume_db(0),
 	}

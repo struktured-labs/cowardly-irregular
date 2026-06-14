@@ -45,6 +45,10 @@ var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible
 ## UI State
 var selected_index: int = 0
 var _settings_items: Array = []
+## ScrollContainer holding the setting rows; navigation auto-scrolls it so the
+## selected row stays visible (mirrors TeleportMenu.gd scroll-follow). Without
+## this, the bottom action rows are unreachable and the cursor goes off-screen.
+var _scroll: ScrollContainer = null
 var _controls_submenu_open: bool = false
 var _jukebox_submenu_open: bool = false
 var _boss_submenu_open: bool = false
@@ -192,12 +196,14 @@ func _build_ui() -> void:
 
 	# ── ScrollContainer ──────────────────────────────────────────────────
 	# Occupies the space between title and footer; vertical scroll only.
+	# Cached on _scroll so _update_selection can auto-scroll to the selected row.
 	var scroll = ScrollContainer.new()
 	scroll.position = Vector2(0, TITLE_H)
 	scroll.size = Vector2(panel.size.x, panel.size.y - TITLE_H - FOOTER_H)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.add_child(scroll)
+	_scroll = scroll
 
 	# Inner VBoxContainer — rows stack top-to-bottom, no manual y positions.
 	var vbox = VBoxContainer.new()
@@ -325,21 +331,24 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(llm_item, llm_idx, 400, 60,
 		_on_setting_click.bind(llm_idx), _on_setting_hover.bind(llm_idx))
 
-	# Debug-only: Unlock All Party toggle — bypasses every PC's autobattle_locked
+	# Debug: Unlock All Party toggle — bypasses every PC's autobattle_locked
 	# spotlight gate. Honored at BattleManager / BattleCommandMenu / UI gates,
 	# not by mutating Combatant state, so flips here take effect immediately.
-	if debug_log_enabled:
-		var debug_unlock_idx: int = _settings_items.size()
-		var debug_unlock_item = _create_toggle_setting(
-			"Debug: Unlock All Party",
-			"Bypass spotlight gates — every PC is player-controlled",
-			debug_all_pcs_unlocked,
-			debug_unlock_idx
-		)
-		vbox.add_child(debug_unlock_item)
-		_settings_items.append({"control": debug_unlock_item, "type": "toggle", "id": "debug_all_pcs_unlocked"})
-		MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
-			_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
+	# Always visible (was gated behind debug_log_enabled but users couldn't
+	# find it; user feedback 2026-06-04 "couldn't find settings/debug menu
+	# where to unlock entire party"). The Jukebox / Fight Boss / Debug Teleport
+	# actions below remain debug-gated.
+	var debug_unlock_idx: int = _settings_items.size()
+	var debug_unlock_item = _create_toggle_setting(
+		"Debug: Unlock All Party",
+		"Bypass spotlight gates — every PC is player-controlled",
+		debug_all_pcs_unlocked,
+		debug_unlock_idx
+	)
+	vbox.add_child(debug_unlock_item)
+	_settings_items.append({"control": debug_unlock_item, "type": "toggle", "id": "debug_all_pcs_unlocked"})
+	MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
+		_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
 
 	# ── Action buttons ───────────────────────────────────────────────────
 	# Stacked in their own VBoxContainer inside the scroll area so any
@@ -744,12 +753,26 @@ func _update_toggle_display(index: int, is_on: bool) -> void:
 
 
 func _update_selection() -> void:
-	"""Update visual selection state"""
+	"""Update visual selection state and keep the selected row scrolled into view.
+
+	The ScrollContainer clips content but does NOT follow keyboard/gamepad
+	selection on its own — so without the scroll-follow below the bottom rows
+	(Debug Unlock / Controls / Jukebox / Fight Boss / Debug Teleport / Quit)
+	scroll out of view and the cursor disappears. We mirror TeleportMenu's
+	scroll-follow, using ensure_control_visible() since the VBox rows have
+	variable heights (no fixed ROW_HEIGHT to do scroll math against)."""
+	var selected_control: Control = null
 	for i in range(_settings_items.size()):
 		var item = _settings_items[i]
-		var highlight = item["control"].get_node_or_null("Highlight")
+		var control: Control = item["control"]
+		var highlight = control.get_node_or_null("Highlight")
 		if highlight:
 			highlight.color = SELECTED_COLOR if i == selected_index else Color.TRANSPARENT
+		if i == selected_index:
+			selected_control = control
+	# Auto-scroll so the selected row stays inside the viewport.
+	if _scroll and is_instance_valid(_scroll) and selected_control:
+		_scroll.ensure_control_visible(selected_control)
 
 
 func _update_option_display(index: int, option_index: int) -> void:

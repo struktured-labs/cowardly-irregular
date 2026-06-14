@@ -261,9 +261,44 @@ func use_item(user: Combatant, item_id: String, targets: Array[Combatant]) -> bo
 			continue
 		_apply_item_effects(user, target, item)
 
+	# Non-target-bound effects — applied once, not per-target.
+	_apply_global_item_effects(item)
+
 	item_used.emit(user, item_id, targets)
 	print("%s used %s" % [user.combatant_name, item["name"]])
 	return true
+
+
+func _apply_global_item_effects(item: Dictionary) -> void:
+	"""Apply item effects that act on world/battle state rather than a Combatant.
+
+	These keys are NOT per-target: applying them inside the per-target loop
+	would multiply the effect by the target count. Handled here exactly once.
+
+	Caller-handled keys (escape_battle, save_point_only) are intentionally NOT
+	resolved here — ItemSystem has no battle/menu reference — but they ARE
+	recognized so the silent-consume class of bug is caught by the handler
+	coverage regression test:
+	  - escape_battle: gated by the battle caller (BattleManager._execute_item)
+	    before removing the item; non-battle use is a no-op.
+	  - save_point_only: gated by the menu use site, which must refuse use when
+	    the party is not at a save point.
+	  - all_party: redundant with target_type ALL_ALLIES (callers already expand
+	    targets to the whole party); no action needed here.
+	"""
+	var effects = item.get("effects", {})
+	if typeof(effects) != TYPE_DICTIONARY:
+		return
+
+	# Repel — suppress overworld encounters for N steps via EncounterSystem.
+	# Use a /root/ lookup (NOT Engine.has_singleton, which never sees autoloads).
+	if effects.has("repel_steps"):
+		var encounter_system = get_node_or_null("/root/EncounterSystem")
+		if encounter_system and encounter_system.has_method("use_repel"):
+			encounter_system.use_repel(int(effects["repel_steps"]))
+			print("  → Repel active for %d steps" % int(effects["repel_steps"]))
+		else:
+			push_warning("ItemSystem: repel_steps used but EncounterSystem unavailable")
 
 
 func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -> void:
@@ -338,10 +373,24 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		print("  → %s cured of all status effects" % target.combatant_name)
 
 	# Add buff
+	# Buff consumables (power_drink/speed_tonic/defense_tonic/magic_tonic) carry
+	# {type: attack_up/speed_up/defense_up/magic_up, power: 1.5, duration: 3}.
+	# Pre-fix this called add_status(buff["type"]) which only appended an inert
+	# status string — get_buffed_stat reads ONLY active_buffs, so the item was
+	# consumed for zero stat benefit. We must call add_buff() to create a real
+	# entry. Use the JSON key `power` (NOT `modifier`) and a distinct per-type
+	# effect name so add_buff's same-effect refresh logic doesn't collide an
+	# attack buff with a defense buff.
 	if effects.has("add_buff"):
 		var buff = effects["add_buff"]
-		target.add_status(buff["type"])
-		print("  → %s gained %s" % [target.combatant_name, buff["type"]])
+		var _buff_stat_map = {"attack_up": "attack", "speed_up": "speed", "defense_up": "defense", "magic_up": "magic"}
+		var _buff_type = str(buff.get("type", "attack_up"))
+		var _stat = _buff_stat_map.get(_buff_type, "attack")
+		var _effect_name = _buff_type.capitalize()  # human-readable effect label for active_buffs
+		var _power = float(buff.get("power", 1.5))
+		var _duration = int(buff.get("duration", 3))
+		target.add_buff(_effect_name, _stat, _power, _duration)
+		print("  → %s gained %s (%.1fx %s for %d turns)" % [target.combatant_name, _buff_type, _power, _stat, _duration])
 
 	# Damage
 	if effects.has("damage"):
@@ -382,6 +431,35 @@ func _is_target_undead(target) -> bool:
 		return false
 	var data: Dictionary = BestiarySystem.get_monster_data(monster_id)
 	return bool(data.get("undead", false))
+
+
+## Effect keys that _apply_item_effects / _apply_global_item_effects act on
+## directly within ItemSystem. `element` and `bonus_vs_undead` are modifiers
+## read by the `damage` branch (not standalone effects).
+const _LOCALLY_HANDLED_EFFECT_KEYS := [
+	"revive", "heal_hp", "heal_hp_percent", "heal_mp", "heal_mp_percent",
+	"cure_status", "cure_all_status", "add_buff", "damage", "element",
+	"bonus_vs_undead", "repel_steps",
+]
+
+## Effect keys ItemSystem deliberately does NOT resolve itself because they
+## require a battle/menu context the system has no reference to. They are
+## recognized (not silently consumed) and routed to a documented caller:
+##   escape_battle  -> BattleManager._execute_item gates escape before consume
+##   save_point_only -> menu use site refuses use when not at a save point
+##   all_party       -> redundant with target_type ALL_ALLIES (caller expands)
+const _CALLER_HANDLED_EFFECT_KEYS := [
+	"escape_battle", "save_point_only", "all_party",
+]
+
+
+func is_effect_key_handled(key: String) -> bool:
+	"""True if `key` is handled by ItemSystem or routed to a documented caller.
+
+	Used by the handler-coverage regression test to catch the silent-consume
+	class of bug: a new effect key in items.json with no handler anywhere.
+	"""
+	return key in _LOCALLY_HANDLED_EFFECT_KEYS or key in _CALLER_HANDLED_EFFECT_KEYS
 
 
 func get_item(item_id: String) -> Dictionary:

@@ -771,7 +771,13 @@ func _get_objective_position() -> Vector2:
 	if gs:
 		if gs.get_story_flag("rat_king_defeated") or gs.get_story_flag("w1_boss_defeated"):
 			return spawn_points.get("steampunk_portal", Vector2.ZERO)
-		if gs.get_story_flag("chapter1_complete"):
+		# chapter1_complete is only ever written to game_constants as
+		# "cutscene_flag_chapter1_complete" (by GameLoop on cutscene finish),
+		# never to story_flags. Check both namespaces — same dual-namespace
+		# guard QuestTracker.gd already uses — so the cave marker appears
+		# right after the Elder Theron / chapter1 cutscene, not only after
+		# the cave is already cleared (rat_king_defeated / w1_boss_defeated).
+		if gs.get_story_flag("chapter1_complete") or gs.game_constants.get("cutscene_flag_chapter1_complete", false):
 			return spawn_points.get("cave_entrance", Vector2.ZERO)
 	return spawn_points.get("village_entrance", Vector2.ZERO)
 

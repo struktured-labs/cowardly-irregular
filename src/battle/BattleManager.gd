@@ -784,6 +784,13 @@ func go_back_to_previous_player() -> void:
 	print("%s's natural AP gain reverted (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
 
 	# Find a previous player who can actually act (not in AP debt)
+	# Snapshot selection_index so we can restore it if no eligible previous
+	# player is found — the backward-scan loop below decrements it (and
+	# `continue`s past non-players / AP-debt entries) without restoring it,
+	# which would otherwise leave selection_index misaligned from the still-
+	# current original combatant and re-process earlier PCs (double AP /
+	# duplicate action) when the round resumes. (Bug 2026-06-04.)
+	var saved_index := selection_index
 	var found_player = false
 	while selection_index > 0:
 		selection_index -= 1
@@ -815,6 +822,18 @@ func go_back_to_previous_player() -> void:
 		print("Cannot go back - no previous player available")
 		# Restore current player's AP since we couldn't go back
 		current_combatant.gain_ap(1)
+		# Restore selection_index so it stays aligned with the still-current
+		# original combatant. The backward-scan loop decremented it (often to
+		# 0) while skipping non-players / AP-debt entries; without this the
+		# round would resume from the wrong (earlier) position and re-process
+		# combatants who already selected (double AP / duplicate action).
+		selection_index = saved_index
+		# Re-emit the turn signal so the command menu re-opens. Without this,
+		# the caller in BattleCommandMenu._on_win98_go_back_requested has
+		# already force-closed the menu, leaving the game in PLAYER_SELECTING
+		# state with no input surface — player is stuck unless they toggle
+		# autobattle on. (Bug 2026-06-04: user reported "stuck after B".)
+		selection_turn_started.emit(current_combatant)
 		return
 
 	# Re-emit the selection turn started signal (menu will be shown again)
@@ -1694,7 +1713,7 @@ func _execute_next_action() -> void:
 					await get_tree().process_frame
 				else:
 					var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-					await get_tree().create_timer(0.2 / speed_scale).timeout
+					await get_tree().create_timer(0.1 / speed_scale).timeout
 				if not is_instance_valid(self):
 					return
 				_execute_next_action()
@@ -1757,12 +1776,15 @@ func _execute_next_action() -> void:
 	_log_player_action(combatant, action)
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
-	# Delay between actions — scale with battle speed for snappy feel
+	# Delay between actions — scale with battle speed for snappy feel.
+	# 0.1s base lets each action's animation breathe but doesn't add dead
+	# air after the tween finishes. Was 0.2s; user reported awkward pauses
+	# between monster attacks (2026-06-04).
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
 		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.2 / speed_scale  # 0.2s base — snappy at all speeds
+		var delay = 0.1 / speed_scale
 		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return
@@ -1861,7 +1883,7 @@ func _execute_group_action(action: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.2 / speed_scale
+		var delay = 0.1 / speed_scale
 		await get_tree().create_timer(delay).timeout
 	if not is_instance_valid(self):
 		return
@@ -2227,7 +2249,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			# (User feedback 2026-05-20: "why is there a weird pause
 			# in between turns in the battle?")
 			var speed_scale_sub = Engine.time_scale if Engine.time_scale > 0 else 1.0
-			await get_tree().create_timer(0.5 / speed_scale_sub).timeout
+			# Was 0.5s — tightened to 0.3s 2026-06-04 per user feedback that
+			# Advance-mode sub-actions had awkward pauses at 1x battle speed.
+			await get_tree().create_timer(0.3 / speed_scale_sub).timeout
 		if not is_instance_valid(self):
 			return
 
@@ -2236,7 +2260,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		var speed_scale_post = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		await get_tree().create_timer(0.5 / speed_scale_post).timeout
+		await get_tree().create_timer(0.3 / speed_scale_post).timeout
 	if not is_instance_valid(self):
 		return
 	if _check_victory_conditions():
@@ -2596,8 +2620,21 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 	# Check for equipment bonuses (could add this later)
 	var equip_bonus = 0.0
 
+	# Check for active crit_rate buffs (e.g. the jailbreak BACKFIRE
+	# "enrage_briefly" consequence stacks a "crit_rate" buff so Mordaine's
+	# next turn genuinely hits harder — see _on_boss_jailbreak_succeeded).
+	# get_buffed_stat only multiplies attack/magic/defense/speed, so the
+	# crit calc must read crit_rate buffs itself or the punishment is a
+	# silent no-op. A modifier of 1.5 contributes +0.5 (additive), which
+	# the 0.50 cap below pins to a 50% crit spike for the enraged turn.
+	var crit_buff = 0.0
+	if "active_buffs" in attacker:
+		for b in attacker.active_buffs:
+			if str(b.get("stat", "")) == "crit_rate":
+				crit_buff += (float(b.get("modifier", 1.0)) - 1.0)
+
 	# Cap at 50% crit chance
-	return min(base_crit + speed_bonus + passive_bonus + equip_bonus, 0.50)
+	return min(base_crit + speed_bonus + passive_bonus + equip_bonus + crit_buff, 0.50)
 
 
 func _get_crit_multiplier(attacker: Combatant) -> float:
@@ -2767,8 +2804,54 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("regen", duration)
 					battle_log_message.emit("[color=green]%s gains Regen![/color] (HP restore for %d turns)" % [target.combatant_name, duration])
+		"attack_down":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Weaken", "attack", stat_modifier, duration)
+		"speed_down":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Slow", "speed", stat_modifier, duration)
+		"all_stats_down":
+			# Distinct effect names per stat — add_debuff keys on the effect
+			# name and refreshes-in-place, so reusing one name would only
+			# debuff a single stat.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Despair (ATK)", "attack", stat_modifier, duration)
+					target.add_debuff("Despair (DEF)", "defense", stat_modifier, duration)
+					target.add_debuff("Despair (SPD)", "speed", stat_modifier, duration)
+					target.add_debuff("Despair (MAG)", "magic", stat_modifier, duration)
+		"buff":
+			# Generic stat buff (masterite_* family). Reads the stat field
+			# from the ability dict; defaults to attack if unspecified.
+			var buff_stat = str(ability.get("stat", "attack"))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_buff("Empower", buff_stat, stat_modifier, duration)
+		"debuff":
+			# Generic stat debuff (masterite_* family). Reads the stat field
+			# from the ability dict; defaults to attack if unspecified.
+			var debuff_stat = str(ability.get("stat", "attack"))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Sap", debuff_stat, stat_modifier, duration)
+		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block":
+			# Simple status effects — applied as a named status the rest of
+			# the battle engine can read via has_status(). Maps the data
+			# effect string directly to the status name.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status(effect, duration)
+					battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [target.combatant_name, effect])
 		_:
-			print("  → Unknown support effect: %s" % effect)
+			# Authored-but-unimplemented support effect (dispel, summon_clone,
+			# copy_last_ability, random_stat_change, adapt_resistance, etc.).
+			# These need bespoke handling — make the gap LOUD (push_warning)
+			# so it shows up in CI/test runs rather than silently no-opping.
+			# (Silent failure is the project's canonical worst failure class.)
+			print("  → Unhandled support effect: %s" % effect)
+			push_warning("BattleManager._execute_support_ability: unhandled support effect '%s' (ability '%s') applied no mechanical change" % [effect, ability.get("id", "?")])
 
 
 func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:

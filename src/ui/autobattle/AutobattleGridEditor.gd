@@ -33,6 +33,7 @@ var cursor_row: int = 0  # Current rule (row)
 var cursor_col: int = 0  # Current cell in row (conditions then actions)
 var is_editing: bool = false  # Currently editing a cell
 var _portrait_focused: bool = false  # True when cursor is on character portrait panel
+var _scroll_offset: float = 0.0  # Vertical scroll so >9 rules / off-screen rows follow the cursor
 
 ## Visual elements
 var _title_label: Label
@@ -58,6 +59,8 @@ const CONNECTOR_COLOR = Color(0.6, 0.6, 0.7)
 const CURSOR_COLOR = Color(1.0, 1.0, 0.3)
 const MAX_CONDITIONS = 3  # Max AND conditions per rule
 const MAX_ACTIONS = 4  # Max actions per rule
+const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
+const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
 
 ## Character class color schemes (matching Win98Menu exactly)
 ## Maps character_id -> job class style
@@ -170,6 +173,7 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null,
 
 	cursor_row = 0
 	cursor_col = 0
+	_scroll_offset = 0.0
 
 	# Rebuild UI and grid - defer if not in tree yet
 	if is_inside_tree():
@@ -223,8 +227,10 @@ func _build_ui() -> void:
 
 	# Grid container (shifted right to make room for stats)
 	_grid_container = Control.new()
-	_grid_container.position = Vector2(120, 50)
+	_grid_container.position = GRID_BASE_POS
 	_grid_container.size = Vector2(size.x - 136, size.y - 100)
+	# Clip scrolled-out rows so they don't bleed over the stats panel / legend strip
+	_grid_container.clip_contents = true
 	add_child(_grid_container)
 
 	# Cursor (animated highlight)
@@ -1035,11 +1041,42 @@ func _short_target(target: String) -> String:
 			return target
 
 
+func _update_scroll_offset() -> void:
+	"""Scroll the grid container vertically so the selected rule row stays on-screen.
+
+	The grid is hand-positioned into a plain (non-ScrollContainer) Control, so we
+	follow the JobMenu pattern: shift _grid_container.position.y by -_scroll_offset.
+	The animated cursor reads _grid_container.position (see _update_cursor), so both
+	rows and cursor shift together. clip_contents on the container hides the overflow.
+	"""
+	if not _grid_container or not is_instance_valid(_grid_container):
+		return
+
+	var row_stride = CELL_HEIGHT + ROW_SPACING
+	var cursor_y = cursor_row * row_stride
+	var view_h = _grid_container.size.y
+
+	# Clamp the selected row into the visible viewport.
+	if cursor_y - _scroll_offset < 0:
+		_scroll_offset = cursor_y
+	elif cursor_y + CELL_HEIGHT - _scroll_offset > view_h:
+		_scroll_offset = cursor_y + CELL_HEIGHT - view_h
+
+	# Never scroll past the top (negative offset would push row 0 down off the anchor).
+	_scroll_offset = max(0.0, _scroll_offset)
+
+	_grid_container.position.y = GRID_BASE_POS.y - _scroll_offset
+
+
 func _update_cursor() -> void:
 	"""Update cursor visual position"""
 	# Clear and redraw cursor
 	for child in _cursor.get_children():
 		child.queue_free()
+
+	# Keep the selected row in view (no-op in portrait focus mode below).
+	if not _portrait_focused:
+		_update_scroll_offset()
 
 	# Portrait focus mode - draw cursor around portrait area
 	if _portrait_focused:
@@ -1991,6 +2028,9 @@ func _add_and_condition() -> void:
 
 func _add_or_row() -> void:
 	"""Add a new OR rule row"""
+	if rules.size() >= MAX_RULES:
+		SoundManager.play_ui("menu_error")
+		return
 	var new_rule = _create_default_rule()
 	rules.insert(cursor_row + 1, new_rule)
 	cursor_row += 1
@@ -2001,6 +2041,9 @@ func _add_or_row() -> void:
 
 func _insert_row_after(row_idx: int) -> void:
 	"""Insert a new rule row after the specified row index"""
+	if rules.size() >= MAX_RULES:
+		SoundManager.play_ui("menu_error")
+		return
 	var new_rule = {
 		"conditions": [{"type": "always"}],
 		"actions": [{"type": "attack", "target": "lowest_hp_enemy"}],

@@ -25,16 +25,16 @@ const OBJECTIVES: Array = [
 	{"flag": "w1_boss_defeated", "text": "Enter the portal to the Mundane Sprawl"},
 	# W2 Suburban
 	{"flag": "w2_entered", "text": "Explore the Mundane Sprawl"},
-	{"flag": "w2_boss_defeated", "text": "Find the portal to the Clockwork Dominion"},
+	{"flag": "w2_dungeon_cleared", "text": "Find the portal to the Clockwork Dominion"},
 	# W3 Steampunk
 	{"flag": "w3_entered", "text": "Explore the Clockwork Dominion"},
-	{"flag": "w3_boss_defeated", "text": "Find the portal to the Assembly Line"},
+	{"flag": "w3_dungeon_cleared", "text": "Find the portal to the Assembly Line"},
 	# W4 Industrial
 	{"flag": "w4_entered", "text": "Explore the Assembly Line"},
-	{"flag": "w4_boss_defeated", "text": "Find the portal to the Source Layer"},
+	{"flag": "w4_dungeon_cleared", "text": "Find the portal to the Source Layer"},
 	# W5 Digital
 	{"flag": "w5_entered", "text": "Explore the Source Layer"},
-	{"flag": "w5_boss_defeated", "text": "Find the portal to the Remainder"},
+	{"flag": "w5_dungeon_cleared", "text": "Find the portal to the Remainder"},
 	# W6 Abstract
 	{"flag": "w6_entered", "text": "Reach the Vertex"},
 ]

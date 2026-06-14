@@ -279,9 +279,11 @@ func _launch_collapse_boss_battle() -> void:
 
 ## Generate enemies with adaptation scaling
 func _generate_scaled_enemies() -> Array:
-	# Pick random enemies from BattleScene.MONSTER_TYPES
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	var monster_types = BattleSceneScript.MONSTER_TYPES
+	# Pick random enemies from the spawner's MONSTER_TYPES const.
+	# BattleScene.MONSTER_TYPES is an instance property getter (not static),
+	# so it cannot be read off the GDScript Resource — read the const where it
+	# actually lives (BattleEnemySpawner, a global class with const MONSTER_TYPES).
+	var monster_types = BattleEnemySpawner.MONSTER_TYPES
 
 	var num_enemies = randi_range(2, 3)
 	var selected: Array = []

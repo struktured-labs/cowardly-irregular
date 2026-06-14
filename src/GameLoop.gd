@@ -176,12 +176,23 @@ func _connect_llm_breadcrumb() -> void:
 		llm.inference_failed.connect(_on_llm_inference_failed)
 
 
-func _on_llm_inference_failed(_mode: String, _reason: String) -> void:
+func _on_llm_inference_failed(_mode: String, reason: String) -> void:
 	"""R9 (principle #7 — silent failures are worse than crashes): the FIRST
 	time dynamic dialogue falls back in a session, surface a brief, unobtrusive,
 	in-voice notice so the player knows scripted lines are a fallback, not a bug.
 	Latched to one-shot via _llm_notice_shown so repeated failures never spam.
-	Toast auto-dismisses (~2s hold + fade); no input is stolen."""
+	Toast auto-dismisses (~2s hold + fade); no input is stolen.
+
+	Reason-aware gating: inference_failed is a BROAD telemetry signal emitted on
+	EVERY fallback — including per-response guard rejections (one refusal-pattern
+	line or one schema-invalid JSON) from a perfectly HEALTHY backend. Those are
+	NOT an outage: dynamic dialogue is available, one turn just fell back. Only
+	surface the "unavailable" breadcrumb for genuine backend-availability
+	failures; quiet otherwise (whitelist, so a future outage reason simply won't
+	toast rather than mis-toast as available)."""
+	const _AVAILABILITY_REASONS := ["no ready backend", "request failed or cancelled", "client_timeout"]
+	if reason not in _AVAILABILITY_REASONS:
+		return  # quiet: guard rejection from a working backend, not an outage
 	if _llm_notice_shown:
 		return
 	_llm_notice_shown = true
@@ -1050,6 +1061,15 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(cutscene_id, "")
 		if completion_flag != "" and GameState:
 			GameState.game_constants[completion_flag] = true
+			# Mirror into story_flags under the bare name so QuestLog
+			# (which reads via GameState.get_story_flag) sees the
+			# objective complete. Without this mirror, "Speak with
+			# Elder Theron" and other chapter-gated quest log lines
+			# stay yellow forever even when the cutscene played and
+			# set its game_constants flag. Bug user-reported 2026-06-04.
+			if completion_flag.begins_with("cutscene_flag_"):
+				var bare = completion_flag.substr("cutscene_flag_".length())
+				GameState.set_story_flag(bare)
 			print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
 			# W1 spotlight completion also unlocks the matching PC's
 			# manual control. Reconcile is idempotent so a no-op for

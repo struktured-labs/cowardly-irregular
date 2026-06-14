@@ -101,14 +101,17 @@ func test_settings_menu_has_debug_unlock_toggle() -> void:
 		"SettingsMenu._adjust_setting must dispatch the debug_all_pcs_unlocked toggle id")
 	assert_true(text.find("_save_debug_all_pcs_unlocked_setting") > -1,
 		"SettingsMenu must expose _save_debug_all_pcs_unlocked_setting helper")
-	# Gating: the toggle must live under `if debug_log_enabled:` so it stays
-	# hidden in shipping builds without the debug menu surfaced.
+	# Visibility: the Debug Unlock toggle is now ALWAYS visible (the
+	# `if debug_log_enabled:` gate was removed because users couldn't find
+	# it — feedback 2026-06-04). The Jukebox / Fight Boss / Debug Teleport
+	# *actions* stay debug-gated, but the Unlock-All-Party toggle does not.
 	var idx = text.find("Debug: Unlock All Party")
 	assert_true(idx > -1, "Settings toggle label 'Debug: Unlock All Party' must be present")
-	# Walk backwards from the label to find the nearest `if` block.
+	# Walk backwards from the label to confirm there is NO `if debug_log_enabled`
+	# gate immediately preceding it.
 	var preceding = text.substr(max(0, idx - 200), 200)
-	assert_true(preceding.find("if debug_log_enabled") > -1,
-		"Debug Unlock toggle must be gated behind `if debug_log_enabled:`")
+	assert_true(preceding.find("if debug_log_enabled") == -1,
+		"Debug Unlock toggle must NOT be gated behind `if debug_log_enabled:` (always visible)")
 
 
 func test_tutorial_hints_has_spotlight_unlock_entry() -> void:

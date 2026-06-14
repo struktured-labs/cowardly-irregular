@@ -426,6 +426,12 @@ func setup(title: String, items: Array, pos: Vector2, character_class: String = 
 	menu_items = items
 	anchor_position = pos
 	selected_index = 0
+	# Don't open with the cursor resting on a leading disabled row (skip-disabled).
+	# Bounded scan; if every item is disabled, fall back to index 0.
+	for i in range(menu_items.size()):
+		if not menu_items[i].get("disabled", false):
+			selected_index = i
+			break
 
 	if CHARACTER_STYLES.has(character_class):
 		style = CHARACTER_STYLES[character_class]
@@ -1173,6 +1179,25 @@ func _update_ap_label() -> void:
 		_ap_label.add_theme_color_override("font_color", color)
 
 
+func _step_selection(delta: int) -> void:
+	"""Move selection by delta, skipping disabled rows (wraps around).
+
+	Mirrors TitleScreen._move_selection skip-disabled behavior so the cursor
+	never rests on an unselectable row (where A would do nothing, reading as a
+	'stuck' cursor). If every item is disabled, selection is left unchanged.
+	"""
+	var n := menu_items.size()
+	if n == 0:
+		return
+	var idx := selected_index
+	for _i in range(n):
+		idx = (idx + delta + n) % n
+		if not menu_items[idx].get("disabled", false):
+			selected_index = idx
+			return
+	# all items disabled: leave selected_index unchanged
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for menu navigation"""
 	# Wait for input delay to prevent accidental selection
@@ -1225,13 +1250,13 @@ func _input(event: InputEvent) -> void:
 	# Unified navigation via input actions (covers both keyboard and gamepad)
 	# Note: Check echo to prevent rapid-fire when holding d-pad
 	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_index = (selected_index - 1) if selected_index > 0 else menu_items.size() - 1
+		_step_selection(-1)
 		_play_move_sound()
 		_update_selection()
 		_auto_expand_submenu()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_index = (selected_index + 1) % menu_items.size()
+		_step_selection(1)
 		_play_move_sound()
 		_update_selection()
 		_auto_expand_submenu()

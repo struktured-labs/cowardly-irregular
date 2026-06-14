@@ -171,18 +171,39 @@ func test_status_box_height_shrinks_for_5pc_party() -> void:
 		"HP bar must not hardcode 22 — should use hp_bar_h")
 
 
-func test_sprite_target_height_shrinks_for_5pc() -> void:
-	# Pre-fix: target_height was unconditional PARTY_SPRITE_HEIGHT (280px ×
-	# SPRITE_SCALE_BUMP 1.5 = 420px effective). With the new 5-PC Y stagger
-	# at 75px gaps (vs 100px for 4-PC), 420px sprites overlapped beyond the
-	# screen and the Bard column ran past the panel edge.
-	# Pin: sprite_scale must apply a density_scale factor (0.75 for 5-PC,
-	# 1.0 for 4-PC) so the target_height / Y_gap ratio stays consistent.
+func test_party_sprite_height_set_for_5pc() -> void:
+	# Per BDFFHD layout design lock (2026-06-03), PARTY_SPRITE_HEIGHT was
+	# lowered from 280 to 210 so the strict-5 party fits without crowding.
+	# Earlier transitional fix used a runtime density_scale conditional;
+	# the design call replaced that with a lower base constant.
+	# Pin: the base constant must be in the user's target band (200-220
+	# per cowir-battle msg). Catches anyone reverting to the 280 era.
 	var text = _read(BATTLE_SCENE_PATH)
-	assert_true(text.find("_density_scale") > -1,
-		"BattleScene sprite scaling must derive a _density_scale factor for 5-PC")
-	assert_true(text.find("if _party_size <= 4 else 0.75") > -1,
-		"_density_scale must drop to 0.75 when party_size > 4")
+	var idx = text.find("const PARTY_SPRITE_HEIGHT: float =")
+	assert_gt(idx, -1, "PARTY_SPRITE_HEIGHT must be declared")
+	var line_end = text.find("\n", idx)
+	var line = text.substr(idx, line_end - idx)
+	# Extract number after `=`. Take the substring after '=', strip
+	# surrounding whitespace, split on whitespace and read the first token.
+	# NOTE: do NOT rstrip(".0") here — String.rstrip strips the *set* of
+	# chars '.' and '0' from the end, turning "210.0" into "21" (the bug
+	# this test previously masked). "210.0".to_float() == 210.0 directly.
+	var val_str = line.substr(line.find("=") + 1).strip_edges()
+	var val = val_str.split(" ")[0].to_float()
+	assert_gte(val, 200.0, "PARTY_SPRITE_HEIGHT must be >= 200 (BDFFHD layout target); got: %f" % val)
+	assert_lte(val, 220.0, "PARTY_SPRITE_HEIGHT must be <= 220 (BDFFHD layout target); got: %f" % val)
+
+
+func test_mode7_floor_disabled_by_default() -> void:
+	# BDFFHD layout design lock disabled the Mode 7 floor for regular
+	# battles. File kept in tree for future boss-arena revisit.
+	# Pin: the default `_mode7_floor_enabled` must be false.
+	var text = _read(BATTLE_SCENE_PATH)
+	# The exact line is `var _mode7_floor_enabled: bool = false`.
+	assert_true(text.find("var _mode7_floor_enabled: bool = false") > -1,
+		"_mode7_floor_enabled must default to false per BDFFHD layout lock")
+	assert_eq(text.find("var _mode7_floor_enabled: bool = true"), -1,
+		"_mode7_floor_enabled must NOT default to true (BDFFHD-layout regression guard)")
 
 
 func test_character_creation_screen_tabs_dynamic() -> void:

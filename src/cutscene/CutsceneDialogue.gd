@@ -714,6 +714,12 @@ func _input(event: InputEvent) -> void:
 		if event.is_action_pressed("ui_accept") and not event.is_echo():
 			get_viewport().set_input_as_handled()
 			return
+		# Also swallow ui_cancel (B / Esc) so the player can't skip the queue
+		# out from under an in-flight LLM response — the thinking guard must
+		# block fast-exit just as it blocks advance.
+		if event.is_action_pressed("ui_cancel") and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			get_viewport().set_input_as_handled()
 			return
@@ -723,6 +729,16 @@ func _input(event: InputEvent) -> void:
 	# multiple lines per held key, also spamming the menu_select cue).
 	if event.is_action_pressed("ui_accept") and not event.is_echo():
 		_advance_dialogue()
+		get_viewport().set_input_as_handled()
+		return
+
+	# ui_cancel (B / Esc): skip the rest of the dialogue queue. For story
+	# cutscenes CutsceneDirector renders a hold-B-to-skip pill — for plain
+	# NPC dialogue (no Director) this is the only way to fast-exit.
+	# Bug user-reported 2026-06-04: "can't skip Elder Theron dialogue."
+	# (Guarded above while the LLM "thinking" indicator is active.)
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
+		_finish_dialogue()
 		get_viewport().set_input_as_handled()
 		return
 

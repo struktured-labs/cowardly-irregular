@@ -8,6 +8,11 @@ extends GutTest
 const QUEST_LOG_PATH := "res://src/ui/QuestLog.gd"
 
 # Story flags we touch so we can restore state cleanly between tests.
+# These are the EXACT flags QuestLog.CHAPTERS objectives gate on. The W2-W5
+# portal objectives now read the REAL written flags (w2_dungeon_cleared ..
+# w5_dungeon_cleared, set by SuburbanUnderground / SteampunkMechanism /
+# AssemblyCore / RootProcess on dungeon clear), NOT the old phantom
+# w2_boss_defeated .. w5_boss_defeated flags that were never written.
 const _TOUCHED_FLAGS := [
 	"prologue_complete",
 	"chapter1_complete",
@@ -16,13 +21,13 @@ const _TOUCHED_FLAGS := [
 	"rat_king_defeated",
 	"w1_boss_defeated",
 	"w2_entered",
-	"w2_boss_defeated",
+	"w2_dungeon_cleared",
 	"w3_entered",
-	"w3_boss_defeated",
+	"w3_dungeon_cleared",
 	"w4_entered",
-	"w4_boss_defeated",
+	"w4_dungeon_cleared",
 	"w5_entered",
-	"w5_boss_defeated",
+	"w5_dungeon_cleared",
 	"w6_entered",
 ]
 
@@ -99,7 +104,7 @@ func test_next_banner_jumps_into_unlocked_chapter() -> void:
 	if banner:
 		# Ch2's first objective is "Explore the suburban neighborhood" but its
 		# flag (w2_entered) is already set, so the next incomplete one is
-		# "Find the portal to the Clockwork Dominion" (w2_boss_defeated).
+		# "Find the portal to the Clockwork Dominion" (w2_dungeon_cleared).
 		assert_true(banner.text.find("Clockwork Dominion") > -1,
 			"Banner must skip already-complete Ch2 objectives, got: '%s'" % banner.text)
 

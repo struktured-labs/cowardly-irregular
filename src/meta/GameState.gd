@@ -309,6 +309,28 @@ func unlock_time_mage_features() -> void:
 	print("Time Mage features unlocked!")
 
 
+func record_history_checkpoint(force: bool = false) -> bool:
+	"""Snapshot current state into save_history for Time Mage rewind.
+
+	Bug fix (2026-06-14): save_history was dead — _add_to_history (the only
+	function that appends to the ring buffer) had ZERO callers anywhere in
+	src/, so save_history stayed empty forever and rewind_to_previous_save()
+	always tripped the 'No previous save state' guard. The Time Mage
+	'time_rewind' ability (abilities.json 'rewind' → meta_effect 'time_rewind'
+	→ BattleManager → GameState.rewind_to_previous_save) was therefore
+	permanently non-functional.
+
+	Public checkpoint hook: callers (SaveSystem on save success, BattleManager
+	at battle start) invoke this to feed the history. Gated on rewind_enabled
+	so we don't pay the deep-duplicate cost before the Time Mage unlock; pass
+	force=true to snapshot regardless (used by tests / explicit quicksave).
+	Returns true if a checkpoint was actually recorded."""
+	if not force and not meta_features.get("rewind_enabled", false):
+		return false
+	_add_to_history(_create_save_data())
+	return true
+
+
 func _add_to_history(save_data: Dictionary) -> void:
 	"""Add save state to history for rewind"""
 	save_history.append(save_data.duplicate(true))

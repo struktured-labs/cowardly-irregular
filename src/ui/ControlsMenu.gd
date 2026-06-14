@@ -284,6 +284,7 @@ func _build_capture_overlay() -> void:
 	box.color = PANEL_COLOR
 	box.position = Vector2(size.x * 0.25, size.y * 0.35)
 	box.size = Vector2(size.x * 0.5, size.y * 0.3)
+	box.name = "CaptureBox"
 	_capture_overlay.add_child(box)
 
 	RetroPanel.add_border(box, box.size, BORDER_LIGHT, BORDER_SHADOW)
@@ -492,7 +493,7 @@ func _process(delta: float) -> void:
 	if _capturing:
 		_capture_timer -= delta
 		# Update timer display
-		var timer_label = _capture_overlay.get_node_or_null("*/TimerLabel")
+		var timer_label = _capture_overlay.get_node_or_null("CaptureBox/TimerLabel")
 		if timer_label:
 			timer_label.text = "%.1fs" % max(0, _capture_timer)
 		if _capture_timer <= 0:
@@ -591,7 +592,7 @@ func _start_capture(action: String) -> void:
 	_capture_action = action
 	_capture_timer = CAPTURE_TIMEOUT
 	_capture_overlay.visible = true
-	var prompt = _capture_overlay.get_node_or_null("*/CapturePrompt")
+	var prompt = _capture_overlay.get_node_or_null("CaptureBox/CapturePrompt")
 	if prompt:
 		var label = InputProfileManager.ACTION_LABELS.get(action, action)
 		prompt.text = "Remap '%s' — press a button..." % label

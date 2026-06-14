@@ -401,9 +401,13 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	var item_height = 60
 	var max_visible = int((panel_size.y - 50) / item_height)
 
-	for i in range(min(items.size(), max_visible)):
-		var item_id = items[i]
-		var item_row = _create_item_row(item_id, i)
+	# Handle scroll offset so the selection always stays in view
+	var scroll_offset = max(0, selected_item_index - max_visible + 1)
+
+	for i in range(min(items.size() - scroll_offset, max_visible)):
+		var item_idx = i + scroll_offset
+		var item_id = items[item_idx]
+		var item_row = _create_item_row(item_id, item_idx)
 		item_row.position = Vector2(4, y_offset + i * item_height)
 		item_row.size = Vector2(panel_size.x - 8, item_height - 4)
 		panel.add_child(item_row)

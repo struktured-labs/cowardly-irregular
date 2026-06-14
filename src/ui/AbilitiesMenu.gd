@@ -295,9 +295,13 @@ func _create_abilities_panel(panel_size: Vector2) -> Control:
 	var item_height = 24
 	var max_visible = int((panel_size.y - 40) / item_height)
 
-	for i in range(min(_abilities_list.size(), max_visible)):
-		var ability = _abilities_list[i]
-		var row = _create_ability_row(ability, i)
+	# Handle scroll offset so the selected row stays visible
+	var scroll_offset = clampi(selected_index - max_visible + 1, 0, max(0, _abilities_list.size() - max_visible))
+
+	for i in range(min(_abilities_list.size() - scroll_offset, max_visible)):
+		var idx = i + scroll_offset
+		var ability = _abilities_list[idx]
+		var row = _create_ability_row(ability, idx)
 		row.position = Vector2(4, y_offset + i * item_height)
 		row.size = Vector2(panel_size.x - 8, item_height)
 		panel.add_child(row)
@@ -467,9 +471,13 @@ func _create_passives_panel(panel_size: Vector2) -> Control:
 	var item_height = 28
 	var max_visible = int((panel_size.y - 40) / item_height)
 
-	for i in range(min(_passives_list.size(), max_visible)):
-		var passive = _passives_list[i]
-		var row = _create_passive_row(passive, i)
+	# Handle scroll offset so the selected row stays visible
+	var scroll_offset = clampi(selected_index - max_visible + 1, 0, max(0, _passives_list.size() - max_visible))
+
+	for i in range(min(_passives_list.size() - scroll_offset, max_visible)):
+		var idx = i + scroll_offset
+		var passive = _passives_list[idx]
+		var row = _create_passive_row(passive, idx)
 		row.position = Vector2(4, y_offset + i * item_height)
 		row.size = Vector2(panel_size.x - 8, item_height - 2)
 		panel.add_child(row)
