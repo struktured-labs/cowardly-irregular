@@ -695,11 +695,12 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			_scene._update_ui()
 		return
 
-	# Trust toggle — flip the per-PC autobattle_locked flag. The same field
-	# that gates spotlight unlocks (BattleManager turn routing, BattleCommandMenu
-	# UI suppression, AutobattleGridEditor tab visibility all key off it). One-
-	# way flip from the menu context (menu doesn't open for locked PCs). Closes
-	# the menu after flipping so the next-turn routing picks up the new state.
+	# Trust toggle — flip the per-PC autobattle_locked flag (the same field that
+	# gates spotlight unlocks, BattleManager turn routing, command-menu UI
+	# suppression, and the autobattle editor tab). The menu can show for a
+	# locked PC when Debug: Unlock All Party is on, so this MUST handle BOTH
+	# directions or the turn soft-locks (bug 2026-06-14: untrust closed the
+	# menu and left the PC mid-selection with no input surface).
 	if item_id == "trust_toggle" and item_data is Dictionary:
 		var combatant_for_trust = item_data.get("combatant", null)
 		if combatant_for_trust and "autobattle_locked" in combatant_for_trust:
@@ -707,12 +708,18 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			var new_state = "ON" if combatant_for_trust.autobattle_locked else "OFF"
 			SoundManager.play_ui("autobattle_on" if combatant_for_trust.autobattle_locked else "autobattle_off")
 			_scene.log_message("[color=cyan]%s: Trust %s[/color]" % [combatant_for_trust.combatant_name, new_state])
-			close_win98_menu()
-			# Force the current selection to proceed via AI when Trust ON
-			# was just set — caller of the menu was the in-flight selection
-			# for this combatant, so the AI eval should kick in now.
 			if combatant_for_trust.autobattle_locked:
+				# Trust ON → delegate this turn to the AI (queues an action and
+				# advances the selection order).
+				close_win98_menu()
 				BattleManager.execute_autobattle_for_current()
+			else:
+				# Trust OFF → player keeps manual control of this turn. Reopen
+				# the command menu (deferred to avoid re-entrancy with the
+				# in-flight selection callback) with the refreshed Trust label,
+				# so the turn isn't left soft-locked with no input surface.
+				close_win98_menu()
+				call_deferred("show_win98_command_menu", combatant_for_trust)
 			_scene._update_ui()
 		return
 
