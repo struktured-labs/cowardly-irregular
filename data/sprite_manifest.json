@@ -692,29 +692,29 @@
     },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
-      "frame_width": 256,
-      "frame_height": 256,
+      "frame_width": 128,
+      "frame_height": 128,
       "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
           "end": 3
         },
-        "hit": {
+        "attack": {
           "start": 4,
-          "end": 5
+          "end": 12
+        },
+        "hit": {
+          "start": 10,
+          "end": 12
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 12,
+          "end": 12
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "artist aseprite — Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
     },
     "goblin": {
       "path": "res://assets/sprites/monsters/goblin.png",
