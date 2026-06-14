@@ -87,6 +87,10 @@ var _last_player_line: String = ""   # Most-recent player choice; threaded into 
 var _npc_dialogue:   Node   = null   # NPCDialogue instance (lazy-init).
 var _choice_menu:    DialogueChoiceMenu = null
 var _active:         bool   = false
+## R2 — the player node frozen by run(), tracked so abort() can restore
+## movement even when called from outside the run() coroutine (e.g. a
+## scene-change-triggered teardown). Cleared on normal completion.
+var _player:         Node   = null
 
 ## Optional staging area used by the combined-call path: when MERGE_REPLY_AND_CHOICES
 ## is true, _do_npc_reply fetches both the reply AND the next choices in a
@@ -94,6 +98,16 @@ var _active:         bool   = false
 ## consume (so _fetch_player_choices skips the second call).
 var _pending_choices: Array[String] = []
 var _has_pending_choices: bool = false
+
+
+# ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+## R4 — keep the conversation's await loop alive even while the scene tree is
+## paused. This node awaits LLM responses and drives a child choice menu whose
+## input handling must also survive pause; PROCESS_MODE_ALWAYS covers both this
+## node's processing and (via propagation) any child left at PROCESS_MODE_INHERIT.
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -132,6 +146,7 @@ func run(player: Node) -> void:
 		return
 
 	_active = true
+	_player = player
 	_exchange_count = 0
 	_last_npc_line  = ""
 	_last_player_line = ""
@@ -159,6 +174,7 @@ func run(player: Node) -> void:
 	_set_player_movement(player, true)
 
 	_active = false
+	_player = null
 	conversation_ended.emit(_npc_name)
 
 
@@ -168,12 +184,38 @@ func is_active() -> bool:
 
 
 ## Abort a running conversation immediately (e.g. on scene change).
-## Emits conversation_ended and cleans up UI.
+##
+## R2 — full, idempotent teardown. Safe to call at ANY state (including before
+## run() ever started) and any number of times. Performs best-effort cleanup so
+## a scene-change-triggered abort can never strand the player frozen or leave
+## the thinking indicator / choice menu on screen:
+##   • state          → DONE (breaks the run() loop on its next iteration)
+##   • thinking dots   → hidden (set_thinking(false))
+##   • choice menu     → dismissed + freed (_cleanup_ui)
+##   • player movement → restored (set_can_move(true))
+##
+## NOTE: LLMService.cancel_all() is intentionally NOT called here — in-flight
+## request cancellation is wired at the scene-change site by another agent.
 func abort() -> void:
-	if not _active:
-		return
+	var was_active: bool = _active
+
+	# Always force the loop to terminate and drop the active flag, regardless
+	# of prior state, so a second abort() (or an abort before run()) is a no-op
+	# beyond re-asserting the cleaned-up state.
 	_state = State.DONE
+	_active = false
+
+	# Hide the "thinking" indicator (idempotent on the NPCDialogue).
+	_set_thinking(false)
+
+	# Dismiss + free the choice menu.
 	_cleanup_ui()
+
+	# Restore player movement so the overworld isn't left frozen. Only meaningful
+	# if we actually froze someone; guarded by is_instance_valid inside the setter.
+	if was_active and _player != null:
+		_set_player_movement(_player, true)
+	_player = null
 
 
 # ── State handlers ────────────────────────────────────────────────────────────

@@ -128,6 +128,12 @@ func dismiss() -> void:
 # ── UI construction ───────────────────────────────────────────────────────────
 
 func _ready() -> void:
+	# R4 — keep this menu's _input() handling and async resolution loop alive
+	# even while the scene tree is paused (a dialogue choice should never freeze
+	# because something else paused the game). PROCESS_MODE_ALWAYS also lets the
+	# while-loop in _wait_for_resolution keep awaiting process_frame under pause.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	# Transparent full-screen layer to capture input.
 	anchor_left   = 0.0
 	anchor_top    = 0.0

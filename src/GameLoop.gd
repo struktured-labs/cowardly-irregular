@@ -114,6 +114,11 @@ var _first_launch: bool = true  # True if no save exists
 var _title_screen: Control = null
 var _title_layer: CanvasLayer = null
 
+## R9 (inference_failed breadcrumb, principle #7): one-time latch so the FIRST
+## LLM fallback in a session surfaces a brief, in-voice notice instead of being
+## truly silent. Subsequent failures stay quiet (no toast spam).
+var _llm_notice_shown: bool = false
+
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
@@ -147,9 +152,43 @@ func _ready() -> void:
 	# Always show title screen first
 	_show_title_screen()
 
+	# R9 (inference_failed breadcrumb): connect deferred — LLMService autoloads
+	# late, so /root/LLMService may not exist yet at our _ready. Deferring runs
+	# the hookup after the current frame's autoload init settles.
+	_connect_llm_breadcrumb.call_deferred()
+
 	# Log startup
 	if DebugLogOverlay:
 		DebugLogOverlay.log("[GAME] Started")
+
+
+func _connect_llm_breadcrumb() -> void:
+	"""R9: safe-connect to LLMService.inference_failed. Guards the singleton
+	(autoload may not exist if the subsystem is stripped) AND the signal (so a
+	future LLMService refactor that renames/drops it degrades to a no-op rather
+	than a crash). Idempotent — won't double-connect on a re-entrant call."""
+	var llm := get_node_or_null("/root/LLMService")
+	if not llm:
+		return
+	if not llm.has_signal("inference_failed"):
+		return
+	if not llm.inference_failed.is_connected(_on_llm_inference_failed):
+		llm.inference_failed.connect(_on_llm_inference_failed)
+
+
+func _on_llm_inference_failed(_mode: String, _reason: String) -> void:
+	"""R9 (principle #7 — silent failures are worse than crashes): the FIRST
+	time dynamic dialogue falls back in a session, surface a brief, unobtrusive,
+	in-voice notice so the player knows scripted lines are a fallback, not a bug.
+	Latched to one-shot via _llm_notice_shown so repeated failures never spam.
+	Toast auto-dismisses (~2s hold + fade); no input is stolen."""
+	if _llm_notice_shown:
+		return
+	_llm_notice_shown = true
+	if current_state == LoopState.TITLE:
+		return  # Nothing dialogue-facing on the title screen — stay quiet there.
+	if Toast:
+		Toast.show(self, "Dynamic dialogue unavailable — falling back to scripted lines.", Toast.WARNING_COLOR)
 
 
 func _input(event: InputEvent) -> void:
@@ -2459,6 +2498,17 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	if _transition_in_progress:
 		return
 	_transition_in_progress = true
+
+	# R2 (scene-change abort): kill any in-flight NPC dialogue LLM requests so a
+	# slow inference from the OLD map can't resolve into the NEW scene (stale
+	# bubble / wrong-NPC line). LLMService is an autoload that lands late in the
+	# boot order, so guard the lookup. GameLoop does not hold a reference to the
+	# active DynamicConversation — cancel_all is sufficient: the conversation's
+	# _safe await path takes its null fallback and its own teardown clears UI.
+	var _llm := get_node_or_null("/root/LLMService")
+	if _llm and _llm.has_method("cancel_all"):
+		_llm.cancel_all("scene_change")
+
 	_current_map_id = target_map
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO

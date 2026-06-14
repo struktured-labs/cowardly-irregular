@@ -100,6 +100,12 @@ var _draining: bool = false
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 func _ready() -> void:
+	# R4 (pause-safe): keep the await/poll loop alive when the SceneTree is
+	# paused. _await_box yields on get_tree().process_frame; if the game pauses
+	# mid-conversation a default-mode autoload would stop ticking and the
+	# awaiting coroutine (and its CLIENT_TIMEOUT_SEC guard) would freeze until
+	# unpause. PROCESS_MODE_ALWAYS makes the timeout fire regardless of pause.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_backends()
 	_select_backend()
 
@@ -305,13 +311,21 @@ func _submit_and_wait(prompt: String, opts: Dictionary) -> Variant:
 		_queue.append({"id": id, "prompt": prompt, "opts": opts})
 		# Wait for box to be resolved (by _process_queue when it's our turn).
 		await _await_box(id, opts)
-		return box[1]
+		# B1 (robust return): snapshot the resolved value the instant resolution
+		# is observed. `box` is the same Array stored in _pending_boxes[id], and
+		# cancel_all()/timeout paths may erase that dict entry (and other code may
+		# reuse the id's slot); reading box[1] into a local NOW guarantees the
+		# returned value can't be mutated out from under us afterwards.
+		var queued_result: Variant = box[1]
+		return queued_result
 
 	# No in-flight — submit immediately.
 	_inflight_id = id
 	_active_backend.submit(id, prompt, opts)
 	await _await_box(id, opts)
-	return box[1]
+	# B1 (robust return): capture before returning — see note above.
+	var result: Variant = box[1]
+	return result
 
 
 ## Poll until box[0] is true, then return.  Uses a timer-based poll so we never
@@ -356,6 +370,21 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 			_pending_boxes.erase(id)
 			if _inflight_id == id:
 				_inflight_id = ""
+			# R6 (no orphan requests): now that _inflight_id no longer points at
+			# this id, ask the backend to abort the still-running HTTPRequest so
+			# the node doesn't linger until the server (or the 30s HTTPRequest
+			# timeout) replies. HTTPBackend.cancel(id) frees the HTTPRequest and
+			# emits request_finished(id, ...) — possibly SYNCHRONOUSLY. That is
+			# safe here precisely because _inflight_id was cleared above:
+			#   - _on_backend_finished's stale-id guard (id != _inflight_id) now
+			#     holds, so the sync emit is a clean no-op (it does not re-resolve
+			#     the already-erased box, nor re-enter _process_queue);
+			#   - _pending_boxes[id] was already erased, so even if it slipped
+			#     through, _resolve_box would no-op (it has()-checks first).
+			# This is independent of the cancel_all() path: _draining stays false
+			# here, but the stale-id guard alone makes the sync emit harmless.
+			if _active_backend != null and _active_backend.has_method("cancel"):
+				_active_backend.cancel(id)
 			var mode_label: String = MODE_JSON if opts.get("json_mode", false) else MODE_TEXT
 			inference_failed.emit(mode_label, "client_timeout")
 			# Kick the queue so any pending request runs immediately.

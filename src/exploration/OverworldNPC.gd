@@ -22,8 +22,34 @@ signal dialogue_ended(npc_name: String)
 ## using the static dialogue_lines pipeline.
 ## Default OFF — design doc explicitly says do NOT retrofit every NPC.
 ## Showcase set is the 3 W1 NPCs flagged in scene/spawn code.
-@export var dynamic: bool = false
-@export_multiline var persona: String = ""
+##
+## R5 fix (2026-06-14): `dynamic` and `persona` use setters that re-run the
+## persona overlay (_setup_persona_data) when assigned AFTER _ready. Before
+## this, _setup_persona_data was ONLY called from _ready() gated on `dynamic`
+## at that instant — so any code path that flips dynamic=true post-construction
+## (a village factory that add_child's BEFORE setting the flag, or a future
+## save-restore that re-applies NPC state) silently dropped the persona +
+## opening lines. The showcase NPCs (Theron/Milo/Boris) reverted to scene
+## defaults on save→load→re-spawn. The setters make BOTH orderings correct
+## and idempotent. (CLAUDE.md principle #7 — silent failures > crashes.)
+@export var dynamic: bool = false:
+	set(value):
+		dynamic = value
+		# Only re-hydrate once the node has entered the tree (post-_ready).
+		# In-_ready ordering is handled by the explicit _setup_persona_data()
+		# call in _ready(); guarding on _ready_done prevents a redundant
+		# double-load while still covering every post-construction assignment.
+		if _ready_done and dynamic:
+			_setup_persona_data()
+@export_multiline var persona: String = "":
+	set(value):
+		persona = value
+		# A non-empty persona implies the NPC is meant to be dynamic-capable;
+		# re-running setup after _ready captures fallback/opening overlays even
+		# if persona is assigned on its own (e.g. inline designer override that
+		# lands after the node is already in the tree).
+		if _ready_done and dynamic:
+			_setup_persona_data()
 
 ## Mapping from npc_type → preferred archetype. "" = picked by name hash
 ## from a pair (defined in _resolve_archetype). All 20 archetype sheets
@@ -75,6 +101,10 @@ var _persona_openings: Array = []
 var _current_line: int = 0
 var _is_talking: bool = false
 var _player_nearby: bool = false
+## True once _ready() has finished. Gates the dynamic/persona setters so they
+## only trigger a re-hydrate for POST-construction assignments (the in-_ready
+## path is handled by the explicit _setup_persona_data() call). R5 fix.
+var _ready_done: bool = false
 
 ## Animation
 var _is_dancing: bool = false
@@ -118,6 +148,21 @@ func _ready() -> void:
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+	# Mark ready LAST so the dynamic/persona setters now re-hydrate on any
+	# post-construction assignment (save-restore re-spawn, late factory flag).
+	# R5 fix — see the @export blocks above.
+	_ready_done = true
+
+
+## Public: force a re-hydrate of persona/opening/fallback overlay from
+## npc_showcase_personas.json. Safe to call any time after construction;
+## no-ops if this NPC isn't dynamic. Idempotent. Provided so a village/
+## save-restore path can deterministically re-apply the overlay after
+## flipping `dynamic`/`persona` (rather than relying on setter side effects).
+func refresh_persona() -> void:
+	if dynamic:
+		_setup_persona_data()
 
 
 ## Load and apply persona + fallback dialogue for showcase NPCs.
