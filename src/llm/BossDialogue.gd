@@ -8,6 +8,8 @@ extends Node
 ##   get_verbs(boss_id) -> Array[Dictionary]
 ##   get_opening_lines(boss_id) -> Array[String]
 ##   get_phase_transition_line(boss_id, phase) -> String
+##   get_victory_line(boss_id) -> String   (boss reaction when the PARTY wins)
+##   get_defeat_line(boss_id) -> String    (boss gloat when it WIPES the party)
 ##   pick_intent(boss_id, phase, game_state, llm_available) -> Dictionary
 ##       returns { intent_id, taunt_line }
 ##   check_jailbreak(boss_id, directive_text) -> Variant
@@ -100,6 +102,15 @@ func get_opening_lines(boss_id: String) -> Array:
 	return []
 
 
+func get_display_name(boss_id: String) -> String:
+	"""Returns the boss section's display_name, or "" if absent. Flavour only —
+	used to humanise LLM prompts; never gates a deterministic fallback."""
+	if not has_entry(boss_id):
+		return ""
+	var entry: Dictionary = _data[boss_id]
+	return str(entry.get("display_name", ""))
+
+
 func get_phase_transition_line(boss_id: String, phase: int) -> String:
 	"""Returns a random transition line for the given phase, or empty string."""
 	if not has_entry(boss_id):
@@ -110,6 +121,37 @@ func get_phase_transition_line(boss_id: String, phase: int) -> String:
 	if not phase_map.has(key):
 		return ""
 	var lines = phase_map[key]
+	if lines is Array and lines.size() > 0:
+		return str(lines[randi() % lines.size()])
+	return ""
+
+
+## get_victory_line — scripted-pool fallback for the boss's reaction WHEN THE
+## PARTY DEFEATS IT (the party wins; the boss gloats/concedes in defeat).
+## Returns a random pick from the boss section's "victory_lines" pool, or empty
+## string if the section/pool is absent. This is the deterministic floor the
+## LLM-narrated gloat falls back to. Graceful: never crashes on missing data.
+func get_victory_line(boss_id: String) -> String:
+	return _random_pool_line(boss_id, "victory_lines")
+
+
+## get_defeat_line — scripted-pool fallback for what the boss says WHEN IT WIPES
+## THE PARTY (the boss wins). Returns a random pick from the boss section's
+## "defeat_lines" pool, or empty string if the section/pool is absent.
+func get_defeat_line(boss_id: String) -> String:
+	return _random_pool_line(boss_id, "defeat_lines")
+
+
+## Shared helper for the optional victory_lines / defeat_lines pools. Returns a
+## random non-empty string from the named pool, or "" when the boss has no
+## section, the pool key is absent, the value is not an Array, or the Array is
+## empty. The graceful empty-string contract lets call sites treat "no scripted
+## line authored yet" identically to "no LLM available" — both degrade silently.
+func _random_pool_line(boss_id: String, pool_key: String) -> String:
+	if not has_entry(boss_id):
+		return ""
+	var entry: Dictionary = _data[boss_id]
+	var lines = entry.get(pool_key, [])
 	if lines is Array and lines.size() > 0:
 		return str(lines[randi() % lines.size()])
 	return ""

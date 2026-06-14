@@ -1635,6 +1635,7 @@
     "id": "fire_dragon",
     "name": "Pyrroth, the Ember Wyrm",
     "description": "An ancient fire dragon whose scales radiate unbearable heat. The cave walls glow red in its presence.",
+    "boss_llm_persona_id": "pyrroth",
     "level": 14,
     "boss": true,
     "stats": {
@@ -1711,6 +1712,7 @@
     "id": "ice_dragon",
     "name": "Glacius, the Frozen Sovereign",
     "description": "A majestic ice dragon entombed in permafrost for centuries. Its breath freezes time itself.",
+    "boss_llm_persona_id": "glacius",
     "level": 15,
     "boss": true,
     "stats": {
@@ -1789,6 +1791,7 @@
     "id": "lightning_dragon",
     "name": "Voltharion, the Storm's Edge",
     "description": "A crackling dragon made of pure electrical fury. It speaks faster than you can think.",
+    "boss_llm_persona_id": "voltharion",
     "level": 16,
     "boss": true,
     "stats": {
@@ -1868,6 +1871,7 @@
     "id": "shadow_dragon",
     "name": "Umbraxis, the Void Render",
     "description": "A dragon of living shadow that questions its own existence between attacks. Dangerously philosophical.",
+    "boss_llm_persona_id": "umbraxis",
     "level": 18,
     "boss": true,
     "stats": {

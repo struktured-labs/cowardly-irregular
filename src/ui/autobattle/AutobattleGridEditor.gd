@@ -46,6 +46,9 @@ const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 var _profile_label: Label
 var _stats_panel: Control
+var _share_picker: Control = null  # Import file-picker overlay (acts as a submenu; blocks grid input while open)
+var _flash_label: Label = null     # Transient status flash for export/import feedback
+var _flash_timer: float = 0.0
 
 ## Grid layout constants
 const CELL_WIDTH = 110
@@ -139,6 +142,9 @@ func _exit_tree() -> void:
 	if _keyboard and is_instance_valid(_keyboard):
 		_keyboard.queue_free()
 	_keyboard = null
+	if _share_picker and is_instance_valid(_share_picker):
+		_share_picker.queue_free()
+	_share_picker = null
 
 
 func setup(char_id: String, char_name: String, char_combatant: Combatant = null, char_party: Array = []) -> void:
@@ -253,11 +259,21 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  Sel:Auto  Start:Save"
+	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label2)
+
+	# Transient status flash (export/import feedback), centered above the legend strip
+	_flash_label = Label.new()
+	_flash_label.position = Vector2(16, size.y - 66)
+	_flash_label.size = Vector2(size.x - 32, 18)
+	_flash_label.add_theme_font_size_override("font_size", 12)
+	_flash_label.add_theme_color_override("font_color", Color.LIME)
+	_flash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_flash_label.visible = false
+	add_child(_flash_label)
 
 
 func _build_profile_panel() -> void:
@@ -1586,6 +1602,11 @@ func _input(event: InputEvent) -> void:
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
 		return
 
+	# Import file-picker submenu handles its own input when open (don't steal grid input)
+	if _share_picker and is_instance_valid(_share_picker) and _share_picker.visible:
+		_handle_share_picker_input(event)
+		return
+
 	if is_editing:
 		# Edit modal handles input
 		return
@@ -1676,6 +1697,16 @@ func _input(event: InputEvent) -> void:
 	# Shift+R - Rename current profile
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
 		_open_rename_profile()
+		get_viewport().set_input_as_handled()
+
+	# E - Export current character's script (+ party bundle) to user://script_exports/
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.shift_pressed and not event.is_echo():
+		_export_script()
+		get_viewport().set_input_as_handled()
+
+	# I - Import: open a controller-navigable picker of exported files
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and not event.shift_pressed and not event.is_echo():
+		_open_share_picker()
 		get_viewport().set_input_as_handled()
 
 	# Tab / Y - Toggle current row enabled/disabled
@@ -2234,3 +2265,228 @@ func _on_rename_cancelled() -> void:
 		_keyboard.queue_free()
 		_keyboard = null
 	SoundManager.play_ui("menu_close")
+
+
+# --- Script sharing (export / import) -------------------------------------
+# Surfaces the existing ScriptShareManager API so players can save, load, and
+# share autobattle scripts. Files live in user://script_exports/. Mirrors the
+# established pattern in AutogrindUI (_export_scripts / _import_scripts).
+
+func _export_script() -> void:
+	"""Export the current character's script (and the whole party bundle) to JSON."""
+	# Persist any in-progress edits first so the exported file is current.
+	_save_script()
+
+	var exported := 0
+	var char_path := ScriptShareManager.export_character_script(character_id)
+	if char_path != "":
+		exported += 1
+
+	# Also write a party bundle when a party is available — enables one-file sharing.
+	if party.size() > 0:
+		var bundle_path := ScriptShareManager.export_all_scripts(party)
+		if bundle_path != "":
+			exported += 1
+
+	if exported > 0:
+		_flash_status("Exported %d file(s) to script_exports/" % exported, Color.LIME)
+		SoundManager.play_ui("menu_select")
+	else:
+		_flash_status("Nothing to export", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+
+
+func _open_share_picker() -> void:
+	"""Open a controller-navigable picker listing exported files to import."""
+	if _share_picker and is_instance_valid(_share_picker):
+		_share_picker.queue_free()
+		_share_picker = null
+
+	var files := ScriptShareManager.list_exports()
+	if files.is_empty():
+		_flash_status("No export files found — press E to export first", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+
+	_share_picker = Control.new()
+	_share_picker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_share_picker.set_meta("files", files)
+	_share_picker.set_meta("selected", 0)
+	add_child(_share_picker)
+	_build_share_picker(files)
+	SoundManager.play_ui("menu_select")
+
+
+func _build_share_picker(files: Array) -> void:
+	"""(Re)build the import picker overlay visuals from the file list."""
+	for child in _share_picker.get_children():
+		child.queue_free()
+
+	var selected: int = _share_picker.get_meta("selected")
+
+	# Dim backdrop
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.7)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_share_picker.add_child(backdrop)
+
+	# Right-click anywhere cancels the picker (mouse parity with the rest of the editor)
+	MenuMouseHelper.add_right_click_cancel(backdrop, func() -> void: _close_share_picker())
+
+	# Panel
+	var panel_w := 460.0
+	var panel_h := minf(80.0 + files.size() * 26.0, size.y - 80.0)
+	var panel := ColorRect.new()
+	panel.color = style.bg
+	panel.position = Vector2((size.x - panel_w) / 2.0, (size.y - panel_h) / 2.0)
+	panel.size = Vector2(panel_w, panel_h)
+	_share_picker.add_child(panel)
+	_add_pixel_border(panel, panel_w, panel_h)
+
+	var title := Label.new()
+	title.text = "IMPORT SCRIPT  -  apply to %s" % character_name
+	title.position = panel.position + Vector2(12, 8)
+	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
+	_share_picker.add_child(title)
+
+	var list_y := panel.position.y + 34.0
+	for i in range(files.size()):
+		var filename: String = files[i]
+		var is_sel := i == selected
+
+		var row_bg := ColorRect.new()
+		row_bg.position = Vector2(panel.position.x + 8, list_y - 2)
+		row_bg.size = Vector2(panel_w - 16, 24)
+		row_bg.color = style.get("highlight_bg", Color(0.3, 0.3, 0.5)) if is_sel else Color(0, 0, 0, 0)
+		_share_picker.add_child(row_bg)
+
+		var row := Label.new()
+		row.text = "%s %s" % ["▶" if is_sel else "  ", ScriptShareManager.get_export_summary(filename)]
+		row.position = Vector2(panel.position.x + 12, list_y)
+		row.size = Vector2(panel_w - 24, 22)
+		row.add_theme_font_size_override("font_size", 11)
+		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
+		row.clip_text = true
+		_share_picker.add_child(row)
+
+		# Mouse: click a row to import it immediately
+		var idx := i
+		MenuMouseHelper.make_clickable(row_bg, idx, panel_w - 16, 24,
+			func() -> void:
+				_share_picker.set_meta("selected", idx)
+				_apply_share_selection(),
+			func() -> void:
+				_share_picker.set_meta("selected", idx)
+				_build_share_picker(_share_picker.get_meta("files")))
+
+		list_y += 26.0
+
+	var help := Label.new()
+	help.text = "D-Pad:Select   A:Import   B:Cancel"
+	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
+	help.add_theme_font_size_override("font_size", 10)
+	help.add_theme_color_override("font_color", style.text.darkened(0.2))
+	_share_picker.add_child(help)
+
+
+func _handle_share_picker_input(event: InputEvent) -> void:
+	"""Self-contained input for the import picker (keeps grid input frozen while open)."""
+	if not _share_picker or not is_instance_valid(_share_picker):
+		return
+
+	var files: Array = _share_picker.get_meta("files")
+	var selected: int = _share_picker.get_meta("selected")
+
+	if event.is_action_pressed("ui_up") and not event.is_echo():
+		_share_picker.set_meta("selected", (selected - 1 + files.size()) % files.size())
+		_build_share_picker(files)
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
+		_share_picker.set_meta("selected", (selected + 1) % files.size())
+		_build_share_picker(files)
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
+		_apply_share_selection()
+		get_viewport().set_input_as_handled()
+	elif (event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_menu")) and not event.is_echo():
+		_close_share_picker()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_close_share_picker()
+		get_viewport().set_input_as_handled()
+
+
+func _apply_share_selection() -> void:
+	"""Apply the highlighted export file to the current character, then rebuild the grid."""
+	if not _share_picker or not is_instance_valid(_share_picker):
+		return
+	var files: Array = _share_picker.get_meta("files")
+	var selected: int = _share_picker.get_meta("selected")
+	if selected < 0 or selected >= files.size():
+		_close_share_picker()
+		return
+
+	var filename: String = files[selected]
+	var ok := _import_script_file(filename)
+	_close_share_picker()
+
+	if ok:
+		_flash_status("Imported %s" % filename, Color.LIME)
+		SoundManager.play_ui("menu_select")
+	else:
+		_flash_status("Could not apply %s to %s" % [filename, character_name], Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+
+
+func _import_script_file(filename: String) -> bool:
+	"""Load filename via ScriptShareManager, apply to current character, reload rules + grid.
+
+	Handles both single-character exports and party bundles (applies the matching
+	character's slice). Returns true when the current character's script changed.
+	"""
+	var data := ScriptShareManager.import_file(filename)
+	if data.is_empty():
+		return false
+
+	var applied := ScriptShareManager.apply_character_script(character_id, data)
+	if not applied:
+		return false
+
+	# Reload the freshly-applied script and rebuild the visible grid.
+	char_script = AutobattleSystem.get_character_script(character_id)
+	rules = char_script.get("rules", []).duplicate(true)
+	if rules.size() == 0:
+		rules.append(_create_default_rule())
+	cursor_row = 0
+	cursor_col = 0
+	_scroll_offset = 0.0
+	_refresh_grid()
+	return true
+
+
+func _close_share_picker() -> void:
+	"""Tear down the import picker overlay and return control to the grid."""
+	if _share_picker and is_instance_valid(_share_picker):
+		_share_picker.queue_free()
+	_share_picker = null
+	_update_cursor()
+
+
+func _flash_status(text: String, color: Color = Color.LIME) -> void:
+	"""Show a transient status message above the legend strip (export/import feedback)."""
+	if not _flash_label or not is_instance_valid(_flash_label):
+		return
+	_flash_label.text = text
+	_flash_label.add_theme_color_override("font_color", color)
+	_flash_label.visible = true
+	_flash_timer = 2.5
+
+
+func _process(delta: float) -> void:
+	if _flash_timer > 0.0:
+		_flash_timer -= delta
+		if _flash_timer <= 0.0 and _flash_label and is_instance_valid(_flash_label):
+			_flash_label.visible = false

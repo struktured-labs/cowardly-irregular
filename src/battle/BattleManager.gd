@@ -31,6 +31,15 @@ signal boss_taunt(boss: Combatant, line: String)
 ## vulnerability and the consequence has been applied to the boss. The UI
 ## shows the diegetic '⚠ DIRECTIVE OVERRIDE ACCEPTED' banner.
 signal boss_jailbreak_landed(boss: Combatant, vulnerability_id: String, consequence: Dictionary)
+## boss_gloat_line: emitted once at battle end when a boss with a
+## data/boss_dialogue.json section was involved — a personality-driven gloat.
+## is_victory=true means the PARTY won (the boss concedes/gloats in defeat);
+## is_victory=false means the boss WIPED the party (the boss gloats in triumph).
+## The line is LLM-narrated when available, otherwise a scripted-pool fallback
+## from BossDialogue.get_victory_line / get_defeat_line. NON-BLOCKING: the
+## deterministic battle-end flow never awaits the LLM — the fallback ships
+## immediately and an LLM re-narration (when available) replaces it on arrival.
+signal boss_gloat_line(text: String, is_victory: bool)
 
 enum BattleState {
 	INACTIVE,
@@ -101,6 +110,12 @@ var _died_callbacks: Dictionary = {}
 var _full_autobattle: bool = true          # False if any player turn was manual
 var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
 var _manual_player_turns: int = 0          # Player turns handled manually
+
+## Boss-gloat context tracking — deterministic facts about how the fight went,
+## woven into the LLM gloat prompt (and harmless when LLM is off). Reset per
+## battle alongside the autobattle counters.
+var _jailbreak_landed_this_battle: bool = false  # A player directive tripped a vuln.
+var _all_out_attack_this_battle: bool = false    # The party used a pooled group attack.
 
 ## Battle results (populated in end_battle before signal, cleared on next battle)
 var _battle_results: Dictionary = {}  # {exp_per_char: int, bonuses: Array, char_results: Array}
@@ -192,6 +207,10 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_manual_player_turns = 0
 	_battle_results = {}
 	_ko_this_battle.clear()
+
+	# Reset boss-gloat context tracking.
+	_jailbreak_landed_this_battle = false
+	_all_out_attack_this_battle = false
 
 	# Clear per-battle combatant state: buffs/debuffs/status effects don't
 	# persist across encounters (was a leak — GameLoop reuses party Combatant
@@ -400,6 +419,13 @@ func end_battle(victory: bool) -> void:
 	if victory:
 		var summary = _summarize_battle_actions()
 		battle_actions_logged.emit(summary)
+
+	# Wave G — personality-driven boss gloat. Fire-and-forget; the deterministic
+	# fallback ships immediately and (when LLM is available) an async re-narration
+	# replaces it on arrival. Runs BEFORE battle_ended so the scripted line is in
+	# the log alongside the VICTORY/DEFEAT banner. Snapshot must happen here while
+	# enemy_party is still populated — _cleanup_battle may clear it.
+	_dispatch_boss_gloat(victory)
 
 	battle_ended.emit(victory)
 	_cleanup_battle()
@@ -1851,6 +1877,9 @@ func _execute_group_action(action: Dictionary) -> void:
 		return
 
 	var _formation_id: String = action.get("formation_id", "")
+	# Boss-gloat context: remember the party pooled AP into a combined strike so
+	# the end-of-fight gloat can reference it ("…an all-out attack, how brutish").
+	_all_out_attack_this_battle = true
 	group_attack_executing.emit(participants, group_type, alive_enemies, _formation_id)
 	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
 		group_type, participants.size(), alive_enemies.size()])
@@ -3736,6 +3765,10 @@ func _on_boss_jailbreak_succeeded(boss_id: String, vulnerability_id: String, con
 		battle_log_message.emit("[color=#88ccff]%s[/color]" % narration)
 		boss_taunt.emit(boss, narration)
 
+	# Boss-gloat context: a player directive landed this battle. The end-of-fight
+	# gloat can reference the player having gotten under the boss's skin.
+	_jailbreak_landed_this_battle = true
+
 	boss_jailbreak_landed.emit(boss, vulnerability_id, consequence)
 
 
@@ -3757,3 +3790,191 @@ func try_player_jailbreak_directive(directive_text: String) -> bool:
 		if persona_id != "" and boss_dlg.has_entry(persona_id):
 			return boss_dlg.try_apply_jailbreak(persona_id, directive_text)
 	return false
+
+
+# ── Wave G — Boss gloat lines (victory / defeat) ─────────────────────────────
+
+## Resolve the boss persona id for the gloat. Unlike the jailbreak path (which
+## needs a LIVE boss), the gloat fires at battle end where the boss may already
+## be dead (victory) — so we DON'T filter on is_alive. We look for the enemy
+## flagged as a boss/miniboss (or any enemy carrying an explicit llm_persona_id)
+## that has a data/boss_dialogue.json section. Returns "" if none qualifies —
+## the gloat is then skipped entirely (graceful: ordinary trash mobs stay quiet).
+func _resolve_gloat_boss_persona() -> String:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return ""
+	for e in enemy_party:
+		if not is_instance_valid(e):
+			continue
+		var is_boss: bool = false
+		if e.has_meta("is_boss") and e.get_meta("is_boss"):
+			is_boss = true
+		elif e.has_meta("is_miniboss") and e.get_meta("is_miniboss"):
+			is_boss = true
+		var persona_id: String = e.get_meta("llm_persona_id", "")
+		if persona_id == "":
+			persona_id = e.get_meta("monster_type", "")
+		if persona_id == "":
+			continue
+		# An explicit persona handle (set by a dungeon subclass) counts as a boss
+		# even without the is_boss meta; otherwise require the boss/miniboss flag.
+		if not is_boss and not e.has_meta("llm_persona_id"):
+			continue
+		if boss_dlg.has_entry(persona_id):
+			return persona_id
+	return ""
+
+
+## Fire-and-forget gloat dispatcher called from end_battle. Resolves the boss
+## persona, computes the DETERMINISTIC scripted fallback synchronously, and:
+##   - LLM unavailable → emits boss_gloat_line immediately with the fallback.
+##   - LLM available    → kicks off an async coroutine (NOT awaited here, so the
+##                        battle-end flow never blocks) that re-narrates the line
+##                        and emits boss_gloat_line on arrival. The coroutine's
+##                        own fallback is the same scripted pool line, so even an
+##                        LLM failure mid-flight yields a non-empty line.
+## No-op (no signal) when there is no qualifying boss or no scripted line exists
+## for the resolved persona — graceful degradation, never an empty gloat.
+func _dispatch_boss_gloat(victory: bool) -> void:
+	var persona_id: String = _resolve_gloat_boss_persona()
+	if persona_id == "":
+		return
+
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return
+
+	# victory == party won → boss concedes (victory_lines).
+	# victory == false     → boss wiped the party (defeat_lines).
+	var fallback: String = ""
+	if victory:
+		fallback = boss_dlg.get_victory_line(persona_id)
+	else:
+		fallback = boss_dlg.get_defeat_line(persona_id)
+
+	# No scripted line authored for this boss yet → stay silent rather than
+	# emit an empty gloat. The data agent fills these pools concurrently.
+	if fallback.strip_edges() == "":
+		return
+
+	var llm_node = get_node_or_null("/root/LLMService")
+	var llm_available: bool = false
+	if llm_node and llm_node.has_method("is_available"):
+		llm_available = llm_node.is_available()
+
+	if not llm_available:
+		# Deterministic path — ship the scripted pool line immediately.
+		boss_gloat_line.emit(fallback, victory)
+		return
+
+	# LLM available — capture the context snapshot NOW (enemy_party is about to
+	# be cleared by _cleanup_battle) and hand off to the async producer. We do
+	# NOT await: end_battle stays synchronous and non-blocking.
+	var boss_name: String = _gloat_boss_display_name(persona_id)
+	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory)
+	_produce_boss_gloat_async(prompt, fallback, victory)
+
+
+## Async LLM producer. Awaits LLMService.complete with the scripted line as the
+## guaranteed fallback, then emits boss_gloat_line. Detached from end_battle so
+## the main thread is never blocked. If the LLM is cancelled (scene change) or
+## times out, complete() returns the fallback — so the emitted line is ALWAYS
+## non-empty and ALWAYS personality-appropriate.
+func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) -> void:
+	var llm_node = get_node_or_null("/root/LLMService")
+	if llm_node == null or not llm_node.has_method("complete"):
+		boss_gloat_line.emit(fallback, victory)
+		return
+	var line: Variant = await llm_node.complete(prompt, fallback)
+	var text: String = str(line).strip_edges()
+	if text == "":
+		text = fallback
+	boss_gloat_line.emit(text, victory)
+
+
+## Build the LLM gloat prompt, enriched with deterministic EventLog context and
+## the how-the-fight-went facts tracked this battle (jailbreak landed?
+## autobattle-only? all-out attack?). The scripted pool line is the fallback so
+## the LLM only ever RE-NARRATES a line that already works — it is never the
+## rules engine and never touches story flags.
+func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -> String:
+	var recent_events: Array = []
+	var gs = get_node_or_null("/root/GameState")
+	if gs and "event_log" in gs and gs.event_log != null:
+		recent_events = gs.event_log.recent(5)
+
+	# Deterministic how-the-fight-went facts.
+	var facts: Array[String] = []
+	if _full_autobattle and _autobattle_player_turns > 0:
+		facts.append("the party never lifted a finger — every move was automated (autobattle)")
+	if _all_out_attack_this_battle:
+		facts.append("the party pooled their power into an all-out group attack")
+	if _jailbreak_landed_this_battle:
+		facts.append("the player got under the boss's skin with a directive that landed")
+
+	var facts_block: String = ""
+	if facts.size() > 0:
+		facts_block = "\nHow the fight went:\n"
+		for fact in facts:
+			facts_block += "  - %s\n" % fact
+
+	var events_block: String = ""
+	if recent_events.size() > 0:
+		events_block = "\nRecent events:\n"
+		var n: int = mini(recent_events.size(), 5)
+		var start: int = recent_events.size() - n
+		for i in range(start, recent_events.size()):
+			var entry: Dictionary = recent_events[i]
+			var summary: String = str(entry.get("summary", ""))
+			if summary.is_empty():
+				continue
+			events_block += "  [%s] %s\n" % [str(entry.get("type", "")), summary]
+
+	var situation: String = ""
+	if victory:
+		situation = (
+			"The PARTY has just DEFEATED this boss. Write what the boss says as it "
+			+ "falls — a final gloat, concession, or dark joke. Meta-aware: it may "
+			+ "remark on the player automating their way to victory."
+		)
+	else:
+		situation = (
+			"The boss has just WIPED the entire party. Write its triumphant gloat "
+			+ "over the fallen heroes — cruel, smug, and meta-aware."
+		)
+
+	return (
+		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
+		+ "%s\n" % situation
+		+ "\n"
+		+ "Boss: %s\n" % boss_name
+		+ facts_block
+		+ events_block
+		+ "\n"
+		+ "Rules:\n"
+		+ "- Stay fully in character as the boss; first person.\n"
+		+ "- ONE short line, maximum 140 characters.\n"
+		+ "- Do NOT include the boss name or a speaker label.\n"
+		+ "- Respond with ONLY the line itself, no quotes, no JSON.\n"
+	)
+
+
+## Best-effort display name for the gloat prompt. Prefers the boss's combatant
+## name from enemy_party, then the BossDialogue display_name, then the persona id
+## prettified. Pure flavour — never affects the deterministic fallback.
+func _gloat_boss_display_name(persona_id: String) -> String:
+	for e in enemy_party:
+		if not is_instance_valid(e):
+			continue
+		var pid: String = e.get_meta("llm_persona_id", "")
+		if pid == "":
+			pid = e.get_meta("monster_type", "")
+		if pid == persona_id and e.combatant_name != "":
+			return e.combatant_name
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg and boss_dlg.has_method("get_display_name"):
+		var dn: String = boss_dlg.get_display_name(persona_id)
+		if dn != "":
+			return dn
+	return persona_id.replace("_", " ").capitalize()

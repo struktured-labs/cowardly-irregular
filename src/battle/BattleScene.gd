@@ -299,6 +299,9 @@ func _ready() -> void:
 		BattleManager.boss_taunt.connect(_on_boss_taunt)
 	if BattleManager.has_signal("boss_jailbreak_landed"):
 		BattleManager.boss_jailbreak_landed.connect(_on_boss_jailbreak_landed)
+	# Wave G — end-of-fight boss gloat line (victory / defeat).
+	if BattleManager.has_signal("boss_gloat_line"):
+		BattleManager.boss_gloat_line.connect(_on_boss_gloat_line)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -369,6 +372,8 @@ func _exit_tree() -> void:
 		BattleManager.group_attack_executing.disconnect(_on_group_attack_executing)
 	if BattleManager.advance_trash_talk.is_connected(_on_advance_trash_talk):
 		BattleManager.advance_trash_talk.disconnect(_on_advance_trash_talk)
+	if BattleManager.has_signal("boss_gloat_line") and BattleManager.boss_gloat_line.is_connected(_on_boss_gloat_line):
+		BattleManager.boss_gloat_line.disconnect(_on_boss_gloat_line)
 
 	# Reset engine time scale in case battle speed was altered
 	Engine.time_scale = 1.0
@@ -3520,6 +3525,33 @@ func _on_boss_jailbreak_landed(_boss: Combatant, _vulnerability_id: String, _con
 	autodismiss via tween. Triggered after BattleManager has already
 	applied the consequence — this is purely visual feedback."""
 	_show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
+
+
+func _on_boss_gloat_line(text: String, is_victory: bool) -> void:
+	"""Wave G — surface the end-of-fight boss gloat in the battle log. The boss
+	(victory) or the party (defeat) may already be dead, so the sprite-bubble
+	path is unreliable here — the log is the dependable display surface, sitting
+	right alongside the VICTORY/DEFEAT banner. LLM-narrated when available,
+	scripted-pool fallback otherwise; this handler treats both identically."""
+	if text.strip_edges() == "":
+		return
+	# Crimson for a triumphant boss gloat (party wiped); muted gold for a boss
+	# conceding in defeat (party won). Both are tagged so the line reads as the
+	# boss speaking, not narration.
+	var color: String = "#cc4444" if not is_victory else "#d8b860"
+	log_message('[color=%s]%s: "%s"[/color]' % [color, _gloat_speaker_name(is_victory), text])
+
+
+func _gloat_speaker_name(_is_victory: bool) -> String:
+	"""Best-effort boss display name for the gloat log line. Reads from the live
+	boss combatant if one is still around; falls back to a neutral label."""
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy):
+			if (enemy.has_meta("is_boss") and enemy.get_meta("is_boss")) \
+					or (enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss")):
+				if enemy.combatant_name != "":
+					return enemy.combatant_name
+	return "The Boss"
 
 
 func _show_address_banner(text: String) -> void:
