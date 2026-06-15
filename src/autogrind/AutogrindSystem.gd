@@ -635,6 +635,14 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	items_consumed.clear()
 	per_character_exp.clear()
 	injuries_this_session = 0
+	# Reset session-scoped fatigue counter. fatigue_events_triggered is
+	# displayed as a SESSION stat in AutogrindSummary (label "Fatigue
+	# Events") and is the gate for check_fatigue_collapse (requires >= 5
+	# alongside >= 50 battles this session). Without this reset, the
+	# lifetime count carried across sessions — collapse could fire on
+	# battle 50 of a fresh grind with no new fatigue events, just because
+	# the lifetime tally had already crossed the threshold months ago.
+	fatigue_events_triggered = 0
 	# Capture injury baseline to detect new injuries
 	_injury_baseline = 0
 	for member in party:
