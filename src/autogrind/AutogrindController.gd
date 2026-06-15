@@ -29,6 +29,13 @@ var _state: State = State.IDLE
 var _party: Array = []
 var _config: Dictionary = {}
 var _saved_autobattle_states: Dictionary = {}
+## Per-character pre-grind script snapshot, populated ONLY for characters
+## where _force_autobattle_on overwrote an empty script with a default.
+## Restored on stop_grind so the autogrind doesn't silently mutate the
+## player's authored autobattle config. (Bug: prior to this, an empty
+## script became the autogrind default permanently — players had to
+## manually clear it after their first grind session.)
+var _autogrind_authored_scripts: Dictionary = {}
 var _terrain: String = "plains"
 var _between_battle_timer: float = 0.0
 var _skip_next_battle: bool = false
@@ -479,6 +486,7 @@ func is_paused() -> bool:
 ## Save current autobattle toggle states for all party members
 func _save_autobattle_states() -> void:
 	_saved_autobattle_states.clear()
+	_autogrind_authored_scripts.clear()
 	for member in _party:
 		if member is Combatant:
 			var char_id = member.combatant_name.to_lower().replace(" ", "_")
@@ -493,6 +501,11 @@ func _force_autobattle_on() -> void:
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
 			var active_script = AutobattleSystem.get_character_script(char_id)
 			if active_script.is_empty() or not active_script.has("rules") or active_script["rules"].is_empty():
+				# Snapshot the pre-existing (empty / unfinished) script BEFORE
+				# overwriting so stop_grind can put it back. Without this,
+				# autogrind's default script would persist after the session,
+				# silently replacing whatever the player had drafted.
+				_autogrind_authored_scripts[char_id] = active_script.duplicate(true) if active_script is Dictionary else {}
 				var default_script = AutobattleSystem.create_default_character_script(char_id)
 				AutobattleSystem.set_character_script(char_id, default_script)
 				print("[AUTOGRIND] Created default autobattle script for %s" % char_id)
@@ -503,7 +516,15 @@ func _force_autobattle_on() -> void:
 func _restore_autobattle_states() -> void:
 	for char_id in _saved_autobattle_states:
 		AutobattleSystem.set_autobattle_enabled(char_id, _saved_autobattle_states[char_id])
+	# Restore the pre-grind script for any character we overwrote with the
+	# autogrind default. We only entered this branch when the player's
+	# original script was empty / had no rules — putting it back keeps the
+	# authored-state surface clean and the autobattle editor reflects
+	# pre-grind state on the next open.
+	for char_id in _autogrind_authored_scripts:
+		AutobattleSystem.set_character_script(char_id, _autogrind_authored_scripts[char_id])
 	_saved_autobattle_states.clear()
+	_autogrind_authored_scripts.clear()
 	print("[AUTOGRIND] Restored autobattle states")
 
 
