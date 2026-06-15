@@ -121,7 +121,17 @@ func get_tail_event_pct() -> float:
 
 
 func _get_macro_volatility() -> float:
-	"""Read macro volatility from GameState (or test override)."""
+	"""Read macro volatility from GameState (or test override).
+
+	GameState.macro_volatility is documented as 0.0-1.0 (soft cap) but no
+	caller enforces it. A corrupted save, a buggy Speculator effect, or a
+	hand-edited save could write a wildly out-of-range value (negative or
+	>1.0). Downstream consumers use the result as a multiplier or in band
+	thresholds — out-of-range inputs produce silently broken variance,
+	wrong starting band, and tail-event probabilities that would otherwise
+	be impossible. Clamp here so every consumer gets the documented
+	contract regardless of upstream hygiene. The test override is exempt
+	so unit tests can probe the boundary math directly."""
 	# Test override path — short-circuit if a unit test has set it.
 	if not is_nan(_macro_override):
 		return _macro_override
@@ -132,5 +142,5 @@ func _get_macro_volatility() -> float:
 	if tree != null and tree.root != null:
 		game_state = tree.root.get_node_or_null("GameState")
 	if game_state and "macro_volatility" in game_state:
-		return game_state.macro_volatility
+		return clampf(float(game_state.macro_volatility), 0.0, 1.0)
 	return 0.0
