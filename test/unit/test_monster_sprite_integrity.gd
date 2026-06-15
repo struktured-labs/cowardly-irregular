@@ -129,11 +129,11 @@ func test_idle_frames_have_content() -> void:
 			continue
 		var stride := maxi(1, fw / 64)  # ~64 samples per axis regardless of frame size
 		# Sample the first two idle frames (or just the first if only one exists).
-		var sample_indices: Array = [start]
+		var sample_indices: Array[int] = [start]
 		if end > start:
 			sample_indices.append(start + 1)
 		for frame_idx in sample_indices:
-			var frame_x := frame_idx * fw
+			var frame_x: int = frame_idx * fw
 			var opaque_count := 0
 			for y in range(0, fh, stride):
 				for x in range(frame_x, frame_x + fw, stride):

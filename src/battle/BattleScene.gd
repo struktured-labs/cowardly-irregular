@@ -1252,6 +1252,25 @@ func _refresh_status_icons(combatant: Combatant) -> void:
 			display_text += " %d" % turns_left  # e.g. "STUN 2"
 		var icon = _create_status_icon_label(display_text, config["color"])
 		container.add_child(icon)
+		# Pop-in feedback so buffs/debuffs land with weight. _refresh_status_icons
+		# only fires on status_added/status_removed signals (not per-turn counter
+		# ticks), so an unconditional pop on every refresh is honest: it tells
+		# the player "something just changed in the status row." Subtle overshoot.
+		_animate_status_icon_pop_in(icon)
+
+
+func _animate_status_icon_pop_in(icon: Control) -> void:
+	# Defer one frame so the PanelContainer has a real size for pivot_offset
+	# (mirrors the deferred-pivot pattern noted in CLAUDE.md polish item #24).
+	await get_tree().process_frame
+	if not is_instance_valid(icon):
+		return
+	icon.pivot_offset = icon.size / 2.0
+	icon.scale = Vector2(0.55, 0.55)
+	var tween := create_tween()
+	tween.tween_property(icon, "scale", Vector2.ONE, 0.12) \
+		.set_trans(Tween.TRANS_BACK) \
+		.set_ease(Tween.EASE_OUT)
 
 
 func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
