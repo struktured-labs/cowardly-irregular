@@ -384,8 +384,18 @@ func _open_chest(player: Node2D) -> void:
 	dialogue_label.text = contents_text
 
 	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
-	# Play item found as a UI sound, not a music stinger — avoids music loop bug
-	SoundManager.play_ui("chest_open")
+	# Content-aware "loot received" cue. Pre-fix this also played
+	# "chest_open" — the same sound the opening at line 331 already fired,
+	# so every chest played chest_open TWICE. The comment hinted that this
+	# slot was intended as a content-specific reward chime (a music stinger
+	# here caused a loop bug, hence the play_ui form). Gold gets the
+	# canonical gold_pickup chime (matches BattleResultsDisplay's gold
+	# count-up); item/equipment chests stay silent on this slot — the
+	# opening sound + on-screen text already communicate the reward.
+	if SoundManager:
+		match contents_type:
+			"gold":
+				SoundManager.play_ui("gold_pickup")
 
 	# Hide after delay
 	await get_tree().create_timer(2.0).timeout
