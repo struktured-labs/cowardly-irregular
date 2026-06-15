@@ -424,6 +424,16 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	_pending_tier_switch = -1
+	# Reset deferred next-battle modifiers. _evaluate_and_apply_rules and
+	# fatigue events set these in _request_next_battle; they are consumed
+	# only when the NEXT battle actually launches. If the player stops the
+	# grind in between (between fatigue trigger and battle launch), the
+	# flags would otherwise leak into the next grind session — first
+	# battle skipped, enemies arbitrarily +20% buff, or EXP arbitrarily
+	# +50% bonus, depending on which was pending.
+	_skip_next_battle = false
+	_next_battle_enemy_boost = 0.0
+	_next_battle_exp_bonus = 0.0
 
 	# Disconnect region_cracked signal
 	if AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
