@@ -174,14 +174,21 @@ static func _safe_pixel(img: Image, x: int, y: int, color: Color) -> void:
 ## Draw an outlined pixel (adds dark outline around it)
 static func _outlined_pixel(img: Image, x: int, y: int, color: Color, outline_color: Color = Color(0.1, 0.1, 0.1, 0.8)) -> void:
 	"""Set pixel with outline effect for more definition"""
-	var s = img.get_width()
+	# Bounds: width for x, height for y. Pre-fix this used `s = get_width()`
+	# for both — wrong on non-square images (SNES party sprites are 32×48).
+	# If width > height, py could exceed image bounds and set_pixel logs an
+	# error; if width < height, the bottom rows weren't reachable for
+	# outlining. The other static drawing helpers in this file all use
+	# (get_width / get_height) correctly — _outlined_pixel was the outlier.
+	var w := img.get_width()
+	var h := img.get_height()
 	# Draw outline first
 	for ox in [-1, 0, 1]:
 		for oy in [-1, 0, 1]:
 			if ox != 0 or oy != 0:
 				var px = x + ox
 				var py = y + oy
-				if px >= 0 and px < s and py >= 0 and py < s:
+				if px >= 0 and px < w and py >= 0 and py < h:
 					var existing = img.get_pixel(px, py)
 					if existing.a < 0.1:  # Only outline on transparent pixels
 						img.set_pixel(px, py, outline_color)
