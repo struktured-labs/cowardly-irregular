@@ -67,6 +67,14 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const OPTION_BG = Color(0.15, 0.15, 0.2)
 const OPTION_SELECTED = Color(0.3, 0.5, 0.8)
 
+## Preloaded for the battle-speed write path. Promoted from the runtime
+## load("res://src/battle/BattleScene.gd") in _save_battle_speed (matches
+## the SaveSystem.BATTLE_SCENE_SCRIPT pattern). Preload errors at compile
+## time instead of silently at runtime, so a transient load failure
+## mid-session can no longer drop the battle_speed_index write into the
+## `if BattleSceneScript:` defensive else branch.
+const BATTLE_SCENE_SCRIPT := preload("res://src/battle/BattleScene.gd")
+
 
 func _ready() -> void:
 	# Load current settings from GameState
@@ -1043,9 +1051,10 @@ func _save_battle_speed() -> void:
 	"""Save battle speed default setting + push to BattleScene static."""
 	if GameState:
 		GameState.default_battle_speed = battle_speed
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	if BattleSceneScript:
-		BattleSceneScript._battle_speed_index = battle_speed_index
+	# Use the preloaded class const (BATTLE_SCENE_SCRIPT) — preload errors
+	# at compile time, so no defensive `if BattleSceneScript:` skip is
+	# possible. Mirrors SaveSystem's BATTLE_SCENE_SCRIPT setup.
+	BATTLE_SCENE_SCRIPT._battle_speed_index = battle_speed_index
 	settings_changed.emit("battle_speed", battle_speed)
 	print("[SETTINGS] Default battle speed set to %.2fx" % battle_speed)
 	_persist_settings()
