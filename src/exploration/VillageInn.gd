@@ -309,12 +309,34 @@ func interact(player: Node2D) -> void:
 func _show_inn_menu() -> void:
 	_is_showing_menu = true
 	dialogue_box.visible = true
-	dialogue_label.text = "Welcome to %s!\nRest and restore your party?\n[Press again to rest, move away to cancel]" % inn_name
+	# Surface the cost so the player can decide before confirming. Pre-fix
+	# the dialog didn't mention rest_cost at all — combined with the
+	# missing spend_gold call below, every inn rest was silently free.
+	dialogue_label.text = "Welcome to %s!\nRest and restore your party? (%d G)\n[Press again to rest, move away to cancel]" % [inn_name, rest_cost]
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
 
 
 func _rest_party() -> void:
+	# Charge gold for the rest. Pre-fix this whole block was missing —
+	# the rest_cost @export was declared but never enforced, so inns
+	# healed the party for free regardless of party_gold. Insufficient
+	# gold now surfaces a clear message instead of silently restoring.
+	if GameState and GameState.has_method("get_gold"):
+		var current_gold: int = GameState.get_gold()
+		if current_gold < rest_cost:
+			dialogue_label.text = "Not enough gold!\nNeed %d G, you have %d G." % [rest_cost, current_gold]
+			if SoundManager:
+				SoundManager.play_ui("menu_error")
+			# Close after a beat so the player can read the failure.
+			await get_tree().create_timer(1.5).timeout
+			_close_menu()
+			return
+		# Spend gold via the canonical accessor so the gold_multiplier
+		# game_constant stays consistent with shop transactions.
+		if GameState.has_method("spend_gold"):
+			GameState.spend_gold(rest_cost)
+
 	# Restore all party members to full HP/MP
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and game_loop.party:
@@ -323,7 +345,7 @@ func _rest_party() -> void:
 			member.current_mp = member.max_mp
 			member.current_ap = 0  # Reset AP too
 
-	dialogue_label.text = "Your party is fully rested!\nHP and MP restored."
+	dialogue_label.text = "Your party is fully rested!\nHP and MP restored. (-%d G)" % rest_cost
 
 	if SoundManager:
 		SoundManager.play_ui("heal")
