@@ -3569,6 +3569,29 @@ func get_autobattle_achieved() -> bool:
 	return _full_autobattle and _autobattle_player_turns > 0
 
 
+## Bundle the just-finished battle's tactic fingerprints so external systems
+## (EventLog, NPC dialogue context, achievements) can react to HOW the player
+## won, not just THAT they won. These flags reset at start_battle, so the
+## "current/last" snapshot is what callers get between battles.
+##
+## Keys:
+##   pure_autobattle     — every player turn went through the AI selector
+##   autobattle_used     — at least one AI-selected turn occurred (mixed counts)
+##   manual_turns        — count of manually-issued commands
+##   autobattle_turns    — count of AI-selected commands
+##   jailbreak_landed    — a player directive tripped a boss vulnerability
+##   all_out_attack_used — the party fired a pooled group attack
+func get_battle_tactics_snapshot() -> Dictionary:
+	return {
+		"pure_autobattle":     get_autobattle_achieved(),
+		"autobattle_used":     _autobattle_player_turns > 0,
+		"manual_turns":        _manual_player_turns,
+		"autobattle_turns":    _autobattle_player_turns,
+		"jailbreak_landed":    _jailbreak_landed_this_battle,
+		"all_out_attack_used": _all_out_attack_this_battle,
+	}
+
+
 func get_autobattle_exp_multiplier() -> float:
 	"""Get the autobattle EXP multiplier for the current/last battle"""
 	if get_autobattle_achieved():

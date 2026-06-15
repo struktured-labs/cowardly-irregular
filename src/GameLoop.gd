@@ -1679,15 +1679,23 @@ func _apply_pending_boss_defeat() -> void:
 			var flags: Array = spec.get("story_flags", [])
 			boss_id = flags[0] if flags.size() > 0 else "unknown_boss"
 		var boss_name: String = boss_id.replace("_defeated", "").replace("_", " ").capitalize()
+		var defeat_data: Dictionary = {
+			"boss_id":    boss_id,
+			"boss_name":  boss_name,
+			"map_id":     _current_map_id,
+			"world":      GameState.worlds_unlocked,
+		}
+		# Tactics snapshot — HOW the player won, not just THAT they won. NPC
+		# dialogue prompts pull this from EventLog so future chats can react
+		# ("you autobattled your way past the Rat King?"). BattleManager's
+		# tracking flags are still live at this point — they reset on the next
+		# start_battle, not on end_battle.
+		if BattleManager and BattleManager.has_method("get_battle_tactics_snapshot"):
+			defeat_data["tactics"] = BattleManager.get_battle_tactics_snapshot()
 		GameState.event_log.record(
 			EventLog.TYPE_BOSS_DEFEAT,
 			"Defeated %s" % boss_name,
-			{
-				"boss_id":    boss_id,
-				"boss_name":  boss_name,
-				"map_id":     _current_map_id,
-				"world":      GameState.worlds_unlocked,
-			}
+			defeat_data
 		)
 	# One-shot: clear after applying
 	GameState.pending_boss_defeat = {}
