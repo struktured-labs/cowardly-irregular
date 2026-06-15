@@ -445,8 +445,12 @@ func update_buff_durations() -> void:
 			print("%s's %s wore off" % [combatant_name, active_debuffs[i]["effect"]])
 			active_debuffs.remove_at(i)
 
-	# Update doom counter
-	if doom_counter > 0:
+	# Update doom counter. Gate on is_alive so a doomed combatant who died
+	# earlier in this same update_buff_durations pass (poison / burn lethal
+	# tick) doesn't tick doom AGAIN and re-fire died(). Each is_alive guard
+	# in the DoT blocks above already prevents the lethal-by-poison ->
+	# lethal-by-burn cascade; this is the same defense for doom.
+	if doom_counter > 0 and is_alive:
 		doom_counter -= 1
 		if doom_counter == 0:
 			print("%s succumbs to Death Sentence!" % combatant_name)
