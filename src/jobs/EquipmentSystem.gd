@@ -210,6 +210,11 @@ func _create_default_equipment() -> void:
 ## Equipment management
 func equip_weapon(combatant: Combatant, weapon_id: String) -> bool:
 	"""Equip a weapon"""
+	# Defensive: PassiveSystem.equip_passive validates the combatant; this
+	# sister API didn't, so equip_weapon(null, ...) crashed at the
+	# `.equipped_weapon = ...` write below. Same for armor / accessory.
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not weapons.has(weapon_id):
 		print("Error: Weapon '%s' not found" % weapon_id)
 		return false
@@ -224,6 +229,8 @@ func equip_weapon(combatant: Combatant, weapon_id: String) -> bool:
 
 func equip_armor(combatant: Combatant, armor_id: String) -> bool:
 	"""Equip armor"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not armors.has(armor_id):
 		print("Error: Armor '%s' not found" % armor_id)
 		return false
@@ -238,6 +245,8 @@ func equip_armor(combatant: Combatant, armor_id: String) -> bool:
 
 func equip_accessory(combatant: Combatant, accessory_id: String) -> bool:
 	"""Equip accessory"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not accessories.has(accessory_id):
 		print("Error: Accessory '%s' not found" % accessory_id)
 		return false
@@ -252,6 +261,12 @@ func equip_accessory(combatant: Combatant, accessory_id: String) -> bool:
 
 func unequip_slot(combatant: Combatant, slot: EquipSlot) -> bool:
 	"""Unequip equipment from a slot"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
+	# Guard slot range so an out-of-band int (e.g. -1 from a UI bug) can't
+	# crash EquipSlot.keys()[slot] below.
+	if slot < 0 or slot >= EquipSlot.size():
+		return false
 	match slot:
 		EquipSlot.WEAPON:
 			combatant.equipped_weapon = ""
@@ -266,7 +281,11 @@ func unequip_slot(combatant: Combatant, slot: EquipSlot) -> bool:
 
 
 func get_equipment_mods(combatant: Combatant) -> Dictionary:
-	"""Calculate total equipment modifiers for a combatant"""
+	"""Calculate total equipment modifiers for a combatant."""
+	# Mirror PassiveSystem.get_passive_mods's contract: empty dict for
+	# invalid combatants so callers don't crash dereferencing a stat.
+	if not combatant or not is_instance_valid(combatant):
+		return {}
 	var total_mods = {
 		"attack": 0,
 		"defense": 0,
