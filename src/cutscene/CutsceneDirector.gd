@@ -290,11 +290,11 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 		await _execute_step(step)
 		step_index += 1
 
-	# When skipped, still apply all set_flag steps so cutscenes never replay
+	# When skipped, still apply all set_flag steps so cutscenes never replay.
+	# Delegate to the shared helper so this path matches play_cutscene's
+	# behaviour byte-for-byte (the inline loop drifted from the helper).
 	if _skipping:
-		for i in range(step_index, steps.size()):
-			if steps[i].get("type", "") == "set_flag":
-				_step_set_flag(steps[i])
+		_apply_remaining_set_flag_steps(steps, step_index)
 
 	await _end_cutscene()
 
@@ -1213,11 +1213,20 @@ func _end_cutscene() -> void:
 	# this, a lingering _timer_label would float over post-cutscene gameplay.
 	_clear_timer_hud()
 
+	# Snapshot then clear BEFORE the emit. Otherwise: a listener that
+	# synchronously chains into the next cutscene (e.g. prologue → chapter1
+	# via GameLoop._on_prologue_finished) sets _cutscene_id to the new id
+	# inside the emit's stack, but as soon as the listener yields on an
+	# await, control returns here and `_cutscene_id = ""` below would
+	# clobber the chained id. Snapshot + clear-first fixes that — when the
+	# listener runs, our member vars are already in the "between
+	# cutscenes" state and any new play_cutscene gets to fully own them.
+	var finished_id: String = _cutscene_id
 	_active = false
 	visible = false
-	cutscene_finished.emit(_cutscene_id)
 	_cutscene_id = ""
 	_skipping = false
+	cutscene_finished.emit(finished_id)
 
 
 ## =====================
