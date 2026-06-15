@@ -4245,15 +4245,17 @@ func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 1.0)
 
 
-## Track which monster types the player has encountered (persists in GameState)
+## Track which monster types the player has encountered (persists in GameState).
+## Delegates to BestiarySystem so the discovery dict has a single owner.
+## Pre-fix this inlined the same `GameState.game_constants["seen_monsters"]…`
+## lines that BestiarySystem.is_seen / mark_seen already implemented byte-for-
+## byte; the BestiarySystem versions sat as dead code (zero callers) and would
+## have drifted from these inlined copies on any future refactor.
 func _is_new_monster(monster_type: String) -> bool:
-	var seen = GameState.game_constants.get("seen_monsters", {})
-	return not seen.has(monster_type)
+	return not BestiarySystem.is_seen(monster_type)
 
 func _mark_monster_seen(monster_type: String) -> void:
-	if not GameState.game_constants.has("seen_monsters"):
-		GameState.game_constants["seen_monsters"] = {}
-	GameState.game_constants["seen_monsters"][monster_type] = true
+	BestiarySystem.mark_seen(monster_type)
 
 func _show_battle_quip() -> void:
 	"""Show a party member quip at battle start."""
