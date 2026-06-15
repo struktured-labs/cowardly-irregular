@@ -125,11 +125,16 @@ func transition_from_battle(victory: bool) -> void:
 	if battle_scene:
 		battle_scene.queue_free()
 
+	# Release the input lock pushed by transition_to_battle — UNCONDITIONALLY.
+	# Previously this sat inside `if player:`; if the player was freed mid-
+	# battle (scene change, map mid-load) the lock would leak and the
+	# overworld stayed permanently input-locked the next time it loaded.
+	InputLockManager.pop_lock("battle_transition")
+
 	# Show player controller
 	var player = MapSystem.get_player()
 	if player:
 		player.visible = true
-		InputLockManager.pop_lock("battle_transition")
 
 		# Reset step counter to prevent immediate re-encounter
 		player.reset_step_count()
