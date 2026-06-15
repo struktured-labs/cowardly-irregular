@@ -347,12 +347,18 @@ func _fetch_npc_sign_off() -> String:
 	if _event_log != null:
 		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
 
-	var prompt: String = DialoguePrompts.build_npc_opening_topical(
+	# Dedicated sign-off builder — frames the line as a GOODBYE and threads
+	# the conversation tail so the farewell reacts to what was just said.
+	# Previously this reused the opening-topical builder, whose prompt told
+	# the LLM "Generate exactly ONE opening line spoken by the NPC when the
+	# player approaches." — sign-offs often came back reading like greetings.
+	var prompt: String = DialoguePrompts.build_npc_sign_off(
 		_npc_name,
 		_npc_persona,
 		_location,
-		"a polite farewell — end the conversation warmly",
 		recent,
+		_last_npc_line,
+		_last_player_line,
 	)
 
 	_set_thinking(true)

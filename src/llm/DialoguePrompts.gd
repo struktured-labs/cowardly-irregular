@@ -168,6 +168,55 @@ static func build_npc_opening_topical(
 	return build_npc_opening(npc_name, extended_persona, location, recent_events)
 
 
+# ── Prompt builder: NPC sign-off ─────────────────────────────────────────────
+
+## Build a prompt asking the LLM to generate a single CLOSING line — the
+## NPC's farewell when the exchange limit hits or the player ends the chat.
+##
+## Crucially this is NOT another opening: previously the sign-off path
+## delegated to build_npc_opening_topical("a polite farewell"), whose prompt
+## literally said "Generate exactly ONE opening line spoken by the NPC when
+## the player approaches." The LLM had to fight that framing, and the result
+## often read like another greeting. This builder frames the line as a
+## farewell explicitly, threads the conversation tail so the goodbye actually
+## reacts to what was just said, and reuses the SCHEMA_NPC_OPENING shape so
+## validate_npc_opening still applies.
+static func build_npc_sign_off(
+	npc_name: String,
+	npc_persona: String,
+	location: String,
+	recent_events: Array,
+	last_npc_line: String,
+	player_line: String,
+) -> String:
+	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
+
+	var history_block: String = ""
+	if last_npc_line.strip_edges() != "":
+		history_block += "\nYou previously said:\n  \"%s\"\n" % last_npc_line.strip_edges()
+	if player_line.strip_edges() != "":
+		history_block += "The player just responded:\n  \"%s\"\n" % player_line.strip_edges()
+
+	return (
+		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
+		+ "Generate exactly ONE closing line — the NPC's farewell as the conversation ends.\n"
+		+ "\n"
+		+ "NPC: %s\n" % npc_name
+		+ "Persona: %s\n" % npc_persona
+		+ "Location: %s\n" % location
+		+ history_block
+		+ ctx_block
+		+ "\n"
+		+ "Rules:\n"
+		+ "- This is a GOODBYE, not a greeting; do NOT restart the conversation.\n"
+		+ "- React briefly to the player's last words if appropriate, then close warmly.\n"
+		+ "- Stay in character; no modern slang unless the setting demands it.\n"
+		+ "- Maximum %d characters.\n" % MAX_LINE_CHARS
+		+ "- Do NOT include the NPC name or speaker label in the line.\n"
+		+ "- Respond with ONLY valid JSON: {\"line\": \"<text>\"}\n"
+	)
+
+
 # ── Prompt builders: NPC follow-up reply ─────────────────────────────────────
 
 ## Build a prompt asking the LLM to generate a single NPC follow-up line
