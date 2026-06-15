@@ -592,7 +592,13 @@ func _resolve_attack(attacker, target) -> int:
 		_log("Critical hit!")
 
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
-	var actual = int((damage * damage) / (damage + def_val))
+	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
+	# combinations are reachable: get_buffed_stat returns 0 for base 0
+	# (the maxi(1, …) clamp only applies when base > 0), so a base-0
+	# attack stat × base-0 defense produces a 0/0 NaN that int() casts
+	# to a sentinel — silent garbage damage in autogrind sims.
+	var denom = maxf(1.0, damage + def_val)
+	var actual = int((damage * damage) / denom)
 	actual = max(1, actual)
 	if target.is_defending:
 		actual = actual / 2
@@ -669,7 +675,9 @@ func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 		return 0
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
 	var dmg = float(base_damage)
-	var actual = int((dmg * dmg) / (dmg + def_val))
+	# Same divisor guard as _resolve_attack — see comment there.
+	var denom = maxf(1.0, dmg + def_val)
+	var actual = int((dmg * dmg) / denom)
 	actual = max(1, actual)
 	if target.is_defending:
 		actual = actual / 2
