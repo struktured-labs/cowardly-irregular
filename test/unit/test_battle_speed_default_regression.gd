@@ -42,8 +42,16 @@ func test_battle_speeds_index_2_is_one_x() -> void:
 		"BATTLE_SPEEDS array must keep 1.0 at index 2; default index relies on this position")
 
 
-func test_save_system_fallback_default_is_2() -> void:
+func test_save_system_reads_via_preload_const() -> void:
+	# SaveSystem was rewired to preload BattleScene.gd as a class constant
+	# (BATTLE_SCENE_SCRIPT) — the runtime-load fallback `else 2` no longer
+	# exists because preload guarantees the script is present at save time.
+	# Pin the equivalent intent: SaveSystem must read the speed index
+	# directly from the preload const (no fragile 0.5x literal can sneak in).
 	var text = _read(SAVE_SYSTEM_PATH)
-	# The fallback for when BattleSceneScript isn't loaded must also be 2.
-	assert_true(text.find("BattleSceneScript._battle_speed_index if BattleSceneScript else 2") > -1,
-		"SaveSystem.save_settings fallback must default to 2 (= 1.0x), matching BattleScene's static default")
+	assert_true(text.find("BATTLE_SCENE_SCRIPT._battle_speed_index") > -1,
+		"SaveSystem must read _battle_speed_index via the BATTLE_SCENE_SCRIPT preload const")
+	# Belt-and-braces: the legacy bug-shape (runtime-load fallback to index 1)
+	# must never re-appear.
+	assert_eq(text.find("_battle_speed_index if BattleSceneScript else 1"), -1,
+		"SaveSystem must NOT carry the legacy `else 1` (= 0.5x) fallback for _battle_speed_index")

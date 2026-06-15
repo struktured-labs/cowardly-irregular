@@ -20,6 +20,12 @@ const QUICK_SAVE_SLOT = 99  # Special slot for quick save
 # SaveScreen presents as "Slot 1", silently clobbering the player's manual save.)
 const AUTO_SAVE_SLOT = 98
 
+## Preloaded for the settings save/load path. Promoted from two runtime
+## load("res://src/battle/BattleScene.gd") calls so we don't hit the
+## resource cache twice per session (and so a partial-import race during
+## launch can't silently degrade settings to defaults).
+const BATTLE_SCENE_SCRIPT := preload("res://src/battle/BattleScene.gd")
+
 ## Save data
 var current_save_slot: int = -1
 var auto_save_enabled: bool = true
@@ -620,10 +626,9 @@ const SETTINGS_PATH = "user://settings.json"
 
 func save_settings() -> void:
 	"""Save global game settings (battle speed, audio, display options)."""
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
 	var settings = {
 		"version": 2,
-		"battle_speed_index": BattleSceneScript._battle_speed_index if BattleSceneScript else 2,
+		"battle_speed_index": BATTLE_SCENE_SCRIPT._battle_speed_index,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"master_volume": AudioServer.get_bus_volume_db(0),
 	}
@@ -661,11 +666,10 @@ func load_settings() -> void:
 
 	var settings = json.data
 	# Battle speed
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	if BattleSceneScript and settings.has("battle_speed_index"):
+	if settings.has("battle_speed_index"):
 		var idx = int(settings["battle_speed_index"])
-		if idx >= 0 and idx < BattleSceneScript.BATTLE_SPEEDS.size():
-			BattleSceneScript._battle_speed_index = idx
+		if idx >= 0 and idx < BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.size():
+			BATTLE_SCENE_SCRIPT._battle_speed_index = idx
 
 	# Controller overlay
 	if GameState and settings.has("show_controller_overlay"):
@@ -700,9 +704,8 @@ func load_settings() -> void:
 			GameState.screen_shake_enabled = bool(settings["screen_shake_enabled"])
 		if settings.has("default_battle_speed"):
 			# Validate against actual BATTLE_SPEEDS — fall back to 1.0 if drift.
-			# (BattleSceneScript was already loaded at line 577 in this function.)
 			var raw_speed = float(settings["default_battle_speed"])
-			GameState.default_battle_speed = raw_speed if (BattleSceneScript and raw_speed in BattleSceneScript.BATTLE_SPEEDS) else 1.0
+			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else 1.0
 		if settings.has("debug_log_enabled"):
 			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
 			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):

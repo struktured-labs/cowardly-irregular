@@ -116,9 +116,13 @@ func test_settings_load_validates_battle_speed() -> void:
 	var src = _read_file("res://src/save/SaveSystem.gd")
 	# Look for the BATTLE_SPEEDS membership check in the default_battle_speed branch.
 	var idx = src.find("default_battle_speed")
-	# Find "in BattleSceneScript.BATTLE_SPEEDS" in any subsequent context.
-	# We require it (not just the bare float cast).
+	# Find the membership check in any subsequent context. The runtime-loaded
+	# `BattleSceneScript` was promoted to the preload class const
+	# BATTLE_SCENE_SCRIPT — either spelling means the lookup still validates
+	# against the actual BATTLE_SPEEDS array (not a literal whitelist).
 	var rest = src.substr(idx)
-	assert_string_contains(rest, "in BattleSceneScript.BATTLE_SPEEDS",
+	var validates := rest.contains("in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS") \
+		or rest.contains("in BattleSceneScript.BATTLE_SPEEDS")
+	assert_true(validates,
 		"default_battle_speed must be validated against the actual " +
 		"BATTLE_SPEEDS array, falling back to 1.0 on drift")
