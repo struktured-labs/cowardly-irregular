@@ -81,7 +81,30 @@ func transition_to_map(map_id: String, spawn_point: String = "default") -> void:
 
 
 func _get_map_path(map_id: String) -> String:
-	"""Get resource path for a map"""
+	"""Get resource path for a map.
+
+	Only PackedScene (.tscn) paths are returned: load_map uses
+	`scene.instantiate()` (PackedScene), not `Script.new()`, so
+	pointing at a .gd file silently produces a broken instance.
+
+	Most maps are loaded directly by GameLoop via preloaded Script
+	constants + .new() (the dragon caves, the .gd-only villages, the
+	Steampunk overworld). Those are NOT in this table — MapSystem's
+	routing is reserved for the handful of maps that genuinely have
+	a .tscn entry point and round-trip through save_data's
+	current_map_id field.
+
+	Prior to this trim, the table contained 10 entries pointing at
+	.gd scripts (would have silently failed if any caller routed
+	through MapSystem) plus 2 entries pointing at .tscn files that
+	no longer exist (StarterVillage, Cave). All 12 were unreachable
+	dead code — confirmed via grep of `MapSystem.load_map(\"...\")`
+	and `MapSystem.transition_to_map(\"...\")` callers — but a
+	future caller hitting any of them would have crashed silently.
+	The fallback wildcard at the bottom is kept as a sane default
+	but will return a path that doesn't match the real
+	villages/dungeons subdir layout — callers should add explicit
+	entries here when they wire MapSystem-driven loads."""
 	match map_id:
 		"overworld":
 			return "res://src/exploration/OverworldScene.tscn"
@@ -89,33 +112,6 @@ func _get_map_path(map_id: String) -> String:
 			return "res://src/maps/villages/HarmoniaVillage.tscn"
 		"whispering_cave":
 			return "res://src/maps/dungeons/WhisperingCave.tscn"
-		"village_starter":
-			return "res://src/maps/villages/StarterVillage.tscn"
-		"dungeon_cave":
-			return "res://src/maps/dungeons/Cave.tscn"
-		# New villages
-		"frosthold_village":
-			return "res://src/maps/villages/FrostholdVillage.gd"
-		"eldertree_village":
-			return "res://src/maps/villages/EldertreeVillage.gd"
-		"grimhollow_village":
-			return "res://src/maps/villages/GrimhollowVillage.gd"
-		"sandrift_village":
-			return "res://src/maps/villages/SandriftVillage.gd"
-		"ironhaven_village":
-			return "res://src/maps/villages/IronhavenVillage.gd"
-		# Dragon caves
-		"ice_dragon_cave":
-			return "res://src/maps/dungeons/IceDragonCave.gd"
-		"shadow_dragon_cave":
-			return "res://src/maps/dungeons/ShadowDragonCave.gd"
-		"lightning_dragon_cave":
-			return "res://src/maps/dungeons/LightningDragonCave.gd"
-		"fire_dragon_cave":
-			return "res://src/maps/dungeons/FireDragonCave.gd"
-		# Steampunk overworld
-		"steampunk_overworld":
-			return "res://src/exploration/SteampunkOverworld.gd"
 		_:
 			return "res://src/maps/%s.tscn" % map_id
 
