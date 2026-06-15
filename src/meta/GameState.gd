@@ -178,6 +178,24 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		for entry in save_data["player_party"]:
 			if entry is Dictionary:
 				typed_party.append(entry.duplicate(true))
+		# Resolve legacy job_aliases here too — without this, the carefully-
+		# resolved IDs that SaveSystem._deserialize_party writes BEFORE
+		# from_dict get silently overwritten with raw aliased IDs (white_mage
+		# / black_mage / thief) when game_state.player_party deserializes.
+		# Resolving in-place means any caller of from_dict — SaveSystem,
+		# time-rewind restore, save-migration tooling — gets canonical IDs.
+		var tree: SceneTree = Engine.get_main_loop() as SceneTree
+		var job_system: Node = null
+		if tree != null and tree.root != null:
+			job_system = tree.root.get_node_or_null("JobSystem")
+		if job_system != null and job_system.has_method("resolve_job_id"):
+			for entry in typed_party:
+				if entry.has("job_id") and entry["job_id"] is String:
+					entry["job_id"] = job_system.resolve_job_id(entry["job_id"])
+				if entry.has("job") and entry["job"] is String:
+					entry["job"] = job_system.resolve_job_id(entry["job"])
+				if entry.has("secondary_job_id") and entry["secondary_job_id"] is String:
+					entry["secondary_job_id"] = job_system.resolve_job_id(entry["secondary_job_id"])
 		player_party = typed_party
 	if save_data.has("party_leader_index"):
 		party_leader_index = save_data["party_leader_index"]
