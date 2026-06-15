@@ -121,14 +121,18 @@ func test_zero_attack_zero_defense_resolves_without_nan() -> void:
 	var atk := _make_combatant("ZeroAtk", 0, 5)
 	var tgt := _make_combatant("ZeroDef", 5, 0)
 	var resolver := ResolverScript.new()
-	# The function does randf_range / crit roll internally, so we just
-	# assert the result is a finite, positive int (no NaN cascade).
+	# The resolver has an internal miss roll (~10% baseline when attacker
+	# and target speeds match), so the result is either 0 (miss) or >= 1
+	# (real hit). The point of THIS test is that neither path produces a
+	# NaN-cast sentinel — both must be finite ints in a sensible range.
 	var result: int = resolver._resolve_attack(atk, tgt)
-	# Result must be 1 (the max(1, …) floor) since 0 damage smooths to 0
-	# before the floor. Critically it must NOT be INT_MIN / 0 / negative.
-	assert_gte(result, 1,
-		"_resolve_attack with zero-attack vs zero-defense must return >= 1 (not a NaN-cast sentinel)")
-	# Target HP must have decreased by exactly the returned damage —
-	# a NaN would have propagated into take_damage's HP math.
-	assert_eq(tgt.current_hp, 100 - result,
-		"target current_hp must equal max_hp - returned damage (no NaN propagation through take_damage)")
+	assert_true(result == 0 or result >= 1,
+		"_resolve_attack with zero/zero must return 0 (miss) or >= 1 (hit), never a NaN-cast sentinel. Got: %d" % result)
+	# HP propagation: miss preserves max_hp; hit reduces by exactly the
+	# returned damage. A NaN would corrupt the HP math here.
+	if result == 0:
+		assert_eq(tgt.current_hp, 100,
+			"a miss must preserve current_hp at max (no NaN propagation through take_damage)")
+	else:
+		assert_eq(tgt.current_hp, 100 - result,
+			"a hit must reduce current_hp by exactly the returned damage (no NaN propagation)")

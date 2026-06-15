@@ -255,7 +255,11 @@ func _rebuild_detail() -> void:
 		return
 	for child in _detail_panel.get_children():
 		child.queue_free()
-	if focused_index >= party.size():
+	# Defense in depth — the _input nav guards already keep focused_index in
+	# [0, party.size()), but a future input path or a setup() race could
+	# leave it negative. Guard both directions so party[focused_index]
+	# below can't blow up on `party[-1]`.
+	if focused_index < 0 or focused_index >= party.size():
 		return
 	var member = party[focused_index]
 
@@ -448,7 +452,16 @@ func _on_card_hover(index: int) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	# Nav guards: party.size() can be 0 if the screen opens against a freshly
+	# wiped state (test path, mid-load race). max(0, focused_index - 1) is
+	# safe on its own, but `min(party.size() - 1, …)` is NOT — empty party
+	# means min(-1, focused_index + 1) → -1 → _rebuild_detail's
+	# `if focused_index >= party.size()` guard misses (-1 < 0) and
+	# `party[-1]` crashes. Gate both nav paths on a non-empty party.
 	if event.is_action_pressed("ui_left") and not event.is_echo():
+		if party.size() == 0:
+			get_viewport().set_input_as_handled()
+			return
 		focused_index = max(0, focused_index - 1)
 		_update_focus()
 		_rebuild_detail()
@@ -456,6 +469,9 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_right") and not event.is_echo():
+		if party.size() == 0:
+			get_viewport().set_input_as_handled()
+			return
 		focused_index = min(party.size() - 1, focused_index + 1)
 		_update_focus()
 		_rebuild_detail()
