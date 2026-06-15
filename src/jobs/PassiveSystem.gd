@@ -306,13 +306,7 @@ func get_passive_mods(combatant: Combatant) -> Dictionary:
 		if passive.has("stat_mods"):
 			for mod_key in passive["stat_mods"]:
 				var mod_value = passive["stat_mods"][mod_key]
-
-				# Multiplicative mods
-				if mod_key.ends_with("_multiplier"):
-					total_mods[mod_key] *= mod_value
-				# Additive mods
-				else:
-					total_mods[mod_key] += mod_value
+				_compose_mod(total_mods, mod_key, mod_value)
 
 		# Apply conditional mods (like Last Stand)
 		if passive.has("conditional_mods"):
@@ -321,10 +315,27 @@ func get_passive_mods(combatant: Combatant) -> Dictionary:
 			if passive["conditional_mods"].has("hp_below_25") and hp_pct < 0.25:
 				for mod_key in passive["conditional_mods"]["hp_below_25"]:
 					var mod_value = passive["conditional_mods"]["hp_below_25"][mod_key]
-					if mod_key.ends_with("_multiplier"):
-						total_mods[mod_key] *= mod_value
+					_compose_mod(total_mods, mod_key, mod_value)
 
 	return total_mods
+
+
+## Compose a single passive stat-mod into the accumulator dict, initializing
+## any key that isn't yet present with the appropriate identity element
+## (1.0 for *_multiplier keys, 0.0 for additive keys). Without this guard,
+## stat_mods that introduce a new key (e.g. data/passives.json's
+## `steal_boost` adds `steal_chance` — not in the initial defaults dict)
+## triggered `null +=`/`null *=` runtime errors when the passive was
+## equipped, because Dictionary[missing_key] returns null in Godot 4.
+static func _compose_mod(total_mods: Dictionary, mod_key: String, mod_value: float) -> void:
+	if mod_key.ends_with("_multiplier"):
+		if not total_mods.has(mod_key):
+			total_mods[mod_key] = 1.0
+		total_mods[mod_key] *= mod_value
+	else:
+		if not total_mods.has(mod_key):
+			total_mods[mod_key] = 0.0
+		total_mods[mod_key] += mod_value
 
 
 func get_passives_by_category(category: PassiveCategory) -> Array:
