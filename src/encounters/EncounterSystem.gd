@@ -329,10 +329,26 @@ func set_enemy_pool_for_area(area_id: String) -> void:
 		print("Warning: No enemy pool defined for area: %s" % area_id)
 
 
+## Sane upper bound for the encounter-rate modifier. Cursed items / debuff
+## abilities can crank encounters up, but >10x base (50%/step at default rate)
+## is already absurd; anything past this is almost certainly a bug. NaN, inf
+## and negative values clamp to 0.0 — equivalent to "no encounters this step",
+## the safest no-op when caller code is malformed.
+const ENCOUNTER_RATE_MODIFIER_MAX: float = 10.0
+
+
 func set_encounter_rate_modifier(modifier: float) -> void:
-	"""Set encounter rate modifier (for items/abilities that affect encounter rate)"""
-	encounter_rate_modifier = modifier
-	print("Encounter rate modifier: %.1fx" % modifier)
+	"""Set encounter rate modifier (for items/abilities that affect encounter rate).
+
+	Clamped to [0.0, ENCOUNTER_RATE_MODIFIER_MAX]. A buggy caller (ability with
+	a sign bug, a corrupted save) could otherwise lock the player into
+	permanent no-encounters (negative product) or NaN math downstream — see
+	get_steps_until_guaranteed_encounter for the log() that breaks under
+	product == 1.0 / out-of-range values."""
+	if is_nan(modifier) or is_inf(modifier):
+		modifier = 0.0
+	encounter_rate_modifier = clampf(modifier, 0.0, ENCOUNTER_RATE_MODIFIER_MAX)
+	print("Encounter rate modifier: %.1fx" % encounter_rate_modifier)
 
 
 ## Special encounters
@@ -405,13 +421,26 @@ func _load_monster_database() -> void:
 
 ## Utility
 func get_steps_until_guaranteed_encounter() -> int:
-	"""Get approximate steps until an encounter is very likely (statistical)"""
-	if encounter_rate <= 0:
+	"""Approximate steps until an encounter is very likely (statistical).
+
+	Uses the effective per-step probability (encounter_rate * modifier) so
+	abilities that suppress (modifier=0) or amplify (modifier>1) encounters
+	are reflected in the estimate.
+
+	Returns -1 when effective probability is <= 0 (encounters are off /
+	suppressed). Returns 1 when effective probability is >= 1 (every step
+	guarantees an encounter). The interior log() math is undefined at the
+	0 and 1 boundaries — guarding those at the API edge is cleaner than
+	hoping callers never observe a stray NaN."""
+	var effective: float = encounter_rate * encounter_rate_modifier
+	if effective <= 0.0:
 		return -1  # Never
+	if effective >= 1.0:
+		return 1  # Guaranteed every step
 	# After N steps, probability of at least one encounter is high
 	# P(encounter in N steps) = 1 - (1 - rate)^N
 	# For 99% chance: N = log(0.01) / log(1 - rate)
-	return int(ceil(log(0.01) / log(1.0 - encounter_rate * encounter_rate_modifier)))
+	return int(ceil(log(0.01) / log(1.0 - effective)))
 
 
 func reset_encounter_counter() -> void:
