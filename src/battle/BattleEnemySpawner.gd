@@ -122,16 +122,19 @@ func _init(scene) -> void:
 
 func spawn_enemies() -> void:
 	"""Spawn 1-3 random enemies for the battle - sometimes mixed groups"""
-	# Clear any existing enemies
+	# Clear any existing enemies. Disconnect known signals before freeing to
+	# prevent dangling connections — must cover EVERY signal connected at
+	# spawn time (hp_changed, died, status_added, status_removed; see the
+	# four .connect() calls at the bottom of this function). Asymmetric
+	# cleanup (only the first two) leaves status listeners potentially
+	# called with a stale enemy reference if queue_free flushes mid-emit.
 	for enemy in _scene.test_enemies:
 		if is_instance_valid(enemy):
-			# Disconnect known signals before freeing to prevent dangling connections
-			if enemy.hp_changed.get_connections().size() > 0:
-				for conn in enemy.hp_changed.get_connections():
-					enemy.hp_changed.disconnect(conn.callable)
-			if enemy.died.get_connections().size() > 0:
-				for conn in enemy.died.get_connections():
-					enemy.died.disconnect(conn.callable)
+			for sig_name in ["hp_changed", "died", "status_added", "status_removed"]:
+				var sig: Signal = enemy.get(sig_name)
+				if sig.get_connections().size() > 0:
+					for conn in sig.get_connections():
+						sig.disconnect(conn.callable)
 			enemy.queue_free()
 	_scene.test_enemies.clear()
 
@@ -190,10 +193,14 @@ func spawn_enemies() -> void:
 				type_count += 1
 
 		var stats = monster_type["stats"].duplicate()
-		# Only add suffix if there are multiple of the same type
+		# Only add suffix if there are multiple of the same type. % 3 guards
+		# against an out-of-bounds read if num_enemies ever grows past 3
+		# (live cap is enemy_positions.size() == 3 today; the modulo matches
+		# spawn_from_data and spawn_encounter_enemies so all three spawn
+		# paths use the same suffix rule).
 		var same_type_total = monster_types_for_encounter.count(monster_type)
 		if same_type_total > 1:
-			stats["name"] = monster_type["name"] + " " + ["A", "B", "C"][type_count]
+			stats["name"] = monster_type["name"] + " " + ["A", "B", "C"][type_count % 3]
 		else:
 			stats["name"] = monster_type["name"]
 
