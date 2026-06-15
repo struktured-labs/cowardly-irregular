@@ -28,10 +28,57 @@ func on_damage_dealt(target: Combatant, amount: int, is_crit: bool, _element: St
 
 
 func on_healing_done(target: Combatant, amount: int) -> void:
-	"""Show floating heal number near target"""
+	"""Show floating heal number AND a soft expanding glow under target.
+	The glow gives healing visual parity with damage (which gets screen shake
+	+ a number). Previously a heal only spawned a green number — visually
+	indistinguishable from any other floaty popup. Now there's a moment."""
 	var pos = _get_combatant_sprite_position(target)
 	if pos != Vector2.ZERO:
 		spawn_damage_number(pos, amount, true, false)
+		spawn_heal_glow(pos)
+
+
+## Spawn a soft expanding green glow under the target sprite. Tweens alpha
+## up over 0.18s and back down over 0.62s while scaling 0.5 → 1.3, then
+## queue_frees. Two independent tweens because chain()/parallel()/set_parallel
+## are easy to mis-stage; two tweens against the same target are robust.
+func spawn_heal_glow(pos: Vector2) -> void:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.35, 1.0, 0.5, 0.32)
+	sb.corner_radius_top_left = 40
+	sb.corner_radius_top_right = 40
+	sb.corner_radius_bottom_left = 40
+	sb.corner_radius_bottom_right = 40
+	sb.border_width_top = 2
+	sb.border_width_bottom = 2
+	sb.border_width_left = 2
+	sb.border_width_right = 2
+	sb.border_color = Color(0.6, 1.0, 0.7, 0.8)
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.size = Vector2(90.0, 90.0)
+	panel.pivot_offset = panel.size / 2.0
+	# Anchored slightly below sprite center so the glow reads as ground-up.
+	panel.position = pos - panel.size / 2.0 + Vector2(0.0, 10.0)
+	panel.scale = Vector2(0.5, 0.5)
+	panel.modulate.a = 0.0
+	_scene.add_child(panel)
+
+	# Tween 1: alpha fade in (0.18s) then out (0.62s), then cleanup.
+	# Explicit Tween type — _scene is Variant-typed (circular-dep workaround)
+	# so create_tween() returns Variant and := can't infer.
+	var fade: Tween = _scene.create_tween()
+	fade.tween_property(panel, "modulate:a", 0.85, 0.18) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	fade.tween_property(panel, "modulate:a", 0.0, 0.62) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	fade.tween_callback(panel.queue_free)
+
+	# Tween 2: scale from 0.5 to 1.3 across the full 0.8s envelope.
+	var grow: Tween = _scene.create_tween()
+	grow.tween_property(panel, "scale", Vector2(1.3, 1.3), 0.8) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func on_attack_missed(target: Combatant) -> void:
