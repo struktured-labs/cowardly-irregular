@@ -339,9 +339,19 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 		description_label.text = "Insufficient gold!\nYou need %d G but only have %d G." % [cost, current_gold]
 		return
 
-	# Purchase successful
+	# Purchase successful — atomic: if the item can't actually be received
+	# (no party member to hold it, save corruption mid-shop, etc.), refund
+	# the gold and surface the failure. Pre-fix, _add_item_to_inventory
+	# silently no-op'd when player_party was empty — the gold was already
+	# spent and the UI showed "Purchased X!" but no item appeared.
 	if game_state.spend_gold(cost):
-		_add_item_to_inventory(item_id)
+		var added: bool = _add_item_to_inventory(item_id)
+		if not added:
+			game_state.add_gold(cost)  # Refund the failed transaction.
+			SoundManager.play_ui("menu_error")
+			_update_gold_display()
+			description_label.text = "No party to receive item — gold refunded."
+			return
 		SoundManager.play_ui("menu_select")
 		_update_gold_display()
 
@@ -435,24 +445,35 @@ func _get_sellable_inventory() -> Array:
 	return sellable
 
 
-func _add_item_to_inventory(item_id: String) -> void:
-	"""Add item to party inventory"""
+func _add_item_to_inventory(item_id: String) -> bool:
+	"""Add item to party inventory. Returns true if a recipient was found
+	and the item was added; false if no party member exists to hold it
+	(empty player_party). _attempt_purchase relies on this return value to
+	refund the spent gold when no recipient is reachable."""
 	if shop_type == ShopType.ITEM:
-		# Add to first party member's inventory
-		if game_state.player_party.size() > 0:
-			var party_leader = game_state.player_party[0]
-			if not party_leader.has("inventory"):
-				party_leader["inventory"] = {}
-			var inventory = party_leader["inventory"]
-			inventory[item_id] = inventory.get(item_id, 0) + 1
+		# Add to first party member's inventory.
+		if game_state.player_party.size() == 0:
+			return false
+		var party_leader = game_state.player_party[0]
+		if not party_leader.has("inventory"):
+			party_leader["inventory"] = {}
+		var inventory = party_leader["inventory"]
+		inventory[item_id] = inventory.get(item_id, 0) + 1
+		return true
 	elif shop_type == ShopType.BLACKSMITH:
-		# Add equipment to party leader's equipment pool
-		if game_state.player_party.size() > 0:
-			var party_leader = game_state.player_party[0]
-			if not party_leader.has("equipment_inventory"):
-				party_leader["equipment_inventory"] = []
-			party_leader["equipment_inventory"].append(item_id)
-	# Magic purchases handled separately in _attempt_magic_purchase
+		# Add equipment to party leader's equipment pool.
+		if game_state.player_party.size() == 0:
+			return false
+		var party_leader = game_state.player_party[0]
+		if not party_leader.has("equipment_inventory"):
+			party_leader["equipment_inventory"] = []
+		party_leader["equipment_inventory"].append(item_id)
+		return true
+	# Magic purchases handled separately in _attempt_magic_purchase. Any
+	# other shop_type values reaching here are an authoring error — refuse
+	# so the caller refunds the gold rather than silently accepting a
+	# half-applied transaction.
+	return false
 
 
 func _remove_item_from_inventory(item_id: String) -> bool:
