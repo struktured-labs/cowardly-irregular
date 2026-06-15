@@ -325,7 +325,15 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 			elif effects.has("heal_hp"):
 				revive_hp = max(1, int(effects["heal_hp"]))
 				_heal_consumed_by_revive = true
+			var hp_before_revive: int = target.current_hp
 			target.revive(revive_hp)
+			# Emit healing_done so the revived HP shows up as a popup + glow,
+			# the same visual the player sees when they get healed normally.
+			# Without this, revive items silently restore HP — the player has
+			# to look at the bar to notice anything happened.
+			var revived_amount: int = target.current_hp - hp_before_revive
+			if revived_amount > 0 and BattleManager:
+				BattleManager.healing_done.emit(target, revived_amount)
 			if _heal_consumed_by_revive:
 				print("  → %s was revived with %d HP!" % [target.combatant_name, target.current_hp])
 			else:
@@ -334,28 +342,41 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 	# HP healing (flat amount) — skip if revive already consumed it.
 	if effects.has("heal_hp") and not _heal_consumed_by_revive:
 		var heal_amount = effects["heal_hp"]
-		target.heal(heal_amount)
-		print("  → %s recovered %d HP" % [target.combatant_name, heal_amount])
+		var actual = target.heal(heal_amount)
+		# Emit healing_done so BattleScene's heal popup + glow fire — without
+		# this, items that heal would tick the HP bar silently.
+		if actual > 0 and BattleManager:
+			BattleManager.healing_done.emit(target, actual)
+		print("  → %s recovered %d HP" % [target.combatant_name, actual])
 
 	# HP healing (percentage) — skip if revive already consumed it.
 	if effects.has("heal_hp_percent") and not _heal_consumed_by_revive:
 		var heal_percent = effects["heal_hp_percent"]
 		var heal_amount = int(target.max_hp * heal_percent / 100.0)
-		target.heal(heal_amount)
-		print("  → %s recovered %d HP (%d%%)" % [target.combatant_name, heal_amount, heal_percent])
+		var actual_p = target.heal(heal_amount)
+		if actual_p > 0 and BattleManager:
+			BattleManager.healing_done.emit(target, actual_p)
+		print("  → %s recovered %d HP (%d%%)" % [target.combatant_name, actual_p, heal_percent])
 
-	# MP restoration (flat amount)
+	# MP restoration (flat amount). Surfaced through healing_done as the
+	# visual proxy — same convention as the Free Move MP-restore actions
+	# (Pray / Channel / Riff), per CLAUDE.md "healing_done (green popup)
+	# not damage_dealt (would show as crit damage)".
 	if effects.has("heal_mp"):
 		var restore_amount = effects["heal_mp"]
-		target.restore_mp(restore_amount)
-		print("  → %s recovered %d MP" % [target.combatant_name, restore_amount])
+		var actual_mp = target.restore_mp(restore_amount)
+		if actual_mp > 0 and BattleManager:
+			BattleManager.healing_done.emit(target, actual_mp)
+		print("  → %s recovered %d MP" % [target.combatant_name, actual_mp])
 
 	# MP restoration (percentage)
 	if effects.has("heal_mp_percent"):
 		var restore_percent = effects["heal_mp_percent"]
 		var restore_amount = int(target.max_mp * restore_percent / 100.0)
-		target.restore_mp(restore_amount)
-		print("  → %s recovered %d MP (%d%%)" % [target.combatant_name, restore_amount, restore_percent])
+		var actual_mp_p = target.restore_mp(restore_amount)
+		if actual_mp_p > 0 and BattleManager:
+			BattleManager.healing_done.emit(target, actual_mp_p)
+		print("  → %s recovered %d MP (%d%%)" % [target.combatant_name, actual_mp_p, restore_percent])
 
 	# Cure specific status effects
 	if effects.has("cure_status"):
@@ -414,8 +435,14 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 			multiplier *= 2.0
 
 		damage = int(damage * multiplier)
-		target.take_damage(damage)
-		print("  → %s took %d %s damage" % [target.combatant_name, damage, element])
+		var actual_damage: int = target.take_damage(damage)
+		# Emit damage_dealt so BattleScene's damage popup + screen shake
+		# fire. Without this, throwing a Holy Water at a skeleton would
+		# silently tick the enemy's HP bar — no number, no shake, no
+		# elemental tint. Items don't crit, so is_crit is always false.
+		if actual_damage > 0 and BattleManager:
+			BattleManager.damage_dealt.emit(target, actual_damage, false, element, multiplier)
+		print("  → %s took %d %s damage" % [target.combatant_name, actual_damage, element])
 
 
 func _is_target_undead(target) -> bool:
