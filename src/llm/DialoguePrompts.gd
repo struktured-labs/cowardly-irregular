@@ -515,12 +515,46 @@ static func _format_events(events: Array, limit: int) -> String:
 		var etype: String = str(entry.get("type", ""))
 		if summary.is_empty():
 			continue
-		lines.append("  [%s] %s" % [etype, summary])
+		var tags: String = _format_event_tags(entry)
+		lines.append("  [%s] %s%s" % [etype, summary, tags])
 
 	if lines.is_empty():
 		return ""
 
 	return "\nRecent events:\n" + "\n".join(lines) + "\n"
+
+
+## Surface rich-data flags from an EventLog entry as terse trailing tags so
+## the LLM can react to HOW something happened, not just THAT it did. Only
+## flags that are TRUE / non-default contribute — false flags would be
+## prompt noise that the LLM would helpfully but pointlessly acknowledge.
+##
+## Current decorations:
+##   boss_defeat → "[autobattled]" if tactics.pure_autobattle,
+##                 "[jailbreak landed]" if tactics.jailbreak_landed,
+##                 "[all-out attack]" if tactics.all_out_attack_used.
+## Returns "" when the entry has no decorable data or no truthy flags.
+static func _format_event_tags(entry: Dictionary) -> String:
+	var etype: String = str(entry.get("type", ""))
+	var data: Variant = entry.get("data", {})
+	if not (data is Dictionary):
+		return ""
+	var d: Dictionary = data as Dictionary
+	var tags: PackedStringArray = PackedStringArray()
+	match etype:
+		"boss_defeat":
+			var t: Variant = d.get("tactics", {})
+			if t is Dictionary:
+				var td: Dictionary = t as Dictionary
+				if bool(td.get("pure_autobattle", false)):
+					tags.append("autobattled")
+				if bool(td.get("jailbreak_landed", false)):
+					tags.append("jailbreak landed")
+				if bool(td.get("all_out_attack_used", false)):
+					tags.append("all-out attack")
+	if tags.is_empty():
+		return ""
+	return " [%s]" % ", ".join(tags)
 
 
 ## Return a copy of FALLBACK_PLAYER_CHOICES trimmed to `count` items.
