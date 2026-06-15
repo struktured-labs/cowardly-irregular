@@ -293,6 +293,31 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("ui_down"):
 		input_dir.y += 1
 
+	# Click-to-move: when no keyboard/gamepad direction is held AND the
+	# input layer (_unhandled_input) flagged a click target, derive an
+	# input_dir that walks toward it. Pre-fix this consumer didn't exist
+	# — _click_target / _moving_to_click / _interact_on_arrival were SET
+	# by the mouse handler but never READ anywhere, so the click-to-move
+	# UX promised by the input branch was silently dead.
+	if input_dir == Vector2.ZERO and _moving_to_click:
+		var to_target := _click_target - global_position
+		var arrive_dist := INTERACT_ARRIVE_DIST if _interact_on_arrival else CLICK_ARRIVE_DIST
+		if to_target.length() <= arrive_dist:
+			# Arrived. Fire the interact if we were heading to an NPC,
+			# then clear the click-walk state.
+			_moving_to_click = false
+			if _interact_on_arrival:
+				_interact_on_arrival = false
+				interaction_requested.emit()
+		else:
+			input_dir = to_target.normalized()
+	elif input_dir != Vector2.ZERO and _moving_to_click:
+		# Player took the wheel — cancel the click-walk so manual input
+		# wins (matches the JRPG / RTS convention where any explicit move
+		# overrides queued click-to-move).
+		_moving_to_click = false
+		_interact_on_arrival = false
+
 	# Rotate input to match camera direction so "up" moves forward visually
 	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
 		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
