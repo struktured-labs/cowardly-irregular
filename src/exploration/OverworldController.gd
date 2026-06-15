@@ -64,8 +64,23 @@ func _check_encounter() -> bool:
 	# FALSE for autoloads in Godot 4 — look up via scene tree root).
 	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if get_tree() else null
 	if es != null:
-		# EncounterSystem should also respect the multiplier
-		return es.check_for_encounter() and randf() < rate_multiplier
+		# Compose the settings multiplier with ES's chance calculation by
+		# scaling encounter_rate_modifier for the duration of one check.
+		# Pre-fix this did `es.check_for_encounter() and randf() < rate_multiplier`
+		# as a SECONDARY roll. For settings_multiplier > 1.0 (UI exposes
+		# 0..2x), `randf() < 1.5` is always true so the bonus did nothing —
+		# the slider effectively capped at 1x. Scaling the ES modifier
+		# pre-roll makes the full UI range honest. Restore after so item
+		# debuffs / Repel state aren't polluted. Clamp to the ES allowed
+		# range so a bad UI value can't push past the engine's contract.
+		var original_modifier: float = es.encounter_rate_modifier
+		var composite: float = clampf(
+			original_modifier * rate_multiplier,
+			0.0, es.ENCOUNTER_RATE_MODIFIER_MAX)
+		es.encounter_rate_modifier = composite
+		var triggered: bool = es.check_for_encounter()
+		es.encounter_rate_modifier = original_modifier
+		return triggered
 
 	# Fallback: simple random check with multiplier
 	return randf() < (_encounter_rate * rate_multiplier)
