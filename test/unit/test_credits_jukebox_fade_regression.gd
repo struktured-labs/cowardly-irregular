@@ -33,8 +33,13 @@ func test_credits_end_path_uses_fade_out_music() -> void:
 
 func test_jukebox_close_no_resume_uses_fade() -> void:
 	var text = _read(JUKEBOX_PATH)
-	# Find the elif _resume_track == "" branch and confirm it now fades.
-	var branch_idx = text.find("elif _resume_track == \"\":")
+	# Find the no-resume branch. Tick 34 tightened the clause from
+	#   elif _resume_track == "":
+	# to
+	#   elif _resume_track == "" and current_track != "":
+	# so a jukebox opened from genuine silence doesn't fade-out silence.
+	# Match either form with a prefix search.
+	var branch_idx = text.find("elif _resume_track == \"\"")
 	assert_true(branch_idx > -1, "JukeboxMenu must still have the no-resume-track branch")
 	if branch_idx == -1:
 		return

@@ -328,12 +328,24 @@ func _on_row_hover(local_row: int) -> void:
 
 func _close_menu() -> void:
 	if SoundManager:
+		# Compare against what's ACTUALLY playing right now, not against
+		# _currently_playing (which is only set when the user clicks Play
+		# inside the jukebox). Pre-fix: if the player opened the jukebox
+		# while music was playing and closed without clicking anything,
+		# the branch below saw _currently_playing == "" and re-fired
+		# play_music(_resume_track) — restarting the SAME track that was
+		# already playing seamlessly. Audible hitch on every "just
+		# browsed and backed out" close. Comparing against the live
+		# current_music makes this branch a true no-op in that case.
+		var current_track: String = ""
+		if "_current_music" in SoundManager:
+			current_track = str(SoundManager._current_music)
 		# Resume the track that was playing before the jukebox opened, if any.
 		# Falls back to stopping music if there was no prior track.
-		if _resume_track != "" and _resume_track != _currently_playing:
+		if _resume_track != "" and _resume_track != current_track:
 			if SoundManager.has_method("play_music"):
 				SoundManager.play_music(_resume_track)
-		elif _resume_track == "":
+		elif _resume_track == "" and current_track != "":
 			# Smooth fade rather than hard cut — the jukebox was playing
 			# but the player opened it from silent context, so we're
 			# returning them to silence. Fade keeps the close from feeling
