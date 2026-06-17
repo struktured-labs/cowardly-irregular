@@ -341,7 +341,14 @@ func _rest_party() -> void:
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and game_loop.party:
 		for member in game_loop.party:
-			member.current_hp = member.max_hp
+			# Direct current_hp assignment leaves is_alive=false on dead
+			# members — they end up at full HP but still flagged dead, so
+			# they sit out of battles until a Phoenix Down. Call revive()
+			# to flip is_alive AND set HP atomically.
+			if not member.is_alive:
+				member.revive(member.max_hp)
+			else:
+				member.current_hp = member.max_hp
 			member.current_mp = member.max_mp
 			member.current_ap = 0  # Reset AP too
 
