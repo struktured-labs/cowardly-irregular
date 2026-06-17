@@ -39,17 +39,26 @@ for f in assets/audio/music/*.ogg; do
   if [ "$br" = "64000" ] && [ "$ch" = "1" ]; then
     continue
   fi
-  ffmpeg -y -loglevel error -i "$f" -ac 1 -b:a 64k -map_metadata -1 "${f}.tmp" && mv "${f}.tmp" "$f"
+  # ffmpeg infers output format from the file extension; keep ".ogg" on
+  # the tmp name so libvorbis is selected (a bare ".tmp" suffix fails
+  # with "Unable to choose an output format").
+  tmp="${f%.ogg}.tmp.ogg"
+  ffmpeg -y -loglevel error -i "$f" -ac 1 -b:a 64k -map_metadata -1 "$tmp" && mv "$tmp" "$f"
   music_compressed=$((music_compressed + 1))
 done
 echo "[deploy_web]   $music_compressed file(s) compressed"
 
-echo "[deploy_web] quantizing monster sprites to 64 colors..."
+echo "[deploy_web] quantizing monster sprites (iterative 256→128→64 colors)..."
+# Empirically (interactive deploy 2026-06-16) the iterative reduction
+# produces a tighter final palette than a single-pass to 64 — final pck
+# came in ~17 MiB smaller. Each pass refines the previous output.
 sprites_quantized=0
 for f in assets/sprites/monsters/*.png; do
-  magick "$f" -strip -colors 64 -dither FloydSteinberg "${f}.tmp"
-  optipng -o2 -quiet "${f}.tmp"
-  mv "${f}.tmp" "$f"
+  for colors in 256 128 64; do
+    magick "$f" -strip -colors "$colors" -dither FloydSteinberg "${f}.tmp"
+    optipng -o2 -quiet "${f}.tmp"
+    mv "${f}.tmp" "$f"
+  done
   sprites_quantized=$((sprites_quantized + 1))
 done
 echo "[deploy_web]   $sprites_quantized sprite(s) quantized"
