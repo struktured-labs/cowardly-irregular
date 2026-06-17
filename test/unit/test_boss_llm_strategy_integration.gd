@@ -174,3 +174,24 @@ func test_build_intent_context_captures_party_and_boss_state() -> void:
 
 	# Clean up.
 	bm.player_party.clear()
+
+
+# ── Stale-phase guard source pin ─────────────────────────────────────────────
+
+func test_refine_boss_intent_async_has_stale_phase_guard() -> void:
+	# Out-of-order safety: a phase 1→3 swing kicks off two async LLM
+	# calls in quick succession. If phase 2's reply lands AFTER phase
+	# 3's, the stale phase-2 intent would otherwise overwrite phase 3.
+	# _refine_boss_intent_async must compare the snapshot phase against
+	# combatant.boss_dialogue_phase when the result lands and drop
+	# anything stale.
+	var bm_src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var fn_idx: int = bm_src.find("func _refine_boss_intent_async")
+	assert_gt(fn_idx, -1, "_refine_boss_intent_async must exist")
+	var rest: String = bm_src.substr(fn_idx)
+	var next_fn: int = rest.find("\nfunc ", 1)
+	var body: String = rest.substr(0, next_fn) if next_fn > -1 else rest
+	assert_true(body.contains("boss_dialogue_phase"),
+		"_refine_boss_intent_async must read combatant.boss_dialogue_phase to detect stale results")
+	assert_true(body.contains("current_phase > phase"),
+		"_refine_boss_intent_async must compare current_phase > phase and drop stale refinements")

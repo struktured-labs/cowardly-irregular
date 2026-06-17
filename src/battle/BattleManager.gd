@@ -3708,6 +3708,12 @@ func _should_use_llm_strategy(persona_id: String) -> bool:
 ## deterministic pick already in place stays — no UI artifact, no NPC
 ## confusion. Caller MUST NOT await this; it's intentionally fire-and-
 ## forget so the current turn isn't held up.
+##
+## Out-of-order guard: if a phase 1→3 swing fires two transitions back
+## to back and the phase-2 LLM call lands AFTER the phase-3 one, the
+## stale phase-2 result would otherwise overwrite phase 3's intent.
+## We pin the snapshot phase against combatant.boss_dialogue_phase when
+## the refined result lands — anything stale is dropped silently.
 func _refine_boss_intent_async(
 	combatant: Combatant,
 	persona_id: String,
@@ -3722,6 +3728,11 @@ func _refine_boss_intent_async(
 	var refined: Dictionary = await boss_dlg.pick_intent_async(ctx)
 	if not is_instance_valid(combatant):
 		return  # Boss died / battle ended while the LLM was thinking.
+	# Stale-phase guard: drop the result if the boss has already
+	# advanced past the phase this refinement was launched for.
+	var current_phase: int = int(combatant.get_meta("boss_dialogue_phase", 0))
+	if current_phase > phase:
+		return
 	var refined_id: String = str(refined.get("intent_id", ""))
 	if refined_id.is_empty():
 		return
