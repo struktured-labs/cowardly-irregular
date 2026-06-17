@@ -41,6 +41,14 @@ var screen_shake_enabled: bool = true  # Master gate for camera/screen shake eff
 ## desktop. SettingsMenu mirrors this to LLMService.llm_enabled at runtime.
 var llm_enabled: bool = not OS.has_feature("web")
 
+## Phase-1 LLM-strategic-boss flag (Mordaine only for first showcase).
+## When ON AND llm_enabled AND LLMService reports a ready non-null backend,
+## BattleManager._update_boss_dialogue_phase awaits BossDialogue
+## pick_intent_async to let the LLM pick the boss's strategic posture for
+## the phase. OFF defaults — opt-in for first plays so vanilla bosses stay
+## reproducible.
+var boss_llm_strategy_enabled: bool = false
+
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {
 	"exp_multiplier": 1.0,
@@ -218,6 +226,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		current_save_name = save_data["current_save_name"]
 	if save_data.has("llm_enabled"):
 		llm_enabled = bool(save_data["llm_enabled"])
+	if save_data.has("boss_llm_strategy_enabled"):
+		boss_llm_strategy_enabled = bool(save_data["boss_llm_strategy_enabled"])
 	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
 	# hasn't run yet (defensive — _apply_save_data is normally called via
 	# SaveSystem after autoloads are live). EventLog.restore() handles the

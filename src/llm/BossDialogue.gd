@@ -11,7 +11,10 @@ extends Node
 ##   get_victory_line(boss_id) -> String   (boss reaction when the PARTY wins)
 ##   get_defeat_line(boss_id) -> String    (boss gloat when it WIPES the party)
 ##   pick_intent(boss_id, phase, game_state, llm_available) -> Dictionary
-##       returns { intent_id, taunt_line }
+##       returns { intent_id, taunt_line }  — synchronous, deterministic
+##   pick_intent_async(ctx: BossIntentContext) -> Dictionary  [awaitable]
+##       returns { intent_id, taunt_line, reason } — LLM-aware; falls
+##       through to the deterministic pick_intent on any failure.
 ##   check_jailbreak(boss_id, directive_text) -> Variant
 ##       returns null OR { vulnerability_id, consequence }
 ##
@@ -216,6 +219,72 @@ func pick_intent(boss_id: String, phase: int, _game_state: Variant = null, _llm_
 	return {
 		"intent_id": str(picked.get("id", "")),
 		"taunt_line": taunt_line,
+	}
+
+
+## pick_intent_async — LLM-aware variant. Builds the
+## DialoguePrompts.build_boss_intent prompt off the given context,
+## awaits LLMService.complete_json with SCHEMA_BOSS_INTENT, and validates
+## the result with DialoguePrompts.validate_boss_intent (which gates
+## intent_id ∈ ctx.available_intents).
+##
+## On ANY failure — LLM disabled, no ready backend, schema violation,
+## intent not in available list, timeout — falls through to the
+## existing deterministic pick_intent() so the boss still acts. The LLM
+## is never load-bearing; it's strictly an override layer.
+##
+## Returns { intent_id, taunt_line, reason }. `reason` is empty in the
+## fallback path. `taunt_line` may also be empty if the boss has no
+## authored taunts for the deterministic pick.
+##
+## MUST be awaited.
+func pick_intent_async(ctx: BossIntentContext) -> Dictionary:
+	if ctx == null:
+		return {"intent_id": "", "taunt_line": "", "reason": ""}
+
+	# Deterministic baseline — used as the fallback at the bottom AND as
+	# the immediate return when LLM isn't available. Computing it upfront
+	# also gives us a known-valid intent_id to return on any LLM failure
+	# without re-rolling the weighted picker.
+	var det: Dictionary = pick_intent(ctx.boss_id, ctx.phase, null, false)
+	var det_envelope: Dictionary = {
+		"intent_id":  str(det.get("intent_id", "")),
+		"taunt_line": str(det.get("taunt_line", "")),
+		"reason":     "",
+	}
+
+	var llm = get_node_or_null("/root/LLMService")
+	if llm == null or not llm.has_method("is_available") or not llm.is_available():
+		return det_envelope
+
+	# Build prompt off the context dict so DialoguePrompts stays decoupled.
+	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")
+	if DialoguePromptsScript == null:
+		return det_envelope
+
+	var display_name: String = get_display_name(ctx.boss_id)
+	var prompt: String = DialoguePromptsScript.build_boss_intent(display_name, ctx.to_dict())
+
+	var raw: Variant = await llm.complete_json(
+		prompt,
+		DialoguePromptsScript.SCHEMA_BOSS_INTENT,
+		DialoguePromptsScript.FALLBACK_BOSS_INTENT,
+	)
+	var validated: Dictionary = DialoguePromptsScript.validate_boss_intent(raw, ctx.available_intents)
+	var chosen_id: String = str(validated.get("intent_id", ""))
+	if chosen_id.is_empty():
+		# Validator rejected — keep the deterministic envelope.
+		return det_envelope
+
+	# Successful LLM pick. The taunt the LLM wrote takes priority over the
+	# authored taunt_lines (which the deterministic path picked at random).
+	var llm_taunt: String = str(validated.get("taunt", ""))
+	var final_taunt: String = llm_taunt if not llm_taunt.is_empty() else det_envelope.get("taunt_line", "")
+
+	return {
+		"intent_id":  chosen_id,
+		"taunt_line": final_taunt,
+		"reason":     str(validated.get("reason", "")),
 	}
 
 

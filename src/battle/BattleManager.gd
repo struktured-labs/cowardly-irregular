@@ -3669,6 +3669,132 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 		battle_log_message.emit("[color=red]%s: \"%s\"[/color]" % [combatant.combatant_name, taunt])
 		boss_taunt.emit(combatant, taunt)
 
+	# Phase 1: strategic-intent refinement. The deterministic pick above
+	# fires immediately (no UX stall); when GameState.boss_llm_strategy_enabled
+	# is on AND a ready LLM backend is reachable, kick off an async
+	# refinement that may override `llm_intent` for the REMAINDER of this
+	# phase. The first phase-N turn uses the scripted intent; later turns
+	# in the same phase use the LLM-chosen posture. The function is async
+	# and intentionally NOT awaited so the enemy's current decision flow
+	# isn't blocked by a 1–5s HTTP round-trip.
+	if llm_available and _should_use_llm_strategy(persona_id):
+		_refine_boss_intent_async(combatant, persona_id, new_phase, boss_dlg)
+
+
+## Returns true when LLM strategy is opt-in AND the persona is on the
+## showcase list. First showcase: Mordaine only. Extend the allowlist as
+## later bosses get persona blocks + scripted_intents.
+func _should_use_llm_strategy(persona_id: String) -> bool:
+	var gs = get_node_or_null("/root/GameState")
+	if gs == null:
+		return false
+	if not ("boss_llm_strategy_enabled" in gs) or not gs.boss_llm_strategy_enabled:
+		return false
+	# Allowlist guard: a boss without a scripted_intents block in
+	# data/boss_dialogue.json would just round-trip a fallback anyway, so
+	# pin to the bosses we've explicitly designed for.
+	const ALLOWLIST: Array[String] = ["chancellor_mordaine"]
+	return persona_id in ALLOWLIST
+
+
+## Async refinement — builds a BossIntentContext snapshot and awaits
+## BossDialogue.pick_intent_async. On success, overrides combatant's
+## `llm_intent` meta and emits the LLM-authored taunt. On failure the
+## deterministic pick already in place stays — no UI artifact, no NPC
+## confusion. Caller MUST NOT await this; it's intentionally fire-and-
+## forget so the current turn isn't held up.
+func _refine_boss_intent_async(
+	combatant: Combatant,
+	persona_id: String,
+	phase: int,
+	boss_dlg: Node,
+) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	var ctx := _build_boss_intent_context(combatant, persona_id, phase, boss_dlg)
+	if ctx == null:
+		return
+	var refined: Dictionary = await boss_dlg.pick_intent_async(ctx)
+	if not is_instance_valid(combatant):
+		return  # Boss died / battle ended while the LLM was thinking.
+	var refined_id: String = str(refined.get("intent_id", ""))
+	if refined_id.is_empty():
+		return
+	# Compare against the currently-set intent. If they match, no taunt
+	# (the deterministic taunt already surfaced — don't echo).
+	var current_id: String = str(combatant.get_meta("llm_intent", ""))
+	combatant.set_meta("llm_intent", refined_id)
+	if refined_id == current_id:
+		return
+	var refined_taunt: String = str(refined.get("taunt_line", ""))
+	if refined_taunt.is_empty():
+		return
+	battle_log_message.emit("[color=red]%s: \"%s\"[/color]" % [combatant.combatant_name, refined_taunt])
+	boss_taunt.emit(combatant, refined_taunt)
+
+
+## Snapshot the live battle into a BossIntentContext for LLM prompting.
+## Strips Node refs — the LLM input is pure data (names, HP%, IDs).
+func _build_boss_intent_context(
+	combatant: Combatant,
+	persona_id: String,
+	phase: int,
+	boss_dlg: Node,
+) -> BossIntentContext:
+	var ctx := BossIntentContext.new()
+	ctx.boss_id = persona_id
+	ctx.phase = phase
+	ctx.boss_hp_pct = combatant.get_hp_percentage()
+	ctx.boss_mp_pct = float(combatant.current_mp) / float(maxi(combatant.max_mp, 1)) * 100.0
+	ctx.boss_ap = combatant.current_ap
+	ctx.boss_status = combatant.status_effects.duplicate() if combatant.status_effects != null else []
+
+	for member in player_party:
+		if member == null:
+			continue
+		ctx.party.append({
+			"name":    str(member.combatant_name),
+			"job_id":  str(member.job_id) if "job_id" in member else "",
+			"hp_pct":  member.get_hp_percentage(),
+			"mp_pct":  float(member.current_mp) / float(maxi(member.max_mp, 1)) * 100.0,
+			"ap":      member.current_ap,
+			"is_alive": member.is_alive,
+			"status":  member.status_effects.duplicate() if member.status_effects != null else [],
+		})
+
+	# Available intents — pre-filtered by phase, mirrors the deterministic
+	# pick_intent eligibility logic. The validator gates on this list.
+	if boss_dlg != null and boss_dlg.has_method("has_entry") and boss_dlg.has_entry(persona_id):
+		var entry: Dictionary = boss_dlg._data.get(persona_id, {})
+		var scripted: Array = entry.get("scripted_intents", [])
+		for it in scripted:
+			if not (it is Dictionary):
+				continue
+			var cond: Dictionary = it.get("conditions", {})
+			var min_phase: int = int(cond.get("min_phase", 1))
+			if phase >= min_phase:
+				ctx.available_intents.append(str(it.get("id", "")))
+		# Pull persona text from the showcase personas data if present —
+		# falls back to display_name + "boss" if no persona block authored.
+		ctx.persona = str(entry.get("persona", ""))
+		if ctx.persona.is_empty() and "get_display_name" in boss_dlg:
+			ctx.persona = "%s, a boss in Cowardly Irregular." % boss_dlg.get_display_name(persona_id)
+
+	# Recent actions — feed the player action log so the LLM can see what
+	# the party keeps doing (mirrors the prompt's "Recent exchange" block).
+	for entry_dict in _battle_action_log:
+		if not (entry_dict is Dictionary):
+			continue
+		ctx.push_recent({
+			"kind":       "party_action",
+			"actor":      str(entry_dict.get("character_id", "?")),
+			"ability_id": str(entry_dict.get("ability_id", "")),
+			"target":     str(entry_dict.get("target_type", "")),
+			"damage":     0,
+		})
+
+	return ctx
+
 
 ## Probability multiplier ladder. Returns a Dictionary {ability_id_or_role: float}
 ## that ladders downstream of the existing weighted match — _ai_caster /

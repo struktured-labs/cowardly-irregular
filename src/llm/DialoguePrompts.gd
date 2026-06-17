@@ -67,6 +67,18 @@ const SCHEMA_COMBINED_REPLY: Dictionary = {
 	"choices": "Array",
 }
 
+## Schema for the boss strategic-intent picker. The LLM picks ONE of the
+## boss's pre-authored scripted_intents (aggress / turtle / etc.) based on
+## battle state, plus a short in-character taunt. The validator enforces
+## intent_id ∈ available_intents — the LLM cannot invent ability names
+## (see BossDialogue's "STAKES GUARDRAIL: never let the LLM name an
+## ability" — strategy lives at the intent level only).
+const SCHEMA_BOSS_INTENT: Dictionary = {
+	"intent_id": "String",
+	"reason":    "String",
+	"taunt":     "String",
+}
+
 
 # ── Fallback constants ────────────────────────────────────────────────────────
 
@@ -115,6 +127,21 @@ const FALLBACK_COMBINED_REPLY: Dictionary = {
 		"Farewell.",
 	],
 }
+
+## Fallback boss intent envelope. intent_id is intentionally empty here —
+## validate_boss_intent's caller treats empty intent_id as "use the
+## deterministic weighted-random picker" so the existing strategy layer
+## takes over silently.
+const FALLBACK_BOSS_INTENT: Dictionary = {
+	"intent_id": "",
+	"reason":    "",
+	"taunt":     "",
+}
+
+## Hard cap on the LLM's freeform reason/taunt strings so a runaway
+## generation doesn't blow up the combat log.
+const MAX_BOSS_TAUNT_CHARS: int = 140
+const MAX_BOSS_REASON_CHARS: int = 240
 
 
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
@@ -382,6 +409,97 @@ static func build_player_choices_toned(
 	)
 
 
+# ── Prompt builder: boss strategic intent ─────────────────────────────────────
+
+## Build the prompt asked of the LLM at each boss phase transition.
+##
+## ctx is a BossIntentContext (passed as Dictionary via to_dict()) so this
+## function stays decoupled from the class. The LLM picks ONE of
+## ctx.available_intents and writes a short in-character taunt for the
+## moment the new posture lands.
+##
+## Parameters:
+##   display_name — boss display name (e.g. "Chancellor Mordaine")
+##   ctx          — Dictionary from BossIntentContext.to_dict()
+##
+## Returns a prompt String ready for LLMService.complete_json().
+static func build_boss_intent(
+	display_name: String,
+	ctx: Dictionary,
+) -> String:
+	var persona: String = str(ctx.get("persona", ""))
+	if persona.is_empty():
+		persona = "A formidable JRPG boss."
+	var phase: int = int(ctx.get("phase", 1))
+	var hp_pct: float = float(ctx.get("boss_hp_pct", 100.0))
+	var mp_pct: float = float(ctx.get("boss_mp_pct", 100.0))
+	var ap: int = int(ctx.get("boss_ap", 0))
+	var boss_status: Array = ctx.get("boss_status", []) as Array
+	var party: Array = ctx.get("party", []) as Array
+	var intents: Array = ctx.get("available_intents", []) as Array
+	var recent: Array = ctx.get("recent_actions", []) as Array
+
+	var party_lines: PackedStringArray = PackedStringArray()
+	for member in party:
+		if not (member is Dictionary):
+			continue
+		var alive: bool = bool(member.get("is_alive", true))
+		var alive_tag: String = "alive" if alive else "DEAD"
+		var status_arr: Array = member.get("status", []) as Array
+		var status_tag: String = ("/" + ",".join(_strs_packed(status_arr))) if status_arr.size() > 0 else ""
+		party_lines.append("  - %s (%s): HP %d%%, AP %d %s%s" % [
+			str(member.get("name", "?")),
+			str(member.get("job_id", "?")),
+			int(member.get("hp_pct", 100)),
+			int(member.get("ap", 0)),
+			alive_tag,
+			status_tag,
+		])
+
+	var recent_lines: PackedStringArray = PackedStringArray()
+	for entry in recent:
+		if not (entry is Dictionary):
+			continue
+		var kind: String = str(entry.get("kind", ""))
+		var actor: String = str(entry.get("actor", "?"))
+		var ability: String = str(entry.get("ability_id", "?"))
+		var target: String = str(entry.get("target", ""))
+		var dmg: int = int(entry.get("damage", 0))
+		var dmg_tag: String = (" (%d dmg)" % dmg) if dmg != 0 else ""
+		var tgt_tag: String = (" → %s" % target) if target != "" else ""
+		recent_lines.append("  - [%s] %s used %s%s%s" % [kind, actor, ability, tgt_tag, dmg_tag])
+
+	var intent_block: String = ""
+	for id in intents:
+		intent_block += "  - %s\n" % str(id)
+	if intent_block.is_empty():
+		intent_block = "  - (no scripted intents available — return empty intent_id)\n"
+
+	var boss_status_tag: String = ", ".join(_strs_packed(boss_status)) if boss_status.size() > 0 else "none"
+	var party_block: String = "\n".join(party_lines) if party_lines.size() > 0 else "  (no live party data)"
+	var recent_block: String = "\n".join(recent_lines) if recent_lines.size() > 0 else "  (no recent actions)"
+
+	return (
+		"You are the strategic mind of %s, a boss in the meta-aware JRPG 'Cowardly Irregular'.\n" % display_name
+		+ "Stay rigorously in character. Persona:\n"
+		+ "  %s\n" % persona
+		+ "\n"
+		+ "It is the start of phase %d.\n" % phase
+		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
+		+ "Party state:\n%s\n" % party_block
+		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
+		+ "\n"
+		+ "Pick exactly ONE intent for this phase from this list (anything else is a parse error):\n"
+		+ intent_block
+		+ "\n"
+		+ "Rules:\n"
+		+ "- intent_id MUST be one of the listed values, verbatim.\n"
+		+ "- reason: one short sentence (≤ %d chars) explaining WHY this intent fits the moment. Internal use only.\n" % MAX_BOSS_REASON_CHARS
+		+ "- taunt: one in-character line (≤ %d chars) to surface in the combat log. No quote marks.\n" % MAX_BOSS_TAUNT_CHARS
+		+ "- Respond with ONLY valid JSON: {\"intent_id\": \"...\", \"reason\": \"...\", \"taunt\": \"...\"}\n"
+	)
+
+
 # ── Validation helpers ─────────────────────────────────────────────────────────
 
 ## Validate and sanitise an LLM-returned NPC opening Dictionary.
@@ -498,7 +616,72 @@ static func validate_combined_reply(raw: Variant, expected_count: int, cycle_ind
 	}
 
 
+## Validate and sanitise an LLM-returned boss intent Dictionary.
+##
+## Accepts the raw Variant from LLMService.complete_json() and the list
+## of intent IDs the boss currently has access to (already phase-filtered
+## by BossIntentContext.available_intents).
+##
+## Returns a safe Dictionary matching SCHEMA_BOSS_INTENT. On ANY failure —
+## raw isn't a Dictionary, intent_id missing, intent_id not in available,
+## reason/taunt malformed — returns FALLBACK_BOSS_INTENT (intent_id == "")
+## so the caller's deterministic path takes over. Never crashes, never
+## returns an intent the boss can't actually execute.
+##
+## Clamps reason to MAX_BOSS_REASON_CHARS and taunt to MAX_BOSS_TAUNT_CHARS.
+static func validate_boss_intent(raw: Variant, available_intents: Array) -> Dictionary:
+	if not (raw is Dictionary):
+		return FALLBACK_BOSS_INTENT.duplicate()
+
+	var d: Dictionary = raw as Dictionary
+	var intent_raw: Variant = d.get("intent_id", null)
+	if not (intent_raw is String):
+		return FALLBACK_BOSS_INTENT.duplicate()
+	var intent_id: String = (intent_raw as String).strip_edges()
+	if intent_id.is_empty():
+		return FALLBACK_BOSS_INTENT.duplicate()
+
+	# Gate: intent_id MUST be in the boss's pre-filtered intent list.
+	# This is the stakes guardrail — the LLM never invents an intent.
+	var allowed: bool = false
+	for a in available_intents:
+		if str(a) == intent_id:
+			allowed = true
+			break
+	if not allowed:
+		return FALLBACK_BOSS_INTENT.duplicate()
+
+	var reason: String = ""
+	var reason_raw: Variant = d.get("reason", "")
+	if reason_raw is String:
+		reason = (reason_raw as String).strip_edges()
+		if reason.length() > MAX_BOSS_REASON_CHARS:
+			reason = reason.left(MAX_BOSS_REASON_CHARS)
+
+	var taunt: String = ""
+	var taunt_raw: Variant = d.get("taunt", "")
+	if taunt_raw is String:
+		taunt = (taunt_raw as String).strip_edges()
+		if taunt.length() > MAX_BOSS_TAUNT_CHARS:
+			taunt = taunt.left(MAX_BOSS_TAUNT_CHARS)
+
+	return {
+		"intent_id": intent_id,
+		"reason":    reason,
+		"taunt":     taunt,
+	}
+
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
+
+
+## Coerce an Array into a PackedStringArray (drops non-Stringables).
+## Used by build_boss_intent's status-tag joiners.
+static func _strs_packed(items: Array) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for x in items:
+		out.append(str(x))
+	return out
 
 ## Format recent EventLog entries as a compact context block for inclusion in prompts.
 ## Returns empty string when events is empty.
