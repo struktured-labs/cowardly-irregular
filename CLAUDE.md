@@ -2,7 +2,7 @@
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Project Status: Advanced Prototype (v3.27-alpha-track)
+## Project Status: Advanced Prototype (v3.29-alpha-track)
 
 Playable end-to-end through World 1:
 
@@ -10,8 +10,9 @@ Playable end-to-end through World 1:
 - **Autobattle**: per-character rule editor with full keyboard/gamepad nav
 - **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable
 - **Bosses**: Cave Rat King, 4 elemental dragons (Pyrroth/Glacius/Voltharion/Umbraxis), Chancellor Mordaine (W1 final)
+- **LLM integration**: opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue + **Phase-1 LLM-picked boss strategic intent for all 5 W1 bosses** (Settings → LLM Boss Strategy). Stakes guardrail: LLM picks intent/posture, never abilities. Ollama / OpenAI-compat backends via HTTPBackend.
 - **Data**: 14 jobs, 286 abilities, 88 monsters, 117 items, 43 passives, 33 encounter pools, 166 cutscenes, 150+ music tracks
-- **Tests**: 1099+ passing in GUT (suite ~12s headless)
+- **Tests**: 1830 passing in GUT (suite ~15s headless)
 - **Save**: Full JSON save with typed-array roundtrip protection, MRU/pin ability persistence, permanent injuries, corruption effects, story-flag gates
 
 Deployed via butler to itch.io `:web` channel at every milestone tag.
