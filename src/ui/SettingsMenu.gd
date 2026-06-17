@@ -350,7 +350,7 @@ func _build_ui() -> void:
 	var boss_llm_idx: int = _settings_items.size()
 	var boss_llm_item = _create_toggle_setting(
 		"LLM Boss Strategy (experimental)",
-		"Showcase bosses pick their phase posture via LLM",
+		"W1 bosses pick phase posture via LLM (needs Dynamic Dialogue ON)",
 		boss_llm_strategy_enabled,
 		boss_llm_idx
 	)
