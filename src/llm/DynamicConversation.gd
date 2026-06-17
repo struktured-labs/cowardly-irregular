@@ -519,15 +519,33 @@ func _show_choice_menu(choices: Array[String]) -> String:
 		_choice_menu.queue_free()
 		_choice_menu = null
 
+	# Wrap the menu in a CanvasLayer at the scene root. DynamicConversation
+	# is parented to an OverworldNPC (Node2D in world space); adding the
+	# menu directly under us makes get_viewport_rect/anchor math evaluate
+	# against the world canvas, not the screen viewport, so the panel
+	# landed in the upper-right of the window. A CanvasLayer renders in
+	# screen space — anchors and positions are viewport-absolute.
+	var ui_layer := CanvasLayer.new()
+	ui_layer.name = "DynConvChoiceMenuLayer"
+	ui_layer.layer = 95  # Above world (default 0), below transitions (100).
+	# Attach to the main scene root rather than self so the layer survives
+	# briefly if this Node2D gets reparented mid-conversation.
+	var root_attach: Node = get_tree().current_scene
+	if root_attach == null:
+		root_attach = self
+	root_attach.add_child(ui_layer)
+
 	_choice_menu = DialogueChoiceMenu.new()
 	_choice_menu.name = "DynConvChoiceMenu"
-	add_child(_choice_menu)
+	ui_layer.add_child(_choice_menu)
 
 	var chosen: String = await _choice_menu.present(choices)
 
 	if _choice_menu != null and is_instance_valid(_choice_menu):
 		_choice_menu.queue_free()
 		_choice_menu = null
+	if is_instance_valid(ui_layer):
+		ui_layer.queue_free()
 
 	return chosen
 

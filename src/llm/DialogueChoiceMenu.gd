@@ -39,7 +39,11 @@ signal choice_cancelled()
 
 # ── Layout constants ──────────────────────────────────────────────────────────
 
-const PANEL_W:        int   = 480
+## Target width; clamped at present()-time to `viewport_width - 40` so the
+## panel never bleeds off-screen-right on small viewports.
+const PANEL_W_TARGET: int   = 640
+## Resolved width for the current present() call.
+var _panel_w: int = PANEL_W_TARGET
 const ROW_H:          int   = 40
 const HEADER_H:       int   = 0    # No header row in this menu variant
 const PADDING_TOP:    int   = 12
@@ -48,9 +52,13 @@ const PADDING_BOTTOM: int   = 12
 const ROW_FONT_SIZE:  int   = 18
 const HINT_FONT_SIZE: int   = 13
 
-## Vertical offset from the bottom of the viewport (negative = up).
-## Callers may override before calling present().
-var panel_offset: Vector2 = Vector2(0.0, -20.0)
+## Position offset from the upper-center anchor of the viewport.
+## NPCDialogue/CutsceneDialogue occupies the bottom ~170 px of the
+## viewport, so the choice menu sits in the upper region — classic
+## FF6-style: NPC line at the bottom, player choices above it.
+## Callers may override before calling present() (e.g. for non-dialog
+## contexts like menu pickers that should hover near the cursor).
+var panel_offset: Vector2 = Vector2(0.0, 40.0)
 
 
 # ── Palette (RetroPanel blue family) ─────────────────────────────────────────
@@ -134,6 +142,10 @@ func _ready() -> void:
 	# while-loop in _wait_for_resolution keep awaiting process_frame under pause.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+	# DynamicConversation now wraps this menu in a CanvasLayer at the
+	# overworld scene root so all positioning is in viewport (screen)
+	# space — see DynamicConversation._present_choices.
+
 	# Transparent full-screen layer to capture input.
 	anchor_left   = 0.0
 	anchor_top    = 0.0
@@ -161,22 +173,27 @@ func _build_ui() -> void:
 	dim.mouse_filter  = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 
+	# Clamp panel width to viewport so it never bleeds off-screen-right
+	# (LLM choice text already gets ellipsis-trimmed inside the label).
+	var vp_size: Vector2 = get_viewport_rect().size
+	_panel_w = mini(PANEL_W_TARGET, int(vp_size.x) - 40)
+
 	# Calculate panel height from number of choices.
 	var panel_h: int = PADDING_TOP + _choices.size() * ROW_H + PADDING_BOTTOM + 28  # +28 for hint row
 
 	_panel = RetroPanel.create_panel(
-		PANEL_W,
+		_panel_w,
 		panel_h,
 		COL_BG,
 		COL_BORDER,
 		COL_BORDER_SHADE,
 	)
 
-	# Bottom-centre anchor.
-	var vp_size: Vector2 = get_viewport_rect().size
+	# Top-centre anchor (panel_offset.y is offset DOWN from the top).
+	# Leaves the bottom ~170 px clear for the NPCDialogue line panel.
 	_panel.position = Vector2(
-		(vp_size.x - PANEL_W) / 2.0 + panel_offset.x,
-		vp_size.y - panel_h + panel_offset.y,
+		(vp_size.x - _panel_w) / 2.0 + panel_offset.x,
+		panel_offset.y,
 	)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_panel)
@@ -188,9 +205,13 @@ func _build_ui() -> void:
 		row.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
 		row.add_theme_color_override("font_color", COL_ROW_NORMAL)
 		row.position  = Vector2(PADDING_SIDE, PADDING_TOP + i * ROW_H)
-		row.size      = Vector2(PANEL_W - PADDING_SIDE * 2, ROW_H)
-		row.clip_text = false
-		row.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+		row.size      = Vector2(_panel_w - PADDING_SIDE * 2, ROW_H)
+		# Long LLM-generated choices used to bleed past the panel and off
+		# the right edge of the viewport (clip_text=false +
+		# OVERRUN_NO_TRIMMING). Clip to label rect and ellipsis-trim so
+		# the menu always stays inside the panel.
+		row.clip_text = true
+		row.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		_panel.add_child(row)
 		_row_nodes.append(row)
@@ -209,14 +230,14 @@ func _build_ui() -> void:
 	var div := ColorRect.new()
 	div.color    = Color(0.3, 0.4, 0.6, 0.7)
 	div.position = Vector2(PADDING_SIDE, PADDING_TOP + _choices.size() * ROW_H + 4)
-	div.size     = Vector2(PANEL_W - PADDING_SIDE * 2, 2)
+	div.size     = Vector2(_panel_w - PADDING_SIDE * 2, 2)
 	_panel.add_child(div)
 
 	# Hint row.
 	_hint_label = Label.new()
 	_hint_label.text = "[A/Enter/Click] Confirm    [B/Esc/RClick] Cancel    (↑↓/D-pad)"
 	_hint_label.position = Vector2(PADDING_SIDE, PADDING_TOP + _choices.size() * ROW_H + 8)
-	_hint_label.size     = Vector2(PANEL_W - PADDING_SIDE * 2, 24)
+	_hint_label.size     = Vector2(_panel_w - PADDING_SIDE * 2, 24)
 	_hint_label.add_theme_font_size_override("font_size", HINT_FONT_SIZE)
 	_hint_label.add_theme_color_override("font_color", COL_HINT)
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
