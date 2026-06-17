@@ -227,3 +227,46 @@ func test_boss_llm_strategy_flag_defaults_off() -> void:
 	if not gs.boss_llm_strategy_enabled:
 		assert_false(gs.boss_llm_strategy_enabled,
 			"boss_llm_strategy_enabled must default to false on a fresh GameState")
+
+
+# ── BattleManager gating ──────────────────────────────────────────────────────
+
+func test_should_use_llm_strategy_off_when_flag_off() -> void:
+	# With the master flag OFF, every persona returns false — even
+	# Mordaine, the showcase. Vanilla play is fully deterministic.
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	var gs: Node = get_node_or_null("/root/GameState")
+	if bm == null or gs == null:
+		pending("BattleManager / GameState autoloads unavailable in GUT runtime")
+		return
+	if not bm.has_method("_should_use_llm_strategy"):
+		pending("BattleManager._should_use_llm_strategy missing — Phase 1 not landed?")
+		return
+	var prior: bool = gs.boss_llm_strategy_enabled
+	gs.boss_llm_strategy_enabled = false
+	assert_false(bm._should_use_llm_strategy("chancellor_mordaine"),
+		"With flag OFF, Mordaine must NOT route through the LLM path")
+	gs.boss_llm_strategy_enabled = prior
+
+
+func test_should_use_llm_strategy_on_for_mordaine_only() -> void:
+	# Flag ON: only the allowlisted persona ("chancellor_mordaine") routes
+	# through the LLM. Other bosses (dragons, future masterites) stay
+	# deterministic until we expand the allowlist.
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	var gs: Node = get_node_or_null("/root/GameState")
+	if bm == null or gs == null:
+		pending("BattleManager / GameState autoloads unavailable in GUT runtime")
+		return
+	if not bm.has_method("_should_use_llm_strategy"):
+		pending("BattleManager._should_use_llm_strategy missing — Phase 1 not landed?")
+		return
+	var prior: bool = gs.boss_llm_strategy_enabled
+	gs.boss_llm_strategy_enabled = true
+	assert_true(bm._should_use_llm_strategy("chancellor_mordaine"),
+		"With flag ON, Mordaine must route through the LLM path")
+	# Pyrroth / Glacius / non-listed personas must still go deterministic.
+	for off_list in ["pyrroth_fire_dragon", "glacius_ice_dragon", "boss_rat_king", ""]:
+		assert_false(bm._should_use_llm_strategy(off_list),
+			"With flag ON, %s must NOT route through the LLM (allowlist gate)" % off_list)
+	gs.boss_llm_strategy_enabled = prior

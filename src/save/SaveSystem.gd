@@ -645,6 +645,10 @@ func save_settings() -> void:
 		# UX preferences so the SettingsMenu toggle survives a relaunch.
 		if "llm_enabled" in GameState:
 			settings["llm_enabled"] = GameState.llm_enabled
+		# Phase 1: persist the LLM-strategic-boss flag (opt-in, defaults
+		# off — see GameState.boss_llm_strategy_enabled).
+		if "boss_llm_strategy_enabled" in GameState:
+			settings["boss_llm_strategy_enabled"] = GameState.boss_llm_strategy_enabled
 	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(settings, "\t"))
@@ -719,5 +723,8 @@ func load_settings() -> void:
 			var svc: Node = get_node_or_null("/root/LLMService")
 			if svc and "llm_enabled" in svc:
 				svc.llm_enabled = GameState.llm_enabled
+		# Phase 1: load the LLM-strategic-boss flag if present.
+		if settings.has("boss_llm_strategy_enabled") and "boss_llm_strategy_enabled" in GameState:
+			GameState.boss_llm_strategy_enabled = bool(settings["boss_llm_strategy_enabled"])
 
 	print("[SAVE] Settings loaded")
