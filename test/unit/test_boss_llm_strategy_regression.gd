@@ -249,10 +249,11 @@ func test_should_use_llm_strategy_off_when_flag_off() -> void:
 	gs.boss_llm_strategy_enabled = prior
 
 
-func test_should_use_llm_strategy_on_for_mordaine_only() -> void:
-	# Flag ON: only the allowlisted persona ("chancellor_mordaine") routes
-	# through the LLM. Other bosses (dragons, future masterites) stay
-	# deterministic until we expand the allowlist.
+func test_should_use_llm_strategy_on_for_w1_bosses() -> void:
+	# Flag ON: every W1 boss with a persona block + scripted_intents is
+	# on the allowlist. Bosses outside W1 (no persona authored yet) must
+	# still fall through to deterministic so an accidental data add
+	# doesn't quietly enable a half-finished boss.
 	var bm: Node = get_node_or_null("/root/BattleManager")
 	var gs: Node = get_node_or_null("/root/GameState")
 	if bm == null or gs == null:
@@ -263,10 +264,30 @@ func test_should_use_llm_strategy_on_for_mordaine_only() -> void:
 		return
 	var prior: bool = gs.boss_llm_strategy_enabled
 	gs.boss_llm_strategy_enabled = true
-	assert_true(bm._should_use_llm_strategy("chancellor_mordaine"),
-		"With flag ON, Mordaine must route through the LLM path")
-	# Pyrroth / Glacius / non-listed personas must still go deterministic.
-	for off_list in ["pyrroth_fire_dragon", "glacius_ice_dragon", "boss_rat_king", ""]:
+	for on_list in ["chancellor_mordaine", "pyrroth", "glacius", "voltharion", "umbraxis"]:
+		assert_true(bm._should_use_llm_strategy(on_list),
+			"With flag ON, %s must route through the LLM path (W1 boss roster)" % on_list)
+	# Non-W1 / non-existent persona keys must still go deterministic.
+	for off_list in ["boss_rat_king", "boss_random", "non_existent_boss", ""]:
 		assert_false(bm._should_use_llm_strategy(off_list),
 			"With flag ON, %s must NOT route through the LLM (allowlist gate)" % off_list)
 	gs.boss_llm_strategy_enabled = prior
+
+
+# ── Persona coverage — every allowlisted boss must have a persona ────────────
+
+func test_w1_bosses_have_persona_blocks_in_data() -> void:
+	# Stakes guardrail: a boss on the LLM allowlist with NO persona block
+	# would still route LLM calls, but the prompt would have nothing to
+	# anchor the LLM in character. Catch the data gap source-side.
+	var raw: String = FileAccess.get_file_as_string("res://data/boss_dialogue.json")
+	var data: Dictionary = JSON.parse_string(raw)
+	for boss_id in ["chancellor_mordaine", "pyrroth", "glacius", "voltharion", "umbraxis"]:
+		assert_true(data.has(boss_id),
+			"data/boss_dialogue.json must contain entry for '%s'" % boss_id)
+		var persona: String = str(data[boss_id].get("persona", ""))
+		assert_gt(persona.length(), 200,
+			"%s must have a substantive persona block (>200 chars) so the LLM stays in character; got %d chars" % [boss_id, persona.length()])
+		var intents: Array = data[boss_id].get("scripted_intents", []) as Array
+		assert_gt(intents.size(), 0,
+			"%s must have at least one scripted_intent — the LLM picks from this pool only" % boss_id)

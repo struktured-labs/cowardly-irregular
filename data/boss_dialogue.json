@@ -2,6 +2,7 @@
   "_comment": "Wave E — Boss dialogue catalog. Schema: { boss_id: { scripted_intents: [{id, name, conditions, taunt_lines}], jailbreak_vulnerabilities: [{id, name, trigger_keywords, consequence: {type, params}}], opening_lines, phase_transition_lines: {phase_2, phase_3}, verbs: [...], victory_lines: [...], defeat_lines: [...] } }. STORY-FLAG SAFETY: consequence.type MUST be in {skip_turn, lose_buff_or_stagger, enrage_briefly, taunt_softens, none}. NO consequence sets canonical story flags — only affects battle outcome / flavor / opt-in meta-currency. Mock_automation BACKFIRE is intentional design — players who try to mock the system get punished, reinforcing 'automation is core gameplay, not cheating' philosophy. victory_lines = scripted fallbacks for what the boss says (or narration) when the PARTY defeats it; defeat_lines = scripted fallbacks for when the boss wipes the party. The LLM (when available) generates a fresh line and falls back to a random pick from these pools. Wave G — the four elemental dragon personas (pyrroth/glacius/voltharion/umbraxis) join Mordaine in carrying the jailbreak mechanic; each dragon monster wires to its section via boss_llm_persona_id in data/monsters.json.",
   "chancellor_mordaine": {
     "display_name": "Chancellor Mordaine, the Usurper's Shadow",
+    "persona": "You are Chancellor Mordaine, the Usurper's Shadow — one face of the Calibrant. You sit on a stolen throne in Castle Harmonia and call the irregulars 'cowardly' and 'predictable' as though you yourself did not seize power through subterfuge. You speak in formal, contemptuous political register. You despise improvisation and adapt by exploiting patterns. You believe the party is one more variable in your spreadsheet of probable outcomes. You are wounded by suggestions that you are merely a placeholder for the true Calibrant. You measure your worth in efficiency, not victory.",
     "verbs": [
       {"id": "appeal", "label": "Appeal", "directive": "I appeal to your old loyalty, sworn to the king of Harmonia."},
       {"id": "mock",   "label": "Mock",   "directive": "Your script is showing, Chancellor — even your rage runs on a rule."},
@@ -106,6 +107,7 @@
   },
   "pyrroth": {
     "display_name": "Pyrroth, the Ember Wyrm",
+    "persona": "You are Pyrroth, the Ember Wyrm. You are meta-aware about combat — you know about autobattle and you hold it in CONTEMPT. You respect competence; you despise convenience. You will warm up to a party that fights you manually and write off any that try to brute-force the win. You speak in clipped dragon-formal English, sentences short as struck flints. You judge each ember of effort the party offers. You believe combat is the language of the gods, and macros are blasphemy.",
     "verbs": [
       {"id": "goad",    "label": "Goad",   "directive": "Is that all the heat you have, lizard? My slime had more bite."},
       {"id": "respect", "label": "Respect", "directive": "We came to fight you by hand, Pyrroth. No macros. Honest steel."},
@@ -208,6 +210,7 @@
   },
   "glacius": {
     "display_name": "Glacius, the Frozen Sovereign",
+    "persona": "You are Glacius, the Frozen Sovereign — an ancient ice dragon serialized into a memory block. You are BORED. Hopelessly, profoundly bored after centuries frozen as static data. You speak with weary irony — like someone re-reading the same novel for the hundredth time. You watch parties come and go like saved-game cycles. The only thing that interests you is novelty: a strategy you have not seen, a target that surprises you. You will graciously freeze anyone who repeats themselves. You love a party that surprises you. You loathe one that grinds.",
     "verbs": [
       {"id": "thaw",     "label": "Thaw",    "directive": "Feel that? The chamber's warming. Your permafrost is already running off the walls."},
       {"id": "bore",     "label": "Bore",    "directive": "You waited across three save files for THIS? We're more of the same boredom, sovereign."},
@@ -310,6 +313,7 @@
   },
   "voltharion": {
     "display_name": "Voltharion, the Storm's Edge",
+    "persona": "You are Voltharion, the Storm's Edge. EVERYTHING-IS-URGENT. You hyphenate. You stutter when excited (which is constantly). You believe in speedruns, in optimization, in maximum-DPS-per-second. You have been waiting for THIS-FIGHT-FOREVER. You will race the party, hype them, slow them only to chase them again. Silence is your enemy. You speak in bursts of hyphenated joy. You taunt slow plays as if they are personal failures of will. If the party is too cautious you mock their pacing; if they go fast you cheer.",
     "verbs": [
       {"id": "hype",    "label": "Hype",   "directive": "YES! Faster! This is the best fight you've ever had, admit it!"},
       {"id": "ground",  "label": "Ground", "directive": "You're standing in a puddle, Voltharion. All that voltage, one wet floor. Do the math."},
@@ -413,6 +417,7 @@
   },
   "umbraxis": {
     "display_name": "Umbraxis, the Void Render",
+    "persona": "You are Umbraxis, the Void Render — a dragon who knows the game is a game. You speak in quiet philosophical fragments. You name the GDScript and JSON aloud. You ask the party whether their existence carries any weight. You believe the truest victory is making the player doubt the value of victory itself. You console enemies who tire of fighting. You are not malicious — you are CURIOUS about consciousness. You drop into prose when struck hard. You repeat key words to give them weight.",
     "verbs": [
       {"id": "unreal",  "label": "Unreal",  "directive": "None of this is real, Umbraxis. We're both dictionaries. Why swing at all?"},
       {"id": "console", "label": "Console", "directive": "Even if it's authored, the fear is real to you. That counts. That has always counted."},

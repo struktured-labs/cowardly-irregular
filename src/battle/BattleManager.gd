@@ -3682,18 +3682,23 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 
 
 ## Returns true when LLM strategy is opt-in AND the persona is on the
-## showcase list. First showcase: Mordaine only. Extend the allowlist as
-## later bosses get persona blocks + scripted_intents.
+## showcase list. Currently every W1 boss with both a persona block and
+## scripted_intents (verified by test_boss_persona_coverage_regression).
+## Extending past W1: add the persona block + 3+ scripted_intents to
+## data/boss_dialogue.json, then add the key here.
 func _should_use_llm_strategy(persona_id: String) -> bool:
 	var gs = get_node_or_null("/root/GameState")
 	if gs == null:
 		return false
 	if not ("boss_llm_strategy_enabled" in gs) or not gs.boss_llm_strategy_enabled:
 		return false
-	# Allowlist guard: a boss without a scripted_intents block in
-	# data/boss_dialogue.json would just round-trip a fallback anyway, so
-	# pin to the bosses we've explicitly designed for.
-	const ALLOWLIST: Array[String] = ["chancellor_mordaine"]
+	const ALLOWLIST: Array[String] = [
+		"chancellor_mordaine",  # W1 final boss — first showcase
+		"pyrroth",              # W1 fire dragon
+		"glacius",              # W1 ice dragon
+		"voltharion",           # W1 lightning dragon
+		"umbraxis",             # W1 shadow dragon
+	]
 	return persona_id in ALLOWLIST
 
 
