@@ -2032,6 +2032,10 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		print("[GAMELOOP] BLOCKED — autogrind UI is open")
 		return
 
+	# Dead-stop player during transition; pop_all in _start_exploration clears it.
+	if InputLockManager:
+		InputLockManager.push_lock("encounter_transition")
+
 	# LoopState.BATTLE blocks player movement — set in _start_battle_async after transition.
 	# Do NOT set it here — transition needs EXPLORATION state to render the screenshot.
 
