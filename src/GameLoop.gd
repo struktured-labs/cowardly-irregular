@@ -1604,9 +1604,17 @@ func _on_battle_ended(victory: bool) -> void:
 		if BattleTransition:
 			await BattleTransition.play_exit_transition(true)
 
-		_return_to_exploration()
+		# Must `await` — _return_to_exploration is async (it awaits the
+		# scene-swap _start_exploration). On desktop the scene load is
+		# ~1 frame so the bug was invisible; on Android web the scene
+		# instantiation takes seconds, the reveal_exploration tween below
+		# fired immediately, faded the iris from black to transparent
+		# while NO scene was rendered, and the player saw a black screen
+		# until the new scene finally appeared.
+		await _return_to_exploration()
 
-		# Reveal the overworld with a smooth fade
+		# Reveal the overworld with a smooth fade — runs ONLY after the
+		# new scene is in the tree.
 		if BattleTransition:
 			await BattleTransition.reveal_exploration()
 	else:
@@ -3030,8 +3038,11 @@ func _stop_autogrind(reason: String) -> void:
 	# If a BattleScene is still the active scene (grind stopped between/after a battle),
 	# tear it down and return to exploration. The AutogrindUI lives on its own CanvasLayer
 	# and is not indicative of the active scene — during a grind it stays instantiated but hidden.
+	# MUST await — _return_to_exploration is async; firing the summary
+	# before the scene swap completes causes a black-summary flash on
+	# slow scene-load platforms (Android web through Brave especially).
 	if not _exploration_scene or not is_instance_valid(_exploration_scene):
-		_return_to_exploration()
+		await _return_to_exploration()
 	else:
 		current_state = LoopState.EXPLORATION
 		InputLockManager.pop_all()  # Clear any leaked locks
@@ -3411,8 +3422,10 @@ func _on_grind_complete(reason: String) -> void:
 	# If a BattleScene is still the active scene (rule-triggered stop between battles,
 	# pre_battle_check interrupt, party wipe, etc.), tear it down and return to exploration.
 	# Otherwise the player is stranded in an empty BattleScene with no enemies.
+	# MUST await — see _on_battle_ended for the same web/mobile black-screen
+	# race when the follow-up code fires before the scene swap completes.
 	if not _exploration_scene or not is_instance_valid(_exploration_scene):
-		_return_to_exploration()
+		await _return_to_exploration()
 
 	# Play interrupt SFX based on stop reason
 	_play_grind_stop_sfx(reason)
@@ -3485,9 +3498,11 @@ func _toggle_autogrind_pause() -> void:
 
 func _on_autogrind_paused() -> void:
 	"""Handle autogrind session pause."""
-	# Return to exploration while paused so the player can move around
+	# Return to exploration while paused so the player can move around.
+	# MUST await — see _on_battle_ended; the summary overlay update
+	# below otherwise fires against a half-loaded scene on Android web.
 	if not _exploration_scene or not is_instance_valid(_exploration_scene):
-		_return_to_exploration()
+		await _return_to_exploration()
 
 	# Update overlay to show paused state
 	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel") if _autogrind_overlay and is_instance_valid(_autogrind_overlay) else null
