@@ -79,6 +79,12 @@ const SCHEMA_BOSS_INTENT: Dictionary = {
 	"taunt":     "String",
 }
 
+## Schema for the party-combat-line generator (PC speaks an in-character line at a battle event).
+const SCHEMA_PARTY_LINE: Dictionary = {
+	"line": "String",
+	"mood": "String",
+}
+
 
 # ── Fallback constants ────────────────────────────────────────────────────────
 
@@ -142,6 +148,15 @@ const FALLBACK_BOSS_INTENT: Dictionary = {
 ## generation doesn't blow up the combat log.
 const MAX_BOSS_TAUNT_CHARS: int = 140
 const MAX_BOSS_REASON_CHARS: int = 240
+
+## Fallback envelope for party-line — empty line signals caller to use scripted pool.
+const FALLBACK_PARTY_LINE: Dictionary = {
+	"line": "",
+	"mood": "neutral",
+}
+
+const MAX_PARTY_LINE_CHARS: int = 140
+const PARTY_LINE_MOODS: Array[String] = ["anxious", "cocky", "focused", "panicked", "neutral"]
 
 
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
@@ -500,6 +515,113 @@ static func build_boss_intent(
 	)
 
 
+# ── Prompt builder: party combat line ────────────────────────────────────────
+
+## Build the prompt asked of the LLM when a party member speaks a combat line.
+static func build_party_line(
+	persona: String,
+	signature_phrases: Array,
+	ctx: Dictionary,
+) -> String:
+	var event_kind: String = str(ctx.get("event_kind", "turn_start"))
+	var speaker_name: String = str(ctx.get("speaker_name", "the character"))
+	var speaker_job: String = str(ctx.get("speaker_job_id", "fighter"))
+	var hp_pct: float = float(ctx.get("speaker_hp_pct", 100.0))
+	var mp_pct: float = float(ctx.get("speaker_mp_pct", 100.0))
+	var status: Array = ctx.get("speaker_status", []) as Array
+	var personality: String = str(ctx.get("speaker_personality", ""))
+	var party: Array = ctx.get("party", []) as Array
+	var enemies: Array = ctx.get("enemies", []) as Array
+	var recent: Array = ctx.get("recent_actions", []) as Array
+	var event_data: Dictionary = ctx.get("event_data", {}) as Dictionary
+
+	var sig_block: String = ""
+	for phrase in signature_phrases:
+		sig_block += "  - %s\n" % str(phrase)
+	if sig_block.is_empty():
+		sig_block = "  (none)\n"
+
+	var party_lines: PackedStringArray = PackedStringArray()
+	for member in party:
+		if not (member is Dictionary):
+			continue
+		var alive_tag: String = "alive" if bool(member.get("is_alive", true)) else "DEAD"
+		party_lines.append("  - %s (%s): HP %d%%, %s" % [
+			str(member.get("name", "?")),
+			str(member.get("job_id", "?")),
+			int(member.get("hp_pct", 100)),
+			alive_tag,
+		])
+
+	var enemy_lines: PackedStringArray = PackedStringArray()
+	for foe in enemies:
+		if not (foe is Dictionary):
+			continue
+		enemy_lines.append("  - %s: HP %d%%" % [
+			str(foe.get("name", "?")),
+			int(foe.get("hp_pct", 100)),
+		])
+
+	var recent_lines: PackedStringArray = PackedStringArray()
+	for entry in recent:
+		if not (entry is Dictionary):
+			continue
+		recent_lines.append("  - %s used %s%s" % [
+			str(entry.get("actor", "?")),
+			str(entry.get("ability_id", "?")),
+			(" (%d dmg)" % int(entry.get("damage", 0))) if int(entry.get("damage", 0)) != 0 else "",
+		])
+
+	var status_tag: String = ", ".join(_strs_packed(status)) if status.size() > 0 else "none"
+	var party_block: String = "\n".join(party_lines) if party_lines.size() > 0 else "  (solo)"
+	var enemy_block: String = "\n".join(enemy_lines) if enemy_lines.size() > 0 else "  (no enemies)"
+	var recent_block: String = "\n".join(recent_lines) if recent_lines.size() > 0 else "  (no recent actions)"
+	var personality_block: String = ("Personality trait: %s.\n" % personality) if not personality.is_empty() else ""
+
+	var event_hint: String = _party_line_event_hint(event_kind, event_data)
+	var moods: String = ", ".join(PARTY_LINE_MOODS)
+
+	return (
+		"You voice %s, the party's %s, in the meta-aware JRPG 'Cowardly Irregular'.\n" % [speaker_name, speaker_job]
+		+ "Stay rigorously in character. Persona:\n"
+		+ "  %s\n" % persona
+		+ personality_block
+		+ "Signature phrases (use the rhythm — do NOT copy verbatim every turn):\n"
+		+ sig_block
+		+ "\n"
+		+ "Your state: HP %d%%, MP %d%%, status: %s.\n" % [int(hp_pct), int(mp_pct), status_tag]
+		+ "Party state:\n%s\n" % party_block
+		+ "Enemies:\n%s\n" % enemy_block
+		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
+		+ "\n"
+		+ "Trigger: %s. %s\n" % [event_kind, event_hint]
+		+ "\n"
+		+ "Rules:\n"
+		+ "- line: ONE in-character utterance (≤ %d chars). No quote marks. No NPC names other than party/enemy listed above.\n" % MAX_PARTY_LINE_CHARS
+		+ "- mood: ONE of %s.\n" % moods
+		+ "- Respond with ONLY valid JSON: {\"line\": \"...\", \"mood\": \"...\"}\n"
+	)
+
+
+## Per-event hint string used in build_party_line.
+static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -> String:
+	match event_kind:
+		"turn_start":
+			return "Your initiative just landed. Say something short before you act."
+		"low_hp":
+			return "You just dropped below 25%% HP. React in voice — worry, cockiness, prayer, etc., per your persona."
+		"big_hit_taken":
+			var amt: int = int(event_data.get("damage", 0))
+			return "You just took a chunky hit (%d damage). React without breaking character." % amt
+		"used_signature_ability":
+			var ability: String = str(event_data.get("ability_id", "your signature move"))
+			return "You just landed %s — flex or downplay it per your persona." % ability
+		"victory":
+			return "The party just won. You speak FIRST — set the tone for the post-battle moment."
+		_:
+			return "Speak a single line that fits the moment, in voice."
+
+
 # ── Validation helpers ─────────────────────────────────────────────────────────
 
 ## Validate and sanitise an LLM-returned NPC opening Dictionary.
@@ -669,6 +791,31 @@ static func validate_boss_intent(raw: Variant, available_intents: Array) -> Dict
 		"intent_id": intent_id,
 		"reason":    reason,
 		"taunt":     taunt,
+	}
+
+
+## Validate party-line LLM output. Empty line ⇒ caller routes to scripted fallback.
+static func validate_party_line(raw: Variant) -> Dictionary:
+	if not (raw is Dictionary):
+		return FALLBACK_PARTY_LINE.duplicate()
+	var d: Dictionary = raw as Dictionary
+	var line_raw: Variant = d.get("line", "")
+	if not (line_raw is String):
+		return FALLBACK_PARTY_LINE.duplicate()
+	var line: String = (line_raw as String).strip_edges()
+	if line.is_empty():
+		return FALLBACK_PARTY_LINE.duplicate()
+	if line.length() > MAX_PARTY_LINE_CHARS:
+		line = line.left(MAX_PARTY_LINE_CHARS)
+	var mood: String = "neutral"
+	var mood_raw: Variant = d.get("mood", "neutral")
+	if mood_raw is String:
+		var m: String = (mood_raw as String).strip_edges().to_lower()
+		if m in PARTY_LINE_MOODS:
+			mood = m
+	return {
+		"line": line,
+		"mood": mood,
 	}
 
 

@@ -188,6 +188,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	"""Initialize and start a new battle"""
 	current_state = BattleState.STARTING
 	current_round = 0
+	_party_line_cooldowns.clear()
 
 	player_party = players.duplicate()
 	enemy_party = enemies.duplicate()
@@ -420,12 +421,12 @@ func end_battle(victory: bool) -> void:
 		var summary = _summarize_battle_actions()
 		battle_actions_logged.emit(summary)
 
-	# Wave G — personality-driven boss gloat. Fire-and-forget; the deterministic
-	# fallback ships immediately and (when LLM is available) an async re-narration
-	# replaces it on arrival. Runs BEFORE battle_ended so the scripted line is in
-	# the log alongside the VICTORY/DEFEAT banner. Snapshot must happen here while
-	# enemy_party is still populated — _cleanup_battle may clear it.
+	# Boss gloat — fire-and-forget; scripted ships now, async LLM re-narration may replace it.
 	_dispatch_boss_gloat(victory)
+
+	# Party line on victory — one PC speaks first; cooldown still applies.
+	if victory:
+		_dispatch_victory_party_line()
 
 	battle_ended.emit(victory)
 	_cleanup_battle()
@@ -596,6 +597,10 @@ func _process_next_selection() -> void:
 		current_state = BattleState.ENEMY_SELECTING
 
 	selection_turn_started.emit(current_combatant)
+
+	# Party-line hook: fire on PC turn start (cooldown-gated, opt-in via GameState flag).
+	if current_combatant in player_party:
+		_maybe_fire_party_line(current_combatant, "turn_start", {})
 
 	# AI selects automatically for enemies and autobattle players
 	var char_id = _get_character_id(current_combatant)
@@ -4143,3 +4148,162 @@ func _gloat_boss_display_name(persona_id: String) -> String:
 		if dn != "":
 			return dn
 	return persona_id.replace("_", " ").capitalize()
+
+
+# ── Party LLM combat dialogue ────────────────────────────────────────────────
+
+## Per-character cooldown: combatant_name → round_when_last_spoke. Cleared on battle start.
+var _party_line_cooldowns: Dictionary = {}
+const PARTY_LINE_COOLDOWN_ROUNDS: int = 8
+
+
+## Gate-and-fire a single PC dialogue line at a battle event. Async + non-awaited by caller.
+func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if not (combatant in player_party):
+		return
+	if not combatant.is_alive:
+		return
+	var gs = get_node_or_null("/root/GameState")
+	if gs == null or not ("party_llm_dialogue_enabled" in gs) or not gs.party_llm_dialogue_enabled:
+		return
+	var name_key: String = str(combatant.combatant_name)
+	var last_round: int = int(_party_line_cooldowns.get(name_key, -PARTY_LINE_COOLDOWN_ROUNDS - 1))
+	if event_kind != "victory" and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:
+		return
+	_party_line_cooldowns[name_key] = current_round
+	_run_party_line_async(combatant, event_kind, event_data)
+
+
+## Pick the freshest alive PC to deliver the post-battle victory line.
+func _dispatch_victory_party_line() -> void:
+	if player_party.is_empty():
+		return
+	var speaker: Combatant = null
+	for m in player_party:
+		if m == null or not is_instance_valid(m):
+			continue
+		if not m.is_alive:
+			continue
+		if speaker == null or m.get_hp_percentage() > speaker.get_hp_percentage():
+			speaker = m
+	if speaker == null:
+		return
+	_maybe_fire_party_line(speaker, "victory", {})
+
+
+## Awaitable producer — kicks off the LLM call OR ships the scripted fallback line.
+func _run_party_line_async(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
+	var pp = get_node_or_null("/root/PartyPersonas")
+	var job_id: String = _resolve_party_job_id(combatant)
+	var fallback: String = ""
+	if pp != null and pp.has_method("get_trigger_voice"):
+		fallback = str(pp.get_trigger_voice(job_id, event_kind))
+	if fallback.is_empty():
+		fallback = ""
+
+	var llm = get_node_or_null("/root/LLMService")
+	if llm == null or not llm.has_method("is_available") or not llm.is_available():
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback)
+		return
+
+	var ctx := _build_party_line_context(combatant, event_kind, event_data)
+	if ctx == null:
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback)
+		return
+	var persona: String = ""
+	var sig: Array = []
+	if pp != null:
+		persona = str(pp.get_persona(job_id))
+		sig = pp.get_signature_phrases(job_id)
+	if persona.is_empty():
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback)
+		return
+
+	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")
+	if DialoguePromptsScript == null:
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback)
+		return
+
+	var prompt: String = DialoguePromptsScript.build_party_line(persona, sig, ctx.to_dict())
+	var raw: Variant = await llm.complete_json(
+		prompt,
+		DialoguePromptsScript.SCHEMA_PARTY_LINE,
+		DialoguePromptsScript.FALLBACK_PARTY_LINE,
+	)
+	if not is_instance_valid(combatant):
+		return
+	var validated: Dictionary = DialoguePromptsScript.validate_party_line(raw)
+	var line: String = str(validated.get("line", ""))
+	if line.is_empty():
+		line = fallback
+	if line.is_empty():
+		return
+	_emit_party_line(combatant, line)
+
+
+func _resolve_party_job_id(combatant: Combatant) -> String:
+	if combatant == null:
+		return ""
+	if combatant.job and combatant.job is Dictionary:
+		var jid: String = str(combatant.job.get("id", ""))
+		if not jid.is_empty():
+			return jid
+	if "job_id" in combatant:
+		return str(combatant.job_id)
+	return ""
+
+
+func _emit_party_line(combatant: Combatant, line: String) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	battle_log_message.emit("[color=#9bbfff]%s: \"%s\"[/color]" % [combatant.combatant_name, line])
+
+
+## Build a snapshot for the LLM party-line prompt.
+func _build_party_line_context(combatant: Combatant, event_kind: String, event_data: Dictionary) -> PartyCombatLineContext:
+	var ctx := PartyCombatLineContext.new()
+	ctx.event_kind = event_kind
+	ctx.event_data = event_data.duplicate() if event_data != null else {}
+	ctx.speaker_name = str(combatant.combatant_name)
+	ctx.speaker_job_id = _resolve_party_job_id(combatant)
+	ctx.speaker_personality = str(combatant.get_meta("personality", "")) if combatant.has_meta("personality") else ""
+	ctx.speaker_hp_pct = combatant.get_hp_percentage()
+	ctx.speaker_mp_pct = float(combatant.current_mp) / float(maxi(combatant.max_mp, 1)) * 100.0
+	ctx.speaker_ap = combatant.current_ap
+	ctx.speaker_status = combatant.status_effects.duplicate() if combatant.status_effects != null else []
+
+	for m in player_party:
+		if m == null or not is_instance_valid(m):
+			continue
+		ctx.party.append({
+			"name":     str(m.combatant_name),
+			"job_id":   _resolve_party_job_id(m),
+			"hp_pct":   m.get_hp_percentage(),
+			"is_alive": m.is_alive,
+		})
+
+	for e in enemy_party:
+		if e == null or not is_instance_valid(e):
+			continue
+		ctx.enemies.append({
+			"name":   str(e.combatant_name),
+			"hp_pct": e.get_hp_percentage(),
+		})
+
+	for entry_dict in _battle_action_log:
+		if not (entry_dict is Dictionary):
+			continue
+		ctx.push_recent({
+			"actor":      str(entry_dict.get("character_id", "?")),
+			"ability_id": str(entry_dict.get("ability_id", "")),
+			"target":     str(entry_dict.get("target_type", "")),
+			"damage":     0,
+		})
+
+	return ctx

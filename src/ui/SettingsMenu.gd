@@ -41,6 +41,7 @@ var text_speed_index: int = 1
 var screen_shake_enabled: bool = true
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
 var boss_llm_strategy_enabled: bool = false  # Phase 1 boss-AI strategic-intent toggle (opt-in)
+var party_llm_dialogue_enabled: bool = false  # Party LLM combat-line toggle (opt-in)
 var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible when debug_log_enabled
 
 ## UI State
@@ -107,6 +108,8 @@ func _ready() -> void:
 			llm_enabled = GameState.llm_enabled
 		if "boss_llm_strategy_enabled" in GameState:
 			boss_llm_strategy_enabled = GameState.boss_llm_strategy_enabled
+		if "party_llm_dialogue_enabled" in GameState:
+			party_llm_dialogue_enabled = GameState.party_llm_dialogue_enabled
 		if "debug_all_pcs_unlocked" in GameState:
 			debug_all_pcs_unlocked = GameState.debug_all_pcs_unlocked
 	_build_ui()
@@ -358,6 +361,18 @@ func _build_ui() -> void:
 	_settings_items.append({"control": boss_llm_item, "type": "toggle", "id": "boss_llm_strategy_enabled"})
 	MenuMouseHelper.make_clickable(boss_llm_item, boss_llm_idx, 400, 60,
 		_on_setting_click.bind(boss_llm_idx), _on_setting_hover.bind(boss_llm_idx))
+
+	var party_llm_idx: int = _settings_items.size()
+	var party_llm_item = _create_toggle_setting(
+		"LLM Party Dialogue (experimental)",
+		"Party speaks in-character battle lines via LLM (needs Dynamic Dialogue ON)",
+		party_llm_dialogue_enabled,
+		party_llm_idx
+	)
+	vbox.add_child(party_llm_item)
+	_settings_items.append({"control": party_llm_item, "type": "toggle", "id": "party_llm_dialogue_enabled"})
+	MenuMouseHelper.make_clickable(party_llm_item, party_llm_idx, 400, 60,
+		_on_setting_click.bind(party_llm_idx), _on_setting_hover.bind(party_llm_idx))
 
 	# Debug: Unlock All Party toggle — bypasses every PC's autobattle_locked
 	# spotlight gate. Honored at BattleManager / BattleCommandMenu / UI gates,
@@ -913,6 +928,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_boss_llm_strategy_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "party_llm_dialogue_enabled":
+		party_llm_dialogue_enabled = not party_llm_dialogue_enabled
+		_update_toggle_display(selected_index, party_llm_dialogue_enabled)
+		_save_party_llm_dialogue_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "debug_all_pcs_unlocked":
 		debug_all_pcs_unlocked = not debug_all_pcs_unlocked
 		_update_toggle_display(selected_index, debug_all_pcs_unlocked)
@@ -1011,15 +1032,21 @@ func _save_llm_enabled_setting() -> void:
 	_persist_settings()
 
 
-## Phase 1 boss-AI: flip the LLM-picks-boss-intent flag. Lives next to
-## llm_enabled — the boss path also requires that flag + a ready backend,
-## so flipping this without LLMService running is harmless (every fight
-## silently falls back to the deterministic weighted picker).
+## Flip the LLM-picks-boss-intent flag; gated also by llm_enabled at runtime.
 func _save_boss_llm_strategy_setting() -> void:
 	if GameState:
 		GameState.boss_llm_strategy_enabled = boss_llm_strategy_enabled
 	settings_changed.emit("boss_llm_strategy_enabled", boss_llm_strategy_enabled)
 	print("[SETTINGS] LLM boss strategy %s" % ("enabled" if boss_llm_strategy_enabled else "disabled"))
+	_persist_settings()
+
+
+## Flip the party LLM-dialogue flag; gated also by llm_enabled at runtime.
+func _save_party_llm_dialogue_setting() -> void:
+	if GameState:
+		GameState.party_llm_dialogue_enabled = party_llm_dialogue_enabled
+	settings_changed.emit("party_llm_dialogue_enabled", party_llm_dialogue_enabled)
+	print("[SETTINGS] LLM party dialogue %s" % ("enabled" if party_llm_dialogue_enabled else "disabled"))
 	_persist_settings()
 
 

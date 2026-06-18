@@ -41,13 +41,11 @@ var screen_shake_enabled: bool = true  # Master gate for camera/screen shake eff
 ## desktop. SettingsMenu mirrors this to LLMService.llm_enabled at runtime.
 var llm_enabled: bool = not OS.has_feature("web")
 
-## Phase-1 LLM-strategic-boss flag (Mordaine only for first showcase).
-## When ON AND llm_enabled AND LLMService reports a ready non-null backend,
-## BattleManager._update_boss_dialogue_phase awaits BossDialogue
-## pick_intent_async to let the LLM pick the boss's strategic posture for
-## the phase. OFF defaults — opt-in for first plays so vanilla bosses stay
-## reproducible.
+## Phase-1 LLM-strategic-boss flag — opt-in; see BattleManager._should_use_llm_strategy.
 var boss_llm_strategy_enabled: bool = false
+
+## Party LLM dialogue flag — opt-in; see BattleManager._maybe_fire_party_line.
+var party_llm_dialogue_enabled: bool = false
 
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {
@@ -157,12 +155,8 @@ func _create_save_data() -> Dictionary:
 		# settings.json copy in SaveSystem is the primary store; this is the
 		# secondary so per-save imports stay self-contained.
 		"llm_enabled": llm_enabled,
-		# Wave D: persist EventLog ring buffer (capped at EventLog.RING_CAP = 50
-		# entries). Adds ~1-3 KB to the JSON payload — well under the typed-
-		# array regression threshold. EventLog.serialize() returns a JSON-safe
-		# duplicate; restore on the load side uses the same typed-array-safe
-		# coercion pattern as Combatant.from_dict to survive JSON.parse's
-		# generic-Array return type.
+		"boss_llm_strategy_enabled": boss_llm_strategy_enabled,
+		"party_llm_dialogue_enabled": party_llm_dialogue_enabled,
 		"event_log": event_log.serialize() if event_log != null else [],
 	}
 
@@ -228,6 +222,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		llm_enabled = bool(save_data["llm_enabled"])
 	if save_data.has("boss_llm_strategy_enabled"):
 		boss_llm_strategy_enabled = bool(save_data["boss_llm_strategy_enabled"])
+	if save_data.has("party_llm_dialogue_enabled"):
+		party_llm_dialogue_enabled = bool(save_data["party_llm_dialogue_enabled"])
 	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
 	# hasn't run yet (defensive — _apply_save_data is normally called via
 	# SaveSystem after autoloads are live). EventLog.restore() handles the

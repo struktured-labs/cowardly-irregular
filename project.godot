@@ -42,6 +42,7 @@ InputLockManager="*res://src/input/InputLockManager.gd"
 PartyChatSystem="*res://src/cutscene/PartyChatSystem.gd"
 LLMService="*res://src/llm/LLMService.gd"
 BossDialogue="*res://src/llm/BossDialogue.gd"
+PartyPersonas="*res://src/llm/PartyPersonas.gd"
 
 [display]
 

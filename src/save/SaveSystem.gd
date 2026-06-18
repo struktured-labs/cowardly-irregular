@@ -645,10 +645,12 @@ func save_settings() -> void:
 		# UX preferences so the SettingsMenu toggle survives a relaunch.
 		if "llm_enabled" in GameState:
 			settings["llm_enabled"] = GameState.llm_enabled
-		# Phase 1: persist the LLM-strategic-boss flag (opt-in, defaults
-		# off — see GameState.boss_llm_strategy_enabled).
+		# Phase 1: persist the LLM-strategic-boss flag (opt-in).
 		if "boss_llm_strategy_enabled" in GameState:
 			settings["boss_llm_strategy_enabled"] = GameState.boss_llm_strategy_enabled
+		# Party LLM dialogue flag (opt-in).
+		if "party_llm_dialogue_enabled" in GameState:
+			settings["party_llm_dialogue_enabled"] = GameState.party_llm_dialogue_enabled
 	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(settings, "\t"))
@@ -726,5 +728,7 @@ func load_settings() -> void:
 		# Phase 1: load the LLM-strategic-boss flag if present.
 		if settings.has("boss_llm_strategy_enabled") and "boss_llm_strategy_enabled" in GameState:
 			GameState.boss_llm_strategy_enabled = bool(settings["boss_llm_strategy_enabled"])
+		if settings.has("party_llm_dialogue_enabled") and "party_llm_dialogue_enabled" in GameState:
+			GameState.party_llm_dialogue_enabled = bool(settings["party_llm_dialogue_enabled"])
 
 	print("[SAVE] Settings loaded")
