@@ -756,28 +756,22 @@ func _update_turn_order_strip() -> void:
 		var panel_style = StyleBoxFlat.new()
 		panel_style.bg_color = Color(0.05, 0.03, 0.1, 0.75)
 		panel_style.border_color = Color(0.4, 0.35, 0.6, 0.6)
-		panel_style.border_width_left = 1
-		panel_style.corner_radius_top_left = 4
-		panel_style.corner_radius_bottom_left = 4
+		panel_style.border_width_right = 1
+		panel_style.corner_radius_top_right = 4
+		panel_style.corner_radius_bottom_right = 4
 		panel_style.content_margin_left = 6
 		panel_style.content_margin_right = 6
 		panel_style.content_margin_top = 4
 		panel_style.content_margin_bottom = 4
 		_ctb_panel.add_theme_stylebox_override("panel", panel_style)
-		# Bottom-right, anchored so it tracks viewport size instead of
-		# the hardcoded 1280x720. PartyStatusPanel ends at y=460, so
-		# TURN ORDER sits below at y=540..710 with a 80px buffer (was
-		# y=480..710 with 20px buffer — too tight: dynamic content in
-		# the party panel pushed the last member's AP label into the
-		# turn-order area, user feedback 2026-05-02).
-		# Height of 170 fits up to ~6 entries comfortably.
-		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-		_ctb_panel.offset_left = -110
-		_ctb_panel.offset_right = -5
+		# Bottom-LEFT — moved 2026-06-17 to clear the right-side party panel.
+		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		_ctb_panel.offset_left = 5
+		_ctb_panel.offset_right = 110
 		_ctb_panel.offset_bottom = -10
 		_ctb_panel.offset_top = -180
 		_ctb_panel.custom_minimum_size = Vector2(100, 0)
-		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_END
 		_ctb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		_scene.get_node("UI").add_child(_ctb_panel)
 
