@@ -281,6 +281,11 @@ func _physics_process(delta: float) -> void:
 	if not _can_move():
 		velocity = Vector2.ZERO
 		is_moving = false
+		# Snap to idle frame so encounter halt shows a still pose, not mid-stride.
+		if _anim_frame != 0:
+			_anim_frame = 0
+			_anim_timer = 0.0
+			_update_sprite()
 		return
 
 	var input_dir = Vector2.ZERO
