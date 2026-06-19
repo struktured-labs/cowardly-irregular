@@ -694,7 +694,7 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "futuristic_overworld"
 
 	# W5 Digital encounters — data-themed, avg lv 12 (big jump from W4)

@@ -667,7 +667,7 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "steampunk_overworld"
 
 	# W3 Steampunk encounters — clockwork enemies, avg lv 5
