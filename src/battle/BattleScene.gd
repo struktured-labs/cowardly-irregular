@@ -31,7 +31,9 @@ const PARTY_SPRITE_HEIGHT: float = 210.0
 ## 1.5 picked as the visible-but-not-too-big sweet spot after fighter override
 ## was removed.
 const SPRITE_SCALE_BUMP: float = 1.5
-const JOB_SCALE_OVERRIDES: Dictionary = {}
+const JOB_SCALE_OVERRIDES: Dictionary = {
+	"fighter": 1.4,
+}
 
 ## Bump applied ONLY to artist-style small-frame enemies (<=128px) so they
 ## don't read as half the size of the proc-gen 256x256 monsters they sit
