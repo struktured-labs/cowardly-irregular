@@ -189,6 +189,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	current_state = BattleState.STARTING
 	current_round = 0
 	_party_line_cooldowns.clear()
+	if not damage_dealt.is_connected(_on_damage_dealt_for_party_dialogue):
+		damage_dealt.connect(_on_damage_dealt_for_party_dialogue)
 
 	player_party = players.duplicate()
 	enemy_party = enemies.duplicate()
@@ -3106,6 +3108,11 @@ func _log_player_action(combatant: Combatant, action: Dictionary) -> void:
 		"ap_before": combatant.current_ap
 	})
 
+	# Signature-ability dialogue trigger; cooldown handled inside _maybe_fire.
+	var ability_id: String = str(action.get("ability_id", ""))
+	if ability_id != "" and _is_signature_ability(combatant, ability_id):
+		_maybe_fire_party_line(combatant, "used_signature_ability", {"ability_id": ability_id})
+
 
 func _classify_target(action: Dictionary) -> String:
 	"""Classify target type for pattern detection"""
@@ -4156,6 +4163,30 @@ func _gloat_boss_display_name(persona_id: String) -> String:
 var _party_line_cooldowns: Dictionary = {}
 const PARTY_LINE_COOLDOWN_ROUNDS: int = 8
 
+## Iconic ability per starter job — used to gate the used_signature_ability trigger.
+const SIGNATURE_ABILITIES: Dictionary = {
+	"fighter": "power_strike",
+	"cleric":  "cure",
+	"mage":    "fire",
+	"rogue":   "backstab",
+	"bard":    "inspiring_melody",
+}
+
+## Damage threshold (% of max HP) above which a hit fires the big_hit_taken trigger.
+const BIG_HIT_HP_PCT_THRESHOLD: float = 0.30
+
+## HP-fraction below which a downward crossing fires the low_hp trigger.
+const LOW_HP_PCT_THRESHOLD: float = 25.0
+
+
+func _is_signature_ability(combatant: Combatant, ability_id: String) -> bool:
+	if combatant == null:
+		return false
+	var job_id: String = _resolve_party_job_id(combatant)
+	if job_id.is_empty():
+		return false
+	return str(SIGNATURE_ABILITIES.get(job_id, "")) == ability_id
+
 
 ## Gate-and-fire a single PC dialogue line at a battle event. Async + non-awaited by caller.
 func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
@@ -4307,3 +4338,23 @@ func _build_party_line_context(combatant: Combatant, event_kind: String, event_d
 		})
 
 	return ctx
+
+
+## Subscribed to damage_dealt at start_battle; fires low_hp + big_hit_taken party-line triggers.
+func _on_damage_dealt_for_party_dialogue(target: Combatant, amount: int, is_crit: bool, _element: String, _elemental_mod: float) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not (target in player_party):
+		return
+	if not target.is_alive:
+		return
+	if amount <= 0:
+		return
+	var post_hp_pct: float = target.get_hp_percentage()
+	var pre_hp_pct: float = clampf(float(target.current_hp + amount) / float(maxi(target.max_hp, 1)) * 100.0, 0.0, 100.0)
+	var big: bool = is_crit or amount > int(float(target.max_hp) * BIG_HIT_HP_PCT_THRESHOLD)
+	if big:
+		_maybe_fire_party_line(target, "big_hit_taken", {"damage": amount, "is_crit": is_crit})
+		return
+	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
+		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct})
