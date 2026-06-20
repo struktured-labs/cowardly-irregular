@@ -2,18 +2,23 @@
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Project Status: Advanced Prototype (v3.29-alpha-track)
+## Project Status: Advanced Prototype (v3.30-alpha-track, undeployed work ahead)
 
 Playable end-to-end through World 1:
 
-- **Battle system**: CTB + AP, 4-party, Advance/Defer mechanics, group attacks, formation specials, per-job Free Move command (Channel/Pray/Riff/Strike), Mode 7 perspective floor
+- **Battle system**: CTB + AP, 5-party, Advance/Defer mechanics, group attacks, formation specials, per-job Free Move command (Channel/Pray/Riff/Strike), Mode 7 perspective floor
 - **Autobattle**: per-character rule editor with full keyboard/gamepad nav
-- **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable
+- **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable. W2-W6 use visible roaming monsters only (step-based random encounters disabled when MonsterSpawner is active — fix shipped 2026-06-19).
 - **Bosses**: Cave Rat King, 4 elemental dragons (Pyrroth/Glacius/Voltharion/Umbraxis), Chancellor Mordaine (W1 final)
-- **LLM integration**: opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue + **Phase-1 LLM-picked boss strategic intent for all 5 W1 bosses** (Settings → LLM Boss Strategy). Stakes guardrail: LLM picks intent/posture, never abilities. Ollama / OpenAI-compat backends via HTTPBackend.
-- **Data**: 14 jobs, 286 abilities, 88 monsters, 117 items, 43 passives, 33 encounter pools, 166 cutscenes, 150+ music tracks
-- **Tests**: 1830 passing in GUT (suite ~15s headless)
+- **LLM integration**:
+  - Opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue
+  - **Boss Strategic Intent** for all 5 W1 bosses (Settings → LLM Boss Strategy). LLM picks intent/posture per phase, deterministic ladder still owns ability choice.
+  - **Party Combat Dialogue** for all 5 starter jobs (Settings → LLM Party Dialogue). Personas drafted via workflow. Triggers: turn_start, low_hp (cross-25%), big_hit_taken (crit or >30% max HP), used_signature_ability (per-job iconic move), victory. Per-character 8-round cooldown. Scripted `trigger_voices` fallback per job when LLM off.
+  - Ollama / OpenAI-compat backends via HTTPBackend. DialogueChoiceMenu CanvasLayer-anchored top-centre.
+- **Data**: 14 jobs, 286 abilities, 88 monsters (now with artist art for slime, bat, goblin), 117 items, 43 passives, 33 encounter pools, 166 cutscenes, 150+ music tracks
+- **Tests**: 1862 passing / 0 failing in GUT (suite ~18s headless)
 - **Save**: Full JSON save with typed-array roundtrip protection, MRU/pin ability persistence, permanent injuries, corruption effects, story-flag gates
+- **Deployment**: `v3.30.0-alpha` live on itch.io (web/Brave-mobile black-screen-after-battle fix). Many commits since waiting for next user-approved deploy.
 
 Deployed via butler to itch.io `:web` channel at every milestone tag.
 
