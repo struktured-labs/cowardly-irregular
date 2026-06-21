@@ -44,6 +44,8 @@ var unlock_world: int = 0
 # (2026-05-23: identified after Mordaine scaffold; rat king's WhisperingCave
 # uses a custom pending_boss_defeat spec to bridge the same gap.)
 var defeat_cutscene_flags: Array[String] = []
+# Optional cutscene id played on boss defeat (e.g. "world1_mordaine_defeat").
+var defeat_cutscene: String = ""
 
 ## Override in subclass: floor number -> Array of ASCII rows (20 chars × 16 rows)
 var floor_layouts: Dictionary = {}
@@ -504,7 +506,6 @@ func _place_dungeon_signposts(floor_num: int) -> void:
 func _on_boss_defeated() -> void:
 	boss_defeated = true
 	_save_boss_state()
-	# Unlock next world if configured
 	if unlock_story_flag != "":
 		GameState.set_story_flag(unlock_story_flag)
 	if unlock_world > 0:
@@ -512,6 +513,13 @@ func _on_boss_defeated() -> void:
 			GameState.unlock_next_world()
 	print("%s defeated! Exit stairs appear." % boss_id)
 	_setup_transitions_for_floor(current_floor)
+	# Subclass can declare defeat_cutscene; play it via CutsceneDirector autoload.
+	if defeat_cutscene != "":
+		var director = get_node_or_null("/root/CutsceneDirector")
+		if director and director.has_method("play_cutscene"):
+			var path = "res://data/cutscenes/%s.json" % defeat_cutscene
+			if FileAccess.file_exists(path):
+				director.play_cutscene(defeat_cutscene)
 
 
 func _load_boss_state() -> void:

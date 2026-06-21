@@ -129,17 +129,19 @@ func _setup_transitions() -> void:
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
 
-	# Suburban portal - mysterious glowing teleporter pad
-	var suburban_portal = AreaTransitionScript.new()
-	suburban_portal.name = "SuburbanPortal"
-	suburban_portal.target_map = "suburban_overworld"
-	suburban_portal.target_spawn = "entrance"
-	suburban_portal.require_interaction = true
-	suburban_portal.indicator_text = "Strange Device (90s???)"
-	suburban_portal.position = Vector2(20 * TILE_SIZE, 11 * TILE_SIZE)
-	_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE, TILE_SIZE))
-	suburban_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(suburban_portal)
+	# Suburban portal — only spawned after W1 final boss (Mordaine) is defeated.
+	var gs = get_node_or_null("/root/GameState")
+	if gs and gs.has_method("get_story_flag") and gs.get_story_flag("w1_boss_defeated"):
+		var suburban_portal = AreaTransitionScript.new()
+		suburban_portal.name = "SuburbanPortal"
+		suburban_portal.target_map = "suburban_overworld"
+		suburban_portal.target_spawn = "entrance"
+		suburban_portal.require_interaction = true
+		suburban_portal.indicator_text = "Strange Device (90s???)"
+		suburban_portal.position = Vector2(20 * TILE_SIZE, 11 * TILE_SIZE)
+		_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		suburban_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(suburban_portal)
 
 
 func _setup_buildings() -> void:

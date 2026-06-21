@@ -38,8 +38,8 @@ const DESTINATIONS: Array = [
 	{"id": "abstract_overworld",     "label": "Abstract Domain",      "spawn": "entrance",    "section": "World 6: Abstract"},
 	{"id": "vertex_village",         "label": "The Vertex",           "spawn": "default",     "section": ""},
 	{"id": "null_chamber",           "label": "Null Chamber",         "spawn": "default",     "section": ""},
-	# --- Dragon caves (W2 sub-dungeons) ---
-	{"id": "ice_dragon_cave",        "label": "Ice Dragon Cave",      "spawn": "default",     "section": "Dragon Caves"},
+	# --- Dragon caves (W1 sub-dungeons placed on the medieval overworld) ---
+	{"id": "ice_dragon_cave",        "label": "Ice Dragon Cave",      "spawn": "default",     "section": "Dragon Caves (W1)"},
 	{"id": "fire_dragon_cave",       "label": "Fire Dragon Cave",     "spawn": "default",     "section": ""},
 	{"id": "shadow_dragon_cave",     "label": "Shadow Dragon Cave",   "spawn": "default",     "section": ""},
 	{"id": "lightning_dragon_cave",  "label": "Lightning Dragon Cave","spawn": "default",     "section": ""},

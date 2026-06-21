@@ -242,44 +242,44 @@ func _generate_map() -> void:
 		"~~~~MMMii~~~~~..B..~~g..............gFFFFFFF~~~~~~~~~~~~~~~~~~~Sddddd......ddddddd~~~~~~~~~~~~~~~~~~",  # 12
 		"~~~~~MMi~~~~~~.....~~g..............gFFFFFF~~~~~~~~~~~~~~~~~~~~SSddd.....ddddddd~~~~~~~~~~~~~~~~~~~~",  # 13
 		"~~~~~~M~~~~~~~..B..~~................FFFFF~~~~~~~~~~~~~~~~~~~~~SSdd....ddddddd~~~~~~~~~~~~~~~~~~~~~~",  # 14
-		"..........................................................................................dd..ddddd",  # 15
+		"..........................................................................................dd..dddddd",  # 15
 		"....................................................................................................",  # 16
 		"....................................................................................................",  # 17
 		"....................................................................................................",  # 18
 		"....................................................................................................",  # 19
 		# Row 20-29: Central grassland (Harmonia Village + Whispering Cave)
-		"...C..........................gggggggggggggg.........gggggg........................................",  # 20
-		"..C...........................ggggggggggggggg........gggggggg....................................",  # 21
-		"..............................ggggggggggggggggg.....gggggggggg...................................",  # 22
-		".............BB........BB.....ggggggggggggggggg....ggggggggggg................................ccc",  # 23
-		".............BB........BB.....gggggggggggggggg....gggggggggggg...............................cccc",  # 24
-		"....V........BB........BB.....ggggggggggggggg....ggggggggggg................................ccccc",  # 25
-		".............BB........BB.....gggggggggggggg....gggggggggg..................................cccccc",  # 26
-		"..............................ggggggggggggg....ggggggggg....................................ccccccc",  # 27
-		"..........gggggg..............ggggggggggg....gggggggg......................................cccccccc",  # 28
-		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................ccccccccc",  # 29
+		"...C..........................gggggggggggggg.........gggggg.........................................",  # 20
+		"..C...........................ggggggggggggggg........gggggggg.......................................",  # 21
+		"..............................ggggggggggggggggg.....gggggggggg......................................",  # 22
+		".............BB........BB.....ggggggggggggggggg....ggggggggggg................................cccccc",  # 23
+		".............BB........BB.....gggggggggggggggg....gggggggggggg...............................ccccccc",  # 24
+		"....V........BB........BB.....ggggggggggggggg....ggggggggggg................................cccccccc",  # 25
+		".............BB........BB.....gggggggggggggg....gggggggggg..................................cccccccc",  # 26
+		"..............................ggggggggggggg....ggggggggg....................................cccccccc",  # 27
+		"..........gggggg..............ggggggggggg....gggggggg......................................ccccccccc",  # 28
+		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................cccccccccc",  # 29
 		# Row 30-39: Central-south transition
-		"~~~~~~~~....ggggggggggg.............gggggggg..ggggggg....................................cccccccccc",  # 30
-		"~~~~~~~~~..ggggggggggggg............ggggggg..gggggg.....................................ccccccccccc",  # 31
-		"~~~~~~~~~~ggggggggggggggg...........gggggg..ggggg......................................cccccccccccc",  # 32
-		"~~~~~~~~~~ggggggggggggggg............ggggg.gggg.......................................ccccccc~~~ccc",  # 33
-		"~~~~~~~~~ggggggggggggggg.............gggg.ggg........................................cccccc~~~~~cc",  # 34
-		"~~~~~~~~gggggggggggggg................ggg.gg........................................ccccc~~~~~~~~c",  # 35
-		"~~~~~~~ggggggggggggg...................gg.g........................................ccccc~~~~~~~~~~",  # 36
-		"~~~~~~gggggggggggg..........................................................................~~~~~~",  # 37
-		"~~~~~ggggggggg.................................................................................~~~~",  # 38
-		"~~~~gggggggg....................................................................................~~~",  # 39
+		"~~~~~~~~....ggggggggggg.............gggggggg..ggggggg....................................ccccccccccc",  # 30
+		"~~~~~~~~~..ggggggggggggg............ggggggg..gggggg.....................................cccccccccccc",  # 31
+		"~~~~~~~~~~ggggggggggggggg...........gggggg..ggggg......................................ccccccccccccc",  # 32
+		"~~~~~~~~~~ggggggggggggggg............ggggg.gggg.......................................ccccccc~~~cccc",  # 33
+		"~~~~~~~~~ggggggggggggggg.............gggg.ggg........................................cccccc~~~~~cccc",  # 34
+		"~~~~~~~~gggggggggggggg................ggg.gg........................................ccccc~~~~~~~~ccc",  # 35
+		"~~~~~~~ggggggggggggg...................gg.g........................................ccccc~~~~~~~~~~~~",  # 36
+		"~~~~~~gggggggggggg..........................................................................~~~~~~~~",  # 37
+		"~~~~~ggggggggg.................................................................................~~~~~",  # 38
+		"~~~~gggggggg....................................................................................~~~~",  # 39
 		# Row 40-49: Southern transition (Desert SW, Rivers, Volcanic SE)
-		"~~~ggggggg.......................................................................................~~",  # 40
-		"~~gggggg.........................................................................................~",  # 41
-		"~ggggg............................................................................................",  # 42
-		"gggg..............................................................................................",  # 43
-		"ggg...............................................................................................",  # 44
-		"gg................................................................................................",  # 45
-		"g..............................~~...............~~.............................................~~~~",  # 46
+		"~~~ggggggg.......................................................................................~~~",  # 40
+		"~~gggggg.........................................................................................~~~",  # 41
+		"~ggggg..............................................................................................",  # 42
+		"gggg................................................................................................",  # 43
+		"ggg.................................................................................................",  # 44
+		"gg..................................................................................................",  # 45
+		"g..............................~~...............~~.............................................~~~~~",  # 46
 		"..............................~~~~.............~~~~...........................................~~~~~~",  # 47
-		".............................~~~~~~...........~~~~~~.........................................~~~~~~~~",  # 48
-		"............................~~~~~~~~.........~~~~~~~~........................................~~~~~~~~",  # 49
+		".............................~~~~~~...........~~~~~~.........................................~~~~~~~",  # 48
+		"............................~~~~~~~~.........~~~~~~~~........................................~~~~~~~",  # 49
 		# Row 50-59: Desert and Volcanic regions
 		"ssssssssssssssss............~~~~~~~~~~BBB~~~~~~~~~~............................MMMMMM~~~~MMM~~~~~~~~",  # 50
 		"sssssssssssssssss..........~~~~~~~~~~~...~~~~~~~~~~...........................MMMMMMlllMMMMM~~~~~~~~",  # 51
@@ -293,14 +293,14 @@ func _generate_map() -> void:
 		"ssssssssss..sssssssss......~~~~~~~~~~~...~~~~~~~~~~...................MMlllllll.....lllMM~~~~~~~~~~~",  # 59
 		# Row 60-69: Southern edge
 		"sssssssssssssssssssss......~~~~~~~~~~~~.~~~~~~~~~~~~..................MMMllllllllllllllMM~~~~~~~~~~~",  # 60
-		"ssssssssssssssssssssss.....~~~~~~~~~~~~~~~~~~~~~~~~~.................MMMMlllllllllllMMM~~~~~~~~~~~~",  # 61
-		"sssssssssssssssssssssss....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.............MMMMMlllllllMMMMM~~~~~~~~~~~~~",  # 62
-		"ssssssssssssssssssssssss...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~............MMMMMMlllllMMMMMM~~~~~~~~~~~~~",  # 63
+		"ssssssssssssssssssssss.....~~~~~~~~~~~~~~~~~~~~~~~~~.................MMMMlllllllllllMMM~~~~~~~~~~~~~",  # 61
+		"sssssssssssssssssssssss....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.............MMMMMlllllllMMMMM~~~~~~~~~~~~~~",  # 62
+		"ssssssssssssssssssssssss...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~............MMMMMMlllllMMMMMM~~~~~~~~~~~~~~",  # 63
 		"sssssssssssssssssssssssss..~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...........MMMMMMMlllMMMMMMM~~~~~~~~~~~~~~",  # 64
-		"ssssssssssssssssssssssssss.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........MMMMMMMMMMMMMMMM~~~~~~~~~~~~~~",  # 65
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........MMMMMMMMMMMMMM~~~~~~~~~~~~~~~~",  # 66
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........MMMMMMMMMMMMM~~~~~~~~~~~~~~~~~",  # 67
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......MMMMMMMMMMMM~~~~~~~~~~~~~~~~~~",  # 68
+		"ssssssssssssssssssssssssss.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........MMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~",  # 65
+		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........MMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~",  # 66
+		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........MMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~",  # 67
+		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......MMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~",  # 68
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 69
 	]
 
@@ -337,10 +337,18 @@ func _register_spawn_point(char: String, x: int, y: int) -> void:
 	match char:
 		"C": spawn_points["cave_entrance"] = pos
 		"V": spawn_points["village_entrance"] = pos
-		"1": spawn_points["ice_dragon_cave"] = pos
-		"2": spawn_points["shadow_dragon_cave"] = pos
-		"3": spawn_points["lightning_dragon_cave"] = pos
-		"4": spawn_points["fire_dragon_cave"] = pos
+		"1":
+			spawn_points["ice_dragon_cave"] = pos
+			spawn_points["ice_cave_entrance"] = pos
+		"2":
+			spawn_points["shadow_dragon_cave"] = pos
+			spawn_points["shadow_cave_entrance"] = pos
+		"3":
+			spawn_points["lightning_dragon_cave"] = pos
+			spawn_points["lightning_cave_entrance"] = pos
+		"4":
+			spawn_points["fire_dragon_cave"] = pos
+			spawn_points["fire_cave_entrance"] = pos
 		"W": spawn_points["frosthold_entrance"] = pos
 		"E": spawn_points["eldertree_entrance"] = pos
 		"G": spawn_points["grimhollow_entrance"] = pos
@@ -348,8 +356,14 @@ func _register_spawn_point(char: String, x: int, y: int) -> void:
 		"I": spawn_points["ironhaven_entrance"] = pos
 		"P":
 			spawn_points["steampunk_portal"] = pos
-			# Alias: W2's return portal targets "suburban_portal" — same physical spot
+			# W2 return portal aliases — same physical spot.
 			spawn_points["suburban_portal"] = pos
+	# Castle Harmonia portal — placed adjacent to Whispering Cave on the central map.
+	# 'C' is the cave marker; we anchor the castle portal one tile east of it.
+	if char == "C":
+		var castle_pos = Vector2((x + 2) * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+		spawn_points["castle_entrance"] = castle_pos
+		spawn_points["castle_harmonia_entrance"] = castle_pos
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -419,6 +433,11 @@ func _setup_transitions() -> void:
 	if gs and (gs.is_world_unlocked(2) or gs.get_story_flag("w1_boss_defeated")):
 		_add_area_transition("WorldPortal", "suburban_overworld", "entrance",
 			spawn_points.get("steampunk_portal", Vector2.ZERO), "Enter the Mundane Sprawl")
+
+	# Castle Harmonia — gated on rat_king_defeated (Rat King reveals castle).
+	if gs and gs.get_story_flag("rat_king_defeated"):
+		_add_area_transition("CastleHarmonia", "castle_harmonia", "castle_entrance",
+			spawn_points.get("castle_entrance", Vector2.ZERO), "Enter Castle Harmonia")
 
 
 func _add_area_transition(trans_name: String, target_map: String, target_spawn: String,
@@ -544,31 +563,43 @@ func _get_zone_for_tile(tx: int, ty: int) -> String:
 
 
 func _apply_zone_encounters(zone: String) -> void:
-	var pool: Array = []
-	match zone:
-		"central":
-			pool = ["slime", "bat", "goblin"]
-			controller.set_area_config("overworld_central", false, 0.05, pool)
-		"forest":
-			pool = ["wolf", "spider", "goblin"]
-			controller.set_area_config("overworld_forest", false, 0.06, pool)
-		"ice":
-			pool = ["skeleton", "wolf", "goblin"]
-			controller.set_area_config("overworld_ice", false, 0.06, pool)
-		"swamp":
-			pool = ["snake", "ghost", "imp"]
-			controller.set_area_config("overworld_swamp", false, 0.06, pool)
-		"desert":
-			pool = ["skeleton", "snake", "goblin"]
-			controller.set_area_config("overworld_desert", false, 0.06, pool)
-		"volcanic":
-			pool = ["imp", "skeleton", "troll"]
-			controller.set_area_config("overworld_volcanic", false, 0.065, pool)
-		"coast":
-			pool = ["slime", "bat", "spider"]
-			controller.set_area_config("overworld_coast", false, 0.05, pool)
+	# Source of truth: enemy_pools.json. Zone -> pool_id mapping below.
+	var pool_id_map = {
+		"central": "overworld_central",
+		"forest": "overworld_forest",
+		"ice": "overworld_ice",
+		"swamp": "overworld_swamp",
+		"desert": "overworld_desert",
+		"volcanic": "overworld_volcanic",
+		"coast": "overworld_coast",
+	}
+	var rate_map = {
+		"central": 0.05, "forest": 0.06, "ice": 0.06,
+		"swamp": 0.06, "desert": 0.06, "volcanic": 0.065, "coast": 0.05,
+	}
+	var pool_id: String = pool_id_map.get(zone, "")
+	if pool_id == "":
+		return
+	var pool: Array = _load_zone_pool(pool_id)
+	controller.set_area_config(pool_id, false, rate_map.get(zone, 0.05), pool)
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
+
+
+func _load_zone_pool(pool_id: String) -> Array:
+	# Read pool from data/enemy_pools.json. Falls back to empty Array on miss.
+	var path = "res://data/enemy_pools.json"
+	if not FileAccess.file_exists(path):
+		return []
+	var f = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return []
+	var txt = f.get_as_text()
+	f.close()
+	var parsed = JSON.parse_string(txt)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return []
+	return parsed.get(pool_id, [])
 
 
 func _place_wanderers() -> void:
