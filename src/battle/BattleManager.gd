@@ -319,14 +319,22 @@ func end_battle(victory: bool) -> void:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
-						# Add to party leader's inventory
-						if player_party.size() > 0 and player_party[0].is_alive:
-							player_party[0].add_item(item_id)
+						# Equipment IDs route to GameLoop.equipment_pool so they
+						# end up in the shared equipment inventory (where the
+						# Equipment menu reads from); consumables stay on the
+						# party leader's inventory dict. Pre-fix EVERY drop went
+						# into add_item, leaving equipment as unusable lore items.
+						var routed_as_equipment = _route_drop_to_equipment_pool(item_id)
+						if not routed_as_equipment:
+							if player_party.size() > 0 and player_party[0].is_alive:
+								player_party[0].add_item(item_id)
 						# Track for display
 						var item_name = item_id.replace("_", " ").capitalize()
 						var item_data = ItemSystem.get_item(item_id) if ItemSystem else {}
 						if not item_data.is_empty():
 							item_name = item_data.get("name", item_name)
+						if routed_as_equipment and item_name == item_id.replace("_", " ").capitalize():
+							item_name = _equipment_display_name(item_id, item_name)
 						# Merge duplicates
 						var found = false
 						for existing in item_drops:
@@ -1949,6 +1957,7 @@ func _execute_group_action(action: Dictionary) -> void:
 
 func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant], group_type: String, ap_cost: int) -> void:
 	"""Execute All-Out Attack or Limit Break — physical combined damage"""
+	var is_limit_break: bool = group_type == "limit_break"
 	var total_power: float = 0.0
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
@@ -1957,15 +1966,37 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 		total_power += p.attack
 
 	var scale: float = pow(participants.size(), 1.5)
+	var lb_dmg_mult: float = 3.0
 	for enemy in alive_enemies:
 		if not enemy.is_alive:
 			continue
 		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
-		var mitigated: int = max(1, raw_damage - enemy.defense)
+		var mitigated: int = 0
+		if is_limit_break:
+			# Limit Break: 3x damage, ignore defense (project rule: ultimate
+			# strike must justify its 4x AP cost vs All-Out Attack).
+			mitigated = max(1, int(raw_damage * lb_dmg_mult))
+		else:
+			mitigated = max(1, raw_damage - enemy.defense)
 		enemy.take_damage(mitigated)
 		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
 		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
 			group_type, enemy.combatant_name, mitigated])
+
+	if is_limit_break:
+		_limit_break_cleanse(participants)
+
+
+func _limit_break_cleanse(participants: Array) -> void:
+	## Limit Break post-effect: cleanse negative statuses from all participants.
+	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence"]
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		for status in cleansable:
+			if p.has_status(status):
+				p.remove_status(status)
+		battle_log_message.emit("[color=lime]%s is cleansed by the Limit Break![/color]" % p.combatant_name)
 
 
 func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], ap_cost: int) -> void:
@@ -2366,16 +2397,20 @@ func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead:
 
 func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	"""Execute a basic physical attack (costs 1 AP)"""
-	# AP is spent FIRST so a fizzled action (e.g. all enemies dead) still
-	# commits the cost. Otherwise an Advance with mixed valid/invalid
-	# targets would leave AP elevated above what the player chose to spend
-	# (bug fix 2026-04-30 — caught by combat audit).
+	# AP spent FIRST so fizzled action still commits cost (bug fix 2026-04-30).
 	attacker.spend_ap(1)
-
 	# Auto-retarget if original target is dead/invalid
 	var actual_target = _retarget_enemy(attacker, target)
+	# Pacify silences offensive actions (consumer for add_status pacify).
+	if attacker.has_status("pacify"):
+		battle_log_message.emit("[color=cyan]%s is pacified and cannot attack![/color]" % attacker.combatant_name)
+		return
 	if not actual_target or not is_instance_valid(actual_target):
 		print("%s's attack fizzles - no valid targets!" % attacker.combatant_name)
+		return
+
+	# Invisible/evasion give the target untouchable/dodge windows.
+	if _target_dodges_physical(attacker, actual_target):
 		return
 
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
@@ -2428,6 +2463,23 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		damage += actual_target.defense
 		battle_log_message.emit("[color=purple]Reality bends — %s's defenses shatter![/color]" % actual_target.combatant_name)
 
+	# Barrier nullifies the next incoming hit, then expires.
+	if actual_target.has_status("barrier"):
+		actual_target.remove_status("barrier")
+		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
+		# Counter-on-hit hook fires even on nullified hits — boss reads it
+		# as a tactical pressure event (the boss WAS attacked).
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
+	# Physical reflect (reflect or physical_reflect): bounce dmg to attacker.
+	if actual_target.has_status("reflect") or actual_target.has_status("physical_reflect"):
+		var reflected = attacker.take_damage(damage, false)
+		damage_dealt.emit(attacker, reflected, false, "", 1.0)
+		battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage back to %s![/color]" % [actual_target.combatant_name, reflected, attacker.combatant_name])
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
 
@@ -2439,6 +2491,10 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, crit_text]
 	battle_log_message.emit(log_msg)
 	print("%s attacks %s for %d damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, " CRIT!" if is_crit else ""])
+
+	# Counter-on-hit: monsters with counter_abilities defined in monsters.json
+	# fire a free retaliatory ability after taking a real hit.
+	_trigger_monster_counter(actual_target, attacker)
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
@@ -2512,6 +2568,11 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 
 
 func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	# Pacify silences offensive abilities entirely.
+	if caster.has_status("pacify"):
+		battle_log_message.emit("[color=cyan]%s is pacified and cannot strike![/color]" % caster.combatant_name)
+		return
+
 	var base_damage = caster.get_buffed_stat("attack", caster.attack)
 	if caster.has_status("fear"):
 		base_damage = int(base_damage * 0.5)
@@ -2530,6 +2591,10 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 				battle_log_message.emit("[color=white]%s[/color]'s attack misses [color=red]%s[/color]! [color=gray](Blind)[/color]" % [caster.combatant_name, target.combatant_name])
 				continue
 
+		# Invisible/evasion give the target untouchable/dodge windows.
+		if _target_dodges_physical(caster, target):
+			continue
+
 		var damage = int(base_damage * multiplier)
 		var is_crit = false
 
@@ -2541,6 +2606,22 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var phys_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(phys_vrange.x, phys_vrange.y))
 		damage = _apply_market_sense(caster, damage)
+
+		# Barrier absorbs the next hit.
+		if target.has_status("barrier"):
+			target.remove_status("barrier")
+			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the hit![/color]" % target.combatant_name)
+			_trigger_monster_counter(target, caster)
+			continue
+
+		# Physical reflect bounces the swing back.
+		if target.has_status("reflect") or target.has_status("physical_reflect"):
+			var reflected = caster.take_damage(damage, false)
+			damage_dealt.emit(caster, reflected, false, "", 1.0)
+			battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage to %s![/color]" % [target.combatant_name, reflected, caster.combatant_name])
+			_trigger_monster_counter(target, caster)
+			continue
+
 		var actual_damage = target.take_damage(damage, false)
 		damage_dealt.emit(target, actual_damage, is_crit, "", 1.0)
 
@@ -2560,8 +2641,15 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			target.add_status(effect)
 			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
 
+		_trigger_monster_counter(target, caster)
+
 
 func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	# Pacify silences offensive magic too.
+	if caster.has_status("pacify"):
+		battle_log_message.emit("[color=cyan]%s is pacified — the spell fizzles![/color]" % caster.combatant_name)
+		return
+
 	var base_damage = caster.get_buffed_stat("magic", caster.magic)
 	var multiplier = ability.get("damage_multiplier", 1.0)
 	var element = ability.get("element", "")
@@ -2569,6 +2657,16 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
+			continue
+
+		# Invisible makes target untargetable; magic_block cancels the spell.
+		if target.has_status("invisible"):
+			battle_log_message.emit("[color=gray]%s is invisible — the spell finds nothing![/color]" % target.combatant_name)
+			continue
+		if target.has_status("magic_block"):
+			target.remove_status("magic_block")
+			battle_log_message.emit("[color=cyan]%s's Magic Block cancels the spell![/color]" % target.combatant_name)
+			_trigger_monster_counter(target, caster)
 			continue
 
 		var damage = int(base_damage * multiplier)
@@ -2581,6 +2679,21 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if element:
 			terrain_mod = get_terrain_damage_modifier(element)
 			damage = int(damage * terrain_mod)
+
+		# Barrier nullifies the next hit (magic counts).
+		if target.has_status("barrier"):
+			target.remove_status("barrier")
+			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the spell![/color]" % target.combatant_name)
+			_trigger_monster_counter(target, caster)
+			continue
+
+		# Prismatic reflect bounces magic back at the caster.
+		if target.has_status("prismatic_reflect"):
+			var reflected = caster.take_damage(damage, true)
+			damage_dealt.emit(caster, reflected, false, element, 1.0)
+			battle_log_message.emit("[color=magenta]%s's Prismatic Reflect bounces %d magic damage to %s![/color]" % [target.combatant_name, reflected, caster.combatant_name])
+			_trigger_monster_counter(target, caster)
+			continue
 
 		var actual_damage = 0
 		var elemental_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
@@ -2619,6 +2732,8 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
 			target.add_status(effect)
 			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
+
+		_trigger_monster_counter(target, caster)
 
 
 ## Critical hit system
@@ -4395,3 +4510,105 @@ func _on_damage_dealt_for_party_dialogue(target: Combatant, amount: int, is_crit
 		return
 	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
 		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct})
+
+
+## Drop routing helpers — equipment IDs go to GameLoop.equipment_pool, not
+## the consumable inventory dict. Pre-fix every monster drop went through
+## add_item even when the ID resolved to equipment.json (e.g. speed_boots).
+
+func _route_drop_to_equipment_pool(item_id: String) -> bool:
+	## Returns true when the drop was routed as equipment. False means the
+	## caller should fall back to add_item (consumable).
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return false
+	var pool_key: String = ""
+	if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+		pool_key = "weapons"
+	elif eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+		pool_key = "armors"
+	elif eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+		pool_key = "accessories"
+	if pool_key == "":
+		return false
+	var game_loop = get_tree().root.get_node_or_null("GameLoop") if get_tree() else null
+	if game_loop == null or not "equipment_pool" in game_loop:
+		return false
+	if not game_loop.equipment_pool.has(pool_key):
+		game_loop.equipment_pool[pool_key] = []
+	game_loop.equipment_pool[pool_key].append(item_id)
+	return true
+
+
+func _equipment_display_name(item_id: String, fallback: String) -> String:
+	## Pull the display name from equipment.json when items.json doesn't know it.
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return fallback
+	for getter in ["get_weapon", "get_armor", "get_accessory"]:
+		if eq.has_method(getter):
+			var data: Dictionary = eq.call(getter, item_id)
+			if not data.is_empty():
+				return str(data.get("name", fallback))
+	return fallback
+
+
+## Support-status consumers (barrier/reflect/evasion/invisible/etc.) and
+## monster counter_abilities hook. Reads statuses applied via add_status in
+## _execute_support_ability so the support tree is no longer a silent no-op.
+
+func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
+	## True if a physical strike misses due to invisible (cannot be targeted)
+	## or evasion (chance-based dodge). Both consume one use; invisible falls
+	## off only on a hit attempt (lore: the swing reveals them).
+	if target == null or not is_instance_valid(target):
+		return false
+	if target.has_status("invisible"):
+		target.remove_status("invisible")
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s strikes thin air — %s was invisible![/color]" % [attacker.combatant_name, target.combatant_name])
+		return true
+	if target.has_status("evasion") and randf() < 0.6:
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
+		return true
+	return false
+
+
+func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
+	## Reads counter_abilities from monsters.json and fires a free retaliatory
+	## strike at the attacker. Boss-only field on 13 W1/meta encounters; was
+	## defined but never read until this hook.
+	if monster == null or not is_instance_valid(monster) or not monster.is_alive:
+		return
+	if attacker == null or not is_instance_valid(attacker) or not attacker.is_alive:
+		return
+	if not (monster in enemy_party):
+		return
+	var monster_type: String = monster.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not EncounterSystem or EncounterSystem.monster_database.is_empty():
+		return
+	var entry: Dictionary = EncounterSystem.monster_database.get(monster_type, {})
+	var counters = entry.get("counter_abilities", [])
+	if counters == null or counters.is_empty():
+		return
+	var ability_id: String = str(counters[randi() % counters.size()])
+	if ability_id == "":
+		return
+	# Probabilistic to avoid every hit triggering a full counter chain.
+	if randf() > 0.4:
+		return
+	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	if ability.is_empty():
+		return
+	battle_log_message.emit("[color=red]%s counters with %s![/color]" % [monster.combatant_name, ability.get("name", ability_id)])
+	# Reuse the existing physical/magic ability path; targets = [attacker].
+	# Skipping AP and MP costs — counters are reactive freebies by design.
+	var atype: String = str(ability.get("type", "physical"))
+	match atype:
+		"magic":
+			_execute_magic_ability(monster, ability, [attacker])
+		_:
+			_execute_physical_ability(monster, ability, [attacker])

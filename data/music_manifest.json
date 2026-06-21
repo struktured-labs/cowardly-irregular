@@ -65,6 +65,20 @@
       "loop": true,
       "generated_at": "2026-03-21"
     },
+    "boss_rat_king": {
+      "tier": "T0",
+      "provider": "placeholder",
+      "title": "The Crown Beneath the Whispers",
+      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows.",
+      "style": "SNES tutorial boss, manic minor key, comedic-yet-menacing, harpsichord + low brass + skittering percussion, 16-bit",
+      "model": "suno-v4",
+      "duration": 0.0,
+      "loop": true,
+      "generated_at": "",
+      "placeholder": true,
+      "planned_file": "assets/audio/music/boss_rat_king.ogg",
+      "notes": "Authored track pending — Suno generation slot for cowir-music. Until the OGG ships, BattleScene falls back to procedural _start_rat_king_music(). 'file' key intentionally omitted so the manifest-integrity audit doesn't fail on a known-missing placeholder; cowir-music adds it when the OGG lands."
+    },
     "overworld_suburban": {
       "file": "assets/audio/music/overworld_suburban.ogg",
       "tier": "T1",
