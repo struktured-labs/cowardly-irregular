@@ -73,5 +73,5 @@ func to_dict() -> Dictionary:
 		"party": party.duplicate(),
 		"recent_actions": recent_actions.duplicate(),
 		"available_intents": available_intents.duplicate(),
-		"persona_len": persona.length(),
+		"persona": persona,
 	}
