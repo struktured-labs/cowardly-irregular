@@ -862,6 +862,10 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter2_complete", false) and not flags.get("cutscene_flag_chapter3_complete", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_chapter3"
+	# Rat king defeat cutscene: plays IN the cave right after victory, before chapter4.
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_rat_king_defeat"
 	# Chapter 4: plays after rat king boss defeat (key story beat)
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_chapter4_complete", false):
 		if _current_map_id == "overworld":
@@ -995,6 +999,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
+	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
 	# W1 spotlight cutscenes — each completion flag also unlocks the
 	# matching PC's manual control + autobattle editor tab via
 	# _reconcile_spotlight_locks(). Trigger schedule (per cowir-story
@@ -1768,11 +1773,9 @@ func _show_game_over_screen() -> void:
 			battles_won = 0
 			_current_map_id = "overworld"
 			_spawn_point = "default"
-			_start_exploration()
+			await _start_exploration()
 	else:
-		# Load most recent save and rehydrate the live party from it.
-		# Bug fix (2026-04-30): used to fall through to _create_party()
-		# unconditionally, throwing away the save's level/HP/equipment.
+		# Continue: load most recent save and rehydrate the live party.
 		var loaded = false
 		if SaveSystem and SaveSystem.has_method("load_game"):
 			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
@@ -1780,7 +1783,7 @@ func _show_game_over_screen() -> void:
 				loaded = SaveSystem.load_game(slot)
 		if not (loaded and _restore_party_from_save_data()):
 			_create_party()
-		_start_exploration()
+		await _start_exploration()
 
 
 ## Exploration Management
