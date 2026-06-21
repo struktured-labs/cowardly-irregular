@@ -551,11 +551,11 @@ func _trigger_boss_battle() -> void:
 	# flags on victory. Without this, the cave instance gets freed by
 	# _return_to_exploration before any defeat handler can fire, so the
 	# Rat King flag silently never gets set.
+	# Rat King is mid-boss — only reveals Castle Harmonia portal, no W2 unlock.
 	GameState.pending_boss_defeat = {
-		"story_flags": ["rat_king_defeated", "w1_boss_defeated"],
+		"story_flags": ["rat_king_defeated"],
 		"constants": ["cutscene_flag_rat_king_defeated"],
 		"dungeon_flag": "cave_rat_king_defeated",
-		"unlock_world": true,
 		"defeat_cutscene": "world1_rat_king_defeat",
 	}
 
@@ -609,13 +609,10 @@ func _on_boss_defeated() -> void:
 	add_child(director)
 	director.cutscene_finished.connect(func(_id: String):
 		director.queue_free()
-		# Unlock W2 — Cave Rat King is the W1 gatekeeper boss
-		GameState.set_story_flag("w1_boss_defeated")
+		# Rat King is mid-boss; reveals Castle Harmonia portal, not W2.
 		GameState.set_story_flag("rat_king_defeated")
 		GameState.game_constants["cutscene_flag_rat_king_defeated"] = true
-		GameState.unlock_next_world()
-		# Spawn exit stairs
-		print("Cave Rat King defeated! W2 portal unlocked. Exit stairs appear.")
+		print("Cave Rat King defeated! Castle Harmonia portal revealed.")
 		_setup_transitions_for_floor(current_floor)
 		controller.resume_exploration()
 	, CONNECT_ONE_SHOT)

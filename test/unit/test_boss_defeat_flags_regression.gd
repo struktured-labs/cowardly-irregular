@@ -42,8 +42,9 @@ func test_whispering_cave_registers_pending_boss_defeat() -> void:
 		"_trigger_boss_battle must set GameState.pending_boss_defeat (regression: rat_king_defeated never set)")
 	assert_true(body.find("rat_king_defeated") != -1,
 		"WhisperingCave spec must include rat_king_defeated story flag")
-	assert_true(body.find("w1_boss_defeated") != -1,
-		"WhisperingCave spec must include w1_boss_defeated story flag")
+	# Rat King is mid-boss now — Mordaine (CastleHarmonia) owns w1_boss_defeated.
+	assert_false(body.find("w1_boss_defeated") != -1,
+		"WhisperingCave (mid-boss) must NOT set w1_boss_defeated — Mordaine does")
 	assert_true(body.find("cutscene_flag_rat_king_defeated") != -1,
 		"WhisperingCave spec must include cutscene_flag_rat_king_defeated constant (gates chapter4)")
 	assert_true(body.find("cave_rat_king_defeated") != -1,
