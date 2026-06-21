@@ -1734,27 +1734,28 @@ func _show_game_over_screen() -> void:
 	# Check if a save exists
 	var has_save = SaveSystem != null and SaveSystem.has_method("has_save") and SaveSystem.has_save()
 
-	var choice_made = false
-	var retry = true
+	# Array-wrapped flags because GDScript lambdas capture primitives by VALUE.
+	var choice_made: Array[bool] = [false]
+	var retry: Array[bool] = [true]
 
 	game_over.retry_selected.connect(func():
-		choice_made = true
-		retry = true
+		choice_made[0] = true
+		retry[0] = true
 	)
 	game_over.continue_selected.connect(func():
-		choice_made = true
-		retry = false
+		choice_made[0] = true
+		retry[0] = false
 	)
 
 	await game_over.show_game_over(has_save)
 
 	# Wait for player choice
-	while not choice_made:
+	while not choice_made[0]:
 		await get_tree().process_frame
 
 	game_over.queue_free()
 
-	if retry:
+	if retry[0]:
 		# Retry the same battle with the same enemy formation
 		if _last_battle_enemies.size() > 0:
 			# Heal party to full for retry (no permanent death on retry)
