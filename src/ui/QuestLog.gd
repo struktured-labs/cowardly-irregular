@@ -242,7 +242,7 @@ func _build_quest_lines() -> Array:
 			# Objectives
 			for obj in chapter["objectives"]:
 				var flag = obj["flag"]
-				var is_complete = (flag == "" and ch_idx == 0) or (flag != "" and GameState.get_story_flag(flag))
+				var is_complete = (flag == "" and ch_idx == 0) or (flag != "" and (GameState.get_story_flag(flag) or GameState.game_constants.get("cutscene_flag_" + flag, false)))
 
 				if is_complete:
 					lines.append({
