@@ -119,6 +119,15 @@ var _title_layer: CanvasLayer = null
 ## truly silent. Subsequent failures stay quiet (no toast spam).
 var _llm_notice_shown: bool = false
 
+## Companion latch — first successful non-fallback LLM response in a session
+## surfaces a "Dynamic dialogue active" toast so desktop+Ollama players know
+## the LLM is wired up. Subsequent successes stay quiet.
+var _llm_success_notice_shown: bool = false
+
+## First-open latch for the autobattle editor — fires the autobattle_intro
+## tutorial hint once per save (TutorialHints itself enforces the once-per-save).
+var _autobattle_editor_ever_opened: bool = false
+
 func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
@@ -174,6 +183,9 @@ func _connect_llm_breadcrumb() -> void:
 		return
 	if not llm.inference_failed.is_connected(_on_llm_inference_failed):
 		llm.inference_failed.connect(_on_llm_inference_failed)
+	# Companion-success breadcrumb — symmetric to inference_failed.
+	if llm.has_signal("inference_succeeded") and not llm.inference_succeeded.is_connected(_on_llm_inference_succeeded):
+		llm.inference_succeeded.connect(_on_llm_inference_succeeded)
 
 
 func _on_llm_inference_failed(_mode: String, reason: String) -> void:
@@ -200,6 +212,19 @@ func _on_llm_inference_failed(_mode: String, reason: String) -> void:
 		return  # Nothing dialogue-facing on the title screen — stay quiet there.
 	if Toast:
 		Toast.show(self, "Dynamic dialogue unavailable — falling back to scripted lines.", Toast.WARNING_COLOR)
+
+
+func _on_llm_inference_succeeded(_mode: String) -> void:
+	"""Companion to _on_llm_inference_failed: one-shot confirmation that the
+	LLM is alive in this session. Closes the telemetry loop for desktop+Ollama
+	players who otherwise can't tell scripted from dynamic dialogue."""
+	if _llm_success_notice_shown:
+		return
+	_llm_success_notice_shown = true
+	if current_state == LoopState.TITLE:
+		return
+	if Toast:
+		Toast.show(self, "Dynamic dialogue active.", Toast.SUCCESS_COLOR)
 
 
 func _input(event: InputEvent) -> void:
@@ -415,6 +440,10 @@ func _toggle_autobattle_editor() -> void:
 	_autobattle_editor.setup(char_id, char_name, combatant, party)  # Pass party for R to cycle
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
 	SoundManager.play_ui("autobattle_open")
+	# Fire the catalog's authored autobattle intro hint on first open per save.
+	if not _autobattle_editor_ever_opened:
+		_autobattle_editor_ever_opened = true
+		TutorialHints.show(self, "autobattle_intro")
 	print("Autobattle editor opened for %s (R to switch character, Start to save & exit)" % char_name)
 
 
@@ -2548,6 +2577,10 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	var _llm := get_node_or_null("/root/LLMService")
 	if _llm and _llm.has_method("cancel_all"):
 		_llm.cancel_all("scene_change")
+	# Idempotent UI/movement reset for any active conversation (cancel_all only
+	# unblocks awaits — the choice menu + frozen player needed an explicit abort).
+	if _llm and _llm.has_method("abort_all_conversations"):
+		_llm.abort_all_conversations()
 
 	_current_map_id = target_map
 	_spawn_point = spawn_point
