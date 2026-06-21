@@ -892,11 +892,15 @@ func _create_battle_sprites() -> void:
 		# Per-frame-size bump: artist drops at <=128px get ENEMY_SCALE_BUMP so
 		# they don't read as tiny next to proc-gen 256-frame monsters.
 		var size_bump = 1.0
+		var _is_artist_monster := false
 		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
 			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 				var _enemy_ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
 				if _enemy_ftex and _enemy_ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
 					size_bump = ENEMY_SCALE_BUMP
+					_is_artist_monster = true
+		# Artist monsters (slime/bat/goblin) are authored facing LEFT; flip so they face the party on the right. Procedurals already face right.
+		sprite.flip_h = _is_artist_monster
 		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		base_enemy_pos.y += enemy_y_stagger
 		sprite.position = base_enemy_pos
