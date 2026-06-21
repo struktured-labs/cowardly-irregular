@@ -4025,8 +4025,14 @@ func _start_area_music_deferred(area_type: String) -> void:
 			_start_village_location_music("vertex", "abstract")
 		"cave", "whispering_cave":
 			_start_dungeon_music("medieval")
-		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
+		"fire_dragon_cave":
+			_start_dungeon_music("dragon_fire")
+		"ice_dragon_cave":
 			_start_dungeon_music("dragon_ice")
+		"lightning_dragon_cave":
+			_start_dungeon_music("dragon_lightning")
+		"shadow_dragon_cave":
+			_start_dungeon_music("dragon_shadow")
 		"suburban_dungeon":
 			_start_dungeon_music("suburban")
 		"steampunk_dungeon":
