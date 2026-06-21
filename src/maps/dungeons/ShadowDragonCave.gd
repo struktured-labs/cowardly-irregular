@@ -9,6 +9,7 @@ func _init() -> void:
 	cave_id = "shadow_dragon_cave"
 	boss_id = "shadow_dragon"
 	boss_flag_key = "shadow_dragon_defeated"
+	boss_cutscene_id = "world1_umbraxis_intro"
 	total_floors = 3
 	overworld_exit_spawn = "shadow_cave_entrance"
 

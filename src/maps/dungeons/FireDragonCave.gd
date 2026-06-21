@@ -9,6 +9,7 @@ func _init() -> void:
 	cave_id = "fire_dragon_cave"
 	boss_id = "fire_dragon"
 	boss_flag_key = "fire_dragon_defeated"
+	boss_cutscene_id = "world1_pyrroth_intro"
 	total_floors = 3
 	overworld_exit_spawn = "fire_cave_entrance"
 

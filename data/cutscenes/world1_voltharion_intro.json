@@ -1,0 +1,93 @@
+{
+  "id": "world1_voltharion_intro",
+  "title": "Voltharion, the Storm's Edge",
+  "world": 1,
+  "trigger": "boss_lightning_dragon",
+  "background": "lightning_cave",
+  "description": "Boss intro for Voltharion in Stormspire Cavern. A hyperactive lightning dragon who has been counting milliseconds.",
+  "steps": [
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "boss_intro",
+      "name": "Voltharion",
+      "title": "The Storm's Edge"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Static fills the air. Your hair stands on end.",
+        "Lightning arcs between stalactites like a tesla coil."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Voltharion",
+          "text": "FINALLYFINALLYFINALLYFINALLY!!!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Voltharion",
+          "text": "Do you KNOW how BORING it is waiting?!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Voltharion",
+          "text": "I've been counting milliseconds! 847,293,461 of them! Give or take!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Slow down, I can barely--",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Voltharion",
+          "text": "SLOW?! SLOW IS FOR CPUS WITH THERMAL THROTTLING!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Voltharion",
+          "text": "I run at CLOCK SPEED baby!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Voltharion",
+          "text": "Your turn timer starts NOW! Actually it started 3 lines ago! YOU'RE ALREADY BEHIND!",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}
