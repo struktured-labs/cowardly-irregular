@@ -850,7 +850,16 @@ func _create_battle_sprites() -> void:
 		sprite.position = base_pos
 		_party_base_positions.append(base_pos)
 
-		sprite.flip_h = true  # Flip to face left
+		# Procedural sprites are drawn facing right and need flip_h to face the
+		# enemy line; artist sheets are already authored facing left and the
+		# flip rotates them BACK to wrong-way. Detect via the same large-frame
+		# heuristic used for scale (>128 px frame height = artist sheet).
+		var _is_artist_sheet := false
+		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
+			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
+				var _ft = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+				_is_artist_sheet = _ft != null and _ft.get_height() > 128
+		sprite.flip_h = not _is_artist_sheet
 		sprite.play("idle")
 		party_sprites.add_child(sprite)
 		party_sprite_nodes.append(sprite)
