@@ -47,12 +47,13 @@ func test_context_to_dict_has_stable_shape() -> void:
 	ctx.persona = "Some persona blurb."
 	var d: Dictionary = ctx.to_dict()
 	for key in ["boss_id", "phase", "boss_hp_pct", "boss_mp_pct", "boss_ap",
-				"boss_status", "party", "recent_actions", "available_intents", "persona_len"]:
+				"boss_status", "party", "recent_actions", "available_intents", "persona"]:
 		assert_true(d.has(key), "to_dict() must surface key '%s' for stable test-pin shape" % key)
-	# persona text itself is NOT serialised; only its length is — to keep
-	# downstream logs from including the full persona on every snapshot.
-	assert_eq(d["persona_len"], "Some persona blurb.".length(),
-		"persona_len must reflect the persona string length")
+	# Persona STRING is now serialized (previously only its length was) so the
+	# boss-intent prompt can render authored personas instead of falling through
+	# to the generic "A formidable JRPG boss." default.
+	assert_eq(d["persona"], "Some persona blurb.",
+		"persona must round-trip as the full string")
 
 
 # ── DialoguePrompts.SCHEMA_BOSS_INTENT / FALLBACK_BOSS_INTENT ─────────────────

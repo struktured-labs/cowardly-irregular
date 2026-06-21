@@ -27,6 +27,9 @@ extends Node
 ## Emitted every time a fallback is used (LLM failed or was skipped).
 signal inference_failed(mode: String, reason: String)
 
+## Emitted every time a request resolves to a guarded, non-fallback result.
+signal inference_succeeded(mode: String)
+
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 const QUEUE_CAP:          int    = 16    # Max queued (waiting) requests.
@@ -95,6 +98,11 @@ var _cancelled_ids: Dictionary = {}
 # request_finished signal emitted synchronously by backend.cancel_all()
 # does not re-enter _process_queue and submit a fresh request.
 var _draining: bool = false
+
+# Active DynamicConversation registry — references to live DynamicConversation
+# nodes so a scene-change can abort each one's UI/movement reset (LLM cancel
+# alone leaves the choice menu visible).
+var _active_conversations: Array = []
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -176,6 +184,7 @@ func complete(prompt: String, fallback: String, opts: Dictionary = {}) -> Varian
 		inference_failed.emit(MODE_TEXT, "guard rejected response")
 	else:
 		_set_cache(cache_key, guarded)
+		inference_succeeded.emit(MODE_TEXT)
 	return guarded
 
 
@@ -203,6 +212,8 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 	var guarded: Variant = _guard_json(str(raw), schema, fallback)
 	if guarded == fallback:
 		inference_failed.emit(MODE_JSON, "guard rejected response")
+	else:
+		inference_succeeded.emit(MODE_JSON)
 	return guarded
 
 
@@ -236,7 +247,33 @@ func choose(prompt: String, valid_options: Array[String], fallback: String, opts
 		inference_failed.emit(MODE_CHOICE, "guard rejected response")
 	else:
 		_set_cache(cache_key, guarded)
+		inference_succeeded.emit(MODE_CHOICE)
 	return guarded
+
+
+## Register a live DynamicConversation so abort_all_conversations() can tear it
+## down on scene change. Idempotent; stale (freed) entries are pruned lazily.
+func register_conversation(conv: Node) -> void:
+	if conv == null:
+		return
+	if not (conv in _active_conversations):
+		_active_conversations.append(conv)
+
+
+## Unregister a conversation that has ended normally.
+func unregister_conversation(conv: Node) -> void:
+	_active_conversations.erase(conv)
+
+
+## Abort every registered conversation (calls abort() on each). Used by GameLoop
+## on scene change so the choice menu / frozen player are reset alongside the
+## LLM request cancel.
+func abort_all_conversations() -> void:
+	var snapshot: Array = _active_conversations.duplicate()
+	_active_conversations.clear()
+	for conv in snapshot:
+		if conv != null and is_instance_valid(conv) and conv.has_method("abort"):
+			conv.abort()
 
 
 ## Cancel all in-flight and queued requests.  Each pending caller receives its

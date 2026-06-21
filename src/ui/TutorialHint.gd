@@ -77,10 +77,13 @@ func _build_ui() -> void:
 
 func show_hint(hint_id: String, title: String, body: String) -> void:
 	"""Show a tutorial hint if it hasn't been shown before."""
-	# Check if already shown (static + GameState)
+	# Belt-and-suspenders queue_free on early-return: hint_dismissed will not fire
+	# (since _active stays false) so callers that depend on it for cleanup leak.
 	if _shown_hints.get(hint_id, false):
+		queue_free()
 		return
 	if GameState and GameState.game_constants.get("tutorial_" + hint_id, false):
+		queue_free()
 		return
 
 	# Mark as shown

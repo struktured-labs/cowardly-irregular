@@ -218,17 +218,35 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	# Party member cards
 	var card_height = 100
 	var y_offset = 28
+	var card_pitch = card_height + 8
+
+	# Wrap cards in a ScrollContainer when 5+ party members would overflow the
+	# panel at 480p (5 * 108 + 28 = 568 > 400). The scroll viewport sits below
+	# the PARTY title, so cards still scroll vertically without clipping art.
+	var card_host: Node = panel
+	var needs_scroll: bool = party.size() >= 5
+	if needs_scroll:
+		var scroll := ScrollContainer.new()
+		scroll.position = Vector2(0, y_offset)
+		scroll.size = Vector2(panel_size.x, panel_size.y - y_offset - 4)
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		var inner := Control.new()
+		inner.custom_minimum_size = Vector2(panel_size.x - 8, party.size() * card_pitch + 4)
+		scroll.add_child(inner)
+		panel.add_child(scroll)
+		card_host = inner
+		y_offset = 0  # cards are now positioned relative to the scroll content
 
 	for i in range(party.size()):
 		var member = party[i]
 		var card = _create_character_card(member, i)
-		card.position = Vector2(4, y_offset + i * (card_height + 8))
+		card.position = Vector2(4, y_offset + i * card_pitch)
 		card.size = Vector2(panel_size.x - 8, card_height)
 		# Beveled border using job color
 		var job_color = _get_job_color(member).lightened(0.5)
 		var job_shadow = _get_job_color(member).darkened(0.3)
 		RetroPanel.add_border(card, card.size, job_color, job_shadow)
-		panel.add_child(card)
+		card_host.add_child(card)
 		_party_panels.append(card)
 
 	return panel
@@ -548,6 +566,11 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# Ignore input during the 0.15s fade-in tween so a held confirm can't
+	# pick a stale option while the panel is invisible.
+	if modulate.a < 1.0:
+		return
+
 	# Submenus handle their own input now (including the standalone
 	# TeleportMenu that replaced the inline teleport logic). Just bail.
 	if _submenu_open:
@@ -751,6 +774,10 @@ func _on_load_completed(_slot: int) -> void:
 	player warps to the saved position) before closing the menu.
 	"""
 	_rehydrate_party_after_load()
+	# Confirm to the player the load actually landed (the in-game menu Load
+	# path had no equivalent of the F3 quick-load toast).
+	if Toast:
+		Toast.show(get_tree().current_scene, "Game Loaded", Toast.SUCCESS_COLOR)
 	_close_menu()
 
 
