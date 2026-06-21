@@ -2445,8 +2445,9 @@ func _on_selection_phase_started() -> void:
 ## of their selection turn, then slides back into formation when the
 ## turn ends. Clear who's-up signal without needing a portrait highlight
 ## or arrow indicator. Per cowir-battle's design lock 2026-06-04.
-const ACTIVE_PC_STEP_OUT_OFFSET: float = -42.0
+const ACTIVE_PC_STEP_OUT_OFFSET: float = -80.0
 const ACTIVE_PC_STEP_TWEEN_TIME: float = 0.18
+const ACTIVE_PC_DIM_COLOR: Color = Color(0.55, 0.55, 0.65, 1.0)
 
 
 func _step_active_pc(combatant: Combatant, step_out: bool) -> void:
@@ -2464,6 +2465,19 @@ func _step_active_pc(combatant: Combatant, step_out: bool) -> void:
 	tween.tween_property(sprite, "position", target, ACTIVE_PC_STEP_TWEEN_TIME) \
 		.set_trans(Tween.TRANS_QUAD) \
 		.set_ease(Tween.EASE_OUT if step_out else Tween.EASE_IN)
+	_dim_inactive_party(idx, step_out)
+
+
+func _dim_inactive_party(active_idx: int, dim_others: bool) -> void:
+	for i in party_sprite_nodes.size():
+		var s = party_sprite_nodes[i]
+		if not is_instance_valid(s):
+			continue
+		var target_mod: Color = Color.WHITE
+		if dim_others and i != active_idx:
+			target_mod = ACTIVE_PC_DIM_COLOR
+		var t = create_tween()
+		t.tween_property(s, "modulate", target_mod, ACTIVE_PC_STEP_TWEEN_TIME)
 
 
 func _on_selection_turn_started(combatant: Combatant) -> void:
