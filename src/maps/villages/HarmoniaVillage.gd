@@ -237,9 +237,11 @@ func _setup_treasures() -> void:
 func _setup_npcs() -> void:
 	# === STORY/LORE NPCs ===
 
-	# Theron is plot-load-bearing — talking to him triggers the world1_chapter1 cutscene
-	# whose scripted lines clash with an LLM persona. Gate dynamic dialogue behind
-	# chapter1_complete so the scripted plot drops first; LLM kicks in on re-visits.
+	# Village Elder (near fountain)
+	# Wave D showcase NPC #1 — lore-load-bearing elder (already gates the
+	# W1 prologue via talked_to_theron). Persona text + fallback lines
+	# live in data/cutscenes/npc_showcase_personas.json and are hydrated
+	# at _ready() via OverworldNPC._setup_persona_data().
 	var elder = _create_npc("Elder Theron", "elder", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Welcome to Harmonia Village, young adventurer.",
 		"Our peaceful village has stood for generations...",
@@ -248,7 +250,7 @@ func _setup_npcs() -> void:
 		"If you seek glory, be warned: the cave adapts to those who challenge it.",
 		"May the light guide your path."
 	])
-	elder.dynamic = _is_chapter1_complete()
+	elder.dynamic = true
 	npcs.add_child(elder)
 
 	# === AUTOBATTLE HINT NPCs ===
@@ -431,11 +433,3 @@ func _setup_npcs() -> void:
 		"scholar"
 	)
 	npcs.add_child(wandering_scholar)
-
-
-## Has the W1 chapter1 cutscene already played?
-func _is_chapter1_complete() -> bool:
-	var gs = get_node_or_null("/root/GameState")
-	if gs == null:
-		return false
-	return bool(gs.game_constants.get("cutscene_flag_chapter1_complete", false))

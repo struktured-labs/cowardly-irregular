@@ -1,11 +1,11 @@
 {
   "version": 3,
-  "description": "SFX manifest — maps sound keys to ElevenLabs-generated OGG files. Falls back to procedural if file missing.",
+  "description": "SFX manifest \u2014 maps sound keys to ElevenLabs-generated OGG files. Falls back to procedural if file missing.",
   "model_id": "eleven_text_to_sound_v2",
   "sfx": {
     "menu_move": {
       "file": "assets/audio/sfx/menu_move.ogg",
-      "prompt": "Very short low bubbly boing tick, quick wobbly digital dink with a silly wah bend, playful retro menu cursor — dampened highs, pitched up 50%",
+      "prompt": "Very short low bubbly boing tick, quick wobbly digital dink with a silly wah bend, playful retro menu cursor \u2014 dampened highs, pitched up 50%",
       "duration_seconds": 0.5,
       "prompt_influence": 0.95
     },
@@ -20,13 +20,6 @@
       "prompt": "Quick low digital buzz rejection, short descending cancel tone like backing out of a SNES menu, snappy negative blip",
       "duration_seconds": 0.5,
       "prompt_influence": 0.8
-    },
-    "menu_error": {
-      "file": "assets/audio/sfx/menu_error.ogg",
-      "source": "sox_synth",
-      "prompt": "Dissonant minor-second blip: G3 + G#3 square waves played simultaneously for 80ms, lowpassed 2kHz, sharp negative-feedback buzz — the SNES \"can't do that\" beep",
-      "duration_seconds": 0.08,
-      "prompt_influence": 0.0
     },
     "item_obtain": {
       "file": "assets/audio/sfx/item_obtain.ogg",
@@ -206,7 +199,7 @@
     "attack_hit_dagger_crit": {
       "file": "assets/audio/sfx/attack_hit_dagger_crit.ogg",
       "source": "ffmpeg_derive",
-      "prompt": "Dagger crit = double-tap attack_hit_dagger (2 stabs, 75ms apart) — faster/more notes",
+      "prompt": "Dagger crit = double-tap attack_hit_dagger (2 stabs, 75ms apart) \u2014 faster/more notes",
       "duration_seconds": 0.6,
       "prompt_influence": 0.0
     },
@@ -227,7 +220,7 @@
     "attack_hit_piano_scythe_crit": {
       "file": "assets/audio/sfx/attack_hit_piano_scythe_crit.ogg",
       "source": "ffmpeg_derive",
-      "prompt": "Piano-scythe crit = 3-layer dissonant chord (original + 18% up + 16% down) + sustained 3-tap reverb (120/240/380ms) — thicker discord, more notes",
+      "prompt": "Piano-scythe crit = 3-layer dissonant chord (original + 18% up + 16% down) + sustained 3-tap reverb (120/240/380ms) \u2014 thicker discord, more notes",
       "duration_seconds": 0.9,
       "prompt_influence": 0.0
     },
@@ -272,7 +265,10 @@
       "prompt": "Single soft footstep on grass, quiet shoe on lawn, gentle earthy step",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7,
-      "variants": ["footstep_grass_v2", "footstep_grass_v3"]
+      "variants": [
+        "footstep_grass_v2",
+        "footstep_grass_v3"
+      ]
     },
     "footstep_grass_v2": {
       "file": "assets/audio/sfx/footstep_grass_v2.ogg",
@@ -291,7 +287,10 @@
       "prompt": "Single boot step on stone floor, hard sole on cobblestone, quick dry tap on rock surface",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7,
-      "variants": ["footstep_stone_v2", "footstep_stone_v3"]
+      "variants": [
+        "footstep_stone_v2",
+        "footstep_stone_v3"
+      ]
     },
     "footstep_stone_v2": {
       "file": "assets/audio/sfx/footstep_stone_v2.ogg",
@@ -310,7 +309,10 @@
       "prompt": "Single footstep in soft sand, quiet shoe sinking into dry beach sand, muffled granular step",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7,
-      "variants": ["footstep_sand_v2", "footstep_sand_v3"]
+      "variants": [
+        "footstep_sand_v2",
+        "footstep_sand_v3"
+      ]
     },
     "footstep_sand_v2": {
       "file": "assets/audio/sfx/footstep_sand_v2.ogg",
@@ -329,7 +331,10 @@
       "prompt": "Single footstep crunching fresh snow, quiet boot compressing powder, crisp cold winter step",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7,
-      "variants": ["footstep_snow_v2", "footstep_snow_v3"]
+      "variants": [
+        "footstep_snow_v2",
+        "footstep_snow_v3"
+      ]
     },
     "footstep_snow_v2": {
       "file": "assets/audio/sfx/footstep_snow_v2.ogg",
@@ -348,7 +353,10 @@
       "prompt": "Single boot step on metal grate, industrial steel floor clang, short hollow metallic footfall",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7,
-      "variants": ["footstep_metal_v2", "footstep_metal_v3"]
+      "variants": [
+        "footstep_metal_v2",
+        "footstep_metal_v3"
+      ]
     },
     "footstep_metal_v2": {
       "file": "assets/audio/sfx/footstep_metal_v2.ogg",
@@ -367,7 +375,10 @@
       "prompt": "Single footstep on wooden floorboard, warm hollow wood tap, tavern floor step",
       "duration_seconds": 0.5,
       "prompt_influence": 0.7,
-      "variants": ["footstep_wood_v2", "footstep_wood_v3"]
+      "variants": [
+        "footstep_wood_v2",
+        "footstep_wood_v3"
+      ]
     },
     "footstep_wood_v2": {
       "file": "assets/audio/sfx/footstep_wood_v2.ogg",
@@ -543,7 +554,10 @@
       "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",
       "duration_seconds": 1.0,
       "prompt_influence": 0.5,
-      "variants": ["heal_v2", "heal_v3"]
+      "variants": [
+        "heal_v2",
+        "heal_v3"
+      ]
     },
     "heal_v2": {
       "file": "assets/audio/sfx/heal_v2.ogg",
@@ -562,7 +576,10 @@
       "prompt": "Quick magical power-up whoosh with rising pitch, energizing upward sweep of warm synth, stat boost activated",
       "duration_seconds": 0.8,
       "prompt_influence": 0.5,
-      "variants": ["buff_v2", "buff_v3"]
+      "variants": [
+        "buff_v2",
+        "buff_v3"
+      ]
     },
     "buff_v2": {
       "file": "assets/audio/sfx/buff_v2.ogg",
@@ -581,7 +598,10 @@
       "prompt": "Sad descending pitch drop, deflating rubber balloon losing air, comical weakening spiral downward",
       "duration_seconds": 0.8,
       "prompt_influence": 0.5,
-      "variants": ["debuff_v2", "debuff_v3"]
+      "variants": [
+        "debuff_v2",
+        "debuff_v3"
+      ]
     },
     "debuff_v2": {
       "file": "assets/audio/sfx/debuff_v2.ogg",
@@ -648,7 +668,10 @@
       "prompt": "Roaring campfire erupting, warm crackling flames whooshing upward, deep orange fire with wood pops and snaps, cozy but powerful",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
-      "variants": ["ability_fire_v2", "ability_fire_v3"]
+      "variants": [
+        "ability_fire_v2",
+        "ability_fire_v3"
+      ]
     },
     "ability_fire_v2": {
       "file": "assets/audio/sfx/ability_fire_v2.ogg",
@@ -667,7 +690,10 @@
       "prompt": "Cracking frozen lake, sharp crystalline ice forming rapidly, cold brittle snapping with frosty wind howl, winter blizzard",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
-      "variants": ["ability_ice_v2", "ability_ice_v3"]
+      "variants": [
+        "ability_ice_v2",
+        "ability_ice_v3"
+      ]
     },
     "ability_ice_v2": {
       "file": "assets/audio/sfx/ability_ice_v2.ogg",
@@ -686,7 +712,10 @@
       "prompt": "Close thunderclap with electric buzzing aftermath, raw thunder strike with static discharge crackling, stormy atmospheric",
       "duration_seconds": 1.0,
       "prompt_influence": 0.7,
-      "variants": ["ability_lightning_v2", "ability_lightning_v3"]
+      "variants": [
+        "ability_lightning_v2",
+        "ability_lightning_v3"
+      ]
     },
     "ability_lightning_v2": {
       "file": "assets/audio/sfx/ability_lightning_v2.ogg",
@@ -723,7 +752,10 @@
       "prompt": "Gentle rain on leaves with harp notes, nature healing sounds, birdsong and dewdrops, peaceful restoration",
       "duration_seconds": 1.2,
       "prompt_influence": 0.6,
-      "variants": ["ability_heal_v2", "ability_heal_v3"]
+      "variants": [
+        "ability_heal_v2",
+        "ability_heal_v3"
+      ]
     },
     "ability_heal_v2": {
       "file": "assets/audio/sfx/ability_heal_v2.ogg",
@@ -737,7 +769,6 @@
       "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
-
     "w2_ability_fire": {
       "file": "assets/audio/sfx/w2_ability_fire.ogg",
       "prompt": "Gas stove burner igniting with a whoosh, kitchen flame flaring up, domestic fire sound, suburban cooking gone wrong",
@@ -780,7 +811,6 @@
       "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
-
     "w3_ability_fire": {
       "file": "assets/audio/sfx/w3_ability_fire.ogg",
       "prompt": "Industrial furnace blast door opening, roaring metal forge fire with bellows pumping, steampunk smelter eruption",
@@ -823,31 +853,132 @@
       "duration_seconds": 1.2,
       "prompt_influence": 0.7
     },
-
-    "w4_ability_fire": { "file": "assets/audio/sfx/w4_ability_fire.ogg", "prompt": "Welding arc igniting", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w4_ability_ice": { "file": "assets/audio/sfx/w4_ability_ice.ogg", "prompt": "Industrial coolant spray", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w4_ability_lightning": { "file": "assets/audio/sfx/w4_ability_lightning.ogg", "prompt": "High voltage breaker tripping", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w4_ability_holy": { "file": "assets/audio/sfx/w4_ability_holy.ogg", "prompt": "Factory PA chime + fluorescent hum", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w4_ability_dark": { "file": "assets/audio/sfx/w4_ability_dark.ogg", "prompt": "Hydraulic press crushing", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w4_ability_heal": { "file": "assets/audio/sfx/w4_ability_heal.ogg", "prompt": "Clean room air filtration", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w4_ability_physical": { "file": "assets/audio/sfx/w4_ability_physical.ogg", "prompt": "Punch clock stamping", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-
-    "w5_ability_fire": { "file": "assets/audio/sfx/w5_ability_fire.ogg", "prompt": "Digital data corruption burning", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w5_ability_ice": { "file": "assets/audio/sfx/w5_ability_ice.ogg", "prompt": "Buffer overflow freeze", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w5_ability_lightning": { "file": "assets/audio/sfx/w5_ability_lightning.ogg", "prompt": "Bandwidth screech + signal overload", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w5_ability_holy": { "file": "assets/audio/sfx/w5_ability_holy.ogg", "prompt": "Pure sine wave chord resolving", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w5_ability_dark": { "file": "assets/audio/sfx/w5_ability_dark.ogg", "prompt": "Memory dump rumble + corrupted audio", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w5_ability_heal": { "file": "assets/audio/sfx/w5_ability_heal.ogg", "prompt": "System restore chime", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-    "w5_ability_physical": { "file": "assets/audio/sfx/w5_ability_physical.ogg", "prompt": "Quick glitch pop + digital clipping", "duration_seconds": 1.2, "prompt_influence": 0.7 },
-
-    "w6_ability_fire": { "file": "assets/audio/sfx/w6_ability_fire.ogg", "prompt": "Pure rising tone — concept of heat", "duration_seconds": 1.5, "prompt_influence": 0.8 },
-    "w6_ability_ice": { "file": "assets/audio/sfx/w6_ability_ice.ogg", "prompt": "Pure descending tone — concept of cold", "duration_seconds": 1.5, "prompt_influence": 0.8 },
-    "w6_ability_lightning": { "file": "assets/audio/sfx/w6_ability_lightning.ogg", "prompt": "Sharp pure tone spike — concept of sudden energy", "duration_seconds": 1.5, "prompt_influence": 0.8 },
-    "w6_ability_holy": { "file": "assets/audio/sfx/w6_ability_holy.ogg", "prompt": "Harmonic chord resolving to unity — abstract truth", "duration_seconds": 1.5, "prompt_influence": 0.8 },
-    "w6_ability_dark": { "file": "assets/audio/sfx/w6_ability_dark.ogg", "prompt": "Low tone fading to silence — concept of absence", "duration_seconds": 1.5, "prompt_influence": 0.8 },
-    "w6_ability_heal": { "file": "assets/audio/sfx/w6_ability_heal.ogg", "prompt": "Two tones converging to unison — becoming whole", "duration_seconds": 1.5, "prompt_influence": 0.8 },
-    "w6_ability_physical": { "file": "assets/audio/sfx/w6_ability_physical.ogg", "prompt": "Single percussive sine ping — concept of force", "duration_seconds": 1.5, "prompt_influence": 0.8 },
-
+    "w4_ability_fire": {
+      "file": "assets/audio/sfx/w4_ability_fire.ogg",
+      "prompt": "Welding arc igniting",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w4_ability_ice": {
+      "file": "assets/audio/sfx/w4_ability_ice.ogg",
+      "prompt": "Industrial coolant spray",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w4_ability_lightning": {
+      "file": "assets/audio/sfx/w4_ability_lightning.ogg",
+      "prompt": "High voltage breaker tripping",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w4_ability_holy": {
+      "file": "assets/audio/sfx/w4_ability_holy.ogg",
+      "prompt": "Factory PA chime + fluorescent hum",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w4_ability_dark": {
+      "file": "assets/audio/sfx/w4_ability_dark.ogg",
+      "prompt": "Hydraulic press crushing",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w4_ability_heal": {
+      "file": "assets/audio/sfx/w4_ability_heal.ogg",
+      "prompt": "Clean room air filtration",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w4_ability_physical": {
+      "file": "assets/audio/sfx/w4_ability_physical.ogg",
+      "prompt": "Punch clock stamping",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w5_ability_fire": {
+      "file": "assets/audio/sfx/w5_ability_fire.ogg",
+      "prompt": "Digital data corruption burning",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w5_ability_ice": {
+      "file": "assets/audio/sfx/w5_ability_ice.ogg",
+      "prompt": "Buffer overflow freeze",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w5_ability_lightning": {
+      "file": "assets/audio/sfx/w5_ability_lightning.ogg",
+      "prompt": "Bandwidth screech + signal overload",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w5_ability_holy": {
+      "file": "assets/audio/sfx/w5_ability_holy.ogg",
+      "prompt": "Pure sine wave chord resolving",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w5_ability_dark": {
+      "file": "assets/audio/sfx/w5_ability_dark.ogg",
+      "prompt": "Memory dump rumble + corrupted audio",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w5_ability_heal": {
+      "file": "assets/audio/sfx/w5_ability_heal.ogg",
+      "prompt": "System restore chime",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w5_ability_physical": {
+      "file": "assets/audio/sfx/w5_ability_physical.ogg",
+      "prompt": "Quick glitch pop + digital clipping",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "w6_ability_fire": {
+      "file": "assets/audio/sfx/w6_ability_fire.ogg",
+      "prompt": "Pure rising tone \u2014 concept of heat",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8
+    },
+    "w6_ability_ice": {
+      "file": "assets/audio/sfx/w6_ability_ice.ogg",
+      "prompt": "Pure descending tone \u2014 concept of cold",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8
+    },
+    "w6_ability_lightning": {
+      "file": "assets/audio/sfx/w6_ability_lightning.ogg",
+      "prompt": "Sharp pure tone spike \u2014 concept of sudden energy",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8
+    },
+    "w6_ability_holy": {
+      "file": "assets/audio/sfx/w6_ability_holy.ogg",
+      "prompt": "Harmonic chord resolving to unity \u2014 abstract truth",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8
+    },
+    "w6_ability_dark": {
+      "file": "assets/audio/sfx/w6_ability_dark.ogg",
+      "prompt": "Low tone fading to silence \u2014 concept of absence",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8
+    },
+    "w6_ability_heal": {
+      "file": "assets/audio/sfx/w6_ability_heal.ogg",
+      "prompt": "Two tones converging to unison \u2014 becoming whole",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8
+    },
+    "w6_ability_physical": {
+      "file": "assets/audio/sfx/w6_ability_physical.ogg",
+      "prompt": "Single percussive sine ping \u2014 concept of force",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8
+    },
     "screen_shake": {
       "file": "assets/audio/sfx/screen_shake.ogg",
       "prompt": "Deep rumbling earthquake tremor, ground shaking impact with low bass vibration, dramatic cinematic rumble",
@@ -973,7 +1104,11 @@
       "prompt": "C4 triangle wave, generic NPC dialogue blip, 60ms",
       "duration_seconds": 0.06,
       "prompt_influence": 0.0
+    },
+    "menu_error": {
+      "file": "assets/audio/sfx/menu_error.ogg",
+      "prompt": "Short error buzz/denial sound \u2014 pending asset",
+      "duration_ms": 200
     }
   }
 }
-

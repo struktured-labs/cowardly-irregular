@@ -1805,7 +1805,7 @@ func _show_game_over_screen() -> void:
 			_spawn_point = "default"
 			await _start_exploration()
 	else:
-		# Continue: load most recent save and rehydrate the live party.
+		# Continue: Load most recent save and rehydrate the live party from it.
 		var loaded = false
 		if SaveSystem and SaveSystem.has_method("load_game"):
 			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
