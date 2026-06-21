@@ -475,6 +475,9 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 
 	# Update floor
 	current_floor = target_floor
+	# Quest-tracking flag — set once the player descends past floor 2.
+	if current_floor >= 3 and GameState:
+		GameState.game_constants["reached_cave_floor_3"] = true
 
 	# Clear and regenerate map
 	tile_map.clear()

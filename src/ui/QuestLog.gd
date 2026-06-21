@@ -24,12 +24,12 @@ const CHAPTERS: Array = [
 		"world_flag": "",
 		"objectives": [
 			{"flag": "", "text": "Explore Harmonia Village to the west"},
-			{"flag": "prologue_complete", "text": "Speak with Elder Theron in Harmonia"},
-			{"flag": "chapter1_complete", "text": "Investigate the Whispering Cave"},
-			{"flag": "chapter2_complete", "text": "Descend deeper into the Whispering Cave"},
-			{"flag": "chapter3_complete", "text": "Defeat the Cave Rat King"},
-			{"flag": "rat_king_defeated", "text": "Find the portal to the next world"},
-			{"flag": "w1_boss_defeated", "text": "Enter the Mundane Sprawl"},
+			{"flag": "talked_to_theron", "text": "Speak with Elder Theron in Harmonia"},
+			{"flag": "chapter3_complete", "text": "Investigate the Whispering Cave"},
+			{"flag": "reached_cave_floor_3", "text": "Descend deeper into the Whispering Cave"},
+			{"flag": "rat_king_defeated", "text": "Defeat the Cave Rat King"},
+			{"flag": "world1_rat_king_defeat_complete", "text": "Find the portal to the next world"},
+			{"flag": "world2_prologue_complete", "text": "Enter the Mundane Sprawl"},
 		]
 	},
 	{
@@ -242,7 +242,7 @@ func _build_quest_lines() -> Array:
 			# Objectives
 			for obj in chapter["objectives"]:
 				var flag = obj["flag"]
-				var is_complete = (flag == "" and ch_idx == 0) or (flag != "" and (GameState.get_story_flag(flag) or GameState.game_constants.get("cutscene_flag_" + flag, false)))
+				var is_complete = (flag == "" and ch_idx == 0) or _is_quest_flag_set(flag)
 
 				if is_complete:
 					lines.append({
@@ -316,9 +316,18 @@ func _find_active_objective_text() -> String:
 			# (it's the implicit starting state), so skip it here.
 			if flag == "":
 				continue
-			if not GameState.get_story_flag(flag):
+			if not _is_quest_flag_set(flag):
 				return str(obj["text"])
 	return ""
+
+
+## Triple-bucket completion check — story_flags, game_constants[cutscene_flag_X], game_constants[X].
+func _is_quest_flag_set(flag: String) -> bool:
+	if flag == "":
+		return false
+	return GameState.get_story_flag(flag) \
+		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
+		or GameState.game_constants.get(flag, false)
 
 
 func _input(event: InputEvent) -> void:
