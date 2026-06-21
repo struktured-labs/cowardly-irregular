@@ -2238,7 +2238,7 @@ func _build_option_picker() -> void:
 	var scroll_start := 0
 	if options.size() > max_visible:
 		scroll_start = clampi(selected - max_visible / 2, 0, options.size() - max_visible)
-	var end := min(options.size(), scroll_start + max_visible)
+	var end := mini(options.size(), scroll_start + max_visible)
 	for i in range(scroll_start, end):
 		var opt: Dictionary = options[i]
 		var is_sel := i == selected
