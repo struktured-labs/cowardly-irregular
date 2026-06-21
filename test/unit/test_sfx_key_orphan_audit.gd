@@ -34,8 +34,6 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 #     each entry is its own design call (sample bank vs proc-gen).
 const KNOWN_ORPHAN_SFX := {
 	# Code-side (high priority UX)
-	"item_obtain": true,
-	"menu_error": true,
 	# Cutscene atmospheric SFX (alphabetical)
 	"acrobatic_leap": true,
 	"bell_shift": true,
