@@ -2504,7 +2504,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		"escape":
 			_execute_escape_ability(caster, ability)
 		"mp_restore":
-			_execute_mp_restore_ability(caster, ability)
+			_execute_mp_restore_ability(caster, ability, retargeted)
 		_:
 			print("Unknown ability type: %s" % ability_type)
 
@@ -2959,15 +2959,31 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 		print("  → %s failed to escape!" % caster.combatant_name)
 
 
-func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary) -> void:
-	"""Free-Move style ability that restores a small amount of MP to the caster."""
+func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets: Array = []) -> void:
+	"""Free-Move MP restore: honors ability.target_type (self / single_ally / all_allies)."""
 	var amount: int = ability.get("mp_amount", 5)
-	var before: int = caster.current_mp
-	caster.current_mp = min(caster.max_mp, caster.current_mp + amount)
-	var restored: int = caster.current_mp - before
-	print("  → %s restores %d MP" % [caster.combatant_name, restored])
-	battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color][/color]" % [caster.combatant_name, restored])
-	healing_done.emit(caster, restored)
+	var target_type: String = ability.get("target_type", "self")
+	var recipients: Array[Combatant] = []
+	match target_type:
+		"all_allies":
+			for ally in player_party:
+				if ally and is_instance_valid(ally) and ally.is_alive:
+					recipients.append(ally)
+		"single_ally":
+			for t in targets:
+				if t is Combatant and is_instance_valid(t) and t.is_alive:
+					recipients.append(t)
+			if recipients.is_empty():
+				recipients.append(caster)
+		_:
+			recipients.append(caster)
+	for r in recipients:
+		var before: int = r.current_mp
+		r.current_mp = min(r.max_mp, r.current_mp + amount)
+		var restored: int = r.current_mp - before
+		print("  → %s restores %d MP for %s" % [caster.combatant_name, restored, r.combatant_name])
+		battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color] for [color=white]%s[/color][/color]" % [caster.combatant_name, restored, r.combatant_name])
+		healing_done.emit(r, restored)
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
