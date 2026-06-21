@@ -90,6 +90,17 @@ static func show(parent: Node, hint_id: String) -> void:
 		push_warning("TutorialHints: Unknown hint '%s'" % hint_id)
 		return
 
+	# Guard BEFORE instancing/add_child — prior code leaked a node every call
+	# for an already-seen hint (TutorialHint.show_hint short-circuited but the
+	# CanvasLayer had already been parented and nothing freed it).
+	if TutorialHint._shown_hints.get(hint_id, false):
+		return
+	var ml := Engine.get_main_loop()
+	if ml and ml is SceneTree:
+		var gs := (ml as SceneTree).root.get_node_or_null("GameState")
+		if gs and gs.game_constants.get("tutorial_" + hint_id, false):
+			return
+
 	var hint_data = HINTS[hint_id]
 	var hint = TutorialHint.new()
 	parent.add_child(hint)
