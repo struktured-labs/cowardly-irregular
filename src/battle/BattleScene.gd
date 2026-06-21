@@ -541,7 +541,17 @@ func _show_boss_intro_dialogue() -> void:
 	"""Show boss intro dialogue if available"""
 	if _boss_dialogue_data.has("intro") and _boss_dialogue_data["intro"].size() > 0:
 		_waiting_for_dialogue = true
-		_battle_dialogue.show_boss_intro("Boss", _boss_dialogue_data["intro"])
+		_battle_dialogue.show_boss_intro(_get_boss_intro_speaker(), _boss_dialogue_data["intro"])
+
+
+func _get_boss_intro_speaker() -> String:
+	# Prefer the actual boss combatant name over the generic "Boss" placeholder.
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
+			return enemy.combatant_name
+	if test_enemies.size() > 0 and is_instance_valid(test_enemies[0]):
+		return test_enemies[0].combatant_name
+	return "Boss"
 
 
 func _start_battle_after_dialogue() -> void:
