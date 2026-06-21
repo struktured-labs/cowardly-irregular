@@ -1222,16 +1222,6 @@
     "cost": 0,
     "flavor": ""
   },
-  "speed_boots": {
-    "id": "speed_boots",
-    "name": "Speed Boots",
-    "category": 4,
-    "target_type": 4,
-    "description": "Lightweight boots \u2014 wearer moves quicker (lore-only, not equippable yet).",
-    "effects": {},
-    "cost": 0,
-    "flavor": ""
-  },
   "megalixir": {
     "id": "megalixir",
     "name": "Megalixir",

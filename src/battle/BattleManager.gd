@@ -319,14 +319,22 @@ func end_battle(victory: bool) -> void:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
-						# Add to party leader's inventory
-						if player_party.size() > 0 and player_party[0].is_alive:
-							player_party[0].add_item(item_id)
+						# Equipment IDs route to GameLoop.equipment_pool so they
+						# end up in the shared equipment inventory (where the
+						# Equipment menu reads from); consumables stay on the
+						# party leader's inventory dict. Pre-fix EVERY drop went
+						# into add_item, leaving equipment as unusable lore items.
+						var routed_as_equipment = _route_drop_to_equipment_pool(item_id)
+						if not routed_as_equipment:
+							if player_party.size() > 0 and player_party[0].is_alive:
+								player_party[0].add_item(item_id)
 						# Track for display
 						var item_name = item_id.replace("_", " ").capitalize()
 						var item_data = ItemSystem.get_item(item_id) if ItemSystem else {}
 						if not item_data.is_empty():
 							item_name = item_data.get("name", item_name)
+						if routed_as_equipment and item_name == item_id.replace("_", " ").capitalize():
+							item_name = _equipment_display_name(item_id, item_name)
 						# Merge duplicates
 						var found = false
 						for existing in item_drops:
@@ -4358,3 +4366,44 @@ func _on_damage_dealt_for_party_dialogue(target: Combatant, amount: int, is_crit
 		return
 	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
 		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct})
+
+
+## Drop routing helpers — equipment IDs go to GameLoop.equipment_pool, not
+## the consumable inventory dict. Pre-fix every monster drop went through
+## add_item even when the ID resolved to equipment.json (e.g. speed_boots).
+
+func _route_drop_to_equipment_pool(item_id: String) -> bool:
+	## Returns true when the drop was routed as equipment. False means the
+	## caller should fall back to add_item (consumable).
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return false
+	var pool_key: String = ""
+	if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+		pool_key = "weapons"
+	elif eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+		pool_key = "armors"
+	elif eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+		pool_key = "accessories"
+	if pool_key == "":
+		return false
+	var game_loop = get_tree().root.get_node_or_null("GameLoop") if get_tree() else null
+	if game_loop == null or not "equipment_pool" in game_loop:
+		return false
+	if not game_loop.equipment_pool.has(pool_key):
+		game_loop.equipment_pool[pool_key] = []
+	game_loop.equipment_pool[pool_key].append(item_id)
+	return true
+
+
+func _equipment_display_name(item_id: String, fallback: String) -> String:
+	## Pull the display name from equipment.json when items.json doesn't know it.
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return fallback
+	for getter in ["get_weapon", "get_armor", "get_accessory"]:
+		if eq.has_method(getter):
+			var data: Dictionary = eq.call(getter, item_id)
+			if not data.is_empty():
+				return str(data.get("name", fallback))
+	return fallback
