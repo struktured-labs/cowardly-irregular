@@ -741,42 +741,38 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 		return
 	_track_manual_player_turn()
 
-	var alive_players: Array[Combatant] = player_party.filter(func(c): return c.is_alive)
+	# Participants are the only PCs whose AP/element should gate group attacks.
+	var participants: Array[Combatant] = []
+	participants.append(current_combatant)
+	for i in range(selection_index + 1, selection_order.size()):
+		var c = selection_order[i]
+		if c in player_party and c.is_alive:
+			participants.append(c)
 
-	# Limit Break requires full AP (>= 4) from every party member
+	# Limit Break requires full AP (>= 4) from every PARTICIPATING member.
 	if group_type == "limit_break":
-		for member in alive_players:
+		for member in participants:
 			if member.current_ap < 4:
-				battle_log_message.emit("[color=red]Limit Break requires ALL party members at full AP (4)![/color]")
+				battle_log_message.emit("[color=red]Limit Break requires ALL participants at full AP (4)![/color]")
 				print("[GROUP] Limit Break blocked — %s has AP %d" % [member.combatant_name, member.current_ap])
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
 
-	# Combo Magic requires >= 2 AP each and >= 2 distinct magic elements
+	# Combo Magic requires >= 2 AP each and >= 2 distinct elements across participants.
 	if group_type == "combo_magic":
-		for member in alive_players:
+		for member in participants:
 			if member.current_ap < 2:
-				battle_log_message.emit("[color=red]Combo Magic requires ALL party members to have >= 2 AP![/color]")
+				battle_log_message.emit("[color=red]Combo Magic requires ALL participants to have >= 2 AP![/color]")
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
-		var elements = _get_party_elements(alive_players)
+		var elements = _get_party_elements(participants)
 		if elements.size() < 2:
 			battle_log_message.emit("[color=red]Combo Magic requires at least 2 different magic elements![/color]")
 			current_state = BattleState.PLAYER_SELECTING
 			selection_turn_started.emit(current_combatant)
 			return
-
-	# Collect participants: current combatant + remaining unselected alive players
-	var participants: Array[Combatant] = []
-	participants.append(current_combatant)
-
-	# Determine remaining players who haven't selected yet (index after current)
-	for i in range(selection_index + 1, selection_order.size()):
-		var c = selection_order[i]
-		if c in player_party and c.is_alive:
-			participants.append(c)
 
 	var action = {
 		"type": "group",
