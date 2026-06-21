@@ -1608,18 +1608,20 @@ func repeat_previous_actions() -> bool:
 			var action = saved_action.duplicate()
 			action["combatant"] = combatant
 
-			# Retarget if target is dead, freed, or carries over from a
-			# previous battle (target IS valid + alive but belongs to the
-			# stale enemy_party from the prior encounter — Y-button replay
-			# would otherwise hit ghosts of last battle's monsters).
+			# Validity check MUST happen before `is Combatant` — a freed
+			# reference makes `is` error with 'Left operand of is is a
+			# previously freed instance' (Godot 4 behaviour, seen in log
+			# during Y-button repeat across battles).
 			if action.has("target"):
 				var target = action["target"]
-				var is_stale = (target is Combatant
-					and is_instance_valid(target)
+				var target_valid: bool = is_instance_valid(target)
+				var is_stale = (target_valid
+					and target is Combatant
 					and target.is_alive
 					and target not in player_party
 					and target not in enemy_party)
-				if not is_instance_valid(target) or (target is Combatant and not target.is_alive) or is_stale:
+				var target_dead: bool = target_valid and target is Combatant and not target.is_alive
+				if not target_valid or target_dead or is_stale:
 					var alive_enemies = _get_alive_enemies()
 					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
 
@@ -1627,8 +1629,8 @@ func repeat_previous_actions() -> bool:
 			if action.has("targets"):
 				var new_targets = []
 				for target in action["targets"]:
-					var is_alive_in_battle = (target is Combatant
-						and is_instance_valid(target)
+					var is_alive_in_battle = (is_instance_valid(target)
+						and target is Combatant
 						and target.is_alive
 						and (target in player_party or target in enemy_party))
 					if is_alive_in_battle:
