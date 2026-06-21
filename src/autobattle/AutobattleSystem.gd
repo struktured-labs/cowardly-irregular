@@ -108,8 +108,7 @@ const ACTION_TYPES = {
 	"attack": "Attack",
 	"ability": "Ability",
 	"item": "Item",
-	"defer": "Defer",
-	"all_out_attack": "All-Out Attack"
+	"defer": "Defer"
 }
 
 ## Target types
@@ -117,7 +116,11 @@ const TARGET_TYPES = {
 	"lowest_hp_enemy": "Lowest HP Enemy",
 	"highest_hp_enemy": "Highest HP Enemy",
 	"random_enemy": "Random Enemy",
+	"highest_speed_enemy": "Highest Speed Enemy",
+	"highest_atk_enemy": "Highest ATK Enemy",
+	"lowest_magic_defense_enemy": "Lowest M.DEF Enemy",
 	"lowest_hp_ally": "Lowest HP Ally",
+	"all_allies": "All Allies",
 	"self": "Self"
 }
 
@@ -347,7 +350,7 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 			return {
 				"type": "ability",
 				"ability_id": ability_id,
-				"targets": [_get_target_by_type(combatant, target_type)]
+				"targets": _resolve_ability_targets(combatant, ability_id, target_type)
 			}
 
 		"item":
@@ -363,13 +366,6 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 				"type": "defer"
 			}
 
-		"all_out_attack":
-			# Queue max actions on lowest HP enemy (signals advance mode)
-			return {
-				"type": "attack",
-				"target": _get_target_by_type(combatant, "lowest_hp_enemy"),
-				"force_advance": true  # Signal to queue max actions
-			}
 		_:
 			push_warning("AutobattleSystem: Unknown action type '%s', defaulting to attack" % action_type)
 			return {
@@ -379,7 +375,9 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 
 
 func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant:
-	"""Get target based on target type string"""
+	"""Get target based on target type string. For multi-target types like all_allies,
+	returns the first member of the group; callers needing the full array should call
+	_get_targets_by_type or rely on _resolve_ability_targets for ability execution."""
 	match target_type:
 		"lowest_hp_enemy":
 			return _get_lowest_hp_enemy(combatant)
@@ -394,10 +392,58 @@ func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant
 			return _get_lowest_magic_defense_enemy(combatant)
 		"highest_atk_enemy":
 			return _get_highest_atk_enemy(combatant)
+		"highest_speed_enemy":
+			return _get_highest_speed_enemy(combatant)
+		"all_allies":
+			# Single-target fallback: first living ally (used when caller can't expand)
+			var allies = _get_all_alive_allies(combatant)
+			return allies[0] if allies.size() > 0 else combatant
 		"self":
 			return combatant
 		_:
+			push_warning("AutobattleSystem: Unknown target type '%s', defaulting to lowest_hp_enemy" % target_type)
 			return _get_lowest_hp_enemy(combatant)
+
+
+func _get_targets_by_type(combatant: Combatant, target_type: String) -> Array[Combatant]:
+	"""Multi-target resolver. Returns the full party for 'all_allies' / 'all_enemies',
+	otherwise wraps the single _get_target_by_type result in a one-element array."""
+	match target_type:
+		"all_allies":
+			return _get_all_alive_allies(combatant)
+		"all_enemies":
+			return _get_enemies_for(combatant)
+		_:
+			var t = _get_target_by_type(combatant, target_type)
+			var arr: Array[Combatant] = []
+			if t != null:
+				arr.append(t)
+			return arr
+
+
+func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_type: String) -> Array[Combatant]:
+	"""Resolve the targets array for an ability action.
+	If the ability's own target_type is 'all_allies' / 'all_enemies', expand to the
+	full group regardless of the script target string — fixes Bard Battle Hymn /
+	Inspiring Melody silently hitting one enemy."""
+	var js = get_node_or_null("/root/JobSystem")
+	if js and js.has_method("get_ability"):
+		var ability = js.get_ability(ability_id)
+		if ability is Dictionary and not ability.is_empty():
+			var ab_target = ability.get("target_type", "")
+			if ab_target == "all_allies":
+				return _get_all_alive_allies(combatant)
+			if ab_target == "all_enemies":
+				return _get_enemies_for(combatant)
+	return _get_targets_by_type(combatant, target_type)
+
+
+func _get_all_alive_allies(combatant: Combatant) -> Array[Combatant]:
+	"""Living allies for a combatant, including the combatant itself when alive."""
+	var allies := _get_allies_for(combatant)
+	if combatant.is_alive and not (combatant in allies):
+		allies.append(combatant)
+	return allies
 
 
 func _get_character_id(combatant: Combatant) -> String:
@@ -1755,6 +1801,16 @@ func _get_highest_atk_enemy(combatant: Combatant) -> Combatant:
 		return null
 
 	enemies.sort_custom(func(a, b): return a.base_attack > b.base_attack)
+	return enemies[0]
+
+
+func _get_highest_speed_enemy(combatant: Combatant) -> Combatant:
+	"""Get enemy with highest speed — the Time Mage's Slow/Rewind target"""
+	var enemies = _get_enemies_for(combatant)
+	if enemies.size() == 0:
+		return null
+
+	enemies.sort_custom(func(a, b): return a.speed > b.speed)
 	return enemies[0]
 
 
