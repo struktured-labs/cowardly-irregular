@@ -1520,6 +1520,11 @@ func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {
 	if targets.size() == 0:
 		return null
 
+	# Taunt: if attacker is taunted by any alive target, lock onto that taunter.
+	var taunter = _find_taunter(attacker, targets)
+	if taunter:
+		return taunter
+
 	# Prefer lowest HP target (60% chance)
 	if randf() < 0.6:
 		var sorted_targets = targets.duplicate()
@@ -1527,6 +1532,24 @@ func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {
 		return sorted_targets[0]
 
 	return targets[randi() % targets.size()]
+
+
+func _find_taunter(attacker: Combatant, targets: Array) -> Combatant:
+	"""Return the alive target whose taunt status is currently locking the attacker, or null."""
+	if not attacker or not is_instance_valid(attacker):
+		return null
+	if not "status_effects" in attacker:
+		return null
+	for status in attacker.status_effects:
+		if typeof(status) != TYPE_STRING:
+			continue
+		if not status.begins_with("taunted_"):
+			continue
+		var taunter_name = status.substr(len("taunted_"))
+		for t in targets:
+			if t is Combatant and is_instance_valid(t) and t.is_alive and t.combatant_name == taunter_name:
+				return t
+	return null
 
 
 ## Execution Phase
