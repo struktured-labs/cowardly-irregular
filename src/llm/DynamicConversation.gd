@@ -157,6 +157,7 @@ func run(player: Node) -> void:
 	# Freeze the player.
 	_set_player_movement(player, false)
 
+	_register_with_llm_service()
 	conversation_started.emit(_npc_name)
 	_state = State.OPENING
 
@@ -175,6 +176,7 @@ func run(player: Node) -> void:
 
 	_active = false
 	_player = null
+	_unregister_with_llm_service()
 	conversation_ended.emit(_npc_name)
 
 
@@ -216,6 +218,7 @@ func abort() -> void:
 	if was_active and _player != null:
 		_set_player_movement(_player, true)
 	_player = null
+	_unregister_with_llm_service()
 
 
 # ── State handlers ────────────────────────────────────────────────────────────
@@ -654,3 +657,17 @@ func _is_farewell(choice: String) -> bool:
 func _set_player_movement(player: Node, can_move: bool) -> void:
 	if player != null and is_instance_valid(player) and player.has_method("set_can_move"):
 		player.set_can_move(can_move)
+
+
+## Register this conversation with LLMService so a scene-change abort_all
+## reaches us. Guarded — autoload may be absent in test harnesses.
+func _register_with_llm_service() -> void:
+	var svc: Node = get_node_or_null("/root/LLMService")
+	if svc != null and svc.has_method("register_conversation"):
+		svc.register_conversation(self)
+
+
+func _unregister_with_llm_service() -> void:
+	var svc: Node = get_node_or_null("/root/LLMService")
+	if svc != null and svc.has_method("unregister_conversation"):
+		svc.unregister_conversation(self)
