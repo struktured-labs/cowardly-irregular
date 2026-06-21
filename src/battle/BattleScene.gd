@@ -171,6 +171,7 @@ var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # "battle" or "boss"
+var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
 
 ## Autobattle state
@@ -541,7 +542,17 @@ func _show_boss_intro_dialogue() -> void:
 	"""Show boss intro dialogue if available"""
 	if _boss_dialogue_data.has("intro") and _boss_dialogue_data["intro"].size() > 0:
 		_waiting_for_dialogue = true
-		_battle_dialogue.show_boss_intro("Boss", _boss_dialogue_data["intro"])
+		_battle_dialogue.show_boss_intro(_get_boss_intro_speaker(), _boss_dialogue_data["intro"])
+
+
+func _get_boss_intro_speaker() -> String:
+	# Prefer the actual boss combatant name over the generic "Boss" placeholder.
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
+			return enemy.combatant_name
+	if test_enemies.size() > 0 and is_instance_valid(test_enemies[0]):
+		return test_enemies[0].combatant_name
+	return "Boss"
 
 
 func _start_battle_after_dialogue() -> void:
@@ -2019,6 +2030,7 @@ func _on_battle_started() -> void:
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
+	_masterite_phase2_swapped = false
 
 
 func _get_dominant_monster_type() -> String:
@@ -2980,6 +2992,7 @@ func _on_round_ended(round_num: int) -> void:
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
 	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
 	_update_ui()
+	_check_masterite_phase2_music_swap()
 	# Safety net: if the attacker's melee-attack tween was interrupted
 	# (target died mid-animation, scene refresh, battle-speed change,
 	# etc.), force the sprite back to its stored home position and
@@ -3005,6 +3018,23 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 					SoundManager.play_status("confuse")
 				"paralyze":
 					SoundManager.play_status("paralyze")
+
+
+func _check_masterite_phase2_music_swap() -> void:
+	# Latch once per battle when a Masterite boss escalates to phase 2.
+	if _masterite_phase2_swapped or _is_danger_music:
+		return
+	for enemy in test_enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var phase: int = int(enemy.get_meta("masterite_battle_phase", 1))
+		var mtype: String = str(enemy.get_meta("masterite_type", ""))
+		if phase >= 2 and mtype != "":
+			var track: String = "boss_phase2_%s" % mtype
+			_base_music_track = track
+			SoundManager.play_music(track)
+			_masterite_phase2_swapped = true
+			return
 
 
 ## Combatant event handlers

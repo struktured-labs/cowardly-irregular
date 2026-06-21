@@ -1,0 +1,93 @@
+{
+  "id": "world1_glacius_intro",
+  "title": "Glacius, the Frozen Sovereign",
+  "world": 1,
+  "trigger": "boss_ice_dragon",
+  "background": "ice_cave",
+  "description": "Boss intro for Glacius in the Glacial Sanctum. A meta-aware ice dragon who has read the documentation while frozen.",
+  "steps": [
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "boss_intro",
+      "name": "Glacius",
+      "title": "The Frozen Sovereign"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The air turns to frost. Ice crystals hang motionless in the dark.",
+        "A massive dragon of living ice unfurls from the cavern wall."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Glacius",
+          "text": "You know what I've been waiting for?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Glacius",
+          "text": "Three save files. THREE.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Glacius",
+          "text": "One for each difficulty. One for each 'perfect' run.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Glacius",
+          "text": "And every single one of you does the same thing.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "How do you know about save files?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Glacius",
+          "text": "I've been frozen here since the TUTORIAL. I've had time to read the documentation.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Glacius",
+          "text": "Let's see how your autobattle handles THIS.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}
