@@ -1592,7 +1592,7 @@ func repeat_previous_actions() -> bool:
 				"combatant": combatant,
 				"type": "attack",
 				"target": alive[0] if alive.size() > 0 else null,
-				"speed": ACTION_SPEEDS["attack"] + combatant.speed
+				"speed": _compute_action_speed(combatant, "attack")
 			})
 			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
 			repeated_any = true
