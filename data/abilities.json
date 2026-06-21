@@ -259,8 +259,8 @@
 		"type": "mp_restore",
 		"animation": "pray",
 		"mp_cost": 0,
-		"description": "Offer a brief prayer — restore a small amount of MP",
-		"target_type": "self",
+		"description": "Offer a brief prayer — restore a small amount of MP to one ally",
+		"target_type": "single_ally",
 		"mp_amount": 6
 	},
 	"riff": {
@@ -269,8 +269,8 @@
 		"type": "mp_restore",
 		"animation": "riff",
 		"mp_cost": 0,
-		"description": "Strike a quick chord — restore a small amount of MP",
-		"target_type": "self",
+		"description": "Strike a quick chord — restore a small amount of MP to the whole party",
+		"target_type": "all_allies",
 		"mp_amount": 6
 	},
 	"backstab": {

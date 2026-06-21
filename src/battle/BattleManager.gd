@@ -741,42 +741,38 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 		return
 	_track_manual_player_turn()
 
-	var alive_players: Array[Combatant] = player_party.filter(func(c): return c.is_alive)
+	# Participants are the only PCs whose AP/element should gate group attacks.
+	var participants: Array[Combatant] = []
+	participants.append(current_combatant)
+	for i in range(selection_index + 1, selection_order.size()):
+		var c = selection_order[i]
+		if c in player_party and c.is_alive:
+			participants.append(c)
 
-	# Limit Break requires full AP (>= 4) from every party member
+	# Limit Break requires full AP (>= 4) from every PARTICIPATING member.
 	if group_type == "limit_break":
-		for member in alive_players:
+		for member in participants:
 			if member.current_ap < 4:
-				battle_log_message.emit("[color=red]Limit Break requires ALL party members at full AP (4)![/color]")
+				battle_log_message.emit("[color=red]Limit Break requires ALL participants at full AP (4)![/color]")
 				print("[GROUP] Limit Break blocked — %s has AP %d" % [member.combatant_name, member.current_ap])
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
 
-	# Combo Magic requires >= 2 AP each and >= 2 distinct magic elements
+	# Combo Magic requires >= 2 AP each and >= 2 distinct elements across participants.
 	if group_type == "combo_magic":
-		for member in alive_players:
+		for member in participants:
 			if member.current_ap < 2:
-				battle_log_message.emit("[color=red]Combo Magic requires ALL party members to have >= 2 AP![/color]")
+				battle_log_message.emit("[color=red]Combo Magic requires ALL participants to have >= 2 AP![/color]")
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
-		var elements = _get_party_elements(alive_players)
+		var elements = _get_party_elements(participants)
 		if elements.size() < 2:
 			battle_log_message.emit("[color=red]Combo Magic requires at least 2 different magic elements![/color]")
 			current_state = BattleState.PLAYER_SELECTING
 			selection_turn_started.emit(current_combatant)
 			return
-
-	# Collect participants: current combatant + remaining unselected alive players
-	var participants: Array[Combatant] = []
-	participants.append(current_combatant)
-
-	# Determine remaining players who haven't selected yet (index after current)
-	for i in range(selection_index + 1, selection_order.size()):
-		var c = selection_order[i]
-		if c in player_party and c.is_alive:
-			participants.append(c)
 
 	var action = {
 		"type": "group",
@@ -1524,6 +1520,11 @@ func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {
 	if targets.size() == 0:
 		return null
 
+	# Taunt: if attacker is taunted by any alive target, lock onto that taunter.
+	var taunter = _find_taunter(attacker, targets)
+	if taunter:
+		return taunter
+
 	# Prefer lowest HP target (60% chance)
 	if randf() < 0.6:
 		var sorted_targets = targets.duplicate()
@@ -1531,6 +1532,24 @@ func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {
 		return sorted_targets[0]
 
 	return targets[randi() % targets.size()]
+
+
+func _find_taunter(attacker: Combatant, targets: Array) -> Combatant:
+	"""Return the alive target whose taunt status is currently locking the attacker, or null."""
+	if not attacker or not is_instance_valid(attacker):
+		return null
+	if not "status_effects" in attacker:
+		return null
+	for status in attacker.status_effects:
+		if typeof(status) != TYPE_STRING:
+			continue
+		if not status.begins_with("taunted_"):
+			continue
+		var taunter_name = status.substr(len("taunted_"))
+		for t in targets:
+			if t is Combatant and is_instance_valid(t) and t.is_alive and t.combatant_name == taunter_name:
+				return t
+	return null
 
 
 ## Execution Phase
@@ -1596,7 +1615,7 @@ func repeat_previous_actions() -> bool:
 				"combatant": combatant,
 				"type": "attack",
 				"target": alive[0] if alive.size() > 0 else null,
-				"speed": ACTION_SPEEDS["attack"] + combatant.speed
+				"speed": _compute_action_speed(combatant, "attack")
 			})
 			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
 			repeated_any = true
@@ -2487,7 +2506,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		"escape":
 			_execute_escape_ability(caster, ability)
 		"mp_restore":
-			_execute_mp_restore_ability(caster, ability)
+			_execute_mp_restore_ability(caster, ability, retargeted)
 		_:
 			print("Unknown ability type: %s" % ability_type)
 
@@ -2942,15 +2961,31 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 		print("  → %s failed to escape!" % caster.combatant_name)
 
 
-func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary) -> void:
-	"""Free-Move style ability that restores a small amount of MP to the caster."""
+func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets: Array = []) -> void:
+	"""Free-Move MP restore: honors ability.target_type (self / single_ally / all_allies)."""
 	var amount: int = ability.get("mp_amount", 5)
-	var before: int = caster.current_mp
-	caster.current_mp = min(caster.max_mp, caster.current_mp + amount)
-	var restored: int = caster.current_mp - before
-	print("  → %s restores %d MP" % [caster.combatant_name, restored])
-	battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color][/color]" % [caster.combatant_name, restored])
-	healing_done.emit(caster, restored)
+	var target_type: String = ability.get("target_type", "self")
+	var recipients: Array[Combatant] = []
+	match target_type:
+		"all_allies":
+			for ally in player_party:
+				if ally and is_instance_valid(ally) and ally.is_alive:
+					recipients.append(ally)
+		"single_ally":
+			for t in targets:
+				if t is Combatant and is_instance_valid(t) and t.is_alive:
+					recipients.append(t)
+			if recipients.is_empty():
+				recipients.append(caster)
+		_:
+			recipients.append(caster)
+	for r in recipients:
+		var before: int = r.current_mp
+		r.current_mp = min(r.max_mp, r.current_mp + amount)
+		var restored: int = r.current_mp - before
+		print("  → %s restores %d MP for %s" % [caster.combatant_name, restored, r.combatant_name])
+		battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color] for [color=white]%s[/color][/color]" % [caster.combatant_name, restored, r.combatant_name])
+		healing_done.emit(r, restored)
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
