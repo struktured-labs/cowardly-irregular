@@ -47,6 +47,7 @@ const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 var _profile_label: Label
 var _stats_panel: Control
 var _share_picker: Control = null  # Import file-picker overlay (acts as a submenu; blocks grid input while open)
+var _option_picker: Control = null # Generic option-picker overlay (condition/action/item/target)
 var _flash_label: Label = null     # Transient status flash for export/import feedback
 var _flash_timer: float = 0.0
 
@@ -145,6 +146,9 @@ func _exit_tree() -> void:
 	if _share_picker and is_instance_valid(_share_picker):
 		_share_picker.queue_free()
 	_share_picker = null
+	if _option_picker and is_instance_valid(_option_picker):
+		_option_picker.queue_free()
+	_option_picker = null
 
 
 func setup(char_id: String, char_name: String, char_combatant: Combatant = null, char_party: Array = []) -> void:
@@ -1607,6 +1611,11 @@ func _input(event: InputEvent) -> void:
 		_handle_share_picker_input(event)
 		return
 
+	# Generic option picker (condition/action/item/target) handles its own input
+	if _option_picker and is_instance_valid(_option_picker) and _option_picker.visible:
+		_handle_option_picker_input(event)
+		return
+
 	if is_editing:
 		# Edit modal handles input
 		return
@@ -1707,6 +1716,14 @@ func _input(event: InputEvent) -> void:
 	# I - Import: open a controller-navigable picker of exported files
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and not event.shift_pressed and not event.is_echo():
 		_open_share_picker()
+		get_viewport().set_input_as_handled()
+
+	# T - Open target picker for the action under the cursor
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_T and not event.shift_pressed and not event.is_echo():
+		if _is_on_action_group():
+			_open_target_picker()
+		else:
+			SoundManager.play_ui("menu_error")
 		get_viewport().set_input_as_handled()
 
 	# Tab / Y - Toggle current row enabled/disabled
@@ -1810,28 +1827,77 @@ func _edit_current_cell() -> void:
 
 
 func _open_condition_editor() -> void:
-	"""Open condition editor - A button cycles condition type"""
-	is_editing = true
-	_update_cursor()
-
+	"""Open condition picker — submenu listing all 14 supported condition types.
+	Idx==-1 (current type not in the canonical list) leaves the type unchanged
+	and plays menu_error, so editing a cell with an unrecognized type can never
+	silently overwrite it (prior bug: hitting A on 'ally_has_status' wiped it
+	to 'hp_percent' via the 6-type cycle)."""
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
-	if cursor_col < conditions.size():
-		var cond = conditions[cursor_col]
-		var types = ["hp_percent", "mp_percent", "ap", "turn", "enemy_count", "always"]
-		var current_type = cond.get("type", "always")
-		var idx = types.find(current_type)
-		idx = (idx + 1) % types.size()
-		cond["type"] = types[idx]
-		if types[idx] != "always":
-			if not cond.has("op"):
-				cond["op"] = "<"
-			if not cond.has("value"):
-				cond["value"] = 50
-		_refresh_grid()
+	if cursor_col >= conditions.size():
+		return
+	var cond = conditions[cursor_col]
+	var current_type = cond.get("type", "always")
+	var type_keys: Array = AutobattleSystem.CONDITION_TYPES.keys()
+	var idx = type_keys.find(current_type)
+	if idx == -1:
+		SoundManager.play_ui("menu_error")
+		return
+	_open_option_picker({
+		"title": "Condition Type",
+		"kind": "condition_type",
+		"options": _build_condition_type_options(type_keys),
+		"selected": idx,
+	})
 
-	is_editing = false
-	_update_cursor()
+
+func _build_condition_type_options(type_keys: Array) -> Array:
+	"""Display rows for the condition picker — label + machine key for each type."""
+	var rows: Array = []
+	for k in type_keys:
+		rows.append({"id": k, "label": AutobattleSystem.CONDITION_TYPES.get(k, k)})
+	return rows
+
+
+func _apply_condition_type(new_type: String) -> void:
+	"""Commit a chosen condition type to the current cell, seeding sane defaults
+	(op, value, status name, item id, stat) so the new condition is immediately
+	evaluable without a follow-up edit."""
+	var rule = rules[cursor_row]
+	var conditions = rule.get("conditions", [])
+	if cursor_col >= conditions.size():
+		return
+	var cond = conditions[cursor_col]
+	cond["type"] = new_type
+	if new_type == "always":
+		cond.erase("op")
+		cond.erase("value")
+	elif new_type in ["has_status", "ally_has_status"]:
+		if not cond.has("status"):
+			cond["status"] = "poison"
+		cond.erase("op")
+		cond.erase("value")
+	elif new_type == "item_count":
+		if not cond.has("item_id"):
+			cond["item_id"] = "potion"
+		if not cond.has("op"):
+			cond["op"] = ">"
+		if not cond.has("value"):
+			cond["value"] = 0
+	elif new_type in ["has_buff", "not_has_buff"]:
+		if not cond.has("stat"):
+			cond["stat"] = "defense"
+		cond.erase("op")
+		cond.erase("value")
+	elif new_type == "setup_complete":
+		cond.erase("op")
+		cond.erase("value")
+	else:
+		if not cond.has("op"):
+			cond["op"] = "<"
+		if not cond.has("value"):
+			cond["value"] = 50
+	_refresh_grid()
 
 
 func _cycle_condition_operator() -> void:
@@ -1891,106 +1957,381 @@ func _adjust_condition_value(delta: int) -> void:
 
 
 func _open_action_editor() -> void:
-	"""Open action editor modal - cycles through action types and abilities"""
-	is_editing = true
-	_update_cursor()
+	"""Open action picker — submenu over the supported action types
+	(attack, ability, item, defer). Selecting 'ability' / 'item' opens a
+	sub-picker scoped to the character's known abilities or inventory items.
+	'all_out_attack' was removed as a dead branch (no consumer reads its
+	force_advance flag)."""
+	var action_ctx = _resolve_current_action_context()
+	if action_ctx.is_empty():
+		return
+	var action: Dictionary = action_ctx["action"]
+	var current_type: String = action.get("type", "attack")
+	var rows: Array = []
+	rows.append({"id": "attack", "label": "Attack"})
+	rows.append({"id": "ability", "label": "Ability..."})
+	rows.append({"id": "item", "label": "Item..."})
+	rows.append({"id": "defer", "label": "Defer"})
+	var selected = 0
+	for i in range(rows.size()):
+		if rows[i]["id"] == current_type:
+			selected = i
+			break
+	_open_option_picker({
+		"title": "Action",
+		"kind": "action_type",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": action_ctx,
+	})
 
+
+func _resolve_current_action_context() -> Dictionary:
+	"""Resolve the action group under the cursor — returns the underlying actions
+	array slice + the first action to drive the picker. Returns {} when the
+	cursor isn't on an action group."""
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
-
-	# Check if any condition is ALWAYS (affects slot count)
 	var has_always = false
 	for cond in conditions:
 		if cond.get("type", "") == "always":
 			has_always = true
 			break
-
-	# Account for empty condition slot (but not if ALWAYS)
 	var condition_slots = conditions.size()
 	if conditions.size() < MAX_CONDITIONS and not has_always:
 		condition_slots += 1
-
-	# cursor_col counts groups, not individual actions - convert to actual action index
 	var group_idx = cursor_col - condition_slots
 	var action_groups = _group_actions(actions)
+	if group_idx < 0 or group_idx >= action_groups.size():
+		return {}
+	var group = action_groups[group_idx]
+	var action_idx = group.get("start_idx", 0)
+	var group_count = group.get("count", 1)
+	if action_idx < 0 or action_idx >= actions.size():
+		return {}
+	return {
+		"actions": actions,
+		"action": actions[action_idx],
+		"action_idx": action_idx,
+		"group_count": group_count,
+	}
 
-	if group_idx < action_groups.size():
-		var group = action_groups[group_idx]
-		var action_idx = group.get("start_idx", 0)
-		var group_count = group.get("count", 1)
-		# Validate action_idx is within bounds
-		if action_idx < 0 or action_idx >= actions.size():
-			return
-		var action = actions[action_idx]
-		var current_type = action.get("type", "attack")
-		var current_ability_id = action.get("id", "")
 
-		# Get character-specific abilities
-		var char_abilities = _get_character_abilities()
-
-		# Defer is now allowed at any position (removed AP restriction)
-
-		# Determine the new action type/id
-		var new_type = current_type
-		var new_id = current_ability_id
-		var new_target = action.get("target", "lowest_hp_enemy")
-
-		if current_type == "ability" and char_abilities.size() > 0:
-			# Cycle through abilities
-			var ability_idx = -1
-			for i in range(char_abilities.size()):
-				if char_abilities[i]["id"] == current_ability_id:
-					ability_idx = i
-					break
-
-			if ability_idx >= 0 and ability_idx < char_abilities.size() - 1:
-				# Next ability - use smart target based on ability type
-				new_id = char_abilities[ability_idx + 1]["id"]
-				new_target = _get_target_for_ability(new_id)
-			else:
-				# After last ability, go to defer
-				new_type = "defer"
-				new_id = ""
-				new_target = ""
-		elif current_type == "defer":
-			# Back to attack
-			new_type = "attack"
-			new_id = ""
-			new_target = "lowest_hp_enemy"
-		elif current_type == "attack":
-			if char_abilities.size() > 0:
-				# Move to first ability - use smart target based on ability type
-				new_type = "ability"
-				new_id = char_abilities[0]["id"]
-				new_target = _get_target_for_ability(new_id)
-			else:
-				# No abilities, go to defer
-				new_type = "defer"
-				new_id = ""
-				new_target = ""
+func _apply_action_type(new_type: String, ctx: Dictionary) -> void:
+	"""Commit a chosen action type for the action group at ctx.
+	For 'ability' / 'item' the value is staged and a sub-picker over the
+	character's abilities/inventory opens; the sub-picker writes the id."""
+	if new_type == "ability":
+		_open_ability_subpicker(ctx)
+		return
+	if new_type == "item":
+		_open_item_subpicker(ctx)
+		return
+	var action: Dictionary = ctx["action"]
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	var new_target = ""
+	if new_type == "attack":
+		new_target = "lowest_hp_enemy"
+	for i in range(count):
+		var idx = start + i
+		actions[idx]["type"] = new_type
+		actions[idx].erase("id")
+		if new_target != "":
+			actions[idx]["target"] = new_target
 		else:
-			# Unknown type, reset to attack
-			new_type = "attack"
-			new_id = ""
-			new_target = "lowest_hp_enemy"
+			actions[idx].erase("target")
+	_refresh_grid()
 
-		# Apply change to ALL actions in the group
-		for i in range(group_count):
-			var idx = action_idx + i
-			actions[idx]["type"] = new_type
-			if new_id != "":
-				actions[idx]["id"] = new_id
-			else:
-				actions[idx].erase("id")
-			if new_target != "":
-				actions[idx]["target"] = new_target
-			else:
-				actions[idx].erase("target")
 
-		_refresh_grid()
+func _open_ability_subpicker(ctx: Dictionary) -> void:
+	"""Sub-picker over the current character's ability list."""
+	var char_abilities = _get_character_abilities()
+	if char_abilities.is_empty():
+		SoundManager.play_ui("menu_error")
+		_flash_status("No abilities available for %s" % character_name, Color.YELLOW)
+		return
+	var rows: Array = []
+	for ab in char_abilities:
+		rows.append({"id": ab["id"], "label": ab.get("name", ab["id"])})
+	var current_id: String = ctx["action"].get("id", "")
+	var selected = 0
+	for i in range(rows.size()):
+		if rows[i]["id"] == current_id:
+			selected = i
+			break
+	_open_option_picker({
+		"title": "Ability",
+		"kind": "ability_id",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": ctx,
+	})
 
-	is_editing = false
+
+func _apply_ability_id(ability_id: String, ctx: Dictionary) -> void:
+	"""Commit an ability id; pick a sensible target from the ability target_type."""
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	var target = _get_target_for_ability(ability_id)
+	for i in range(count):
+		var idx = start + i
+		actions[idx]["type"] = "ability"
+		actions[idx]["id"] = ability_id
+		actions[idx]["target"] = target
+	_refresh_grid()
+
+
+func _open_item_subpicker(ctx: Dictionary) -> void:
+	"""Sub-picker over consumable items the character can currently use."""
+	var items := _get_character_consumables()
+	if items.is_empty():
+		SoundManager.play_ui("menu_error")
+		_flash_status("No consumable items available", Color.YELLOW)
+		return
+	var rows: Array = []
+	for it in items:
+		rows.append({"id": it["id"], "label": it.get("name", it["id"])})
+	var current_id: String = ctx["action"].get("id", "")
+	var selected = 0
+	for i in range(rows.size()):
+		if rows[i]["id"] == current_id:
+			selected = i
+			break
+	_open_option_picker({
+		"title": "Item",
+		"kind": "item_id",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": ctx,
+	})
+
+
+func _apply_item_id(item_id: String, ctx: Dictionary) -> void:
+	"""Commit a chosen item id to the action group; default to self target
+	(matches the default-script convention for potions/antidotes)."""
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	for i in range(count):
+		var idx = start + i
+		actions[idx]["type"] = "item"
+		actions[idx]["id"] = item_id
+		actions[idx]["target"] = "self"
+	_refresh_grid()
+
+
+func _get_character_consumables() -> Array:
+	"""Return consumable items available to the character — filters ItemSystem
+	for category CONSUMABLE/CURATIVE/BUFF/OFFENSIVE and intersects with the
+	combatant's known inventory when possible."""
+	var rows: Array = []
+	var item_sys = get_node_or_null("/root/ItemSystem")
+	if not item_sys or not ("items" in item_sys):
+		return rows
+	var all_items: Dictionary = item_sys.items
+	var allowed_categories: Array = [0, 1, 2, 3]
+	if "ItemCategory" in item_sys:
+		var cat = item_sys.ItemCategory
+		allowed_categories = [cat.CONSUMABLE, cat.CURATIVE, cat.BUFF, cat.OFFENSIVE]
+	for item_id in all_items.keys():
+		var entry: Dictionary = all_items[item_id]
+		var cat_val = entry.get("category", 0)
+		if cat_val in allowed_categories:
+			rows.append({"id": item_id, "name": entry.get("name", item_id)})
+	rows.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+	return rows
+
+
+# --- Target picker --------------------------------------------------------
+# Right-pane target picker on action focus: lets the player override the
+# heuristic target for an action. Triggered via the T key on action cells.
+
+func _open_target_picker() -> void:
+	"""Open a picker over AutobattleSystem.TARGET_TYPES for the focused action."""
+	var ctx = _resolve_current_action_context()
+	if ctx.is_empty():
+		SoundManager.play_ui("menu_error")
+		return
+	var action: Dictionary = ctx["action"]
+	if action.get("type", "") == "defer":
+		SoundManager.play_ui("menu_error")
+		return
+	var target_keys: Array = AutobattleSystem.TARGET_TYPES.keys()
+	var rows: Array = []
+	for k in target_keys:
+		rows.append({"id": k, "label": AutobattleSystem.TARGET_TYPES.get(k, k)})
+	var current: String = action.get("target", "lowest_hp_enemy")
+	var selected = target_keys.find(current)
+	if selected == -1:
+		selected = 0
+	_open_option_picker({
+		"title": "Target",
+		"kind": "target_type",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": ctx,
+	})
+
+
+func _apply_target_type(target: String, ctx: Dictionary) -> void:
+	"""Commit a chosen target type to every action in the group."""
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	for i in range(count):
+		actions[start + i]["target"] = target
+	_refresh_grid()
+
+
+# --- Generic option picker overlay ----------------------------------------
+# Mirrors _open_share_picker's pattern: a dim backdrop + bordered panel +
+# scrollable row list. Drives all four kinds of picker (condition_type,
+# action_type, ability_id, item_id, target_type) through _handle_option_picker_input.
+
+func _open_option_picker(spec: Dictionary) -> void:
+	"""Open the generic picker overlay. spec keys:
+	  title (String), kind (String), options (Array of {id,label}),
+	  selected (int), action_ctx (Dictionary, optional)."""
+	if _option_picker and is_instance_valid(_option_picker):
+		_option_picker.queue_free()
+		_option_picker = null
+	_option_picker = Control.new()
+	_option_picker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_option_picker.set_meta("spec", spec)
+	add_child(_option_picker)
+	_build_option_picker()
+	SoundManager.play_ui("menu_select")
+
+
+func _build_option_picker() -> void:
+	"""(Re)build the option picker visuals from the stored spec dictionary."""
+	for child in _option_picker.get_children():
+		child.queue_free()
+	var spec: Dictionary = _option_picker.get_meta("spec")
+	var options: Array = spec.get("options", [])
+	var selected: int = spec.get("selected", 0)
+	var title_text: String = spec.get("title", "Select")
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.7)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_option_picker.add_child(backdrop)
+	var panel_w := 360.0
+	var panel_h := minf(80.0 + options.size() * 24.0, size.y - 80.0)
+	var panel := ColorRect.new()
+	panel.color = style.bg
+	panel.position = Vector2((size.x - panel_w) / 2.0, (size.y - panel_h) / 2.0)
+	panel.size = Vector2(panel_w, panel_h)
+	_option_picker.add_child(panel)
+	_add_pixel_border(panel, panel_w, panel_h)
+	var title := Label.new()
+	title.text = title_text
+	title.position = panel.position + Vector2(12, 8)
+	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
+	_option_picker.add_child(title)
+	var list_y := panel.position.y + 34.0
+	var max_visible := int((panel_h - 50.0) / 22.0)
+	var scroll_start := 0
+	if options.size() > max_visible:
+		scroll_start = clampi(selected - max_visible / 2, 0, options.size() - max_visible)
+	var end := min(options.size(), scroll_start + max_visible)
+	for i in range(scroll_start, end):
+		var opt: Dictionary = options[i]
+		var is_sel := i == selected
+		var row_bg := ColorRect.new()
+		row_bg.position = Vector2(panel.position.x + 8, list_y - 2)
+		row_bg.size = Vector2(panel_w - 16, 22)
+		row_bg.color = style.get("highlight_bg", Color(0.3, 0.3, 0.5)) if is_sel else Color(0, 0, 0, 0)
+		_option_picker.add_child(row_bg)
+		var row := Label.new()
+		row.text = "%s %s" % ["▶" if is_sel else "  ", opt.get("label", opt.get("id", ""))]
+		row.position = Vector2(panel.position.x + 12, list_y)
+		row.size = Vector2(panel_w - 24, 20)
+		row.add_theme_font_size_override("font_size", 11)
+		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
+		row.clip_text = true
+		_option_picker.add_child(row)
+		list_y += 22.0
+	var help := Label.new()
+	help.text = "D-Pad:Select   A:Confirm   B:Cancel"
+	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
+	help.add_theme_font_size_override("font_size", 10)
+	help.add_theme_color_override("font_color", style.text.darkened(0.2))
+	_option_picker.add_child(help)
+
+
+func _handle_option_picker_input(event: InputEvent) -> void:
+	"""Self-contained input for the generic picker (mirrors _handle_share_picker_input)."""
+	if not _option_picker or not is_instance_valid(_option_picker):
+		return
+	var spec: Dictionary = _option_picker.get_meta("spec")
+	var options: Array = spec.get("options", [])
+	var selected: int = spec.get("selected", 0)
+	if options.is_empty():
+		_close_option_picker()
+		return
+	if event.is_action_pressed("ui_up") and not event.is_echo():
+		spec["selected"] = (selected - 1 + options.size()) % options.size()
+		_option_picker.set_meta("spec", spec)
+		_build_option_picker()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
+		spec["selected"] = (selected + 1) % options.size()
+		_option_picker.set_meta("spec", spec)
+		_build_option_picker()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
+		_apply_option_picker_selection()
+		get_viewport().set_input_as_handled()
+	elif (event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_menu")) and not event.is_echo():
+		_close_option_picker()
+		SoundManager.play_ui("menu_close")
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_close_option_picker()
+		SoundManager.play_ui("menu_close")
+		get_viewport().set_input_as_handled()
+
+
+func _apply_option_picker_selection() -> void:
+	"""Dispatch the picker's selection to the kind-specific apply handler."""
+	if not _option_picker or not is_instance_valid(_option_picker):
+		return
+	var spec: Dictionary = _option_picker.get_meta("spec")
+	var options: Array = spec.get("options", [])
+	var selected: int = spec.get("selected", 0)
+	if selected < 0 or selected >= options.size():
+		_close_option_picker()
+		return
+	var chosen: Dictionary = options[selected]
+	var kind: String = spec.get("kind", "")
+	var ctx: Dictionary = spec.get("action_ctx", {})
+	_close_option_picker()
+	match kind:
+		"condition_type":
+			_apply_condition_type(chosen["id"])
+		"action_type":
+			_apply_action_type(chosen["id"], ctx)
+		"ability_id":
+			_apply_ability_id(chosen["id"], ctx)
+		"item_id":
+			_apply_item_id(chosen["id"], ctx)
+		"target_type":
+			_apply_target_type(chosen["id"], ctx)
+	SoundManager.play_ui("menu_select")
+
+
+func _close_option_picker() -> void:
+	"""Tear down the generic picker overlay and return focus to the grid."""
+	if _option_picker and is_instance_valid(_option_picker):
+		_option_picker.queue_free()
+	_option_picker = null
 	_update_cursor()
 
 
