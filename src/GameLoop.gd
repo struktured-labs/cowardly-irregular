@@ -1741,6 +1741,12 @@ func _apply_pending_boss_defeat() -> void:
 		)
 	# One-shot: clear after applying
 	GameState.pending_boss_defeat = {}
+	# Auto-save immediately after boss flags land. Without this, a crash or
+	# quit between victory and the next area transition / 5-min auto-tick
+	# loses the boss-defeat flag entirely — and boss fights are the longest,
+	# highest-stakes encounters in the game.
+	if SaveSystem and SaveSystem.has_method("auto_save"):
+		SaveSystem.auto_save()
 
 
 func _wait_for_confirm() -> void:
