@@ -701,10 +701,12 @@ func _toggle_passive() -> void:
 			_build_ui()
 		else:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Unequip failed")
 	else:
 		# Equip (check slot availability)
 		if character.equipped_passives.size() >= character.max_passive_slots:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "All passive slots full (%d/%d)" % [character.equipped_passives.size(), character.max_passive_slots])
 			return
 
 		if PassiveSystem.equip_passive(character, passive_id):
@@ -714,6 +716,7 @@ func _toggle_passive() -> void:
 			_build_ui()
 		else:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Equip failed (passive requirements not met)")
 
 
 func _on_tab_click(tab_index: int) -> void:
