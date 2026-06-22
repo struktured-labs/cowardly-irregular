@@ -146,16 +146,9 @@ func _ready() -> void:
 	# overworld scene root so all positioning is in viewport (screen)
 	# space — see DynamicConversation._present_choices.
 
-	# Transparent full-screen layer to capture input.
-	anchor_left   = 0.0
-	anchor_top    = 0.0
-	anchor_right  = 1.0
-	anchor_bottom = 1.0
-	offset_left   = 0
-	offset_top    = 0
-	offset_right  = 0
-	offset_bottom = 0
-	mouse_filter  = Control.MOUSE_FILTER_STOP
+	# Transparent full-screen layer — set_anchors_and_offsets_preset is atomic and avoids the 'non-equal opposite anchors' warning on partial reassignments.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_STOP
 
 
 func _build_ui() -> void:
@@ -165,12 +158,11 @@ func _build_ui() -> void:
 		_panel = null
 	_row_nodes.clear()
 
-	# Dim backdrop.
+	# Dim backdrop — preset call sets all 4 anchors + offsets atomically (no intermediate mismatched state).
 	var dim := ColorRect.new()
 	dim.color = COL_DIM
-	dim.anchor_right  = 1.0
-	dim.anchor_bottom = 1.0
-	dim.mouse_filter  = Control.MOUSE_FILTER_IGNORE
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 
 	# Clamp panel width to viewport so it never bleeds off-screen-right
