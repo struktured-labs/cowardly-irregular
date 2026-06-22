@@ -10,6 +10,18 @@ signal load_started()
 signal load_completed(save_slot: int)
 signal load_failed(reason: String)
 
+## Fired by save_game/quick_save/auto_save BEFORE _create_save_data
+## reads GameState. Listeners flush their runtime state into the
+## serializable buckets — e.g. GameLoop._sync_party_to_game_state
+## copies the live Combatant array into GameState.player_party so
+## post-battle XP / HP / items aren't lost.
+##
+## Without this, the sync only happened when the overworld menu was
+## opened — auto-saves from zone-transitions / boss-defeat / the
+## 5-min timer wrote stale party state, losing any progress since
+## the last menu open.
+signal pre_save_sync()
+
 ## Save configuration
 const SAVE_DIR = "user://saves/"
 const MAX_SAVE_SLOTS = 3
@@ -75,6 +87,12 @@ func save_game(slot: int = -1) -> bool:
 		save_failed.emit("Cannot save during battle")
 		print("[SAVE] save_game refused: battle active")
 		return false
+
+	# Flush runtime state into the serializable GameState buckets
+	# BEFORE reading them. Listeners (currently GameLoop) sync live
+	# Combatant array → GameState.player_party so post-battle gains
+	# don't disappear on save.
+	pre_save_sync.emit()
 
 	save_started.emit()
 

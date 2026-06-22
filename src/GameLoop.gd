@@ -158,6 +158,13 @@ func _ready() -> void:
 		if not SaveSystem.save_completed.is_connected(_on_any_save_completed):
 			SaveSystem.save_completed.connect(_on_any_save_completed)
 
+	# Flush runtime party → GameState BEFORE every save reads it.
+	# Pre-fix this only ran when the overworld menu opened, so battle
+	# gains since the last menu open vanished from auto-saves.
+	if SaveSystem and SaveSystem.has_signal("pre_save_sync"):
+		if not SaveSystem.pre_save_sync.is_connected(_sync_party_to_game_state):
+			SaveSystem.pre_save_sync.connect(_sync_party_to_game_state)
+
 	# Always show title screen first
 	_show_title_screen()
 
