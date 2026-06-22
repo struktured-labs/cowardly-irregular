@@ -45,7 +45,7 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	label.modulate.a = 0.0
 	layer.add_child(label)
 
-	var tween := parent.create_tween() if parent.has_method("create_tween") else layer.create_tween()
+	var tween := layer.create_tween()
 	tween.tween_property(label, "modulate:a", 1.0, 0.3)
 	tween.parallel().tween_property(shadow, "modulate:a", 1.0, 0.3)
 	tween.tween_interval(hold_s)
