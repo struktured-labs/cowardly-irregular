@@ -423,8 +423,10 @@ func _handle_confirm() -> void:
 				_close()
 			else:
 				SoundManager.play_ui("menu_error")
+				Toast.show_warning(self, "Load failed: save file unreadable or corrupt")
 		else:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Load failed: that slot has no save")
 
 
 func _do_save(slot: int) -> void:
@@ -435,6 +437,12 @@ func _do_save(slot: int) -> void:
 		_close()
 	else:
 		SoundManager.play_ui("menu_error")
+		# SaveSystem refuses to save during battle (transient queued state,
+		# mid-animation HP). That's the most common failure mode by far —
+		# default the message to it. Other failures (disk full, permissions)
+		# are vanishingly rare in practice but still get the same visible
+		# notification rather than a silent SFX.
+		Toast.show_warning(self, "Save failed (battle in progress or disk write error)")
 
 
 func _show_overwrite_confirmation(slot: int) -> void:
