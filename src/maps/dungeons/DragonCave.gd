@@ -81,6 +81,16 @@ var spawn_points: Dictionary = {}
 func _ready() -> void:
 	_setup_scene()
 	_load_boss_state()
+	# Restore floor from save. Without this, a player who quits deep in
+	# any dragon cave / Castle Harmonia / Assembly Core / Null Chamber
+	# reloads on floor 1 and has to re-descend. The key is scoped by
+	# cave_id so each dungeon persists independently.
+	if GameState and cave_id != "":
+		var floor_key := cave_id + "_floor"
+		if GameState.game_constants.has(floor_key):
+			var saved_floor: int = int(GameState.game_constants[floor_key])
+			if saved_floor >= 1 and saved_floor <= total_floors:
+				current_floor = saved_floor
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
@@ -322,6 +332,10 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	controller.pause_exploration()
 
 	current_floor = target_floor
+	# Persist floor across save/load. Scoped by cave_id so each dungeon
+	# tracks independently.
+	if GameState and cave_id != "":
+		GameState.game_constants[cave_id + "_floor"] = current_floor
 
 	tile_map.clear()
 	_generate_map_for_floor(current_floor)
@@ -578,6 +592,11 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	# Walking back to the overworld clears the persisted floor so a
+	# fresh re-entry starts at floor 1 (dungeon-reset semantic). Same
+	# behavior as WhisperingCave.
+	if target_map != "" and target_map != cave_id and GameState and cave_id != "":
+		GameState.game_constants.erase(cave_id + "_floor")
 	area_transition.emit(target_map, spawn_point)
 
 
