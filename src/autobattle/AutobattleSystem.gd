@@ -1761,12 +1761,12 @@ func _get_lowest_hp_enemy(combatant: Combatant) -> Combatant:
 
 
 func _get_highest_hp_enemy(combatant: Combatant) -> Combatant:
-	"""Get enemy with highest HP"""
+	"""Get enemy with highest HP percentage (symmetric with _get_lowest_hp_* — the 'healthy targets first' picker)."""
 	var enemies = _get_enemies_for(combatant)
 	if enemies.size() == 0:
 		return null
 
-	enemies.sort_custom(func(a, b): return a.current_hp > b.current_hp)
+	enemies.sort_custom(func(a, b): return a.get_hp_percentage() > b.get_hp_percentage())
 	return enemies[0]
 
 
