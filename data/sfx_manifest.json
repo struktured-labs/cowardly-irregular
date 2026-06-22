@@ -26,7 +26,8 @@
       "source": "sox_synth",
       "prompt": "C5-E5-G5-C6 ascending major arpeggio (40ms per note) on triangle wave with light reverb tail, bright celebratory key-item jingle",
       "duration_seconds": 0.22,
-      "prompt_influence": 0.0
+      "prompt_influence": 0.0,
+      "fallback_to": "chest_open"
     },
     "menu_expand": {
       "file": "assets/audio/sfx/menu_expand.ogg",
@@ -1108,7 +1109,8 @@
     "menu_error": {
       "file": "assets/audio/sfx/menu_error.ogg",
       "prompt": "Short error buzz/denial sound \u2014 pending asset",
-      "duration_ms": 200
+      "duration_ms": 200,
+      "fallback_to": "menu_cancel"
     }
   }
 }

@@ -266,15 +266,19 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 			player.pitch_scale = final_pitch
 			player.play()
 			return true
-		else:
-			# Cached null = file doesn't exist, fall through to procedural
-			return false
+		var cached_fallback: String = str(entry.get("fallback_to", ""))
+		if cached_fallback != "" and cached_fallback != sound_key and _sfx_manifest.has(cached_fallback):
+			return _try_play_sfx_from_manifest(player, cached_fallback, volume_db_override, pitch_scale)
+		return false
 
 	# Try loading directly — skip existence checks that can fail in web/PCK exports
 	var stream = load(path) as AudioStream
 	if not stream:
-		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, resolved_key])
 		_sfx_stream_cache[resolved_key] = null
+		var fallback_key: String = str(entry.get("fallback_to", ""))
+		if fallback_key != "" and fallback_key != sound_key and _sfx_manifest.has(fallback_key):
+			return _try_play_sfx_from_manifest(player, fallback_key, volume_db_override, pitch_scale)
+		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, resolved_key])
 		return false
 	_sfx_stream_cache[resolved_key] = stream
 	player.stream = stream
