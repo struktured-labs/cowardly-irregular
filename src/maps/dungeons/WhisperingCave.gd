@@ -193,6 +193,15 @@ func _ready() -> void:
 	# Load boss defeated state BEFORE generating map (so boss trigger is set correctly)
 	_load_boss_state()
 
+	# Restore floor from save. Without this, a player who quits on floor
+	# 5 reloads on floor 1 and has to re-descend — the cave doesn't
+	# survive save/load. GameLoop's _current_cave_floor handles in-session
+	# battle re-entry; this handles full save/load cycles.
+	if GameState and GameState.game_constants.has("whispering_cave_floor"):
+		var saved_floor: int = int(GameState.game_constants["whispering_cave_floor"])
+		if saved_floor >= 1 and saved_floor <= 6:
+			current_floor = saved_floor
+
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
@@ -478,6 +487,9 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	# Quest-tracking flag — set once the player descends past floor 2.
 	if current_floor >= 3 and GameState:
 		GameState.game_constants["reached_cave_floor_3"] = true
+	# Persist current floor so save/load restores deep-in-cave progress.
+	if GameState:
+		GameState.game_constants["whispering_cave_floor"] = current_floor
 
 	# Clear and regenerate map
 	tile_map.clear()
@@ -697,6 +709,11 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	# Clear the persisted floor when the player walks back to the overworld
+	# — re-entering the cave should start from floor 1, not pop them
+	# back to whichever floor they previously left at.
+	if target_map != "" and target_map != "whispering_cave" and GameState:
+		GameState.game_constants.erase("whispering_cave_floor")
 	area_transition.emit(target_map, spawn_point)
 
 
