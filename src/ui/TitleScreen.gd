@@ -26,6 +26,8 @@ var _press_tween: Tween = null
 var _version_label: Label = null
 var _stars: Array[ColorRect] = []
 var _help_overlay: Control = null
+var _help_scroll_target: RichTextLabel = null
+const HELP_SCROLL_STEP_PX: float = 48.0
 
 ## Colors
 const MENU_COLOR := Color(0.95, 0.95, 1.0)
@@ -275,11 +277,21 @@ func _input(event: InputEvent) -> void:
 	if not _can_input:
 		return
 
-	# Help overlay intercept
-	if _help_overlay and event.is_action_pressed("ui_cancel"):
-		_close_help_overlay()
-		get_viewport().set_input_as_handled()
-		return
+	# Help overlay intercept — cancel closes; up/down scroll the long content via controller.
+	if _help_overlay:
+		if event.is_action_pressed("ui_cancel"):
+			_close_help_overlay()
+			get_viewport().set_input_as_handled()
+			return
+		var dy: float = 0.0
+		if event.is_action_pressed("ui_down"):
+			dy = HELP_SCROLL_STEP_PX
+		elif event.is_action_pressed("ui_up"):
+			dy = -HELP_SCROLL_STEP_PX
+		if dy != 0.0:
+			_scroll_help(dy)
+			get_viewport().set_input_as_handled()
+			return
 
 	if _phase == Phase.PRESS_START:
 		# Accept gamepad/keyboard confirm/start, OR a mouse click anywhere
@@ -436,6 +448,7 @@ func _show_help_overlay() -> void:
 	_help_overlay.add_child(title)
 
 	var content := RichTextLabel.new()
+	_help_scroll_target = content
 	content.bbcode_enabled = true
 	content.scroll_active = true
 	content.position = Vector2(60, 75)
@@ -500,7 +513,18 @@ func _close_help_overlay() -> void:
 	if _help_overlay:
 		_help_overlay.queue_free()
 		_help_overlay = null
+		_help_scroll_target = null
 		_can_input = true  # Restore input ability after close
+
+
+## Scroll the open help overlay's content by `dy` pixels (positive = down).
+func _scroll_help(dy: float) -> void:
+	if _help_scroll_target == null or not is_instance_valid(_help_scroll_target):
+		return
+	var sb := _help_scroll_target.get_v_scroll_bar()
+	if sb == null:
+		return
+	sb.value = clampf(sb.value + dy, sb.min_value, max(sb.min_value, sb.max_value - sb.page))
 
 
 func _exit_tree() -> void:
