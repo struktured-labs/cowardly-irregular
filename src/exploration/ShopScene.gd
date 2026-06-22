@@ -665,6 +665,18 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		description_label.text = "Insufficient gold!\nYou need %d G but only have %d G." % [cost, current_gold]
 		return
 
+	# Guard against double-purchase: the character-select menu disables
+	# already-known options, but a stale menu (rebuild race after a job
+	# change) or a future direct-call path could still reach here. Spend
+	# THEN no-op-append silently consumed the gold for nothing.
+	var existing_member: Dictionary = game_state.player_party[char_index]
+	var existing_learned: Array = existing_member.get("learned_abilities", [])
+	if pending_spell_id in existing_learned:
+		SoundManager.play_ui("menu_error")
+		var name_str: String = str(existing_member.get("name", "Character"))
+		description_label.text = "%s already knows %s." % [name_str, pending_spell_data.get("name", "this spell")]
+		return
+
 	if game_state.spend_gold(cost):
 		var member = game_state.player_party[char_index]
 		if not member.has("learned_abilities"):
