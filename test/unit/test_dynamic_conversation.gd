@@ -226,7 +226,7 @@ func test_fallback_npc_line_cycles_with_modulo() -> void:
 
 ## _llm_available() returns false when LLMService singleton is absent.
 func test_llm_available_false_without_singleton() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_service_actually_reachable():
 		pending("LLMService singleton present; test requires its absence")
 		return
 	assert_false(_dc._llm_available(),
@@ -304,7 +304,7 @@ func test_run_reentrant_guard() -> void:
 
 ## When LLM is unavailable, _fetch_player_choices returns the DialoguePrompts fallback.
 func test_fetch_player_choices_uses_fallback_without_llm() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_service_actually_reachable():
 		pending("LLMService singleton present; test requires its absence")
 		return
 
@@ -325,7 +325,7 @@ func test_fetch_player_choices_uses_fallback_without_llm() -> void:
 
 ## When LLM is unavailable, _fetch_npc_opening returns a fallback line.
 func test_fetch_npc_opening_uses_fallback_without_llm() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_service_actually_reachable():
 		pending("LLMService singleton present; test requires its absence")
 		return
 
@@ -340,7 +340,7 @@ func test_fetch_npc_opening_uses_fallback_without_llm() -> void:
 
 ## _fetch_npc_opening returns '...' when fallback_lines is empty and LLM is off.
 func test_fetch_npc_opening_empty_fallbacks_returns_ellipsis() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_service_actually_reachable():
 		pending("LLMService singleton present; test requires its absence")
 		return
 
@@ -381,3 +381,9 @@ func test_state_enum_variants_present() -> void:
 	assert_eq(DynamicConversation.State.PLAYER_TURN, 2, "State.PLAYER_TURN should be 2")
 	assert_eq(DynamicConversation.State.NPC_REPLY,   3, "State.NPC_REPLY should be 3")
 	assert_eq(DynamicConversation.State.DONE,        4, "State.DONE should be 4")
+
+
+## True when /root/LLMService autoload is present AND its HTTPBackend is ready (Ollama responding).
+func _llm_service_actually_reachable() -> bool:
+	var svc: Node = get_tree().root.get_node_or_null("LLMService") if get_tree() else null
+	return svc != null and svc.has_method("is_available") and svc.is_available()

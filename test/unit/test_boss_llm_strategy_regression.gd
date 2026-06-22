@@ -182,6 +182,10 @@ func test_pick_intent_async_falls_back_when_llm_unavailable() -> void:
 	if boss_dlg == null:
 		pending("BossDialogue autoload unavailable in GUT runtime")
 		return
+	var svc: Node = get_node_or_null("/root/LLMService")
+	if svc != null and svc.has_method("is_available") and svc.is_available():
+		pending("LLMService backend is reachable (Ollama running) — test asserts the deterministic-only path")
+		return
 
 	var ctx = BossIntentContextScript.new()
 	ctx.boss_id = "chancellor_mordaine"
