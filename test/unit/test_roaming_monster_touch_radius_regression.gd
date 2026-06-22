@@ -8,11 +8,8 @@ const RoamingMonsterScript := preload("res://src/exploration/RoamingMonster.gd")
 
 
 func test_touch_radius_is_tight_enough_to_match_visible_sprite() -> void:
-	var monster = RoamingMonsterScript.new()
-	add_child_autofree(monster)
-	# Radius is exposed as a const for easy tuning + asserting.
-	assert_true("TOUCH_RADIUS_PX" in RoamingMonsterScript,
-		"RoamingMonster must expose TOUCH_RADIUS_PX as a tunable constant")
+	# Direct const access — GDScript constants aren't enumerable via `in` so
+	# accessing the symbol is the contract check.
 	var r: float = float(RoamingMonsterScript.TOUCH_RADIUS_PX)
 	assert_true(r >= 40.0 and r <= 80.0,
 		"Touch radius (%.0f) must be in [40, 80] px — the visible 32px sprite + a small margin. Outside that range the player either bonks-on-air (>80) or feels too pixel-precise (<40)." % r)
