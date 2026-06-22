@@ -99,6 +99,13 @@ var _cancelled_ids: Dictionary = {}
 # does not re-enter _process_queue and submit a fresh request.
 var _draining: bool = false
 
+## True once 'no backend ready' has been logged this session.
+## _select_backend() runs on every complete() call, so without this gate
+## the warning fires for every NPC interaction / boss-strategy probe /
+## party-chat fetch when LLM is enabled but no backend is reachable.
+## One warning per session is plenty — it's status, not per-call info.
+var _no_backend_warned: bool = false
+
 # Active DynamicConversation registry — references to live DynamicConversation
 # nodes so a scene-change can abort each one's UI/movement reset (LLM cancel
 # alone leaves the choice menu visible).
@@ -144,7 +151,14 @@ func _select_backend() -> void:
 			_active_backend = be
 			break
 	if _active_backend == null:
-		push_warning("[LLMService] No ready backend found — all calls will use fallbacks.")
+		if not _no_backend_warned:
+			push_warning("[LLMService] No ready backend found — all calls will use fallbacks.")
+			_no_backend_warned = true
+	else:
+		# Reset the gate when a backend comes back online (Ollama
+		# returned, HTTP started accepting connections) — next outage
+		# gets its own one-shot warning.
+		_no_backend_warned = false
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
