@@ -555,9 +555,19 @@ func _trigger_boss_battle() -> void:
 	# _return_to_exploration before any defeat handler can fire, so the
 	# Rat King flag silently never gets set.
 	# Rat King is mid-boss — only reveals Castle Harmonia portal, no W2 unlock.
+	# 'constants' also back-fills the prereq flags that the boss fight
+	# logically implies: you cannot reach the rat king without descending
+	# past floor 2 AND triggering the chapter-3 cave intro cutscene. The
+	# normal setters (in _change_floor / _get_pending_story_cutscene) cover
+	# fresh playthroughs; back-fill catches saves that predate either
+	# setter so the quest log doesn't stay yellow forever.
 	GameState.pending_boss_defeat = {
 		"story_flags": ["rat_king_defeated"],
-		"constants": ["cutscene_flag_rat_king_defeated"],
+		"constants": [
+			"cutscene_flag_rat_king_defeated",
+			"reached_cave_floor_3",
+			"cutscene_flag_chapter3_complete",
+		],
 		"dungeon_flag": "cave_rat_king_defeated",
 		"defeat_cutscene": "world1_rat_king_defeat",
 	}
