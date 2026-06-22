@@ -380,6 +380,14 @@ func _on_menu_click(event: InputEvent, index: int) -> void:
 ## — Helpers —
 
 func _check_for_save() -> bool:
+	# Prefer SaveSystem's enumeration when available — it walks ALL slots
+	# including AUTO_SAVE_SLOT and QUICK_SAVE_SLOT. The hardcoded file
+	# checks below missed both, so a player whose only save was the
+	# periodic auto-save would see NO Continue button on the title screen
+	# even though their progress was on disk.
+	if SaveSystem and SaveSystem.has_method("has_save"):
+		return SaveSystem.has_save()
+	# Fallback when SaveSystem isn't ready yet (very early boot path).
 	if FileAccess.file_exists("user://save_data.json"):
 		return true
 	if FileAccess.file_exists("user://saves/save_00.json"):
