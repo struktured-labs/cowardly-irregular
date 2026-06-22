@@ -101,6 +101,11 @@ var _persona_openings: Array = []
 var _current_line: int = 0
 var _is_talking: bool = false
 var _player_nearby: bool = false
+## Rotates the starting index of dialogue_lines on each interaction so
+## the player doesn't hear the same opener every time they re-talk to
+## a static NPC. Preserves relative order (still cycles through the
+## scripted set) — just shifts the entry point.
+var _dialogue_visit_count: int = 0
 ## True once _ready() has finished. Gates the dynamic/persona setters so they
 ## only trigger a re-hydrate for POST-construction assignments (the in-_ready
 ## path is handled by the explicit _setup_persona_data() call). R5 fix.
@@ -895,15 +900,18 @@ func _start_dialogue() -> void:
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
 
-	# Build dialogue lines list: speaker = npc_name, theme/portrait = npc_type.
 	var lines: Array = []
-	for line_text in dialogue_lines:
+	var n: int = dialogue_lines.size()
+	var offset: int = (_dialogue_visit_count % n) if n > 0 else 0
+	for i in range(n):
+		var line_text = dialogue_lines[(i + offset) % n]
 		lines.append({
 			"speaker": npc_name,
 			"text": line_text,
 			"theme": npc_type,
 			"portrait": npc_type,
 		})
+	_dialogue_visit_count += 1
 	await _npc_dialogue.say_lines(lines)
 
 	if player and is_instance_valid(player) and player.has_method("set_can_move"):
