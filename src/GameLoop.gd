@@ -1134,14 +1134,23 @@ func _on_title_continue() -> void:
 	# live party from the loaded GameState. Bug fix (2026-04-30): previously
 	# we went straight to _create_party() (defaults) and ignored the save.
 	var loaded = false
+	var slot := -1
 	if SaveSystem and SaveSystem.has_method("load_game"):
-		var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
+		slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
 		if slot >= 0:
 			loaded = SaveSystem.load_game(slot)
 	if loaded and _restore_party_from_save_data():
 		print("[GAME] Continue: restored party from save")
 	else:
-		print("[GAME] Continue: no save / restore failed — creating default party")
+		# Silent fallback to default party was a UX trap — the player clicks
+		# Continue expecting to resume, gets a brand-new party with no
+		# explanation, and assumes their progress is gone. Toast the failure
+		# so they at least know what happened before the fresh game begins.
+		var why: String = "no save found" if slot < 0 \
+			else ("save load failed (slot %d)" % slot) if not loaded \
+			else ("save restored but party data was empty (slot %d)" % slot)
+		print("[GAME] Continue: %s — creating default party" % why)
+		Toast.show_warning(self, "Continue: %s. Starting fresh." % why)
 		_create_party()
 	if _area_fade_rect:
 		_area_fade_rect.modulate.a = 1.0
