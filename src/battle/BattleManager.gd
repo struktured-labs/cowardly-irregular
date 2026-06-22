@@ -2501,7 +2501,12 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	"""Execute an ability (costs 1 AP)"""
 	var ability = JobSystem.get_ability(ability_id)
 	if ability.is_empty():
+		# Loud-fail: a bad ability_id silently consumed the caster's turn
+		# with print-only feedback before. Now surfaces in GUT runs and
+		# CI logs so a typo in abilities.json / a stale job_aliases.json
+		# entry doesn't ship as 'this ability does nothing'.
 		print("Error: Unknown ability %s" % ability_id)
+		push_warning("BattleManager._execute_ability: unknown ability_id '%s' (caster '%s') — turn consumed, no effect" % [ability_id, caster.combatant_name])
 		return
 
 	if not JobSystem.can_use_ability(caster, ability_id):
@@ -2564,7 +2569,12 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		"mp_restore":
 			_execute_mp_restore_ability(caster, ability, retargeted)
 		_:
+			# Loud-fail: a new ability_type added to abilities.json
+			# without a matching handler used to print-only and
+			# silently consume the turn. Same loud-fail pattern as
+			# tick 26 (meta_ability) and the support sibling.
 			print("Unknown ability type: %s" % ability_type)
+			push_warning("BattleManager._execute_ability: unhandled ability_type '%s' (ability '%s') — no execution branch matched" % [ability_type, ability.get("id", "?")])
 
 
 func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
