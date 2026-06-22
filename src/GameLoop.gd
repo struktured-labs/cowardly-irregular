@@ -356,6 +356,14 @@ func _input(event: InputEvent) -> void:
 					_toggle_autobattle_editor()
 				get_viewport().set_input_as_handled()
 		elif current_state == LoopState.EXPLORATION:
+			# Block during battle transition (encounter fired but state
+			# hasn't flipped to BATTLE yet — that flip happens after the
+			# transition await in _on_exploration_battle_triggered, so
+			# raw state-check leaves a ~0.5s window where Start would
+			# open settings UNDER the loading battle scene).
+			if InputLockManager and InputLockManager.is_locked():
+				get_viewport().set_input_as_handled()
+				return
 			_open_settings_menu()
 			get_viewport().set_input_as_handled()
 
