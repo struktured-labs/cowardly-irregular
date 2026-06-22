@@ -2467,9 +2467,10 @@ func _area_overworld_transition_in() -> void:
 	var cy = screen_size.y * 0.5
 
 	# Four black rects collapsing toward center from all four sides
+	# (no anchor preset on left_r — explicit size/position is correct,
+	# and PRESET_FULL_RECT would fight the tween that animates size:x).
 	var left_r = ColorRect.new()
 	left_r.color = Color.BLACK
-	left_r.set_anchors_preset(Control.PRESET_FULL_RECT)
 	left_r.size = Vector2(cx, screen_size.y)
 	left_r.position = Vector2(0, 0)
 	left_r.pivot_offset = Vector2(0, 0)

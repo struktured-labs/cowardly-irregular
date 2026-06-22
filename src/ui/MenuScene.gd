@@ -1261,8 +1261,7 @@ func _open_autobattle_editor(char_id: String, char_name: String) -> void:
 	# Create editor
 	var AutobattleGridEditorClass = load("res://src/ui/autobattle/AutobattleGridEditor.gd")
 	autobattle_editor = AutobattleGridEditorClass.new()
-	autobattle_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
-	autobattle_editor.size = size
+	autobattle_editor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(autobattle_editor)
 
 	autobattle_editor.setup(char_id, char_name)
@@ -1449,8 +1448,7 @@ func _open_autogrind_editor() -> void:
 
 	var AutogrindGridEditorClass = load("res://src/ui/autogrind/AutogrindGridEditor.gd")
 	autogrind_editor = AutogrindGridEditorClass.new()
-	autogrind_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
-	autogrind_editor.size = size
+	autogrind_editor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(autogrind_editor)
 
 	autogrind_editor.setup(party)

@@ -125,8 +125,7 @@ func _build_ui() -> void:
 	# Semi-transparent overlay
 	_background = ColorRect.new()
 	_background.color = Color(0, 0, 0, 0.4)
-	_background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_background.size = get_viewport().get_visible_rect().size
+	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_background)
 
 	# Calculate positions
