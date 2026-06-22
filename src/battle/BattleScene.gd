@@ -4027,10 +4027,10 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var enemy = Combatant.new()
 	var stats = monster_data["stats"].duplicate()
 
-	# Count existing enemies of this type for naming
+	# Count ALIVE enemies of this type for the next suffix letter — dead ones must not consume a slot.
 	var type_count = 0
 	for e in test_enemies:
-		if e.get_meta("monster_type", "") == monster_type:
+		if is_instance_valid(e) and e.is_alive and e.get_meta("monster_type", "") == monster_type:
 			type_count += 1
 	if type_count > 0:
 		stats["name"] = monster_data["name"] + " " + ["A", "B", "C", "D", "E"][mini(type_count, 4)]
