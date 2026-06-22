@@ -381,12 +381,23 @@ func _input(event: InputEvent) -> void:
 
 	if x_pressed:
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
+			# Same race as the Start→settings guard above: an
+			# encounter-transition holds the lock but current_state is
+			# still EXPLORATION until _start_battle_async flips it.
+			# Opening the overworld menu in that window puts it under
+			# the loading battle scene.
+			if InputLockManager and InputLockManager.is_locked():
+				get_viewport().set_input_as_handled()
+				return
 			_open_overworld_menu()
 			get_viewport().set_input_as_handled()
 
 	# L shoulder / L key = open Party Chat menu (exploration only, opt-in flavor cutscenes)
 	if event.is_action_pressed("party_chat"):
 		if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu:
+			if InputLockManager and InputLockManager.is_locked():
+				get_viewport().set_input_as_handled()
+				return
 			if PartyChatSystem and PartyChatSystem.has_available_chats():
 				_open_party_chat_menu()
 				get_viewport().set_input_as_handled()
