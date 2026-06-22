@@ -652,6 +652,7 @@ func _use_selected_item() -> void:
 				break
 		if not valid_target:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Cannot revive — no KO'd target")
 			return
 
 	# Use the item
@@ -687,6 +688,10 @@ func _use_selected_item() -> void:
 		_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
+		# ItemSystem.use_item returns false for various reasons (target
+		# already at full HP for heal, status-clear with no matching status,
+		# etc). Without a Toast the player hears the beep but can't tell why.
+		Toast.show_warning(self, "Item had no effect")
 
 
 func _on_item_click(index: int) -> void:
