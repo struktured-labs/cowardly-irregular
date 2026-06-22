@@ -227,6 +227,19 @@ func _on_llm_inference_succeeded(_mode: String) -> void:
 		Toast.show(self, "Dynamic dialogue active.", Toast.SUCCESS_COLOR)
 
 
+## Helper for the EXPLORATION→BATTLE transition race that ticks 15/16
+## first caught. An encounter pushes 'encounter_transition' onto
+## InputLockManager and awaits ~0.5s of BattleTransition. During that
+## window current_state is still EXPLORATION, but opening any menu
+## puts it under the loading battle scene. Returns true ONLY for the
+## EXPLORATION + locked combination, so BATTLE-state dialogue locks
+## (which legitimately want to allow some hotkeys) aren't affected.
+func _in_exploration_transition() -> bool:
+	return current_state == LoopState.EXPLORATION \
+		and InputLockManager != null \
+		and InputLockManager.is_locked()
+
+
 func _input(event: InputEvent) -> void:
 	# F12 screenshot — always available, any state
 	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F12:
@@ -300,11 +313,17 @@ func _input(event: InputEvent) -> void:
 
 	# F5 = Open autobattle editor for current/first player
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
+		if _in_exploration_transition():
+			get_viewport().set_input_as_handled()
+			return
 		_toggle_autobattle_editor()
 		get_viewport().set_input_as_handled()
 
 	# F6 or Select button = Toggle autobattle for ALL players
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F6:
+		if _in_exploration_transition():
+			get_viewport().set_input_as_handled()
+			return
 		_toggle_all_autobattle()
 		get_viewport().set_input_as_handled()
 
@@ -321,6 +340,8 @@ func _input(event: InputEvent) -> void:
 		elif current_state == LoopState.BATTLE:
 			# Pass through — BattleScene._input handles it
 			pass
+		elif _in_exploration_transition():
+			get_viewport().set_input_as_handled()
 		else:
 			_toggle_all_autobattle()
 			get_viewport().set_input_as_handled()
