@@ -3060,7 +3060,14 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)
 			GameState.add_corruption(corruption_risk)
 		_:
+			# Loud-fail symmetry with _execute_support_ability (line ~3026):
+			# a typo'd meta_effect in abilities.json used to silently consume
+			# AP and do nothing — print-only feedback never reached CI or
+			# the unit test suite. push_warning surfaces it in GUT runs and
+			# during runtime audit logs so the gap gets fixed instead of
+			# shipped.
 			print("  → Unknown meta effect: %s" % meta_effect)
+			push_warning("BattleManager._execute_meta_ability: unknown meta_effect '%s' (ability '%s') applied no mechanical change" % [meta_effect, ability.get("id", "?")])
 
 
 func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
