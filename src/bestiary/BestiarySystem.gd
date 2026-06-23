@@ -30,15 +30,28 @@ static func _ensure_loaded() -> void:
 
 
 static func _load_json(path: String) -> Dictionary:
+	# Loud-fail shared helper (ticks 28-31 pattern). Each failure mode
+	# pushes a distinct warning so a malformed monsters.json /
+	# bestiary.json doesn't silently break get_monster_data and
+	# get_flavor — bestiary entries vanish, monster sprites fall to
+	# generic fallbacks, and the only sign is "?" entries on the
+	# bestiary screen.
 	if not FileAccess.file_exists(path):
+		push_warning("[BestiarySystem] %s not found — entries from this file will return empty" % path)
 		return {}
 	var f := FileAccess.open(path, FileAccess.READ)
 	if not f:
+		push_warning("[BestiarySystem] %s exists but FileAccess.open failed — entries empty" % path)
 		return {}
+	var raw := f.get_as_text()
+	f.close()
 	var json := JSON.new()
-	if json.parse(f.get_as_text()) != OK:
+	var parse_result := json.parse(raw)
+	if parse_result != OK:
+		push_warning("[BestiarySystem] %s parse error: %s — entries empty" % [path, json.get_error_message()])
 		return {}
 	if not (json.data is Dictionary):
+		push_warning("[BestiarySystem] %s parsed but root is not a Dictionary — entries empty" % path)
 		return {}
 	return json.data
 
