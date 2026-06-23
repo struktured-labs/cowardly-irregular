@@ -46,6 +46,12 @@ func _init_spawn_points() -> void:
 	spawn_points["podium"] = Vector2(6, 5)
 
 
+## tick 68: route music through SoundManager's rivet_row_village arm so
+## the hall plays W4 industrial music instead of medieval.
+func _get_music_track() -> String:
+	return "rivet_row_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Diamond-plate steel floor with safety yellow striping near edges.
 	# Reads as 'we expect spills here, deal with it'.

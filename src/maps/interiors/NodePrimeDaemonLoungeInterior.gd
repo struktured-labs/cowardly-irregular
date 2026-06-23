@@ -46,6 +46,12 @@ func _init_spawn_points() -> void:
 	spawn_points["terminal"] = Vector2(6, 5)
 
 
+## tick 68: route music through SoundManager's node_prime_village arm so
+## the lounge plays W5 digital music instead of medieval.
+func _get_music_track() -> String:
+	return "node_prime_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Raised computer-room floor — square anti-static tiles with a
 	# bluish-black hue and faint cooling-vent grilles at the seams.

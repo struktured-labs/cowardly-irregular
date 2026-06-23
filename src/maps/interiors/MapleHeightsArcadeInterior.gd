@@ -46,6 +46,13 @@ func _init_spawn_points() -> void:
 	spawn_points["counter"] = Vector2(5, 7)
 
 
+## tick 68: route music through SoundManager's maple_heights_village arm
+## so the arcade plays W2 suburban music instead of BaseInterior's
+## default 'village' (medieval Harmonia music — wrong world).
+func _get_music_track() -> String:
+	return "maple_heights_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Black-and-white checkerboard floor — classic 80s arcade vibe.
 	# Slightly worn with scuff marks from decades of foot traffic.

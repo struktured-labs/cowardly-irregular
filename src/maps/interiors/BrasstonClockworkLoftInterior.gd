@@ -46,6 +46,12 @@ func _init_spawn_points() -> void:
 	spawn_points["bench"] = Vector2(6, 5)
 
 
+## tick 68: route music through SoundManager's brasston_village arm so
+## the loft plays W3 steampunk music instead of medieval.
+func _get_music_track() -> String:
+	return "brasston_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Polished brass parquet — repeating brass tiles with riveted
 	# joints. Distinct from Sandrift's sand boards or the chapel's

@@ -46,6 +46,12 @@ func _init_spawn_points() -> void:
 	spawn_points["bench"] = Vector2(6, 5)
 
 
+## tick 68: route music through SoundManager's vertex_village arm so
+## The Threshold plays W6 abstract music instead of medieval.
+func _get_music_track() -> String:
+	return "vertex_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Minimalist off-white floor with the faintest grid — abstract,
 	# undecorated. The world has been optimized down to the essentials.
