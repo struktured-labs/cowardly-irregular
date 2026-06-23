@@ -119,3 +119,26 @@ func test_handler_gates_rebalance_on_opt_in_flag() -> void:
 		"handler must pass the TRIGGER_LEVEL_UP constant when calling consider")
 	assert_true(body.contains("_kick_off_rebalance_fetch.call_deferred"),
 		"handler must kick off the LLM fetch when consider() succeeds — same shape as wipe/defeat trigger sites")
+
+
+## tick 60: level-up Toast (suppressed during battle to avoid noise on
+## top of the existing victory screen)
+
+
+func test_handler_toasts_out_of_battle() -> void:
+	var body := _body_of(GAME_LOOP, "_on_party_leveled_up")
+	assert_true(body.contains("Toast.show"),
+		"handler must Toast — without it leveling out of battle (debug paths, future event-driven exp) silently flickers stats")
+	# Must include the member name + level so the toast is informative.
+	assert_true(body.contains("reached job level"),
+		"toast message must say 'reached job level X' so the player knows what changed")
+
+
+func test_handler_suppresses_toast_during_battle() -> void:
+	# Battle has its own victory screen with per-character level info.
+	# A parallel Toast would just spam the UI.
+	var body := _body_of(GAME_LOOP, "_on_party_leveled_up")
+	assert_true(body.contains("is_battle_active"),
+		"handler must check is_battle_active and suppress the Toast during battle — victory screen already surfaces the level-up")
+	assert_true(body.contains("not in_battle"),
+		"toast must be gated on 'not in_battle' so the suppression actually kicks in")

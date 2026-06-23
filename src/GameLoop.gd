@@ -1707,6 +1707,16 @@ func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
 			EventLog.TYPE_LEVEL_UP,
 			"%s reached level %d" % [str(ctx["member"]), new_level],
 			ctx)
+	# tick 60: Toast the level-up unless we're in battle (the battle's
+	# own victory screen already surfaces per-character level info, so
+	# a parallel Toast would just be noise — but out-of-battle leveling
+	# from debug paths / future event-driven exp sources still wants
+	# a visible cue).
+	var in_battle: bool = BattleManager != null and BattleManager.is_battle_active()
+	if Toast and not in_battle and member != null:
+		Toast.show(self,
+			"%s reached job level %d!" % [member.combatant_name, new_level],
+			Toast.SUCCESS_COLOR)
 	if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
 		var fired: bool = GameState.rebalance_daemon.consider(
 			RebalanceDaemonScript.TRIGGER_LEVEL_UP, ctx)
