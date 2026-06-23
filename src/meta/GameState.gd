@@ -68,6 +68,15 @@ var llm_custom_model: String = ""
 var llm_custom_api_key: String = ""  ## SENSITIVE — never log, never print
 
 
+## ── LLM Rebalance Daemon ───────────────────────────────────────────
+##
+## User directive 2026-06-22: "the game needs to be constantly
+## attempting to rebalance itself using the llm as guidance".
+## Opt-in master switch; daemon is the RebalanceDaemon instance below.
+var llm_rebalance_enabled: bool = false
+var rebalance_daemon: RebalanceDaemon = null
+
+
 ## Mask the API key for UI display: 'sk-abcd…WXYZ' style. The full key
 ## stays in llm_custom_api_key. This helper is the ONLY safe way to
 ## surface the key value in logs, settings panels, or telemetry.
@@ -147,6 +156,7 @@ func is_world_unlocked(world_num: int) -> bool:
 func _ready() -> void:
 	_ensure_save_directory()
 	event_log = EventLog.new()
+	rebalance_daemon = RebalanceDaemon.new()
 
 
 func _process(delta: float) -> void:
@@ -189,7 +199,9 @@ func _create_save_data() -> Dictionary:
 		"llm_enabled": llm_enabled,
 		"boss_llm_strategy_enabled": boss_llm_strategy_enabled,
 		"party_llm_dialogue_enabled": party_llm_dialogue_enabled,
+		"llm_rebalance_enabled": llm_rebalance_enabled,
 		"event_log": event_log.serialize() if event_log != null else [],
+		"rebalance_daemon": rebalance_daemon.to_dict() if rebalance_daemon != null else {},
 	}
 
 
@@ -256,6 +268,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		boss_llm_strategy_enabled = bool(save_data["boss_llm_strategy_enabled"])
 	if save_data.has("party_llm_dialogue_enabled"):
 		party_llm_dialogue_enabled = bool(save_data["party_llm_dialogue_enabled"])
+	if save_data.has("llm_rebalance_enabled"):
+		llm_rebalance_enabled = bool(save_data["llm_rebalance_enabled"])
 	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
 	# hasn't run yet (defensive — _apply_save_data is normally called via
 	# SaveSystem after autoloads are live). EventLog.restore() handles the
@@ -266,6 +280,13 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		event_log.restore(save_data["event_log"])
 	else:
 		event_log.clear()
+	# Rebalance daemon: same lazy-instantiate pattern as event_log,
+	# then restore pending + applied histories so the player's review
+	# queue survives a quit-and-resume.
+	if rebalance_daemon == null:
+		rebalance_daemon = RebalanceDaemon.new()
+	if save_data.has("rebalance_daemon"):
+		rebalance_daemon.from_dict(save_data["rebalance_daemon"])
 
 
 ## Corruption system
