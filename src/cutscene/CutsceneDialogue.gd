@@ -180,6 +180,13 @@ const CHARACTER_THEMES = {
 		"name": Color(0.9, 0.75, 0.35),
 		"portrait_bg": Color(0.12, 0.1, 0.05)
 	},
+	"guard": {
+		"bg": Color(0.06, 0.08, 0.10),
+		"border": Color(0.55, 0.62, 0.72),
+		"text": Color(0.92, 0.95, 1.0),
+		"name": Color(0.75, 0.85, 0.95),
+		"portrait_bg": Color(0.08, 0.10, 0.13)
+	},
 	"mysterious": {
 		"bg": Color(0.03, 0.02, 0.06),
 		"border": Color(0.5, 0.3, 0.6),
@@ -765,6 +772,7 @@ const PORTRAIT_SPRITES = {
 	"scholar": "res://assets/sprites/portraits/npcs/scholar.png",
 	"shopkeeper": "res://assets/sprites/portraits/npcs/shopkeeper.png",
 	"brigadier": "res://assets/sprites/portraits/npcs/brigadier.png",
+	"guard": "res://assets/sprites/portraits/npcs/brigadier.png",
 }
 
 ## Cache loaded portrait textures to avoid repeated disk reads
@@ -814,6 +822,8 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 			_draw_scholar_portrait(img, size)
 		"shopkeeper", "merchant":
 			_draw_shopkeeper_portrait(img, size)
+		"guard", "brigadier":
+			_draw_elder_portrait(img, size)
 		"goblin":
 			_draw_goblin_portrait(img, size)
 		"mysterious":
