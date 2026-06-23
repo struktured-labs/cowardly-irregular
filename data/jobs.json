@@ -120,6 +120,10 @@
 			"blizzaga",
 			"thundaga"
 		],
+		"abilities_at_level": {
+			"4": ["dark_bolt"],
+			"8": ["chain_lightning"]
+		},
 		"passive_abilities": [
 			"magic_boost"
 		],
@@ -166,6 +170,10 @@
 			"backstab",
 			"mug"
 		],
+		"abilities_at_level": {
+			"3": ["smoke_bomb"],
+			"6": ["shadow_step"]
+		},
 		"passive_abilities": [
 			"steal_boost",
 			"evasion_up"
