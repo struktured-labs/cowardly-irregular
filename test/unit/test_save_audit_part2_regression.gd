@@ -87,8 +87,13 @@ func test_save_game_refuses_during_battle() -> void:
 	assert_string_contains(body, "if not can_quick_save():",
 		"save_game must invoke can_quick_save() (battle gate) before " +
 		"writing — pre-fix, only quick_save and auto_save were gated")
-	assert_string_contains(body, "Cannot save during battle",
-		"Failure message must explain the battle gate")
+	# Tick 75: the literal "Cannot save during battle" string moved
+	# into _save_block_reason() so save_game can also surface the
+	# interior blocker. Pin it there instead.
+	assert_string_contains(src, "Cannot save during battle",
+		"_save_block_reason() must still emit 'Cannot save during battle' for the battle case")
+	assert_string_contains(body, "_save_block_reason()",
+		"save_game must derive its failure message via _save_block_reason() — keeps the surfaced reason in sync with the actual blocker")
 
 
 # reset_game_state must also reset macro_volatility — already tested in

@@ -83,9 +83,13 @@ func save_game(slot: int = -1) -> bool:
 	# only quick_save() and auto_save() checked this; save_game(slot)
 	# called from SaveScreen could write transient battle state (queued
 	# actions, mid-animation HP, party still mid-revive) into the save.
+	# Tick 75: pick the specific reason so SaveScreen can surface the
+	# real blocker (interior, battle) instead of a misleading 'battle'
+	# message when the player is actually inside a chapel.
 	if not can_quick_save():
-		save_failed.emit("Cannot save during battle")
-		print("[SAVE] save_game refused: battle active")
+		var reason: String = _save_block_reason()
+		save_failed.emit(reason)
+		print("[SAVE] save_game refused: %s" % reason)
 		return false
 
 	# Flush runtime state into the serializable GameState buckets
@@ -136,8 +140,9 @@ func quick_save() -> bool:
 	"""Quick save to dedicated slot"""
 	# Check if quick save is allowed in current location
 	if not can_quick_save():
-		save_failed.emit("Cannot quick save here")
-		print("Quick save not allowed in current location")
+		var reason: String = _save_block_reason()
+		save_failed.emit(reason)
+		print("Quick save not allowed: %s" % reason)
 		return false
 
 	print("Quick saving...")
@@ -181,6 +186,19 @@ func can_quick_save() -> bool:
 	if _is_player_inside_interior():
 		return false
 	return true
+
+
+## Specific reason save was blocked. Returns "" when save is allowed.
+## Mirrors the can_quick_save check order so the surfaced message
+## matches the actual blocker.
+func _save_block_reason() -> String:
+	if not BattleManager:
+		return "Save system not ready"
+	if BattleManager.is_battle_active():
+		return "Cannot save during battle"
+	if _is_player_inside_interior():
+		return "Cannot save inside this room — leave to a village or overworld first"
+	return ""
 
 
 func _is_player_inside_interior() -> bool:
