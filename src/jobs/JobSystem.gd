@@ -332,6 +332,43 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 	return true
 
 
+## tick 58: data-driven per-level ability unlocks. Reads the optional
+## "abilities_at_level" field on a job's data:
+##   "abilities_at_level": { "3": ["ability_id"], "6": [...] }
+## Grants every ability whose level threshold has been crossed (NOT
+## just the current level — covers level jumps from EXP overflow).
+## Idempotent: existing learned abilities skip their grant.
+##
+## Returns the list of ability_ids granted on this call (empty if
+## nothing crossed).
+func learn_abilities_for_level(combatant: Combatant, new_level: int) -> Array:
+	if not combatant or not is_instance_valid(combatant) or not combatant.job:
+		return []
+	var unlocks: Dictionary = combatant.job.get("abilities_at_level", {})
+	if unlocks.is_empty():
+		return []
+	var granted: Array = []
+	for level_key in unlocks.keys():
+		var threshold: int = int(level_key)
+		if threshold > new_level:
+			continue
+		var ids: Variant = unlocks[level_key]
+		if not (ids is Array):
+			continue
+		for raw in ids:
+			var ability_id: String = str(raw)
+			if ability_id == "":
+				continue
+			# Combatant.learn_ability handles dedupe — if the ability
+			# is already known, this no-ops cleanly.
+			if combatant.has_method("learn_ability"):
+				if combatant.learn_ability(ability_id):
+					granted.append(ability_id)
+					if combatant.has_signal("ability_learned"):
+						combatant.ability_learned.emit(ability_id)
+	return granted
+
+
 func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
 	"""Assign a secondary job to a combatant (visual accents + minor stat boost)."""
 	job_id = resolve_job_id(job_id)

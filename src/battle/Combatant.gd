@@ -13,6 +13,10 @@ signal status_removed(status: String)
 ## rebalance daemon listens (via BattleManager → GameLoop) and uses
 ## it as a passive progression signal — distinct from wipe/defeat.
 signal leveled_up(new_level: int)
+## tick 58: emitted when JobSystem.learn_abilities_for_level grants
+## a new ability via a level threshold. UI uses this for the "X
+## learned Y!" Toast.
+signal ability_learned(ability_id: String)
 
 ## Core stats
 @export var combatant_name: String = "Unknown"
@@ -707,11 +711,16 @@ func from_dict(data: Dictionary) -> void:
 		job_profiles = resolved_profiles
 
 
-func learn_ability(ability_id: String) -> void:
-	"""Learn a new ability (from magic shop purchase)"""
-	if not ability_id in learned_abilities:
-		learned_abilities.append(ability_id)
-		print("%s learned ability: %s" % [combatant_name, ability_id])
+func learn_ability(ability_id: String) -> bool:
+	"""Learn a new ability (from magic shop purchase or level-up).
+	Returns true if the ability was newly granted, false if the
+	combatant already knew it. tick 58: signature changed from void
+	to bool so JobSystem.learn_abilities_for_level can dedupe."""
+	if ability_id in learned_abilities:
+		return false
+	learned_abilities.append(ability_id)
+	print("%s learned ability: %s" % [combatant_name, ability_id])
+	return true
 
 
 func has_learned_ability(ability_id: String) -> bool:
@@ -884,8 +893,12 @@ func gain_job_exp(amount: int) -> void:
 
 	if did_level:
 		recalculate_stats()
-
-		# TODO: Unlock new abilities/passives at certain levels
+		# Per-level ability unlocks live in JobSystem (data-driven via
+		# the abilities_at_level field on each job). Calling
+		# learn_abilities_for_level here grants any newly-eligible
+		# abilities and emits ability_learned for each one.
+		if JobSystem and JobSystem.has_method("learn_abilities_for_level"):
+			JobSystem.learn_abilities_for_level(self, job_level)
 
 
 func learn_passive(passive_id: String) -> void:

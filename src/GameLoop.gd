@@ -1655,11 +1655,18 @@ func _create_party() -> void:
 ## tick 55: connect each Combatant's leveled_up signal to the daemon
 ## bridge. Idempotent — checking is_connected before connecting so
 ## save/load reuse paths don't double-connect.
+## tick 58: also connects ability_learned so level-up unlocks Toast
+## the player.
 func _wire_party_level_up_listeners() -> void:
 	for member in party:
-		if member is Combatant and member.has_signal("leveled_up"):
+		if not (member is Combatant):
+			continue
+		if member.has_signal("leveled_up"):
 			if not member.leveled_up.is_connected(_on_party_leveled_up):
 				member.leveled_up.connect(_on_party_leveled_up.bind(member))
+		if member.has_signal("ability_learned"):
+			if not member.ability_learned.is_connected(_on_party_ability_learned):
+				member.ability_learned.connect(_on_party_ability_learned.bind(member))
 
 
 ## Handler for any party Combatant's leveled_up signal. Records the
@@ -1671,6 +1678,21 @@ func _wire_party_level_up_listeners() -> void:
 ## against firing on every level when the player chain-levels in a
 ## grinding session. Recording is unconditional so the audit log has
 ## the level changes regardless of rebalance opt-in.
+## tick 58: Toast on ability unlock so the player sees the reward.
+func _on_party_ability_learned(ability_id: String, member: Combatant) -> void:
+	if member == null:
+		return
+	var ability_name: String = ability_id
+	if JobSystem and JobSystem.has_method("get_ability"):
+		var a: Dictionary = JobSystem.get_ability(ability_id)
+		if not a.is_empty() and a.has("name"):
+			ability_name = str(a["name"])
+	if Toast:
+		Toast.show(self,
+			"%s learned %s!" % [member.combatant_name, ability_name],
+			Toast.SUCCESS_COLOR)
+
+
 func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
 	if GameState == null:
 		return
