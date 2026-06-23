@@ -143,6 +143,74 @@ func _build_backends() -> void:
 	for be in _backends:
 		be.request_finished.connect(_on_backend_finished)
 
+	# Apply BYOK config from GameState — if the user toggled custom
+	# backend on, this swaps the HTTPBackend defaults (localhost
+	# Ollama) for their endpoint + key + model. Defaults survive if
+	# BYOK is off.
+	apply_byok_config()
+
+
+## Public: re-read GameState's BYOK config and apply it to the
+## HTTPBackend. Settings menu calls this when the user toggles the
+## BYOK switch or edits a field at runtime — without it, the change
+## doesn't take effect until the next game restart.
+##
+## When llm_custom_backend_enabled = false, this REVERTS the backend
+## to the localhost Ollama defaults so toggling off doesn't strand the
+## user with a half-applied config.
+##
+## Returns true if any backend got reconfigured; false if no BYOK
+## fields exist (e.g. very early boot before GameState autoload).
+func apply_byok_config() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null:
+		return false
+	if not ("llm_custom_backend_enabled" in gs):
+		return false
+	# Web build never holds keys — defensive even though GameState's
+	# load_settings skips the BYOK section in web.
+	if OS.has_feature("web"):
+		return false
+	var http: LLMBackend = null
+	for be in _backends:
+		if be is HTTPBackend:
+			http = be
+			break
+	if http == null:
+		return false
+	if gs.llm_custom_backend_enabled \
+			and str(gs.llm_custom_base_url) != "" \
+			and str(gs.llm_custom_model) != "":
+		http.base_url = str(gs.llm_custom_base_url)
+		http.api_format = str(gs.llm_custom_api_format)
+		http.model = str(gs.llm_custom_model)
+		http.api_key = str(gs.llm_custom_api_key)
+		_log_byok_applied(http)
+	else:
+		http.base_url = "http://localhost:11434"
+		http.api_format = "ollama"
+		http.model = "llama3"
+		http.api_key = ""
+	# Reset the readiness flag if the backend caches it — next probe
+	# decides whether the new endpoint is reachable.
+	if "_ready_flag" in http:
+		http._ready_flag = false
+	# Reset the "no backend" warning gate so a successful BYOK swap
+	# can re-warn cleanly if the new endpoint also fails.
+	_no_backend_warned = false
+	return true
+
+
+func _log_byok_applied(http: LLMBackend) -> void:
+	# Logs the config CHANGE without ever printing the api_key — even
+	# masked. Caller of telemetry-aware contexts can read the masked
+	# helper from GameState if they need the value.
+	print("[LLMService] BYOK applied: format=%s url=%s model=%s key=%s"
+		% [str(http.api_format),
+		   str(http.base_url),
+		   str(http.model),
+		   "<set>" if str(http.api_key) != "" else "<empty>"])
+
 
 func _select_backend() -> void:
 	_active_backend = null
