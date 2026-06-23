@@ -206,29 +206,9 @@ func _setup_buildings() -> void:
 	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(4 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 
-## Shared interior-door builder. Extracted in tick 36 because the
-## chapel + library each need the same 10-line AreaTransition setup;
-## any future Harmonia interior (herbalist, watchhouse, archive)
-## can reuse this directly instead of pasting.
-func _add_interior_door(node_name: String, target_map: String, label: String, pos: Vector2) -> void:
-	var door = AreaTransitionScript.new()
-	door.name = node_name
-	door.target_map = target_map
-	door.target_spawn = "entrance"
-	door.require_interaction = false
-	door.indicator_text = label
-	door.show_gate_visual = true
-	door.position = pos
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
-	collision.shape = shape
-	door.add_child(collision)
-	door.collision_layer = 4
-	door.collision_mask = 2
-	door.monitoring = true
-	door.transition_triggered.connect(_on_transition_triggered)
-	buildings.add_child(door)
+## tick 37: _add_interior_door moved up to BaseVillage so every village
+## can reuse it. Harmonia's calls are unchanged — inheritance does the
+## rest.
 
 	# === FOUNTAIN ===
 	var fountain = VillageFountainScript.new()

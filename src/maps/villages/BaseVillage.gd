@@ -110,6 +110,36 @@ func _setup_buildings() -> void:
 	pass
 
 
+## Shared interior-door builder. Subclasses (Harmonia, Eldertree, ...)
+## call this from _setup_buildings to drop an AreaTransition that
+## warps to a BaseInterior subclass with a single line.
+## Pre-extraction (tick 36) HarmoniaVillage had ~20 lines of inline
+## scaffolding per door; tick 37 moved the helper up to BaseVillage so
+## any village can reuse it. The interior is expected to spawn the
+## player at its `entrance` spawn_point.
+func _add_interior_door(node_name: String, target_map: String, label: String, pos: Vector2) -> void:
+	if not buildings:
+		return
+	var door = AreaTransitionScript.new()
+	door.name = node_name
+	door.target_map = target_map
+	door.target_spawn = "entrance"
+	door.require_interaction = false
+	door.indicator_text = label
+	door.show_gate_visual = true
+	door.position = pos
+	var collision = CollisionShape2D.new()
+	var shape = RectangleShape2D.new()
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
+	collision.shape = shape
+	door.add_child(collision)
+	door.collision_layer = 4
+	door.collision_mask = 2
+	door.monitoring = true
+	door.transition_triggered.connect(_on_transition_triggered)
+	buildings.add_child(door)
+
+
 func _setup_treasures() -> void:
 	pass
 

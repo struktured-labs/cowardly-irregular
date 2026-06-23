@@ -74,10 +74,12 @@ func test_harmonia_has_library_door_via_helper() -> void:
 		"HarmoniaVillage must define library_exit spawn for the return path")
 	assert_true(src.contains("_add_interior_door(\"LibraryDoor\", \"harmonia_library\""),
 		"library door must be created via the shared _add_interior_door helper")
-	# Helper itself must exist — that's where the door-creation logic
-	# moved out of the inline chapel paste.
-	assert_true(src.contains("func _add_interior_door(node_name: String, target_map: String"),
-		"_add_interior_door helper must exist so future interiors reuse the door scaffolding")
+	# Helper now lives on BaseVillage (promoted up in tick 37) so any
+	# village subclass can reuse it. Check the helper exists THERE, not
+	# inline in HarmoniaVillage.
+	var base := _read("res://src/maps/villages/BaseVillage.gd")
+	assert_true(base.contains("func _add_interior_door(node_name: String, target_map: String"),
+		"_add_interior_door helper must exist on BaseVillage so every subclass inherits it")
 
 
 func test_chapel_also_uses_helper() -> void:

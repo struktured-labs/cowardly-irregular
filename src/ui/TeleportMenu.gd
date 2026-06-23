@@ -53,6 +53,7 @@ const DESTINATIONS: Array = [
 	{"id": "tavern_interior",        "label": "Tavern (Harmonia)",    "spawn": "default",     "section": "Interiors"},
 	{"id": "harmonia_chapel",        "label": "Chapel (Harmonia)",    "spawn": "entrance",    "section": ""},
 	{"id": "harmonia_library",       "label": "Library (Harmonia)",   "spawn": "entrance",    "section": ""},
+	{"id": "eldertree_hollow",       "label": "The Hollow (Eldertree)","spawn": "entrance",   "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26

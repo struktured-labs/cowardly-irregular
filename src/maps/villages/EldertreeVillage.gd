@@ -125,6 +125,13 @@ func _setup_buildings() -> void:
 	training.position = Vector2(19 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(training)
 
+	# === HOLLOW TREE DOOR ===
+	# One of the 'T' tiles (row 5 col 11) hides Greenleaf's sanctum.
+	# Player walks up to it and gets the 'Enter The Hollow' prompt.
+	# Spawn-back point is just south of the tree on walkable floor.
+	spawn_points["hollow_exit"] = Vector2(11 * TILE_SIZE, 6 * TILE_SIZE)
+	_add_interior_door("HollowTreeDoor", "eldertree_hollow", "Enter The Hollow", Vector2(11 * TILE_SIZE + TILE_SIZE / 2, 5 * TILE_SIZE + TILE_SIZE / 2))
+
 
 func _setup_treasures() -> void:
 	# 3x Ether in herb garden
