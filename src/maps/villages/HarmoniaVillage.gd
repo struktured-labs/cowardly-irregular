@@ -97,6 +97,8 @@ func _generate_map() -> void:
 	spawn_points["bar_exit"] = Vector2(26 * TILE_SIZE, 16 * TILE_SIZE)
 	# Chapel exit spawn (in front of the H cluster at columns 3-5, rows 13-15)
 	spawn_points["chapel_exit"] = Vector2(4 * TILE_SIZE, 16 * TILE_SIZE)
+	# Library exit spawn (in front of the top-left H cluster at cols 3-5, rows 2-4)
+	spawn_points["library_exit"] = Vector2(4 * TILE_SIZE, 5 * TILE_SIZE)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -197,24 +199,36 @@ func _setup_buildings() -> void:
 	# Door sits on the south face so the player walks into it from
 	# the path at row 16. show_gate_visual draws the archway so the
 	# player can SEE there's an interior here.
-	var chapel_door = AreaTransitionScript.new()
-	chapel_door.name = "ChapelDoor"
-	chapel_door.target_map = "harmonia_chapel"
-	chapel_door.target_spawn = "entrance"
-	chapel_door.require_interaction = false
-	chapel_door.indicator_text = "Enter Chapel"
-	chapel_door.show_gate_visual = true
-	chapel_door.position = Vector2(4 * TILE_SIZE, 15.5 * TILE_SIZE)
-	var chapel_collision = CollisionShape2D.new()
-	var chapel_shape = RectangleShape2D.new()
-	chapel_shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
-	chapel_collision.shape = chapel_shape
-	chapel_door.add_child(chapel_collision)
-	chapel_door.collision_layer = 4
-	chapel_door.collision_mask = 2
-	chapel_door.monitoring = true
-	chapel_door.transition_triggered.connect(_on_transition_triggered)
-	buildings.add_child(chapel_door)
+	_add_interior_door("ChapelDoor", "harmonia_chapel", "Enter Chapel", Vector2(4 * TILE_SIZE, 15.5 * TILE_SIZE))
+	# === LIBRARY DOOR ===
+	# Top-left H cluster (cols 3-5, rows 2-4). Door on the south face
+	# at row 4.5 so the player walking on path row 5 hits it.
+	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(4 * TILE_SIZE, 4.5 * TILE_SIZE))
+
+
+## Shared interior-door builder. Extracted in tick 36 because the
+## chapel + library each need the same 10-line AreaTransition setup;
+## any future Harmonia interior (herbalist, watchhouse, archive)
+## can reuse this directly instead of pasting.
+func _add_interior_door(node_name: String, target_map: String, label: String, pos: Vector2) -> void:
+	var door = AreaTransitionScript.new()
+	door.name = node_name
+	door.target_map = target_map
+	door.target_spawn = "entrance"
+	door.require_interaction = false
+	door.indicator_text = label
+	door.show_gate_visual = true
+	door.position = pos
+	var collision = CollisionShape2D.new()
+	var shape = RectangleShape2D.new()
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
+	collision.shape = shape
+	door.add_child(collision)
+	door.collision_layer = 4
+	door.collision_mask = 2
+	door.monitoring = true
+	door.transition_triggered.connect(_on_transition_triggered)
+	buildings.add_child(door)
 
 	# === FOUNTAIN ===
 	var fountain = VillageFountainScript.new()

@@ -65,11 +65,15 @@ func test_harmonia_has_door_and_return_spawn() -> void:
 	assert_true(src.contains("spawn_points[\"chapel_exit\"]"),
 		"HarmoniaVillage must define chapel_exit spawn so chapel→village return works")
 	# Door must target the right map AND be wired to the village's
-	# transition_triggered handler (same connect as the bar).
-	assert_true(src.contains("chapel_door.target_map = \"harmonia_chapel\""),
-		"chapel door must point at harmonia_chapel")
-	assert_true(src.contains("chapel_door.transition_triggered.connect(_on_transition_triggered)"),
-		"chapel door must wire to _on_transition_triggered — otherwise click does nothing")
+	# tick 36 refactored the inline door scaffold into _add_interior_door;
+	# the door is now created via that helper with the right target.
+	# The helper itself wires transition_triggered to
+	# _on_transition_triggered, so both assertions land on the helper
+	# call site instead of the old inline strings.
+	assert_true(src.contains("_add_interior_door(\"ChapelDoor\", \"harmonia_chapel\""),
+		"chapel door must be added via the shared _add_interior_door helper (refactored tick 36)")
+	assert_true(src.contains("transition_triggered.connect(_on_transition_triggered)"),
+		"_add_interior_door (or some equivalent) must wire transition_triggered to _on_transition_triggered")
 
 
 func test_teleport_menu_lists_chapel() -> void:

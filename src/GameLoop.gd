@@ -14,6 +14,7 @@ const HarmoniaVillageRes = preload("res://src/maps/villages/HarmoniaVillage.tscn
 const WhisperingCaveRes = preload("res://src/maps/dungeons/WhisperingCave.tscn")
 const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd")
 const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
+const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
 const GrimhollowVillageScript = preload("res://src/maps/villages/GrimhollowVillage.gd")
@@ -1924,6 +1925,8 @@ func _start_exploration() -> void:
 			exploration_scene = _create_tavern_scene()
 		"harmonia_chapel":
 			exploration_scene = HarmoniaChapelInteriorScript.new()
+		"harmonia_library":
+			exploration_scene = HarmoniaLibraryInteriorScript.new()
 		"frosthold_village":
 			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
@@ -2796,7 +2799,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "plains"
 		"whispering_cave":
 			return "cave"
-		"harmonia_village", "tavern_interior", "harmonia_chapel":
+		"harmonia_village", "tavern_interior", "harmonia_chapel", "harmonia_library":
 			return "village"
 		"frosthold_village":
 			return "ice"
