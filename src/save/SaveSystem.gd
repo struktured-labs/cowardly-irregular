@@ -669,6 +669,22 @@ func save_settings() -> void:
 		# Party LLM dialogue flag (opt-in).
 		if "party_llm_dialogue_enabled" in GameState:
 			settings["party_llm_dialogue_enabled"] = GameState.party_llm_dialogue_enabled
+		# BYOK (Bring Your Own Key) — user-provided cloud LLM config.
+		# Gated off in web builds (browser sandbox can't hold secrets
+		# safely). Same gate as llm_enabled. The API key is sensitive;
+		# treat the settings.json file as containing a secret. Per-
+		# machine, NOT per-save.
+		if not OS.has_feature("web"):
+			if "llm_custom_backend_enabled" in GameState:
+				settings["llm_custom_backend_enabled"] = GameState.llm_custom_backend_enabled
+			if "llm_custom_base_url" in GameState:
+				settings["llm_custom_base_url"] = GameState.llm_custom_base_url
+			if "llm_custom_api_format" in GameState:
+				settings["llm_custom_api_format"] = GameState.llm_custom_api_format
+			if "llm_custom_model" in GameState:
+				settings["llm_custom_model"] = GameState.llm_custom_model
+			if "llm_custom_api_key" in GameState:
+				settings["llm_custom_api_key"] = GameState.llm_custom_api_key
 	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(settings, "\t"))
@@ -748,5 +764,21 @@ func load_settings() -> void:
 			GameState.boss_llm_strategy_enabled = bool(settings["boss_llm_strategy_enabled"])
 		if settings.has("party_llm_dialogue_enabled") and "party_llm_dialogue_enabled" in GameState:
 			GameState.party_llm_dialogue_enabled = bool(settings["party_llm_dialogue_enabled"])
+		# BYOK load. Web build skips this — the fields stay at their
+		# struct-default empty strings, so even a settings.json
+		# transplanted FROM a desktop save into a web export can't
+		# leak the key into web logic. Belt-and-suspenders.
+		if not OS.has_feature("web"):
+			if settings.has("llm_custom_backend_enabled") and "llm_custom_backend_enabled" in GameState:
+				GameState.llm_custom_backend_enabled = bool(settings["llm_custom_backend_enabled"])
+			if settings.has("llm_custom_base_url") and "llm_custom_base_url" in GameState:
+				GameState.llm_custom_base_url = str(settings["llm_custom_base_url"])
+			if settings.has("llm_custom_api_format") and "llm_custom_api_format" in GameState:
+				var fmt: String = str(settings["llm_custom_api_format"])
+				GameState.llm_custom_api_format = fmt if fmt in ["openai", "ollama"] else "openai"
+			if settings.has("llm_custom_model") and "llm_custom_model" in GameState:
+				GameState.llm_custom_model = str(settings["llm_custom_model"])
+			if settings.has("llm_custom_api_key") and "llm_custom_api_key" in GameState:
+				GameState.llm_custom_api_key = str(settings["llm_custom_api_key"])
 
 	print("[SAVE] Settings loaded")

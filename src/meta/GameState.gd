@@ -47,6 +47,38 @@ var boss_llm_strategy_enabled: bool = false
 ## Party LLM dialogue flag — opt-in; see BattleManager._maybe_fire_party_line.
 var party_llm_dialogue_enabled: bool = false
 
+## ── BYOK (Bring Your Own Key) — user-provided cloud LLM endpoint ──
+##
+## User directive 2026-06-22: power users want to plug in their own
+## OpenAI / Anthropic-via-OpenRouter / Groq / etc key for a deeper
+## model than the desktop default. The HTTPBackend already supports
+## base_url + api_format + model + api_key — these fields persist the
+## user's choice. SettingsMenu (future tick) writes them; LLMService
+## reads them at backend probe time.
+##
+## Persisted ONLY in settings.json (per-machine), NEVER in per-save
+## data — importing someone else's save must not carry their key.
+##
+## Web export: BYOK is gated off entirely because the browser sandbox
+## can't safely hold secrets. Same gate as llm_enabled.
+var llm_custom_backend_enabled: bool = false
+var llm_custom_base_url: String = ""
+var llm_custom_api_format: String = "openai"  ## "openai" | "ollama"
+var llm_custom_model: String = ""
+var llm_custom_api_key: String = ""  ## SENSITIVE — never log, never print
+
+
+## Mask the API key for UI display: 'sk-abcd…WXYZ' style. The full key
+## stays in llm_custom_api_key. This helper is the ONLY safe way to
+## surface the key value in logs, settings panels, or telemetry.
+func get_llm_custom_api_key_masked() -> String:
+	var k := llm_custom_api_key
+	if k == "":
+		return ""
+	if k.length() <= 8:
+		return "•".repeat(k.length())
+	return k.substr(0, 4) + "…" + k.substr(k.length() - 4)
+
 ## Game constants (modifiable by Scriptweaver and other meta jobs)
 var game_constants: Dictionary = {
 	"exp_multiplier": 1.0,
