@@ -33,6 +33,7 @@ extends RefCounted
 const TRIGGER_PARTY_WIPE := "party_wipe"
 const TRIGGER_BOSS_DEFEAT := "boss_defeat"
 const TRIGGER_AREA_ENTERED := "area_entered"
+const TRIGGER_LEVEL_UP := "level_up"
 const TRIGGER_MANUAL := "manual"
 
 

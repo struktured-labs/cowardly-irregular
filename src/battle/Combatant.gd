@@ -9,6 +9,10 @@ signal ap_changed(old_value: int, new_value: int)
 signal died()
 signal status_added(status: String)
 signal status_removed(status: String)
+## tick 55: emit once per level threshold crossed in gain_exp. The
+## rebalance daemon listens (via BattleManager → GameLoop) and uses
+## it as a passive progression signal — distinct from wipe/defeat.
+signal leveled_up(new_level: int)
 
 ## Core stats
 @export var combatant_name: String = "Unknown"
@@ -866,17 +870,19 @@ func gain_job_exp(amount: int) -> void:
 	if amount <= 0:
 		return
 	job_exp += amount
-	var leveled_up := false
+	# Renamed in tick 55 to avoid shadowing the new `leveled_up` signal.
+	var did_level := false
 	# Loop while excess EXP crosses the next-level threshold. Each level
 	# consumes `job_level * 100` before incrementing, so the threshold grows
 	# after each pass. Cap at 99 as a safety (same ceiling used elsewhere).
 	while job_exp >= job_level * 100 and job_level < 99:
 		job_exp -= job_level * 100
 		job_level += 1
-		leveled_up = true
+		did_level = true
 		print("%s reached job level %d!" % [combatant_name, job_level])
+		leveled_up.emit(job_level)
 
-	if leveled_up:
+	if did_level:
 		recalculate_stats()
 
 		# TODO: Unlock new abilities/passives at certain levels

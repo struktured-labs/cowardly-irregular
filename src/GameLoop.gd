@@ -1493,6 +1493,10 @@ func _restore_party_from_save_data() -> bool:
 	# so a save mid-W1 may carry already-unlocked PCs even though the
 	# Combatant.autobattle_locked field is freshly set by from_dict.
 	_reconcile_spotlight_locks()
+	# tick 55: rewire level-up listeners after a load — the freshly-
+	# constructed Combatants don't carry connections from the previous
+	# session.
+	_wire_party_level_up_listeners()
 	return true
 
 
@@ -1643,6 +1647,50 @@ func _create_party() -> void:
 	# Apply any spotlight unlocks already in flags (relevant for NG+ or
 	# debug fast-travel — usually a no-op on a fresh game).
 	_reconcile_spotlight_locks()
+	# tick 55: wire the level-up listener so the rebalance daemon sees
+	# the passive progression signal in addition to wipes / boss defeats.
+	_wire_party_level_up_listeners()
+
+
+## tick 55: connect each Combatant's leveled_up signal to the daemon
+## bridge. Idempotent — checking is_connected before connecting so
+## save/load reuse paths don't double-connect.
+func _wire_party_level_up_listeners() -> void:
+	for member in party:
+		if member is Combatant and member.has_signal("leveled_up"):
+			if not member.leveled_up.is_connected(_on_party_leveled_up):
+				member.leveled_up.connect(_on_party_leveled_up.bind(member))
+
+
+## Handler for any party Combatant's leveled_up signal. Records the
+## event in EventLog AND (if rebalance is enabled) fires a consider
+## trigger so the daemon can react to passive progression — not just
+## the high-stakes wipe/defeat signals.
+##
+## Throttling: the daemon's own min_consideration_interval guards
+## against firing on every level when the player chain-levels in a
+## grinding session. Recording is unconditional so the audit log has
+## the level changes regardless of rebalance opt-in.
+func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
+	if GameState == null:
+		return
+	var ctx: Dictionary = {
+		"member": member.combatant_name if member else "?",
+		"new_level": new_level,
+		"map_id": _current_map_id,
+		"world": GameState.worlds_unlocked,
+	}
+	if "event_log" in GameState and GameState.event_log != null:
+		GameState.event_log.record(
+			EventLog.TYPE_LEVEL_UP,
+			"%s reached level %d" % [str(ctx["member"]), new_level],
+			ctx)
+	if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+		var fired: bool = GameState.rebalance_daemon.consider(
+			RebalanceDaemonScript.TRIGGER_LEVEL_UP, ctx)
+		if fired:
+			_kick_off_rebalance_fetch.call_deferred(
+				GameState.rebalance_daemon.pending.size() - 1)
 
 
 func _reconcile_spotlight_locks() -> void:
