@@ -28,10 +28,12 @@ const APPLIED_COLOR := Color(0.45, 0.85, 0.50)
 const DISMISSED_COLOR := Color(0.85, 0.55, 0.45)
 const NEUTRAL_COLOR := Color(0.7, 0.7, 0.75)
 const REJECTED_COLOR := Color(0.95, 0.45, 0.40)
+const RESET_COLOR := Color(0.55, 0.75, 0.95)
 
 var _list_label: RichTextLabel
 var _empty_label: Label
 var _modifiers_label: RichTextLabel
+var _reset_btn: Button
 
 
 func _ready() -> void:
@@ -122,13 +124,23 @@ func _build_ui() -> void:
 	_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_empty_label)
 
+	# tick 57: Reset button — restores ALLOWED_CONSTANTS to 1.0 in one
+	# click. Recorded as an applied[] entry with status='reset' so the
+	# audit trail captures the manual revert.
+	_reset_btn = Button.new()
+	_reset_btn.text = "Reset All Modifiers"
+	_reset_btn.size = Vector2(180, 32)
+	_reset_btn.position = Vector2(panel_x + 24, panel_y + panel_h - 44)
+	_reset_btn.pressed.connect(_on_reset_pressed)
+	add_child(_reset_btn)
+
 	var hint := Label.new()
 	hint.text = "[B/Esc] Close"
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", TEXT_COLOR)
-	hint.position = Vector2(panel_x + 24, panel_y + panel_h - 28)
-	hint.size = Vector2(panel_w - 48, 20)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.position = Vector2(panel_x + panel_w - 200, panel_y + panel_h - 28)
+	hint.size = Vector2(180, 20)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(hint)
 
 
@@ -186,6 +198,9 @@ func _format_entry(entry: Dictionary, daemon) -> String:
 		"rejected":
 			tag = "[REJECTED]"
 			color = REJECTED_COLOR
+		"reset":
+			tag = "[RESET]"
+			color = RESET_COLOR
 		_:
 			tag = "[%s]" % status.to_upper()
 			color = DIM_COLOR
@@ -256,6 +271,24 @@ func _format_when(ts: int) -> String:
 		return "%d hr ago" % (delta / 3600)
 	else:
 		return "%d days ago" % (delta / 86400)
+
+
+func _on_reset_pressed() -> void:
+	var daemon = _get_daemon()
+	if daemon == null or not daemon.has_method("reset_to_defaults"):
+		return
+	var changed: Dictionary = daemon.reset_to_defaults()
+	if SoundManager:
+		var sfx: String = "menu_select" if not changed.is_empty() else "menu_error"
+		SoundManager.play_ui(sfx)
+	if Toast:
+		if changed.is_empty():
+			Toast.show(self, "Reset: already at defaults", Toast.WARNING_COLOR)
+		else:
+			Toast.show(self, "Reset %d modifier(s) to defaults" % changed.size(), Toast.SUCCESS_COLOR)
+	# Re-render so the active-modifiers header AND the history list
+	# reflect the new state.
+	_render_history()
 
 
 func _input(event: InputEvent) -> void:

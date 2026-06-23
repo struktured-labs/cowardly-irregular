@@ -386,6 +386,54 @@ func dismiss(proposal_idx: int) -> bool:
 	return true
 
 
+## tick 57: reset every ALLOWED_CONSTANTS value back to 1.0 (default).
+## Records the reset as an applied[] entry so the audit trail captures
+## the player-initiated revert — better than silent restoration.
+##
+## Returns the dict of constants that actually changed: { name: before }.
+## Empty dict when everything was already at default.
+func reset_to_defaults() -> Dictionary:
+	var gs: Node = _resolve_game_state()
+	if gs == null or not ("game_constants" in gs):
+		return {}
+	var changed: Dictionary = {}
+	for c in ALLOWED_CONSTANTS:
+		if not gs.game_constants.has(c):
+			continue
+		var before: float = float(gs.game_constants[c])
+		if abs(before - 1.0) < 0.001:
+			continue
+		gs.game_constants[c] = 1.0
+		changed[c] = before
+	if changed.is_empty():
+		return {}
+	# Record the reset so the history panel surfaces it. status='reset'
+	# is a new entry type the history panel renders as a distinct tag.
+	var applied_changes: Array = []
+	for c in changed.keys():
+		applied_changes.append({
+			"constant":   c,
+			"before":     float(changed[c]),
+			"after":      1.0,
+			"multiplier": 1.0 / float(changed[c]) if float(changed[c]) != 0.0 else 1.0,
+		})
+	var entry: Dictionary = {
+		"trigger": "manual_reset",
+		"ts": int(Time.get_unix_time_from_system()),
+		"context_summary": "player reset",
+		"status": "reset",
+		"verdict": "no_change",
+		"confidence": 1.0,
+		"deltas": [],
+		"reason": "Player reset all modifiers to defaults",
+		"applied_changes": applied_changes,
+	}
+	applied.append(entry)
+	while applied.size() > APPLIED_CAP:
+		applied.pop_front()
+	return changed
+
+
 ## Count of pending proposals with status='needs_review'. UI uses this
 ## for badge counts / "you have N proposals waiting" surface.
 func needs_review_count() -> int:
@@ -431,6 +479,17 @@ func format_for_review(proposal: Dictionary) -> String:
 ## the same formatter.
 func summarize_applied(proposal: Dictionary) -> String:
 	var verdict: String = str(proposal.get("verdict", ""))
+	var status: String = str(proposal.get("status", ""))
+	# tick 57: reset entries get their own framing — they're not LLM
+	# proposals, they're player-initiated reverts.
+	if status == "reset":
+		var changes_r: Array = proposal.get("applied_changes", [])
+		if changes_r.is_empty():
+			return "Player reset: already at defaults."
+		var names: Array[String] = []
+		for c in changes_r:
+			names.append(str(c.get("constant", "?")))
+		return "Player reset: " + ", ".join(names) + " → 1.00"
 	if verdict == "no_change":
 		return "Auto-rebalance: no change needed."
 	var changes: Array = proposal.get("applied_changes", [])
