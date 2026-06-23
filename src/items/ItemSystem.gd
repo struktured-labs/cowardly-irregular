@@ -36,7 +36,7 @@ func _load_item_data() -> void:
 	var file_path = "res://data/items.json"
 
 	if not FileAccess.file_exists(file_path):
-		print("Warning: items.json not found, using default items")
+		push_warning("[ItemSystem] items.json not found at %s — falling back to hardcoded defaults" % file_path)
 		_create_default_items()
 		return
 
@@ -53,10 +53,10 @@ func _load_item_data() -> void:
 				items = json.data
 				print("Loaded %d items" % items.size())
 			else:
-				print("Error: items.json data is not a valid dictionary")
+				push_warning("[ItemSystem] items.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
 				_create_default_items()
 		else:
-			print("Error parsing items.json: ", json.get_error_message())
+			push_warning("[ItemSystem] items.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 			_create_default_items()
 	else:
 		_create_default_items()

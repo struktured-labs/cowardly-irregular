@@ -28,7 +28,7 @@ func _load_equipment_data() -> void:
 	var file_path = "res://data/equipment.json"
 
 	if not FileAccess.file_exists(file_path):
-		print("Warning: equipment.json not found, using default equipment")
+		push_warning("[EquipmentSystem] equipment.json not found at %s — falling back to hardcoded defaults" % file_path)
 		_create_default_equipment()
 		return
 
@@ -48,10 +48,10 @@ func _load_equipment_data() -> void:
 				accessories = data.get("accessories", {})
 				print("Loaded equipment: %d weapons, %d armors, %d accessories" % [weapons.size(), armors.size(), accessories.size()])
 			else:
-				print("Error: equipment.json data is not a valid dictionary")
+				push_warning("[EquipmentSystem] equipment.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
 				_create_default_equipment()
 		else:
-			print("Error parsing equipment.json: ", json.get_error_message())
+			push_warning("[EquipmentSystem] equipment.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 			_create_default_equipment()
 	else:
 		_create_default_equipment()
