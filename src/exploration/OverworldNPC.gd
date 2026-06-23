@@ -730,6 +730,18 @@ func _get_clothes_color() -> Color:
 			return Color(0.25, 0.2, 0.35)  # Dark purple cloak
 		"bard":
 			return Color(0.7, 0.55, 0.3)  # Gold/tan tunic
+		"scholar":
+			# tick 69: docstring listed scholar as valid but
+			# _get_clothes_color had no arm — fell through to random
+			# villager. Sister Concord / Cantor Vell / Greenleaf /
+			# Mire / Clavis / Vetch / SUDO-1 / The Witness all carry
+			# this type. Deep teal-grey reads as 'studious quiet'.
+			return Color(0.30, 0.40, 0.45)
+		"merchant":
+			# tick 69: same gap — Senga / Crusher Pete carry merchant.
+			# Earthy mustard distinguishes from innkeeper's brown
+			# (0.7/0.5/0.3) and bard's gold/tan (0.7/0.55/0.3).
+			return Color(0.60, 0.45, 0.20)
 		_:
 			# Random villager colors
 			var colors = [
