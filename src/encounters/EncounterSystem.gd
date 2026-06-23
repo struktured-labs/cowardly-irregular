@@ -369,20 +369,34 @@ func _load_enemy_pools() -> void:
 	"""Load enemy pools for different areas"""
 	var data_path = "res://data/enemy_pools.json"
 
-	if FileAccess.file_exists(data_path):
-		var file = FileAccess.open(data_path, FileAccess.READ)
-		if file:
-			var json_string = file.get_as_text()
-			file.close()
+	if not FileAccess.file_exists(data_path):
+		push_warning("[EncounterSystem] enemy_pools.json not found at %s — falling back to 7-pool hardcoded defaults (33 real pools missing)" % data_path)
+		_create_default_enemy_pools()
+		return
 
-			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				enemy_pools = json.data
-				print("Loaded %d enemy pools" % enemy_pools.size())
-				return
+	var file = FileAccess.open(data_path, FileAccess.READ)
+	if not file:
+		push_warning("[EncounterSystem] enemy_pools.json exists but FileAccess.open failed — permissions issue? — falling back to defaults")
+		_create_default_enemy_pools()
+		return
 
-	# Create default enemy pools
-	_create_default_enemy_pools()
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result := json.parse(json_string)
+	if parse_result != OK:
+		push_warning("[EncounterSystem] enemy_pools.json parse error: %s — falling back to defaults" % json.get_error_message())
+		_create_default_enemy_pools()
+		return
+
+	if not (json.data is Dictionary):
+		push_warning("[EncounterSystem] enemy_pools.json parsed but root is not a Dictionary — falling back to defaults")
+		_create_default_enemy_pools()
+		return
+
+	enemy_pools = json.data
+	print("Loaded %d enemy pools" % enemy_pools.size())
 
 
 func _create_default_enemy_pools() -> void:
@@ -404,19 +418,30 @@ func _load_monster_database() -> void:
 	"""Load monster data from monsters.json"""
 	var data_path = "res://data/monsters.json"
 
-	if FileAccess.file_exists(data_path):
-		var file = FileAccess.open(data_path, FileAccess.READ)
-		if file:
-			var json_string = file.get_as_text()
-			file.close()
+	if not FileAccess.file_exists(data_path):
+		push_warning("[EncounterSystem] monsters.json not found at %s — monster_database empty, all encounters will use hardcoded BattleManager fallbacks" % data_path)
+		return
 
-			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				monster_database = json.data
-				print("Loaded %d monsters from database" % monster_database.size())
-				return
+	var file = FileAccess.open(data_path, FileAccess.READ)
+	if not file:
+		push_warning("[EncounterSystem] monsters.json exists but FileAccess.open failed — monster_database empty")
+		return
 
-	print("Warning: Could not load monster database")
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result := json.parse(json_string)
+	if parse_result != OK:
+		push_warning("[EncounterSystem] monsters.json parse error: %s — monster_database empty" % json.get_error_message())
+		return
+
+	if not (json.data is Dictionary):
+		push_warning("[EncounterSystem] monsters.json parsed but root is not a Dictionary — monster_database empty")
+		return
+
+	monster_database = json.data
+	print("Loaded %d monsters from database" % monster_database.size())
 
 
 ## Utility
