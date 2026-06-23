@@ -71,10 +71,10 @@ func _load_job_data() -> void:
 				jobs = json.data
 				print("Loaded %d jobs" % jobs.size())
 			else:
-				print("Error: jobs.json data is not a valid dictionary")
+				push_warning("[JobSystem] jobs.json parsed but root is not a Dictionary — falling back to hardcoded defaults (286 abilities / 14 jobs would be lost)")
 				_create_default_jobs()
 		else:
-			print("Error parsing jobs.json: ", json.get_error_message())
+			push_warning("[JobSystem] jobs.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 			_create_default_jobs()
 	else:
 		_create_default_jobs()
@@ -85,7 +85,7 @@ func _load_ability_data() -> void:
 	var file_path = "res://data/abilities.json"
 
 	if not FileAccess.file_exists(file_path):
-		print("Warning: abilities.json not found, using default abilities")
+		push_warning("[JobSystem] abilities.json not found at %s — falling back to hardcoded defaults" % file_path)
 		_create_default_abilities()
 		return
 
@@ -102,10 +102,10 @@ func _load_ability_data() -> void:
 				abilities = json.data
 				print("Loaded %d abilities" % abilities.size())
 			else:
-				print("Error: abilities.json data is not a valid dictionary")
+				push_warning("[JobSystem] abilities.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
 				_create_default_abilities()
 		else:
-			print("Error parsing abilities.json: ", json.get_error_message())
+			push_warning("[JobSystem] abilities.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 			_create_default_abilities()
 	else:
 		_create_default_abilities()

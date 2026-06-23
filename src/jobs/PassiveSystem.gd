@@ -28,7 +28,7 @@ func _load_passive_data() -> void:
 	var file_path = "res://data/passives.json"
 
 	if not FileAccess.file_exists(file_path):
-		print("Warning: passives.json not found, using default passives")
+		push_warning("[PassiveSystem] passives.json not found at %s — falling back to hardcoded defaults" % file_path)
 		_create_default_passives()
 		return
 
@@ -44,7 +44,7 @@ func _load_passive_data() -> void:
 			passives = json.data
 			print("Loaded %d passives" % passives.size())
 		else:
-			print("Error parsing passives.json: ", json.get_error_message())
+			push_warning("[PassiveSystem] passives.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 			_create_default_passives()
 	else:
 		_create_default_passives()
