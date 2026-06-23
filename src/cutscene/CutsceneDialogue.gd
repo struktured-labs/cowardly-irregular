@@ -55,6 +55,8 @@ const VOICE_BLIP_ALIASES := {
 	"scholar": "scholar",
 	"shopkeeper": "generic_npc",
 	"villager": "generic_npc",
+	"merchant": "generic_npc",
+	"guard": "generic_npc",
 }
 
 ## UI Elements
@@ -274,19 +276,22 @@ func _resolve_voice_blip_key(portrait_type: String, theme_name: String) -> Strin
 	return VOICE_BLIP_FALLBACK
 
 
-func _load_voice_blip(speaker_key: String) -> void:
+func _load_voice_blip(speaker_key: String, speaker_name: String = "") -> void:
 	"""Load and cache the voice blip stream for a speaker. Falls back to
-	VOICE_BLIP_FALLBACK if the speaker-specific file is missing. When the
-	fallback is used, derive a deterministic pitch offset from the speaker
-	name so unnamed NPCs still feel distinct."""
+	VOICE_BLIP_FALLBACK if the speaker-specific file is missing. Pitch
+	always derives from the speaker name (when provided) so two NPCs
+	sharing a blip family — eight scholars, two guards — still sound
+	individually distinct. speaker_name="" reverts to the legacy
+	speaker_key hash for back-compat with callers that don't plumb the
+	name through."""
+	var pitch_source: String = speaker_name if speaker_name != "" else speaker_key
+	_voice_blip_pitch_base = _hash_pitch(pitch_source)
 	if speaker_key == _voice_blip_speaker_key and _voice_blip_stream != null:
 		return
 	_voice_blip_speaker_key = speaker_key
 	_voice_blip_stream = _load_voice_blip_stream(speaker_key)
-	_voice_blip_pitch_base = 1.0
 	if _voice_blip_stream == null and speaker_key != VOICE_BLIP_FALLBACK:
 		_voice_blip_stream = _load_voice_blip_stream(VOICE_BLIP_FALLBACK)
-		_voice_blip_pitch_base = _hash_pitch(speaker_key)
 
 
 static func _hash_pitch(key: String) -> float:
@@ -588,8 +593,10 @@ func _show_current_line() -> void:
 	# Apply expression tint to portrait
 	_portrait_image.modulate = EXPRESSION_TINTS.get(expression, Color.WHITE)
 
-	# Load voice blip for this speaker
-	_load_voice_blip(_resolve_voice_blip_key(portrait_type, theme_name))
+	# Load voice blip for this speaker — pitch derived from the speaker
+	# NAME so NPCs sharing a blip family (8 scholars / 2 guards) still
+	# sound individually distinct.
+	_load_voice_blip(_resolve_voice_blip_key(portrait_type, theme_name), entry.get("speaker", ""))
 
 	# Hide portrait frame for narrator (no-portrait mode)
 	var hide_portrait = entry.get("hide_portrait", false)
