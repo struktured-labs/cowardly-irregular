@@ -65,8 +65,8 @@ func test_game_loop_routes_node_prime_daemon_lounge() -> void:
 		"GameLoop must preload the lounge script")
 	assert_true(src.contains("\"node_prime_daemon_lounge\":"),
 		"GameLoop scene routing must include node_prime_daemon_lounge")
-	assert_true(src.contains("\"node_prime_daemon_lounge\":\n\t\t\treturn \"futuristic\""),
-		"node_prime_daemon_lounge must map to 'futuristic' terrain — W5's battle backdrop")
+	assert_true(src.contains("\"node_prime_daemon_lounge\":\n\t\t\treturn \"digital\""),
+		"node_prime_daemon_lounge must map to 'digital' terrain — 'digital' is the canonical W5 terrain key recognized by BattleBackground.set_terrain_from_string, Mode7Overlay, SoundManager. Earlier 'futuristic' (tick 65) fell through to PLAINS — silent bug)")
 
 
 func test_node_prime_has_door_via_helper() -> void:

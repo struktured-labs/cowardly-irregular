@@ -2996,7 +2996,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 		"rivet_row_union_hall":
 			return "industrial"
 		"node_prime_daemon_lounge":
-			return "futuristic"
+			return "digital"
 		"vertex_threshold":
 			return "abstract"
 		"frosthold_village":
