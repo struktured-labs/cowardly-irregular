@@ -82,6 +82,23 @@ var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 
 ## Exploration state
 var _current_map_id: String = "overworld"
+
+
+## Public read of the current map_id — exposed so SaveSystem.can_quick_save()
+## and others can interrogate location without needing to grep the scene tree.
+func get_current_map_id() -> String:
+	return _current_map_id
+
+
+## True when the player is inside one of the small village-side interior
+## rooms. SaveSystem skips auto-save in this state because MapSystem
+## doesn't track interiors (they're loaded by GameLoop's scene-routing,
+## not MapSystem.load_map), so MapSystem.current_map_id would be stale —
+## the resume path would either spawn the player in the wrong location
+## or fail to load any map at all.
+func is_inside_interior() -> bool:
+	return _current_map_id in INTERIOR_MAP_IDS
+
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
@@ -2942,9 +2959,10 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 			}
 		)
 
-	# Auto-save on zone transition (villages/overworld only; dungeons use save points).
+	# Auto-save on zone transition (villages/overworld only; dungeons use save points;
+	# interiors skipped — MapSystem.current_map_id is stale for them).
 	# SaveSystem.save_completed signal drives the Toast via _on_any_save_completed.
-	if SaveSystem and SaveSystem.has_method("auto_save"):
+	if transition_type != "interior" and SaveSystem and SaveSystem.has_method("auto_save"):
 		SaveSystem.auto_save()
 
 

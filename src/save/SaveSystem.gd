@@ -166,12 +166,31 @@ func can_quick_save() -> bool:
 	that API relied on an `enter_location`/`current_location_id` system
 	that was never wired up (so it always returned OVERWORLD). Dungeon
 	save points instead call quick_save() directly, meaning the only
-	real gate is "not in a battle"."""
+	real gate is "not in a battle".
+
+	Tick 74: also block while inside an interior. Interiors bypass
+	MapSystem entirely (GameLoop loads them via direct scene-routing),
+	so MapSystem.current_map_id is stale when the player is in one.
+	Saving would record the wrong map and the resume path would either
+	spawn in the wrong location or fail to load any map. Quick + auto
+	saves both share this gate, so neither corrupts state."""
 	if not BattleManager:
 		return false
 	if BattleManager.is_battle_active():
 		return false
+	if _is_player_inside_interior():
+		return false
 	return true
+
+
+func _is_player_inside_interior() -> bool:
+	"""Returns true when GameLoop is currently showing an interior scene.
+	Falls back to false when GameLoop isn't reachable (e.g. unit tests
+	with no scene tree) — keeps the gate permissive in non-game contexts."""
+	var root := get_tree().current_scene
+	if root != null and root.has_method("is_inside_interior"):
+		return root.is_inside_interior()
+	return false
 
 
 ## Best-effort human-readable name for the currently loaded map, used
