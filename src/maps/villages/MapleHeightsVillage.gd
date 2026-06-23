@@ -146,6 +146,12 @@ func _setup_buildings() -> void:
 	magic.position = Vector2(6 * TILE_SIZE, 7 * TILE_SIZE)
 	buildings.add_child(magic)
 
+	# === ARCADE DOOR ===
+	# Pete's Glitch City Arcade — pays off Greenleaf's foreshadowing
+	# from tick 37. First enterable W2 interior.
+	spawn_points["arcade_exit"] = Vector2(5 * TILE_SIZE, 11 * TILE_SIZE)
+	_add_interior_door("ArcadeDoor", "maple_heights_arcade", "Enter Glitch City Arcade", Vector2(5 * TILE_SIZE, 10 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Hidden behind the house — a forgotten lunchbox with supplies

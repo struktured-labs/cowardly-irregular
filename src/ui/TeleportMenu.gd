@@ -58,6 +58,7 @@ const DESTINATIONS: Array = [
 	{"id": "sandrift_glassmaker",    "label": "Glassmaker (Sandrift)", "spawn": "entrance",    "section": ""},
 	{"id": "grimhollow_witch_hut",   "label": "Witch's Hut (Grimhollow)","spawn": "entrance",  "section": ""},
 	{"id": "ironhaven_watchtower",   "label": "Watchtower (Ironhaven)","spawn": "entrance",  "section": ""},
+	{"id": "maple_heights_arcade",   "label": "Arcade (MapleHeights)","spawn": "entrance",   "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26
