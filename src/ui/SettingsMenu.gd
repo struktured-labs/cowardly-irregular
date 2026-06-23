@@ -43,6 +43,7 @@ var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue to
 var boss_llm_strategy_enabled: bool = false  # Phase 1 boss-AI strategic-intent toggle (opt-in)
 var party_llm_dialogue_enabled: bool = false  # Party LLM combat-line toggle (opt-in)
 var llm_custom_backend_enabled: bool = false  # tick 40: BYOK master switch (opt-in; web build hides entirely)
+var llm_rebalance_enabled: bool = false  # tick 42: LLM-guided rebalance daemon (opt-in)
 var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible when debug_log_enabled
 
 ## UI State
@@ -113,6 +114,8 @@ func _ready() -> void:
 			party_llm_dialogue_enabled = GameState.party_llm_dialogue_enabled
 		if "llm_custom_backend_enabled" in GameState:
 			llm_custom_backend_enabled = GameState.llm_custom_backend_enabled
+		if "llm_rebalance_enabled" in GameState:
+			llm_rebalance_enabled = GameState.llm_rebalance_enabled
 		if "debug_all_pcs_unlocked" in GameState:
 			debug_all_pcs_unlocked = GameState.debug_all_pcs_unlocked
 	_build_ui()
@@ -392,6 +395,23 @@ func _build_ui() -> void:
 		_settings_items.append({"control": byok_item, "type": "toggle", "id": "llm_custom_backend_enabled"})
 		MenuMouseHelper.make_clickable(byok_item, byok_idx, 400, 60,
 			_on_setting_click.bind(byok_idx), _on_setting_hover.bind(byok_idx))
+
+	# tick 42: Rebalance Daemon master switch. Per user directive
+	# 2026-06-22 — the game self-tunes difficulty using LLM guidance.
+	# Off by default; the daemon proposes small game_constants nudges
+	# on party-wipe / boss-defeat triggers. UI for reviewing pending
+	# proposals lands later — for now this just gates the trigger calls.
+	var reb_idx: int = _settings_items.size()
+	var reb_item = _create_toggle_setting(
+		"LLM Auto-Rebalance (experimental)",
+		"Game proposes difficulty nudges after wipes / boss wins (needs Dynamic Dialogue ON)",
+		llm_rebalance_enabled,
+		reb_idx
+	)
+	vbox.add_child(reb_item)
+	_settings_items.append({"control": reb_item, "type": "toggle", "id": "llm_rebalance_enabled"})
+	MenuMouseHelper.make_clickable(reb_item, reb_idx, 400, 60,
+		_on_setting_click.bind(reb_idx), _on_setting_hover.bind(reb_idx))
 
 	# Debug: Unlock All Party toggle — bypasses every PC's autobattle_locked
 	# spotlight gate. Honored at BattleManager / BattleCommandMenu / UI gates,
@@ -959,6 +979,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_llm_custom_backend_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "llm_rebalance_enabled":
+		llm_rebalance_enabled = not llm_rebalance_enabled
+		_update_toggle_display(selected_index, llm_rebalance_enabled)
+		_save_llm_rebalance_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "debug_all_pcs_unlocked":
 		debug_all_pcs_unlocked = not debug_all_pcs_unlocked
 		_update_toggle_display(selected_index, debug_all_pcs_unlocked)
@@ -1072,6 +1098,18 @@ func _save_party_llm_dialogue_setting() -> void:
 		GameState.party_llm_dialogue_enabled = party_llm_dialogue_enabled
 	settings_changed.emit("party_llm_dialogue_enabled", party_llm_dialogue_enabled)
 	print("[SETTINGS] LLM party dialogue %s" % ("enabled" if party_llm_dialogue_enabled else "disabled"))
+	_persist_settings()
+
+
+## tick 42: rebalance daemon master-switch save handler. Just mirrors
+## the bit + persists; no immediate-apply call needed because the
+## daemon's consider() is gated on the flag at the GameLoop call sites
+## (every call checks GameState.llm_rebalance_enabled before firing).
+func _save_llm_rebalance_setting() -> void:
+	if GameState:
+		GameState.llm_rebalance_enabled = llm_rebalance_enabled
+	settings_changed.emit("llm_rebalance_enabled", llm_rebalance_enabled)
+	print("[SETTINGS] LLM auto-rebalance %s" % ("enabled" if llm_rebalance_enabled else "disabled"))
 	_persist_settings()
 
 

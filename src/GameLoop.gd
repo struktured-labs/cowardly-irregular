@@ -16,6 +16,7 @@ const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd
 const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
+const RebalanceDaemonScript = preload("res://src/llm/RebalanceDaemon.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
 const GrimhollowVillageScript = preload("res://src/maps/villages/GrimhollowVillage.gd")
@@ -1727,17 +1728,23 @@ func _on_battle_ended(victory: bool) -> void:
 					var etype: String = e.get_meta("monster_type", e.combatant_name)
 					if etype not in enemy_names:
 						enemy_names.append(etype)
+			var wipe_ctx: Dictionary = {
+				"map_id":      _current_map_id,
+				"survivors":   survivors,
+				"party_size":  party.size(),
+				"enemy_types": enemy_names,
+				"world":       GameState.worlds_unlocked,
+			}
 			GameState.event_log.record(
 				EventLog.TYPE_PARTY_WIPE,
 				"Party wiped in %s" % _current_map_id.replace("_", " ").capitalize(),
-				{
-					"map_id":      _current_map_id,
-					"survivors":   survivors,
-					"party_size":  party.size(),
-					"enemy_types": enemy_names,
-					"world":       GameState.worlds_unlocked,
-				}
+				wipe_ctx
 			)
+			# Rebalance trigger: a wipe is the strongest 'this is too hard'
+			# signal we have. Daemon's own throttle keeps a streak from
+			# spending the LLM budget; opt-in flag keeps this off by default.
+			if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+				GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_PARTY_WIPE, wipe_ctx)
 		await _show_game_over_screen()
 
 
@@ -1798,6 +1805,12 @@ func _apply_pending_boss_defeat() -> void:
 			"Defeated %s" % boss_name,
 			defeat_data
 		)
+		# Rebalance trigger: a boss victory is a 'curve looks right' signal
+		# (or 'too easy' if the player one-shot it). Daemon decides whether
+		# to nudge based on the tactics snapshot — opt-in flag gates the
+		# whole call so vanilla play isn't affected.
+		if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+			GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_BOSS_DEFEAT, defeat_data)
 	# One-shot: clear after applying
 	GameState.pending_boss_defeat = {}
 	# Auto-save immediately after boss flags land. Without this, a crash or
