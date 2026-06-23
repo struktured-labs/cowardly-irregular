@@ -58,6 +58,7 @@ var _jukebox_submenu_open: bool = false
 var _boss_submenu_open: bool = false
 var _teleport_submenu_open: bool = false
 var _rebalance_review_open: bool = false  ## tick 49
+var _byok_config_open: bool = false  ## tick 50
 ## When true, hides the "Quit to Title" action (we're already on the title screen)
 var from_title: bool = false
 
@@ -465,6 +466,13 @@ func _build_ui() -> void:
 			"Review Rebalance Proposals",
 			"%d proposal(s) waiting for your review" % rebalance_count,
 			"rebalance_review")
+	# tick 50: Configure BYOK — always available on desktop, hidden
+	# on web (browser sandbox can't safely hold keys).
+	if not OS.has_feature("web"):
+		add_action.call(
+			"Configure BYOK",
+			"URL + model + API key for a custom LLM backend",
+			"byok_config")
 	# Debug-only batch
 	if debug_log_enabled:
 		add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
@@ -896,7 +904,7 @@ func _input(event: InputEvent) -> void:
 	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
-	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open:
+	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open or _byok_config_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -1247,6 +1255,8 @@ func _activate_setting() -> void:
 			_open_teleport_menu()
 		elif item["id"] == "rebalance_review":
 			_open_rebalance_review()
+		elif item["id"] == "byok_config":
+			_open_byok_config()
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
@@ -1270,6 +1280,29 @@ func _on_setting_hover(index: int) -> void:
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+
+
+## tick 50: open the BYOK config panel. Hidden on web build —
+## SettingsMenu's action-row registration guards there too, but
+## belt-and-suspenders here in case some other path calls this.
+func _open_byok_config() -> void:
+	if OS.has_feature("web"):
+		return
+	_byok_config_open = true
+	var PanelScript = load("res://src/ui/BYOKConfigPanel.gd")
+	if not PanelScript:
+		_byok_config_open = false
+		return
+	var panel = PanelScript.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.closed.connect(_on_byok_config_closed)
+	add_child(panel)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
+func _on_byok_config_closed() -> void:
+	_byok_config_open = false
 
 
 ## tick 49: open the rebalance review panel. Reads pending NEEDS_REVIEW
