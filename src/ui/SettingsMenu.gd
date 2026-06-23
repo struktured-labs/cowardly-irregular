@@ -57,6 +57,7 @@ var _controls_submenu_open: bool = false
 var _jukebox_submenu_open: bool = false
 var _boss_submenu_open: bool = false
 var _teleport_submenu_open: bool = false
+var _rebalance_review_open: bool = false  ## tick 49
 ## When true, hides the "Quit to Title" action (we're already on the title screen)
 var from_title: bool = false
 
@@ -455,6 +456,15 @@ func _build_ui() -> void:
 
 	# Controls (always shown)
 	add_action.call("Controls", "Remap gamepad buttons", "controls")
+	# tick 49: Review Pending Rebalances — shown only when there's
+	# something waiting. Subtitle includes the live count so the
+	# player can see at a glance how many proposals need attention.
+	var rebalance_count: int = _get_rebalance_needs_review_count()
+	if rebalance_count > 0:
+		add_action.call(
+			"Review Rebalance Proposals",
+			"%d proposal(s) waiting for your review" % rebalance_count,
+			"rebalance_review")
 	# Debug-only batch
 	if debug_log_enabled:
 		add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
@@ -886,7 +896,7 @@ func _input(event: InputEvent) -> void:
 	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
-	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open:
+	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -1235,6 +1245,8 @@ func _activate_setting() -> void:
 			_open_boss_selector()
 		elif item["id"] == "debug_teleport":
 			_open_teleport_menu()
+		elif item["id"] == "rebalance_review":
+			_open_rebalance_review()
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
@@ -1258,6 +1270,42 @@ func _on_setting_hover(index: int) -> void:
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+
+
+## tick 49: open the rebalance review panel. Reads pending NEEDS_REVIEW
+## proposals from the daemon and lets the player Apply or Dismiss.
+func _open_rebalance_review() -> void:
+	_rebalance_review_open = true
+	var PanelScript = load("res://src/ui/RebalanceReviewPanel.gd")
+	if not PanelScript:
+		_rebalance_review_open = false
+		return
+	var panel = PanelScript.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.closed.connect(_on_rebalance_review_closed)
+	add_child(panel)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
+func _on_rebalance_review_closed() -> void:
+	_rebalance_review_open = false
+	# Refresh the action button's subtitle so the count reflects any
+	# applies/dismisses the player did inside the panel.
+	_build_ui()
+
+
+## Convenience: get the daemon's pending-review count. Returns 0 if
+## the autoload or field is missing — defensive for boot-edge calls.
+func _get_rebalance_needs_review_count() -> int:
+	if not GameState:
+		return 0
+	if not ("rebalance_daemon" in GameState) or GameState.rebalance_daemon == null:
+		return 0
+	var d = GameState.rebalance_daemon
+	if d.has_method("needs_review_count"):
+		return d.needs_review_count()
+	return 0
 
 
 func _open_controls_menu() -> void:
