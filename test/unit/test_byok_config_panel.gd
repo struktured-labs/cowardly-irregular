@@ -148,3 +148,65 @@ func test_dispatcher_routes_byok_action_id() -> void:
 		"dispatcher must handle the byok_config action id")
 	assert_true(src.contains("_open_byok_config()"),
 		"dispatcher must call _open_byok_config")
+
+
+## tick 52: Test Connection button
+
+
+func test_panel_has_test_button_and_status_label() -> void:
+	var src := _read(PANEL)
+	assert_true(src.contains("var _test_btn"),
+		"panel must declare _test_btn — the Test Connection button")
+	assert_true(src.contains("var _status_label"),
+		"panel must declare _status_label — shows the test result")
+	assert_true(src.contains("\"Test Connection\""),
+		"button label must read 'Test Connection' so users know what it does")
+
+
+func test_test_handler_uses_real_llm_call() -> void:
+	# Without this, "Test" just checks is_available — which would
+	# return true even with a misconfigured endpoint that hangs.
+	var body := _body_of(PANEL, "_on_test_pressed")
+	assert_true(body.contains("svc.complete"),
+		"_on_test_pressed must call LLMService.complete — a real round-trip is the only honest test")
+	assert_true(body.contains("await"),
+		"_on_test_pressed must await the complete call — it's async")
+
+
+func test_test_handler_detects_fallback_vs_success() -> void:
+	# The probe distinguishes 'LLM returned something' from 'fallback
+	# was used' by checking against the sentinel. Without this, every
+	# probe would report success even when the backend timed out.
+	var body := _body_of(PANEL, "_on_test_pressed")
+	assert_true(body.contains("PROBE_FALLBACK"),
+		"test must compare against the sentinel fallback to distinguish real success from timeout/error")
+
+
+func test_test_handler_short_circuits_on_unavailable() -> void:
+	# Save the user a wait if is_available is already false — show
+	# an instant 'no ready backend' message instead of timing out
+	# at the HTTP layer.
+	var body := _body_of(PANEL, "_on_test_pressed")
+	assert_true(body.contains("svc.is_available()") or body.contains("not svc.is_available()"),
+		"test must short-circuit on is_available=false instead of always sending a probe")
+
+
+func test_test_handler_guards_concurrent_clicks() -> void:
+	# Without a guard, mashing Test would fire multiple in-flight
+	# probes and the responses could land out of order.
+	var body := _body_of(PANEL, "_on_test_pressed")
+	assert_true(body.contains("_testing"),
+		"test handler must guard against concurrent clicks via _testing flag")
+	assert_true(body.contains("_test_btn.disabled"),
+		"test handler must also disable the button during the probe — visual confirmation that a test is in flight")
+
+
+func test_test_handler_never_logs_or_displays_api_key() -> void:
+	# The Test status message must NOT include the raw api_key. Pin
+	# negatively that GameState.llm_custom_api_key isn't referenced
+	# in the handler body.
+	var body := _body_of(PANEL, "_on_test_pressed")
+	assert_false(body.contains("GameState.llm_custom_api_key"),
+		"_on_test_pressed must NEVER reference the raw api_key — the LLM call uses the already-applied config")
+	assert_false(body.contains("_api_key_field.text"),
+		"_on_test_pressed must NEVER read the raw key field — the LLM call uses the already-applied config")

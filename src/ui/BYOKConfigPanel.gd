@@ -38,6 +38,16 @@ var _base_url_field: LineEdit
 var _format_picker: OptionButton
 var _model_field: LineEdit
 var _api_key_field: LineEdit
+var _status_label: Label
+var _test_btn: Button
+var _testing: bool = false
+
+const PROBE_PROMPT := "Reply with exactly: PONG"
+const PROBE_FALLBACK := "__BYOK_PROBE_FAIL__"
+const STATUS_IDLE_COLOR := Color(0.65, 0.65, 0.70)
+const STATUS_OK_COLOR := Color(0.45, 0.85, 0.50)
+const STATUS_FAIL_COLOR := Color(0.95, 0.45, 0.40)
+const STATUS_BUSY_COLOR := Color(0.85, 0.75, 0.40)
 
 
 func _ready() -> void:
@@ -137,8 +147,26 @@ func _build_ui() -> void:
 	reminder.position = Vector2(form_x, row_y + 4)
 	reminder.size = Vector2(form_w, 18)
 	add_child(reminder)
+	row_y += 24
 
-	# Buttons
+	# tick 52: status label for the Test Connection result. Persists
+	# between Test clicks so the user can see what last happened.
+	_status_label = Label.new()
+	_status_label.text = "Status: idle (Save first to test current config)"
+	_status_label.add_theme_font_size_override("font_size", 12)
+	_status_label.add_theme_color_override("font_color", STATUS_IDLE_COLOR)
+	_status_label.position = Vector2(form_x, row_y + 12)
+	_status_label.size = Vector2(form_w, 22)
+	add_child(_status_label)
+
+	# Buttons: Test (left), Save (mid-right), Cancel (right).
+	_test_btn = Button.new()
+	_test_btn.text = "Test Connection"
+	_test_btn.size = Vector2(160, 36)
+	_test_btn.position = Vector2(panel_x + 24, panel_y + panel_h - 56)
+	_test_btn.pressed.connect(_on_test_pressed)
+	add_child(_test_btn)
+
 	var save_btn := Button.new()
 	save_btn.text = "Save & Apply"
 	save_btn.size = Vector2(160, 36)
@@ -225,6 +253,57 @@ func _on_cancel_pressed() -> void:
 		SoundManager.play_ui("menu_cancel")
 	closed.emit()
 	queue_free()
+
+
+## tick 52: async probe. Uses the CURRENTLY APPLIED LLMService config
+## (whatever was last Save & Apply'd). To test a new config the user
+## edits the form, hits Save & Apply (which calls LLMService.apply_
+## byok_config — tick 39), then comes back and hits Test. Single-flow
+## is simpler than the temporarily-apply-then-revert dance.
+##
+## Sends a tiny probe prompt with a sentinel fallback string. If
+## the LLM returns anything OTHER than the sentinel, the round-trip
+## works. Times out via LLMService's own internal timeout — if no
+## answer arrives, the fallback wins and we report failure.
+func _on_test_pressed() -> void:
+	if _testing:
+		return
+	_testing = true
+	_test_btn.disabled = true
+	_set_status("Testing... (sending small probe)", STATUS_BUSY_COLOR)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+	var svc: Node = get_node_or_null("/root/LLMService")
+	if svc == null or not svc.has_method("complete"):
+		_set_status("Status: failed — LLMService not available", STATUS_FAIL_COLOR)
+		_testing = false
+		_test_btn.disabled = false
+		return
+	if not svc.is_available():
+		_set_status("Status: failed — no ready backend (is BYOK toggled ON? did you Save & Apply?)", STATUS_FAIL_COLOR)
+		_testing = false
+		_test_btn.disabled = false
+		return
+	var start_ms: int = Time.get_ticks_msec()
+	var result: Variant = await svc.complete(PROBE_PROMPT, PROBE_FALLBACK, {"max_tokens": 16})
+	var elapsed_ms: int = Time.get_ticks_msec() - start_ms
+	var result_str: String = str(result)
+	if result_str == PROBE_FALLBACK or result_str == "":
+		_set_status("Status: failed — backend returned fallback (timeout? bad key? wrong model?)", STATUS_FAIL_COLOR)
+	else:
+		# Truncate the response so the status line doesn't blow out;
+		# we just need to show the user that SOMETHING came back.
+		var preview: String = result_str.strip_edges().substr(0, 40)
+		_set_status("Status: OK (%d ms) — got: \"%s\"" % [elapsed_ms, preview], STATUS_OK_COLOR)
+	_testing = false
+	_test_btn.disabled = false
+
+
+func _set_status(msg: String, color: Color) -> void:
+	if _status_label == null:
+		return
+	_status_label.text = msg
+	_status_label.add_theme_color_override("font_color", color)
 
 
 func _input(event: InputEvent) -> void:
