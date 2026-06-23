@@ -57,11 +57,12 @@
       "prompt_influence": 0.0
     },
     "advance_queue": {
-      "file": "assets/audio/sfx/advance_queue.ogg",
-      "source": "elevenlabs_post",
-      "prompt": "Toned-down gunshot with gamey chorus + phaser + multi-tap reverb: 4:1 compressor + 3.2kHz lowpass, then 2-voice chorus (50/70ms, different sweep speeds), phaser sweep, soft tanh saturation, 4-tap decaying reverb (50/110/200/320ms). -19 LUFS. ~2s total.",
-      "duration_seconds": 2.0,
-      "prompt_influence": 0.0
+      "file": "assets/audio/sfx/advance_queue_arcade.ogg",
+      "source": "lmms_freeboy_or_elevenlabs",
+      "prompt": "Arcade-machine credit-added jingle: a single coin dropping into a metal slot followed by a short ascending 3-note chiptune bleep (Game Boy / FreeBoy square wave, ~C5→E5→G5, 80ms per note) confirming the credit registered. Bright, satisfying, 'I just got another turn to spend'. ~0.45s total, mono, normalize to -14 LUFS. Replaces the prior tonal-gunshot prompt the user disliked.",
+      "duration_seconds": 0.45,
+      "prompt_influence": 0.0,
+      "fallback_to": "menu_select"
     },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
