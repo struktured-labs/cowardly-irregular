@@ -328,6 +328,13 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 		if equipment and equipment.weapons.has("piano_scythe"):
 			equipment.equip_weapon(combatant, "piano_scythe")
 
+	# tick 59: retroactively grant any abilities the combatant should
+	# already have at their current job_level. Without this, a save
+	# loaded post-data-change wouldn't unlock the leveled abilities
+	# until the next level-up — soft save break.
+	if combatant.job_level > 1:
+		learn_abilities_for_level(combatant, combatant.job_level)
+
 	job_changed.emit(combatant, old_job, job)
 	return true
 

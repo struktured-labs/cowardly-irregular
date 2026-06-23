@@ -17,6 +17,10 @@
 			"provoke",
 			"cleave"
 		],
+		"abilities_at_level": {
+			"3": ["shield_bash"],
+			"6": ["slash"]
+		},
 		"passive_abilities": [
 			"weapon_mastery"
 		],
@@ -61,6 +65,10 @@
 			"esuna",
 			"regen"
 		],
+		"abilities_at_level": {
+			"4": ["regenerate"],
+			"8": ["crystal_heal"]
+		},
 		"passive_abilities": [
 			"healing_boost"
 		],
