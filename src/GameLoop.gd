@@ -2491,8 +2491,23 @@ func _area_fade_from_black() -> void:
 	await tween.finished
 
 
+## Interior map_ids — stepping into one of these should use the
+## quick interior transition, not the dramatic "Arriving at..." wipe
+## meant for entering a new village from the overworld.
+const INTERIOR_MAP_IDS: PackedStringArray = [
+	"harmonia_chapel", "harmonia_library", "tavern_interior",
+	"eldertree_hollow", "frosthold_warden_hut", "sandrift_glassmaker",
+	"grimhollow_witch_hut", "ironhaven_watchtower",
+	"maple_heights_arcade", "brasston_clockwork_loft",
+	"rivet_row_union_hall", "node_prime_daemon_lounge",
+	"vertex_threshold",
+]
+
+
 func _get_transition_type(map_id: String) -> String:
-	"""Classify destination into cave, village, overworld, or generic."""
+	"""Classify destination into interior, cave, village, overworld, or generic."""
+	if map_id in INTERIOR_MAP_IDS:
+		return "interior"
 	var t = map_id.to_lower()
 	if "cave" in t or "dungeon" in t:
 		return "cave"
@@ -2690,6 +2705,48 @@ func _area_village_transition_out() -> void:
 	wipe.queue_free()
 
 
+func _area_interior_transition_in(location_name: String) -> void:
+	"""Quick black fade with a subtle bottom-left room label. Distinct
+	from the dramatic village wipe — the player is stepping into a
+	small room within the village they already know, not arriving at
+	a new town."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	var fade_tween = create_tween()
+	fade_tween.tween_property(_area_fade_rect, "modulate:a", 1.0, 0.20).set_ease(Tween.EASE_IN)
+	await fade_tween.finished
+
+	# Subtle small label in the lower-left — just the room name, no prefix.
+	var lbl = Label.new()
+	lbl.text = location_name
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(0.85, 0.80, 0.70))
+	lbl.add_theme_color_override("font_shadow_color", Color.BLACK)
+	lbl.add_theme_constant_override("shadow_offset_x", 1)
+	lbl.add_theme_constant_override("shadow_offset_y", 1)
+	lbl.position = Vector2(32, get_viewport().get_visible_rect().size.y - 56)
+	lbl.modulate.a = 0.0
+	_area_fade_layer.add_child(lbl)
+	var lbl_tween = create_tween()
+	lbl_tween.tween_property(lbl, "modulate:a", 1.0, 0.12)
+	await lbl_tween.finished
+	await get_tree().create_timer(0.22).timeout
+	lbl.queue_free()
+
+
+func _area_interior_transition_out() -> void:
+	"""Quick black fade-out to reveal the interior. ~half the duration
+	of village fade — the room should feel close at hand."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+	var fade_tween = create_tween()
+	fade_tween.tween_property(_area_fade_rect, "modulate:a", 0.0, 0.18).set_ease(Tween.EASE_OUT)
+	await fade_tween.finished
+
+
 func _area_overworld_transition_in() -> void:
 	"""Circular iris-out: screen shrinks to a point at center, hold black."""
 	if not _area_fade_rect or not _area_fade_layer:
@@ -2850,6 +2907,10 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 			await _area_village_transition_in(display_name)
 			await _start_exploration()
 			await _area_village_transition_out()
+		"interior":
+			await _area_interior_transition_in(display_name)
+			await _start_exploration()
+			await _area_interior_transition_out()
 		"overworld":
 			await _area_overworld_transition_in()
 			await _start_exploration()
