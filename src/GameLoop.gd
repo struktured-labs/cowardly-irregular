@@ -1744,8 +1744,28 @@ func _on_battle_ended(victory: bool) -> void:
 			# signal we have. Daemon's own throttle keeps a streak from
 			# spending the LLM budget; opt-in flag keeps this off by default.
 			if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
-				GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_PARTY_WIPE, wipe_ctx)
+				var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_PARTY_WIPE, wipe_ctx)
+				if fired:
+					_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
 		await _show_game_over_screen()
+
+
+## tick 44: deferred coroutine that fires the LLM call for a freshly
+## queued rebalance proposal. call_deferred from the trigger sites so
+## the sync wipe/defeat handlers don't block on the await — the LLM
+## call happens on the next idle frame and lands in the proposal
+## record by the time the player checks the (forthcoming) review UI.
+##
+## Recent EventLog entries are passed in for trend context — the
+## daemon uses them so the LLM can tell "first wipe of the session"
+## from "tenth wipe in 20 minutes".
+func _kick_off_rebalance_fetch(proposal_idx: int) -> void:
+	if GameState == null or GameState.rebalance_daemon == null:
+		return
+	var recent: Array = []
+	if "event_log" in GameState and GameState.event_log != null:
+		recent = GameState.event_log.recent(10)
+	await GameState.rebalance_daemon.request_llm_proposal(proposal_idx, recent)
 
 
 func _apply_pending_boss_defeat() -> void:
@@ -1810,7 +1830,9 @@ func _apply_pending_boss_defeat() -> void:
 		# to nudge based on the tactics snapshot — opt-in flag gates the
 		# whole call so vanilla play isn't affected.
 		if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
-			GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_BOSS_DEFEAT, defeat_data)
+			var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_BOSS_DEFEAT, defeat_data)
+			if fired:
+				_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
 	# One-shot: clear after applying
 	GameState.pending_boss_defeat = {}
 	# Auto-save immediately after boss flags land. Without this, a crash or
