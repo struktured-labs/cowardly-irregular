@@ -123,6 +123,12 @@ func _setup_buildings() -> void:
 	chapel.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(chapel)
 
+	# === WARDEN'S HUT DOOR ===
+	# Standalone hut on the empty south-west tundra. Trygg foreshadows
+	# the Glacius fight. Spawn-back point is just south of the door.
+	spawn_points["warden_hut_exit"] = Vector2(4 * TILE_SIZE, 12 * TILE_SIZE)
+	_add_interior_door("WardenHutDoor", "frosthold_warden_hut", "Enter Warden's Hut", Vector2(4 * TILE_SIZE, 11 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# 2x Hi-Potion behind lodge

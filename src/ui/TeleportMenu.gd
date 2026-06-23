@@ -54,6 +54,7 @@ const DESTINATIONS: Array = [
 	{"id": "harmonia_chapel",        "label": "Chapel (Harmonia)",    "spawn": "entrance",    "section": ""},
 	{"id": "harmonia_library",       "label": "Library (Harmonia)",   "spawn": "entrance",    "section": ""},
 	{"id": "eldertree_hollow",       "label": "The Hollow (Eldertree)","spawn": "entrance",   "section": ""},
+	{"id": "frosthold_warden_hut",   "label": "Warden's Hut (Frosthold)","spawn": "entrance", "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26
