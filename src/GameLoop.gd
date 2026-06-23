@@ -18,6 +18,7 @@ const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/Harmonia
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
 const FrostholdWardenHutInteriorScript = preload("res://src/maps/interiors/FrostholdWardenHutInterior.gd")
 const SandriftGlassmakerInteriorScript = preload("res://src/maps/interiors/SandriftGlassmakerInterior.gd")
+const GrimhollowWitchHutInteriorScript = preload("res://src/maps/interiors/GrimhollowWitchHutInterior.gd")
 const RebalanceDaemonScript = preload("res://src/llm/RebalanceDaemon.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
@@ -2004,6 +2005,8 @@ func _start_exploration() -> void:
 			exploration_scene = FrostholdWardenHutInteriorScript.new()
 		"sandrift_glassmaker":
 			exploration_scene = SandriftGlassmakerInteriorScript.new()
+		"grimhollow_witch_hut":
+			exploration_scene = GrimhollowWitchHutInteriorScript.new()
 		"frosthold_village":
 			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
@@ -2884,6 +2887,8 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "ice"
 		"sandrift_glassmaker":
 			return "desert"
+		"grimhollow_witch_hut":
+			return "swamp"
 		"frosthold_village":
 			return "ice"
 		"eldertree_village":

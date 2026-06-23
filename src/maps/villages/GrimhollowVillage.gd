@@ -122,6 +122,12 @@ func _setup_buildings() -> void:
 	chapel.position = Vector2(11 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(chapel)
 
+	# === WITCH'S HUT DOOR ===
+	# Old Mire's hut at the bog's edge. She foreshadows Umbraxis (W1
+	# shadow dragon) — the room's payload.
+	spawn_points["witch_hut_exit"] = Vector2(4 * TILE_SIZE, 10 * TILE_SIZE)
+	_add_interior_door("WitchHutDoor", "grimhollow_witch_hut", "Enter Witch's Hut", Vector2(4 * TILE_SIZE, 9 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Phoenix Down in cemetery
