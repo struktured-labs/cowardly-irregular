@@ -112,3 +112,49 @@ func test_count_helper_guards_missing_autoload() -> void:
 		"count helper must guard missing GameState — returns 0 for boot edge")
 	assert_true(body.contains("rebalance_daemon"),
 		"count helper must guard missing daemon field")
+
+
+## tick 56: Active Modifiers header section
+
+
+func test_panel_renders_active_modifiers_section() -> void:
+	# The history shows CHANGES; the modifiers header shows current
+	# steady-state. Both are needed — without the header the player
+	# sees "exp_multiplier +5%" applied last week but doesn't know
+	# whether it's still in effect.
+	var src := _read(PANEL)
+	assert_true(src.contains("var _modifiers_label"),
+		"panel must declare _modifiers_label for the active-modifiers section")
+	assert_true(src.contains("_render_active_modifiers"),
+		"panel must have a _render_active_modifiers method")
+
+
+func test_active_modifiers_uses_allowed_constants_list() -> void:
+	# Mirror the daemon's safelist so the panel can't accidentally
+	# surface a constant the daemon doesn't touch (or miss one that
+	# IS).
+	var src := _read(PANEL)
+	assert_true(src.contains("ALLOWED_CONSTANTS"),
+		"_render_active_modifiers must read the daemon's ALLOWED_CONSTANTS list — single source of truth")
+
+
+func test_active_modifiers_hides_defaults_only_surfaces_divergent() -> void:
+	# If every game_constant is at 1.0, surfacing them clutters the
+	# panel. Pin that the renderer skips ~1.0 values.
+	var src := _read(PANEL)
+	assert_true(src.contains("abs(v - 1.0) < 0.001"),
+		"active-modifiers renderer must skip values at default (1.0) — only surface divergent multipliers")
+
+
+func test_active_modifiers_colors_signed_percentage() -> void:
+	# Easier (green +) vs harder (amber -) reading at a glance.
+	var src := _read(PANEL)
+	assert_true(src.contains("APPLIED_COLOR if pct >= 0 else DISMISSED_COLOR"),
+		"active-modifiers must color the multiplier by direction — green for boost, amber for cut")
+
+
+func test_active_modifiers_empty_state_says_all_defaults() -> void:
+	# Empty state must explicitly say "all defaults" — not be blank.
+	var src := _read(PANEL)
+	assert_true(src.contains("(all defaults)"),
+		"empty state must surface '(all defaults)' so the player knows the daemon HASN'T modified anything yet")

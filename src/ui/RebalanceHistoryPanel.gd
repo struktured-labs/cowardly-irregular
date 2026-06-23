@@ -31,6 +31,7 @@ const REJECTED_COLOR := Color(0.95, 0.45, 0.40)
 
 var _list_label: RichTextLabel
 var _empty_label: Label
+var _modifiers_label: RichTextLabel
 
 
 func _ready() -> void:
@@ -87,12 +88,26 @@ func _build_ui() -> void:
 	note.size = Vector2(panel_w - 40, 18)
 	add_child(note)
 
+	# tick 56: "Currently Active" snapshot section. Shows game_constants
+	# that diverged from their daemon-applied defaults (1.0). Without
+	# this, the player sees the history of CHANGES but not the current
+	# steady-state of MULTIPLIERS in effect.
+	_modifiers_label = RichTextLabel.new()
+	_modifiers_label.bbcode_enabled = true
+	_modifiers_label.add_theme_color_override("default_color", TEXT_COLOR)
+	_modifiers_label.add_theme_font_size_override("normal_font_size", 12)
+	_modifiers_label.position = Vector2(panel_x + 24, panel_y + 76)
+	_modifiers_label.size = Vector2(panel_w - 48, 56)
+	_modifiers_label.scroll_active = false
+	_modifiers_label.fit_content = false
+	add_child(_modifiers_label)
+
 	_list_label = RichTextLabel.new()
 	_list_label.bbcode_enabled = true
 	_list_label.add_theme_color_override("default_color", TEXT_COLOR)
 	_list_label.add_theme_font_size_override("normal_font_size", 13)
-	_list_label.position = Vector2(panel_x + 24, panel_y + 76)
-	_list_label.size = Vector2(panel_w - 48, panel_h - 124)
+	_list_label.position = Vector2(panel_x + 24, panel_y + 138)
+	_list_label.size = Vector2(panel_w - 48, panel_h - 186)
 	_list_label.scroll_active = true
 	_list_label.fit_content = false
 	add_child(_list_label)
@@ -118,6 +133,7 @@ func _build_ui() -> void:
 
 
 func _render_history() -> void:
+	_render_active_modifiers()
 	var daemon = _get_daemon()
 	if daemon == null:
 		_list_label.visible = false
@@ -191,6 +207,40 @@ func _format_entry(entry: Dictionary, daemon) -> String:
 	if verdict != "":
 		line3 = "  verdict=%s  confidence=%.0f%%" % [verdict, confidence * 100.0]
 	return "\n".join([line1, line2, line3] if line3 != "" else [line1, line2])
+
+
+## Render the active-modifiers snapshot. Reads GameState.game_constants
+## directly so the header is always live — even constants that were
+## modified outside the daemon (Scriptweaver, debug edits) surface here.
+func _render_active_modifiers() -> void:
+	if _modifiers_label == null:
+		return
+	var daemon = _get_daemon()
+	var watch_list: Array = ["exp_multiplier", "gold_multiplier", "encounter_rate"]
+	if daemon != null and "ALLOWED_CONSTANTS" in daemon:
+		watch_list = daemon.ALLOWED_CONSTANTS
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("game_constants" in gs):
+		_modifiers_label.text = "[color=#%s]Currently Active:[/color] (GameState not available)" % HEADER_COLOR.to_html(false)
+		return
+	var parts: Array[String] = []
+	for c in watch_list:
+		if not gs.game_constants.has(c):
+			continue
+		var v: float = float(gs.game_constants[c])
+		# Only surface DIVERGENT values — 1.0 is the default, no clutter.
+		if abs(v - 1.0) < 0.001:
+			continue
+		var pct: int = int(round((v - 1.0) * 100.0))
+		var sign: String = "+" if pct >= 0 else ""
+		var color: Color = APPLIED_COLOR if pct >= 0 else DISMISSED_COLOR
+		parts.append("[color=#%s]%s %s%d%%[/color]" % [
+			color.to_html(false), str(c), sign, pct])
+	var header: String = "[color=#%s]Currently Active:[/color] " % HEADER_COLOR.to_html(false)
+	if parts.is_empty():
+		_modifiers_label.text = header + "[color=#%s](all defaults)[/color]" % DIM_COLOR.to_html(false)
+	else:
+		_modifiers_label.text = header + "    ".join(parts)
 
 
 func _format_when(ts: int) -> String:

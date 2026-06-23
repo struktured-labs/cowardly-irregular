@@ -15,10 +15,19 @@
 ##   - Larger proposals are surfaced as PENDING for the player to
 ##     review (UI lands in a follow-up tick).
 ##
-## This tick is the SCAFFOLD only — consider() logs what it WOULD
-## propose without calling the LLM yet. The autoload wiring +
-## structured-output schema + apply path land in subsequent ticks so
-## the surface stays manageable per tick.
+## Full pipeline (ticks 41-49):
+##   consider()         (tick 41) creates a proposal record with
+##                                status='stub'. Pure-sync.
+##   request_llm_proposal (tick 43) fills the proposal from the LLM,
+##                                  status flows stub → awaiting_llm →
+##                                  proposed | failed_*. Async.
+##   try_auto_apply     (tick 45) routes by safety check:
+##                                  status → applied | applied_no_change
+##                                          | needs_review | rejected
+##   force_apply        (tick 48) player-consent path. Still enforces
+##                                ALLOWED_CONSTANTS.
+##   dismiss            (tick 48) move to applied[] with
+##                                status='dismissed'.
 ##
 ## State lives on GameState (var rebalance_daemon: RebalanceDaemon)
 ## so save/load can persist the pending + applied histories without
@@ -98,12 +107,14 @@ var _last_consideration_ts: int = 0
 
 
 ## Public entry point. GameLoop calls this from party_wipe / boss_defeat
-## handlers (and any future trigger site). Returns true if the trigger
-## was actually considered, false if it was throttled by the cadence
-## guard.
+## / level_up handlers (and any future trigger site). Returns true if
+## the trigger was actually considered, false if it was throttled by
+## the cadence guard.
 ##
-## For now this is a STUB — it records a proposal stub and prints. The
-## LLM call + structured-output schema + safe-apply lands in tick 42+.
+## SYNCHRONOUS — records a proposal with status='stub' and returns.
+## GameLoop's _kick_off_rebalance_fetch.call_deferred then awaits
+## request_llm_proposal which flips the status through awaiting_llm →
+## proposed | failed_*.
 func consider(trigger_type: String, context: Dictionary) -> bool:
 	var now: int = int(Time.get_unix_time_from_system())
 	if _last_consideration_ts > 0 \
@@ -119,13 +130,13 @@ func consider(trigger_type: String, context: Dictionary) -> bool:
 		"trigger": trigger_type,
 		"ts": now,
 		"context_summary": _summarize_context(context),
-		"status": "stub",  # tick 42 swaps to 'awaiting_llm' then 'proposed'
+		"status": "stub",  # request_llm_proposal flips to awaiting_llm → proposed
 		"deltas": [],
 	}
 	pending.append(proposal)
 	while pending.size() > PENDING_CAP:
 		pending.pop_front()
-	print("[REBALANCE] considered trigger=%s context=%s (stub — LLM call lands tick 42+)"
+	print("[REBALANCE] considered trigger=%s context=%s (awaiting LLM proposal)"
 		% [trigger_type, proposal["context_summary"]])
 	return true
 
