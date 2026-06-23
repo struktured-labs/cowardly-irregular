@@ -131,6 +131,13 @@ func _setup_buildings() -> void:
 	tavern.position = Vector2(3.5 * TILE_SIZE, 12 * TILE_SIZE)
 	buildings.add_child(tavern)
 
+	# === STORM WATCHTOWER DOOR ===
+	# Drogal's tower on the open eastern side of the village. He
+	# foreshadows Voltharion — the last of the four W1 dragons to
+	# get an interior NPC.
+	spawn_points["watchtower_exit"] = Vector2(18 * TILE_SIZE, 12 * TILE_SIZE)
+	_add_interior_door("WatchtowerDoor", "ironhaven_watchtower", "Enter Storm Watchtower", Vector2(18 * TILE_SIZE, 11 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Iron Shield near forge

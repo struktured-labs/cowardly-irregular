@@ -57,6 +57,7 @@ const DESTINATIONS: Array = [
 	{"id": "frosthold_warden_hut",   "label": "Warden's Hut (Frosthold)","spawn": "entrance", "section": ""},
 	{"id": "sandrift_glassmaker",    "label": "Glassmaker (Sandrift)", "spawn": "entrance",    "section": ""},
 	{"id": "grimhollow_witch_hut",   "label": "Witch's Hut (Grimhollow)","spawn": "entrance",  "section": ""},
+	{"id": "ironhaven_watchtower",   "label": "Watchtower (Ironhaven)","spawn": "entrance",  "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26
