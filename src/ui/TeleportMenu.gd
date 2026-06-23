@@ -60,6 +60,7 @@ const DESTINATIONS: Array = [
 	{"id": "ironhaven_watchtower",   "label": "Watchtower (Ironhaven)","spawn": "entrance",  "section": ""},
 	{"id": "maple_heights_arcade",   "label": "Arcade (MapleHeights)","spawn": "entrance",   "section": ""},
 	{"id": "brasston_clockwork_loft","label": "Clockwork Loft (Brasston)","spawn": "entrance","section": ""},
+	{"id": "rivet_row_union_hall",   "label": "Union Hall (RivetRow)", "spawn": "entrance",    "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26

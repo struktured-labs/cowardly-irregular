@@ -22,6 +22,7 @@ const GrimhollowWitchHutInteriorScript = preload("res://src/maps/interiors/Grimh
 const IronhavenWatchtowerInteriorScript = preload("res://src/maps/interiors/IronhavenWatchtowerInterior.gd")
 const MapleHeightsArcadeInteriorScript = preload("res://src/maps/interiors/MapleHeightsArcadeInterior.gd")
 const BrasstonClockworkLoftInteriorScript = preload("res://src/maps/interiors/BrasstonClockworkLoftInterior.gd")
+const RivetRowUnionHallInteriorScript = preload("res://src/maps/interiors/RivetRowUnionHallInterior.gd")
 const RebalanceDaemonScript = preload("res://src/llm/RebalanceDaemon.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
@@ -2096,6 +2097,8 @@ func _start_exploration() -> void:
 			exploration_scene = MapleHeightsArcadeInteriorScript.new()
 		"brasston_clockwork_loft":
 			exploration_scene = BrasstonClockworkLoftInteriorScript.new()
+		"rivet_row_union_hall":
+			exploration_scene = RivetRowUnionHallInteriorScript.new()
 		"frosthold_village":
 			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
@@ -2984,6 +2987,8 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "suburban"
 		"brasston_clockwork_loft":
 			return "steampunk"
+		"rivet_row_union_hall":
+			return "industrial"
 		"frosthold_village":
 			return "ice"
 		"eldertree_village":

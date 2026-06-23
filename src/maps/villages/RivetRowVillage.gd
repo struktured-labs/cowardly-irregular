@@ -133,6 +133,12 @@ func _setup_buildings() -> void:
 	magic.position = Vector2(6 * TILE_SIZE, 8 * TILE_SIZE)
 	buildings.add_child(magic)
 
+	# === UNION HALL DOOR ===
+	# Steward Vetch keeps the strike ledgers. Foreshadows the
+	# Assembly Core dungeon AND the warden_industrial boss.
+	spawn_points["union_hall_exit"] = Vector2(7 * TILE_SIZE, 11 * TILE_SIZE)
+	_add_interior_door("UnionHallDoor", "rivet_row_union_hall", "Enter Union Hall", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Contraband stash behind the barracks
