@@ -59,6 +59,7 @@ var _boss_submenu_open: bool = false
 var _teleport_submenu_open: bool = false
 var _rebalance_review_open: bool = false  ## tick 49
 var _byok_config_open: bool = false  ## tick 50
+var _rebalance_history_open: bool = false  ## tick 54
 ## When true, hides the "Quit to Title" action (we're already on the title screen)
 var from_title: bool = false
 
@@ -473,6 +474,14 @@ func _build_ui() -> void:
 			"Configure BYOK",
 			"URL + model + API key for a custom LLM backend",
 			"byok_config")
+	# tick 54: Rebalance History — shown only when there's something
+	# in the applied[] log. Read-only diegetic surface.
+	var history_count: int = _get_rebalance_applied_count()
+	if history_count > 0:
+		add_action.call(
+			"Rebalance History",
+			"View what the daemon has done (%d entries)" % history_count,
+			"rebalance_history")
 	# Debug-only batch
 	if debug_log_enabled:
 		add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
@@ -904,7 +913,7 @@ func _input(event: InputEvent) -> void:
 	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
-	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open or _byok_config_open:
+	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open or _byok_config_open or _rebalance_history_open:
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
@@ -1257,6 +1266,8 @@ func _activate_setting() -> void:
 			_open_rebalance_review()
 		elif item["id"] == "byok_config":
 			_open_byok_config()
+		elif item["id"] == "rebalance_history":
+			_open_rebalance_history()
 		elif item["id"] == "quit_to_title":
 			if SoundManager:
 				SoundManager.play_ui("menu_select")
@@ -1280,6 +1291,40 @@ func _on_setting_hover(index: int) -> void:
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+
+
+## tick 54: open the rebalance history panel. Read-only diegetic
+## surface for the daemon's applied[] log — what the AI has been
+## doing since the player started.
+func _open_rebalance_history() -> void:
+	_rebalance_history_open = true
+	var PanelScript = load("res://src/ui/RebalanceHistoryPanel.gd")
+	if not PanelScript:
+		_rebalance_history_open = false
+		return
+	var panel = PanelScript.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.closed.connect(_on_rebalance_history_closed)
+	add_child(panel)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
+func _on_rebalance_history_closed() -> void:
+	_rebalance_history_open = false
+
+
+## Convenience: get the daemon's applied[] count. Returns 0 if the
+## autoload or field is missing — defensive for boot-edge calls.
+func _get_rebalance_applied_count() -> int:
+	if not GameState:
+		return 0
+	if not ("rebalance_daemon" in GameState) or GameState.rebalance_daemon == null:
+		return 0
+	var d = GameState.rebalance_daemon
+	if "applied" in d:
+		return d.applied.size()
+	return 0
 
 
 ## tick 50: open the BYOK config panel. Hidden on web build —
