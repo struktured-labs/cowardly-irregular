@@ -1252,4 +1252,14 @@ func _load_cutscene_data(cutscene_id: String) -> Dictionary:
 		push_error("CutsceneDirector: JSON parse error in %s: %s" % [path, json.get_error_message()])
 		return {}
 
-	return json.data if json.data is Dictionary else {}
+	# Out-of-family loud-fail gap: pre-fix this silently swallowed a
+	# non-Dict root (e.g. someone wraps the cutscene in an Array by
+	# mistake, or a corrupted file parses as a string). play_cutscene
+	# would then receive {} and silently no-op the whole cutscene,
+	# leaving the story flag uncompleted forever — the same loop class
+	# tick 12 had to back-fill for the rat king flag.
+	if not (json.data is Dictionary):
+		push_error("CutsceneDirector: %s parsed but root is not a Dictionary (type=%s) — cutscene will not play" % [path, typeof(json.data)])
+		return {}
+
+	return json.data
