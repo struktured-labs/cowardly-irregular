@@ -1765,7 +1765,40 @@ func _kick_off_rebalance_fetch(proposal_idx: int) -> void:
 	var recent: Array = []
 	if "event_log" in GameState and GameState.event_log != null:
 		recent = GameState.event_log.recent(10)
-	await GameState.rebalance_daemon.request_llm_proposal(proposal_idx, recent)
+	var ok: bool = await GameState.rebalance_daemon.request_llm_proposal(proposal_idx, recent)
+	if not ok:
+		return
+	# LLM returned a proposal — try to auto-apply it. Safe deltas at
+	# high confidence land instantly; out-of-band or low-confidence
+	# proposals stay in pending[] for the review UI to surface.
+	# Surface the result diegetically via Toast — matches the "what
+	# did the AI change for me" directive (not hidden).
+	#
+	# pending is ordered by append; the proposal we just filled may
+	# have moved if older entries were ring-dropped during the await,
+	# so re-find it by status rather than trust the idx blindly.
+	var fresh_idx: int = -1
+	for i in range(GameState.rebalance_daemon.pending.size()):
+		var p: Dictionary = GameState.rebalance_daemon.pending[i]
+		if str(p.get("status", "")) == "proposed":
+			fresh_idx = i
+			break
+	if fresh_idx < 0:
+		return
+	var proposal_copy: Dictionary = GameState.rebalance_daemon.pending[fresh_idx].duplicate(true)
+	var result: String = GameState.rebalance_daemon.try_auto_apply(fresh_idx)
+	if result == GameState.rebalance_daemon.APPLY_APPLIED or result == GameState.rebalance_daemon.APPLY_NO_CHANGE:
+		# Look up the moved-to-applied proposal (it has the
+		# applied_changes annotation now).
+		var summary_target: Dictionary = proposal_copy
+		if GameState.rebalance_daemon.applied.size() > 0:
+			summary_target = GameState.rebalance_daemon.applied[-1]
+		var msg: String = GameState.rebalance_daemon.summarize_applied(summary_target)
+		if Toast:
+			Toast.show(self, msg, Toast.SUCCESS_COLOR if result == GameState.rebalance_daemon.APPLY_APPLIED else Toast.WARNING_COLOR)
+	elif result == GameState.rebalance_daemon.APPLY_NEEDS_REVIEW:
+		if Toast:
+			Toast.show(self, "Auto-rebalance proposal needs your review (Settings → review queue)", Toast.WARNING_COLOR)
 
 
 func _apply_pending_boss_defeat() -> void:

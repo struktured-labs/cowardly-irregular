@@ -67,6 +67,16 @@ const SAFE_DELTA_MAX: float = 1.15
 ## goes to review even if deltas are in the safe band.
 const AUTO_APPLY_CONFIDENCE: float = 0.7
 
+
+## Safelist of game_constants the daemon is allowed to nudge. Anything
+## outside this list gets rejected at apply time — no surprise edits
+## to story flags, save corruption, or anything load-bearing.
+const ALLOWED_CONSTANTS: Array[String] = [
+	"exp_multiplier",
+	"gold_multiplier",
+	"encounter_rate",
+]
+
 ## Cap on how many proposals we'll hold pending review. Older proposals
 ## get dropped (oldest first) — same ring pattern as EventLog.
 const PENDING_CAP: int = 20
@@ -143,9 +153,9 @@ func build_prompt(trigger_type: String, context: Dictionary, recent_events: Arra
 	lines.append("Propose at most ONE small adjustment to game constants. Stay subtle (±15%% max). If the curve looks fine, choose 'no_change'.")
 	lines.append("")
 	lines.append("Allowed constants:")
-	lines.append("  exp_multiplier         (XP gain rate)")
-	lines.append("  gold_multiplier        (gold drop rate)")
-	lines.append("  encounter_rate_modifier (random encounter frequency)")
+	lines.append("  exp_multiplier   (XP gain rate)")
+	lines.append("  gold_multiplier  (gold drop rate)")
+	lines.append("  encounter_rate   (random encounter frequency)")
 	lines.append("")
 	lines.append("Respond with JSON ONLY matching this shape:")
 	lines.append("  { \"verdict\": \"nudge_easier\" | \"nudge_harder\" | \"no_change\",")
@@ -205,6 +215,131 @@ func _summarize_context(context: Dictionary) -> String:
 			v_str = v_str.substr(0, 37) + "..."
 		parts.append("%s=%s" % [str(key), v_str])
 	return ", ".join(parts) if parts.size() > 0 else "(empty)"
+
+
+## Result strings for try_auto_apply — keeps the caller's match arms
+## stable even if the internal flow changes.
+const APPLY_NO_CHANGE := "no_change"
+const APPLY_APPLIED := "applied"
+const APPLY_NEEDS_REVIEW := "needs_review"
+const APPLY_REJECTED := "rejected"
+
+
+## Try to auto-apply a proposal that's reached status='proposed'.
+## Returns one of:
+##   APPLY_NO_CHANGE   — verdict was 'no_change', nothing to apply,
+##                       proposal logged into applied[] with empty deltas
+##   APPLY_APPLIED     — all deltas were safe + confidence met threshold,
+##                       written to game_constants and proposal moved to applied[]
+##   APPLY_NEEDS_REVIEW — at least one delta was outside the safe band
+##                        OR confidence was below threshold; proposal
+##                        stays in pending[] with status='needs_review'
+##                        for player UI to surface
+##   APPLY_REJECTED    — proposal references an unsafe constant (not in
+##                       ALLOWED_CONSTANTS), or proposal idx is invalid;
+##                       proposal status set to 'rejected', NOT applied
+##
+## The caller is GameLoop's _kick_off_rebalance_fetch (after
+## request_llm_proposal returns true). Settings UI will also call it
+## when the player clicks "Apply" on a needs_review proposal.
+func try_auto_apply(proposal_idx: int) -> String:
+	if proposal_idx < 0 or proposal_idx >= pending.size():
+		return APPLY_REJECTED
+	var proposal: Dictionary = pending[proposal_idx]
+	var verdict: String = str(proposal.get("verdict", ""))
+	var confidence: float = float(proposal.get("confidence", 0.0))
+	var deltas: Variant = proposal.get("deltas", [])
+	if not (deltas is Array):
+		proposal["status"] = "rejected"
+		return APPLY_REJECTED
+	# verdict='no_change' = LLM says the curve is fine. Move proposal
+	# into applied[] for the diegetic log, but apply nothing.
+	if verdict == "no_change":
+		proposal["status"] = "applied_no_change"
+		_move_to_applied(proposal_idx)
+		return APPLY_NO_CHANGE
+	# Reject malformed deltas before any other check — unknown
+	# constants must never write into game_constants.
+	for delta in deltas:
+		if not (delta is Dictionary):
+			proposal["status"] = "rejected"
+			return APPLY_REJECTED
+		var constant_name: String = str(delta.get("constant", ""))
+		if constant_name not in ALLOWED_CONSTANTS:
+			proposal["status"] = "rejected"
+			return APPLY_REJECTED
+	# Auto-apply gates: confidence + each multiplier in safe band.
+	# Failing either sends the proposal to review, not rejection — the
+	# constants ARE valid, just outside the auto-apply comfort zone.
+	if confidence < AUTO_APPLY_CONFIDENCE:
+		proposal["status"] = "needs_review"
+		return APPLY_NEEDS_REVIEW
+	for delta in deltas:
+		var multiplier: float = float((delta as Dictionary).get("multiplier", 1.0))
+		if multiplier < SAFE_DELTA_MIN or multiplier > SAFE_DELTA_MAX:
+			proposal["status"] = "needs_review"
+			return APPLY_NEEDS_REVIEW
+	# All checks passed — apply the deltas to GameState.game_constants.
+	var gs: Node = _resolve_game_state()
+	if gs == null or not ("game_constants" in gs):
+		# Can't apply without GameState — mark for review so the deltas
+		# aren't lost.
+		proposal["status"] = "needs_review"
+		return APPLY_NEEDS_REVIEW
+	var applied_changes: Array = []
+	for delta in deltas:
+		var d: Dictionary = delta
+		var constant_name: String = str(d.get("constant", ""))
+		var multiplier: float = float(d.get("multiplier", 1.0))
+		if gs.game_constants.has(constant_name):
+			var before: float = float(gs.game_constants[constant_name])
+			var after: float = before * multiplier
+			gs.game_constants[constant_name] = after
+			applied_changes.append({
+				"constant":   constant_name,
+				"before":     before,
+				"after":      after,
+				"multiplier": multiplier,
+			})
+	proposal["status"] = "applied"
+	proposal["applied_changes"] = applied_changes
+	_move_to_applied(proposal_idx)
+	return APPLY_APPLIED
+
+
+## Build the human-readable line the diegetic "what did the AI change
+## for me" surface shows. Public so the toast / settings UI can use
+## the same formatter.
+func summarize_applied(proposal: Dictionary) -> String:
+	var verdict: String = str(proposal.get("verdict", ""))
+	if verdict == "no_change":
+		return "Auto-rebalance: no change needed."
+	var changes: Array = proposal.get("applied_changes", [])
+	if changes.is_empty():
+		return "Auto-rebalance: proposed but no changes applied."
+	var parts: Array[String] = []
+	for c in changes:
+		var name: String = str(c.get("constant", "?"))
+		var mult: float = float(c.get("multiplier", 1.0))
+		var pct: int = int(round((mult - 1.0) * 100.0))
+		var sign: String = "+" if pct >= 0 else ""
+		parts.append("%s %s%d%%" % [name, sign, pct])
+	return "Auto-rebalance: " + ", ".join(parts)
+
+
+func _move_to_applied(proposal_idx: int) -> void:
+	var proposal: Dictionary = pending[proposal_idx]
+	pending.remove_at(proposal_idx)
+	applied.append(proposal)
+	while applied.size() > APPLIED_CAP:
+		applied.pop_front()
+
+
+func _resolve_game_state() -> Node:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.get_node_or_null("GameState")
 
 
 ## Save/load — daemon state rides on GameState's save dict so the

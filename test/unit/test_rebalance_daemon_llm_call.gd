@@ -74,7 +74,10 @@ func test_build_prompt_lists_allowed_constants() -> void:
 	# response and fail the apply-layer's safelist check.
 	var daemon = load(DAEMON_PATH).new()
 	var prompt: String = daemon.build_prompt("manual", {}, [])
-	for c in ["exp_multiplier", "gold_multiplier", "encounter_rate_modifier"]:
+	# tick 45 corrected encounter_rate_modifier → encounter_rate to
+	# match the actual game_constants key. Both wrong-name and right-
+	# name appearance are checked below to lock in the fix.
+	for c in ["exp_multiplier", "gold_multiplier", "encounter_rate"]:
 		assert_true(prompt.contains(c),
 			"prompt must list allowed constant '%s' explicitly" % c)
 
