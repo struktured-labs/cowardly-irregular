@@ -123,6 +123,13 @@ func _setup_buildings() -> void:
 	bazaar_weapons.position = Vector2(14 * TILE_SIZE, 5.5 * TILE_SIZE)
 	buildings.add_child(bazaar_weapons)
 
+	# === GLASSMAKER'S WORKSHOP DOOR ===
+	# Senga's hut on the open south-east tundra of the village map.
+	# She foreshadows Pyrroth (W1 fire dragon) through the desert
+	# glass she collects from sand fused by the dragon's breath.
+	spawn_points["glassmaker_exit"] = Vector2(8 * TILE_SIZE, 11 * TILE_SIZE)
+	_add_interior_door("GlassmakerDoor", "sandrift_glassmaker", "Enter Glassmaker's Workshop", Vector2(8 * TILE_SIZE, 10 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# 500 Gold in hidden tent
