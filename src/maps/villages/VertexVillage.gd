@@ -135,6 +135,13 @@ func _setup_buildings() -> void:
 	remainder.position = Vector2(4.5 * TILE_SIZE, 10 * TILE_SIZE)
 	buildings.add_child(remainder)
 
+	# === THE THRESHOLD DOOR ===
+	# The Witness — pays off the player's visits to every prior
+	# interior by naming them all. Foreshadows the Calibrant (W6
+	# final boss).
+	spawn_points["threshold_exit"] = Vector2(11 * TILE_SIZE, 8 * TILE_SIZE)
+	_add_interior_door("ThresholdDoor", "vertex_threshold", "Enter The Threshold", Vector2(11 * TILE_SIZE, 7 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Something left behind — no explanation given

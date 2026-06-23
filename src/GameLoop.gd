@@ -24,6 +24,7 @@ const MapleHeightsArcadeInteriorScript = preload("res://src/maps/interiors/Maple
 const BrasstonClockworkLoftInteriorScript = preload("res://src/maps/interiors/BrasstonClockworkLoftInterior.gd")
 const RivetRowUnionHallInteriorScript = preload("res://src/maps/interiors/RivetRowUnionHallInterior.gd")
 const NodePrimeDaemonLoungeInteriorScript = preload("res://src/maps/interiors/NodePrimeDaemonLoungeInterior.gd")
+const VertexThresholdInteriorScript = preload("res://src/maps/interiors/VertexThresholdInterior.gd")
 const RebalanceDaemonScript = preload("res://src/llm/RebalanceDaemon.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
@@ -2102,6 +2103,8 @@ func _start_exploration() -> void:
 			exploration_scene = RivetRowUnionHallInteriorScript.new()
 		"node_prime_daemon_lounge":
 			exploration_scene = NodePrimeDaemonLoungeInteriorScript.new()
+		"vertex_threshold":
+			exploration_scene = VertexThresholdInteriorScript.new()
 		"frosthold_village":
 			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
@@ -2994,6 +2997,8 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "industrial"
 		"node_prime_daemon_lounge":
 			return "futuristic"
+		"vertex_threshold":
+			return "abstract"
 		"frosthold_village":
 			return "ice"
 		"eldertree_village":

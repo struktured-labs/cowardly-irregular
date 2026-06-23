@@ -62,6 +62,7 @@ const DESTINATIONS: Array = [
 	{"id": "brasston_clockwork_loft","label": "Clockwork Loft (Brasston)","spawn": "entrance","section": ""},
 	{"id": "rivet_row_union_hall",   "label": "Union Hall (RivetRow)", "spawn": "entrance",    "section": ""},
 	{"id": "node_prime_daemon_lounge","label": "Daemon Lounge (NodePrime)","spawn": "entrance","section": ""},
+	{"id": "vertex_threshold",       "label": "The Threshold (Vertex)","spawn": "entrance",   "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26
