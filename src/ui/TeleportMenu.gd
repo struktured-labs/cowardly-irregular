@@ -51,6 +51,7 @@ const DESTINATIONS: Array = [
 	{"id": "ironhaven_village",      "label": "Ironhaven Village",    "spawn": "default",     "section": ""},
 	# --- Interiors ---
 	{"id": "tavern_interior",        "label": "Tavern (Harmonia)",    "spawn": "default",     "section": "Interiors"},
+	{"id": "harmonia_chapel",        "label": "Chapel (Harmonia)",    "spawn": "entrance",    "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26

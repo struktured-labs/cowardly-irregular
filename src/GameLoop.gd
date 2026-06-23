@@ -13,6 +13,7 @@ const TitleScreenClass = preload("res://src/ui/TitleScreen.gd")
 const HarmoniaVillageRes = preload("res://src/maps/villages/HarmoniaVillage.tscn")
 const WhisperingCaveRes = preload("res://src/maps/dungeons/WhisperingCave.tscn")
 const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd")
+const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
 const GrimhollowVillageScript = preload("res://src/maps/villages/GrimhollowVillage.gd")
@@ -1921,6 +1922,8 @@ func _start_exploration() -> void:
 			exploration_scene = _create_cave_scene()
 		"tavern_interior":
 			exploration_scene = _create_tavern_scene()
+		"harmonia_chapel":
+			exploration_scene = HarmoniaChapelInteriorScript.new()
 		"frosthold_village":
 			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
@@ -2793,7 +2796,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "plains"
 		"whispering_cave":
 			return "cave"
-		"harmonia_village", "tavern_interior":
+		"harmonia_village", "tavern_interior", "harmonia_chapel":
 			return "village"
 		"frosthold_village":
 			return "ice"
