@@ -307,6 +307,113 @@ func try_auto_apply(proposal_idx: int) -> String:
 	return APPLY_APPLIED
 
 
+## Force-apply a proposal that previously returned APPLY_NEEDS_REVIEW.
+## Caller is the review UI — the player has explicitly seen the
+## proposal's deltas and chosen to accept them. This bypasses the
+## confidence + safe-band gates but STILL enforces the constant
+## safelist — even with player consent, we don't let the LLM scribble
+## into unknown game_constants keys.
+##
+## Returns APPLY_APPLIED on success, APPLY_REJECTED if the proposal
+## references an unsafe constant or has malformed deltas.
+func force_apply(proposal_idx: int) -> String:
+	if proposal_idx < 0 or proposal_idx >= pending.size():
+		return APPLY_REJECTED
+	var proposal: Dictionary = pending[proposal_idx]
+	var deltas: Variant = proposal.get("deltas", [])
+	if not (deltas is Array):
+		proposal["status"] = "rejected"
+		return APPLY_REJECTED
+	# Constant safelist still applies — player consent doesn't unlock
+	# arbitrary writes.
+	for delta in deltas:
+		if not (delta is Dictionary):
+			proposal["status"] = "rejected"
+			return APPLY_REJECTED
+		if str((delta as Dictionary).get("constant", "")) not in ALLOWED_CONSTANTS:
+			proposal["status"] = "rejected"
+			return APPLY_REJECTED
+	var gs: Node = _resolve_game_state()
+	if gs == null or not ("game_constants" in gs):
+		return APPLY_REJECTED
+	var applied_changes: Array = []
+	for delta in deltas:
+		var d: Dictionary = delta
+		var constant_name: String = str(d.get("constant", ""))
+		var multiplier: float = float(d.get("multiplier", 1.0))
+		if gs.game_constants.has(constant_name):
+			var before: float = float(gs.game_constants[constant_name])
+			var after: float = before * multiplier
+			gs.game_constants[constant_name] = after
+			applied_changes.append({
+				"constant":   constant_name,
+				"before":     before,
+				"after":      after,
+				"multiplier": multiplier,
+			})
+	proposal["status"] = "applied"
+	proposal["applied_changes"] = applied_changes
+	proposal["force_applied"] = true
+	_move_to_applied(proposal_idx)
+	return APPLY_APPLIED
+
+
+## Dismiss a pending proposal without applying. Player has reviewed
+## and rejected it. The proposal moves to applied[] with status
+## 'dismissed' so the history surface shows it was considered — better
+## than silent deletion when the player wants to know "what has the
+## AI been proposing that I rejected".
+##
+## Returns true if a proposal was dismissed, false on bad idx.
+func dismiss(proposal_idx: int) -> bool:
+	if proposal_idx < 0 or proposal_idx >= pending.size():
+		return false
+	var proposal: Dictionary = pending[proposal_idx]
+	proposal["status"] = "dismissed"
+	_move_to_applied(proposal_idx)
+	return true
+
+
+## Count of pending proposals with status='needs_review'. UI uses this
+## for badge counts / "you have N proposals waiting" surface.
+func needs_review_count() -> int:
+	var c: int = 0
+	for p in pending:
+		if str(p.get("status", "")) == "needs_review":
+			c += 1
+	return c
+
+
+## Format a proposal for display in the review UI. Returns multi-line
+## human-readable string (not Toast-sized — the review panel shows
+## these in a scroll list, not in a toast).
+func format_for_review(proposal: Dictionary) -> String:
+	var lines: Array[String] = []
+	var verdict: String = str(proposal.get("verdict", "?"))
+	var confidence: float = float(proposal.get("confidence", 0.0))
+	var trigger: String = str(proposal.get("trigger", "?"))
+	lines.append("Verdict: %s (confidence %.0f%%)" % [verdict, confidence * 100.0])
+	lines.append("Trigger: %s" % trigger)
+	var reason: String = str(proposal.get("reason", ""))
+	if reason != "":
+		lines.append("Reason: %s" % reason)
+	var deltas: Variant = proposal.get("deltas", [])
+	if deltas is Array and (deltas as Array).size() > 0:
+		lines.append("Proposed changes:")
+		for delta in deltas:
+			if delta is Dictionary:
+				var d: Dictionary = delta
+				var c_name: String = str(d.get("constant", "?"))
+				var mult: float = float(d.get("multiplier", 1.0))
+				var pct: int = int(round((mult - 1.0) * 100.0))
+				var sign: String = "+" if pct >= 0 else ""
+				var c_reason: String = str(d.get("reason", ""))
+				lines.append("  • %s %s%d%% (%s)" % [c_name, sign, pct, c_reason])
+	else:
+		lines.append("(no concrete deltas)")
+	return "\n".join(lines)
+
+
 ## Build the human-readable line the diegetic "what did the AI change
 ## for me" surface shows. Public so the toast / settings UI can use
 ## the same formatter.
