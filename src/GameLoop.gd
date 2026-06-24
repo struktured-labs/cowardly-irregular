@@ -2922,27 +2922,40 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	var transition_type = _get_transition_type(target_map)
 	var display_name = _get_location_display_name(target_map)
 
+	# Hold a movement lock through the fade-out: _start_exploration sets
+	# state=EXPLORATION and pops all locks, so without this the player
+	# can press D-pad and start walking before the fade-out reveals the
+	# new scene. Push AFTER _start_exploration in each arm so pop_all
+	# doesn't clobber it. The pop in the safety cleanup block below
+	# also covers exception paths.
 	match transition_type:
 		"cave":
 			await _area_cave_transition_in(display_name)
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_cave_transition_out()
 		"village":
 			await _area_village_transition_in(display_name)
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_village_transition_out()
 		"interior":
 			await _area_interior_transition_in(display_name)
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_interior_transition_out()
 		"overworld":
 			await _area_overworld_transition_in()
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_overworld_transition_out()
 		_:
 			await _area_fade_to_black()
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_fade_from_black()
+	# Release the fade lock — the new scene is now fully visible.
+	InputLockManager.pop_lock("area_transition_fade")
 
 	# Safety cleanup: ensure fade overlay is transparent and no stale children remain
 	if _area_fade_rect:
