@@ -11,6 +11,7 @@ func _init() -> void:
 	cave_id = "steampunk_mechanism"
 	boss_id = "meta_knight"
 	boss_flag_key = "steampunk_mechanism_cleared"
+	boss_cutscene_id = "world3_tempo_intro"
 	total_floors = 3
 	overworld_exit_spawn = "plaza"
 	overworld_exit_map = "steampunk_overworld"
