@@ -573,6 +573,11 @@ func _trigger_boss_battle() -> void:
 	# normal setters (in _change_floor / _get_pending_story_cutscene) cover
 	# fresh playthroughs; back-fill catches saves that predate either
 	# setter so the quest log doesn't stay yellow forever.
+	# Tick 106: removed the "defeat_cutscene" key — it was never read by
+	# any spec consumer (GameLoop._apply_pending_boss_defeat ignores it).
+	# The world1_rat_king_defeat cutscene plays via
+	# GameLoop._get_pending_story_cutscene's gate on
+	# cutscene_flag_rat_king_defeated in whispering_cave.
 	GameState.pending_boss_defeat = {
 		"story_flags": ["rat_king_defeated"],
 		"constants": [
@@ -581,7 +586,6 @@ func _trigger_boss_battle() -> void:
 			"cutscene_flag_chapter3_complete",
 		],
 		"dungeon_flag": "cave_rat_king_defeated",
-		"defeat_cutscene": "world1_rat_king_defeat",
 	}
 
 	# Play boss intro cutscene, then trigger battle
@@ -624,24 +628,12 @@ func _place_floor_treasure(floor_num: int) -> void:
 	transitions.add_child(chest)
 
 
-func _on_boss_defeated() -> void:
-	"""Handle boss defeat — play defeat cutscene, then unlock W2"""
-	boss_defeated = true
-	_save_boss_state()
-
-	# Play defeat cutscene, then unlock W2
-	var director = CutsceneDirector.new()
-	add_child(director)
-	director.cutscene_finished.connect(func(_id: String):
-		director.queue_free()
-		# Rat King is mid-boss; reveals Castle Harmonia portal, not W2.
-		GameState.set_story_flag("rat_king_defeated")
-		GameState.game_constants["cutscene_flag_rat_king_defeated"] = true
-		print("Cave Rat King defeated! Castle Harmonia portal revealed.")
-		_setup_transitions_for_floor(current_floor)
-		controller.resume_exploration()
-	, CONNECT_ONE_SHOT)
-	director.play_cutscene("world1_rat_king_defeat")
+# (Tick 106: removed dead _on_boss_defeated. No caller anywhere — the same
+# class of dead code as DragonCave._on_boss_defeated (removed in tick 105).
+# The actual flag-setting work happens via GameLoop._apply_pending_boss_defeat
+# reading the pending_boss_defeat spec assembled in _trigger_boss above. The
+# world1_rat_king_defeat cutscene plays via GameLoop._get_pending_story_cutscene
+# gating on cutscene_flag_rat_king_defeated in whispering_cave.)
 
 
 func _load_boss_state() -> void:
