@@ -20,11 +20,32 @@ const MAP_WIDTH: int = 100
 const MAP_HEIGHT: int = 70
 
 ## Safe zones (tile rect) where no monsters spawn. Format: Rect2(tile_x, tile_y, w, h)
+## Safe-zone rectangles in TILE coordinates: [tile_x, tile_y, width, height].
+## Spawner walks every rect and refuses to spawn monsters inside any of them.
+##
+## Tick 83: extended from W1-Harmonia-only to cover every world's village
+## entrance. Pre-fix, the rects only protected W1 Harmonia coords; roaming
+## monsters could spawn ON or adjacent to W2 (Maple Heights), W4 (Rivet Row),
+## W5 (Node Prime), W6 (Vertex) entrances. W3 Brasston @ (5, 26) was
+## coincidentally inside the W1 rect [0,21,12,10] so happened to be protected.
+##
+## A single global list (rather than per-world setter) means W2 coords are
+## technically "safe" while in W1, but at tile positions that don't matter
+## to W1's map layout — harmless extra coverage. Cheaper than threading
+## per-world rects through five overworld scripts.
 const SAFE_ZONE_RECTS: Array = [
-	# Harmonia village area — rows 21-29, cols 0-10 approx
+	# W1 Harmonia village area — rows 21-29, cols 0-10 approx
 	[0, 21, 12, 10],
-	# Village gate tile region
+	# W1 Harmonia gate tile region
 	[20, 22, 16, 10],
+	# W2 Maple Heights entrance @ tile (38, 3) — 10x8 buffer
+	[34, 0, 10, 8],
+	# W4 Rivet Row entrance @ tile (55, 17) — 10x8 buffer
+	[51, 13, 10, 8],
+	# W5 Node Prime entrance @ tile (50, 20) — 10x8 buffer
+	[46, 16, 10, 8],
+	# W6 Vertex Threshold entrance @ tile (19, 16) — 10x8 buffer
+	[15, 12, 10, 8],
 ]
 
 var _player: Node2D = null
