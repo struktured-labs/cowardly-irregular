@@ -105,14 +105,13 @@ func test_arbiter_bias_path_preserved() -> void:
 		"arbiter bias path from tick 117 must remain")
 
 
-func test_curator_still_marked_for_followup() -> void:
-	# Coverage doc: curator ladder STILL doesn't consume llm_bias.
-	# Same negative pin pattern as tick 117 used for tempo.
+func test_curator_arm_now_consumes_llm_bias() -> void:
+	# Tick 119 wired the curator arm. This was a negative pin in
+	# tick 118; flipped to positive once curator got its bias reads.
 	var body := _make_masterite_decision_body()
 	var curator_idx: int = body.find("\"curator\":")
 	assert_gt(curator_idx, -1, "curator arm must exist")
-	# Curator is the last masterite arm. Slice to the end of the
-	# function body — the closing `}` of match.
+	# Slice to end of function body.
 	var curator_arm: String = body.substr(curator_idx, 4000)
-	assert_false(curator_arm.contains("llm_bias.get("),
-		"curator arm STILL doesn't consume llm_bias — known gap, remove this assertion when wiring curator")
+	assert_true(curator_arm.contains("llm_bias.get("),
+		"curator arm must consume llm_bias — wired in tick 119 (see test_curator_intent_bias_consumption.gd for specific pins)")

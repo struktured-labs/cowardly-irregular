@@ -1534,13 +1534,20 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 			# TACTICAL RESOURCE DENIAL — dispel buffs, drain MP, audit for damage
 			# Phase 2+: targets highest-threat player, multi-dispel
 			# Phase 3: advance drain+audit combo, total resource starvation
+			# Tick 119: curator consumes attack_weight bias — closes the
+			# masterite intent bias series (warden in tick 116, arbiter in
+			# 117, tempo in 118, curator now). aggress pushes the curator
+			# to drain + cut more often; turtle damps both.
+			var curator_attack_bias: float = float(llm_bias.get("attack_weight", 1.0))
 			var buffed_targets = alive_enemies.filter(func(e): return e.active_buffs.size() > 0)
 			if buffed_targets.size() > 0 and not find_ability.call("masterite_dispel").is_empty():
 				var dispel_targets = [buffed_targets[0]] if battle_phase < 3 else buffed_targets.slice(0, mini(3, buffed_targets.size()))
 				battle_log_message.emit("[color=gray]The Curator nullifies your enhancements...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_dispel", "targets": dispel_targets, "speed": _compute_action_speed(combatant, "ability")}
-			# Phase 3: advance combo — mana drain then audit the drained target
-			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < 0.45:
+			# Phase 3: advance combo — mana drain then audit the drained target.
+			# Bias the combo entry so aggress intent makes the advance more likely.
+			var curator_combo_chance: float = clampf(0.45 * curator_attack_bias, 0.0, 1.0)
+			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < curator_combo_chance:
 				var drain = find_ability.call("masterite_mana_drain")
 				var audit = find_ability.call("masterite_audit")
 				if not drain.is_empty() and not audit.is_empty():
@@ -1551,13 +1558,13 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_mana_drain", "targets": [mp_sorted[0]]},
 						{"type": "ability", "ability_id": "masterite_audit", "targets": [mp_sorted[0]]},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			var drain_chance = [0.45, 0.6, 0.8][battle_phase - 1]
+			var drain_chance = clampf([0.45, 0.6, 0.8][battle_phase - 1] * curator_attack_bias, 0.0, 1.0)
 			if randf() < drain_chance and not find_ability.call("masterite_mana_drain").is_empty():
 				var mp_sorted = alive_enemies.duplicate()
 				mp_sorted.sort_custom(func(a, b): return a.current_mp > b.current_mp)
 				battle_log_message.emit("[color=gray]The Curator eyes %s's mana reserves...[/color]" % mp_sorted[0].combatant_name)
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_mana_drain", "targets": [mp_sorted[0]], "speed": _compute_action_speed(combatant, "ability")}
-			var cut_chance = [0.4, 0.55, 0.7][battle_phase - 1]
+			var cut_chance = clampf([0.4, 0.55, 0.7][battle_phase - 1] * curator_attack_bias, 0.0, 1.0)
 			if randf() < cut_chance and not find_ability.call("masterite_resource_cut").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_resource_cut", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
