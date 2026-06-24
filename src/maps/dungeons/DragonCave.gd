@@ -44,8 +44,13 @@ var unlock_world: int = 0
 # (2026-05-23: identified after Mordaine scaffold; rat king's WhisperingCave
 # uses a custom pending_boss_defeat spec to bridge the same gap.)
 var defeat_cutscene_flags: Array[String] = []
-# Optional cutscene id played on boss defeat (e.g. "world1_mordaine_defeat").
-var defeat_cutscene: String = ""
+# (Tick 105: the legacy `defeat_cutscene` field was removed. It was set by
+# subclasses but read only by _on_boss_defeated which had no caller — pure
+# dead code. The actual post-victory cutscene mechanism lives in
+# GameLoop._get_pending_story_cutscene's defeat-cutscene gates (e.g.
+# world1_mordaine_defeat, world2_warden_defeat, …); each gate fires when
+# the matching boss-defeat flag is set and the player is in the dungeon's
+# map. Wire new defeat cutscenes there, not here.)
 
 ## Override in subclass: floor number -> Array of ASCII rows (20 chars × 16 rows)
 var floor_layouts: Dictionary = {}
@@ -529,23 +534,14 @@ func _place_dungeon_signposts(floor_num: int) -> void:
 		transitions.add_child(down_sign)
 
 
-func _on_boss_defeated() -> void:
-	boss_defeated = true
-	_save_boss_state()
-	if unlock_story_flag != "":
-		GameState.set_story_flag(unlock_story_flag)
-	if unlock_world > 0:
-		while GameState.worlds_unlocked < unlock_world:
-			GameState.unlock_next_world()
-	print("%s defeated! Exit stairs appear." % boss_id)
-	_setup_transitions_for_floor(current_floor)
-	# Subclass can declare defeat_cutscene; play it via CutsceneDirector autoload.
-	if defeat_cutscene != "":
-		var director = get_node_or_null("/root/CutsceneDirector")
-		if director and director.has_method("play_cutscene"):
-			var path = "res://data/cutscenes/%s.json" % defeat_cutscene
-			if FileAccess.file_exists(path):
-				director.play_cutscene(defeat_cutscene)
+# (Tick 105: _on_boss_defeated removed. It was dead code with no caller in
+# the entire codebase. The boss_defeated state + unlock_story_flag + unlock_world
+# + dungeon_flag are all set via GameState.pending_boss_defeat (assembled in
+# _trigger_boss before the battle, applied by GameLoop._apply_pending_boss_defeat
+# on victory). The defeat cutscene is played by
+# GameLoop._get_pending_story_cutscene's per-dungeon defeat-cutscene gates on
+# the next pending-cutscene check after victory return. Adding any new boss
+# defeat side-effect goes into the pending spec, not here.)
 
 
 func _load_boss_state() -> void:

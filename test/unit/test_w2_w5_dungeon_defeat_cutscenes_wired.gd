@@ -31,14 +31,17 @@ func _read(p: String) -> String:
 	return t
 
 
-func test_every_w2_w5_dungeon_declares_defeat_cutscene() -> void:
+func test_every_w2_w5_dungeon_defeat_cutscene_reachable_via_game_loop() -> void:
+	# Tick 105: the original assertion was "each dungeon declares
+	# defeat_cutscene = '<id>'". That field was removed as dead code
+	# (read only by DragonCave._on_boss_defeated which had no caller).
+	# The replacement mechanism is GameLoop._get_pending_story_cutscene
+	# gates — pin THAT instead so the live mechanism is checked.
+	var game_loop := _read("res://src/GameLoop.gd")
 	for entry in DUNGEON_DEFEATS:
-		var path: String = entry[0]
 		var expected: String = entry[1]
-		var src := _read(path)
-		var quoted: String = "defeat_cutscene = \"" + expected + "\""
-		assert_true(src.contains(quoted),
-			"%s must declare defeat_cutscene = '%s' in _init — without it, DragonCave._on_boss_defeated skips the post-victory cutscene" % [path, expected])
+		assert_true(game_loop.contains("return \"" + expected + "\""),
+			"GameLoop._get_pending_story_cutscene must return '%s' — the post-tick-105 mechanism that replaces the removed defeat_cutscene field" % expected)
 
 
 func test_every_referenced_defeat_cutscene_file_exists() -> void:
@@ -58,22 +61,21 @@ func test_w6_null_chamber_defeat_cutscene_not_yet_authored() -> void:
 		"If world6_curator_defeat.json now exists, wire NullChamber.defeat_cutscene and remove this guard")
 
 
-func test_w1_castle_harmonia_defeat_cutscene_preserved() -> void:
-	# Don't regress: W1 final boss (Mordaine / CastleHarmonia)
-	# already had defeat_cutscene wired correctly.
-	var src := _read("res://src/maps/dungeons/CastleHarmonia.gd")
-	assert_true(src.contains("defeat_cutscene = \"world1_mordaine_defeat\""),
-		"CastleHarmonia must still declare defeat_cutscene = 'world1_mordaine_defeat'")
+func test_w1_castle_harmonia_defeat_cutscene_now_reachable_via_game_loop() -> void:
+	# Tick 105: CastleHarmonia's `defeat_cutscene = "world1_mordaine_defeat"`
+	# field assignment was removed (dead code). The Mordaine post-defeat
+	# dialogue now plays via the GameLoop gate added in tick 104.
+	var src := _read("res://src/GameLoop.gd")
+	assert_true(src.contains("return \"world1_mordaine_defeat\""),
+		"GameLoop must gate world1_mordaine_defeat in _get_pending_story_cutscene — the post-tick-105 mechanism that replaces CastleHarmonia's removed defeat_cutscene field")
 
 
-func test_dragon_cave_still_reads_defeat_cutscene_field() -> void:
-	# Sanity: the read path in DragonCave._on_boss_defeated must
-	# still gate on `defeat_cutscene != ""` and call
-	# director.play_cutscene with it. If a future refactor
-	# repurposes the field, all 4 newly-wired dungeons silently
-	# skip their cutscene.
+func test_dragon_cave_no_longer_has_dead_defeat_cutscene_path() -> void:
+	# Tick 105: removed _on_boss_defeated function + defeat_cutscene field
+	# from DragonCave. They were pure dead code (no caller anywhere).
+	# Pin the negative so a future revert is caught.
 	var src := _read("res://src/maps/dungeons/DragonCave.gd")
-	assert_true(src.contains("if defeat_cutscene != \"\":"),
-		"DragonCave._on_boss_defeated must still check defeat_cutscene != \"\"")
-	assert_true(src.contains("director.play_cutscene(defeat_cutscene)"),
-		"DragonCave._on_boss_defeated must still call director.play_cutscene(defeat_cutscene)")
+	assert_false(src.contains("var defeat_cutscene: String"),
+		"DragonCave must NOT declare `var defeat_cutscene: String` — removed as dead code")
+	assert_false(src.contains("func _on_boss_defeated()"),
+		"DragonCave must NOT define _on_boss_defeated — removed as dead code (no caller existed)")

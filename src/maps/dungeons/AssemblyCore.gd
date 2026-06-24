@@ -12,7 +12,9 @@ func _init() -> void:
 	boss_id = "masterite_warden_industrial"
 	boss_flag_key = "assembly_core_cleared"
 	boss_cutscene_id = "world4_assembly_boss"
-	defeat_cutscene = "world4_warden_defeat"
+	# (Tick 105: defeat_cutscene removed. The W4 warden defeat plays via
+	# the GameLoop gate on cutscene_flag_warden_industrial_defeated in
+	# assembly_core.)
 	total_floors = 3
 	overworld_exit_spawn = "chemical_zone"
 	overworld_exit_map = "industrial_overworld"

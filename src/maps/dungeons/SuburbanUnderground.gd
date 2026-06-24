@@ -11,7 +11,9 @@ func _init() -> void:
 	boss_id = "masterite_warden_suburban"
 	boss_flag_key = "suburban_underground_cleared"
 	boss_cutscene_id = "world2_warden_routine"
-	defeat_cutscene = "world2_warden_defeat"
+	# (Tick 105: legacy defeat_cutscene field removed. The W2 warden defeat
+	# cutscene now plays via GameLoop._get_pending_story_cutscene's gate
+	# on cutscene_flag_warden_suburban_defeated in suburban_underground.)
 	# Bridge to game_constants — GameLoop:840 gates world2_chapter3 on
 	# `cutscene_flag_warden_suburban_defeated`. Without this declaration
 	# the cutscene never triggers post-victory (same class as the Mordaine

@@ -11,11 +11,10 @@ func _init() -> void:
 	boss_id = "masterite_arbiter_futuristic"
 	boss_flag_key = "root_process_cleared"
 	boss_cutscene_id = "world5_root_process_boss"
-	defeat_cutscene = "world5_arbiter_defeat"
-	# Tick 103: bridge to game_constants so GameLoop's defeat-cutscene
-	# gate at line ~1133 can fire world5_arbiter_defeat after victory.
-	# (defeat_cutscene field above is dead code — read only by
-	# DragonCave._on_boss_defeated which has no caller.)
+	# Tick 103/105: bridge to game_constants so GameLoop's defeat-cutscene
+	# gate fires world5_arbiter_defeat after victory return to root_process.
+	# (The legacy defeat_cutscene field — read only by the now-removed
+	# DragonCave._on_boss_defeated — was deleted in tick 105.)
 	defeat_cutscene_flags = ["cutscene_flag_arbiter_futuristic_defeated"]
 	total_floors = 3
 	overworld_exit_spawn = "glitch_sector"

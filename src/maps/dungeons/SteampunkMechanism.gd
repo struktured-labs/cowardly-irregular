@@ -12,7 +12,9 @@ func _init() -> void:
 	boss_id = "meta_knight"
 	boss_flag_key = "steampunk_mechanism_cleared"
 	boss_cutscene_id = "world3_tempo_intro"
-	defeat_cutscene = "world3_tempo_defeat"
+	# (Tick 105: defeat_cutscene removed — see DragonCave for rationale.
+	# The W3 tempo defeat plays via the GameLoop gate on
+	# cutscene_flag_tempo_steampunk_defeated in steampunk_mechanism.)
 	# Bridge to game_constants — GameLoop:1067 gates world3_chapter4 on
 	# `cutscene_flag_tempo_steampunk_defeated`. Pre-tick-96 the gate
 	# was checking `warden_industrial_defeated` (a W4 flag), so W3

@@ -40,21 +40,25 @@ func test_castle_harmonia_sets_w1_final_boss_flags() -> void:
 		"CastleHarmonia must declare unlock_world = 2")
 	assert_true(text.find("cutscene_flag_world1_mordaine_defeated") != -1,
 		"CastleHarmonia must push the cutscene completion flag")
-	assert_true(text.find("defeat_cutscene = \"world1_mordaine_defeat\"") != -1,
-		"CastleHarmonia must reference the world1_mordaine_defeat cutscene id")
+	# Tick 105: the legacy `defeat_cutscene = "..."` field assignment was
+	# removed (dead code). The Mordaine post-defeat dialogue now plays via
+	# GameLoop._get_pending_story_cutscene's gate on
+	# cutscene_flag_world1_mordaine_defeated in castle_harmonia.
+	var game_loop = _read("res://src/GameLoop.gd")
+	assert_true(game_loop.find("return \"world1_mordaine_defeat\"") != -1,
+		"GameLoop must gate world1_mordaine_defeat in _get_pending_story_cutscene — the post-tick-105 mechanism that replaces the removed defeat_cutscene field")
 
 
-func test_dragon_cave_plays_defeat_cutscene() -> void:
+func test_dragon_cave_no_longer_has_dead_defeat_cutscene_code() -> void:
+	# Tick 105: `defeat_cutscene` field and `_on_boss_defeated` function
+	# both removed from DragonCave. Pre-tick-105 they were pure dead code
+	# (no caller anywhere in the codebase). The defeat cutscene playing is
+	# now done by GameLoop._get_pending_story_cutscene's per-dungeon gates.
 	var text = _read("res://src/maps/dungeons/DragonCave.gd")
-	assert_true(text.find("var defeat_cutscene") != -1,
-		"DragonCave must declare a defeat_cutscene field")
-	var idx = text.find("func _on_boss_defeated")
-	var next_func = text.find("\nfunc ", idx + 1)
-	var body = text.substr(idx, next_func - idx)
-	assert_true(body.find("defeat_cutscene") != -1,
-		"_on_boss_defeated must consume the defeat_cutscene field")
-	assert_true(body.find("play_cutscene") != -1,
-		"_on_boss_defeated must call play_cutscene on the director")
+	assert_true(text.find("var defeat_cutscene: String") == -1,
+		"DragonCave must NOT declare `var defeat_cutscene: String` — removed in tick 105 as dead code")
+	assert_true(text.find("func _on_boss_defeated()") == -1,
+		"DragonCave must NOT define _on_boss_defeated — removed in tick 105 (no caller anywhere)")
 
 
 func test_mordaine_defeat_cutscene_file_exists() -> void:

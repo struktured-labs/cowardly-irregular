@@ -35,8 +35,10 @@ func _init() -> void:
 	# Push cutscene_flag_world1_mordaine_defeated + w1_boss_defeated on defeat.
 	defeat_cutscene_flags = ["cutscene_flag_world1_mordaine_defeated"]
 	unlock_story_flag = "w1_boss_defeated"
-	# Defeat cutscene id — DragonCave._on_boss_defeated plays this on victory.
-	defeat_cutscene = "world1_mordaine_defeat"
+	# (Tick 104/105: world1_mordaine_defeat plays via GameLoop's gate on
+	# cutscene_flag_world1_mordaine_defeated in castle_harmonia. The
+	# legacy defeat_cutscene field — read only by the removed
+	# DragonCave._on_boss_defeated — was deleted in tick 105.)
 
 	# Single floor layout — 20×16 grid. `M`=wall (stone), `.`=floor,
 	# `T`=torch decoration, `B`=boss spawn marker, `D`=down stairs
