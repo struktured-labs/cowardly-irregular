@@ -199,6 +199,21 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	if has_status("exposed"):
 		actual_damage = int(actual_damage * 1.5)
 
+	# Tick 114: apply the global damage_multiplier from game_constants.
+	# Scriptweaver writes this knob to nudge incoming damage globally
+	# (player + enemy alike). Pre-fix the constant was set in defaults
+	# but no code path read it, so Scriptweaver edits were cosmetic.
+	# Defensive pattern matches the tick 109/110/113 multipliers:
+	# .get(key, 1.0) + clampf [0.1, 10.0]. Runtime lookup keeps this
+	# function preload-safe for unit tests (GameState autoload may
+	# not be present in pure-class tests).
+	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	if gs_node and "game_constants" in gs_node:
+		var dmg_mult: float = clampf(
+			float(gs_node.game_constants.get("damage_multiplier", 1.0)),
+			0.1, 10.0)
+		actual_damage = int(actual_damage * dmg_mult)
+
 	var old_hp = current_hp
 	current_hp = max(0, current_hp - actual_damage)
 	# Flip is_alive BEFORE emitting hp_changed so any UI listener (e.g.
@@ -222,13 +237,24 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 
 
 func heal(amount: int) -> int:
-	"""Heal HP, returns actual amount healed. Curse reduces healing by 50%."""
+	"""Heal HP, returns actual amount healed. Curse reduces healing by 50%.
+	Tick 114: applies the global healing_multiplier from game_constants
+	so Scriptweaver edits actually scale healing across the entire
+	game. Pre-fix the constant was a cosmetic flag flip — no consumer."""
 	if not is_alive:
 		return 0
 
 	var heal_amount = amount
 	if has_status("curse"):
 		heal_amount = int(heal_amount * 0.5)
+
+	# Global healing multiplier — defensive pattern matching tick 109/110/113.
+	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	if gs_node and "game_constants" in gs_node:
+		var heal_mult: float = clampf(
+			float(gs_node.game_constants.get("healing_multiplier", 1.0)),
+			0.1, 10.0)
+		heal_amount = int(heal_amount * heal_mult)
 
 	var old_hp = current_hp
 	current_hp = min(max_hp, current_hp + heal_amount)
