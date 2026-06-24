@@ -992,6 +992,17 @@ func _get_pending_story_cutscene() -> String:
 			return "world1_chapter1"
 	# Chapter 2: SKIPPED — party road commentary now opt-in
 	# Auto-set the flag so chapter 3 can trigger
+	# Tick 97: cleric spotlight unlock — fires in Harmonia village after
+	# chapter1 cutscene (Mira/Cleric joins the player's controllable
+	# roster at the village well). Pre-fix, spotlight cutscenes were
+	# referenced by _CUTSCENE_COMPLETION_FLAGS + _reconcile_spotlight_locks
+	# but NEVER triggered by any code path — so non-Fighter PCs were
+	# permanently locked into autobattle. Gating on chapter1_complete +
+	# being in harmonia_village makes the cleric unlock at the natural
+	# story moment, matching the design comment at line ~1607.
+	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_cleric", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_spotlight_cleric_ch1"
 	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):
 		GameState.game_constants["cutscene_flag_chapter2_complete"] = true
 	# Chapter 3: plays when first entering the cave (key story beat)
