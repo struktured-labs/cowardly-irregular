@@ -1077,6 +1077,16 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 
 	if adaptation_level > 0 and not counter_strategy.is_empty():
 		var counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
+		# Tick 116: scale counter_chance by the LLM intent's
+		# counter_action_chance bias. The "exploit_pattern" intent is
+		# specifically about countering the player's patterns — pre-fix
+		# its counter_action_chance bias (1.6x) was set in the bias dict
+		# but NOTHING read it, so picking "exploit_pattern" produced
+		# the same counter rate as no intent at all. Now an LLM that
+		# chooses "exploit_pattern" actually counters more often
+		# (30/60/90% × 1.6 = 48/96/100% clamped).
+		var ci_bias: Dictionary = _bias_by_intent(combatant.get_meta("llm_intent", ""))
+		counter_chance = clampf(counter_chance * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
 		if randf() < counter_chance:
 			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
 			if not counter_action.is_empty():
