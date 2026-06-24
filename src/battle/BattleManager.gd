@@ -308,14 +308,25 @@ func end_battle(victory: bool) -> void:
 			GameState.add_gold(total_gold)
 			print("Party earned %d gold!" % total_gold)
 
-		# Roll item drops from defeated enemies' drop tables
+		# Roll item drops from defeated enemies' drop tables.
+		# Tick 115: apply the global drop_rate_multiplier from
+		# game_constants — the last unwired knob in the
+		# game_constants multiplier set. Scriptweaver writes to this
+		# knob were cosmetic pre-fix. Defensive .get + clampf pattern
+		# matches tick 109/110/113/114. Computed ONCE per battle since
+		# game_constants doesn't change mid-victory.
+		var drop_rate_mult: float = 1.0
+		if GameState and "game_constants" in GameState:
+			drop_rate_mult = clampf(
+				float(GameState.game_constants.get("drop_rate_multiplier", 1.0)),
+				0.1, 10.0)
 		var item_drops: Array = []  # [{item: "potion", name: "Potion", qty: 1}]
 		for enemy in enemy_party:
 			var mt = enemy.get_meta("monster_type", "")
 			if mt in monsters_data:
 				var drop_table = monsters_data[mt].get("drop_table", [])
 				for drop in drop_table:
-					if randf() < drop.get("chance", 0.0):
+					if randf() < drop.get("chance", 0.0) * drop_rate_mult:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
