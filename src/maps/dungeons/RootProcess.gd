@@ -11,6 +11,7 @@ func _init() -> void:
 	boss_id = "masterite_arbiter_futuristic"
 	boss_flag_key = "root_process_cleared"
 	boss_cutscene_id = "world5_root_process_boss"
+	defeat_cutscene = "world5_arbiter_defeat"
 	total_floors = 3
 	overworld_exit_spawn = "glitch_sector"
 	overworld_exit_map = "futuristic_overworld"
