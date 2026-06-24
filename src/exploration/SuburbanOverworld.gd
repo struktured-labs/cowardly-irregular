@@ -115,6 +115,7 @@ func _ready() -> void:
 	monster_spawner.name = "MonsterSpawner"
 	add_child(monster_spawner)
 	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	monster_spawner.setup(player, ["spiteful_crow", "new_age_retro_hippie", "skate_punk", "unassuming_dog", "cranky_lady"])
 
 	_threat_meter = ThreatMeter.new()
@@ -745,6 +746,19 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 func _on_battle_triggered(enemies: Array) -> void:
 	battle_triggered.emit(enemies, _get_terrain_for_zone())
+
+
+## Tick 86: roaming-monster contact must trigger a battle. Pre-fix,
+## monster_touched fired but nothing listened in W2-W6, so the monsters
+## were decorative — bumping them did nothing. Build an enemy list
+## (with 0-2 duplicates for variety) and delegate to _on_battle_triggered
+## so terrain selection stays in one place.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _get_terrain_for_zone() -> String:

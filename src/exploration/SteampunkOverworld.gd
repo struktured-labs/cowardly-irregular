@@ -113,6 +113,7 @@ func _ready() -> void:
 	monster_spawner.name = "MonsterSpawner"
 	add_child(monster_spawner)
 	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	monster_spawner.setup(player, ["steam_rat", "cog_swarm", "clockwork_sentinel", "pipe_phantom", "brass_golem"])
 
 	_threat_meter = ThreatMeter.new()
@@ -693,6 +694,15 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 func _on_battle_triggered(enemies: Array) -> void:
 	battle_triggered.emit(enemies, "steampunk")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
