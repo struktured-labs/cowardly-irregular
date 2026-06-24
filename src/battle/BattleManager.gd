@@ -4525,6 +4525,15 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	)
 	if not is_instance_valid(combatant):
 		return
+	# Tick 121: if the PC died during the LLM await, suppress the line.
+	# Pre-fix, a Cleric crit-killed mid-cast could surface "Mira: 'Cure
+	# is just polite negotiation...'" AFTER her HP bar zeroed and the
+	# death animation played. The LLM call is several hundred ms;
+	# plenty of time for an enemy turn to land a fatal hit.
+	# Victory lines are the exception — _dispatch_victory_party_line
+	# picks an alive PC explicitly, so this guard is a no-op there too.
+	if not combatant.is_alive:
+		return
 	var validated: Dictionary = DialoguePromptsScript.validate_party_line(raw)
 	var line: String = str(validated.get("line", ""))
 	if line.is_empty():
