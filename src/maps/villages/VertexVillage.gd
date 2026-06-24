@@ -23,6 +23,10 @@ func _get_village_display_name() -> String:
 	return "The Vertex"
 
 
+func _get_music_area_id() -> String:
+	return "vertex_village"
+
+
 func _get_map_pixel_size() -> Vector2i:
 	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 

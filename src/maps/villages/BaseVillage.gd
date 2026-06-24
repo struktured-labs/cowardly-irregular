@@ -71,7 +71,7 @@ func _ready() -> void:
 	_setup_save_point()
 
 	if SoundManager:
-		SoundManager.play_area_music("village")
+		SoundManager.play_area_music(_get_music_area_id())
 
 	exploration_ready.emit()
 
@@ -79,6 +79,18 @@ func _ready() -> void:
 ## ---- Virtual hooks — subclasses override ----
 
 func _get_area_id() -> String:
+	return "village"
+
+
+## Tick 92: per-village music routing. Default returns "village"
+## which SoundManager.play_area_music maps to Harmonia medieval
+## music (correct for W1 villages without their own track). W2-W6
+## village subclasses MUST override this to return their manifest
+## key (maple_heights_village / brasston_village / rivet_row_village
+## / node_prime_village / vertex_village) — otherwise stepping into
+## Maple Heights plays Harmonia medieval music instead of the
+## suburban village track that was specifically composed for it.
+func _get_music_area_id() -> String:
 	return "village"
 
 
