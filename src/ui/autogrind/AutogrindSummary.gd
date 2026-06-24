@@ -68,7 +68,7 @@ func _build_ui() -> void:
 	if not items_consumed.is_empty():
 		var item_parts: Array = []
 		for item_id in items_consumed:
-			item_parts.append("%s x%d" % [item_id.replace("_", " ").capitalize(), items_consumed[item_id]])
+			item_parts.append("%s x%d" % [_resolve_item_display_name(item_id), items_consumed[item_id]])
 		stats_data.append({"label": "Items Used", "value": ", ".join(item_parts), "color": LABEL_COLOR})
 	else:
 		stats_data.append({"label": "Items Used", "value": "None", "color": LABEL_COLOR})
@@ -155,6 +155,23 @@ func _build_ui() -> void:
 	dismiss_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	dismiss_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(dismiss_lbl)
+
+
+## Tick 131: prefer ItemSystem's canonical display name for items
+## consumed during the autogrind session. Mirror of the BestiaryMenu
+## resolver added in tick 130. Items_consumed is consumables-only
+## (autogrind doesn't track equipment use), so no EquipmentSystem
+## fallback is needed — but defensive prettifier fallback covers
+## debug paths + custom Scriptweaver items + save-format drift.
+func _resolve_item_display_name(item_id: String) -> String:
+	if item_id == "":
+		return ""
+	var item_sys = get_node_or_null("/root/ItemSystem")
+	if item_sys != null and item_sys.has_method("get_item"):
+		var data: Dictionary = item_sys.get_item(item_id)
+		if not data.is_empty() and data.has("name"):
+			return str(data["name"])
+	return item_id.replace("_", " ").capitalize()
 
 
 func _compute_grade() -> Dictionary:
