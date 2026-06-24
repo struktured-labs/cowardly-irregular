@@ -1087,6 +1087,12 @@ func _get_pending_story_cutscene() -> String:
 	# Gates on all W2 Masterites being defeated (memos found = last Masterite chain)
 	if flags.get("cutscene_flag_chapter8_memos_found", false) and not flags.get("cutscene_flag_chapter11_complete", false):
 		return "world2_chapter11"
+	# Tick 100: auto-set world2_complete when chapter11 finishes — pre-fix,
+	# nothing set this flag, so the W3 prologue gate at line ~1092 (which
+	# reads cutscene_flag_world2_complete) was never satisfied. Players
+	# couldn't progress past W2 even after finishing chapter11.
+	if flags.get("cutscene_flag_chapter11_complete", false) and not flags.get("cutscene_flag_world2_complete", false):
+		GameState.game_constants["cutscene_flag_world2_complete"] = true
 
 	# ===== WORLD 3: STEAMPUNK =====
 	if flags.get("cutscene_flag_world2_complete", false) and not flags.get("cutscene_flag_world3_prologue_complete", false):
@@ -1110,6 +1116,10 @@ func _get_pending_story_cutscene() -> String:
 			return "world3_chapter4"
 	if flags.get("cutscene_flag_world3_chapter4_complete", false) and not flags.get("cutscene_flag_world3_chapter5_complete", false):
 		return "world3_chapter5"
+	# Tick 100: auto-set world3_complete after chapter5 — same fix pattern
+	# as W2. Unblocks the W4 prologue gate which reads world3_complete.
+	if flags.get("cutscene_flag_world3_chapter5_complete", false) and not flags.get("cutscene_flag_world3_complete", false):
+		GameState.game_constants["cutscene_flag_world3_complete"] = true
 
 	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
 	if flags.get("cutscene_flag_world3_complete", false) and not flags.get("cutscene_flag_world4_prologue_complete", false):
@@ -1127,6 +1137,9 @@ func _get_pending_story_cutscene() -> String:
 		return "world4_chapter4"
 	if flags.get("cutscene_flag_world4_chapter4_complete", false) and not flags.get("cutscene_flag_world4_chapter5_complete", false):
 		return "world4_chapter5"
+	# Tick 100: auto-set world4_complete after chapter5.
+	if flags.get("cutscene_flag_world4_chapter5_complete", false) and not flags.get("cutscene_flag_world4_complete", false):
+		GameState.game_constants["cutscene_flag_world4_complete"] = true
 
 	# ===== WORLD 5: ABSTRACT / NETWORK =====
 	if flags.get("cutscene_flag_world4_complete", false) and not flags.get("cutscene_flag_world5_prologue_complete", false):
@@ -1144,6 +1157,10 @@ func _get_pending_story_cutscene() -> String:
 		return "world5_chapter4"
 	if flags.get("cutscene_flag_world5_chapter4_complete", false) and not flags.get("cutscene_flag_world5_chapter5_complete", false):
 		return "world5_chapter5"
+	# Tick 100: auto-set world5_complete after chapter5 — unblocks W6
+	# prologue gate.
+	if flags.get("cutscene_flag_world5_chapter5_complete", false) and not flags.get("cutscene_flag_world5_complete", false):
+		GameState.game_constants["cutscene_flag_world5_complete"] = true
 
 	# ===== WORLD 6: THE VERTEX (Final) =====
 	if flags.get("cutscene_flag_world5_complete", false) and not flags.get("cutscene_flag_world6_prologue_complete", false):
