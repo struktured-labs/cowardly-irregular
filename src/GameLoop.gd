@@ -188,6 +188,13 @@ func _ready() -> void:
 		if not SaveSystem.save_completed.is_connected(_on_any_save_completed):
 			SaveSystem.save_completed.connect(_on_any_save_completed)
 
+	# Toast on any save failure — pre-fix, save_failed had ZERO listeners
+	# so a player who pressed Save in the chapel got silent rejection
+	# with no feedback. Surface the specific reason from _save_block_reason.
+	if SaveSystem and SaveSystem.has_signal("save_failed"):
+		if not SaveSystem.save_failed.is_connected(_on_any_save_failed):
+			SaveSystem.save_failed.connect(_on_any_save_failed)
+
 	# Flush runtime party → GameState BEFORE every save reads it.
 	# Pre-fix this only ran when the overworld menu opened, so battle
 	# gains since the last menu open vanished from auto-saves.
@@ -4405,6 +4412,17 @@ func _get_milestone_text(battles: int) -> String:
 		50: return "DEEP GRIND — Maximum adaptation reached!"
 		100: return "LEGENDARY SESSION — Reality is bending..."
 		_: return "Milestone: %d battles!" % battles
+
+
+func _on_any_save_failed(reason: String) -> void:
+	"""Surface every save failure as a warning toast. Pre-fix, save_failed
+	had no listeners — silent rejection was indistinguishable from
+	'something is broken'. Now the player sees the actual blocker
+	('Cannot save inside this room — leave to a village or overworld first')."""
+	if not Toast:
+		return
+	var msg: String = reason if reason != "" else "Save failed"
+	Toast.show_warning(self, msg)
 
 
 func _on_any_save_completed(_slot: int) -> void:
