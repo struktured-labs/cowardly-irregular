@@ -390,7 +390,7 @@ func _format_drops(drops: Array, one_shot) -> String:
 		if item == "":
 			continue
 		var pct: int = int(round(chance * 100.0))
-		parts.append("%s %d%%" % [item.replace("_", " ").capitalize(), pct])
+		parts.append("%s %d%%" % [_resolve_item_display_name(item), pct])
 	var base: String = "Drops: %s" % (", ".join(parts) if parts.size() > 0 else "—")
 	# one_shot_reward (rare bonus, set in monsters.json for special enemies)
 	# appended as "(one-shot: <item>)" so it's visually distinct from the
@@ -398,8 +398,34 @@ func _format_drops(drops: Array, one_shot) -> String:
 	if one_shot != null and str(one_shot) != "":
 		var os_str: String = str(one_shot)
 		if os_str != "Null" and os_str != "null":
-			base += "   (One-shot: %s)" % os_str.replace("_", " ").capitalize()
+			base += "   (One-shot: %s)" % _resolve_item_display_name(os_str)
 	return base
+
+
+## Tick 130: prefer ItemSystem's canonical display name (handles items
+## with non-prettifiable names like "Hi-Potion" vs the raw-prettified
+## "Hi Potion"), fall back to snake_case → Title Case if the lookup
+## fails (debug item / custom Scriptweaver entry / save-format drift).
+## EquipmentSystem also stores names; check there for weapon/armor/
+## accessory drops the ItemSystem doesn't know about.
+func _resolve_item_display_name(item_id: String) -> String:
+	if item_id == "":
+		return ""
+	var item_sys = get_node_or_null("/root/ItemSystem")
+	if item_sys != null and item_sys.has_method("get_item"):
+		var data: Dictionary = item_sys.get_item(item_id)
+		if not data.is_empty() and data.has("name"):
+			return str(data["name"])
+	var equip_sys = get_node_or_null("/root/EquipmentSystem")
+	if equip_sys != null:
+		for pool_name in ["weapons", "armor", "accessories"]:
+			if pool_name in equip_sys:
+				var pool: Dictionary = equip_sys[pool_name]
+				if pool.has(item_id) and pool[item_id] is Dictionary:
+					var name = str(pool[item_id].get("name", ""))
+					if name != "":
+						return name
+	return item_id.replace("_", " ").capitalize()
 
 
 func _load_sprite(monster_id: String) -> void:
