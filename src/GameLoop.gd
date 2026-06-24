@@ -1063,6 +1063,15 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_world2_chapter1_complete", false) and not flags.get("cutscene_flag_world2_chapter2_complete", false):
 		if _current_map_id == "suburban_overworld":
 			return "world2_chapter2"
+	# Tick 102: W2 Warden of Routine defeat cutscene — plays IN the
+	# dungeon on return from boss victory. Pre-fix, the world2_warden_defeat
+	# cutscene was unreachable because the DragonCave._on_boss_defeated
+	# code path is dead (no caller), so tick 95's defeat_cutscene field
+	# was a no-op. This gate mirrors the W1 rat_king_defeat pattern:
+	# play the defeat cutscene in-place once on return from victory.
+	if flags.get("cutscene_flag_warden_suburban_defeated", false) and not flags.get("cutscene_flag_world2_warden_defeat_complete", false):
+		if _current_map_id == "suburban_underground":
+			return "world2_warden_defeat"
 	# W2 Chapter 3: Warden of Routine aftermath
 	if flags.get("cutscene_flag_warden_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter3_complete", false):
 		return "world2_chapter3"
@@ -1122,6 +1131,12 @@ func _get_pending_story_cutscene() -> String:
 			return "world3_chapter2"
 	if flags.get("cutscene_flag_world3_chapter2_complete", false) and not flags.get("cutscene_flag_world3_chapter3_complete", false):
 		return "world3_chapter3"
+	# Tick 102: W3 Tempo of the Shift defeat cutscene — plays IN the
+	# Mechanism on return from boss victory. Same pattern as the W2
+	# warden defeat gate above.
+	if flags.get("cutscene_flag_tempo_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_tempo_defeat_complete", false):
+		if _current_map_id == "steampunk_mechanism":
+			return "world3_tempo_defeat"
 	if flags.get("cutscene_flag_world3_chapter3_complete", false) and not flags.get("cutscene_flag_world3_chapter4_complete", false):
 		# Tick 96: was gated on `cutscene_flag_warden_industrial_defeated`
 		# (a W4 flag set by AssemblyCore), so W3 chapter4 — the
@@ -1138,6 +1153,11 @@ func _get_pending_story_cutscene() -> String:
 		GameState.game_constants["cutscene_flag_world3_complete"] = true
 
 	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
+	# Tick 102: W4 Warden of Industrial defeat cutscene — plays IN
+	# Assembly Core on return from boss victory.
+	if flags.get("cutscene_flag_warden_industrial_defeated", false) and not flags.get("cutscene_flag_world4_warden_defeat_complete", false):
+		if _current_map_id == "assembly_core":
+			return "world4_warden_defeat"
 	if flags.get("cutscene_flag_world3_complete", false) and not flags.get("cutscene_flag_world4_prologue_complete", false):
 		if _current_map_id == "industrial_overworld":
 			return "world4_prologue"
@@ -1233,6 +1253,8 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world2_chapter7_infrastructure":   "cutscene_flag_chapter7_infrastructure_complete",
 	"world2_chapter8_memos":            "cutscene_flag_chapter8_memos_found",
 	"world2_chapter11":                 "cutscene_flag_chapter11_complete",
+	# Tick 102: W2 Warden of Routine post-defeat dialogue
+	"world2_warden_defeat":             "cutscene_flag_world2_warden_defeat_complete",
 	# World 3 (steampunk)
 	"world3_prologue":                  "cutscene_flag_world3_prologue_complete",
 	"world3_chapter1":                  "cutscene_flag_world3_chapter1_complete",
@@ -1240,6 +1262,8 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world3_chapter3":                  "cutscene_flag_world3_chapter3_complete",
 	"world3_chapter4":                  "cutscene_flag_world3_chapter4_complete",
 	"world3_chapter5":                  "cutscene_flag_world3_chapter5_complete",
+	# Tick 102: W3 Tempo of the Shift post-defeat dialogue
+	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
 	# World 4 (industrial)
 	"world4_prologue":                  "cutscene_flag_world4_prologue_complete",
 	"world4_chapter1":                  "cutscene_flag_world4_chapter1_complete",
@@ -1247,6 +1271,8 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world4_chapter3":                  "cutscene_flag_world4_chapter3_complete",
 	"world4_chapter4":                  "cutscene_flag_world4_chapter4_complete",
 	"world4_chapter5":                  "cutscene_flag_world4_chapter5_complete",
+	# Tick 102: W4 Warden of Industrial post-defeat dialogue
+	"world4_warden_defeat":             "cutscene_flag_world4_warden_defeat_complete",
 	# World 5 (digital/abstract)
 	"world5_prologue":                  "cutscene_flag_world5_prologue_complete",
 	"world5_chapter1":                  "cutscene_flag_world5_chapter1_complete",
