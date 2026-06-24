@@ -1050,6 +1050,17 @@ func _get_pending_story_cutscene() -> String:
 			if not flags.get("cutscene_flag_" + skip_flag, false):
 				GameState.game_constants["cutscene_flag_" + skip_flag] = true
 
+	# Tick 104: W1 Mordaine post-defeat dialogue — plays IN Castle
+	# Harmonia on return from final-boss victory. Mirrors the W2-W5
+	# defeat-cutscene gates added in ticks 102-103. Pre-fix, the
+	# world1_mordaine_defeat cutscene was never played (DragonCave._on_boss_defeated
+	# code path is dead). The post-Mordaine moment — the W1 narrative
+	# closer — was silently skipped, sending the player straight to
+	# W2 prologue with no Mordaine resolution.
+	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world1_mordaine_defeat_complete", false):
+		if _current_map_id == "castle_harmonia":
+			return "world1_mordaine_defeat"
+
 	# ===== WORLD 2: THE MUNDANE SPRAWL (Suburban) =====
 	# W2 Prologue: portal arrival, gear transformation
 	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world2_prologue_complete", false):
@@ -1237,6 +1248,8 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
+	# Tick 104: W1 Mordaine final post-defeat dialogue
+	"world1_mordaine_defeat":           "cutscene_flag_world1_mordaine_defeat_complete",
 	# W1 spotlight cutscenes — each completion flag also unlocks the
 	# matching PC's manual control + autobattle editor tab via
 	# _reconcile_spotlight_locks(). Trigger schedule (per cowir-story
