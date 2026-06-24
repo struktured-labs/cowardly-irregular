@@ -519,6 +519,7 @@ func _setup_monster_spawner() -> void:
 	monster_spawner.name = "MonsterSpawner"
 	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
 	monster_spawner.setup(player, ["slime", "bat", "goblin"])
 
 

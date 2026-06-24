@@ -112,6 +112,7 @@ func _ready() -> void:
 	monster_spawner = MonsterSpawner.new()
 	monster_spawner.name = "MonsterSpawner"
 	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
 	monster_spawner.setup(player, ["steam_rat", "cog_swarm", "clockwork_sentinel", "pipe_phantom", "brass_golem"])
 
 	_threat_meter = ThreatMeter.new()

@@ -16,8 +16,30 @@ const MIN_MONSTER_SEPARATION: float = 64.0
 const DESPAWN_DISTANCE: float = 640.0
 const SPAWN_BUFFER: float = 480.0
 const CHECK_INTERVAL: float = 3.0
-const MAP_WIDTH: int = 100
-const MAP_HEIGHT: int = 70
+## Per-instance map dimensions (in tiles). Default to the W1 OverworldScene
+## size (100x70), but each overworld script should call set_map_size with its
+## own MAP_WIDTH / MAP_HEIGHT after add_child so candidate spawn positions
+## clamp to the actual playable area.
+##
+## Tick 84: pre-fix these were `const`, so W2-W6 (smaller maps: 40x35 to
+## 60x50) tried to spawn monsters in coordinates well outside their actual
+## bounds. _is_impassable_tile rejected most of them via "no tile data" but
+## that meant ~50-70% of spawn attempts were wasted, reducing effective
+## monster density in the smaller worlds (worst case W6 Abstract: 40*35 /
+## 100*70 = 20% of attempted area was real).
+var map_width: int = 100
+var map_height: int = 70
+
+
+func set_map_size(w: int, h: int) -> void:
+	"""Configure per-overworld map dimensions. Called by each overworld
+	script after add_child. Spawn-position picker clamps candidates to
+	(TILE_SIZE, map_width*TILE_SIZE - TILE_SIZE) so attempts land
+	inside the actual playable area instead of wasting on dead space."""
+	if w > 0:
+		map_width = w
+	if h > 0:
+		map_height = h
 
 ## Safe zones (tile rect) where no monsters spawn. Format: Rect2(tile_x, tile_y, w, h)
 ## Safe-zone rectangles in TILE coordinates: [tile_x, tile_y, width, height].
@@ -128,8 +150,8 @@ func _try_spawn_monster() -> void:
 
 func _find_spawn_position() -> Vector2:
 	var player_pos = _player.global_position
-	var map_px_w = MAP_WIDTH * TILE_SIZE
-	var map_px_h = MAP_HEIGHT * TILE_SIZE
+	var map_px_w = map_width * TILE_SIZE
+	var map_px_h = map_height * TILE_SIZE
 
 	for _attempt in range(20):
 		var angle = randf() * TAU
