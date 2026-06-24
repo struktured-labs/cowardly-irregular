@@ -4437,9 +4437,12 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 		return
 	if not combatant.is_alive:
 		return
-	var gs = get_node_or_null("/root/GameState")
-	if gs == null or not ("party_llm_dialogue_enabled" in gs) or not gs.party_llm_dialogue_enabled:
-		return
+	# Tick 120: do NOT short-circuit on party_llm_dialogue_enabled here.
+	# Pre-fix, this early-return blocked even the scripted trigger_voices
+	# fallback — so when the toggle was off (the default), party
+	# dialogue went completely silent. CLAUDE.md design says scripted
+	# lines play even without LLM. _run_party_line_async now decides
+	# LLM-vs-scripted based on the flag + LLM availability.
 	var name_key: String = str(combatant.combatant_name)
 	var last_round: int = int(_party_line_cooldowns.get(name_key, -PARTY_LINE_COOLDOWN_ROUNDS - 1))
 	if event_kind != "victory" and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:
@@ -4474,6 +4477,18 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		fallback = str(pp.get_trigger_voice(job_id, event_kind))
 	if fallback.is_empty():
 		fallback = ""
+
+	# Tick 120: party_llm_dialogue_enabled gates the LLM call but NOT
+	# the scripted fallback. When the toggle is off (default), we
+	# still surface the trigger_voices line so party dialogue isn't
+	# completely silent. Same path the LLM-unavailable case takes
+	# below.
+	var gs = get_node_or_null("/root/GameState")
+	var llm_dialogue_on: bool = gs != null and ("party_llm_dialogue_enabled" in gs) and gs.party_llm_dialogue_enabled
+	if not llm_dialogue_on:
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback)
+		return
 
 	var llm = get_node_or_null("/root/LLMService")
 	if llm == null or not llm.has_method("is_available") or not llm.is_available():
