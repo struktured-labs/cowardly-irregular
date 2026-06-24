@@ -1493,12 +1493,19 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 			# SPEED MANIPULATOR — haste self, slow enemies, rapid strikes
 			# Phase 2+: time tax more frequent, multi-slow
 			# Phase 3: advance double-strike, relentless speed control
+			# Tick 118: tempo consumes attack_weight bias. The "aggress"
+			# intent (1.4x) pushes the boss toward more strikes + faster
+			# debuffs; "turtle" (0.6x) trims them down. Pre-fix this
+			# ladder ignored llm_bias entirely.
+			var tempo_attack_bias: float = float(llm_bias.get("attack_weight", 1.0))
 			var has_spd_buff = combatant.active_buffs.any(func(b): return b.get("stat") == "speed")
 			if not has_spd_buff and not find_ability.call("masterite_haste").is_empty():
 				battle_log_message.emit("[color=gray]Time warps around the Tempo...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_haste", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability")}
 			# Phase 3: advance combo — haste + double quick strike
-			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < 0.45:
+			# Bias the entry roll so aggress intent makes the double-strike combo more likely.
+			var tempo_combo_chance: float = clampf(0.45 * tempo_attack_bias, 0.0, 1.0)
+			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < tempo_combo_chance:
 				var quick = find_ability.call("masterite_quick_strike")
 				if not quick.is_empty() and alive_enemies.size() > 0:
 					var t1 = _choose_target(combatant, alive_enemies, {})
@@ -1508,11 +1515,11 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_quick_strike", "targets": [t1]},
 						{"type": "ability", "ability_id": "masterite_quick_strike", "targets": [t2]},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			var tax_chance = [0.35, 0.5, 0.7][battle_phase - 1]
+			var tax_chance = clampf([0.35, 0.5, 0.7][battle_phase - 1] * tempo_attack_bias, 0.0, 1.0)
 			if randf() < tax_chance and not find_ability.call("masterite_time_tax").is_empty():
 				battle_log_message.emit("[color=gray]The Tempo steals your time...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_time_tax", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
-			var slow_chance = [0.4, 0.55, 0.7][battle_phase - 1]
+			var slow_chance = clampf([0.4, 0.55, 0.7][battle_phase - 1] * tempo_attack_bias, 0.0, 1.0)
 			if randf() < slow_chance and not find_ability.call("masterite_slow").is_empty():
 				var fastest = alive_enemies.duplicate()
 				fastest.sort_custom(func(a, b): return a.speed > b.speed)

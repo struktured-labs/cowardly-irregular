@@ -96,20 +96,14 @@ func test_arbiter_attack_bias_var_scoped_to_arbiter_arm() -> void:
 		"arb_attack_bias must be declared EXACTLY ONCE — scoped to the arbiter arm")
 
 
-func test_tempo_and_curator_ladders_marked_for_followup() -> void:
-	# Coverage doc: tempo + curator ladders STILL don't consume
-	# llm_bias as of this tick. Negative pin so a future "all done"
-	# claim is caught — actually this just documents the gap; a
-	# follow-up tick should wire them too.
+func test_tempo_arm_now_consumes_llm_bias() -> void:
+	# Tick 118 wired the tempo arm. This was a negative pin in tick
+	# 117; flipped to positive once tempo got its bias reads.
 	var body := _make_masterite_decision_body()
-	# Find the tempo arm.
 	var tempo_idx: int = body.find("\"tempo\":")
 	var curator_idx: int = body.find("\"curator\":")
 	assert_gt(tempo_idx, -1, "tempo arm must exist")
 	assert_gt(curator_idx, -1, "curator arm must exist")
 	var tempo_arm: String = body.substr(tempo_idx, curator_idx - tempo_idx)
-	# Tempo arm currently has NO llm_bias reads — that's the known
-	# gap. Assert it explicitly so a future fix removes this guard
-	# along with the fix.
-	assert_false(tempo_arm.contains("llm_bias.get("),
-		"tempo arm STILL doesn't consume llm_bias — known gap, remove this assertion when wiring tempo")
+	assert_true(tempo_arm.contains("llm_bias.get("),
+		"tempo arm must consume llm_bias — wired in tick 118 (see test_tempo_intent_bias_consumption.gd for the specific scaling pins)")
