@@ -1178,6 +1178,12 @@ func _get_pending_story_cutscene() -> String:
 		GameState.game_constants["cutscene_flag_world4_complete"] = true
 
 	# ===== WORLD 5: ABSTRACT / NETWORK =====
+	# Tick 103: W5 Arbiter of Futuristic defeat cutscene — plays IN
+	# Root Process on return from boss victory. Same pattern as W2-W4
+	# defeat gates (tick 102).
+	if flags.get("cutscene_flag_arbiter_futuristic_defeated", false) and not flags.get("cutscene_flag_world5_arbiter_defeat_complete", false):
+		if _current_map_id == "root_process":
+			return "world5_arbiter_defeat"
 	if flags.get("cutscene_flag_world4_complete", false) and not flags.get("cutscene_flag_world5_prologue_complete", false):
 		if _current_map_id == "abstract_overworld":
 			return "world5_prologue"
@@ -1280,6 +1286,8 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world5_chapter3":                  "cutscene_flag_world5_chapter3_complete",
 	"world5_chapter4":                  "cutscene_flag_world5_chapter4_complete",
 	"world5_chapter5":                  "cutscene_flag_world5_chapter5_complete",
+	# Tick 103: W5 Arbiter of Futuristic post-defeat dialogue
+	"world5_arbiter_defeat":            "cutscene_flag_world5_arbiter_defeat_complete",
 	# World 6 (vertex/final)
 	"world6_prologue":                  "cutscene_flag_world6_prologue_complete",
 	"world6_chapter1":                  "cutscene_flag_world6_chapter1_complete",
