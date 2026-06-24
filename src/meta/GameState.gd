@@ -246,7 +246,16 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	if save_data.has("party_leader_index"):
 		party_leader_index = save_data["party_leader_index"]
 	if save_data.has("game_constants"):
-		game_constants = save_data["game_constants"].duplicate()
+		# Tick 112: MERGE saved values onto the default dict instead of
+		# replacing the dict wholesale. Old saves predate later-added keys
+		# (exp_multiplier, encounter_rate, drop_rate_multiplier, …), and a
+		# direct replace wiped the defaults, leaving consumers like
+		# GameState.add_gold to crash on KeyError when accessing the
+		# missing key. Merging preserves both the saved daemon nudges
+		# AND the defaults for new keys the save didn't know about.
+		var saved: Dictionary = save_data["game_constants"]
+		for key in saved.keys():
+			game_constants[key] = saved[key]
 	if save_data.has("meta_features"):
 		meta_features = save_data["meta_features"].duplicate()
 	if save_data.has("corruption_effects"):
