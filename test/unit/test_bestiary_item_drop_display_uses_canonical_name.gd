@@ -73,14 +73,21 @@ func test_resolver_prefers_item_system_first() -> void:
 
 
 func test_resolver_iterates_three_equipment_pools() -> void:
-	# Pin: weapons, armor, accessories — EquipmentSystem's three
-	# top-level pool dicts. Missing one would leak the prettified id
-	# for that category.
+	# Pin: weapons, armors, accessories — EquipmentSystem's three
+	# top-level pool dicts. CRITICAL: must be "armors" (plural) to
+	# match EquipmentSystem.gd line 11 `var armors: Dictionary`.
+	# Tick 130 originally pinned "armor" (singular) which never hit
+	# any pool — silently fell through to the prettifier for ALL
+	# armor drops. Tick 133 fixed both the resolver AND this pin.
 	var body := _resolver_body()
-	for pool in ["weapons", "armor", "accessories"]:
+	for pool in ["weapons", "armors", "accessories"]:
 		var quoted: String = "\"" + pool + "\""
 		assert_true(body.contains(quoted),
 			"resolver must check '%s' EquipmentSystem pool" % pool)
+	# Negative pin: the broken singular form must not return — it
+	# would silently leak prettified names for every armor drop.
+	assert_false(body.contains("\"armor\","),
+		"singular 'armor' is a typo — EquipmentSystem.armors is plural. Tick 133 fixed this; don't regress.")
 
 
 func test_resolver_empty_id_returns_empty_string() -> void:

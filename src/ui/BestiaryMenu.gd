@@ -418,7 +418,7 @@ func _resolve_item_display_name(item_id: String) -> String:
 			return str(data["name"])
 	var equip_sys = get_node_or_null("/root/EquipmentSystem")
 	if equip_sys != null:
-		for pool_name in ["weapons", "armor", "accessories"]:
+		for pool_name in ["weapons", "armors", "accessories"]:
 			if pool_name in equip_sys:
 				var pool: Dictionary = equip_sys[pool_name]
 				if pool.has(item_id) and pool[item_id] is Dictionary:
