@@ -55,6 +55,20 @@ func _check_encounter() -> bool:
 	var gs = get_tree().root.get_node_or_null("GameState") if get_tree() else null
 	if gs:
 		rate_multiplier = gs.encounter_rate_multiplier
+		# Tick 110: compose the RebalanceDaemon's encounter_rate knob into
+		# the chance calc. Pre-fix, game_constants["encounter_rate"] was
+		# one of three ALLOWED_CONSTANTS the daemon could nudge — set,
+		# persisted, audited — but NO code path read it. Daemon
+		# proposals to change encounter frequency had zero effect.
+		# Compose multiplicatively with the user's settings slider:
+		# daemon trims the curve, slider expresses player preference,
+		# both stack. Defensive clampf into a wide-but-finite band so
+		# debug overrides or post-load corruption can't blow up.
+		if "game_constants" in gs:
+			var daemon_rate: float = clampf(
+				float(gs.game_constants.get("encounter_rate", 1.0)),
+				0.1, 10.0)
+			rate_multiplier *= daemon_rate
 
 	# If multiplier is 0, no encounters
 	if rate_multiplier <= 0.0:
