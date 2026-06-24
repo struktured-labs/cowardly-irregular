@@ -1223,6 +1223,7 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 
 ## Status effect icon display system
 const STATUS_ICON_CONFIG = {
+	# Crowd control / debuffs
 	"exposed": {"label": "EXP", "color": Color(1.0, 0.3, 0.3)},
 	"cannot_defer": {"label": "LOCK", "color": Color(0.8, 0.2, 0.2)},
 	"stun": {"label": "STUN", "color": Color(1.0, 1.0, 0.2)},
@@ -1234,6 +1235,26 @@ const STATUS_ICON_CONFIG = {
 	"curse": {"label": "CURS", "color": Color(0.5, 0.0, 0.5)},
 	"regen": {"label": "REGN", "color": Color(0.3, 1.0, 0.3)},
 	"permakilled": {"label": "DEAD", "color": Color(0.3, 0.0, 0.0)},
+	# Tick 129: common stat buffs/debuffs from abilities.json. Pre-fix,
+	# 25+ distinct statuses fell through to the `status.substr(0, 3).to_upper()`
+	# fallback, giving the player vague "ATT" both for attack_up AND
+	# attack_down — same icon for opposite effects. Buffs get green
+	# (+suffix), debuffs get red (-suffix).
+	"attack_up": {"label": "ATK+", "color": Color(0.3, 1.0, 0.3)},
+	"attack_down": {"label": "ATK-", "color": Color(1.0, 0.3, 0.3)},
+	"defense_up": {"label": "DEF+", "color": Color(0.3, 1.0, 0.3)},
+	"defense_down": {"label": "DEF-", "color": Color(1.0, 0.3, 0.3)},
+	"magic_up": {"label": "MAG+", "color": Color(0.3, 1.0, 0.3)},
+	"magic_down": {"label": "MAG-", "color": Color(1.0, 0.3, 0.3)},
+	"speed_up": {"label": "SPD+", "color": Color(0.3, 1.0, 0.3)},
+	"speed_down": {"label": "SPD-", "color": Color(1.0, 0.3, 0.3)},
+	# Standalone damage-over-time + utility effects
+	"burn": {"label": "BURN", "color": Color(1.0, 0.5, 0.1)},
+	"poison": {"label": "PSN", "color": Color(0.6, 0.9, 0.3)},
+	"silence": {"label": "SLNC", "color": Color(0.6, 0.6, 0.6)},
+	"barrier": {"label": "BARR", "color": Color(0.4, 0.8, 1.0)},
+	"haste": {"label": "HAST", "color": Color(0.3, 1.0, 0.5)},
+	"slow": {"label": "SLOW", "color": Color(0.7, 0.3, 0.8)},
 }
 
 
