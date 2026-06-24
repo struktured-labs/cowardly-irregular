@@ -1009,6 +1009,19 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter2_complete", false) and not flags.get("cutscene_flag_chapter3_complete", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_chapter3"
+	# Tick 98: rogue + mage spotlight unlocks — fire IN the Whispering
+	# Cave after chapter3 (the party discovers Rogue and Mage need
+	# manual control to navigate the dungeon). Rogue first (chapter3
+	# discovery beat), Mage next visit (gated on rogue already
+	# unlocked so they sequence cleanly across map re-entries instead
+	# of stacking on a single trigger). _cutscene_cooldown prevents
+	# back-to-back firing on the same entry.
+	if flags.get("cutscene_flag_chapter3_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_rogue", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_spotlight_rogue_ch3"
+	if flags.get("cutscene_flag_spotlight_unlocked_rogue", false) and not flags.get("cutscene_flag_spotlight_unlocked_mage", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_spotlight_mage_ch3"
 	# Rat king defeat cutscene: plays IN the cave right after victory, before chapter4.
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
 		if _current_map_id == "whispering_cave":
