@@ -3180,16 +3180,21 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "digital"
 		"abstract_overworld":
 			return "void"
+		# Tick 88: W2-W6 villages map to their WORLD's terrain string,
+		# not generic "village". Pre-fix, a battle triggered inside Maple
+		# Heights (e.g. from a story cutscene) got the medieval village
+		# backdrop instead of the suburban art — visual inconsistency
+		# breaking the W2-W6 world identity.
 		"maple_heights_village":
-			return "village"
+			return "suburban"
 		"brasston_village":
-			return "village"
+			return "steampunk"
 		"rivet_row_village":
-			return "village"
+			return "industrial"
 		"node_prime_village":
-			return "village"
+			return "digital"
 		"vertex_village":
-			return "village"
+			return "void"
 		_:
 			if "cave" in map_id or "dungeon" in map_id:
 				return "cave"
