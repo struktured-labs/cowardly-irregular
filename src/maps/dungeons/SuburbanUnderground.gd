@@ -108,3 +108,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Masterite Warden: *snaps a clipboard in half*",
 		"Masterite Warden: 'This is why we have DOCUMENTATION.'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "suburban_dungeon"

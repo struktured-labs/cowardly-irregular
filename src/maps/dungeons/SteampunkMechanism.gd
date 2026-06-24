@@ -106,3 +106,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Meta Knight: *taps the pocketwatch — it's a frame counter*",
 		"Meta Knight: 'I AM the dropped frame. Pleasure to finally fight you.'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "steampunk_dungeon"

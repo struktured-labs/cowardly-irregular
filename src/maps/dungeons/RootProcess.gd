@@ -104,3 +104,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Masterite Arbiter: *opens a terminal*",
 		"Masterite Arbiter: 'Running validation on your process...'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "digital_dungeon"

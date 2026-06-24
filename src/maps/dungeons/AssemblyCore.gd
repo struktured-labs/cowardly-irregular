@@ -109,3 +109,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Masterite Warden: *unclips a time clock and winds it back*",
 		"Masterite Warden: 'We're going to work overtime.'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "industrial_dungeon"

@@ -97,7 +97,7 @@ func _ready() -> void:
 	_setup_controller()
 
 	if SoundManager:
-		SoundManager.play_area_music("cave")
+		SoundManager.play_area_music(_get_music_area_id())
 
 	exploration_ready.emit()
 
@@ -450,6 +450,18 @@ func _show_boss_intro() -> void:
 ## Virtual - subclass MUST override to provide boss dialogue
 func _get_boss_intro_dialogue() -> Array:
 	return ["A dragon blocks the path!"]
+
+
+## Tick 93: per-dungeon music routing. Default returns "cave" which
+## SoundManager.play_area_music maps to _start_dungeon_music("medieval")
+## — correct for W1 dragon caves (fire, ice, lightning, shadow) and
+## the whispering cave. W2-W6 dungeons (SuburbanUnderground,
+## SteampunkMechanism, AssemblyCore, RootProcess, NullChamber) MUST
+## override this to return their per-world dungeon key, otherwise
+## stepping into them plays the W1 medieval dungeon theme instead
+## of the world's own track.
+func _get_music_area_id() -> String:
+	return "cave"
 
 
 func _place_floor_treasure(floor_num: int) -> void:
