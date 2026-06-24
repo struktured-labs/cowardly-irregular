@@ -86,8 +86,22 @@ func test_bard_stats_apply_to_combatant() -> void:
 ## ---- Bard Abilities ----
 
 func test_bard_has_4_abilities() -> void:
-	var abilities = _jobs["bard"]["abilities"]
-	assert_eq(abilities.size(), 4, "Bard should have exactly 4 abilities")
+	# Tick 81: 2 of the 4 abilities moved to abilities_at_level — the
+	# union must still total 4 so existing high-level saves work and
+	# the kit feels complete. L1 list is now 2; level-gated unlocks
+	# bring it back up to 4.
+	var l1: Array = _jobs["bard"]["abilities"]
+	var unlocks: Dictionary = _jobs["bard"].get("abilities_at_level", {})
+	var total: Array[String] = []
+	for a in l1:
+		total.append(str(a))
+	for level_key in unlocks.keys():
+		var ids: Variant = unlocks[level_key]
+		if ids is Array:
+			for a in ids:
+				total.append(str(a))
+	assert_eq(total.size(), 4,
+		"Bard should have exactly 4 abilities across L1 + abilities_at_level union")
 
 
 func test_bard_abilities_exist_in_data() -> void:

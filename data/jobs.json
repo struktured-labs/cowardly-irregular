@@ -213,10 +213,12 @@
 		},
 		"abilities": [
 			"battle_hymn",
-			"lullaby",
-			"discord",
-			"inspiring_melody"
+			"lullaby"
 		],
+		"abilities_at_level": {
+			"4": ["discord"],
+			"8": ["inspiring_melody"]
+		},
 		"passive_abilities": [
 			"encore"
 		],
