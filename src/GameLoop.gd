@@ -1355,6 +1355,18 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 			# non-spotlight cutscenes.
 			if completion_flag.begins_with("cutscene_flag_spotlight_unlocked_"):
 				_reconcile_spotlight_locks()
+			# Tick 108: world6_ending is the game's narrative closer.
+			# Mark the run as complete + surface a celebratory toast so
+			# the player has acknowledgment that they finished, rather
+			# than just dropping back into vertex_village wandering.
+			# The flag is durable + per-save so NG+ flows / replay UI
+			# can branch on it without re-deriving from cutscene state.
+			if cutscene_id == "world6_ending":
+				GameState.game_constants["game_complete"] = true
+				GameState.set_story_flag("game_complete")
+				if Toast:
+					Toast.show_success(self,
+						"Calibration complete — thank you for playing Cowardly Irregular.")
 		# Wave D: record cutscene completion in the EventLog so LLM-driven
 		# NPC dialogue can reference recently-witnessed story beats. The
 		# completion_flag is already in game_constants so LLMContext picks
