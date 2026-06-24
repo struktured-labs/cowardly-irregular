@@ -278,10 +278,21 @@ func _on_llm_inference_succeeded(_mode: String) -> void:
 ## puts it under the loading battle scene. Returns true ONLY for the
 ## EXPLORATION + locked combination, so BATTLE-state dialogue locks
 ## (which legitimately want to allow some hotkeys) aren't affected.
+##
+## Tick 79 extension: also true during area-transition fade-IN.
+## _transition_in_progress is set true at the start of
+## _on_area_transition and stays true until the match block clears
+## the fade-out. The 'area_transition_fade' InputLockManager lock
+## only covers fade-OUT (tick 77 — pushed after _start_exploration's
+## pop_all), so fade-IN previously slipped past callers that only
+## checked InputLockManager. Now F5/F6/Select autobattle inputs are
+## blocked across the entire fade window, not just fade-out.
 func _in_exploration_transition() -> bool:
-	return current_state == LoopState.EXPLORATION \
-		and InputLockManager != null \
-		and InputLockManager.is_locked()
+	if current_state != LoopState.EXPLORATION:
+		return false
+	if _transition_in_progress:
+		return true
+	return InputLockManager != null and InputLockManager.is_locked()
 
 
 func _input(event: InputEvent) -> void:
