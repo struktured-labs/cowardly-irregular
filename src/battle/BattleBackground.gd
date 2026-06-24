@@ -156,6 +156,65 @@ const TERRAIN_PALETTES = {
 		"accent": Color(0.30, 0.50, 0.70),
 		"horizon": Color(0.40, 0.55, 0.72)
 	},
+	## Tick 89: W2-W6 procedural-fallback palettes.
+	## Artist backdrops at BACKDROP_PATHS are loaded preferentially —
+	## these palettes only show if the .png ever fails to load. Without
+	## them, the fallback used PLAINS colors (green) for every world.
+	TerrainType.SUBURBAN: {
+		# Cul-de-sac daylight — soft lawn green sky-down, pastel pavement
+		"sky_top": Color(0.45, 0.62, 0.85),
+		"sky_mid": Color(0.62, 0.78, 0.92),
+		"sky_bottom": Color(0.78, 0.88, 0.95),
+		"ground": Color(0.52, 0.55, 0.50),
+		"ground_dark": Color(0.38, 0.42, 0.38),
+		"ground_light": Color(0.70, 0.72, 0.65),
+		"accent": Color(0.55, 0.68, 0.42),
+		"horizon": Color(0.75, 0.78, 0.72)
+	},
+	TerrainType.STEAMPUNK: {
+		# Brass + copper + sepia, smokey grey sky
+		"sky_top": Color(0.18, 0.14, 0.10),
+		"sky_mid": Color(0.32, 0.24, 0.16),
+		"sky_bottom": Color(0.52, 0.38, 0.22),
+		"ground": Color(0.40, 0.28, 0.16),
+		"ground_dark": Color(0.25, 0.18, 0.10),
+		"ground_light": Color(0.62, 0.45, 0.22),
+		"accent": Color(0.78, 0.55, 0.20),
+		"horizon": Color(0.55, 0.40, 0.22)
+	},
+	TerrainType.INDUSTRIAL: {
+		# Rusty steel, smog-grey sky, oxidised metal ground
+		"sky_top": Color(0.22, 0.20, 0.18),
+		"sky_mid": Color(0.35, 0.32, 0.28),
+		"sky_bottom": Color(0.48, 0.42, 0.36),
+		"ground": Color(0.30, 0.28, 0.25),
+		"ground_dark": Color(0.18, 0.16, 0.14),
+		"ground_light": Color(0.45, 0.40, 0.35),
+		"accent": Color(0.55, 0.32, 0.18),
+		"horizon": Color(0.40, 0.35, 0.30)
+	},
+	TerrainType.DIGITAL: {
+		# Cyan/magenta neon on near-black grid
+		"sky_top": Color(0.03, 0.02, 0.10),
+		"sky_mid": Color(0.06, 0.04, 0.18),
+		"sky_bottom": Color(0.12, 0.06, 0.28),
+		"ground": Color(0.04, 0.08, 0.14),
+		"ground_dark": Color(0.02, 0.04, 0.08),
+		"ground_light": Color(0.08, 0.18, 0.28),
+		"accent": Color(0.20, 0.85, 0.95),
+		"horizon": Color(0.45, 0.20, 0.65)
+	},
+	TerrainType.ABSTRACT: {
+		# Minimalist near-white with faint pastel grid
+		"sky_top": Color(0.88, 0.88, 0.92),
+		"sky_mid": Color(0.92, 0.92, 0.94),
+		"sky_bottom": Color(0.95, 0.95, 0.96),
+		"ground": Color(0.85, 0.85, 0.88),
+		"ground_dark": Color(0.72, 0.72, 0.78),
+		"ground_light": Color(0.94, 0.94, 0.96),
+		"accent": Color(0.60, 0.65, 0.72),
+		"horizon": Color(0.78, 0.78, 0.82)
+	},
 	TerrainType.VOLCANIC: {
 		"sky_top": Color(0.15, 0.04, 0.02),
 		"sky_mid": Color(0.35, 0.10, 0.05),
