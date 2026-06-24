@@ -1130,7 +1130,12 @@ func play_music(track: String) -> void:
 		# Terrain-specific battle themes
 		"battle_suburban":
 			_start_suburban_battle_music()
-		"battle_urban":
+		# Tick 91: W3 Steampunk battles emit 'battle_steampunk' but
+		# pre-fix the match arm only knew 'battle_urban'. The
+		# _start_urban_battle_music helper actually plays the
+		# battle_steampunk.ogg manifest track (confusingly named) —
+		# so both keys route to it.
+		"battle_steampunk", "battle_urban":
 			_start_urban_battle_music()
 		"battle_industrial":
 			_start_industrial_battle_music()

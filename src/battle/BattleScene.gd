@@ -2086,10 +2086,17 @@ func _get_masterite_type() -> String:
 
 func _get_terrain_battle_track() -> String:
 	"""Get terrain-specific battle music track, or 'battle' for generic.
-	   Areas with unique battle themes return 'battle_<terrain>'."""
+	   Areas with unique battle themes return 'battle_<terrain>'.
+	   Tick 91: added 'steampunk' arm — W3 SteampunkOverworld emits
+	   'steampunk' as the terrain string, which previously fell
+	   through to generic 'battle' music despite SoundManager having
+	   a dedicated _start_urban_battle_music helper that DID play the
+	   manifest's battle_steampunk.ogg."""
 	match _current_terrain:
 		"suburban":
 			return "battle_suburban"
+		"steampunk":
+			return "battle_steampunk"
 		"urban":
 			return "battle_urban"
 		"industrial":
