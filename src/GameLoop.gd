@@ -454,6 +454,15 @@ func _input(event: InputEvent) -> void:
 			if InputLockManager and InputLockManager.is_locked():
 				get_viewport().set_input_as_handled()
 				return
+			# Tick 78: also block menu open during area-transition fade-IN.
+			# _transition_in_progress is true from the moment a transition
+			# starts until the fade-out finishes. Without this gate, the
+			# player can press Esc mid-fade-in — pausing the OLD scene
+			# that's about to be freed by _start_exploration, while the
+			# NEW scene runs unpaused behind the menu overlay.
+			if _transition_in_progress:
+				get_viewport().set_input_as_handled()
+				return
 			_open_overworld_menu()
 			get_viewport().set_input_as_handled()
 
@@ -461,6 +470,9 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("party_chat"):
 		if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu:
 			if InputLockManager and InputLockManager.is_locked():
+				get_viewport().set_input_as_handled()
+				return
+			if _transition_in_progress:
 				get_viewport().set_input_as_handled()
 				return
 			if PartyChatSystem and PartyChatSystem.has_available_chats():
