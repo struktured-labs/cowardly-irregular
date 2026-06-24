@@ -3778,14 +3778,33 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE if pointer.has_method("set") else 0
 	container.add_child(pointer)
 
+	# Initial position — refined in the bubble.ready callback once
+	# the panel's size is laid out. The -40 / -90 offset is roughly
+	# right for a narrow bubble; ready-time recentering covers the
+	# tick 125 wide-wrap case.
 	container.position = sprite.global_position + Vector2(-40, -90)
 	container.modulate.a = 0.0
 	add_child(container)
 
-	# Position pointer below the bubble panel
+	# Tick 126: re-center the container under the sprite once the
+	# bubble's actual layout size is known, and place the pointer
+	# at the bubble's horizontal center. Pre-fix, the pointer's
+	# polygon was fixed at local x≈20 with no recentering, so a wide
+	# wrapped bubble (up to ~260px after tick 125) had its center
+	# offset 110px from the pointer — the speaker looked like they
+	# were standing under the left edge of their own speech bubble.
+	# Captures sprite position locally to avoid touching a freed
+	# Node2D if the sprite was deleted during the same frame.
+	var anchor_x: float = sprite.global_position.x
 	bubble.ready.connect(func():
-		if is_instance_valid(pointer) and is_instance_valid(bubble):
-			pointer.position.y = bubble.size.y
+		if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(container)):
+			return
+		var bw: float = bubble.size.x
+		container.position.x = anchor_x - bw / 2.0
+		# Polygon's tip sits at local x=20 within itself, so subtract
+		# 20 to align the tip with the bubble's horizontal center.
+		pointer.position.x = bw / 2.0 - 20.0
+		pointer.position.y = bubble.size.y
 	, CONNECT_ONE_SHOT)
 
 	var tween = create_tween()
