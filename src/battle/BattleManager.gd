@@ -3986,6 +3986,13 @@ func _refine_boss_intent_async(
 	var refined: Dictionary = await boss_dlg.pick_intent_async(ctx)
 	if not is_instance_valid(combatant):
 		return  # Boss died / battle ended while the LLM was thinking.
+	# Tick 123: also drop the refined taunt if the boss died during
+	# the await. is_instance_valid above only catches the freed-node
+	# case (battle scene tore down); a boss that's dead but not yet
+	# freed is still memory-valid but shouldn't taunt. Symmetric with
+	# tick 121's party-line is_alive guard.
+	if not combatant.is_alive:
+		return
 	# Stale-phase guard: drop the result if the boss has already
 	# advanced past the phase this refinement was launched for.
 	var current_phase: int = int(combatant.get_meta("boss_dialogue_phase", 0))
