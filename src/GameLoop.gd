@@ -3036,13 +3036,19 @@ func _quick_save_with_toast() -> void:
 	"""F2 hotkey: quick-save to the dedicated quicksave slot with toast feedback.
 	Blocked mid-battle (via can_quick_save) AND during autogrind — the
 	autogrind run statistics and rule state would be lost on a mid-grind
-	save and the user would be confused why autogrind didn't resume."""
+	save and the user would be confused why autogrind didn't resume.
+	Tick 80: also blocked during area-transition fade (in or out) — the
+	scene swap is in flight, _current_map_id was updated but the scene
+	itself isn't loaded yet, so the save would capture inconsistent state."""
 	if not SaveSystem:
 		return
 	if not SaveSystem.has_method("quick_save"):
 		return
 	if current_state == LoopState.AUTOGRIND:
 		Toast.show_warning(self, "Cannot quick-save during autogrind — stop grinding first")
+		return
+	if _in_exploration_transition():
+		Toast.show_warning(self, "Cannot quick-save mid-transition — wait for the scene to settle")
 		return
 	if not SaveSystem.can_quick_save():
 		Toast.show_warning(self, "Cannot quick-save right now")
@@ -3061,7 +3067,10 @@ func _quick_load_with_toast() -> void:
 	Returns to overworld via the same _restore_party_from_save_data path
 	used by Continue. Only works if a save exists.
 	Blocked during active battle AND during autogrind — mid-grind load
-	would corrupt the run statistics and the autogrind state machine."""
+	would corrupt the run statistics and the autogrind state machine.
+	Tick 80: also blocked during area-transition fade — loading would
+	collide with the in-flight scene swap (MapSystem.load_map racing
+	against GameLoop's direct-scene routing for the destination map)."""
 	if not SaveSystem:
 		return
 	if not SaveSystem.has_method("load_game"):
@@ -3071,6 +3080,9 @@ func _quick_load_with_toast() -> void:
 		return
 	if current_state == LoopState.AUTOGRIND:
 		Toast.show_warning(self, "Cannot quick-load during autogrind — stop grinding first")
+		return
+	if _in_exploration_transition():
+		Toast.show_warning(self, "Cannot quick-load mid-transition — wait for the scene to settle")
 		return
 	var slot: int = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
 	if slot < 0:
