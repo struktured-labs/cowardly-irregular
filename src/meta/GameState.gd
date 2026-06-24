@@ -449,8 +449,16 @@ func rewind_to_previous_save() -> bool:
 
 ## Economy methods
 func add_gold(amount: int) -> void:
-	"""Add gold to party (applies gold_multiplier)"""
-	var multiplied_amount = int(amount * game_constants["gold_multiplier"])
+	"""Add gold to party (applies gold_multiplier).
+	Tick 113: defensive .get() so a future debug path or pathological
+	save that removed the key doesn't crash the entire victory flow.
+	Matches the tick 109/110 defensive read pattern in BattleManager
+	exp_multiplier + OverworldController encounter_rate, and clamps
+	into the same [0.1, 10.0] band as the daemon's safe-delta floor."""
+	var multiplier: float = clampf(
+		float(game_constants.get("gold_multiplier", 1.0)),
+		0.1, 10.0)
+	var multiplied_amount = int(amount * multiplier)
 	party_gold += multiplied_amount
 	print("Gold gained: %d (base: %d)" % [multiplied_amount, amount])
 
