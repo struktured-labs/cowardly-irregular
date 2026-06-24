@@ -1030,6 +1030,19 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_chapter4_complete", false):
 		if _current_map_id == "overworld":
 			return "world1_chapter4"
+	# Tick 99: bard spotlight unlock — completes the spotlight series.
+	# Original design point was "capital gate" (Scriptura) but
+	# village_capital is registered in locations.json without an
+	# actual scene route, so the capital isn't reachable in W1. Bard
+	# instead unlocks on return to harmonia_village after the rat
+	# king is defeated (matching the cleric spotlight cadence at the
+	# same village). chapter4_complete is the natural trigger — it's
+	# set by world1_chapter4 (post-rat-king cutscene in overworld),
+	# so the player heading back to town for re-supply gets Bard's
+	# join cutscene next.
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_bard", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_spotlight_bard_ch7"
 	# Chapters 5-9: auto-set flags — party commentary now opt-in via NPCs
 	# These cutscenes are still available but won't auto-trigger on map entry
 	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
