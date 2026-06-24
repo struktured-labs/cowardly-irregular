@@ -2403,6 +2403,34 @@ func _spawn_ambient_particles(viewport_size: Vector2, palette: Dictionary) -> vo
 		TerrainType.BOSS:
 			var spark_color = palette.get("glow", palette["accent"]).lightened(0.2)
 			_spawn_particle_type(viewport_size, count, Color(spark_color.r, spark_color.g, spark_color.b, 0.5), "erratic")
+		# Tick 90: W1 sub-zones — pre-fix these match arms didn't exist
+		# and battles in ice/desert/swamp/coast/volcanic zones got zero
+		# ambient particles. PLAINS gets pollen, FOREST gets falling
+		# leaves, etc — these terrains had nothing.
+		TerrainType.ICE:
+			_spawn_particle_type(viewport_size, count, Color(0.95, 0.97, 1.0, 0.6), "fall")
+		TerrainType.DESERT:
+			_spawn_particle_type(viewport_size, count, Color(0.85, 0.72, 0.45, 0.5), "drift_random")
+		TerrainType.SWAMP:
+			_spawn_particle_type(viewport_size, int(count * 0.6), Color(0.35, 0.45, 0.20, 0.45), "drift_random")
+		TerrainType.COAST:
+			_spawn_particle_type(viewport_size, count, Color(0.92, 0.95, 0.98, 0.55), "drift_random")
+		TerrainType.VOLCANIC:
+			var ember_color = palette.get("glow", palette["accent"]).lightened(0.1)
+			_spawn_particle_type(viewport_size, count, Color(ember_color.r, ember_color.g, ember_color.b, 0.6), "rise_fade")
+		# Tick 90: W2-W6 defensive — artist backdrop normally loads,
+		# but if it fails the procedural fallback gets world-themed
+		# atmosphere instead of a static gradient.
+		TerrainType.SUBURBAN:
+			_spawn_particle_type(viewport_size, int(count * 0.5), Color(0.95, 0.95, 0.70, 0.4), "drift_up")
+		TerrainType.STEAMPUNK:
+			_spawn_particle_type(viewport_size, count, Color(0.78, 0.72, 0.62, 0.45), "rise_fade")
+		TerrainType.INDUSTRIAL:
+			_spawn_particle_type(viewport_size, count, Color(0.42, 0.40, 0.38, 0.45), "rise_fade")
+		TerrainType.DIGITAL:
+			_spawn_particle_type(viewport_size, count, Color(0.30, 0.85, 0.95, 0.6), "drift_random")
+		TerrainType.ABSTRACT:
+			_spawn_particle_type(viewport_size, int(count * 0.5), Color(0.78, 0.80, 0.85, 0.35), "drift_random")
 
 
 func _spawn_particle_type(viewport_size: Vector2, count: int, color: Color, motion: String) -> void:
