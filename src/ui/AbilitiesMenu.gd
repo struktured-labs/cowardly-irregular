@@ -79,12 +79,15 @@ func _sort_abilities(a: Dictionary, b: Dictionary) -> bool:
 
 
 func _get_ability_data(ability_id: String) -> Dictionary:
-	"""Synthesize basic ability data from an id.
-
-	This previously deferred to a `/root/AbilitySystem` autoload that
-	was never actually registered, so the branch was dead. If that
-	system ever ships, reintroduce it here via the autoload global
-	name rather than a has_node() probe."""
+	## Tick 132: prefer JobSystem.get_ability (data/abilities.json) over
+	## the synthesized stub. Pre-fix this menu showed every learned
+	## ability as generic "physical" type / "A combat ability" desc —
+	## type-coloring + descriptions silently wrong for all magic/support
+	## abilities. Stub remains as fallback for unknown ids.
+	if JobSystem and JobSystem.has_method("get_ability"):
+		var data: Dictionary = JobSystem.get_ability(ability_id)
+		if not data.is_empty():
+			return data
 	return {
 		"id": ability_id,
 		"name": ability_id.replace("_", " ").capitalize(),
