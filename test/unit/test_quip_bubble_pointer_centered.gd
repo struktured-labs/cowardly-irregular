@@ -71,11 +71,10 @@ func test_callback_guards_validity_of_all_three_nodes() -> void:
 		"ready callback must guard ALL THREE nodes (pointer, bubble, container) before mutating positions")
 
 
-func test_initial_position_unchanged() -> void:
-	# Initial position is still sprite + (-40, -90); the ready
-	# callback refines it. Don't accidentally break the initial
-	# placement — it's what the player sees during the ~1 frame
-	# before ready() fires.
+func test_initial_x_offset_preserved_at_minus_40() -> void:
+	# Tick 127 changed the y component to a line-length heuristic
+	# but kept the x at -40 (refined by ready callback below). Pin
+	# just the x portion so a tick-127 update doesn't trip this test.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("container.position = sprite.global_position + Vector2(-40, -90)"),
-		"initial container position must still be sprite + (-40, -90) — placeholder before ready-time recentering")
+	assert_true(body.contains("Vector2(-40, -float(est_height + 28))"),
+		"initial container x offset must still be -40 — finalized by ready-time recentering")

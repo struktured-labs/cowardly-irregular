@@ -3778,11 +3778,23 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE if pointer.has_method("set") else 0
 	container.add_child(pointer)
 
-	# Initial position — refined in the bubble.ready callback once
-	# the panel's size is laid out. The -40 / -90 offset is roughly
-	# right for a narrow bubble; ready-time recentering covers the
-	# tick 125 wide-wrap case.
-	container.position = sprite.global_position + Vector2(-40, -90)
+	# Tick 127: estimate bubble height from line length so the
+	# initial y offset keeps wrapped multi-line bubbles clear of
+	# the sprite head. Pre-fix, the offset was a flat -90 which
+	# handled narrow single-line bubbles but overlapped the sprite
+	# for wrapped 4-5 line lines (worst-case ~98px tall) after the
+	# tick 125 wrap fix.
+	#
+	# Heuristic: ~20 chars per wrapped line at font-size 13 in a
+	# 260px-wide bubble. Plus ~24px for name label + bubble padding.
+	# Final height = lines * 16 + 24. Y offset positions the
+	# bubble bottom ~28px above the sprite (plus pointer = 36px
+	# above), so wrapped bubbles never crowd the sprite. The
+	# bubble.ready callback below refines x (centering) without
+	# touching y — re-tweening y mid-flight would jump.
+	var est_lines: int = int(ceil(float(line.length()) / 20.0))
+	var est_height: int = est_lines * 16 + 24
+	container.position = sprite.global_position + Vector2(-40, -float(est_height + 28))
 	container.modulate.a = 0.0
 	add_child(container)
 
