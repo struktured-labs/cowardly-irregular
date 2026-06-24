@@ -1226,6 +1226,19 @@ func _get_pending_story_cutscene() -> String:
 		return "world6_chapter2"
 	if flags.get("cutscene_flag_world6_chapter2_complete", false) and not flags.get("cutscene_flag_world6_chapter3_complete", false):
 		return "world6_chapter3"
+	# Tick 107: W6 endgame closer — chapter3 (The Question) → calibrant
+	# defeat (the answer + class offer) → ending (worlds reform). Pre-fix,
+	# the W6 chain stopped at chapter3 and the player had no narrative
+	# closer despite world6_calibrant_defeat.json and world6_ending.json
+	# being authored on disk. The Calibrant "battle" is elided as
+	# narrative — matches the W2 Masterite auto-sets pattern (tick 101)
+	# since no Calibrant arena/dungeon exists.
+	if flags.get("cutscene_flag_world6_chapter3_complete", false) and not flags.get("cutscene_flag_world6_calibrant_defeat_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_calibrant_defeat"
+	if flags.get("cutscene_flag_world6_calibrant_defeat_complete", false) and not flags.get("cutscene_flag_world6_ending_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_ending"
 
 	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
 	# These were auto-triggering too aggressively. Guidance hints are now
@@ -1306,6 +1319,9 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world6_chapter1":                  "cutscene_flag_world6_chapter1_complete",
 	"world6_chapter2":                  "cutscene_flag_world6_chapter2_complete",
 	"world6_chapter3":                  "cutscene_flag_world6_chapter3_complete",
+	# Tick 107: W6 endgame closer
+	"world6_calibrant_defeat":          "cutscene_flag_world6_calibrant_defeat_complete",
+	"world6_ending":                    "cutscene_flag_world6_ending_complete",
 }
 
 
