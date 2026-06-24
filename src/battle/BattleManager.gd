@@ -22,6 +22,11 @@ signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
 signal group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String)
 signal advance_trash_talk(combatant: Combatant, line: String)
+## Tick 122: party combat dialogue lines (turn_start/low_hp/big_hit_taken
+## /used_signature_ability/victory) want a quip-bubble surface so they
+## read as actual character speech, not just battle-log text. Listener
+## is BattleScene._on_party_combat_line which calls _spawn_quip_bubble.
+signal party_combat_line(combatant: Combatant, line: String)
 ## Wave E — Boss dialogue / jailbreak signals.
 ## boss_taunt: emitted when a boss intent picker produces a phase-transition
 ## taunt or when a jailbreak narration line is generated. BattleScene listens
@@ -4559,6 +4564,12 @@ func _emit_party_line(combatant: Combatant, line: String) -> void:
 	if combatant == null or not is_instance_valid(combatant):
 		return
 	battle_log_message.emit("[color=#9bbfff]%s: \"%s\"[/color]" % [combatant.combatant_name, line])
+	# Tick 122: also surface as a speech bubble over the PC's sprite.
+	# Pre-fix, party combat lines only appeared in the battle log
+	# (scrolling text) — players might not realize a specific PC said
+	# it. The quip-bubble path auto-suppresses at high speed / turbo
+	# so it doesn't interrupt autogrind.
+	party_combat_line.emit(combatant, line)
 
 
 ## Build a snapshot for the LLM party-line prompt.

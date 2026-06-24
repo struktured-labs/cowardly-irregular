@@ -297,6 +297,12 @@ func _ready() -> void:
 	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
 	BattleManager.group_attack_executing.connect(_on_group_attack_executing)
 	BattleManager.advance_trash_talk.connect(_on_advance_trash_talk)
+	# Tick 122: party combat dialogue (turn_start/low_hp/big_hit_taken/
+	# used_signature_ability/victory) — surface as speech bubbles too,
+	# not just as battle-log text. Uses has_signal guard for safety
+	# during partial autoload boot scenarios.
+	if BattleManager.has_signal("party_combat_line"):
+		BattleManager.party_combat_line.connect(_on_party_combat_line)
 	# Wave E — Boss dialogue / jailbreak signals.
 	if BattleManager.has_signal("boss_taunt"):
 		BattleManager.boss_taunt.connect(_on_boss_taunt)
@@ -375,6 +381,8 @@ func _exit_tree() -> void:
 		BattleManager.group_attack_executing.disconnect(_on_group_attack_executing)
 	if BattleManager.advance_trash_talk.is_connected(_on_advance_trash_talk):
 		BattleManager.advance_trash_talk.disconnect(_on_advance_trash_talk)
+	if BattleManager.has_signal("party_combat_line") and BattleManager.party_combat_line.is_connected(_on_party_combat_line):
+		BattleManager.party_combat_line.disconnect(_on_party_combat_line)
 	if BattleManager.has_signal("boss_gloat_line") and BattleManager.boss_gloat_line.is_connected(_on_boss_gloat_line):
 		BattleManager.boss_gloat_line.disconnect(_on_boss_gloat_line)
 
@@ -3581,6 +3589,19 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant))
 	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
 	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
+
+
+## Tick 122: party combat dialogue lines (turn_start/low_hp/big_hit_taken/
+## used_signature_ability/victory). BattleManager._emit_party_line emits
+## both this signal AND a battle_log_message, so the log retains the line
+## as text scrollback while the bubble plays over the sprite. The
+## quip-bubble code auto-suppresses at turbo / 4x+ / autogrind console.
+func _on_party_combat_line(combatant: Combatant, line: String) -> void:
+	if turbo_mode:
+		return
+	var sprite = _get_combatant_sprite(combatant)
+	if sprite and is_instance_valid(sprite):
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
