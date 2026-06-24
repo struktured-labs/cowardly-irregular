@@ -3571,6 +3571,17 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if not JobSystem.can_use_ability(combatant, ability_id):
 				print("[AUTOBATTLE] Cannot use ability: %s (MP: %d)" % [ability_id, combatant.current_mp])
 				return {}
+			# Tick 111: if the action explicitly carries a `targets` key
+			# (AutobattleSystem always does for abilities) but the array
+			# is empty, respect that — it means the rule's target_type
+			# couldn't resolve to anyone (e.g. "lowest_hp_ally" when the
+			# party is full HP and the resolver returned []). DON'T fall
+			# back to lowest_hp_enemy: that turns a Cleric's heal rule
+			# into a Cleric attack at the lowest-HP enemy, which is the
+			# opposite of what the player scripted. Return {} so the
+			# autobattle scheduler defers this turn cleanly.
+			if action_data.has("targets") and action_targets.size() == 0:
+				return {}
 			var targets_to_use = action_targets if has_direct_targets else ([resolved_target] if resolved_target else [])
 			return {
 				"type": "ability",
@@ -3586,6 +3597,13 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if item_id.is_empty():
 				return {}
 			if not combatant.has_item(item_id):
+				return {}
+			# Tick 111: same empty-targets handling as ability — if the
+			# autobattle rule explicitly produced an empty targets list,
+			# fall back to defer rather than re-targeting the item at
+			# lowest_hp_enemy (which turns a Phoenix Down rule into
+			# "throw it at the enemy" when no ally is down).
+			if action_data.has("targets") and action_targets.size() == 0:
 				return {}
 			var targets_to_use = action_targets if has_direct_targets else ([resolved_target] if resolved_target else [])
 			return {
