@@ -215,6 +215,15 @@ func _cull_far_monsters() -> void:
 		if not is_instance_valid(m):
 			continue
 		if m.global_position.distance_to(player_pos) > DESPAWN_DISTANCE:
+			# Tick 85: deactivate BEFORE queue_free — matches _despawn_all.
+			# queue_free is end-of-frame, so without deactivate() any
+			# body_entered signal queued for this physics frame can still
+			# trigger a battle for a monster that's already being culled.
+			# Worst case: player walks past the DESPAWN_DISTANCE edge and
+			# brushes a culling monster, getting a battle for an enemy
+			# that should have vanished.
+			if m.has_method("deactivate"):
+				m.deactivate()
 			m.queue_free()
 		else:
 			alive.append(m)
