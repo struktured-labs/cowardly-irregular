@@ -13,6 +13,12 @@ func _init() -> void:
 	boss_flag_key = "steampunk_mechanism_cleared"
 	boss_cutscene_id = "world3_tempo_intro"
 	defeat_cutscene = "world3_tempo_defeat"
+	# Bridge to game_constants — GameLoop:1067 gates world3_chapter4 on
+	# `cutscene_flag_tempo_steampunk_defeated`. Pre-tick-96 the gate
+	# was checking `warden_industrial_defeated` (a W4 flag), so W3
+	# chapter4 only triggered AFTER the player beat W4's AssemblyCore
+	# boss — skipping the W3 narrative closer entirely.
+	defeat_cutscene_flags = ["cutscene_flag_tempo_steampunk_defeated"]
 	total_floors = 3
 	overworld_exit_spawn = "plaza"
 	overworld_exit_map = "steampunk_overworld"

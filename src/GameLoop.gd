@@ -1064,7 +1064,12 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_world3_chapter2_complete", false) and not flags.get("cutscene_flag_world3_chapter3_complete", false):
 		return "world3_chapter3"
 	if flags.get("cutscene_flag_world3_chapter3_complete", false) and not flags.get("cutscene_flag_world3_chapter4_complete", false):
-		if flags.get("cutscene_flag_warden_industrial_defeated", false):
+		# Tick 96: was gated on `cutscene_flag_warden_industrial_defeated`
+		# (a W4 flag set by AssemblyCore), so W3 chapter4 — the
+		# Regulator post-defeat dialogue — only triggered after the
+		# player beat W4's dungeon. Now correctly gated on the W3
+		# Mechanism's own boss-defeat flag set by SteampunkMechanism.
+		if flags.get("cutscene_flag_tempo_steampunk_defeated", false):
 			return "world3_chapter4"
 	if flags.get("cutscene_flag_world3_chapter4_complete", false) and not flags.get("cutscene_flag_world3_chapter5_complete", false):
 		return "world3_chapter5"
