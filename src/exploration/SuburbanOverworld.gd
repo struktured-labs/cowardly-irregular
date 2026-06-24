@@ -762,12 +762,15 @@ func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> v
 
 
 func _get_terrain_for_zone() -> String:
-	# W2 zones: residential / strip mall / park — all map to suburban terrain
+	# W2 zones: park (leftmost third, trees/grass feel) → forest backdrop;
+	# residential / strip mall (middle + right two-thirds) → suburban backdrop.
+	# Tick 87: pre-fix both branches returned "suburban" — the park-zone
+	# 'forest' intent was documented in the comment but never coded, so
+	# every W2 battle got the same suburban backdrop regardless of zone.
 	var player_pos: Vector2 = player.global_position if player else Vector2.ZERO
 	var tile_x: int = int(player_pos.x / TILE_SIZE)
-	# Park/playground zone (leftmost third) → forest (trees, grass feel)
 	if tile_x < MAP_WIDTH / 3:
-		return "suburban"
+		return "forest"
 	return "suburban"
 
 
