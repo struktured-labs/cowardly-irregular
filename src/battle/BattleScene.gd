@@ -3758,6 +3758,14 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	label.add_theme_constant_override("outline_size", 1)
 	label.add_theme_color_override("font_outline_color", Color(0.2, 0.15, 0.0))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Tick 125: enable word-wrap with a max bubble width. Pre-fix,
+	# Label was set with no autowrap so long lines (cleric/mage/bard
+	# trigger_voices entries average 80-108 chars after tick 122
+	# wired them into the bubble surface) extended horizontally off-
+	# screen. Now lines wrap at ~260px, keeping the bubble inside
+	# the play viewport regardless of speaker position.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	label.custom_minimum_size = Vector2(260, 0)
 	vbox.add_child(label)
 
 	container.add_child(bubble)
