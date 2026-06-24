@@ -1424,6 +1424,15 @@ func _create_party_from_customizations(customizations: Array) -> void:
 			CustomizationScript.get_personality_name(custom.personality)
 		])
 
+	# Tick 82: wire leveled_up + ability_learned signals so the new
+	# party fires Toast on every level-up and ability unlock. Without
+	# this, character-creation players got silent level-ups —
+	# discord/inspiring_melody (Bard), shield_bash/slash (Fighter),
+	# regenerate/crystal_heal (Cleric), etc. all popped without
+	# feedback. _create_party() (the default-party path) already calls
+	# this; the character-creation path was the only one missing it.
+	_wire_party_level_up_listeners()
+
 
 func _save_customizations(customizations: Array) -> void:
 	"""Save character customizations to file"""
