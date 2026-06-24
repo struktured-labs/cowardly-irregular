@@ -347,8 +347,19 @@ func end_battle(victory: bool) -> void:
 		if item_drops.size() > 0:
 			print("Items dropped: %s" % [item_drops])
 
-		# Award job EXP to player party and store results
+		# Award job EXP to player party and store results.
+		# Tick 109: factor in GameState.game_constants["exp_multiplier"]
+		# so RebalanceDaemon nudges actually affect XP gain. Pre-fix, the
+		# multiplier was set+persisted but never consumed by combat —
+		# meaning the daemon's primary XP knob was cosmetic. Defensive
+		# clamp keeps the multiplier in a sane band even if proposals
+		# slip past the daemon's SAFE_DELTA gates (e.g. via debug paths).
 		var base_exp = 50
+		var exp_multiplier: float = 1.0
+		if GameState and "game_constants" in GameState:
+			exp_multiplier = clampf(
+				float(GameState.game_constants.get("exp_multiplier", 1.0)),
+				0.1, 10.0)
 		var char_results: Array = []
 		for combatant in player_party:
 			var exp_gained = 0
@@ -356,7 +367,7 @@ func end_battle(victory: bool) -> void:
 			var old_exp = combatant.job_exp
 			var old_exp_max = combatant.job_level * 100
 			if combatant.is_alive:
-				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus)
+				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
 				combatant.gain_job_exp(exp_gained)
 			var leveled_up = combatant.job_level > old_level
 			char_results.append({
