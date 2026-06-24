@@ -1473,11 +1473,19 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_precise_strike", "targets": [target]},
 						{"type": "ability", "ability_id": "masterite_measured_blow", "targets": alive_enemies},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			var strike_chance = [0.5, 0.65, 0.8][battle_phase - 1]
+			# Tick 117: arbiter consumes attack_weight bias on its
+			# primary offensive rolls. Pre-fix, the arbiter ladder
+			# ignored llm_bias entirely (only the warden ladder read
+			# it) — so a "aggress" intent on an arbiter boss had ZERO
+			# effect on its attack frequency. Now strike + AoE roll
+			# rates scale with the same bias the generic spell-cast
+			# rate already uses elsewhere.
+			var arb_attack_bias: float = float(llm_bias.get("attack_weight", 1.0))
+			var strike_chance = clampf([0.5, 0.65, 0.8][battle_phase - 1] * arb_attack_bias, 0.0, 1.0)
 			if randf() < strike_chance and not find_ability.call("masterite_precise_strike").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_precise_strike", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
-			var aoe_chance = [0.4, 0.55, 0.75][battle_phase - 1]
+			var aoe_chance = clampf([0.4, 0.55, 0.75][battle_phase - 1] * arb_attack_bias, 0.0, 1.0)
 			if randf() < aoe_chance and not find_ability.call("masterite_measured_blow").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_measured_blow", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
 
