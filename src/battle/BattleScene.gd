@@ -4299,15 +4299,26 @@ const VICTORY_QUIPS: Dictionary = {
 
 ## Per-job bubble colors for quip identity
 const JOB_QUIP_COLORS: Dictionary = {
+	# Starter jobs
 	"fighter": Color(0.9, 0.5, 0.2),    # Orange — aggressive
 	"cleric": Color(1.0, 0.95, 0.6),    # Warm gold — holy
 	"mage": Color(0.5, 0.4, 1.0),       # Purple — arcane
 	"rogue": Color(0.4, 0.9, 0.4),      # Green — sneaky
 	"bard": Color(1.0, 0.6, 0.8),       # Pink — performer
+	# Advanced jobs
 	"guardian": Color(0.6, 0.55, 0.4),   # Bronze — armored
 	"ninja": Color(0.5, 0.5, 0.6),      # Dark gray — shadow
 	"summoner": Color(0.3, 0.8, 0.7),   # Teal — ethereal
 	"speculator": Color(0.3, 0.7, 0.3), # Money green — market
+	# Tick 124: meta jobs — each colored to its diegetic schtick.
+	# Pre-fix, all 5 fell through to the default gray Color(0.8, 0.8, 0.8)
+	# in _get_job_quip_color, breaking the per-job visual story for
+	# anyone unlocking them via debug mode.
+	"scriptweaver": Color(0.0, 0.95, 0.55), # Neon green — terminal/code
+	"time_mage": Color(0.7, 0.85, 1.0),     # Pale blue — chronal shimmer
+	"necromancer": Color(0.45, 0.2, 0.55),  # Deep violet — undeath
+	"bossbinder": Color(0.95, 0.25, 0.35),  # Boss-red — they BECOME the boss
+	"skiptrotter": Color(0.95, 0.85, 0.35), # Glitchy yellow — frame-skip
 }
 
 
