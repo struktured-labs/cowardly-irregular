@@ -1893,7 +1893,14 @@ func _wire_party_level_up_listeners() -> void:
 func _on_party_ability_learned(ability_id: String, member: Combatant) -> void:
 	if member == null:
 		return
-	var ability_name: String = ability_id
+	# Tick 128: prefer the JobSystem's canonical display name; fall
+	# back to the prettified ability_id (snake_case → Title Case)
+	# rather than the raw key. Pre-fix, a Combatant.learn_ability
+	# call for an id JobSystem couldn't resolve (debug paths,
+	# Scriptweaver custom abilities, save-format drift) surfaced
+	# "Mira learned shield_bash!" with the underscore — ugly and
+	# clearly an engineer-facing string.
+	var ability_name: String = ability_id.replace("_", " ").capitalize()
 	if JobSystem and JobSystem.has_method("get_ability"):
 		var a: Dictionary = JobSystem.get_ability(ability_id)
 		if not a.is_empty() and a.has("name"):
