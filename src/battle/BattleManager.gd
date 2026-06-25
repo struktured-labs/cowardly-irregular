@@ -199,6 +199,15 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 
 	player_party = players.duplicate()
 	enemy_party = enemies.duplicate()
+	## Tick 144: connect each party member's status_tick_damage so
+	## poison/burn ticks can trigger low_hp + big_hit_taken party
+	## lines just like regular damage. Pre-fix a burning Cleric who
+	## crossed below 25% from a tick got no reaction quip.
+	for member in player_party:
+		if not is_instance_valid(member):
+			continue
+		if not member.status_tick_damage.is_connected(_on_status_tick_damage_for_party_dialogue):
+			member.status_tick_damage.connect(_on_status_tick_damage_for_party_dialogue.bind(member))
 	all_combatants = players + enemies
 
 	# Reset one-shot tracking
@@ -4645,6 +4654,31 @@ func _on_damage_dealt_for_party_dialogue(target: Combatant, amount: int, is_crit
 		return
 	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
 		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct})
+
+
+## Tick 144: parallel handler for status-tick damage (poison/burn).
+## Same trigger semantics as _on_damage_dealt_for_party_dialogue but
+## is_crit is forced false (DoTs don't crit) and the source string
+## ends up in the context dict for any future per-source dialogue
+## variations. Without this a burning party member's tick that
+## drops them to 24% HP would silently skip the low_hp quip.
+func _on_status_tick_damage_for_party_dialogue(amount: int, source: String, target: Combatant) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not (target in player_party):
+		return
+	if not target.is_alive:
+		return
+	if amount <= 0:
+		return
+	var post_hp_pct: float = target.get_hp_percentage()
+	var pre_hp_pct: float = clampf(float(target.current_hp + amount) / float(maxi(target.max_hp, 1)) * 100.0, 0.0, 100.0)
+	var big: bool = amount > int(float(target.max_hp) * BIG_HIT_HP_PCT_THRESHOLD)
+	if big:
+		_maybe_fire_party_line(target, "big_hit_taken", {"damage": amount, "is_crit": false, "source": source})
+		return
+	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
+		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct, "source": source})
 
 
 ## Drop routing helpers — equipment IDs go to GameLoop.equipment_pool, not
