@@ -148,6 +148,11 @@ func serialize() -> Array:
 ## Restore from a raw value loaded by JSON.parse (generic Array or null).
 ## Uses the typed-array-safe coercion pattern to avoid silent SCRIPT ERRORs
 ## when JSON returns untyped Arrays instead of Array[Dictionary].
+## Tick 164: also enforces RING_CAP on load (matches record()'s
+## cap at line 63-64), int() coerces timestamps (JSON.parse returns
+## numerics as float), and floors negative timestamps at 0
+## (corrupted save defense — negative timestamps would propagate
+## into UI rendering as "X seconds ago" arithmetic).
 func restore(raw: Variant) -> void:
 	_entries.clear()
 	if raw == null:
@@ -158,7 +163,21 @@ func restore(raw: Variant) -> void:
 	var typed: Array[Dictionary] = []
 	for item in (raw as Array):
 		if item is Dictionary:
-			typed.append(item.duplicate(true))
+			var copied: Dictionary = item.duplicate(true)
+			# Coerce timestamps to int — JSON returns float for numerics.
+			# Floor at 0 so a corrupted negative doesn't poison
+			# downstream "now - entry.t" arithmetic.
+			if copied.has("t"):
+				copied["t"] = max(0, int(copied["t"]))
+			if copied.has("pt"):
+				copied["pt"] = max(0, int(copied["pt"]))
+			typed.append(copied)
 		else:
 			push_warning("[EventLog] restore: skipping non-Dictionary entry: %s" % str(item))
+	# Enforce RING_CAP — a save from an older build with looser cap
+	# (or a corrupted save with bogus padding) would otherwise leak
+	# unbounded into runtime. Drop OLDEST first (pop_front) matching
+	# record()'s ring semantics.
+	while typed.size() > RING_CAP:
+		typed.pop_front()
 	_entries = typed
