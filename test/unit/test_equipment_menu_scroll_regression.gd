@@ -45,10 +45,14 @@ func _selected_index_for_panel(panel: Control) -> int:
 	for child in panel.get_children():
 		var cursor = child.get_node_or_null("Cursor")
 		if cursor and cursor.text == ">":
-			# Decode index from the item name label (weapon_<idx>) — robust to row order.
+			# Decode index from the rendered name label ("Weapon <idx>") — robust
+			# to row order. Tick 140 changed the row name fallback from raw id
+			# to ItemNameResolver, which prettifies "weapon_3" → "Weapon 3"
+			# (since "weapon_3" isn't in EquipmentSystem). Test updated to
+			# match the new rendered text.
 			for sub in child.get_children():
-				if sub is Label and sub.text.begins_with("weapon_"):
-					return int(sub.text.substr("weapon_".length()))
+				if sub is Label and sub.text.begins_with("Weapon "):
+					return int(sub.text.substr("Weapon ".length()))
 	return -1
 
 
@@ -56,8 +60,8 @@ func _visible_indices(panel: Control) -> Array:
 	var indices: Array = []
 	for child in panel.get_children():
 		for sub in child.get_children():
-			if sub is Label and sub.text.begins_with("weapon_"):
-				indices.append(int(sub.text.substr("weapon_".length())))
+			if sub is Label and sub.text.begins_with("Weapon "):
+				indices.append(int(sub.text.substr("Weapon ".length())))
 	return indices
 
 

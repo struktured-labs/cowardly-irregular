@@ -257,27 +257,44 @@ func _create_slot_row(slot_index: int) -> Control:
 
 
 func _get_equipped_name(slot_index: int) -> String:
-	"""Get name of currently equipped item"""
+	## Tick 140: pre-fix an equipped item not found in EquipmentSystem
+	## (deleted entry, custom Scriptweaver item, save-format drift)
+	## rendered as "(empty)" — implying the slot was empty when it
+	## actually held something. Player couldn't tell whether their
+	## character was wearing armor or not. Now: fall back to
+	## ItemNameResolver for any non-empty-id case, so the player at
+	## least sees the item's id (prettified) instead of the
+	## misleading "(empty)".
 	if not character:
 		return "(empty)"
 
+	var equipped_id: String = ""
 	match slot_index:
-		0:  # Weapon
-			if character.equipped_weapon.is_empty():
+		0:
+			equipped_id = character.equipped_weapon
+			if equipped_id.is_empty():
 				return "(empty)"
-			var weapon = EquipmentSystem.get_weapon(character.equipped_weapon)
-			return weapon.get("name", "(empty)")
-		1:  # Armor
-			if character.equipped_armor.is_empty():
+			var weapon = EquipmentSystem.get_weapon(equipped_id)
+			if not weapon.is_empty():
+				return weapon.get("name", ItemNameResolver.resolve(equipped_id))
+		1:
+			equipped_id = character.equipped_armor
+			if equipped_id.is_empty():
 				return "(empty)"
-			var armor = EquipmentSystem.get_armor(character.equipped_armor)
-			return armor.get("name", "(empty)")
-		2:  # Accessory
-			if character.equipped_accessory.is_empty():
+			var armor = EquipmentSystem.get_armor(equipped_id)
+			if not armor.is_empty():
+				return armor.get("name", ItemNameResolver.resolve(equipped_id))
+		2:
+			equipped_id = character.equipped_accessory
+			if equipped_id.is_empty():
 				return "(empty)"
-			var acc = EquipmentSystem.get_accessory(character.equipped_accessory)
-			return acc.get("name", "(empty)")
+			var acc = EquipmentSystem.get_accessory(equipped_id)
+			if not acc.is_empty():
+				return acc.get("name", ItemNameResolver.resolve(equipped_id))
 
+	# Equipped id is non-empty but EquipmentSystem doesn't know it.
+	if not equipped_id.is_empty():
+		return ItemNameResolver.resolve(equipped_id)
 	return "(empty)"
 
 
@@ -454,8 +471,14 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	row.add_child(cursor)
 
 	# Item name
+	## Tick 140: prefer canonical name from item_data when available;
+	## fall back to ItemNameResolver (canonical from any data source)
+	## before raw snake_case id. Affects equipment pool entries that
+	## came from external sources (chest drops via save-format drift,
+	## Scriptweaver custom items) — pre-fix those rendered as e.g.
+	## "iron_sword" instead of "Iron Sword".
 	var name_label = Label.new()
-	name_label.text = item_data.get("name", item_id)
+	name_label.text = item_data.get("name", ItemNameResolver.resolve(item_id))
 	name_label.position = Vector2(24, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
