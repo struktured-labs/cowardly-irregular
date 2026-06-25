@@ -32,6 +32,13 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const HEAL_COLOR = Color(0.4, 0.9, 0.4)
 const MP_COLOR = Color(0.4, 0.8, 1.0)
 const BUFF_COLOR = Color(1.0, 0.8, 0.3)
+## Tick 138: OFFENSIVE damage items (bombs, lightning bolts) read
+## as physical-damage red-orange — matches AbilitiesMenu's
+## PHYSICAL_COLOR semantic. META items (Scriptweaver shards / save
+## fragments / reality-edit catalysts) get the same magenta as
+## meta abilities so the player visually groups them.
+const OFFENSIVE_COLOR = Color(1.0, 0.5, 0.3)
+const META_COLOR = Color(0.95, 0.4, 0.95)
 
 
 func _ready() -> void:
@@ -239,8 +246,20 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 
 
 func _get_item_color(item_data: Dictionary) -> Color:
-	"""Get color based on item category"""
-	var category = item_data.get("category", ItemSystem.ItemCategory.CONSUMABLE)
+	## Tick 138: every ItemCategory now has an explicit branch.
+	## Pre-fix OFFENSIVE (3) and META (4) silently fell through to
+	## TEXT_COLOR (white) despite both appearing in items.json —
+	## so bomb_fragment / corrupt_save / similar entries read as
+	## "neutral white" in the menu instead of their semantic
+	## damage/meta color.
+	## Coerce to int: JSON.parse returns numeric category as float
+	## (3.0), but the enum compares as int. Without int() the match
+	## arms never hit and EVERY item rendered through the default —
+	## i.e. ALL items appeared as TEXT_COLOR (white). The pre-tick-138
+	## "CONSUMABLE = HEAL_COLOR" code was effectively dead. Verified
+	## by the OFFENSIVE runtime test that failed with the explicit
+	## branches alone, then passed after this coercion was added.
+	var category = int(item_data.get("category", ItemSystem.ItemCategory.CONSUMABLE))
 	match category:
 		ItemSystem.ItemCategory.CONSUMABLE:
 			return HEAL_COLOR
@@ -248,6 +267,10 @@ func _get_item_color(item_data: Dictionary) -> Color:
 			return MP_COLOR
 		ItemSystem.ItemCategory.BUFF:
 			return BUFF_COLOR
+		ItemSystem.ItemCategory.OFFENSIVE:
+			return OFFENSIVE_COLOR
+		ItemSystem.ItemCategory.META:
+			return META_COLOR
 		_:
 			return TEXT_COLOR
 
