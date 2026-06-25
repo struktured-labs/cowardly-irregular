@@ -3146,33 +3146,49 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 	var corruption_risk = ability.get("corruption_risk", 0.0)
 	var corruption_amount = ability.get("corruption_amount", 0.0)
 
+	## Tick 172: every meta branch now emits battle_log_message.
+	## Meta abilities are reality manipulation (Scriptweaver / Time
+	## Mage / Necromancer / Bossbinder) — they should feel DRAMATIC
+	## in the log, not silent. Pre-fix EVERY branch only printed to
+	## debug console; player saw nothing in the visible log even as
+	## save state mutated. Magenta palette matches the META category
+	## color (AbilitiesMenu META_COLOR, ItemsMenu META_COLOR from
+	## the tick 137/138 color audit).
 	match meta_effect:
 		"formula_modification":
 			print("  → %s opens the formula editor..." % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s opens the formula editor...[/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_risk)
 		"constant_modification":
 			print("  → %s accesses game constants..." % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s accesses the game constants...[/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_risk)
 		"code_inspection":
 			print("  → %s analyzes the battle code..." % caster.combatant_name)
 			print("  → [META] Revealing execution order...")
+			battle_log_message.emit("[color=magenta]✦ %s analyzes the battle code — execution order revealed.[/color]" % caster.combatant_name)
 		"time_rewind":
 			print("  → %s attempts to rewind time..." % caster.combatant_name)
 			if GameState.rewind_to_previous_save():
 				print("  → [META] Time has been rewound!")
+				battle_log_message.emit("[color=magenta]✦ %s rewinds time![/color]" % caster.combatant_name)
 			else:
 				print("  → [META] No previous save state to rewind to")
+				battle_log_message.emit("[color=gray]%s reaches for the timeline... but no rewind point exists.[/color]" % caster.combatant_name)
 		"add_corruption":
 			print("  → %s channels corrupted power!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
 		"permanent_death":
 			print("  → %s casts PERMAKILL!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s casts PERMAKILL![/color]" % caster.combatant_name)
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.die()
 					target.add_status("permakilled")
 					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)
+					battle_log_message.emit("[color=red]☠ %s has been PERMANENTLY KILLED![/color]" % target.combatant_name)
 			GameState.add_corruption(corruption_risk)
 		_:
 			# Loud-fail symmetry with _execute_support_ability (line ~3026):
@@ -3186,16 +3202,23 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 
 
 func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
+	## Tick 172: every branch now emits battle_log_message. Pre-fix
+	## the player tried to escape and saw NOTHING in the visible log
+	## — only print() to debug console. The escape result is one of
+	## the most important per-turn outcomes; player needs to see it.
 	if not escape_allowed:
 		print("  → Cannot escape from this battle!")
+		battle_log_message.emit("[color=gray]Cannot escape from this battle![/color]")
 		return
 
 	var success_rate = ability.get("success_rate", 0.5)
 	if randf() < success_rate:
 		print("  → %s escaped successfully!" % caster.combatant_name)
+		battle_log_message.emit("[color=lime]%s escaped successfully![/color]" % caster.combatant_name)
 		end_battle(false)
 	else:
 		print("  → %s failed to escape!" % caster.combatant_name)
+		battle_log_message.emit("[color=gray]%s failed to escape.[/color]" % caster.combatant_name)
 
 
 func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets: Array = []) -> void:
