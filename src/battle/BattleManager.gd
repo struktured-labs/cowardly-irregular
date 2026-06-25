@@ -2947,6 +2947,13 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 
 
 func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	## Tick 169: emit healing_done + battle_log_message after a
+	## revive lands. Pre-fix revive only called target.revive()
+	## (which updates HP via hp_changed) and print()'d to the
+	## debug console — so the player saw the HP bar pop up but
+	## had no battle-log line and no green floating popup. Phoenix
+	## Down felt invisible despite working mechanically.
+	## Matches the _execute_healing_ability emit shape.
 	var revive_pct = ability.get("revive_percentage", 50)
 
 	for target in targets:
@@ -2955,7 +2962,13 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 
 		var revive_hp = int(target.max_hp * revive_pct / 100.0)
 		target.revive(revive_hp)
-		print("  → %s is revived with %d HP!" % [target.combatant_name, revive_hp])
+		# The actual HP after revive may differ from revive_hp due
+		# to max_hp clamps. healing_done uses the real current HP
+		# so the floating number matches the bar.
+		healing_done.emit(target, target.current_hp)
+		var revive_log: String = "  → [color=lime]%s[/color] is revived with [color=lime]%d[/color] HP!" % [target.combatant_name, target.current_hp]
+		battle_log_message.emit(revive_log)
+		print("  → %s is revived with %d HP!" % [target.combatant_name, target.current_hp])
 
 
 func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
