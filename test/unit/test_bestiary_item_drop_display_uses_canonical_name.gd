@@ -1,15 +1,12 @@
 extends GutTest
 
-## tick 130 regression: BestiaryMenu must prefer the canonical
-## ItemSystem display name for drops + one-shot rewards, falling
-## back to snake_case → Title Case only when the lookup fails.
-## Pre-fix, the bestiary used `replace+capitalize` directly — so
-## "hi_potion" displayed as "Hi Potion" instead of the canonical
-## "Hi-Potion" (with hyphen) from items.json.
-##
-## Equipment items (weapons / armor / accessories) come from
-## EquipmentSystem, not ItemSystem — so the resolver falls through
-## to that pool before the prettifier fallback.
+## tick 130 + tick 135 regression: BestiaryMenu's drop display
+## now delegates to the shared ItemNameResolver. Original tick-130
+## fix prevented "Hi Potion" instead of canonical "Hi-Potion"
+## from items.json. Tick 133 corrected the armors-plural typo.
+## Tick 135 moved the body to ItemNameResolver, so this test now
+## pins the wrapper-delegation shape + the live resolver
+## guarantees the runtime-behavior pin tests still rely on.
 
 const BESTIARY_MENU := "res://src/ui/BestiaryMenu.gd"
 
@@ -28,89 +25,70 @@ func _format_drops_body() -> String:
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
 
-func _resolver_body() -> String:
-	var src := _read(BESTIARY_MENU)
-	var idx: int = src.find("func _resolve_item_display_name")
-	assert_gt(idx, -1, "_resolve_item_display_name must exist")
-	var next_fn: int = src.find("\nfunc ", idx + 1)
-	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-
-
 func test_drops_path_uses_resolver_helper() -> void:
-	# Pin: the drop iteration uses _resolve_item_display_name, not
-	# the raw replace+capitalize.
 	var body := _format_drops_body()
 	assert_true(body.contains("_resolve_item_display_name(item)"),
-		"_format_drops must call _resolve_item_display_name(item) for each drop")
-	# Negative pin: the OLD direct prettifier path must be gone.
+		"_format_drops must call _resolve_item_display_name(item)")
 	assert_false(body.contains("item.replace(\"_\", \" \").capitalize()"),
-		"old direct `item.replace('_', ' ').capitalize()` must be gone — replaced by the resolver")
+		"old direct prettifier must be gone")
 
 
 func test_one_shot_path_uses_resolver_helper() -> void:
 	var body := _format_drops_body()
 	assert_true(body.contains("_resolve_item_display_name(os_str)"),
-		"_format_drops must call _resolve_item_display_name(os_str) for one-shot rewards")
+		"_format_drops must call _resolve_item_display_name(os_str)")
 	assert_false(body.contains("os_str.replace(\"_\", \" \").capitalize()"),
-		"old direct `os_str.replace('_', ' ').capitalize()` must be gone")
+		"old direct prettifier must be gone for one-shot path")
 
 
-func test_resolver_prefers_item_system_first() -> void:
-	# Pin ordering: ItemSystem first (covers consumables + main item
-	# table), then EquipmentSystem (covers weapons/armor/accessories),
-	# then prettifier fallback.
-	var body := _resolver_body()
-	var item_idx: int = body.find("get_node_or_null(\"/root/ItemSystem\")")
-	var equip_idx: int = body.find("get_node_or_null(\"/root/EquipmentSystem\")")
-	var fallback_idx: int = body.find("return item_id.replace(\"_\", \" \").capitalize()")
+func test_local_resolver_delegates_to_shared() -> void:
+	# Tick 135: BestiaryMenu._resolve_item_display_name is now a
+	# one-line wrapper over ItemNameResolver.resolve.
+	var src := _read(BESTIARY_MENU)
+	var idx: int = src.find("func _resolve_item_display_name")
+	assert_gt(idx, -1, "wrapper must exist")
+	var next_fn: int = src.find("\nfunc ", idx + 1)
+	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
+	assert_true(body.contains("ItemNameResolver.resolve(item_id)"),
+		"local resolver must delegate to shared ItemNameResolver.resolve")
+
+
+func test_shared_resolver_iterates_three_equipment_pools() -> void:
+	# Pin lives on the shared resolver now.
+	var resolver_src := _read("res://src/items/ItemNameResolver.gd")
+	for pool in ["weapons", "armors", "accessories"]:
+		var quoted: String = "\"" + pool + "\""
+		assert_true(resolver_src.contains(quoted),
+			"shared resolver must check '%s' EquipmentSystem pool" % pool)
+	# Negative pin: singular 'armor' typo must NOT return.
+	assert_false(resolver_src.contains("\"armor\","),
+		"singular 'armor' is a typo — must be 'armors' plural")
+
+
+func test_shared_resolver_prefers_item_system_first() -> void:
+	var resolver_src := _read("res://src/items/ItemNameResolver.gd")
+	var item_idx: int = resolver_src.find("get_node_or_null(\"ItemSystem\")")
+	var equip_idx: int = resolver_src.find("get_node_or_null(\"EquipmentSystem\")")
+	var fallback_idx: int = resolver_src.find("return item_id.replace(\"_\", \" \").capitalize()")
 	assert_gt(item_idx, -1, "ItemSystem lookup must exist")
 	assert_gt(equip_idx, -1, "EquipmentSystem lookup must exist")
 	assert_gt(fallback_idx, -1, "prettifier fallback must exist")
 	assert_lt(item_idx, equip_idx,
-		"ItemSystem must be queried BEFORE EquipmentSystem — consumables are the most common drop")
+		"ItemSystem checked before EquipmentSystem in shared resolver")
 	assert_lt(equip_idx, fallback_idx,
-		"EquipmentSystem must be queried BEFORE the prettifier fallback — equipment drops have canonical names too")
+		"EquipmentSystem checked before prettifier fallback")
 
 
-func test_resolver_iterates_three_equipment_pools() -> void:
-	# Pin: weapons, armors, accessories — EquipmentSystem's three
-	# top-level pool dicts. CRITICAL: must be "armors" (plural) to
-	# match EquipmentSystem.gd line 11 `var armors: Dictionary`.
-	# Tick 130 originally pinned "armor" (singular) which never hit
-	# any pool — silently fell through to the prettifier for ALL
-	# armor drops. Tick 133 fixed both the resolver AND this pin.
-	var body := _resolver_body()
-	for pool in ["weapons", "armors", "accessories"]:
-		var quoted: String = "\"" + pool + "\""
-		assert_true(body.contains(quoted),
-			"resolver must check '%s' EquipmentSystem pool" % pool)
-	# Negative pin: the broken singular form must not return — it
-	# would silently leak prettified names for every armor drop.
-	assert_false(body.contains("\"armor\","),
-		"singular 'armor' is a typo — EquipmentSystem.armors is plural. Tick 133 fixed this; don't regress.")
-
-
-func test_resolver_empty_id_returns_empty_string() -> void:
-	# Defensive: empty item_id is a no-op.
-	var body := _resolver_body()
-	assert_true(body.contains("if item_id == \"\":\n\t\treturn \"\""),
-		"resolver must return \"\" on empty input — defensive")
-
-
-func test_resolver_handles_missing_name_field() -> void:
-	# Pin: ItemSystem.get_item returning a dict without "name" key
-	# must still fall through (not return empty). The has("name")
-	# guard catches that case.
-	var body := _resolver_body()
-	assert_true(body.contains("if not data.is_empty() and data.has(\"name\"):"),
-		"ItemSystem branch must check has('name') — falls through if item exists but unnamed")
+func test_shared_resolver_handles_missing_name_field() -> void:
+	var resolver_src := _read("res://src/items/ItemNameResolver.gd")
+	assert_true(resolver_src.contains("if not data.is_empty() and data.has(\"name\"):"),
+		"ItemSystem branch must check has('name')")
 
 
 func test_existing_format_drops_skeleton_preserved() -> void:
-	# Sanity: don't regress the structural format ("X N%, Y M%").
 	var body := _format_drops_body()
 	assert_true(body.contains("parts.append(\"%s %d%%\""),
-		"format_drops skeleton must still produce '<name> <pct>%' parts")
+		"format must produce '<name> <pct>%' parts")
 	assert_true(body.contains("\"Drops: %s\""),
 		"Drops: prefix preserved")
 	assert_true(body.contains("(One-shot: %s)"),

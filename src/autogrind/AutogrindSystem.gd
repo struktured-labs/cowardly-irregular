@@ -1783,7 +1783,7 @@ func get_items_consumed_summary() -> String:
 		return "None"
 	var parts: Array = []
 	for item_id in items_consumed:
-		var name = item_id.replace("_", " ").capitalize()
+		var name = ItemNameResolver.resolve(item_id)
 		parts.append("%s x%d" % [name, items_consumed[item_id]])
 	return ", ".join(parts)
 

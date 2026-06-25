@@ -1125,7 +1125,7 @@ func _show_scan_popup(enemy: Combatant) -> void:
 			for drop in drops:
 				var item_id = drop.get("item", "")
 				var chance = drop.get("chance", 0.0)
-				var item_name = item_id.replace("_", " ").capitalize()
+				var item_name = ItemNameResolver.resolve(item_id)
 				drop_names.append("%s (%d%%)" % [item_name, int(chance * 100)])
 			var drop_label = Label.new()
 			drop_label.text = "Drops: %s" % ", ".join(drop_names)

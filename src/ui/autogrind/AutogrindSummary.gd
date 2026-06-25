@@ -157,21 +157,9 @@ func _build_ui() -> void:
 	panel.add_child(dismiss_lbl)
 
 
-## Tick 131: prefer ItemSystem's canonical display name for items
-## consumed during the autogrind session. Mirror of the BestiaryMenu
-## resolver added in tick 130. Items_consumed is consumables-only
-## (autogrind doesn't track equipment use), so no EquipmentSystem
-## fallback is needed — but defensive prettifier fallback covers
-## debug paths + custom Scriptweaver items + save-format drift.
+## Tick 135: thin wrapper around ItemNameResolver.
 func _resolve_item_display_name(item_id: String) -> String:
-	if item_id == "":
-		return ""
-	var item_sys = get_node_or_null("/root/ItemSystem")
-	if item_sys != null and item_sys.has_method("get_item"):
-		var data: Dictionary = item_sys.get_item(item_id)
-		if not data.is_empty() and data.has("name"):
-			return str(data["name"])
-	return item_id.replace("_", " ").capitalize()
+	return ItemNameResolver.resolve(item_id)
 
 
 func _compute_grade() -> Dictionary:

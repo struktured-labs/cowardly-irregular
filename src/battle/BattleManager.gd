@@ -344,13 +344,8 @@ func end_battle(victory: bool) -> void:
 						if not routed_as_equipment:
 							if player_party.size() > 0 and player_party[0].is_alive:
 								player_party[0].add_item(item_id)
-						# Track for display
-						var item_name = item_id.replace("_", " ").capitalize()
-						var item_data = ItemSystem.get_item(item_id) if ItemSystem else {}
-						if not item_data.is_empty():
-							item_name = item_data.get("name", item_name)
-						if routed_as_equipment and item_name == item_id.replace("_", " ").capitalize():
-							item_name = _equipment_display_name(item_id, item_name)
+						# Track for display via shared resolver (tick 135).
+						var item_name = ItemNameResolver.resolve(item_id)
 						# Merge duplicates
 						var found = false
 						for existing in item_drops:

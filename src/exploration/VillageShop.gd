@@ -504,36 +504,9 @@ func _format_inventory(items: Array) -> String:
 	return result
 
 
-## Tick 134: shop inventories mix consumables, spells, weapons, and
-## armor — each lives in a different system. Resolve through all
-## four (ItemSystem → JobSystem.abilities → EquipmentSystem) before
-## falling back to the prettifier. Pre-fix every entry got the
-## raw replace+capitalize, so "Hi Potion" / "Iron Sword" instead
-## of canonical names with modifiers from JSON. High-visibility:
-## shop dialogue fires in every village across all 6 worlds.
+## Tick 135: thin wrapper around ItemNameResolver.
 func _resolve_inventory_name(item_id: String) -> String:
-	if item_id == "":
-		return ""
-	var item_sys = get_node_or_null("/root/ItemSystem")
-	if item_sys != null and item_sys.has_method("get_item"):
-		var data: Dictionary = item_sys.get_item(item_id)
-		if not data.is_empty() and data.has("name"):
-			return str(data["name"])
-	var job_sys = get_node_or_null("/root/JobSystem")
-	if job_sys != null and job_sys.has_method("get_ability"):
-		var ab: Dictionary = job_sys.get_ability(item_id)
-		if not ab.is_empty() and ab.has("name"):
-			return str(ab["name"])
-	var equip_sys = get_node_or_null("/root/EquipmentSystem")
-	if equip_sys != null:
-		for pool_name in ["weapons", "armors", "accessories"]:
-			if pool_name in equip_sys:
-				var pool: Dictionary = equip_sys[pool_name]
-				if pool.has(item_id) and pool[item_id] is Dictionary:
-					var name = str(pool[item_id].get("name", ""))
-					if name != "":
-						return name
-	return item_id.replace("_", " ").capitalize()
+	return ItemNameResolver.resolve(item_id)
 
 
 func _close_menu() -> void:
