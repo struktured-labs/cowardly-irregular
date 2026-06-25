@@ -356,8 +356,12 @@ func spawn_forced_enemies() -> void:
 
 		var monster_data = monsters_data[enemy_id]
 		var enemy = Combatant.new()
+		## Tick 142: prettify enemy_id when monsters.json lacks a "name".
+		## The Combatant.name field flows into the battle log, damage
+		## popups, gloat lines, and bestiary entries — a raw snake_case
+		## leak here surfaces in dozens of player-facing places.
 		var stats = {
-			"name": monster_data.get("name", enemy_id),
+			"name": monster_data.get("name", enemy_id.replace("_", " ").capitalize()),
 			"max_hp": monster_data["stats"].get("max_hp", 100),
 			"max_mp": monster_data["stats"].get("max_mp", 0),
 			"attack": monster_data["stats"].get("attack", 10),
@@ -380,7 +384,7 @@ func spawn_forced_enemies() -> void:
 
 		# Set abilities from monster data so AI can use them
 		if monster_data.has("abilities"):
-			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id)}
+			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id.replace("_", " ").capitalize())}
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
@@ -453,7 +457,7 @@ func spawn_encounter_enemies() -> void:
 		var enemy = Combatant.new()
 
 		var stats = {
-			"name": monster_data.get("name", enemy_id),
+			"name": monster_data.get("name", enemy_id.replace("_", " ").capitalize()),
 			"max_hp": monster_data["stats"].get("max_hp", 100),
 			"max_mp": monster_data["stats"].get("max_mp", 0),
 			"attack": monster_data["stats"].get("attack", 10),
@@ -482,7 +486,7 @@ func spawn_encounter_enemies() -> void:
 
 		# Set abilities from monster data so AI can use them
 		if monster_data.has("abilities"):
-			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id)}
+			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id.replace("_", " ").capitalize())}
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
@@ -504,7 +508,7 @@ func spawn_encounter_enemies() -> void:
 		_scene.test_enemies.append(enemy)
 
 		# Track for encounter message
-		var display_name = monster_data.get("name", enemy_id)
+		var display_name = monster_data.get("name", enemy_id.replace("_", " ").capitalize())
 		if display_name in enemy_names:
 			enemy_names[display_name] += 1
 		else:
