@@ -244,7 +244,17 @@ func _apply_save_data(save_data: Dictionary) -> void:
 					entry["secondary_job_id"] = job_system.resolve_job_id(entry["secondary_job_id"])
 		player_party = typed_party
 	if save_data.has("party_leader_index"):
-		party_leader_index = save_data["party_leader_index"]
+		## Tick 155: int() coerce (JSON.parse returns numeric as
+		## float) + clamp to valid range. Pre-fix a corrupted save
+		## with an out-of-range index would crash the next consumer
+		## reading player_party[party_leader_index]. The clamp uses
+		## the loaded player_party.size() — make sure this line
+		## stays AFTER the player_party load above. If the saved
+		## index is invalid we fall back to 0 (defensive: max with 0
+		## handles the empty-party edge case where size()-1 = -1).
+		var raw_idx: int = int(save_data["party_leader_index"])
+		var max_idx: int = max(0, player_party.size() - 1)
+		party_leader_index = clampi(raw_idx, 0, max_idx)
 	if save_data.has("game_constants"):
 		# Tick 112: MERGE saved values onto the default dict instead of
 		# replacing the dict wholesale. Old saves predate later-added keys

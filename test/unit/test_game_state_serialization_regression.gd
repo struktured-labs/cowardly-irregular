@@ -62,12 +62,27 @@ func test_round_trip_preserves_worlds_unlocked() -> void:
 
 
 func test_round_trip_preserves_party_leader_index() -> void:
+	# Tick 155: from_dict now clamps party_leader_index to a valid
+	# range against the loaded player_party.size(). The test must
+	# seed a party of size ≥ 4 so the saved value 3 is in range
+	# and round-trips unchanged. Pre-tick-155 there was no clamp,
+	# and the test happened to pass with an empty party because
+	# the raw value passed through. With the clamp, an empty party
+	# correctly clamps to 0 — this test asserts the round-trip for
+	# VALID index/party combinations.
 	var s = _make_state()
+	var typed_party: Array[Dictionary] = [
+		{"name": "A", "job_id": "fighter"},
+		{"name": "B", "job_id": "cleric"},
+		{"name": "C", "job_id": "mage"},
+		{"name": "D", "job_id": "rogue"},
+	]
+	s.player_party = typed_party
 	s.party_leader_index = 3
 	var data = s.to_dict()
 	s.party_leader_index = 0
 	s.from_dict(data)
-	assert_eq(s.party_leader_index, 3, "party_leader_index round-trips")
+	assert_eq(s.party_leader_index, 3, "party_leader_index round-trips when party size accommodates it")
 
 
 func test_round_trip_preserves_story_flags() -> void:
