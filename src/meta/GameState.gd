@@ -257,7 +257,15 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		for key in saved.keys():
 			game_constants[key] = saved[key]
 	if save_data.has("meta_features"):
-		meta_features = save_data["meta_features"].duplicate()
+		## Tick 150: same MERGE pattern as game_constants (tick 112).
+		## Pre-fix this replaced the dict wholesale — old saves missing
+		## later-added default keys (e.g. a new "restore_points_v2" entry)
+		## would silently lose the defaults on load, leaving consumers
+		## crashing on missing-key access. Merging preserves both the
+		## saved values AND any defaults the save didn't know about.
+		var saved_meta: Dictionary = save_data["meta_features"]
+		for key in saved_meta.keys():
+			meta_features[key] = saved_meta[key]
 	if save_data.has("corruption_effects"):
 		var typed_corruption: Array[String] = []
 		for ce in save_data["corruption_effects"]:
