@@ -32,6 +32,11 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const MAGIC_COLOR = Color(0.6, 0.4, 1.0)
 const PHYSICAL_COLOR = Color(1.0, 0.5, 0.3)
 const SUPPORT_COLOR = Color(0.4, 0.9, 0.4)
+## Tick 137: distinct color for Scriptweaver/Time Mage/Necromancer
+## meta abilities — they manipulate save/code/reality and shouldn't
+## share the physical color. Magenta sits visually between magic
+## and support.
+const META_COLOR = Color(0.95, 0.4, 0.95)
 const PASSIVE_EQUIPPED = Color(1.0, 0.8, 0.3)
 const PASSIVE_AVAILABLE = Color(0.7, 0.7, 0.8)
 const TAB_ACTIVE = Color(0.3, 0.4, 0.6)
@@ -361,13 +366,23 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 
 
 func _get_ability_color(data: Dictionary) -> Color:
-	"""Get color based on ability type"""
+	## Tick 137: previous match only covered 4 explicit types; the
+	## other 6 in abilities.json (escape, meta, mp_restore, revival,
+	## song, summon) all silently rendered as PHYSICAL_COLOR. Now
+	## every type from data/abilities.json has an explicit branch,
+	## chosen by semantic role:
+	##   - MAGIC for caster-style (magic/healing/mp_restore/revival/summon)
+	##   - SUPPORT for ally-aid (support/buff/song/escape)
+	##   - META for reality manipulation (meta — Scriptweaver/etc)
+	##   - PHYSICAL as the safe default for physical or unknown
 	var ability_type = data.get("type", "physical")
 	match ability_type:
-		"magic", "offensive_magic", "healing":
+		"magic", "offensive_magic", "healing", "mp_restore", "revival", "summon":
 			return MAGIC_COLOR
-		"support", "buff":
+		"support", "buff", "song", "escape":
 			return SUPPORT_COLOR
+		"meta":
+			return META_COLOR
 		_:
 			return PHYSICAL_COLOR
 

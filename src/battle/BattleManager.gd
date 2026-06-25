@@ -4052,9 +4052,12 @@ func _build_boss_intent_context(
 				ctx.available_intents.append(str(it.get("id", "")))
 		# Pull persona text from the showcase personas data if present —
 		# falls back to display_name + "boss" if no persona block authored.
+		# Tick 137: route through _resolve_boss_display_name so a dungeon-
+		# subclass-set combatant_name (e.g. "Mordaine the Usurper") wins
+		# over BossDialogue's bare display_name.
 		ctx.persona = str(entry.get("persona", ""))
-		if ctx.persona.is_empty() and "get_display_name" in boss_dlg:
-			ctx.persona = "%s, a boss in Cowardly Irregular." % boss_dlg.get_display_name(persona_id)
+		if ctx.persona.is_empty():
+			ctx.persona = "%s, a boss in Cowardly Irregular." % _resolve_boss_display_name(persona_id)
 
 	# Recent actions — feed the player action log so the LLM can see what
 	# the party keeps doing (mirrors the prompt's "Recent exchange" block).
@@ -4296,7 +4299,7 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 	# LLM available — capture the context snapshot NOW (enemy_party is about to
 	# be cleared by _cleanup_battle) and hand off to the async producer. We do
 	# NOT await: end_battle stays synchronous and non-blocking.
-	var boss_name: String = _gloat_boss_display_name(persona_id)
+	var boss_name: String = _resolve_boss_display_name(persona_id)
 	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory)
 	_produce_boss_gloat_async(prompt, fallback, victory)
 
@@ -4385,10 +4388,16 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -
 	)
 
 
-## Best-effort display name for the gloat prompt. Prefers the boss's combatant
-## name from enemy_party, then the BossDialogue display_name, then the persona id
-## prettified. Pure flavour — never affects the deterministic fallback.
-func _gloat_boss_display_name(persona_id: String) -> String:
+## Tick 137: renamed from _gloat_boss_display_name. Used by the
+## gloat path (line 4299), the intent-picker context (line 4057),
+## and BattleCommandMenu's 'does not react' log line. Single
+## canonical resolver for "the player-facing name of a boss
+## persona". Resolution order:
+##   1. enemy_party combatant_name (e.g. "Mordaine the Usurper")
+##   2. BossDialogue.get_display_name (canonical from JSON)
+##   3. persona_id prettified (graceful fallback)
+## Pure flavour — never affects the deterministic fallback.
+func _resolve_boss_display_name(persona_id: String) -> String:
 	for e in enemy_party:
 		if not is_instance_valid(e):
 			continue
