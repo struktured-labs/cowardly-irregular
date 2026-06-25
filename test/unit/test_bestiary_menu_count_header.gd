@@ -46,12 +46,46 @@ func test_count_label_width_accommodates_longer_text() -> void:
 	# The new label is longer than the old "12 / 88 discovered".
 	# Width must be ≥ 320 (rough fit at 16pt font) to avoid truncation.
 	var src := _read(BESTIARY_MENU)
-	# The exact size used in tick 148: 340 wide.
+	# The exact size used in tick 148 (wide branch): 340 wide.
 	assert_true(src.contains("_count_label.size = Vector2(340, 24)"),
-		"count label must be wide enough for the new dual-count text — 340px")
+		"count label (wide viewport) must be wide enough for the dual-count text — 340px")
 	# Positioned 360 left of right edge to match the wider label.
 	assert_true(src.contains("Vector2(viewport.x - 360, 22)"),
-		"count label must be positioned to fit the wider text without clipping the viewport edge")
+		"count label (wide viewport) must be positioned to fit the wider text without clipping the viewport edge")
+
+
+func test_narrow_viewport_collapses_to_short_form() -> void:
+	# Tick 149: viewport <= 720 collapses to "X/N seen" only.
+	# At narrow viewports the dual-count text would overlap the
+	# "Bestiary" title label (header ends at x=324, count label
+	# positioned at viewport.x - 360 would start at x=240 on a
+	# 600-wide viewport → 84px overlap).
+	var src := _read(BESTIARY_MENU)
+	assert_true(src.contains("var narrow_viewport: bool = viewport.x <= 720"),
+		"narrow viewport threshold must be set at 720px")
+	# Narrow branch uses the shorter format string.
+	assert_true(src.contains("_count_label.text = \"%d/%d seen\" % [counts.x, counts.y]"),
+		"narrow branch must use the seen-only format string")
+	# Narrow branch uses a smaller label width (200) and tighter
+	# position (viewport.x - 220).
+	assert_true(src.contains("_count_label.size = Vector2(200, 24)"),
+		"narrow branch must use the smaller label width")
+	assert_true(src.contains("Vector2(viewport.x - 220, 22)"),
+		"narrow branch must use the tighter position offset")
+
+
+func test_dual_count_text_only_in_wide_branch() -> void:
+	# Negative pin: the dual-count format string must NOT appear
+	# outside the `else:` (wide) branch. Otherwise narrow viewports
+	# would still try to render it.
+	var src := _read(BESTIARY_MENU)
+	# The dual-count format appears in the source body.
+	var dual_idx: int = src.find("\"%d/%d seen · %d/%d defeated\"")
+	assert_gt(dual_idx, -1, "dual-count format must exist for the wide branch")
+	# Walk back to confirm it lives inside an else: block.
+	var else_idx: int = src.rfind("else:", dual_idx)
+	assert_gt(else_idx, -1,
+		"dual-count format must be inside an `else:` block — narrow viewports must NOT render it")
 
 
 # ── Test pollution fixes ────────────────────────────────────────────────

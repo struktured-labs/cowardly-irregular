@@ -76,12 +76,23 @@ func _build_ui() -> void:
 	## at a glance. Seen = encountered (full bestiary list size).
 	## Defeated = killed (full intel unlocked). Format: "12/88 seen
 	## · 7/88 defeated" — em-dash visually anchors the split.
+	## Tick 149: narrow viewport (<= 720px wide) collapses to the
+	## short form "12/88 seen" to avoid overlap with the "Bestiary"
+	## title label (which ends at x=324). Web build can render at
+	## arbitrary viewport sizes; without this guard the count text
+	## ran into the title at viewports ≤ ~600px.
 	var counts: Vector2i = BestiarySystem.discovery_counts()
 	var defeated_counts: Vector2i = BestiarySystem.defeat_counts()
 	_count_label = Label.new()
-	_count_label.text = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
-	_count_label.position = Vector2(viewport.x - 360, 22)
-	_count_label.size = Vector2(340, 24)
+	var narrow_viewport: bool = viewport.x <= 720
+	if narrow_viewport:
+		_count_label.text = "%d/%d seen" % [counts.x, counts.y]
+		_count_label.size = Vector2(200, 24)
+		_count_label.position = Vector2(viewport.x - 220, 22)
+	else:
+		_count_label.text = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
+		_count_label.size = Vector2(340, 24)
+		_count_label.position = Vector2(viewport.x - 360, 22)
 	_count_label.add_theme_font_size_override("font_size", 16)
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
