@@ -210,7 +210,12 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	if save_data.has("playtime"):
 		playtime_seconds = save_data["playtime"]
 	if save_data.has("corruption_level"):
-		corruption_level = save_data["corruption_level"]
+		## Tick 156: float() coerce + clampf to documented [0.0, 1.0]
+		## range. Pre-fix a corrupted save with negative or >1.0 value
+		## would propagate: add_corruption clamps on add but read sites
+		## (save_corrupted signal arg, _apply_random_corruption_effect)
+		## could fire with out-of-range. Sealing at load.
+		corruption_level = clampf(float(save_data["corruption_level"]), 0.0, 1.0)
 	if save_data.has("macro_volatility"):
 		macro_volatility = float(save_data["macro_volatility"])
 	if save_data.has("party_gold"):
@@ -281,10 +286,15 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		for ce in save_data["corruption_effects"]:
 			typed_corruption.append(str(ce))
 		corruption_effects = typed_corruption
+	## Tick 156: world bookkeeping is int 1-6 (matches the 6 worlds
+	## shipped). Coerce from JSON's float + clamp to valid range so
+	## a corrupted save with 0 or 99 doesn't leak into is_world_unlocked
+	## (which compares world_num <= worlds_unlocked — 99 would
+	## "unlock" all worlds) or WorldMapMenu's display label.
 	if save_data.has("current_world"):
-		current_world = save_data["current_world"]
+		current_world = clampi(int(save_data["current_world"]), 1, 6)
 	if save_data.has("worlds_unlocked"):
-		worlds_unlocked = save_data["worlds_unlocked"]
+		worlds_unlocked = clampi(int(save_data["worlds_unlocked"]), 1, 6)
 	if save_data.has("story_flags"):
 		story_flags = save_data["story_flags"].duplicate()
 	if save_data.has("current_save_name"):
