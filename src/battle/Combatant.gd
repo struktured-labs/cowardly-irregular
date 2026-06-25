@@ -657,30 +657,46 @@ func to_dict() -> Dictionary:
 
 func from_dict(data: Dictionary) -> void:
 	"""Restore combatant state from saved data"""
+	## Tick 157: int() coerce + clamp on all scalar stat fields.
+	## JSON.parse returns numerics as float; typed-int fields would
+	## auto-truncate, but explicit coerce + clamp catches save
+	## corruption (negative HP, AP out of [-4, 4] range, level 0,
+	## current_hp > max_hp from an interrupted save). Load order
+	## matters: max_hp / max_mp loaded BEFORE current_hp / current_mp
+	## so the cap-clamp uses the just-loaded max, not the default.
 	if data.has("name"):
 		combatant_name = data["name"]
 	if data.has("max_hp"):
-		max_hp = data["max_hp"]
+		# Floor at 1 — max_hp = 0 would divide-by-zero in
+		# get_hp_percentage and break recalculate_stats's
+		# `max(1, max_hp - penalty)` semantics.
+		max_hp = max(1, int(data["max_hp"]))
 	if data.has("max_mp"):
-		max_mp = data["max_mp"]
+		max_mp = max(0, int(data["max_mp"]))
 	if data.has("current_hp"):
-		current_hp = data["current_hp"]
+		# Clamp to [0, max_hp]. Negative HP could happen via save
+		# corruption; > max_hp could happen when a save was taken
+		# during a +max_hp buff and the buff dropped off.
+		current_hp = clampi(int(data["current_hp"]), 0, max_hp)
 	if data.has("current_mp"):
-		current_mp = data["current_mp"]
+		current_mp = clampi(int(data["current_mp"]), 0, max_mp)
 	if data.has("current_ap"):
-		current_ap = data["current_ap"]
+		# AP design range: -4 to +4 (CLAUDE.md combat section).
+		current_ap = clampi(int(data["current_ap"]), -4, 4)
 	if data.has("attack"):
-		attack = data["attack"]
+		attack = max(0, int(data["attack"]))
 	if data.has("defense"):
-		defense = data["defense"]
+		defense = max(0, int(data["defense"]))
 	if data.has("magic"):
-		magic = data["magic"]
+		magic = max(0, int(data["magic"]))
 	if data.has("speed"):
-		speed = data["speed"]
+		speed = max(0, int(data["speed"]))
 	if data.has("job_level"):
-		job_level = data["job_level"]
+		# Floor at 1 — level 0 would break level_mult calculation
+		# (1.0 + (0 - 1) * 0.04 = 0.96) and ability-learning gates.
+		job_level = max(1, int(data["job_level"]))
 	if data.has("job_exp"):
-		job_exp = data["job_exp"]
+		job_exp = max(0, int(data["job_exp"]))
 	# JSON-roundtrip note: JSON.parse returns generic Array, not Array[T].
 	# Assigning to a typed Array[T] field silently fails with a SCRIPT
 	# ERROR — the field keeps its prior value (default []). For each

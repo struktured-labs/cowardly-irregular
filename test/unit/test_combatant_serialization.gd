@@ -185,9 +185,14 @@ func test_to_dict_returns_independent_copy() -> void:
 
 
 func test_round_trip_with_zero_stats() -> void:
+	# Tick 157: from_dict floors max_hp at 1 (zero would
+	# divide-by-zero in get_hp_percentage and break the
+	# recalculate_stats `max(1, max_hp - penalty)` invariant).
+	# Zero attack/defense IS allowed (floored at 0, not 1) —
+	# a stat-stripped character is a valid game state.
 	var c = CombatantScript.new()
 	add_child_autofree(c)
-	c.max_hp = 0
+	c.max_hp = 1  # tick-157-safe: explicit 1, not 0
 	c.current_hp = 0
 	c.max_mp = 0
 	c.current_mp = 0
@@ -199,8 +204,8 @@ func test_round_trip_with_zero_stats() -> void:
 	add_child_autofree(restored)
 	restored.from_dict(data)
 
-	assert_eq(restored.max_hp, 0, "Zero max_hp round-trip")
-	assert_eq(restored.attack, 0, "Zero attack round-trip")
+	assert_eq(restored.max_hp, 1, "max_hp round-trip preserves safe minimum (tick 157 floor)")
+	assert_eq(restored.attack, 0, "Zero attack round-trip (no floor below 0 needed)")
 
 
 func test_round_trip_with_negative_ap() -> void:
