@@ -34,6 +34,20 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_battle_log.clear()
 	_rounds_since_group_attack = 99
 
+	## Tick 145: mark encountered monsters as seen in the bestiary,
+	## mirroring BattleScene._show_battle_quip. Pre-fix autogrind
+	## battles never updated the bestiary — a player running
+	## autogrind for hours could face hundreds of monster types
+	## without any of them showing up in their bestiary.
+	for enemy in _enemy_party:
+		if not is_instance_valid(enemy):
+			continue
+		var mtype: String = ""
+		if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+			mtype = str(enemy.get_meta("monster_type", ""))
+		if mtype != "":
+			BestiarySystem.mark_seen(mtype)
+
 	# Edge case: empty or all-dead party = immediate defeat
 	var alive_players = _player_party.filter(func(c): return c.is_alive)
 	if alive_players.is_empty():

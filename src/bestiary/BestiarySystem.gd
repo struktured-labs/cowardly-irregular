@@ -123,7 +123,12 @@ static func get_seen_entries_sorted() -> Array:
 			continue
 		out.append({
 			"id": id,
-			"name": data.get("name", id),
+			## Tick 145: prettify id fallback so a monsters.json entry
+			## that's missing a "name" field (data drift, custom
+			## Scriptweaver enemy, save built against older monsters
+			## list) shows as "Cave Rat King" instead of raw
+			## "cave_rat_king" in the bestiary list.
+			"name": data.get("name", id.replace("_", " ").capitalize()),
 			"level": data.get("level", 1),
 			"stats": data.get("stats", {}),
 			"weaknesses": data.get("weaknesses", []),
