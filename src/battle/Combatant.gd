@@ -757,8 +757,16 @@ func from_dict(data: Dictionary) -> void:
 					entry["remaining_turns"] = int(entry["remaining_turns"])
 				typed_debuffs.append(entry)
 		active_debuffs = typed_debuffs
-	if data.has("is_alive"):
-		is_alive = data["is_alive"]
+	## Tick 158: derive is_alive from current_hp instead of trusting
+	## the saved bool. Pre-fix a corrupted save with current_hp=0 +
+	## is_alive=true would leave the combatant "alive but at 0 HP"
+	## until the next take_damage call flipped it. Symmetric:
+	## current_hp>0 + is_alive=false would leave a "dead but
+	## healable" combatant. The pairing IS enforced everywhere else
+	## (die sets is_alive=false AND current_hp=0; revive sets
+	## is_alive=true AND current_hp>=1) so derivation is sound and
+	## seals load against save corruption.
+	is_alive = current_hp > 0
 	if data.has("learned_abilities"):
 		learned_abilities.clear()
 		for ability_id in data["learned_abilities"]:
@@ -788,7 +796,15 @@ func from_dict(data: Dictionary) -> void:
 	if data.has("inventory"):
 		inventory = data["inventory"].duplicate()
 	if data.has("doom_counter"):
-		doom_counter = data["doom_counter"]
+		## Tick 158: int() coerce + normalize any negative to the
+		## canonical -1 sentinel ("not doomed"). All consumers
+		## check `> 0` for active countdown and `== 0` for the
+		## kill-trigger, so a value like -5 from save corruption
+		## isn't directly harmful — but it muddles the contract,
+		## and downstream code that later adds a `== -1` check
+		## (cleaner alternative to `<= -1`) would silently miss it.
+		var raw_doom: int = int(data["doom_counter"])
+		doom_counter = -1 if raw_doom < 0 else raw_doom
 	if data.has("pinned_abilities"):
 		var typed_pinned: Array[String] = []
 		for ability_id in data["pinned_abilities"]:

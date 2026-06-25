@@ -88,8 +88,15 @@ func test_round_trip_with_learned_abilities() -> void:
 
 
 func test_round_trip_with_is_alive_false() -> void:
+	# Tick 158: is_alive is now DERIVED from current_hp on load,
+	# not trusted from save. The pre-fix test set is_alive=false
+	# but left current_hp at its constructor default (100) — an
+	# inconsistent state. Post-fix that inconsistency would
+	# resolve to is_alive=true (HP > 0 → alive).
+	# Test now sets BOTH consistently for a dead combatant.
 	var c = CombatantScript.new()
 	add_child_autofree(c)
+	c.current_hp = 0
 	c.is_alive = false
 
 	var data = c.to_dict()
@@ -97,7 +104,7 @@ func test_round_trip_with_is_alive_false() -> void:
 	add_child_autofree(restored)
 	restored.from_dict(data)
 
-	assert_false(restored.is_alive, "Should restore is_alive=false")
+	assert_false(restored.is_alive, "Should restore is_alive=false (derived from current_hp=0)")
 
 
 func test_round_trip_with_ap() -> void:
