@@ -71,15 +71,24 @@ static func export_autogrind_rules() -> String:
 
 
 ## Import a script/rules file. Returns a dict with "type" and content, or empty on failure.
+## Tick 168: every failure mode now uses push_warning instead of
+## print. Imports are player-driven (user picks a file to import
+## a friend's autobattle script). When import silently fails, the
+## player has no signal beyond "the script didn't appear" — no
+## hint whether the file was missing, malformed, or wrong shape.
+## push_warning surfaces in the editor warnings panel + CI test
+## runs. Also added the missing root-Dictionary check (pre-fix
+## a parsed-but-non-Dict root would crash on the typed assignment
+## `var data: Dictionary = json.data` at the next line).
 static func import_file(filename: String) -> Dictionary:
 	var path = EXPORT_DIR + filename
 	if not FileAccess.file_exists(path):
-		print("[SHARE] File not found: %s" % path)
+		push_warning("[SHARE] Import file not found: %s" % path)
 		return {}
 
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
-		print("[SHARE] Cannot open: %s" % path)
+		push_warning("[SHARE] Import file exists but FileAccess.open failed: %s" % path)
 		return {}
 
 	var json_text = file.get_as_text()
@@ -87,12 +96,16 @@ static func import_file(filename: String) -> Dictionary:
 
 	var json = JSON.new()
 	if json.parse(json_text) != OK:
-		print("[SHARE] Invalid JSON in %s" % filename)
+		push_warning("[SHARE] Import file '%s' JSON parse error: %s" % [filename, json.get_error_message()])
+		return {}
+
+	if not (json.data is Dictionary):
+		push_warning("[SHARE] Import file '%s' parsed but root is not a Dictionary — expected a script/bundle export" % filename)
 		return {}
 
 	var data: Dictionary = json.data
 	if not data.has("type") or not data.has("version"):
-		print("[SHARE] Missing type/version in %s" % filename)
+		push_warning("[SHARE] Import file '%s' missing required 'type' or 'version' fields — not a valid export" % filename)
 		return {}
 
 	return data
@@ -191,7 +204,12 @@ static func _write_export(filename: String, data: Dictionary) -> String:
 	var path = EXPORT_DIR + filename
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	if not file:
-		print("[SHARE] Cannot write to %s" % path)
+		## Tick 168: push_warning so the editor + CI surface this.
+		## Export failures matter: the player triggered the export
+		## expecting a file to land. Silent failure breaks the
+		## share workflow (they hand a friend a path that doesn't
+		## exist).
+		push_warning("[SHARE] Could not open %s for write — export will fail (error: %s)" % [path, FileAccess.get_open_error()])
 		return ""
 
 	file.store_string(JSON.stringify(data, "\t"))

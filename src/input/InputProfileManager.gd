@@ -301,11 +301,19 @@ func save_config() -> void:
 			data["custom_bindings"][action] = [indices]
 
 	var json_str = JSON.stringify(data, "\t")
+	## Tick 168: surface save failures. Pre-fix a silent
+	## `if file:` short-circuit meant a player who customized
+	## their controls would think their bindings were saved (no
+	## error toast, no warning) when the write actually failed
+	## (perms, disk full, RO filesystem). Next launch reverts to
+	## defaults — surprise loss of config.
 	var file = FileAccess.open(CONFIG_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(json_str)
-		file.close()
-		print("[InputProfileManager] Config saved")
+	if file == null:
+		push_warning("[InputProfileManager] Could not open %s for write — custom input bindings will NOT persist across launches (error: %s)" % [CONFIG_PATH, FileAccess.get_open_error()])
+		return
+	file.store_string(json_str)
+	file.close()
+	print("[InputProfileManager] Config saved")
 
 
 func load_config() -> void:
