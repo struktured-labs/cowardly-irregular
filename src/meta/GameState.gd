@@ -225,10 +225,39 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		# Array[Dictionary] silently fails (SCRIPT ERROR, no crash) and
 		# leaves player_party at its default []. (2026-05-12 audit:
 		# same root cause as the Combatant.from_dict typed-array fix.)
+		## Tick 163: cap at MAX_PARTY_SIZE (CLAUDE.md strict-5) +
+		## sanitize per-entry inventory dict (mirrors tick 162's
+		## Combatant.inventory cleanup but on the GameState snapshot
+		## dict, which ShopScene reads directly without going through
+		## Combatant.from_dict). Drops oldest-first if oversized so
+		## party_leader_index resolution against position 0 stays
+		## meaningful for the player's primary character.
+		const MAX_PARTY_SIZE: int = 5
 		var typed_party: Array[Dictionary] = []
 		for entry in save_data["player_party"]:
-			if entry is Dictionary:
-				typed_party.append(entry.duplicate(true))
+			if not (entry is Dictionary):
+				continue
+			var copied: Dictionary = entry.duplicate(true)
+			if copied.has("inventory") and copied["inventory"] is Dictionary:
+				var raw_inv: Dictionary = copied["inventory"]
+				var sanitized: Dictionary = {}
+				for item_id in raw_inv.keys():
+					var key: String = str(item_id)
+					if key == "":
+						continue
+					var qty: int = int(raw_inv[item_id])
+					if qty <= 0:
+						continue
+					sanitized[key] = qty
+				copied["inventory"] = sanitized
+			typed_party.append(copied)
+		while typed_party.size() > MAX_PARTY_SIZE:
+			# Drop newest (back) — strict-5 party means positions 0-4
+			# are the canonical starters (Fighter/Cleric/Mage/Rogue/
+			# Bard). Anything beyond is save corruption or migration
+			# from an older variable-size design. Trim the tail so the
+			# canonical roster's leader-position semantics survive.
+			typed_party.pop_back()
 		# Resolve legacy job_aliases here too — without this, the carefully-
 		# resolved IDs that SaveSystem._deserialize_party writes BEFORE
 		# from_dict get silently overwritten with raw aliased IDs (white_mage
