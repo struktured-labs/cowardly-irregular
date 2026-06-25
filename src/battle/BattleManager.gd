@@ -2484,7 +2484,12 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		battle_log_message.emit("[color=cyan]%s is pacified and cannot attack![/color]" % attacker.combatant_name)
 		return
 	if not actual_target or not is_instance_valid(actual_target):
+		## Tick 173: basic attack fizzle in the log (symmetric with
+		## ability fizzle). Common: queued attack, target dies first
+		## via someone else's action, retargeter finds nobody. Pre-fix
+		## the AP was spent silently.
 		print("%s's attack fizzles - no valid targets!" % attacker.combatant_name)
+		battle_log_message.emit("[color=gray]%s's attack fizzles — no valid targets.[/color]" % attacker.combatant_name)
 		return
 
 	# Invisible/evasion give the target untouchable/dodge windows.
@@ -2588,7 +2593,11 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		return
 
 	if not JobSystem.can_use_ability(caster, ability_id):
+		## Tick 173: surface in the log. Pre-fix the ability was
+		## blocked (insufficient MP, missing prerequisite, etc.) and
+		## the player saw nothing — character appeared to pass turn.
 		print("%s cannot use %s" % [caster.combatant_name, ability["name"]])
+		battle_log_message.emit("[color=gray]%s can't use %s right now.[/color]" % [caster.combatant_name, ability["name"]])
 		return
 
 	# Auto-retarget dead targets based on ability type
@@ -2613,7 +2622,14 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 				retargeted.append(new_target)
 
 	if retargeted.size() == 0 and targets.size() > 0:
+		## Tick 173: ability fizzle in the log. Common scenario:
+		## party member queues an attack on an enemy, that enemy
+		## dies before the action fires (group_attack KO), and
+		## retargeting can't find a survivor. Pre-fix this was
+		## print-only — character's AP was spent, turn passed,
+		## nothing happened, no log explanation.
 		print("%s's %s fizzles - no valid targets!" % [caster.combatant_name, ability["name"]])
+		battle_log_message.emit("[color=gray]%s's %s fizzles — no valid targets.[/color]" % [caster.combatant_name, ability["name"]])
 		return
 
 	var mp_cost = ability.get("mp_cost", 0)
