@@ -619,6 +619,15 @@ func to_dict() -> Dictionary:
 		## status_durations is iterated in update_status_durations
 		## (line ~474); an empty dict skips the loop entirely.
 		"status_durations": status_durations.duplicate(),
+		## Tick 152: serialize buff/debuff arrays so a Time Mage
+		## mid-battle rewind preserves them. Pre-fix only status_effects
+		## persisted across snapshot — buffs/debuffs disappeared on
+		## rewind, leaving the combatant in a weaker/stronger state
+		## than the snapshot moment. Less catastrophic than the
+		## status_durations gap (tick 151) since these clear at battle
+		## end naturally, but still wrong for the rewind use-case.
+		"active_buffs": active_buffs.duplicate(true),
+		"active_debuffs": active_debuffs.duplicate(true),
 		"permanent_injuries": permanent_injuries.duplicate(),
 		"is_alive": is_alive,
 		"learned_abilities": learned_abilities.duplicate(),
@@ -702,6 +711,36 @@ func from_dict(data: Dictionary) -> void:
 			if inj is Dictionary:
 				typed_injuries.append(inj.duplicate(true))
 		permanent_injuries = typed_injuries
+	## Tick 152: typed Array[Dictionary] coercion for buffs/debuffs.
+	## Same pattern as permanent_injuries above. JSON.parse returns
+	## generic Array; direct assignment to Array[Dictionary] silently
+	## fails (Combatant comment at to_dict explains the trap). Inner
+	## numeric fields (modifier/duration/remaining_turns) come back
+	## as float from JSON — duration counters get coerced to int so
+	## the > 0 / decrement-by-1 logic in update_buff_durations
+	## doesn't drift on float arithmetic.
+	if data.has("active_buffs"):
+		var typed_buffs: Array[Dictionary] = []
+		for b in data["active_buffs"]:
+			if b is Dictionary:
+				var entry: Dictionary = b.duplicate(true)
+				if entry.has("duration"):
+					entry["duration"] = int(entry["duration"])
+				if entry.has("remaining_turns"):
+					entry["remaining_turns"] = int(entry["remaining_turns"])
+				typed_buffs.append(entry)
+		active_buffs = typed_buffs
+	if data.has("active_debuffs"):
+		var typed_debuffs: Array[Dictionary] = []
+		for d in data["active_debuffs"]:
+			if d is Dictionary:
+				var entry: Dictionary = d.duplicate(true)
+				if entry.has("duration"):
+					entry["duration"] = int(entry["duration"])
+				if entry.has("remaining_turns"):
+					entry["remaining_turns"] = int(entry["remaining_turns"])
+				typed_debuffs.append(entry)
+		active_debuffs = typed_debuffs
 	if data.has("is_alive"):
 		is_alive = data["is_alive"]
 	if data.has("learned_abilities"):
