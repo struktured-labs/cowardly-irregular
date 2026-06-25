@@ -817,7 +817,27 @@ func from_dict(data: Dictionary) -> void:
 				break
 		equipped_passives = typed_ep
 	if data.has("inventory"):
-		inventory = data["inventory"].duplicate()
+		## Tick 162: int() coerce + filter non-positive + filter empty
+		## key. JSON.parse returns numerics as float; downstream
+		## add_item/remove_item treat values as int (`+= quantity`
+		## auto-truncates on first mutation but UI rendering before
+		## any mutation shows fractional counts). remove_item erases
+		## entries that drop to ≤ 0 — mirror that on load so a save
+		## with `potion: -5` from corruption doesn't sit as a ghost
+		## negative entry showing "-5 potions" in the menu. Empty-key
+		## entries (e.g. `"": 3`) are phantom rows that iterate UI
+		## sites can't render meaningfully.
+		var raw_inv: Dictionary = data["inventory"]
+		var typed_inv: Dictionary = {}
+		for item_id in raw_inv.keys():
+			var key: String = str(item_id)
+			if key == "":
+				continue
+			var qty: int = int(raw_inv[item_id])
+			if qty <= 0:
+				continue
+			typed_inv[key] = qty
+		inventory = typed_inv
 	if data.has("doom_counter"):
 		## Tick 158: int() coerce + normalize any negative to the
 		## canonical -1 sentinel ("not doomed"). All consumers
