@@ -223,6 +223,9 @@ func spawn_enemies() -> void:
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -313,6 +316,9 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -410,6 +416,9 @@ func spawn_forced_enemies() -> void:
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 		enemy_names.append(stats["name"])
@@ -504,6 +513,9 @@ func spawn_encounter_enemies() -> void:
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -572,6 +584,9 @@ func spawn_miniboss() -> void:
 	enemy.died.connect(_scene._on_enemy_died.bind(0))
 	enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 	enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+	## Tick 143: status-tick damage/heal popups (single-boss path).
+	enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+	enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 	_scene.test_enemies.append(enemy)
 

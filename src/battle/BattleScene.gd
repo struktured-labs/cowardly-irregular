@@ -635,6 +635,13 @@ func _start_test_battle() -> void:
 			member.status_added.connect(_on_status_added.bind(member))
 		if not member.status_removed.is_connected(_on_status_removed):
 			member.status_removed.connect(_on_status_removed.bind(member))
+		## Tick 143: spawn damage/heal popups on status-effect ticks
+		## (poison/burn/regen). Without this the HP bar dropped but no
+		## floating number appeared, so status ticks felt invisible.
+		if not member.status_tick_damage.is_connected(_on_status_tick_damage):
+			member.status_tick_damage.connect(_on_status_tick_damage.bind(member))
+		if not member.status_tick_heal.is_connected(_on_status_tick_heal):
+			member.status_tick_heal.connect(_on_status_tick_heal.bind(member))
 
 	# Create sprites
 	_create_battle_sprites()
@@ -3528,6 +3535,24 @@ func _on_attack_missed(target: Combatant) -> void:
 func _on_healing_done(target: Combatant, amount: int) -> void:
 	_results_display.on_healing_done(target, amount)
 	SoundManager.play_battle("heal")
+
+
+## Tick 143: spawn floating damage/healing popups when poison /
+## burn / regen ticks fire on a Combatant. Pre-fix only hp_changed
+## emitted on these ticks, so the HP bar dropped but no number
+## floated up — players couldn't see status effects ticking unless
+## they watched the HP bar carefully. The `source` arg distinguishes
+## the cause (could drive icon color/text in the future).
+func _on_status_tick_damage(amount: int, _source: String, target: Combatant) -> void:
+	if not is_instance_valid(target) or not is_instance_valid(_results_display):
+		return
+	_results_display.on_damage_dealt(target, amount, false)
+
+
+func _on_status_tick_heal(amount: int, _source: String, target: Combatant) -> void:
+	if not is_instance_valid(target) or not is_instance_valid(_results_display):
+		return
+	_results_display.on_healing_done(target, amount)
 
 
 func _crit_visual_burst(target: Combatant, _amount: int) -> void:

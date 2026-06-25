@@ -17,6 +17,14 @@ signal leveled_up(new_level: int)
 ## a new ability via a level threshold. UI uses this for the "X
 ## learned Y!" Toast.
 signal ability_learned(ability_id: String)
+## tick 143: emitted on poison/burn/regen ticks. BattleScene listens
+## to spawn floating damage/healing popups. Pre-fix the HP bar
+## dropped but no number floated up — players couldn't see status
+## effects ticking unless they watched the HP bar carefully. The
+## `source` field distinguishes which status caused the tick so
+## the popup can color/style differently if desired.
+signal status_tick_damage(amount: int, source: String)
+signal status_tick_heal(amount: int, source: String)
 
 ## Core stats
 @export var combatant_name: String = "Unknown"
@@ -420,6 +428,10 @@ func update_buff_durations() -> void:
 	# Same ordering fix as take_damage(): flip is_alive BEFORE emitting
 	# hp_changed so UI listeners see the correct state on the lethal tick
 	# and can gray the sprite in a single pass.
+	## Tick 143: status-effect ticks fire status_tick_damage /
+	## status_tick_heal so BattleScene can spawn a popup. Pre-fix
+	## only hp_changed fired — UI updated the HP bar but never
+	## showed the floating number, so status ticks felt invisible.
 	if "poison" in status_effects and is_alive:
 		var poison_damage = max(1, int(max_hp * 0.05))  # 5% max HP per turn
 		var old_hp_poison = current_hp
@@ -427,6 +439,7 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			is_alive = false
 		hp_changed.emit(old_hp_poison, current_hp)
+		status_tick_damage.emit(poison_damage, "poison")
 		print("%s takes %d poison damage!" % [combatant_name, poison_damage])
 		if current_hp <= 0:
 			die()
@@ -438,6 +451,7 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			is_alive = false
 		hp_changed.emit(old_hp_burn, current_hp)
+		status_tick_damage.emit(burn_damage, "burn")
 		print("%s takes %d burn damage!" % [combatant_name, burn_damage])
 		if current_hp <= 0:
 			die()
@@ -450,6 +464,7 @@ func update_buff_durations() -> void:
 		var healed = current_hp - old_hp
 		if healed > 0:
 			hp_changed.emit(old_hp, current_hp)
+			status_tick_heal.emit(healed, "regen")
 			print("%s regenerates %d HP!" % [combatant_name, healed])
 		if current_hp <= 0:
 			die()
