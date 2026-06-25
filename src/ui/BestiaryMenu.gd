@@ -192,17 +192,25 @@ func _populate_list() -> void:
 
 
 func _highlight_row() -> void:
+	## Tick 147: dimmed text + leading "?" for seen-but-not-defeated.
+	## Quick visual scan reveals which entries are full-intel vs
+	## sighting-only.
 	for i in _row_nodes.size():
 		var row: Label = _row_nodes[i]
 		if not is_instance_valid(row):
 			continue
 		var entry: Dictionary = _entries[i]
+		var defeated: bool = bool(entry.get("defeated", false))
+		var name_token: String = entry.name if defeated else "? " + entry.name
 		if i == _selected:
 			row.add_theme_color_override("font_color", ACCENT)
-			row.text = "▸ Lv %d  %s" % [entry.level, entry.name]
+			row.text = "▸ Lv %d  %s" % [entry.level, name_token]
 		else:
-			row.add_theme_color_override("font_color", TEXT_COLOR)
-			row.text = "  Lv %d  %s" % [entry.level, entry.name]
+			## Dim un-defeated entries to ~55% brightness so the list
+			## visually separates "killed" from "merely seen".
+			var color: Color = TEXT_COLOR if defeated else Color(TEXT_COLOR.r * 0.55, TEXT_COLOR.g * 0.55, TEXT_COLOR.b * 0.55, TEXT_COLOR.a)
+			row.add_theme_color_override("font_color", color)
+			row.text = "  Lv %d  %s" % [entry.level, name_token]
 
 
 func _scroll_to_selected() -> void:
@@ -348,34 +356,38 @@ func _refresh_detail() -> void:
 		return
 
 	var entry: Dictionary = _entries[_selected]
+	## Tick 147: seen-but-not-defeated = intel withheld. Player sees
+	## the silhouette + name + level (gleaned from sighting) but
+	## stats / weaknesses / resistances / rewards / drops show "???"
+	## until they actually kill it. Makes the bestiary feel like
+	## progression — discover → defeat → unlock full intel.
+	var defeated: bool = bool(entry.get("defeated", false))
 	_detail_name.text = entry.name
 	_detail_epithet.text = entry.epithet if entry.epithet != "" else ""
 	_detail_level.text = "Level %d" % entry.level
 
-	var stats: Dictionary = entry.stats
-	_detail_stats.text = "HP %d   MP %d   ATK %d   DEF %d   MAG %d   SPD %d" % [
-		stats.get("max_hp", 0),
-		stats.get("max_mp", 0),
-		stats.get("attack", 0),
-		stats.get("defense", 0),
-		stats.get("magic", 0),
-		stats.get("speed", 0),
-	]
-
-	_detail_weak.text = "Weak: %s" % (", ".join(entry.weaknesses) if not entry.weaknesses.is_empty() else "—")
-	_detail_resist.text = "Resist: %s" % (", ".join(entry.resistances) if not entry.resistances.is_empty() else "—")
-
-	# Rewards line — EXP + Gold from victory. Players designing autobattle
-	# scripts use this to plan farming loops.
-	var exp_r: int = int(entry.get("exp_reward", 0))
-	var gold_r: int = int(entry.get("gold_reward", 0))
-	_detail_rewards.text = "EXP: %d   Gold: %d G" % [exp_r, gold_r]
-
-	# Drop table — formatted as "item_name N%" entries, comma-separated.
-	# Handles empty drop tables ("—") and one_shot_reward (rare bonus drop
-	# shown in parentheses to distinguish from regular drops). Names get
-	# the standard snake_case → Title Case treatment used elsewhere in UI.
-	_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
+	if defeated:
+		var stats: Dictionary = entry.stats
+		_detail_stats.text = "HP %d   MP %d   ATK %d   DEF %d   MAG %d   SPD %d" % [
+			stats.get("max_hp", 0),
+			stats.get("max_mp", 0),
+			stats.get("attack", 0),
+			stats.get("defense", 0),
+			stats.get("magic", 0),
+			stats.get("speed", 0),
+		]
+		_detail_weak.text = "Weak: %s" % (", ".join(entry.weaknesses) if not entry.weaknesses.is_empty() else "—")
+		_detail_resist.text = "Resist: %s" % (", ".join(entry.resistances) if not entry.resistances.is_empty() else "—")
+		var exp_r: int = int(entry.get("exp_reward", 0))
+		var gold_r: int = int(entry.get("gold_reward", 0))
+		_detail_rewards.text = "EXP: %d   Gold: %d G" % [exp_r, gold_r]
+		_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
+	else:
+		_detail_stats.text = "HP ???   MP ???   ATK ???   DEF ???   MAG ???   SPD ???"
+		_detail_weak.text = "Weak: ???"
+		_detail_resist.text = "Resist: ???"
+		_detail_rewards.text = "EXP: ???   Gold: ???"
+		_detail_drops.text = "Drops: ???   (defeat to unlock)"
 
 	_load_sprite(entry.id)
 
