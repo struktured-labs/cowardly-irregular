@@ -892,7 +892,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			if _scene.has_method("_show_address_banner"):
 				_scene._show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
 		else:
-			_scene.log_message("[color=gray]%s does not react.[/color]" % persona_id.replace("_", " ").capitalize())
+			_scene.log_message("[color=gray]%s does not react.[/color]" % BattleManager._gloat_boss_display_name(persona_id))
 		# Address consumes the turn.
 		BattleManager.player_defer()
 		_scene._update_ui()

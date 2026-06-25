@@ -352,7 +352,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 	else:
 		for ability_id in abilities:
 			var row := Label.new()
-			row.text = "• " + _format_id(str(ability_id))
+			row.text = "• " + _resolve_ability_name(str(ability_id))
 			row.position = Vector2(x, cy)
 			row.size = Vector2(w, 16)
 			row.add_theme_font_size_override("font_size", 12)
@@ -381,7 +381,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 	else:
 		for passive_id in passives:
 			var row := Label.new()
-			row.text = "◦ " + _format_id(str(passive_id))
+			row.text = "◦ " + _resolve_passive_name(str(passive_id))
 			row.position = Vector2(x, cy)
 			row.size = Vector2(w, 16)
 			row.add_theme_font_size_override("font_size", 12)
@@ -411,6 +411,34 @@ func _get_level(member) -> int:
 
 func _format_id(id: String) -> String:
 	return id.replace("_", " ").capitalize()
+
+
+## Tick 136: prefer canonical names from JobSystem/PassiveSystem
+## over the raw prettifier for the abilities + passives lists.
+## Pre-fix the party status menu rendered "Power strike" instead
+## of "Power Strike" (data/abilities.json), and every passive id
+## got prettified instead of resolving its designer-set name.
+## High-visibility: party menu opens multiple times per session.
+func _resolve_ability_name(ability_id: String) -> String:
+	if ability_id == "":
+		return ""
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js != null and js.has_method("get_ability"):
+		var data: Dictionary = js.get_ability(ability_id)
+		if not data.is_empty() and data.has("name"):
+			return str(data["name"])
+	return _format_id(ability_id)
+
+
+func _resolve_passive_name(passive_id: String) -> String:
+	if passive_id == "":
+		return ""
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps != null and ps.has_method("get_passive"):
+		var data: Dictionary = ps.get_passive(passive_id)
+		if not data.is_empty() and data.has("name"):
+			return str(data["name"])
+	return _format_id(passive_id)
 
 
 func _resolve_equipment(item_id: String) -> Dictionary:
