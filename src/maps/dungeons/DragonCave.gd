@@ -96,6 +96,17 @@ func _ready() -> void:
 			var saved_floor: int = int(GameState.game_constants[floor_key])
 			if saved_floor >= 1 and saved_floor <= total_floors:
 				current_floor = saved_floor
+		## Tick 153: if the boss is already defeated, reset the saved
+		## floor to 1 so re-entering a completed dungeon spawns the
+		## player at the entrance, NOT in the empty boss room they
+		## last won the fight in. Saved floor reflects "where you
+		## were last" — once the boss is dead, the cave's progression
+		## arc is complete and players who revisit want grinding
+		## access from floor 1, not insta-warp to a depopulated
+		## boss arena.
+		if boss_defeated and current_floor != 1:
+			current_floor = 1
+			GameState.game_constants[floor_key] = 1
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()

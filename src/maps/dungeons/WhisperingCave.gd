@@ -201,6 +201,13 @@ func _ready() -> void:
 		var saved_floor: int = int(GameState.game_constants["whispering_cave_floor"])
 		if saved_floor >= 1 and saved_floor <= 6:
 			current_floor = saved_floor
+	## Tick 153: if the Cave Rat King is already dead, reset the
+	## saved floor to 1 so re-entering doesn't drop the player in
+	## the empty floor-6 boss room. Same UX rationale as the
+	## DragonCave base — completed dungeons re-entry from floor 1.
+	if boss_defeated and current_floor != 1 and GameState:
+		current_floor = 1
+		GameState.game_constants["whispering_cave_floor"] = 1
 
 	_generate_map_for_floor(current_floor)
 	_setup_player()
