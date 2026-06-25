@@ -213,15 +213,33 @@ func _setup_default_ability_sounds() -> void:
 static func _load_sfx_manifest() -> void:
 	if _sfx_manifest_loaded:
 		return
-	var file = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	## Tick 166: surface each failure mode. Pre-fix every gap was
+	## silent — open fail, parse fail, missing "sfx" key all
+	## degraded to procedural-only audio with zero console hint.
+	## Players (and devs) had no way to tell whether the manifest
+	## was loading or being silently rejected.
+	var file_path: String = "res://data/sfx_manifest.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("[SFX] sfx_manifest.json not found at %s — falling back to procedural audio only" % file_path)
+		return
+	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
+		push_warning("[SFX] sfx_manifest.json exists but FileAccess.open failed — falling back to procedural audio only")
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
-	if parsed and parsed.has("sfx"):
-		_sfx_manifest = parsed["sfx"]
-		_sfx_manifest_loaded = true
-		if _sfx_manifest.size() > 0:
-			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
+	if parsed == null:
+		push_warning("[SFX] sfx_manifest.json parse error — falling back to procedural audio only")
+		return
+	if not (parsed is Dictionary):
+		push_warning("[SFX] sfx_manifest.json parsed but root is not a Dictionary — falling back to procedural audio only")
+		return
+	if not parsed.has("sfx"):
+		push_warning("[SFX] sfx_manifest.json parsed but missing 'sfx' key — manifest empty")
+		return
+	_sfx_manifest = parsed["sfx"]
+	_sfx_manifest_loaded = true
+	if _sfx_manifest.size() > 0:
+		print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
 
 
 func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0) -> bool:
@@ -956,13 +974,24 @@ static func _load_music_manifest() -> void:
 		push_warning("[MUSIC] Cannot open music_manifest.json — will retry next call")
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
-	if parsed and parsed.has("tracks"):
-		_music_manifest = parsed["tracks"]
-		_manifest_loaded = true  # Only set after successful load
-		if _music_manifest.size() > 0:
-			print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
-	else:
-		push_warning("[MUSIC] Failed to parse music_manifest.json — will retry")
+	## Tick 166: split the conflated failure modes. Pre-fix the
+	## fallback warning ("Failed to parse") fired for parse failure
+	## AND root-type mismatch AND missing "tracks" key — devs
+	## couldn't tell which was the real cause. Now each surfaces
+	## distinctly.
+	if parsed == null:
+		push_warning("[MUSIC] music_manifest.json parse error — will retry")
+		return
+	if not (parsed is Dictionary):
+		push_warning("[MUSIC] music_manifest.json parsed but root is not a Dictionary — will retry")
+		return
+	if not parsed.has("tracks"):
+		push_warning("[MUSIC] music_manifest.json parsed but missing 'tracks' key — manifest empty, will retry")
+		return
+	_music_manifest = parsed["tracks"]
+	_manifest_loaded = true  # Only set after successful load
+	if _music_manifest.size() > 0:
+		print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
 
 
 func _try_play_from_manifest(track_id: String) -> bool:

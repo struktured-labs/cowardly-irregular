@@ -41,24 +41,29 @@ func _load_item_data() -> void:
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
+	if not file:
+		## Tick 166: surface the file-open failure (silent fallback
+		## pre-fix). Same canonical 4-stage pattern as JobSystem +
+		## EquipmentSystem + PassiveSystem from tick 165.
+		push_warning("[ItemSystem] items.json exists but FileAccess.open failed — falling back to hardcoded defaults")
+		_create_default_items()
+		return
 
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
+	var json_string = file.get_as_text()
+	file.close()
 
-		if parse_result == OK:
-			if json.data is Dictionary:
-				items = json.data
-				print("Loaded %d items" % items.size())
-			else:
-				push_warning("[ItemSystem] items.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
-				_create_default_items()
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result == OK:
+		if json.data is Dictionary:
+			items = json.data
+			print("Loaded %d items" % items.size())
 		else:
-			push_warning("[ItemSystem] items.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
+			push_warning("[ItemSystem] items.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
 			_create_default_items()
 	else:
+		push_warning("[ItemSystem] items.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 		_create_default_items()
 
 
