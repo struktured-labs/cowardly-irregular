@@ -482,8 +482,12 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		row.add_child(none_desc)
 		return row
 
-	# Job name with type tag
-	var job_type = job_data.get("type", 0)
+	## Tick 139: same JSON-float-vs-int-enum class as the ItemsMenu
+	## tick 138 fix. job_data.get("type") returns float from JSON;
+	## match against int literals never matches, so advanced and
+	## meta jobs silently rendered with NO type tag — players couldn't
+	## distinguish them in the menu. int() coercion fixes the match.
+	var job_type: int = int(job_data.get("type", 0))
 	var type_tag = ""
 	var tag_color = PRIMARY_COLOR if selected_slot == 0 else SECONDARY_COLOR
 	match job_type:

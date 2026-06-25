@@ -427,11 +427,24 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 
 
 func _get_target_type_text(target_type: int) -> String:
-	match target_type:
+	## Tick 139: same double-bug class as the tick 138 _get_item_color
+	## fix. JSON.parse returns target_type as float (2.0); the match
+	## arms use int enum (2) — without int() coercion at the call site
+	## (already typed `int` here, but callers pass the raw float) the
+	## match never matches and every item rendered "Target: Unknown".
+	## Plus: SINGLE_ENEMY and ALL_ENEMIES had NO branches at all,
+	## even after coercion they would fall through to "Unknown" for
+	## OFFENSIVE items (bombs, lightning bolts, etc).
+	var t: int = int(target_type)
+	match t:
 		ItemSystem.TargetType.SINGLE_ALLY:
 			return "Single Ally"
 		ItemSystem.TargetType.ALL_ALLIES:
 			return "All Allies"
+		ItemSystem.TargetType.SINGLE_ENEMY:
+			return "Single Enemy"
+		ItemSystem.TargetType.ALL_ENEMIES:
+			return "All Enemies"
 		ItemSystem.TargetType.SELF:
 			return "Self"
 		_:

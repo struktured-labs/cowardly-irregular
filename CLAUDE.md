@@ -295,7 +295,7 @@ godot --headless -s test/run_tests.gd          # Run tests
 - **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility
 - **Check `"active_buffs" in combatant`** before accessing buff arrays — not all objects are Combatants
 - **Typed-array assignment from JSON** (`Array[String] = data["x"].duplicate()`) silently fails — use explicit loop with `str()` coercion
-- **`--resume`'d Claude Code sessions** don't pick up new MCP server tools — use fresh sessions for full intercom
+- **Channel delivery requires the launch flag** — `claude --dangerously-load-development-channels server:session-intercom`. Without it, intercom tools work but inbound DMs never inject as `<channel>` tags
 - **`HybridSpriteLoader._manifest_loaded`** is a static var — after editing sprite_manifest.json, restart Godot for changes to take effect
 - **Submenu pattern**: create Control, PRESET_FULL_RECT, call setup(), add_child, hide parent UI (`_submenu_open` flag prevents OverworldMenu input consumption while submenus active)
 - **OverworldMenu** lives inside CanvasLayer(layer=50) in GameLoop
@@ -446,7 +446,7 @@ cowardly-irregular/
 
 This project uses parallel Claude Code sessions coordinated via the `session-intercom` MCP server (SQLite-backed DB at `~/.local/share/session-intercom/intercom.db`).
 
-Named sessions (registered as both team_name + intercom name):
+Named sessions (one-call `intercom_register(name=<name>)` — channels API, no team_name, no TeamCreate):
 - **cowir-main** — game engine, integration, releases (this session usually)
 - **cowir-sprites** — sprite generation (cowardly-irregular-sprite-gen repo)
 - **cowir-music** — music generation (cowardly-irregular-music repo, Suno pipeline)
@@ -454,7 +454,7 @@ Named sessions (registered as both team_name + intercom name):
 - **cowir-story** — narrative content (cowardly-irregular-story repo)
 - **cowir-battle** — combat system specialization (when active)
 
-Native inbox delivery requires fresh `claude` sessions (not `--resume`'d) to pick up the MCP server tools. If MCP tools missing, SQLite-poll the DB manually as a workaround.
+Channel delivery requires the host launched with `--dangerously-load-development-channels server:session-intercom`. If `<channel>` tags never arrive when other sessions DM you, that flag is the first thing to check. Manual fallback: `intercom_poll()`.
 
 ## Deployment
 
