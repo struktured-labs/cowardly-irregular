@@ -304,7 +304,11 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 	var item_desc := ""
 	if item_id != "":
 		var info := _resolve_equipment(item_id)
-		item_name = info.get("name", item_id)
+		## Tick 141: prettify the fallback when EquipmentSystem doesn't
+		## know the item (Scriptweaver custom equipment, save drift).
+		## Pre-fix the raw snake_case id leaked through ("iron_sword"
+		## instead of "Iron Sword").
+		item_name = info.get("name", item_id.replace("_", " ").capitalize())
 		item_desc = info.get("description", "")
 
 	var name_label := Label.new()

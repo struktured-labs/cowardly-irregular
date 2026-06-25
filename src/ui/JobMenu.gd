@@ -137,7 +137,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	if character.secondary_job_id != "":
 		var sec_job = JobSystem.get_job(character.secondary_job_id)
 		var sec_label = Label.new()
-		sec_label.text = "/ %s" % sec_job.get("name", character.secondary_job_id)
+		sec_label.text = "/ %s" % sec_job.get("name", character.secondary_job_id.replace("_", " ").capitalize())
 		sec_label.position = Vector2(8, 42)
 		sec_label.add_theme_font_size_override("font_size", 10)
 		sec_label.add_theme_color_override("font_color", SECONDARY_COLOR)
@@ -267,7 +267,7 @@ func _get_current_job_name(slot_index: int) -> String:
 		1:  # Secondary
 			if character.secondary_job_id != "":
 				var sec_job = JobSystem.get_job(character.secondary_job_id)
-				return sec_job.get("name", character.secondary_job_id)
+				return sec_job.get("name", character.secondary_job_id.replace("_", " ").capitalize())
 			return "(none)"
 	return "(none)"
 
@@ -350,7 +350,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		for ability_id in character.job["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
 			var ability_label = Label.new()
-			ability_label.text = ability.get("name", ability_id)
+			ability_label.text = ability.get("name", ability_id.replace("_", " ").capitalize())
 			ability_label.position = Vector2(16, abilities_y)
 			ability_label.add_theme_font_size_override("font_size", 10)
 			ability_label.add_theme_color_override("font_color", TEXT_COLOR)
@@ -499,7 +499,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 			tag_color = Color(0.9, 0.4, 0.9)  # Purple for meta
 
 	var name_label = Label.new()
-	name_label.text = job_data.get("name", job_id) + type_tag
+	name_label.text = job_data.get("name", job_id.replace("_", " ").capitalize()) + type_tag
 	name_label.position = Vector2(24, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", tag_color)
@@ -522,7 +522,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		var ability_names = []
 		for ability_id in job_data["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
-			ability_names.append(ability.get("name", ability_id))
+			ability_names.append(ability.get("name", ability_id.replace("_", " ").capitalize()))
 		abilities_text = ", ".join(ability_names)
 
 	if abilities_text != "":

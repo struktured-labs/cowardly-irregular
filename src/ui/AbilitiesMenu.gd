@@ -341,8 +341,11 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 	row.add_child(cursor)
 
 	# Ability name
+	## Tick 141: prettify the fallback id when JobSystem doesn't
+	## know the ability. Pre-fix unknown ability ids leaked as raw
+	## snake_case ("power_strike" not "Power Strike").
 	var name_label = Label.new()
-	name_label.text = data.get("name", ability["id"])
+	name_label.text = data.get("name", str(ability["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(20, 2)
 	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.add_theme_color_override("font_color", _get_ability_color(data))
@@ -421,7 +424,7 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 
 	# Ability name
 	var name_label = Label.new()
-	name_label.text = data.get("name", ability["id"])
+	name_label.text = data.get("name", str(ability["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(12, 28)
 	name_label.add_theme_font_size_override("font_size", 14)
 	name_label.add_theme_color_override("font_color", _get_ability_color(data))
@@ -536,7 +539,7 @@ func _create_passive_row(passive: Dictionary, index: int) -> Control:
 
 	# Passive name
 	var name_label = Label.new()
-	name_label.text = data.get("name", passive["id"])
+	name_label.text = data.get("name", str(passive["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(44, 4)
 	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else PASSIVE_AVAILABLE)
@@ -583,7 +586,7 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 
 	# Passive name
 	var name_label = Label.new()
-	name_label.text = data.get("name", passive["id"])
+	name_label.text = data.get("name", str(passive["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(12, 28)
 	name_label.add_theme_font_size_override("font_size", 14)
 	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else TEXT_COLOR)
