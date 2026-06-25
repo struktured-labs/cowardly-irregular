@@ -741,6 +741,14 @@ func _build_results(victory: bool) -> Dictionary:
 		for enemy in _enemy_party:
 			exp += int(enemy.max_hp * 0.5 + enemy.attack * 2)
 			gold += int(enemy.max_hp * 0.3 + enemy.defense)
+			## Tick 146: mark defeated. mark_seen happened at the top
+			## of resolve_battle (tick 145); this is the kill credit.
+			if not is_instance_valid(enemy):
+				continue
+			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+				var mtype: String = str(enemy.get_meta("monster_type", ""))
+				if mtype != "":
+					BestiarySystem.mark_defeated(mtype)
 
 	return {
 		"victory": victory,

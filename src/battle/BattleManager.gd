@@ -288,6 +288,21 @@ func end_battle(victory: bool) -> void:
 	if victory:
 		current_state = BattleState.VICTORY
 
+		## Tick 146: mark each enemy as defeated in the bestiary.
+		## Pre-fix mark_seen happened at battle start, but there was
+		## no notion of "killed" — encountered ≠ defeated. This loop
+		## iterates the original enemy roster (not just survivors)
+		## because we need to credit each unique monster_type the
+		## party brought down. Routes through BestiarySystem which
+		## auto-mark_seen as well (defeat implies seen invariant).
+		for enemy in enemy_party:
+			if not is_instance_valid(enemy):
+				continue
+			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+				var mtype: String = str(enemy.get_meta("monster_type", ""))
+				if mtype != "":
+					BestiarySystem.mark_defeated(mtype)
+
 		# Check for one-shot achievement
 		_check_one_shot()
 

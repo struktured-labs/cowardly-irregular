@@ -102,6 +102,37 @@ static func get_seen_ids() -> Array:
 	return seen.keys()
 
 
+## Tick 146: defeated tracking distinct from seen. Encounter ≠ kill.
+## Pre-fix the bestiary showed an entry the moment a monster spawned,
+## even if the party fled or wiped. Now defeated is a strict subset
+## of seen (you can't kill something you didn't encounter), and the
+## bestiary UI can show "?" or grayed entries for seen-but-not-killed.
+static func is_defeated(monster_id: String) -> bool:
+	var defeated: Dictionary = GameState.game_constants.get("defeated_monsters", {})
+	return defeated.has(monster_id)
+
+
+static func mark_defeated(monster_id: String) -> void:
+	# Defeat implies seen — auto-mark to maintain invariant. A monster
+	# can only be killed if it was encountered.
+	mark_seen(monster_id)
+	if not GameState.game_constants.has("defeated_monsters"):
+		GameState.game_constants["defeated_monsters"] = {}
+	GameState.game_constants["defeated_monsters"][monster_id] = true
+
+
+static func get_defeated_ids() -> Array:
+	var defeated: Dictionary = GameState.game_constants.get("defeated_monsters", {})
+	return defeated.keys()
+
+
+static func defeat_counts() -> Vector2i:
+	"""Returns (defeated, total_monsters) — UI display."""
+	_ensure_loaded()
+	var d: int = get_defeated_ids().size()
+	return Vector2i(d, _monsters_cache.size())
+
+
 static func discovery_counts() -> Vector2i:
 	"""Returns (seen, total_monsters)."""
 	_ensure_loaded()
@@ -139,6 +170,9 @@ static func get_seen_entries_sorted() -> Array:
 			"gold_reward": int(data.get("gold_reward", 0)),
 			"drops": data.get("drop_table", []),
 			"one_shot_reward": data.get("one_shot_reward", null),
+			## Tick 146: defeated flag distinct from seen. UI can show
+			## "?" stats for seen-but-not-killed entries.
+			"defeated": is_defeated(id),
 		})
 	out.sort_custom(func(a, b):
 		if a.level != b.level:
