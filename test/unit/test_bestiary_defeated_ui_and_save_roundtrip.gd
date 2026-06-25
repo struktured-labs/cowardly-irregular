@@ -165,6 +165,10 @@ func test_seen_only_survives_save_load_independently() -> void:
 
 func test_seen_entries_carry_defeated_after_reload() -> void:
 	# Round-trip the entries list and verify defeated flag survives.
+	# Snapshot + restore slime's pre-test state so this test doesn't
+	# permanently mark slime defeated for the suite.
+	var pre_seen: bool = BestiarySystem.is_seen("slime")
+	var pre_def: bool = BestiarySystem.is_defeated("slime")
 	BestiarySystem.mark_defeated("slime")  # using real id so monsters_cache resolves
 	var entries_pre: Array = BestiarySystem.get_seen_entries_sorted()
 	var slime_pre: Dictionary = {}
@@ -184,5 +188,10 @@ func test_seen_entries_carry_defeated_after_reload() -> void:
 		if e.id == "slime":
 			slime_post = e
 			break
+	# Restore slime's pre-test state so the suite isn't polluted.
+	if not pre_def and GameState.game_constants.has("defeated_monsters"):
+		(GameState.game_constants["defeated_monsters"] as Dictionary).erase("slime")
+	if not pre_seen and GameState.game_constants.has("seen_monsters"):
+		(GameState.game_constants["seen_monsters"] as Dictionary).erase("slime")
 	assert_eq(bool(slime_post.get("defeated", false)), true,
 		"post-roundtrip: slime entry's defeated flag preserved")

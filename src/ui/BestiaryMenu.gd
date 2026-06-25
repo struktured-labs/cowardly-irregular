@@ -71,11 +71,17 @@ func _build_ui() -> void:
 	header.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	add_child(header)
 
+	## Tick 148: header now reports BOTH seen and defeated counts so
+	## the autobattle player has a progression metric they can scan
+	## at a glance. Seen = encountered (full bestiary list size).
+	## Defeated = killed (full intel unlocked). Format: "12/88 seen
+	## · 7/88 defeated" — em-dash visually anchors the split.
 	var counts: Vector2i = BestiarySystem.discovery_counts()
+	var defeated_counts: Vector2i = BestiarySystem.defeat_counts()
 	_count_label = Label.new()
-	_count_label.text = "%d / %d discovered" % [counts.x, counts.y]
-	_count_label.position = Vector2(viewport.x - 260, 22)
-	_count_label.size = Vector2(240, 24)
+	_count_label.text = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
+	_count_label.position = Vector2(viewport.x - 360, 22)
+	_count_label.size = Vector2(340, 24)
 	_count_label.add_theme_font_size_override("font_size", 16)
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

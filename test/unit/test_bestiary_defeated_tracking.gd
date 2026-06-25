@@ -80,9 +80,10 @@ func test_get_defeated_ids_starts_empty_until_marked() -> void:
 # ── Bestiary entries include defeated flag ───────────────────────────────
 
 func test_seen_entries_include_defeated_field() -> void:
-	# UI relies on this for grayed-out display.
-	# Mark a real monster as seen-but-not-defeated, verify the entry
-	# carries defeated=false.
+	# UI relies on this for grayed-out display. Snapshot + restore
+	# slime's seen state so the test doesn't permanently mark it
+	# seen for other test files (was tick-148 pollution finding).
+	var pre_seen: bool = BestiarySystem.is_seen("slime")
 	BestiarySystem.mark_seen("slime")
 	var entries: Array = BestiarySystem.get_seen_entries_sorted()
 	var slime_entry: Dictionary = {}
@@ -90,6 +91,10 @@ func test_seen_entries_include_defeated_field() -> void:
 		if e.get("id", "") == "slime":
 			slime_entry = e
 			break
+	# Restore the pre-test state before assertions so a failure
+	# doesn't leave the suite polluted.
+	if not pre_seen:
+		(GameState.game_constants["seen_monsters"] as Dictionary).erase("slime")
 	assert_false(slime_entry.is_empty(),
 		"slime must be in seen entries after mark_seen")
 	assert_true(slime_entry.has("defeated"),

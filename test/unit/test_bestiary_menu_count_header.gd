@@ -1,0 +1,80 @@
+extends GutTest
+
+## tick 148 regression: BestiaryMenu header shows BOTH seen and
+## defeated counts ("12/88 seen · 7/88 defeated"). The previous
+## single-count format ("12 / 88 discovered") meant the
+## autobattle/autogrind player had no scannable metric for kill
+## progression — they could see they'd encountered 12 monsters
+## but not how many they'd actually defeated.
+##
+## Also fixes test pollution from ticks 146/147 — tests that
+## mark "slime" seen/defeated now snapshot+restore so subsequent
+## suite tests don't see leaked state.
+
+const BESTIARY_MENU := "res://src/ui/BestiaryMenu.gd"
+
+
+func _read(p: String) -> String:
+	var t: String = FileAccess.get_file_as_string(p)
+	assert_ne(t, "", "Expected %s to be readable" % p)
+	return t
+
+
+# ── Count header format ─────────────────────────────────────────────────
+
+func test_count_label_format_includes_both_counts() -> void:
+	# Pin the format string. "X/N seen · Y/N defeated" — em-dash
+	# anchors the visual split.
+	var src := _read(BESTIARY_MENU)
+	assert_true(src.contains("\"%d/%d seen · %d/%d defeated\""),
+		"count label must include both seen and defeated counts")
+	# Negative pin: the old single-count format must be gone.
+	assert_false(src.contains("\"%d / %d discovered\""),
+		"old `discovered` single-count format must be gone — replaced by seen+defeated split")
+
+
+func test_count_label_reads_both_systems() -> void:
+	var src := _read(BESTIARY_MENU)
+	# Pin: both discovery_counts AND defeat_counts called.
+	assert_true(src.contains("BestiarySystem.discovery_counts()"),
+		"_build_ui must call BestiarySystem.discovery_counts for seen total")
+	assert_true(src.contains("BestiarySystem.defeat_counts()"),
+		"_build_ui must call BestiarySystem.defeat_counts for kill total")
+
+
+func test_count_label_width_accommodates_longer_text() -> void:
+	# The new label is longer than the old "12 / 88 discovered".
+	# Width must be ≥ 320 (rough fit at 16pt font) to avoid truncation.
+	var src := _read(BESTIARY_MENU)
+	# The exact size used in tick 148: 340 wide.
+	assert_true(src.contains("_count_label.size = Vector2(340, 24)"),
+		"count label must be wide enough for the new dual-count text — 340px")
+	# Positioned 360 left of right edge to match the wider label.
+	assert_true(src.contains("Vector2(viewport.x - 360, 22)"),
+		"count label must be positioned to fit the wider text without clipping the viewport edge")
+
+
+# ── Test pollution fixes ────────────────────────────────────────────────
+
+func test_pollution_fix_in_tick_146_test_file() -> void:
+	# Pin: tick 146's test_seen_entries_include_defeated_field now
+	# snapshots+restores slime's seen state to avoid suite pollution.
+	var src: String = FileAccess.get_file_as_string("res://test/unit/test_bestiary_defeated_tracking.gd")
+	assert_ne(src, "", "tick 146 test file must exist")
+	assert_true(src.contains("var pre_seen: bool = BestiarySystem.is_seen(\"slime\")"),
+		"tick 146 test must snapshot slime's pre-test seen state")
+	assert_true(src.contains("if not pre_seen:"),
+		"tick 146 test must conditionally restore — only erase if it wasn't already seen pre-test")
+
+
+func test_pollution_fix_in_tick_147_test_file() -> void:
+	# Pin: tick 147's test_seen_entries_carry_defeated_after_reload
+	# now snapshots+restores both seen AND defeated state.
+	var src: String = FileAccess.get_file_as_string("res://test/unit/test_bestiary_defeated_ui_and_save_roundtrip.gd")
+	assert_ne(src, "", "tick 147 test file must exist")
+	assert_true(src.contains("var pre_seen: bool = BestiarySystem.is_seen(\"slime\")"),
+		"tick 147 test must snapshot slime's pre-test seen state")
+	assert_true(src.contains("var pre_def: bool = BestiarySystem.is_defeated(\"slime\")"),
+		"tick 147 test must snapshot slime's pre-test defeated state")
+	assert_true(src.contains("if not pre_def and GameState.game_constants.has(\"defeated_monsters\"):"),
+		"tick 147 test must conditionally restore defeated state")
