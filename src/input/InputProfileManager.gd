@@ -309,11 +309,18 @@ func save_config() -> void:
 
 
 func load_config() -> void:
+	## Tick 167: file-missing stays silent (legitimate first-launch
+	## state — no config yet to load). FileAccess.open-fail and
+	## root-type-mismatch were silent pre-fix; both deserve warnings
+	## because they indicate a real problem (perms / corruption)
+	## that the player would experience as "my custom input
+	## profile didn't load" with no console hint.
 	if not FileAccess.file_exists(CONFIG_PATH):
 		return
 
 	var file = FileAccess.open(CONFIG_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[InputProfileManager] Config exists at %s but FileAccess.open failed — using default profile" % CONFIG_PATH)
 		return
 
 	var json_str = file.get_as_text()
@@ -326,7 +333,8 @@ func load_config() -> void:
 		return
 
 	var data = json.data
-	if not data is Dictionary:
+	if not (data is Dictionary):
+		push_warning("[InputProfileManager] Config parsed but root is not a Dictionary — using default profile")
 		return
 
 	if data.has("active_profile") and data["active_profile"] in PROFILE_NAMES:

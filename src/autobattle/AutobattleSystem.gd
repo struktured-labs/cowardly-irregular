@@ -1447,19 +1447,29 @@ func _load_character_scripts() -> void:
 		dir.make_dir("autobattle")
 
 	# Load new profiles format first
+	## Tick 167: surface each failure mode. Pre-fix the primary
+	## profiles load had THREE silent fall-throughs (open fail,
+	## parse fail, root not Dictionary) — if any failed, the code
+	## dropped through to the legacy fallback without surfacing
+	## the real cause. Players who'd authored custom autobattle
+	## scripts could lose them silently.
 	if FileAccess.file_exists(profiles_path):
 		var file = FileAccess.open(profiles_path, FileAccess.READ)
-		if file:
+		if not file:
+			push_warning("[AutobattleSystem] profiles exists at %s but FileAccess.open failed — falling back to legacy format" % profiles_path)
+		else:
 			var json_string = file.get_as_text()
 			file.close()
 			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				var data = json.data
-				if data is Dictionary:
-					character_profiles = data.get("profiles", {})
-					autobattle_enabled = data.get("enabled", {})
-					print("Loaded profiles for %d characters" % character_profiles.size())
-					return
+			if json.parse(json_string) != OK:
+				push_warning("[AutobattleSystem] profiles.json parse error: %s — falling back to legacy format" % json.get_error_message())
+			elif not (json.data is Dictionary):
+				push_warning("[AutobattleSystem] profiles.json parsed but root is not a Dictionary — falling back to legacy format")
+			else:
+				character_profiles = json.data.get("profiles", {})
+				autobattle_enabled = json.data.get("enabled", {})
+				print("Loaded profiles for %d characters" % character_profiles.size())
+				return
 
 	# Fallback: load legacy format for migration
 	if not FileAccess.file_exists(save_path):
