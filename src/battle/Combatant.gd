@@ -611,6 +611,14 @@ func to_dict() -> Dictionary:
 		"job_level": job_level,
 		"job_exp": job_exp,
 		"status_effects": status_effects.duplicate(),
+		## Tick 151: serialize the per-status duration counter. Pre-fix
+		## status_effects survived save/load (and rewind) but
+		## status_durations did not — so any poison/burn/etc that was
+		## active during a Time Mage rewind survived the snapshot but
+		## had no tick-down counter, becoming effectively permanent.
+		## status_durations is iterated in update_status_durations
+		## (line ~474); an empty dict skips the loop entirely.
+		"status_durations": status_durations.duplicate(),
 		"permanent_injuries": permanent_injuries.duplicate(),
 		"is_alive": is_alive,
 		"learned_abilities": learned_abilities.duplicate(),
@@ -677,6 +685,17 @@ func from_dict(data: Dictionary) -> void:
 		for s in data["status_effects"]:
 			typed_status.append(str(s))
 		status_effects = typed_status
+	## Tick 151: per-status duration counter. JSON.parse returns
+	## numeric values as float, but status_durations is treated as
+	## int (decrement-by-1 + > 0 check). Coerce to int on load.
+	## Keys come back as String from JSON regardless of original type,
+	## which is fine — status names are strings anyway.
+	if data.has("status_durations"):
+		var typed_durations: Dictionary = {}
+		var raw: Dictionary = data["status_durations"]
+		for status_key in raw.keys():
+			typed_durations[str(status_key)] = int(raw[status_key])
+		status_durations = typed_durations
 	if data.has("permanent_injuries"):
 		var typed_injuries: Array[Dictionary] = []
 		for inj in data["permanent_injuries"]:
