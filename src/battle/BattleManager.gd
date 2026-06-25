@@ -2978,29 +2978,38 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 	var success_rate = ability.get("success_rate", 1.0)
 
 	match effect:
+		## Tick 170: 10 support-ability branches lacked
+		## battle_log_message emits — buff/debuff/taunt/doom applied
+		## silently. Player had no log feedback (only the buff icon
+		## eventually appearing, which is easy to miss mid-battle).
+		## Lime/cyan for buffs, red for debuffs — matches the
+		## healing/elemental palette family.
 		"taunt":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("taunted_%s" % caster.combatant_name)
-					print("  → %s is now targeting %s!" % [target.combatant_name, caster.combatant_name])
+					battle_log_message.emit("[color=yellow]%s taunts %s into focusing on them![/color]" % [caster.combatant_name, target.combatant_name])
 		"defense_up":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Protect", "defense", stat_modifier, duration)
+					battle_log_message.emit("[color=cyan]%s gains Protect![/color] (DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		"attack_up":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Berserk", "attack", stat_modifier, duration)
+					battle_log_message.emit("[color=orange]%s enters Berserk![/color] (ATK +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		"defense_down":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
+					battle_log_message.emit("[color=red]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"doom":
 			var countdown = ability.get("countdown", 3)
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.doom_counter = countdown
-					print("  → %s is doomed! %d turns remaining..." % [target.combatant_name, countdown])
+					battle_log_message.emit("[color=purple]☠ %s is doomed![/color] (%d turns to KO)" % [target.combatant_name, countdown])
 		"volatility_up_self":
 			if volatility:
 				caster.add_buff("Leveraged", "volatility", stat_modifier, duration)
@@ -3081,10 +3090,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Weaken", "attack", stat_modifier, duration)
+					battle_log_message.emit("[color=red]%s is weakened![/color] (ATK -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"speed_down":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Slow", "speed", stat_modifier, duration)
+					battle_log_message.emit("[color=red]%s slows down![/color] (SPD -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"all_stats_down":
 			# Distinct effect names per stat — add_debuff keys on the effect
 			# name and refreshes-in-place, so reusing one name would only
@@ -3095,6 +3106,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					target.add_debuff("Despair (DEF)", "defense", stat_modifier, duration)
 					target.add_debuff("Despair (SPD)", "speed", stat_modifier, duration)
 					target.add_debuff("Despair (MAG)", "magic", stat_modifier, duration)
+					battle_log_message.emit("[color=red]%s sinks into Despair![/color] (all stats -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"buff":
 			# Generic stat buff (masterite_* family). Reads the stat field
 			# from the ability dict; defaults to attack if unspecified.
@@ -3102,6 +3114,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Empower", buff_stat, stat_modifier, duration)
+					battle_log_message.emit("[color=cyan]%s is empowered![/color] (%s +%d%% for %d turns)" % [target.combatant_name, buff_stat.to_upper(), int((stat_modifier - 1.0) * 100), duration])
 		"debuff":
 			# Generic stat debuff (masterite_* family). Reads the stat field
 			# from the ability dict; defaults to attack if unspecified.
@@ -3109,6 +3122,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Sap", debuff_stat, stat_modifier, duration)
+					battle_log_message.emit("[color=red]%s is sapped![/color] (%s -%d%% for %d turns)" % [target.combatant_name, debuff_stat.to_upper(), int((1.0 - stat_modifier) * 100), duration])
 		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block":
 			# Simple status effects — applied as a named status the rest of
 			# the battle engine can read via has_status(). Maps the data
