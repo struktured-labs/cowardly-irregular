@@ -27,21 +27,39 @@ func _ready() -> void:
 
 func _load_job_aliases() -> void:
 	"""Load job ID aliases from data/job_aliases.json for backward compatibility"""
+	## Tick 165: defensive load mirrors _load_job_data's pattern.
+	## Pre-fix every failure mode (file open fail, parse error,
+	## root-not-Dictionary) silently no-op'd. Result: old saves
+	## with white_mage / black_mage / thief job IDs wouldn't get
+	## resolved to cleric / mage / rogue — the player would see
+	## "Unknown job" or fall back to fighter defaults without any
+	## warning. Now each failure mode pushes a distinct warning so
+	## the cause surfaces during dev / hooks.
 	var file_path = "res://data/job_aliases.json"
 	if not FileAccess.file_exists(file_path):
+		push_warning("[JobSystem] job_aliases.json not found at %s — old saves with renamed jobs (white_mage/black_mage/thief) won't migrate" % file_path)
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
+	if not file:
+		push_warning("[JobSystem] job_aliases.json exists but FileAccess.open failed — aliases empty, save migration disabled")
+		return
 
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
+	var json_string = file.get_as_text()
+	file.close()
 
-		if parse_result == OK and json.data is Dictionary:
-			job_aliases = json.data
-			print("Loaded %d job aliases" % job_aliases.size())
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result != OK:
+		push_warning("[JobSystem] job_aliases.json parse error: %s — aliases empty" % json.get_error_message())
+		return
+	if not (json.data is Dictionary):
+		push_warning("[JobSystem] job_aliases.json parsed but root is not a Dictionary — aliases empty")
+		return
+
+	job_aliases = json.data
+	print("Loaded %d job aliases" % job_aliases.size())
 
 
 func resolve_job_id(raw_id: String) -> String:

@@ -33,27 +33,32 @@ func _load_equipment_data() -> void:
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
+	if not file:
+		## Tick 165: surface the file-open failure. Pre-fix this fell
+		## through to _create_default_equipment silently — devs would
+		## see truncated equipment lists without a hint of why.
+		push_warning("[EquipmentSystem] equipment.json exists but FileAccess.open failed — falling back to hardcoded defaults")
+		_create_default_equipment()
+		return
 
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
+	var json_string = file.get_as_text()
+	file.close()
 
-		if parse_result == OK:
-			var data = json.data
-			if data is Dictionary:
-				weapons = data.get("weapons", {})
-				armors = data.get("armors", {})
-				accessories = data.get("accessories", {})
-				print("Loaded equipment: %d weapons, %d armors, %d accessories" % [weapons.size(), armors.size(), accessories.size()])
-			else:
-				push_warning("[EquipmentSystem] equipment.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
-				_create_default_equipment()
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result == OK:
+		var data = json.data
+		if data is Dictionary:
+			weapons = data.get("weapons", {})
+			armors = data.get("armors", {})
+			accessories = data.get("accessories", {})
+			print("Loaded equipment: %d weapons, %d armors, %d accessories" % [weapons.size(), armors.size(), accessories.size()])
 		else:
-			push_warning("[EquipmentSystem] equipment.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
+			push_warning("[EquipmentSystem] equipment.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
 			_create_default_equipment()
 	else:
+		push_warning("[EquipmentSystem] equipment.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 		_create_default_equipment()
 
 

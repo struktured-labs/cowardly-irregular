@@ -33,21 +33,36 @@ func _load_passive_data() -> void:
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
-
-		if parse_result == OK:
-			passives = json.data
-			print("Loaded %d passives" % passives.size())
-		else:
-			push_warning("[PassiveSystem] passives.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
-			_create_default_passives()
-	else:
+	if not file:
+		## Tick 165: surface the file-open failure (silent fallback
+		## pre-fix). Same canonical pattern as JobSystem +
+		## EquipmentSystem after this tick.
+		push_warning("[PassiveSystem] passives.json exists but FileAccess.open failed — falling back to hardcoded defaults")
 		_create_default_passives()
+		return
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result != OK:
+		push_warning("[PassiveSystem] passives.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
+		_create_default_passives()
+		return
+	## Tick 165: Dictionary check — pre-fix `passives = json.data`
+	## directly assigned without verifying shape. An Array root
+	## would make passives.size() report a count but every
+	## get_passive() call would fail. push_warning surfaces the
+	## real cause instead of letting downstream null derefs cascade.
+	if not (json.data is Dictionary):
+		push_warning("[PassiveSystem] passives.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
+		_create_default_passives()
+		return
+
+	passives = json.data
+	print("Loaded %d passives" % passives.size())
 
 
 func _create_default_passives() -> void:
