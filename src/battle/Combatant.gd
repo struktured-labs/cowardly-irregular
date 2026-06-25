@@ -829,14 +829,42 @@ func from_dict(data: Dictionary) -> void:
 		var raw_doom: int = int(data["doom_counter"])
 		doom_counter = -1 if raw_doom < 0 else raw_doom
 	if data.has("pinned_abilities"):
+		## Tick 161: dedupe + filter empty. Pinned has no documented
+		## cap (player-selected) but duplicates would double-render
+		## in the quick-slot menu. The add_to_mru helper at line
+		## ~314 enforces "Pinned abilities don't pollute the MRU
+		## list" but only on the write path — from_dict was
+		## bypassing it.
 		var typed_pinned: Array[String] = []
+		var seen_pinned: Dictionary = {}
 		for ability_id in data["pinned_abilities"]:
-			typed_pinned.append(str(ability_id))
+			var sid: String = str(ability_id)
+			if sid == "" or seen_pinned.has(sid):
+				continue
+			seen_pinned[sid] = true
+			typed_pinned.append(sid)
 		pinned_abilities = typed_pinned
 	if data.has("recent_abilities"):
+		## Tick 161: enforce MRU_SIZE cap + dedupe + filter empty
+		## + filter pinned-overlap. MRU adds at add_to_mru (line
+		## ~310) enforce all four constraints at write but from_dict
+		## bypassed them. A corrupted save with 99 entries would
+		## propagate, breaking the quick-slot menu's 2-slot layout.
+		## Filter pinned-overlap matches add_to_mru's line 314 guard
+		## ("Pinned abilities don't pollute the MRU list").
 		var typed_recent: Array[String] = []
+		var seen_recent: Dictionary = {}
+		var pinned_set: Dictionary = {}
+		for pid in pinned_abilities:
+			pinned_set[pid] = true
 		for ability_id in data["recent_abilities"]:
-			typed_recent.append(str(ability_id))
+			var sid: String = str(ability_id)
+			if sid == "" or seen_recent.has(sid) or pinned_set.has(sid):
+				continue
+			seen_recent[sid] = true
+			typed_recent.append(sid)
+			if typed_recent.size() >= MRU_SIZE:
+				break
 		recent_abilities = typed_recent
 	if data.has("autobattle_locked"):
 		autobattle_locked = bool(data["autobattle_locked"])
