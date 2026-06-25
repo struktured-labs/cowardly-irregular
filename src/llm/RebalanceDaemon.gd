@@ -531,12 +531,25 @@ func to_dict() -> Dictionary:
 
 
 func from_dict(data: Dictionary) -> void:
+	## Tick 159: enforce PENDING_CAP / APPLIED_CAP on load so a
+	## save written by an older version with looser caps (e.g.
+	## APPLIED_CAP=100 if it gets reduced to 50 in a future build)
+	## doesn't propagate oversized state. Drops OLDEST entries
+	## (same ring semantics as consider/_move_to_applied at write
+	## time). Also negative-coerce the timestamp to prevent a
+	## corrupted save from breaking min_consideration_interval_sec
+	## arithmetic (now - past) when past is in the future.
 	pending.clear()
 	for entry in data.get("pending", []):
 		if entry is Dictionary:
 			pending.append(entry)
+	while pending.size() > PENDING_CAP:
+		pending.pop_front()
 	applied.clear()
 	for entry in data.get("applied", []):
 		if entry is Dictionary:
 			applied.append(entry)
-	_last_consideration_ts = int(data.get("last_consideration_ts", 0))
+	while applied.size() > APPLIED_CAP:
+		applied.pop_front()
+	var raw_ts: int = int(data.get("last_consideration_ts", 0))
+	_last_consideration_ts = max(0, raw_ts)
