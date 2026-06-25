@@ -123,7 +123,7 @@ var story_flags: Dictionary = {}  # Generic flag store: "w1_boss_defeated": true
 ## Schema: {
 ##   "story_flags": Array[String] (always-set on victory),
 ##   "constants": Array[String] (game_constants[k]=true on victory),
-##   "dungeon_flag": String (optional, set on player_party[0].dungeon_flags),
+##   "dungeon_flag": String (optional, set on game_constants["dungeon_flags"] — tick 154; legacy saves stored on player_party[0]),
 ##   "unlock_world": bool (optional, advance worlds_unlocked once),
 ##   "unlock_story_flag": String (optional, set as story flag on victory),
 ##   "defeat_cutscene": String (optional, played by dungeon when scene re-instantiates)

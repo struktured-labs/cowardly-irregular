@@ -38,11 +38,13 @@ var overworld_exit_map: String = "overworld"
 var unlock_story_flag: String = ""
 var unlock_world: int = 0
 # Optional list of cutscene_flag_* constants to set on boss defeat. Distinct
-# from boss_flag_key (which writes to player_party[0].dungeon_flags) — these
-# go into GameState.game_constants which is what _get_pending_story_cutscene
-# reads. Required for story-gate flags like cutscene_flag_world1_mordaine_defeated.
-# (2026-05-23: identified after Mordaine scaffold; rat king's WhisperingCave
-# uses a custom pending_boss_defeat spec to bridge the same gap.)
+# from boss_flag_key (which writes to game_constants["dungeon_flags"] —
+# tick 154 moved off player_party[0] to survive party-leader changes) —
+# these cutscene_flag_* constants are flat keys on game_constants which is
+# what _get_pending_story_cutscene reads. Required for story-gate flags like
+# cutscene_flag_world1_mordaine_defeated. (2026-05-23: identified after
+# Mordaine scaffold; rat king's WhisperingCave uses a custom
+# pending_boss_defeat spec to bridge the same gap.)
 var defeat_cutscene_flags: Array[String] = []
 # (Tick 105: the legacy `defeat_cutscene` field was removed. It was set by
 # subclasses but read only by _on_boss_defeated which had no caller — pure
@@ -558,16 +560,29 @@ func _place_dungeon_signposts(floor_num: int) -> void:
 func _load_boss_state() -> void:
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state and game_state.player_party.size() > 0:
-		var flags = game_state.player_party[0].get("dungeon_flags", {})
+		## Tick 154: read from game_constants["dungeon_flags"] (party-
+		## leader-independent). Fall back to the legacy player_party[0]
+		## location for save-format migration — old saves stored these
+		## on the leader, which silently broke when the player changed
+		## leader via cycle_party_leader.
+		var flags: Dictionary = {}
+		if game_state.game_constants.has("dungeon_flags"):
+			flags = game_state.game_constants["dungeon_flags"]
+		elif game_state.player_party.size() > 0 and game_state.player_party[0].has("dungeon_flags"):
+			flags = game_state.player_party[0]["dungeon_flags"]
 		boss_defeated = flags.get(boss_flag_key, false)
 
 
 func _save_boss_state() -> void:
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state and game_state.player_party.size() > 0:
-		if not game_state.player_party[0].has("dungeon_flags"):
-			game_state.player_party[0]["dungeon_flags"] = {}
-		game_state.player_party[0]["dungeon_flags"][boss_flag_key] = true
+		## Tick 154: write to game_constants["dungeon_flags"] so the
+		## flag survives a party-leader change. Legacy player_party[0]
+		## location ignored on write; load-side fallback handles old
+		## saves so progress doesn't vanish on migration.
+		if not game_state.game_constants.has("dungeon_flags"):
+			game_state.game_constants["dungeon_flags"] = {}
+		game_state.game_constants["dungeon_flags"][boss_flag_key] = true
 
 
 func _setup_player() -> void:

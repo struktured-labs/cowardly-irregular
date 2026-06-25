@@ -646,18 +646,27 @@ func _place_floor_treasure(floor_num: int) -> void:
 func _load_boss_state() -> void:
 	"""Load boss defeated state from GameState"""
 	var game_state = get_node_or_null("/root/GameState")
-	if game_state and game_state.player_party.size() > 0:
-		var flags = game_state.player_party[0].get("dungeon_flags", {})
+	if game_state:
+		## Tick 154: read from game_constants["dungeon_flags"]
+		## (party-leader-independent). Fall back to legacy
+		## player_party[0] location for save-format migration.
+		var flags: Dictionary = {}
+		if game_state.game_constants.has("dungeon_flags"):
+			flags = game_state.game_constants["dungeon_flags"]
+		elif game_state.player_party.size() > 0 and game_state.player_party[0].has("dungeon_flags"):
+			flags = game_state.player_party[0]["dungeon_flags"]
 		boss_defeated = flags.get("cave_rat_king_defeated", false)
 
 
 func _save_boss_state() -> void:
 	"""Save boss defeated state to GameState"""
 	var game_state = get_node_or_null("/root/GameState")
-	if game_state and game_state.player_party.size() > 0:
-		if not game_state.player_party[0].has("dungeon_flags"):
-			game_state.player_party[0]["dungeon_flags"] = {}
-		game_state.player_party[0]["dungeon_flags"]["cave_rat_king_defeated"] = true
+	if game_state:
+		## Tick 154: write to game_constants["dungeon_flags"] so the
+		## flag survives a party-leader change.
+		if not game_state.game_constants.has("dungeon_flags"):
+			game_state.game_constants["dungeon_flags"] = {}
+		game_state.game_constants["dungeon_flags"]["cave_rat_king_defeated"] = true
 
 
 func _setup_player() -> void:

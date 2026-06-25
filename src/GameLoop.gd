@@ -2118,12 +2118,17 @@ func _apply_pending_boss_defeat() -> void:
 	# Game constants (typically cutscene_flag_*)
 	for c in spec.get("constants", []):
 		GameState.game_constants[c] = true
-	# Dungeon flag — stored on the leader's per-character dict
+	## Tick 154: dungeon flag now lives on game_constants
+	## (party-leader-independent). Pre-fix it was stored on
+	## player_party[0]["dungeon_flags"]; if the player changed
+	## leader via GameState.cycle_party_leader, the old leader's
+	## flags became invisible to is_alive checks at dungeon
+	## re-entry — a defeated boss would silently respawn.
 	var df: String = spec.get("dungeon_flag", "")
-	if df != "" and GameState.player_party.size() > 0:
-		if not GameState.player_party[0].has("dungeon_flags"):
-			GameState.player_party[0]["dungeon_flags"] = {}
-		GameState.player_party[0]["dungeon_flags"][df] = true
+	if df != "":
+		if not GameState.game_constants.has("dungeon_flags"):
+			GameState.game_constants["dungeon_flags"] = {}
+		GameState.game_constants["dungeon_flags"][df] = true
 	# World unlock — either advance once, or to a specific world
 	if spec.get("unlock_world", false):
 		var target: int = spec.get("unlock_world_target", 0)
