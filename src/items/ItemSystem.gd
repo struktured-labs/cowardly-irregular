@@ -339,10 +339,17 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 			var revived_amount: int = target.current_hp - hp_before_revive
 			if revived_amount > 0 and BattleManager:
 				BattleManager.healing_done.emit(target, revived_amount)
+			## Tick 171: emit battle_log_message so item use shows in
+			## the visible log. Pre-fix only print() fired — debug
+			## console only, invisible to the player.
 			if _heal_consumed_by_revive:
 				print("  → %s was revived with %d HP!" % [target.combatant_name, target.current_hp])
+				if BattleManager:
+					BattleManager.battle_log_message.emit("  → [color=lime]%s[/color] was revived with [color=lime]%d[/color] HP!" % [target.combatant_name, target.current_hp])
 			else:
 				print("  → %s was revived!" % target.combatant_name)
+				if BattleManager:
+					BattleManager.battle_log_message.emit("  → [color=lime]%s[/color] was revived!" % target.combatant_name)
 
 	# HP healing (flat amount) — skip if revive already consumed it.
 	if effects.has("heal_hp") and not _heal_consumed_by_revive:
@@ -352,6 +359,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		# this, items that heal would tick the HP bar silently.
 		if actual > 0 and BattleManager:
 			BattleManager.healing_done.emit(target, actual)
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=lime]%d[/color] HP!" % [target.combatant_name, actual])
 		print("  → %s recovered %d HP" % [target.combatant_name, actual])
 
 	# HP healing (percentage) — skip if revive already consumed it.
@@ -361,6 +369,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		var actual_p = target.heal(heal_amount)
 		if actual_p > 0 and BattleManager:
 			BattleManager.healing_done.emit(target, actual_p)
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=lime]%d[/color] HP! (%d%%)" % [target.combatant_name, actual_p, heal_percent])
 		print("  → %s recovered %d HP (%d%%)" % [target.combatant_name, actual_p, heal_percent])
 
 	# MP restoration (flat amount). Surfaced through healing_done as the
@@ -372,6 +381,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		var actual_mp = target.restore_mp(restore_amount)
 		if actual_mp > 0 and BattleManager:
 			BattleManager.healing_done.emit(target, actual_mp)
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=cyan]%d MP[/color]!" % [target.combatant_name, actual_mp])
 		print("  → %s recovered %d MP" % [target.combatant_name, actual_mp])
 
 	# MP restoration (percentage)
@@ -381,12 +391,19 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		var actual_mp_p = target.restore_mp(restore_amount)
 		if actual_mp_p > 0 and BattleManager:
 			BattleManager.healing_done.emit(target, actual_mp_p)
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=cyan]%d MP[/color]! (%d%%)" % [target.combatant_name, actual_mp_p, restore_percent])
 		print("  → %s recovered %d MP (%d%%)" % [target.combatant_name, actual_mp_p, restore_percent])
 
 	# Cure specific status effects
 	if effects.has("cure_status"):
 		for status in effects["cure_status"]:
 			target.remove_status(status)
+			## Tick 171: surface cure in the log. Pre-fix antidote
+			## curing poison was completely invisible — no popup, no
+			## log line, only the status icon disappearing (easy to
+			## miss when multiple effects are active).
+			if BattleManager:
+				BattleManager.battle_log_message.emit("  → [color=white]%s[/color] is cured of [color=cyan]%s[/color]!" % [target.combatant_name, status])
 			print("  → %s cured of %s" % [target.combatant_name, status])
 
 	# Cure all status effects
@@ -396,6 +413,8 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 	if effects.has("cure_all_status") and effects["cure_all_status"]:
 		target.status_effects.clear()
 		target.status_durations.clear()
+		if BattleManager:
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] is cured of [color=cyan]all status effects[/color]!" % target.combatant_name)
 		print("  → %s cured of all status effects" % target.combatant_name)
 
 	# Add buff
@@ -416,6 +435,8 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		var _power = float(buff.get("power", 1.5))
 		var _duration = int(buff.get("duration", 3))
 		target.add_buff(_effect_name, _stat, _power, _duration)
+		if BattleManager:
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] gains [color=cyan]%s[/color]! (%s +%d%% for %d turns)" % [target.combatant_name, _effect_name, _stat.to_upper(), int((_power - 1.0) * 100), _duration])
 		print("  → %s gained %s (%.1fx %s for %d turns)" % [target.combatant_name, _buff_type, _power, _stat, _duration])
 
 	# Damage
@@ -447,6 +468,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		# elemental tint. Items don't crit, so is_crit is always false.
 		if actual_damage > 0 and BattleManager:
 			BattleManager.damage_dealt.emit(target, actual_damage, false, element, multiplier)
+			BattleManager.battle_log_message.emit("  → [color=red]%s[/color] takes [color=yellow]%d[/color] %s damage!" % [target.combatant_name, actual_damage, element])
 		print("  → %s took %d %s damage" % [target.combatant_name, actual_damage, element])
 
 
