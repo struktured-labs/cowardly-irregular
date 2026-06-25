@@ -784,14 +784,37 @@ func from_dict(data: Dictionary) -> void:
 	if data.has("secondary_job_id"):
 		secondary_job_id = data["secondary_job_id"]
 	if data.has("learned_passives"):
+		## Tick 160: dedupe learned_passives on load. No size cap on
+		## learned (no slot limit; can know more than you equip) but
+		## duplicates would silently double-count toward UI counters /
+		## set membership checks that use array length.
 		var typed_lp: Array[String] = []
+		var seen_lp: Dictionary = {}
 		for p in data["learned_passives"]:
-			typed_lp.append(str(p))
+			var sid: String = str(p)
+			if sid == "" or seen_lp.has(sid):
+				continue
+			seen_lp[sid] = true
+			typed_lp.append(sid)
 		learned_passives = typed_lp
 	if data.has("equipped_passives"):
+		## Tick 160: enforce slot cap + dedupe on load. PassiveSystem.
+		## equip_passive enforces both at write time (slot count check,
+		## "already equipped" check) but from_dict bypassed those.
+		## A corrupted save with 99 entries would propagate to runtime
+		## and stack passive multipliers way past the design balance —
+		## or include duplicates whose multipliers compound. Cap by
+		## keeping first N (chronological-equip preserved, oldest wins).
 		var typed_ep: Array[String] = []
+		var seen: Dictionary = {}
 		for p in data["equipped_passives"]:
-			typed_ep.append(str(p))
+			var sid: String = str(p)
+			if sid == "" or seen.has(sid):
+				continue
+			seen[sid] = true
+			typed_ep.append(sid)
+			if typed_ep.size() >= max_passive_slots:
+				break
 		equipped_passives = typed_ep
 	if data.has("inventory"):
 		inventory = data["inventory"].duplicate()
