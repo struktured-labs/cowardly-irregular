@@ -12,6 +12,8 @@ const DANGER_COLOR := Color(1.0, 0.4, 0.4)
 # Tick 205: row offset between stacked toasts. Font-size 20 + 28px breathing room reads cleanly without crowding the screen.
 const STACK_ROW_HEIGHT := 48.0
 const BASE_Y := 80.0
+# Tick 206: hard cap on visible stack so a burst of events (corruption cascade, status proc storm) can't fill the screen. Newer events are usually more relevant — evict oldest.
+const MAX_STACK := 5
 
 # Tick 205: track live toast layers so simultaneous events stack vertically instead of all rendering at y=80 as unreadable mush.
 static var _active_layers: Array = []
@@ -23,6 +25,11 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 
 	# Tick 205: prune dead layers (parent freed, manual queue_free elsewhere) before computing stack offset so a finished toast doesn't keep its slot.
 	_active_layers = _active_layers.filter(func(l): return is_instance_valid(l))
+	# Tick 206: evict oldest while at cap so the new toast can spawn without pushing the stack off-screen. Hard queue_free is fine — by the time we hit cap, the user can't read all 5+ anyway.
+	while _active_layers.size() >= MAX_STACK:
+		var oldest: Node = _active_layers.pop_front()
+		if is_instance_valid(oldest):
+			oldest.queue_free()
 	var stack_offset: float = _active_layers.size() * STACK_ROW_HEIGHT
 
 	var layer := CanvasLayer.new()
