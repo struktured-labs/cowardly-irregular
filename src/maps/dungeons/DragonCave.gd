@@ -446,9 +446,16 @@ func _show_boss_intro() -> void:
 	# Try CutsceneDirector with JSON cutscene
 	if boss_cutscene_id != "":
 		var cutscene_path = "res://data/cutscenes/%s.json" % boss_cutscene_id
-		if FileAccess.file_exists(cutscene_path):
+		# Tick 213: surface the silent-failure modes that drop the player to a console-only fallback. boss_cutscene_id is set but: (a) JSON missing on disk (typo, data drift, file not yet authored), (b) CutsceneDirector autoload unavailable, (c) director missing play_cutscene method.
+		if not FileAccess.file_exists(cutscene_path):
+			push_warning("[DragonCave] boss_cutscene_id='%s' but %s does not exist — falling back to console intro (boss will play, but with no cutscene)" % [boss_cutscene_id, cutscene_path])
+		else:
 			var director = get_node_or_null("/root/CutsceneDirector")
-			if director and director.has_method("play_cutscene"):
+			if director == null:
+				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector autoload is null — falling back to console intro" % boss_cutscene_id)
+			elif not director.has_method("play_cutscene"):
+				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene method — falling back to console intro" % boss_cutscene_id)
+			else:
 				await director.play_cutscene(boss_cutscene_id)
 				return
 
