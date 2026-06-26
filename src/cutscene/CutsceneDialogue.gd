@@ -330,6 +330,14 @@ func _play_voice_blip() -> void:
 	_voice_blip_player.play()
 
 
+# Tick 222: scale a base font size by GameState.text_size_scale (accessibility setting). 1.0 default; returns at least 1 so the floor doesn't drop to 0 for tiny inputs.
+func _scaled_font_size(base: int) -> int:
+	var scale: float = 1.0
+	if GameState and "text_size_scale" in GameState:
+		scale = float(GameState.text_size_scale)
+	return max(1, int(round(float(base) * scale)))
+
+
 func _build_ui() -> void:
 	# Semi-transparent overlay (dimmer than battle - cutscenes are more immersive)
 	_background = ColorRect.new()
@@ -404,7 +412,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_speaker_label.size = Vector2(text_width, 20)
 	_speaker_label.clip_text = false
 	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	_speaker_label.add_theme_font_size_override("font_size", 14)
+	# Tick 222: scale via GameState.text_size_scale (accessibility). Reads live so a SettingsMenu change applies on next cutscene.
+	_speaker_label.add_theme_font_size_override("font_size", _scaled_font_size(14))
 	_speaker_label.add_theme_color_override("font_color", theme["name"])
 	_dialogue_box.add_child(_speaker_label)
 
@@ -417,7 +426,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_text_label.bbcode_enabled = true
 	_text_label.scroll_active = false
 	_text_label.clip_contents = true
-	_text_label.add_theme_font_size_override("normal_font_size", 13)
+	# Tick 222: scale.
+	_text_label.add_theme_font_size_override("normal_font_size", _scaled_font_size(13))
 	_text_label.add_theme_color_override("default_color", theme["text"])
 	_dialogue_box.add_child(_text_label)
 
@@ -426,7 +436,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_advance_hint = Label.new()
 	_advance_hint.text = "Z / A / Click ▶"
 	_advance_hint.position = Vector2(box_width - 140, box_height - 20)
-	_advance_hint.add_theme_font_size_override("font_size", 10)
+	# Tick 222: scale.
+	_advance_hint.add_theme_font_size_override("font_size", _scaled_font_size(10))
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
 	_advance_hint.visible = false
 	_dialogue_box.add_child(_advance_hint)
@@ -441,7 +452,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_thinking_label.size = _text_label.size
 	_thinking_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_thinking_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_thinking_label.add_theme_font_size_override("font_size", 18)
+	# Tick 222: scale.
+	_thinking_label.add_theme_font_size_override("font_size", _scaled_font_size(18))
 	_thinking_label.add_theme_color_override("font_color", theme["text"].darkened(0.2))
 	_thinking_label.visible = false
 	_thinking_label.text = THINKING_FRAMES[0]

@@ -25,6 +25,10 @@ const BATTLE_SPEED_LABELS = ["0.25x", "0.5x", "1x", "2x", "4x"]
 const TEXT_SPEED_PRESETS = ["slow", "normal", "fast", "instant"]
 const TEXT_SPEED_LABELS = ["Slow", "Normal", "Fast", "Instant"]
 
+## Tick 222: text size scale presets — accessibility. Consumers multiply base font sizes by the float.
+const TEXT_SIZE_PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+const TEXT_SIZE_LABELS: Array = ["80%", "100%", "125%", "150%", "200%"]
+
 ## Current settings
 var encounter_rate: float = 1.0  # Default 100%
 var encounter_preset_index: int = 4  # Index into ENCOUNTER_PRESETS (100%)
@@ -38,6 +42,9 @@ var battle_speed: float = 1.0
 var battle_speed_index: int = 2
 var text_speed: String = "normal"
 var text_speed_index: int = 1
+# Tick 222: text size scale (accessibility). Defaults to 100% (index 1).
+var text_size_scale: float = 1.0
+var text_size_index: int = 1
 var screen_shake_enabled: bool = true
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
 var boss_llm_strategy_enabled: bool = false  # Phase 1 boss-AI strategic-intent toggle (opt-in)
@@ -107,6 +114,12 @@ func _ready() -> void:
 			text_speed_index = TEXT_SPEED_PRESETS.find(text_speed)
 			if text_speed_index < 0:
 				text_speed_index = 1
+		# Tick 222: text size scale (accessibility).
+		if "text_size_scale" in GameState:
+			text_size_scale = float(GameState.text_size_scale)
+			text_size_index = TEXT_SIZE_PRESETS.find(text_size_scale)
+			if text_size_index < 0:
+				text_size_index = 1
 		if "screen_shake_enabled" in GameState:
 			screen_shake_enabled = GameState.screen_shake_enabled
 		if "llm_enabled" in GameState:
@@ -336,6 +349,20 @@ func _build_ui() -> void:
 	_settings_items.append({"control": shake_item, "type": "toggle", "id": "screen_shake"})
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
+
+	# Tick 222: text size scale (accessibility). Append with dynamic idx so the LLM section below stays a clean append. Consumers (CutsceneDialogue etc.) multiply base font sizes by GameState.text_size_scale.
+	var text_size_idx: int = _settings_items.size()
+	var text_size_item = _create_option_setting_small(
+		"Text Size",
+		"Scale dialogue text size (accessibility)",
+		TEXT_SIZE_LABELS,
+		text_size_index,
+		text_size_idx
+	)
+	vbox.add_child(text_size_item)
+	_settings_items.append({"control": text_size_item, "type": "text_size", "id": "text_size"})
+	MenuMouseHelper.make_clickable(text_size_item, text_size_idx, 400, 60,
+		_on_setting_click.bind(text_size_idx), _on_setting_hover.bind(text_size_idx))
 
 	# Wave C: Dynamic Dialogue (experimental) — gates the LLMService master
 	# enable flag. Default ON on desktop, OFF on web (no HTTP backend reachable
@@ -1046,6 +1073,14 @@ func _adjust_setting(delta: int) -> void:
 		_save_text_speed()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "text_size":
+		# Tick 222: accessibility text scale.
+		text_size_index = clampi(text_size_index + delta, 0, TEXT_SIZE_PRESETS.size() - 1)
+		text_size_scale = TEXT_SIZE_PRESETS[text_size_index]
+		_update_small_option_display(selected_index, text_size_index, TEXT_SIZE_PRESETS.size())
+		_save_text_size_scale()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 
 
 func _persist_settings() -> void:
@@ -1244,6 +1279,16 @@ func _save_text_speed() -> void:
 		GameState.text_speed = text_speed
 	settings_changed.emit("text_speed", text_speed)
 	print("[SETTINGS] Text speed set to %s" % text_speed)
+	_persist_settings()
+
+
+# Tick 222: text size scale (accessibility). Consumers read GameState.text_size_scale live.
+func _save_text_size_scale() -> void:
+	"""Save text size scale setting"""
+	if GameState:
+		GameState.text_size_scale = text_size_scale
+	settings_changed.emit("text_size_scale", text_size_scale)
+	print("[SETTINGS] Text size scale set to %s%%" % int(text_size_scale * 100))
 	_persist_settings()
 
 
