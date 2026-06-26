@@ -1222,6 +1222,9 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.position = offset
 	label.add_theme_font_size_override("font_size", 10)
+	# Tick 219: 1px outline + shadow — name labels sit below sprites on the Mode 7 floor and need edge protection vs grid lines (matches tick 218 contrast scheme, scaled down for 10pt).
+	label.add_theme_constant_override("outline_size", 1)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
@@ -3943,6 +3946,9 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	one_shot_label.offset_right = 200
 	one_shot_label.add_theme_font_size_override("font_size", 48)
 	one_shot_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.0))
+	# Tick 219: 2px outline matches the floating-text contrast scheme; flash_bg fades quickly so the label spends most of its life over the Mode 7 floor.
+	one_shot_label.add_theme_constant_override("outline_size", 2)
+	one_shot_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	one_shot_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	one_shot_label.add_theme_constant_override("shadow_offset_x", 3)
 	one_shot_label.add_theme_constant_override("shadow_offset_y", 3)
@@ -3962,6 +3968,9 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	rank_label.add_theme_font_size_override("font_size", 28)
 	var rank_color = Color(1.0, 0.9, 0.0) if rank == "S" else Color(0.6, 1.0, 0.6) if rank == "A" else Color(0.6, 0.8, 1.0)
 	rank_label.add_theme_color_override("font_color", rank_color)
+	# Tick 219: floating-text contrast — outline + shadow.
+	rank_label.add_theme_constant_override("outline_size", 2)
+	rank_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	rank_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	rank_label.add_theme_constant_override("shadow_offset_x", 2)
 	rank_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -3980,6 +3989,9 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	bonus_label.offset_right = 200
 	bonus_label.add_theme_font_size_override("font_size", 22)
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	# Tick 219: floating-text contrast — outline + shadow.
+	bonus_label.add_theme_constant_override("outline_size", 2)
+	bonus_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	bonus_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	bonus_label.add_theme_constant_override("shadow_offset_x", 2)
 	bonus_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -4047,6 +4059,9 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	auto_label.offset_right = 200
 	auto_label.add_theme_font_size_override("font_size", 42)
 	auto_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	# Tick 219: floating-text contrast — outline + shadow.
+	auto_label.add_theme_constant_override("outline_size", 2)
+	auto_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	auto_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	auto_label.add_theme_constant_override("shadow_offset_x", 3)
 	auto_label.add_theme_constant_override("shadow_offset_y", 3)
@@ -4065,6 +4080,9 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	turns_label.offset_right = 200
 	turns_label.add_theme_font_size_override("font_size", 22)
 	turns_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	# Tick 219: floating-text contrast — outline + shadow.
+	turns_label.add_theme_constant_override("outline_size", 2)
+	turns_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	turns_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	turns_label.add_theme_constant_override("shadow_offset_x", 2)
 	turns_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -4083,6 +4101,9 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.offset_right = 200
 	bonus_label.add_theme_font_size_override("font_size", 22)
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	# Tick 219: floating-text contrast — outline + shadow.
+	bonus_label.add_theme_constant_override("outline_size", 2)
+	bonus_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	bonus_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	bonus_label.add_theme_constant_override("shadow_offset_x", 2)
 	bonus_label.add_theme_constant_override("shadow_offset_y", 2)
