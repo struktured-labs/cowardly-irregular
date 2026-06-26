@@ -1023,7 +1023,8 @@ func _get_pending_story_cutscene() -> String:
 		if _current_map_id == "harmonia_village":
 			return "world1_spotlight_cleric_ch1"
 	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):
-		GameState.game_constants["cutscene_flag_chapter2_complete"] = true
+		# Tick 220: auto-advance via helper so QuestLog's chapter2 objective also flips.
+		_set_cutscene_flag_and_mirror("cutscene_flag_chapter2_complete")
 	# Chapter 3: plays when first entering the cave (key story beat)
 	if flags.get("cutscene_flag_chapter2_complete", false) and not flags.get("cutscene_flag_chapter3_complete", false):
 		if _current_map_id == "whispering_cave":
@@ -1067,7 +1068,8 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
 		for skip_flag in ["chapter5_complete", "chapter5_forest_entered", "chapter7_complete", "chapter8_complete", "chapter9_complete"]:
 			if not flags.get("cutscene_flag_" + skip_flag, false):
-				GameState.game_constants["cutscene_flag_" + skip_flag] = true
+				# Tick 220: route auto-skipped chapter flags through the helper so QuestLog stays consistent.
+				_set_cutscene_flag_and_mirror("cutscene_flag_" + skip_flag)
 
 	# Tick 104: W1 Mordaine post-defeat dialogue — plays IN Castle
 	# Harmonia on return from final-boss victory. Mirrors the W2-W5
@@ -1121,7 +1123,7 @@ func _get_pending_story_cutscene() -> String:
 	# community center reveal. Mirror of the chapter5→curator auto-set
 	# below for the same reason.
 	if flags.get("cutscene_flag_arbiter_suburban_intro_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_defeated", false):
-		GameState.game_constants["cutscene_flag_arbiter_suburban_defeated"] = true
+		_set_cutscene_flag_and_mirror("cutscene_flag_arbiter_suburban_defeated")
 	# W2 Chapter 5: community center, Coordinator reveal
 	if flags.get("cutscene_flag_arbiter_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter5_complete", false):
 		return "world2_chapter5"
@@ -1131,7 +1133,7 @@ func _get_pending_story_cutscene() -> String:
 	# treated as an off-screen narrative beat between chapter5 (reveal)
 	# and chapter7_infrastructure (feral shopping cart aftermath).
 	if flags.get("cutscene_flag_world2_chapter5_complete", false) and not flags.get("cutscene_flag_curator_suburban_defeated", false):
-		GameState.game_constants["cutscene_flag_curator_suburban_defeated"] = true
+		_set_cutscene_flag_and_mirror("cutscene_flag_curator_suburban_defeated")
 	# W2 Chapter 7: feral shopping cart (after curator defeat)
 	if flags.get("cutscene_flag_curator_suburban_defeated", false) and not flags.get("cutscene_flag_chapter7_infrastructure_complete", false):
 		return "world2_chapter7_infrastructure"
@@ -1147,7 +1149,7 @@ func _get_pending_story_cutscene() -> String:
 	# reads cutscene_flag_world2_complete) was never satisfied. Players
 	# couldn't progress past W2 even after finishing chapter11.
 	if flags.get("cutscene_flag_chapter11_complete", false) and not flags.get("cutscene_flag_world2_complete", false):
-		GameState.game_constants["cutscene_flag_world2_complete"] = true
+		_set_cutscene_flag_and_mirror("cutscene_flag_world2_complete")
 
 	# ===== WORLD 3: STEAMPUNK =====
 	if flags.get("cutscene_flag_world2_complete", false) and not flags.get("cutscene_flag_world3_prologue_complete", false):
@@ -1180,7 +1182,7 @@ func _get_pending_story_cutscene() -> String:
 	# Tick 100: auto-set world3_complete after chapter5 — same fix pattern
 	# as W2. Unblocks the W4 prologue gate which reads world3_complete.
 	if flags.get("cutscene_flag_world3_chapter5_complete", false) and not flags.get("cutscene_flag_world3_complete", false):
-		GameState.game_constants["cutscene_flag_world3_complete"] = true
+		_set_cutscene_flag_and_mirror("cutscene_flag_world3_complete")
 
 	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
 	# Tick 102: W4 Warden of Industrial defeat cutscene — plays IN
@@ -1205,7 +1207,7 @@ func _get_pending_story_cutscene() -> String:
 		return "world4_chapter5"
 	# Tick 100: auto-set world4_complete after chapter5.
 	if flags.get("cutscene_flag_world4_chapter5_complete", false) and not flags.get("cutscene_flag_world4_complete", false):
-		GameState.game_constants["cutscene_flag_world4_complete"] = true
+		_set_cutscene_flag_and_mirror("cutscene_flag_world4_complete")
 
 	# ===== WORLD 5: ABSTRACT / NETWORK =====
 	# Tick 103: W5 Arbiter of Futuristic defeat cutscene — plays IN
@@ -1232,7 +1234,7 @@ func _get_pending_story_cutscene() -> String:
 	# Tick 100: auto-set world5_complete after chapter5 — unblocks W6
 	# prologue gate.
 	if flags.get("cutscene_flag_world5_chapter5_complete", false) and not flags.get("cutscene_flag_world5_complete", false):
-		GameState.game_constants["cutscene_flag_world5_complete"] = true
+		_set_cutscene_flag_and_mirror("cutscene_flag_world5_complete")
 
 	# ===== WORLD 6: THE VERTEX (Final) =====
 	if flags.get("cutscene_flag_world5_complete", false) and not flags.get("cutscene_flag_world6_prologue_complete", false):
@@ -1289,6 +1291,16 @@ const _KNOWN_DEFEAT_CUTSCENE_FLAGS := {
 # Tick 214: check whether a defeat flag name is consumed by any _get_pending_story_cutscene gate.
 func _is_known_defeat_flag(flag: String) -> bool:
 	return _KNOWN_DEFEAT_CUTSCENE_FLAGS.has(flag)
+
+
+# Tick 220: set a cutscene_flag_X game_constant AND mirror to story_flags as bare 'X'. QuestLog reads story_flags — without the mirror, objective lines stay stale even after the cutscene fires and the game_constants flag is set. Pre-fix this mirror lived only in _play_story_cutscene; direct game_constants writes elsewhere (boss defeats via _apply_pending_boss_defeat, chapter auto-advance gates) silently skipped it. Same bug class as 2026-06-04 Elder Theron.
+func _set_cutscene_flag_and_mirror(flag: String) -> void:
+	if not GameState or flag == "":
+		return
+	GameState.game_constants[flag] = true
+	if flag.begins_with("cutscene_flag_"):
+		var bare = flag.substr("cutscene_flag_".length())
+		GameState.set_story_flag(bare)
 
 
 const _CUTSCENE_COMPLETION_FLAGS := {
@@ -1379,16 +1391,8 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		if completion_flag == "":
 			push_warning("[GameLoop] _play_story_cutscene: '%s' missing from _CUTSCENE_COMPLETION_FLAGS — flag NOT set, cutscene will replay on next gate check (loop bug)" % cutscene_id)
 		if completion_flag != "" and GameState:
-			GameState.game_constants[completion_flag] = true
-			# Mirror into story_flags under the bare name so QuestLog
-			# (which reads via GameState.get_story_flag) sees the
-			# objective complete. Without this mirror, "Speak with
-			# Elder Theron" and other chapter-gated quest log lines
-			# stay yellow forever even when the cutscene played and
-			# set its game_constants flag. Bug user-reported 2026-06-04.
-			if completion_flag.begins_with("cutscene_flag_"):
-				var bare = completion_flag.substr("cutscene_flag_".length())
-				GameState.set_story_flag(bare)
+			# Tick 220: route through the shared helper so the constant + story_flags mirror always travel together (this site WAS the only mirror pre-fix; the other 8 game_constants writes silently skipped it — see ticks 212/214 audit + the 2026-06-04 Elder Theron user report that prompted the original mirror here).
+			_set_cutscene_flag_and_mirror(completion_flag)
 			print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
 			# W1 spotlight completion also unlocks the matching PC's
 			# manual control. Reconcile is idempotent so a no-op for
@@ -2161,8 +2165,9 @@ func _apply_pending_boss_defeat() -> void:
 		GameState.set_story_flag(flag)
 	# Game constants (typically cutscene_flag_*)
 	# Tick 214: warn on cutscene_flag_* names that don't appear anywhere in this file's body. A subclass typo (e.g. "cutscene_flag_wardin_industrial_defeated") sets the wrong flag silently — defeat applies but no post-defeat cutscene gate ever fires.
+	# Tick 220: route through the helper so each flag also mirrors to story_flags. Pre-fix the direct write here meant QuestLog never saw boss defeat objectives flip to "complete".
 	for c in spec.get("constants", []):
-		GameState.game_constants[c] = true
+		_set_cutscene_flag_and_mirror(str(c))
 		if c is String and c.begins_with("cutscene_flag_") and not _is_known_defeat_flag(c):
 			push_warning("[GameLoop] _apply_pending_boss_defeat: '%s' set but not referenced by any _get_pending_story_cutscene gate — post-defeat cutscene will NOT fire (subclass typo?)" % c)
 	## Tick 154: dungeon flag now lives on game_constants

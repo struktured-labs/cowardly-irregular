@@ -53,16 +53,17 @@ func test_each_world_auto_sets_world_complete_after_last_chapter() -> void:
 
 
 func test_each_world_actually_sets_the_flag_in_game_constants() -> void:
-	# Pin the actual assignment, not just the check. A future
-	# refactor that drops the GameState.game_constants[...] = true
-	# line leaves the gate as a no-op.
+	# Pin the actual assignment, not just the check. Tick 220 routes
+	# these through the shared _set_cutscene_flag_and_mirror helper so
+	# the flag lands in both game_constants AND story_flags. Pin the
+	# helper call.
 	var body := _pending_cutscene_body()
 	for entry in AUTO_SETS:
 		var world_complete: String = entry[1]
 		var world_label: String = entry[2]
-		var pattern: String = "GameState.game_constants[\"" + world_complete + "\"] = true"
+		var pattern: String = "_set_cutscene_flag_and_mirror(\"" + world_complete + "\")"
 		assert_true(body.contains(pattern),
-			"%s must assign GameState.game_constants[%s] = true — the gate alone doesn't do anything" % [world_label, world_complete])
+			"%s must call _set_cutscene_flag_and_mirror(%s) — the gate alone doesn't do anything" % [world_label, world_complete])
 
 
 func test_w2_auto_set_immediately_precedes_w3_section() -> void:
@@ -71,7 +72,8 @@ func test_w2_auto_set_immediately_precedes_w3_section() -> void:
 	# auto-set flag). If they're swapped, the next world's prologue
 	# gate runs first and fails on a still-false flag.
 	var body := _pending_cutscene_body()
-	var auto_set_idx: int = body.find("GameState.game_constants[\"cutscene_flag_world2_complete\"] = true")
+	# Tick 220: pin the helper call instead of the bare write.
+	var auto_set_idx: int = body.find("_set_cutscene_flag_and_mirror(\"cutscene_flag_world2_complete\")")
 	var w3_section_idx: int = body.find("# ===== WORLD 3: STEAMPUNK =====")
 	assert_gt(auto_set_idx, -1, "W2 auto-set must exist")
 	assert_gt(w3_section_idx, -1, "W3 section marker must exist")

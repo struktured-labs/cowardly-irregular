@@ -67,13 +67,14 @@ func test_branch_guarded_after_existing_flag_machinery() -> void:
 	# machinery would still fire and the special branch is redundant
 	# — but the ordering matters for the spotlight reconcile path
 	# above, which is generic.
+	# Tick 220: standard completion_flag set is now the helper call.
 	var body := _play_story_cutscene_body()
-	var standard_flag_set: int = body.find("GameState.game_constants[completion_flag] = true")
+	var standard_flag_set: int = body.find("_set_cutscene_flag_and_mirror(completion_flag)")
 	var ending_branch: int = body.find("if cutscene_id == \"world6_ending\":")
-	assert_gt(standard_flag_set, -1, "standard completion_flag set must exist")
+	assert_gt(standard_flag_set, -1, "standard completion_flag helper call must exist")
 	assert_gt(ending_branch, -1, "world6_ending branch must exist")
 	assert_lt(standard_flag_set, ending_branch,
-		"world6_ending branch must come AFTER the standard completion_flag setter — keeps the special-case scoped to extras (game_complete + toast)")
+		"world6_ending branch must come AFTER the standard completion_flag helper call — keeps the special-case scoped to extras (game_complete + toast)")
 
 
 func test_other_cutscenes_dont_trigger_game_complete() -> void:

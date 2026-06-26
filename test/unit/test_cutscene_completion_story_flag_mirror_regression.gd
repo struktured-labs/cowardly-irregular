@@ -31,15 +31,19 @@ func _read(path: String) -> String:
 
 
 func test_cutscene_completion_mirrors_to_story_flags() -> void:
-	# Pin: the cutscene_finished handler must strip the cutscene_flag_
-	# prefix and call GameState.set_story_flag(bare) so the QuestLog can
-	# see the chapter-complete bit.
+	# Tick 220 extracted the prefix-strip + set_story_flag mirror into
+	# the shared _set_cutscene_flag_and_mirror helper. The original
+	# invariant (cutscene_finished → set_story_flag for cutscene_flag_*)
+	# still holds — pinned via the helper now.
 	var text = _read(GAMELOOP_PATH)
-	# The block lives inside the cutscene_finished lambda right after the
-	# game_constants write. Search anywhere in the file for the pattern.
-	assert_true(text.find("completion_flag.begins_with(\"cutscene_flag_\")") > -1,
-		"completion handler must check for the cutscene_flag_ prefix to derive the bare story flag")
-	assert_true(text.find("completion_flag.substr(\"cutscene_flag_\".length())") > -1,
-		"completion handler must strip the cutscene_flag_ prefix to derive the bare flag")
+	# Pin the helper exists with the right shape (the original mirror
+	# semantics moved inside it).
+	assert_true(text.find("flag.begins_with(\"cutscene_flag_\")") > -1,
+		"_set_cutscene_flag_and_mirror must check the cutscene_flag_ prefix")
+	assert_true(text.find("flag.substr(\"cutscene_flag_\".length())") > -1,
+		"_set_cutscene_flag_and_mirror must strip the cutscene_flag_ prefix")
 	assert_true(text.find("GameState.set_story_flag(bare)") > -1,
-		"completion handler must call GameState.set_story_flag(bare) so QuestLog sees the objective complete")
+		"_set_cutscene_flag_and_mirror must call set_story_flag so QuestLog sees the objective complete")
+	# Pin the cutscene_finished handler routes through the helper.
+	assert_true(text.find("_set_cutscene_flag_and_mirror(completion_flag)") > -1,
+		"cutscene_finished handler must route completion_flag through _set_cutscene_flag_and_mirror")

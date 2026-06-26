@@ -42,8 +42,9 @@ func test_arbiter_defeat_auto_set_after_intro_complete() -> void:
 	)
 	assert_true(body.contains(pattern),
 		"W2 must auto-set arbiter_suburban_defeated after arbiter_suburban_intro_complete — otherwise chapter5 unreachable")
-	assert_true(body.contains("GameState.game_constants[\"cutscene_flag_arbiter_suburban_defeated\"] = true"),
-		"the gate must actually assign the flag in game_constants — gate alone is a no-op")
+	# Tick 220: now via _set_cutscene_flag_and_mirror so the flag also lands in story_flags.
+	assert_true(body.contains("_set_cutscene_flag_and_mirror(\"cutscene_flag_arbiter_suburban_defeated\")"),
+		"the gate must actually assign the flag (via mirror helper) — gate alone is a no-op")
 
 
 func test_curator_defeat_auto_set_after_chapter5_complete() -> void:
@@ -54,8 +55,9 @@ func test_curator_defeat_auto_set_after_chapter5_complete() -> void:
 	)
 	assert_true(body.contains(pattern),
 		"W2 must auto-set curator_suburban_defeated after world2_chapter5_complete — otherwise chapter7_infrastructure unreachable")
-	assert_true(body.contains("GameState.game_constants[\"cutscene_flag_curator_suburban_defeated\"] = true"),
-		"the gate must actually assign the flag")
+	# Tick 220: now via _set_cutscene_flag_and_mirror.
+	assert_true(body.contains("_set_cutscene_flag_and_mirror(\"cutscene_flag_curator_suburban_defeated\")"),
+		"the gate must actually assign the flag (via mirror helper)")
 
 
 func test_arbiter_auto_set_precedes_chapter5_gate() -> void:
@@ -63,7 +65,8 @@ func test_arbiter_auto_set_precedes_chapter5_gate() -> void:
 	# in source so chapter5 reads arbiter_defeated as TRUE on the
 	# same evaluation pass after intro completes.
 	var body := _pending_cutscene_body()
-	var auto_set_idx: int = body.find("GameState.game_constants[\"cutscene_flag_arbiter_suburban_defeated\"] = true")
+	# Tick 220: pin the helper call instead of the bare write.
+	var auto_set_idx: int = body.find("_set_cutscene_flag_and_mirror(\"cutscene_flag_arbiter_suburban_defeated\")")
 	var chapter5_idx: int = body.find("return \"world2_chapter5\"")
 	assert_gt(auto_set_idx, -1, "arbiter auto-set must exist")
 	assert_gt(chapter5_idx, -1, "chapter5 return must exist")
@@ -73,7 +76,8 @@ func test_arbiter_auto_set_precedes_chapter5_gate() -> void:
 
 func test_curator_auto_set_precedes_chapter7_gate() -> void:
 	var body := _pending_cutscene_body()
-	var auto_set_idx: int = body.find("GameState.game_constants[\"cutscene_flag_curator_suburban_defeated\"] = true")
+	# Tick 220: pin the helper call instead of the bare write.
+	var auto_set_idx: int = body.find("_set_cutscene_flag_and_mirror(\"cutscene_flag_curator_suburban_defeated\")")
 	var chapter7_idx: int = body.find("return \"world2_chapter7_infrastructure\"")
 	assert_gt(auto_set_idx, -1, "curator auto-set must exist")
 	assert_gt(chapter7_idx, -1, "chapter7 return must exist")
