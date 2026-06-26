@@ -1273,6 +1273,24 @@ var _cutscene_cooldown: bool = false
 ## map-enter forever (talked-to-theron + !chapter1_complete loops).
 ## (Bug fix 2026-05-20: cutscene completion flags were never being set
 ## by _play_story_cutscene — only chapter2 auto-set itself inline.)
+# Tick 214: defeat flags that _get_pending_story_cutscene actually reads. When a subclass declares defeat_cutscene_flags = ["cutscene_flag_X"] and X isn't here, the flag gets set but no gate fires — silent narrative drop. Update both this set AND the gate when adding a new boss defeat cutscene.
+const _KNOWN_DEFEAT_CUTSCENE_FLAGS := {
+	"cutscene_flag_arbiter_futuristic_defeated": true,
+	"cutscene_flag_arbiter_suburban_defeated": true,
+	"cutscene_flag_curator_suburban_defeated": true,
+	"cutscene_flag_rat_king_defeated": true,
+	"cutscene_flag_tempo_steampunk_defeated": true,
+	"cutscene_flag_warden_industrial_defeated": true,
+	"cutscene_flag_warden_suburban_defeated": true,
+	"cutscene_flag_world1_mordaine_defeated": true,
+}
+
+
+# Tick 214: check whether a defeat flag name is consumed by any _get_pending_story_cutscene gate.
+func _is_known_defeat_flag(flag: String) -> bool:
+	return _KNOWN_DEFEAT_CUTSCENE_FLAGS.has(flag)
+
+
 const _CUTSCENE_COMPLETION_FLAGS := {
 	# World 1 (medieval) — flags drop the "world1_" prefix
 	"world1_prologue":                  "cutscene_flag_prologue_complete",
@@ -2142,8 +2160,11 @@ func _apply_pending_boss_defeat() -> void:
 	for flag in spec.get("story_flags", []):
 		GameState.set_story_flag(flag)
 	# Game constants (typically cutscene_flag_*)
+	# Tick 214: warn on cutscene_flag_* names that don't appear anywhere in this file's body. A subclass typo (e.g. "cutscene_flag_wardin_industrial_defeated") sets the wrong flag silently — defeat applies but no post-defeat cutscene gate ever fires.
 	for c in spec.get("constants", []):
 		GameState.game_constants[c] = true
+		if c is String and c.begins_with("cutscene_flag_") and not _is_known_defeat_flag(c):
+			push_warning("[GameLoop] _apply_pending_boss_defeat: '%s' set but not referenced by any _get_pending_story_cutscene gate — post-defeat cutscene will NOT fire (subclass typo?)" % c)
 	## Tick 154: dungeon flag now lives on game_constants
 	## (party-leader-independent). Pre-fix it was stored on
 	## player_party[0]["dungeon_flags"]; if the player changed
