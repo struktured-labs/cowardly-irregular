@@ -668,10 +668,14 @@ func _step_update_item(step: Dictionary) -> void:
 		var qty: int = member.get_item_count(old_id)
 		if qty <= 0:
 			continue
-		if member.has_method("remove_item"):
-			member.remove_item(old_id, qty)
-		if member.has_method("add_item"):
-			member.add_item(new_id, qty)
+		# Tick 191: guard add_item on remove_item success — pre-fix a failed remove still ran add, producing duplication (player keeps old AND gets new).
+		if not member.has_method("remove_item") or not member.has_method("add_item"):
+			push_warning("CutsceneDirector update_item: party member '%s' missing remove_item/add_item — swap skipped" % member.combatant_name)
+			return
+		if not member.remove_item(old_id, qty):
+			push_warning("CutsceneDirector update_item: remove_item('%s', %d) failed on %s — swap aborted, no duplication" % [old_id, qty, member.combatant_name])
+			return
+		member.add_item(new_id, qty)
 		return  # First match wins — don't double-swap if item exists in multiple members
 	# Not found anywhere — log so a malformed cutscene script doesn't
 	# silently fail to transform.
