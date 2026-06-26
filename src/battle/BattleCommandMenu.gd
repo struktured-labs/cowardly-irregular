@@ -900,7 +900,8 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 
 	# Defer - skip turn, gain +1 AP
 	if item_id == "defer":
-		_scene.log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
+		## Tick 174: defer log emit centralized in BattleManager.
+		## player_defer — don't pre-emit here.
 		BattleManager.player_defer()
 		_scene._update_ui()
 		return
@@ -1011,7 +1012,7 @@ func _on_win98_defer_requested() -> void:
 	if not current:
 		return
 
-	_scene.log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
+	## Tick 174: defer log emit centralized in BattleManager.player_defer.
 	BattleManager.player_defer()
 	_scene._update_ui()
 

@@ -3422,7 +3422,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		# R key = Defer (skip turn, gain AP) during selection
 		if event.keycode == KEY_R and is_player_selecting and current:
 			_close_win98_menu()
-			log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
+			## Tick 174: defer log emit moved into BattleManager.
+			## player_defer so every caller path gets it once. Don't
+			## re-emit here.
 			BattleManager.player_defer()
 			get_viewport().set_input_as_handled()
 			return

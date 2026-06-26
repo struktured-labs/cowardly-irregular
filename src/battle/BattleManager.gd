@@ -751,6 +751,16 @@ func player_defer() -> void:
 		"speed": _compute_action_speed(current_combatant, "defer")
 	}
 	_queue_action(action)
+	## Tick 174: emit the defer log here so EVERY caller gets it.
+	## Pre-fix three callers (BattleScene R-key, BattleCommandMenu
+	## win98 defer, BattleCommandMenu address-action) emitted their
+	## own log lines before calling, but two other callers (legacy
+	## button and the Bossbinder Mind Swap path) silently entered
+	## without logging. Centralizing here ensures consistent
+	## feedback and prevents the "did my defer go through?"
+	## confusion the pre-fix silent callers caused. The three
+	## pre-emit sites are cleaned up to prevent double-logging.
+	battle_log_message.emit("[color=cyan]%s defers![/color]" % current_combatant.combatant_name)
 	print("%s chooses to defer" % current_combatant.combatant_name)
 	_end_selection_turn()
 
