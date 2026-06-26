@@ -16,6 +16,8 @@ const HIGHLIGHT_COLOR := Color(0.2, 0.3, 0.5)
 const TEXT_COLOR := Color(1.0, 1.0, 1.0)
 const DIM_COLOR := Color(0.6, 0.65, 0.75)
 const ACCENT := Color(0.6, 0.85, 1.0)
+# Tick 194: dark blue-gray silhouette for undefeated entries (classic Pokémon-style "you've seen it but haven't dropped it").
+const SILHOUETTE_COLOR := Color(0.12, 0.14, 0.20, 1.0)
 
 var _entries: Array = []  # from BestiarySystem.get_seen_entries_sorted()
 var _selected: int = 0
@@ -417,6 +419,8 @@ func _refresh_detail() -> void:
 	_detail_flavor.text = "\n\n".join(blocks)
 
 	_load_sprite(entry.id)
+	# Tick 194: silhouette undefeated entries so the visual gate matches the text intel gate (tick 147 docstring said "silhouette" but sprite shipped full-color).
+	_detail_sprite.modulate = Color.WHITE if defeated else SILHOUETTE_COLOR
 
 
 func _format_drops(drops: Array, one_shot) -> String:
