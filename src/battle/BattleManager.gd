@@ -2692,7 +2692,10 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 
 	var mp_cost = ability.get("mp_cost", 0)
 	if not caster.spend_mp(mp_cost):
+		# Tick 221: surface MP shortfall to battle_log + push_warning. If we reach here, can_use_ability (line ~2653) said yes but spend_mp said no — that's a real divergence worth surfacing. Pre-fix print-only and the player saw nothing.
 		print("%s doesn't have enough MP!" % caster.combatant_name)
+		battle_log_message.emit("[color=gray]%s lacks MP for %s.[/color]" % [caster.combatant_name, ability["name"]])
+		push_warning("[BattleManager] _execute_ability: '%s' insufficient MP after can_use_ability check passed (cost=%d, have=%d) — can_use_ability / spend_mp divergence" % [ability_id, mp_cost, caster.current_mp])
 		return
 
 	# Actions cost 1 AP (cancels out natural gain for net 0)
@@ -3361,7 +3364,10 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 					retargeted.append(new_target)
 
 	if retargeted.size() == 0 and targets.size() > 0:
+		# Tick 221: symmetric battle-log surface with _execute_ability's fizzle path (line ~2690). Item targets all died between selection and execution — player needs to know why nothing happened.
 		print("%s's item fizzles - no valid targets!" % user.combatant_name)
+		var item_display: String = item_id.replace("_", " ").capitalize()
+		battle_log_message.emit("[color=gray]%s's %s fizzles — no valid targets.[/color]" % [user.combatant_name, item_display])
 		return
 
 	# Actions cost 1 AP (cancels out natural gain for net 0)
