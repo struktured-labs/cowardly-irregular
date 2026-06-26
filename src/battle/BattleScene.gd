@@ -3519,6 +3519,8 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 
 	var pos = _results_display._get_combatant_sprite_position(target)
 	pos.y -= 30  # Offset above damage number
+	# Tick 209: stagger so multi-element hits (formation combos, weakness chains) don't pile labels on top of each other.
+	pos.y -= _count_recent_elem_indicators_near(pos) * ELEM_STAGGER_STEP
 
 	var label = Label.new()
 	label.text = text
@@ -3529,12 +3531,29 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	label.position = pos
 	label.z_index = 100
+	# Tick 209: tag for the stagger counter — bare Labels at BattleScene root would otherwise match generic Label checks.
+	label.set_meta("elem_indicator", true)
 	add_child(label)
 
 	var tween = create_tween()
 	tween.tween_property(label, "position:y", pos.y - 30, 0.8)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
 	tween.tween_callback(label.queue_free)
+
+
+# Tick 209: stagger constants for elemental indicator labels. Same insight as tick 205 (Toast) + tick 208 (damage popups), different node type.
+const ELEM_STAGGER_STEP := 18.0
+const ELEM_STAGGER_RADIUS_SQUARED := 40.0 * 40.0
+
+
+# Tick 209: count live elemental-indicator labels near pos. Tagged via has_meta("elem_indicator") so we don't match unrelated Labels at BattleScene root.
+func _count_recent_elem_indicators_near(pos: Vector2) -> int:
+	var count: int = 0
+	for child in get_children():
+		if child is Label and is_instance_valid(child) and child.has_meta("elem_indicator"):
+			if child.position.distance_squared_to(pos) < ELEM_STAGGER_RADIUS_SQUARED:
+				count += 1
+	return count
 
 
 func _on_attack_missed(target: Combatant) -> void:
