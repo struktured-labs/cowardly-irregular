@@ -4,6 +4,13 @@ extends Node
 ## Handles save corruption, time manipulation, and game constant editing
 
 signal save_corrupted(corruption_level: float)
+## Tick 178: emitted when a NEW corruption effect lands (added to
+## corruption_effects). Distinct from save_corrupted which fires
+## on every level increase regardless of whether a new effect was
+## applied. UI uses this for the "Reality glitches: VISUAL_GLITCH"
+## toast — without it the player has no surface for WHICH effect
+## just got applied.
+signal corruption_effect_added(effect: String)
 signal game_constant_modified(constant_name: String, old_value, new_value)
 
 const SAVE_DIR = "user://saves/"
@@ -415,6 +422,13 @@ func _apply_random_corruption_effect() -> void:
 	var effect = effects[randi() % effects.size()]
 	if not effect in corruption_effects:
 		corruption_effects.append(effect)
+		## Tick 178: emit the signal so UI surfaces can show a
+		## Toast (or any other indicator). Pre-fix only print()
+		## fired — debug console only, invisible to the player.
+		## The save_corrupted signal already exists but has no
+		## listeners; this gives a more specific event ("which
+		## effect just landed") for the UI to react to.
+		corruption_effect_added.emit(effect)
 		print("Corruption effect applied: %s" % effect)
 
 

@@ -162,6 +162,19 @@ func _ready() -> void:
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
 
+	## Tick 178: surface save corruption events to the player.
+	## Pre-fix save_corrupted and the new corruption_effect_added
+	## signals fired but had NO listeners — player corrupted their
+	## save via Scriptweaver/etc. and got zero visible feedback
+	## that the corruption increased or that a NEW effect landed.
+	## Toast banner is the right surface (matches the existing
+	## save-toast / autosave-toast pattern at _on_any_save_completed).
+	if GameState:
+		if GameState.has_signal("save_corrupted") and not GameState.save_corrupted.is_connected(_on_save_corruption_increased):
+			GameState.save_corrupted.connect(_on_save_corruption_increased)
+		if GameState.has_signal("corruption_effect_added") and not GameState.corruption_effect_added.is_connected(_on_corruption_effect_added):
+			GameState.corruption_effect_added.connect(_on_corruption_effect_added)
+
 	# Create the persistent area-transition fade overlay (layer=90, below BattleTransition=100)
 	_area_fade_layer = CanvasLayer.new()
 	_area_fade_layer.layer = 90
@@ -4659,6 +4672,48 @@ func _on_any_save_completed(_slot: int) -> void:
 	if MapSystem and "current_map_id" in MapSystem and MapSystem.current_map_id:
 		location = str(MapSystem.current_map_id).capitalize()
 	Toast.show_save(self, location)
+
+
+## Tick 178: surface save-corruption events. The signals were
+## firing pre-fix with NO listeners — Scriptweaver / Necromancer
+## actions silently corrupted the save and the player got zero
+## visible feedback. Now: every corruption level increase shows
+## a warning-color toast with the new level, and every NEW
+## corruption effect shows a distinct danger-color toast.
+func _on_save_corruption_increased(corruption_level: float) -> void:
+	## Don't spam the player — only show the toast at meaningful
+	## thresholds (10%, 25%, 50%, 75%, 100%) so an Edit Formula
+	## that nudges level by 0.01 doesn't yield a noisy toast.
+	var pct: int = int(corruption_level * 100.0)
+	var prev_threshold: int = -1
+	var thresholds: Array[int] = [10, 25, 50, 75, 100]
+	for t in thresholds:
+		if pct >= t:
+			prev_threshold = t
+	if prev_threshold < 0:
+		return
+	# Track which thresholds we've shown so we don't re-show every
+	# add_corruption call between thresholds.
+	if not has_meta("corruption_thresholds_shown"):
+		set_meta("corruption_thresholds_shown", {})
+	var shown: Dictionary = get_meta("corruption_thresholds_shown", {})
+	if shown.has(prev_threshold):
+		return
+	shown[prev_threshold] = true
+	set_meta("corruption_thresholds_shown", shown)
+	Toast.show(self,
+		"⚠ Save corruption: %d%%" % prev_threshold,
+		Toast.WARNING_COLOR)
+
+
+func _on_corruption_effect_added(effect: String) -> void:
+	## Each new corruption effect is distinct and worth surfacing
+	## immediately — these affect gameplay (visual_glitch, stat_drain,
+	## etc.) so the player should know which effect just landed.
+	var display: String = effect.replace("_", " ").to_upper()
+	Toast.show(self,
+		"⚠ Reality glitches: %s" % display,
+		Toast.DANGER_COLOR)
 
 
 func _show_autogrind_toast(text: String) -> void:
