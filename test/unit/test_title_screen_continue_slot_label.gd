@@ -102,8 +102,11 @@ func test_subtitle_skips_slot_only_when_slot_empty() -> void:
 
 func test_no_save_system_returns_empty() -> void:
 	# Pre-existing: if SaveSystem isn't available, subtitle is "".
+	# Tick 203 simplified the guard — only `not SaveSystem` now (the
+	# get_most_recent_slot method check moved deeper since the cache
+	# may already be populated).
 	var src: String = FileAccess.get_file_as_string(TITLE_SCREEN)
-	assert_true(src.contains("if not SaveSystem or not SaveSystem.has_method(\"get_most_recent_slot\"):\n\t\treturn \"\""),
+	assert_true(src.contains("if not SaveSystem:\n\t\treturn \"\""),
 		"early-return on SaveSystem unavailability preserved")
 
 

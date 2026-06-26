@@ -39,6 +39,9 @@ const CURSOR_COLOR := Color(1.0, 0.9, 0.3)
 var _cursor_blink: bool = true
 var _blink_timer: float = 0.0
 
+# Tick 203: single source of truth for Continue's target slot. Pre-fix _check_for_save (file-existence) and _build_continue_subtitle (metadata-driven get_most_recent_slot) could disagree — a save with missing metadata showed Continue, subtitle was empty, and load attempts went to slot -1.
+var _cached_continue_slot: int = -1
+
 
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
@@ -380,14 +383,17 @@ func _on_menu_click(event: InputEvent, index: int) -> void:
 ## — Helpers —
 
 func _check_for_save() -> bool:
-	# Prefer SaveSystem's enumeration when available — it walks ALL slots
-	# including AUTO_SAVE_SLOT and QUICK_SAVE_SLOT. The hardcoded file
-	# checks below missed both, so a player whose only save was the
-	# periodic auto-save would see NO Continue button on the title screen
-	# even though their progress was on disk.
-	if SaveSystem and SaveSystem.has_method("has_save"):
-		return SaveSystem.has_save()
-	# Fallback when SaveSystem isn't ready yet (very early boot path).
+	# Tick 203: use get_most_recent_slot as the single source of truth — its
+	# semantics (a save WITH METADATA exists) match what Continue actually
+	# needs. has_save() (file-existence only) could disagree, showing
+	# Continue for a save the load path couldn't actually parse.
+	_cached_continue_slot = -1
+	if SaveSystem and SaveSystem.has_method("get_most_recent_slot"):
+		_cached_continue_slot = SaveSystem.get_most_recent_slot()
+		return _cached_continue_slot >= 0
+	# Fallback when SaveSystem isn't ready yet (very early boot path). These
+	# file-existence checks remain as a safety net — better to show Continue
+	# than to hide it on a transient autoload race.
 	if FileAccess.file_exists("user://save_data.json"):
 		return true
 	if FileAccess.file_exists("user://saves/save_00.json"):
@@ -400,9 +406,12 @@ func _build_continue_subtitle() -> String:
 	## resume?" on the title screen. Returns an empty string if the save
 	## is missing, lacks metadata, or SaveSystem isn't available — in
 	## which case the row falls back to the bare "CONTINUE" label.
-	if not SaveSystem or not SaveSystem.has_method("get_most_recent_slot"):
+	if not SaveSystem:
 		return ""
-	var slot: int = SaveSystem.get_most_recent_slot()
+	# Tick 203: prefer the cached slot from _check_for_save (called immediately before this by _build_menu) so subtitle and load target stay consistent. Fall back to a fresh lookup if cache is empty (e.g., very early boot path).
+	var slot: int = _cached_continue_slot
+	if slot < 0 and SaveSystem.has_method("get_most_recent_slot"):
+		slot = SaveSystem.get_most_recent_slot()
 	if slot < 0:
 		return ""
 	# Tick 202: slot label is always shown when we have one — players need to know whether Continue resumes Slot 2, a Quick Save, or an Auto-Save. Pre-fix the choice was silent.

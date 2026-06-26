@@ -21,15 +21,20 @@ func _read(p: String) -> String:
 
 
 func test_check_for_save_defers_to_save_system() -> void:
+	# Tick 203 raised the bar: rather than just has_save (file-existence),
+	# _check_for_save now uses get_most_recent_slot which requires metadata.
+	# That's the same predicate the load path uses, so Continue can't be
+	# shown for a save the load path couldn't actually open. Both APIs still
+	# walk AUTO_SAVE_SLOT + QUICK_SAVE_SLOT — the auto-save discoverability
+	# this test originally pinned is preserved by the new contract.
 	var src := _read(TITLE_SCREEN_PATH)
 	var idx := src.find("func _check_for_save")
 	assert_gt(idx, -1, "_check_for_save must exist")
 	var next_fn := src.find("\nfunc ", idx + 1)
 	var body := src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("SaveSystem.has_save()"),
-		"_check_for_save must defer to SaveSystem.has_save() so AUTO_SAVE_SLOT and QUICK_SAVE_SLOT count")
-	# Must be guarded — SaveSystem may not be ready on a very early boot.
-	assert_true(body.contains("SaveSystem and SaveSystem.has_method(\"has_save\")"),
+	assert_true(body.contains("SaveSystem.get_most_recent_slot()"),
+		"_check_for_save must defer to SaveSystem.get_most_recent_slot — load-path-consistent and walks all slots including AUTO/QUICK")
+	assert_true(body.contains("SaveSystem and SaveSystem.has_method(\"get_most_recent_slot\")"),
 		"the SaveSystem call must be guarded against missing autoload")
 
 
