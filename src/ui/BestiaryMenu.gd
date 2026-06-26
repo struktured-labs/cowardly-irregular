@@ -406,6 +406,16 @@ func _refresh_detail() -> void:
 		_detail_rewards.text = "EXP: ???   Gold: ???"
 		_detail_drops.text = "Drops: ???   (defeat to unlock)"
 
+	# Tick 193: flavor area now actually displays flavor (silent bug — never assigned in positive path) + prepends location hint for completionist navigation.
+	var pools: Array = entry.get("pools", [])
+	var flavor: String = str(entry.get("flavor", ""))
+	var blocks: PackedStringArray = []
+	if pools.size() > 0:
+		blocks.append("Found in: %s" % ", ".join(PackedStringArray(pools)))
+	if flavor != "":
+		blocks.append(flavor)
+	_detail_flavor.text = "\n\n".join(blocks)
+
 	_load_sprite(entry.id)
 
 

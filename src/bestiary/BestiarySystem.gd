@@ -15,9 +15,11 @@ class_name BestiarySystem
 
 const BESTIARY_JSON := "res://data/bestiary.json"
 const MONSTERS_JSON := "res://data/monsters.json"
+const ENEMY_POOLS_JSON := "res://data/enemy_pools.json"
 
 static var _bestiary_cache: Dictionary = {}
 static var _monsters_cache: Dictionary = {}
+static var _pools_cache: Dictionary = {}
 static var _loaded: bool = false
 
 
@@ -27,6 +29,8 @@ static func _ensure_loaded() -> void:
 	_loaded = true
 	_monsters_cache = _load_json(MONSTERS_JSON)
 	_bestiary_cache = _load_json(BESTIARY_JSON)
+	# Tick 193: pools cache feeds get_pools_for_monster for the bestiary location hint.
+	_pools_cache = _load_json(ENEMY_POOLS_JSON)
 
 
 static func _load_json(path: String) -> Dictionary:
@@ -61,7 +65,34 @@ static func reload() -> void:
 	_loaded = false
 	_bestiary_cache.clear()
 	_monsters_cache.clear()
+	_pools_cache.clear()
 	_ensure_loaded()
+
+
+# Tick 193: title-case a snake_case id so "cave_floor_1" → "Cave Floor 1" (String.capitalize() only does first letter).
+static func _titlecase(s: String) -> String:
+	if s == "":
+		return ""
+	var parts: PackedStringArray = s.split("_")
+	for i in parts.size():
+		if parts[i].length() == 0:
+			continue
+		parts[i] = parts[i][0].to_upper() + parts[i].substr(1).to_lower()
+	return " ".join(parts)
+
+
+static func get_pools_for_monster(monster_id: String) -> Array:
+	"""Return prettified pool keys that contain monster_id (e.g. 'cave_floor_1' → 'Cave Floor 1'). Empty array if not in any pool (Scriptweaver-spawned, boss-only, etc.)."""
+	_ensure_loaded()
+	if monster_id == "":
+		return []
+	var out: Array = []
+	for pool_id in _pools_cache.keys():
+		var monsters: Array = _pools_cache.get(pool_id, [])
+		if monsters is Array and monster_id in monsters:
+			out.append(_titlecase(str(pool_id)))
+	out.sort()
+	return out
 
 
 static func get_monster_data(monster_id: String) -> Dictionary:
@@ -173,6 +204,8 @@ static func get_seen_entries_sorted() -> Array:
 			## Tick 146: defeated flag distinct from seen. UI can show
 			## "?" stats for seen-but-not-killed entries.
 			"defeated": is_defeated(id),
+			# Tick 193: where this monster can be encountered (completionist hint).
+			"pools": get_pools_for_monster(id),
 		})
 	out.sort_custom(func(a, b):
 		if a.level != b.level:
