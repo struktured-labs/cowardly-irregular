@@ -174,6 +174,12 @@ func _ready() -> void:
 			GameState.save_corrupted.connect(_on_save_corruption_increased)
 		if GameState.has_signal("corruption_effect_added") and not GameState.corruption_effect_added.is_connected(_on_corruption_effect_added):
 			GameState.corruption_effect_added.connect(_on_corruption_effect_added)
+		## Tick 179: surface Scriptweaver edits to game constants.
+		## game_constant_modified fires from modify_constant (the
+		## Scriptweaver's main verb) but had ZERO listeners — same
+		## silent failure class as tick 178's save_corrupted gap.
+		if GameState.has_signal("game_constant_modified") and not GameState.game_constant_modified.is_connected(_on_game_constant_modified):
+			GameState.game_constant_modified.connect(_on_game_constant_modified)
 
 	# Create the persistent area-transition fade overlay (layer=90, below BattleTransition=100)
 	_area_fade_layer = CanvasLayer.new()
@@ -4714,6 +4720,21 @@ func _on_corruption_effect_added(effect: String) -> void:
 	Toast.show(self,
 		"⚠ Reality glitches: %s" % display,
 		Toast.DANGER_COLOR)
+
+
+## Tick 179: Scriptweaver edits via modify_constant fire
+## game_constant_modified. Pre-fix nobody listened — the player
+## edited a constant and saw zero confirmation that it landed
+## (modify_constant returns true but no UI surface). Toast format
+## shows the constant name + the change ("3.0 → 4.5"). Uses
+## DEFAULT_COLOR (yellow) since this is a player-initiated edit,
+## not a corruption-induced event — different severity from the
+## corruption Toasts above.
+func _on_game_constant_modified(constant_name: String, old_value, new_value) -> void:
+	var display_name: String = constant_name.replace("_", " ").capitalize()
+	Toast.show(self,
+		"✎ %s: %s → %s" % [display_name, str(old_value), str(new_value)],
+		Toast.DEFAULT_COLOR)
 
 
 func _show_autogrind_toast(text: String) -> void:
