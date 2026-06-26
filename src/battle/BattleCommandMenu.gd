@@ -602,9 +602,10 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		var item = _build_ability_menu_item(ability_id, combatant, alive_enemies, canvas_transform)
 		if item.is_empty():
 			return {}
-		# Override the label so the per-job free move uses its canon name
-		# (e.g. "Channel" instead of the ability's standard name).
-		item["label"] = label
+		# Tick 192: append compact hint (effect+scope) so flavor names like "Riff" hint at what they do.
+		var ability_data: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+		var hint: String = _free_move_hint(ability_data)
+		item["label"] = ("%s (%s)" % [label, hint]) if hint != "" else label
 		return item
 
 	# Default: basic_attack (Fighter/Rogue path — same data shape as legacy "Attack")
@@ -634,6 +635,29 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		"label": label,
 		"submenu": enemy_targets
 	}
+
+
+# Tick 192: derive a compact effect+scope hint from ability data so per-job Free Move labels self-document. Returns "" for unknown shapes (label stays bare).
+func _free_move_hint(ability: Dictionary) -> String:
+	if ability.is_empty():
+		return ""
+	var symbol: String = ""
+	match str(ability.get("type", "")):
+		"mp_restore":
+			symbol = "MP+"
+		"heal":
+			symbol = "HP+"
+		_:
+			return ""
+	match str(ability.get("target_type", "")):
+		"self":
+			return "%s self" % symbol
+		"single_ally":
+			return "%s ally" % symbol
+		"all_allies":
+			return "%s party" % symbol
+		_:
+			return symbol
 
 
 func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
