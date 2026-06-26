@@ -683,13 +683,15 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 			hp_label.text = "[color=red]DEFEATED[/color]"
 		elif is_revealed:
 			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
-			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			# Tick 230: BBCode color via AccessibilityPalette so the enemy HP tooltip matches the colorblind-aware visual HP bar palette (cyan/yellow/magenta in accessibility mode).
+			var hp_color = AccessibilityPalette.hp_bbcode_for_pct(hp_percent)
 			hp_label.text = "[color=%s]HP: %d/%d[/color]" % [hp_color, enemy.current_hp, enemy.max_hp]
 		else:
 			# Show vague HP indicator based on percentage
 			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
 			var hp_hint = "Healthy" if hp_percent > 0.75 else ("Wounded" if hp_percent > 0.5 else ("Hurt" if hp_percent > 0.25 else "Critical"))
-			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			# Tick 230: BBCode color via AccessibilityPalette (matches the revealed-HP branch above).
+			var hp_color = AccessibilityPalette.hp_bbcode_for_pct(hp_percent)
 			hp_label.text = "[color=%s]%s[/color]" % [hp_color, hp_hint]
 
 

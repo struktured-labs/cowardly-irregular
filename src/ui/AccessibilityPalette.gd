@@ -72,3 +72,12 @@ static func hp_low() -> Color:
 	if is_on():
 		return Color(1.00, 0.40, 0.80)  # Magenta (matches elem_weak)
 	return Color(0.90, 0.30, 0.30)  # Red
+
+
+# Tick 230: BBCode-friendly HP tier name for [color=X]…[/color] text in RichTextLabels (BattleUIManager enemy tooltips). Tiers match BattleUIManager's original thresholds (>0.5, >0.25). Color-blind mode swaps lime→cyan and red→magenta to match the visual HP bar palette.
+static func hp_bbcode_for_pct(hp_pct: float) -> String:
+	if hp_pct > 0.5:
+		return "cyan" if is_on() else "lime"
+	if hp_pct > 0.25:
+		return "yellow"
+	return "magenta" if is_on() else "red"

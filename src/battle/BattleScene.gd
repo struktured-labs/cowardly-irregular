@@ -1080,13 +1080,13 @@ func _update_enemy_hp_bars() -> void:
 			continue
 		var ratio = float(enemy.current_hp) / float(max(1, enemy.max_hp))
 		bar_fill.size.x = 40.0 * ratio
-		# Color: green > 50%, yellow 25-50%, red < 25%
+		# Tick 230: floating enemy HP bar via AccessibilityPalette — color-blind mode swaps green/red to cyan/magenta, matching the SaveScreen + StatusMenu HP bar palette.
 		if ratio > 0.5:
-			bar_fill.color = Color(0.3, 0.8, 0.3)
+			bar_fill.color = AccessibilityPalette.hp_high()
 		elif ratio > 0.25:
-			bar_fill.color = Color(0.9, 0.8, 0.2)
+			bar_fill.color = AccessibilityPalette.hp_mid()
 		else:
-			bar_fill.color = Color(0.8, 0.2, 0.2)
+			bar_fill.color = AccessibilityPalette.hp_low()
 
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
