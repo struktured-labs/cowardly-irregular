@@ -3510,13 +3510,14 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 	var color: Color
 	if modifier == 0.0:
 		text = "IMMUNE!"
-		color = Color(0.7, 0.7, 0.7)  # Gray
+		color = Color(0.7, 0.7, 0.7)  # Gray (colorblind-safe)
 	elif modifier > 1.0:
 		text = "WEAK!"
-		color = Color(1.0, 0.3, 0.3)  # Red
+		# Tick 227: WEAK uses a color-blind aware palette. Default red sits in the red-green spectrum that deuteranopia/protanopia (~5% of males) struggles with; accessibility mode swaps to magenta which is distinguishable from blue RESIST, yellow crits, and cyan heals.
+		color = _elem_weak_color()
 	elif modifier < 1.0:
 		text = "RESIST"
-		color = Color(0.3, 0.5, 1.0)  # Blue
+		color = Color(0.3, 0.5, 1.0)  # Blue (colorblind-safe)
 	else:
 		return
 
@@ -3550,6 +3551,16 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 # Tick 209: stagger constants for elemental indicator labels. Same insight as tick 205 (Toast) + tick 208 (damage popups), different node type.
 const ELEM_STAGGER_STEP := 18.0
 const ELEM_STAGGER_RADIUS_SQUARED := 40.0 * 40.0
+
+
+# Tick 227: color-blind-aware WEAK indicator color. Default is the classic red; accessibility mode swaps to magenta (distinguishable from blue RESIST + yellow crit + cyan heal under deuteranopia/protanopia).
+func _elem_weak_color() -> Color:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree and tree.root:
+		var gs = tree.root.get_node_or_null("GameState")
+		if gs and "color_blind_mode" in gs and bool(gs.color_blind_mode):
+			return Color(1.00, 0.40, 0.80)  # Magenta — accessibility alternative
+	return Color(1.0, 0.3, 0.3)  # Red — classic default
 
 
 # Tick 209: count live elemental-indicator labels near pos. Tagged via has_meta("elem_indicator") so we don't match unrelated Labels at BattleScene root.
