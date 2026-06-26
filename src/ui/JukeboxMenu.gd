@@ -165,14 +165,14 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "JUKEBOX"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
 	var subtitle = Label.new()
 	subtitle.text = "[DEBUG] Music track browser"
 	subtitle.position = Vector2(16, 30)
-	subtitle.add_theme_font_size_override("font_size", 10)
+	subtitle.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(subtitle)
 
@@ -189,7 +189,7 @@ func _build_ui() -> void:
 
 		var lbl = Label.new()
 		lbl.position = Vector2(10, 6)
-		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		lbl.add_theme_color_override("font_color", TEXT_COLOR)
 		highlight.add_child(lbl)
 		_row_labels.append(lbl)
@@ -202,7 +202,7 @@ func _build_ui() -> void:
 	scroll_up_lbl.name = "ScrollUp"
 	scroll_up_lbl.text = ""
 	scroll_up_lbl.position = Vector2(_panel.size.x - 24, 52)
-	scroll_up_lbl.add_theme_font_size_override("font_size", 12)
+	scroll_up_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_up_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_up_lbl)
 
@@ -210,7 +210,7 @@ func _build_ui() -> void:
 	scroll_dn_lbl.name = "ScrollDown"
 	scroll_dn_lbl.text = ""
 	scroll_dn_lbl.position = Vector2(_panel.size.x - 24, 52 + VISIBLE_ROWS * ROW_HEIGHT - ROW_HEIGHT)
-	scroll_dn_lbl.add_theme_font_size_override("font_size", 12)
+	scroll_dn_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_dn_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_dn_lbl)
 
@@ -218,7 +218,7 @@ func _build_ui() -> void:
 	_now_playing_label = Label.new()
 	_now_playing_label.position = Vector2(16, _panel.size.y - 48)
 	_now_playing_label.size = Vector2(_panel.size.x - 32, 18)
-	_now_playing_label.add_theme_font_size_override("font_size", 11)
+	_now_playing_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	_now_playing_label.add_theme_color_override("font_color", PLAYING_COLOR)
 	_now_playing_label.name = "NowPlaying"
 	_panel.add_child(_now_playing_label)
@@ -228,7 +228,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "Up/Down: Navigate   A: Play   B: Stop & Back"
 	footer.position = Vector2(16, _panel.size.y - 28)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
 

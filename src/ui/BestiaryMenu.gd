@@ -67,7 +67,7 @@ func _build_ui() -> void:
 	header.text = "Bestiary"
 	header.position = Vector2(24, 16)
 	header.size = Vector2(300, 32)
-	header.add_theme_font_size_override("font_size", 26)
+	header.add_theme_font_size_override("font_size", TextScale.scaled(26))
 	header.add_theme_color_override("font_color", ACCENT)
 	header.clip_text = false
 	header.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -95,7 +95,7 @@ func _build_ui() -> void:
 		_count_label.text = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
 		_count_label.size = Vector2(340, 24)
 		_count_label.position = Vector2(viewport.x - 360, 22)
-	_count_label.add_theme_font_size_override("font_size", 16)
+	_count_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_count_label.clip_text = false
@@ -134,7 +134,7 @@ func _build_ui() -> void:
 	footer.text = "↑↓ / Wheel: Select    B / Esc / RClick: Close    (hover to preview)"
 	footer.position = Vector2(24, viewport.y - 32)
 	footer.size = Vector2(viewport.x - 48, 24)
-	footer.add_theme_font_size_override("font_size", 14)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	footer.add_theme_color_override("font_color", DIM_COLOR)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(footer)
@@ -175,7 +175,7 @@ func _populate_list() -> void:
 	if _entries.is_empty():
 		var empty := Label.new()
 		empty.text = "No monsters discovered yet.\nEncounter them in battle to fill the Bestiary."
-		empty.add_theme_font_size_override("font_size", 15)
+		empty.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		empty.add_theme_color_override("font_color", DIM_COLOR)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -186,7 +186,7 @@ func _populate_list() -> void:
 	for entry in _entries:
 		var row := Label.new()
 		row.text = "  Lv %d  %s" % [entry.level, entry.name]
-		row.add_theme_font_size_override("font_size", 17)
+		row.add_theme_font_size_override("font_size", TextScale.scaled(17))
 		row.add_theme_color_override("font_color", TEXT_COLOR)
 		row.custom_minimum_size = Vector2(0, 28)
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -263,7 +263,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_placeholder.text = "?"
 	_detail_placeholder.position = _detail_sprite_bg.position
 	_detail_placeholder.size = _detail_sprite_bg.size
-	_detail_placeholder.add_theme_font_size_override("font_size", 96)
+	_detail_placeholder.add_theme_font_size_override("font_size", TextScale.scaled(96))
 	_detail_placeholder.add_theme_color_override("font_color", Color(0.35, 0.4, 0.5))
 	_detail_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -276,7 +276,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_name = Label.new()
 	_detail_name.position = Vector2(text_x, margin)
 	_detail_name.size = Vector2(text_w, 32)
-	_detail_name.add_theme_font_size_override("font_size", 24)
+	_detail_name.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	_detail_name.add_theme_color_override("font_color", ACCENT)
 	_detail_name.clip_text = false
 	_detail_name.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -285,7 +285,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_epithet = Label.new()
 	_detail_epithet.position = Vector2(text_x, margin + 32)
 	_detail_epithet.size = Vector2(text_w, 22)
-	_detail_epithet.add_theme_font_size_override("font_size", 15)
+	_detail_epithet.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_detail_epithet.add_theme_color_override("font_color", DIM_COLOR)
 	_detail_epithet.clip_text = false
 	_detail_epithet.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -294,7 +294,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_level = Label.new()
 	_detail_level.position = Vector2(text_x, margin + 58)
 	_detail_level.size = Vector2(text_w, 22)
-	_detail_level.add_theme_font_size_override("font_size", 14)
+	_detail_level.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_level.add_theme_color_override("font_color", TEXT_COLOR)
 	_detail_level.clip_text = false
 	_detail_level.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -303,7 +303,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_stats = Label.new()
 	_detail_stats.position = Vector2(text_x, margin + 86)
 	_detail_stats.size = Vector2(text_w, 48)
-	_detail_stats.add_theme_font_size_override("font_size", 14)
+	_detail_stats.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_stats.add_theme_color_override("font_color", TEXT_COLOR)
 	_detail_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(_detail_stats)
@@ -311,7 +311,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_weak = Label.new()
 	_detail_weak.position = Vector2(text_x, margin + 140)
 	_detail_weak.size = Vector2(text_w, 24)
-	_detail_weak.add_theme_font_size_override("font_size", 14)
+	_detail_weak.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_weak.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))
 	_detail_weak.clip_text = false
 	_detail_weak.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -320,7 +320,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_resist = Label.new()
 	_detail_resist.position = Vector2(text_x, margin + 164)
 	_detail_resist.size = Vector2(text_w, 24)
-	_detail_resist.add_theme_font_size_override("font_size", 14)
+	_detail_resist.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_resist.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
 	_detail_resist.clip_text = false
 	_detail_resist.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -332,7 +332,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_rewards = Label.new()
 	_detail_rewards.position = Vector2(text_x, margin + 188)
 	_detail_rewards.size = Vector2(text_w, 22)
-	_detail_rewards.add_theme_font_size_override("font_size", 14)
+	_detail_rewards.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_rewards.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	_detail_rewards.clip_text = false
 	_detail_rewards.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -343,7 +343,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_drops = Label.new()
 	_detail_drops.position = Vector2(text_x, margin + 212)
 	_detail_drops.size = Vector2(text_w, 32)
-	_detail_drops.add_theme_font_size_override("font_size", 12)
+	_detail_drops.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_detail_drops.add_theme_color_override("font_color", Color(0.85, 0.9, 0.75))
 	_detail_drops.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(_detail_drops)
@@ -352,7 +352,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_flavor = Label.new()
 	_detail_flavor.position = Vector2(margin, margin + sprite_size + 20)
 	_detail_flavor.size = Vector2(parent.size.x - margin * 2, parent.size.y - sprite_size - margin * 3 - 12)
-	_detail_flavor.add_theme_font_size_override("font_size", 15)
+	_detail_flavor.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_detail_flavor.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 	_detail_flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_flavor.vertical_alignment = VERTICAL_ALIGNMENT_TOP

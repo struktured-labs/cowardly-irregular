@@ -80,7 +80,7 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "SAVE GAME" if current_mode == Mode.SAVE else "LOAD GAME"
 	title.position = Vector2(vp_size.x / 2 - 60, 16)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	add_child(title)
 
@@ -101,7 +101,7 @@ func _build_ui() -> void:
 	var qs_label = Label.new()
 	qs_label.text = "Quick Save"
 	qs_label.position = Vector2(32, quick_save_y - 18)
-	qs_label.add_theme_font_size_override("font_size", 12)
+	qs_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	qs_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(qs_label)
 
@@ -117,7 +117,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "Up/Dn:Select  A/Click:Confirm  B/RClick:Cancel"
 	footer.position = Vector2(32, vp_size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
 
@@ -165,7 +165,7 @@ func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 	var slot_text = "Slot %d" % (slot + 1) if slot < SaveSystem.QUICK_SAVE_SLOT else "Quick Save"
 	slot_label.text = slot_text
 	slot_label.position = Vector2(12, 8)
-	slot_label.add_theme_font_size_override("font_size", 14)
+	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	slot_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(slot_label)
 
@@ -173,7 +173,7 @@ func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 	var empty_label = Label.new()
 	empty_label.text = "- Empty -" if current_mode == Mode.SAVE else "- No save -"
 	empty_label.position = Vector2(panel_size.x / 2 - 40, panel_size.y / 2 - 14)
-	empty_label.add_theme_font_size_override("font_size", 16)
+	empty_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	empty_label.add_theme_color_override("font_color", EMPTY_COLOR if current_mode == Mode.SAVE else DISABLED_COLOR)
 	panel.add_child(empty_label)
 	if current_mode == Mode.LOAD:
@@ -181,7 +181,7 @@ func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 		var hint = Label.new()
 		hint.text = "(nothing to load)"
 		hint.position = Vector2(panel_size.x / 2 - 58, panel_size.y / 2 + 10)
-		hint.add_theme_font_size_override("font_size", 11)
+		hint.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		hint.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(hint)
 
@@ -193,7 +193,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	var slot_text = "Slot %d" % (slot + 1) if slot < SaveSystem.QUICK_SAVE_SLOT else "Quick Save"
 	slot_label.text = slot_text
 	slot_label.position = Vector2(12, 4)
-	slot_label.add_theme_font_size_override("font_size", 12)
+	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	slot_label.add_theme_color_override("font_color", Color.YELLOW)
 	panel.add_child(slot_label)
 
@@ -216,7 +216,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	story_label.text = story_line
 	story_label.position = Vector2(80, 4)
 	story_label.size = Vector2(panel_size.x - 180, 16)
-	story_label.add_theme_font_size_override("font_size", 12)
+	story_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	story_label.add_theme_color_override("font_color", TEXT_COLOR)
 	story_label.clip_text = false
 	story_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -226,7 +226,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	loc_label.text = location
 	loc_label.position = Vector2(80, 20)
 	loc_label.size = Vector2(panel_size.x - 180, 14)
-	loc_label.add_theme_font_size_override("font_size", 11)
+	loc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	loc_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	loc_label.clip_text = false
 	loc_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -237,7 +237,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	var time_label = Label.new()
 	time_label.text = play_time
 	time_label.position = Vector2(panel_size.x - 90, 4)
-	time_label.add_theme_font_size_override("font_size", 12)
+	time_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	time_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(time_label)
 
@@ -248,7 +248,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		# Tick 197: derive via helper — pre-fix the inner if/else had a fall-through (>=2 parts but malformed ymd/hms left text empty, silent UX).
 		date_label.text = _format_save_date(save_date)
 		date_label.position = Vector2(panel_size.x - 90, 22)
-		date_label.add_theme_font_size_override("font_size", 10)
+		date_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		date_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(date_label)
 
@@ -268,7 +268,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		var no_party = Label.new()
 		no_party.text = "(No party data)"
 		no_party.position = Vector2(16, 56)
-		no_party.add_theme_font_size_override("font_size", 11)
+		no_party.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		no_party.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(no_party)
 
@@ -310,7 +310,7 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	var name_label = Label.new()
 	name_label.text = member.get("name", "???")
 	name_label.position = Vector2(36, 0)
-	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(name_label)
 
@@ -320,7 +320,7 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	var job_label = Label.new()
 	job_label.text = "Lv.%d %s" % [level, job]
 	job_label.position = Vector2(36, 14)
-	job_label.add_theme_font_size_override("font_size", 10)
+	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(job_label)
 
@@ -348,7 +348,7 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	var hp_text = Label.new()
 	hp_text.text = "— KO —" if ko else "%d/%d" % [hp, max_hp]
 	hp_text.position = Vector2(36, 40)
-	hp_text.add_theme_font_size_override("font_size", 9)
+	hp_text.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	hp_text.add_theme_color_override("font_color", KO_NAME_COLOR if ko else DISABLED_COLOR)
 	container.add_child(hp_text)
 
@@ -508,14 +508,14 @@ func _show_overwrite_confirmation(slot: int) -> void:
 	var msg = Label.new()
 	msg.text = "Overwrite %s?" % slot_name
 	msg.position = Vector2(box.position.x + 40, box.position.y + 20)
-	msg.add_theme_font_size_override("font_size", 16)
+	msg.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	msg.add_theme_color_override("font_color", Color.YELLOW)
 	_confirm_overlay.add_child(msg)
 
 	var hint = Label.new()
 	hint.text = "A/Enter: Confirm    B/Esc: Cancel"
 	hint.position = Vector2(box.position.x + 40, box.position.y + 70)
-	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
 	_confirm_overlay.add_child(hint)
 

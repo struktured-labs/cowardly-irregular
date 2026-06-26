@@ -110,7 +110,7 @@ func _build_ui() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.position = Vector2(0, 12)
 	title.size = Vector2(vp_size.x, 30)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", HEADER_COLOR)
 	add_child(title)
 
@@ -140,7 +140,7 @@ func _build_ui() -> void:
 		next_label.text = "▶ Next: " + next_text
 		next_label.position = Vector2(32, 56)
 		next_label.size = Vector2(vp_size.x - 64, 20)
-		next_label.add_theme_font_size_override("font_size", 13)
+		next_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		next_label.add_theme_color_override("font_color", ACTIVE_COLOR)
 		add_child(next_label)
 		banner_h = 36.0
@@ -177,7 +177,7 @@ func _build_ui() -> void:
 		lbl.text = line["text"]
 		lbl.position = Vector2(line["indent"], y)
 		lbl.size = Vector2(vp_size.x - line["indent"] - 20, line_height)
-		lbl.add_theme_font_size_override("font_size", line["size"])
+		lbl.add_theme_font_size_override("font_size", TextScale.scaled(int(line["size"])))
 		lbl.add_theme_color_override("font_color", line["color"])
 		lbl.clip_text = true
 		add_child(lbl)
@@ -188,7 +188,7 @@ func _build_ui() -> void:
 		var up_arrow = Label.new()
 		up_arrow.text = "▲ More"
 		up_arrow.position = Vector2(vp_size.x - 80, content_y - 2)
-		up_arrow.add_theme_font_size_override("font_size", 10)
+		up_arrow.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		up_arrow.add_theme_color_override("font_color", LOCKED_COLOR)
 		add_child(up_arrow)
 
@@ -196,7 +196,7 @@ func _build_ui() -> void:
 		var dn_arrow = Label.new()
 		dn_arrow.text = "▼ More"
 		dn_arrow.position = Vector2(vp_size.x - 80, vp_size.y - 44)
-		dn_arrow.add_theme_font_size_override("font_size", 10)
+		dn_arrow.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		dn_arrow.add_theme_color_override("font_color", LOCKED_COLOR)
 		add_child(dn_arrow)
 
@@ -206,7 +206,7 @@ func _build_ui() -> void:
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp_size.y - 28)
 	footer.size = Vector2(vp_size.x, 20)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", LOCKED_COLOR)
 	add_child(footer)
 
