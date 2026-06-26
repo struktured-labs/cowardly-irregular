@@ -3204,7 +3204,13 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status(effect, duration)
-					battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [target.combatant_name, effect])
+					## Tick 186: prettify the effect name. Pre-fix the
+					## multi-word ones (physical_reflect / prismatic_
+					## reflect / magic_block) surfaced as raw snake_case
+					## in the log. capitalize() alone only handles the
+					## first letter; replace+capitalize gives proper
+					## Title Case across all 11 listed effects.
+					battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [target.combatant_name, effect.replace("_", " ").capitalize()])
 		_:
 			# Authored-but-unimplemented support effect (dispel, summon_clone,
 			# copy_last_ability, random_stat_change, adapt_resistance, etc.).
@@ -4929,7 +4935,11 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
 	if ability.is_empty():
 		return
-	battle_log_message.emit("[color=red]%s counters with %s![/color]" % [monster.combatant_name, ability.get("name", ability_id)])
+	## Tick 186: prettify raw-id fallback for missing-name. Pre-fix
+	## a Scriptweaver-custom ability without a "name" field would
+	## surface as "monster counters with raw_snake_id!" in the
+	## log. Standard prettifier as fallback.
+	battle_log_message.emit("[color=red]%s counters with %s![/color]" % [monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
 	# Reuse the existing physical/magic ability path; targets = [attacker].
 	# Skipping AP and MP costs — counters are reactive freebies by design.
 	var atype: String = str(ability.get("type", "physical"))

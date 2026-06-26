@@ -397,7 +397,12 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 	else:
 		for status in character.status_effects:
 			var status_label = Label.new()
-			status_label.text = "- %s" % status.capitalize()
+			## Tick 186: prettify multi-word status names. Pre-fix
+			## `status.capitalize()` only capitalized the first
+			## letter, so "cannot_act" surfaced as "Cannot_act"
+			## instead of "Cannot Act". String.capitalize() applied
+			## to replace+capitalize gives proper Title Case.
+			status_label.text = "- %s" % status.replace("_", " ").capitalize()
 			status_label.position = Vector2(16, y_offset)
 			status_label.add_theme_font_size_override("font_size", 10)
 			status_label.add_theme_color_override("font_color", STATUS_BAD_COLOR)
