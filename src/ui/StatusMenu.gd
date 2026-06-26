@@ -121,7 +121,8 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 
 	var hp_pct = float(character.current_hp) / max(1, character.max_hp)
 	var hp_bar = ColorRect.new()
-	hp_bar.color = HP_COLOR if hp_pct > 0.3 else PENALTY_COLOR
+	# Tick 229: HP bar fill color via AccessibilityPalette — color-blind mode swaps green/red to cyan/magenta.
+	hp_bar.color = AccessibilityPalette.hp_high() if hp_pct > 0.3 else AccessibilityPalette.hp_low()
 	hp_bar.position = Vector2(16, 54)
 	hp_bar.size = Vector2(200 * hp_pct, 12)
 	panel.add_child(hp_bar)

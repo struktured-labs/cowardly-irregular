@@ -273,13 +273,13 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		panel.add_child(no_party)
 
 
-# Tick 198: 3-tier HP band — green ≥ 60%, yellow ≥ 30%, red below. At 0 HP the bar size is 0 so the color is cosmetic; still returns red for consistency.
+# Tick 198/229: 3-tier HP band — green ≥ 60%, yellow ≥ 30%, red below. Routes through AccessibilityPalette so color-blind mode swaps green→cyan + red→magenta (yellow stays — already colorblind-safe).
 static func _hp_fill_color(hp_pct: float) -> Color:
 	if hp_pct >= 0.6:
-		return HP_HIGH_COLOR
+		return AccessibilityPalette.hp_high()
 	if hp_pct >= 0.3:
-		return HP_MID_COLOR
-	return HP_LOW_COLOR
+		return AccessibilityPalette.hp_mid()
+	return AccessibilityPalette.hp_low()
 
 
 # Tick 197: ISO-8601 'YYYY-MM-DDTHH:MM:SS' → 'MM/DD HH:MM'. Single fallback path replaces the prior inner-if/else with a silent fall-through hole.

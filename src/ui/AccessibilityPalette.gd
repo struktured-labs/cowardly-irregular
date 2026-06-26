@@ -53,3 +53,22 @@ static func elem_weak() -> Color:
 	if is_on():
 		return Color(1.00, 0.40, 0.80)  # Magenta
 	return Color(1.0, 0.3, 0.3)  # Red
+
+
+# Tick 229: HP bar high-tier (≥60% HP) — green default, cyan in accessibility mode. Cyan == heal color: consistent "safe/healing" cool-color semantic.
+static func hp_high() -> Color:
+	if is_on():
+		return Color(0.30, 0.70, 1.00)  # Cyan (matches heal)
+	return Color(0.35, 0.90, 0.35)  # Green
+
+
+# Tick 229: HP bar mid-tier (30..60% HP) — yellow. Already colorblind-safe (yellow reads clearly under deuteranopia/protanopia); same value either way for cross-mode consistency.
+static func hp_mid() -> Color:
+	return Color(0.95, 0.85, 0.30)  # Yellow
+
+
+# Tick 229: HP bar low-tier (<30% HP) — red default, magenta in accessibility mode. Magenta == elem_weak color: consistent "danger" warm-color semantic.
+static func hp_low() -> Color:
+	if is_on():
+		return Color(1.00, 0.40, 0.80)  # Magenta (matches elem_weak)
+	return Color(0.90, 0.30, 0.30)  # Red
