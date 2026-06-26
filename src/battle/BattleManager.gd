@@ -701,10 +701,18 @@ func _track_manual_player_turn() -> void:
 	_manual_player_turns += 1
 
 
+# Tick 231: surface state-machine bugs when player input arrives in the wrong state. Pre-fix 8 player_* entry points silently `return` on state mismatch — UI race conditions or misgated menus disappear without diagnostic. Returns false (caller should also return) so callers stay terse.
+func _check_player_selecting_state(action_name: String) -> bool:
+	if current_state == BattleState.PLAYER_SELECTING:
+		return true
+	push_warning("[BattleManager] %s called outside PLAYER_SELECTING (current=%s) — input dropped, likely UI state-machine bug" % [action_name, BattleState.keys()[current_state]])
+	return false
+
+
 ## Player actions (called from UI)
 func player_attack(target: Combatant) -> void:
 	"""Queue a basic attack"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_attack"):
 		return
 	_track_manual_player_turn()
 
@@ -720,7 +728,7 @@ func player_attack(target: Combatant) -> void:
 
 func player_use_ability(ability_id: String, targets: Array) -> void:
 	"""Queue an ability"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_use_ability"):
 		return
 	_track_manual_player_turn()
 
@@ -748,7 +756,7 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 
 func player_defer() -> void:
 	"""Queue Defer action (skip turn, gain AP, defend)"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_defer"):
 		return
 	if current_combatant.has_status("cannot_defer"):
 		battle_log_message.emit("[color=red]%s cannot defer while exposed![/color]" % current_combatant.combatant_name)
@@ -785,7 +793,7 @@ func player_default() -> void:
 
 func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_advance"):
 		return
 	_track_manual_player_turn()
 
@@ -814,7 +822,7 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	Combo Magic requires >= 2 AP each and >= 2 distinct magic elements across party.
 	The calling combatant's action is queued immediately; remaining alive players are
 	auto-queued as participants (their individual selection turns are skipped)."""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_group_attack"):
 		return
 	_track_manual_player_turn()
 
@@ -958,7 +966,7 @@ func go_back_to_previous_player() -> void:
 
 func player_item(item_id: String, targets: Array) -> void:
 	"""Queue an item use"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_item"):
 		return
 	_track_manual_player_turn()
 
@@ -3479,7 +3487,10 @@ func toggle_autobattle(enabled: bool) -> void:
 
 func execute_autobattle_for_current() -> void:
 	"""Execute autobattle for the current selecting combatant (called from UI)"""
-	if current_state != BattleState.PLAYER_SELECTING or not current_combatant:
+	# Tick 231: route state check through the warning helper; current_combatant check stays inline (warning for that would be too noisy if combatant was just freed mid-frame).
+	if not _check_player_selecting_state("execute_autobattle_for_current"):
+		return
+	if not current_combatant:
 		return
 	# Process using AI selection which handles autobattle
 	_process_ai_selection(current_combatant)
