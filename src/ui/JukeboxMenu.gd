@@ -6,38 +6,10 @@ class_name JukeboxMenu
 
 signal closed()
 
-## All available tracks: [id, display_name]
-const TRACKS = [
-	["title", "Title Screen"],
-	["battle", "Battle (Generic)"],
-	["boss", "Boss Battle"],
-	["boss_rat_king", "Boss - Rat King"],
-	["danger", "Danger / Near Death"],
-	["victory", "Victory Fanfare"],
-	["game_over", "Game Over"],
-	["overworld", "Overworld (Generic)"],
-	["overworld_suburban", "Overworld - Suburban"],
-	["overworld_steampunk", "Overworld - Steampunk"],
-	["overworld_industrial", "Overworld - Industrial"],
-	["overworld_futuristic", "Overworld - Futuristic"],
-	["overworld_abstract", "Overworld - Abstract"],
-	["village", "Village"],
-	["cave", "Cave / Dungeon"],
-	["battle_suburban", "Battle - Suburban"],
-	["battle_urban", "Battle - Urban"],
-	["battle_industrial", "Battle - Industrial"],
-	["battle_digital", "Battle - Digital"],
-	["battle_void", "Battle - Void"],
-	["battle_slime", "Battle - Slime"],
-	["battle_bat", "Battle - Bat"],
-	["battle_mushroom", "Battle - Mushroom"],
-	["battle_imp", "Battle - Imp"],
-	["battle_goblin", "Battle - Goblin"],
-	["battle_skeleton", "Battle - Skeleton"],
-	["battle_wolf", "Battle - Wolf"],
-	["battle_ghost", "Battle - Ghost"],
-	["battle_snake", "Battle - Snake"],
-]
+const MUSIC_MANIFEST := "res://data/music_manifest.json"
+
+# Tick 199: TRACKS now loads from music_manifest.json. Pre-fix the const had 29 stale entries — many ids ("battle", "boss", "overworld", "cave", "battle_urban", "battle_void") didn't match the live 150-entry manifest, so half the jukebox played nothing or fell to procedural fallback.
+var TRACKS: Array = []  # [[id, display_name], ...] populated by _load_manifest_tracks() in _ready
 
 ## How many rows to show at once in the scroll window
 const VISIBLE_ROWS = 14
@@ -74,11 +46,60 @@ var _now_playing_label: Label
 
 
 func _ready() -> void:
+	# Tick 199: load tracks from manifest before _build_ui so the list reflects live music.
+	TRACKS = _load_manifest_tracks()
 	# Snapshot the currently-playing music so _close_menu can restore it
 	# instead of leaving silence behind.
 	if SoundManager and "_current_music" in SoundManager:
 		_resume_track = SoundManager._current_music
 	_build_ui()
+
+
+# Tick 199: load + sort tracks from music_manifest.json. Loud-fail on missing/malformed file so a broken manifest doesn't silently render an empty jukebox.
+static func _load_manifest_tracks() -> Array:
+	if not FileAccess.file_exists(MUSIC_MANIFEST):
+		push_warning("[JukeboxMenu] music_manifest.json not found — jukebox empty")
+		return []
+	var f := FileAccess.open(MUSIC_MANIFEST, FileAccess.READ)
+	if not f:
+		push_warning("[JukeboxMenu] music_manifest.json open failed (error %d)" % FileAccess.get_open_error())
+		return []
+	var raw := f.get_as_text()
+	f.close()
+	var json := JSON.new()
+	if json.parse(raw) != OK:
+		push_warning("[JukeboxMenu] music_manifest.json parse error: %s" % json.get_error_message())
+		return []
+	if not (json.data is Dictionary) or not json.data.has("tracks"):
+		push_warning("[JukeboxMenu] music_manifest.json missing 'tracks' root key")
+		return []
+	var tracks_map = json.data["tracks"]
+	if not (tracks_map is Dictionary):
+		push_warning("[JukeboxMenu] music_manifest.json 'tracks' is not a Dictionary")
+		return []
+	var ids: Array = tracks_map.keys()
+	ids.sort()
+	var out: Array = []
+	for id in ids:
+		var entry = tracks_map.get(id, {})
+		var title: String = ""
+		if entry is Dictionary:
+			title = str(entry.get("title", ""))
+		var display: String = title if title != "" else _titlecase(str(id))
+		out.append([str(id), display])
+	return out
+
+
+# Tick 199: proper multi-word title-case (String.capitalize() only does first letter — see tick 186).
+static func _titlecase(s: String) -> String:
+	if s == "":
+		return ""
+	var parts: PackedStringArray = s.split("_")
+	for i in parts.size():
+		if parts[i].length() == 0:
+			continue
+		parts[i] = parts[i][0].to_upper() + parts[i].substr(1).to_lower()
+	return " ".join(parts)
 
 
 func _build_ui() -> void:
