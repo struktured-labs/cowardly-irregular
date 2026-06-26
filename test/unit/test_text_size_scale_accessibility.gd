@@ -118,28 +118,25 @@ func test_cutscene_dialogue_helper_present() -> void:
 
 
 func test_cutscene_dialogue_helper_reads_gamestate_live() -> void:
-	# Pin: the helper reads GameState.text_size_scale at call time
-	# so a setting change applies on next cutscene build.
+	# Tick 223: CutsceneDialogue._scaled_font_size now delegates to
+	# TextScale.scaled. The "reads GameState live" invariant moved
+	# into TextScale (pinned in test_text_scale_util_extraction.gd).
+	# Here we just confirm the delegation is in place.
 	var src := _read(CUTSCENE_DIALOGUE)
 	var fn_idx: int = src.find("func _scaled_font_size")
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("if GameState and \"text_size_scale\" in GameState:"),
-		"helper must check GameState before reading the scale")
-	assert_true(body.contains("scale = float(GameState.text_size_scale)"),
-		"helper must read scale live from GameState")
+	assert_true(body.contains("return TextScale.scaled(base)"),
+		"helper must delegate to TextScale.scaled (post-tick 223 extraction)")
 
 
 func test_cutscene_dialogue_helper_floor_min_1() -> void:
-	# Defensive: returns at least 1 so a tiny base size + 0 scale
-	# doesn't produce 0 (which would crash some font rendering).
-	var src := _read(CUTSCENE_DIALOGUE)
-	var fn_idx: int = src.find("func _scaled_font_size")
-	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
-	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("return max(1, int(round(float(base) * scale)))"),
-		"helper must floor at 1 (max(1, ...)) and round to int")
+	# Tick 223: floor-at-1 invariant moved to TextScale.scaled. Pinned
+	# in the test_text_scale_util_extraction.gd file instead.
+	var src: String = FileAccess.get_file_as_string("res://src/ui/TextScale.gd")
+	assert_true(src.contains("return max(1, int(round(float(base) * scale)))"),
+		"floor at 1 moved into TextScale.scaled (post-tick 223)")
 
 
 func test_cutscene_dialogue_4_font_sites_use_helper() -> void:

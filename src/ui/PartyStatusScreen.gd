@@ -64,7 +64,7 @@ func _build_ui() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.position = Vector2(0, 14)
 	title.size = Vector2(vp.x, 24)
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	title.add_theme_color_override("font_color", TEXT)
 	add_child(title)
 
@@ -83,7 +83,7 @@ func _build_ui() -> void:
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_label.position = Vector2(vp.x - 200, 18)
 	gold_label.size = Vector2(180, 20)
-	gold_label.add_theme_font_size_override("font_size", 14)
+	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	gold_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	add_child(gold_label)
 
@@ -117,7 +117,7 @@ func _build_ui() -> void:
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp.y - 28)
 	footer.size = Vector2(vp.x, 18)
-	footer.add_theme_font_size_override("font_size", 11)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	footer.add_theme_color_override("font_color", MUTED)
 	add_child(footer)
 
@@ -144,7 +144,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.position = Vector2(0, 6)
 	name_label.size = Vector2(w, 18)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", TEXT)
 	card.add_child(name_label)
 
@@ -156,7 +156,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.position = Vector2(0, 26)
 	sub.size = Vector2(w, 16)
-	sub.add_theme_font_size_override("font_size", 11)
+	sub.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	sub.add_theme_color_override("font_color", LABEL)
 	card.add_child(sub)
 
@@ -187,7 +187,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	]
 	stats.position = Vector2(12, 124)
 	stats.size = Vector2(w - 24, 40)
-	stats.add_theme_font_size_override("font_size", 11)
+	stats.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	stats.add_theme_color_override("font_color", TEXT)
 	card.add_child(stats)
 
@@ -209,7 +209,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		badge.position = Vector2(w - 50, 4)
 		badge.size = Vector2(46, 14)
-		badge.add_theme_font_size_override("font_size", 9)
+		badge.add_theme_font_size_override("font_size", TextScale.scaled(9))
 		badge.add_theme_color_override("font_color", AUTO_BADGE_TEXT)
 		card.add_child(badge)
 
@@ -245,7 +245,7 @@ func _add_bar(parent: Control, x: float, y: float, w: float, h: float, cur: int,
 	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	txt.position = Vector2(x, y - 2)
 	txt.size = Vector2(w, h + 4)
-	txt.add_theme_font_size_override("font_size", 10)
+	txt.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	txt.add_theme_color_override("font_color", TEXT)
 	parent.add_child(txt)
 
@@ -280,7 +280,7 @@ func _build_equipment_column(member, x: float, y: float, w: float, h: float) -> 
 	var section_title := Label.new()
 	section_title.text = "EQUIPMENT"
 	section_title.position = Vector2(x, y)
-	section_title.add_theme_font_size_override("font_size", 14)
+	section_title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	section_title.add_theme_color_override("font_color", LABEL)
 	_detail_panel.add_child(section_title)
 
@@ -296,7 +296,7 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 	var slot := Label.new()
 	slot.text = slot_label
 	slot.position = Vector2(x, y)
-	slot.add_theme_font_size_override("font_size", 11)
+	slot.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	slot.add_theme_color_override("font_color", MUTED)
 	_detail_panel.add_child(slot)
 
@@ -311,7 +311,7 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 	var name_label := Label.new()
 	name_label.text = item_name
 	name_label.position = Vector2(x, y + 14)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", color)
 	_detail_panel.add_child(name_label)
 
@@ -321,7 +321,7 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc.position = Vector2(x, y + 32)
 		desc.size = Vector2(w, 30)
-		desc.add_theme_font_size_override("font_size", 10)
+		desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		desc.add_theme_color_override("font_color", MUTED)
 		_detail_panel.add_child(desc)
 
@@ -337,7 +337,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 	var header := Label.new()
 	header.text = "ABILITIES"
 	header.position = Vector2(x, y)
-	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	header.add_theme_color_override("font_color", LABEL)
 	_detail_panel.add_child(header)
 
@@ -346,7 +346,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 		var none := Label.new()
 		none.text = "— None learned —"
 		none.position = Vector2(x, cy)
-		none.add_theme_font_size_override("font_size", 11)
+		none.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		none.add_theme_color_override("font_color", MUTED)
 		_detail_panel.add_child(none)
 		cy += 20
@@ -356,7 +356,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 			row.text = "• " + _resolve_ability_name(str(ability_id))
 			row.position = Vector2(x, cy)
 			row.size = Vector2(w, 16)
-			row.add_theme_font_size_override("font_size", 12)
+			row.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			row.add_theme_color_override("font_color", TEXT)
 			_detail_panel.add_child(row)
 			cy += 18
@@ -367,7 +367,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 	var passives_header := Label.new()
 	passives_header.text = "PASSIVES"
 	passives_header.position = Vector2(x, y + h * 0.5)
-	passives_header.add_theme_font_size_override("font_size", 14)
+	passives_header.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	passives_header.add_theme_color_override("font_color", LABEL)
 	_detail_panel.add_child(passives_header)
 
@@ -376,7 +376,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 		var none_p := Label.new()
 		none_p.text = "— None equipped —"
 		none_p.position = Vector2(x, cy)
-		none_p.add_theme_font_size_override("font_size", 11)
+		none_p.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		none_p.add_theme_color_override("font_color", MUTED)
 		_detail_panel.add_child(none_p)
 	else:
@@ -385,7 +385,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 			row.text = "◦ " + _resolve_passive_name(str(passive_id))
 			row.position = Vector2(x, cy)
 			row.size = Vector2(w, 16)
-			row.add_theme_font_size_override("font_size", 12)
+			row.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			row.add_theme_color_override("font_color", TEXT)
 			_detail_panel.add_child(row)
 			cy += 18

@@ -330,12 +330,9 @@ func _play_voice_blip() -> void:
 	_voice_blip_player.play()
 
 
-# Tick 222: scale a base font size by GameState.text_size_scale (accessibility setting). 1.0 default; returns at least 1 so the floor doesn't drop to 0 for tiny inputs.
+# Tick 222/223: scale a base font size via the shared TextScale util.
 func _scaled_font_size(base: int) -> int:
-	var scale: float = 1.0
-	if GameState and "text_size_scale" in GameState:
-		scale = float(GameState.text_size_scale)
-	return max(1, int(round(float(base) * scale)))
+	return TextScale.scaled(base)
 
 
 func _build_ui() -> void:
