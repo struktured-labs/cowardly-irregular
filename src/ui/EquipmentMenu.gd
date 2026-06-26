@@ -40,9 +40,39 @@ const WEAPON_COLOR = Color(1.0, 0.6, 0.3)
 const ARMOR_COLOR = Color(0.5, 0.7, 1.0)
 const ACCESSORY_COLOR = Color(0.9, 0.5, 0.9)
 
+# Tick 210: explicit stat display maps — String.capitalize() turns "max_hp" into "Max Hp" (HP/MP acronyms broken), and substr(0, 3) collides "MAX" for both max_hp and max_mp.
+const STAT_DISPLAY := {
+	"attack": "Attack",
+	"defense": "Defense",
+	"magic": "Magic",
+	"speed": "Speed",
+	"max_hp": "Max HP",
+	"max_mp": "Max MP",
+}
+
+# Tick 210: compact stat codes for the per-item comparison row. ATK/DEF/MAG/SPD are the canonical JRPG abbreviations; HP/MP keep the acronym intact.
+const STAT_SHORT := {
+	"attack": "ATK",
+	"defense": "DEF",
+	"magic": "MAG",
+	"speed": "SPD",
+	"max_hp": "HP",
+	"max_mp": "MP",
+}
+
 
 func _ready() -> void:
 	call_deferred("_build_ui")
+
+
+# Tick 210: long-form stat name with HP/MP acronym preservation. Falls back to .capitalize() for unknown stat ids (Scriptweaver custom stats, future stats).
+func _stat_display_name(stat_name: String) -> String:
+	return STAT_DISPLAY.get(stat_name, stat_name.capitalize())
+
+
+# Tick 210: compact stat code for per-item comparison rows. Falls back to substr(0, 3).to_upper() for unknown ids. Pre-fix the bare substr collided max_hp and max_mp both onto "MAX".
+func _stat_short_name(stat_name: String) -> String:
+	return STAT_SHORT.get(stat_name, stat_name.substr(0, 3).to_upper())
 
 
 func setup(target: Combatant, weapons: Array = [], armors: Array = [], accessories: Array = []) -> void:
@@ -372,7 +402,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		var mod_value = equip_mods[stat_name]
 		if mod_value != 0:
 			var mod_label = Label.new()
-			mod_label.text = "%s: %s%d" % [stat_name.capitalize(), "+" if mod_value > 0 else "", mod_value]
+			mod_label.text = "%s: %s%d" % [_stat_display_name(stat_name), "+" if mod_value > 0 else "", mod_value]
 			mod_label.position = Vector2(16, bonus_y)
 			mod_label.add_theme_font_size_override("font_size", 10)
 			mod_label.add_theme_color_override("font_color", POSITIVE_COLOR if mod_value > 0 else NEGATIVE_COLOR)
@@ -502,10 +532,10 @@ func _create_item_row(item_id: String, index: int) -> Control:
 		var diff = new_val - current_val
 
 		if diff > 0:
-			stat_text += "+%d %s  " % [diff, stat_name.substr(0, 3).to_upper()]
+			stat_text += "+%d %s  " % [diff, _stat_short_name(stat_name)]
 			positive_count += 1
 		elif diff < 0:
-			stat_text += "%d %s  " % [diff, stat_name.substr(0, 3).to_upper()]
+			stat_text += "%d %s  " % [diff, _stat_short_name(stat_name)]
 			negative_count += 1
 
 	if stat_text.is_empty():
