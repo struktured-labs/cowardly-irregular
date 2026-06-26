@@ -92,9 +92,14 @@ func test_abilities_menu_passive_name_prettifies_id() -> void:
 # ── PartyStatusScreen ────────────────────────────────────────────────────
 
 func test_party_status_equipment_fallback_prettifies_id() -> void:
+	# Tick 204 upgraded the prettifier to proper title-case via the
+	# now-fixed _format_id helper (String.capitalize() only does the
+	# first letter — see tick 186). Pin the new shape, which still
+	# carries the original tick 141 invariant: the fallback must
+	# never leak raw snake_case.
 	var src := _read(PARTY_STATUS)
-	assert_true(src.contains("item_name = info.get(\"name\", item_id.replace(\"_\", \" \").capitalize())"),
-		"PartyStatusScreen equipment fallback must prettify item_id — not leak raw snake_case")
+	assert_true(src.contains("item_name = info.get(\"name\", _format_id(item_id))"),
+		"PartyStatusScreen equipment fallback must use _format_id (proper title case)")
 	assert_false(src.contains("item_name = info.get(\"name\", item_id)\n"),
 		"old raw item_id fallback must be gone")
 

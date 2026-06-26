@@ -304,11 +304,8 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 	var item_desc := ""
 	if item_id != "":
 		var info := _resolve_equipment(item_id)
-		## Tick 141: prettify the fallback when EquipmentSystem doesn't
-		## know the item (Scriptweaver custom equipment, save drift).
-		## Pre-fix the raw snake_case id leaked through ("iron_sword"
-		## instead of "Iron Sword").
-		item_name = info.get("name", item_id.replace("_", " ").capitalize())
+		# Tick 141/204: prettify fallback through _format_id so multi-word ids ("iron_sword" → "Iron Sword") proper-case correctly.
+		item_name = info.get("name", _format_id(item_id))
 		item_desc = info.get("description", "")
 
 	var name_label := Label.new()
@@ -414,7 +411,15 @@ func _get_level(member) -> int:
 
 
 func _format_id(id: String) -> String:
-	return id.replace("_", " ").capitalize()
+	# Tick 204: proper multi-word title-case — String.capitalize() only uppercases the first letter (tick 186 finding). "power_strike" → "Power Strike" not "Power strike".
+	if id == "":
+		return ""
+	var parts: PackedStringArray = id.split("_")
+	for i in parts.size():
+		if parts[i].length() == 0:
+			continue
+		parts[i] = parts[i][0].to_upper() + parts[i].substr(1).to_lower()
+	return " ".join(parts)
 
 
 ## Tick 136: prefer canonical names from JobSystem/PassiveSystem
