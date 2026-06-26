@@ -9,13 +9,26 @@ const SUCCESS_COLOR := Color(0.5, 1.0, 0.5)
 const WARNING_COLOR := Color(1.0, 0.6, 0.3)
 const DANGER_COLOR := Color(1.0, 0.4, 0.4)
 
+# Tick 205: row offset between stacked toasts. Font-size 20 + 28px breathing room reads cleanly without crowding the screen.
+const STACK_ROW_HEIGHT := 48.0
+const BASE_Y := 80.0
+
+# Tick 205: track live toast layers so simultaneous events stack vertically instead of all rendering at y=80 as unreadable mush.
+static var _active_layers: Array = []
+
 
 static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_s: float = 2.0) -> void:
 	if parent == null or not is_instance_valid(parent):
 		return
+
+	# Tick 205: prune dead layers (parent freed, manual queue_free elsewhere) before computing stack offset so a finished toast doesn't keep its slot.
+	_active_layers = _active_layers.filter(func(l): return is_instance_valid(l))
+	var stack_offset: float = _active_layers.size() * STACK_ROW_HEIGHT
+
 	var layer := CanvasLayer.new()
 	layer.layer = 80
 	parent.add_child(layer)
+	_active_layers.append(layer)
 
 	var vp_size := Vector2(1280, 720)
 	if parent.has_method("get_viewport"):
@@ -25,10 +38,12 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 			if vp_size.x <= 0:
 				vp_size = Vector2(1280, 720)
 
+	var y: float = BASE_Y + stack_offset
+
 	var shadow := Label.new()
 	shadow.text = text
 	shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	shadow.position = Vector2(2, 82)
+	shadow.position = Vector2(2, y + 2)
 	shadow.size = Vector2(vp_size.x, 40)
 	shadow.add_theme_font_size_override("font_size", 20)
 	shadow.add_theme_color_override("font_color", Color(0, 0, 0, 0.6))
@@ -38,7 +53,7 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	var label := Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.position = Vector2(0, 80)
+	label.position = Vector2(0, y)
 	label.size = Vector2(vp_size.x, 40)
 	label.add_theme_font_size_override("font_size", 20)
 	label.add_theme_color_override("font_color", color)
@@ -51,6 +66,8 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	tween.tween_interval(hold_s)
 	tween.tween_property(label, "modulate:a", 0.0, 0.5)
 	tween.parallel().tween_property(shadow, "modulate:a", 0.0, 0.5)
+	# Tick 205: drop layer from active list as it fades — next toast won't inherit a stale slot.
+	tween.tween_callback(func(): _active_layers.erase(layer))
 	tween.tween_callback(layer.queue_free)
 
 
