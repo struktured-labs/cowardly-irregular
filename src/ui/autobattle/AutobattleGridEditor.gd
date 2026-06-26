@@ -1007,7 +1007,8 @@ func _format_condition(condition: Dictionary) -> String:
 			return "AP %s %d" % [op, value]
 		"has_status":
 			var status = condition.get("status", "")
-			return "Has %s" % status.capitalize()
+			# Tick 215: shared StatusNames util.
+			return "Has %s" % StatusNames.display(status)
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":

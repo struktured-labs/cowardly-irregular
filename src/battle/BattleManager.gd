@@ -2801,7 +2801,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var effect_chance = ability.get("effect_chance", 0.0)
 		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
 			target.add_status(effect)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(effect)])
 
 		_trigger_monster_counter(target, caster)
 
@@ -2893,7 +2893,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var effect_chance = ability.get("effect_chance", 0.0)
 		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
 			target.add_status(effect)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(effect)])
 
 		_trigger_monster_counter(target, caster)
 

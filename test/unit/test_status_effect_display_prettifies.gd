@@ -38,12 +38,14 @@ func _read(p: String) -> String:
 # ── StatusMenu status effect list ──────────────────────────────────────
 
 func test_status_menu_prettifies_multi_word_status_names() -> void:
+	# Tick 215 extracted to shared StatusNames util — the helper
+	# now produces the same output but routes through one source.
 	var src := _read(STATUS_MENU)
-	assert_true(src.contains("status_label.text = \"- %s\" % status.replace(\"_\", \" \").capitalize()"),
-		"StatusMenu status_effects loop must prettify status name via replace+capitalize")
+	assert_true(src.contains("status_label.text = \"- %s\" % StatusNames.display(status)"),
+		"StatusMenu status_effects loop must call StatusNames.display(status)")
 	# Negative: simple capitalize() alone is gone.
 	assert_false(src.contains("status_label.text = \"- %s\" % status.capitalize()"),
-		"old simple capitalize() must be replaced — only handled first letter, broke multi-word")
+		"bare capitalize() must not be the call site (use StatusNames.display)")
 
 
 # ── BattleManager "afflicted with" log ─────────────────────────────────
