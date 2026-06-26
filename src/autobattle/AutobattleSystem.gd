@@ -1913,7 +1913,10 @@ func _load_saved_scripts() -> void:
 			saved_scripts = json.data
 			print("Loaded %d autobattle scripts" % saved_scripts.size())
 		else:
-			print("Error parsing autobattle scripts")
+			## Tick 181: surface autobattle script parse failures.
+			## Pre-fix print() only — player's custom scripts
+			## silently reverted to defaults with zero hint why.
+			push_warning("[AutobattleSystem] failed to parse autobattle scripts JSON: %s — falling back to defaults" % json.get_error_message())
 			_create_default_scripts()
 	else:
 		_create_default_scripts()

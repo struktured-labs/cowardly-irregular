@@ -253,11 +253,15 @@ func use_item(user: Combatant, item_id: String, targets: Array[Combatant]) -> bo
 	"""Use an item on target(s)"""
 	var item = get_item(item_id)
 	if item.is_empty():
-		print("Error: Item '%s' not found" % item_id)
+		## Tick 181: surface unknown-item failures. Pre-fix print()
+		## only — a Use Item with a corrupted/missing id returned
+		## false but the WHY was invisible. Catches save-format
+		## drift and Scriptweaver custom items.
+		push_warning("[ItemSystem] use_item: item_id '%s' not found in items table — use failed" % item_id)
 		return false
 
 	if not item.has("effects"):
-		print("Error: Item has no effects")
+		push_warning("[ItemSystem] use_item: item '%s' has no 'effects' field — authoring error in items.json" % item_id)
 		return false
 
 	# Apply item effects to each target

@@ -607,7 +607,12 @@ func _write_save_file(slot: int, data: Dictionary) -> bool:
 
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if not file:
-		print("Error: Could not open save file for writing: %s" % file_path)
+		## Tick 181: surface save-write failures via push_warning.
+		## Pre-fix print() only — silent failure. SaveSystem returned
+		## false, the save UI sometimes still showed "Saved!" toast
+		## depending on caller. push_warning + FileAccess error code
+		## gives diagnostic surface (perms / disk full / RO FS).
+		push_warning("[SaveSystem] _write_save_file: could not open '%s' for write (error: %s)" % [file_path, FileAccess.get_open_error()])
 		return false
 
 	var json_string = JSON.stringify(data, "\t")
@@ -623,7 +628,11 @@ func _read_save_file(slot: int) -> Dictionary:
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
-		print("Error: Could not open save file for reading: %s" % file_path)
+		## Tick 181: surface save-read failures. Pre-fix print()
+		## only — load silently returned {} which the title-screen
+		## CONTINUE button treated as "no save"; player saw their
+		## save disappear with no hint why.
+		push_warning("[SaveSystem] _read_save_file: could not open '%s' for read (error: %s)" % [file_path, FileAccess.get_open_error()])
 		return {}
 
 	var json_string = file.get_as_text()
@@ -631,12 +640,12 @@ func _read_save_file(slot: int) -> Dictionary:
 
 	var json = JSON.new()
 	if json.parse(json_string) != OK:
-		print("Error: Failed to parse save file JSON: %s" % json.get_error_message())
+		push_warning("[SaveSystem] _read_save_file: failed to parse '%s' as JSON: %s" % [file_path, json.get_error_message()])
 		return {}
 
 	# Validate that parsed data is a Dictionary
 	if not json.data is Dictionary:
-		print("Error: Save file data is not a valid dictionary")
+		push_warning("[SaveSystem] _read_save_file: '%s' parsed but root is not a Dictionary (type=%s) — invalid save" % [file_path, typeof(json.data)])
 		return {}
 
 	return json.data
