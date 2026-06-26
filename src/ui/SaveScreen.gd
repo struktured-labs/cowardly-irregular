@@ -164,12 +164,21 @@ func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 	slot_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(slot_label)
 
+	# Tick 196: in SAVE mode "- Empty -" means "available target"; in LOAD mode it means "unavailable". Differentiate the two visually so LOAD users don't click + get an error Toast.
 	var empty_label = Label.new()
-	empty_label.text = "- Empty -"
-	empty_label.position = Vector2(panel_size.x / 2 - 40, panel_size.y / 2 - 10)
+	empty_label.text = "- Empty -" if current_mode == Mode.SAVE else "- No save -"
+	empty_label.position = Vector2(panel_size.x / 2 - 40, panel_size.y / 2 - 14)
 	empty_label.add_theme_font_size_override("font_size", 16)
-	empty_label.add_theme_color_override("font_color", EMPTY_COLOR)
+	empty_label.add_theme_color_override("font_color", EMPTY_COLOR if current_mode == Mode.SAVE else DISABLED_COLOR)
 	panel.add_child(empty_label)
+	if current_mode == Mode.LOAD:
+		# Add a dimmer subhint so the unloadable state reads at a glance.
+		var hint = Label.new()
+		hint.text = "(nothing to load)"
+		hint.position = Vector2(panel_size.x / 2 - 58, panel_size.y / 2 + 10)
+		hint.add_theme_font_size_override("font_size", 11)
+		hint.add_theme_color_override("font_color", DISABLED_COLOR)
+		panel.add_child(hint)
 
 
 func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_info: Dictionary) -> void:
