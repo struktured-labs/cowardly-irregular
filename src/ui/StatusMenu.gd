@@ -365,7 +365,10 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 		for passive_id in character.equipped_passives:
 			var passive_data = PassiveSystem.get_passive(passive_id)
 			var passive_label = Label.new()
-			passive_label.text = "- %s" % passive_data.get("name", passive_id)
+			## Tick 185: prettify raw-id fallback (snake_case → Title
+			## Case). Same treatment as the MenuScene passive
+			## display sites and tick 141's JobMenu.
+			passive_label.text = "- %s" % passive_data.get("name", passive_id.replace("_", " ").capitalize())
 			passive_label.position = Vector2(16, y_offset)
 			passive_label.add_theme_font_size_override("font_size", 10)
 			passive_label.add_theme_color_override("font_color", BONUS_COLOR)

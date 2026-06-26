@@ -360,7 +360,11 @@ func _show_status_view() -> void:
 
 	for passive_id in member.equipped_passives:
 		var passive = PassiveSystem.get_passive(passive_id)
-		var p_name = passive.get("name", passive_id) if passive else passive_id
+		## Tick 185: prettify raw-id fallback (snake_case → Title
+		## Case). Pre-fix unknown passives surfaced as "counter_attack"
+		## instead of "Counter Attack". Same treatment as tick 141's
+		## JobMenu.
+		var p_name = passive.get("name", passive_id.replace("_", " ").capitalize()) if passive else passive_id.replace("_", " ").capitalize()
 		var p_lbl = Label.new()
 		p_lbl.text = "  - %s" % p_name
 		p_lbl.add_theme_font_size_override("font_size", 11)
@@ -856,7 +860,8 @@ func _show_passives_view() -> void:
 		if i < member.equipped_passives.size():
 			var passive_id = member.equipped_passives[i]
 			var passive = PassiveSystem.get_passive(passive_id)
-			var p_name = passive.get("name", passive_id) if passive else passive_id
+			## Tick 185: prettify raw-id fallback.
+			var p_name = passive.get("name", passive_id.replace("_", " ").capitalize()) if passive else passive_id.replace("_", " ").capitalize()
 
 			var btn = Button.new()
 			btn.text = p_name
@@ -885,7 +890,8 @@ func _show_passives_view() -> void:
 			continue  # Already equipped
 
 		var passive = PassiveSystem.get_passive(passive_id)
-		var p_name = passive.get("name", passive_id) if passive else passive_id
+		## Tick 185: prettify raw-id fallback.
+		var p_name = passive.get("name", passive_id.replace("_", " ").capitalize()) if passive else passive_id.replace("_", " ").capitalize()
 		var p_desc = ""
 		if passive:
 			p_desc = passive.get("description", "")
