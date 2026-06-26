@@ -1691,6 +1691,10 @@ func _rule_to_action(combatant: Combatant, rule: Dictionary) -> Dictionary:
 		ActionType.SKIP:
 			action["type"] = "skip"
 
+		_:
+			# Tick 217: unknown ActionType enum value. Pre-fix the function returned an action with only {"type": ...} but no target/ability/item — execution would misbehave silently. Same silent-fail class as tick 216's _evaluate_condition.
+			push_warning("[AutobattleSystem] _rule_to_action: unknown ActionType=%s — action will lack target data (check rule JSON for stale action_type values)" % str(action_type))
+
 	return action
 
 
@@ -1711,6 +1715,8 @@ func _get_target_for_rule(combatant: Combatant, rule: Dictionary) -> Combatant:
 		"self":
 			return combatant
 		_:
+			# Tick 217: unknown target_type silently picks lowest_hp_enemy — could mislead player about what their rule actually targets. Same warning shape as _get_target_by_type at line ~406 (which has had the warning since the grid format landed).
+			push_warning("[AutobattleSystem] _get_target_for_rule: unknown target_type='%s' — defaulting to lowest_hp_enemy (check rule JSON for stale target_type values)" % target_type)
 			return _get_lowest_hp_enemy(combatant)
 
 
@@ -1742,6 +1748,8 @@ func _action_type_to_string(action_type: ActionType) -> String:
 			return "brave"
 		ActionType.SKIP:
 			return "skip"
+	# Tick 217: unknown ActionType silently became "attack" — the rule would attack instead of doing whatever the player intended. Warn loudly so a save with a stale enum surfaces.
+	push_warning("[AutobattleSystem] _action_type_to_string: unknown ActionType=%s — falling back to 'attack' (rule may behave unexpectedly; check rule JSON for stale action_type values)" % str(action_type))
 	return "attack"
 
 
