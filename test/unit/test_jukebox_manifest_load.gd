@@ -33,10 +33,13 @@ func test_load_returns_nonempty() -> void:
 
 
 func test_each_entry_has_id_and_display() -> void:
+	# Tick 200 extended tuples to [id, display, duration_sec]; this
+	# test stays size-loose on the upper bound to permit further
+	# tuple extensions without churning the regression.
 	var tracks: Array = _cls()._load_manifest_tracks()
 	for t in tracks:
 		assert_true(t is Array, "each entry must be an Array")
-		assert_eq(t.size(), 2, "each entry must be [id, display]")
+		assert_gte(t.size(), 2, "each entry must have at least [id, display]")
 		assert_true(t[0] is String and t[0].length() > 0,
 			"id must be non-empty string")
 		assert_true(t[1] is String and t[1].length() > 0,

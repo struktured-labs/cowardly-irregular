@@ -83,11 +83,24 @@ static func _load_manifest_tracks() -> Array:
 	for id in ids:
 		var entry = tracks_map.get(id, {})
 		var title: String = ""
+		var duration: float = 0.0
 		if entry is Dictionary:
 			title = str(entry.get("title", ""))
+			duration = float(entry.get("duration", 0.0))
 		var display: String = title if title != "" else _titlecase(str(id))
-		out.append([str(id), display])
+		# Tick 200: duration helps the player skim 150 entries — append "M:SS" when authored (>0 means rendered).
+		out.append([str(id), display, duration])
 	return out
+
+
+# Tick 200: M:SS for non-zero durations; empty string when unrendered (duration 0.0 in manifest signals pending/no-audio).
+static func _format_duration(sec: float) -> String:
+	if sec <= 0.0:
+		return ""
+	var total: int = int(round(sec))
+	var minutes: int = total / 60
+	var seconds: int = total % 60
+	return "%d:%02d" % [minutes, seconds]
 
 
 # Tick 199: proper multi-word title-case (String.capitalize() only does first letter — see tick 186).
@@ -206,7 +219,10 @@ func _refresh_list() -> void:
 	for i in range(VISIBLE_ROWS):
 		var track_idx = scroll_offset + i
 		if track_idx < total:
-			_row_labels[i].text = TRACKS[track_idx][1]
+			# Tick 200: append M:SS duration so the player can spot long vs short loops at a glance.
+			var display: String = TRACKS[track_idx][1]
+			var dur_str: String = _format_duration(TRACKS[track_idx][2] if TRACKS[track_idx].size() > 2 else 0.0)
+			_row_labels[i].text = ("%s   ·   %s" % [display, dur_str]) if dur_str != "" else display
 			var track_id = TRACKS[track_idx][0]
 			_row_labels[i].add_theme_color_override("font_color",
 				PLAYING_COLOR if track_id == _currently_playing else TEXT_COLOR)
