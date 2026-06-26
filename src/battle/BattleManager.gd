@@ -1986,7 +1986,14 @@ func _get_summon_type(combatant: Combatant) -> String:
 
 func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	"""Execute summon action - spawn a new enemy"""
-	print("  → %s summons a %s!" % [combatant.combatant_name, monster_type.capitalize()])
+	## Tick 177: announce in the battle log. Pre-fix the new enemy
+	## sprite appeared via the monster_summoned signal but no log
+	## line said "X summons a Goblin!" — players got confused why
+	## a new enemy showed up mid-battle. Standard snake_case →
+	## Title Case prettifier on the monster type for display.
+	var display_name: String = monster_type.replace("_", " ").capitalize()
+	battle_log_message.emit("[color=purple]%s summons a %s![/color]" % [combatant.combatant_name, display_name])
+	print("  → %s summons a %s!" % [combatant.combatant_name, display_name])
 	monster_summoned.emit(monster_type, combatant)
 
 
