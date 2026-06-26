@@ -3089,6 +3089,17 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 		party_animators[member_idx].play_hit()
 	# Ally KO quip — when a party member drops to 0 HP, a living ally reacts
 	if new_value <= 0 and old_value > 0:
+		## Tick 176: announce the KO in the battle log. Pre-fix party
+		## member deaths were silent in the log — the HP bar dropped to
+		## 0, an optional ally quip fired ("Hero, no!"), but no clear
+		## line said "X has fallen!" Enemy deaths emit
+		## "X has been defeated!" via _on_enemy_died at line 3296;
+		## this closes the parity gap so the player gets the same
+		## scannable feedback when one of THEIR members goes down.
+		if member_idx < party_members.size():
+			var member = party_members[member_idx]
+			if member is Combatant:
+				log_message("[color=red]✖ %s has fallen![/color]" % member.combatant_name)
 		var alive_allies = party_members.filter(func(m): return m is Combatant and m.is_alive and party_members.find(m) != member_idx)
 		if alive_allies.size() > 0:
 			var reactor = alive_allies[randi() % alive_allies.size()]

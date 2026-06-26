@@ -2159,14 +2159,14 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 
 func _execute_formation_special(participants: Array, alive_enemies: Array[Combatant], formation_id: String) -> void:
 	"""Execute a Formation Special — unique effect based on party job composition"""
-	## Tick 175: announce the formation name at function entry.
-	## Pre-fix six formation specials all started straight into
-	## their effect with no opener announcing which formation
-	## fired. Player saw mechanical effects but no signal that a
-	## FORMATION SPECIAL (vs ordinary group attack) had just
-	## triggered. Reuses the existing prettifier convention.
-	var formation_display: String = formation_id.replace("_", " ").capitalize()
-	battle_log_message.emit("[color=gold]✦ FORMATION SPECIAL: %s ✦[/color]" % formation_display)
+	## Tick 175: announce that a formation special is starting.
+	## Tick 176: reworded to NOT name the formation — each of the
+	## six formation branches already emits a descriptor line at
+	## the END that names + describes the effect ("★ Four Heroes
+	## — balanced strike + party healed 25%! ★"). Repeating the
+	## name in both lines read as duplicate logging. The opener
+	## now signals the dramatic moment WITHOUT redundancy.
+	battle_log_message.emit("[color=gold]✦ FORMATION SPECIAL ✦[/color]")
 	# Spend AP (2 per participant for most formations, 3 for arcane_tempest/chaos_theory)
 	var ap_cost = 3 if formation_id in ["arcane_tempest", "chaos_theory"] else 2
 	for p in participants:

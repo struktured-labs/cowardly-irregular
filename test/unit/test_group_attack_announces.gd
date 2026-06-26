@@ -75,29 +75,26 @@ func test_limit_break_announces_with_dramatic_marker() -> void:
 
 # ── Formation Special announcement ──────────────────────────────────────
 
-func test_formation_special_announces_with_name() -> void:
+func test_formation_special_announces_without_redundant_name() -> void:
+	# Tick 176 update: each formation branch already emits a
+	# descriptor at the END that names + describes the effect.
+	# The opener must NOT also name the formation (was duplicate
+	# pre-tick-176).
 	var body := _fn_body("_execute_formation_special")
-	# Pin the FORMATION SPECIAL marker.
-	assert_true(body.contains("[color=gold]✦ FORMATION SPECIAL: %s ✦[/color]"),
-		"_execute_formation_special must announce 'FORMATION SPECIAL: <name>' at function entry")
-
-
-func test_formation_special_uses_prettified_id() -> void:
-	# Pin: the display name comes from prettifying the formation_id
-	# (e.g., "four_heroes" → "Four Heroes"). Reuses the existing
-	# snake_case → Title Case convention.
-	var body := _fn_body("_execute_formation_special")
-	assert_true(body.contains("formation_id.replace(\"_\", \" \").capitalize()"),
-		"formation announcement must use the standard replace+capitalize prettifier")
+	# Positive pin: name-less marker.
+	assert_true(body.contains("[color=gold]✦ FORMATION SPECIAL ✦[/color]"),
+		"_execute_formation_special must emit the name-less '✦ FORMATION SPECIAL ✦' opener")
+	# Negative pin: the tick-175 named version must be gone.
+	assert_false(body.contains("[color=gold]✦ FORMATION SPECIAL: %s ✦[/color]"),
+		"the original tick-175 named version must be removed — descriptor at branch end already names the formation")
 
 
 func test_formation_announcement_runs_BEFORE_ap_spend() -> void:
-	# Critical ordering: the formation name must be announced
-	# BEFORE the AP-spend loop. Otherwise on a partial-AP case
-	# (some participants short) the AP loop runs first, then
-	# the announcement which feels backwards.
+	# Critical ordering: the opener must be announced BEFORE the
+	# AP-spend loop. Otherwise on a partial-AP case the AP loop
+	# runs first, then the announcement which feels backwards.
 	var body := _fn_body("_execute_formation_special")
-	var announce_idx: int = body.find("FORMATION SPECIAL:")
+	var announce_idx: int = body.find("FORMATION SPECIAL")
 	var ap_spend_idx: int = body.find("p.spend_ap(ap_cost)")
 	assert_gt(announce_idx, -1)
 	assert_gt(ap_spend_idx, -1)
