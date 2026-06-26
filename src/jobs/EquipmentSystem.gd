@@ -221,7 +221,11 @@ func equip_weapon(combatant: Combatant, weapon_id: String) -> bool:
 	if not combatant or not is_instance_valid(combatant):
 		return false
 	if not weapons.has(weapon_id):
-		print("Error: Weapon '%s' not found" % weapon_id)
+		## Tick 180: surface unknown-id failures via push_warning
+		## (was print-only — silent). Catches Scriptweaver custom
+		## items / save-format drift / dropped equipment that
+		## EquipmentMenu accepted but EquipmentSystem doesn't know.
+		push_warning("[EquipmentSystem] equip_weapon: weapon_id '%s' not found — equip failed silently pre-tick-180" % weapon_id)
 		return false
 
 	combatant.equipped_weapon = weapon_id
@@ -237,7 +241,7 @@ func equip_armor(combatant: Combatant, armor_id: String) -> bool:
 	if not combatant or not is_instance_valid(combatant):
 		return false
 	if not armors.has(armor_id):
-		print("Error: Armor '%s' not found" % armor_id)
+		push_warning("[EquipmentSystem] equip_armor: armor_id '%s' not found — equip failed silently pre-tick-180" % armor_id)
 		return false
 
 	combatant.equipped_armor = armor_id
@@ -253,7 +257,7 @@ func equip_accessory(combatant: Combatant, accessory_id: String) -> bool:
 	if not combatant or not is_instance_valid(combatant):
 		return false
 	if not accessories.has(accessory_id):
-		print("Error: Accessory '%s' not found" % accessory_id)
+		push_warning("[EquipmentSystem] equip_accessory: accessory_id '%s' not found — equip failed silently pre-tick-180" % accessory_id)
 		return false
 
 	combatant.equipped_accessory = accessory_id

@@ -327,7 +327,12 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 	"""Assign a job to a combatant"""
 	job_id = resolve_job_id(job_id)
 	if not jobs.has(job_id):
-		print("Error: Job '%s' not found" % job_id)
+		## Tick 180: push_warning so this surfaces in CI / editor
+		## warnings panel. Pre-fix print() only — silent failure
+		## when a save-format-drift or Scriptweaver-corrupted job_id
+		## tried to apply (assign_job returned false but nothing
+		## upstream surfaced WHY).
+		push_warning("[JobSystem] assign_job: job_id '%s' not found in jobs table — assignment failed" % job_id)
 		return false
 
 	var job = jobs[job_id]

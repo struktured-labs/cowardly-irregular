@@ -252,18 +252,19 @@ func _create_default_passives() -> void:
 
 ## Passive management
 func equip_passive(combatant: Combatant, passive_id: String) -> bool:
-	"""Equip a passive to a combatant"""
+	"""Equip a passive to a combatant."""
+	if not combatant or not is_instance_valid(combatant):
+		push_warning("[PassiveSystem] equip_passive: invalid combatant — equip failed")
+		return false
 	if not can_equip_passive(combatant, passive_id):
-		if not combatant or not is_instance_valid(combatant):
-			print("Error: Invalid combatant")
-		elif not passives.has(passive_id):
-			print("Error: Passive '%s' not found" % passive_id)
+		if not passives.has(passive_id):
+			push_warning("[PassiveSystem] equip_passive: passive_id '%s' not found in passives table — equip failed" % passive_id)
 		elif combatant.equipped_passives.size() >= combatant.max_passive_slots:
-			print("Error: No passive slots available")
+			push_warning("[PassiveSystem] equip_passive: %s slot full (%d/%d) — equip of '%s' failed" % [combatant.combatant_name, combatant.equipped_passives.size(), combatant.max_passive_slots, passive_id])
 		elif passive_id in combatant.equipped_passives:
-			print("Error: Passive already equipped")
+			push_warning("[PassiveSystem] equip_passive: '%s' already equipped on %s — equip failed (idempotency check)" % [passive_id, combatant.combatant_name])
 		else:
-			print("Error: Cannot equip passive '%s'" % passive_id)
+			push_warning("[PassiveSystem] equip_passive: '%s' cannot equip on %s (unknown reason — can_equip_passive returned false but no specific cause matched)" % [passive_id, combatant.combatant_name])
 		return false
 
 	combatant.equipped_passives.append(passive_id)
@@ -279,7 +280,7 @@ func unequip_passive(combatant: Combatant, passive_id: String) -> bool:
 	if not combatant or not is_instance_valid(combatant):
 		return false
 	if not passive_id in combatant.equipped_passives:
-		print("Error: Passive not equipped")
+		push_warning("[PassiveSystem] unequip_passive: '%s' not currently equipped on %s — unequip failed" % [passive_id, combatant.combatant_name])
 		return false
 
 	combatant.equipped_passives.erase(passive_id)
