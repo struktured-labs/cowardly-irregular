@@ -240,15 +240,8 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	var save_date = save_info.get("save_date", "")
 	if save_date != "":
 		var date_label = Label.new()
-		# Format: YYYY-MM-DDTHH:MM:SS -> MM/DD HH:MM
-		var date_parts = save_date.split("T")
-		if date_parts.size() >= 2:
-			var ymd = date_parts[0].split("-")
-			var hms = date_parts[1].split(":")
-			if ymd.size() >= 3 and hms.size() >= 2:
-				date_label.text = "%s/%s %s:%s" % [ymd[1], ymd[2], hms[0], hms[1]]
-		else:
-			date_label.text = save_date.substr(0, 16)
+		# Tick 197: derive via helper — pre-fix the inner if/else had a fall-through (>=2 parts but malformed ymd/hms left text empty, silent UX).
+		date_label.text = _format_save_date(save_date)
 		date_label.position = Vector2(panel_size.x - 90, 22)
 		date_label.add_theme_font_size_override("font_size", 10)
 		date_label.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -273,6 +266,20 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		no_party.add_theme_font_size_override("font_size", 11)
 		no_party.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(no_party)
+
+
+# Tick 197: ISO-8601 'YYYY-MM-DDTHH:MM:SS' → 'MM/DD HH:MM'. Single fallback path replaces the prior inner-if/else with a silent fall-through hole.
+static func _format_save_date(save_date: String) -> String:
+	if save_date == "":
+		return ""
+	var date_parts: PackedStringArray = save_date.split("T")
+	if date_parts.size() >= 2:
+		var ymd: PackedStringArray = date_parts[0].split("-")
+		var hms: PackedStringArray = date_parts[1].split(":")
+		if ymd.size() >= 3 and hms.size() >= 2:
+			return "%s/%s %s:%s" % [ymd[1], ymd[2], hms[0], hms[1]]
+	# Either no 'T' separator, OR ymd/hms malformed — trim to 16 chars as last resort.
+	return save_date.substr(0, 16)
 
 
 func _create_party_member_display(member: Dictionary, _index: int) -> Control:
