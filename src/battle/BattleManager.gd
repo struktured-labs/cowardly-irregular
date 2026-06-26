@@ -882,7 +882,12 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 func go_back_to_previous_player() -> void:
 	"""Go back to the previous player's selection (undo their action), skipping those in AP debt"""
 	if current_state != BattleState.PLAYER_SELECTING:
+		## Tick 183: emit to battle log so player sees feedback.
+		## Pre-fix print() only — player hit Go Back, nothing
+		## happened, no explanation. Player-action failures belong
+		## in the visible log, not push_warning.
 		print("Cannot go back - not in player selection state")
+		battle_log_message.emit("[color=gray]Can't go back — not currently in selection phase.[/color]")
 		return
 
 	# Undo the natural AP gain for current player (they didn't actually take their turn)
@@ -925,7 +930,12 @@ func go_back_to_previous_player() -> void:
 		break
 
 	if not found_player:
+		## Tick 183: emit to battle log so player sees feedback.
+		## "No previous player" can mean first PC of round or all
+		## prior PCs in AP debt — either way the player needs to
+		## see why their Go Back didn't work.
 		print("Cannot go back - no previous player available")
+		battle_log_message.emit("[color=gray]Can't go back — no earlier PC available.[/color]")
 		# Restore current player's AP since we couldn't go back
 		current_combatant.gain_ap(1)
 		# Restore selection_index so it stays aligned with the still-current
@@ -3348,7 +3358,17 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	if ItemSystem and ItemSystem.use_item(user, item_id, retargeted):
 		user.remove_item(item_id, 1)
 	else:
+		## Tick 183: surface item-use failures to both push_warning
+		## (dev/CI surface) and battle_log_message (player surface).
+		## Pre-fix print() only — player tried Use Item, nothing
+		## happened, no explanation. The most common cause is
+		## ItemSystem.use_item returning false (item not found,
+		## invalid effects) which tick 181's ItemSystem warnings
+		## already surface, but adding it here gives the failure a
+		## battle-log surface too.
 		print("Failed to use item: %s" % item_id)
+		push_warning("[BattleManager] _execute_item: ItemSystem.use_item returned false for '%s' — item not consumed, turn wasted" % item_id)
+		battle_log_message.emit("[color=gray]Failed to use %s.[/color]" % item_id.replace("_", " ").capitalize())
 
 
 ## Victory/defeat conditions

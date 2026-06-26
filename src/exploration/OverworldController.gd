@@ -214,7 +214,11 @@ func set_enemy_pool(pool_id: String) -> void:
 		_enemy_pool = pools[pool_id]
 		print("Loaded enemy pool '%s': %s" % [pool_id, _enemy_pool])
 	else:
-		print("Warning: Enemy pool '%s' not found" % pool_id)
+		## Tick 183: surface missing pool. Pre-fix print() only —
+		## player would wander an area silently using whatever the
+		## last loaded pool was (or empty). Common cause: a new
+		## overworld zone added without its enemy_pools.json entry.
+		push_warning("[OverworldController] enemy pool '%s' not found in enemy_pools.json — current pool stays at last value, encounters may be wrong for this area" % pool_id)
 
 
 func _load_enemy_pools() -> Dictionary:
