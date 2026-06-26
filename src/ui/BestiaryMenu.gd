@@ -424,7 +424,8 @@ func _refresh_detail() -> void:
 
 
 func _format_drops(drops: Array, one_shot) -> String:
-	var parts: PackedStringArray = []
+	# Tick 195: explicit chance-DESC sort with name-ASC tiebreak so display is stable across saves and monsters.json reorders. Common drops first matches autobattle-planning mental model.
+	var rows: Array = []
 	for d in drops:
 		if not d is Dictionary:
 			continue
@@ -432,8 +433,16 @@ func _format_drops(drops: Array, one_shot) -> String:
 		var chance: float = float(d.get("chance", 0.0))
 		if item == "":
 			continue
-		var pct: int = int(round(chance * 100.0))
-		parts.append("%s %d%%" % [_resolve_item_display_name(item), pct])
+		rows.append({"item": item, "chance": chance, "name": _resolve_item_display_name(item)})
+	rows.sort_custom(func(a, b):
+		if a.chance != b.chance:
+			return a.chance > b.chance
+		return a.name < b.name
+	)
+	var parts: PackedStringArray = []
+	for r in rows:
+		var pct: int = int(round(r.chance * 100.0))
+		parts.append("%s %d%%" % [r.name, pct])
 	var base: String = "Drops: %s" % (", ".join(parts) if parts.size() > 0 else "—")
 	# one_shot_reward (rare bonus, set in monsters.json for special enemies)
 	# appended as "(one-shot: <item>)" so it's visually distinct from the
