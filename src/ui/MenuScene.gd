@@ -1041,8 +1041,11 @@ func _on_item_use_pressed(item_id: String) -> void:
 			break
 
 	if source_member:
-		ItemSystem.use_item(source_member, item_id, [member])
-		source_member.remove_item(item_id, 1)
+		# Tick 190: only consume on successful use — pre-fix unknown-id / no-effects items got consumed for no benefit.
+		if ItemSystem.use_item(source_member, item_id, [member]):
+			source_member.remove_item(item_id, 1)
+		else:
+			push_warning("[MenuScene] _on_item_use_pressed: ItemSystem.use_item('%s') failed for %s — item NOT consumed" % [item_id, source_member.combatant_name])
 		_update_party_list_hp()
 		_show_items_view()
 
