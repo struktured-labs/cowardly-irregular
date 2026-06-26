@@ -403,22 +403,43 @@ func _build_continue_subtitle() -> String:
 	if not SaveSystem or not SaveSystem.has_method("get_most_recent_slot"):
 		return ""
 	var slot: int = SaveSystem.get_most_recent_slot()
-	if slot < 0 or not SaveSystem.has_method("get_save_info"):
+	if slot < 0:
 		return ""
+	# Tick 202: slot label is always shown when we have one — players need to know whether Continue resumes Slot 2, a Quick Save, or an Auto-Save. Pre-fix the choice was silent.
+	var slot_label: String = _format_continue_slot_label(slot)
+	if not SaveSystem.has_method("get_save_info"):
+		return slot_label
 	var info: Dictionary = SaveSystem.get_save_info(slot)
 	if info.is_empty():
-		return ""
+		return slot_label
 	# Prefer chapter + location together when both exist; degrade gracefully
 	# to whichever piece IS available so the subtitle is never half-formed.
 	var location: String = str(info.get("location_name", "")).strip_edges()
 	var chapter: String = str(info.get("chapter_title", "")).strip_edges()
+	var detail: String = ""
 	if chapter != "" and location != "":
-		return "%s — %s" % [chapter, location]
-	if location != "":
-		return location
-	if chapter != "":
-		return chapter
-	return ""
+		detail = "%s — %s" % [chapter, location]
+	elif location != "":
+		detail = location
+	elif chapter != "":
+		detail = chapter
+	if slot_label == "":
+		return detail
+	if detail == "":
+		return slot_label
+	return "%s · %s" % [slot_label, detail]
+
+
+# Tick 202: map slot int → human label. SaveSystem.AUTO_SAVE_SLOT=98, QUICK_SAVE_SLOT=99, 0..2 are manual.
+static func _format_continue_slot_label(slot: int) -> String:
+	if slot < 0:
+		return ""
+	if SaveSystem:
+		if "QUICK_SAVE_SLOT" in SaveSystem and slot == SaveSystem.QUICK_SAVE_SLOT:
+			return "Quick Save"
+		if "AUTO_SAVE_SLOT" in SaveSystem and slot == SaveSystem.AUTO_SAVE_SLOT:
+			return "Auto-Save"
+	return "Slot %d" % (slot + 1)
 
 
 func _vp_size() -> Vector2:
