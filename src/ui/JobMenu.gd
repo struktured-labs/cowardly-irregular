@@ -564,10 +564,8 @@ func _get_stat_comparison(new_job: Dictionary) -> String:
 		var new_val = new_mods.get(stat_name, 0)
 		var diff = new_val - current_val
 		if diff != 0:
-			var short_name = stat_name.substr(0, 3).to_upper()
-			if stat_name == "max_hp":
-				short_name = "HP"
-			parts.append("%s%d %s" % ["+" if diff > 0 else "", diff, short_name])
+			# Tick 211: shared StatNames handles HP/MP acronyms — local max_hp guard no longer needed.
+			parts.append("%s%d %s" % ["+" if diff > 0 else "", diff, StatNames.short_code(stat_name)])
 
 	return "  ".join(parts)
 

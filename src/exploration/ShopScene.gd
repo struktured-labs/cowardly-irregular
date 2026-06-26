@@ -520,7 +520,8 @@ func _update_description_for_item(item_id: String) -> void:
 				for stat in stat_mods:
 					var value = stat_mods[stat]
 					if value != 0:
-						desc += "  %s: %+d\n" % [stat.capitalize(), value]
+						# Tick 211: shared StatNames preserves HP/MP acronyms.
+						desc += "  %s: %+d\n" % [StatNames.display_name(stat), value]
 			else:
 				desc += "Stats (vs equipped):\n"
 				for stat in stat_mods:
@@ -529,11 +530,11 @@ func _update_description_for_item(item_id: String) -> void:
 						continue
 					var delta: int = comparison.get(stat, 0)
 					if delta > 0:
-						desc += "  %s: %+d  (+%d)\n" % [stat.capitalize(), value, delta]
+						desc += "  %s: %+d  (+%d)\n" % [StatNames.display_name(stat), value, delta]
 					elif delta < 0:
-						desc += "  %s: %+d  (%d)\n" % [stat.capitalize(), value, delta]
+						desc += "  %s: %+d  (%d)\n" % [StatNames.display_name(stat), value, delta]
 					elif value != 0:
-						desc += "  %s: %+d  (=)\n" % [stat.capitalize(), value]
+						desc += "  %s: %+d  (=)\n" % [StatNames.display_name(stat), value]
 
 	# Show MP cost for magic
 	if _is_magic_shop():

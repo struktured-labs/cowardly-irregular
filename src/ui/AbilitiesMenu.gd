@@ -638,9 +638,10 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 			if mod_name.ends_with("_multiplier"):
 				var stat = mod_name.replace("_multiplier", "")
 				var pct = int((mod_value - 1.0) * 100)
-				mod_text = "%s%d%% %s" % ["+" if pct > 0 else "", pct, stat.capitalize()]
+				# Tick 211: shared StatNames preserves HP/MP acronyms.
+				mod_text = "%s%d%% %s" % ["+" if pct > 0 else "", pct, StatNames.display_name(stat)]
 			else:
-				mod_text = "%s%.2f %s" % ["+" if mod_value > 0 else "", mod_value, mod_name.capitalize()]
+				mod_text = "%s%.2f %s" % ["+" if mod_value > 0 else "", mod_value, StatNames.display_name(mod_name)]
 
 			var mod_label = Label.new()
 			mod_label.text = mod_text

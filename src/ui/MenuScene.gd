@@ -549,7 +549,7 @@ func _show_equipment_selection(slot: String) -> void:
 			var mods = []
 			for stat in item.stat_mods:
 				var val = item.stat_mods[stat]
-				mods.append("%s%+d" % [stat.substr(0, 3).to_upper(), val])
+				mods.append("%s%+d" % [StatNames.short_code(stat), val])
 			stat_text = " (%s)" % ", ".join(mods)
 
 		var btn = Button.new()

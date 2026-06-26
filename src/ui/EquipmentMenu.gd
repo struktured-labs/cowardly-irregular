@@ -40,39 +40,21 @@ const WEAPON_COLOR = Color(1.0, 0.6, 0.3)
 const ARMOR_COLOR = Color(0.5, 0.7, 1.0)
 const ACCESSORY_COLOR = Color(0.9, 0.5, 0.9)
 
-# Tick 210: explicit stat display maps — String.capitalize() turns "max_hp" into "Max Hp" (HP/MP acronyms broken), and substr(0, 3) collides "MAX" for both max_hp and max_mp.
-const STAT_DISPLAY := {
-	"attack": "Attack",
-	"defense": "Defense",
-	"magic": "Magic",
-	"speed": "Speed",
-	"max_hp": "Max HP",
-	"max_mp": "Max MP",
-}
-
-# Tick 210: compact stat codes for the per-item comparison row. ATK/DEF/MAG/SPD are the canonical JRPG abbreviations; HP/MP keep the acronym intact.
-const STAT_SHORT := {
-	"attack": "ATK",
-	"defense": "DEF",
-	"magic": "MAG",
-	"speed": "SPD",
-	"max_hp": "HP",
-	"max_mp": "MP",
-}
+# Tick 211: stat display maps extracted to StatNames (src/ui/StatNames.gd) — same surfaces should display the same names. Local helpers below now delegate.
 
 
 func _ready() -> void:
 	call_deferred("_build_ui")
 
 
-# Tick 210: long-form stat name with HP/MP acronym preservation. Falls back to .capitalize() for unknown stat ids (Scriptweaver custom stats, future stats).
+# Tick 210/211: long-form stat name with HP/MP acronym preservation. Delegates to StatNames (the shared map source-of-truth).
 func _stat_display_name(stat_name: String) -> String:
-	return STAT_DISPLAY.get(stat_name, stat_name.capitalize())
+	return StatNames.display_name(stat_name)
 
 
-# Tick 210: compact stat code for per-item comparison rows. Falls back to substr(0, 3).to_upper() for unknown ids. Pre-fix the bare substr collided max_hp and max_mp both onto "MAX".
+# Tick 210/211: compact stat code for per-item comparison rows. Delegates to StatNames.
 func _stat_short_name(stat_name: String) -> String:
-	return STAT_SHORT.get(stat_name, stat_name.substr(0, 3).to_upper())
+	return StatNames.short_code(stat_name)
 
 
 func setup(target: Combatant, weapons: Array = [], armors: Array = [], accessories: Array = []) -> void:

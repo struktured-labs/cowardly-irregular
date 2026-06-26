@@ -493,7 +493,8 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 		for stat in ["attack", "defense", "magic", "speed"]:
 			var val = equip_mods.get(stat, 0)
 			if val != 0:
-				var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}[stat]
+				# Tick 211: shared StatNames map.
+				var abbrev: String = StatNames.short_code(stat)
 				var color = "lime" if val > 0 else "red"
 				equip_parts.append("[color=%s]%s%+d[/color]" % [color, abbrev, val])
 		if equip_parts.size() > 0:
@@ -507,7 +508,8 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 			var turns: int = buff.get("remaining_turns", 0)
 			if stat_name == "" or modifier == 1.0:
 				continue
-			var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}.get(stat_name, stat_name.substr(0, 3).to_upper())
+			# Tick 211: shared StatNames map adds HP/MP coverage the inline dict missed.
+			var abbrev: String = StatNames.short_code(stat_name)
 			var pct = int((modifier - 1.0) * 100)
 			var color = "aqua" if pct > 0 else "orange"
 			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [color, abbrev, pct, turns])
@@ -519,7 +521,8 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 			var turns: int = debuff.get("remaining_turns", 0)
 			if stat_name == "" or modifier == 1.0:
 				continue
-			var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}.get(stat_name, stat_name.substr(0, 3).to_upper())
+			# Tick 211: shared StatNames map adds HP/MP coverage the inline dict missed.
+			var abbrev: String = StatNames.short_code(stat_name)
 			var pct = int((modifier - 1.0) * 100)
 			parts.append("[color=red]%s%+d%%(%d)[/color]" % [abbrev, pct, turns])
 

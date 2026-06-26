@@ -117,15 +117,19 @@ func test_unknown_stat_short_falls_back_to_substr() -> void:
 # ── Const maps present ────────────────────────────────────────────────
 
 func test_stat_display_map_const_defined() -> void:
-	var src := _read(EQUIPMENT_MENU)
-	assert_true(src.contains("const STAT_DISPLAY := {"),
-		"STAT_DISPLAY const map must be defined at class level")
+	# Tick 211 extracted the maps from EquipmentMenu to the shared
+	# StatNames class. Pin the maps' new home.
+	var src: String = FileAccess.get_file_as_string("res://src/ui/StatNames.gd")
+	assert_true(src.contains("const DISPLAY := {"),
+		"DISPLAY const map must be defined on StatNames (post-tick 211 home)")
 
 
 func test_stat_short_map_const_defined() -> void:
-	var src := _read(EQUIPMENT_MENU)
-	assert_true(src.contains("const STAT_SHORT := {"),
-		"STAT_SHORT const map must be defined at class level")
+	# Tick 211 extracted the maps from EquipmentMenu to the shared
+	# StatNames class.
+	var src: String = FileAccess.get_file_as_string("res://src/ui/StatNames.gd")
+	assert_true(src.contains("const SHORT := {"),
+		"SHORT const map must be defined on StatNames")
 
 
 # ── Wiring at the call sites ──────────────────────────────────────────
