@@ -131,8 +131,13 @@ func test_damage_handler_no_ops_for_zero_amount() -> void:
 	c.combatant_name = "Hero"
 	c.max_hp = 100; c.current_hp = 100; c.is_alive = true
 	add_child_autofree(c)
-	var snapshot: Array = bm.player_party.duplicate()
-	bm.player_party = [c]
+	## Tick 182: pre-fix `bm.player_party = [c]` was a typed-array
+	## trap — Array[Combatant] field, generic [c] literal, silent
+	## SCRIPT ERROR that aborted the function before the assert.
+	## Build a typed local first so the assignment succeeds.
+	var snapshot: Array[Combatant] = bm.player_party.duplicate()
+	var typed_party: Array[Combatant] = [c]
+	bm.player_party = typed_party
 	bm._on_damage_dealt_for_party_dialogue(c, 0, false, "", 1.0)
 	bm.player_party = snapshot
 	assert_true(true, "handler must early-return when amount <= 0")

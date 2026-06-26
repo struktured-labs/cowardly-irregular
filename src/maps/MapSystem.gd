@@ -40,7 +40,13 @@ func load_map(map_id: String, spawn_point: String = "default") -> void:
 		# Load map scene
 		var map_path = _get_map_path(map_id)
 		if not ResourceLoader.exists(map_path):
-			print("Error: Map not found: %s" % map_path)
+			## Tick 182: surface missing-map failures. Pre-fix print()
+			## only — load_map silently returned with current_map
+			## unchanged. Callers couldn't tell whether the load
+			## succeeded or whether they were still on the old map.
+			## push_error matches the severity of the existing
+			## load-scene-fail path at the next branch.
+			push_error("[MapSystem] load_map: map not found at '%s' — load silently aborted, current_map unchanged" % map_path)
 			return
 
 		var map_scene = load(map_path)
@@ -126,7 +132,12 @@ func _position_player_at_spawn(spawn_point: String) -> void:
 	if spawn_marker and spawn_marker is Marker2D:
 		player.global_position = spawn_marker.global_position
 	else:
-		print("Warning: Spawn point not found: %s" % spawn_point)
+		## Tick 182: surface missing spawn point. Pre-fix print()
+		## only — player would silently spawn at the default
+		## position (often 0,0 or wherever they were last) instead
+		## of at the requested spawn marker. Symptom looked like
+		## "the transition didn't work" with no diagnostic surface.
+		push_warning("[MapSystem] _position_player_at_spawn: spawn point '%s' not found in current_map — player will remain at last position" % spawn_point)
 
 
 ## Player management

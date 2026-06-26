@@ -195,8 +195,12 @@ func test_maybe_fire_party_line_no_op_when_flag_off() -> void:
 	c.max_hp = 100; c.current_hp = 100
 	c.is_alive = true
 	add_child_autofree(c)
-	var snapshot: Array = bm.player_party.duplicate()
-	bm.player_party = [c]
+	## Tick 182: typed-array trap fix — Array[Combatant] field
+	## with generic [c] literal silently SCRIPT ERROR'd and
+	## aborted the test before the assert.
+	var snapshot: Array[Combatant] = bm.player_party.duplicate()
+	var typed_party: Array[Combatant] = [c]
+	bm.player_party = typed_party
 	# With flag OFF, calling the hook is a silent no-op — no exception, no log.
 	bm._maybe_fire_party_line(c, "turn_start", {})
 	# Restore.
