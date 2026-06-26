@@ -24,6 +24,13 @@ const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const PLAYING_COLOR = Color(0.3, 1.0, 0.4)
+# Tick 201: per-category tints — vertical color bands in the sorted list show category boundaries at a glance. PLAYING_COLOR still overrides for the active track.
+const CAT_BATTLE_COLOR := Color(0.95, 0.55, 0.55)   # muted red — combat
+const CAT_BOSS_COLOR := Color(0.95, 0.80, 0.40)     # gold — boss
+const CAT_OVERWORLD_COLOR := Color(0.50, 0.85, 0.95) # cyan — open world
+const CAT_VILLAGE_COLOR := Color(0.65, 0.80, 1.00)  # pastel blue — settlement
+const CAT_DUNGEON_COLOR := Color(0.80, 0.65, 1.00)  # purple — interior dungeon
+const CAT_DANGER_COLOR := Color(0.95, 0.65, 0.30)   # orange — alert
 
 ## UI State
 var selected_index: int = 0
@@ -91,6 +98,23 @@ static func _load_manifest_tracks() -> Array:
 		# Tick 200: duration helps the player skim 150 entries — append "M:SS" when authored (>0 means rendered).
 		out.append([str(id), display, duration])
 	return out
+
+
+# Tick 201: prefix-based category lookup so the sorted list reads as vertical color bands. Unknown ids (title, victory, game_over, autogrind, ...) stay TEXT_COLOR.
+static func _category_color(track_id: String) -> Color:
+	if track_id.begins_with("boss_") or track_id == "boss":
+		return CAT_BOSS_COLOR
+	if track_id.begins_with("battle_") or track_id == "battle":
+		return CAT_BATTLE_COLOR
+	if track_id.begins_with("overworld_") or track_id == "overworld":
+		return CAT_OVERWORLD_COLOR
+	if track_id.begins_with("village_") or track_id == "village":
+		return CAT_VILLAGE_COLOR
+	if track_id.begins_with("dungeon_") or track_id == "dungeon":
+		return CAT_DUNGEON_COLOR
+	if track_id.begins_with("danger_") or track_id == "danger":
+		return CAT_DANGER_COLOR
+	return TEXT_COLOR
 
 
 # Tick 200: M:SS for non-zero durations; empty string when unrendered (duration 0.0 in manifest signals pending/no-audio).
@@ -224,8 +248,9 @@ func _refresh_list() -> void:
 			var dur_str: String = _format_duration(TRACKS[track_idx][2] if TRACKS[track_idx].size() > 2 else 0.0)
 			_row_labels[i].text = ("%s   ·   %s" % [display, dur_str]) if dur_str != "" else display
 			var track_id = TRACKS[track_idx][0]
+			# Tick 201: category color band replaces the bare TEXT_COLOR fallback. PLAYING_COLOR still wins for the active track.
 			_row_labels[i].add_theme_color_override("font_color",
-				PLAYING_COLOR if track_id == _currently_playing else TEXT_COLOR)
+				PLAYING_COLOR if track_id == _currently_playing else _category_color(track_id))
 			_row_highlights[i].modulate.a = 1.0
 		else:
 			_row_labels[i].text = ""
