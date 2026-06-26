@@ -311,6 +311,8 @@ func _compare_str(a: float, op: String, b: float) -> bool:
 			return a > b
 		"!=":
 			return a != b
+	# Tick 216: unknown comparison operator — symmetry with the existing _evaluate_grid_condition unknown-type warning at line ~295. Pre-fix a corrupt op like "=" or ">>" silently returned false; rules never matched and players had no way to diagnose.
+	push_warning("[AutobattleSystem] _compare_str: unknown op='%s' (expected <, <=, ==, >=, >, !=) — comparison treated as false" % op)
 	return false
 
 
@@ -1632,6 +1634,8 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 			push_warning("AutobattleSystem: CUSTOM conditions not yet implemented")
 			return false
 
+	# Tick 216: unknown ConditionType enum value — save drift, deprecated value left in a rule, Scriptweaver custom condition not registered. Pre-fix this returned false silently and the autobattle rule never matched — player thinks their script is broken and can't diagnose.
+	push_warning("[AutobattleSystem] _evaluate_condition: unknown ConditionType=%s — rule will NOT match (autobattle may silently misbehave; check rule JSON for stale type values)" % str(type))
 	return false
 
 
@@ -1650,6 +1654,8 @@ func _compare(a: float, op: CompareOp, b: float) -> bool:
 			return a > b
 		CompareOp.NOT_EQUAL:
 			return a != b
+	# Tick 216: unknown CompareOp — same silent-fail class as above. A condition with a bad op silently never matches.
+	push_warning("[AutobattleSystem] _compare: unknown CompareOp=%s — comparison treated as false (check rule JSON for stale op values)" % str(op))
 	return false
 
 
