@@ -210,7 +210,13 @@ func _open_buy_menu() -> void:
 		if item_data:
 			var cost = item_data.get("cost", 0)
 			var owned = _get_owned_count(item_id)
-			var label = "%s - %dG" % [item_data.get("name", "???"), cost]
+			## Tick 187: fallback through ItemNameResolver instead of
+			## sentinel "???". Surfaces a meaningful name for items
+			## where the shop's _get_item_data found the entry but it
+			## lacks a "name" field (Scriptweaver custom items / save-
+			## format drift / authoring error). Player sees "Iron
+			## Sword" instead of "???" for unknown-name items.
+			var label = "%s - %dG" % [item_data.get("name", ItemNameResolver.resolve(item_id)), cost]
 			if _is_magic_shop() and owned > 0:
 				label += " [%d learned]" % owned
 			elif owned > 0:
@@ -248,7 +254,9 @@ func _open_sell_menu() -> void:
 		if item_data:
 			var cost = item_data.get("cost", 0)
 			var sell_price = int(cost * 0.5)  # 50% sell price
-			var label = "%s - %dG (x%d)" % [item_data.get("name", "???"), sell_price, quantity]
+			## Tick 187: same ItemNameResolver fallback as the Buy
+			## path. Avoids "???" sentinel for missing-name items.
+			var label = "%s - %dG (x%d)" % [item_data.get("name", ItemNameResolver.resolve(item_id)), sell_price, quantity]
 
 			items.append({
 				"id": item_id,
