@@ -468,7 +468,7 @@ func _create_speed_indicator() -> void:
 	_speed_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Style it
-	_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
+	_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(16))
 
 	panel.add_child(_speed_indicator)
 
@@ -479,7 +479,7 @@ func _create_speed_indicator() -> void:
 	_battle_counter_label.fit_content = true
 	_battle_counter_label.scroll_active = false
 	_battle_counter_label.custom_minimum_size = Vector2(120, 24)
-	_battle_counter_label.add_theme_font_size_override("normal_font_size", 14)
+	_battle_counter_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(14))
 	_battle_counter_label.position = Vector2(8, 34)
 	_battle_counter_label.visible = false
 	$UI.add_child(_battle_counter_label)
@@ -518,11 +518,11 @@ func _update_speed_indicator() -> void:
 
 	if turbo_mode:
 		if _speed_indicator:
-			_speed_indicator.add_theme_font_size_override("normal_font_size", 22)
+			_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(22))
 			_speed_indicator.custom_minimum_size = Vector2(160, 32)
 	else:
 		if _speed_indicator:
-			_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
+			_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(16))
 			_speed_indicator.custom_minimum_size = Vector2(80, 24)
 
 
@@ -1221,7 +1221,7 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.position = offset
-	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	# Tick 219: 1px outline + shadow — name labels sit below sprites on the Mode 7 floor and need edge protection vs grid lines (matches tick 218 contrast scheme, scaled down for 10pt).
 	label.add_theme_constant_override("outline_size", 1)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -1362,7 +1362,7 @@ func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
 
 	var label = Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(8))
 	label.add_theme_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(label)
@@ -1470,7 +1470,7 @@ func _build_input_hint_bar() -> void:
 	# Use [L]/[R] notation that works for both gamepad (shoulder)
 	# and keyboard (L/R keys per InputMap).
 	label.text = "[L] Defer  ·  [R] Advance  ·  [+/-] Speed  ·  [Select] Auto"
-	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95, 0.95))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1504,8 +1504,8 @@ func enable_autogrind_console() -> void:
 	_autogrind_console.scroll_active = true
 	_autogrind_console.scroll_following = true
 	_autogrind_console.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_autogrind_console.add_theme_font_size_override("normal_font_size", 13)
-	_autogrind_console.add_theme_font_size_override("bold_font_size", 14)
+	_autogrind_console.add_theme_font_size_override("normal_font_size", TextScale.scaled(13))
+	_autogrind_console.add_theme_font_size_override("bold_font_size", TextScale.scaled(14))
 	_autogrind_console.add_theme_color_override("default_color", Color(0.8, 0.8, 0.9))
 
 	var margin = log_panel.get_node_or_null("MarginContainer")
@@ -3527,7 +3527,7 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 
 	var label = Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", color)
 	# Tick 218: add full-perimeter outline so RESIST/IMMUNE colors don't blend into the Mode 7 floor grid lines. Shadow alone is offset (lower-right only) — top-left edges go unprotected against busy backgrounds. Matches the contrast scheme DamageNumber uses.
 	label.add_theme_constant_override("outline_size", 2)
@@ -3623,7 +3623,7 @@ func _spawn_crit_banner(pos: Vector2) -> void:
 	"""Spawn a large 'CRITICAL!' text that scales up and fades"""
 	var label = Label.new()
 	label.text = "CRITICAL!"
-	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.1))
 	label.add_theme_constant_override("outline_size", 3)
 	label.add_theme_color_override("font_outline_color", Color(0.6, 0.2, 0.0))
@@ -3773,7 +3773,7 @@ func _show_address_banner(text: String) -> void:
 	var label = Label.new()
 	label.text = text
 	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	panel.add_child(label)
 	# Anchor at top-center.
 	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -3829,7 +3829,7 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	# Speaker name header (small, colored)
 	var name_label = Label.new()
 	name_label.text = speaker_name
-	name_label.add_theme_font_size_override("font_size", 9)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	name_label.add_theme_color_override("font_color", border_color)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(name_label)
@@ -3837,7 +3837,7 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	# Quote text
 	var label = Label.new()
 	label.text = '"%s"' % line
-	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
 	label.add_theme_constant_override("outline_size", 1)
 	label.add_theme_color_override("font_outline_color", Color(0.2, 0.15, 0.0))
@@ -3944,7 +3944,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	one_shot_label.offset_bottom = 0
 	one_shot_label.offset_left = -200
 	one_shot_label.offset_right = 200
-	one_shot_label.add_theme_font_size_override("font_size", 48)
+	one_shot_label.add_theme_font_size_override("font_size", TextScale.scaled(48))
 	one_shot_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.0))
 	# Tick 219: 2px outline matches the floating-text contrast scheme; flash_bg fades quickly so the label spends most of its life over the Mode 7 floor.
 	one_shot_label.add_theme_constant_override("outline_size", 2)
@@ -3965,7 +3965,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	rank_label.offset_bottom = 40
 	rank_label.offset_left = -200
 	rank_label.offset_right = 200
-	rank_label.add_theme_font_size_override("font_size", 28)
+	rank_label.add_theme_font_size_override("font_size", TextScale.scaled(28))
 	var rank_color = Color(1.0, 0.9, 0.0) if rank == "S" else Color(0.6, 1.0, 0.6) if rank == "A" else Color(0.6, 0.8, 1.0)
 	rank_label.add_theme_color_override("font_color", rank_color)
 	# Tick 219: floating-text contrast — outline + shadow.
@@ -3987,7 +3987,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	bonus_label.offset_bottom = 75
 	bonus_label.offset_left = -200
 	bonus_label.offset_right = 200
-	bonus_label.add_theme_font_size_override("font_size", 22)
+	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 	# Tick 219: floating-text contrast — outline + shadow.
 	bonus_label.add_theme_constant_override("outline_size", 2)
@@ -4057,7 +4057,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	auto_label.offset_bottom = 0 + y_offset
 	auto_label.offset_left = -200
 	auto_label.offset_right = 200
-	auto_label.add_theme_font_size_override("font_size", 42)
+	auto_label.add_theme_font_size_override("font_size", TextScale.scaled(42))
 	auto_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
 	# Tick 219: floating-text contrast — outline + shadow.
 	auto_label.add_theme_constant_override("outline_size", 2)
@@ -4078,7 +4078,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	turns_label.offset_bottom = 35 + y_offset
 	turns_label.offset_left = -200
 	turns_label.offset_right = 200
-	turns_label.add_theme_font_size_override("font_size", 22)
+	turns_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	turns_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	# Tick 219: floating-text contrast — outline + shadow.
 	turns_label.add_theme_constant_override("outline_size", 2)
@@ -4099,7 +4099,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.offset_bottom = 70 + y_offset
 	bonus_label.offset_left = -200
 	bonus_label.offset_right = 200
-	bonus_label.add_theme_font_size_override("font_size", 22)
+	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 	# Tick 219: floating-text contrast — outline + shadow.
 	bonus_label.add_theme_constant_override("outline_size", 2)

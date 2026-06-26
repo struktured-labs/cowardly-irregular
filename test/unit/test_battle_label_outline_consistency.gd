@@ -58,7 +58,7 @@ func test_one_shot_label_has_outline() -> void:
 	# Find the one_shot_label setup region (anchored by 'ONE-SHOT!').
 	var idx: int = src.find("one_shot_label.text = \"ONE-SHOT!\"")
 	assert_gt(idx, -1)
-	var window: String = src.substr(idx, 800)
+	var window: String = src.substr(idx, 1200)
 	assert_true(window.contains("one_shot_label.add_theme_constant_override(\"outline_size\", 2)"),
 		"one_shot_label must have outline_size=2")
 	assert_true(window.contains("one_shot_label.add_theme_color_override(\"font_outline_color\", Color.BLACK)"),
@@ -69,7 +69,7 @@ func test_rank_label_has_outline() -> void:
 	var src := _read(BATTLE_SCENE)
 	var idx: int = src.find("rank_label.text = \"Rank:")
 	assert_gt(idx, -1)
-	var window: String = src.substr(idx, 800)
+	var window: String = src.substr(idx, 1200)
 	assert_true(window.contains("rank_label.add_theme_constant_override(\"outline_size\", 2)"),
 		"rank_label must have outline_size=2")
 	assert_true(window.contains("rank_label.add_theme_color_override(\"font_outline_color\", Color.BLACK)"),
@@ -80,7 +80,7 @@ func test_auto_label_has_outline() -> void:
 	var src := _read(BATTLE_SCENE)
 	var idx: int = src.find("auto_label.text = \"AUTO-BATTLE!\"")
 	assert_gt(idx, -1)
-	var window: String = src.substr(idx, 800)
+	var window: String = src.substr(idx, 1200)
 	assert_true(window.contains("auto_label.add_theme_constant_override(\"outline_size\", 2)"),
 		"auto_label must have outline_size=2")
 
@@ -89,7 +89,7 @@ func test_turns_label_has_outline() -> void:
 	var src := _read(BATTLE_SCENE)
 	var idx: int = src.find("turns_label.text = \"%d turns automated\"")
 	assert_gt(idx, -1)
-	var window: String = src.substr(idx, 800)
+	var window: String = src.substr(idx, 1200)
 	assert_true(window.contains("turns_label.add_theme_constant_override(\"outline_size\", 2)"),
 		"turns_label must have outline_size=2")
 

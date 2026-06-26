@@ -199,7 +199,7 @@ func show_victory_results() -> void:
 	var header = Label.new()
 	header.text = "VICTORY"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 24)
+	header.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	header.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(header)
@@ -226,7 +226,7 @@ func show_victory_results() -> void:
 		var name_label = Label.new()
 		name_label.text = cr["name"]
 		name_label.custom_minimum_size.x = 90
-		name_label.add_theme_font_size_override("font_size", 15)
+		name_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		var name_color = Color(0.5, 0.5, 0.5) if not cr["is_alive"] else Color(1.0, 1.0, 1.0)
 		name_label.add_theme_color_override("font_color", name_color)
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -239,14 +239,14 @@ func show_victory_results() -> void:
 		else:
 			exp_label.text = "KO"
 		exp_label.custom_minimum_size.x = 90
-		exp_label.add_theme_font_size_override("font_size", 15)
+		exp_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		exp_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5) if cr["is_alive"] else Color(0.8, 0.3, 0.3))
 		exp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(exp_label)
 
 		var job_label = Label.new()
 		job_label.text = "%s Lv.%d" % [cr["job_name"], cr["job_level"]]
-		job_label.add_theme_font_size_override("font_size", 13)
+		job_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		job_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.9))
 		job_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(job_label)
@@ -277,7 +277,7 @@ func show_victory_results() -> void:
 
 			# EXP fraction label (right-aligned after bar)
 			var exp_frac = Label.new()
-			exp_frac.add_theme_font_size_override("font_size", 10)
+			exp_frac.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			exp_frac.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
 			exp_frac.position = Vector2(314, -2)
 			exp_frac.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -340,7 +340,7 @@ func show_victory_results() -> void:
 		if cr.get("leveled_up", false):
 			var lvl_label = Label.new()
 			lvl_label.text = "    LEVEL UP!"
-			lvl_label.add_theme_font_size_override("font_size", 14)
+			lvl_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 			lvl_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
 			lvl_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			lvl_label.modulate.a = 0.0
@@ -366,7 +366,7 @@ func show_victory_results() -> void:
 		var gold_label = Label.new()
 		gold_label.text = "0 G"
 		gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		gold_label.add_theme_font_size_override("font_size", 18)
+		gold_label.add_theme_font_size_override("font_size", TextScale.scaled(18))
 		gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 		gold_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		vbox.add_child(gold_label)
@@ -395,7 +395,7 @@ func show_victory_results() -> void:
 			var item_label = Label.new()
 			var qty_text = " x%d" % drop["qty"] if drop["qty"] > 1 else ""
 			item_label.text = "  + %s%s" % [drop["name"], qty_text]
-			item_label.add_theme_font_size_override("font_size", 13)
+			item_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 			item_label.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
 			item_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			item_label.modulate.a = 0.0
@@ -422,7 +422,7 @@ func show_victory_results() -> void:
 			inj_label.text = "  ⚠ %s: %s (-%d %s)" % [
 				inj["name"], injury_data.get("description", "Injury"),
 				injury_data.get("penalty", 0), injury_data.get("stat", "").capitalize()]
-			inj_label.add_theme_font_size_override("font_size", 12)
+			inj_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			inj_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 			inj_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			inj_label.modulate.a = 0.0
@@ -440,7 +440,7 @@ func show_victory_results() -> void:
 
 		for bonus in bonuses:
 			var bonus_row = Label.new()
-			bonus_row.add_theme_font_size_override("font_size", 14)
+			bonus_row.add_theme_font_size_override("font_size", TextScale.scaled(14))
 			bonus_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 			if bonus["type"] == "one_shot":
@@ -456,7 +456,7 @@ func show_victory_results() -> void:
 	var prompt = Label.new()
 	prompt.text = "Press ENTER to continue"
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt.add_theme_font_size_override("font_size", 12)
+	prompt.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	prompt.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(prompt)
