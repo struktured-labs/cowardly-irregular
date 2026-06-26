@@ -2046,6 +2046,16 @@ func _execute_group_action(action: Dictionary) -> void:
 func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant], group_type: String, ap_cost: int) -> void:
 	"""Execute All-Out Attack or Limit Break — physical combined damage"""
 	var is_limit_break: bool = group_type == "limit_break"
+	## Tick 175: announce the group attack name at the top. Pre-fix
+	## physical group attacks went straight to per-enemy hit lines
+	## ("Group all_out_attack hits X for N!") with no opener — the
+	## combo magic path DOES announce ("★ Steam Burst! ★") so this
+	## closes the parity gap. Limit Break is the more dramatic
+	## variant; gold + ★★★ markers signal the 4-AP commitment.
+	if is_limit_break:
+		battle_log_message.emit("[color=gold]★★★ LIMIT BREAK! ★★★[/color]")
+	else:
+		battle_log_message.emit("[color=orange]All-Out Attack![/color] (%d participants)" % participants.size())
 	var total_power: float = 0.0
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
@@ -2149,6 +2159,14 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 
 func _execute_formation_special(participants: Array, alive_enemies: Array[Combatant], formation_id: String) -> void:
 	"""Execute a Formation Special — unique effect based on party job composition"""
+	## Tick 175: announce the formation name at function entry.
+	## Pre-fix six formation specials all started straight into
+	## their effect with no opener announcing which formation
+	## fired. Player saw mechanical effects but no signal that a
+	## FORMATION SPECIAL (vs ordinary group attack) had just
+	## triggered. Reuses the existing prettifier convention.
+	var formation_display: String = formation_id.replace("_", " ").capitalize()
+	battle_log_message.emit("[color=gold]✦ FORMATION SPECIAL: %s ✦[/color]" % formation_display)
 	# Spend AP (2 per participant for most formations, 3 for arcane_tempest/chaos_theory)
 	var ap_cost = 3 if formation_id in ["arcane_tempest", "chaos_theory"] else 2
 	for p in participants:
