@@ -42,6 +42,11 @@ const SELECTED_COLOR = Color(0.2, 0.25, 0.4)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const EMPTY_COLOR = Color(0.5, 0.5, 0.5)
+# Tick 198: HP-bar 3-tier band + KO visual.
+const HP_HIGH_COLOR := Color(0.35, 0.90, 0.35)    # green: >= 60%
+const HP_MID_COLOR := Color(0.95, 0.85, 0.30)     # yellow: 30..60%
+const HP_LOW_COLOR := Color(0.90, 0.30, 0.30)     # red: < 30%
+const KO_NAME_COLOR := Color(0.85, 0.35, 0.35)    # dim red for dead party members
 
 
 func _ready() -> void:
@@ -268,6 +273,15 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		panel.add_child(no_party)
 
 
+# Tick 198: 3-tier HP band — green ≥ 60%, yellow ≥ 30%, red below. At 0 HP the bar size is 0 so the color is cosmetic; still returns red for consistency.
+static func _hp_fill_color(hp_pct: float) -> Color:
+	if hp_pct >= 0.6:
+		return HP_HIGH_COLOR
+	if hp_pct >= 0.3:
+		return HP_MID_COLOR
+	return HP_LOW_COLOR
+
+
 # Tick 197: ISO-8601 'YYYY-MM-DDTHH:MM:SS' → 'MM/DD HH:MM'. Single fallback path replaces the prior inner-if/else with a silent fall-through hole.
 static func _format_save_date(save_date: String) -> String:
 	if save_date == "":
@@ -314,6 +328,10 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	var hp = member.get("hp", 0)
 	var max_hp = member.get("max_hp", 1)
 	var hp_pct = float(hp) / float(max_hp) if max_hp > 0 else 0.0
+	# Tick 198: 3-tier color band (green/yellow/red) replaces binary green/red — smoother visual progression. KO state surfaces a name-color + bar-text swap so dead members read at a glance instead of just "0/N" small text.
+	var ko: bool = hp <= 0
+	if ko:
+		name_label.add_theme_color_override("font_color", KO_NAME_COLOR)
 
 	var hp_bg = ColorRect.new()
 	hp_bg.color = Color(0.1, 0.1, 0.1)
@@ -322,16 +340,16 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	container.add_child(hp_bg)
 
 	var hp_fill = ColorRect.new()
-	hp_fill.color = Color.LIME if hp_pct > 0.3 else Color.RED
+	hp_fill.color = _hp_fill_color(hp_pct)
 	hp_fill.position = Vector2(36, 30)
 	hp_fill.size = Vector2(80 * hp_pct, 8)
 	container.add_child(hp_fill)
 
 	var hp_text = Label.new()
-	hp_text.text = "%d/%d" % [hp, max_hp]
+	hp_text.text = "— KO —" if ko else "%d/%d" % [hp, max_hp]
 	hp_text.position = Vector2(36, 40)
 	hp_text.add_theme_font_size_override("font_size", 9)
-	hp_text.add_theme_color_override("font_color", DISABLED_COLOR)
+	hp_text.add_theme_color_override("font_color", KO_NAME_COLOR if ko else DISABLED_COLOR)
 	container.add_child(hp_text)
 
 	return container
