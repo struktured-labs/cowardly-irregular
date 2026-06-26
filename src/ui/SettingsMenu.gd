@@ -45,6 +45,8 @@ var text_speed_index: int = 1
 # Tick 222: text size scale (accessibility). Defaults to 100% (index 1).
 var text_size_scale: float = 1.0
 var text_size_index: int = 1
+# Tick 226: color-blind friendly palette for damage popups.
+var color_blind_mode: bool = false
 var screen_shake_enabled: bool = true
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
 var boss_llm_strategy_enabled: bool = false  # Phase 1 boss-AI strategic-intent toggle (opt-in)
@@ -120,6 +122,9 @@ func _ready() -> void:
 			text_size_index = TEXT_SIZE_PRESETS.find(text_size_scale)
 			if text_size_index < 0:
 				text_size_index = 1
+		# Tick 226: color-blind friendly damage colors (accessibility).
+		if "color_blind_mode" in GameState:
+			color_blind_mode = bool(GameState.color_blind_mode)
 		if "screen_shake_enabled" in GameState:
 			screen_shake_enabled = GameState.screen_shake_enabled
 		if "llm_enabled" in GameState:
@@ -363,6 +368,19 @@ func _build_ui() -> void:
 	_settings_items.append({"control": text_size_item, "type": "text_size", "id": "text_size"})
 	MenuMouseHelper.make_clickable(text_size_item, text_size_idx, 400, 60,
 		_on_setting_click.bind(text_size_idx), _on_setting_hover.bind(text_size_idx))
+
+	# Tick 226: color-blind friendly palette toggle (accessibility). Swaps damage popup colors to deuteranopia-safe alternatives (cyan heal, yellow crit).
+	var cb_idx: int = _settings_items.size()
+	var cb_item = _create_toggle_setting(
+		"Color-blind Friendly",
+		"Cyan/yellow damage popups (vs green/orange)",
+		color_blind_mode,
+		cb_idx
+	)
+	vbox.add_child(cb_item)
+	_settings_items.append({"control": cb_item, "type": "toggle", "id": "color_blind_mode"})
+	MenuMouseHelper.make_clickable(cb_item, cb_idx, 400, 60,
+		_on_setting_click.bind(cb_idx), _on_setting_hover.bind(cb_idx))
 
 	# Wave C: Dynamic Dialogue (experimental) — gates the LLMService master
 	# enable flag. Default ON on desktop, OFF on web (no HTTP backend reachable
@@ -1009,6 +1027,13 @@ func _adjust_setting(delta: int) -> void:
 		_save_screen_shake_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "color_blind_mode":
+		# Tick 226: accessibility palette toggle.
+		color_blind_mode = not color_blind_mode
+		_update_toggle_display(selected_index, color_blind_mode)
+		_save_color_blind_mode_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "llm_enabled":
 		llm_enabled = not llm_enabled
 		_update_toggle_display(selected_index, llm_enabled)
@@ -1289,6 +1314,16 @@ func _save_text_size_scale() -> void:
 		GameState.text_size_scale = text_size_scale
 	settings_changed.emit("text_size_scale", text_size_scale)
 	print("[SETTINGS] Text size scale set to %s%%" % int(text_size_scale * 100))
+	_persist_settings()
+
+
+# Tick 226: color-blind friendly palette toggle. DamageNumber reads GameState.color_blind_mode live each spawn.
+func _save_color_blind_mode_setting() -> void:
+	"""Save color blind mode setting"""
+	if GameState:
+		GameState.color_blind_mode = color_blind_mode
+	settings_changed.emit("color_blind_mode", color_blind_mode)
+	print("[SETTINGS] Color-blind friendly mode: %s" % ("ON" if color_blind_mode else "OFF"))
 	_persist_settings()
 
 

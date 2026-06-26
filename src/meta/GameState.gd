@@ -44,6 +44,8 @@ var default_battle_speed: float = 1.0  # Default speed index value
 var text_speed: String = "normal"  # slow | normal | fast | instant
 # Tick 222: accessibility text-size multiplier. Consumers (CutsceneDialogue etc.) multiply base font sizes by this. 1.0 = default, 0.8 = compact, 1.25/1.5/2.0 = larger for readability.
 var text_size_scale: float = 1.0  # 0.8 | 1.0 | 1.25 | 1.5 | 2.0
+# Tick 226: color-blind friendly palette. When true, DamageNumber swaps lime green → cyan (heal) and orange → bright yellow (crit) — both safer for deuteranopia/protanopia (red-green color blindness, ~5% of males).
+var color_blind_mode: bool = false
 var screen_shake_enabled: bool = true  # Master gate for camera/screen shake effects
 ## Wave C: dynamic-dialogue master switch persisted to user settings. Off by
 ## default on web (no HTTP backend reachable from WASM); on by default on

@@ -62,11 +62,11 @@ func _create_label() -> void:
 		if is_critical:
 			base_size += 6
 
-		# Color: green for heal, orange for crit, white for normal
+		# Tick 226: color-blind friendly palette swaps green→cyan (heal) and orange→yellow (crit). Both are distinguishable for deuteranopia/protanopia (red-green color blindness, ~5% of males).
 		if is_heal:
-			color = Color.LIME_GREEN
+			color = _heal_color()
 		elif is_critical:
-			color = Color.ORANGE
+			color = _crit_color()
 		else:
 			color = Color.WHITE
 
@@ -97,6 +97,30 @@ func _create_label() -> void:
 		_high_damage_pulse_effect()
 
 
+# Tick 226: heal popup color, color-blind aware. Cyan/sky-blue when accessibility mode is on (distinguishable from red for deuteranopia/protanopia); LIME_GREEN by default for the classic JRPG look.
+func _heal_color() -> Color:
+	if _is_color_blind_mode_on():
+		return Color(0.30, 0.70, 1.00)  # Cyan/sky blue
+	return Color.LIME_GREEN
+
+
+# Tick 226: crit popup color, color-blind aware. Bright yellow when accessibility mode is on (distinguishable from cyan-heal); ORANGE by default.
+func _crit_color() -> Color:
+	if _is_color_blind_mode_on():
+		return Color(1.00, 0.95, 0.40)  # Bright yellow
+	return Color.ORANGE
+
+
+# Tick 226: check the accessibility setting via scene-tree-root autoload lookup (Engine.has_singleton lint).
+func _is_color_blind_mode_on() -> bool:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree and tree.root:
+		var gs = tree.root.get_node_or_null("GameState")
+		if gs and "color_blind_mode" in gs:
+			return bool(gs.color_blind_mode)
+	return false
+
+
 func _flash_effect() -> void:
 	"""Flash the number for emphasis"""
 	if _flash_tween and _flash_tween.is_valid():
@@ -118,9 +142,9 @@ func _crit_wobble_effect() -> void:
 	_polish_tween.tween_property(_label, "rotation", deg_to_rad(8.0), 0.08)
 	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-8.0), 0.08)
 	_polish_tween.tween_property(_label, "rotation", 0.0, 0.10)
-	# Color cycle: orange -> yellow-white -> orange for extra punch
+	# Tick 226: crit cycle returns to crit color (ORANGE default, yellow in color-blind mode) for consistency with the initial setup color.
 	_polish_tween.parallel().tween_property(_label, "theme_override_colors/font_color", Color(1.0, 1.0, 0.7), 0.08)
-	_polish_tween.tween_property(_label, "theme_override_colors/font_color", Color.ORANGE, 0.15)
+	_polish_tween.tween_property(_label, "theme_override_colors/font_color", _crit_color(), 0.15)
 
 
 func _heal_bounce_effect() -> void:

@@ -703,6 +703,9 @@ func save_settings() -> void:
 		# Tick 222: accessibility text scale.
 		if "text_size_scale" in GameState:
 			settings["text_size_scale"] = GameState.text_size_scale
+		# Tick 226: color-blind palette.
+		if "color_blind_mode" in GameState:
+			settings["color_blind_mode"] = GameState.color_blind_mode
 		settings["encounter_rate_multiplier"] = GameState.encounter_rate_multiplier
 		settings["screen_shake_enabled"] = GameState.screen_shake_enabled
 		settings["default_battle_speed"] = GameState.default_battle_speed
@@ -792,6 +795,9 @@ func load_settings() -> void:
 		if settings.has("text_size_scale"):
 			# Tick 222: clamp to the valid preset range [0.8, 2.0] — defends against legacy/corrupt saves.
 			GameState.text_size_scale = clampf(float(settings["text_size_scale"]), 0.8, 2.0)
+		if settings.has("color_blind_mode"):
+			# Tick 226: bool flag, no clamping needed but coerce to bool defensively.
+			GameState.color_blind_mode = bool(settings["color_blind_mode"])
 		if settings.has("encounter_rate_multiplier"):
 			# UI exposes 0.0 (off) to 2.0 (double rate); clamp accordingly.
 			GameState.encounter_rate_multiplier = clampf(float(settings["encounter_rate_multiplier"]), 0.0, 2.0)
