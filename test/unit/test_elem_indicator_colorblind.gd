@@ -43,36 +43,29 @@ func test_elem_weak_color_helper_present() -> void:
 
 
 func test_elem_weak_color_defaults_to_red() -> void:
-	var src := _read(BATTLE_SCENE)
-	var fn_idx: int = src.find("func _elem_weak_color")
-	assert_gt(fn_idx, -1)
-	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
-	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("return Color(1.0, 0.3, 0.3)"),
-		"default WEAK color preserved as red Color(1.0, 0.3, 0.3)")
+	# Tick 228: color literal lives in AccessibilityPalette now;
+	# BattleScene._elem_weak_color delegates.
+	var palette: String = FileAccess.get_file_as_string("res://src/ui/AccessibilityPalette.gd")
+	assert_true(palette.contains("return Color(1.0, 0.3, 0.3)"),
+		"default WEAK color preserved as red Color(1.0, 0.3, 0.3) (in AccessibilityPalette)")
 
 
 func test_elem_weak_color_uses_magenta_in_accessibility_mode() -> void:
-	var src := _read(BATTLE_SCENE)
-	var fn_idx: int = src.find("func _elem_weak_color")
-	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
-	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("return Color(1.00, 0.40, 0.80)"),
-		"accessibility WEAK color = magenta Color(1.00, 0.40, 0.80)")
+	# Tick 228: color literal lives in AccessibilityPalette.
+	var palette: String = FileAccess.get_file_as_string("res://src/ui/AccessibilityPalette.gd")
+	assert_true(palette.contains("return Color(1.00, 0.40, 0.80)"),
+		"accessibility WEAK color = magenta Color(1.00, 0.40, 0.80) (in AccessibilityPalette)")
 
 
 func test_elem_weak_helper_reads_gamestate_live() -> void:
-	var src := _read(BATTLE_SCENE)
-	var fn_idx: int = src.find("func _elem_weak_color")
-	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
-	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	# Scene-tree-root lookup pattern (Engine.has_singleton lint enforces).
-	assert_true(body.contains("gs.get_node_or_null") or body.contains("tree.root.get_node_or_null(\"GameState\")"),
-		"helper must use scene-tree-root autoload lookup, not Engine.has_singleton")
-	assert_true(body.contains("\"color_blind_mode\" in gs"),
-		"helper must check for the color_blind_mode property before reading")
-	assert_true(body.contains("bool(gs.color_blind_mode)"),
-		"helper must coerce to bool")
+	# Tick 228: scene-tree-root lookup moved into AccessibilityPalette.is_on.
+	var palette: String = FileAccess.get_file_as_string("res://src/ui/AccessibilityPalette.gd")
+	assert_true(palette.contains("tree.root.get_node_or_null(\"GameState\")"),
+		"AccessibilityPalette must use scene-tree-root autoload lookup (Engine.has_singleton lint)")
+	assert_true(palette.contains("\"color_blind_mode\" in gs"),
+		"AccessibilityPalette must check for the color_blind_mode property before reading")
+	assert_true(palette.contains("bool(gs.color_blind_mode)"),
+		"AccessibilityPalette must coerce to bool")
 
 
 # ── _spawn_elemental_indicator wiring ────────────────────────────────
@@ -130,13 +123,13 @@ func test_resist_blue_preserved() -> void:
 func test_magenta_distinct_from_tick_226_colors() -> void:
 	# Cross-feature consistency check: WEAK magenta (1.0, 0.4, 0.8)
 	# must not collide with heal cyan (0.30, 0.70, 1.00) or crit
-	# yellow (1.00, 0.95, 0.40) from tick 226 — otherwise a player
-	# with multiple popups stacked sees indistinguishable colors.
-	var dn: String = FileAccess.get_file_as_string("res://src/ui/DamageNumber.gd")
-	assert_true(dn.contains("return Color(0.30, 0.70, 1.00)"),
-		"tick 226 heal cyan preserved")
-	assert_true(dn.contains("return Color(1.00, 0.95, 0.40)"),
-		"tick 226 crit yellow preserved")
+	# yellow (1.00, 0.95, 0.40) from tick 226. Post tick 228 all 3
+	# colors live in AccessibilityPalette.
+	var palette: String = FileAccess.get_file_as_string("res://src/ui/AccessibilityPalette.gd")
+	assert_true(palette.contains("return Color(0.30, 0.70, 1.00)"),
+		"tick 226 heal cyan preserved in AccessibilityPalette")
+	assert_true(palette.contains("return Color(1.00, 0.95, 0.40)"),
+		"tick 226 crit yellow preserved in AccessibilityPalette")
 	# Magenta R=1.0 G=0.4 B=0.8 — distinct from both.
 
 

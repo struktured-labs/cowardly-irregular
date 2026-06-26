@@ -3553,14 +3553,9 @@ const ELEM_STAGGER_STEP := 18.0
 const ELEM_STAGGER_RADIUS_SQUARED := 40.0 * 40.0
 
 
-# Tick 227: color-blind-aware WEAK indicator color. Default is the classic red; accessibility mode swaps to magenta (distinguishable from blue RESIST + yellow crit + cyan heal under deuteranopia/protanopia).
+# Tick 227/228: color-blind-aware WEAK indicator color via shared AccessibilityPalette util.
 func _elem_weak_color() -> Color:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree and tree.root:
-		var gs = tree.root.get_node_or_null("GameState")
-		if gs and "color_blind_mode" in gs and bool(gs.color_blind_mode):
-			return Color(1.00, 0.40, 0.80)  # Magenta — accessibility alternative
-	return Color(1.0, 0.3, 0.3)  # Red — classic default
+	return AccessibilityPalette.elem_weak()
 
 
 # Tick 209: count live elemental-indicator labels near pos. Tagged via has_meta("elem_indicator") so we don't match unrelated Labels at BattleScene root.

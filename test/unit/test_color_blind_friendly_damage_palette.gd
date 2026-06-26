@@ -108,25 +108,28 @@ func test_save_system_loads_color_blind_mode() -> void:
 # ── DamageNumber consumer ────────────────────────────────────────────
 
 func test_damage_number_heal_color_helper_present() -> void:
+	# Tick 228: color literals live in AccessibilityPalette now.
+	# DamageNumber._heal_color just delegates.
 	var src := _read(DAMAGE_NUMBER)
 	assert_true(src.contains("func _heal_color() -> Color:"),
 		"_heal_color helper must exist")
-	# Pin both palettes — default + accessibility.
-	assert_true(src.contains("return Color(0.30, 0.70, 1.00)"),
-		"accessibility heal color = cyan/sky-blue (0.30, 0.70, 1.00)")
-	assert_true(src.contains("return Color.LIME_GREEN"),
-		"default heal color preserved as LIME_GREEN")
+	var palette: String = FileAccess.get_file_as_string("res://src/ui/AccessibilityPalette.gd")
+	assert_true(palette.contains("return Color(0.30, 0.70, 1.00)"),
+		"accessibility heal color = cyan/sky-blue (in AccessibilityPalette)")
+	assert_true(palette.contains("return Color.LIME_GREEN"),
+		"default heal color preserved as LIME_GREEN (in AccessibilityPalette)")
 
 
 func test_damage_number_crit_color_helper_present() -> void:
+	# Tick 228: color literals live in AccessibilityPalette now.
 	var src := _read(DAMAGE_NUMBER)
 	assert_true(src.contains("func _crit_color() -> Color:"),
 		"_crit_color helper must exist")
-	# Pin both palettes.
-	assert_true(src.contains("return Color(1.00, 0.95, 0.40)"),
-		"accessibility crit color = bright yellow (1.00, 0.95, 0.40)")
-	assert_true(src.contains("return Color.ORANGE"),
-		"default crit color preserved as ORANGE")
+	var palette: String = FileAccess.get_file_as_string("res://src/ui/AccessibilityPalette.gd")
+	assert_true(palette.contains("return Color(1.00, 0.95, 0.40)"),
+		"accessibility crit color = bright yellow (in AccessibilityPalette)")
+	assert_true(palette.contains("return Color.ORANGE"),
+		"default crit color preserved as ORANGE (in AccessibilityPalette)")
 
 
 func test_damage_number_uses_helper_in_create_label() -> void:

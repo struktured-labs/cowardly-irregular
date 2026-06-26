@@ -97,28 +97,14 @@ func _create_label() -> void:
 		_high_damage_pulse_effect()
 
 
-# Tick 226: heal popup color, color-blind aware. Cyan/sky-blue when accessibility mode is on (distinguishable from red for deuteranopia/protanopia); LIME_GREEN by default for the classic JRPG look.
+# Tick 226/228: heal popup color via shared AccessibilityPalette util.
 func _heal_color() -> Color:
-	if _is_color_blind_mode_on():
-		return Color(0.30, 0.70, 1.00)  # Cyan/sky blue
-	return Color.LIME_GREEN
+	return AccessibilityPalette.heal()
 
 
-# Tick 226: crit popup color, color-blind aware. Bright yellow when accessibility mode is on (distinguishable from cyan-heal); ORANGE by default.
+# Tick 226/228: crit popup color via shared AccessibilityPalette util.
 func _crit_color() -> Color:
-	if _is_color_blind_mode_on():
-		return Color(1.00, 0.95, 0.40)  # Bright yellow
-	return Color.ORANGE
-
-
-# Tick 226: check the accessibility setting via scene-tree-root autoload lookup (Engine.has_singleton lint).
-func _is_color_blind_mode_on() -> bool:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree and tree.root:
-		var gs = tree.root.get_node_or_null("GameState")
-		if gs and "color_blind_mode" in gs:
-			return bool(gs.color_blind_mode)
-	return false
+	return AccessibilityPalette.crit()
 
 
 func _flash_effect() -> void:
