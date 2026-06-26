@@ -1357,6 +1357,9 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		# (Bug 2026-05-20: chapter1_complete was never set, so Elder
 		# Theron's cutscene looped forever and quest log stayed stale.)
 		var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(cutscene_id, "")
+		# Tick 212: surface missing map entries loudly. Pre-fix a new cutscene id added to _get_pending without a matching map entry silently played → loop forever, no signal in the editor logs. Same class of silent failure as the 2026-05-20 Elder Theron bug.
+		if completion_flag == "":
+			push_warning("[GameLoop] _play_story_cutscene: '%s' missing from _CUTSCENE_COMPLETION_FLAGS — flag NOT set, cutscene will replay on next gate check (loop bug)" % cutscene_id)
 		if completion_flag != "" and GameState:
 			GameState.game_constants[completion_flag] = true
 			# Mirror into story_flags under the bare name so QuestLog
