@@ -1679,10 +1679,24 @@ func _restore_party_from_save_data() -> bool:
 			job_id = entry["job"]
 		if job_id == "":
 			job_id = "fighter"
-		JobSystem.assign_job(c, job_id)
+		## Tick 188: handle assign_job failure. Pre-fix the return
+		## value was ignored — if the save's job_id was unknown
+		## (Scriptweaver custom job that's no longer in jobs.json,
+		## save-format drift), JobSystem.assign_job would
+		## push_warning AND return false, leaving the character
+		## with NO job. Subsequent code (assign_secondary, equip
+		## weapon) would silently no-op or crash on attribute
+		## access. Fall back to "fighter" so the character at least
+		## has a valid playable state.
+		if not JobSystem.assign_job(c, job_id):
+			push_warning("[GameLoop] _restore_party_from_save_data: assign_job('%s') failed for %s — falling back to 'fighter'" % [job_id, c.combatant_name])
+			JobSystem.assign_job(c, "fighter")
 		var sec_id = entry.get("secondary_job_id", "")
 		if sec_id != "":
-			JobSystem.assign_secondary_job(c, sec_id)
+			## Don't fall back here — secondary job is optional, a
+			## failed assign just means no secondary (acceptable).
+			if not JobSystem.assign_secondary_job(c, sec_id):
+				push_warning("[GameLoop] _restore_party_from_save_data: assign_secondary_job('%s') failed for %s — leaving secondary unset" % [sec_id, c.combatant_name])
 		# Re-apply equipment via EquipmentSystem so stat modifiers attach
 		# (from_dict only restored the ID strings).
 		var w = entry.get("equipped_weapon", "")
