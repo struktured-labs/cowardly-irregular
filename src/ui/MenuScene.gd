@@ -391,9 +391,14 @@ func _get_equipment_name(item_id: String, slot: String) -> String:
 		"accessory":
 			item = EquipmentSystem.get_accessory(item_id)
 
+	## Tick 184: prettify raw-id fallback via ItemNameResolver
+	## (Item → Job → Equipment → prettifier). Pre-fix returned raw
+	## snake_case ("iron_sword") when EquipmentSystem didn't know
+	## the id (Scriptweaver custom items, save-format drift). Now
+	## consistent with tick 140's EquipmentMenu treatment.
 	if item and item.size() > 0:
-		return item.get("name", item_id)
-	return item_id
+		return item.get("name", ItemNameResolver.resolve(item_id))
+	return ItemNameResolver.resolve(item_id)
 
 
 ## Equipment View
@@ -530,7 +535,9 @@ func _show_equipment_selection(slot: String) -> void:
 			"accessory":
 				item = EquipmentSystem.get_accessory(item_id)
 
-		var item_name = item.get("name", item_id) if item.size() > 0 else item_id
+		## Tick 184: prettify raw-id fallback. Same treatment as
+		## _get_equipment_name above + tick 140's EquipmentMenu.
+		var item_name = item.get("name", ItemNameResolver.resolve(item_id)) if item.size() > 0 else ItemNameResolver.resolve(item_id)
 
 		# Show stat mods
 		var stat_text = ""
@@ -971,7 +978,11 @@ func _show_items_view() -> void:
 	else:
 		for item_id in combined:
 			var item = ItemSystem.get_item(item_id)
-			var item_name = item.get("name", item_id) if item else item_id
+			## Tick 184: prettify raw-id fallback via ItemNameResolver.
+			## Pre-fix MenuScene's items view showed raw snake_case
+			## ("hi_potion") for unknown items. Same treatment as the
+			## equipment paths above.
+			var item_name = item.get("name", ItemNameResolver.resolve(item_id)) if item else ItemNameResolver.resolve(item_id)
 			var quantity = combined[item_id]
 
 			var row = HBoxContainer.new()

@@ -3325,7 +3325,15 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	"""Execute item use (costs 1 AP)"""
 	if not user.has_item(item_id):
+		## Tick 184: surface to battle_log when user doesn't have
+		## the item. Common scenarios: autobattle script targets a
+		## consumable that ran out mid-grind, or save-state drift
+		## where the item was consumed but the script wasn't told.
+		## Pre-fix print() only — character's turn was silently
+		## wasted with no in-game explanation.
 		print("%s doesn't have item: %s" % [user.combatant_name, item_id])
+		var item_display: String = item_id.replace("_", " ").capitalize()
+		battle_log_message.emit("[color=gray]%s has no %s left.[/color]" % [user.combatant_name, item_display])
 		return
 
 	# Check if this is a revival item (e.g. Phoenix Down)
