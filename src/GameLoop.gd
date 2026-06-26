@@ -1679,40 +1679,30 @@ func _restore_party_from_save_data() -> bool:
 			job_id = entry["job"]
 		if job_id == "":
 			job_id = "fighter"
-		## Tick 188: handle assign_job failure. Pre-fix the return
-		## value was ignored — if the save's job_id was unknown
-		## (Scriptweaver custom job that's no longer in jobs.json,
-		## save-format drift), JobSystem.assign_job would
-		## push_warning AND return false, leaving the character
-		## with NO job. Subsequent code (assign_secondary, equip
-		## weapon) would silently no-op or crash on attribute
-		## access. Fall back to "fighter" so the character at least
-		## has a valid playable state.
+		# Tick 188: assign_job failure fell silently before — fall back to fighter so character has a valid job.
 		if not JobSystem.assign_job(c, job_id):
 			push_warning("[GameLoop] _restore_party_from_save_data: assign_job('%s') failed for %s — falling back to 'fighter'" % [job_id, c.combatant_name])
 			JobSystem.assign_job(c, "fighter")
 		var sec_id = entry.get("secondary_job_id", "")
 		if sec_id != "":
-			## Don't fall back here — secondary job is optional, a
-			## failed assign just means no secondary (acceptable).
+			# Secondary is optional — failure leaves it unset, no fallback.
 			if not JobSystem.assign_secondary_job(c, sec_id):
 				push_warning("[GameLoop] _restore_party_from_save_data: assign_secondary_job('%s') failed for %s — leaving secondary unset" % [sec_id, c.combatant_name])
-		# Re-apply equipment via EquipmentSystem so stat modifiers attach
-		# (from_dict only restored the ID strings).
+		# Re-apply equipment so stat mods attach; tick 189 warns on equip failure (unknown id, removed item). Empty is valid — no fallback.
 		var w = entry.get("equipped_weapon", "")
-		if w != "":
-			EquipmentSystem.equip_weapon(c, w)
+		if w != "" and not EquipmentSystem.equip_weapon(c, w):
+			push_warning("[GameLoop] _restore_party_from_save_data: equip_weapon('%s') failed for %s — slot left empty" % [w, c.combatant_name])
 		var a = entry.get("equipped_armor", "")
-		if a != "":
-			EquipmentSystem.equip_armor(c, a)
+		if a != "" and not EquipmentSystem.equip_armor(c, a):
+			push_warning("[GameLoop] _restore_party_from_save_data: equip_armor('%s') failed for %s — slot left empty" % [a, c.combatant_name])
 		var acc = entry.get("equipped_accessory", "")
-		if acc != "":
-			EquipmentSystem.equip_accessory(c, acc)
-		# Equipped passives — re-apply through PassiveSystem so their
-		# runtime hooks attach.
+		if acc != "" and not EquipmentSystem.equip_accessory(c, acc):
+			push_warning("[GameLoop] _restore_party_from_save_data: equip_accessory('%s') failed for %s — slot left empty" % [acc, c.combatant_name])
+		# Re-equip passives so hooks attach; tick 189 warns on failure (passive removed from json, slot count shrunk).
 		for pid in entry.get("equipped_passives", []):
 			if pid is String:
-				PassiveSystem.equip_passive(c, pid)
+				if not PassiveSystem.equip_passive(c, pid):
+					push_warning("[GameLoop] _restore_party_from_save_data: equip_passive('%s') failed for %s — passive skipped" % [pid, c.combatant_name])
 		party.append(c)
 
 	# After equip/passive reapply, restore HP/MP/AP from the saved data
