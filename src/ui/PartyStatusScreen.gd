@@ -394,12 +394,19 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 
 
 func _job_label(member) -> String:
+	# Tick 207: cascade name → prettified id → "(no job)". Pre-fix the bare "Job" fallback looked like a UI label, not a value, so a briefly-unassigned or data-drifted combatant rendered as the literal word "Job" in their card.
 	if "job" in member and member.job != null:
-		if member.job is Dictionary and member.job.has("name"):
-			return str(member.job["name"])
-		if member.job is Object and "name" in member.job:
-			return str(member.job.name)
-	return "Job"
+		if member.job is Dictionary:
+			if member.job.has("name") and str(member.job["name"]) != "":
+				return str(member.job["name"])
+			if member.job.has("id") and str(member.job["id"]) != "":
+				return _format_id(str(member.job["id"]))
+		elif member.job is Object:
+			if "name" in member.job and str(member.job.name) != "":
+				return str(member.job.name)
+			if "id" in member.job and str(member.job.id) != "":
+				return _format_id(str(member.job.id))
+	return "(no job)"
 
 
 func _get_level(member) -> int:
