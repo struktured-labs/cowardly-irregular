@@ -92,8 +92,9 @@ func spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool
 	"""Spawn a floating damage/heal number"""
 	var dmg_num = DamageNumber.new()
 	dmg_num.setup(amount, is_heal, is_crit)
-	# Offset slightly upward from sprite center
-	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
+	# Tick 208: stagger near-duplicate positions so multi-hit attacks don't cluster into one mushy popup pile.
+	var stagger_y: float = _count_recent_popups_near(pos) * STAGGER_STEP
+	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30 - stagger_y)
 	_scene.add_child(dmg_num)
 
 
@@ -101,8 +102,26 @@ func spawn_miss_number(pos: Vector2) -> void:
 	"""Spawn a floating MISS text"""
 	var dmg_num = DamageNumber.new()
 	dmg_num.setup_miss()
-	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
+	# Tick 208: same stagger logic as damage popups — multiple misses on one target (e.g., blind) shouldn't overlap.
+	var stagger_y: float = _count_recent_popups_near(pos) * STAGGER_STEP
+	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30 - stagger_y)
 	_scene.add_child(dmg_num)
+
+
+# Tick 208: 18px per stacked popup — readable separation without flying immediately off-screen.
+const STAGGER_STEP := 18.0
+# Tick 208: any DamageNumber within 40px (~0.6s of float time) of the spawn pos counts as a "fresh overlap" and pushes the new one upward.
+const STAGGER_RADIUS_SQUARED := 40.0 * 40.0
+
+
+# Tick 208: count live DamageNumber children near pos. O(N) but N is tiny (4-8 max typically) and runs once per spawn.
+func _count_recent_popups_near(pos: Vector2) -> int:
+	var count: int = 0
+	for child in _scene.get_children():
+		if child is DamageNumber and is_instance_valid(child):
+			if child.position.distance_squared_to(pos) < STAGGER_RADIUS_SQUARED:
+				count += 1
+	return count
 
 
 func show_victory_results() -> void:
