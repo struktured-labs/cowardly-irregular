@@ -89,9 +89,13 @@ func test_music_loader_distinguishes_parse_vs_type_vs_missing_key() -> void:
 		"music loader must have a DISTINCT root-type warning")
 	assert_true(src.contains("push_warning(\"[MUSIC] music_manifest.json parsed but missing 'tracks' key"),
 		"music loader must have a DISTINCT missing-tracks-key warning")
-	# Pre-existing file-open warning preserved.
-	assert_true(src.contains("push_warning(\"[MUSIC] Cannot open music_manifest.json"),
-		"existing file-open warning preserved")
+	# Tick 276: file-open warning rephrased to "exists but FileAccess.open
+	# failed" to match the canonical 4-stage pattern (sfx + bestiary).
+	# Accept either legacy or post-276 form.
+	var has_legacy: bool = src.contains("push_warning(\"[MUSIC] Cannot open music_manifest.json")
+	var has_276: bool = src.contains("push_warning(\"[MUSIC] music_manifest.json exists but FileAccess.open failed")
+	assert_true(has_legacy or has_276,
+		"file-open warning must be present (either pre-276 'Cannot open' form or post-276 canonical form)")
 
 
 # ── EncounterSystem audit pin ───────────────────────────────────────────

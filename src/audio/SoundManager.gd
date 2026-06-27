@@ -969,9 +969,17 @@ static func _load_music_manifest() -> void:
 	if _manifest_loaded:
 		return
 	# Do NOT set _manifest_loaded until successful — allows retry if PCK isn't ready yet
-	var file = FileAccess.open("res://data/music_manifest.json", FileAccess.READ)
+	# Tick 276: added the file_exists pre-check (was missing — pre-fix
+	# a deleted/moved music_manifest.json conflated with a permission
+	# issue under the single "Cannot open" warning, no path printed).
+	# Aligns with _load_sfx_manifest's 5-stage shape from tick 166.
+	var file_path: String = "res://data/music_manifest.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("[MUSIC] music_manifest.json not found at %s — procedural fallbacks only, will retry next call" % file_path)
+		return
+	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
-		push_warning("[MUSIC] Cannot open music_manifest.json — will retry next call")
+		push_warning("[MUSIC] music_manifest.json exists but FileAccess.open failed at %s — will retry next call" % file_path)
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
 	## Tick 166: split the conflated failure modes. Pre-fix the
