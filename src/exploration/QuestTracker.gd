@@ -13,7 +13,12 @@ var _poll_timer: float = 0.0
 const POLL_INTERVAL: float = 2.0  # Check for flag changes every 2 seconds
 
 ## Objective definitions: flag → objective text (checked in order, first match wins)
-## Later entries override earlier ones (progression order)
+## Later entries override earlier ones (progression order).
+## Tick 281: 5 dead flag references replaced with their real forms
+## (same bug class as ticks 271/278/280). _update_objective does
+## dual-namespace lookup (story_flags OR cutscene_flag_X game_constants)
+## so bare forms like `world1_mordaine_defeated` resolve via the
+## cutscene_flag_ prefix path.
 const OBJECTIVES: Array = [
 	# W1 Medieval progression
 	{"flag": "", "text": "Explore Harmonia Village to the west"},
@@ -22,19 +27,21 @@ const OBJECTIVES: Array = [
 	{"flag": "chapter2_complete", "text": "Descend deeper into the Whispering Cave"},
 	{"flag": "chapter3_complete", "text": "Defeat the Cave Rat King"},
 	{"flag": "rat_king_defeated", "text": "Find the portal to the next world (south)"},
-	{"flag": "w1_boss_defeated", "text": "Enter the portal to the Mundane Sprawl"},
+	# Tick 281: w1_boss_defeated had no writers — Mordaine's real flag.
+	{"flag": "world1_mordaine_defeated", "text": "Enter the portal to the Mundane Sprawl"},
 	# W2 Suburban
 	{"flag": "w2_entered", "text": "Explore the Mundane Sprawl"},
-	{"flag": "w2_dungeon_cleared", "text": "Find the portal to the Clockwork Dominion"},
+	# Tick 281: w2_dungeon_cleared had no writers — world2_complete is the real clear flag.
+	{"flag": "world2_complete", "text": "Find the portal to the Clockwork Dominion"},
 	# W3 Steampunk
 	{"flag": "w3_entered", "text": "Explore the Clockwork Dominion"},
-	{"flag": "w3_dungeon_cleared", "text": "Find the portal to the Assembly Line"},
+	{"flag": "world3_complete", "text": "Find the portal to the Assembly Line"},
 	# W4 Industrial
 	{"flag": "w4_entered", "text": "Explore the Assembly Line"},
-	{"flag": "w4_dungeon_cleared", "text": "Find the portal to the Source Layer"},
+	{"flag": "world4_complete", "text": "Find the portal to the Source Layer"},
 	# W5 Digital
 	{"flag": "w5_entered", "text": "Explore the Source Layer"},
-	{"flag": "w5_dungeon_cleared", "text": "Find the portal to the Remainder"},
+	{"flag": "world5_complete", "text": "Find the portal to the Remainder"},
 	# W6 Abstract
 	{"flag": "w6_entered", "text": "Reach the Vertex"},
 ]
