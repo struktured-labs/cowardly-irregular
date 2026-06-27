@@ -38,6 +38,19 @@ func after_each() -> void:
 	_dc  = null
 
 
+# Tick 261: real reachability check. The original gates used
+# Engine.has_singleton("LLMService") which is ALWAYS false for Godot
+# 4 autoloads (cowir-ai sharpening 2 in msg 1884) — those gates never
+# actually skipped. Tests passed anyway because LLMService.complete
+# falls over to the fallback string when no backend is ready, but the
+# skip-when-Ollama-running INTENT wasn't enforceable. This helper
+# probes the actual autoload + backend readiness so the gates work as
+# documented.
+func _llm_actually_reachable() -> bool:
+	var svc: Node = get_tree().root.get_node_or_null("LLMService") if get_tree() else null
+	return svc != null and svc.has_method("is_available") and svc.is_available()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ── 1. DynamicConversation multi-turn loop (no LLM / no UI) ──────────────────
 # ══════════════════════════════════════════════════════════════════════════════
@@ -100,7 +113,7 @@ func test_dc_abort_while_active_sets_done() -> void:
 
 ## _fetch_npc_opening() — without LLM, returns first fallback line.
 func test_dc_fetch_opening_uses_first_fallback() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping fallback-path test")
 		return
 	_dc.setup("Guard", "stoic guard", "Gate", null, ["Halt! Who goes there?"])
@@ -112,7 +125,7 @@ func test_dc_fetch_opening_uses_first_fallback() -> void:
 
 ## _fetch_npc_opening() cycles through fallback lines using exchange_count.
 func test_dc_fetch_opening_cycles_fallbacks() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping fallback-path test")
 		return
 	var fallbacks: Array = ["Hello.", "Goodbye.", "Perhaps later."]
@@ -126,7 +139,7 @@ func test_dc_fetch_opening_cycles_fallbacks() -> void:
 
 ## _fetch_npc_opening() returns '...' when fallback_lines is empty.
 func test_dc_fetch_opening_empty_fallbacks_is_ellipsis() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping fallback-path test")
 		return
 	_dc.setup("Ghost", "silent spirit", "Graveyard", null, [])
@@ -136,7 +149,7 @@ func test_dc_fetch_opening_empty_fallbacks_is_ellipsis() -> void:
 
 ## _fetch_player_choices() — without LLM, returns DialoguePrompts fallback.
 func test_dc_fetch_player_choices_fallback_non_empty() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping fallback-path test")
 		return
 	_dc.setup("Sage", "mystical sage", "Library", null, ["Indeed."])
@@ -149,7 +162,7 @@ func test_dc_fetch_player_choices_fallback_non_empty() -> void:
 
 ## _fetch_player_choices() entries are all non-empty Strings.
 func test_dc_fetch_player_choices_all_strings() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping fallback-path test")
 		return
 	_dc.setup("Sage", "mystical sage", "Library", null, ["Indeed."])
@@ -165,7 +178,7 @@ func test_dc_full_fallback_state_sequence() -> void:
 	_dc.setup("Innkeeper", "friendly innkeeper", "Tavern", _log, ["Welcome!", "Come again!", "Safe travels."])
 
 	# Verify OPENING handler returns a non-empty fallback line.
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping full fallback loop test")
 		return
 
@@ -259,7 +272,7 @@ func test_dc_has_required_signals() -> void:
 
 ## EventLog injected via setup() is read during _fetch_npc_opening().
 func test_dc_uses_event_log_recent_during_fetch() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping EventLog integration test")
 		return
 	# Populate the event log with a fact.
@@ -277,7 +290,7 @@ func test_dc_uses_event_log_recent_during_fetch() -> void:
 
 ## EventLog with null injected via setup() does not crash during fetch.
 func test_dc_null_event_log_no_crash_during_fetch() -> void:
-	if Engine.has_singleton("LLMService"):
+	if _llm_actually_reachable():
 		pending("LLMService present — skipping null EventLog test")
 		return
 	_dc.setup("Ghost", "silent spirit", "Ruin", null, ["..."])

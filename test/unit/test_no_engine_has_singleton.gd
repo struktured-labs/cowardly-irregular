@@ -52,10 +52,10 @@ const ALLOWED_OCCURRENCES: Dictionary = {
 		{"needle": "Engine.has_singleton(\"LLMService\")",
 		 "reason": "Legacy gate; LLMService autoload exists post-Wave-A but is_available() returns false without a backend, so fallback assertions still hold."},
 	],
-	"test_llm_integration.gd": [
-		{"needle": "Engine.has_singleton(\"LLMService\")",
-		 "reason": "Legacy gate; identical to test_dynamic_conversation rationale."},
-	],
+	# Tick 261: test_llm_integration.gd no longer needs the allowlist
+	# entry — all 8 dead gates were replaced with the
+	# _llm_actually_reachable() helper (proper autoload + is_available
+	# probe). cowir-ai sharpening 2 in msg 1884.
 }
 
 const VIOLATION_NEEDLE: String = "Engine.has_singleton("
