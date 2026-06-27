@@ -399,7 +399,15 @@ func _refresh_detail() -> void:
 		_detail_resist.text = "Resist: %s" % (", ".join(entry.resistances) if not entry.resistances.is_empty() else "—")
 		var exp_r: int = int(entry.get("exp_reward", 0))
 		var gold_r: int = int(entry.get("gold_reward", 0))
-		_detail_rewards.text = "EXP: %d   Gold: %d G" % [exp_r, gold_r]
+		# Tick 262: per-monster kill counter — autobattle-planning hint
+		# ("how many bones have I farmed off this slime?"). Only shown
+		# in the defeated branch since the count is by definition 0 for
+		# seen-but-not-killed. Reads "Killed: X" appended to rewards.
+		var defeat_count: int = int(entry.get("defeat_count", 0))
+		var rewards_text: String = "EXP: %d   Gold: %d G" % [exp_r, gold_r]
+		if defeat_count > 0:
+			rewards_text += "   Killed: %d" % defeat_count
+		_detail_rewards.text = rewards_text
 		_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
 	else:
 		_detail_stats.text = "HP ???   MP ???   ATK ???   DEF ???   MAG ???   SPD ???"

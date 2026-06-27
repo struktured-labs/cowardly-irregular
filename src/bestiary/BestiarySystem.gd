@@ -182,6 +182,9 @@ static func mark_defeated(monster_id: String, location_id: String = "") -> void:
 	# warns for unknown ids — no need to double-warn here.
 	# Tick 260: forward location_id through the seen-invariant
 	# auto-mark so kill site updates the "last seen here" hint too.
+	# Tick 262: increment per-monster kill counter for the bestiary
+	# UI ("you've killed X slimes") — autobattle-planning hint that
+	# complements the boolean defeated flag.
 	if monster_id == "":
 		push_warning("[BestiarySystem] mark_defeated called with empty monster_id — skipped")
 		return
@@ -191,11 +194,24 @@ static func mark_defeated(monster_id: String, location_id: String = "") -> void:
 	if not GameState.game_constants.has("defeated_monsters"):
 		GameState.game_constants["defeated_monsters"] = {}
 	GameState.game_constants["defeated_monsters"][monster_id] = true
+	if not GameState.game_constants.has("defeated_counts"):
+		GameState.game_constants["defeated_counts"] = {}
+	var counts: Dictionary = GameState.game_constants["defeated_counts"]
+	counts[monster_id] = int(counts.get(monster_id, 0)) + 1
 
 
 static func get_defeated_ids() -> Array:
 	var defeated: Dictionary = GameState.game_constants.get("defeated_monsters", {})
 	return defeated.keys()
+
+
+# Tick 262: per-monster kill count for the bestiary UI. Returns 0 for
+# never-killed or legacy saves predating the defeated_counts dict
+# (mark_defeated initializes the dict lazily). Caller should gate UI
+# rendering on > 0 since "Killed: 0" reads worse than absence.
+static func get_defeat_count(monster_id: String) -> int:
+	var counts: Dictionary = GameState.game_constants.get("defeated_counts", {})
+	return int(counts.get(monster_id, 0))
 
 
 static func defeat_counts() -> Vector2i:
@@ -264,6 +280,8 @@ static func get_seen_entries_sorted() -> Array:
 			"pools": get_pools_for_monster(id),
 			# Tick 260: last-known encounter location ("" if not recorded).
 			"last_location": get_last_seen_location(id),
+			# Tick 262: how many times the player has killed this enemy.
+			"defeat_count": get_defeat_count(id),
 		})
 	out.sort_custom(func(a, b):
 		if a.level != b.level:
