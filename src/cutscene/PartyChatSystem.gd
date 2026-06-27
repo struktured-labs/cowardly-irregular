@@ -255,7 +255,13 @@ func is_available(id: String) -> bool:
 
 
 func mark_viewed(id: String) -> void:
+	# Tick 246: surface silent-skip when caller passes an unregistered id
+	# (typo, dropped registry entry, stale cutscene reference). Silent
+	# skip was protective but masked the bug class where a UI menu
+	# fires mark_viewed and the chat stays "available" forever because
+	# the write was a no-op.
 	if not REGISTRY.has(id):
+		push_warning("[PartyChatSystem] mark_viewed('%s') — id not in REGISTRY (typo? dropped entry?). Skipped — chat will remain in 'available' state if it was unlocked." % id)
 		return
 	_flags()["party_chat_viewed_" + id] = true
 	chats_changed.emit()
