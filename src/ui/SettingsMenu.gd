@@ -502,7 +502,8 @@ func _build_ui() -> void:
 			_on_setting_click.bind(idx), _on_setting_hover.bind(idx))
 
 	# Controls (always shown)
-	add_action.call("Controls", "Remap gamepad buttons", "controls")
+	# Tick 234: dynamic subtitle shows current ui_accept / ui_cancel / ui_menu key binds at a glance — players don't have to open the submenu just to remember which key opens the menu.
+	add_action.call("Controls", _get_controls_subtitle(), "controls")
 	# tick 49: Review Pending Rebalances — shown only when there's
 	# something waiting. Subtitle includes the live count so the
 	# player can see at a glance how many proposals need attention.
@@ -1315,6 +1316,18 @@ func _save_text_size_scale() -> void:
 	settings_changed.emit("text_size_scale", text_size_scale)
 	print("[SETTINGS] Text size scale set to %s%%" % int(text_size_scale * 100))
 	_persist_settings()
+
+
+# Tick 234: build a live "A:Z  B:X  Menu:Esc" subtitle for the Controls action button. Falls back to the static text when InputProfileManager isn't reachable (test bootstrap, very early init).
+func _get_controls_subtitle() -> String:
+	var ipm: Node = get_node_or_null("/root/InputProfileManager")
+	if not ipm or not ipm.has_method("get_action_key_label"):
+		return "Remap gamepad buttons"
+	var a: String = str(ipm.get_action_key_label("ui_accept"))
+	var b: String = str(ipm.get_action_key_label("ui_cancel"))
+	var m: String = str(ipm.get_action_key_label("ui_menu"))
+	# Compact "A:Z  B:X  Menu:Esc" — preserves the cross-input intent of the original subtitle but surfaces the live binds.
+	return "A:%s  B:%s  Menu:%s" % [a, b, m]
 
 
 # Tick 226: color-blind friendly palette toggle. DamageNumber reads GameState.color_blind_mode live each spawn.
