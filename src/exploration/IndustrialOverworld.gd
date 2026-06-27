@@ -239,7 +239,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
 			"hints": [
 				{"flag": "w4_entered", "text": "Rivet Row is east — the worker housing. The Director watches everything."},
-				{"flag": "w4_boss_defeated", "text": "The Assembly Line stopped. There's a rift where the furnace was... glowing blue."},
+				{"flag": "warden_industrial_defeated", "text": "The Assembly Line stopped. There's a rift where the furnace was... glowing blue."},
 			],
 		},
 		{
@@ -249,7 +249,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(35, 25), Vector2(40, 25), Vector2(40, 30), Vector2(35, 30)],
 			"hints": [
 				{"flag": "w4_entered", "text": "The factory floor runs north to south. Watch for chemical barrels."},
-				{"flag": "w4_boss_defeated", "text": "Past the rift... it's all data. Numbers. Like the world forgot how to be real."},
+				{"flag": "warden_industrial_defeated", "text": "Past the rift... it's all data. Numbers. Like the world forgot how to be real."},
 			],
 		},
 	]

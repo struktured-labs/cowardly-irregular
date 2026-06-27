@@ -277,10 +277,21 @@ func _get_current_dialogue() -> String:
 		return dialogue
 	var best = dialogue
 	for hint in dialogue_hints:
-		var flag = hint.get("flag", "")
-		if flag == "" or GameState.get_story_flag(flag):
+		var flag: String = hint.get("flag", "")
+		# Tick 280: dual-namespace check (matches QuestLog._is_quest_flag_set).
+		# Pre-fix only get_story_flag fired — every bare-name flag that
+		# actually lives in game_constants ("chapter1_complete" →
+		# "cutscene_flag_chapter1_complete") silently never matched, so
+		# wanderer hints stayed on the default text forever.
+		if flag == "" or _flag_set(flag):
 			best = hint.get("text", dialogue)
 	return best
+
+
+func _flag_set(flag: String) -> bool:
+	return GameState.get_story_flag(flag) \
+		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
+		or GameState.game_constants.get(flag, false)
 
 
 func _on_body_entered(body: Node2D) -> void:

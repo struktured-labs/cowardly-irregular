@@ -274,7 +274,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)],
 			"hints": [
 				{"flag": "w2_entered", "text": "Maple Heights is up north — nice neighborhood if you like picket fences."},
-				{"flag": "w2_boss_defeated", "text": "Something weird opened up south of the park. Like a... gear-shaped hole?"},
+				{"flag": "warden_suburban_defeated", "text": "Something weird opened up south of the park. Like a... gear-shaped hole?"},
 			],
 		},
 		{
@@ -284,7 +284,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(30, 10), Vector2(35, 10), Vector2(35, 15), Vector2(30, 15)],
 			"hints": [
 				{"flag": "w2_entered", "text": "The strip mall south of the main road has everything. Well, five stores."},
-				{"flag": "w2_boss_defeated", "text": "Past the portal it smells like copper and oil. Not my kind of neighborhood."},
+				{"flag": "warden_suburban_defeated", "text": "Past the portal it smells like copper and oil. Not my kind of neighborhood."},
 			],
 		},
 	]
