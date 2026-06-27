@@ -3219,17 +3219,31 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	_transition_in_progress = false
 
 	# ── EventLog: record area transition fact ────────────────────────────────
+	var area_ctx: Dictionary = {}
 	if GameState and "event_log" in GameState and GameState.event_log != null:
 		var area_display_name: String = _get_location_display_name(target_map)
+		area_ctx = {
+			"map_id":      target_map,
+			"spawn_point": spawn_point,
+			"world":       GameState.worlds_unlocked,
+		}
 		GameState.event_log.record(
 			EventLog.TYPE_AREA_ENTERED,
 			"Entered %s" % area_display_name,
-			{
-				"map_id":      target_map,
-				"spawn_point": spawn_point,
-				"world":       GameState.worlds_unlocked,
-			}
+			area_ctx,
 		)
+	# Tick 252: fire the matching RebalanceDaemon trigger so daemon gets
+	# the area-transition signal it was designed to react to (not just
+	# the wipe/defeat/level_up triggers). TRIGGER_AREA_ENTERED was
+	# defined but unfired before this — the daemon's min_consideration
+	# _interval_sec throttle prevents flooding when the player chains
+	# transitions.
+	if GameState and GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+		var fired: bool = GameState.rebalance_daemon.consider(
+			RebalanceDaemonScript.TRIGGER_AREA_ENTERED, area_ctx)
+		if fired:
+			_kick_off_rebalance_fetch.call_deferred(
+				GameState.rebalance_daemon.pending.size() - 1)
 
 	# Auto-save on zone transition (villages/overworld only; dungeons use save points;
 	# interiors skipped — MapSystem.current_map_id is stale for them).
