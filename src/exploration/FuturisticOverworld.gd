@@ -138,7 +138,7 @@ func _ready() -> void:
 
 
 func _get_objective_position() -> Vector2:
-	if GameState.get_story_flag("w5_boss_defeated"):
+	if GameState.game_constants.get("cutscene_flag_arbiter_futuristic_defeated", false):
 		return spawn_points.get("server_farm", Vector2.ZERO)
 	if GameState.get_story_flag("visited_node_prime"):
 		return spawn_points.get("server_farm", Vector2.ZERO)
@@ -532,7 +532,7 @@ func _setup_transitions() -> void:
 	transitions.add_child(back_portal)
 
 	# Forward portal to W6 Abstract (gated on world unlock)
-	if GameState.is_world_unlocked(6) or GameState.get_story_flag("w5_boss_defeated"):
+	if GameState.is_world_unlocked(6) or GameState.game_constants.get("cutscene_flag_arbiter_futuristic_defeated", false):
 		var forward_portal = AreaTransitionScript.new()
 		forward_portal.name = "WorldPortal"
 		forward_portal.target_map = "abstract_overworld"

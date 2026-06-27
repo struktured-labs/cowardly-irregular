@@ -41,7 +41,8 @@ func before_each() -> void:
 	# Start from a clean slate so prior tests / save state don't leak in.
 	gs.story_flags.erase("chapter1_complete")
 	gs.story_flags.erase("rat_king_defeated")
-	gs.story_flags.erase("w1_boss_defeated")
+	gs.story_flags.erase("w1_boss_defeated")  # legacy cleanup; tick 278 swapped to the cutscene_flag form
+	gs.game_constants.erase("cutscene_flag_world1_mordaine_defeated")
 	gs.game_constants.erase("cutscene_flag_chapter1_complete")
 
 
@@ -123,13 +124,16 @@ func test_marker_still_points_at_cave_via_story_flag() -> void:
 
 
 func test_marker_points_at_portal_after_boss() -> void:
-	# Once the W1 boss / rat king is down (these ARE in story_flags), the
-	# objective advances to the world portal — unaffected by the fix.
+	# Once the W1 boss (Mordaine) is down, the objective advances to the
+	# world portal. Tick 278: was reading dead story_flag
+	# "w1_boss_defeated" (no writer in src/) — replaced with the real
+	# cutscene_flag_world1_mordaine_defeated set by CastleHarmonia's
+	# defeat_cutscene_flags ratchet.
 	var gs = get_tree().root.get_node_or_null("GameState")
 	if gs == null:
 		pass_test("GameState autoload unavailable; skipping")
 		return
-	gs.story_flags["w1_boss_defeated"] = true
+	gs.game_constants["cutscene_flag_world1_mordaine_defeated"] = true
 	# Even with the chapter1 game_constant set, boss-defeated takes priority.
 	gs.game_constants["cutscene_flag_chapter1_complete"] = true
 
@@ -137,7 +141,7 @@ func test_marker_points_at_portal_after_boss() -> void:
 	var portal = scene.spawn_points.get("steampunk_portal", Vector2.ZERO)
 	var objective = scene._get_objective_position()
 	assert_eq(objective, portal,
-		"After w1_boss_defeated, marker should point at the world portal. " +
+		"After Mordaine defeat, marker should point at the world portal. " +
 		"Got %s, portal=%s" % [objective, portal])
 
 

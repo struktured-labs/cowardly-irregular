@@ -137,7 +137,11 @@ func _ready() -> void:
 
 func _get_objective_position() -> Vector2:
 	## W2 quest objective: reach steampunk portal (Forward) after exploring
-	if GameState.get_story_flag("w2_boss_defeated"):
+	# Tick 278: was reading dead story_flag "w2_boss_defeated" (no
+	# writer in src/). Real W2 boss is Warden of Routine — its
+	# completion flag is cutscene_flag_warden_suburban_defeated in
+	# game_constants. Same bug class as tick 277's W6 fix.
+	if GameState.game_constants.get("cutscene_flag_warden_suburban_defeated", false):
 		return spawn_points.get("from_industrial", Vector2.ZERO)
 	if GameState.get_story_flag("visited_maple_heights"):
 		return Vector2(45 * TILE_SIZE, 20 * TILE_SIZE)  # Forward Portal
@@ -557,7 +561,8 @@ func _setup_transitions() -> void:
 	transitions.add_child(portal_trans)
 
 	# Forward portal to W3 Steampunk (gated on world unlock)
-	if GameState.is_world_unlocked(3) or GameState.get_story_flag("w2_boss_defeated"):
+	# Tick 278: dead-flag fix (see _get_objective_position note).
+	if GameState.is_world_unlocked(3) or GameState.game_constants.get("cutscene_flag_warden_suburban_defeated", false):
 		var forward_portal = AreaTransitionScript.new()
 		forward_portal.name = "WorldPortal"
 		forward_portal.target_map = "steampunk_overworld"

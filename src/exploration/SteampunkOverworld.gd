@@ -135,7 +135,7 @@ func _ready() -> void:
 
 func _get_objective_position() -> Vector2:
 	## W3: reach rail station (Forward Portal) after visiting Brasston
-	if GameState.get_story_flag("w3_boss_defeated"):
+	if GameState.game_constants.get("cutscene_flag_tempo_steampunk_defeated", false):
 		return spawn_points.get("station", Vector2.ZERO)
 	if GameState.get_story_flag("visited_brasston"):
 		return spawn_points.get("station", Vector2.ZERO)
@@ -513,7 +513,7 @@ func _setup_transitions() -> void:
 	transitions.add_child(back_portal)
 
 	# Forward portal to W4 Industrial (gated on world unlock)
-	if GameState.is_world_unlocked(4) or GameState.get_story_flag("w3_boss_defeated"):
+	if GameState.is_world_unlocked(4) or GameState.game_constants.get("cutscene_flag_tempo_steampunk_defeated", false):
 		var forward_portal = AreaTransitionScript.new()
 		forward_portal.name = "WorldPortal"
 		forward_portal.target_map = "industrial_overworld"

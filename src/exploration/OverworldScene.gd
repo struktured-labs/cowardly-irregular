@@ -428,9 +428,14 @@ func _setup_transitions() -> void:
 		spawn_points.get("ironhaven_entrance", Vector2.ZERO), "Enter Ironhaven")
 
 	# World progression portal — leads to next world (W2 Suburban)
-	# Only visible after W1 boss is defeated (or world 2+ is unlocked)
+	# Only visible after W1 boss (Mordaine) is defeated, or world 2+ is unlocked.
+	# Tick 278: was reading dead story_flag "w1_boss_defeated" (no
+	# writer in src/) — the alternative path was permanently false.
+	# Mordaine's real defeat flag is cutscene_flag_world1_mordaine
+	# _defeated in game_constants (set by CastleHarmonia's
+	# defeat_cutscene_flags ratchet).
 	var gs = _get_game_state()
-	if gs and (gs.is_world_unlocked(2) or gs.get_story_flag("w1_boss_defeated")):
+	if gs and (gs.is_world_unlocked(2) or gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false)):
 		_add_area_transition("WorldPortal", "suburban_overworld", "entrance",
 			spawn_points.get("steampunk_portal", Vector2.ZERO), "Enter the Mundane Sprawl")
 
@@ -801,7 +806,10 @@ func _get_objective_position() -> Vector2:
 	## Return the world position of the current quest objective for minimap highlighting.
 	var gs = _get_game_state()
 	if gs:
-		if gs.get_story_flag("rat_king_defeated") or gs.get_story_flag("w1_boss_defeated"):
+		# Tick 278: w1_boss_defeated is a dead story_flag (no writer in src/);
+		# Mordaine's real flag is cutscene_flag_world1_mordaine_defeated in
+		# game_constants. rat_king_defeated still works (set by WhisperingCave).
+		if gs.get_story_flag("rat_king_defeated") or gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false):
 			return spawn_points.get("steampunk_portal", Vector2.ZERO)
 		# chapter1_complete is only ever written to game_constants as
 		# "cutscene_flag_chapter1_complete" (by GameLoop on cutscene finish),

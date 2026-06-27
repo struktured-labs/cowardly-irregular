@@ -133,7 +133,7 @@ func _ready() -> void:
 
 
 func _get_objective_position() -> Vector2:
-	if GameState.get_story_flag("w4_boss_defeated"):
+	if GameState.game_constants.get("cutscene_flag_warden_industrial_defeated", false):
 		return spawn_points.get("rail_yard", Vector2.ZERO)
 	if GameState.get_story_flag("visited_rivet_row"):
 		return spawn_points.get("rail_yard", Vector2.ZERO)
@@ -579,7 +579,7 @@ func _setup_transitions() -> void:
 	transitions.add_child(back_portal)
 
 	# Forward portal to W5 Futuristic (gated on world unlock)
-	if GameState.is_world_unlocked(5) or GameState.get_story_flag("w4_boss_defeated"):
+	if GameState.is_world_unlocked(5) or GameState.game_constants.get("cutscene_flag_warden_industrial_defeated", false):
 		var forward_portal = AreaTransitionScript.new()
 		forward_portal.name = "WorldPortal"
 		forward_portal.target_map = "futuristic_overworld"
