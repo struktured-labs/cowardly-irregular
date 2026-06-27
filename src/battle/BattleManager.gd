@@ -402,6 +402,22 @@ func end_battle(victory: bool) -> void:
 							item_drops.append({"item": item_id, "name": item_name, "qty": 1})
 		if item_drops.size() > 0:
 			print("Items dropped: %s" % [item_drops])
+			# Tick 253: record obtained items in EventLog for the LLM
+			# rebalance context. TYPE_ITEM_OBTAINED was defined since
+			# tick 41 but no upstream site emitted it — daemon's prompt
+			# only saw wipe/defeat/level_up/area events when items were
+			# also high-signal (a rare drop is the bigger evidence that
+			# the player out-grew the zone than the kill itself).
+			if GameState and "event_log" in GameState and GameState.event_log != null:
+				for drop_entry in item_drops:
+					GameState.event_log.record(
+						EventLog.TYPE_ITEM_OBTAINED,
+						"Obtained %s x%d" % [drop_entry["name"], drop_entry["qty"]],
+						{
+							"item": drop_entry["item"],
+							"qty":  drop_entry["qty"],
+						}
+					)
 
 		# Award job EXP to player party and store results.
 		# Tick 109: factor in GameState.game_constants["exp_multiplier"]
