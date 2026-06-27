@@ -177,6 +177,17 @@ static func is_defeated(monster_id: String) -> bool:
 	return defeated.has(monster_id)
 
 
+## Tick 264: per-monster kill milestones. Crossing one fires a Toast
+## via GameState.bestiary_kill_milestone signal so grinding gets
+## visible reward feedback. Chosen as 10/50/100/500 because:
+##   10  — first sense of "I've actually been farming this"
+##   50  — established autobattle target
+##   100 — round-number trophy
+##   500 — extreme grind achievement
+## Kept fixed (not data-driven) so the suite can pin the exact list.
+const KILL_MILESTONES: Array[int] = [10, 50, 100, 500]
+
+
 static func mark_defeated(monster_id: String, location_id: String = "") -> void:
 	# Tick 245: empty-id guard mirrors mark_seen. mark_seen itself
 	# warns for unknown ids — no need to double-warn here.
@@ -197,7 +208,16 @@ static func mark_defeated(monster_id: String, location_id: String = "") -> void:
 	if not GameState.game_constants.has("defeated_counts"):
 		GameState.game_constants["defeated_counts"] = {}
 	var counts: Dictionary = GameState.game_constants["defeated_counts"]
-	counts[monster_id] = int(counts.get(monster_id, 0)) + 1
+	var new_count: int = int(counts.get(monster_id, 0)) + 1
+	counts[monster_id] = new_count
+	# Tick 264: emit if this kill crossed a milestone exactly. Strict
+	# equality so 11/12/etc. don't re-fire (idempotent: each milestone
+	# announces exactly once across the entire save).
+	if new_count in KILL_MILESTONES:
+		_ensure_loaded()
+		var data: Dictionary = _monsters_cache.get(monster_id, {})
+		var display_name: String = str(data.get("name", monster_id.replace("_", " ").capitalize()))
+		GameState.bestiary_kill_milestone.emit(monster_id, display_name, new_count)
 
 
 static func get_defeated_ids() -> Array:

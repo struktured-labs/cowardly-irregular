@@ -180,6 +180,10 @@ func _ready() -> void:
 		## silent failure class as tick 178's save_corrupted gap.
 		if GameState.has_signal("game_constant_modified") and not GameState.game_constant_modified.is_connected(_on_game_constant_modified):
 			GameState.game_constant_modified.connect(_on_game_constant_modified)
+		# Tick 264: bestiary kill-milestone toast — fires once per
+		# (monster, threshold) pair across the save.
+		if GameState.has_signal("bestiary_kill_milestone") and not GameState.bestiary_kill_milestone.is_connected(_on_bestiary_kill_milestone):
+			GameState.bestiary_kill_milestone.connect(_on_bestiary_kill_milestone)
 
 	## Tick 254: surface party-chat event unlocks. Pre-fix the player
 	## triggered an event flag (boss kill, level 10, magic shop, etc.)
@@ -4803,6 +4807,14 @@ func _on_game_constant_modified(constant_name: String, old_value, new_value) -> 
 ## from locked to available.
 func _on_event_chat_unlocked(_chat_id: String, title: String) -> void:
 	Toast.show_success(self, "New party chat: %s" % title)
+
+
+## Tick 264: visible feedback for bestiary kill milestones (10/50/100
+## /500 of one monster). Pluralization handled with a naive +s — fine
+## for current monster names ("Slime"/"Bat"/"Goblin"); add a real
+## pluralizer if monster names start ending in y/s/x.
+func _on_bestiary_kill_milestone(_monster_id: String, monster_name: String, count: int) -> void:
+	Toast.show_success(self, "%d %ss defeated!" % [count, monster_name])
 
 
 func _show_autogrind_toast(text: String) -> void:

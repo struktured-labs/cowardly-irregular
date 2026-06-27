@@ -12,6 +12,12 @@ signal save_corrupted(corruption_level: float)
 ## just got applied.
 signal corruption_effect_added(effect: String)
 signal game_constant_modified(constant_name: String, old_value, new_value)
+## Tick 264: fired by BestiarySystem.mark_defeated when the per-monster
+## kill count crosses a defined milestone (10/50/100/500). UI shows a
+## Toast so the grinding loop gets visible reward feedback. BestiarySystem
+## itself can't emit (static class, no instance), so the signal hangs off
+## GameState — same pattern as save_corrupted / corruption_effect_added.
+signal bestiary_kill_milestone(monster_id: String, monster_name: String, count: int)
 
 const SAVE_DIR = "user://saves/"
 const SAVE_EXTENSION = ".cowirsave"
