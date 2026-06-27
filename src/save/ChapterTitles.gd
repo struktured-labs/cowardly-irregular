@@ -15,6 +15,8 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_chapter1_complete",         "world": 1, "chapter": 1, "title": "The Summons"},
 	{"flag": "cutscene_flag_chapter2_complete",         "world": 1, "chapter": 2, "title": "The Road North"},
 	{"flag": "cutscene_flag_chapter3_complete",         "world": 1, "chapter": 3, "title": "The Whispering Cave"},
+	# Tick 240: bridge the W1 ch3 boss → ch4 gap. Pre-fix the title stayed "The Whispering Cave" after defeating Rat King until the chapter4 cutscene fired, leaving a stale "in cave" feeling on save slots.
+	{"flag": "cutscene_flag_world1_rat_king_defeat_complete", "world": 1, "chapter": 3, "title": "Rat King Falls"},
 	{"flag": "cutscene_flag_chapter4_complete",         "world": 1, "chapter": 4, "title": "The Warden's Chain"},
 	{"flag": "cutscene_flag_chapter5_complete",         "world": 1, "chapter": 5, "title": "Into the Forest"},
 	{"flag": "cutscene_flag_chapter5_forest_entered",   "world": 1, "chapter": 5, "title": "Tempo's Chase"},
@@ -61,6 +63,9 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_world6_chapter1_complete",  "world": 6, "chapter": 1, "title": "Abstract Seas"},
 	{"flag": "cutscene_flag_world6_chapter2_complete",  "world": 6, "chapter": 2, "title": "The Question"},
 	{"flag": "cutscene_flag_world6_chapter3_complete",  "world": 6, "chapter": 3, "title": "The Answer"},
+	# Tick 240: post-game progression. Pre-fix a player who beat the Calibrant or finished the game still saw "Chapter 3: The Answer" on their save slot — incomplete-feeling end state. The completion flags are durable (set by _play_story_cutscene's post-cutscene hook) so they persist across saves/sessions.
+	{"flag": "cutscene_flag_world6_calibrant_defeat_complete", "world": 6, "chapter": 4, "title": "Calibrant Falls"},
+	{"flag": "cutscene_flag_world6_ending_complete",    "world": 6, "chapter": 5, "title": "The End"},
 ]
 
 const WORLD_NAMES := {
