@@ -25,27 +25,32 @@ func _read(p: String) -> String:
 # ── Death announcement in _on_party_hp_changed ──────────────────────────
 
 func test_party_death_emits_fallen_log() -> void:
+	# Tick 239 routed [color=red] through AccessibilityPalette.penalty_bbcode().
+	# Accept either shape so the invariant (severity-colored fallen log)
+	# holds across the refactor.
 	var src := _read(BATTLE_SCENE)
-	# Find _on_party_hp_changed body.
 	var idx: int = src.find("func _on_party_hp_changed")
 	assert_gt(idx, -1, "_on_party_hp_changed must exist")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("[color=red]✖ %s has fallen![/color]"),
-		"party HP-changed handler must emit '✖ X has fallen!' on KO")
+	var has_legacy: bool = body.contains("[color=red]✖ %s has fallen![/color]")
+	var has_palette: bool = body.contains("[color=%s]✖ %s has fallen![/color]\" % [AccessibilityPalette.penalty_bbcode(), member.combatant_name]")
+	assert_true(has_legacy or has_palette,
+		"party HP-changed handler must emit a severity-colored '✖ X has fallen!' on KO (legacy red OR tick 239 palette shape)")
 
 
 func test_party_death_log_uses_red_for_severity() -> void:
-	# Red matches the severity palette: enemy defeat is yellow
-	# (neutral "hostile gone"), party defeat is red (player's
-	# loss, more urgent).
+	# Severity palette: enemy defeat is yellow (neutral), party defeat
+	# is red-family (player's loss, urgent). Tick 239 routed [color=red]
+	# through AccessibilityPalette.penalty_bbcode() — accept either shape.
 	var src := _read(BATTLE_SCENE)
 	var idx: int = src.find("func _on_party_hp_changed")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx)
-	# Pin red+✖ marker for severity.
-	assert_true(body.contains("[color=red]✖"),
-		"party death log must use red + ✖ for severity (vs enemy death's yellow)")
+	var has_legacy: bool = body.contains("[color=red]✖")
+	var has_palette: bool = body.contains("[color=%s]✖") and body.contains("AccessibilityPalette.penalty_bbcode()")
+	assert_true(has_legacy or has_palette,
+		"party death log must use the severity (penalty) palette + ✖ marker (legacy red OR tick 239 palette helper)")
 
 
 func test_party_death_log_inside_drop_to_0_branch() -> void:

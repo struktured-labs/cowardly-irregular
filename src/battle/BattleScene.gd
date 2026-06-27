@@ -1882,7 +1882,8 @@ func _on_autobattle_toggled(enabled: bool) -> void:
 	"""Handle autobattle toggle"""
 	BattleManager.toggle_autobattle(enabled)
 	if enabled:
-		log_message("[color=green]Autobattle enabled - AI will control your turns[/color]")
+		# Tick 239: bonus BBCode (autobattle-enabled feedback).
+		log_message("[color=%s]Autobattle enabled - AI will control your turns[/color]" % AccessibilityPalette.bonus_bbcode())
 	else:
 		log_message("[color=gray]Autobattle disabled - manual control[/color]")
 
@@ -1901,7 +1902,8 @@ func _enable_all_autobattle() -> void:
 
 	# Play enable sound
 	SoundManager.play_ui("autobattle_on")
-	log_message("[color=lime]>>> AUTOBATTLE: ALL PLAYERS ENABLED[/color]")
+	# Tick 239: bonus BBCode (all-players autobattle announcement).
+	log_message("[color=%s]>>> AUTOBATTLE: ALL PLAYERS ENABLED[/color]" % AccessibilityPalette.bonus_bbcode())
 
 	# Close any open menu
 	_close_win98_menu()
@@ -2177,7 +2179,8 @@ func _on_battle_ended(victory: bool) -> void:
 				member.active_debuffs.remove_at(debuff_idx)
 
 	if victory:
-		log_message("\n[color=lime]=== VICTORY ===[/color]")
+		# Tick 239: bonus BBCode (victory header).
+		log_message("\n[color=%s]=== VICTORY ===[/color]" % AccessibilityPalette.bonus_bbcode())
 		_battle_victory = true
 		if not turbo_mode:
 			log_message("[color=gray]Press ENTER to continue...[/color]")
@@ -2190,7 +2193,8 @@ func _on_battle_ended(victory: bool) -> void:
 				SoundManager.play_music("victory")
 			_show_victory_results()
 	else:
-		log_message("\n[color=red]=== DEFEAT ===[/color]")
+		# Tick 239: penalty BBCode (defeat header).
+		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
 		log_message("[color=gray]Press ENTER to restart...[/color]")
 		# Play defeat animation for all party members
 		for animator in party_animators:
@@ -3102,7 +3106,8 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 		if member_idx < party_members.size():
 			var member = party_members[member_idx]
 			if member is Combatant:
-				log_message("[color=red]✖ %s has fallen![/color]" % member.combatant_name)
+				# Tick 239: penalty BBCode (party member fallen).
+				log_message("[color=%s]✖ %s has fallen![/color]" % [AccessibilityPalette.penalty_bbcode(), member.combatant_name])
 		var alive_allies = party_members.filter(func(m): return m is Combatant and m.is_alive and party_members.find(m) != member_idx)
 		if alive_allies.size() > 0:
 			var reactor = alive_allies[randi() % alive_allies.size()]
@@ -4175,7 +4180,8 @@ func _show_victory_quip() -> void:
 	if pool.is_empty():
 		return
 	var line = pool[randi() % pool.size()]
-	log_message("[color=lime]%s:[/color] \"%s\"" % [speaker.combatant_name, line])
+	# Tick 239: bonus BBCode (PC dialogue speaker — positive valence by convention).
+	log_message("[color=%s]%s:[/color] \"%s\"" % [AccessibilityPalette.bonus_bbcode(), speaker.combatant_name, line])
 	var sprite = _get_combatant_sprite(speaker)
 	if sprite and is_instance_valid(sprite):
 		_spawn_quip_bubble(sprite, speaker.combatant_name, line, _get_job_quip_color(speaker), 2.5)
