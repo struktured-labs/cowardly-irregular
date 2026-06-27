@@ -447,9 +447,58 @@ func test_llm_context_max_events_trimmed() -> void:
 	assert_eq(LLMContext.MAX_EVENTS_TRIMMED, 4, "MAX_EVENTS_TRIMMED should be 4")
 
 
-## MAX_PARTY_FULL is 4.
+## MAX_PARTY_FULL is 5. Tick 269/270: bumped from 4 to match the
+## strict-5 party. Pre-fix the 5th party member (typically Bard) was
+## silently omitted from every LLM prompt.
 func test_llm_context_max_party_full() -> void:
-	assert_eq(LLMContext.MAX_PARTY_FULL, 4, "MAX_PARTY_FULL should be 4")
+	assert_eq(LLMContext.MAX_PARTY_FULL, 5,
+		"MAX_PARTY_FULL must be 5 to match the strict-5 party (CLAUDE.md)")
+
+
+## Behavioral pin: _build_party retains all 5 strict-5 members when
+## given a 5-PC party. Catches a regression where MAX_PARTY_FULL drifts
+## back to 4 (the literal-pin test above catches the bump path; this
+## test catches the actual data-flow path).
+func test_llm_context_build_party_keeps_all_5_when_given_5() -> void:
+	# Build a stub GameState-shaped Object with a 5-member player_party.
+	var holder_script := GDScript.new()
+	holder_script.source_code = "extends Node\nvar player_party: Array = []\n"
+	holder_script.reload()
+	var holder: Node = holder_script.new()
+	add_child_autofree(holder)
+	holder.player_party = [
+		{"name": "A", "job": "fighter", "level": 10, "max_hp": 100, "current_hp": 100},
+		{"name": "B", "job": "cleric",  "level": 10, "max_hp": 100, "current_hp": 100},
+		{"name": "C", "job": "mage",    "level": 10, "max_hp": 100, "current_hp": 100},
+		{"name": "D", "job": "rogue",   "level": 10, "max_hp": 100, "current_hp": 100},
+		{"name": "E", "job": "bard",    "level": 10, "max_hp": 100, "current_hp": 100},
+	]
+	var party_ctx: Array = LLMContext._build_party(holder)
+	assert_eq(party_ctx.size(), 5,
+		"_build_party must keep all 5 strict-5 members (was truncating at 4 — Bard silently missing)")
+	# Sanity: the 5th member (Bard) is actually included.
+	var names: Array = []
+	for m in party_ctx:
+		names.append(str(m.get("name", "?")))
+	assert_true("E" in names,
+		"5th member must appear in the built context (Bard / index 4)")
+
+
+## Defensive pin: _build_party still respects MAX_PARTY_FULL when given
+## MORE than 5 (e.g. debug paths, save corruption, future scope creep).
+func test_llm_context_build_party_caps_at_max_when_given_more() -> void:
+	var holder_script := GDScript.new()
+	holder_script.source_code = "extends Node\nvar player_party: Array = []\n"
+	holder_script.reload()
+	var holder: Node = holder_script.new()
+	add_child_autofree(holder)
+	var seven: Array = []
+	for i in range(7):
+		seven.append({"name": "P%d" % i, "job": "fighter", "level": 1, "max_hp": 10, "current_hp": 10})
+	holder.player_party = seven
+	var party_ctx: Array = LLMContext._build_party(holder)
+	assert_eq(party_ctx.size(), LLMContext.MAX_PARTY_FULL,
+		"_build_party must still cap at MAX_PARTY_FULL when given an oversized party")
 
 
 ## build() returns a populated Dictionary when the GameState autoload is live.

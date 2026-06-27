@@ -25,7 +25,7 @@ extends RefCounted
 # ── Budget constants ───────────────────────────────────────────────────────────
 const MAX_EVENTS_FULL:    int = 8    # Events included before budget check.
 const MAX_EVENTS_TRIMMED: int = 4    # Events retained after budget trim.
-const MAX_PARTY_FULL:     int = 4    # Max party members in full detail.
+const MAX_PARTY_FULL:     int = 5    # Max party members in full detail. Tick 269/270: bumped 4 → 5 for the strict-5 party (CLAUDE.md). Pre-fix the 5th member (typically Bard) was silently omitted from every LLM prompt — boss strategy / party dialogue / NPC context all saw a 4-PC party. Per-member JSON is ~50 bytes; total still well under MAX_JSON_BYTES=2048.
 const MAX_JSON_BYTES:     int = 2048 # ~2 KB JSON budget guard.
 
 
