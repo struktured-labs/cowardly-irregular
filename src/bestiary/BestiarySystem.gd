@@ -123,6 +123,19 @@ static func is_seen(monster_id: String) -> bool:
 
 
 static func mark_seen(monster_id: String) -> void:
+	# Tick 245: loud-fail on empty / unknown ids so a Combatant with a
+	# missing monster_id (Summoner internal, save-side drift, typo'd
+	# Scriptweaver spawn) doesn't silently pollute the seen dict.
+	# Empty -> reject outright (no valid use case for "" in the bestiary).
+	# Unknown id -> WARN but still write, so a story-agent reload that
+	# adds the id later still grants the player credit (the tick 244
+	# count-filter swallows the noise meanwhile).
+	if monster_id == "":
+		push_warning("[BestiarySystem] mark_seen called with empty monster_id — likely a Combatant missing monster_type; skipped")
+		return
+	_ensure_loaded()
+	if not _monsters_cache.has(monster_id):
+		push_warning("[BestiarySystem] mark_seen('%s') — id not in monsters.json (typo? renamed? data drift?). Writing anyway in case the id arrives via reload; count filter will exclude it." % monster_id)
 	if not GameState.game_constants.has("seen_monsters"):
 		GameState.game_constants["seen_monsters"] = {}
 	GameState.game_constants["seen_monsters"][monster_id] = true
@@ -144,6 +157,11 @@ static func is_defeated(monster_id: String) -> bool:
 
 
 static func mark_defeated(monster_id: String) -> void:
+	# Tick 245: empty-id guard mirrors mark_seen. mark_seen itself
+	# warns for unknown ids — no need to double-warn here.
+	if monster_id == "":
+		push_warning("[BestiarySystem] mark_defeated called with empty monster_id — skipped")
+		return
 	# Defeat implies seen — auto-mark to maintain invariant. A monster
 	# can only be killed if it was encountered.
 	mark_seen(monster_id)
