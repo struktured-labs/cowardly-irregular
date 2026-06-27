@@ -275,7 +275,8 @@ func _create_stat_row(stat: Dictionary, y_pos: int) -> Control:
 		breakdown_label.text = "(%d %s%d)" % [stat["base"], "+" if diff > 0 else "", diff]
 		breakdown_label.position = Vector2(140, y_pos)
 		breakdown_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-		breakdown_label.add_theme_color_override("font_color", BONUS_COLOR if diff > 0 else PENALTY_COLOR)
+		# Tick 236: AccessibilityPalette so bonus/penalty colors swap to cyan/magenta in color-blind mode.
+		breakdown_label.add_theme_color_override("font_color", AccessibilityPalette.bonus() if diff > 0 else AccessibilityPalette.penalty())
 		row.add_child(breakdown_label)
 
 	return row
@@ -372,7 +373,8 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 			passive_label.text = "- %s" % passive_data.get("name", passive_id.replace("_", " ").capitalize())
 			passive_label.position = Vector2(16, y_offset)
 			passive_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-			passive_label.add_theme_color_override("font_color", BONUS_COLOR)
+			# Tick 236: AccessibilityPalette.
+			passive_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
 			panel.add_child(passive_label)
 			y_offset += 14
 
@@ -414,7 +416,8 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 		injury_title.text = "PERMANENT INJURIES"
 		injury_title.position = Vector2(8, y_offset)
 		injury_title.add_theme_font_size_override("font_size", TextScale.scaled(12))
-		injury_title.add_theme_color_override("font_color", INJURY_COLOR)
+		# Tick 236: AccessibilityPalette injury color.
+		injury_title.add_theme_color_override("font_color", AccessibilityPalette.injury())
 		panel.add_child(injury_title)
 		y_offset += 18
 
@@ -423,7 +426,7 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 			injury_label.text = "- %s: -%d" % [injury.get("stat", "unknown").capitalize(), injury.get("penalty", 0)]
 			injury_label.position = Vector2(16, y_offset)
 			injury_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-			injury_label.add_theme_color_override("font_color", INJURY_COLOR)
+			injury_label.add_theme_color_override("font_color", AccessibilityPalette.injury())
 			panel.add_child(injury_label)
 			y_offset += 14
 

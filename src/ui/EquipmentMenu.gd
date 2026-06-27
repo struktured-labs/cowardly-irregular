@@ -387,7 +387,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 			mod_label.text = "%s: %s%d" % [_stat_display_name(stat_name), "+" if mod_value > 0 else "", mod_value]
 			mod_label.position = Vector2(16, bonus_y)
 			mod_label.add_theme_font_size_override("font_size", 10)
-			mod_label.add_theme_color_override("font_color", POSITIVE_COLOR if mod_value > 0 else NEGATIVE_COLOR)
+			mod_label.add_theme_color_override("font_color", AccessibilityPalette.bonus() if mod_value > 0 else AccessibilityPalette.penalty())
 			panel.add_child(mod_label)
 			bonus_y += 16
 
@@ -528,9 +528,9 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	stats_label.position = Vector2(24, 20)
 	stats_label.add_theme_font_size_override("font_size", 10)
 	if positive_count > 0 and negative_count == 0:
-		stats_label.add_theme_color_override("font_color", POSITIVE_COLOR)
+		stats_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
 	elif negative_count > 0 and positive_count == 0:
-		stats_label.add_theme_color_override("font_color", NEGATIVE_COLOR)
+		stats_label.add_theme_color_override("font_color", AccessibilityPalette.penalty())
 	else:
 		stats_label.add_theme_color_override("font_color", TEXT_COLOR)
 	row.add_child(stats_label)

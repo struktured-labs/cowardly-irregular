@@ -81,3 +81,24 @@ static func hp_bbcode_for_pct(hp_pct: float) -> String:
 	if hp_pct > 0.25:
 		return "yellow"
 	return "magenta" if is_on() else "red"
+
+
+# Tick 236: bonus/positive stat color — green default, cyan in accessibility mode. Used by StatusMenu, JobMenu, EquipmentMenu for "+N stat" displays. Same cyan as heal + hp_high — consistent "positive" semantic.
+static func bonus() -> Color:
+	if is_on():
+		return Color(0.30, 0.70, 1.00)  # Cyan (matches heal, hp_high)
+	return Color(0.4, 0.9, 0.4)  # Green
+
+
+# Tick 236: penalty/negative stat color — red default, magenta in accessibility mode. Used for "-N stat" displays. Same magenta as elem_weak + hp_low — consistent "negative" semantic.
+static func penalty() -> Color:
+	if is_on():
+		return Color(1.00, 0.40, 0.80)  # Magenta (matches elem_weak, hp_low)
+	return Color(0.9, 0.4, 0.4)  # Red (PartyStatusScreen / EquipmentMenu / StatusMenu PENALTY shade)
+
+
+# Tick 236: injury color — darker red default, darker magenta in accessibility mode. Used by StatusMenu for permanent injury labels. Darker variant keeps it visually distinct from regular penalty (more severe state).
+static func injury() -> Color:
+	if is_on():
+		return Color(0.75, 0.25, 0.65)  # Darker magenta
+	return Color(0.8, 0.2, 0.2)  # Darker red
