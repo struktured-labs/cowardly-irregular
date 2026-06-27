@@ -4342,6 +4342,14 @@ const BATTLE_START_QUIPS: Dictionary = {
 	"ninja": ["Already behind them.", "Too slow.", "This ends quickly.", "..."],
 	"summoner": ["I sense their weakness.", "Spirits, attend me!", "The ether stirs...", "Let's call for backup."],
 	"speculator": ["I'm betting on us.", "The odds look good.", "Risk assessment: favorable.", "All in."],
+	# Tick 290: meta-job lines (mirrors tick 289's VICTORY_QUIPS extension).
+	"scriptweaver": ["Pushing combat-v2 to prod.", "Forking this encounter.", "Stack trace ready.", "git battle origin/main"],
+	"time_mage": ["I've seen this fight before.", "Loading the right branch.", "Cue intro music.", "Time's already on our side."],
+	"necromancer": ["Their grave is open.", "Add them to the ledger.", "I hear the bones humming.", "Endings rehearse here."],
+	"bossbinder": ["Mask up, everyone.", "We answer their script.", "Their pattern is mine to wear.", "Boss music? In my head."],
+	"skiptrotter": ["Speedrun start.", "I've got the route.", "Cutscene → skip.", "Next checkpoint, now."],
+	# `_default` fallback for unknown jobs (debug, modded, etc.).
+	"_default": ["Battle begins!", "Here we go.", "Stay sharp.", "Engage!"],
 }
 
 const NEW_MONSTER_QUIPS: Dictionary = {
@@ -4354,6 +4362,13 @@ const NEW_MONSTER_QUIPS: Dictionary = {
 	"ninja": ["Hmm. Unfamiliar.", "No entry in the bestiary.", "...interesting."],
 	"summoner": ["The spirits don't recognize it either.", "A new entity... fascinating.", "What plane did YOU come from?"],
 	"speculator": ["No market data on this one.", "Unpriced asset. Could be valuable.", "Unknown risk profile."],
+	# Tick 290: meta-job lines for first-encounter bestiary triggers.
+	"scriptweaver": ["No schema for that.", "404 — monster type unknown.", "Patching bestiary on the fly."],
+	"time_mage": ["I haven't seen this one yet.", "Future-me will recognize it.", "A new variable in the timeline."],
+	"necromancer": ["A fresh page in the ledger.", "I don't know its name. Yet.", "Its bones will tell me later."],
+	"bossbinder": ["A new mask to study.", "Their pattern is unread.", "Catalog it before I wear it."],
+	"skiptrotter": ["Wasn't in the route notes.", "Hold up — undocumented spawn.", "Recompiling the speedrun."],
+	"_default": ["What's that?", "I don't recognize it.", "Unknown threat!"],
 }
 
 ## Monster-specific encounter flavor text (shown alongside quips)
@@ -4383,6 +4398,13 @@ const BRAVE_QUIPS: Dictionary = {
 	"ninja": ["Shadow rush.", "Multi-strike.", "Vanishing barrage."],
 	"summoner": ["Spirits, converge!", "All together now!", "Full summoning circle!"],
 	"speculator": ["Going all in!", "Double or nothing!", "Maximum leverage!"],
+	# Tick 290: meta-job brave lines (advance/pool AP burst).
+	"scriptweaver": ["Buffer overflow incoming.", "Unrolled the loop.", "Inlined."],
+	"time_mage": ["All my futures, at once.", "Stacked turns.", "Fast-forward."],
+	"necromancer": ["Chorus, sing.", "All the dead in one note.", "Open the ledger wide."],
+	"bossbinder": ["Boss-phase, NOW.", "Their finisher is mine.", "Mask glows."],
+	"skiptrotter": ["Skipping every cooldown.", "Glitch jump.", "OOB combo."],
+	"_default": ["Going all out!", "Full force!", "Now!"],
 }
 
 ## Combat reaction quips — triggered by battle events (30% chance each)
