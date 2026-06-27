@@ -155,16 +155,25 @@ func spend_ap(amount: int) -> bool:
 	if not can_brave(amount):
 		return false
 
+	# Tick 286: guard ap_changed.emit on actual change. spend_ap(0)
+	# was a spurious emit; gain_ap(1) at cap was the worse case.
+	# UI listeners shouldn't see "ap changed" for a no-op tick.
 	var old_ap = current_ap
 	current_ap = clampi(current_ap - amount, -4, 4)
-	ap_changed.emit(old_ap, current_ap)
+	if current_ap != old_ap:
+		ap_changed.emit(old_ap, current_ap)
 	return true
 
 
 func gain_ap(amount: int) -> void:
+	# Tick 286: clamp at +4 means gain_ap(1) when current_ap == 4
+	# was a no-op that still emitted ap_changed — UI listeners
+	# repainted needlessly each turn after reaching cap. Guard on
+	# actual change.
 	var old_ap = current_ap
 	current_ap = clampi(current_ap + amount, -4, 4)
-	ap_changed.emit(old_ap, current_ap)
+	if current_ap != old_ap:
+		ap_changed.emit(old_ap, current_ap)
 
 
 func execute_defer() -> void:
