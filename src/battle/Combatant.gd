@@ -601,6 +601,22 @@ func apply_permanent_injury(injury: Dictionary) -> void:
 				magic = max(1, magic - penalty)
 			"speed":
 				speed = max(1, speed - penalty)
+			"max_mp":
+				# Tick 287: max_mp injury support + clamp emit.
+				# Pre-fix not in INJURY_TYPES (BattleManager:3479) but
+				# Scriptweaver / custom paths could request it — the
+				# match's lack of a branch silently no-op'd. Now mirrors
+				# the max_hp clamp logic (no mp_changed signal exists;
+				# UI polls current_mp via update_character_status).
+				max_mp = max(0, max_mp - penalty)
+				current_mp = min(current_mp, max_mp)
+			_:
+				# Tick 287: surface unknown injury stats. Pre-fix any
+				# typo'd or new-stat injury (e.g. "luck" before it was
+				# added) silently consumed the permanent_injuries slot
+				# without applying its penalty — UI showed the injury
+				# in the list but the player's stats were unchanged.
+				push_warning("[Combatant] apply_permanent_injury: unknown stat '%s' — no penalty applied, injury still recorded in list (Scriptweaver typo? new stat needing a match arm?)" % stat)
 
 
 ## Turn management
