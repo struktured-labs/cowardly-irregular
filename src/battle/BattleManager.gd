@@ -2046,6 +2046,12 @@ func _execute_group_action(action: Dictionary) -> void:
 	# Boss-gloat context: remember the party pooled AP into a combined strike so
 	# the end-of-fight gloat can reference it ("…an all-out attack, how brutish").
 	_all_out_attack_this_battle = true
+	# Tick 247/248: ratchet "first group attack" event flag on any pooled
+	# strike type (all_out_attack / limit_break / combo_magic / formation).
+	# PartyChatSystem unlocks "All at Once" after this fires.
+	if GameState and "game_constants" in GameState \
+			and not GameState.game_constants.get("event_flag_first_group_attack", false):
+		GameState.game_constants["event_flag_first_group_attack"] = true
 	group_attack_executing.emit(participants, group_type, alive_enemies, _formation_id)
 	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
 		group_type, participants.size(), alive_enemies.size()])
@@ -3420,6 +3426,13 @@ func _check_victory_conditions() -> bool:
 	var enemies_alive = enemy_party.any(func(e): return e.is_alive)
 
 	if not players_alive:
+		# Tick 247/248: ratchet "first party wipe" event flag exactly
+		# at the wipe trigger, not in end_battle (which is also hit by
+		# the escape path with victory=false). PartyChatSystem unlocks
+		# "After the First Time" once this fires.
+		if GameState and "game_constants" in GameState \
+				and not GameState.game_constants.get("event_flag_first_party_wipe", false):
+			GameState.game_constants["event_flag_first_party_wipe"] = true
 		end_battle(false)
 		return true
 	elif not enemies_alive:

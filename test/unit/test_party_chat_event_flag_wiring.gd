@@ -22,13 +22,12 @@ const PARTY_CHAT := "res://src/cutscene/PartyChatSystem.gd"
 ## Event flags that have a REGISTRY entry but are not yet emitted
 ## anywhere in src/. Acknowledged content debt — wire one per tick.
 ##
-## tick 247 initial wave: removed 2 (level_10_reached, first_autobattle_enabled).
+## tick 247 wave: removed 2 (level_10_reached, first_autobattle_enabled).
+## tick 248 wave: removed 2 more (first_party_wipe, first_group_attack).
 const KNOWN_UNWIRED: Array[String] = [
 	"event_flag_first_magic_shop_visited",
-	"event_flag_first_party_wipe",
 	"event_flag_rare_drop_found",
 	"event_flag_dragon_cave_entered",
-	"event_flag_first_group_attack",
 	"event_flag_one_hp_victory",
 ]
 
@@ -138,3 +137,13 @@ func test_tick_247_level_10_flag_wired() -> void:
 func test_tick_247_autobattle_flag_wired() -> void:
 	assert_true(_is_flag_emitted("event_flag_first_autobattle_enabled"),
 		"event_flag_first_autobattle_enabled must be set by AutobattleSystem.set_autobattle_enabled")
+
+
+func test_tick_248_first_party_wipe_flag_wired() -> void:
+	assert_true(_is_flag_emitted("event_flag_first_party_wipe"),
+		"event_flag_first_party_wipe must be set by BattleManager._check_victory_conditions when party loses")
+
+
+func test_tick_248_first_group_attack_flag_wired() -> void:
+	assert_true(_is_flag_emitted("event_flag_first_group_attack"),
+		"event_flag_first_group_attack must be set by BattleManager._execute_group_action on any pooled strike")
