@@ -354,11 +354,21 @@ func get_quick_slot_abilities(num_slots: int = MRU_SIZE) -> Array[String]:
 
 ## Status effects
 func add_status(status: String, duration: int = 3) -> void:
-	if status not in status_effects:
-		status_effects.append(status)
+	# Tick 285: refresh duration when re-applying the same status.
+	# Pre-fix this was a silent no-op when the status already existed —
+	# the player couldn't extend a beneficial DOT (regen) or refresh
+	# a debuff. Inconsistent with add_buff/add_debuff which both
+	# refresh on re-apply. status_added.emit fires only on the
+	# first add (UI doesn't need a "refresh" notification — the
+	# status icon is already showing).
+	if status in status_effects:
 		status_durations[status] = duration
-		status_added.emit(status)
-		print("%s gained status: %s (%d turns)" % [combatant_name, status, duration])
+		print("%s refreshed status: %s (%d turns)" % [combatant_name, status, duration])
+		return
+	status_effects.append(status)
+	status_durations[status] = duration
+	status_added.emit(status)
+	print("%s gained status: %s (%d turns)" % [combatant_name, status, duration])
 
 
 func remove_status(status: String) -> void:
