@@ -4414,6 +4414,12 @@ const CRIT_QUIPS: Dictionary = {
 	"mage": ["Critical resonance!", "The formula was perfect!", "Maximum efficiency!"],
 	"rogue": ["Bullseye!", "Right where it hurts!", "Too easy."],
 	"bard": ["♪ And the crowd goes wild! ♪", "Standing ovation!", "Hit the high note!"],
+	# Tick 291: meta-job CRIT lines (continues the 289/290 sweep).
+	"scriptweaver": ["Asserted maximum.", "Force-pushed.", "RNG seed: optimal."],
+	"time_mage": ["Yes — this branch.", "Saw it. Took it.", "Caught the moment."],
+	"necromancer": ["Bones split clean.", "Their record closes loudly.", "The ledger snapped shut."],
+	"bossbinder": ["Boss-grade strike.", "Their finisher, returned.", "Through the mask."],
+	"skiptrotter": ["Frame-perfect.", "Crit chain — no skip.", "Optimal RNG."],
 	"_default": ["Critical hit!", "Nice shot!", "That's a big one!"],
 }
 
@@ -4421,6 +4427,12 @@ const OVERKILL_QUIPS: Dictionary = {
 	"fighter": ["Overkill? No such thing.", "Rest in pieces.", "Didn't even need that much."],
 	"rogue": ["That was excessive. I love it.", "Wasted resources, but style points.", "Oops. Too hard."],
 	"mage": ["Miscalculated... in our favor.", "Excessive force noted.", "The math says: very dead."],
+	# Tick 291: meta-job OVERKILL lines.
+	"scriptweaver": ["Memory leak — theirs.", "Catastrophic stack overflow.", "Buffer is theirs now."],
+	"time_mage": ["Erased from three timelines.", "Won't exist in the next one either.", "Past tense, future tense."],
+	"necromancer": ["Their afterlife flinched.", "Ledger marked TWICE.", "Even the bones are gone."],
+	"bossbinder": ["Boss-killed twice.", "Their mask shattered in my hand.", "Whatever script they had — gone."],
+	"skiptrotter": ["Skipped past dead.", "Out of bounds.", "Cleared. Next."],
 	"_default": ["Overkill!", "That was more than enough!", "Obliterated!"],
 }
 
@@ -4429,6 +4441,12 @@ const TAKE_BIG_DAMAGE_QUIPS: Dictionary = {
 	"cleric": ["Ouch! I need a moment!", "That really hurt...", "Someone cover me!"],
 	"mage": ["My barrier failed!", "Ow! Physical pain! My weakness!", "I need distance!"],
 	"rogue": ["Should've dodged that!", "Okay, THAT hurt.", "Lucky shot..."],
+	# Tick 291: meta-job TAKE_BIG_DAMAGE lines.
+	"scriptweaver": ["Segfault!", "Stack trace incoming.", "Unhandled exception!"],
+	"time_mage": ["Roll back, roll back!", "That timeline hurt.", "Wrong branch!"],
+	"necromancer": ["Adding myself to the ledger?", "The chorus heard that.", "Not yet, not yet."],
+	"bossbinder": ["Boss-level damage.", "Mask cracked.", "Whose pattern WAS that?"],
+	"skiptrotter": ["Hitbox bigger than the wiki said.", "Frame skip didn't save me.", "Hold up — that's a phase change."],
 	"_default": ["Ow!", "That hurt!", "I'm in trouble!"],
 }
 
@@ -4436,6 +4454,12 @@ const DODGE_QUIPS: Dictionary = {
 	"fighter": ["Ha! Missed!", "Too slow!", "I saw that coming!"],
 	"rogue": ["Not even close.", "Like I'd stand still.", "You'll have to be faster than THAT."],
 	"ninja": ["Already moved.", "Predictable.", "..."],
+	# Tick 291: meta-job DODGE lines.
+	"scriptweaver": ["Conditional: false.", "Early-return.", "Branch not taken."],
+	"time_mage": ["Wasn't there. Already moved.", "Read your past.", "I left the timeline."],
+	"necromancer": ["The dead don't predict me.", "Their swing was already over.", "Their ghost mourns the miss."],
+	"bossbinder": ["Read your pattern.", "Boss tells, all of them.", "Their script is mine."],
+	"skiptrotter": ["i-frames.", "OOB.", "Pixel-perfect skip."],
 	"_default": ["Missed me!", "Nice try!", "Dodged!"],
 }
 
@@ -4444,6 +4468,12 @@ const LOW_HP_QUIPS: Dictionary = {
 	"cleric": ["I need healing... ironic.", "My faith is being tested!", "This isn't good..."],
 	"mage": ["Running low on everything...", "My concentration is slipping!", "Need to retreat!"],
 	"rogue": ["Things are looking grim.", "Time to get creative...", "Escape plan forming..."],
+	# Tick 291: meta-job LOW_HP lines.
+	"scriptweaver": ["Memory critical.", "GC me later — finish this.", "OOM warning."],
+	"time_mage": ["Time to rewind.", "Need a save point...", "Bad branch — pivoting."],
+	"necromancer": ["My own ledger is open.", "I can hear my chorus.", "Soon — but not yet."],
+	"bossbinder": ["Mask cracking.", "Phase change coming.", "One more strike — theirs or mine."],
+	"skiptrotter": ["One frame from death.", "Need a glitch jump.", "Skip skip skip!"],
 	"_default": ["I'm in trouble...", "Someone help!", "Not looking good..."],
 }
 
@@ -4452,6 +4482,12 @@ const ALLY_KO_QUIPS: Dictionary = {
 	"cleric": ["I failed them...", "Hold on! I'll revive you!", "No... not again!"],
 	"mage": ["We lost one! Recalculating...", "This changes the equation.", "Focus! We must continue!"],
 	"rogue": ["They got one of ours!", "That's gonna cost them.", "Now I'm angry."],
+	# Tick 291: meta-job ALLY_KO lines.
+	"scriptweaver": ["Process terminated.", "Their thread crashed.", "Reverting their last commit later."],
+	"time_mage": ["I can rewind.", "Give me one turn.", "This isn't final."],
+	"necromancer": ["I'll keep their voice.", "Their chorus gains a member.", "The ledger grows."],
+	"bossbinder": ["They wore the mask too long.", "Their script ran out.", "Boss-phase reversed."],
+	"skiptrotter": ["Need a respawn here!", "Save state, load!", "Not in the route notes..."],
 	"_default": ["We lost someone!", "No!", "Avenge them!"],
 }
 

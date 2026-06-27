@@ -25,11 +25,20 @@ const META_JOB_IDS: Array[String] = [
 	"scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter",
 ]
 
+## Tick 291 extended the audit list to include the 6 reaction-quip
+## dicts as well. All 10 now have meta-job coverage.
 const DICTS_TO_AUDIT: Array[String] = [
 	"BATTLE_START_QUIPS",
 	"NEW_MONSTER_QUIPS",
 	"BRAVE_QUIPS",
 	"VICTORY_QUIPS",
+	# Tick 291 additions:
+	"CRIT_QUIPS",
+	"OVERKILL_QUIPS",
+	"TAKE_BIG_DAMAGE_QUIPS",
+	"DODGE_QUIPS",
+	"LOW_HP_QUIPS",
+	"ALLY_KO_QUIPS",
 ]
 
 
