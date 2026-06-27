@@ -25,10 +25,12 @@ const PARTY_CHAT := "res://src/cutscene/PartyChatSystem.gd"
 ## tick 247 wave: removed 2 (level_10_reached, first_autobattle_enabled).
 ## tick 248 wave: removed 2 more (first_party_wipe, first_group_attack).
 ## tick 249 wave: removed 2 more (dragon_cave_entered, one_hp_victory).
-const KNOWN_UNWIRED: Array[String] = [
-	"event_flag_first_magic_shop_visited",
-	"event_flag_rare_drop_found",
-]
+## tick 250 wave: removed final 2 (first_magic_shop_visited, rare_drop_found).
+##
+## ALL 8 event_chat_* entries now wired. List intentionally empty —
+## any future event_chat_* entry must wire its flag at add-time or
+## land here with a deliberate "acknowledged dormant" note.
+const KNOWN_UNWIRED: Array[String] = []
 
 
 func _system() -> Object:
@@ -156,3 +158,13 @@ func test_tick_249_dragon_cave_entered_flag_wired() -> void:
 func test_tick_249_one_hp_victory_flag_wired() -> void:
 	assert_true(_is_flag_emitted("event_flag_one_hp_victory"),
 		"event_flag_one_hp_victory must be set by BattleManager.end_battle(true) when any survivor has current_hp == 1")
+
+
+func test_tick_250_first_magic_shop_flag_wired() -> void:
+	assert_true(_is_flag_emitted("event_flag_first_magic_shop_visited"),
+		"event_flag_first_magic_shop_visited must be set by ShopScene.setup on BLACK_MAGIC/WHITE_MAGIC")
+
+
+func test_tick_250_rare_drop_flag_wired() -> void:
+	assert_true(_is_flag_emitted("event_flag_rare_drop_found"),
+		"event_flag_rare_drop_found must be set by BattleManager's drop loop when base chance < 0.10")

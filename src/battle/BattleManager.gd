@@ -370,6 +370,16 @@ func end_battle(victory: bool) -> void:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
+						# Tick 250: ratchet "The Glow" event flag on first
+						# sub-10%-chance drop. Uses the base chance, not the
+						# multiplier-modified roll — a base 5% drop that
+						# rolls under a 2x boost is still "rare" from the
+						# narrative POV. PartyChatSystem unlocks
+						# event_chat_rare_drop after this fires.
+						if drop.get("chance", 0.0) < 0.10 \
+								and GameState and "game_constants" in GameState \
+								and not GameState.game_constants.get("event_flag_rare_drop_found", false):
+							GameState.game_constants["event_flag_rare_drop_found"] = true
 						# Equipment IDs route to GameLoop.equipment_pool so they
 						# end up in the shared equipment inventory (where the
 						# Equipment menu reads from); consumables stay on the
