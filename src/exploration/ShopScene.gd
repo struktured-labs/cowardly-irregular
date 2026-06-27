@@ -5,6 +5,11 @@ class_name ShopScene
 ## Fullscreen overlay with buy/sell menus
 
 signal shop_closed()
+## Tick 257: emitted after a successful purchase (gold spent + item
+## received). Lets external listeners (quest hooks, achievements,
+## VillageShop bridge for the overworld trigger) react without
+## reaching into the buy-menu plumbing.
+signal item_purchased(item_id: String, cost: int)
 
 enum ShopMode { MAIN, BUY, SELL, QUANTITY, CHAR_SELECT }
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
@@ -366,6 +371,10 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 			return
 		SoundManager.play_ui("menu_select")
 		_update_gold_display()
+		# Tick 257: emit only after the gold spend AND the item handoff
+		# both succeeded — refund path above returns early so we don't
+		# spuriously fire on failed transactions.
+		item_purchased.emit(item_id, cost)
 
 		description_label.text = "Purchased %s for %d G!" % [item_data.get("name", "item"), cost]
 

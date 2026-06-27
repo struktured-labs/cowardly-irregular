@@ -4,6 +4,13 @@ class_name VillageShop
 ## VillageShop - Buy weapons, armor, or items
 ## Different shop types with different inventories
 
+## Tick 257: public bridge for the ShopScene's item_purchased signal.
+## Quest hooks / achievements / event flag ratchets (e.g. the
+## first_magic_shop_visited flag wired in ShopScene.setup) can listen
+## here on the overworld Area2D rather than reaching into the
+## ShopScene that this trigger spawns.
+signal item_purchased(item_id: String, cost: int)
+
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
 @export var shop_name: String = "Shop"
@@ -420,9 +427,18 @@ func _show_shop_menu(player: Node2D) -> void:
 	shop_scene.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_shop_layer.add_child(shop_scene)
 	shop_scene.shop_closed.connect(_on_shop_closed.bind(player))
+	# Tick 257: bridge purchase events up to overworld listeners.
+	shop_scene.item_purchased.connect(_on_shop_item_purchased)
 
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
+
+
+func _on_shop_item_purchased(item_id: String, cost: int) -> void:
+	# Tick 257: bridge ShopScene's item_purchased up to VillageShop's
+	# public signal. Listeners on the overworld trigger don't need to
+	# know about the inner ShopScene at all.
+	item_purchased.emit(item_id, cost)
 
 
 func _on_shop_closed(player: Node) -> void:
