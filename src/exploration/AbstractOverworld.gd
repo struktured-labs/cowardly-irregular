@@ -144,8 +144,17 @@ func _ready() -> void:
 
 
 func _get_objective_position() -> Vector2:
-	# W6: The Vertex village is the final destination. Everything before it fades.
-	if GameState.get_story_flag("w6_boss_defeated"):
+	# W6: The Vertex village is the final destination. Once the
+	# Calibrant has fallen, the next objective is "the_question"
+	# (the post-game ending sequence).
+	# Tick 277: was reading the bare story_flag "w6_boss_defeated"
+	# which NOTHING in the game ever set — so the objective arrow
+	# stayed pointed at vertex_entrance even after the Calibrant
+	# cutscene finished. The real flag is in game_constants under
+	# the "cutscene_flag_" prefix, set by the post-cutscene hook in
+	# GameLoop._play_story_cutscene when world6_calibrant_defeat
+	# completes (see _CUTSCENE_COMPLETION_FLAGS map).
+	if GameState.game_constants.get("cutscene_flag_world6_calibrant_defeat_complete", false):
 		return spawn_points.get("the_question", Vector2.ZERO)
 	return spawn_points.get("vertex_entrance", Vector2.ZERO)
 
