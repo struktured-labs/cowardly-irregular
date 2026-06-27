@@ -73,7 +73,12 @@ func test_rendering_happens_after_sort() -> void:
 	var body := _fmt_body()
 	var sort_idx: int = body.find("rows.sort_custom")
 	var parts_loop_idx: int = body.find("for r in rows:")
-	var append_idx: int = body.find("parts.append(\"%s %d%%\" % [r.name, pct])")
+	# Tick 256: format string gained a trailing %s for the rare ★ marker.
+	# Accept either pre-tick-256 form OR the post-tick-256 form so the
+	# test pin isn't snapped to a single literal.
+	var append_legacy: int = body.find("parts.append(\"%s %d%%\" % [r.name, pct])")
+	var append_marked: int = body.find("parts.append(\"%s %d%%%s\" % [r.name, pct, marker])")
+	var append_idx: int = max(append_legacy, append_marked)
 	assert_gt(sort_idx, -1)
 	assert_gt(parts_loop_idx, -1, "must iterate sorted rows when rendering")
 	assert_gt(append_idx, -1, "must format each row into the parts list")
@@ -116,8 +121,12 @@ func test_output_format_unchanged() -> void:
 	var body := _fmt_body()
 	assert_true(body.contains("\"Drops: %s\" % (\", \".join(parts) if parts.size() > 0 else \"—\")"),
 		"display format 'Drops: A, B, C' preserved (em-dash for empty)")
-	assert_true(body.contains("\"%s %d%%\" % [r.name, pct]"),
-		"per-drop format 'Name %d%%' preserved")
+	# Tick 256: format expanded to include trailing ★ marker for rare drops.
+	# Accept either legacy or post-256 form.
+	var has_legacy: bool = body.contains("\"%s %d%%\" % [r.name, pct]")
+	var has_marked: bool = body.contains("\"%s %d%%%s\" % [r.name, pct, marker]")
+	assert_true(has_legacy or has_marked,
+		"per-drop format 'Name %d%%' (or '...%s' with ★ marker) preserved")
 
 
 func test_pct_calculation_preserved() -> void:

@@ -87,8 +87,12 @@ func test_shared_resolver_handles_missing_name_field() -> void:
 
 func test_existing_format_drops_skeleton_preserved() -> void:
 	var body := _format_drops_body()
-	assert_true(body.contains("parts.append(\"%s %d%%\""),
-		"format must produce '<name> <pct>%' parts")
+	# Tick 256: format expanded to include trailing ★ marker. Accept
+	# either legacy or post-256 form.
+	var has_legacy: bool = body.contains("parts.append(\"%s %d%%\"")
+	var has_marked: bool = body.contains("parts.append(\"%s %d%%%s\"")
+	assert_true(has_legacy or has_marked,
+		"format must produce '<name> <pct>%' parts (with optional trailing %s for rare ★)")
 	assert_true(body.contains("\"Drops: %s\""),
 		"Drops: prefix preserved")
 	assert_true(body.contains("(One-shot: %s)"),

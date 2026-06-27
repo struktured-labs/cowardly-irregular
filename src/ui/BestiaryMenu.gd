@@ -439,11 +439,22 @@ func _format_drops(drops: Array, one_shot) -> String:
 			return a.chance > b.chance
 		return a.name < b.name
 	)
+	# Tick 256: ★ marks any drop with base chance < 10% (same threshold
+	# as tick 250's event_flag_rare_drop_found — consistent semantics
+	# across "this is a rare drop" UX). Legend appended only when at
+	# least one rare row exists so the legend isn't noise on common-
+	# only drop tables.
 	var parts: PackedStringArray = []
+	var has_rare: bool = false
 	for r in rows:
 		var pct: int = int(round(r.chance * 100.0))
-		parts.append("%s %d%%" % [r.name, pct])
+		var marker: String = " ★" if r.chance < 0.10 else ""
+		if marker != "":
+			has_rare = true
+		parts.append("%s %d%%%s" % [r.name, pct, marker])
 	var base: String = "Drops: %s" % (", ".join(parts) if parts.size() > 0 else "—")
+	if has_rare:
+		base += "   (★ = rare)"
 	# one_shot_reward (rare bonus, set in monsters.json for special enemies)
 	# appended as "(one-shot: <item>)" so it's visually distinct from the
 	# regular percentage drops.
