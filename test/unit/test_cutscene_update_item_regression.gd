@@ -65,16 +65,13 @@ func test_update_item_handles_missing_item_gracefully() -> void:
 
 
 func test_update_item_swaps_quantity_in_inventory() -> void:
-	# Behavioral roundtrip — only runs when GameLoop with party is live.
-	var game_loop = get_tree().root.get_node_or_null("GameLoop")
-	if game_loop == null or not "party" in game_loop or game_loop.party.is_empty():
-		pending("GameLoop with non-empty party not available — skipping behavioral test")
-		return
-
-	var leader = game_loop.party[0]
-	if not leader.has_method("add_item") or not leader.has_method("remove_item"):
-		pending("party leader missing inventory API")
-		return
+	# Tick 258: previously skipped via pending() because no GameLoop was
+	# instantiated in headless GUT. The director only needs a node at
+	# /root/GameLoop exposing a `party` Array[Combatant] — build a stub
+	# (matches the fixture pattern in test_cutscene_grant_give_item_regression).
+	var fixture: Dictionary = _make_game_loop_stub_with_leader()
+	var stub: Node = fixture["stub"]
+	var leader = fixture["leader"]
 
 	# Seed the leader with 3 of the source item.
 	leader.add_item("fool_card", 3)
@@ -96,4 +93,31 @@ func test_update_item_swaps_quantity_in_inventory() -> void:
 		"wild_card must hold the same quantity (3) that fool_card had")
 
 	# Cleanup
-	leader.remove_item("wild_card", 3)
+	_teardown_game_loop_stub(stub)
+
+
+# ── Test fixture: mirrors test_cutscene_grant_give_item_regression ─
+
+func _make_game_loop_stub_with_leader() -> Dictionary:
+	# See test_cutscene_grant_give_item_regression for the fixture rationale.
+	var existing := get_tree().root.get_node_or_null("GameLoop")
+	if existing != null and "party" in existing:
+		if not existing.party.is_empty():
+			return {"stub": null, "leader": existing.party[0]}
+		var leader_real: Combatant = Combatant.new()
+		leader_real.combatant_name = "Test Leader"
+		existing.party.append(leader_real)
+		return {"stub": null, "leader": leader_real, "_appended_to": existing}
+	var stub_script: GDScript = load("res://test/unit/_test_game_loop_stub.gd")
+	var stub: Node = stub_script.new()
+	stub.name = "GameLoop"
+	get_tree().root.add_child(stub)
+	var leader: Combatant = Combatant.new()
+	leader.combatant_name = "Test Leader"
+	stub.party.append(leader)
+	return {"stub": stub, "leader": leader}
+
+
+func _teardown_game_loop_stub(stub: Node) -> void:
+	if stub != null and is_instance_valid(stub):
+		stub.queue_free()
