@@ -140,7 +140,9 @@ func _dlog(msg: String) -> void:
 
 func _on_interaction_requested() -> void:
 	# Check for nearby interactables
+	# Tick 232: surface wiring bug. Pre-fix the @export var player being unassigned (forgotten in a new village scene, broken signal binding) silently dropped every interaction — player tapped Z, nothing happened, no diagnostic.
 	if not player:
+		push_warning("[OverworldController] _on_interaction_requested: player ref is null — @export var player likely unwired in the scene setup")
 		return
 
 	_dlog("[INTERACT] At pos: %s" % player.global_position)
@@ -224,20 +226,28 @@ func set_enemy_pool(pool_id: String) -> void:
 func _load_enemy_pools() -> Dictionary:
 	"""Load enemy pools from data file"""
 	var file_path = "res://data/enemy_pools.json"
+	# Tick 232: 4-stage loud-fail surfaces. Pre-fix each error path silently returned {} so set_enemy_pool's "pool not found" warning fired but the root cause (file missing, parse error, etc.) was invisible. Mirrors the BestiarySystem._load_json pattern.
 	if not FileAccess.file_exists(file_path):
+		push_warning("[OverworldController] enemy_pools.json missing at %s — no encounter pools available" % file_path)
 		return {}
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
+		push_warning("[OverworldController] enemy_pools.json exists but FileAccess.open failed (error %d) — no encounter pools available" % FileAccess.get_open_error())
 		return {}
 
 	var json_string = file.get_as_text()
 	file.close()
 
 	var json = JSON.new()
-	if json.parse(json_string) == OK:
-		return json.data
-	return {}
+	var parse_result := json.parse(json_string)
+	if parse_result != OK:
+		push_warning("[OverworldController] enemy_pools.json parse error: %s — no encounter pools available" % json.get_error_message())
+		return {}
+	if not (json.data is Dictionary):
+		push_warning("[OverworldController] enemy_pools.json parsed but root is not a Dictionary — no encounter pools available")
+		return {}
+	return json.data
 
 
 ## Resume player control after battle or menu
