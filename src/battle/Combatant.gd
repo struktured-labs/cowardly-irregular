@@ -565,7 +565,15 @@ func apply_permanent_injury(injury: Dictionary) -> void:
 		match stat:
 			"max_hp":
 				max_hp = max(1, max_hp - penalty)
+				# Tick 284: emit hp_changed when the clamp actually drops
+				# current_hp. Pre-fix permanent injury silently reduced
+				# current_hp below max_hp's new ceiling — UI HP bars
+				# didn't refresh until the next take_damage / heal /
+				# scene reload sampled the value.
+				var old_hp_inj: int = current_hp
 				current_hp = min(current_hp, max_hp)
+				if current_hp != old_hp_inj:
+					hp_changed.emit(old_hp_inj, current_hp)
 			"attack":
 				attack = max(1, attack - penalty)
 			"defense":
