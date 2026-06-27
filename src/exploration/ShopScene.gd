@@ -79,14 +79,10 @@ func setup(type: ShopType, name: String, inventory: Array, keeper_custom = null)
 	for item in inventory:
 		shop_inventory.append(item)
 	shopkeeper_customization = keeper_custom
-	# Tick 250: ratchet "Magic as Merchandise" event flag on first
-	# visit to ANY magic shop (BLACK_MAGIC or WHITE_MAGIC). The chat
-	# is about confronting commerce in arcane goods — neither flavor
-	# requires a specific element.
+	# Tick 250/254: ratchet "Magic as Merchandise" via centralized helper.
 	if (type == ShopType.BLACK_MAGIC or type == ShopType.WHITE_MAGIC) \
-			and GameState and "game_constants" in GameState \
-			and not GameState.game_constants.get("event_flag_first_magic_shop_visited", false):
-		GameState.game_constants["event_flag_first_magic_shop_visited"] = true
+			and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_first_magic_shop_visited")
 
 
 func _setup_ui() -> void:

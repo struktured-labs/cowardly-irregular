@@ -117,14 +117,12 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music(_get_music_area_id())
 
-	# Tick 249: ratchet "at the cave mouth" event flag the first time
-	# the player enters any of the 4 elemental dragon caves (fire / ice
-	# / lightning / shadow). Cave_id is the canonical filter — non-
-	# dragon DragonCave subclasses (castle_harmonia, null_chamber,
-	# assembly_core, etc.) don't qualify.
-	if GameState and "dragon_cave" in cave_id \
-			and not GameState.game_constants.get("event_flag_dragon_cave_entered", false):
-		GameState.game_constants["event_flag_dragon_cave_entered"] = true
+	# Tick 249/254: ratchet "At the Cave Mouth" via the centralized
+	# helper. Filters to ids containing "dragon_cave" so non-dragon
+	# DragonCave subclasses (castle_harmonia / null_chamber / etc.)
+	# don't qualify.
+	if "dragon_cave" in cave_id and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_dragon_cave_entered")
 
 	exploration_ready.emit()
 

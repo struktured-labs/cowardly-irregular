@@ -181,6 +181,15 @@ func _ready() -> void:
 		if GameState.has_signal("game_constant_modified") and not GameState.game_constant_modified.is_connected(_on_game_constant_modified):
 			GameState.game_constant_modified.connect(_on_game_constant_modified)
 
+	## Tick 254: surface party-chat event unlocks. Pre-fix the player
+	## triggered an event flag (boss kill, level 10, magic shop, etc.)
+	## and the chat silently appeared in PartyChatMenu — they wouldn't
+	## notice until next menu visit. Toast banner ("New chat: <title>")
+	## gives the immediate feedback signal.
+	if PartyChatSystem and PartyChatSystem.has_signal("event_chat_unlocked") \
+			and not PartyChatSystem.event_chat_unlocked.is_connected(_on_event_chat_unlocked):
+		PartyChatSystem.event_chat_unlocked.connect(_on_event_chat_unlocked)
+
 	# Create the persistent area-transition fade overlay (layer=90, below BattleTransition=100)
 	_area_fade_layer = CanvasLayer.new()
 	_area_fade_layer.layer = 90
@@ -1989,12 +1998,10 @@ func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
 		if fired:
 			_kick_off_rebalance_fetch.call_deferred(
 				GameState.rebalance_daemon.pending.size() - 1)
-	# Tick 247: ratchet the "double digits" party-chat flag the first
-	# time any party member crosses level 10. Idempotent — dict writes
-	# overwrite. PartyChatSystem's `event_chat_level_10` becomes
-	# available after this fires (registry test pins the wiring).
-	if new_level >= 10 and not GameState.game_constants.get("event_flag_level_10_reached", false):
-		GameState.game_constants["event_flag_level_10_reached"] = true
+	# Tick 247 / 254: ratchet "Double Digits" event flag via the
+	# centralized helper so a toast fires on first unlock.
+	if new_level >= 10 and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_level_10_reached")
 
 
 func _reconcile_spotlight_locks() -> void:
@@ -4788,6 +4795,14 @@ func _on_game_constant_modified(constant_name: String, old_value, new_value) -> 
 	Toast.show(self,
 		"✎ %s: %s → %s" % [display_name, str(old_value), str(new_value)],
 		Toast.DEFAULT_COLOR)
+
+
+## Tick 254: visible feedback when an event chat unlocks. Listener
+## wired in _ready against PartyChatSystem.event_chat_unlocked, which
+## fires from fire_event_flag the moment a registry entry transitions
+## from locked to available.
+func _on_event_chat_unlocked(_chat_id: String, title: String) -> void:
+	Toast.show_success(self, "New party chat: %s" % title)
 
 
 func _show_autogrind_toast(text: String) -> void:

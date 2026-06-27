@@ -288,15 +288,12 @@ func end_battle(victory: bool) -> void:
 	if victory:
 		current_state = BattleState.VICTORY
 
-		# Tick 249: ratchet "Close" event flag if any survivor walked
-		# out at exactly 1 HP. PartyChatSystem unlocks "event_chat_one
-		# _hp_victory" once this fires. Strict ==1 (not <=1) — 0 is KO
-		# and doesn't count as a survivor.
-		if GameState and "game_constants" in GameState \
-				and not GameState.game_constants.get("event_flag_one_hp_victory", false):
+		# Tick 249/254: ratchet "Close" via centralized helper if any
+		# survivor walked out at exactly 1 HP. Strict ==1 — 0 is KO.
+		if PartyChatSystem:
 			for pc in player_party:
 				if pc and pc.is_alive and pc.current_hp == 1:
-					GameState.game_constants["event_flag_one_hp_victory"] = true
+					PartyChatSystem.fire_event_flag("event_flag_one_hp_victory")
 					break
 
 		## Tick 146: mark each enemy as defeated in the bestiary.
@@ -370,16 +367,11 @@ func end_battle(victory: bool) -> void:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
-						# Tick 250: ratchet "The Glow" event flag on first
-						# sub-10%-chance drop. Uses the base chance, not the
-						# multiplier-modified roll — a base 5% drop that
-						# rolls under a 2x boost is still "rare" from the
-						# narrative POV. PartyChatSystem unlocks
-						# event_chat_rare_drop after this fires.
-						if drop.get("chance", 0.0) < 0.10 \
-								and GameState and "game_constants" in GameState \
-								and not GameState.game_constants.get("event_flag_rare_drop_found", false):
-							GameState.game_constants["event_flag_rare_drop_found"] = true
+						# Tick 250/254: ratchet "The Glow" via centralized helper
+						# on first sub-10%-base-chance drop. Pre-multiplier so a
+						# boosted-2x roll on a 5% base still counts as rare.
+						if drop.get("chance", 0.0) < 0.10 and PartyChatSystem:
+							PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
 						# Equipment IDs route to GameLoop.equipment_pool so they
 						# end up in the shared equipment inventory (where the
 						# Equipment menu reads from); consumables stay on the
@@ -2083,12 +2075,10 @@ func _execute_group_action(action: Dictionary) -> void:
 	# Boss-gloat context: remember the party pooled AP into a combined strike so
 	# the end-of-fight gloat can reference it ("…an all-out attack, how brutish").
 	_all_out_attack_this_battle = true
-	# Tick 247/248: ratchet "first group attack" event flag on any pooled
-	# strike type (all_out_attack / limit_break / combo_magic / formation).
-	# PartyChatSystem unlocks "All at Once" after this fires.
-	if GameState and "game_constants" in GameState \
-			and not GameState.game_constants.get("event_flag_first_group_attack", false):
-		GameState.game_constants["event_flag_first_group_attack"] = true
+	# Tick 247/248/254: ratchet "All at Once" via the centralized helper
+	# on any pooled strike type (all_out / limit_break / combo / formation).
+	if PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_first_group_attack")
 	group_attack_executing.emit(participants, group_type, alive_enemies, _formation_id)
 	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
 		group_type, participants.size(), alive_enemies.size()])
@@ -3463,13 +3453,11 @@ func _check_victory_conditions() -> bool:
 	var enemies_alive = enemy_party.any(func(e): return e.is_alive)
 
 	if not players_alive:
-		# Tick 247/248: ratchet "first party wipe" event flag exactly
-		# at the wipe trigger, not in end_battle (which is also hit by
-		# the escape path with victory=false). PartyChatSystem unlocks
-		# "After the First Time" once this fires.
-		if GameState and "game_constants" in GameState \
-				and not GameState.game_constants.get("event_flag_first_party_wipe", false):
-			GameState.game_constants["event_flag_first_party_wipe"] = true
+		# Tick 247/248/254: ratchet "After the First Time" via the
+		# centralized helper. Fires at the wipe trigger (not in
+		# end_battle, which also serves the escape path).
+		if PartyChatSystem:
+			PartyChatSystem.fire_event_flag("event_flag_first_party_wipe")
 		end_battle(false)
 		return true
 	elif not enemies_alive:

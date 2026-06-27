@@ -20,6 +20,12 @@ extends Node
 ## hides it from the Party Chat menu.
 
 signal chats_changed()
+## Tick 254: fired the moment an event_chat_* transitions from
+## unavailable → available (i.e. fire_event_flag set its last missing
+## unlock flag). Lets a UI listener show a "New chat unlocked: <title>"
+## toast so the player gets visible feedback instead of silently
+## seeing the menu item next time they open it.
+signal event_chat_unlocked(chat_id: String, title: String)
 
 ## Optional override for tests — points at a GameState-like node with
 ## a `game_constants: Dictionary` property. When null, falls back to the
@@ -254,6 +260,55 @@ func is_available(id: String) -> bool:
 	return _is_unlocked(id) and not _is_viewed(id)
 
 
+## Tick 254: centralized helper for ratcheting one-shot event flags.
+## Idempotent: if the flag is already set, returns "" without re-emitting
+## signals. If the flag is new AND its setting makes a registry entry
+## available, emits event_chat_unlocked(chat_id, title) so a UI handler
+## can surface a toast.
+##
+## Returns the chat_id that just unlocked (or "" if none, e.g. flag set
+## but no chat depends on it).
+##
+## Pre-tick-254 every ratchet site did:
+##   if GameState and "game_constants" in GameState \
+##           and not GameState.game_constants.get(flag, false):
+##       GameState.game_constants[flag] = true
+## across 8 sites — copy-paste, easy to drift, no signal hook.
+func fire_event_flag(flag: String) -> String:
+	if not _flags_reachable():
+		# No GameState reachable — common in headless test paths without
+		# the autoload. Caller's flag was never persistent; quietly no-op.
+		return ""
+	var flags := _flags()
+	if flags.get(flag, false):
+		return ""
+	flags[flag] = true
+	# Walk the registry — does this flag unlock any previously-locked
+	# entry? An entry can have multiple unlock flags; only count as
+	# "unlocked NOW" if the entry references THIS flag AND every other
+	# required flag was already set.
+	for id in REGISTRY.keys():
+		var entry: Dictionary = REGISTRY[id]
+		var unlock: Array = entry.get("unlock", [])
+		if not (flag in unlock):
+			continue
+		if _is_viewed(id):
+			continue
+		var all_other_set := true
+		for f in unlock:
+			if str(f) == flag:
+				continue
+			if not flags.get(f, false):
+				all_other_set = false
+				break
+		if all_other_set:
+			var title: String = str(entry.get("title", id))
+			event_chat_unlocked.emit(str(id), title)
+			chats_changed.emit()
+			return str(id)
+	return ""
+
+
 func mark_viewed(id: String) -> void:
 	# Tick 246: surface silent-skip when caller passes an unregistered id
 	# (typo, dropped registry entry, stale cutscene reference). Silent
@@ -291,3 +346,14 @@ func _flags() -> Dictionary:
 	if root is SceneTree and root.root.has_node("GameState"):
 		return root.root.get_node("GameState").game_constants
 	return {}
+
+
+# Tick 254: distinguishes "no GameState wired" from "GameState present
+# with empty game_constants". fire_event_flag needs to no-op only in
+# the former case; the latter is the common pre-tick-1 state where
+# the first ratchet should write its first flag.
+func _flags_reachable() -> bool:
+	if game_state_override:
+		return true
+	var root := Engine.get_main_loop()
+	return root is SceneTree and root.root.has_node("GameState")
