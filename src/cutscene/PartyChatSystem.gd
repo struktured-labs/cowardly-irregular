@@ -318,6 +318,15 @@ func mark_viewed(id: String) -> void:
 	if not REGISTRY.has(id):
 		push_warning("[PartyChatSystem] mark_viewed('%s') — id not in REGISTRY (typo? dropped entry?). Skipped — chat will remain in 'available' state if it was unlocked." % id)
 		return
+	# Tick 255: same silent-fail class fire_event_flag had at tick 254.
+	# When _flags() falls back to a throwaway {} (no GameState wired),
+	# the write here is dropped on the floor and the chat would stay
+	# "available" forever in headless tests / debug paths. Skip-with-
+	# warning is the safer behavior — the caller's UI would otherwise
+	# think the viewed-state landed.
+	if not _flags_reachable():
+		push_warning("[PartyChatSystem] mark_viewed('%s') — no GameState reachable; viewed-state not persisted" % id)
+		return
 	_flags()["party_chat_viewed_" + id] = true
 	chats_changed.emit()
 
