@@ -1989,6 +1989,12 @@ func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
 		if fired:
 			_kick_off_rebalance_fetch.call_deferred(
 				GameState.rebalance_daemon.pending.size() - 1)
+	# Tick 247: ratchet the "double digits" party-chat flag the first
+	# time any party member crosses level 10. Idempotent — dict writes
+	# overwrite. PartyChatSystem's `event_chat_level_10` becomes
+	# available after this fires (registry test pins the wiring).
+	if new_level >= 10 and not GameState.game_constants.get("event_flag_level_10_reached", false):
+		GameState.game_constants["event_flag_level_10_reached"] = true
 
 
 func _reconcile_spotlight_locks() -> void:

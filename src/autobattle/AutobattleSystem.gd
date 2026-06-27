@@ -476,6 +476,12 @@ func set_autobattle_enabled(character_id: String, enabled: bool) -> void:
 	"""Enable or disable autobattle for a character"""
 	autobattle_enabled[character_id] = enabled
 	character_script_changed.emit(character_id)
+	# Tick 247: ratchet the first-autobattle party-chat flag the first
+	# time the player flips ANY character to enabled. Skips on disable
+	# (the chat is about the first scripted run, not the toggle off).
+	if enabled and GameState and "game_constants" in GameState \
+			and not GameState.game_constants.get("event_flag_first_autobattle_enabled", false):
+		GameState.game_constants["event_flag_first_autobattle_enabled"] = true
 
 
 func toggle_autobattle(character_id: String) -> bool:
