@@ -20,6 +20,11 @@ const ACCENT := Color(0.6, 0.85, 1.0)
 const SILHOUETTE_COLOR := Color(0.12, 0.14, 0.20, 1.0)
 
 var _entries: Array = []  # from BestiarySystem.get_seen_entries_sorted()
+# Tick 267: sort-mode cycle. Press Left to advance: Level → Kills →
+# Name → Level. Header gains a "(Sort: <mode>)" suffix when not on
+# the default Level mode (avoid noise on first open).
+const _SORT_CYCLE: Array[String] = ["level", "kills", "name"]
+var _sort_mode_idx: int = 0
 var _selected: int = 0
 var _row_nodes: Array = []
 
@@ -43,7 +48,7 @@ var _count_label: Label = null
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	mouse_filter = MOUSE_FILTER_STOP
-	_entries = BestiarySystem.get_seen_entries_sorted()
+	_entries = BestiarySystem.get_seen_entries_sorted(_SORT_CYCLE[_sort_mode_idx])
 	_build_ui()
 	_refresh_detail()
 	# Sizes aren't valid during _build_ui, so defer the first scroll-to-selected
@@ -101,9 +106,15 @@ func _build_ui() -> void:
 		var base_text: String = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
 		if total_kills > 0:
 			base_text += " · %d kills" % total_kills
+		# Tick 267: surface current sort mode when non-default.
+		# Press Left to cycle. Skipped on the default "level" mode
+		# to keep the header clean for fresh save / first-open UX.
+		var sort_mode: String = _SORT_CYCLE[_sort_mode_idx]
+		if sort_mode != "level":
+			base_text += " · [Sort: %s]" % sort_mode.capitalize()
 		_count_label.text = base_text
-		_count_label.size = Vector2(440, 24)
-		_count_label.position = Vector2(viewport.x - 460, 22)
+		_count_label.size = Vector2(540, 24)
+		_count_label.position = Vector2(viewport.x - 560, 22)
 	_count_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -543,6 +554,13 @@ func _input(event: InputEvent) -> void:
 		_scroll_to_selected()
 		_refresh_detail()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
+		# Tick 267: cycle sort mode (Level → Kills → Name → Level).
+		# Press Left advances; Right could un-cycle but most one-axis
+		# cycle UIs are direction-agnostic, so we keep input minimal.
+		_sort_mode_idx = (_sort_mode_idx + 1) % _SORT_CYCLE.size()
+		_re_sort_and_refresh()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		_close()
 		get_viewport().set_input_as_handled()
@@ -596,3 +614,17 @@ func _on_row_click(idx: int) -> void:
 func _close() -> void:
 	closed.emit()
 	queue_free()
+
+
+# Tick 267: re-fetch entries with the current sort mode then rebuild
+# the list. Resets selection to top so the player sees the new
+# leader of the sort. Detail panel + scroll re-sync via the normal
+# _build_ui flow.
+func _re_sort_and_refresh() -> void:
+	_entries = BestiarySystem.get_seen_entries_sorted(_SORT_CYCLE[_sort_mode_idx])
+	_selected = 0
+	for child in get_children():
+		child.queue_free()
+	_build_ui()
+	_refresh_detail()
+	call_deferred("_scroll_to_selected")

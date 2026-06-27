@@ -276,10 +276,19 @@ static func _count_known_ids(ids: Array) -> int:
 	return n
 
 
-static func get_seen_entries_sorted() -> Array:
+## Sort modes accepted by get_seen_entries_sorted. "level" is the
+## historical default (level ASC, name ASC tiebreak — atlas-like
+## ordering). "kills" sorts most-defeated first (autobattle planner
+## hint). "name" is plain alphabetical.
+const SORT_LEVEL := "level"
+const SORT_KILLS := "kills"
+const SORT_NAME := "name"
+
+
+static func get_seen_entries_sorted(sort_mode: String = SORT_LEVEL) -> Array:
 	"""All seen monsters as [{id, name, level, stats, flavor, epithet,
-	exp_reward, gold_reward, drops, one_shot_reward}] sorted by level
-	ascending then name. Drops + reward fields feed the BestiaryMenu's
+	exp_reward, gold_reward, drops, one_shot_reward}] sorted by the
+	requested mode. Drops + reward fields feed the BestiaryMenu's
 	autobattle-loop intel: players need drop rates to design rules like
 	'farm slime until 5 bone'."""
 	_ensure_loaded()
@@ -316,9 +325,28 @@ static func get_seen_entries_sorted() -> Array:
 			# Tick 262: how many times the player has killed this enemy.
 			"defeat_count": get_defeat_count(id),
 		})
-	out.sort_custom(func(a, b):
-		if a.level != b.level:
-			return a.level < b.level
-		return a.name < b.name
-	)
+	# Tick 267: dispatch sort comparator on requested mode. Each mode
+	# has a deterministic tiebreak so display is stable across saves
+	# and monsters.json reorders.
+	match sort_mode:
+		SORT_KILLS:
+			# Most-killed first; level ASC tiebreak; name ASC final tiebreak.
+			out.sort_custom(func(a, b):
+				if a.defeat_count != b.defeat_count:
+					return a.defeat_count > b.defeat_count
+				if a.level != b.level:
+					return a.level < b.level
+				return a.name < b.name
+			)
+		SORT_NAME:
+			out.sort_custom(func(a, b):
+				return a.name < b.name
+			)
+		_:
+			# Default / SORT_LEVEL: original behavior.
+			out.sort_custom(func(a, b):
+				if a.level != b.level:
+					return a.level < b.level
+				return a.name < b.name
+			)
 	return out
