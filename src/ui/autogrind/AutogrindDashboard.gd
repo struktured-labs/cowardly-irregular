@@ -663,12 +663,13 @@ func set_ludicrous_mode(enabled: bool) -> void:
 		_ludicrous_label.visible = enabled
 
 
-func add_highlight(_text: String, _severity: String = "info") -> void:
-	pass
-
-
-func update_rule_triggers(_triggers: Dictionary) -> void:
-	pass
+# Tick 266: removed dead stub methods. `add_highlight` and
+# `update_rule_triggers` were no-op pass stubs from a now-stale
+# anticipated parity with AutogrindMonitor. AutogrindUI only calls
+# these on `_monitor` (never on `_dashboard`), and GameLoop's
+# `_autogrind_dashboard` doesn't call them either. They were dead
+# code that read as "intentionally swallow events" — misleading.
+# Reintroduce when the Dashboard actually needs the surface.
 
 
 func _update_stat(key: String, value: String) -> void:
