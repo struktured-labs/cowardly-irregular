@@ -211,23 +211,31 @@ func _setup_persona_data() -> void:
 
 
 static func _load_persona_cache() -> void:
+	# Tick 282: split parse-error and non-Dict-root paths so devs can
+	# tell apart "JSON is malformed" from "JSON parses but root isn't
+	# a Dictionary" (matches the canonical loud-fail pattern from
+	# tick 274/275/276). Pre-fix both fell under one generic warning.
 	_persona_cache_loaded = true  # Set first so a malformed file doesn't retry every NPC.
 	if not FileAccess.file_exists(PERSONA_DATA_PATH):
-		push_warning("[OverworldNPC] persona data missing: %s" % PERSONA_DATA_PATH)
+		push_warning("[OverworldNPC] persona data missing at %s — dynamic NPC dialogue scoped-personas will be empty" % PERSONA_DATA_PATH)
 		return
 	var f := FileAccess.open(PERSONA_DATA_PATH, FileAccess.READ)
 	if f == null:
-		push_warning("[OverworldNPC] could not open persona data: %s" % PERSONA_DATA_PATH)
+		push_warning("[OverworldNPC] %s exists but FileAccess.open failed — persona cache empty" % PERSONA_DATA_PATH)
 		return
 	var text: String = f.get_as_text()
 	f.close()
-	var parsed: Variant = JSON.parse_string(text)
-	if not (parsed is Dictionary):
-		push_warning("[OverworldNPC] persona JSON did not parse to Dictionary")
+	var json := JSON.new()
+	var parse_result := json.parse(text)
+	if parse_result != OK:
+		push_warning("[OverworldNPC] %s parse error: %s — persona cache empty" % [PERSONA_DATA_PATH, json.get_error_message()])
+		return
+	if not (json.data is Dictionary):
+		push_warning("[OverworldNPC] %s parsed but root is not a Dictionary — persona cache empty" % PERSONA_DATA_PATH)
 		return
 	# Only keep keys that look like NPC entries (have a "persona" subkey).
-	for key in (parsed as Dictionary).keys():
-		var v: Variant = (parsed as Dictionary)[key]
+	for key in (json.data as Dictionary).keys():
+		var v: Variant = (json.data as Dictionary)[key]
 		if v is Dictionary and (v as Dictionary).has("persona"):
 			_persona_cache[str(key)] = v
 
