@@ -288,6 +288,17 @@ func end_battle(victory: bool) -> void:
 	if victory:
 		current_state = BattleState.VICTORY
 
+		# Tick 249: ratchet "Close" event flag if any survivor walked
+		# out at exactly 1 HP. PartyChatSystem unlocks "event_chat_one
+		# _hp_victory" once this fires. Strict ==1 (not <=1) — 0 is KO
+		# and doesn't count as a survivor.
+		if GameState and "game_constants" in GameState \
+				and not GameState.game_constants.get("event_flag_one_hp_victory", false):
+			for pc in player_party:
+				if pc and pc.is_alive and pc.current_hp == 1:
+					GameState.game_constants["event_flag_one_hp_victory"] = true
+					break
+
 		## Tick 146: mark each enemy as defeated in the bestiary.
 		## Pre-fix mark_seen happened at battle start, but there was
 		## no notion of "killed" — encountered ≠ defeated. This loop

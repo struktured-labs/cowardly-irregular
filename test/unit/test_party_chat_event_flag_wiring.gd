@@ -24,11 +24,10 @@ const PARTY_CHAT := "res://src/cutscene/PartyChatSystem.gd"
 ##
 ## tick 247 wave: removed 2 (level_10_reached, first_autobattle_enabled).
 ## tick 248 wave: removed 2 more (first_party_wipe, first_group_attack).
+## tick 249 wave: removed 2 more (dragon_cave_entered, one_hp_victory).
 const KNOWN_UNWIRED: Array[String] = [
 	"event_flag_first_magic_shop_visited",
 	"event_flag_rare_drop_found",
-	"event_flag_dragon_cave_entered",
-	"event_flag_one_hp_victory",
 ]
 
 
@@ -147,3 +146,13 @@ func test_tick_248_first_party_wipe_flag_wired() -> void:
 func test_tick_248_first_group_attack_flag_wired() -> void:
 	assert_true(_is_flag_emitted("event_flag_first_group_attack"),
 		"event_flag_first_group_attack must be set by BattleManager._execute_group_action on any pooled strike")
+
+
+func test_tick_249_dragon_cave_entered_flag_wired() -> void:
+	assert_true(_is_flag_emitted("event_flag_dragon_cave_entered"),
+		"event_flag_dragon_cave_entered must be set by DragonCave._ready when cave_id contains 'dragon_cave'")
+
+
+func test_tick_249_one_hp_victory_flag_wired() -> void:
+	assert_true(_is_flag_emitted("event_flag_one_hp_victory"),
+		"event_flag_one_hp_victory must be set by BattleManager.end_battle(true) when any survivor has current_hp == 1")
