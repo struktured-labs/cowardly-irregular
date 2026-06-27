@@ -4446,6 +4446,16 @@ const VICTORY_QUIPS: Dictionary = {
 	"ninja": ["Clean.", "Already done.", "Efficient.", "...moving on."],
 	"summoner": ["The spirits are pleased.", "A worthy offering.", "The pact grows stronger.", "Well fought, all of us."],
 	"speculator": ["Profit margins looking good.", "Return on investment: excellent.", "The market rewards the bold.", "Portfolio up."],
+	# Tick 289: meta jobs now have diegetic quips matching their
+	# schtick. Pre-fix all 5 fell through to "_default" / "Victory!"
+	# which broke the per-job voice for debug-unlocked playthroughs.
+	# Mirrors the tick-124 JOB_QUIP_COLORS extension (colors were
+	# fixed; lines weren't).
+	"scriptweaver": ["return WIN;", "Commit. Push. Merge.", "Patch deployed.", "// TODO: feel something"],
+	"time_mage": ["Rewinding for the highlight reel.", "Knew this round before it began.", "Threading the timeline.", "Some battles end before they start."],
+	"necromancer": ["The dead are louder than ever.", "Another for the choir.", "Even endings have endings.", "I'll lend their bones a new song."],
+	"bossbinder": ["I felt them lose.", "We were them, briefly.", "Mask off. Next.", "Their script is now mine."],
+	"skiptrotter": ["Skipped the cutscene, kept the EXP.", "Speed-pace cleared.", "Filing this under: handled.", "Already on the next map."],
 	"_default": ["Victory!", "We did it!", "Well fought!"],
 }
 
