@@ -292,8 +292,23 @@ func spend_mp(amount: int) -> bool:
 
 func die() -> void:
 	"""Handle death"""
+	# Tick 283: emit hp_changed alongside died IF current_hp wasn't
+	# already 0. Pre-fix die() was called from BattleManager's
+	# PERMAKILL ability path with no hp_changed signal — so UI
+	# listeners (BattleUIManager) updating the HP bar via hp_changed
+	# never saw the lethal drop. The bar stayed at the pre-permakill
+	# HP value until the next unrelated event triggered a redraw.
+	#
+	# The guard avoids double-emit on the take_damage → die() path
+	# (take_damage already emits hp_changed before calling die at
+	# its line ~242). Matches take_damage's is_alive-before-emit
+	# ordering so UI listeners see the post-death state on the
+	# sample tick.
+	var old_hp = current_hp
 	is_alive = false
 	current_hp = 0
+	if old_hp != 0:
+		hp_changed.emit(old_hp, current_hp)
 	died.emit()
 
 
