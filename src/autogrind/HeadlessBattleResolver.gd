@@ -39,6 +39,11 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	## battles never updated the bestiary — a player running
 	## autogrind for hours could face hundreds of monster types
 	## without any of them showing up in their bestiary.
+	# Tick 260: pass current map id so the "Last seen: <location>"
+	# bestiary hint reflects autogrind encounters too.
+	var loc: String = ""
+	if MapSystem and "current_map_id" in MapSystem:
+		loc = str(MapSystem.current_map_id)
 	for enemy in _enemy_party:
 		if not is_instance_valid(enemy):
 			continue
@@ -46,7 +51,7 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 		if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
 			mtype = str(enemy.get_meta("monster_type", ""))
 		if mtype != "":
-			BestiarySystem.mark_seen(mtype)
+			BestiarySystem.mark_seen(mtype, loc)
 
 	# Edge case: empty or all-dead party = immediate defeat
 	var alive_players = _player_party.filter(func(c): return c.is_alive)
@@ -743,12 +748,16 @@ func _build_results(victory: bool) -> Dictionary:
 			gold += int(enemy.max_hp * 0.3 + enemy.defense)
 			## Tick 146: mark defeated. mark_seen happened at the top
 			## of resolve_battle (tick 145); this is the kill credit.
+			# Tick 260: forward location through the defeat call too.
 			if not is_instance_valid(enemy):
 				continue
 			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
 				var mtype: String = str(enemy.get_meta("monster_type", ""))
 				if mtype != "":
-					BestiarySystem.mark_defeated(mtype)
+					var defeat_loc: String = ""
+					if MapSystem and "current_map_id" in MapSystem:
+						defeat_loc = str(MapSystem.current_map_id)
+					BestiarySystem.mark_defeated(mtype, defeat_loc)
 
 	return {
 		"victory": victory,

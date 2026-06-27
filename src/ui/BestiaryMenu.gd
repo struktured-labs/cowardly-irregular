@@ -409,11 +409,18 @@ func _refresh_detail() -> void:
 		_detail_drops.text = "Drops: ???   (defeat to unlock)"
 
 	# Tick 193: flavor area now actually displays flavor (silent bug — never assigned in positive path) + prepends location hint for completionist navigation.
+	# Tick 260: adds "Last seen: <location>" derived from the most recent
+	# encounter (mark_seen / mark_defeated forwards MapSystem.current_map
+	# _id). Shown only when non-empty AND the player has actually engaged
+	# (defeated path or any seen-record carrying location data).
 	var pools: Array = entry.get("pools", [])
+	var last_location: String = str(entry.get("last_location", ""))
 	var flavor: String = str(entry.get("flavor", ""))
 	var blocks: PackedStringArray = []
 	if pools.size() > 0:
 		blocks.append("Found in: %s" % ", ".join(PackedStringArray(pools)))
+	if last_location != "":
+		blocks.append("Last seen: %s" % last_location)
 	if flavor != "":
 		blocks.append(flavor)
 	_detail_flavor.text = "\n\n".join(blocks)

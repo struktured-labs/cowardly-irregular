@@ -113,7 +113,10 @@ func test_battle_manager_end_battle_marks_defeated() -> void:
 	assert_gt(idx, -1, "end_battle must exist")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("BestiarySystem.mark_defeated(mtype)"),
+	# Tick 260: mark_defeated gained an optional location arg.
+	var has_legacy: bool = body.contains("BestiarySystem.mark_defeated(mtype)")
+	var has_with_loc: bool = body.contains("BestiarySystem.mark_defeated(mtype, defeat_loc)")
+	assert_true(has_legacy or has_with_loc,
 		"end_battle (victory branch) must call BestiarySystem.mark_defeated")
 	# Negative pin: must be guarded behind victory.
 	var victory_idx: int = body.find("if victory:")
@@ -132,7 +135,10 @@ func test_headless_resolver_marks_defeated_on_victory() -> void:
 	assert_gt(idx, -1, "_build_results must exist")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx)
-	assert_true(body.contains("BestiarySystem.mark_defeated(mtype)"),
+	# Tick 260: mark_defeated gained an optional location arg.
+	var has_legacy: bool = body.contains("BestiarySystem.mark_defeated(mtype)")
+	var has_with_loc: bool = body.contains("BestiarySystem.mark_defeated(mtype, defeat_loc)")
+	assert_true(has_legacy or has_with_loc,
 		"_build_results must call mark_defeated in the victory branch")
 	# Same victory-only guard as BattleManager.
 	var victory_idx: int = body.find("if victory:")

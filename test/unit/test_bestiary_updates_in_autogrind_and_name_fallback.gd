@@ -35,7 +35,11 @@ func test_resolve_battle_marks_each_enemy_seen() -> void:
 	assert_gt(idx, -1, "resolve_battle must exist")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx)
-	assert_true(body.contains("BestiarySystem.mark_seen(mtype)"),
+	# Tick 260: mark_seen gained an optional location arg.
+	# Accept either legacy 1-arg or new 2-arg form.
+	var has_legacy: bool = body.contains("BestiarySystem.mark_seen(mtype)")
+	var has_with_loc: bool = body.contains("BestiarySystem.mark_seen(mtype, loc)")
+	assert_true(has_legacy or has_with_loc,
 		"resolve_battle must call BestiarySystem.mark_seen on each encountered enemy")
 	assert_true(body.contains("enemy.get_meta(\"monster_type\", \"\")"),
 		"resolve_battle must read monster_type meta (same key used by BattleScene + BattleEnemySpawner)")

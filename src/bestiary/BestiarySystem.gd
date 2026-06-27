@@ -122,7 +122,7 @@ static func is_seen(monster_id: String) -> bool:
 	return seen.has(monster_id)
 
 
-static func mark_seen(monster_id: String) -> void:
+static func mark_seen(monster_id: String, location_id: String = "") -> void:
 	# Tick 245: loud-fail on empty / unknown ids so a Combatant with a
 	# missing monster_id (Summoner internal, save-side drift, typo'd
 	# Scriptweaver spawn) doesn't silently pollute the seen dict.
@@ -130,6 +130,11 @@ static func mark_seen(monster_id: String) -> void:
 	# Unknown id -> WARN but still write, so a story-agent reload that
 	# adds the id later still grants the player credit (the tick 244
 	# count-filter swallows the noise meanwhile).
+	#
+	# Tick 260: optional location_id records where the player most
+	# recently encountered this monster — fed to BestiaryMenu as the
+	# "Last seen: <location>" autobattle-planning hint. Empty string
+	# leaves the prior location intact (caller has no map context).
 	if monster_id == "":
 		push_warning("[BestiarySystem] mark_seen called with empty monster_id — likely a Combatant missing monster_type; skipped")
 		return
@@ -139,11 +144,27 @@ static func mark_seen(monster_id: String) -> void:
 	if not GameState.game_constants.has("seen_monsters"):
 		GameState.game_constants["seen_monsters"] = {}
 	GameState.game_constants["seen_monsters"][monster_id] = true
+	if location_id != "":
+		if not GameState.game_constants.has("seen_monsters_last_location"):
+			GameState.game_constants["seen_monsters_last_location"] = {}
+		GameState.game_constants["seen_monsters_last_location"][monster_id] = location_id
 
 
 static func get_seen_ids() -> Array:
 	var seen: Dictionary = GameState.game_constants.get("seen_monsters", {})
 	return seen.keys()
+
+
+# Tick 260: last-known encounter location, prettified for display.
+# "" when never recorded (legacy save, Scriptweaver spawn without map
+# context, headless test). UI should gate the "Last seen:" line on
+# non-empty return.
+static func get_last_seen_location(monster_id: String) -> String:
+	var locations: Dictionary = GameState.game_constants.get("seen_monsters_last_location", {})
+	var raw: String = str(locations.get(monster_id, ""))
+	if raw == "":
+		return ""
+	return _titlecase(raw)
 
 
 ## Tick 146: defeated tracking distinct from seen. Encounter ≠ kill.
@@ -156,15 +177,17 @@ static func is_defeated(monster_id: String) -> bool:
 	return defeated.has(monster_id)
 
 
-static func mark_defeated(monster_id: String) -> void:
+static func mark_defeated(monster_id: String, location_id: String = "") -> void:
 	# Tick 245: empty-id guard mirrors mark_seen. mark_seen itself
 	# warns for unknown ids — no need to double-warn here.
+	# Tick 260: forward location_id through the seen-invariant
+	# auto-mark so kill site updates the "last seen here" hint too.
 	if monster_id == "":
 		push_warning("[BestiarySystem] mark_defeated called with empty monster_id — skipped")
 		return
 	# Defeat implies seen — auto-mark to maintain invariant. A monster
 	# can only be killed if it was encountered.
-	mark_seen(monster_id)
+	mark_seen(monster_id, location_id)
 	if not GameState.game_constants.has("defeated_monsters"):
 		GameState.game_constants["defeated_monsters"] = {}
 	GameState.game_constants["defeated_monsters"][monster_id] = true
@@ -239,6 +262,8 @@ static func get_seen_entries_sorted() -> Array:
 			"defeated": is_defeated(id),
 			# Tick 193: where this monster can be encountered (completionist hint).
 			"pools": get_pools_for_monster(id),
+			# Tick 260: last-known encounter location ("" if not recorded).
+			"last_location": get_last_seen_location(id),
 		})
 	out.sort_custom(func(a, b):
 		if a.level != b.level:

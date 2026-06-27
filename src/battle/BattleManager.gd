@@ -303,13 +303,20 @@ func end_battle(victory: bool) -> void:
 		## because we need to credit each unique monster_type the
 		## party brought down. Routes through BestiarySystem which
 		## auto-mark_seen as well (defeat implies seen invariant).
+		# Tick 260: capture current map id once for the kill loop so
+		# the "Last seen: <location>" hint reflects where the kill
+		# happened (encounter location often matters more to the
+		# autobattle planner than the static enemy_pools mapping).
+		var defeat_loc: String = ""
+		if MapSystem and "current_map_id" in MapSystem:
+			defeat_loc = str(MapSystem.current_map_id)
 		for enemy in enemy_party:
 			if not is_instance_valid(enemy):
 				continue
 			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
 				var mtype: String = str(enemy.get_meta("monster_type", ""))
 				if mtype != "":
-					BestiarySystem.mark_defeated(mtype)
+					BestiarySystem.mark_defeated(mtype, defeat_loc)
 
 		# Check for one-shot achievement
 		_check_one_shot()

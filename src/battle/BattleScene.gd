@@ -4506,7 +4506,12 @@ func _is_new_monster(monster_type: String) -> bool:
 	return not BestiarySystem.is_seen(monster_type)
 
 func _mark_monster_seen(monster_type: String) -> void:
-	BestiarySystem.mark_seen(monster_type)
+	# Tick 260: pass current map id so BestiaryMenu can show
+	# "Last seen: <location>" — autobattle-planning hint.
+	var loc: String = ""
+	if MapSystem and "current_map_id" in MapSystem:
+		loc = str(MapSystem.current_map_id)
+	BestiarySystem.mark_seen(monster_type, loc)
 
 func _show_battle_quip() -> void:
 	"""Show a party member quip at battle start."""
