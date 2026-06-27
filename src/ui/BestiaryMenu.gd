@@ -85,6 +85,12 @@ func _build_ui() -> void:
 	## ran into the title at viewports ≤ ~600px.
 	var counts: Vector2i = BestiarySystem.discovery_counts()
 	var defeated_counts: Vector2i = BestiarySystem.defeat_counts()
+	# Tick 263: total kills aggregate. Reads as "· 124 kills" appended
+	# to the seen/defeated line so the player sees their cumulative
+	# grind tally at a glance — autobattle planners care about this.
+	# Hidden when zero (no "· 0 kills" noise) and on narrow viewports
+	# where the seen/defeated split is already collapsed for space.
+	var total_kills: int = BestiarySystem.total_kills()
 	_count_label = Label.new()
 	var narrow_viewport: bool = viewport.x <= 720
 	if narrow_viewport:
@@ -92,9 +98,12 @@ func _build_ui() -> void:
 		_count_label.size = Vector2(200, 24)
 		_count_label.position = Vector2(viewport.x - 220, 22)
 	else:
-		_count_label.text = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
-		_count_label.size = Vector2(340, 24)
-		_count_label.position = Vector2(viewport.x - 360, 22)
+		var base_text: String = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
+		if total_kills > 0:
+			base_text += " · %d kills" % total_kills
+		_count_label.text = base_text
+		_count_label.size = Vector2(440, 24)
+		_count_label.position = Vector2(viewport.x - 460, 22)
 	_count_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

@@ -214,6 +214,19 @@ static func get_defeat_count(monster_id: String) -> int:
 	return int(counts.get(monster_id, 0))
 
 
+# Tick 263: aggregate kill total across all monsters. Reads from the
+# same defeated_counts dict as get_defeat_count so the sum reflects
+# whatever credit the player has accrued (including stale ids for
+# renamed monsters — they still count as kills the player earned).
+# Returns 0 for legacy saves with no defeated_counts dict.
+static func total_kills() -> int:
+	var counts: Dictionary = GameState.game_constants.get("defeated_counts", {})
+	var total: int = 0
+	for v in counts.values():
+		total += int(v)
+	return total
+
+
 static func defeat_counts() -> Vector2i:
 	"""Returns (defeated, total_monsters) — UI display."""
 	_ensure_loaded()

@@ -45,13 +45,19 @@ func test_count_label_reads_both_systems() -> void:
 func test_count_label_width_accommodates_longer_text() -> void:
 	# The new label is longer than the old "12 / 88 discovered".
 	# Width must be ≥ 320 (rough fit at 16pt font) to avoid truncation.
+	# Tick 263: expanded to 440 to accommodate the trailing
+	# "· <N> kills" suffix. Accept either tick-148 (340) or tick-263
+	# (440) shape.
 	var src := _read(BESTIARY_MENU)
-	# The exact size used in tick 148 (wide branch): 340 wide.
-	assert_true(src.contains("_count_label.size = Vector2(340, 24)"),
-		"count label (wide viewport) must be wide enough for the dual-count text — 340px")
-	# Positioned 360 left of right edge to match the wider label.
-	assert_true(src.contains("Vector2(viewport.x - 360, 22)"),
-		"count label (wide viewport) must be positioned to fit the wider text without clipping the viewport edge")
+	var has_148: bool = src.contains("_count_label.size = Vector2(340, 24)")
+	var has_263: bool = src.contains("_count_label.size = Vector2(440, 24)")
+	assert_true(has_148 or has_263,
+		"count label (wide viewport) must be wide enough for the dual-count text — 340px (tick 148) or 440px (tick 263 kills suffix)")
+	# Position is mirrored to the width — viewport.x - (width + 20).
+	var pos_148: bool = src.contains("Vector2(viewport.x - 360, 22)")
+	var pos_263: bool = src.contains("Vector2(viewport.x - 460, 22)")
+	assert_true(pos_148 or pos_263,
+		"count label position must fit the wider text without clipping viewport edge")
 
 
 func test_narrow_viewport_collapses_to_short_form() -> void:
