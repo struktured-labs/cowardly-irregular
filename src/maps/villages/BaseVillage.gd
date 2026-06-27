@@ -73,6 +73,19 @@ func _ready() -> void:
 	if SoundManager:
 		SoundManager.play_area_music(_get_music_area_id())
 
+	# Tick 279: ratchet visited_<village> story_flag. Pre-fix the
+	# *Overworld scripts read visited_maple_heights / visited_brasston /
+	# visited_rivet_row / visited_node_prime to switch the objective
+	# arrow from "go to <village>" → "head to the forward portal", but
+	# NOTHING anywhere set these flags. Result: the arrow stayed pointed
+	# at the village even after the player had already been there.
+	# Derived flag name = area_id minus the "_village" suffix so the
+	# existing reads (visited_brasston, etc.) just work.
+	if GameState:
+		var aid: String = _get_area_id()
+		if aid.ends_with("_village"):
+			GameState.set_story_flag("visited_" + aid.replace("_village", ""), true)
+
 	exploration_ready.emit()
 
 
