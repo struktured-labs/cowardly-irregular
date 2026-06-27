@@ -18,6 +18,17 @@ const WORLD_DATA := [
 
 ## Flags that represent key progression within a world.
 ## Each flag present = +1 towards completion.
+## Tick 272: per-world boss-defeat flags now correctly placed (same bug
+## class as tick 241's ChapterTitles W3/W4 misplacement). Pre-fix W3's
+## list referenced `cutscene_flag_warden_industrial_defeated` — the W4
+## Industrial Warden flag — so the W3 progress bar would tick up when
+## the player beat the W4 boss instead of W3's actual boss (Tempo).
+## Each world's boss-defeat flag now matches the dungeon that emits it:
+##   W2: warden_suburban (suburban underground)
+##   W3: tempo_steampunk (steampunk mechanism)
+##   W4: warden_industrial (assembly core) — back in its correct world
+##   W5: arbiter_futuristic (root process)
+##   W6: world6_calibrant_defeat_complete (null chamber)
 const PROGRESS_FLAGS := {
 	1: ["cutscene_flag_prologue_complete", "cutscene_flag_chapter1_complete",
 		"cutscene_flag_chapter3_complete", "cutscene_flag_rat_king_defeated",
@@ -25,19 +36,23 @@ const PROGRESS_FLAGS := {
 		"cutscene_flag_world1_mordaine_defeated"],
 	2: ["cutscene_flag_world2_prologue_complete", "cutscene_flag_world2_chapter1_complete",
 		"cutscene_flag_world2_chapter2_complete", "cutscene_flag_world2_chapter3_complete",
+		"cutscene_flag_warden_suburban_defeated",
 		"cutscene_flag_arbiter_suburban_defeated", "cutscene_flag_curator_suburban_defeated",
 		"cutscene_flag_chapter11_complete"],
 	3: ["cutscene_flag_world3_prologue_complete", "cutscene_flag_world3_chapter1_complete",
 		"cutscene_flag_world3_chapter2_complete", "cutscene_flag_world3_chapter3_complete",
-		"cutscene_flag_warden_industrial_defeated", "cutscene_flag_world3_chapter5_complete"],
+		"cutscene_flag_tempo_steampunk_defeated", "cutscene_flag_world3_chapter5_complete"],
 	4: ["cutscene_flag_world4_prologue_complete", "cutscene_flag_world4_chapter1_complete",
 		"cutscene_flag_world4_chapter2_complete", "cutscene_flag_world4_chapter3_complete",
+		"cutscene_flag_warden_industrial_defeated",
 		"cutscene_flag_world4_chapter4_complete", "cutscene_flag_world4_chapter5_complete"],
 	5: ["cutscene_flag_world5_prologue_complete", "cutscene_flag_world5_chapter1_complete",
 		"cutscene_flag_world5_chapter2_complete", "cutscene_flag_world5_chapter3_complete",
+		"cutscene_flag_arbiter_futuristic_defeated",
 		"cutscene_flag_world5_chapter4_complete", "cutscene_flag_world5_chapter5_complete"],
 	6: ["cutscene_flag_world6_prologue_complete", "cutscene_flag_world6_chapter1_complete",
-		"cutscene_flag_world6_chapter2_complete", "cutscene_flag_world6_chapter3_complete"],
+		"cutscene_flag_world6_chapter2_complete", "cutscene_flag_world6_chapter3_complete",
+		"cutscene_flag_world6_calibrant_defeat_complete"],
 }
 
 const BG_COLOR := Color(0.04, 0.04, 0.08, 0.95)
