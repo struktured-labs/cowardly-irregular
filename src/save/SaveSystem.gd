@@ -415,8 +415,12 @@ func _create_save_data() -> Dictionary:
 		"current_map_id": MapSystem.current_map_id,
 	}
 
-	# Inventory (party-wide items)
-	data["inventory"] = _serialize_inventory()
+	# Tick 265: removed dead "inventory" field. Per-character inventories
+	# already roundtrip via Combatant.to_dict / from_dict (lines 819-840).
+	# The original intent — party-wide shared item pouch — was never
+	# implemented; the field was a {} placeholder that took space in the
+	# save file for nothing. _apply_save_data still tolerates legacy
+	# saves that have an "inventory" key (silently ignored).
 
 	# Game state flags/variables
 	if GameState:
@@ -467,10 +471,13 @@ func _get_party_summary() -> Array:
 	return summary
 
 
-func _serialize_inventory() -> Dictionary:
-	"""Serialize inventory"""
-	# TODO: serialize party-wide item inventory when InventorySystem is implemented
-	return {}
+# Tick 265: _serialize_inventory removed (was a {} stub since 2025
+# with a stale "TODO: when InventorySystem is implemented" comment).
+# Per-character inventory IS implemented via Combatant.to_dict —
+# this stub was confusing future readers into thinking a separate
+# party-wide system existed somewhere. If a party-shared item pouch
+# is ever introduced, add it as a top-level save field with its own
+# serializer/deserializer — don't resurrect this dead method.
 
 
 ## Find the active player node. Prefers the "player" group (OverworldPlayer),
@@ -521,9 +528,10 @@ func _apply_save_data(data: Dictionary) -> void:
 	if data.has("party"):
 		_deserialize_party(data["party"])
 
-	# Apply inventory
-	if data.has("inventory"):
-		_deserialize_inventory(data["inventory"])
+	# Tick 265: legacy "inventory" field tolerated for backward compat
+	# with pre-v3.x saves (carried a {} placeholder for an unimplemented
+	# party-wide pouch). Per-character inventories live on Combatant
+	# and load via the party path above — nothing to do here.
 
 	# Apply game state
 	if data.has("game_state") and GameState:
@@ -594,10 +602,9 @@ func _deserialize_party(party_data: Array) -> void:
 	GameState.player_party = resolved
 
 
-func _deserialize_inventory(inventory_data: Dictionary) -> void:
-	"""Deserialize inventory"""
-	# Placeholder
-	pass
+# Tick 265: _deserialize_inventory removed alongside its sibling.
+# Was an empty `pass` since 2025. Per-character inventory comes back
+# via Combatant.from_dict on the party path.
 
 
 ## File I/O
