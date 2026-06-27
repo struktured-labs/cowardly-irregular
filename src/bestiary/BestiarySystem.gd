@@ -160,15 +160,30 @@ static func get_defeated_ids() -> Array:
 static func defeat_counts() -> Vector2i:
 	"""Returns (defeated, total_monsters) — UI display."""
 	_ensure_loaded()
-	var d: int = get_defeated_ids().size()
+	var d: int = _count_known_ids(get_defeated_ids())
 	return Vector2i(d, _monsters_cache.size())
 
 
 static func discovery_counts() -> Vector2i:
 	"""Returns (seen, total_monsters)."""
 	_ensure_loaded()
-	var seen_count: int = get_seen_ids().size()
+	var seen_count: int = _count_known_ids(get_seen_ids())
 	return Vector2i(seen_count, _monsters_cache.size())
+
+
+# Tick 244: filter seen/defeated ids against the live monsters cache
+# so a stale id (renamed/removed from monsters.json after save, typo'd
+# by Scriptweaver, leftover from a prior schema) doesn't inflate the
+# numerator. Pre-fix the bestiary header could show "90/88 seen" if
+# 2 ids in the seen dict had been removed from monsters.json — and
+# get_seen_entries_sorted silently skipped those rows, so the count
+# was inconsistent with what the UI actually rendered.
+static func _count_known_ids(ids: Array) -> int:
+	var n: int = 0
+	for id in ids:
+		if _monsters_cache.has(id):
+			n += 1
+	return n
 
 
 static func get_seen_entries_sorted() -> Array:
