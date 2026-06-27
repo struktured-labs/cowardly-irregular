@@ -241,6 +241,15 @@ func _trigger_transition(_player: Node2D) -> void:
 	# under that condition (it could chain into two scene loads).
 	if _triggered:
 		return
+
+	# Tick 233: validate target_map BEFORE emitting. Pre-fix an empty target_map (designer typo, forgotten override on a new transition node) cascaded through GameLoop's loader as an unknown map_id — player walked into a doorway, screen faded, then NOTHING happened (or the loader silently fell back to a default scene). Now refuses to emit and surfaces the wiring bug.
+	if target_map == "":
+		push_warning("[AreaTransition] '%s' has empty target_map — refusing to emit transition_triggered (likely an @export var unwired in the scene)" % name)
+		return
+	# target_spawn empty is non-fatal — most maps support a "default" spawn point — but still worth surfacing as a probable wiring miss.
+	if target_spawn == "":
+		push_warning("[AreaTransition] '%s' has empty target_spawn — emitting anyway, but most maps expect a non-empty spawn point" % name)
+
 	_triggered = true
 	print("[TRANSITION] Triggering: %s → %s (target_spawn: %s)" % [name, target_map, target_spawn])
 
