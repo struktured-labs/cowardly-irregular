@@ -257,7 +257,11 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	var portrait_x = 16
 	var portrait_y = 44
 
-	for i in range(min(party_summary.size(), 4)):
+	# Tick 268: strict-5 party — was capped at 4, silently truncating
+	# the Bard (or whoever was at index 4) from the save-slot preview.
+	# 5 portraits × 140px = 700px; comfortably fits the slot panel
+	# (~1200px wide on standard viewport).
+	for i in range(min(party_summary.size(), 5)):
 		var member = party_summary[i]
 		var member_panel = _create_party_member_display(member, i)
 		member_panel.position = Vector2(portrait_x + i * 140, portrait_y)
