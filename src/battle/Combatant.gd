@@ -276,7 +276,12 @@ func heal(amount: int) -> int:
 	var old_hp = current_hp
 	current_hp = min(max_hp, current_hp + heal_amount)
 	var healed = current_hp - old_hp
-	hp_changed.emit(old_hp, current_hp)
+	# Tick 288: emit hp_changed only on actual change. Pre-fix heal()
+	# fired hp_changed even when current_hp was already at max_hp (the
+	# clamp pinned it; healed = 0). UI listeners then ran the redraw
+	# path uselessly. Matches tick-286 ap_changed guard pattern.
+	if healed != 0:
+		hp_changed.emit(old_hp, current_hp)
 	return healed
 
 
