@@ -38,9 +38,14 @@ func test_escape_disabled_emits_log() -> void:
 
 
 func test_escape_success_emits_log() -> void:
+	# Tick 237 swapped [color=lime] for AccessibilityPalette.bonus_bbcode()
+	# — accept either shape so the invariant (success-colored escape log)
+	# remains pinned across the refactor.
 	var body := _fn_body("_execute_escape_ability")
-	assert_true(body.contains("[color=lime]%s escaped successfully![/color]"),
-		"escape-success path must emit lime-colored success log")
+	var has_legacy: bool = body.contains("[color=lime]%s escaped successfully![/color]")
+	var has_palette: bool = body.contains("[color=%s]%s escaped successfully![/color]\" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name]")
+	assert_true(has_legacy or has_palette,
+		"escape-success path must emit a positive-colored success log (legacy lime OR tick 237 bonus_bbcode shape)")
 
 
 func test_escape_failure_emits_log() -> void:

@@ -108,11 +108,16 @@ func test_win98_defer_requested_handler_no_longer_pre_emits() -> void:
 # ── Pre-existing emit branches preserved ────────────────────────────────
 
 func test_cannot_defer_log_preserved() -> void:
-	# The "cannot defer while exposed!" branch must NOT lose its
-	# emit while we're refactoring.
+	# The "cannot defer while exposed!" branch must NOT lose its emit
+	# while we're refactoring. Tick 237 swapped the literal [color=red]
+	# for AccessibilityPalette.penalty_bbcode() — the invariant (red
+	# in default mode, distinguishable color name in CB mode) holds
+	# either way. Pin both shapes so this stays robust.
 	var src := _read(BATTLE_MANAGER)
-	assert_true(src.contains("[color=red]%s cannot defer while exposed![/color]"),
-		"cannot_defer guard's log emit must remain — exposed status feedback")
+	var has_legacy: bool = src.contains("[color=red]%s cannot defer while exposed![/color]")
+	var has_palette: bool = src.contains("[color=%s]%s cannot defer while exposed![/color]\" % [AccessibilityPalette.penalty_bbcode(), current_combatant.combatant_name]")
+	assert_true(has_legacy or has_palette,
+		"cannot_defer guard's log emit must remain (legacy [color=red] OR tick 237 penalty_bbcode shape)")
 
 
 func test_print_statement_for_debug_preserved() -> void:

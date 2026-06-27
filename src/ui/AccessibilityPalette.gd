@@ -102,3 +102,13 @@ static func injury() -> Color:
 	if is_on():
 		return Color(0.75, 0.25, 0.65)  # Darker magenta
 	return Color(0.8, 0.2, 0.2)  # Darker red
+
+
+# Tick 237: BBCode color name for "positive" battle-log messages (heals, buffs, character names in success contexts). "lime" default, "cyan" in accessibility mode — matches the Color-returning bonus() / heal() helpers semantically.
+static func bonus_bbcode() -> String:
+	return "cyan" if is_on() else "lime"
+
+
+# Tick 237: BBCode color name for "negative" battle-log messages (damage applied to player, error messages, AP-cost warnings). "red" default, "magenta" in accessibility mode — matches penalty() / elem_weak() / hp_low().
+static func penalty_bbcode() -> String:
+	return "magenta" if is_on() else "red"

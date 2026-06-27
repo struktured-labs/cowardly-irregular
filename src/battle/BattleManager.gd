@@ -759,7 +759,8 @@ func player_defer() -> void:
 	if not _check_player_selecting_state("player_defer"):
 		return
 	if current_combatant.has_status("cannot_defer"):
-		battle_log_message.emit("[color=red]%s cannot defer while exposed![/color]" % current_combatant.combatant_name)
+		# Tick 237: BBCode color via AccessibilityPalette so red↔magenta swap follows the color-blind setting.
+		battle_log_message.emit("[color=%s]%s cannot defer while exposed![/color]" % [AccessibilityPalette.penalty_bbcode(), current_combatant.combatant_name])
 		# Re-show menu instead of silently returning (prevents battle freeze)
 		current_state = BattleState.PLAYER_SELECTING
 		selection_turn_started.emit(current_combatant)
@@ -838,7 +839,8 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	if group_type == "limit_break":
 		for member in participants:
 			if member.current_ap < 4:
-				battle_log_message.emit("[color=red]Limit Break requires ALL participants at full AP (4)![/color]")
+				# Tick 237: penalty BBCode.
+				battle_log_message.emit("[color=%s]Limit Break requires ALL participants at full AP (4)![/color]" % AccessibilityPalette.penalty_bbcode())
 				print("[GROUP] Limit Break blocked — %s has AP %d" % [member.combatant_name, member.current_ap])
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
@@ -848,13 +850,15 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	if group_type == "combo_magic":
 		for member in participants:
 			if member.current_ap < 2:
-				battle_log_message.emit("[color=red]Combo Magic requires ALL participants to have >= 2 AP![/color]")
+				# Tick 237: penalty BBCode.
+				battle_log_message.emit("[color=%s]Combo Magic requires ALL participants to have >= 2 AP![/color]" % AccessibilityPalette.penalty_bbcode())
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
 		var elements = _get_party_elements(participants)
 		if elements.size() < 2:
-			battle_log_message.emit("[color=red]Combo Magic requires at least 2 different magic elements![/color]")
+			# Tick 237: penalty BBCode.
+			battle_log_message.emit("[color=%s]Combo Magic requires at least 2 different magic elements![/color]" % AccessibilityPalette.penalty_bbcode())
 			current_state = BattleState.PLAYER_SELECTING
 			selection_turn_started.emit(current_combatant)
 			return
@@ -3305,7 +3309,8 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 	var success_rate = ability.get("success_rate", 0.5)
 	if randf() < success_rate:
 		print("  → %s escaped successfully!" % caster.combatant_name)
-		battle_log_message.emit("[color=lime]%s escaped successfully![/color]" % caster.combatant_name)
+		# Tick 237: bonus BBCode (escape = positive outcome).
+		battle_log_message.emit("[color=%s]%s escaped successfully![/color]" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
 		end_battle(false)
 	else:
 		print("  → %s failed to escape!" % caster.combatant_name)
