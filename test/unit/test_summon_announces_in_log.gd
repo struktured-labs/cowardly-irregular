@@ -70,9 +70,12 @@ func test_summon_uses_prettified_monster_type() -> void:
 # ── Cross-pins: audited-clean paths must remain ─────────────────────────
 
 func test_limit_break_cleanse_per_participant_log_preserved() -> void:
+	# Tick 238: accept either legacy [color=lime] OR the palette helper shape.
 	var src := _read(BATTLE_MANAGER)
-	assert_true(src.contains("[color=lime]%s is cleansed by the Limit Break![/color]"),
-		"Limit Break cleanse per-participant log preserved (audited clean for tick 177)")
+	var has_legacy: bool = src.contains("[color=lime]%s is cleansed by the Limit Break![/color]")
+	var has_palette: bool = src.contains("[color=%s]%s is cleansed by the Limit Break![/color]\" % [AccessibilityPalette.bonus_bbcode(), p.combatant_name]")
+	assert_true(has_legacy or has_palette,
+		"Limit Break cleanse per-participant log preserved (audited clean for tick 177; legacy OR tick 238 shape)")
 
 
 func test_ability_use_announce_preserved() -> void:

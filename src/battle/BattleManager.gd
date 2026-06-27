@@ -2136,7 +2136,8 @@ func _limit_break_cleanse(participants: Array) -> void:
 		for status in cleansable:
 			if p.has_status(status):
 				p.remove_status(status)
-		battle_log_message.emit("[color=lime]%s is cleansed by the Limit Break![/color]" % p.combatant_name)
+		# Tick 238: bonus BBCode (Limit Break cleanse).
+		battle_log_message.emit("[color=%s]%s is cleansed by the Limit Break![/color]" % [AccessibilityPalette.bonus_bbcode(), p.combatant_name])
 
 
 func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], ap_cost: int) -> void:
@@ -2348,7 +2349,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 						var self_dmg = int(p.max_hp * 0.1)
 						p.take_damage(self_dmg)
 						damage_dealt.emit(p, self_dmg, false, "", 1.0)
-				battle_log_message.emit("[color=red]★ Chaos Theory — BACKFIRE! Party takes recoil damage! ★[/color]")
+				# Tick 238: penalty BBCode (Chaos Theory backfire).
+				battle_log_message.emit("[color=%s]★ Chaos Theory — BACKFIRE! Party takes recoil damage! ★[/color]" % AccessibilityPalette.penalty_bbcode())
 
 		_:
 			# Unknown formation — fallback to physical group
@@ -2375,7 +2377,8 @@ func _apply_vulnerability_window(participants: Array) -> void:
 		p.current_ap = clampi(p.current_ap - 2, -4, 4)
 		if p.has_signal("ap_changed"):
 			p.ap_changed.emit(old_ap, p.current_ap)
-	battle_log_message.emit("[color=red]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]")
+	# Tick 238: penalty BBCode (group-exposure debuff).
+	battle_log_message.emit("[color=%s]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]" % AccessibilityPalette.penalty_bbcode())
 
 
 func _get_party_elements(participants: Array) -> Array[String]:
@@ -3119,7 +3122,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				for target in targets:
 					if target and is_instance_valid(target) and target.is_alive:
 						target.add_buff("Hedged", "volatility", stat_modifier, duration)
-						battle_log_message.emit("[color=green]%s is hedged![/color]" % target.combatant_name)
+						# Tick 238: bonus BBCode (hedge buff).
+					battle_log_message.emit("[color=%s]%s is hedged![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
 		"press_the_edge":
 			if volatility:
 				var band = volatility.global_band
@@ -3141,7 +3145,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			if volatility:
 				volatility.shift_band(-1)
 				caster.gain_ap(1)
-				battle_log_message.emit("[color=green]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % caster.combatant_name)
+				# Tick 238: bonus BBCode (CIRCUIT BREAKER — band-reduce + AP gain).
+				battle_log_message.emit("[color=%s]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
 		"steal":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
@@ -3174,17 +3179,20 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("regen", duration)
-					battle_log_message.emit("[color=green]%s gains Regen![/color] (HP restore for %d turns)" % [target.combatant_name, duration])
+					# Tick 238: bonus BBCode (Regen buff).
+					battle_log_message.emit("[color=%s]%s gains Regen![/color] (HP restore for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
 		"attack_down":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Weaken", "attack", stat_modifier, duration)
-					battle_log_message.emit("[color=red]%s is weakened![/color] (ATK -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+					# Tick 238: penalty BBCode (ATK debuff).
+					battle_log_message.emit("[color=%s]%s is weakened![/color] (ATK -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"speed_down":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Slow", "speed", stat_modifier, duration)
-					battle_log_message.emit("[color=red]%s slows down![/color] (SPD -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+					# Tick 238: penalty BBCode (SPD debuff).
+					battle_log_message.emit("[color=%s]%s slows down![/color] (SPD -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"all_stats_down":
 			# Distinct effect names per stat — add_debuff keys on the effect
 			# name and refreshes-in-place, so reusing one name would only
@@ -3195,7 +3203,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					target.add_debuff("Despair (DEF)", "defense", stat_modifier, duration)
 					target.add_debuff("Despair (SPD)", "speed", stat_modifier, duration)
 					target.add_debuff("Despair (MAG)", "magic", stat_modifier, duration)
-					battle_log_message.emit("[color=red]%s sinks into Despair![/color] (all stats -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+					# Tick 238: penalty BBCode (Despair — all-stat debuff).
+					battle_log_message.emit("[color=%s]%s sinks into Despair![/color] (all stats -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"buff":
 			# Generic stat buff (masterite_* family). Reads the stat field
 			# from the ability dict; defaults to attack if unspecified.
@@ -3283,7 +3292,8 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 					target.die()
 					target.add_status("permakilled")
 					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)
-					battle_log_message.emit("[color=red]☠ %s has been PERMANENTLY KILLED![/color]" % target.combatant_name)
+					# Tick 238: penalty BBCode (permadeath).
+					battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name])
 			GameState.add_corruption(corruption_risk)
 		_:
 			# Loud-fail symmetry with _execute_support_ability (line ~3026):

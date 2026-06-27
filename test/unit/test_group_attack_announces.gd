@@ -120,7 +120,12 @@ func test_combo_magic_announcement_preserved() -> void:
 
 
 func test_limit_break_cleanse_emit_preserved() -> void:
-	# Cross-pin: the Limit Break post-effect emit.
+	# Cross-pin: the Limit Break post-effect emit. Tick 238 routed
+	# the [color=lime] literal through AccessibilityPalette.bonus_bbcode().
+	# Pin both shapes so the invariant (bonus-colored cleanse emit) holds
+	# across the refactor.
 	var src := _read(BATTLE_MANAGER)
-	assert_true(src.contains("[color=lime]%s is cleansed by the Limit Break![/color]"),
-		"limit break cleanse emit preserved")
+	var has_legacy: bool = src.contains("[color=lime]%s is cleansed by the Limit Break![/color]")
+	var has_palette: bool = src.contains("[color=%s]%s is cleansed by the Limit Break![/color]\" % [AccessibilityPalette.bonus_bbcode(), p.combatant_name]")
+	assert_true(has_legacy or has_palette,
+		"limit break cleanse emit preserved (legacy lime OR tick 238 palette shape)")

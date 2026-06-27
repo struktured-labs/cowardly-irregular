@@ -101,10 +101,14 @@ func test_permanent_death_emits_cast_log() -> void:
 
 
 func test_permanent_death_per_target_emits_log() -> void:
-	# Pin: each victim gets a per-target log line (☠ marker + red).
+	# Pin: each victim gets a per-target log line (☠ marker + penalty color).
+	# Tick 238 swapped the literal [color=red] for AccessibilityPalette.penalty_bbcode()
+	# — accept either shape (legacy red OR palette helper) so the invariant holds.
 	var body := _fn_body("_execute_meta_ability")
-	assert_true(body.contains("[color=red]☠ %s has been PERMANENTLY KILLED![/color]"),
-		"permanent_death must emit a per-target ☠ red log for each kill")
+	var has_legacy: bool = body.contains("[color=red]☠ %s has been PERMANENTLY KILLED![/color]")
+	var has_palette: bool = body.contains("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]\" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name]")
+	assert_true(has_legacy or has_palette,
+		"permanent_death must emit a per-target ☠ penalty-colored log (legacy red OR tick 238 palette shape)")
 
 
 # ── Color-palette family ────────────────────────────────────────────────

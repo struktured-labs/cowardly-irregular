@@ -124,13 +124,22 @@ func test_buffs_use_positive_color_family() -> void:
 
 
 func test_debuffs_use_red() -> void:
+	# Tick 238 routed several debuff emits through
+	# AccessibilityPalette.penalty_bbcode(). The invariant ("debuffs
+	# are red-family in default mode, distinguishable color in CB
+	# mode") holds across the refactor. Pin either shape per fragment
+	# so refactored AND non-refactored sites both pass.
 	var body := _support_body()
 	for fragment in [
-		"[color=red]%s's armor is broken!",
-		"[color=red]%s is weakened!",
-		"[color=red]%s slows down!",
-		"[color=red]%s sinks into Despair!",
-		"[color=red]%s is sapped!",
+		"%s's armor is broken!",
+		"%s is weakened!",
+		"%s slows down!",
+		"%s sinks into Despair!",
+		"%s is sapped!",
 	]:
-		assert_true(body.contains(fragment),
-			"debuff must use red palette: %s" % fragment)
+		var legacy: String = "[color=red]" + fragment
+		var palette: String = "[color=%s]" + fragment
+		var has_legacy: bool = body.contains(legacy)
+		var has_palette: bool = body.contains(palette) and body.contains("AccessibilityPalette.penalty_bbcode()")
+		assert_true(has_legacy or has_palette,
+			"debuff must use red palette OR palette helper: %s" % fragment)
