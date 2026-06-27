@@ -32,43 +32,52 @@ const CHAPTERS: Array = [
 			{"flag": "world2_prologue_complete", "text": "Enter the Mundane Sprawl"},
 		]
 	},
+	# Tick 271: W2-W6 entries previously used `w2_entered` /
+	# `w2_dungeon_cleared` (and equivalents for W3-W6) — flags that
+	# NOTHING in the game ever sets. Every entry past W1 was permanently
+	# locked from the player's POV; the entire QuestLog past chapter 1
+	# was dead config. The actual flags are `cutscene_flag_world<N>
+	# _prologue_complete` (world entry) and `cutscene_flag_world<N>
+	# _complete` (world clear). _is_quest_flag_set handles the
+	# `cutscene_flag_` prefix automatically, so bare names like
+	# `world2_prologue_complete` resolve correctly.
 	{
 		"title": "Chapter 2 — The Mundane Sprawl",
-		"world_flag": "w2_entered",
+		"world_flag": "world2_prologue_complete",
 		"objectives": [
-			{"flag": "w2_entered", "text": "Explore the suburban neighborhood"},
-			{"flag": "w2_dungeon_cleared", "text": "Find the portal to the Clockwork Dominion"},
+			{"flag": "world2_prologue_complete", "text": "Explore the suburban neighborhood"},
+			{"flag": "world2_complete", "text": "Find the portal to the Clockwork Dominion"},
 		]
 	},
 	{
 		"title": "Chapter 3 — The Clockwork Dominion",
-		"world_flag": "w3_entered",
+		"world_flag": "world3_prologue_complete",
 		"objectives": [
-			{"flag": "w3_entered", "text": "Explore the steampunk city"},
-			{"flag": "w3_dungeon_cleared", "text": "Find the portal to the Assembly Line"},
+			{"flag": "world3_prologue_complete", "text": "Explore the steampunk city"},
+			{"flag": "world3_complete", "text": "Find the portal to the Assembly Line"},
 		]
 	},
 	{
 		"title": "Chapter 4 — The Assembly Line",
-		"world_flag": "w4_entered",
+		"world_flag": "world4_prologue_complete",
 		"objectives": [
-			{"flag": "w4_entered", "text": "Navigate the industrial complex"},
-			{"flag": "w4_dungeon_cleared", "text": "Find the portal to the Source Layer"},
+			{"flag": "world4_prologue_complete", "text": "Navigate the industrial complex"},
+			{"flag": "world4_complete", "text": "Find the portal to the Source Layer"},
 		]
 	},
 	{
 		"title": "Chapter 5 — The Source Layer",
-		"world_flag": "w5_entered",
+		"world_flag": "world5_prologue_complete",
 		"objectives": [
-			{"flag": "w5_entered", "text": "Explore the digital realm"},
-			{"flag": "w5_dungeon_cleared", "text": "Find the portal to the Remainder"},
+			{"flag": "world5_prologue_complete", "text": "Explore the digital realm"},
+			{"flag": "world5_complete", "text": "Find the portal to the Remainder"},
 		]
 	},
 	{
 		"title": "Chapter 6 — The Remainder",
-		"world_flag": "w6_entered",
+		"world_flag": "world6_prologue_complete",
 		"objectives": [
-			{"flag": "w6_entered", "text": "Reach the Vertex"},
+			{"flag": "world6_prologue_complete", "text": "Reach the Vertex"},
 		]
 	},
 ]
