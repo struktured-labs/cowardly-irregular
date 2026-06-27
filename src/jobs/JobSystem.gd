@@ -71,31 +71,42 @@ func _load_job_data() -> void:
 	"""Load job definitions from data/jobs.json"""
 	var file_path = "res://data/jobs.json"
 
+	# Tick 275: full 4-stage loud-fail (matches BestiarySystem._load_json
+	# pattern). Pre-fix the file-missing case used `print()` (invisible
+	# in Godot's debug output) and the file-open-fail case silently
+	# fell through to defaults. Result: a missing/unreadable jobs.json
+	# silently replaced the 14 jobs with the ~5 hardcoded fallback,
+	# losing every advanced/meta job (Time Mage, Necromancer, etc.) and
+	# the player got no signal that data went wrong.
 	if not FileAccess.file_exists(file_path):
-		print("Warning: jobs.json not found, using default jobs")
+		push_warning("[JobSystem] jobs.json not found at %s — falling back to hardcoded defaults (advanced/meta jobs lost)" % file_path)
 		_create_default_jobs()
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
-
-		if parse_result == OK:
-			if json.data is Dictionary:
-				jobs = json.data
-				print("Loaded %d jobs" % jobs.size())
-			else:
-				push_warning("[JobSystem] jobs.json parsed but root is not a Dictionary — falling back to hardcoded defaults (286 abilities / 14 jobs would be lost)")
-				_create_default_jobs()
-		else:
-			push_warning("[JobSystem] jobs.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
-			_create_default_jobs()
-	else:
+	if file == null:
+		push_warning("[JobSystem] jobs.json exists but FileAccess.open failed — falling back to hardcoded defaults")
 		_create_default_jobs()
+		return
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result != OK:
+		push_warning("[JobSystem] jobs.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
+		_create_default_jobs()
+		return
+
+	if not (json.data is Dictionary):
+		push_warning("[JobSystem] jobs.json parsed but root is not a Dictionary — falling back to hardcoded defaults (286 abilities / 14 jobs would be lost)")
+		_create_default_jobs()
+		return
+
+	jobs = json.data
+	print("Loaded %d jobs" % jobs.size())
 
 
 func _load_ability_data() -> void:
@@ -107,26 +118,32 @@ func _load_ability_data() -> void:
 		_create_default_abilities()
 		return
 
+	# Tick 275: file-open-fail path now warns instead of silently falling
+	# through to defaults (matches the _load_job_data fix above).
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
-
-		if parse_result == OK:
-			if json.data is Dictionary:
-				abilities = json.data
-				print("Loaded %d abilities" % abilities.size())
-			else:
-				push_warning("[JobSystem] abilities.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
-				_create_default_abilities()
-		else:
-			push_warning("[JobSystem] abilities.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
-			_create_default_abilities()
-	else:
+	if file == null:
+		push_warning("[JobSystem] abilities.json exists but FileAccess.open failed — falling back to hardcoded defaults")
 		_create_default_abilities()
+		return
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result != OK:
+		push_warning("[JobSystem] abilities.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
+		_create_default_abilities()
+		return
+
+	if not (json.data is Dictionary):
+		push_warning("[JobSystem] abilities.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
+		_create_default_abilities()
+		return
+
+	abilities = json.data
+	print("Loaded %d abilities" % abilities.size())
 
 
 func _create_default_jobs() -> void:
