@@ -530,11 +530,12 @@ func _build_ui() -> void:
 			"rebalance_history")
 	# Debug-only batch
 	if debug_log_enabled:
-		add_action.call("Jukebox", "[DEBUG] Play any music track", "jukebox")
+		# Tick 235: live subtitles. Jukebox shows the currently-playing track; Debug Teleport shows the current map. Both surface useful at-a-glance state without entering the submenu.
+		add_action.call("Jukebox", _get_jukebox_subtitle(), "jukebox")
 		add_action.call("Fight Boss", "[DEBUG] Battle a Masterite boss", "fight_boss")
 		if not from_title:
 			# Title-screen has no map context, teleport would be a no-op there.
-			add_action.call("Debug Teleport", "[DEBUG] Warp to any map", "debug_teleport")
+			add_action.call("Debug Teleport", _get_debug_teleport_subtitle(), "debug_teleport")
 	# Quit to Title (hidden when opened from title screen)
 	if not from_title:
 		add_action.call("Quit to Title", "Return to the title screen", "quit_to_title", true)
@@ -1328,6 +1329,28 @@ func _get_controls_subtitle() -> String:
 	var m: String = str(ipm.get_action_key_label("ui_menu"))
 	# Compact "A:Z  B:X  Menu:Esc" — preserves the cross-input intent of the original subtitle but surfaces the live binds.
 	return "A:%s  B:%s  Menu:%s" % [a, b, m]
+
+
+# Tick 235: live "Now: <track>" subtitle for the Jukebox debug button — players see which track is playing without entering the submenu.
+func _get_jukebox_subtitle() -> String:
+	var sm: Node = get_node_or_null("/root/SoundManager")
+	if not sm or not ("_current_music" in sm):
+		return "[DEBUG] Play any music track"
+	var track: String = str(sm._current_music)
+	if track == "":
+		return "[DEBUG] Now: (silence)"
+	return "[DEBUG] Now: %s" % track.replace("_", " ").capitalize()
+
+
+# Tick 235: live "Current: <map>" subtitle for the Debug Teleport button — surfaces the active map id so warping is easier to reason about.
+func _get_debug_teleport_subtitle() -> String:
+	var gl: Node = get_node_or_null("/root/GameLoop")
+	if not gl or not gl.has_method("get_current_map_id"):
+		return "[DEBUG] Warp to any map"
+	var map_id: String = str(gl.get_current_map_id())
+	if map_id == "":
+		return "[DEBUG] Warp to any map"
+	return "[DEBUG] At: %s" % map_id.replace("_", " ").capitalize()
 
 
 # Tick 226: color-blind friendly palette toggle. DamageNumber reads GameState.color_blind_mode live each spawn.
