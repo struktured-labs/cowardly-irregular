@@ -4386,7 +4386,10 @@ func _create_autogrind_overlay() -> void:
 	_autogrind_overlay.add_child(party_container)
 
 	var slot_w = (vp_size.x - 32) / max(party.size(), 1)
-	for i in range(min(party.size(), 4)):
+	# Tick 269: strict-5 party — was capped at 4. slot_w is already
+	# derived from party.size() so the 5th slot was correctly sized
+	# but never filled (silent empty column).
+	for i in range(min(party.size(), 5)):
 		var member = party[i]
 		if not member is Combatant:
 			continue
@@ -4494,7 +4497,9 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 		var slot_w = (vp_size.x - 32) / max(party.size(), 1)
 		var bar_w = slot_w - 12
 		var char_exp = stats.get("per_character_exp", {})
-		for i in range(min(party.size(), 4)):
+		# Tick 269: strict-5 party — was capped at 4 (matching the
+		# initial build above; both sites needed bumping together).
+		for i in range(min(party.size(), 5)):
 			var member = party[i]
 			if not member is Combatant:
 				continue

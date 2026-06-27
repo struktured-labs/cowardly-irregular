@@ -478,8 +478,11 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 	panel.add_child(title)
 
 	# Party status
+	# Tick 269: strict-5 party — was capped at 4, silently truncating
+	# the 5th member from the autogrind status panel. Same bug class
+	# as tick 268's SaveScreen fix.
 	var y = 28
-	for i in range(min(_party.size(), 4)):
+	for i in range(min(_party.size(), 5)):
 		var member = _party[i]
 		if member is Combatant:
 			var row = _create_party_status_row(member, panel_size.x - 16)
@@ -2050,8 +2053,9 @@ func _rebuild_party_rows() -> void:
 		child.queue_free()
 
 	# Re-add party rows
+	# Tick 269: strict-5 party — was capped at 4.
 	var y = 28
-	for i in range(min(_party.size(), 4)):
+	for i in range(min(_party.size(), 5)):
 		var member = _party[i]
 		if member is Combatant:
 			var row = _create_party_status_row(member, _status_panel.size.x - 16)
