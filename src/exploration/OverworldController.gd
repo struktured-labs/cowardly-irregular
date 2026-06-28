@@ -92,7 +92,19 @@ func _check_encounter() -> bool:
 			original_modifier * rate_multiplier,
 			0.0, es.ENCOUNTER_RATE_MODIFIER_MAX)
 		es.encounter_rate_modifier = composite
+		# Tick 324: ALSO push the controller's per-area _encounter_rate
+		# into ES.encounter_rate for this check. Pre-fix set_area_config
+		# stored _encounter_rate (dungeon floors set 6-10% with floor
+		# progression) but ES.encounter_rate stayed at its default 5%.
+		# OverworldController's normal path then called ES.check_for_encounter
+		# which used `encounter_rate * encounter_rate_modifier` from ES's
+		# OWN fields, totally ignoring the controller's _encounter_rate.
+		# Dungeons effectively had a flat 5% rate regardless of floor or
+		# area config. Same swap-restore idiom as the modifier above.
+		var original_rate: float = es.encounter_rate
+		es.encounter_rate = _encounter_rate
 		var triggered: bool = es.check_for_encounter()
+		es.encounter_rate = original_rate
 		es.encounter_rate_modifier = original_modifier
 		return triggered
 
