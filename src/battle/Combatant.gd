@@ -1131,6 +1131,18 @@ func recalculate_stats() -> void:
 					magic = max(1, magic - injury["penalty"])
 				"speed":
 					speed = max(1, speed - injury["penalty"])
+				"max_mp":
+					# Tick 316: re-apply max_mp injury on every recalc.
+					# Pre-fix apply_permanent_injury (tick 287) handled the
+					# first application but recalculate_stats was MISSING
+					# the max_mp arm — so the very next recalc (equip/
+					# unequip/job change) reset max_mp from base + buffs
+					# and silently lost the injury penalty. The injury
+					# was still in permanent_injuries (visible in the UI)
+					# but had zero stat effect from then on. Mirror the
+					# floor=0 from apply_permanent_injury since max_mp
+					# can legitimately reach 0 (some classes have 0 MP).
+					max_mp = max(0, max_mp - injury["penalty"])
 
 	# Clamp current HP/MP to new maxes
 	# Same ordering fix as take_damage / update_buff_durations: flip
