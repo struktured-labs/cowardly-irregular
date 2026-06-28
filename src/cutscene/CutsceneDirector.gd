@@ -352,6 +352,8 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_boss_intro(step)
 		"roll_credits":
 			await _step_roll_credits(step)
+		"choice":
+			await _step_choice(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -397,6 +399,100 @@ func _step_narration(step: Dictionary) -> void:
 	var dialogue = _get_or_create_dialogue()
 	dialogue.show_dialogue(lines_array)
 	await dialogue.dialogue_finished
+
+
+## Tick 331: handle "choice" step type. Pre-fix the type was used by
+## world6_orrery.json but had no handler — every play hit the unknown-
+## step-type push_warning and silently skipped the prompt, never setting
+## any response flag. Implementation:
+##   1. Show the prompt as a single narration line so the player has
+##      context (mirrors how dialogue → choice flows in classic JRPGs).
+##   2. Hand the option strings to DialogueChoiceMenu and await.
+##   3. Find the matched option by text and set its declared flag in
+##      GameState.game_constants.
+## When _skipping is true (player held the skip button) we still set
+## the FIRST option's flag so the cutscene state machine doesn't get
+## stuck waiting for a response that never arrives, matching the
+## skip-resilient pattern used elsewhere in the director.
+func _step_choice(step: Dictionary) -> void:
+	var prompt: String = str(step.get("prompt", ""))
+	var options: Array = step.get("options", [])
+	if options.is_empty():
+		push_warning("CutsceneDirector._step_choice: 'options' array empty — choice has nothing to present, skipping")
+		return
+
+	# Show the prompt as narration first (skipped if empty).
+	if prompt != "":
+		var narration_line: Dictionary = {
+			"speaker": "",
+			"text": prompt,
+			"theme": "narrator",
+			"portrait": "narrator",
+		}
+		var dialogue = _get_or_create_dialogue()
+		dialogue.show_dialogue([narration_line])
+		await dialogue.dialogue_finished
+
+	# Build the choice text list. Drop options without text — they
+	# can't be displayed.
+	var choice_texts: Array[String] = []
+	for opt in options:
+		if not (opt is Dictionary):
+			continue
+		var t: String = str((opt as Dictionary).get("text", ""))
+		if t.strip_edges() != "":
+			choice_texts.append(t)
+	if choice_texts.is_empty():
+		push_warning("CutsceneDirector._step_choice: no valid option texts after filtering — skipping")
+		return
+
+	# Skip path: set the first option's flag deterministically. Avoids
+	# leaving the cutscene state machine waiting on input that won't
+	# come when the player hits skip.
+	if _skipping:
+		_set_choice_flag(options[0])
+		return
+
+	# Present the menu and await selection.
+	var DialogueChoiceMenuScript = load("res://src/llm/DialogueChoiceMenu.gd")
+	if DialogueChoiceMenuScript == null:
+		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — setting first option's flag and continuing")
+		_set_choice_flag(options[0])
+		return
+	var menu: Node = DialogueChoiceMenuScript.new()
+	# Anchor to a CanvasLayer so it renders above the cutscene UI.
+	var layer := CanvasLayer.new()
+	layer.layer = 96  # Above CutsceneDirector layer (95).
+	get_tree().root.add_child(layer)
+	layer.add_child(menu)
+
+	var result: String = await menu.present(choice_texts)
+	layer.queue_free()
+
+	# Find the matched option. Empty (cancel) falls back to first.
+	var matched: Dictionary = options[0]
+	if result != "":
+		for opt in options:
+			if opt is Dictionary and str((opt as Dictionary).get("text", "")) == result:
+				matched = opt
+				break
+	_set_choice_flag(matched)
+
+
+## Apply a choice option's flag to GameState.game_constants. Safe-noop
+## when the option has no flag (the player picks a "do nothing" option)
+## or when GameState isn't reachable (test environments).
+func _set_choice_flag(option: Variant) -> void:
+	if not (option is Dictionary):
+		return
+	var flag_name: String = str((option as Dictionary).get("flag", ""))
+	if flag_name == "":
+		return
+	var gs: Node = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	if gs == null or not ("game_constants" in gs):
+		push_warning("CutsceneDirector._set_choice_flag: GameState unreachable — flag '%s' not persisted" % flag_name)
+		return
+	gs.game_constants[flag_name] = true
 
 
 func _step_fade_to_black(step: Dictionary) -> void:
