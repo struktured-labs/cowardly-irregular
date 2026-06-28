@@ -773,6 +773,23 @@ func _setup_collision() -> void:
 
 
 func _adjust_collision_for_mode7(shape: CircleShape2D) -> void:
+	# Tick 349: collision layer/mask setup moved BEFORE the Mode 7 check
+	# so it runs for ALL NPCs, not just non-Mode-7 ones. Pre-fix the
+	# early `return` inside the Mode 7 branch skipped lines 794-797 —
+	# Mode 7 overworld NPCs never got collision_layer = 4, so
+	# OverworldController._on_interaction_requested's primary physics
+	# intersect_point query (mask=4) couldn't find them. The fallback
+	# group/distance loop (line ~201) still worked, but every Mode 7
+	# NPC interaction routed through the slower path. Same NPC, two
+	# different code paths depending on world type.
+	#
+	# Layer 4 = interactables (NPCs, signs, etc.) - detected by controller queries
+	# Mask 2 = player layer - for detecting when player enters NPC zone
+	collision_layer = 4  # So controller can find us via physics query
+	collision_mask = 2   # To detect player entering our zone
+	monitoring = true
+	monitorable = true
+
 	# Check if we're on a Mode 7 overworld by looking for Mode7Overlay in ancestors
 	var parent = get_parent()
 	while parent:
@@ -787,14 +804,6 @@ func _adjust_collision_for_mode7(shape: CircleShape2D) -> void:
 						break
 			return
 		parent = parent.get_parent()
-
-	# Set collision layer/mask for interaction
-	# Layer 4 = interactables (NPCs, signs, etc.) - detected by controller queries
-	# Mask 2 = player layer - for detecting when player enters NPC zone
-	collision_layer = 4  # So controller can find us via physics query
-	collision_mask = 2   # To detect player entering our zone
-	monitoring = true
-	monitorable = true
 
 
 func _setup_name_label() -> void:
