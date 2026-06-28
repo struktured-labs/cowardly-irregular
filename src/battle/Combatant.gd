@@ -484,9 +484,15 @@ func update_buff_durations() -> void:
 		current_hp = max(0, current_hp - poison_damage)
 		if current_hp <= 0:
 			is_alive = false
-		hp_changed.emit(old_hp_poison, current_hp)
-		status_tick_damage.emit(poison_damage, "poison")
-		print("%s takes %d poison damage!" % [combatant_name, poison_damage])
+		# Tick 302: guard the emit on actual change. Parity with regen
+		# below (line ~511) which already gated on healed > 0.
+		# Spurious-emit cases: current_hp was already 0 entering the
+		# tick (alive-but-at-zero window from a mid-tick revive race),
+		# or max_hp == 0 → max(0, 0-1) == 0 (boss with zeroed max_hp).
+		if current_hp != old_hp_poison:
+			hp_changed.emit(old_hp_poison, current_hp)
+			status_tick_damage.emit(poison_damage, "poison")
+			print("%s takes %d poison damage!" % [combatant_name, poison_damage])
 		if current_hp <= 0:
 			die()
 
@@ -496,9 +502,11 @@ func update_buff_durations() -> void:
 		current_hp = max(0, current_hp - burn_damage)
 		if current_hp <= 0:
 			is_alive = false
-		hp_changed.emit(old_hp_burn, current_hp)
-		status_tick_damage.emit(burn_damage, "burn")
-		print("%s takes %d burn damage!" % [combatant_name, burn_damage])
+		# Tick 302: same parity guard as poison above.
+		if current_hp != old_hp_burn:
+			hp_changed.emit(old_hp_burn, current_hp)
+			status_tick_damage.emit(burn_damage, "burn")
+			print("%s takes %d burn damage!" % [combatant_name, burn_damage])
 		if current_hp <= 0:
 			die()
 
