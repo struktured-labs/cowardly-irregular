@@ -513,7 +513,23 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 
 	# Update grind stats tracking
 	_grind_stats["total_exp"] += adjusted_exp
-	_grind_stats["total_gold"] += int(items_gained.get("gold", 0) * reward_scale)
+	# Tick 342: gold actually credits the player's pool now. Pre-fix
+	# this line tracked total_gold for the autogrind display but the
+	# player's party_gold never moved — autogrind farms gave EXP but
+	# ZERO gold despite the display implying otherwise. Now both the
+	# display tracker AND GameState.party_gold receive the gold. Skip
+	# GameState.add_gold to avoid re-applying gold_multiplier — incoming
+	# gold already had it applied at the source (HeadlessBattleResolver
+	# tick 341 / live-autogrind tick 342).
+	var raw_gold_in: int = int(items_gained.get("gold", 0))
+	var scaled_gold: int = int(raw_gold_in * reward_scale)
+	_grind_stats["total_gold"] += scaled_gold
+	var gs: Node = null
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		gs = tree.root.get_node_or_null("GameState")
+	if gs != null and "party_gold" in gs and scaled_gold > 0:
+		gs.party_gold += scaled_gold
 	_grind_stats["total_jp"] += jp_gained
 	_grind_stats["total_encounters"] += 1
 

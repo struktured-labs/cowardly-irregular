@@ -3916,6 +3916,9 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	var result = resolver.resolve_battle(party, enemies)
 	var victory = result.get("victory", false)
 	var exp_gained = result.get("exp_gained", 0)
+	# Tick 342: pick up gold_gained too — the resolver (tick 341) pre-applied
+	# gold_multiplier, so we just forward as-is.
+	var gold_gained_headless: int = int(result.get("gold_gained", 0))
 	var rounds = result.get("rounds", 0)
 
 	for e in enemies:
@@ -3942,9 +3945,11 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 				if member is Combatant and member.is_alive:
 					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
 
-	# Forward to controller with headless-computed EXP
+	# Forward to controller with headless-computed EXP + gold (tick 342:
+	# gold was previously dropped — empty items_gained dict meant the
+	# autogrind player got zero gold despite total_gold display).
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
-		_autogrind_controller.on_battle_ended(victory, exp_gained, {})
+		_autogrind_controller.on_battle_ended(victory, exp_gained, {"gold": gold_gained_headless})
 
 		var stats = _autogrind_controller.get_grind_stats()
 
@@ -4109,6 +4114,23 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 				float(GameState.game_constants.get("exp_multiplier", 1.0)),
 				0.1, 10.0)
 		exp_gained = int(exp_gained * exp_mult)
+		# Tick 342: compute + forward gold from defeated enemies. Pre-fix
+		# items_gained stayed {} so AutogrindSystem.on_battle_victory's
+		# gold tracking (line ~516) summed zeros — player got EXP from
+		# autogrind but ZERO actual gold despite the "total_gold" display
+		# counter implying otherwise. Same enemy-stat formula as
+		# HeadlessBattleResolver._build_results (max_hp * 0.3 + defense)
+		# and the same gold_multiplier clampf pattern.
+		var gold_gained_live: int = 0
+		for enemy in BattleManager.enemy_party:
+			if enemy is Combatant:
+				gold_gained_live += int(enemy.max_hp * 0.3 + enemy.defense)
+		var gold_mult: float = 1.0
+		if GameState and "game_constants" in GameState:
+			gold_mult = clampf(
+				float(GameState.game_constants.get("gold_multiplier", 1.0)),
+				0.1, 10.0)
+		items_gained["gold"] = int(gold_gained_live * gold_mult)
 
 		# Feed battle action summary into adaptive AI pattern learning
 		var region_id = AutogrindSystem.current_region_id
