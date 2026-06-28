@@ -544,18 +544,32 @@ func load_monsters_data() -> Dictionary:
 	if EncounterSystem and not EncounterSystem.monster_database.is_empty():
 		return EncounterSystem.monster_database
 	# Fallback: load from disk if autoload unavailable (e.g., tests)
+	# Tick 322: every failure mode push_warns instead of silently returning
+	# an empty dict. Pre-fix all 4 disk-load failures (file missing / open
+	# fail / parse fail / non-Dict root) just returned {}; callers fell
+	# through to "no valid IDs found" or "Failed to load monsters.json"
+	# with no insight into which step actually broke. Symptom looked like
+	# "encounter spawning is broken" but the root cause (file gone, file
+	# locked, syntax error, wrong root type) was invisible. Same silent-
+	# fallback class as ticks 303-306.
 	var file_path = "res://data/monsters.json"
 	if not FileAccess.file_exists(file_path):
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json not found at %s — encounter spawning will fall back to MONSTER_TYPES defaults" % file_path)
 		return {}
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json exists but FileAccess.open failed (error: %s) — file likely locked or permission-denied" % FileAccess.get_open_error())
 		return {}
 	var json_string = file.get_as_text()
 	file.close()
 	var json = JSON.new()
-	if json.parse(json_string) == OK:
-		return json.data
-	return {}
+	if json.parse(json_string) != OK:
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json parse error: %s — encounter spawning will fall back to MONSTER_TYPES defaults" % json.get_error_message())
+		return {}
+	if not (json.data is Dictionary):
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json parsed but root is not a Dictionary (got %s) — encounter spawning will fall back to MONSTER_TYPES defaults" % typeof(json.data))
+		return {}
+	return json.data
 
 
 func spawn_miniboss() -> void:
