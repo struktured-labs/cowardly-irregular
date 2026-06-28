@@ -69,7 +69,95 @@ const CHARACTER_STYLES = {
 		"highlight_bg": Color(0.4, 0.32, 0.1),
 		"highlight_text": Color(1.0, 0.9, 0.4),  # Bright gold
 		"cursor": Color(0.85, 0.72, 0.2)
-	}
+	},
+	# Tick 293: advanced + meta jobs were falling through to fighter's
+	# blue scheme (see line 439 fallback). Same visual-voice gap as
+	# tick 124's JOB_QUIP_COLORS fix. Each scheme anchors on the
+	# JOB_QUIP_COLORS base color and modulates for menu palette
+	# (dark bg, bright border, accent highlight).
+	# ---- Advanced jobs ----
+	"guardian": {
+		"bg": Color(0.10, 0.09, 0.06),           # Dark bronze
+		"border": Color(0.85, 0.78, 0.55),       # Bright bronze
+		"border_shadow": Color(0.25, 0.22, 0.15),
+		"text": Color(1.0, 0.95, 0.85),
+		"highlight_bg": Color(0.30, 0.27, 0.18),
+		"highlight_text": Color(1.0, 0.9, 0.55),
+		"cursor": Color(0.85, 0.78, 0.55)
+	},
+	"ninja": {
+		"bg": Color(0.05, 0.05, 0.08),           # Near black
+		"border": Color(0.65, 0.65, 0.75),       # Shadow steel
+		"border_shadow": Color(0.18, 0.18, 0.22),
+		"text": Color(0.92, 0.92, 0.98),
+		"highlight_bg": Color(0.20, 0.20, 0.28),
+		"highlight_text": Color(0.85, 1.0, 0.85),
+		"cursor": Color(0.65, 0.65, 0.75)
+	},
+	"summoner": {
+		"bg": Color(0.05, 0.12, 0.12),           # Dark teal
+		"border": Color(0.4, 0.9, 0.8),          # Bright teal
+		"border_shadow": Color(0.10, 0.25, 0.22),
+		"text": Color(0.85, 1.0, 0.95),
+		"highlight_bg": Color(0.15, 0.35, 0.32),
+		"highlight_text": Color(0.6, 1.0, 0.9),
+		"cursor": Color(0.4, 0.9, 0.8)
+	},
+	"speculator": {
+		"bg": Color(0.06, 0.12, 0.06),           # Dark forest
+		"border": Color(0.4, 0.85, 0.4),         # Money green
+		"border_shadow": Color(0.12, 0.25, 0.12),
+		"text": Color(0.92, 1.0, 0.92),
+		"highlight_bg": Color(0.18, 0.36, 0.18),
+		"highlight_text": Color(1.0, 0.9, 0.4),  # Gold accent — market
+		"cursor": Color(0.4, 0.85, 0.4)
+	},
+	# ---- Meta jobs ----
+	"scriptweaver": {
+		"bg": Color(0.0, 0.08, 0.04),            # Terminal black-green
+		"border": Color(0.0, 0.95, 0.55),        # Neon green
+		"border_shadow": Color(0.0, 0.22, 0.12),
+		"text": Color(0.7, 1.0, 0.75),
+		"highlight_bg": Color(0.0, 0.30, 0.15),
+		"highlight_text": Color(0.85, 1.0, 0.7),
+		"cursor": Color(0.0, 0.95, 0.55)
+	},
+	"time_mage": {
+		"bg": Color(0.06, 0.08, 0.14),           # Twilight blue
+		"border": Color(0.75, 0.88, 1.0),        # Pale chrono blue
+		"border_shadow": Color(0.18, 0.22, 0.35),
+		"text": Color(0.9, 0.95, 1.0),
+		"highlight_bg": Color(0.22, 0.28, 0.45),
+		"highlight_text": Color(1.0, 1.0, 0.9),
+		"cursor": Color(0.75, 0.88, 1.0)
+	},
+	"necromancer": {
+		"bg": Color(0.06, 0.02, 0.08),           # Crypt black
+		"border": Color(0.65, 0.35, 0.75),       # Violet
+		"border_shadow": Color(0.18, 0.08, 0.22),
+		"text": Color(0.92, 0.85, 1.0),
+		"highlight_bg": Color(0.25, 0.10, 0.32),
+		"highlight_text": Color(0.85, 1.0, 0.7),
+		"cursor": Color(0.65, 0.35, 0.75)
+	},
+	"bossbinder": {
+		"bg": Color(0.10, 0.02, 0.04),           # Boss-arena red-black
+		"border": Color(0.95, 0.25, 0.35),       # Boss-red
+		"border_shadow": Color(0.30, 0.05, 0.10),
+		"text": Color(1.0, 0.92, 0.92),
+		"highlight_bg": Color(0.36, 0.10, 0.14),
+		"highlight_text": Color(1.0, 1.0, 0.6),
+		"cursor": Color(0.95, 0.25, 0.35)
+	},
+	"skiptrotter": {
+		"bg": Color(0.10, 0.10, 0.02),           # Glitchy dark yellow
+		"border": Color(0.95, 0.85, 0.35),       # Frame-skip yellow
+		"border_shadow": Color(0.30, 0.26, 0.08),
+		"text": Color(1.0, 1.0, 0.85),
+		"highlight_bg": Color(0.35, 0.30, 0.10),
+		"highlight_text": Color(0.65, 1.0, 0.65),  # Glitch green accent
+		"cursor": Color(0.95, 0.85, 0.35)
+	},
 }
 
 var style: Dictionary = CHARACTER_STYLES["fighter"]
@@ -433,6 +521,8 @@ func setup(title: String, items: Array, pos: Vector2, character_class: String = 
 			selected_index = i
 			break
 
+	# Tick 293: now covers all 14 jobs; fighter remains the
+	# defensive default for unknown / modded job ids.
 	if CHARACTER_STYLES.has(character_class):
 		style = CHARACTER_STYLES[character_class]
 	else:
