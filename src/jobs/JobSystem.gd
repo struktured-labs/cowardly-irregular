@@ -357,6 +357,88 @@ func _create_default_abilities() -> void:
 			"description": "View the actual game code for current battle logic",
 			"target_type": "self",
 			"meta_effect": "code_inspection"
+		},
+		# Tick 296: rogue + bard abilities were missing from defaults
+		# fallback. _create_default_jobs (tick 295) lists them in the
+		# rogue / bard ability arrays but the actual ability dicts
+		# weren't there — assign_job's downstream stat / passive
+		# resolution would have surfaced 8 push_warnings on broken
+		# data/abilities.json. Stats mirror the live abilities.json
+		# shape (verified at tick time; minimal fields for fallback).
+		# ---- Rogue ----
+		"sneak_attack": {
+			"id": "sneak_attack",
+			"name": "Sneak Attack",
+			"type": "physical",
+			"mp_cost": 6,
+			"description": "A surprise strike with high critical chance",
+			"damage_multiplier": 1.4,
+			"crit_chance_bonus": 0.5,
+			"target_type": "single_enemy"
+		},
+		"steal": {
+			"id": "steal",
+			"name": "Steal",
+			"type": "support",
+			"mp_cost": 4,
+			"description": "Attempt to steal an item from the target",
+			"target_type": "single_enemy",
+			"effect": "steal_item"
+		},
+		"smoke_bomb": {
+			"id": "smoke_bomb",
+			"name": "Smoke Bomb",
+			"type": "support",
+			"mp_cost": 8,
+			"description": "Obscure the field — boost party evasion next turn",
+			"target_type": "all_allies",
+			"effect": "evasion_up"
+		},
+		"vanish": {
+			"id": "vanish",
+			"name": "Vanish",
+			"type": "support",
+			"mp_cost": 10,
+			"description": "Become temporarily untargetable",
+			"target_type": "self",
+			"effect": "untargetable"
+		},
+		# ---- Bard ----
+		"battle_hymn": {
+			"id": "battle_hymn",
+			"name": "Battle Hymn",
+			"type": "support",
+			"mp_cost": 8,
+			"description": "Inspire allies — boost attack",
+			"target_type": "all_allies",
+			"effect": "attack_up"
+		},
+		"lullaby": {
+			"id": "lullaby",
+			"name": "Lullaby",
+			"type": "status",
+			"mp_cost": 10,
+			"description": "Put enemies to sleep with a soft melody",
+			"target_type": "all_enemies",
+			"status_effect": "sleep"
+		},
+		"discord": {
+			"id": "discord",
+			"name": "Discord",
+			"type": "status",
+			"mp_cost": 12,
+			"description": "Strike a dissonant chord — enemies take more damage",
+			"target_type": "all_enemies",
+			"effect": "defense_down"
+		},
+		"inspiring_melody": {
+			"id": "inspiring_melody",
+			"name": "Inspiring Melody",
+			"type": "support",
+			"mp_cost": 14,
+			"description": "Restore party morale — grant +1 AP to each ally",
+			"target_type": "all_allies",
+			"effect": "ap_grant"
 		}
 	}
 
