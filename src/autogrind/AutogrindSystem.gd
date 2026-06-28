@@ -2066,18 +2066,33 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 
 
 func load_grind_snapshot() -> Dictionary:
-	"""Load a saved grind snapshot. Returns empty if none exists."""
+	"""Load a saved grind snapshot. Returns empty if none exists.
+
+	Tick 344: every failure mode AFTER existence push_warns instead of
+	silently returning {}. Pre-fix a corrupted snapshot (e.g., game
+	crashed mid-write, hand-edited JSON, version-bump migration) just
+	returned {} — the player's resume button vanished with zero
+	diagnostic. The file-missing case stays silent (most players never
+	have a snapshot). Same loud-fail pattern as tick 322 (load_monsters_
+	data) and tick 323 (load_custom_presets).
+	"""
 	if not FileAccess.file_exists(SNAPSHOT_PATH):
 		return {}
 	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[AUTOGRIND] grind snapshot at %s exists but FileAccess.open failed (error %d) — resume disabled this session" % [SNAPSHOT_PATH, FileAccess.get_open_error()])
 		return {}
 	var json = JSON.new()
-	if json.parse(file.get_as_text()) != OK:
-		file.close()
-		return {}
+	var parse_result: int = json.parse(file.get_as_text())
 	file.close()
-	if not json.data is Dictionary or json.data.get("version", 0) != 1:
+	if parse_result != OK:
+		push_warning("[AUTOGRIND] grind snapshot JSON parse error: %s — file likely corrupted by interrupted write; resume disabled" % json.get_error_message())
+		return {}
+	if not (json.data is Dictionary):
+		push_warning("[AUTOGRIND] grind snapshot parsed but root is not a Dictionary (got %s) — file shape changed; resume disabled" % typeof(json.data))
+		return {}
+	if json.data.get("version", 0) != 1:
+		push_warning("[AUTOGRIND] grind snapshot version mismatch (expected 1, got %s) — snapshot from a different game version; resume disabled" % str(json.data.get("version", 0)))
 		return {}
 	return json.data
 
