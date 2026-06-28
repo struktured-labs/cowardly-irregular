@@ -99,6 +99,21 @@ func set_terrain(terrain: String) -> void:
 	print("Terrain set to: %s" % terrain)
 
 
+## Tick 325: public alias for _generate_enemy_party. OverworldController
+## ._generate_enemies (line 126) calls es.generate_enemy_party() expecting
+## a public API, but EncounterSystem only had the underscore-prefixed
+## private variant — every call hit "Invalid call. Nonexistent function
+## 'generate_enemy_party'" and returned null. The controller's
+## battle_triggered emit then carried an empty/null enemies array, but
+## the parallel ES.encounter_triggered → SceneTransition path provided
+## proper enemy data, so the bug stayed invisible while still spamming
+## errors to the console on every encounter. Exposing the public alias
+## lets the controller call site work as authored without changing
+## the call site (or removing the redundant emit).
+func generate_enemy_party() -> Array:
+	return _generate_enemy_party()
+
+
 func _generate_enemy_party() -> Array:
 	"""Generate a random enemy party from the current pool"""
 	# 2% chance for rare Hero Mimics encounter
