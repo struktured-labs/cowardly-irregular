@@ -116,6 +116,24 @@ func _create_default_passives() -> void:
 				"max_hp_multiplier": 1.3
 			}
 		},
+		# Tick 327: mp_boost was the natural pair to hp_boost (same
+		# category, same +30% pattern) but was MISSING from the defaults
+		# fallback. Mage-class passive selection in passives.json
+		# references it. If both jobs.json and passives.json failed to
+		# load, mp_boost equips silently failed (push_warning in
+		# equip_passive's "passive_id not found" path), but a player who
+		# DOES have passives.json loaded successfully could still hit
+		# the JSON happy path — the defaults gap is a fallback-only
+		# bug. Same omission class as tick 319 (encore).
+		"mp_boost": {
+			"id": "mp_boost",
+			"name": "MP Boost",
+			"category": PassiveCategory.DEFENSIVE,
+			"description": "+30% max MP",
+			"stat_mods": {
+				"max_mp_multiplier": 1.3
+			}
+		},
 		"evasion_up": {
 			"id": "evasion_up",
 			"name": "Evasion Up",
