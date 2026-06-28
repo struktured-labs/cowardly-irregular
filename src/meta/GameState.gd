@@ -161,6 +161,32 @@ func set_story_flag(flag_name: String, value: bool = true) -> void:
 func get_story_flag(flag_name: String) -> bool:
 	return story_flags.get(flag_name, false)
 
+
+## Tick 335: centralized dual-namespace story-flag check. Mirrors the
+## ad-hoc pattern in WanderingNPC._flag_set (line ~291), QuestLog
+## ._is_quest_flag_set (line ~334), and QuestTracker (line ~94) so
+## scattered call sites can converge on a single source of truth.
+##
+## Checks three places:
+##   1. story_flags[flag]                       (the canonical store)
+##   2. game_constants["cutscene_flag_" + flag] (cutscene-side writes)
+##   3. game_constants[flag]                    (legacy bare-name writes)
+##
+## Pre-fix the bare get_story_flag() was used by ~7 readers
+## (OverworldScene Castle Harmonia gate, HarmoniaVillage Suburban
+## portal gate, etc) that would silently disagree with QuestLog /
+## WanderingNPC after a save format migration or debug toggle that
+## set ONLY the cutscene_flag_ variant. Routing those readers through
+## this helper closes the disagreement at the boundary.
+func is_story_flag_set(flag_name: String) -> bool:
+	if flag_name == "":
+		return false
+	if story_flags.get(flag_name, false):
+		return true
+	if game_constants.get("cutscene_flag_" + flag_name, false):
+		return true
+	return bool(game_constants.get(flag_name, false))
+
 func unlock_next_world() -> void:
 	if worlds_unlocked < 6:
 		worlds_unlocked += 1

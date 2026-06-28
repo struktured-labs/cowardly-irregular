@@ -440,7 +440,12 @@ func _setup_transitions() -> void:
 			spawn_points.get("steampunk_portal", Vector2.ZERO), "Enter the Mundane Sprawl")
 
 	# Castle Harmonia — gated on rat_king_defeated (Rat King reveals castle).
-	if gs and gs.get_story_flag("rat_king_defeated"):
+	# Tick 335: dual-namespace check via GameState.is_story_flag_set so a
+	# save-format migration or debug toggle that set ONLY cutscene_flag_
+	# rat_king_defeated still reveals the castle. Pre-fix bare
+	# get_story_flag would silently miss that and the player would be
+	# stranded mid-W1.
+	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("rat_king_defeated"):
 		_add_area_transition("CastleHarmonia", "castle_harmonia", "castle_entrance",
 			spawn_points.get("castle_entrance", Vector2.ZERO), "Enter Castle Harmonia")
 
