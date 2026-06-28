@@ -347,7 +347,14 @@ func end_battle(victory: bool) -> void:
 			var mt = enemy.get_meta("monster_type", "")
 			if mt in monsters_data:
 				var gold = monsters_data[mt].get("gold_reward", 0)
-				total_gold += int(gold * one_shot_gold_bonus)
+				# Tick 338: factor reward_multiplier into gold (was EXP-only).
+				# Pre-fix rare-encounter monsters (Hero Mimics et al with
+				# data.reward_multiplier > 1.0) gave extra EXP but ZERO extra
+				# gold — same enemy data, asymmetric reward application.
+				# Symptom: "the rare mimic gives me bonus EXP but the same
+				# gold as a regular encounter." Aligns with line 441's EXP
+				# formula where reward_multiplier IS applied.
+				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier)
 		if total_gold > 0:
 			GameState.add_gold(total_gold)
 			print("Party earned %d gold!" % total_gold)
