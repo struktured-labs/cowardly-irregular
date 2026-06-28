@@ -116,13 +116,40 @@ static func _build_party(gs: Object) -> Array:
 
 
 static func _build_progress(gs: Object) -> Dictionary:
-	# Collect defeated boss ids from story_flags (keys matching "*_boss_defeated").
-	var raw_flags: Variant = gs.get("story_flags")
-	var story_flags: Dictionary = raw_flags as Dictionary if raw_flags is Dictionary else {}
+	# Tick 312: collect defeated boss ids from game_constants (the
+	# canonical store) matching "cutscene_flag_*_defeated". Pre-fix
+	# this read story_flags (wrong dict — bosses live in game_constants
+	# per the tick 277-281 dead-flag audit) and matched "*_boss_defeated"
+	# (wrong pattern — no flag in the codebase uses that suffix). Result:
+	# the `bosses` array was ALWAYS empty regardless of which bosses the
+	# player had killed. Boss-strategy LLM prompts saw a fresh-game
+	# context for every fight; the W3 Tempo boss talked to you the same
+	# way it would in a no-prior-bosses W1 save.
+	#
+	# Real flags: cutscene_flag_rat_king_defeated,
+	# cutscene_flag_world1_mordaine_defeated,
+	# cutscene_flag_warden_suburban_defeated, etc. (see WorldMapMenu's
+	# unlock list for the full set).
+	#
+	# We strip the "cutscene_flag_" prefix and "_defeated" suffix so the
+	# LLM-visible array is short ids like ["rat_king", "world1_mordaine"]
+	# rather than the full flag names — keeps the prompt token budget
+	# tight and the LLM reads them as proper boss names.
+	var raw_consts: Variant = gs.get("game_constants")
+	var consts: Dictionary = raw_consts as Dictionary if raw_consts is Dictionary else {}
 	var bosses: Array[String] = []
-	for key in story_flags.keys():
-		if str(key).ends_with("_boss_defeated") and story_flags[key] == true:
-			bosses.append(str(key))
+	for key in consts.keys():
+		var k: String = str(key)
+		if not k.begins_with("cutscene_flag_"):
+			continue
+		if not k.ends_with("_defeated"):
+			continue
+		if consts[key] != true:
+			continue
+		var trimmed: String = k.substr(len("cutscene_flag_"))
+		trimmed = trimmed.substr(0, len(trimmed) - len("_defeated"))
+		if trimmed != "":
+			bosses.append(trimmed)
 
 	var raw_world: Variant    = gs.get("current_world")
 	var raw_unlocked: Variant = gs.get("worlds_unlocked")
