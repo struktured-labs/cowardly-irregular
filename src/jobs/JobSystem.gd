@@ -149,6 +149,14 @@ func _load_ability_data() -> void:
 func _create_default_jobs() -> void:
 	"""Create default starter jobs if file doesn't exist"""
 	jobs = {
+		# Tick 318: all stat_modifiers now include max_mp. Pre-fix every
+		# fallback job dropped the field — recalculate_stats's
+		# `if job_mods.has("max_mp")` then never fired, so casters fell
+		# back to Combatant.base_max_mp default (50) instead of their
+		# canonical jobs.json value (cleric 70, mage 80, bard 65...).
+		# If jobs.json failed to load (push_warning on missing / parse /
+		# non-Dict-root), every caster was silently down 15-30 max MP.
+		# Values mirror data/jobs.json exactly.
 		"fighter": {
 			"id": "fighter",
 			"name": "Fighter",
@@ -156,6 +164,7 @@ func _create_default_jobs() -> void:
 			"description": "A warrior skilled in physical combat",
 			"stat_modifiers": {
 				"max_hp": 120,
+				"max_mp": 30,
 				"attack": 15,
 				"defense": 12,
 				"magic": 5,
@@ -171,6 +180,7 @@ func _create_default_jobs() -> void:
 			"description": "A healer who uses restorative magic",
 			"stat_modifiers": {
 				"max_hp": 80,
+				"max_mp": 70,
 				"attack": 5,
 				"defense": 8,
 				"magic": 18,
@@ -186,6 +196,7 @@ func _create_default_jobs() -> void:
 			"description": "A mage who wields destructive magic",
 			"stat_modifiers": {
 				"max_hp": 70,
+				"max_mp": 80,
 				"attack": 5,
 				"defense": 6,
 				"magic": 20,
@@ -201,6 +212,7 @@ func _create_default_jobs() -> void:
 			"description": "A performer who uses songs to buff allies and debuff enemies",
 			"stat_modifiers": {
 				"max_hp": 85,
+				"max_mp": 65,
 				"attack": 8,
 				"defense": 7,
 				"magic": 16,
@@ -223,6 +235,7 @@ func _create_default_jobs() -> void:
 			"description": "A nimble striker who relies on speed, evasion, and critical strikes",
 			"stat_modifiers": {
 				"max_hp": 90,
+				"max_mp": 40,
 				"attack": 13,
 				"defense": 8,
 				"magic": 7,
@@ -238,6 +251,7 @@ func _create_default_jobs() -> void:
 			"description": "A meta job that can edit game formulas and constants",
 			"stat_modifiers": {
 				"max_hp": 90,
+				"max_mp": 60,
 				"attack": 10,
 				"defense": 10,
 				"magic": 15,
