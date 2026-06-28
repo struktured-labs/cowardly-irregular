@@ -2474,6 +2474,15 @@ const ADVANCE_TRASH_TALK = {
 	"ninja": ["Shadow combo!", "You won't see this coming!", "Swift as the wind!", "Vanishing strike!"],
 	"summoner": ["All of us, together!", "Lend me your power!", "Convergence!", "United we strike!"],
 	"speculator": ["All in!", "High risk, high reward!", "The market favors the bold!", "Leveraged to the max!"],
+	# Tick 292: meta-job lines + _default fallback. Pre-fix the get
+	# fell back to ADVANCE_TRASH_TALK["fighter"] when the job_id was
+	# unknown — meta-job PCs trash-talked in the wrong voice.
+	"scriptweaver": ["Chained calls.", "Stack trace incoming.", "Queue length: three.", "git stash, git smash, git ship!"],
+	"time_mage": ["Three turns at once.", "I already finished this.", "Sequenced across the timeline.", "Wait for the rewind."],
+	"necromancer": ["Three verses, one funeral.", "The chorus rises.", "I have three names ready for the ledger.", "Three steps to the grave."],
+	"bossbinder": ["Phase one, two, three.", "Their pattern, mine to play.", "I wore three masks for this.", "Boss-script: triple casting."],
+	"skiptrotter": ["Three-action combo, no skip.", "Frame-perfect chain.", "Already past your iframes.", "Speedrun finisher!"],
+	"_default": ["Multi-hit incoming!", "Going all out!", "Combo time!", "Take this!"],
 }
 
 
@@ -2485,8 +2494,11 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 
 	# Trash talk on 3+ action Advance from player characters (20% chance)
 	if actions.size() >= 3 and combatant in player_party and randf() < 0.2:
+		# Tick 292: fall back to "_default" (was "fighter" — wrong
+		# voice for any unknown / non-starter job; meta-job PCs were
+		# trash-talking in fighter lines).
 		var job_id = combatant.job.get("id", "fighter") if combatant.job else "fighter"
-		var lines = ADVANCE_TRASH_TALK.get(job_id, ADVANCE_TRASH_TALK["fighter"])
+		var lines = ADVANCE_TRASH_TALK.get(job_id, ADVANCE_TRASH_TALK["_default"])
 		var line = lines[randi() % lines.size()]
 		advance_trash_talk.emit(combatant, line)
 
