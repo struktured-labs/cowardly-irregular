@@ -556,6 +556,16 @@ func _apply_job_stats(combatant: Combatant, job: Dictionary) -> void:
 	if mods.has("max_hp"):
 		combatant.max_hp = mods["max_hp"]
 		combatant.current_hp = combatant.max_hp
+	# Tick 328: max_mp was missing from this 5-stat copy. Pre-fix a
+	# freshly-assigned job left max_mp at Combatant.base_max_mp (50)
+	# instead of the job's canonical value (Cleric 70, Mage 80, Bard
+	# 65). The gap only closed when something else triggered
+	# recalculate_stats — a level-up, an equip/unequip, or a passive
+	# change. Same omission class as ticks 287/316/317/318 — every
+	# 5-stat tuple needs to be 6 to include max_mp.
+	if mods.has("max_mp"):
+		combatant.max_mp = mods["max_mp"]
+		combatant.current_mp = combatant.max_mp
 	if mods.has("attack"):
 		combatant.attack = mods["attack"]
 	if mods.has("defense"):
