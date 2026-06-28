@@ -3302,6 +3302,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					## first letter; replace+capitalize gives proper
 					## Title Case across all 11 listed effects.
 					battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [target.combatant_name, effect.replace("_", " ").capitalize()])
+		"evasion_up":
+			# Tick 350: dedicated arm for the "_up" variant used by
+			# Rogue's smoke_bomb (jobs.json line 409) and any other
+			# evasion-granting ability. Pre-fix this fell through to
+			# the `_:` push_warning default and the rogue's signature
+			# crowd-control did nothing — every smoke_bomb cast was a
+			# silent fizzle. The "_up" variant maps to the canonical
+			# "evasion" status name so _target_dodges_physical (line
+			# 5017) actually fires the 60% dodge roll.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("evasion", duration)
+					battle_log_message.emit("[color=cyan]%s gains Evasion![/color] (60%% dodge chance for %d turns)" % [target.combatant_name, duration])
 		_:
 			# Authored-but-unimplemented support effect (dispel, summon_clone,
 			# copy_last_ability, random_stat_change, adapt_resistance, etc.).
