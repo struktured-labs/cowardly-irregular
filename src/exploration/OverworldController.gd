@@ -212,12 +212,41 @@ func _on_interaction_requested() -> void:
 	_dlog("[INTERACT] Nothing found")
 
 
+## Tick 326: push the current pool into the EncounterSystem autoload so
+## es.generate_enemy_party() spawns the controller's intended monsters.
+## Explicit Array → Array[String] coercion (same idiom as the typed-
+## array save-roundtrip fixes in Combatant/GameState) dodges the silent
+## typed-array-assignment failure that GDScript exhibits when the source
+## array isn't already typed as Array[String]. EncounterSystem.set_enemy_pool
+## requires Array[String]; passing a plain Array would silently no-op the
+## inner .duplicate() call.
+func _push_pool_to_encounter_system(pool: Array) -> void:
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if get_tree() else null
+	if es == null or not es.has_method("set_enemy_pool"):
+		return
+	var typed: Array[String] = []
+	for entry in pool:
+		typed.append(str(entry))
+	es.set_enemy_pool(typed)
+
+
 ## Configure area for encounters
 func set_area_config(area_id: String, safe_zone: bool, encounter_rate: float, enemy_pool: Array) -> void:
 	current_area_id = area_id
 	_is_safe_zone = safe_zone
 	_encounter_rate = encounter_rate
 	_enemy_pool = enemy_pool
+	# Tick 326: push the new pool into EncounterSystem.current_enemy_pool
+	# so es.generate_enemy_party() actually spawns the dungeon/area's
+	# intended monsters. Pre-fix set_area_config stored _enemy_pool but
+	# never told ES — ES.current_enemy_pool stayed at its default
+	# (["slime", "bat"]) or whatever the LAST ES.set_enemy_pool call
+	# pushed. So a fire dungeon configured with ["fire_imp", "salamander"]
+	# kept spawning slimes and bats. Same stored-locally-never-pushed
+	# class as tick 324 (encounter_rate). Same coercion idiom as tick 304
+	# — Array → Array[String] explicit loop to dodge the silent typed-
+	# array assignment failure.
+	_push_pool_to_encounter_system(enemy_pool)
 
 
 ## Set enemy pool directly (convenience method)
@@ -227,6 +256,8 @@ func set_enemy_pool(pool_id: String) -> void:
 	if pools.has(pool_id):
 		_enemy_pool = pools[pool_id]
 		print("Loaded enemy pool '%s': %s" % [pool_id, _enemy_pool])
+		# Tick 326: see set_area_config above for the rationale.
+		_push_pool_to_encounter_system(pools[pool_id])
 	else:
 		## Tick 183: surface missing pool. Pre-fix print() only —
 		## player would wander an area silently using whatever the
