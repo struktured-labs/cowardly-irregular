@@ -22,7 +22,12 @@ func test_apply_save_data_loads_map_before_position() -> void:
 	var src = _read_file("res://src/save/SaveSystem.gd")
 	var idx = src.find("func _apply_save_data")
 	assert_gt(idx, -1)
-	var body = src.substr(idx, 1500)
+	# Slice ends at the next top-level func so the test is robust to
+	# in-function comment / code growth (tick 308 expanded the map block
+	# with ~17 lines of comment + new assignment; old 1500-char slice
+	# silently dropped the load_map call out of the window).
+	var next_fn = src.find("\nfunc ", idx + 1)
+	var body = src.substr(idx, (next_fn - idx) if next_fn > 0 else 4000)
 	var map_idx = body.find("MapSystem.load_map(")
 	var pos_teleport_idx = body.find("player.teleport(")
 	assert_gt(map_idx, -1, "_apply_save_data must call MapSystem.load_map")

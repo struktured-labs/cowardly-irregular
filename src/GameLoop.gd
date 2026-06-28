@@ -1787,6 +1787,18 @@ func _restore_party_from_save_data() -> bool:
 	# constructed Combatants don't carry connections from the previous
 	# session.
 	_wire_party_level_up_listeners()
+	# Tick 308: pull the saved map_id out of MapSystem.current_map_id (which
+	# SaveSystem._apply_save_data wrote unconditionally) and sync our private
+	# _current_map_id so _start_exploration routes to the right scene. Pre-
+	# fix Continue/quick_load always landed the player on whatever GameLoop
+	# was already showing (typically "overworld") regardless of where the
+	# save was taken — symptom looked like "the save didn't remember my
+	# location". Skip empty/unknown ids so a corrupt save doesn't strand the
+	# player on a no-match scene.
+	if MapSystem and "current_map_id" in MapSystem:
+		var saved_map_id: String = str(MapSystem.current_map_id)
+		if saved_map_id != "" and saved_map_id != _current_map_id:
+			_set_current_map_id(saved_map_id)
 	return true
 
 

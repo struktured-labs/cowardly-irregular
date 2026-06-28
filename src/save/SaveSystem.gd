@@ -509,10 +509,23 @@ func _apply_save_data(data: Dictionary) -> void:
 	  4. Inventory — items, gold.
 	"""
 	# Apply map/location FIRST so player respawn happens cleanly, then teleport.
+	# Tick 308: write MapSystem.current_map_id UNCONDITIONALLY before the
+	# load_map call so dungeon/interior/village saves survive the round-trip.
+	# MapSystem._get_map_path only handles 3 ids (overworld / harmonia_village
+	# / whispering_cave); load_map push_errors + early-returns for everything
+	# else, leaving MapSystem.current_map_id at the pre-load value. GameLoop's
+	# Continue / quick_load path reads MapSystem.current_map_id to sync its
+	# private _current_map_id (tick 307), so we need it pre-populated. The
+	# subsequent load_map() call is best-effort — its success path overwrites
+	# current_map_id with the same value (harmless), its failure path leaves
+	# our pre-set value intact.
 	if data.has("map"):
 		var map_data = data["map"]
 		if map_data.has("current_map_id"):
-			MapSystem.load_map(map_data["current_map_id"])
+			var saved_map_id: String = str(map_data["current_map_id"])
+			if MapSystem and "current_map_id" in MapSystem:
+				MapSystem.current_map_id = saved_map_id
+			MapSystem.load_map(saved_map_id)
 
 	# Apply player position AFTER map load.
 	if data.has("player"):
