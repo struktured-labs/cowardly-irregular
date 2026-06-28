@@ -466,11 +466,38 @@ func _get_sellable_inventory() -> Array:
 	return sellable
 
 
+## Tick 314: resolve the LIVE party (Array[Combatant]) so shop writes
+## land on the source-of-truth inventory. Pre-fix shop only mutated
+## game_state.player_party (the serialized snapshot dict). On the next
+## menu open / pre-save sync, _sync_party_to_game_state copied LIVE
+## inventory back over the snapshot, OVERWRITING every shop change.
+## Net effect: purchases vanished (gold spent, item gone — refund flow
+## couldn't catch this because the dict update technically "succeeded");
+## sales were a free-money exploit (gold credited, item kept).
+##
+## Falls back to null in test envs without a GameLoop in the tree —
+## callers handle null by writing only to the snapshot (legacy behavior),
+## which keeps the existing unit tests passing.
+func _resolve_live_party() -> Array:
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.root == null:
+		return []
+	var gl: Node = tree.root.get_node_or_null("GameLoop")
+	if gl == null or not ("party" in gl):
+		return []
+	return gl.party
+
+
 func _add_item_to_inventory(item_id: String) -> bool:
 	"""Add item to party inventory. Returns true if a recipient was found
 	and the item was added; false if no party member exists to hold it
 	(empty player_party). _attempt_purchase relies on this return value to
-	refund the spent gold when no recipient is reachable."""
+	refund the spent gold when no recipient is reachable.
+
+	Tick 314: writes to BOTH the live Combatant.inventory (source of
+	truth) AND the snapshot dict (still consumed by other shop code +
+	the next _sync_party_to_game_state's seed value). Without the live
+	write, the snapshot mutation gets overwritten on the next sync."""
 	if shop_type == ShopType.ITEM:
 		# Add to first party member's inventory.
 		if game_state.player_party.size() == 0:
@@ -480,6 +507,11 @@ func _add_item_to_inventory(item_id: String) -> bool:
 			party_leader["inventory"] = {}
 		var inventory = party_leader["inventory"]
 		inventory[item_id] = inventory.get(item_id, 0) + 1
+		# Tick 314: also write to the LIVE Combatant so the next sync
+		# doesn't clobber the purchase.
+		var live_party: Array = _resolve_live_party()
+		if live_party.size() > 0 and live_party[0] and live_party[0].has_method("add_item"):
+			live_party[0].add_item(item_id, 1)
 		return true
 	elif shop_type == ShopType.BLACKSMITH:
 		# Add equipment to party leader's equipment pool.
@@ -489,6 +521,28 @@ func _add_item_to_inventory(item_id: String) -> bool:
 		if not party_leader.has("equipment_inventory"):
 			party_leader["equipment_inventory"] = []
 		party_leader["equipment_inventory"].append(item_id)
+		# Tick 314: equipment_pool lives on GameLoop, not the snapshot
+		# dict (per the BattleManager._route_drop_to_equipment_pool
+		# pattern at line ~4979). Without this the same overwrite class
+		# applies to blacksmith purchases.
+		var tree: SceneTree = get_tree()
+		if tree != null and tree.root != null:
+			var gl: Node = tree.root.get_node_or_null("GameLoop")
+			if gl != null and "equipment_pool" in gl:
+				var pool: Dictionary = gl.equipment_pool
+				var eq = get_node_or_null("/root/EquipmentSystem")
+				if eq != null:
+					var key: String = ""
+					if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+						key = "weapons"
+					elif eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+						key = "armors"
+					elif eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+						key = "accessories"
+					if key != "":
+						if not pool.has(key):
+							pool[key] = []
+						pool[key].append(item_id)
 		return true
 	# Magic purchases handled separately in _attempt_magic_purchase. Any
 	# other shop_type values reaching here are an authoring error — refuse
@@ -498,14 +552,25 @@ func _add_item_to_inventory(item_id: String) -> bool:
 
 
 func _remove_item_from_inventory(item_id: String) -> bool:
-	"""Remove item from party inventory (returns false if not found)"""
-	# Find first party member with this item
-	for member_data in game_state.player_party:
-		var inventory = member_data.get("inventory", {})
+	"""Remove item from party inventory (returns false if not found).
+
+	Tick 314: removes from BOTH the snapshot dict (where the sell menu
+	reads quantities) AND the LIVE Combatant.inventory (source of truth).
+	Pre-fix the snapshot-only decrement was overwritten on the next sync,
+	so the player got the sell-price gold while keeping the item — a
+	free-money exploit triggered every time a sell was confirmed."""
+	# Find first party member with this item in the snapshot.
+	var live_party: Array = _resolve_live_party()
+	for i in range(game_state.player_party.size()):
+		var member_data: Dictionary = game_state.player_party[i]
+		var inventory: Dictionary = member_data.get("inventory", {})
 		if inventory.has(item_id) and inventory[item_id] > 0:
 			inventory[item_id] -= 1
 			if inventory[item_id] == 0:
 				inventory.erase(item_id)
+			# Tick 314: mirror on the matching live Combatant.
+			if i < live_party.size() and live_party[i] and live_party[i].has_method("remove_item"):
+				live_party[i].remove_item(item_id, 1)
 			return true
 	return false
 
