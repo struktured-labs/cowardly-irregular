@@ -758,6 +758,28 @@ func _build_results(victory: bool) -> Dictionary:
 					if MapSystem and "current_map_id" in MapSystem:
 						defeat_loc = str(MapSystem.current_map_id)
 					BestiarySystem.mark_defeated(mtype, defeat_loc)
+		# Tick 341: parallel to tick 340 — apply game_constants
+		# ["exp_multiplier"] and ["gold_multiplier"] so Scriptweaver /
+		# RebalanceDaemon nudges affect the headless autogrind path too.
+		# Pre-fix this returned raw enemy-stat sums; AutogrindSystem.on_
+		# battle_victory consumed exp directly via gain_job_exp without
+		# the multiplier, so a knob set to 2.0 had ZERO effect on
+		# headless autogrind. Same defensive clampf([0.1, 10.0]) band
+		# as BattleManager line ~431 and the live-autogrind fix in
+		# GameLoop._on_autogrind_battle_ended.
+		var gs: Object = null
+		var tree: SceneTree = Engine.get_main_loop() as SceneTree
+		if tree != null and tree.root != null:
+			gs = tree.root.get_node_or_null("GameState")
+		if gs != null and "game_constants" in gs:
+			var exp_mult: float = clampf(
+				float(gs.game_constants.get("exp_multiplier", 1.0)),
+				0.1, 10.0)
+			var gold_mult: float = clampf(
+				float(gs.game_constants.get("gold_multiplier", 1.0)),
+				0.1, 10.0)
+			exp = int(exp * exp_mult)
+			gold = int(gold * gold_mult)
 
 	return {
 		"victory": victory,
