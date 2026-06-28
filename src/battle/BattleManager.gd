@@ -377,7 +377,14 @@ func end_battle(victory: bool) -> void:
 			if mt in monsters_data:
 				var drop_table = monsters_data[mt].get("drop_table", [])
 				for drop in drop_table:
-					if randf() < drop.get("chance", 0.0) * drop_rate_mult:
+					# Tick 339: factor reward_multiplier into drop chance too,
+					# matching the EXP (line 441) and gold (tick 338) chains.
+					# Pre-fix rare-encounter monsters with
+					# data.reward_multiplier > 1.0 gave bonus EXP and gold but
+					# the SAME drop rate as a regular encounter — the third
+					# reward axis was the only one not respecting the
+					# rarity flag. Closes the rare-reward asymmetry trio.
+					if randf() < drop.get("chance", 0.0) * drop_rate_mult * reward_multiplier:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
