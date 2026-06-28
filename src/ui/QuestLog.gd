@@ -234,7 +234,12 @@ func _build_quest_lines() -> Array:
 	for ch_idx in range(CHAPTERS.size()):
 		var chapter = CHAPTERS[ch_idx]
 		var world_flag = chapter["world_flag"]
-		var chapter_unlocked = (world_flag == "" or GameState.get_story_flag(world_flag))
+		# Tick 337: route through _is_quest_flag_set (delegates to
+		# GameState.is_story_flag_set) so a save-format migration that
+		# left world2_prologue_complete in only one namespace still
+		# unlocks the chapter. Pre-fix bare get_story_flag silently
+		# locked the entire chapter section behind a single-store check.
+		var chapter_unlocked = (world_flag == "" or _is_quest_flag_set(world_flag))
 
 		# Chapter header
 		if chapter_unlocked:
@@ -326,7 +331,12 @@ func _find_active_objective_text() -> String:
 	## game is fully complete or no chapter is yet unlocked.
 	for chapter in CHAPTERS:
 		var world_flag = chapter["world_flag"]
-		var chapter_unlocked = (world_flag == "" or GameState.get_story_flag(world_flag))
+		# Tick 337: route through _is_quest_flag_set (delegates to
+		# GameState.is_story_flag_set) so a save-format migration that
+		# left world2_prologue_complete in only one namespace still
+		# unlocks the chapter. Pre-fix bare get_story_flag silently
+		# locked the entire chapter section behind a single-store check.
+		var chapter_unlocked = (world_flag == "" or _is_quest_flag_set(world_flag))
 		if not chapter_unlocked:
 			continue
 		for obj in chapter["objectives"]:
