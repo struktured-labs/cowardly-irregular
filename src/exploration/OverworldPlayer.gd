@@ -330,7 +330,14 @@ func _physics_process(delta: float) -> void:
 	if input_dir != Vector2.ZERO:
 		# Compensate for Mode 7 horizontal compression before normalizing.
 		# Shader compresses horizontal visually — boost X to feel equal to vertical.
-		input_dir.x *= 2.0
+		# Tick 348: gate the boost on Mode7Overlay.is_active. Pre-fix the 2x
+		# multiplier applied UNCONDITIONALLY — non-Mode-7 contexts (villages,
+		# interiors, flat-camera dungeons) saw diagonal movement biased
+		# toward horizontal. Diagonal up-right visibly walked more right
+		# than up because input_dir.x was 2x boosted before normalize. With
+		# Mode 7 off there's no horizontal compression to compensate for.
+		if Mode7Overlay.is_active:
+			input_dir.x *= 2.0
 		input_dir = input_dir.normalized()
 		# Terrain speed modifier — rough terrain slows you down instead of blocking
 		var terrain_speed = _get_terrain_speed_modifier()

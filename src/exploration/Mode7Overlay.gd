@@ -112,6 +112,15 @@ var _player_moving: bool = false
 
 static var camera_angle: float = 0.0
 static var _pending_dissolve_in: bool = false
+## Tick 348: static flag mirroring the most-recently-applied `mode7` param
+## from apply_camera. OverworldPlayer reads this to gate its Mode 7
+## horizontal compensation — pre-fix the 2x X boost (input_dir.x *= 2.0)
+## fired unconditionally, so non-Mode-7 contexts (villages, interiors,
+## dungeons rendered with the flat camera) saw their diagonal movement
+## biased toward horizontal. Diagonal up-right would visibly walk more
+## right than up. Defaults to false so the boost stays OFF until an
+## overworld explicitly turns Mode 7 on.
+static var is_active: bool = false
 
 
 ## Apply a per-world visual preset. Call BEFORE setup().
@@ -489,6 +498,9 @@ func cleanup() -> void:
 
 
 static func apply_camera(cam: Camera2D, mode7: bool) -> void:
+	# Tick 348: surface mode7 state via the static is_active flag so
+	# OverworldPlayer can gate its 2x horizontal-compensation boost.
+	is_active = mode7
 	if mode7:
 		cam.zoom = Vector2(0.85, 0.85)  # Closer zoom = tiles near player match collision size
 		cam.offset = Vector2(0, -20)
