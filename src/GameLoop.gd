@@ -116,6 +116,14 @@ func _set_current_map_id(id: String) -> void:
 		var w: int = _get_world_for_map(id)
 		if w != GameState.current_world:
 			GameState.current_world = w
+	# Tick 311: derive _current_terrain from the map_id at the same point
+	# so save-load and autogrind hand-off see fresh terrain. Pre-fix the
+	# terrain was only re-derived on battle-trigger and area-transition;
+	# loading a save inside fire_dragon_cave and immediately starting
+	# autogrind passed "plains" (the default) into start_grind, which
+	# rendered the wrong battle background until the first ENEMY scripted
+	# event ticked. Closes the same drift class as the world sync above.
+	_current_terrain = _get_terrain_for_map(id)
 
 
 ## Tick 310: derive world number (1-6) from a map_id. Used by
