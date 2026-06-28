@@ -496,7 +496,15 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	total_exp_gained += adjusted_exp
 
 	# Track items
+	# Tick 343: skip the "gold" key — tick 342 added it to items_gained as
+	# the gold-forwarding channel, but it's NOT an item ID. AutogrindController
+	# .get_grind_stats counts total_items_gained values as item drops (line
+	# ~568); without this filter the gold amount would be misreported as a
+	# huge fake item count ("you got 5000 'gold' items this session"). The
+	# gold value is handled separately below in the party_gold credit path.
 	for item_id in items_gained:
+		if item_id == "gold":
+			continue
 		var quantity = items_gained[item_id]
 		if total_items_gained.has(item_id):
 			total_items_gained[item_id] += quantity
