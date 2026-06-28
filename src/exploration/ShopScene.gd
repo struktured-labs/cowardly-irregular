@@ -771,6 +771,15 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		if pending_spell_id not in member["learned_abilities"]:
 			member["learned_abilities"].append(pending_spell_id)
 
+		# Tick 315: mirror to the LIVE Combatant. Same overwrite class as
+		# tick 314's potion-purchase fix — pre-fix the snapshot-only
+		# append was clobbered on the next _sync_party_to_game_state,
+		# silently un-learning the just-purchased spell while keeping
+		# the gold spent.
+		var live_party: Array = _resolve_live_party()
+		if char_index < live_party.size() and live_party[char_index] and live_party[char_index].has_method("learn_ability"):
+			live_party[char_index].learn_ability(pending_spell_id)
+
 		SoundManager.play_ui("menu_select")
 		_update_gold_display()
 
