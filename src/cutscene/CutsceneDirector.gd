@@ -500,6 +500,11 @@ func _set_choice_flag(option: Variant) -> void:
 		push_warning("CutsceneDirector._set_choice_flag: GameState unreachable — flag '%s' not persisted" % flag_name)
 		return
 	gs.game_constants["cutscene_flag_" + flag_name] = true
+	# Tick 333: mirror to story_flags too (see _step_set_flag for
+	# rationale — QuestLog and other bare-flag consumers don't fall
+	# back to game_constants).
+	if gs.has_method("set_story_flag"):
+		gs.set_story_flag(flag_name, true)
 
 
 func _step_fade_to_black(step: Dictionary) -> void:
@@ -632,6 +637,17 @@ func _step_set_flag(step: Dictionary) -> void:
 		# Store cutscene flags in game_constants for now
 		if GameState:
 			GameState.game_constants["cutscene_flag_" + flag] = value
+			# Tick 333: also mirror to story_flags so QuestLog (reads
+			# get_story_flag, no game_constants fallback) and other
+			# bare-flag consumers see the value. Pre-fix a cutscene
+			# set_flag step that flipped a quest objective flag (e.g.
+			# "talked_to_theron") never updated story_flags — QuestLog
+			# kept showing the objective as incomplete even after the
+			# Theron dialogue played. Mirrors the helper at GameLoop
+			# ._set_cutscene_flag_and_mirror that's used for the
+			# completion-flag write at cutscene_finished.
+			if GameState.has_method("set_story_flag"):
+				GameState.set_story_flag(flag, bool(value))
 
 
 func _step_grant_item(step: Dictionary) -> void:
