@@ -1558,7 +1558,7 @@ func _toggle_grinding() -> void:
 		# Persist current rules to AutogrindSystem so the controller evaluates them
 		AutogrindSystem.set_autogrind_rules(rules.duplicate(true))
 		_is_grinding = true
-		_log_message("[color=lime]Autogrind started![/color]")
+		_log_message("[color=%s]Autogrind started![/color]" % AccessibilityPalette.bonus_bbcode())
 		# Hide config UI FIRST, then start grinding on next frame
 		visible = false
 		var config = _get_grind_config()
@@ -1590,7 +1590,7 @@ func _toggle_ludicrous_speed() -> void:
 	if _ludicrous_speed_enabled:
 		_log_message("[color=magenta]LUDICROUS SPEED enabled! Battles resolve instantly via math.[/color]")
 	else:
-		_log_message("[color=lime]Ludicrous speed disabled. Normal battle rendering.[/color]")
+		_log_message("[color=%s]Ludicrous speed disabled. Normal battle rendering.[/color]" % AccessibilityPalette.bonus_bbcode())
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 
@@ -1649,18 +1649,18 @@ func _export_scripts() -> void:
 		var path = ScriptShareManager.export_all_scripts(_party)
 		if path != "":
 			exported += 1
-			_log_message("[color=lime]Exported party autobattle scripts[/color]")
+			_log_message("[color=%s]Exported party autobattle scripts[/color]" % AccessibilityPalette.bonus_bbcode())
 
 	# Export autogrind rules
 	var rules_path = ScriptShareManager.export_autogrind_rules()
 	if rules_path != "":
 		exported += 1
-		_log_message("[color=lime]Exported autogrind rules[/color]")
+		_log_message("[color=%s]Exported autogrind rules[/color]" % AccessibilityPalette.bonus_bbcode())
 
 	if exported == 0:
 		_log_message("[color=yellow]Nothing to export.[/color]")
 	else:
-		_log_message("[color=lime]%d file(s) exported to script_exports/[/color]" % exported)
+		_log_message("[color=%s]%d file(s) exported to script_exports/[/color]" % [AccessibilityPalette.bonus_bbcode(), exported])
 		TutorialHints.show(self, "autogrind_export")
 	SoundManager.play_ui("menu_select")
 
@@ -1686,17 +1686,17 @@ func _import_scripts() -> void:
 				var count = ScriptShareManager.apply_script_bundle(data)
 				if count > 0:
 					imported += count
-					_log_message("[color=lime]Imported %d autobattle scripts from %s[/color]" % [count, filename])
+					_log_message("[color=%s]Imported %d autobattle scripts from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), count, filename])
 			"autobattle_script":
 				var char_id = data.get("character_id", "")
 				if char_id != "" and ScriptShareManager.apply_character_script(char_id, data):
 					imported += 1
-					_log_message("[color=lime]Imported script for %s[/color]" % char_id)
+					_log_message("[color=%s]Imported script for %s[/color]" % [AccessibilityPalette.bonus_bbcode(), char_id])
 			"autogrind_rules":
 				if ScriptShareManager.apply_autogrind_rules(data):
 					imported += 1
 					rules = AutogrindSystem.get_autogrind_rules()
-					_log_message("[color=lime]Imported autogrind rules from %s[/color]" % filename)
+					_log_message("[color=%s]Imported autogrind rules from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), filename])
 
 	if imported == 0:
 		_log_message("[color=yellow]No compatible files to import.[/color]")
@@ -1716,7 +1716,7 @@ func _toggle_permadeath_staking() -> void:
 		# Disable immediately — no confirmation needed to turn it off
 		_permadeath_staking_enabled = false
 		AutogrindSystem.enable_permadeath_staking(false)
-		_log_message("[color=lime]Permadeath staking disabled.[/color]")
+		_log_message("[color=%s]Permadeath staking disabled.[/color]" % AccessibilityPalette.bonus_bbcode())
 		_build_ui()
 		SoundManager.play_ui("menu_select")
 		return
@@ -1758,7 +1758,8 @@ func _show_permadeath_confirmation() -> void:
 
 	var warn_lbl := RichTextLabel.new()
 	warn_lbl.bbcode_enabled = true
-	warn_lbl.text = "[color=white]Enabling [color=red]PERMADEATH STAKES[/color] means:\n\n- If your party is wiped, the lowest-HP member [color=red]DIES PERMANENTLY[/color]\n- Their death is saved to disk and cannot be undone\n- Rewards grow 50% faster as compensation\n\n[color=yellow]Are you sure?[/color][/color]"
+	var _danger: String = AccessibilityPalette.penalty_bbcode()
+	warn_lbl.text = "[color=white]Enabling [color=%s]PERMADEATH STAKES[/color] means:\n\n- If your party is wiped, the lowest-HP member [color=%s]DIES PERMANENTLY[/color]\n- Their death is saved to disk and cannot be undone\n- Rewards grow 50%% faster as compensation\n\n[color=yellow]Are you sure?[/color][/color]" % [_danger, _danger]
 	warn_lbl.position = Vector2(12, 36)
 	warn_lbl.size = Vector2(dialog.size.x - 24, 108)
 	warn_lbl.add_theme_font_size_override("normal_font_size", 11)
@@ -1786,7 +1787,7 @@ func _show_permadeath_confirmation() -> void:
 		func() -> void:
 			_permadeath_staking_enabled = true
 			AutogrindSystem.enable_permadeath_staking(true)
-			_log_message("[color=red]PERMADEATH STAKES ENABLED! +50% efficiency growth.[/color]")
+			_log_message("[color=%s]PERMADEATH STAKES ENABLED! +50%% efficiency growth.[/color]" % AccessibilityPalette.penalty_bbcode())
 			overlay.queue_free()
 			_build_ui()
 			SoundManager.play_ui("menu_select"),
@@ -2149,7 +2150,7 @@ func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 		if _monitor and is_instance_valid(_monitor):
 			_monitor.add_highlight("META-BOSS DEFEATED: %s! Corruption -" % boss_name, "success")
 	elif victory:
-		_log_message("[color=lime]Battle #%d: +%d EXP[/color]" % [battle_num, exp_gained])
+		_log_message("[color=%s]Battle #%d: +%d EXP[/color]" % [AccessibilityPalette.bonus_bbcode(), battle_num, exp_gained])
 		# Forward victory to monitor highlight
 		if _monitor and is_instance_valid(_monitor):
 			var yield_mult = results.get("yield_multiplier", 1.0)
@@ -2161,7 +2162,7 @@ func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 				if item_id != "gold":
 					_monitor.add_highlight("Drop: %s x%d" % [item_id, items[item_id]], "success")
 	else:
-		_log_message("[color=red]Battle #%d: Defeat![/color]" % battle_num)
+		_log_message("[color=%s]Battle #%d: Defeat![/color]" % [AccessibilityPalette.penalty_bbcode(), battle_num])
 		if _monitor and is_instance_valid(_monitor):
 			_monitor.add_highlight("DEFEAT at battle #%d!" % battle_num, "danger")
 
@@ -2173,7 +2174,7 @@ func _on_efficiency_increased(new_multiplier: float) -> void:
 func _on_corruption_increased(level: float) -> void:
 	_corruption = level
 	if level >= 4.0:
-		_log_message("[color=red]Corruption critical: %.1f[/color]" % level)
+		_log_message("[color=%s]Corruption critical: %.1f[/color]" % [AccessibilityPalette.penalty_bbcode(), level])
 
 
 func _on_interrupt_triggered(reason: String) -> void:
@@ -2192,7 +2193,7 @@ func _on_meta_boss_spawned(boss_name: String) -> void:
 
 
 func _on_system_collapse() -> void:
-	_log_message("[color=red]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]")
+	_log_message("[color=%s]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]" % AccessibilityPalette.penalty_bbcode())
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.add_highlight("SYSTEM COLLAPSE (#%d)!" % AutogrindSystem.collapse_count, "danger")
 
@@ -2235,7 +2236,7 @@ func _save_current_as_preset() -> void:
 	_custom_presets.append(preset)
 	_persist_custom_presets()
 
-	_log_message("[color=lime]Saved as '%s' (slot [%d])[/color]" % [preset["name"], slot + 4])
+	_log_message("[color=%s]Saved as '%s' (slot [%d])[/color]" % [AccessibilityPalette.bonus_bbcode(), preset["name"], slot + 4])
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 
