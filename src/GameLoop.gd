@@ -106,6 +106,44 @@ func _set_current_map_id(id: String) -> void:
 	_current_map_id = id
 	if MapSystem and "current_map_id" in MapSystem:
 		MapSystem.current_map_id = id
+	# Tick 310: also sync GameState.current_world from the map_id so
+	# GameOverScreen + LLMContext + any other reader sees the correct
+	# world. Pre-fix current_world was set ONLY by autogrind's region-
+	# advance signal, so a player dying in suburban_overworld with a
+	# fresh save (never touched autogrind) saw the W1 game-over title.
+	# Skip when GameState is unreachable (test envs).
+	if GameState and "current_world" in GameState:
+		var w: int = _get_world_for_map(id)
+		if w != GameState.current_world:
+			GameState.current_world = w
+
+
+## Tick 310: derive world number (1-6) from a map_id. Used by
+## _set_current_map_id to keep GameState.current_world in sync with
+## exploration. Heuristic-based prefix matching: W2 (suburban), W3
+## (steampunk), W4 (industrial), W5 (futuristic), W6 (abstract) keys
+## are distinctive; everything else falls back to W1 (medieval —
+## covers harmonia / dragon caves / 5 side villages / Castle Harmonia
+## / Whispering Cave). Adding a new W2-W6 region without updating
+## this needs a push_warning at the call site so the gap is loud.
+func _get_world_for_map(id: String) -> int:
+	# W2 — Suburban
+	if id.begins_with("suburban_") or id.begins_with("maple_heights"):
+		return 2
+	# W3 — Steampunk
+	if id.begins_with("steampunk_") or id.begins_with("brasston"):
+		return 3
+	# W4 — Industrial
+	if id.begins_with("industrial_") or id.begins_with("rivet_row") or id.begins_with("assembly_"):
+		return 4
+	# W5 — Futuristic
+	if id.begins_with("futuristic_") or id.begins_with("node_prime") or id == "root_process":
+		return 5
+	# W6 — Abstract
+	if id.begins_with("abstract_") or id.begins_with("vertex") or id == "null_chamber":
+		return 6
+	# W1 — Medieval (default; covers all original-world ids)
+	return 1
 
 
 ## True when the player is inside one of the small village-side interior
