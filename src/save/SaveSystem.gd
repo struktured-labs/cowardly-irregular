@@ -805,17 +805,32 @@ func save_settings() -> void:
 
 
 func load_settings() -> void:
-	"""Load and apply global game settings."""
+	"""Load and apply global game settings.
+
+	Tick 347: 3-stage loud-fail on the post-existence failure paths
+	(open / parse / non-Dict root). Pre-fix every failure mode silently
+	returned and the player lost ALL their settings (volume, text speed,
+	controller overlay, etc.) with zero diagnostic. Common cause: game
+	crashed mid-write, leaving an empty / truncated settings.json.
+
+	The file-missing case stays silent — first-launch players don't
+	have a settings file.
+	"""
 	if not FileAccess.file_exists(SETTINGS_PATH):
 		return
 	var file = FileAccess.open(SETTINGS_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[SaveSystem] settings.json exists but FileAccess.open failed (error %d) — settings reset to defaults this session" % FileAccess.get_open_error())
 		return
 	var json = JSON.new()
-	if json.parse(file.get_as_text()) != OK or not json.data is Dictionary:
-		file.close()
-		return
+	var parse_result: int = json.parse(file.get_as_text())
 	file.close()
+	if parse_result != OK:
+		push_warning("[SaveSystem] settings.json parse error: %s — likely corrupted by interrupted write; settings reset to defaults" % json.get_error_message())
+		return
+	if not (json.data is Dictionary):
+		push_warning("[SaveSystem] settings.json parsed but root is not a Dictionary (got %s) — file shape changed; settings reset to defaults" % typeof(json.data))
+		return
 
 	var settings = json.data
 	# Battle speed
