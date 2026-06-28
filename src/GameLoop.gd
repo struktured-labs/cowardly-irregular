@@ -4096,6 +4096,19 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		for enemy in BattleManager.enemy_party:
 			if enemy is Combatant:
 				exp_gained += int(enemy.max_hp * 0.5 + enemy.attack * 2)
+		# Tick 340: apply game_constants["exp_multiplier"] so Scriptweaver
+		# nudges and RebalanceDaemon proposals actually affect autogrind
+		# EXP gains. Pre-fix the live-autogrind path used the raw enemy-
+		# stat formula directly — so an exp_multiplier of 2.0 set via the
+		# rebalance system doubled normal-battle EXP but had ZERO effect
+		# on autogrind farms (the system that grinds the most). Mirrors
+		# BattleManager line ~431's defensive clampf pattern.
+		var exp_mult: float = 1.0
+		if GameState and "game_constants" in GameState:
+			exp_mult = clampf(
+				float(GameState.game_constants.get("exp_multiplier", 1.0)),
+				0.1, 10.0)
+		exp_gained = int(exp_gained * exp_mult)
 
 		# Feed battle action summary into adaptive AI pattern learning
 		var region_id = AutogrindSystem.current_region_id
