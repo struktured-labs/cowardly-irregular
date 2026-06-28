@@ -285,6 +285,14 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			}
 
 		_:
+			# Tick 306: surface unknown enemy_id via push_warning. Pre-fix
+			# silent slime-fallback meant a typo'd id in enemy_pools.json
+			# (or save-format drift with a renamed monster) spawned slimes
+			# everywhere with no diagnostic. To QA the area "wrong
+			# monsters" symptom was downstream from a totally invisible
+			# miss. Same silent-fail class as tick 304's set_enemy_pool
+			# _for_area fix.
+			push_warning("[EncounterSystem] _create_enemy_data: unknown enemy_id '%s' — falling back to slime (typo? monsters.json drift? new id in enemy_pools.json without DB entry?)" % enemy_id)
 			# Unknown enemy, return basic slime from database or hardcoded
 			if monster_database.has("slime"):
 				return _create_enemy_data("slime")
