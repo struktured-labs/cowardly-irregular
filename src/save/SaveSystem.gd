@@ -52,6 +52,15 @@ var one_shot_records: Dictionary = {}  # {monster_id: {count: int, best_rank: St
 ## Autobattle victory tracking records
 var autobattle_records: Dictionary = {}  # {monster_key: {count: int, best_turns: int, best_multiplier: float}}
 
+## Tick 309: pending player position from a load — populated by
+## _apply_save_data and consumed by GameLoop after _start_exploration
+## creates the saved map's scene. Vector2.INF is the "no pending" sentinel
+## so the consumer can distinguish "load wasn't called" from "load placed
+## the player at (0, 0)". GameLoop must reset this back to INF after
+## consuming it so subsequent _start_exploration calls don't snap the
+## player back to a stale position.
+var pending_player_position: Vector2 = Vector2.INF
+
 
 func _ready() -> void:
 	# Create save directory if it doesn't exist
@@ -528,14 +537,26 @@ func _apply_save_data(data: Dictionary) -> void:
 			MapSystem.load_map(saved_map_id)
 
 	# Apply player position AFTER map load.
-	if data.has("player"):
+	# Tick 309: stash the saved position into pending_player_position so
+	# GameLoop's Continue / quick_load flow can re-apply it AFTER it tears
+	# down the current scene and instantiates the saved map's scene. Pre-
+	# fix player.teleport() was applied to whatever player happened to be
+	# in the tree NOW (typically the title-screen-residual or a stale
+	# scene's player), which gets queue_free()'d a moment later when
+	# GameLoop._start_exploration swaps to the saved scene — so the new
+	# scene's player spawned at its default marker and the saved position
+	# was silently lost. The in-place teleport is preserved as a best-effort
+	# (live-scene saves like the in-overworld autosave still benefit), but
+	# the stash is the canonical path Continue/quick_load now consume.
+	if data.has("player") and data["player"].has("position"):
+		var pos = data["player"]["position"]
+		pending_player_position = Vector2(pos["x"], pos["y"])
 		var player = _find_active_player()
-		if player and data["player"].has("position"):
-			var pos = data["player"]["position"]
+		if player:
 			if player.has_method("teleport"):
-				player.teleport(Vector2(pos["x"], pos["y"]))
+				player.teleport(pending_player_position)
 			else:
-				player.position = Vector2(pos["x"], pos["y"])
+				player.position = pending_player_position
 
 	# Apply party data
 	if data.has("party"):

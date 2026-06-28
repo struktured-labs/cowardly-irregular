@@ -1799,6 +1799,18 @@ func _restore_party_from_save_data() -> bool:
 		var saved_map_id: String = str(MapSystem.current_map_id)
 		if saved_map_id != "" and saved_map_id != _current_map_id:
 			_set_current_map_id(saved_map_id)
+	# Tick 309: pull the pending player position from SaveSystem (set by
+	# _apply_save_data) into _player_position so the post-_start_exploration
+	# restore step in Continue / quick_load snaps the player to the saved
+	# coords. Pre-fix the saved position was teleported to a stale scene's
+	# player that got queue_free()'d during scene swap, and the new scene's
+	# player spawned at its default marker — saved position silently lost
+	# every Continue from anywhere except the in-overworld autosave path.
+	if SaveSystem and "pending_player_position" in SaveSystem:
+		var pending: Vector2 = SaveSystem.pending_player_position
+		if pending != Vector2.INF:
+			_player_position = pending
+			SaveSystem.pending_player_position = Vector2.INF
 	return true
 
 
@@ -2485,6 +2497,21 @@ func _start_exploration() -> void:
 	# Spawn player at correct position
 	if exploration_scene.has_method("spawn_player_at"):
 		exploration_scene.spawn_player_at(_spawn_point)
+
+	# Tick 309: override the default spawn marker with _player_position
+	# when one is pending. Sources: battle-return path (saved live coords
+	# pre-battle) and load-from-save path (_restore_party_from_save_data
+	# pulls from SaveSystem.pending_player_position). Consumed-and-cleared
+	# semantics so subsequent _start_exploration calls without a pending
+	# value (e.g. fresh area transitions) use spawn_player_at's marker.
+	# Was previously only applied by _return_to_exploration, missing the
+	# load-from-save case entirely — saves outside the in-overworld
+	# autosave window respawned the player at the dungeon entrance.
+	if _player_position != Vector2.ZERO:
+		var scene_player = exploration_scene.get("player") if "player" in exploration_scene else null
+		if scene_player:
+			scene_player.position = _player_position
+		_player_position = Vector2.ZERO
 
 	# Set player appearance based on party leader (respects party_leader_index)
 	if party.size() > 0:
