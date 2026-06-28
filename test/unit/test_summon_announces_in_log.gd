@@ -88,16 +88,22 @@ func test_ability_use_announce_preserved() -> void:
 
 func test_physical_damage_log_preserved() -> void:
 	# Cross-pin: physical ability per-target damage log.
+	# Tick 298: red → AccessibilityPalette.penalty_bbcode() (palette swap).
 	var src := _read(BATTLE_MANAGER)
-	assert_true(src.contains("[color=red]%s[/color] takes [color=yellow]%d[/color] damage!"),
-		"physical damage log preserved")
+	var has_legacy: bool = src.contains("[color=red]%s[/color] takes [color=yellow]%d[/color] damage!")
+	var has_palette: bool = src.contains("[color=%s]%s[/color] takes [color=yellow]%d[/color] damage!")
+	assert_true(has_legacy or has_palette,
+		"physical damage log preserved (red literal or %s + penalty_bbcode)")
 
 
 func test_magic_damage_log_preserved() -> void:
 	# Cross-pin: magic ability per-target damage log (with element).
+	# Tick 298: red → palette swap.
 	var src := _read(BATTLE_MANAGER)
-	assert_true(src.contains("[color=red]%s[/color] takes [color=cyan]%d[/color] %s damage!"),
-		"magic damage log preserved")
+	var has_legacy: bool = src.contains("[color=red]%s[/color] takes [color=cyan]%d[/color] %s damage!")
+	var has_palette: bool = src.contains("[color=%s]%s[/color] takes [color=cyan]%d[/color] %s damage!")
+	assert_true(has_legacy or has_palette,
+		"magic damage log preserved (red literal or %s + penalty_bbcode)")
 
 
 # ── Defensive: monster_summoned signal must still fire ─────────────────

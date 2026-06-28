@@ -49,9 +49,13 @@ func test_revival_emits_battle_log_message() -> void:
 	# Pin the log format includes the revive context.
 	assert_true(body.contains("is revived with"),
 		"battle log line must include 'is revived with' phrasing for clarity")
-	# Pin color codes match the healing family (lime for heal).
-	assert_true(body.contains("[color=lime]"),
-		"revive log must use lime color (matches heal-family palette)")
+	# Tick 297/298: lime now routed through AccessibilityPalette
+	# .bonus_bbcode() for colorblind-mode swap. Accept either legacy
+	# literal or post-298 %s form.
+	var has_legacy: bool = body.contains("[color=lime]")
+	var has_palette: bool = body.contains("AccessibilityPalette.bonus_bbcode()") and body.contains("[color=%s]")
+	assert_true(has_legacy or has_palette,
+		"revive log must use heal-family color (lime literal, or %s + AccessibilityPalette.bonus_bbcode())")
 
 
 func test_revival_emit_order_revive_before_emit() -> void:

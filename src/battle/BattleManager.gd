@@ -474,8 +474,8 @@ func end_battle(victory: bool) -> void:
 				var injury = _roll_permanent_injury(combatant)
 				combatant.apply_permanent_injury(injury)
 				injuries.append({"name": combatant.combatant_name, "injury": injury})
-				battle_log_message.emit("[color=red]%s sustained a permanent injury: %s (-%d %s)[/color]" % [
-					combatant.combatant_name, injury["description"], injury["penalty"], injury["stat"].capitalize()])
+				battle_log_message.emit("[color=%s]%s sustained a permanent injury: %s (-%d %s)[/color]" % [
+					AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, injury["description"], injury["penalty"], injury["stat"].capitalize()])
 
 		_battle_results = {
 			"char_results": char_results,
@@ -1494,7 +1494,7 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 	if new_phase > battle_phase:
 		combatant.set_meta("masterite_battle_phase", new_phase)
 		var phase_names = {2: "enraged", 3: "desperate"}
-		battle_log_message.emit("[color=red]★ %s becomes %s! ★[/color]" % [combatant.combatant_name, phase_names.get(new_phase, "?")])
+		battle_log_message.emit("[color=%s]★ %s becomes %s! ★[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, phase_names.get(new_phase, "?")])
 		# Phase transition: refresh proclamation buff
 		combatant.active_buffs.clear()
 
@@ -2631,7 +2631,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.60)
 	if randf() < miss_rate:
 		attack_missed.emit(actual_target)
-		var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, actual_target.combatant_name]
+		var log_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name]
 		battle_log_message.emit(log_msg)
 		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
 		return
@@ -2696,7 +2696,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		_record_first_damage()
 
 	var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
-	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, crit_text]
+	var log_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color] for [color=yellow]%d[/color] damage!%s" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name, actual_damage, crit_text]
 	battle_log_message.emit(log_msg)
 	print("%s attacks %s for %d damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, " CRIT!" if is_crit else ""])
 
@@ -2820,7 +2820,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			var blind_miss_rate = 0.40
 			if randf() < blind_miss_rate:
 				attack_missed.emit(target)
-				battle_log_message.emit("[color=white]%s[/color]'s attack misses [color=red]%s[/color]! [color=gray](Blind)[/color]" % [caster.combatant_name, target.combatant_name])
+				battle_log_message.emit("[color=white]%s[/color]'s attack misses [color=%s]%s[/color]! [color=gray](Blind)[/color]" % [caster.combatant_name, AccessibilityPalette.penalty_bbcode(), target.combatant_name])
 				continue
 
 		# Invisible/evasion give the target untouchable/dodge windows.
@@ -2862,7 +2862,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			_record_first_damage()
 
 		var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
-		var log_msg = "  → [color=red]%s[/color] takes [color=yellow]%d[/color] damage!%s" % [target.combatant_name, actual_damage, crit_text]
+		var log_msg = "  → [color=%s]%s[/color] takes [color=yellow]%d[/color] damage!%s" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, crit_text]
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
 
@@ -2943,10 +2943,10 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var elem_text = element if element else "magic"
 		var terrain_text = ""
 		if terrain_mod > 1.0:
-			terrain_text = " [color=lime](terrain +%d%%)[/color]" % int((terrain_mod - 1.0) * 100)
+			terrain_text = " [color=%s](terrain +%d%%)[/color]" % [AccessibilityPalette.bonus_bbcode(), int((terrain_mod - 1.0) * 100)]
 		elif terrain_mod < 1.0:
 			terrain_text = " [color=gray](terrain -%d%%)[/color]" % int((1.0 - terrain_mod) * 100)
-		var log_msg = "  → [color=red]%s[/color] takes [color=cyan]%d[/color] %s damage!%s" % [target.combatant_name, actual_damage, elem_text, terrain_text]
+		var log_msg = "  → [color=%s]%s[/color] takes [color=cyan]%d[/color] %s damage!%s" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, elem_text, terrain_text]
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d %s damage! (terrain: %.2fx)" % [target.combatant_name, actual_damage, elem_text, terrain_mod])
 
@@ -2954,7 +2954,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			var drained = int(actual_damage * drain_pct / 100.0)
 			caster.heal(drained)
 			healing_done.emit(caster, drained)
-			var drain_log = "  → [color=white]%s[/color] drains [color=lime]%d[/color] HP!" % [caster.combatant_name, drained]
+			var drain_log = "  → [color=white]%s[/color] drains [color=%s]%d[/color] HP!" % [caster.combatant_name, AccessibilityPalette.bonus_bbcode(), drained]
 			battle_log_message.emit(drain_log)
 			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
 
@@ -3085,7 +3085,7 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 
 		var healed = target.heal(heal_amount)
 		healing_done.emit(target, healed)
-		var heal_log = "  → [color=white]%s[/color] recovers [color=lime]%d[/color] HP!" % [target.combatant_name, healed]
+		var heal_log = "  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), healed]
 		battle_log_message.emit(heal_log)
 		print("  → %s recovers %d HP!" % [target.combatant_name, healed])
 
@@ -3110,7 +3110,8 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 		# to max_hp clamps. healing_done uses the real current HP
 		# so the floating number matches the bar.
 		healing_done.emit(target, target.current_hp)
-		var revive_log: String = "  → [color=lime]%s[/color] is revived with [color=lime]%d[/color] HP!" % [target.combatant_name, target.current_hp]
+		var _bonus: String = AccessibilityPalette.bonus_bbcode()
+		var revive_log: String = "  → [color=%s]%s[/color] is revived with [color=%s]%d[/color] HP!" % [_bonus, target.combatant_name, _bonus, target.current_hp]
 		battle_log_message.emit(revive_log)
 		print("  → %s is revived with %d HP!" % [target.combatant_name, target.current_hp])
 
@@ -3147,7 +3148,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
-					battle_log_message.emit("[color=red]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+					battle_log_message.emit("[color=%s]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"doom":
 			var countdown = ability.get("countdown", 3)
 			for target in targets:
@@ -3272,7 +3273,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Sap", debuff_stat, stat_modifier, duration)
-					battle_log_message.emit("[color=red]%s is sapped![/color] (%s -%d%% for %d turns)" % [target.combatant_name, debuff_stat.to_upper(), int((1.0 - stat_modifier) * 100), duration])
+					battle_log_message.emit("[color=%s]%s is sapped![/color] (%s -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, debuff_stat.to_upper(), int((1.0 - stat_modifier) * 100), duration])
 		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block":
 			# Simple status effects — applied as a named status the rest of
 			# the battle engine can read via has_status(). Maps the data
@@ -4177,10 +4178,10 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	# moment instead of only an intent taunt.
 	var transition_line: String = boss_dlg.get_phase_transition_line(persona_id, new_phase)
 	if transition_line != "" and last_phase > 0:
-		battle_log_message.emit("[color=red]%s: \"%s\"[/color]" % [combatant.combatant_name, transition_line])
+		battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, transition_line])
 		boss_taunt.emit(combatant, transition_line)
 	if taunt != "":
-		battle_log_message.emit("[color=red]%s: \"%s\"[/color]" % [combatant.combatant_name, taunt])
+		battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, taunt])
 		boss_taunt.emit(combatant, taunt)
 
 	# Phase 1: strategic-intent refinement. The deterministic pick above
@@ -4266,7 +4267,7 @@ func _refine_boss_intent_async(
 	var refined_taunt: String = str(refined.get("taunt_line", ""))
 	if refined_taunt.is_empty():
 		return
-	battle_log_message.emit("[color=red]%s: \"%s\"[/color]" % [combatant.combatant_name, refined_taunt])
+	battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, refined_taunt])
 	boss_taunt.emit(combatant, refined_taunt)
 
 
@@ -4438,7 +4439,7 @@ func _on_boss_jailbreak_succeeded(boss_id: String, vulnerability_id: String, con
 			else:
 				# Fallback — at least let the player see the narrative beat.
 				boss.add_status("cannot_act", 0)  # no-op status; ensures the path is exercised
-			battle_log_message.emit("[color=red]%s ENRAGES! ★[/color]" % boss.combatant_name)
+			battle_log_message.emit("[color=%s]%s ENRAGES! ★[/color]" % [AccessibilityPalette.penalty_bbcode(), boss.combatant_name])
 		"taunt_softens":
 			# Pure narration; no mechanical change.
 			pass
@@ -5028,7 +5029,7 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	## a Scriptweaver-custom ability without a "name" field would
 	## surface as "monster counters with raw_snake_id!" in the
 	## log. Standard prettifier as fallback.
-	battle_log_message.emit("[color=red]%s counters with %s![/color]" % [monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
+	battle_log_message.emit("[color=%s]%s counters with %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
 	# Reuse the existing physical/magic ability path; targets = [attacker].
 	# Skipping AP and MP costs — counters are reactive freebies by design.
 	var atype: String = str(ability.get("type", "physical"))
