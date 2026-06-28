@@ -346,14 +346,19 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 			## Tick 171: emit battle_log_message so item use shows in
 			## the visible log. Pre-fix only print() fired — debug
 			## console only, invisible to the player.
+			# Tick 297: route lime→bonus_bbcode for accessibility-mode swap.
+			# Pre-fix hardcoded "lime" stayed lime in colorblind mode where
+			# bonus_bbcode swaps to cyan — heal-positive lines stayed
+			# inaccessible. Matches BattleManager's tick-237 pattern.
+			var _bonus: String = AccessibilityPalette.bonus_bbcode()
 			if _heal_consumed_by_revive:
 				print("  → %s was revived with %d HP!" % [target.combatant_name, target.current_hp])
 				if BattleManager:
-					BattleManager.battle_log_message.emit("  → [color=lime]%s[/color] was revived with [color=lime]%d[/color] HP!" % [target.combatant_name, target.current_hp])
+					BattleManager.battle_log_message.emit("  → [color=%s]%s[/color] was revived with [color=%s]%d[/color] HP!" % [_bonus, target.combatant_name, _bonus, target.current_hp])
 			else:
 				print("  → %s was revived!" % target.combatant_name)
 				if BattleManager:
-					BattleManager.battle_log_message.emit("  → [color=lime]%s[/color] was revived!" % target.combatant_name)
+					BattleManager.battle_log_message.emit("  → [color=%s]%s[/color] was revived!" % [_bonus, target.combatant_name])
 
 	# HP healing (flat amount) — skip if revive already consumed it.
 	if effects.has("heal_hp") and not _heal_consumed_by_revive:
@@ -363,7 +368,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		# this, items that heal would tick the HP bar silently.
 		if actual > 0 and BattleManager:
 			BattleManager.healing_done.emit(target, actual)
-			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=lime]%d[/color] HP!" % [target.combatant_name, actual])
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), actual])
 		print("  → %s recovered %d HP" % [target.combatant_name, actual])
 
 	# HP healing (percentage) — skip if revive already consumed it.
@@ -373,7 +378,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		var actual_p = target.heal(heal_amount)
 		if actual_p > 0 and BattleManager:
 			BattleManager.healing_done.emit(target, actual_p)
-			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=lime]%d[/color] HP! (%d%%)" % [target.combatant_name, actual_p, heal_percent])
+			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP! (%d%%)" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), actual_p, heal_percent])
 		print("  → %s recovered %d HP (%d%%)" % [target.combatant_name, actual_p, heal_percent])
 
 	# MP restoration (flat amount). Surfaced through healing_done as the
@@ -472,7 +477,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		# elemental tint. Items don't crit, so is_crit is always false.
 		if actual_damage > 0 and BattleManager:
 			BattleManager.damage_dealt.emit(target, actual_damage, false, element, multiplier)
-			BattleManager.battle_log_message.emit("  → [color=red]%s[/color] takes [color=yellow]%d[/color] %s damage!" % [target.combatant_name, actual_damage, element])
+			BattleManager.battle_log_message.emit("  → [color=%s]%s[/color] takes [color=yellow]%d[/color] %s damage!" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, element])
 		print("  → %s took %d %s damage" % [target.combatant_name, actual_damage, element])
 
 

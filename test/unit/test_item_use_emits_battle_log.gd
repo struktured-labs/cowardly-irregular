@@ -30,14 +30,20 @@ func _read(p: String) -> String:
 # ── Heal branches ──────────────────────────────────────────────────────
 
 func test_heal_hp_emits_log() -> void:
+	# Tick 297: lime → bonus_bbcode (palette swap for accessibility).
+	# Accept either legacy literal or post-297 %s form.
 	var src := _read(ITEM_SYSTEM)
-	assert_true(src.contains("%s[/color] recovers [color=lime]%d[/color] HP!"),
+	var has_legacy: bool = src.contains("%s[/color] recovers [color=lime]%d[/color] HP!")
+	var has_palette: bool = src.contains("recovers [color=%s]%d[/color] HP!")
+	assert_true(has_legacy or has_palette,
 		"heal_hp branch must emit a battle_log_message — pre-fix only healing_done + print")
 
 
 func test_heal_hp_percent_emits_log_with_pct() -> void:
 	var src := _read(ITEM_SYSTEM)
-	assert_true(src.contains("recovers [color=lime]%d[/color] HP! (%d%%)"),
+	var has_legacy: bool = src.contains("recovers [color=lime]%d[/color] HP! (%d%%)")
+	var has_palette: bool = src.contains("recovers [color=%s]%d[/color] HP! (%d%%)")
+	assert_true(has_legacy or has_palette,
 		"heal_hp_percent must surface the percentage in the log")
 
 
@@ -56,14 +62,19 @@ func test_heal_mp_percent_emits_log_with_pct() -> void:
 # ── Revive branches ────────────────────────────────────────────────────
 
 func test_revive_with_remaining_heal_emits_log() -> void:
+	# Tick 297: lime → bonus_bbcode (palette swap for accessibility).
 	var src := _read(ITEM_SYSTEM)
-	assert_true(src.contains("was revived with [color=lime]%d[/color] HP!"),
+	var has_legacy: bool = src.contains("was revived with [color=lime]%d[/color] HP!")
+	var has_palette: bool = src.contains("was revived with [color=%s]%d[/color] HP!")
+	assert_true(has_legacy or has_palette,
 		"revive (with heal_hp also present) must emit the HP-specific log")
 
 
 func test_revive_without_heal_emits_log() -> void:
 	var src := _read(ITEM_SYSTEM)
-	assert_true(src.contains("[color=lime]%s[/color] was revived!"),
+	var has_legacy: bool = src.contains("[color=lime]%s[/color] was revived!")
+	var has_palette: bool = src.contains("[color=%s]%s[/color] was revived!")
+	assert_true(has_legacy or has_palette,
 		"revive (without heal_hp) must emit the simple-revive log")
 
 
