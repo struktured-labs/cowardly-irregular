@@ -2063,11 +2063,20 @@ func _on_party_ability_learned(ability_id: String, member: Combatant) -> void:
 func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
 	if GameState == null:
 		return
+	# Tick 313: world key now uses current_world (where THIS event happened)
+	# instead of worlds_unlocked (progression marker). Pre-fix `world` meant
+	# "highest unlocked" not "current location" — the rebalance LLM seeing
+	# a level-up event with world=4 thought the level-up happened in W4
+	# even when the player was in W2. Both fields surface so the LLM has
+	# the full picture; "world" is renamed via the comment, the dict key
+	# stays "world" for backward compatibility with existing EventLog rows
+	# and tests pinning the key name.
 	var ctx: Dictionary = {
 		"member": member.combatant_name if member else "?",
 		"new_level": new_level,
 		"map_id": _current_map_id,
-		"world": GameState.worlds_unlocked,
+		"world": GameState.current_world,
+		"worlds_unlocked": GameState.worlds_unlocked,
 	}
 	if "event_log" in GameState and GameState.event_log != null:
 		GameState.event_log.record(
@@ -2188,7 +2197,11 @@ func _on_battle_ended(victory: bool) -> void:
 				"survivors":   survivors,
 				"party_size":  party.size(),
 				"enemy_types": enemy_names,
-				"world":       GameState.worlds_unlocked,
+				# Tick 313: world = current_world (where the wipe happened),
+				# worlds_unlocked carries the progression marker. See the
+				# matching comment in _on_party_leveled_up.
+				"world":       GameState.current_world,
+				"worlds_unlocked": GameState.worlds_unlocked,
 			}
 			GameState.event_log.record(
 				EventLog.TYPE_PARTY_WIPE,
@@ -2308,7 +2321,11 @@ func _apply_pending_boss_defeat() -> void:
 			"boss_id":    boss_id,
 			"boss_name":  boss_name,
 			"map_id":     _current_map_id,
-			"world":      GameState.worlds_unlocked,
+			# Tick 313: world = current_world (where THIS boss was beaten),
+			# worlds_unlocked carries progression. See matching comment
+			# in _on_party_leveled_up.
+			"world":      GameState.current_world,
+			"worlds_unlocked": GameState.worlds_unlocked,
 		}
 		# Tactics snapshot — HOW the player won, not just THAT they won. NPC
 		# dialogue prompts pull this from EventLog so future chats can react
@@ -3339,7 +3356,11 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 		area_ctx = {
 			"map_id":      target_map,
 			"spawn_point": spawn_point,
-			"world":       GameState.worlds_unlocked,
+			# Tick 313: world = current_world (the new area's world),
+			# worlds_unlocked carries progression. See matching comment
+			# in _on_party_leveled_up.
+			"world":       GameState.current_world,
+			"worlds_unlocked": GameState.worlds_unlocked,
 		}
 		GameState.event_log.record(
 			EventLog.TYPE_AREA_ENTERED,
