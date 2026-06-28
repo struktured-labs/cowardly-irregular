@@ -1732,8 +1732,16 @@ func _get_default_action(combatant: Combatant) -> Dictionary:
 			"type": "attack",
 			"target": enemies[0]
 		}
+	# Tick 330: return "defer" instead of "skip". Pre-fix the no-enemies
+	# fallback returned {"type": "skip"} — a string BattleManager's
+	# action dispatch at line ~1972 has no arm for. The default `_:` arm
+	# fired push_warning("Unknown action type 'skip'") and recovered by
+	# advancing the chain, but every "all enemies dead before this turn
+	# fires" path produced a misleading runtime warning. Defer's semantics
+	# ("skip turn, gain AP, defend") match what we actually want here:
+	# the combatant has nothing to attack, so step back and bank AP.
 	return {
-		"type": "skip"
+		"type": "defer"
 	}
 
 
