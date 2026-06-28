@@ -69,13 +69,30 @@ func _ready() -> void:
 	load_settings()
 
 
+## Tick 329: how long to delay the next retry when the auto-save attempt
+## was refused (e.g., player in battle / inside an interior). Pre-fix the
+## timer reset to 0 regardless of success, so a refused auto-save meant
+## the player waited another full auto_save_interval (default 5 min) for
+## the next retry — during which any progress could be lost to a wipe.
+## 30s is short enough that a quick boss battle yields a near-immediate
+## retry post-victory, long enough not to spam can_quick_save() every
+## frame.
+const AUTO_SAVE_RETRY_BACKOFF: float = 30.0
+
+
 func _process(delta: float) -> void:
 	# Auto-save timer
 	if auto_save_enabled:
 		time_since_last_auto_save += delta
 		if time_since_last_auto_save >= auto_save_interval:
-			auto_save()
-			time_since_last_auto_save = 0.0
+			if auto_save():
+				time_since_last_auto_save = 0.0
+			else:
+				# Refused (battle / interior / no SaveSystem state). Back the
+				# timer off by the backoff window so we retry soon instead
+				# of waiting another full interval. Clamp at 0.0 so a
+				# pathologically small auto_save_interval can't underflow.
+				time_since_last_auto_save = maxf(0.0, auto_save_interval - AUTO_SAVE_RETRY_BACKOFF)
 
 
 ## Save functions
