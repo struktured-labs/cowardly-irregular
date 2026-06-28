@@ -127,6 +127,41 @@ func _create_default_equipment() -> void:
 				"magic": 6,
 				"speed": 2
 			}
+		},
+		# Tick 321: weapons referenced by GameLoop._create_party for the
+		# default party (mira/rogue/vex starter loadouts). Pre-fix every
+		# call to EquipmentSystem.equip_weapon('oak_staff' / 'iron_dagger'
+		# / 'shadow_rod') push_warning'd if equipment.json failed to load,
+		# leaving mira/rogue/vex unarmed on new game. Stats mirror
+		# data/equipment.json exactly. Same gap class as piano_scythe
+		# above (tick 320) and as JobSystem default abilities (tick 296).
+		"oak_staff": {
+			"id": "oak_staff",
+			"name": "Oak Staff",
+			"description": "A polished oak staff",
+			"stat_mods": {
+				"magic": 12,
+				"attack": 3,
+				"max_mp": 10
+			}
+		},
+		"iron_dagger": {
+			"id": "iron_dagger",
+			"name": "Iron Dagger",
+			"description": "A quick-strike dagger",
+			"stat_mods": {
+				"attack": 8,
+				"speed": 5
+			}
+		},
+		"shadow_rod": {
+			"id": "shadow_rod",
+			"name": "Shadow Rod",
+			"description": "A rod that channels dark energy",
+			"stat_mods": {
+				"magic": 15,
+				"attack": 2
+			}
 		}
 	}
 
@@ -158,6 +193,38 @@ func _create_default_equipment() -> void:
 				"defense": 5,
 				"magic": 10,
 				"max_mp": 20
+			}
+		},
+		# Tick 321: armors referenced by GameLoop._create_party. Same gap
+		# class as the weapons above — pre-fix new game with equipment.json
+		# failure left mira/rogue/vex/bard unarmored.
+		"cloth_robe": {
+			"id": "cloth_robe",
+			"name": "Cloth Robe",
+			"description": "A simple cloth robe",
+			"stat_mods": {
+				"defense": 4,
+				"magic": 5,
+				"max_mp": 10
+			}
+		},
+		"thief_garb": {
+			"id": "thief_garb",
+			"name": "Thief Garb",
+			"description": "Light, sneak-friendly attire",
+			"stat_mods": {
+				"defense": 6,
+				"speed": 8
+			}
+		},
+		"dark_robe": {
+			"id": "dark_robe",
+			"name": "Dark Robe",
+			"description": "A shadow-woven robe",
+			"stat_mods": {
+				"defense": 5,
+				"magic": 8,
+				"max_mp": 15
 			}
 		},
 		"dragon_mail": {
