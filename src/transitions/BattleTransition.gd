@@ -462,6 +462,19 @@ func _generate_monster_sound(profile: Dictionary, transition_type: TransitionTyp
 	var mod_type = profile.get("mod", "growl")
 	var pitch = profile.get("pitch", 1.0)
 
+	# Tick 305: validate mod_type ONCE before the sample loop. The
+	# match below has 11 arms but no `_:` default — an unknown
+	# mod_type left `sample = 0.0` for every iteration, producing
+	# silent audio that played back inaudibly. Symptom looked like
+	# the SFX channel was muted. Now: warn + fall back to "growl"
+	# (the same default the .get() above uses).
+	const _KNOWN_MOD_TYPES := ["gloop", "screech", "growl", "rattle",
+		"wail", "skitter", "howl", "hiss", "roar", "squelch",
+		"cackle", "rumble", "doom"]
+	if not (mod_type in _KNOWN_MOD_TYPES):
+		push_warning("[BattleTransition] _generate_monster_sound: unknown mod_type '%s' — falling back to 'growl' (typo? new mod_type added to monster profile without match arm?)" % mod_type)
+		mod_type = "growl"
+
 	for i in range(samples):
 		var t = float(i) / sample_rate
 		var env = 1.0 - t / duration  # Basic envelope
