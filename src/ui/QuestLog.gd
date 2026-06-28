@@ -344,6 +344,14 @@ func _find_active_objective_text() -> String:
 func _is_quest_flag_set(flag: String) -> bool:
 	if flag == "":
 		return false
+	# Tick 336: delegate to GameState.is_story_flag_set (canonical
+	# dual-namespace helper). See WanderingNPC._flag_set for the same
+	# rationale — collapse three near-identical copies of the 3-way
+	# check into one source of truth. Wrapper kept so call sites in
+	# this file don't churn.
+	if GameState.has_method("is_story_flag_set"):
+		return GameState.is_story_flag_set(flag)
+	# Defensive fallback for partial test harnesses without the helper.
 	return GameState.get_story_flag(flag) \
 		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
 		or GameState.game_constants.get(flag, false)

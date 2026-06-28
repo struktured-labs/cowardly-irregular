@@ -289,9 +289,21 @@ func _get_current_dialogue() -> String:
 
 
 func _flag_set(flag: String) -> bool:
-	return GameState.get_story_flag(flag) \
-		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
-		or GameState.game_constants.get(flag, false)
+	# Tick 336: delegate to GameState.is_story_flag_set (the canonical
+	# dual-namespace helper added in tick 335). Pre-fix this file
+	# duplicated the 3-way check inline; QuestLog and QuestTracker had
+	# their own near-identical copies. Three copies meant three drift
+	# surfaces — a future namespace addition (e.g. a 4th flag store)
+	# would need to land in all three. Delegating to GameState
+	# collapses the surface to one source of truth. Kept as a local
+	# wrapper to preserve the existing call signature in this file.
+	if GameState == null or not GameState.has_method("is_story_flag_set"):
+		# Defensive fallback so a partial test harness without the helper
+		# doesn't false-negative. Same 3-way check as pre-tick-336.
+		return GameState.get_story_flag(flag) \
+			or GameState.game_constants.get("cutscene_flag_" + flag, false) \
+			or GameState.game_constants.get(flag, false)
+	return GameState.is_story_flag_set(flag)
 
 
 func _on_body_entered(body: Node2D) -> void:

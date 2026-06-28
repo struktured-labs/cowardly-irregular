@@ -91,7 +91,7 @@ func _update_objective() -> void:
 		var flag = entry["flag"]
 		if flag == "":
 			best_text = entry["text"]
-		elif GameState.get_story_flag(flag) or GameState.game_constants.get("cutscene_flag_" + flag, false):
+		elif _is_flag_set(flag):
 			best_text = entry["text"]
 
 	if best_text != _current_objective:
@@ -112,3 +112,22 @@ func _process(delta: float) -> void:
 
 func update() -> void:
 	_update_objective()
+
+
+## Tick 336: delegate to GameState.is_story_flag_set (canonical
+## dual-namespace helper added in tick 335). Pre-fix this file had
+## an inline 2-way OR check (story_flags + cutscene_flag_<bare>) that
+## missed the bare-name-in-game_constants case the QuestLog and
+## WanderingNPC variants both covered. So a flag set ONLY in
+## game_constants[bare] (legacy / debug toggle) made this tracker
+## stay on the prior objective text even when QuestLog / WanderingNPC
+## already advanced. The delegation pulls all three dual checks onto
+## the GameState helper for a single source of truth.
+func _is_flag_set(flag: String) -> bool:
+	if flag == "":
+		return false
+	if GameState.has_method("is_story_flag_set"):
+		return GameState.is_story_flag_set(flag)
+	return GameState.get_story_flag(flag) \
+		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
+		or GameState.game_constants.get(flag, false)
