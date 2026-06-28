@@ -4285,7 +4285,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, sprite.global_position)
 
 	# Log message
-	log_message("[color=red]%s appears![/color]" % stats["name"])
+	log_message("[color=%s]%s appears![/color]" % [AccessibilityPalette.penalty_bbcode(), stats["name"]])
 
 	_update_ui()
 

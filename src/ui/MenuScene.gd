@@ -293,7 +293,8 @@ func _show_status_view() -> void:
 	hp_mp.bbcode_enabled = true
 	hp_mp.fit_content = true
 	hp_mp.scroll_active = false
-	hp_mp.text = "[color=lime]HP:[/color] %d / %d\n[color=cyan]MP:[/color] %d / %d" % [
+	hp_mp.text = "[color=%s]HP:[/color] %d / %d\n[color=cyan]MP:[/color] %d / %d" % [
+		AccessibilityPalette.bonus_bbcode(),
 		member.current_hp, member.max_hp,
 		member.current_mp, member.max_mp
 	]

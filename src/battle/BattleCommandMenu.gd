@@ -710,7 +710,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			var was_enabled = AutobattleSystem.is_autobattle_enabled(char_id)
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
 			SoundManager.play_ui("autobattle_on")
-			_scene.log_message("[color=lime]%s: Auto (this turn)[/color]" % combatant_for_auto.combatant_name)
+			_scene.log_message("[color=%s]%s: Auto (this turn)[/color]" % [AccessibilityPalette.bonus_bbcode(), combatant_for_auto.combatant_name])
 			print("[AUTOBATTLE] %s — one-shot auto turn (sticky was %s)" % [combatant_for_auto.combatant_name, was_enabled])
 			BattleManager.execute_autobattle_for_current()
 			# Restore the sticky state so the [A] indicator and future-turn

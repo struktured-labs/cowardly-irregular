@@ -524,7 +524,7 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 			# Tick 211: shared StatNames map adds HP/MP coverage the inline dict missed.
 			var abbrev: String = StatNames.short_code(stat_name)
 			var pct = int((modifier - 1.0) * 100)
-			parts.append("[color=red]%s%+d%%(%d)[/color]" % [abbrev, pct, turns])
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), abbrev, pct, turns])
 
 	label.text = " ".join(parts) if parts.size() > 0 else ""
 
@@ -680,7 +680,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 	var hp_label = box.get_node_or_null("HP")
 	if hp_label and hp_label is RichTextLabel:
 		if is_dead:
-			hp_label.text = "[color=red]DEFEATED[/color]"
+			hp_label.text = "[color=%s]DEFEATED[/color]" % AccessibilityPalette.penalty_bbcode()
 		elif is_revealed:
 			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
 			# Tick 230: BBCode color via AccessibilityPalette so the enemy HP tooltip matches the colorblind-aware visual HP bar palette (cyan/yellow/magenta in accessibility mode).

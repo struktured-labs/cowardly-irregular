@@ -426,11 +426,11 @@ func spawn_forced_enemies() -> void:
 	# Announcement based on battle type
 	if is_boss_battle:
 		_scene.log_message("")
-		_scene.log_message("[color=red]═══════════════════════════════[/color]")
+		_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 		_scene.log_message("[color=orange]   👑  BOSS BATTLE!  👑[/color]")
 		for enemy_name in enemy_names:
 			_scene.log_message("[color=yellow]   %s appeared![/color]" % enemy_name)
-		_scene.log_message("[color=red]═══════════════════════════════[/color]")
+		_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 		_scene.log_message("")
 	else:
 		for enemy_name in enemy_names:
@@ -592,10 +592,10 @@ func spawn_miniboss() -> void:
 
 	# Epic announcement!
 	_scene.log_message("")
-	_scene.log_message("[color=red]═══════════════════════════════[/color]")
+	_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 	_scene.log_message("[color=orange]   ⚔️  MINIBOSS BATTLE!  ⚔️[/color]")
 	_scene.log_message("[color=yellow]   %s appeared![/color]" % boss_type["name"])
-	_scene.log_message("[color=red]═══════════════════════════════[/color]")
+	_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 	_scene.log_message("")
 
 	_scene._update_ui()
