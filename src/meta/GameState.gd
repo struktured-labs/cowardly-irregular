@@ -446,7 +446,13 @@ func _apply_random_corruption_effect() -> void:
 func modify_constant(constant_name: String, new_value: float) -> bool:
 	"""Modify a game constant (causes corruption)"""
 	if not game_constants.has(constant_name):
-		print("Error: Unknown game constant: %s" % constant_name)
+		# Tick 303: surface unknown-constant failures via push_warning
+		# (matches JobSystem.assign_job tick 180 pattern). Pre-fix
+		# print() only — silent in production debugger panel and
+		# invisible to CI. A Scriptweaver typo'd constant name would
+		# return false without any diagnostic, looking like the
+		# modification succeeded but rolled back.
+		push_warning("[GameState] modify_constant: constant '%s' not found in game_constants dict — modification failed (typo? save-format drift?)" % constant_name)
 		return false
 
 	var old_value = game_constants[constant_name]
