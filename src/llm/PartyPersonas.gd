@@ -20,8 +20,16 @@ func _load_data() -> void:
 		_loaded = true
 		return
 	var parsed: Variant = JSON.parse_string(raw)
+	# Tick 345: distinguish parse-error from non-Dict root. Pre-fix both
+	# arms fell into one push_warning ("did not parse as a Dictionary"),
+	# misreporting a JSON syntax error as a root-type error. Mirrors
+	# the precision fix in BossDialogue._load_data.
+	if parsed == null:
+		push_warning("[PartyPersonas] %s parse error — file is not valid JSON (hand-edit broke syntax? truncated write?)" % DATA_PATH)
+		_loaded = true
+		return
 	if not (parsed is Dictionary):
-		push_warning("[PartyPersonas] %s did not parse as a Dictionary" % DATA_PATH)
+		push_warning("[PartyPersonas] %s parsed but root is not a Dictionary (got %s) — file shape changed; personas will be empty" % [DATA_PATH, typeof(parsed)])
 		_loaded = true
 		return
 	var jobs: Variant = (parsed as Dictionary).get("jobs", {})

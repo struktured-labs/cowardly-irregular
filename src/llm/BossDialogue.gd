@@ -64,13 +64,23 @@ func _load_data() -> void:
 		return
 	var f = FileAccess.open(DATA_PATH, FileAccess.READ)
 	if f == null:
-		push_warning("[BossDialogue] could not open data file")
+		push_warning("[BossDialogue] could not open data file at %s (error %d) — file likely locked or permission-denied" % [DATA_PATH, FileAccess.get_open_error()])
 		return
 	var text = f.get_as_text()
 	f.close()
 	var parsed = JSON.parse_string(text)
+	# Tick 345: distinguish parse-error (parsed == null) from non-Dict
+	# root. Pre-fix both arms fell into one push_warning ("data root is
+	# not a Dictionary") because `not (parsed is Dictionary)` is true
+	# for null too. A JSON syntax error was misreported as a root-type
+	# error, sending devs down the wrong debug path. Same precision
+	# fix the loud-fail 4-stage pattern in load_monsters_data (tick
+	# 322) and load_grind_snapshot (tick 344) applies.
+	if parsed == null:
+		push_warning("[BossDialogue] %s parse error — file is not valid JSON (hand-edit broke syntax? truncated write?)" % DATA_PATH)
+		return
 	if not (parsed is Dictionary):
-		push_warning("[BossDialogue] data root is not a Dictionary")
+		push_warning("[BossDialogue] data root is not a Dictionary (got %s) — file shape changed" % typeof(parsed))
 		return
 	_data = parsed
 
