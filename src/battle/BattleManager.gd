@@ -3489,9 +3489,19 @@ func _check_victory_conditions() -> bool:
 
 ## Signal handlers
 ## Permanent injury definitions — weighted by stat, scaled by level
+## Tick 317: added max_mp arms so MP-heavy classes (Cleric/Mage/Bard)
+## have a real injury risk profile. Pre-fix INJURY_TYPES had only
+## max_hp/attack/defense/magic/speed — Combatant.apply_permanent_injury
+## supported max_mp (tick 287) and recalculate_stats now persists it
+## (tick 316), but the natural injury roll never produced one because
+## no template existed. Penalties 5/7 ≈ 7-10% of typical caster
+## max_mp (Cleric 70, Mage 80), matching the 8-12% calibration of
+## the max_hp arms vs Fighter's 100 base.
 const INJURY_TYPES = [
 	{"stat": "max_hp", "description": "Fractured ribs", "base_penalty": 8},
 	{"stat": "max_hp", "description": "Internal bleeding", "base_penalty": 12},
+	{"stat": "max_mp", "description": "Mana drain wound", "base_penalty": 5},
+	{"stat": "max_mp", "description": "Spirit fracture", "base_penalty": 7},
 	{"stat": "attack", "description": "Torn muscle", "base_penalty": 2},
 	{"stat": "attack", "description": "Damaged nerve", "base_penalty": 3},
 	{"stat": "defense", "description": "Cracked armor plates", "base_penalty": 2},
