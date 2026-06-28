@@ -293,8 +293,18 @@ func _build_quest_lines() -> Array:
 
 
 func _is_chapter_complete(chapter: Dictionary) -> bool:
+	# Tick 334: route through _is_quest_flag_set (same file, line ~334)
+	# instead of the bare get_story_flag check. Pre-fix this method
+	# silently disagreed with _is_quest_flag_set's dual-namespace lookup:
+	# a chapter could have every objective rendered as complete by the
+	# objective-paint path (which uses the dual check) yet still appear
+	# "in progress" here (which only checked story_flags). The disagreement
+	# was invisible until a single objective's flag happened to live ONLY
+	# in game_constants["cutscene_flag_..."] — e.g. boss-defeat flags
+	# written via _apply_pending_boss_defeat before tick 220 mirrored
+	# them. Now the two paths share the same authority.
 	for obj in chapter["objectives"]:
-		if obj["flag"] != "" and not GameState.get_story_flag(obj["flag"]):
+		if obj["flag"] != "" and not _is_quest_flag_set(obj["flag"]):
 			return false
 	return true
 
