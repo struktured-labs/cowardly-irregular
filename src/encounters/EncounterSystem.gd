@@ -326,7 +326,12 @@ func set_enemy_pool_for_area(area_id: String) -> void:
 		current_enemy_pool = enemy_pools[area_id].duplicate()
 		print("Enemy pool loaded for area: %s" % area_id)
 	else:
-		print("Warning: No enemy pool defined for area: %s" % area_id)
+		# Tick 304: surface unknown area_id via push_warning. Pre-fix
+		# print() only — silent in Debugger Errors panel. A typo'd
+		# area_id (or save-format drift with renamed area) returned
+		# silently with current_enemy_pool unchanged, so encounters
+		# stayed on the previous area's pool — invisible to QA.
+		push_warning("[EncounterSystem] set_enemy_pool_for_area: no enemy pool defined for area '%s' — current_enemy_pool unchanged (typo? data/enemy_pools.json drift?)" % area_id)
 
 
 ## Sane upper bound for the encounter-rate modifier. Cursed items / debuff
