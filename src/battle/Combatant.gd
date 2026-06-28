@@ -241,7 +241,14 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	# grayed out.
 	if current_hp <= 0:
 		is_alive = false
-	hp_changed.emit(old_hp, current_hp)
+	# Tick 301: guard the emit on actual change. take_damage(0) is a
+	# real call path — int-truncation on a 0.5x resistance against
+	# 1-damage attacks, or damage_multiplier set to 0 by Scriptweaver,
+	# or 100%-block by a passive — each case left old_hp == current_hp
+	# but still re-emitted, prompting redundant UI redraws. Matches
+	# the ap_changed (tick 286) and heal (tick 288) guard pattern.
+	if current_hp != old_hp:
+		hp_changed.emit(old_hp, current_hp)
 
 	# Taking damage wakes up sleeping targets
 	if has_status("sleep") and actual_damage > 0:
