@@ -110,6 +110,23 @@ func _create_default_equipment() -> void:
 				"magic": 20,
 				"max_mp": 15
 			}
+		},
+		# Tick 320: Bard's signature instrument-weapon. JobSystem.assign_job
+		# at line ~487 auto-equips it on every Bard pick — but the check
+		# guards on `weapons.has("piano_scythe")`, so a missing entry just
+		# silently skipped the equip. Pre-fix, if equipment.json failed to
+		# load (push_warning paths in EquipmentSystem:31/40/58/61), every
+		# Bard joined unarmed and the player wouldn't know why. Stats
+		# mirror data/equipment.json exactly (attack 8 / magic 6 / speed 2).
+		"piano_scythe": {
+			"id": "piano_scythe",
+			"name": "Piano Scythe",
+			"description": "A bard's signature instrument-weapon — sweeps with dissonant chords on every swing",
+			"stat_mods": {
+				"attack": 8,
+				"magic": 6,
+				"speed": 2
+			}
 		}
 	}
 
