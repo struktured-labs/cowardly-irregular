@@ -90,6 +90,24 @@ func get_current_map_id() -> String:
 	return _current_map_id
 
 
+## Tick 307: setter that keeps MapSystem.current_map_id in sync with our
+## _current_map_id. Pre-fix MapSystem.current_map_id was only updated by
+## MapSystem.load_map, which is bypassed by GameLoop's direct scene routing
+## for villages/dungeons/interiors. Result: bestiary mark_seen/mark_defeated
+## (BattleScene/BattleManager/HeadlessBattleResolver), WorldMapMenu location
+## label, autogrind dashboard location, and the save serialization all read
+## a stale value (empty string or last MapSystem.load_map target — usually
+## "overworld") regardless of where the player actually was. A monster
+## defeated in fire_dragon_cave was logged as defeated in "overworld" in
+## the bestiary; save records of a player at a dungeon save crystal stored
+## the wrong map_id. Keeping MapSystem.current_map_id in sync via this
+## setter fixes every read site at once without touching the load path.
+func _set_current_map_id(id: String) -> void:
+	_current_map_id = id
+	if MapSystem and "current_map_id" in MapSystem:
+		MapSystem.current_map_id = id
+
+
 ## True when the player is inside one of the small village-side interior
 ## rooms. SaveSystem skips auto-save in this state because MapSystem
 ## doesn't track interiors (they're loaded by GameLoop's scene-routing,
@@ -977,7 +995,7 @@ func _on_title_new_game() -> void:
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
 	# Go straight to exploration — prologue triggers on first Theron interaction
-	_current_map_id = "overworld"
+	_set_current_map_id("overworld")
 	_start_exploration()
 
 
@@ -2310,7 +2328,7 @@ func _show_game_over_screen() -> void:
 			# No battle to retry — restart from overworld
 			_create_party()
 			battles_won = 0
-			_current_map_id = "overworld"
+			_set_current_map_id("overworld")
 			_spawn_point = "default"
 			await _start_exploration()
 	else:
@@ -3177,7 +3195,7 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	if _llm and _llm.has_method("abort_all_conversations"):
 		_llm.abort_all_conversations()
 
-	_current_map_id = target_map
+	_set_current_map_id(target_map)
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO
 	_current_terrain = _get_terrain_for_map(target_map)
@@ -4229,7 +4247,7 @@ func _on_autogrind_resumed() -> void:
 
 func _on_autogrind_region_advanced(from_region: String, to_region: String, world_num: int) -> void:
 	"""Handle auto-advance to next world region during autogrind."""
-	_current_map_id = to_region
+	_set_current_map_id(to_region)
 	_current_terrain = to_region
 	if has_node("/root/GameState"):
 		GameState.current_world = world_num
