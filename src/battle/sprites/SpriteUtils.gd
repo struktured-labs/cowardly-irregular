@@ -669,11 +669,27 @@ static func get_job_visual(job_id: String) -> Dictionary:
 
 
 static func _load_job_visuals() -> void:
-	"""Load job visual data from jobs.json."""
+	"""Load job visual data from jobs.json.
+
+	Tick 346: 3-stage loud-fail on the JSON load so a missing /
+	corrupted / wrong-shape jobs.json doesn't silently leave
+	_job_visuals empty — pre-fix every job rendered with its sprite
+	loader's hard-coded fallback color/outfit and the dev had no clue
+	the visual data was actually missing. Same loud-fail pattern as
+	ticks 322 (load_monsters_data), 323 (load_custom_presets), 344
+	(load_grind_snapshot)."""
 	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
-	if file:
+	if not file:
+		push_warning("[SpriteUtils] _load_job_visuals: FileAccess.open(jobs.json) failed (error %d) — all jobs will use procedural-fallback visual data" % FileAccess.get_open_error())
+	else:
 		var json = JSON.new()
-		if json.parse(file.get_as_text()) == OK and json.data is Dictionary:
+		var parse_result: int = json.parse(file.get_as_text())
+		file.close()
+		if parse_result != OK:
+			push_warning("[SpriteUtils] _load_job_visuals: jobs.json parse error: %s — visual data will be empty" % json.get_error_message())
+		elif not (json.data is Dictionary):
+			push_warning("[SpriteUtils] _load_job_visuals: jobs.json parsed but root is not a Dictionary (got %s) — visual data will be empty" % typeof(json.data))
+		else:
 			for job_id in json.data:
 				var job = json.data[job_id]
 				if job.has("visual"):
@@ -684,7 +700,6 @@ static func _load_job_visuals() -> void:
 						"outfit_color": Color(color_arr[0], color_arr[1], color_arr[2]),
 						"headgear": vis.get("headgear", "none")
 					}
-		file.close()
 	# Backward-compat aliases: old job IDs point to new visual data
 	var _aliases = {"white_mage": "cleric", "black_mage": "mage", "thief": "rogue"}
 	for old_id in _aliases:
