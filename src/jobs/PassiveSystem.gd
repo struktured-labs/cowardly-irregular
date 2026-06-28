@@ -154,6 +154,23 @@ func _create_default_passives() -> void:
 				"healing_multiplier": 1.5
 			}
 		},
+		# Tick 319: encore is Bard's default passive (referenced by
+		# JobSystem._create_default_jobs:209) but was MISSING from this
+		# defaults fallback. If both jobs.json AND passives.json failed
+		# to load (push_warning on each), equip_passive("encore") would
+		# fire its "passive_id not found in passives table" warning and
+		# the Bard's passive slot would stay empty. Mirrors data/passives.json
+		# exactly: stat_mods empty, meta_effects.song_duration_bonus=1.
+		"encore": {
+			"id": "encore",
+			"name": "Encore",
+			"category": PassiveCategory.UTILITY,
+			"description": "Song buffs and debuffs last 1 extra turn",
+			"stat_mods": {},
+			"meta_effects": {
+				"song_duration_bonus": 1
+			}
+		},
 
 		# Trade-off passives (high risk, high reward)
 		"glass_cannon": {
