@@ -209,6 +209,28 @@ func _create_default_jobs() -> void:
 			"abilities": ["battle_hymn", "lullaby", "discord", "inspiring_melody"],
 			"passive_abilities": ["encore"]
 		},
+		# Tick 295: rogue was missing from the defaults fallback —
+		# a real gap (rogue is a starter job per CLAUDE.md and ships
+		# in every default party). When data/jobs.json was missing or
+		# broken, the rogue slot lost stat_modifiers, abilities, and
+		# passives — silently degrading to whatever JobMenu / sprite
+		# loader fell back to. Stats mirror the live jobs.json shape
+		# (90 HP / 13 attack / 16 speed — speed-stat striker).
+		"rogue": {
+			"id": "rogue",
+			"name": "Rogue",
+			"type": JobType.STARTER,
+			"description": "A nimble striker who relies on speed, evasion, and critical strikes",
+			"stat_modifiers": {
+				"max_hp": 90,
+				"attack": 13,
+				"defense": 8,
+				"magic": 7,
+				"speed": 16
+			},
+			"abilities": ["sneak_attack", "steal", "smoke_bomb", "vanish"],
+			"passive_abilities": ["evasion_up"]
+		},
 		"scriptweaver": {
 			"id": "scriptweaver",
 			"name": "Scriptweaver",
