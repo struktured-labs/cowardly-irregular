@@ -482,6 +482,13 @@ func _step_choice(step: Dictionary) -> void:
 ## Apply a choice option's flag to GameState.game_constants. Safe-noop
 ## when the option has no flag (the player picks a "do nothing" option)
 ## or when GameState isn't reachable (test environments).
+##
+## Tick 332: prefix flag name with "cutscene_flag_" to match
+## _step_set_flag's convention (line ~627). Pre-fix tick 331 wrote
+## the bare name — so a branch step reading `cutscene_flag_<flag>`
+## (the format _step_branch uses at line ~1004) never saw the choice
+## response. The whole "choice → set flag → branch on flag" loop
+## was broken by a one-prefix naming gap.
 func _set_choice_flag(option: Variant) -> void:
 	if not (option is Dictionary):
 		return
@@ -492,7 +499,7 @@ func _set_choice_flag(option: Variant) -> void:
 	if gs == null or not ("game_constants" in gs):
 		push_warning("CutsceneDirector._set_choice_flag: GameState unreachable — flag '%s' not persisted" % flag_name)
 		return
-	gs.game_constants[flag_name] = true
+	gs.game_constants["cutscene_flag_" + flag_name] = true
 
 
 func _step_fade_to_black(step: Dictionary) -> void:

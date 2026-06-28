@@ -61,8 +61,8 @@ func test_set_choice_flag_helper_exists() -> void:
 	var fn_idx: int = src.find("func _set_choice_flag")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	assert_true(body.contains("game_constants[flag_name] = true"),
-		"_set_choice_flag must write the flag into GameState.game_constants")
+	assert_true(body.contains("game_constants[\"cutscene_flag_\" + flag_name] = true"),
+		"_set_choice_flag must write the flag PREFIXED with cutscene_flag_ (tick 332 — matches _step_set_flag and _step_branch conventions)")
 
 
 # ── Source pin: skip path sets first option deterministically ───────
@@ -98,14 +98,17 @@ func test_set_choice_flag_writes_to_game_constants() -> void:
 	var prior: bool = bool(GameState.game_constants.get(test_flag, false))
 
 	director._set_choice_flag({"text": "Test", "flag": test_flag})
-	assert_eq(bool(GameState.game_constants.get(test_flag, false)), true,
-		"_set_choice_flag must set the flag to true in game_constants")
+	# Tick 332: flag is now prefixed with "cutscene_flag_" so it lives
+	# in the same namespace as _step_set_flag and is readable by
+	# _step_branch.
+	var prefixed_key: String = "cutscene_flag_" + test_flag
+	assert_eq(bool(GameState.game_constants.get(prefixed_key, false)), true,
+		"_set_choice_flag must set the PREFIXED flag (cutscene_flag_<name>) to true in game_constants")
 
 	# Cleanup.
+	GameState.game_constants.erase(prefixed_key)
 	if prior:
-		GameState.game_constants[test_flag] = true
-	else:
-		GameState.game_constants.erase(test_flag)
+		GameState.game_constants[prefixed_key] = true
 
 
 # ── Behavioral: empty/missing flag is a no-op (no crash) ────────────
