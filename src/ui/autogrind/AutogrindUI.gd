@@ -2295,15 +2295,30 @@ func _persist_custom_presets() -> void:
 
 
 func _load_custom_presets() -> void:
-	"""Load custom presets from user://"""
+	"""Load custom presets from user://.
+
+	Tick 323: every failure mode surfaces via push_warning instead of
+	silently returning empty. User-authored data file — if the user
+	edits it by hand and breaks the JSON, they should see WHY their
+	presets vanished. Same 4-stage loud-fail pattern as tick 322
+	(BattleEnemySpawner.load_monsters_data).
+
+	The missing-file case stays silent — first-time players have no
+	presets file, and warning every launch would be noise."""
 	if not FileAccess.file_exists(CUSTOM_PRESETS_PATH):
 		return
 	var file = FileAccess.open(CUSTOM_PRESETS_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[AUTOGRIND] Custom presets file at %s exists but FileAccess.open failed (error %d) — file likely locked or permission-denied; presets will not load this session" % [CUSTOM_PRESETS_PATH, FileAccess.get_open_error()])
 		return
 	var text = file.get_as_text()
 	file.close()
 	var json = JSON.new()
-	if json.parse(text) == OK and json.data is Array:
-		_custom_presets = json.data
-		print("[AUTOGRIND] Loaded %d custom presets" % _custom_presets.size())
+	if json.parse(text) != OK:
+		push_warning("[AUTOGRIND] Custom presets JSON parse error: %s — user-edited file likely has a syntax error; presets will not load this session" % json.get_error_message())
+		return
+	if not (json.data is Array):
+		push_warning("[AUTOGRIND] Custom presets parsed but root is not an Array (got %s) — file shape changed or hand-edited to wrong root; presets will not load this session" % typeof(json.data))
+		return
+	_custom_presets = json.data
+	print("[AUTOGRIND] Loaded %d custom presets" % _custom_presets.size())
