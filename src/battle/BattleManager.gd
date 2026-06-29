@@ -3198,6 +3198,14 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 	var element = ability.get("element", "")
 	var drain_pct = ability.get("drain_percentage", 0)
 
+	## Tick 432: track total damage dealt this cast so
+	## damage_to_self_pct (stack_overflow's caster recoil) can apply
+	## proportional self-damage after the loop. Pre-fix the field was
+	## authored but no code read it — stack_overflow dealt 3.0x to
+	## all enemies for free, defeating the "catastrophic damage" /
+	## "20% recoil" tradeoff design.
+	var total_dealt_for_recoil: int = 0
+
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
@@ -3256,6 +3264,8 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			actual_damage = target.take_damage(damage, true)
 
 		damage_dealt.emit(target, actual_damage, false, element, elemental_mod)
+		## Tick 432: accumulate for damage_to_self_pct recoil.
+		total_dealt_for_recoil += actual_damage
 
 		## Tick 421: permadeath enforcement for magic ability path —
 		## soul_reap / final_death from the reaper land here.
@@ -3323,6 +3333,18 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(status_to_add)])
 
 		_trigger_monster_counter(target, caster)
+
+	## Tick 432: damage_to_self_pct caster recoil. Applied AFTER the
+	## per-target loop so the caster takes proportional damage to the
+	## total dealt across all targets. stack_overflow authors 0.2
+	## (20% of total dealt → self). Skips when caster is dead from
+	## another effect this cast or no damage was dealt.
+	var dmg_to_self_pct: float = float(ability.get("damage_to_self_pct", 0.0))
+	if dmg_to_self_pct > 0.0 and total_dealt_for_recoil > 0 and caster != null and is_instance_valid(caster) and caster.is_alive:
+		var recoil: int = max(1, int(round(total_dealt_for_recoil * dmg_to_self_pct)))
+		caster.take_damage(recoil, true)
+		damage_dealt.emit(caster, recoil, false, "", 1.0)
+		battle_log_message.emit("[color=magenta]%s takes %d recoil from the overflow![/color]" % [caster.combatant_name, recoil])
 
 
 ## Critical hit system
