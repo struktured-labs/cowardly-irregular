@@ -89,7 +89,11 @@ func test_save_game_refuses_during_battle() -> void:
 	var idx = src.find("func save_game")
 	assert_gt(idx, -1)
 	var body = src.substr(idx, 1500)
-	assert_string_contains(body, "if not can_quick_save():",
+	# Tick 397 added a `bypass_gate` flag for the Time Mage quicksave
+	# meta-ability, changing the literal to "if not bypass_gate and
+	# not can_quick_save():". The substring "can_quick_save()" is
+	# still load-bearing.
+	assert_string_contains(body, "can_quick_save():",
 		"save_game must invoke can_quick_save() (battle gate) before " +
 		"writing — pre-fix, only quick_save and auto_save were gated")
 	# Tick 75: the literal "Cannot save during battle" string moved

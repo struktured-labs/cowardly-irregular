@@ -96,6 +96,23 @@ func _process(delta: float) -> void:
 
 
 ## Save functions
+## Tick 397: Time Mage meta-ability quicksave override flag. Set by
+## force_quick_save() to bypass the can_quick_save battle/interior
+## gate. Self-clearing after a single save_game call so it can't
+## accidentally leak across other save paths.
+var _meta_save_bypass: bool = false
+
+
+func force_quick_save(slot: int = -1) -> bool:
+	"""Bypass the battle/interior gate for meta-job quicksave abilities."""
+	_meta_save_bypass = true
+	# Default to QUICK_SAVE_SLOT when no slot specified — matches quick_save's
+	# slot choice and keeps the meta save out of the manual user slots.
+	if slot == -1:
+		slot = QUICK_SAVE_SLOT
+	return save_game(slot)
+
+
 func save_game(slot: int = -1) -> bool:
 	"""Save the current game state to a slot"""
 	if slot == -1:
@@ -112,7 +129,11 @@ func save_game(slot: int = -1) -> bool:
 	# Tick 75: pick the specific reason so SaveScreen can surface the
 	# real blocker (interior, battle) instead of a misleading 'battle'
 	# message when the player is actually inside a chapel.
-	if not can_quick_save():
+	## Tick 397: meta-ability quicksave bypasses the gate. Consume the
+	## flag on entry so it can't leak.
+	var bypass_gate: bool = _meta_save_bypass
+	_meta_save_bypass = false
+	if not bypass_gate and not can_quick_save():
 		var reason: String = _save_block_reason()
 		save_failed.emit(reason)
 		print("[SAVE] save_game refused: %s" % reason)

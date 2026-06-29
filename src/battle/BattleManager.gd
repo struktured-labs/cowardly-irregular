@@ -3820,6 +3820,25 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 397: create_save (Time Mage quicksave ability). Pre-fix
+		## the meta_effect fell through to push_warning even though the
+		## ability description literally says "Create a quicksave during
+		## battle". SaveSystem.quick_save / save_game block during
+		## battle via can_quick_save — this is the meta-job override.
+		## Routed through the new SaveSystem.force_quick_save which
+		## bypasses the gate, writes to QUICK_SAVE_SLOT (matches normal
+		## quicksave's slot choice), and self-clears the bypass flag.
+		"create_save":
+			print("  → %s rewinds reality to fork a save..." % caster.combatant_name)
+			var save_system: Node = get_node_or_null("/root/SaveSystem")
+			if save_system != null and save_system.has_method("force_quick_save"):
+				var ok: bool = save_system.force_quick_save()
+				if ok:
+					battle_log_message.emit("[color=magenta]✦ %s forks a quicksave![/color]" % caster.combatant_name)
+				else:
+					battle_log_message.emit("[color=gray]%s reaches for a save slot... but the timeline refuses.[/color]" % caster.combatant_name)
+			else:
+				push_warning("[BattleManager] create_save meta_effect: SaveSystem unavailable")
 		## Tick 396: force_weak_attack — applies attack debuff to target.
 		## boss_puppet ability uses this. Maps to existing add_debuff
 		## on "attack" stat with default 0.5x for 3 turns.
