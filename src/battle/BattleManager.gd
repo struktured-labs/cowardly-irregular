@@ -3221,6 +3221,26 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				caster.gain_ap(1)
 				# Tick 238: bonus BBCode (CIRCUIT BREAKER — band-reduce + AP gain).
 				battle_log_message.emit("[color=%s]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
+		"mp_restore_and_ap":
+			# Tick 352: Bard's inspiring_melody (abilities.json line ~437)
+			# uses this effect to restore MP + grant AP to all allies.
+			# Pre-fix the effect had no handler — inspiring_melody fell
+			# through to the `_:` push_warning default and the ability
+			# silently fizzled. ap_gain defaults to 1 (matches the
+			# canonical data), mp_restore_percent defaults to 5% so a
+			# minimal {effect: "mp_restore_and_ap"} ability still does
+			# something sensible.
+			var mp_pct: float = float(ability.get("mp_restore_percent", 0.05))
+			var ap_gain: int = int(ability.get("ap_gain", 1))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					if mp_pct > 0.0 and "max_mp" in target:
+						var mp_restored: int = int(target.max_mp * mp_pct)
+						if mp_restored > 0 and target.has_method("restore_mp"):
+							target.restore_mp(mp_restored)
+					if ap_gain != 0 and target.has_method("gain_ap"):
+						target.gain_ap(ap_gain)
+			battle_log_message.emit("[color=%s]%s's inspiring melody rallies the party![/color] (+%d AP, +%d%% MP)" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name, ap_gain, int(mp_pct * 100)])
 		"steal":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
