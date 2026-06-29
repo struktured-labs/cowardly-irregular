@@ -422,6 +422,16 @@ func die() -> void:
 
 func revive(hp_amount: int = 0) -> void:
 	"""Revive with specified HP (or 50% max if not specified)"""
+	## Tick 421: refuse revive when permakilled. The permakilled status
+	## is the canonical "this PC cannot come back" marker — set by the
+	## permanent_death meta_effect (tick 354) AND by the
+	## can_cause_permadeath flag enforcement (this tick). Pre-fix
+	## Phoenix Down / revive abilities silently brought permakilled
+	## PCs back, defeating the "HIGH RISK" design promise of the
+	## permanent_death ability and the permadeath_reaper monster.
+	if "permakilled" in status_effects:
+		print("[REVIVE] refused — %s is permakilled" % combatant_name)
+		return
 	is_alive = true
 	if hp_amount > 0:
 		current_hp = min(hp_amount, max(1, max_hp))

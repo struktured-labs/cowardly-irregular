@@ -2800,6 +2800,12 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	battle_log_message.emit(log_msg)
 	print("%s attacks %s for %d damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, " CRIT!" if is_crit else ""])
 
+	## Tick 421: enforce can_cause_permadeath. If the attacker's
+	## monster data carries the flag and the target just died, mark
+	## the target permakilled so Phoenix Down / revival abilities
+	## can't bring them back.
+	_maybe_apply_permadeath_on_kill(attacker, actual_target)
+
 	# Counter-on-hit: monsters with counter_abilities defined in monsters.json
 	# fire a free retaliatory ability after taking a real hit.
 	_trigger_monster_counter(actual_target, attacker)
@@ -2991,6 +2997,10 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var actual_damage = target.take_damage(damage, false)
 		damage_dealt.emit(target, actual_damage, is_crit, "", 1.0)
 
+		## Tick 421: permadeath enforcement for physical ability path —
+		## permakill_strike from the reaper lands here.
+		_maybe_apply_permadeath_on_kill(caster, target)
+
 		# Track first damage for one-shot detection
 		if target in enemy_party:
 			_record_first_damage()
@@ -3090,6 +3100,10 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			actual_damage = target.take_damage(damage, true)
 
 		damage_dealt.emit(target, actual_damage, false, element, elemental_mod)
+
+		## Tick 421: permadeath enforcement for magic ability path —
+		## soul_reap / final_death from the reaper land here.
+		_maybe_apply_permadeath_on_kill(caster, target)
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
@@ -4406,6 +4420,34 @@ func _on_combatant_died(combatant: Combatant) -> void:
 	# Track party member KOs for permanent injury system
 	if combatant in player_party and combatant not in _ko_this_battle:
 		_ko_this_battle.append(combatant)
+
+
+## Tick 421: enforce the monsters.json `can_cause_permadeath` flag.
+## Pre-fix the flag was authored on permadeath_reaper but no code
+## path read it — players who lost a PC to the reaper revived them
+## normally with Phoenix Down, defeating the design "HIGH RISK"
+## promise. Called from damage paths that know the attacker.
+## Permakilled status is the same marker meta-ability permanent_death
+## uses (tick 354); it persists into the save and blocks revival.
+func _maybe_apply_permadeath_on_kill(attacker: Combatant, target: Combatant) -> void:
+	if attacker == null or target == null or target.is_alive:
+		return
+	if not (target in player_party):
+		return  # only PCs can be permakilled by monster attacks
+	if not attacker.has_method("get_meta"):
+		return
+	var monster_type: String = attacker.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	if not bool(data.get("can_cause_permadeath", false)):
+		return
+	if not target.has_status("permakilled"):
+		target.add_status("permakilled")
+		battle_log_message.emit("[color=red]☠ %s has been PERMANENTLY ERASED by %s ☠[/color]" % [target.combatant_name, attacker.combatant_name])
+		print("[PERMADEATH] %s permakilled by %s" % [target.combatant_name, attacker.combatant_name])
 
 
 ## Utility functions

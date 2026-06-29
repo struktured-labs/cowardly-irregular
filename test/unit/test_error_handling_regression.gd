@@ -579,7 +579,10 @@ func test_combatant_revive_minimum_hp() -> void:
 
 	var idx = content.find("func revive")
 	if idx > 0:
-		var context = content.substr(idx, 300)
+		# Tick 421 added a permakilled guard block to revive(),
+		# pushing the max(1, ...) call past the original 300-char
+		# window. Widened.
+		var context = content.substr(idx, 1000)
 		assert_true(context.contains("max(1,"),
 			"revive should use max(1, ...) to ensure minimum 1 HP")
 
