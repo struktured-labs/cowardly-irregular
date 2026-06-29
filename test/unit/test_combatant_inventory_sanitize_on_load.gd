@@ -33,7 +33,11 @@ func test_inventory_load_builds_typed_dict() -> void:
 	var src := _read(COMBATANT)
 	var idx: int = src.find("if data.has(\"inventory\"):")
 	assert_gt(idx, -1, "inventory load branch must exist")
-	var window: String = src.substr(idx, 1000)
+	# Tick 395 added a type guard + comment block above the sanitize
+	# code, which pushed the asserted strings further from the
+	# `if data.has("inventory"):` anchor. 1800 chars covers the
+	# expanded block plus a margin.
+	var window: String = src.substr(idx, 1800)
 	assert_true(window.contains("var typed_inv: Dictionary = {}"),
 		"inventory load must build a typed_inv dict for sanitization")
 	assert_true(window.contains("inventory = typed_inv"),
@@ -46,7 +50,11 @@ func test_inventory_load_builds_typed_dict() -> void:
 func test_inventory_load_int_coerces_quantity() -> void:
 	var src := _read(COMBATANT)
 	var idx: int = src.find("if data.has(\"inventory\"):")
-	var window: String = src.substr(idx, 1000)
+	# Tick 395 added a type guard + comment block above the sanitize
+	# code, which pushed the asserted strings further from the
+	# `if data.has("inventory"):` anchor. 1800 chars covers the
+	# expanded block plus a margin.
+	var window: String = src.substr(idx, 1800)
 	assert_true(window.contains("var qty: int = int(raw_inv[item_id])"),
 		"inventory load must int() coerce quantity — JSON returns float")
 
@@ -54,7 +62,11 @@ func test_inventory_load_int_coerces_quantity() -> void:
 func test_inventory_load_filters_non_positive() -> void:
 	var src := _read(COMBATANT)
 	var idx: int = src.find("if data.has(\"inventory\"):")
-	var window: String = src.substr(idx, 1000)
+	# Tick 395 added a type guard + comment block above the sanitize
+	# code, which pushed the asserted strings further from the
+	# `if data.has("inventory"):` anchor. 1800 chars covers the
+	# expanded block plus a margin.
+	var window: String = src.substr(idx, 1800)
 	assert_true(window.contains("if qty <= 0:"),
 		"inventory load must filter non-positive quantities (mirrors consume_item's erase semantics)")
 	assert_true(window.contains("continue"),
@@ -64,7 +76,11 @@ func test_inventory_load_filters_non_positive() -> void:
 func test_inventory_load_filters_empty_key() -> void:
 	var src := _read(COMBATANT)
 	var idx: int = src.find("if data.has(\"inventory\"):")
-	var window: String = src.substr(idx, 1000)
+	# Tick 395 added a type guard + comment block above the sanitize
+	# code, which pushed the asserted strings further from the
+	# `if data.has("inventory"):` anchor. 1800 chars covers the
+	# expanded block plus a margin.
+	var window: String = src.substr(idx, 1800)
 	assert_true(window.contains("if key == \"\":"),
 		"inventory load must filter empty-string keys (phantom rows)")
 

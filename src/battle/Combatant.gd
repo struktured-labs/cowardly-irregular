@@ -1039,17 +1039,26 @@ func from_dict(data: Dictionary) -> void:
 		## negative entry showing "-5 potions" in the menu. Empty-key
 		## entries (e.g. `"": 3`) are phantom rows that iterate UI
 		## sites can't render meaningfully.
-		var raw_inv: Dictionary = data["inventory"]
-		var typed_inv: Dictionary = {}
-		for item_id in raw_inv.keys():
-			var key: String = str(item_id)
-			if key == "":
-				continue
-			var qty: int = int(raw_inv[item_id])
-			if qty <= 0:
-				continue
-			typed_inv[key] = qty
-		inventory = typed_inv
+		## Tick 395: type-guard before the typed-Dict assignment. Pre-fix
+		## a corrupted save with `"inventory": null` (or int/string)
+		## crashed with `Trying to assign value of type 'X' to a variable
+		## of type 'Dictionary'`. Same class as tick 363/364's GameState
+		## guards.
+		var raw_inv_v: Variant = data["inventory"]
+		if raw_inv_v is Dictionary:
+			var raw_inv: Dictionary = raw_inv_v
+			var typed_inv: Dictionary = {}
+			for item_id in raw_inv.keys():
+				var key: String = str(item_id)
+				if key == "":
+					continue
+				var qty: int = int(raw_inv[item_id])
+				if qty <= 0:
+					continue
+				typed_inv[key] = qty
+			inventory = typed_inv
+		else:
+			push_warning("[Combatant] from_dict: inventory malformed (type=%s) — keeping defaults" % typeof(raw_inv_v))
 	if data.has("doom_counter"):
 		## Tick 158: int() coerce + normalize any negative to the
 		## canonical -1 sentinel ("not doomed"). All consumers
