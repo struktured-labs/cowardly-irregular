@@ -3111,6 +3111,12 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			_trigger_monster_counter(target, caster)
 			continue
 
+		## Tick 427: optimization_itself adapts to repeated abilities.
+		## Reduces damage if the target was hit by the same ability
+		## last time, then updates the meta tracker. Applied before
+		## take_damage so the adapted value is what lands.
+		damage = _apply_counter_repeated_damage_mod(target, ability.get("id", ""), damage)
+
 		var actual_damage = target.take_damage(damage, false)
 		damage_dealt.emit(target, actual_damage, is_crit, "", 1.0)
 
@@ -3221,6 +3227,9 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			battle_log_message.emit("[color=magenta]%s's Prismatic Reflect bounces %d magic damage to %s![/color]" % [target.combatant_name, reflected, caster.combatant_name])
 			_trigger_monster_counter(target, caster)
 			continue
+
+		## Tick 427: optimization_itself adapts to repeated magic too.
+		damage = _apply_counter_repeated_damage_mod(target, ability.get("id", ""), damage)
 
 		var actual_damage = 0
 		var elemental_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
@@ -6183,6 +6192,44 @@ func _maybe_heal_from_damage(target: Combatant, damage_amount: int, element: Str
 	if actual_healed > 0:
 		healing_done.emit(target, actual_healed)
 		battle_log_message.emit("[color=cyan]%s absorbs the impact — heals %d HP![/color]" % [target.combatant_name, actual_healed])
+
+
+## Tick 427: optimization_itself.counter_repeated_actions. monsters.json
+## authors counter_description: "If the same ability is used twice in
+## a row, Optimization Itself adapts and takes reduced damage from
+## it." Pre-fix the flag was authored but no code read it — repeating
+## an ability did normal damage. Helper checks the target's monster
+## flag + meta-tracked last ability used against it. On match, returns
+## a reduced damage value; always updates the meta so the next call
+## sees the current ability as the "previous". 50% reduction matches
+## typical FF-style adapt mechanics (and is conservatively below 100%
+## so the player still gets some value from repeated casts).
+func _apply_counter_repeated_damage_mod(target: Combatant, ability_id: String, damage: int) -> int:
+	if target == null or not is_instance_valid(target) or ability_id == "":
+		return damage
+	if not target.has_method("get_meta"):
+		return damage
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return damage
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return damage
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return damage
+	if not bool(sb.get("counter_repeated_actions", false)):
+		return damage
+	var adjusted: int = damage
+	var prior: String = target.get_meta("_last_ability_against", "")
+	if prior == ability_id:
+		# 50% reduction on a repeat. Floor at 1 so the player still
+		# lands a hit (and triggers downstream signals like
+		# damage_dealt) — the design wants reduced, not negated.
+		adjusted = max(1, int(round(damage * 0.5)))
+		battle_log_message.emit("[color=cyan]%s adapts to %s — damage reduced![/color]" % [target.combatant_name, ability_id.capitalize().replace("_", " ")])
+	target.set_meta("_last_ability_against", ability_id)
+	return adjusted
 
 
 ## Tick 422: roll the null_entity-style phase_out chance. monsters.json
