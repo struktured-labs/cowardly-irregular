@@ -3820,6 +3820,32 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 402: sequence_break (Skiptrotter sequence_break
+		## ability). Pre-fix the meta_effect fell through to `_:`
+		## push_warning. Mechanically: writes a meta_sequence_break
+		## flag that future world-warp paths can read, and applies the
+		## authored corruption_risk (sequence-breaking is dangerous —
+		## that's the design payoff). The actual world-skip
+		## implementation lives in a future tick; this tick stops the
+		## silent fizzle and surfaces the cast.
+		"sequence_break":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_sequence_break_pending"] = true
+			print("  → %s ruptures the sequence!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s breaks the intended sequence — reality glitches.[/color]" % caster.combatant_name)
+			GameState.add_corruption(corruption_risk)
+		## Tick 402: autobattle_editor (Scriptweaver create_autobattle_
+		## script ability). "Open the autobattle scripting interface
+		## mid-battle." Pre-fix the meta_effect fell through to `_:`
+		## push_warning. Sets meta_autobattle_editor_requested flag
+		## that BattleScene can poll between turns to surface the
+		## editor overlay. Actual overlay wiring is downstream; this
+		## tick stops the silent fizzle and gives BattleScene a hook.
+		"autobattle_editor":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_autobattle_editor_requested"] = true
+			print("  → %s pulls open the autobattle editor!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s opens the autobattle editor — script the next sequence.[/color]" % caster.combatant_name)
 		## Tick 401: skip_dialogue (Skiptrotter skip_cutscene ability).
 		## Pre-fix the meta_effect fell through to `_:` push_warning.
 		## Sets game_constants.meta_skip_next_cutscene = true; GameLoop
