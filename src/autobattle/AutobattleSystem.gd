@@ -1472,8 +1472,22 @@ func _load_character_scripts() -> void:
 			elif not (json.data is Dictionary):
 				push_warning("[AutobattleSystem] profiles.json parsed but root is not a Dictionary — falling back to legacy format")
 			else:
-				character_profiles = json.data.get("profiles", {})
-				autobattle_enabled = json.data.get("enabled", {})
+				## Tick 367: type-guard the .get() return value before
+				## typed-Dict assignment. Pre-fix a profiles.json with
+				## profiles=null or enabled=null (hand-edited corruption,
+				## migration drift) crashed with the typed-Dictionary
+				## assignment error and dropped the player's autobattle
+				## scripts onto the legacy fallback unannounced.
+				var raw_profiles: Variant = json.data.get("profiles", {})
+				var raw_enabled: Variant = json.data.get("enabled", {})
+				if raw_profiles is Dictionary:
+					character_profiles = raw_profiles
+				else:
+					push_warning("[AutobattleSystem] profiles.json profiles field malformed (type=%s) — keeping empty dict" % typeof(raw_profiles))
+				if raw_enabled is Dictionary:
+					autobattle_enabled = raw_enabled
+				else:
+					push_warning("[AutobattleSystem] profiles.json enabled field malformed (type=%s) — keeping empty dict" % typeof(raw_enabled))
 				print("Loaded profiles for %d characters" % character_profiles.size())
 				return
 
@@ -1490,8 +1504,18 @@ func _load_character_scripts() -> void:
 		if json.parse(json_string) == OK:
 			var data = json.data
 			if data is Dictionary:
-				character_scripts = data.get("scripts", {})
-				autobattle_enabled = data.get("enabled", {})
+				## Tick 367: same type guard as the profiles path above
+				## for the legacy characters.json migration.
+				var raw_scripts: Variant = data.get("scripts", {})
+				var raw_legacy_enabled: Variant = data.get("enabled", {})
+				if raw_scripts is Dictionary:
+					character_scripts = raw_scripts
+				else:
+					push_warning("[AutobattleSystem] legacy characters.json scripts field malformed (type=%s) — keeping empty dict" % typeof(raw_scripts))
+				if raw_legacy_enabled is Dictionary:
+					autobattle_enabled = raw_legacy_enabled
+				else:
+					push_warning("[AutobattleSystem] legacy characters.json enabled field malformed (type=%s) — keeping empty dict" % typeof(raw_legacy_enabled))
 				# Migrate old format scripts to new format
 				_migrate_old_format_scripts()
 				print("Loaded %d character autobattle scripts (legacy)" % character_scripts.size())
