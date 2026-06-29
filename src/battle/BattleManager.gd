@@ -2811,6 +2811,12 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## with the mitigated number that landed, not the raw value.
 	_maybe_heal_from_damage(actual_target, actual_damage, "")
 
+	## Tick 424: empty_set applies a random debuff from its pool
+	## on every attack. Authored as W6 abstract's signature mechanic
+	## ("erases what you have"). Called AFTER the damage lands so
+	## the debuff also stacks on top.
+	_maybe_apply_debuff_on_attack(attacker, actual_target)
+
 	# Counter-on-hit: monsters with counter_abilities defined in monsters.json
 	# fire a free retaliatory ability after taking a real hit.
 	_trigger_monster_counter(actual_target, attacker)
@@ -5980,6 +5986,58 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 			battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
 			return true
 	return false
+
+
+## Tick 424: empty_set-style debuff_on_attack. Reads
+## special_behavior.debuff_on_attack + debuff_types from monster
+## data. Pre-fix empty_set (W6 abstract) authored a random-debuff
+## pool but no code path read it — its attacks dealt regular damage
+## instead of the "erases what you have" design. Picks one debuff
+## from the authored debuff_types pool, applies via add_debuff with
+## a -25% stat_modifier and 3-turn duration (matches the existing
+## debuff arms' default shape).
+##
+## Maps each debuff_type string to (stat, label):
+##   attack_down  → ("attack", "Attack Erased")
+##   defense_down → ("defense", "Defense Erased")
+##   magic_down   → ("magic", "Magic Erased")
+##   speed_down   → ("speed", "Speed Erased")
+const _DEBUFF_ON_ATTACK_MAP: Dictionary = {
+	"attack_down":  ["attack",  "Attack Erased"],
+	"defense_down": ["defense", "Defense Erased"],
+	"magic_down":   ["magic",   "Magic Erased"],
+	"speed_down":   ["speed",   "Speed Erased"],
+}
+
+
+func _maybe_apply_debuff_on_attack(attacker: Combatant, target: Combatant) -> void:
+	if attacker == null or target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if not attacker.has_method("get_meta"):
+		return
+	var monster_type: String = attacker.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return
+	if not bool(sb.get("debuff_on_attack", false)):
+		return
+	var pool: Variant = sb.get("debuff_types", [])
+	if not (pool is Array) or pool.size() == 0:
+		return
+	var pick: String = str(pool[randi() % pool.size()])
+	if not _DEBUFF_ON_ATTACK_MAP.has(pick):
+		return  # unknown debuff type — skip silently
+	var entry: Array = _DEBUFF_ON_ATTACK_MAP[pick]
+	var stat: String = entry[0]
+	var label: String = entry[1]
+	# 0.75x for 3 turns — matches the existing debuff arms' defaults.
+	target.add_debuff(label, stat, 0.75, 3)
+	battle_log_message.emit("[color=cyan]%s erases %s's %s![/color]" % [attacker.combatant_name, target.combatant_name, stat.to_upper()])
 
 
 ## Tick 423: the_absence-style heal-from-damage. Reads
