@@ -3263,6 +3263,21 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				caster.gain_ap(1)
 				# Tick 238: bonus BBCode (CIRCUIT BREAKER — band-reduce + AP gain).
 				battle_log_message.emit("[color=%s]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
+		"default_stance":
+			# Tick 356: the `default` ability (Bravely Default-style
+			# defensive stance) sets is_defending = true on the caster,
+			# which take_damage already reads at line ~212 for 50% damage
+			# reduction. Pre-fix no arm matched and the entire ability
+			# fizzled: 0 MP cost, but no defending flag set, no log line.
+			# The bp_gain field (Bravely Default's brave-points bank) is
+			# not implemented yet — see Combat System Mutation in
+			# CLAUDE.md — so we don't read it here. When BP lands, this
+			# arm grows by one line.
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				target.is_defending = true
+				battle_log_message.emit("[color=%s]%s takes a defensive stance![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
 		"dispel_one":
 			# Tick 355: weaker variant of dispel — removes ONE random buff
 			# or positive status from the target. Used by remove_element
