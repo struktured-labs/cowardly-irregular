@@ -512,6 +512,18 @@ func _get_party_summary() -> Array:
 	if GameState and "player_party" in GameState:
 		for member in GameState.player_party:
 			if member is Dictionary:
+				## Tick 415: dropped the "customization" field. The
+				## player_party member dict only ever holds the live
+				## CharacterCustomization RefCounted reference (set by
+				## GameLoop _save_customizations on creation); JSON
+				## stringification turns RefCounted instances into null,
+				## so the field landed in saves as "customization":
+				## null. SaveScreen reads name/job_id/hp/max_hp only —
+				## never customization — so the null entry was pure
+				## bloat. Persistence of actual customization data
+				## happens through GameLoop._save_customizations writing
+				## to user://save_data.json (the global customization
+				## file). No consumer is impacted by removing this.
 				summary.append({
 					"name": member.get("name", "Unknown"),
 					"level": member.get("job_level", 1),
@@ -520,7 +532,6 @@ func _get_party_summary() -> Array:
 					"secondary_job_id": member.get("secondary_job_id", ""),
 					"hp": member.get("current_hp", 0),
 					"max_hp": member.get("max_hp", 1),
-					"customization": member.get("customization", null)
 				})
 
 	return summary
