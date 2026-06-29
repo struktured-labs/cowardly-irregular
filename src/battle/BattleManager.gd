@@ -3798,7 +3798,16 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			print("  → %s analyzes the battle code..." % caster.combatant_name)
 			print("  → [META] Revealing execution order...")
 			battle_log_message.emit("[color=magenta]✦ %s analyzes the battle code — execution order revealed.[/color]" % caster.combatant_name)
-		"time_rewind":
+		## Tick 396: alias "rewind_turn" to the same rewind path.
+		## Pre-fix the rewind_turn meta_effect (used by rewind_turn
+		## ability — Time Mage advanced) fell through to `_:`
+		## push_warning. Mechanically rewind_turn IS time_rewind from
+		## the engine's perspective — both restore the previous save
+		## state. The narrative distinction (one turn vs deeper rewind)
+		## lives in the dialogue / ability description, not the
+		## engine. Sharing the case label drops both effect names into
+		## the same code path.
+		"time_rewind", "rewind_turn":
 			print("  → %s attempts to rewind time..." % caster.combatant_name)
 			if GameState.rewind_to_previous_save():
 				print("  → [META] Time has been rewound!")
@@ -3811,6 +3820,25 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 396: force_weak_attack — applies attack debuff to target.
+		## boss_puppet ability uses this. Maps to existing add_debuff
+		## on "attack" stat with default 0.5x for 3 turns.
+		"force_weak_attack":
+			var fw_mod: float = float(ability.get("stat_modifier", 0.5))
+			var fw_dur: int = int(ability.get("duration", 3))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_debuff("Forced Weak", "attack", fw_mod, fw_dur)
+					battle_log_message.emit("[color=magenta]✦ %s forces %s into a weak attack![/color] (ATK -%d%% for %d turns)" % [caster.combatant_name, target.combatant_name, int((1.0 - fw_mod) * 100), fw_dur])
+		## Tick 396: time_stop — applies stun to all targets for 1 turn.
+		## Time Mage's time_stop ability uses this. Stun status already
+		## has engine support (CC arm in support effects).
+		"time_stop":
+			var ts_dur: int = int(ability.get("duration", 1))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("stun", ts_dur)
+					battle_log_message.emit("[color=magenta]✦ Time stops for %s![/color] (stunned for %d turns)" % [target.combatant_name, ts_dur])
 		"permanent_death":
 			print("  → %s casts PERMAKILL!" % caster.combatant_name)
 			battle_log_message.emit("[color=magenta]✦ %s casts PERMAKILL![/color]" % caster.combatant_name)
