@@ -3508,7 +3508,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		# downstream consumers (take_damage wakes sleepers, DOT ticks
 		# in update_buff_durations, has_status("blind") in miss math,
 		# etc.).
-		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block", "sleep", "poison", "burn", "burning", "confuse", "fear", "silence", "curse":
+		## Tick 379: added "static" to the simple-status arm. Pre-fix
+		## static_field (effect="static", duration=3) fell through to
+		## the `_:` push_warning default and silently fizzled. The
+		## status is now applied via add_status; Combatant.update_buff_
+		## durations sister-fix processes the lightning DOT tick.
+		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block", "sleep", "poison", "burn", "burning", "static", "confuse", "fear", "silence", "curse":
 			# Simple status effects — applied as a named status the rest of
 			# the battle engine can read via has_status(). Maps the data
 			# effect string directly to the status name.

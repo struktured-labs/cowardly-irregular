@@ -576,6 +576,25 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			die()
 
+	## Tick 379: lightning DOT — applied by static_field ability.
+	## Pre-fix the status was authored but no consumer ticked damage;
+	## now mirrors the poison/burn shape at 4% max_hp per turn (lighter
+	## than burn's 8% and poison's 5% — static feels like persistent
+	## zaps, not a sear). Same lethal-tick guard ordering as the
+	## sister DOTs above so a static-kill grays the sprite cleanly.
+	if "static" in status_effects and is_alive:
+		var static_damage = max(1, int(max_hp * 0.04))
+		var old_hp_static = current_hp
+		current_hp = max(0, current_hp - static_damage)
+		if current_hp <= 0:
+			is_alive = false
+		if current_hp != old_hp_static:
+			hp_changed.emit(old_hp_static, current_hp)
+			status_tick_damage.emit(static_damage, "static")
+			print("%s takes %d static damage!" % [combatant_name, static_damage])
+		if current_hp <= 0:
+			die()
+
 	# Process heal-over-time effects
 	if "regen" in status_effects and is_alive:
 		var regen_heal = max(1, int(max_hp * 0.05))  # 5% max HP per turn
