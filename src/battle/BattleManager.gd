@@ -3820,6 +3820,27 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 399: mutual_permadeath (Bossbinder's mutual_destruction
+		## ability). "Kill both you and the bound boss instantly.
+		## Permanent. No takebacks." Pre-fix the meta_effect fell
+		## through to `_:` push_warning — the 99-MP terminal sacrifice
+		## did absolutely nothing. Mirrors permanent_death's mechanic
+		## but applies to caster as well as targets.
+		"mutual_permadeath":
+			print("  → %s casts MUTUAL DESTRUCTION!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s casts MUTUAL DESTRUCTION![/color]" % caster.combatant_name)
+			# Caster dies + permakilled.
+			if caster != null and is_instance_valid(caster) and caster.is_alive:
+				caster.die()
+				caster.add_status("permakilled")
+				battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), caster.combatant_name])
+			# Targets die + permakilled (same shape as permanent_death).
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.die()
+					target.add_status("permakilled")
+					battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name])
+			GameState.add_corruption(corruption_risk)
 		## Tick 398: corrupt_save (save_deletion ability — boss-only
 		## terror move). Pre-fix the meta_effect fell through to `_:`
 		## push_warning, so a boss using this ability had no real
