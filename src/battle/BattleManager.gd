@@ -271,6 +271,40 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 				print("[BATTLE] Escape disabled — boss '%s' detected in enemy party" % monster_type)
 				break
 
+	## Tick 425: forgotten_variable randomize_stats. monsters.json
+	## authors special_behavior = {randomize_stats: true,
+	## stat_variance: 0.4, ...} on forgotten_variable (W6 abstract)
+	## as the "you never know what you're dealing with" mechanic.
+	## Pre-fix the flag was authored but no code read it — every
+	## encounter rolled identical stats. Multiplies each combat stat
+	## by a random factor in [1-variance, 1+variance] at battle
+	## start so each fight feels different. Clamped to [0.1, 4.0]
+	## defensively so a typo'd variance like 5.0 can't make stats
+	## negative or absurd.
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.has_method("get_meta"):
+			continue
+		var mtype: String = enemy.get_meta("monster_type", "")
+		if mtype == "":
+			continue
+		if not (EncounterSystem and EncounterSystem.monster_database.has(mtype)):
+			continue
+		var mdata: Dictionary = EncounterSystem.monster_database[mtype]
+		var msb: Variant = mdata.get("special_behavior", {})
+		if not (msb is Dictionary):
+			continue
+		if not bool(msb.get("randomize_stats", false)):
+			continue
+		var variance: float = clampf(float(msb.get("stat_variance", 0.4)), 0.0, 1.0)
+		for stat_name in ["attack", "defense", "magic", "speed"]:
+			if not (stat_name in enemy):
+				continue
+			var base: int = int(enemy.get(stat_name))
+			var factor: float = clampf(randf_range(1.0 - variance, 1.0 + variance), 0.1, 4.0)
+			enemy.set(stat_name, max(1, int(round(base * factor))))
+		print("[BATTLE] %s's stats randomized — atk=%d def=%d mag=%d spd=%d" % [enemy.combatant_name, enemy.attack, enemy.defense, enemy.magic, enemy.speed])
+		battle_log_message.emit("[color=cyan]%s's stats shift wildly![/color]" % enemy.combatant_name)
+
 	# Reset autobattle tracking
 	_full_autobattle = true
 	_autobattle_player_turns = 0
