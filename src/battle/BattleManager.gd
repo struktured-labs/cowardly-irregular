@@ -3127,11 +3127,23 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 func _get_crit_multiplier(attacker: Combatant) -> float:
 	"""Get critical hit damage multiplier"""
 	# Base crit multiplier is 1.5x
-	var base_mult = 1.5
+	var base_mult: float = 1.5
 
-	# Check for enhanced crit passives
-	if "devastating_criticals" in attacker.equipped_passives:
-		base_mult = 2.0
+	## Tick 376: route through PassiveSystem.get_passive_mods's
+	## crit_damage_bonus accumulator. Pre-fix the function hardcoded
+	## a check for the "devastating_criticals" passive name, but that
+	## passive didn't exist in data/passives.json — the +2.0 multiplier
+	## was dead code (the `in equipped_passives` check could never be
+	## true). Generic accumulator read realizes the latent design
+	## intent and lets any future passive add to crit damage. Clamped
+	## so a stacked passive bundle can't produce absurd crit damage —
+	## [0.0, 1.5] band caps total at base 1.5 + 1.5 = 3.0x.
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps != null and ps.has_method("get_passive_mods"):
+		var mods: Dictionary = ps.get_passive_mods(attacker)
+		var bonus: float = clampf(float(mods.get("crit_damage_bonus", 0.0)), 0.0, 1.5)
+		base_mult += bonus
 
 	return base_mult
 
