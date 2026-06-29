@@ -2889,10 +2889,31 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 
 		# Apply status effect if ability has one
 		var effect = ability.get("effect", "")
-		var effect_chance = ability.get("effect_chance", 0.0)
+		# Tick 354: special-case "random_debuff" — pre-fix add_status
+		# ("random_debuff") wrote a literal "random_debuff" string into
+		# status_effects, an inert sentinel no downstream consumer
+		# recognizes. corrupting_touch / data_corruption JSON descriptions
+		# present the debuff as the headline behavior, but omitted
+		# effect_chance — which defaulted to 0.0, so the apply never
+		# fired even if random_debuff were a real status. Default the
+		# chance to 1.0 for random_debuff specifically; other abilities
+		# keep their 0.0 default to preserve "you must opt in explicitly"
+		# semantics for status_effect.
+		var effect_chance: float
+		if effect == "random_debuff":
+			effect_chance = float(ability.get("effect_chance", 1.0))
+		else:
+			effect_chance = float(ability.get("effect_chance", 0.0))
 		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			target.add_status(effect)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(effect)])
+			var status_to_add: String = effect
+			if effect == "random_debuff":
+				const _RANDOM_DEBUFF_POOL := [
+					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
+				]
+				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+			var duration: int = int(ability.get("duration", 3))
+			target.add_status(status_to_add, duration)
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(status_to_add)])
 
 		_trigger_monster_counter(target, caster)
 
@@ -2981,10 +3002,31 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 
 		# Apply status effect if ability has one
 		var effect = ability.get("effect", "")
-		var effect_chance = ability.get("effect_chance", 0.0)
+		# Tick 354: special-case "random_debuff" — pre-fix add_status
+		# ("random_debuff") wrote a literal "random_debuff" string into
+		# status_effects, an inert sentinel no downstream consumer
+		# recognizes. corrupting_touch / data_corruption JSON descriptions
+		# present the debuff as the headline behavior, but omitted
+		# effect_chance — which defaulted to 0.0, so the apply never
+		# fired even if random_debuff were a real status. Default the
+		# chance to 1.0 for random_debuff specifically; other abilities
+		# keep their 0.0 default to preserve "you must opt in explicitly"
+		# semantics for status_effect.
+		var effect_chance: float
+		if effect == "random_debuff":
+			effect_chance = float(ability.get("effect_chance", 1.0))
+		else:
+			effect_chance = float(ability.get("effect_chance", 0.0))
 		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			target.add_status(effect)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(effect)])
+			var status_to_add: String = effect
+			if effect == "random_debuff":
+				const _RANDOM_DEBUFF_POOL := [
+					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
+				]
+				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+			var duration: int = int(ability.get("duration", 3))
+			target.add_status(status_to_add, duration)
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(status_to_add)])
 
 		_trigger_monster_counter(target, caster)
 
