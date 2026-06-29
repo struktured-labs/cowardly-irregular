@@ -3601,6 +3601,24 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					picked_label = pick["name"]
 					target.remove_status(pick["name"])
 				battle_log_message.emit("[color=%s]%s loses %s![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, picked_label])
+		## Tick 407: negate_last_ability (rules_lawyer support ability).
+		## "Invokes obscure rules that negate the last ability used
+		## against it." Pre-fix fell through to `_:` push_warning.
+		## Uses tick 406's last-cast tracker. Refunds the last cast's
+		## MP cost AND consumes the tracker so a second cast can't
+		## negate the same ability twice. If no recent cast exists,
+		## surfaces a gray "nothing to cite" line.
+		"negate_last_ability":
+			if _last_ability_cast_id == "" or _last_ability_cast_caster == null or not is_instance_valid(_last_ability_cast_caster):
+				battle_log_message.emit("[color=gray]%s invokes the rules... but there's nothing to cite.[/color]" % caster.combatant_name)
+			else:
+				var negated_ability: Dictionary = JobSystem.get_ability(_last_ability_cast_id) if JobSystem else {}
+				var cost_refund: int = int(negated_ability.get("mp_cost", 0))
+				if cost_refund > 0:
+					_last_ability_cast_caster.restore_mp(cost_refund)
+				battle_log_message.emit("[color=magenta]✦ %s negates %s's %s![/color]" % [caster.combatant_name, _last_ability_cast_caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
+				_last_ability_cast_id = ""
+				_last_ability_cast_caster = null
 		## Tick 405: break_mind_swap (release_binding ability — Time
 		## Mage / Bossbinder release). Pre-fix the support effect fell
 		## through to `_:` push_warning. Tick 404 introduced the
