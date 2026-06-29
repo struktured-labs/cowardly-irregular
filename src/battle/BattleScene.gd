@@ -293,6 +293,11 @@ func _ready() -> void:
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
+	## Tick 409: Scriptweaver's create_autobattle_script meta-ability
+	## surfaces the autobattle editor for the caster. Wired via
+	## has_signal guard for partial-autoload boot scenarios.
+	if BattleManager.has_signal("meta_autobattle_editor_requested"):
+		BattleManager.meta_autobattle_editor_requested.connect(_on_meta_autobattle_editor_requested)
 	BattleManager.one_shot_achieved.connect(_on_one_shot_achieved)
 	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
 	BattleManager.group_attack_executing.connect(_on_group_attack_executing)
@@ -2427,6 +2432,18 @@ func _open_autobattle_editor_for(combatant: Combatant) -> void:
 	editor.setup(char_id, char_name, combatant)
 	editor.closed.connect(_on_inline_autobattle_editor_closed.bind(editor))
 	print("Autobattle editor opened for %s (hold-A)" % char_name)
+
+
+## Tick 409: Scriptweaver's create_autobattle_script meta-ability fires
+## this. Opens the editor for the caster (target_type=self per ability
+## data) and clears the meta_autobattle_editor_requested flag so a
+## subsequent in-battle save doesn't re-trigger the editor.
+func _on_meta_autobattle_editor_requested(caster: Combatant) -> void:
+	if caster == null or not is_instance_valid(caster):
+		return
+	_open_autobattle_editor_for(caster)
+	if GameState and "game_constants" in GameState:
+		GameState.game_constants["meta_autobattle_editor_requested"] = false
 
 
 func _on_inline_autobattle_editor_closed(editor: Control) -> void:

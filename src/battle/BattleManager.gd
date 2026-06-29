@@ -18,6 +18,13 @@ signal attack_missed(target: Combatant)
 signal healing_done(target: Combatant, amount: int)
 signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
+## Tick 409: meta_autobattle_editor_requested fires when the
+## Scriptweaver create_autobattle_script ability lands. BattleScene
+## listens to surface the editor overlay. Pairs with the existing
+## meta_autobattle_editor_requested game_constant flag — flag is the
+## durable signal for post-battle / mid-frame readers; this signal
+## is the immediate hook for the BattleScene UI.
+signal meta_autobattle_editor_requested(caster: Combatant)
 signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
 signal group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String)
@@ -3993,6 +4000,9 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 				GameState.game_constants["meta_autobattle_editor_requested"] = true
 			print("  → %s pulls open the autobattle editor!" % caster.combatant_name)
 			battle_log_message.emit("[color=magenta]✦ %s opens the autobattle editor — script the next sequence.[/color]" % caster.combatant_name)
+			## Tick 409: emit the immediate-hook signal so BattleScene
+			## can surface the editor without having to poll the flag.
+			meta_autobattle_editor_requested.emit(caster)
 		## Tick 401: skip_dialogue (Skiptrotter skip_cutscene ability).
 		## Pre-fix the meta_effect fell through to `_:` push_warning.
 		## Sets game_constants.meta_skip_next_cutscene = true; GameLoop
