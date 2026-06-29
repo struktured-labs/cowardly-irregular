@@ -3443,7 +3443,13 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					picked_label = pick["name"]
 					target.remove_status(pick["name"])
 				battle_log_message.emit("[color=%s]%s loses %s![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, picked_label])
-		"dispel":
+		## Tick 384: erase aliases dispel. Pre-fix null_touch
+		## (effect=erase) fell through to the `_:` push_warning default
+		## even though the description ("erases the target's existence
+		## temporarily") matches dispel's strip-all-enhancements semantic
+		## exactly. Sharing the case label drops both effect names into
+		## the same code path with no behavioral divergence.
+		"erase", "dispel":
 			# Tick 353: strips active_buffs + positive statuses from the
 			# target. Used by 7 abilities (masterite_dispel, cardinality_
 			# zero, garbage_collect_all, intersection_null, optimize_away,
