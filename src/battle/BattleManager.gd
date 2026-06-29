@@ -3820,6 +3820,26 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 400: reverse_permadeath (Time Mage undo_death ability).
+		## "Undo a permanent death". Pre-fix the meta_effect fell
+		## through to `_:` push_warning — the 40-MP rescue was a
+		## complete no-op. Mechanically: remove permakilled status +
+		## revive at 50% max HP, mirroring revival ability shape.
+		## target_type=dead_ally filters to dead allies; the for-loop
+		## guards on `not is_alive` for the revive (vs the alive guard
+		## the kill effects use).
+		"reverse_permadeath":
+			for target in targets:
+				if target == null or not is_instance_valid(target):
+					continue
+				if target.is_alive:
+					continue  # the ability filters target_type=dead_ally; defensive
+				# Remove permakilled marker so the death isn't re-applied.
+				if "permakilled" in target.status_effects:
+					target.remove_status("permakilled")
+				target.revive(int(target.max_hp * 0.5))
+				healing_done.emit(target, target.current_hp)
+				battle_log_message.emit("[color=magenta]✦ %s undoes %s's death![/color]" % [caster.combatant_name, target.combatant_name])
 		## Tick 399: mutual_permadeath (Bossbinder's mutual_destruction
 		## ability). "Kill both you and the bound boss instantly.
 		## Permanent. No takebacks." Pre-fix the meta_effect fell
