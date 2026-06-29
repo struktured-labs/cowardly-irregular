@@ -3820,6 +3820,19 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 403: dungeon_skip (Skiptrotter warp_to_boss ability).
+		## "Skip the dungeon and warp directly to the boss room.
+		## Missed loot!" Pre-fix the meta_effect fell through to `_:`
+		## push_warning. Writes meta_dungeon_skip_pending flag that
+		## future dungeon-warp wiring can read on next exploration
+		## return. Penalty (no_dungeon_loot) is documented in the
+		## ability data but enforcement lives in the warp implementation
+		## (a future tick).
+		"dungeon_skip":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_dungeon_skip_pending"] = true
+			print("  → %s ruptures dungeon space!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s warps past the dungeon — boss room ahead.[/color]" % caster.combatant_name)
 		## Tick 402: sequence_break (Skiptrotter sequence_break
 		## ability). Pre-fix the meta_effect fell through to `_:`
 		## push_warning. Mechanically: writes a meta_sequence_break
