@@ -343,6 +343,17 @@ func spend_mp(amount: int) -> bool:
 	"""Try to spend MP, returns false if insufficient"""
 	if not is_alive:
 		return false
+	## Tick 370: refuse negative amounts. Pre-fix spend_mp(-5) returned
+	## true (`current_mp < -5` is always false for non-negative MP)
+	## then ran `current_mp -= -5`, GRANTING 5 MP through the spend
+	## path and bypassing max_mp clamp. Callers using the bool return
+	## as "MP cost paid?" gate would let a character cast for free AND
+	## gain MP — beyond max_mp, even. Symmetric with tick 368's
+	## restore_mp guard and tick 369's spend_ap guard. Use restore_mp
+	## for legitimate MP gain (it clamps to max_mp correctly).
+	if amount < 0:
+		push_warning("[Combatant] spend_mp() called with negative amount %d on %s — refused, returning false (use restore_mp for MP gain)" % [amount, combatant_name])
+		return false
 	if current_mp < amount:
 		return false
 	current_mp -= amount
