@@ -3292,6 +3292,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("festered", amp_duration)
 					battle_log_message.emit("[color=%s]%s festers![/color] (poison damage doubled for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, amp_duration])
+		## Tick 382: ability_silence handler — aliases to the existing
+		## "silence" status. Pre-fix null_field (effect=ability_silence,
+		## duration=1, target=all_enemies) fell through to the `_:`
+		## push_warning default. Multiple downstream consumers already
+		## gate offensive actions on has_status("silence") (e.g. cast
+		## path at line ~2834, magic-ability path); applying "silence"
+		## reuses all of them rather than introducing a parallel
+		## "ability_silence" status with new consumers.
+		"ability_silence":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("silence", duration)
+					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
 		## Tick 381: shadow_step handler. Pre-fix the shadow_step
 		## ability (effect=shadow_step, duration=1) fell through to
 		## the `_:` push_warning default. The description "Vanish into
