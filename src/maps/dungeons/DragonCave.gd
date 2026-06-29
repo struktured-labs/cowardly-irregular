@@ -109,6 +109,22 @@ func _ready() -> void:
 		if boss_defeated and current_floor != 1:
 			current_floor = 1
 			GameState.game_constants[floor_key] = 1
+		## Tick 410: consume the Skiptrotter dungeon_skip flag here so
+		## the next dungeon entry warps straight to the boss room.
+		## Tick 403 wrote the flag from BattleManager.dungeon_skip arm;
+		## this is the single-shot consumer that clears it and jumps
+		## to total_floors before _generate_map_for_floor renders the
+		## level. Refuses if the boss is already defeated (skipping to
+		## an empty boss room would strand the player). Also skips for
+		## non-dragon DragonCave subclasses where boss completion is
+		## tracked differently — the cave_id "_floor" key gate above
+		## already validates this is a dragon-style dungeon.
+		var skip_pending: bool = bool(GameState.game_constants.get("meta_dungeon_skip_pending", false))
+		if skip_pending and not boss_defeated and total_floors >= 1:
+			current_floor = total_floors
+			GameState.game_constants[floor_key] = total_floors
+			GameState.game_constants["meta_dungeon_skip_pending"] = false
+			print("[DUNGEON_SKIP] meta-ability consumed — warped to boss floor %d of %s" % [current_floor, cave_id])
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
