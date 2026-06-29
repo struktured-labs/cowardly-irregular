@@ -29,9 +29,14 @@ func _read(p: String) -> String:
 func test_apply_save_data_uses_merge_loop_for_meta_features() -> void:
 	# Pin: the load path iterates saved_meta.keys() and assigns
 	# into the existing meta_features dict.
+	# Tick 363: capture form changed from direct `var saved_meta: Dictionary =
+	# save_data["meta_features"]` to a type-guarded variant — accept either.
 	var src := _read(GAME_STATE)
-	assert_true(src.contains("var saved_meta: Dictionary = save_data[\"meta_features\"]"),
-		"_apply_save_data must capture saved meta into a local var")
+	assert_true(
+		src.contains("var saved_meta: Dictionary = save_data[\"meta_features\"]")
+		or (src.contains("var raw_meta: Variant = save_data[\"meta_features\"]")
+			and src.contains("var saved_meta: Dictionary = raw_meta")),
+		"_apply_save_data must capture saved meta into a local var (direct or via type-guarded raw_meta)")
 	assert_true(src.contains("for key in saved_meta.keys():"),
 		"_apply_save_data must iterate saved keys, NOT replace the dict")
 	assert_true(src.contains("meta_features[key] = saved_meta[key]"),
@@ -104,8 +109,12 @@ func test_save_data_overrides_take_priority_over_defaults() -> void:
 func test_game_constants_merge_pattern_still_present() -> void:
 	# Negative regression: don't accidentally regress tick 112's
 	# merge fix while updating meta_features.
+	# Tick 363: same capture-form update as meta_features above.
 	var src := _read(GAME_STATE)
-	assert_true(src.contains("var saved: Dictionary = save_data[\"game_constants\"]"),
-		"game_constants merge loop (tick 112) must still be present")
+	assert_true(
+		src.contains("var saved: Dictionary = save_data[\"game_constants\"]")
+		or (src.contains("var raw_gc: Variant = save_data[\"game_constants\"]")
+			and src.contains("var saved: Dictionary = raw_gc")),
+		"game_constants merge loop (tick 112) must still be present (direct or via type-guarded raw_gc)")
 	assert_true(src.contains("game_constants[key] = saved[key]"),
 		"game_constants per-key assign must still be present")

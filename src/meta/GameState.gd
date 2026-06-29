@@ -332,6 +332,11 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		var raw_idx: int = int(save_data["party_leader_index"])
 		var max_idx: int = max(0, player_party.size() - 1)
 		party_leader_index = clampi(raw_idx, 0, max_idx)
+	## Tick 363: type-guard Dictionary/Array reads so a corrupted save
+	## with null / int / string in these slots warns + skips instead of
+	## crashing _apply_save_data with `Trying to assign a value of type
+	## 'X' to a variable of type 'Dictionary'`. Same defensive shape as
+	## tick 362's player.position guard in SaveSystem.
 	if save_data.has("game_constants"):
 		# Tick 112: MERGE saved values onto the default dict instead of
 		# replacing the dict wholesale. Old saves predate later-added keys
@@ -340,9 +345,13 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		# GameState.add_gold to crash on KeyError when accessing the
 		# missing key. Merging preserves both the saved daemon nudges
 		# AND the defaults for new keys the save didn't know about.
-		var saved: Dictionary = save_data["game_constants"]
-		for key in saved.keys():
-			game_constants[key] = saved[key]
+		var raw_gc: Variant = save_data["game_constants"]
+		if raw_gc is Dictionary:
+			var saved: Dictionary = raw_gc
+			for key in saved.keys():
+				game_constants[key] = saved[key]
+		else:
+			push_warning("[GameState] _apply_save_data: game_constants malformed (type=%s) — keeping defaults" % typeof(raw_gc))
 	if save_data.has("meta_features"):
 		## Tick 150: same MERGE pattern as game_constants (tick 112).
 		## Pre-fix this replaced the dict wholesale — old saves missing
@@ -350,14 +359,22 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		## would silently lose the defaults on load, leaving consumers
 		## crashing on missing-key access. Merging preserves both the
 		## saved values AND any defaults the save didn't know about.
-		var saved_meta: Dictionary = save_data["meta_features"]
-		for key in saved_meta.keys():
-			meta_features[key] = saved_meta[key]
+		var raw_meta: Variant = save_data["meta_features"]
+		if raw_meta is Dictionary:
+			var saved_meta: Dictionary = raw_meta
+			for key in saved_meta.keys():
+				meta_features[key] = saved_meta[key]
+		else:
+			push_warning("[GameState] _apply_save_data: meta_features malformed (type=%s) — keeping defaults" % typeof(raw_meta))
 	if save_data.has("corruption_effects"):
-		var typed_corruption: Array[String] = []
-		for ce in save_data["corruption_effects"]:
-			typed_corruption.append(str(ce))
-		corruption_effects = typed_corruption
+		var raw_ce: Variant = save_data["corruption_effects"]
+		if raw_ce is Array:
+			var typed_corruption: Array[String] = []
+			for ce in raw_ce:
+				typed_corruption.append(str(ce))
+			corruption_effects = typed_corruption
+		else:
+			push_warning("[GameState] _apply_save_data: corruption_effects malformed (type=%s) — keeping current list" % typeof(raw_ce))
 	## Tick 156: world bookkeeping is int 1-6 (matches the 6 worlds
 	## shipped). Coerce from JSON's float + clamp to valid range so
 	## a corrupted save with 0 or 99 doesn't leak into is_world_unlocked
@@ -368,7 +385,13 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	if save_data.has("worlds_unlocked"):
 		worlds_unlocked = clampi(int(save_data["worlds_unlocked"]), 1, 6)
 	if save_data.has("story_flags"):
-		story_flags = save_data["story_flags"].duplicate()
+		# Tick 363: type-guard before .duplicate() — a corrupted save with
+		# story_flags=null would crash with Invalid call .duplicate on Nil.
+		var raw_sf: Variant = save_data["story_flags"]
+		if raw_sf is Dictionary:
+			story_flags = raw_sf.duplicate()
+		else:
+			push_warning("[GameState] _apply_save_data: story_flags malformed (type=%s) — keeping current flags" % typeof(raw_sf))
 	if save_data.has("current_save_name"):
 		current_save_name = save_data["current_save_name"]
 	if save_data.has("llm_enabled"):
