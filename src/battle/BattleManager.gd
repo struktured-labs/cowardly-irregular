@@ -97,6 +97,11 @@ const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
 signal autobattle_toggled(character_id: String, enabled: bool)
 
 ## One-shot tracking
+## Tick 406: per-battle last ability cast by ANY combatant. Reads
+## by the mimic_ability path so copy_last_ability has a real target
+## to replay. Reset in start_battle alongside other per-battle state.
+var _last_ability_cast_id: String = ""
+var _last_ability_cast_caster: Combatant = null
 var _first_damage_round: int = -1    # Round when first damage was dealt to any enemy
 var _first_damage_phase: int = -1    # Execution phase when first damage was dealt
 var _execution_phase_count: int = 0  # Number of execution phases so far
@@ -217,6 +222,10 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_one_shot_achieved = false
 	_setup_turns_used = 0
 	_all_enemies_initial_count = enemies.size()
+
+	## Tick 406: reset per-battle mimic tracking.
+	_last_ability_cast_id = ""
+	_last_ability_cast_caster = null
 
 	# Reset autobattle tracking
 	_full_autobattle = true
@@ -2797,6 +2806,14 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	battle_log_message.emit(ability_log)
 	print("%s uses %s!" % [caster.combatant_name, ability["name"]])
 
+	## Tick 406: track last cast so mimic_ability (copy_last_ability)
+	## can replay. Skip when the ability IS mimic_ability so a mimic
+	## of a mimic doesn't infinite-recurse on itself; mimic still
+	## reads the prior cast.
+	if ability_id != "mimic_ability":
+		_last_ability_cast_id = ability_id
+		_last_ability_cast_caster = caster
+
 	match ability_type:
 		"physical":
 			_execute_physical_ability(caster, ability, retargeted)
@@ -3833,6 +3850,20 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 406: copy_last_ability (mimic_ability). Replay the last
+		## ability cast by ANY combatant this battle. Pre-fix fell
+		## through to `_:` push_warning — 10 MP burned, no copy.
+		## _execute_ability tracks _last_ability_cast_id, skipping
+		## mimic_ability itself so a mimic-of-a-mimic doesn't recurse;
+		## the mimic still reads the prior cast.
+		"copy_last_ability":
+			if _last_ability_cast_id == "":
+				battle_log_message.emit("[color=gray]%s reaches for a memory... but there's nothing to mimic yet.[/color]" % caster.combatant_name)
+			else:
+				battle_log_message.emit("[color=magenta]✦ %s mimics %s![/color]" % [caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
+				# Replay the ability using the caster as the new source.
+				# Pass the same targets — semantically "do what they did".
+				_execute_ability(caster, _last_ability_cast_id, targets)
 		## Tick 404: batch-wire 5 flag-write meta_effects so the casts
 		## stop silently fizzling. Actual mechanical implementations
 		## live downstream; this tick writes the canonical flags +
