@@ -3305,6 +3305,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 391: counter_next_action handler — aliases to the
+		## existing "reflect" status. Pre-fix future_sight
+		## (effect=counter_next_action, duration=1, target=self) fell
+		## through to `_:` push_warning default. Description "Reads
+		## the future to counter the next action perfectly" maps to
+		## reflect's bounce-incoming-damage semantic. duration=1 lines
+		## up with reflect's typical short window — fires on the next
+		## physical attack against the caster and bounces 100%.
+		"counter_next_action":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("reflect", duration)
+					battle_log_message.emit("[color=%s]%s reads the future![/color] (reflect next attack, %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
 		## Tick 390: random_stat_change handler. Pre-fix reassign
 		## (effect=random_stat_change, duration=3, target=self) fell
 		## through to `_:` push_warning default. Description:
