@@ -3263,6 +3263,48 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				caster.gain_ap(1)
 				# Tick 238: bonus BBCode (CIRCUIT BREAKER — band-reduce + AP gain).
 				battle_log_message.emit("[color=%s]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
+		"dispel_one":
+			# Tick 355: weaker variant of dispel — removes ONE random buff
+			# or positive status from the target. Used by remove_element
+			# (abilities.json: "Removes a random buff or positive effect
+			# from the target"). Pre-fix no arm matched and every cast
+			# silently fizzled. Pool combines active_buffs entries with
+			# the same positive-status list dispel uses (tick 353).
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				# Build the candidate pool: each buff is one candidate;
+				# each positive status the target currently has is one
+				# candidate.
+				var candidates: Array = []  # [{"type": "buff", "index": int} or {"type": "status", "name": String}]
+				if "active_buffs" in target:
+					for i in range(target.active_buffs.size()):
+						candidates.append({"type": "buff", "index": i})
+				const _POSITIVE_FOR_DISPEL_ONE := [
+					"barrier", "invisible", "evasion", "reflect",
+					"physical_reflect", "prismatic_reflect", "magic_block",
+					"regen",
+				]
+				for s in _POSITIVE_FOR_DISPEL_ONE:
+					if target.has_status(s):
+						candidates.append({"type": "status", "name": s})
+				if candidates.is_empty():
+					battle_log_message.emit("[color=gray]%s had nothing to dispel.[/color]" % target.combatant_name)
+					continue
+				var pick: Dictionary = candidates[randi() % candidates.size()]
+				var picked_label: String = ""
+				if pick["type"] == "buff":
+					# Buff index might have shifted? No — we built the
+					# pool just now, no mutations between. Safe to index.
+					var buff_data: Dictionary = target.active_buffs[pick["index"]]
+					picked_label = str(buff_data.get("effect", "buff"))
+					target.active_buffs.remove_at(pick["index"])
+					if target.has_method("recalculate_stats"):
+						target.recalculate_stats()
+				else:
+					picked_label = pick["name"]
+					target.remove_status(pick["name"])
+				battle_log_message.emit("[color=%s]%s loses %s![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, picked_label])
 		"dispel":
 			# Tick 353: strips active_buffs + positive statuses from the
 			# target. Used by 7 abilities (masterite_dispel, cardinality_
