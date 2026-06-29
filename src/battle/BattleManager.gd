@@ -3305,6 +3305,36 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 385: dispel_and_self_buff handler. Pre-fix
+		## reduce_overhead (effect=dispel_and_self_buff,
+		## target=single_ally) fell through to `_:` push_warning
+		## default — 15 MP + AP wasted. Description: "Strips all buffs
+		## from a party member to improve its own performance." Two
+		## composite mechanics: dispel target ally + self-buff caster.
+		## Defaults (no data fields authored): attack_up 1.3x for 3
+		## turns on caster — modest but meaningful. Future abilities
+		## with this effect can author `self_buff_stat`, `self_buff_
+		## modifier`, `self_buff_duration` to override.
+		"dispel_and_self_buff":
+			# Step 1: strip the target ally's buffs (sacrifice).
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				var stripped: int = 0
+				if "active_buffs" in target:
+					stripped = target.active_buffs.size()
+					target.active_buffs.clear()
+				if target.has_method("recalculate_stats"):
+					target.recalculate_stats()
+				if stripped > 0:
+					battle_log_message.emit("[color=%s]%s's buffs are stripped![/color] (%d cleared)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, stripped])
+			# Step 2: self-buff the caster (the "improved performance" part).
+			if caster != null and is_instance_valid(caster) and caster.is_alive:
+				var self_stat: String = str(ability.get("self_buff_stat", "attack"))
+				var self_mod: float = float(ability.get("self_buff_modifier", 1.3))
+				var self_dur: int = int(ability.get("self_buff_duration", 3))
+				caster.add_buff("Overhead Reduced", self_stat, self_mod, self_dur)
+				battle_log_message.emit("[color=%s]%s's performance is improved![/color] (%s +%d%% for %d turns)" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name, self_stat.to_upper(), int((self_mod - 1.0) * 100), self_dur])
 		## Tick 383: memory_leak_status handler. Pre-fix memory_leak
 		## (effect=memory_leak_status, duration=4) fell through to the
 		## `_:` push_warning default — the upfront cast damage (0.5x
