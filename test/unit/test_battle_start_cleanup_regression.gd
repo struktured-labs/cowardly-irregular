@@ -133,7 +133,8 @@ func test_start_battle_clears_queued_actions() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
 	# Tick 406 added per-battle mimic tracker reset which pushed the
-	# queued_actions clear further down. Widened window.
-	var body = text.substr(idx, 4000)
+	# queued_actions clear further down. Tick 419 added boss-escape
+	# detection, pushing it further still. Widened window again.
+	var body = text.substr(idx, 5500)
 	assert_true(body.find("queued_actions.clear()") != -1,
 		"start_battle must clear queued_actions (prevent unbounded growth across battles)")

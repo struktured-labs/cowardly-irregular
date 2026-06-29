@@ -249,6 +249,28 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_last_ability_cast_id = ""
 	_last_ability_cast_caster = null
 
+	## Tick 419: gate escape on boss presence. Pre-fix escape_allowed
+	## defaulted to true and no code path ever set it false — players
+	## could flee from boss battles (Cave Rat King, Mordaine, dragons,
+	## etc.). Now reads monsters.json `boss: true` flag on each enemy
+	## and disables flee when ANY boss is in the party. Monster
+	## database lookup via EncounterSystem since BestiarySystem doesn't
+	## carry the boss flag directly; EncounterSystem.monster_database
+	## holds the parsed monsters.json.
+	escape_allowed = true
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var monster_type: String = enemy.get_meta("monster_type", "") if enemy.has_method("get_meta") else ""
+		if monster_type == "":
+			continue
+		if EncounterSystem and EncounterSystem.monster_database.has(monster_type):
+			var data: Dictionary = EncounterSystem.monster_database[monster_type]
+			if bool(data.get("boss", false)):
+				escape_allowed = false
+				print("[BATTLE] Escape disabled — boss '%s' detected in enemy party" % monster_type)
+				break
+
 	# Reset autobattle tracking
 	_full_autobattle = true
 	_autobattle_player_turns = 0
