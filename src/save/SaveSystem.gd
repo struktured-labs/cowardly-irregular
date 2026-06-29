@@ -484,7 +484,12 @@ func _create_save_data() -> Dictionary:
 	# Autogrind/autobattle stats
 	data["automation"] = {
 		"region_crack_levels": AutogrindSystem.region_crack_levels if AutogrindSystem else {},
-		"total_battles": BattleManager.total_battles_won if BattleManager and "total_battles_won" in BattleManager else 0,
+		## Tick 418: read GameState.battles_won (the canonical
+		## persistent counter) instead of the dead BattleManager
+		## reference that never existed — the old read always took
+		## the `else 0` fallback, silently saving 0 on every save
+		## regardless of actual battle count.
+		"total_battles": GameState.battles_won if GameState and "battles_won" in GameState else 0,
 		"learned_patterns": AutogrindSystem.learned_patterns if AutogrindSystem else {}
 	}
 

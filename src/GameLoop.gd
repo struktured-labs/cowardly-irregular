@@ -2154,6 +2154,13 @@ func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	if victory:
 		battles_won += 1
+		## Tick 418: sync to GameState's persistent counter so SaveSystem
+		## and CutsceneDirector can read across save+quit. GameLoop's
+		## battles_won stays as a session-local mirror — convenient for
+		## the same-frame consumers below (miniboss every 3, dashboard
+		## summary, etc.) that don't need to round-trip through GameState.
+		if GameState:
+			GameState.battles_won += 1
 
 		# Apply pending boss-defeat flags (set by dungeon._trigger_boss_battle).
 		# Must happen BEFORE _return_to_exploration so the new dungeon instance
@@ -2447,6 +2454,10 @@ func _show_game_over_screen() -> void:
 			# No battle to retry — restart from overworld
 			_create_party()
 			battles_won = 0
+			## Tick 418: also reset the canonical persistent counter
+			## on the new-game-after-defeat path.
+			if GameState:
+				GameState.battles_won = 0
 			_set_current_map_id("overworld")
 			_spawn_point = "default"
 			await _start_exploration()

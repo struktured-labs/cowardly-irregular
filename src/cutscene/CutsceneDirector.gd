@@ -1068,8 +1068,15 @@ func _detect_playstyle() -> String:
 		var auto_count: int = 0
 		for key in SaveSystem.autobattle_records:
 			auto_count += SaveSystem.autobattle_records[key].get("count", 0)
-		if BattleManager and "total_battles_won" in BattleManager:
-			total_battles = BattleManager.total_battles_won
+		## Tick 418: read GameState.battles_won (the canonical
+		## persistent counter) instead of the dead BattleManager
+		## reference that never existed — the old read always took
+		## the false branch, leaving total_battles = 0 forever. The
+		## autobattle-ratio playstyle gating below (>= 20 battles
+		## for "automator", > 100 for veteran) silently never fired
+		## pre-fix.
+		if GameState and "battles_won" in GameState:
+			total_battles = GameState.battles_won
 		if total_battles > 0:
 			autobattle_ratio = float(auto_count) / float(total_battles)
 

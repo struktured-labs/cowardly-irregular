@@ -115,6 +115,17 @@ var game_constants: Dictionary = {
 	"drop_rate_multiplier": 1.0,
 }
 
+## Tick 418: persistent battle counter. Pre-fix this lived only on
+## GameLoop.battles_won as a session-local int that never made it to
+## save data — every game restart reset to 0. SaveSystem and
+## CutsceneDirector both tried to read a non-existent
+## BattleManager.total_battles_won field and silently got 0
+## (CutsceneDirector's "playstyle has been more automated" gating
+## requires total_battles >= 20 and never fired). Now GameState owns
+## the canonical count, persisted via to_dict, and GameLoop syncs
+## its session counter to match.
+var battles_won: int = 0
+
 ## Meta-save features (unlocked by Time Mage)
 var meta_features: Dictionary = {
 	"autosave_enabled": false,
@@ -245,6 +256,12 @@ func _create_save_data() -> Dictionary:
 		"llm_rebalance_enabled": llm_rebalance_enabled,
 		"event_log": event_log.serialize() if event_log != null else [],
 		"rebalance_daemon": rebalance_daemon.to_dict() if rebalance_daemon != null else {},
+		## Tick 418: persist the canonical battle counter so
+		## CutsceneDirector's autobattle-ratio gating and any other
+		## "total battles >= N" thresholds actually fire after enough
+		## play. Pre-fix this lived only on GameLoop and reset to 0
+		## every restart.
+		"battles_won": battles_won,
 		## Tick 413: persist save_history so Time Mage rewinds and
 		## tick-412 restore points survive save+quit cycles. Pre-fix
 		## save_history was in-memory only — quit the game and every
@@ -444,6 +461,11 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		rebalance_daemon = RebalanceDaemon.new()
 	if save_data.has("rebalance_daemon"):
 		rebalance_daemon.from_dict(save_data["rebalance_daemon"])
+
+	## Tick 418: restore the canonical battle counter. max(0, ...)
+	## clamp defends against a corrupted save with a negative value.
+	if save_data.has("battles_won"):
+		battles_won = max(0, int(save_data["battles_won"]))
 
 	## Tick 413: restore save_history from the persisted snapshot.
 	## Type-guarded with explicit typed-Array coercion to dodge the
