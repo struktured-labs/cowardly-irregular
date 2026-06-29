@@ -346,8 +346,26 @@ func set_enemy_pool(enemy_ids: Array[String]) -> void:
 func set_enemy_pool_for_area(area_id: String) -> void:
 	"""Set enemy pool based on area/dungeon"""
 	if enemy_pools.has(area_id):
-		current_enemy_pool = enemy_pools[area_id].duplicate()
-		print("Enemy pool loaded for area: %s" % area_id)
+		## Tick 366: explicit Array → Array[String] coercion. Pre-fix
+		## the plain-Array `.duplicate()` from enemy_pools[area_id]
+		## silently failed to assign into the typed `current_enemy_pool:
+		## Array[String]` field — same documented silent-fail class as
+		## the typed-array JSON save-roundtrip trap (CLAUDE.md Common
+		## Pitfalls). Same coercion idiom as OverworldController._push_
+		## pool_to_encounter_system. With no callers in production code
+		## this was a latent bug; if anything calls this in the future
+		## (Scriptweaver, debug console, save-migration tooling), the
+		## old code would have silently no-op'd while the print()
+		## claimed success.
+		var raw_pool: Variant = enemy_pools[area_id]
+		if raw_pool is Array:
+			var typed: Array[String] = []
+			for entry in raw_pool:
+				typed.append(str(entry))
+			current_enemy_pool = typed
+			print("Enemy pool loaded for area: %s" % area_id)
+		else:
+			push_warning("[EncounterSystem] set_enemy_pool_for_area: enemy_pools['%s'] is not an Array (type=%s) — current_enemy_pool unchanged" % [area_id, typeof(raw_pool)])
 	else:
 		# Tick 304: surface unknown area_id via push_warning. Pre-fix
 		# print() only — silent in Debugger Errors panel. A typo'd
