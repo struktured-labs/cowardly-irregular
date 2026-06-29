@@ -3305,6 +3305,22 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 389: adapt_resistance handler — applies a defense buff.
+		## Pre-fix adapt (effect=adapt_resistance, duration=999,
+		## target=self) fell through to `_:` push_warning default.
+		## Full "learn from last ability type" tracking would require
+		## per-target last-hit-element state on Combatant — out of
+		## scope for this tick. Simpler mechanical fit: defense up
+		## across the board (covers physical and magical damage via
+		## the existing get_buffed_stat path; magic ticks at 0.5x
+		## defense in take_damage so still benefits). 1.3x default
+		## (30% reduction roughly) for the authored duration.
+		"adapt_resistance":
+			var adapt_mod: float = float(ability.get("stat_modifier", 1.3))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_buff("Adapted", "defense", adapt_mod, duration)
+					battle_log_message.emit("[color=%s]%s adapts![/color] (DEF +%d%% for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, int((adapt_mod - 1.0) * 100), duration])
 		## Tick 388: ability_weaken handler — applies combined attack
 		## + magic debuff. Pre-fix deprecate (effect=ability_weaken,
 		## duration=3) fell through to `_:` push_warning default.
