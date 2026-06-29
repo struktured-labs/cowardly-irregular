@@ -4977,8 +4977,30 @@ func _on_event_chat_unlocked(_chat_id: String, title: String) -> void:
 ## /500 of one monster). Pluralization handled with a naive +s — fine
 ## for current monster names ("Slime"/"Bat"/"Goblin"); add a real
 ## pluralizer if monster names start ending in y/s/x.
+## Tick 358: simple English pluralization that handles the most common
+## non-trivial endings monsters.json names hit: Entity → Entities,
+## Process → Processes, Lady → Ladies. Pre-fix the bare `%ss` append
+## produced "Entitys", "Processs", "Ladys" toast text on milestone
+## hits. Only covers the rules the actual monster name set needs;
+## extend the helper as new data lands rather than pulling in a full
+## inflection lib for a polish nit.
+func _pluralize_monster_name(name: String) -> String:
+	if name.is_empty():
+		return name
+	var lower: String = name.to_lower()
+	# -y after a consonant → -ies (Lady → Ladies, Entity → Entities)
+	if lower.ends_with("y") and lower.length() >= 2:
+		var penultimate: String = lower.substr(lower.length() - 2, 1)
+		if not (penultimate in ["a", "e", "i", "o", "u"]):
+			return name.substr(0, name.length() - 1) + "ies"
+	# -s, -sh, -ch, -x, -z → -es (Process → Processes, Wretch → Wretches)
+	if lower.ends_with("sh") or lower.ends_with("ch") or lower.ends_with("s") or lower.ends_with("x") or lower.ends_with("z"):
+		return name + "es"
+	return name + "s"
+
+
 func _on_bestiary_kill_milestone(_monster_id: String, monster_name: String, count: int) -> void:
-	Toast.show_success(self, "%d %ss defeated!" % [count, monster_name])
+	Toast.show_success(self, "%d %s defeated!" % [count, _pluralize_monster_name(monster_name)])
 
 
 func _show_autogrind_toast(text: String) -> void:
