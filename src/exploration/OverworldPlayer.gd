@@ -239,6 +239,41 @@ func _setup_sprite() -> void:
 	collision_mask = 1   # Player collides with walls (layer 1)
 
 
+## Tick 357: map GameLoop._current_terrain (battle-terrain vocabulary)
+## to the 6 footstep-audio variants the SFX manifest provides
+## (grass, stone, sand, snow, metal, wood). Falls back to "grass"
+## when GameLoop is unavailable (test runs) or the terrain string
+## is unknown, matching the historical default.
+const _FOOTSTEP_TERRAIN_MAP := {
+	"plains": "grass",
+	"forest": "grass",
+	"swamp": "grass",
+	"village": "stone",   # village paths are stone-paved
+	"suburban": "stone",  # sidewalks
+	"cave": "stone",
+	"lava_cave": "stone",
+	"dark_cave": "stone",
+	"storm_cave": "stone",
+	"volcanic": "stone",
+	"void": "stone",
+	"abstract": "stone",
+	"desert": "sand",
+	"ice": "snow",
+	"ice_cave": "snow",
+	"steampunk": "metal",
+	"industrial": "metal",
+	"digital": "metal",
+}
+
+
+func _resolve_footstep_terrain() -> String:
+	var gl = get_node_or_null("/root/GameLoop")
+	if gl == null or not ("_current_terrain" in gl):
+		return "grass"
+	var battle_terrain: String = str(gl._current_terrain)
+	return _FOOTSTEP_TERRAIN_MAP.get(battle_terrain, "grass")
+
+
 func _get_terrain_speed_modifier() -> float:
 	"""Check tile under player and apply speed penalty for rough terrain."""
 	var parent = get_parent()
@@ -392,7 +427,14 @@ func _physics_process(delta: float) -> void:
 		# Runtime lookup keeps this file preload-safe for the test suite.
 		var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
 		if sm:
-			sm.play_footstep()
+			# Tick 357: pass a terrain-derived footstep tag so caves don't
+			# sound like grass and metal industrial floors don't sound
+			# like grass either. Pre-fix every call was bare and defaulted
+			# to "grass" in SoundManager.play_footstep regardless of where
+			# the player actually was — 5 worlds' worth of distinctive
+			# footstep audio (sand / stone / snow / metal / wood) sat in
+			# the manifest unused.
+			sm.play_footstep(_resolve_footstep_terrain())
 
 	# Update animation
 	_update_animation(delta)
