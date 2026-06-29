@@ -637,8 +637,21 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		_log("%s has no MP for %s" % [caster.combatant_name, ability_id])
 		return
 
-	var category = ability.get("category", "magic")
-	var power = ability.get("power", 1.0)
+	## Tick 393: dispatch on `type` (the canonical abilities.json
+	## schema field) instead of `category` (which no ability authors).
+	## Pre-fix `ability.get("category", "magic")` always returned the
+	## "magic" default for every ability, so the `match category:` arm
+	## always fired the magic-damage branch — heal abilities dealt
+	## magic damage to the target instead of healing, support abilities
+	## did nothing useful, etc. Major divergence between live combat
+	## and autogrind simulation that silently corrupted reward
+	## calculations whenever a non-physical-non-magic ability fired.
+	##
+	## Also accept `damage_multiplier` as a power fallback so abilities
+	## that author the canonical magic-shape field aren't reading the
+	## default 1.0 (which would silently nerf eidolon casts and similar).
+	var category = ability.get("type", ability.get("category", "magic"))
+	var power = ability.get("power", ability.get("damage_multiplier", 1.0))
 	var element = ability.get("element", "")
 
 	match category:
