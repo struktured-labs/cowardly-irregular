@@ -494,6 +494,19 @@ func _create_save_data() -> Dictionary:
 	# Autobattle records
 	data["autobattle_records"] = _get_autobattle_records()
 
+	## Tick 417: persist encounter state so a Repel mid-use survives
+	## save+quit. Pre-fix repel_steps_remaining = 0 on every game
+	## restart — a player who used a 30-gold Repel, walked 3 steps,
+	## then saved and quit lost the remaining 47 protected steps.
+	## Same applies to steps_since_last_encounter (the minimum-steps
+	## gate would reset, briefly allowing back-to-back encounters
+	## right after a load).
+	if EncounterSystem:
+		data["encounter_state"] = {
+			"repel_steps_remaining": EncounterSystem.repel_steps_remaining,
+			"steps_since_last_encounter": EncounterSystem.steps_since_last_encounter,
+		}
+
 	return data
 
 
@@ -679,6 +692,21 @@ func _apply_save_data(data: Dictionary) -> void:
 			autobattle_records = ar
 		else:
 			push_warning("[SaveSystem] _apply_save_data: autobattle_records malformed (type=%s) — keeping current" % typeof(ar))
+
+	## Tick 417: restore encounter state — pairs with the save-side
+	## persistence in _create_save_data so a mid-Repel save+quit
+	## doesn't lose the remaining protection.
+	if data.has("encounter_state") and EncounterSystem:
+		var raw_es: Variant = data["encounter_state"]
+		if raw_es is Dictionary:
+			# Per-field type-guarded reads so a partial save (missing
+			# one of the two fields) doesn't reset the other to default.
+			if raw_es.has("repel_steps_remaining"):
+				EncounterSystem.repel_steps_remaining = max(0, int(raw_es["repel_steps_remaining"]))
+			if raw_es.has("steps_since_last_encounter"):
+				EncounterSystem.steps_since_last_encounter = max(0, int(raw_es["steps_since_last_encounter"]))
+		else:
+			push_warning("[SaveSystem] _apply_save_data: encounter_state malformed (type=%s) — keeping current" % typeof(raw_es))
 
 
 func _deserialize_party(party_data: Array) -> void:
