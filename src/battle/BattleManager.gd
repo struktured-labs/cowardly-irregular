@@ -3083,6 +3083,13 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 
 func _calculate_crit_chance(attacker: Combatant) -> float:
 	"""Calculate critical hit chance based on speed and equipment"""
+	## Tick 381: shadow_step status → guaranteed crit. Return 1.0 up
+	## front and skip the rest of the calc. Consumed when the attacker
+	## next attacks (the status removes itself in _target_dodges_physical
+	## OR via the natural duration tick — duration=1 from the ability).
+	if attacker != null and is_instance_valid(attacker) and attacker.has_status("shadow_step"):
+		return 1.0
+
 	# Base crit chance is 5%
 	var base_crit = 0.05
 
@@ -3285,6 +3292,23 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("festered", amp_duration)
 					battle_log_message.emit("[color=%s]%s festers![/color] (poison damage doubled for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, amp_duration])
+		## Tick 381: shadow_step handler. Pre-fix the shadow_step
+		## ability (effect=shadow_step, duration=1) fell through to
+		## the `_:` push_warning default. The description "Vanish into
+		## shadows, gaining evasion and guaranteeing next attack crits"
+		## maps to two existing mechanics:
+		##   - 100% dodge: piggyback on the existing invisible / dodge
+		##     check path via a status the dodge helper recognizes.
+		##   - Guaranteed crit: _calculate_crit_chance returns 1.0 when
+		##     the attacker has the shadow_step status.
+		##
+		## Self-buff target. Default duration 1 turn per the data.
+		"shadow_step":
+			var ss_duration: int = int(ability.get("duration", 1))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("shadow_step", ss_duration)
+					battle_log_message.emit("[color=cyan]%s vanishes into shadow![/color] (evade + guaranteed crit, %d turns)" % [target.combatant_name, ss_duration])
 		"doom":
 			var countdown = ability.get("countdown", 3)
 			for target in targets:
@@ -5295,6 +5319,15 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 		target.remove_status("invisible")
 		attack_missed.emit(target)
 		battle_log_message.emit("[color=gray]%s strikes thin air — %s was invisible![/color]" % [attacker.combatant_name, target.combatant_name])
+		return true
+	## Tick 381: shadow_step status grants 100% dodge — same falls-off-
+	## on-hit semantic as invisible. The caster also gets a guaranteed
+	## crit when THEY attack (consumed in _calculate_crit_chance).
+	## Pre-fix the shadow_step ability silently fizzled.
+	if target.has_status("shadow_step"):
+		target.remove_status("shadow_step")
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s strikes thin air — %s was in shadow![/color]" % [attacker.combatant_name, target.combatant_name])
 		return true
 	if target.has_status("evasion") and randf() < 0.6:
 		attack_missed.emit(target)
