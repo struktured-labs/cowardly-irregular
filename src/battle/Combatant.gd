@@ -545,7 +545,15 @@ func update_buff_durations() -> void:
 	## only hp_changed fired — UI updated the HP bar but never
 	## showed the floating number, so status ticks felt invisible.
 	if "poison" in status_effects and is_alive:
+		## Tick 380: festered status doubles poison damage. Applied by
+		## the fester ability (effect="amplify_poison"). Festered alone
+		## does nothing — it amplifies poison ticks when both are
+		## active. Stays in status_effects independently so a
+		## festered-then-poison combo (apply fester first, then poison)
+		## also amplifies, rewarding strategic ordering.
 		var poison_damage = max(1, int(max_hp * 0.05))  # 5% max HP per turn
+		if "festered" in status_effects:
+			poison_damage *= 2
 		var old_hp_poison = current_hp
 		current_hp = max(0, current_hp - poison_damage)
 		if current_hp <= 0:

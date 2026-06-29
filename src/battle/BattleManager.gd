@@ -3260,6 +3260,31 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Soul Sap", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s's magic defense is sapped![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		## Tick 380: amplify_poison handler. Pre-fix fester
+		## (effect=amplify_poison, multiplier=2.0) fell through to the
+		## `_:` push_warning default and silently fizzled. The ability
+		## consumed MP+AP, ran the animation, and did nothing.
+		##
+		## Mechanism: apply a "festered" status to the target. The
+		## Combatant.update_buff_durations poison block reads
+		## has_status("festered") and doubles poison tick damage when
+		## set. Per the data description "Worsen existing poison
+		## effects", we apply unconditionally — even to non-poisoned
+		## targets — so a fester pre-poison combo amplifies poison
+		## applied later (within festered's duration). Skipping the
+		## status on non-poisoned targets would also be valid; the
+		## current shape rewards strategic ordering more.
+		##
+		## Default duration 3 turns when the ability doesn't author one.
+		## Hardcoded 2x amplification matches the data multiplier; if
+		## future abilities want different amplification, that lives in
+		## a follow-up tick (status_modifiers dict on Combatant).
+		"amplify_poison":
+			var amp_duration: int = int(ability.get("duration", 3))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("festered", amp_duration)
+					battle_log_message.emit("[color=%s]%s festers![/color] (poison damage doubled for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, amp_duration])
 		"doom":
 			var countdown = ability.get("countdown", 3)
 			for target in targets:
