@@ -722,27 +722,39 @@ func _resolve_item(user, item_id: String, target) -> void:
 		return
 	user.remove_item(item_id)
 
+	## Tick 394: route through ItemSystem.use_item so autogrind item
+	## use matches live battle exactly. Pre-fix hardcoded handlers
+	## for potion (50), hi_potion (200), ether (30), hi_ether (100)
+	## and a unconditional heal(50) default. The default silently
+	## mishandled every other item:
+	##   - mega_potion silently healed 50 instead of 100
+	##   - phoenix_down silently healed 50 instead of reviving
+	##   - holy_water / bomb_fragment / etc silently healed 50
+	##     instead of damaging an enemy
+	##   - power_drink / speed_tonic silently healed 50 instead of
+	##     applying their buff
+	## All silently corrupted autogrind reward / tier calculations.
+	if target == null or not target.is_alive:
+		return
+	var its = _get_autoload("ItemSystem")
+	if its != null and its.has_method("use_item"):
+		var typed_targets: Array[Combatant] = [target]
+		its.use_item(user, item_id, typed_targets)
+		_log("%s uses %s on %s" % [user.combatant_name, item_id, target.combatant_name])
+		return
+	# Fallback: ItemSystem unavailable. Original hardcoded list.
 	match item_id:
 		"potion":
-			if target and target.is_alive:
-				target.heal(50)
-				_log("%s uses Potion on %s" % [user.combatant_name, target.combatant_name])
+			target.heal(50)
 		"hi_potion":
-			if target and target.is_alive:
-				target.heal(200)
-				_log("%s uses Hi-Potion on %s" % [user.combatant_name, target.combatant_name])
+			target.heal(200)
 		"ether":
-			if target and target.is_alive:
-				target.restore_mp(30)
-				_log("%s uses Ether on %s" % [user.combatant_name, target.combatant_name])
+			target.restore_mp(30)
 		"hi_ether":
-			if target and target.is_alive:
-				target.restore_mp(100)
-				_log("%s uses Hi-Ether on %s" % [user.combatant_name, target.combatant_name])
+			target.restore_mp(100)
 		_:
-			if target and target.is_alive:
-				target.heal(50)
-				_log("%s uses %s on %s" % [user.combatant_name, item_id, target.combatant_name])
+			target.heal(50)
+	_log("%s uses %s on %s (fallback path — ItemSystem missing)" % [user.combatant_name, item_id, target.combatant_name])
 
 
 func _all_dead(party: Array) -> bool:
