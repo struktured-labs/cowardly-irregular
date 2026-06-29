@@ -3305,6 +3305,30 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 390: random_stat_change handler. Pre-fix reassign
+		## (effect=random_stat_change, duration=3, target=self) fell
+		## through to `_:` push_warning default. Description:
+		## "Reassigns its own value, randomly altering its stats."
+		## Picks a random stat from the 4-stat list and applies a
+		## ±25% modifier — the "randomly" part means the result is
+		## sometimes a buff, sometimes a debuff (matches meta-job
+		## chaos vibe). Pulled from a small list so each cast has a
+		## predictable shape but unpredictable outcome.
+		"random_stat_change":
+			const _RANDOM_STAT_POOL: Array[String] = ["attack", "defense", "magic", "speed"]
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				var stat: String = _RANDOM_STAT_POOL[randi() % _RANDOM_STAT_POOL.size()]
+				# 50/50 buff vs debuff. Modifier 1.25x or 0.75x.
+				var is_buff: bool = randf() < 0.5
+				var mod: float = 1.25 if is_buff else 0.75
+				if is_buff:
+					target.add_buff("Reassigned (+)", stat, mod, duration)
+					battle_log_message.emit("[color=%s]%s reassigns![/color] (%s +25%% for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, stat.to_upper(), duration])
+				else:
+					target.add_debuff("Reassigned (-)", stat, mod, duration)
+					battle_log_message.emit("[color=%s]%s reassigns![/color] (%s -25%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, stat.to_upper(), duration])
 		## Tick 389: adapt_resistance handler — applies a defense buff.
 		## Pre-fix adapt (effect=adapt_resistance, duration=999,
 		## target=self) fell through to `_:` push_warning default.
