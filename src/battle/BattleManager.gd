@@ -3941,12 +3941,24 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 					battle_log_message.emit("[color=magenta]✦ %s mind-swaps with %s![/color]" % [caster.combatant_name, target.combatant_name])
 			GameState.add_corruption(corruption_risk)
 		"create_restore_point":
-			# Restore Point: similar to create_save but explicitly tagged
-			# as a restore point (vs save slot). For now writes a flag the
-			# rewind system can pick up.
+			## Tick 412: actually create the restore point via the
+			## existing record_history_checkpoint helper. Pre-fix
+			## (tick 404) only set a meta_restore_point_pending flag
+			## with no consumer — burning 35 MP for a flag that
+			## nothing read. record_history_checkpoint(true) bypasses
+			## the rewind_enabled gate (the meta ability IS the
+			## override), pushes a snapshot onto save_history, and
+			## becomes the next rewind_to_previous_save target.
+			## Flag is kept for downstream awareness (e.g. UI badges).
+			var checkpointed: bool = false
+			if GameState and GameState.has_method("record_history_checkpoint"):
+				checkpointed = GameState.record_history_checkpoint(true)
 			if GameState and "game_constants" in GameState:
 				GameState.game_constants["meta_restore_point_pending"] = true
-			battle_log_message.emit("[color=magenta]✦ %s anchors a restore point.[/color]" % caster.combatant_name)
+			if checkpointed:
+				battle_log_message.emit("[color=magenta]✦ %s anchors a restore point.[/color]" % caster.combatant_name)
+			else:
+				battle_log_message.emit("[color=gray]%s reaches for a restore point... but the timeline refuses.[/color]" % caster.combatant_name)
 		"full_boss_control":
 			# Control Override: apply a "controlled" status on the target
 			# for the authored duration. Downstream AI path can read it
