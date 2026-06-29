@@ -603,6 +603,26 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			die()
 
+	## Tick 383: memory_leak DOT — applied by memory_leak ability.
+	## Pre-fix the status was authored but had no consumer (the cast
+	## landed 0.5x upfront damage but the advertised 4-turn DOT was
+	## silently dropped). 3% max_hp per turn — lighter than burn/poison/
+	## static because memory_leak already has upfront damage and lasts
+	## a full 4 turns by default (12% total). Mirror lethal-tick guard
+	## ordering of the sister DOTs above.
+	if "memory_leak" in status_effects and is_alive:
+		var leak_damage = max(1, int(max_hp * 0.03))
+		var old_hp_leak = current_hp
+		current_hp = max(0, current_hp - leak_damage)
+		if current_hp <= 0:
+			is_alive = false
+		if current_hp != old_hp_leak:
+			hp_changed.emit(old_hp_leak, current_hp)
+			status_tick_damage.emit(leak_damage, "memory_leak")
+			print("%s takes %d memory_leak damage!" % [combatant_name, leak_damage])
+		if current_hp <= 0:
+			die()
+
 	# Process heal-over-time effects
 	if "regen" in status_effects and is_alive:
 		var regen_heal = max(1, int(max_hp * 0.05))  # 5% max HP per turn

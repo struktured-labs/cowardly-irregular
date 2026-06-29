@@ -3305,6 +3305,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 383: memory_leak_status handler. Pre-fix memory_leak
+		## (effect=memory_leak_status, duration=4) fell through to the
+		## `_:` push_warning default — the upfront cast damage (0.5x
+		## multiplier) landed but the 4-turn DOT it advertised was
+		## silently dropped. Applies the "memory_leak" status; the
+		## sister Combatant.update_buff_durations block ticks 3%
+		## max_hp per turn (lighter than burn 8%/poison 5%/static 4%
+		## since the ability also lands upfront damage and runs longer).
+		"memory_leak_status":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("memory_leak", duration)
+					battle_log_message.emit("[color=%s]%s starts leaking memory![/color] (HP drain for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
 		## Tick 381: shadow_step handler. Pre-fix the shadow_step
 		## ability (effect=shadow_step, duration=1) fell through to
 		## the `_:` push_warning default. The description "Vanish into
