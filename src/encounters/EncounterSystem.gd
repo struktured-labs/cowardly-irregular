@@ -387,9 +387,22 @@ func force_next_encounter() -> void:
 
 
 func use_repel(steps: int) -> void:
-	"""Prevent encounters for a number of steps (from repel item)"""
-	repel_steps_remaining = steps
-	print("Repel active for %d steps" % steps)
+	"""Prevent encounters for a number of steps (from repel item).
+
+	Tick 365: STACK with any remaining repel instead of overwriting.
+	Pre-fix using a fresh Repel mid-active-repel discarded the
+	remaining steps from the first one (player burned a 50-step Repel
+	at 47 steps remaining and only got 50, losing 47 effective steps).
+
+	Tick 365: clamp negative inputs to 0. Pre-fix a corrupted /
+	mis-authored repel_steps value (e.g. -10) silently set
+	repel_steps_remaining negative, which `> 0` then read as "no
+	repel active" — the player lost the item for zero effect.
+	"""
+	var add: int = max(0, steps)
+	var prior: int = max(0, repel_steps_remaining)
+	repel_steps_remaining = prior + add
+	print("Repel active for %d steps (added %d to %d remaining)" % [repel_steps_remaining, add, prior])
 
 
 ## Enemy pool loading
