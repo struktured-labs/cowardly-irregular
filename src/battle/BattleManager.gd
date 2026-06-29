@@ -3868,6 +3868,32 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 408: recursive_summon (Summoner meta ability).
+		## "Summon another Summoner who summons another... (up to 3
+		## deep). Exponential power!" Pre-fix the meta_effect fell
+		## through to `_:` push_warning. 45 MP wasted.
+		##
+		## Implementation: count existing "Recursive Summon N" buffs;
+		## each cast adds the next stack up to max_depth. Distinct
+		## effect names so add_buff doesn't refresh-in-place — three
+		## separate 2.0x buffs on magic stack multiplicatively in
+		## get_buffed_stat (capped at 4x base by the existing clamp,
+		## matching the engine's overall power ceiling).
+		"recursive_summon":
+			var max_depth: int = int(ability.get("max_depth", 3))
+			var per_stack_mult: float = float(ability.get("damage_multiplier", 2.0))
+			var stack_duration: int = int(ability.get("duration", 3))
+			var existing_stacks: int = 0
+			if "active_buffs" in caster:
+				for b in caster.active_buffs:
+					if str(b.get("effect", "")).begins_with("Recursive Summon"):
+						existing_stacks += 1
+			if existing_stacks >= max_depth:
+				battle_log_message.emit("[color=gray]The spiral collapses on itself — no further recursion.[/color]")
+			else:
+				var new_stack: int = existing_stacks + 1
+				caster.add_buff("Recursive Summon %d" % new_stack, "magic", per_stack_mult, stack_duration)
+				battle_log_message.emit("[color=magenta]✦ %s summons another summoner![/color] (stack %d/%d, MAG ×%.1f for %d turns)" % [caster.combatant_name, new_stack, max_depth, per_stack_mult, stack_duration])
 		## Tick 406: copy_last_ability (mimic_ability). Replay the last
 		## ability cast by ANY combatant this battle. Pre-fix fell
 		## through to `_:` push_warning — 10 MP burned, no copy.
