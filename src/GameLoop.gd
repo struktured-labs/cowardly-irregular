@@ -2189,6 +2189,25 @@ func _on_battle_ended(victory: bool) -> void:
 		if BattleTransition:
 			await BattleTransition.reveal_exploration()
 	else:
+		## Tick 411: consume meta_auto_rewind_pending (set by the Time
+		## Mage temporal_shield meta-ability in tick 404). If the
+		## player armed the shield and the wipe just hit, fire the
+		## rewind BEFORE the game-over flow so the wipe never reaches
+		## the screen. Single-shot — clear the flag whether the rewind
+		## succeeded or not, so a stuck shield can't infinitely re-arm
+		## on every wipe in the same battle. Falls through to the
+		## normal game-over path if rewind_to_previous_save returns
+		## false (rewind locked, no history, etc.).
+		if GameState and "game_constants" in GameState and bool(GameState.game_constants.get("meta_auto_rewind_pending", false)):
+			GameState.game_constants["meta_auto_rewind_pending"] = false
+			if GameState.rewind_to_previous_save():
+				print("[META] temporal_shield auto-rewind consumed — wipe averted")
+				# Skip game-over flow entirely; the save data has been
+				# restored to a pre-wipe state.
+				return
+			else:
+				print("[META] temporal_shield auto-rewind failed — rewind not enabled or no history; falling through to game over")
+
 		# Game over — show dramatic screen with retry/continue options
 		# Clear pending boss spec on defeat so a retry doesn't accidentally
 		# fire flags from a battle the player didn't actually win.

@@ -104,7 +104,10 @@ func test_gameloop_clears_pending_on_defeat() -> void:
 	# accidentally fire flags from a battle the player didn't actually win.
 	var text = _read("res://src/GameLoop.gd")
 	var idx = text.find("func _on_battle_ended")
-	var body = text.substr(idx, 2000)
+	# Tick 411 added a meta_auto_rewind_pending consumer block before
+	# the defeat-branch's pending_boss_defeat clear, pushing the
+	# literal past the 2000-char window. Widened.
+	var body = text.substr(idx, 3500)
 	# Defeat branch: look in the `else` clause for pending clear
 	assert_true(body.find("pending_boss_defeat = {}") != -1,
 		"On battle defeat, pending_boss_defeat must be cleared (prevent false-flag on retry)")
