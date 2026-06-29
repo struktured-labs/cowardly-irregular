@@ -3820,6 +3820,52 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 404: batch-wire 5 flag-write meta_effects so the casts
+		## stop silently fizzling. Actual mechanical implementations
+		## live downstream; this tick writes the canonical flags +
+		## battle_log so the player sees the cast fire AND so future
+		## consumers have a clean signal to read.
+		"auto_rewind_on_death":
+			# Temporal Shield: 1-shot auto-rewind protection on party wipe.
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_auto_rewind_pending"] = true
+			battle_log_message.emit("[color=magenta]✦ %s arms the temporal shield![/color] (next wipe → rewind)" % caster.combatant_name)
+		"auto_solve_puzzle":
+			# Bypass Puzzle: flag the next puzzle to auto-solve.
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_auto_solve_puzzle_pending"] = true
+			battle_log_message.emit("[color=magenta]✦ %s primes the puzzle bypass.[/color]" % caster.combatant_name)
+		"boss_control_swap":
+			# Mind Swap: applies a "mind_swap" status on the target so the
+			# release_binding ability (effect=break_mind_swap, sister tick
+			# candidate) has something to release. Also applies the
+			# authored corruption_risk per the boss-control gamble design.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("mind_swap", int(ability.get("duration", 5)))
+					battle_log_message.emit("[color=magenta]✦ %s mind-swaps with %s![/color]" % [caster.combatant_name, target.combatant_name])
+			GameState.add_corruption(corruption_risk)
+		"create_restore_point":
+			# Restore Point: similar to create_save but explicitly tagged
+			# as a restore point (vs save slot). For now writes a flag the
+			# rewind system can pick up.
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_restore_point_pending"] = true
+			battle_log_message.emit("[color=magenta]✦ %s anchors a restore point.[/color]" % caster.combatant_name)
+		"full_boss_control":
+			# Control Override: apply a "controlled" status on the target
+			# for the authored duration. Downstream AI path can read it
+			# and yield turn choice to the player.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("controlled", int(ability.get("duration", 1)))
+					battle_log_message.emit("[color=magenta]✦ %s overrides %s's control![/color]" % [caster.combatant_name, target.combatant_name])
+			GameState.add_corruption(corruption_risk)
+		"ng_plus_warp":
+			# NG+ Warp: flag for the world-warp UI. Pure marker for now.
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_ng_plus_warp_pending"] = true
+			battle_log_message.emit("[color=magenta]✦ %s opens the NG+ warp.[/color]" % caster.combatant_name)
 		## Tick 403: dungeon_skip (Skiptrotter warp_to_boss ability).
 		## "Skip the dungeon and warp directly to the boss room.
 		## Missed loot!" Pre-fix the meta_effect fell through to `_:`
