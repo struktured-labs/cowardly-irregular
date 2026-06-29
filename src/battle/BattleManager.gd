@@ -3584,6 +3584,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					picked_label = pick["name"]
 					target.remove_status(pick["name"])
 				battle_log_message.emit("[color=%s]%s loses %s![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, picked_label])
+		## Tick 405: break_mind_swap (release_binding ability — Time
+		## Mage / Bossbinder release). Pre-fix the support effect fell
+		## through to `_:` push_warning. Tick 404 introduced the
+		## mind_swap status (applied by boss_control_swap meta_effect)
+		## that this ability is supposed to remove — finally wirable
+		## end-to-end. Removes mind_swap from the caster (target=self
+		## per ability data) and any allies the caller passes; the
+		## simple-loop handles both target_type=self and broader scopes.
+		"break_mind_swap":
+			for target in targets:
+				if target and is_instance_valid(target) and target.has_status("mind_swap"):
+					target.remove_status("mind_swap")
+					battle_log_message.emit("[color=cyan]%s breaks the mind swap![/color]" % target.combatant_name)
 		## Tick 384: erase aliases dispel. Pre-fix null_touch
 		## (effect=erase) fell through to the `_:` push_warning default
 		## even though the description ("erases the target's existence
