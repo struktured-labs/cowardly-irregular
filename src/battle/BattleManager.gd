@@ -3250,6 +3250,11 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		## element so the helper can skip when element=="holy".
 		_maybe_heal_from_damage(target, actual_damage, element)
 
+		## Tick 429: learns_from adaptive resistance. Increments the
+		## per-element counter for the target and adds a resistance
+		## once the threshold is met.
+		_maybe_apply_elemental_adaptation(target, element)
+
 		# Track first damage for one-shot detection
 		if target in enemy_party:
 			_record_first_damage()
@@ -6192,6 +6197,65 @@ func _maybe_heal_from_damage(target: Combatant, damage_amount: int, element: Str
 	if actual_healed > 0:
 		healing_done.emit(target, actual_healed)
 		battle_log_message.emit("[color=cyan]%s absorbs the impact — heals %d HP![/color]" % [target.combatant_name, actual_healed])
+
+
+## Tick 429: learns_from adaptive-resistance. monsters.json authors
+## `learns_from: ["all"]` (all bosses + dragons + Mordaine + reaper)
+## or `["abilities"]` (elite enemies) on 22 monsters as the "this
+## fight learns from your tactics" promise. Pre-fix no code path
+## read it — boss fights were as static as random encounters.
+##
+## Implementation: when a flagged enemy gets hit with an elemental
+## attack, increment a per-element counter on enemy meta. On the
+## third hit with the same element, add it to elemental_resistances
+## so the enemy halves further damage from that element. Threshold
+## of 3 means a 1-2 cast burst still lands full damage; the
+## adaptation only kicks in when the player is over-relying on one
+## element. Caps element_resistances accumulation to one resistance
+## per battle per enemy so even a 10-fireball spam can't make the
+## enemy fully immune.
+const _LEARNS_FROM_THRESHOLD: int = 3
+
+
+func _maybe_apply_elemental_adaptation(target: Combatant, element: String) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if element == "" or element == "physical":
+		return
+	if not target.has_method("get_meta"):
+		return
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var lf: Variant = data.get("learns_from", [])
+	if not (lf is Array) or (lf as Array).is_empty():
+		return
+	# Bail if not "all" or "abilities".
+	var qualifies: bool = false
+	for tag in lf:
+		var t: String = str(tag)
+		if t == "all" or t == "abilities":
+			qualifies = true
+			break
+	if not qualifies:
+		return
+	# One adaptation per battle per enemy — once it's added a
+	# resistance, don't keep growing the list.
+	if target.get_meta("_learned_adaptation", false):
+		return
+	# Increment per-element counter on meta.
+	var counts: Dictionary = target.get_meta("_learns_element_counts", {})
+	var current: int = int(counts.get(element, 0)) + 1
+	counts[element] = current
+	target.set_meta("_learns_element_counts", counts)
+	if current >= _LEARNS_FROM_THRESHOLD:
+		target.set_meta("_learned_adaptation", true)
+		if not (element in target.elemental_resistances):
+			target.elemental_resistances.append(element)
+			battle_log_message.emit("[color=cyan]%s adapts — now resistant to %s![/color]" % [target.combatant_name, element])
 
 
 ## Tick 427: optimization_itself.counter_repeated_actions. monsters.json
