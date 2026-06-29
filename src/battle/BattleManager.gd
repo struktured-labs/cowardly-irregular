@@ -3305,6 +3305,21 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 388: ability_weaken handler — applies combined attack
+		## + magic debuff. Pre-fix deprecate (effect=ability_weaken,
+		## duration=3) fell through to `_:` push_warning default.
+		## "Marks a target ability as deprecated, reducing its
+		## effectiveness" maps cleanly to a damage-output reduction —
+		## stacked attack and magic debuff with the distinct
+		## "Deprecated" label so the UI source is legible. Default
+		## 30% reduction (stat_modifier=0.7) unless data overrides.
+		"ability_weaken":
+			var weaken_mod: float = float(ability.get("stat_modifier", 0.7))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Deprecated (Atk)", "attack", weaken_mod, duration)
+					target.add_debuff("Deprecated (Mag)", "magic", weaken_mod, duration)
+					battle_log_message.emit("[color=%s]%s is deprecated![/color] (ATK/MAG -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - weaken_mod) * 100), duration])
 		## Tick 387: brave_actions handler. Pre-fix brave
 		## (effect=brave_actions, mp_cost=0, bp_cost=1, target=self)
 		## fell through to `_:` push_warning default. The Bravely-
