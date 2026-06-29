@@ -251,6 +251,27 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 			0.1, 10.0)
 		actual_damage = int(actual_damage * dmg_mult)
 
+	## Tick 386: damage_absorb status converts incoming damage to
+	## healing 1:1 while active. Applied by the fill_the_void ability
+	## (effect=damage_absorb, duration=2). Pre-fix the effect fell
+	## through to push_warning — the ability burned 12 MP for nothing.
+	## Duration controls when absorb wears off. Lethal-tick guard
+	## doesn't apply since absorb returns 0 — caller sees "no damage
+	## taken" and skips the die() branch downstream.
+	if has_status("damage_absorb") and actual_damage > 0:
+		var absorbed: int = actual_damage
+		var old_hp_absorb: int = current_hp
+		current_hp = min(max_hp, current_hp + absorbed)
+		var healed: int = current_hp - old_hp_absorb
+		if healed > 0:
+			hp_changed.emit(old_hp_absorb, current_hp)
+		# Emit status_tick_heal so BattleScene shows the green popup —
+		# tagged with "damage_absorb" so the popup label can distinguish.
+		if status_tick_heal != null and healed > 0:
+			status_tick_heal.emit(healed, "damage_absorb")
+		print("%s absorbed %d damage (healed %d)" % [combatant_name, absorbed, healed])
+		return 0  # no damage taken
+
 	var old_hp = current_hp
 	current_hp = max(0, current_hp - actual_damage)
 	# Flip is_alive BEFORE emitting hp_changed so any UI listener (e.g.

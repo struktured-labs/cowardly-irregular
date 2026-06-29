@@ -3305,6 +3305,20 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 386: damage_absorb handler. Pre-fix fill_the_void
+		## (effect=damage_absorb, duration=2, absorb_amount=100) fell
+		## through to `_:` push_warning default — the 12 MP cast was
+		## pure flavor. Now applies the "damage_absorb" status; the
+		## sister Combatant.take_damage block intercepts incoming
+		## damage and converts it 1:1 to healing while the status
+		## holds. Duration handles wear-off; absorb_amount is
+		## documented in the data but not enforced (duration is the
+		## limiter).
+		"damage_absorb":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("damage_absorb", duration)
+					battle_log_message.emit("[color=%s]%s will absorb damage as healing![/color] (%d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
 		## Tick 385: dispel_and_self_buff handler. Pre-fix
 		## reduce_overhead (effect=dispel_and_self_buff,
 		## target=single_ally) fell through to `_:` push_warning
