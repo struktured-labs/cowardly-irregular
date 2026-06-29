@@ -174,6 +174,14 @@ var _base_music_track: String = "battle"  # "battle" or "boss"
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
 
+## Tick 428: per-battle latches so the boss `low_hp` and `defeat`
+## dialogue lines fire ONCE per battle. Pre-fix monsters.json
+## authored intro/low_hp/defeat triples on cave_rat_king, the 4
+## dragons, optimization_itself, etc. but only `intro` was wired —
+## the other two never spoke regardless of the fight state.
+var _boss_low_hp_spoken: bool = false
+var _boss_defeat_spoken: bool = false
+
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
 # Note: cancel flag is stored in AutobattleSystem.cancel_all_next_turn for persistence across scenes
@@ -2077,6 +2085,9 @@ func _on_battle_started() -> void:
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
 	_masterite_phase2_swapped = false
+	## Tick 428: reset per-battle boss-dialogue latches.
+	_boss_low_hp_spoken = false
+	_boss_defeat_spoken = false
 
 
 func _get_dominant_monster_type() -> String:
@@ -2157,6 +2168,21 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
+	## wired — cave_rat_king, the dragons, etc. never spoke their
+	## "you've bested me" beat. Fires on player victory ONLY if the
+	## dialogue["defeat"] array is present. Find the boss combatant
+	## (first enemy with is_boss meta) for the speaker name.
+	if victory and not _boss_defeat_spoken and _boss_dialogue_data.has("defeat") and _boss_dialogue_data["defeat"].size() > 0:
+		_boss_defeat_spoken = true
+		var boss_name: String = "Boss"
+		for enemy in test_enemies:
+			if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
+				boss_name = enemy.combatant_name
+				break
+		if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
+			_battle_dialogue.show_boss_intro(boss_name, _boss_dialogue_data["defeat"])
+
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
 		active_win98_menu.queue_free()
@@ -3517,6 +3543,19 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	# Low HP warning (dropped below 25%)
 	if target in BattleManager.player_party and target.is_alive and target.get_hp_percentage() < 25.0:
 		_try_combat_quip(LOW_HP_QUIPS, target)
+
+	## Tick 428: boss low_hp dialogue line. Authored on cave_rat_king,
+	## the 4 dragons, optimization_itself, etc. but pre-fix only
+	## `intro` was wired — bosses never spoke their "I'm wounded"
+	## line. Fires once per battle when an enemy boss drops below
+	## 25%. Same threshold as the player LOW_HP_QUIPS so the moment
+	## feels symmetric.
+	if not _boss_low_hp_spoken and target in BattleManager.enemy_party and target.is_alive:
+		if _boss_dialogue_data.has("low_hp") and _boss_dialogue_data["low_hp"].size() > 0:
+			if target.get_hp_percentage() < 25.0 and target.has_meta("is_boss"):
+				_boss_low_hp_spoken = true
+				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
+					_battle_dialogue.show_boss_intro(target.combatant_name, _boss_dialogue_data["low_hp"])
 
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
