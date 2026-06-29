@@ -3060,6 +3060,13 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if target.has_status("invisible"):
 			battle_log_message.emit("[color=gray]%s is invisible — the spell finds nothing![/color]" % target.combatant_name)
 			continue
+		## Tick 422: phase_out also misses spells. null_entity's
+		## phase_out_description says "all actions targeting it this
+		## turn fail" — meaning physical AND magical. Wired here
+		## symmetric to _target_dodges_physical.
+		if _monster_phase_out_check(target):
+			battle_log_message.emit("[color=cyan]%s phases out — %s's spell finds nothing![/color]" % [target.combatant_name, caster.combatant_name])
+			continue
 		if target.has_status("magic_block"):
 			target.remove_status("magic_block")
 			battle_log_message.emit("[color=cyan]%s's Magic Block cancels the spell![/color]" % target.combatant_name)
@@ -5929,6 +5936,15 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 		attack_missed.emit(target)
 		battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
 		return true
+	## Tick 422: monsters.json special_behavior.phase_out gates a
+	## chance-based "ceases to exist" miss. null_entity authors this
+	## (phase_out_chance: 0.2) but pre-fix no code read it — players
+	## hit the null_entity with 100% reliability instead of 80%.
+	## Read the monster_database for the target's monster_type.
+	if _monster_phase_out_check(target):
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=cyan]%s phases out — %s's attack passes through nothing![/color]" % [target.combatant_name, attacker.combatant_name])
+		return true
 	## Tick 375: read PassiveSystem's accumulated `evasion` stat_mod.
 	## Pre-fix passive `evasion_up` (data/passives.json: evasion=0.20)
 	## was a silent no-op — StatusMenu rendered the "+20% evasion" line
@@ -5947,6 +5963,33 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 			battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
 			return true
 	return false
+
+
+## Tick 422: roll the null_entity-style phase_out chance. monsters.json
+## authors special_behavior = {"phase_out": true, "phase_out_chance":
+## 0.2, ...} on null_entity (W6 abstract). The attack/spell misses on
+## a successful phase-out roll — no consumption, just a chance miss.
+## Defensively scoped: only reads the flag from the monster_database
+## (the EncounterSystem-loaded copy of monsters.json) and only if the
+## target is actually a monster with that flag.
+func _monster_phase_out_check(target: Combatant) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_method("get_meta"):
+		return false
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return false
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return false
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return false
+	if not bool(sb.get("phase_out", false)):
+		return false
+	var chance: float = clampf(float(sb.get("phase_out_chance", 0.2)), 0.0, 1.0)
+	return randf() < chance
 
 
 func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
