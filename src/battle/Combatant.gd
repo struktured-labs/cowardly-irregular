@@ -311,6 +311,23 @@ func heal(amount: int) -> int:
 			0.1, 10.0)
 		heal_amount = int(heal_amount * heal_mult)
 
+	## Tick 373: passive healing_multiplier wiring. Pre-fix passive
+	## `healing_boost` (data/passives.json: healing_multiplier=1.5) had
+	## ZERO effect on healing — PassiveSystem.get_passive_mods
+	## accumulated the multiplier into the total_mods dict but
+	## Combatant.heal() only read game_constants["healing_multiplier"]
+	## (Scriptweaver knob), never the passive's value. Players equipped
+	## the passive seeing "+50% healing" in the description and got
+	## nothing. Same defensive [0.1, 10.0] clamp as the game_constants
+	## read above so a broken passive can't black-hole or runaway
+	## healing.
+	if has_node("/root/PassiveSystem"):
+		var passive_mods: Dictionary = get_node("/root/PassiveSystem").get_passive_mods(self)
+		var passive_heal_mult: float = clampf(
+			float(passive_mods.get("healing_multiplier", 1.0)),
+			0.1, 10.0)
+		heal_amount = int(heal_amount * passive_heal_mult)
+
 	var old_hp = current_hp
 	current_hp = min(max_hp, current_hp + heal_amount)
 	var healed = current_hp - old_hp
