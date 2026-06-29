@@ -2796,7 +2796,14 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			_execute_healing_ability(caster, ability, retargeted)
 		"revival":
 			_execute_revival_ability(caster, ability, retargeted)
-		"support":
+		"support", "song", "status":
+			# Tick 351: "song" (Bard's lullaby/discord/inspiring_melody in
+			# abilities.json) and "status" (JobSystem default fallback for
+			# lullaby/discord when abilities.json fails to load) both route
+			# to the support handler. Pre-fix neither had an arm — every
+			# Bard cast fell into the `_:` push_warning and silently
+			# fizzled. Same authored-but-unimplemented class as the
+			# evasion_up gap in tick 350.
 			_execute_support_ability(caster, ability, retargeted)
 		"meta":
 			_execute_meta_ability(caster, ability, retargeted)
@@ -3288,7 +3295,17 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Sap", debuff_stat, stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s is sapped![/color] (%s -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, debuff_stat.to_upper(), int((1.0 - stat_modifier) * 100), duration])
-		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block":
+		# Tick 351: added sleep/poison/burn/confuse/fear/silence/curse to
+		# the simple-status arm. These are referenced by abilities.json
+		# (lullaby's effect="sleep", etc.) but pre-fix the arm only
+		# listed defensive/CC statuses (barrier/invisible/etc.) — every
+		# offensive-status effect fell through to the `_:` push_warning
+		# default and the casting ability silently fizzled. add_status
+		# treats them all the same; the differentiation is in the
+		# downstream consumers (take_damage wakes sleepers, DOT ticks
+		# in update_buff_durations, has_status("blind") in miss math,
+		# etc.).
+		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block", "sleep", "poison", "burn", "burning", "confuse", "fear", "silence", "curse":
 			# Simple status effects — applied as a named status the rest of
 			# the battle engine can read via has_status(). Maps the data
 			# effect string directly to the status name.
