@@ -55,9 +55,13 @@ func test_helper_wired_into_attack_paths() -> void:
 	# Basic attack path passes "" for element.
 	assert_true(src.contains("_maybe_heal_from_damage(actual_target, actual_damage, \"\")"),
 		"basic-attack path must call _maybe_heal_from_damage with empty element")
-	# Physical ability path also passes "".
-	assert_true(src.contains("_maybe_heal_from_damage(target, actual_damage, \"\")"),
-		"physical-ability path must call _maybe_heal_from_damage with empty element")
+	# Physical ability path also passes "". Tick 431 renamed the
+	# variable to hit_damage (per-hit) for multi-hit support — accept
+	# either to stay forward-compatible.
+	assert_true(
+		src.contains("_maybe_heal_from_damage(target, actual_damage, \"\")")
+		or src.contains("_maybe_heal_from_damage(target, hit_damage, \"\")"),
+		"physical-ability path must call _maybe_heal_from_damage with empty element (actual_damage or per-hit hit_damage)")
 	# Magic ability path passes the actual element (so holy bypass works).
 	assert_true(src.contains("_maybe_heal_from_damage(target, actual_damage, element)"),
 		"magic-ability path must call _maybe_heal_from_damage with element so holy bypasses")

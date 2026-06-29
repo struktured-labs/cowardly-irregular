@@ -3117,25 +3117,42 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		## take_damage so the adapted value is what lands.
 		damage = _apply_counter_repeated_damage_mod(target, ability.get("id", ""), damage)
 
-		var actual_damage = target.take_damage(damage, false)
-		damage_dealt.emit(target, actual_damage, is_crit, "", 1.0)
+		## Tick 431: multi-hit ability support. abilities.json authors
+		## `hits` on gold_scatter (3), recursive_strike (3),
+		## repetitive_strike (3), temporal_strike (2), thread_slash (3)
+		## with low damage_multiplier each — but pre-fix the field was
+		## never read, so each multi-hit ability dealt one hit instead
+		## of N. Run the damage step `hits` times when authored. Each
+		## hit is independent (separate take_damage call → separate
+		## absorb/death/permadeath checks), matching the "barrage of
+		## smaller hits" design vs one big hit.
+		var hits: int = max(1, int(ability.get("hits", 1)))
+		var actual_damage: int = 0
+		for hit_idx in range(hits):
+			if not target.is_alive:
+				break  # don't keep hitting after a kill
+			var hit_damage: int = target.take_damage(damage, false)
+			actual_damage += hit_damage
+			damage_dealt.emit(target, hit_damage, is_crit, "", 1.0)
 
-		## Tick 421: permadeath enforcement for physical ability path —
-		## permakill_strike from the reaper lands here.
-		_maybe_apply_permadeath_on_kill(caster, target)
+			## Tick 421: permadeath enforcement for physical ability path —
+			## permakill_strike from the reaper lands here. Per-hit so a
+			## single hit in a multi-hit volley can permakill.
+			_maybe_apply_permadeath_on_kill(caster, target)
 
-		## Tick 423: the_absence heals from physical damage. Magic
-		## abilities and holy-element are intentionally NOT here (data
-		## says: "Status effects, debuffs, and holy magic bypass this
-		## absorption"). Element gate at the helper covers holy magic.
-		_maybe_heal_from_damage(target, actual_damage, "")
+			## Tick 423: the_absence heals from physical damage. Magic
+			## abilities and holy-element are intentionally NOT here (data
+			## says: "Status effects, debuffs, and holy magic bypass this
+			## absorption"). Element gate at the helper covers holy magic.
+			_maybe_heal_from_damage(target, hit_damage, "")
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
 			_record_first_damage()
 
 		var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
-		var log_msg = "  → [color=%s]%s[/color] takes [color=yellow]%d[/color] damage!%s" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, crit_text]
+		var hits_text = (" ×%d" % hits) if hits > 1 else ""
+		var log_msg = "  → [color=%s]%s[/color] takes [color=yellow]%d[/color] damage!%s%s" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, hits_text, crit_text]
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
 
