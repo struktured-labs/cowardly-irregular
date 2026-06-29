@@ -360,15 +360,61 @@ func get_passive_mods(combatant: Combatant) -> Dictionary:
 				_compose_mod(total_mods, mod_key, mod_value)
 
 		# Apply conditional mods (like Last Stand)
+		## Tick 377: generalize the condition parser. Pre-fix only
+		## `hp_below_25` was recognized — any other passive condition
+		## key (hp_below_50, hp_above_75, mp_below_25, etc.) was
+		## silently ignored. The single-threshold limitation made
+		## conditional_mods a graveyard for future authoring: write a
+		## hp_below_50 conditional and watch it never fire.
+		##
+		## New key shape (backward-compatible with hp_below_25):
+		##   <stat>_<comparator>_<threshold_int>
+		## where stat ∈ {hp, mp}, comparator ∈ {below, above}, threshold
+		## ∈ [0, 100]. Examples: hp_below_25, hp_above_75, mp_below_30.
+		## Unknown keys are skipped silently per the old contract; the
+		## generic shape just removes the hardcoded 25-only ceiling.
 		if passive.has("conditional_mods"):
-			var hp_pct = combatant.get_hp_percentage() / 100.0
-
-			if passive["conditional_mods"].has("hp_below_25") and hp_pct < 0.25:
-				for mod_key in passive["conditional_mods"]["hp_below_25"]:
-					var mod_value = passive["conditional_mods"]["hp_below_25"][mod_key]
+			var hp_pct: float = combatant.get_hp_percentage() / 100.0
+			var mp_pct: float = combatant.get_mp_percentage() / 100.0 if combatant.has_method("get_mp_percentage") else 1.0
+			for cond_key in passive["conditional_mods"].keys():
+				if not _conditional_key_satisfied(str(cond_key), hp_pct, mp_pct):
+					continue
+				for mod_key in passive["conditional_mods"][cond_key]:
+					var mod_value = passive["conditional_mods"][cond_key][mod_key]
 					_compose_mod(total_mods, mod_key, mod_value)
 
 	return total_mods
+
+
+## Tick 377: parse a conditional_mods key like "hp_below_25" /
+## "mp_above_50" and return true if the combatant satisfies the
+## comparison. Returns false for unknown shape (preserves the
+## silent-ignore behavior the old code had for non-hp_below_25 keys).
+static func _conditional_key_satisfied(key: String, hp_pct: float, mp_pct: float) -> bool:
+	var parts: PackedStringArray = key.split("_")
+	if parts.size() != 3:
+		return false
+	var stat: String = parts[0]
+	var comparator: String = parts[1]
+	var threshold_raw: String = parts[2]
+	if not threshold_raw.is_valid_int():
+		return false
+	var threshold: float = float(threshold_raw.to_int()) / 100.0
+	var value: float = 1.0
+	match stat:
+		"hp":
+			value = hp_pct
+		"mp":
+			value = mp_pct
+		_:
+			return false
+	match comparator:
+		"below":
+			return value < threshold
+		"above":
+			return value > threshold
+		_:
+			return false
 
 
 ## Compose a single passive stat-mod into the accumulator dict, initializing
