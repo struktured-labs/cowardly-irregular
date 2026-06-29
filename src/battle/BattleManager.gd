@@ -3221,6 +3221,42 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				caster.gain_ap(1)
 				# Tick 238: bonus BBCode (CIRCUIT BREAKER — band-reduce + AP gain).
 				battle_log_message.emit("[color=%s]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
+		"dispel":
+			# Tick 353: strips active_buffs + positive statuses from the
+			# target. Used by 7 abilities (masterite_dispel, cardinality_
+			# zero, garbage_collect_all, intersection_null, optimize_away,
+			# undefine, void_breath) — all of which silently fizzled
+			# pre-fix because no arm matched. Symptom: a W5/W6 boss casts
+			# a defensive buff stack and the player's dispel does NOTHING
+			# to remove it.
+			#
+			# Implementation: clear active_buffs (all of them — dispel is
+			# the strong version; dispel_one would remove a single random
+			# one) and remove any positive statuses from status_effects.
+			# Defining "positive" via an inclusion list rather than
+			# exclusion so adding a new debuff later doesn't accidentally
+			# make dispel start removing it.
+			const _POSITIVE_STATUSES_DISPELLABLE := [
+				"barrier", "invisible", "evasion", "reflect",
+				"physical_reflect", "prismatic_reflect", "magic_block",
+				"regen",
+			]
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				var cleared_count: int = 0
+				if "active_buffs" in target:
+					cleared_count += target.active_buffs.size()
+					target.active_buffs.clear()
+				for s in _POSITIVE_STATUSES_DISPELLABLE:
+					if target.has_status(s):
+						target.remove_status(s)
+						cleared_count += 1
+				if cleared_count > 0:
+					target.recalculate_stats() if target.has_method("recalculate_stats") else null
+					battle_log_message.emit("[color=%s]%s's enhancements stripped away![/color] (%d cleared)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, cleared_count])
+				else:
+					battle_log_message.emit("[color=gray]%s had nothing to dispel.[/color]" % target.combatant_name)
 		"mp_restore_and_ap":
 			# Tick 352: Bard's inspiring_melody (abilities.json line ~437)
 			# uses this effect to restore MP + grant AP to all allies.

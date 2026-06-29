@@ -49,11 +49,15 @@ func test_simple_status_arm_includes_lullaby_targets() -> void:
 	# comma list so it applies via add_status. discord uses defense_down
 	# (already handled). inspiring_melody uses ap_grant (separate path).
 	var src := _read(BATTLE_MANAGER_PATH)
-	# Find the simple-status arm.
-	var arm_idx: int = src.find("\"barrier\", \"invisible\"")
+	# Find the simple-status arm. Tick 353 added a dispel const that
+	# ALSO contains "barrier", "invisible" — find the LAST match so we
+	# get the actual arm signature, not the dispel allow-list.
+	var arm_idx: int = src.rfind("\"barrier\", \"invisible\"")
 	assert_gt(arm_idx, -1, "the simple-status comma-arm must still exist")
-	# Slice to capture the full arm string.
-	var colon_idx: int = src.find(":", arm_idx)
+	# Slice to capture the full arm string. Look for `:\n` to anchor on
+	# the match-arm colon-newline pattern (the dispel const's strings
+	# end with `,` not `:\n`).
+	var colon_idx: int = src.find(":\n", arm_idx)
 	assert_gt(colon_idx, -1)
 	var arm_signature: String = src.substr(arm_idx, colon_idx - arm_idx)
 	for status in ["sleep", "poison", "burn", "confuse", "fear", "silence", "curse"]:
