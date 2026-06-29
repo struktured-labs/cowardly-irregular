@@ -3089,10 +3089,20 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 	# Speed adds to crit chance (each 10 speed = +1% crit)
 	var speed_bonus = attacker.speed * 0.01
 
-	# Check for crit-boosting passives
-	var passive_bonus = 0.0
-	if "critical_strike" in attacker.equipped_passives:
-		passive_bonus += 0.10  # +10% from passive
+	## Tick 375: read PassiveSystem's accumulated crit_chance mod
+	## instead of hardcoding a check for the "critical_strike" passive.
+	## Pre-fix the code granted +0.10 when critical_strike was equipped,
+	## but data/passives.json authored crit_chance=0.25 — a 15-point
+	## code/data divergence that silently nerfed the passive (and
+	## ignored any future passive adding crit_chance entirely). Now
+	## reads the accumulated mod, so a passive bundle with mixed crit
+	## stat_mods stacks correctly.
+	var passive_bonus: float = 0.0
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps != null and ps.has_method("get_passive_mods"):
+		var mods: Dictionary = ps.get_passive_mods(attacker)
+		passive_bonus = clampf(float(mods.get("crit_chance", 0.0)), 0.0, 0.50)
 
 	# Check for equipment bonuses (could add this later)
 	var equip_bonus = 0.0
@@ -5232,6 +5242,23 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 		attack_missed.emit(target)
 		battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
 		return true
+	## Tick 375: read PassiveSystem's accumulated `evasion` stat_mod.
+	## Pre-fix passive `evasion_up` (data/passives.json: evasion=0.20)
+	## was a silent no-op — StatusMenu rendered the "+20% evasion" line
+	## but the dodge check never read it. Now passive evasion gives a
+	## chance-based miss on every physical strike (separate from the
+	## evasion STATUS effect above, which is the temporary 60% dodge
+	## from abilities like Smoke Bomb). Clamped at 50% so a stacked
+	## passive bundle can't make a target untouchable.
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps != null and ps.has_method("get_passive_mods"):
+		var mods: Dictionary = ps.get_passive_mods(target)
+		var passive_dodge: float = clampf(float(mods.get("evasion", 0.0)), 0.0, 0.50)
+		if passive_dodge > 0.0 and randf() < passive_dodge:
+			attack_missed.emit(target)
+			battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
+			return true
 	return false
 
 
