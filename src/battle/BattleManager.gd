@@ -705,11 +705,83 @@ func _start_new_round() -> void:
 	# Apply corruption effects from enemies that carry them
 	_apply_corruption_effects_on_round_start()
 
+	## Tick 426: optimization_itself.strip_buffs — runs each round
+	## if the enemy is alive. monsters.json authored:
+	##   special_behavior: {strip_buffs: true, strip_buffs_per_turn: 1, ...}
+	## Pre-fix nothing read these — the "buffs are unnecessary
+	## overhead to be eliminated" gimmick was pure flavor.
+	_apply_strip_buffs_on_round_start()
+
 	# Calculate selection order (players first, then enemies, sorted by speed)
 	_calculate_selection_order()
 
 	round_started.emit(current_round)
 	_start_selection_phase()
+
+
+## Tick 426: scan the alive enemy_party for monsters with
+## special_behavior.strip_buffs and strip strip_buffs_per_turn random
+## buffs from the player party each round. Skips silently when no
+## qualifying enemy or no buffed party member exists.
+func _apply_strip_buffs_on_round_start() -> void:
+	if enemy_party.is_empty():
+		return
+	# Sum strip counts across ALL alive flagged enemies (multiple
+	# optimization_itself in one party would stack).
+	var total_strips: int = 0
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		if not enemy.has_method("get_meta"):
+			continue
+		var monster_type: String = enemy.get_meta("monster_type", "")
+		if monster_type == "":
+			continue
+		if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+			continue
+		var data: Dictionary = EncounterSystem.monster_database[monster_type]
+		var sb: Variant = data.get("special_behavior", {})
+		if not (sb is Dictionary):
+			continue
+		if not bool(sb.get("strip_buffs", false)):
+			continue
+		total_strips += max(1, int(sb.get("strip_buffs_per_turn", 1)))
+	if total_strips <= 0:
+		return
+	# Build pool of (party_member, buff_index) pairs from buffed alive PCs.
+	var candidates: Array = []
+	for member in player_party:
+		if member == null or not is_instance_valid(member) or not member.is_alive:
+			continue
+		if not ("active_buffs" in member):
+			continue
+		for i in range(member.active_buffs.size()):
+			candidates.append([member, i])
+	if candidates.is_empty():
+		return
+	# Strip up to total_strips random buffs from the pool. Each strip
+	# may invalidate later indices in the same member's buff list, so
+	# we re-scan candidates after each removal to keep indices fresh.
+	var stripped_count: int = 0
+	while stripped_count < total_strips and not candidates.is_empty():
+		var pick: Array = candidates[randi() % candidates.size()]
+		var member: Combatant = pick[0]
+		var buff_idx: int = pick[1]
+		if buff_idx < member.active_buffs.size():
+			var buff_label: String = str(member.active_buffs[buff_idx].get("effect", "buff"))
+			member.active_buffs.remove_at(buff_idx)
+			member.recalculate_stats() if member.has_method("recalculate_stats") else null
+			battle_log_message.emit("[color=cyan]Optimization removes %s from %s — overhead eliminated.[/color]" % [buff_label, member.combatant_name])
+			stripped_count += 1
+		# Re-scan to keep indices in sync after a removal.
+		candidates.clear()
+		for m in player_party:
+			if m == null or not is_instance_valid(m) or not m.is_alive:
+				continue
+			if not ("active_buffs" in m):
+				continue
+			for i in range(m.active_buffs.size()):
+				candidates.append([m, i])
 
 
 func _apply_corruption_effects_on_round_start() -> void:
