@@ -337,8 +337,30 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	desc_label.size = Vector2(panel_size.x - 32, 60)
 	panel.add_child(desc_label)
 
+	## Tick 430: surface authored item flavor text. 146 items in
+	## items.json author a `flavor` string (e.g. potion's "A dusty
+	## bottle that smells faintly of mint") but pre-fix no UI ever
+	## displayed it — pure data bloat. Now renders below the
+	## description in a softer italic-feel font color so it reads as
+	## flavor, not gameplay info. Only renders when authored (no
+	## empty-line padding for the ~10 items without flavor).
+	var flavor_text: String = str(item_data.get("flavor", ""))
+	var effects_y_offset: int = 0
+	if flavor_text != "":
+		var flavor_label = Label.new()
+		flavor_label.text = flavor_text
+		flavor_label.position = Vector2(16, 112)
+		flavor_label.add_theme_font_size_override("font_size", 10)
+		# Dimmed text — flavor reads as background lore, not gameplay info.
+		flavor_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		flavor_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		flavor_label.size = Vector2(panel_size.x - 32, 48)
+		panel.add_child(flavor_label)
+		# Push effects breakdown down to avoid overlap.
+		effects_y_offset = 60
+
 	# Effects breakdown
-	var effects_y = 100
+	var effects_y = 100 + effects_y_offset
 	if item_data.has("effects"):
 		var effects = item_data["effects"]
 
