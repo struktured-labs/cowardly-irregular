@@ -591,6 +591,15 @@ func add_gold(amount: int) -> void:
 	Matches the tick 109/110 defensive read pattern in BattleManager
 	exp_multiplier + OverworldController encounter_rate, and clamps
 	into the same [0.1, 10.0] band as the daemon's safe-delta floor."""
+	## Tick 372: refuse negative amounts. Pre-fix add_gold(-50)
+	## silently DRAINED 50 gold through `party_gold += -50`. Same
+	## exploitable class as ticks 368-371's heal/restore_mp/spend_ap/
+	## gain_ap/spend_mp/add_item negative-amount footguns. A typo'd
+	## reward table or Scriptweaver mod could silently bankrupt the
+	## party. Use spend_gold for legitimate drain.
+	if amount < 0:
+		push_warning("[GameState] add_gold(%d) — negative amount refused (use spend_gold to drain)" % amount)
+		return
 	var multiplier: float = clampf(
 		float(game_constants.get("gold_multiplier", 1.0)),
 		0.1, 10.0)
@@ -601,6 +610,15 @@ func add_gold(amount: int) -> void:
 
 func spend_gold(amount: int) -> bool:
 	"""Spend gold (returns false if insufficient funds)"""
+	## Tick 372: refuse negative amounts. Pre-fix spend_gold(-50)
+	## passed the `party_gold < -50` gate (always false for valid
+	## gold), then ran `party_gold -= -50` GRANTING 50 gold AND
+	## returning true so the caller believed it had been spent.
+	## Symmetric with spend_mp / remove_item bypasses. Use add_gold
+	## for legitimate gain.
+	if amount < 0:
+		push_warning("[GameState] spend_gold(%d) — negative amount refused (use add_gold to grant)" % amount)
+		return false
 	if party_gold < amount:
 		print("Error: Insufficient gold (have %d, need %d)" % [party_gold, amount])
 		return false
