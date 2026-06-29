@@ -3625,7 +3625,22 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	var item_effects = item_data.get("effects", {})
 	var is_revival_item = item_effects.get("revive", false)
 
-	# Auto-retarget: revival items need dead allies, others need alive allies
+	## Tick 361: route enemy-targeting damage items (holy_water,
+	## bomb_fragment, arctic_wind, lightning_bolt) through
+	## _retarget_enemy instead of _retarget_ally. Pre-fix every
+	## non-revival item was retargeted as an ally — throwing Holy
+	## Water at a skeleton via autobattle silently redirected to the
+	## party's lowest-HP ally and HEALED the enemy (zero damage)
+	## while applying holy damage to the wrong target. Read the
+	## item's authored target_type to pick the right retargeter.
+	var item_target_type: int = int(item_data.get("target_type", ItemSystem.TargetType.SINGLE_ALLY))
+	var targets_enemies: bool = (
+		item_target_type == ItemSystem.TargetType.SINGLE_ENEMY
+		or item_target_type == ItemSystem.TargetType.ALL_ENEMIES
+	)
+
+	# Auto-retarget: revival items need dead allies; damage items need
+	# alive enemies; everything else (heals/cures/buffs) needs alive allies.
 	var retargeted: Array[Combatant] = []
 	for t in targets:
 		if t is Combatant:
@@ -3633,6 +3648,10 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 				# Revival items should keep dead targets, not retarget to alive
 				if not t.is_alive:
 					retargeted.append(t)
+			elif targets_enemies:
+				var new_enemy = _retarget_enemy(user, t)
+				if new_enemy and not retargeted.has(new_enemy):
+					retargeted.append(new_enemy)
 			else:
 				var new_target = _retarget_ally(user, t, false)
 				if new_target:
