@@ -2815,6 +2815,19 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			# fizzled. Same authored-but-unimplemented class as the
 			# evasion_up gap in tick 350.
 			_execute_support_ability(caster, ability, retargeted)
+		## Tick 392: Summoner job's 4 eidolon abilities (summon_ifrit,
+		## summon_shiva, summon_ramuh, summon_bahamut) all author
+		## type=summon with damage_multiplier + element +
+		## target_type=all_enemies — magic-ability shape exactly. Pre-
+		## fix every eidolon cast burned 30 MP and silently fizzled to
+		## the `_:` push_warning default. Route through the magic
+		## execution path so the eidolon damage actually lands. The
+		## ally-spawning summons (rat_swarm, pack_call) are not in any
+		## player job — only enemy AI uses them via _execute_summon at
+		## line 2076 — so routing all "summon" ability_types to magic
+		## doesn't break any player path.
+		"summon":
+			_execute_magic_ability(caster, ability, retargeted)
 		"meta":
 			_execute_meta_ability(caster, ability, retargeted)
 		"escape":
