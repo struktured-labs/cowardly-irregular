@@ -1173,7 +1173,11 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	if combatant.job and combatant.job.has("abilities"):
 		for ability_id in combatant.job["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
-			if not ability.is_empty() and combatant.current_mp >= ability.get("mp_cost", 0):
+			# Tick 374: route through JobSystem.get_ability_mp_cost so
+			# any passive mp_cost_multiplier on enemy combatants (rare
+			# but possible for bosses with equipped passives) affects
+			# their affordability check too.
+			if not ability.is_empty() and combatant.current_mp >= JobSystem.get_ability_mp_cost(combatant, ability_id):
 				available_abilities.append(ability)
 
 	# Wave E — BossDialogue intent picker. Fires for ANY boss with a
@@ -2771,7 +2775,13 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		battle_log_message.emit("[color=gray]%s's %s fizzles — no valid targets.[/color]" % [caster.combatant_name, ability["name"]])
 		return
 
-	var mp_cost = ability.get("mp_cost", 0)
+	# Tick 374: route through JobSystem.get_ability_mp_cost so passives
+	# like mp_efficiency / magic_amplifier / elemental_affinity that
+	# multiply MP cost actually affect spending. Pre-fix this read the
+	# bare ability.mp_cost while can_use_ability (post-tick-374) checks
+	# the multiplied cost — a divergence that would let mp_efficiency
+	# pass the affordability gate then spend the unmultiplied amount.
+	var mp_cost = JobSystem.get_ability_mp_cost(caster, ability_id)
 	if not caster.spend_mp(mp_cost):
 		# Tick 221: surface MP shortfall to battle_log + push_warning. If we reach here, can_use_ability (line ~2653) said yes but spend_mp said no — that's a real divergence worth surfacing. Pre-fix print-only and the player saw nothing.
 		print("%s doesn't have enough MP!" % caster.combatant_name)

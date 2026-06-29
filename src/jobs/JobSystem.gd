@@ -596,15 +596,47 @@ func get_ability(ability_id: String) -> Dictionary:
 	return abilities.get(ability_id, {})
 
 
+## Tick 374: canonical MP-cost resolver. Applies the passive
+## `mp_cost_multiplier` mod so passives like `mp_efficiency` (0.75x),
+## `magic_amplifier` (2.5x), and `elemental_affinity` (0.75x) actually
+## affect ability MP cost. Pre-fix PassiveSystem.get_passive_mods
+## accumulated the mod but no caller ever read it — three passives
+## were silent no-ops, players saw "-25% MP cost" descriptions and
+## got nothing. Symmetric with tick 373's healing_multiplier wiring.
+## Clamped to [0.1, 10.0] safety band (matches healing/damage clamps)
+## so a typo'd passive can't black-hole or runaway MP cost.
+func get_ability_mp_cost(combatant: Combatant, ability_id: String) -> int:
+	var ability: Dictionary = get_ability(ability_id)
+	if ability.is_empty():
+		return 0
+	var base: int = int(ability.get("mp_cost", 0))
+	if base <= 0:
+		return 0
+	if combatant == null or not is_instance_valid(combatant):
+		return base
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps == null or not ps.has_method("get_passive_mods"):
+		return base
+	var mods: Dictionary = ps.get_passive_mods(combatant)
+	var mult: float = clampf(float(mods.get("mp_cost_multiplier", 1.0)), 0.1, 10.0)
+	# max(0, ...) guards against int truncation of a 0.0001 multiplier
+	# accidentally rounding to a 0 cost that lets the player spam an
+	# expensive ability for free.
+	return max(0, int(round(base * mult)))
+
+
 func can_use_ability(combatant: Combatant, ability_id: String) -> bool:
 	"""Check if combatant can use an ability (ability_id is an ability, not a job)"""
 	var ability = get_ability(ability_id)
 	if ability.is_empty():
 		return false
 
-	# Check MP cost
+	# Check MP cost — route through get_ability_mp_cost so passive
+	# mp_cost_multiplier mods apply (tick 374).
 	if ability.has("mp_cost"):
-		if combatant.current_mp < ability["mp_cost"]:
+		var cost: int = get_ability_mp_cost(combatant, ability_id)
+		if combatant.current_mp < cost:
 			return false
 
 	# Check job restrictions (allow if in job abilities OR learned abilities)
