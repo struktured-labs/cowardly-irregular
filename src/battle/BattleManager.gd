@@ -3305,6 +3305,22 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 387: brave_actions handler. Pre-fix brave
+		## (effect=brave_actions, mp_cost=0, bp_cost=1, target=self)
+		## fell through to `_:` push_warning default. The Bravely-
+		## Default-derived BP system doesn't exist in this engine; the
+		## closest mechanical fit is "extra actions this turn" = grant
+		## AP to the caster so they can Advance an additional action
+		## without paying the natural-gain offset. gain_ap(2) is the
+		## documented "extra actions" interpretation; gain_ap clamps
+		## at +4 so a maxed-AP combatant gets nothing — fine, brave's
+		## value is mid-battle when AP is scarce.
+		"brave_actions":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and target.has_method("gain_ap"):
+					var ap_grant: int = int(ability.get("ap_grant", 2))
+					target.gain_ap(ap_grant)
+					battle_log_message.emit("[color=%s]%s braves the moment![/color] (+%d AP)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, ap_grant])
 		## Tick 386: damage_absorb handler. Pre-fix fill_the_void
 		## (effect=damage_absorb, duration=2, absorb_amount=100) fell
 		## through to `_:` push_warning default — the 12 MP cast was
