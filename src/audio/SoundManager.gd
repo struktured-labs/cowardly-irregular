@@ -1050,21 +1050,35 @@ func _try_play_from_manifest(track_id: String) -> bool:
 func _get_current_world_suffix() -> String:
 	"""Map current area to world suffix for manifest track lookup.
 	When _current_area is empty (cleared by play_music for battle/victory),
-	returns the last known world suffix so battle music stays world-aware."""
+	returns the last known world suffix so battle music stays world-aware.
+
+	Tick 359: added the canonical `<world>_overworld` map_id forms
+	(suburban_overworld, steampunk_overworld, etc.) alongside the
+	legacy `overworld_<world>` strings. GameLoop._on_area_transition
+	calls play_area_music(_current_map_id), passing the canonical
+	`<world>_overworld` form. Pre-fix the match arms only listed the
+	legacy reversed form, so the canonical-form call fell through to
+	the `_:` arm and returned the cached `_current_world_suffix`
+	(initialized to "medieval"). Result: every battle in
+	suburban/steampunk/industrial/futuristic/abstract overworlds used
+	MEDIEVAL battle music regardless of where the player actually was.
+	"""
 	match _current_area:
 		"overworld", "village", "harmonia_village", "cave", "whispering_cave":
 			return "medieval"
 		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
 			return "medieval"
-		"overworld_suburban", "maple_heights_village", "suburban_dungeon":
+		"castle_harmonia":
+			return "medieval"
+		"overworld_suburban", "suburban_overworld", "maple_heights_village", "suburban_dungeon", "suburban_underground":
 			return "suburban"
-		"overworld_steampunk", "brasston_village", "steampunk_dungeon":
+		"overworld_steampunk", "steampunk_overworld", "brasston_village", "steampunk_dungeon", "steampunk_mechanism":
 			return "steampunk"
-		"overworld_industrial", "rivet_row_village", "industrial_dungeon":
+		"overworld_industrial", "industrial_overworld", "rivet_row_village", "industrial_dungeon", "assembly_core":
 			return "industrial"
-		"overworld_futuristic", "node_prime_village", "digital_dungeon":
+		"overworld_futuristic", "futuristic_overworld", "node_prime_village", "digital_dungeon", "root_process":
 			return "digital"
-		"overworld_abstract", "vertex_village", "abstract_dungeon":
+		"overworld_abstract", "abstract_overworld", "vertex_village", "abstract_dungeon", "null_chamber":
 			return "abstract"
 		_:
 			# During battles, _current_area is cleared — use persisted suffix
