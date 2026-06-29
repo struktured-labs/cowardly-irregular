@@ -597,23 +597,48 @@ func _apply_save_data(data: Dictionary) -> void:
 	if data.has("game_state") and GameState:
 		GameState.from_dict(data["game_state"])
 
+	## Tick 364: type-guard automation/records reads. Pre-fix a save
+	## with automation=null/int/string crashed at automation_data.has()
+	## with `Invalid call .has on Nil`, and the direct typed-Dictionary
+	## assignments below crashed with `Trying to assign value of type
+	## 'X' to a variable of type 'Dictionary'`. Same defensive shape as
+	## tick 362/363's other save-load guards.
 	# Apply automation stats
 	if data.has("automation"):
-		var automation_data = data["automation"]
-		# Restore region crack levels
-		if automation_data.has("region_crack_levels") and AutogrindSystem:
-			AutogrindSystem.region_crack_levels = automation_data["region_crack_levels"]
-		# Restore learned patterns for adaptive AI
-		if automation_data.has("learned_patterns") and AutogrindSystem:
-			AutogrindSystem.learned_patterns = automation_data["learned_patterns"]
+		var automation_data: Variant = data["automation"]
+		if automation_data is Dictionary:
+			# Restore region crack levels
+			if automation_data.has("region_crack_levels") and AutogrindSystem:
+				var rcl: Variant = automation_data["region_crack_levels"]
+				if rcl is Dictionary:
+					AutogrindSystem.region_crack_levels = rcl
+				else:
+					push_warning("[SaveSystem] _apply_save_data: automation.region_crack_levels malformed (type=%s) — keeping current" % typeof(rcl))
+			# Restore learned patterns for adaptive AI
+			if automation_data.has("learned_patterns") and AutogrindSystem:
+				var lp: Variant = automation_data["learned_patterns"]
+				if lp is Dictionary:
+					AutogrindSystem.learned_patterns = lp
+				else:
+					push_warning("[SaveSystem] _apply_save_data: automation.learned_patterns malformed (type=%s) — keeping current" % typeof(lp))
+		else:
+			push_warning("[SaveSystem] _apply_save_data: automation block malformed (type=%s) — skipping automation restore" % typeof(automation_data))
 
 	# Restore one-shot records
 	if data.has("one_shot_records"):
-		one_shot_records = data["one_shot_records"]
+		var osr: Variant = data["one_shot_records"]
+		if osr is Dictionary:
+			one_shot_records = osr
+		else:
+			push_warning("[SaveSystem] _apply_save_data: one_shot_records malformed (type=%s) — keeping current" % typeof(osr))
 
 	# Restore autobattle records
 	if data.has("autobattle_records"):
-		autobattle_records = data["autobattle_records"]
+		var ar: Variant = data["autobattle_records"]
+		if ar is Dictionary:
+			autobattle_records = ar
+		else:
+			push_warning("[SaveSystem] _apply_save_data: autobattle_records malformed (type=%s) — keeping current" % typeof(ar))
 
 
 func _deserialize_party(party_data: Array) -> void:
