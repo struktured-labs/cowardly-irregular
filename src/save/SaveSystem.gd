@@ -565,15 +565,24 @@ func _apply_save_data(data: Dictionary) -> void:
 	# was silently lost. The in-place teleport is preserved as a best-effort
 	# (live-scene saves like the in-overworld autosave still benefit), but
 	# the stash is the canonical path Continue/quick_load now consume.
+	## Tick 362: validate pos shape before reading x/y. Pre-fix a
+	## hand-edited / partially-corrupt save with position=null or
+	## position={} crashed with `Invalid get index 'x' on base: 'Nil'`
+	## at pos["x"], leaving the player no recovery path. Now we
+	## push_warning and skip the position restore — the player keeps
+	## the scene's default spawn marker instead of crashing.
 	if data.has("player") and data["player"].has("position"):
-		var pos = data["player"]["position"]
-		pending_player_position = Vector2(pos["x"], pos["y"])
-		var player = _find_active_player()
-		if player:
-			if player.has_method("teleport"):
-				player.teleport(pending_player_position)
-			else:
-				player.position = pending_player_position
+		var pos: Variant = data["player"]["position"]
+		if pos is Dictionary and pos.has("x") and pos.has("y"):
+			pending_player_position = Vector2(float(pos["x"]), float(pos["y"]))
+			var player = _find_active_player()
+			if player:
+				if player.has_method("teleport"):
+					player.teleport(pending_player_position)
+				else:
+					player.position = pending_player_position
+		else:
+			push_warning("[SaveSystem] _apply_save_data: player.position malformed (type=%s, value=%s) — keeping default spawn, no crash" % [typeof(pos), pos])
 
 	# Apply party data
 	if data.has("party"):

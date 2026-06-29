@@ -47,7 +47,11 @@ func test_apply_save_data_writes_pending_position() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	assert_true(body.contains("pending_player_position = Vector2(pos["),
+	# Tick 362 wrapped pos["x"]/["y"] in float() for malformed-save resilience —
+	# accept either Vector2(pos[ or Vector2(float(pos[ to stay forward-compatible.
+	assert_true(
+		body.contains("pending_player_position = Vector2(pos[")
+		or body.contains("pending_player_position = Vector2(float(pos["),
 		"_apply_save_data must write pending_player_position from data[\"player\"][\"position\"]")
 
 
