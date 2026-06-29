@@ -2806,6 +2806,11 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## can't bring them back.
 	_maybe_apply_permadeath_on_kill(attacker, actual_target)
 
+	## Tick 423: the_absence heals from physical damage. Called
+	## AFTER damage is dealt — uses actual_damage so the heal scales
+	## with the mitigated number that landed, not the raw value.
+	_maybe_heal_from_damage(actual_target, actual_damage, "")
+
 	# Counter-on-hit: monsters with counter_abilities defined in monsters.json
 	# fire a free retaliatory ability after taking a real hit.
 	_trigger_monster_counter(actual_target, attacker)
@@ -3001,6 +3006,12 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		## permakill_strike from the reaper lands here.
 		_maybe_apply_permadeath_on_kill(caster, target)
 
+		## Tick 423: the_absence heals from physical damage. Magic
+		## abilities and holy-element are intentionally NOT here (data
+		## says: "Status effects, debuffs, and holy magic bypass this
+		## absorption"). Element gate at the helper covers holy magic.
+		_maybe_heal_from_damage(target, actual_damage, "")
+
 		# Track first damage for one-shot detection
 		if target in enemy_party:
 			_record_first_damage()
@@ -3111,6 +3122,12 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		## Tick 421: permadeath enforcement for magic ability path —
 		## soul_reap / final_death from the reaper land here.
 		_maybe_apply_permadeath_on_kill(caster, target)
+
+		## Tick 423: the_absence heals from damage — but the data
+		## explicitly says holy magic bypasses ("Status effects,
+		## debuffs, and holy magic bypass this absorption"). Pass the
+		## element so the helper can skip when element=="holy".
+		_maybe_heal_from_damage(target, actual_damage, element)
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
@@ -5963,6 +5980,45 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 			battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
 			return true
 	return false
+
+
+## Tick 423: the_absence-style heal-from-damage. Reads
+## special_behavior.heals_from_damage + heal_percentage from monster
+## data. Pre-fix the_absence (W6 abstract) authored a 30% damage→heal
+## conversion but no code read it — hitting the_absence was just
+## damage, not the design's "you're feeding it". Holy element bypasses
+## per the authored description.
+func _maybe_heal_from_damage(target: Combatant, damage_amount: int, element: String) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if damage_amount <= 0:
+		return
+	if not target.has_method("get_meta"):
+		return
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return
+	if not bool(sb.get("heals_from_damage", false)):
+		return
+	# Holy element bypass per the_absence's authored description.
+	if element == "holy":
+		return
+	var pct: float = clampf(float(sb.get("heal_percentage", 0.3)), 0.0, 1.0)
+	if pct <= 0.0:
+		return
+	var heal_amount: int = int(round(damage_amount * pct))
+	if heal_amount <= 0:
+		return
+	var actual_healed: int = target.heal(heal_amount)
+	if actual_healed > 0:
+		healing_done.emit(target, actual_healed)
+		battle_log_message.emit("[color=cyan]%s absorbs the impact — heals %d HP![/color]" % [target.combatant_name, actual_healed])
 
 
 ## Tick 422: roll the null_entity-style phase_out chance. monsters.json
