@@ -100,8 +100,11 @@ var _current_terrain: String = "plains"
 var _terrain_modifiers: Dictionary = {"boost": [], "reduce": []}
 const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
 
-## Autobattle toggle signal
-signal autobattle_toggled(character_id: String, enabled: bool)
+## Tick 416: removed dead `autobattle_toggled` signal that was never
+## emitted from BattleManager — the live signal of the same name
+## lives on AutobattleToggleUI (src/ui/autobattle/AutobattleToggleUI.gd)
+## where the toggle UI emits it. Keeping a same-named no-op signal
+## here caused confusion when readers tried to trace toggle events.
 
 ## One-shot tracking
 ## Tick 406: per-battle last ability cast by ANY combatant. Reads
@@ -142,7 +145,12 @@ var _ko_this_battle: Array[Combatant] = []
 
 ## Adaptive AI - Action logging
 var _battle_action_log: Array[Dictionary] = []  # Log every player action per battle
-signal battle_actions_logged(summary: Dictionary)
+## Tick 416: removed dead `battle_actions_logged` signal — the
+## autogrind path at GameLoop:4185 already calls
+## _summarize_battle_actions() synchronously and feeds the result
+## into AutogrindSystem.update_learned_patterns. The signal had no
+## listeners, and emitting it from end_battle just computed the
+## summary a second time per battle for no reader.
 
 ## Action speed modifiers (lower = faster)
 const ACTION_SPEEDS = {
@@ -545,10 +553,10 @@ func end_battle(victory: bool) -> void:
 	else:
 		current_state = BattleState.DEFEAT
 
-	# Emit battle action summary for adaptive AI pattern learning
-	if victory:
-		var summary = _summarize_battle_actions()
-		battle_actions_logged.emit(summary)
+	# Tick 416: removed the dead battle_actions_logged signal emit.
+	# The autogrind path at GameLoop:4185 already calls
+	# _summarize_battle_actions() and feeds it directly into
+	# AutogrindSystem.update_learned_patterns.
 
 	# Boss gloat — fire-and-forget; scripted ships now, async LLM re-narration may replace it.
 	_dispatch_boss_gloat(victory)
