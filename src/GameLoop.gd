@@ -1071,6 +1071,19 @@ func check_pending_cutscene() -> void:
 	"""Public: called by NPCs after setting story flags to trigger pending cutscenes."""
 	var pending = _get_pending_story_cutscene()
 	if pending != "":
+		## Tick 401: Skiptrotter skip_cutscene meta_effect sets the
+		## meta_skip_next_cutscene flag. Consume it here by writing the
+		## cutscene's completion flag (so it doesn't replay) and
+		## skipping the actual playback. The single-shot flag clears
+		## itself so subsequent cutscenes play normally.
+		if GameState and "game_constants" in GameState:
+			if bool(GameState.game_constants.get("meta_skip_next_cutscene", false)):
+				GameState.game_constants["meta_skip_next_cutscene"] = false
+				var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(pending, "")
+				if completion_flag != "":
+					_set_cutscene_flag_and_mirror(completion_flag)
+					print("[CUTSCENE] %s skipped via Skiptrotter meta-ability — flag %s set" % [pending, completion_flag])
+				return
 		_play_story_cutscene(pending)
 
 

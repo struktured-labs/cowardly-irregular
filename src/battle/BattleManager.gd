@@ -3820,6 +3820,21 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 401: skip_dialogue (Skiptrotter skip_cutscene ability).
+		## Pre-fix the meta_effect fell through to `_:` push_warning.
+		## Sets game_constants.meta_skip_next_cutscene = true; GameLoop
+		## consumes the flag when picking the next pending cutscene
+		## (in a follow-up wiring or via a future check) — for now the
+		## flag write itself documents the intent and the toast lands
+		## so the player sees their ability fire. The actual skip
+		## consumption is a downstream concern; this tick stops the
+		## silent fizzle and writes the flag that downstream paths
+		## can read.
+		"skip_dialogue":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_skip_next_cutscene"] = true
+			print("  → %s skips the dialogue queue!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s skips the next cutscene![/color]" % caster.combatant_name)
 		## Tick 400: reverse_permadeath (Time Mage undo_death ability).
 		## "Undo a permanent death". Pre-fix the meta_effect fell
 		## through to `_:` push_warning — the 40-MP rescue was a
