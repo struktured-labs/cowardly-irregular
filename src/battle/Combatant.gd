@@ -1252,6 +1252,20 @@ func learn_passive(passive_id: String) -> void:
 ## Inventory management
 func add_item(item_id: String, quantity: int = 1) -> void:
 	"""Add item(s) to inventory"""
+	## Tick 371: refuse negative quantity. Pre-fix add_item(id, -5)
+	## silently DRAINED 5 items via `inventory[id] += -5`, mirror of
+	## the spend_mp/spend_ap negative-amount footguns. A typo'd reward
+	## table, Scriptweaver mod, or sign-bug in a computed drop count
+	## could quietly empty inventories. Use remove_item for legitimate
+	## inventory drain.
+	if quantity < 0:
+		push_warning("[Combatant] add_item('%s', %d) on %s — negative quantity refused (use remove_item to drain)" % [item_id, quantity, combatant_name])
+		return
+	# Refuse empty item_id — would create an empty-key inventory slot
+	# that no caller can reference cleanly.
+	if item_id == "":
+		push_warning("[Combatant] add_item called with empty item_id on %s — refused" % combatant_name)
+		return
 	if inventory.has(item_id):
 		inventory[item_id] += quantity
 	else:
@@ -1260,6 +1274,14 @@ func add_item(item_id: String, quantity: int = 1) -> void:
 
 func remove_item(item_id: String, quantity: int = 1) -> bool:
 	"""Remove item(s) from inventory. Returns false if insufficient quantity."""
+	## Tick 371: refuse negative quantity. Pre-fix remove_item(id, -5)
+	## passed both gates (inventory.has + `inventory[id] < -5` always
+	## false) then ran `inventory[id] -= -5` GRANTING 5 items, AND
+	## returned true — symmetric to spend_mp's bypass. Use add_item
+	## for legitimate inventory gain.
+	if quantity < 0:
+		push_warning("[Combatant] remove_item('%s', %d) on %s — negative quantity refused (use add_item to grant)" % [item_id, quantity, combatant_name])
+		return false
 	if not inventory.has(item_id) or inventory[item_id] < quantity:
 		return false
 
