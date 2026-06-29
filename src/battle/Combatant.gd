@@ -268,6 +268,17 @@ func heal(amount: int) -> int:
 	if not is_alive:
 		return 0
 
+	## Tick 368: reject negative amounts. Pre-fix heal(-30) would
+	## silently DRAIN 30 HP via the current_hp = min(max, hp + -30)
+	## arithmetic, bypass the damage path entirely (no die() check,
+	## no damage_dealt signal, no shake/popup), then return -30 — the
+	## caller would emit healing_done(target, -30) producing a misleading
+	## "+(-30) HP!" popup. A typo'd ability/item or Scriptweaver edit
+	## with negative heal would silently exploit this.
+	if amount < 0:
+		push_warning("[Combatant] heal() called with negative amount %d on %s — refused, returning 0 (use take_damage for HP loss)" % [amount, combatant_name])
+		return 0
+
 	var heal_amount = amount
 	if has_status("curse"):
 		heal_amount = int(heal_amount * 0.5)
@@ -295,6 +306,13 @@ func heal(amount: int) -> int:
 func restore_mp(amount: int) -> int:
 	"""Restore MP, returns actual amount restored"""
 	if not is_alive:
+		return 0
+	## Tick 368: same negative-amount guard as heal() above. Pre-fix
+	## restore_mp(-15) silently drained 15 MP and returned -15 — caller
+	## would emit healing_done(target, -15) producing a misleading
+	## negative-amount popup. Use spend_mp for legitimate MP drain.
+	if amount < 0:
+		push_warning("[Combatant] restore_mp() called with negative amount %d on %s — refused, returning 0 (use spend_mp for MP drain)" % [amount, combatant_name])
 		return 0
 	var old_mp = current_mp
 	current_mp = min(max_mp, current_mp + amount)
