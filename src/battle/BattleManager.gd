@@ -3820,6 +3820,23 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
+		## Tick 398: corrupt_save (save_deletion ability — boss-only
+		## terror move). Pre-fix the meta_effect fell through to `_:`
+		## push_warning, so a boss using this ability had no real
+		## consequence beyond its damage_multiplier=3.0 magic damage
+		## (which routes via the add_corruption sister branch since
+		## save_deletion is target=all_enemies). The corruption_amount
+		## (0.5 — half a corruption point in one cast) was authored but
+		## never applied. Wire it through GameState.add_corruption,
+		## which clamps to [0, 1] and fires save_corrupted on increase.
+		## Damage doesn't fire here — the save_deletion ability also
+		## carries damage_multiplier=3.0, and the magic-damage path is
+		## the right home for that. This arm is for the corruption
+		## side-effect only.
+		"corrupt_save":
+			print("  → %s attempts to delete the save..." % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s threatens save corruption![/color]" % caster.combatant_name)
+			GameState.add_corruption(corruption_amount)
 		## Tick 397: create_save (Time Mage quicksave ability). Pre-fix
 		## the meta_effect fell through to push_warning even though the
 		## ability description literally says "Create a quicksave during
