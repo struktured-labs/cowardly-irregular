@@ -332,6 +332,35 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	volatility = VolatilitySystem.new()
 	volatility.reset_battle()
 
+	## Tick 420: surface authored-but-unread danger flags. monsters.json
+	## authors `very_dangerous` (script_error) and `extremely_dangerous`
+	## (permadeath_reaper) as warnings — but pre-fix the flags were
+	## copied into enemy data by EncounterSystem and never read. Players
+	## ran into these without any signal. Emit a distinctive battle_log
+	## line so players see "the air smells wrong" before committing.
+	## Highest-tier wins (extremely > very) when multiple dangerous
+	## enemies share a party.
+	var max_danger: int = 0
+	var danger_source: String = ""
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var monster_type: String = enemy.get_meta("monster_type", "") if enemy.has_method("get_meta") else ""
+		if monster_type == "" or not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+			continue
+		var data: Dictionary = EncounterSystem.monster_database[monster_type]
+		if bool(data.get("extremely_dangerous", false)) and max_danger < 2:
+			max_danger = 2
+			danger_source = enemy.combatant_name
+		elif bool(data.get("very_dangerous", false)) and max_danger < 1:
+			max_danger = 1
+			danger_source = enemy.combatant_name
+	match max_danger:
+		2:
+			battle_log_message.emit("[color=red]☠ EXTREME DANGER: %s ☠[/color]" % danger_source)
+		1:
+			battle_log_message.emit("[color=orange]⚠ Danger: %s ⚠[/color]" % danger_source)
+
 	battle_started.emit()
 	_start_new_round()
 
