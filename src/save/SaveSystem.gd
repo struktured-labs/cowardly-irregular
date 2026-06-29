@@ -175,6 +175,14 @@ func save_game(slot: int = -1) -> bool:
 	if success:
 		current_save_slot = slot
 		save_settings()  # Persist settings alongside save
+		## Tick 414: feed the rewind ring buffer on every save success.
+		## record_history_checkpoint without force respects the
+		## rewind_enabled gate, so pre-Time-Mage saves are cheap
+		## (early return, no deep-duplicate). Documented contract from
+		## the helper's docstring ("Public checkpoint hook: callers
+		## SaveSystem on save success, BattleManager at battle start").
+		if GameState and GameState.has_method("record_history_checkpoint"):
+			GameState.record_history_checkpoint(false)
 		save_completed.emit(slot)
 		print("Game saved to slot %d" % slot)
 		return true

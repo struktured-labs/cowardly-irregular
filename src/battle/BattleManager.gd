@@ -208,6 +208,13 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_party_line_cooldowns.clear()
 	if not damage_dealt.is_connected(_on_damage_dealt_for_party_dialogue):
 		damage_dealt.connect(_on_damage_dealt_for_party_dialogue)
+	## Tick 414: feed the rewind ring buffer at battle start so
+	## rewind_to_previous_save can "undo this battle". Documented
+	## hook from record_history_checkpoint's docstring. Soft call
+	## (force=false) respects rewind_enabled — pre-Time-Mage battles
+	## skip the deep-duplicate cost.
+	if GameState and GameState.has_method("record_history_checkpoint"):
+		GameState.record_history_checkpoint(false)
 
 	player_party = players.duplicate()
 	enemy_party = enemies.duplicate()
