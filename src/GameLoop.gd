@@ -3564,9 +3564,23 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "digital"
 		"vertex_village":
 			return "void"
+		# Tick 360: castle_harmonia (W1 final boss arena, indoor stone
+		# setting) was falling through to the `_:` default and returning
+		# "plains" because no substring keyword matched. Players fought
+		# Chancellor Mordaine in front of a plains background instead of
+		# a medieval indoor scene. Maps to "village" — same terrain the
+		# other medieval indoor spaces use (harmonia_chapel,
+		# harmonia_library) for visual continuity.
+		"castle_harmonia":
+			return "village"
 		_:
 			if "cave" in map_id or "dungeon" in map_id:
 				return "cave"
+			elif "castle" in map_id:
+				# Tick 360: keyword guard for future castle-style arenas
+				# (e.g., castle_<world> if added) so they default to the
+				# village-style medieval background instead of plains.
+				return "village"
 			elif "village" in map_id or "town" in map_id:
 				return "village"
 			elif "forest" in map_id:
