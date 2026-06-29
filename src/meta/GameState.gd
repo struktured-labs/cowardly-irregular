@@ -245,7 +245,32 @@ func _create_save_data() -> Dictionary:
 		"llm_rebalance_enabled": llm_rebalance_enabled,
 		"event_log": event_log.serialize() if event_log != null else [],
 		"rebalance_daemon": rebalance_daemon.to_dict() if rebalance_daemon != null else {},
+		## Tick 413: persist save_history so Time Mage rewinds and
+		## tick-412 restore points survive save+quit cycles. Pre-fix
+		## save_history was in-memory only — quit the game and every
+		## restore point evaporated, defeating the "you can revert
+		## later" design of the restore_point ability. Strip nested
+		## save_history from each snapshot to prevent recursive bloat
+		## (each snapshot is already a full save_data; embedding
+		## another save_history inside would double the file size per
+		## generation). The serialized list is capped naturally by
+		## max_history_size (5 default).
+		"save_history": _serialize_save_history(),
 	}
+
+
+## Tick 413: deep-strip nested save_history from each snapshot so
+## persisting the rewind ring buffer doesn't cause recursive bloat.
+func _serialize_save_history() -> Array:
+	var out: Array = []
+	for snapshot in save_history:
+		if not (snapshot is Dictionary):
+			continue
+		var stripped: Dictionary = snapshot.duplicate(true)
+		if stripped.has("save_history"):
+			stripped.erase("save_history")
+		out.append(stripped)
+	return out
 
 
 func _apply_save_data(save_data: Dictionary) -> void:
@@ -419,6 +444,25 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		rebalance_daemon = RebalanceDaemon.new()
 	if save_data.has("rebalance_daemon"):
 		rebalance_daemon.from_dict(save_data["rebalance_daemon"])
+
+	## Tick 413: restore save_history from the persisted snapshot.
+	## Type-guarded with explicit typed-Array coercion to dodge the
+	## documented Array[Dictionary] silent-fail trap (CLAUDE.md
+	## Common Pitfalls). Cap at max_history_size on load so a
+	## corrupted save with 1000 snapshots doesn't bloat the live
+	## ring buffer.
+	if save_data.has("save_history"):
+		var raw_history: Variant = save_data["save_history"]
+		if raw_history is Array:
+			var typed_history: Array[Dictionary] = []
+			for entry in raw_history:
+				if entry is Dictionary:
+					typed_history.append(entry.duplicate(true))
+			while typed_history.size() > max_history_size:
+				typed_history.pop_front()
+			save_history = typed_history
+		else:
+			push_warning("[GameState] _apply_save_data: save_history malformed (type=%s) — keeping current ring buffer" % typeof(raw_history))
 
 
 ## Corruption system
