@@ -152,6 +152,19 @@ func can_brave(ap_cost: int) -> bool:
 
 
 func spend_ap(amount: int) -> bool:
+	## Tick 369: refuse negative amounts. Pre-fix spend_ap(-3) silently
+	## GRANTED 3 AP and returned true as if the cost was paid —
+	## can_brave(-3) reads `(current_ap - (-3)) >= -4` which is always
+	## true for any valid current_ap, then the clampi(current_ap - (-3),
+	## -4, 4) added 3 AP. Callers (group attacks, autobattle queues,
+	## Scriptweaver mods) treating the bool return as "AP cost paid"
+	## would accidentally let a single character act for free AND gain
+	## AP back. No current production caller passes negatives, but the
+	## footgun is preserved for symmetry with tick 368's heal/restore_mp
+	## guard. Use gain_ap for legitimate AP gain.
+	if amount < 0:
+		push_warning("[Combatant] spend_ap() called with negative amount %d on %s — refused, returning false (use gain_ap for AP gain)" % [amount, combatant_name])
+		return false
 	if not can_brave(amount):
 		return false
 
@@ -166,6 +179,13 @@ func spend_ap(amount: int) -> bool:
 
 
 func gain_ap(amount: int) -> void:
+	## Tick 369: refuse negative amounts. Pre-fix gain_ap(-2) silently
+	## DRAINED 2 AP (clampi(current_ap + -2, -4, 4)) — a silent
+	## bypass of spend_ap's debt-check gate. Symmetric defensive
+	## guard with spend_ap above; use spend_ap for legitimate AP cost.
+	if amount < 0:
+		push_warning("[Combatant] gain_ap() called with negative amount %d on %s — refused (use spend_ap for AP cost)" % [amount, combatant_name])
+		return
 	# Tick 286: clamp at +4 means gain_ap(1) when current_ap == 4
 	# was a no-op that still emitted ap_changed — UI listeners
 	# repainted needlessly each turn after reaching cap. Guard on
