@@ -3081,8 +3081,14 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 				continue
 
 		# Invisible/evasion give the target untouchable/dodge windows.
-		if _target_dodges_physical(caster, target):
-			continue
+		## Tick 434: ignores_evasion bypasses the dodge check. authored
+		## on glitch_strike — the W6 "you can't dodge a glitch" beat.
+		## Pre-fix the field was authored but no code read it, so
+		## glitch_strike still missed against invisible/evasion/shadow_
+		## step targets.
+		if not bool(ability.get("ignores_evasion", false)):
+			if _target_dodges_physical(caster, target):
+				continue
 
 		var damage = int(base_damage * multiplier)
 		var is_crit = false
@@ -3256,12 +3262,35 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		## Tick 427: optimization_itself adapts to repeated magic too.
 		damage = _apply_counter_repeated_damage_mod(target, ability.get("id", ""), damage)
 
+		## Tick 434: ignores_defense doubles damage as a rough
+		## compensation for take_damage's defense formula. phantom_byte
+		## authors this — "ghosts through armor". A true-damage path
+		## would bypass the formula entirely, but doubling produces
+		## the same effective +damage boost without restructuring the
+		## take_damage call. ignores_resistance suppresses the
+		## elemental_mod reduction (resistance and immunity both clamp
+		## up to 1.0; weakness 1.5x stays). exploit_weakness +
+		## fourth_wall_break author it.
+		var ignores_defense: bool = bool(ability.get("ignores_defense", false))
+		var ignores_resistance: bool = bool(ability.get("ignores_resistance", false))
+		if ignores_defense:
+			damage *= 2
+
 		var actual_damage = 0
 		var elemental_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
+		if ignores_resistance and elemental_mod < 1.0:
+			elemental_mod = 1.0
 		if element:
-			actual_damage = target.take_elemental_damage(damage, element)
+			if ignores_resistance:
+				# Skip the elemental damage path so 0.5x resistance and
+				# 0.0x immunity don't get re-applied inside take_elemental_damage.
+				actual_damage = target.take_damage(damage, true)
+			else:
+				actual_damage = target.take_elemental_damage(damage, element)
 		else:
 			actual_damage = target.take_damage(damage, true)
+		if ignores_defense or ignores_resistance:
+			battle_log_message.emit("[color=magenta]✦ %s pierces through %s's defenses![/color]" % [caster.combatant_name, target.combatant_name])
 
 		damage_dealt.emit(target, actual_damage, false, element, elemental_mod)
 		## Tick 432: accumulate for damage_to_self_pct recoil.
