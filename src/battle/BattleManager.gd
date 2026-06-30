@@ -4637,9 +4637,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 						target.gain_ap(ap_gain)
 			battle_log_message.emit("[color=%s]%s's inspiring melody rallies the party![/color] (+%d AP, +%d%% MP)" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name, ap_gain, int(mp_pct * 100)])
 		"steal":
+			## Tick 462: equipment.json special_effects.steal_bonus
+			## (thiefs_glove authors 0.25). Pre-tick the field was
+			## decoration — the glove gave the stat boost but not the
+			## headline +25% steal success the name promised. Add the
+			## bonus to the per-cast success rate. Clamp the sum at
+			## 1.0 so a future stacked-glove build doesn't go above
+			## 100% (the bound also dodges the > 1.0 randf check
+			## becoming always-true edge).
+			var steal_bonus: float = _sum_equipment_special_effect(caster, "steal_bonus")
+			var effective_rate: float = clampf(success_rate + steal_bonus, 0.0, 1.0)
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					if randf() < success_rate:
+					if randf() < effective_rate:
 						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / 50.0))
 						GameState.add_gold(gold_amount)
 						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
