@@ -3368,9 +3368,51 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## the debuff also stacks on top.
 	_maybe_apply_debuff_on_attack(attacker, actual_target)
 
+	## Tick 461: equipment.json special_effects.poison_chance /
+	## sleep_chance — poison_dagger authors 0.25, sleep_dagger
+	## authors 0.20. Pre-tick neither field was read; the weapons
+	## gave the attack stat bonus from stat_mods but their
+	## headline gimmick was decoration. Applied AFTER damage lands
+	## (matches the empty_set debuff_on_attack pattern above) so
+	## the status piles on top of the hit. Each on-hit chance
+	## rolls independently — a poison_dagger upgraded with a
+	## sleep_dagger off-hand (future dual-wield) could apply both.
+	_apply_equipment_on_hit_status(attacker, actual_target)
+
 	# Counter-on-hit: monsters with counter_abilities defined in monsters.json
 	# fire a free retaliatory ability after taking a real hit.
 	_trigger_monster_counter(actual_target, attacker)
+
+
+## Tick 461: on-hit status apply driven by equipment special_effects.
+## Generic over status names — each entry in ON_HIT_STATUSES maps
+## an equipment key to (status_name, duration, color). New on-hit
+## chances (e.g. confuse_chance, burn_chance) drop in by extending
+## the const without touching the loop.
+const ON_HIT_STATUSES: Array = [
+	{"key": "poison_chance", "status": "poison", "duration": 3, "color": "green", "verb": "poisons"},
+	{"key": "sleep_chance", "status": "sleep", "duration": 2, "color": "cyan", "verb": "lulls"},
+]
+
+
+func _apply_equipment_on_hit_status(attacker: Combatant, target: Combatant) -> void:
+	if attacker == null or target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	for entry in ON_HIT_STATUSES:
+		var chance: float = _sum_equipment_special_effect(attacker, entry["key"])
+		if chance <= 0.0:
+			continue
+		## Tick 461: also respect target's status_resistance equipment
+		## (resist_ring authors 0.3 = 30% resist). Subtract the resist
+		## from the chance so a poison_dagger swing against a
+		## resist_ring wearer drops from 0.25 → 0.175.
+		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		if effective <= 0.0 or randf() >= effective:
+			continue
+		target.add_status(entry["status"], entry["duration"])
+		battle_log_message.emit("[color=%s]%s %s %s![/color]" % [
+			entry["color"], attacker.combatant_name, entry["verb"], target.combatant_name])
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
