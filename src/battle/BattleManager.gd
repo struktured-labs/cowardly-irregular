@@ -395,6 +395,30 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 		1:
 			battle_log_message.emit("[color=orange]⚠ Danger: %s ⚠[/color]" % danger_source)
 
+	## Tick 466: monsters.json top-level time_manipulation flag.
+	## time_phantom authors `time_manipulation: true` ("A meta-boss
+	## that exists between save states. Can rewind its own actions.")
+	## but pre-tick the field was decoration — the abilities
+	## themselves (rewind_turn, time_stop, temporal_strike,
+	## future_sight) were already wired through their effect/meta
+	## paths, but the flag itself gave players no signal that the
+	## boss they're facing CAN manipulate time. Now emit a cyan
+	## "⧗ TEMPORAL ANOMALY" line alongside the danger warnings
+	## above. Doesn't share the max_danger tier because the
+	## time_phantom IS extremely_dangerous and BOTH lines should
+	## fire — players see "you're in trouble" AND "specifically
+	## the time-manipulation flavor".
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var monster_type_t: String = enemy.get_meta("monster_type", "") if enemy.has_method("get_meta") else ""
+		if monster_type_t == "" or not (EncounterSystem and EncounterSystem.monster_database.has(monster_type_t)):
+			continue
+		var data_t: Dictionary = EncounterSystem.monster_database[monster_type_t]
+		if bool(data_t.get("time_manipulation", false)):
+			battle_log_message.emit("[color=cyan]⧗ TEMPORAL ANOMALY: %s warps the moment[/color]" % enemy.combatant_name)
+			break  # one announce per battle even if multiple time-manipulators
+
 	battle_started.emit()
 	## Tick 452: boss_insight passive — passives.json authors
 	## meta_effects.show_boss_hp / show_boss_weakness /
