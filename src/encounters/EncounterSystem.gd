@@ -72,12 +72,60 @@ func check_for_encounter() -> bool:
 	var roll = randf()
 
 	if roll < chance:
+		## Tick 440: passive encounter_skip_chance — passives.json
+		## authors encounter_skip's meta_effects.encounter_skip_chance
+		## = 0.25 ("25% chance to skip random encounters entirely")
+		## but pre-fix no code read it. The encounter that would have
+		## fired now rolls against the highest party-wide skip chance
+		## first; on success, the encounter is silently consumed
+		## without firing _trigger_encounter (still advances the
+		## minimum-steps gate so the player can't farm repeated rolls
+		## by staying still). Maximum-wins so multiple skip-passive
+		## bundles take the strongest single source, not stacked.
+		var skip_chance: float = _party_encounter_skip_chance()
+		if skip_chance > 0.0 and randf() < clampf(skip_chance, 0.0, 1.0):
+			steps_since_last_encounter += 1
+			encounter_check_passed.emit()
+			return false
 		_trigger_encounter()
 		return true
 	else:
 		steps_since_last_encounter += 1
 		encounter_check_passed.emit()
 		return false
+
+
+## Tick 440: look up the strongest encounter_skip_chance among the
+## party's equipped passives. Returns 0.0 when GameState isn't
+## available (tests / preload context) or no party member carries a
+## skip passive. Max-wins so multiple skip passives don't stack to
+## near-100% silence — design intent is "one slot can grant the
+## chance", not "stack three to skip everything".
+func _party_encounter_skip_chance() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 0.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return 0.0
+	var max_chance: float = 0.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			var c: float = float(me.get("encounter_skip_chance", 0.0))
+			if c > max_chance:
+				max_chance = c
+	return max_chance
 
 
 func _trigger_encounter() -> void:
