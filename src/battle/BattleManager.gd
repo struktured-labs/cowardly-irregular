@@ -3073,10 +3073,39 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		battle_log_message.emit("[color=cyan]%s is pacified and cannot strike![/color]" % caster.combatant_name)
 		return
 
-	var base_damage = caster.get_buffed_stat("attack", caster.attack)
+	## Tick 437: scales_with field swaps the base stat. abilities.json
+	## authors:
+	##   guard_strike: scales_with=defense
+	##   throw_shuriken: scales_with=speed
+	##   last_stand_ability: scales_with=missing_hp (special — adds a
+	##     multiplier scaling with caster's missing HP)
+	## Pre-fix the field was never read — all three abilities used
+	## the default attack stat as base, so guard_strike on a high-
+	## defense tank dealt poverty damage instead of leveraging the
+	## tank's signature stat.
+	var scales_with: String = str(ability.get("scales_with", ""))
+	var base_damage: int
+	match scales_with:
+		"defense":
+			base_damage = caster.get_buffed_stat("defense", caster.defense)
+		"speed":
+			base_damage = caster.get_buffed_stat("speed", caster.speed)
+		_:
+			base_damage = caster.get_buffed_stat("attack", caster.attack)
 	if caster.has_status("fear"):
 		base_damage = int(base_damage * 0.5)
 	var multiplier = ability.get("damage_multiplier", 1.0)
+	## Tick 437: missing_hp scaling — last_stand_ability authors this.
+	## Caster damage scales linearly from 1.0x to max_multiplier as
+	## current_hp drops from full to 0. Pre-fix max_multiplier was
+	## also unread, so last_stand was a flat 1.0x ability regardless
+	## of HP state — the "more damage the lower your HP" promise
+	## silently dropped.
+	if scales_with == "missing_hp" and caster.max_hp > 0:
+		var hp_pct: float = float(caster.current_hp) / float(caster.max_hp)
+		var max_mult: float = float(ability.get("max_multiplier", 5.0))
+		var missing_factor: float = 1.0 + (1.0 - hp_pct) * (max_mult - 1.0)
+		multiplier *= missing_factor
 	var crit_chance = ability.get("crit_chance", 0.0)
 
 	for target in targets:
@@ -3247,6 +3276,15 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var damage = int(base_damage * multiplier)
 		var mag_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(mag_vrange.x, mag_vrange.y))
+		## Tick 437: damage_variance amplifies the magic-damage roll
+		## randomness. type_error authors 2.0 — "causes random damage"
+		## per its description, so the roll spans [0, 2x] instead of
+		## the default ~[0.9, 1.1]. Pre-fix the field was authored
+		## and described but no code read it; type_error rolled at
+		## the normal narrow variance like every other magic spell.
+		var dmg_variance: float = float(ability.get("damage_variance", 0.0))
+		if dmg_variance > 0.0:
+			damage = int(damage * randf_range(0.0, dmg_variance))
 		damage = _apply_market_sense(caster, damage)
 
 		# Apply terrain modifier for elemental damage
