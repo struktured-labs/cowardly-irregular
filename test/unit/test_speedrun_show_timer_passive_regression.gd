@@ -33,8 +33,11 @@ func test_ready_inits_hud() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	assert_true(body.contains("_init_speedrun_hud"),
-		"_ready must call _init_speedrun_hud")
+	# Tick 464: _ready now defers to _init_passive_hooks (which calls
+	# _init_speedrun_hud) so first-frame paint isn't blocked. Accept
+	# either shape.
+	assert_true(body.contains("_init_speedrun_hud") or body.contains("_init_passive_hooks"),
+		"_ready must call _init_speedrun_hud (or its deferred entry _init_passive_hooks)")
 
 
 func test_init_builds_canvas_layer() -> void:

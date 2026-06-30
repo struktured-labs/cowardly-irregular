@@ -33,8 +33,12 @@ func test_ready_sets_up_timer() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	assert_true(body.contains("_init_autosave_timer"),
-		"_ready must call _init_autosave_timer")
+	# Tick 464: _ready now defers to _init_passive_hooks (which calls
+	# _init_autosave_timer + _init_speedrun_hud) so first-frame paint
+	# isn't blocked. Accept either the direct call (pre-tick-464 shape)
+	# or the deferred entry point.
+	assert_true(body.contains("_init_autosave_timer") or body.contains("_init_passive_hooks"),
+		"_ready must call _init_autosave_timer (or its deferred entry _init_passive_hooks)")
 
 
 func test_init_timer_uses_party_helper() -> void:

@@ -232,27 +232,16 @@ func _ready() -> void:
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
-	## Tick 449: autosave passive's meta_effects.auto_save_interval
-	## (passives.json authors 300 seconds, "Automatically save before
-	## boss fights and dangerous encounters" — the interval is the
-	## "dangerous encounters" half of the promise, fired during plain
-	## overworld traversal). Pre-fix the field was decoration. Each
-	## OverworldPlayer instance owns its own timer so it dies with the
-	## scene (no stale ticks during battle/cutscene). Only autostarts
-	## when at least one party member equips autosave; the timer is
-	## still allocated unconditionally so toggling passives mid-run
-	## can refresh it without re-_ready'ing.
-	_init_autosave_timer()
-	## Tick 450: speedrun_mode passive's meta_effects.show_timer
-	## (passives.json authors true, "Show speedrun timer, +50%
-	## movement speed on overworld"). The movement_speed_bonus
-	## half was wired in tick 448 but the timer half was pure
-	## decoration — players equipped speedrun_mode and got a
-	## faster sprite with no HUD. Each OverworldPlayer instance
-	## owns its own CanvasLayer + Label + 1s refresh Timer so
-	## the HUD dies with the scene (no leftover ticks during
-	## battle / cutscene transitions).
-	_init_speedrun_hud()
+	## Tick 464: defer the tick 449/450/455 HUD + timer setup to the
+	## next idle frame. Allocating Timer / CanvasLayer / Label nodes
+	## inside _ready blocked the player scene's first-frame paint on
+	## slow browsers (Brave on Android), which was a contributing
+	## suspect for the post-battle "black screen freezes" report.
+	## Deferring lets the scene become visible immediately while the
+	## passive-driven hooks finish wiring on the next process_frame.
+	## Timers and labels are still owned by the OverworldPlayer so
+	## they die with the scene cleanly.
+	call_deferred("_init_passive_hooks")
 
 
 func _setup_sprite() -> void:
@@ -1669,6 +1658,18 @@ func _party_movement_speed_bonus() -> float:
 			if b > best:
 				best = b
 	return best
+
+
+## Tick 464: combined deferred setup for the tick 449/450/455 passive
+## hooks. _ready stays lightweight (sprite + group registration); this
+## runs on the next process_frame so first-frame paint isn't blocked
+## by Timer / CanvasLayer / Label allocations. Guarded so a scene
+## torn down between _ready and the deferred call is a clean no-op.
+func _init_passive_hooks() -> void:
+	if not is_inside_tree():
+		return
+	_init_autosave_timer()
+	_init_speedrun_hud()
 
 
 ## Tick 449: build a Timer child that fires the periodic autosave.
