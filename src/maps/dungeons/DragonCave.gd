@@ -434,6 +434,21 @@ func _update_floor_encounters(floor_num: int) -> void:
 func _trigger_boss_battle() -> void:
 	controller.pause_exploration()
 
+	## Tick 447: autosave passive — passives.json authors
+	## meta_effects.auto_save_before_boss = true with description
+	## "Automatically save before boss fights and dangerous
+	## encounters", but pre-fix the field was decoration. If any
+	## party member equips autosave, force a quicksave RIGHT NOW
+	## (before the cutscene + battle_triggered emit) so a wipe
+	## rewinds to the moment the boss appeared, not the last
+	## village save point. Uses force_quick_save to bypass the
+	## interior/battle gate (we're entering the boss intro).
+	if _party_wants_auto_save_before_boss():
+		var ss: Node = get_node_or_null("/root/SaveSystem")
+		if ss != null and ss.has_method("force_quick_save"):
+			ss.force_quick_save()
+			print("[AUTOSAVE] Pre-boss quicksave fired (autosave passive)")
+
 	# Register pending boss defeat so GameLoop._on_battle_ended applies the
 	# flags on victory. The DragonCave instance gets freed during the battle
 	# transition, so any handler attached to `self` would never fire.
@@ -694,3 +709,33 @@ func set_player_job(job_name: String) -> void:
 func set_player_appearance(leader) -> void:
 	if player and player.has_method("set_appearance_from_leader"):
 		player.set_appearance_from_leader(leader)
+
+
+## Tick 447: check the dict-shaped player_party for any equipped
+## passive that authors meta_effects.auto_save_before_boss. Returns
+## false cleanly when GameState / PassiveSystem aren't available
+## (tests / preload). Any-wins (one passive on one party member
+## is enough to trigger the save — it's a safety net).
+func _party_wants_auto_save_before_boss() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("auto_save_before_boss", false)):
+				return true
+	return false

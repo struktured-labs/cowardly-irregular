@@ -55,7 +55,7 @@ func test_dragon_cave_registers_pending_boss_defeat() -> void:
 	var text = _read("res://src/maps/dungeons/DragonCave.gd")
 	var idx = text.find("func _trigger_boss_battle")
 	assert_gt(idx, -1, "_trigger_boss_battle must exist")
-	var body = text.substr(idx, 1500)
+	var body = text.substr(idx, 2500)
 	assert_true(body.find("GameState.pending_boss_defeat") != -1,
 		"DragonCave._trigger_boss_battle must set GameState.pending_boss_defeat")
 	assert_true(body.find("boss_flag_key") != -1,
