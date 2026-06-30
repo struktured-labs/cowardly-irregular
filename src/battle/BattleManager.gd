@@ -3678,6 +3678,22 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 	var element = ability.get("element", "")
 	var drain_pct = ability.get("drain_percentage", 0)
 
+	## Tick 458: equipment.json special_effects.<element>_damage_bonus
+	## family. fire_damage_bonus is authored on flame_sword (1.5);
+	## ice/lightning/dark/holy were authored on themed gear but no
+	## code path read the fields. Now the caster's three equipment
+	## slots get scanned for the matching <element>_damage_bonus and
+	## the resulting multiplier bakes into damage_multiplier ABOVE
+	## the per-target loop so all targets benefit. Generic key
+	## construction (element + "_damage_bonus") reuses the helper
+	## from tick 457 without per-element wiring. Skipped when the
+	## ability is element-less (matches "no fire scroll, no fire
+	## bonus" intent).
+	if element != "":
+		var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
+		if elem_bonus > 0.0:
+			multiplier *= elem_bonus
+
 	## Tick 432: track total damage dealt this cast so
 	## damage_to_self_pct (stack_overflow's caster recoil) can apply
 	## proportional self-damage after the loop. Pre-fix the field was
