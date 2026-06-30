@@ -798,6 +798,29 @@ func calculate_elemental_modifier(element: String) -> float:
 
 func take_elemental_damage(base_damage: int, element: String) -> int:
 	"""Take damage with elemental modifier"""
+
+	## Tick 443: <element>_absorb meta_effect (passives.json).
+	## undead_affinity authors meta_effects.dark_absorb = true with
+	## description "+40% dark damage, heal from dark attacks", but
+	## pre-fix the field was decoration — dark hits chewed HP just
+	## like any other element. Generic by element so future
+	## fire_absorb / ice_absorb passives (e.g. dragon attunement
+	## sets) drop in with no new wire. Conversion is 1:1 (the full
+	## base damage becomes healing) so the absorb feels like a
+	## reward, not a soft resist. Heal goes through hp_changed +
+	## status_tick_heal so the green popup labels the source.
+	if not element.is_empty() and _absorbs_element(element):
+		var heal_amount: int = max(1, base_damage)
+		var old_hp_abs: int = current_hp
+		current_hp = min(max_hp, current_hp + heal_amount)
+		var healed: int = current_hp - old_hp_abs
+		if healed > 0:
+			hp_changed.emit(old_hp_abs, current_hp)
+			if status_tick_heal != null:
+				status_tick_heal.emit(healed, "absorb_" + element)
+		print("%s absorbs %d %s damage!" % [combatant_name, healed, element])
+		return 0
+
 	var elemental_mod = calculate_elemental_modifier(element)
 	var actual_damage = int(base_damage * elemental_mod)
 
@@ -810,6 +833,16 @@ func take_elemental_damage(base_damage: int, element: String) -> int:
 		print("%s resists %s" % [combatant_name, element])
 
 	return take_damage(actual_damage, true)
+
+
+## Tick 443: generic elemental absorb gate. <element>_absorb keys
+## in passive meta_effects (e.g. dark_absorb on undead_affinity)
+## convert damage of that element to healing. Bool-authored values
+## come through _get_passive_meta_effect_sum as 1.0 via float(true).
+func _absorbs_element(element: String) -> bool:
+	if element.is_empty():
+		return false
+	return _get_passive_meta_effect_sum(element + "_absorb") > 0.0
 
 
 ## Permanent injuries (meta mechanic)
