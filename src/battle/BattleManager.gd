@@ -6872,6 +6872,21 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 			attack_missed.emit(target)
 			battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
 			return true
+	## Tick 459: equipment.json special_effects.evasion_bonus —
+	## elven_cloak, thiefs_glove, speed_boots, etc. author this
+	## but pre-tick no code path read the field. The dodge chance
+	## the gear name promised was decoration. Walks all three
+	## equipment slots via the generic helper from tick 457 and
+	## clamps the combined contribution at 50% so a stacked-evade
+	## build can't make the target untouchable. Stacks ADDITIVELY
+	## with the passive_dodge above — they're separate rolls so a
+	## monk with both passive evasion_up and an elven_cloak gets
+	## two independent chances to miss the hit.
+	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
+	if equip_dodge > 0.0 and randf() < equip_dodge:
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
+		return true
 	return false
 
 
