@@ -450,6 +450,12 @@ func end_battle(victory: bool) -> void:
 		## fires on the NEXT encounter with the same opponent. We
 		## append to GameState.previously_fought_bosses (persisted
 		## via to_dict so it survives quit-and-resume).
+		## Tick 454: while we're walking the enemy_party for boss
+		## detection, also stamp the speedrun split + PB. show_splits
+		## fires a "[Splits]" battle-log line ONLY when the party has
+		## speedrun_timer equipped; the underlying data is always
+		## tracked so the player can flip the passive on later and
+		## see existing PBs.
 		if GameState and "previously_fought_bosses" in GameState:
 			for enemy in enemy_party:
 				if not is_instance_valid(enemy):
@@ -466,6 +472,7 @@ func end_battle(victory: bool) -> void:
 					continue
 				if not (boss_id in GameState.previously_fought_bosses):
 					GameState.previously_fought_bosses.append(boss_id)
+				_record_boss_split(boss_id, enemy.combatant_name)
 
 		# Check for one-shot achievement
 		_check_one_shot()
@@ -2030,6 +2037,66 @@ func _start_execution_phase() -> void:
 	execution_phase_started.emit()
 
 	_execute_next_action()
+
+
+## Tick 454: stamp a split + PB for the just-defeated boss. The
+## split is the playtime at defeat (a monotonic counter, perfect
+## for a "splits" view that compares first-clear vs PB). When the
+## party has speedrun_timer.show_splits equipped, emit a battle-log
+## line — new PBs get a gold ★ marker so the player feels the win.
+func _record_boss_split(boss_id: String, display_name: String) -> void:
+	if boss_id == "":
+		return
+	if GameState == null or not ("playtime_seconds" in GameState):
+		return
+	var now: float = float(GameState.playtime_seconds)
+	if not (boss_id in GameState.boss_splits):
+		GameState.boss_splits[boss_id] = now
+	var prior_pb: float = float(GameState.boss_personal_best.get(boss_id, 0.0))
+	var new_pb: bool = false
+	if prior_pb <= 0.0 or now < prior_pb:
+		GameState.boss_personal_best[boss_id] = now
+		new_pb = true
+	if not _party_wants_splits_emit():
+		return
+	var pb_disp: float = float(GameState.boss_personal_best.get(boss_id, now))
+	var marker: String = " [color=gold]★ NEW PB[/color]" if new_pb else ""
+	battle_log_message.emit("[color=cyan][Splits] %s @ %s (PB %s)%s[/color]" % [
+		display_name,
+		_format_split(now),
+		_format_split(pb_disp),
+		marker])
+
+
+## Tick 454: gate. show_splits flag scan, any-wins.
+func _party_wants_splits_emit() -> bool:
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in player_party:
+		if not (member is Combatant):
+			continue
+		for passive_id in member.equipped_passives:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if me is Dictionary and bool(me.get("show_splits", false)):
+				return true
+	return false
+
+
+## Tick 454: split formatter — HH:MM:SS for long runs, M:SS for
+## short. Inlined locally rather than reaching into GameState's
+## get_playtime_formatted (which always emits the long form).
+func _format_split(t: float) -> String:
+	var total: int = int(t)
+	var h: int = total / 3600
+	var m: int = (total / 60) % 60
+	var s: int = total % 60
+	if h > 0:
+		return "%d:%02d:%02d" % [h, m, s]
+	return "%d:%02d" % [m, s]
 
 
 ## Tick 453: apply the pattern_recognition bonus when the attacker

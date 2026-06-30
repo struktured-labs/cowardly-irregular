@@ -135,6 +135,16 @@ var battles_won: int = 0
 ## pattern_memory authors).
 var previously_fought_bosses: Array[String] = []
 
+## Tick 454: speedrun_timer passive's meta_effects.show_splits +
+## track_personal_best. Each defeated boss records the elapsed
+## playtime at defeat (boss_splits) plus the best (lowest) playtime
+## to defeat the same boss across runs (boss_personal_best). Both
+## persist via to_dict so PBs survive quit-and-resume and a fresh
+## sub-300s W1 mordaine kill displays correctly even after a
+## graveyard side-quest detour later.
+var boss_splits: Dictionary = {}
+var boss_personal_best: Dictionary = {}
+
 ## Meta-save features (unlocked by Time Mage)
 var meta_features: Dictionary = {
 	"autosave_enabled": false,
@@ -274,6 +284,9 @@ func _create_save_data() -> Dictionary:
 		## Tick 453: persist the boss-memory list so the pattern_
 		## recognition bonus survives a save+load.
 		"previously_fought_bosses": previously_fought_bosses,
+		## Tick 454: persist speedrun splits + PBs.
+		"boss_splits": boss_splits.duplicate(true),
+		"boss_personal_best": boss_personal_best.duplicate(true),
 		## Tick 413: persist save_history so Time Mage rewinds and
 		## tick-412 restore points survive save+quit cycles. Pre-fix
 		## save_history was in-memory only — quit the game and every
@@ -489,6 +502,15 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		if raw_bosses is Array:
 			for b in raw_bosses:
 				previously_fought_bosses.append(str(b))
+
+	## Tick 454: restore speedrun splits + PBs. Dictionary fields
+	## don't need the typed-array dance, but a Variant guard keeps
+	## a malformed save from silently overwriting them with non-
+	## dict garbage.
+	if save_data.has("boss_splits") and save_data["boss_splits"] is Dictionary:
+		boss_splits = (save_data["boss_splits"] as Dictionary).duplicate(true)
+	if save_data.has("boss_personal_best") and save_data["boss_personal_best"] is Dictionary:
+		boss_personal_best = (save_data["boss_personal_best"] as Dictionary).duplicate(true)
 
 	## Tick 413: restore save_history from the persisted snapshot.
 	## Type-guarded with explicit typed-Array coercion to dodge the
