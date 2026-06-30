@@ -1657,6 +1657,31 @@ func _party_movement_speed_bonus() -> float:
 			var b: float = float(me.get("movement_speed_bonus", 1.0))
 			if b > best:
 				best = b
+	## Tick 468: also consult job overworld_abilities.movement_
+	## speed_bonus. jobs.json authors Ninja with
+	## overworld_abilities = {movement_speed_bonus: 1.5,
+	## reduced_encounter_rate: 0.5, can_skip_cutscenes: true} but
+	## pre-tick no code path read overworld_abilities at all. A
+	## Ninja primary/secondary now nudges the speed via the same
+	## max-wins lane as the speedrun_mode passive.
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js != null and js.has_method("get_job"):
+		for member in gs.player_party:
+			if not (member is Dictionary):
+				continue
+			for slot_key in ["job_id", "secondary_job_id"]:
+				var jid_v: Variant = member.get(slot_key, "")
+				if not (jid_v is String) or (jid_v as String) == "":
+					continue
+				var job_data: Dictionary = js.get_job(str(jid_v))
+				if job_data.is_empty():
+					continue
+				var oa: Variant = job_data.get("overworld_abilities", {})
+				if not (oa is Dictionary):
+					continue
+				var jb: float = float(oa.get("movement_speed_bonus", 1.0))
+				if jb > best:
+					best = jb
 	return best
 
 

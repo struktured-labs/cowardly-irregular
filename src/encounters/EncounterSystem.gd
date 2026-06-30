@@ -69,6 +69,19 @@ func check_for_encounter() -> bool:
 
 	# Roll for encounter
 	var chance = encounter_rate * encounter_rate_modifier
+	## Tick 468: Ninja job's overworld_abilities.reduced_encounter_rate.
+	## jobs.json authors Ninja with overworld_abilities = {... ,
+	## reduced_encounter_rate: 0.5 ...} ("Ninja: half encounters")
+	## but pre-tick no code read the field. Apply the strongest
+	## party-wide reduction to the rolled chance so a Ninja primary
+	## or secondary actually slows the encounter cadence. Multiplied
+	## (not added) so a 0.5 + 0.5 stack still floors at 0.25 (no
+	## free silence). Independent from passive encounter_skip — the
+	## passive rolls AFTER the rate roll, the job reduces the rate
+	## BEFORE the roll, so both layers compose cleanly.
+	var enc_reduction: float = _party_encounter_rate_reduction()
+	if enc_reduction < 1.0:
+		chance *= enc_reduction
 	var roll = randf()
 
 	if roll < chance:
@@ -93,6 +106,41 @@ func check_for_encounter() -> bool:
 		steps_since_last_encounter += 1
 		encounter_check_passed.emit()
 		return false
+
+
+## Tick 468: walk the party for the strongest reduced_encounter_
+## rate among each member's job overworld_abilities. Returns 1.0
+## (no reduction) when no member has the field; a Ninja member
+## drops this to 0.5. Multiplicative compose with the rate so two
+## Ninjas in party would give 0.25 reduction (down from 0.5).
+## Actually we take the MIN here so two Ninjas still grant the
+## authored 0.5x — design intent is "one Ninja halves encounters",
+## not "two compound to 0.25".
+func _party_encounter_rate_reduction() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 1.0
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_job"):
+		return 1.0
+	var best: float = 1.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		for slot_key in ["job_id", "secondary_job_id"]:
+			var jid_v: Variant = member.get(slot_key, "")
+			if not (jid_v is String) or (jid_v as String) == "":
+				continue
+			var job_data: Dictionary = js.get_job(str(jid_v))
+			if job_data.is_empty():
+				continue
+			var oa: Variant = job_data.get("overworld_abilities", {})
+			if not (oa is Dictionary):
+				continue
+			var r: float = float(oa.get("reduced_encounter_rate", 1.0))
+			if r > 0.0 and r < best:
+				best = r
+	return best
 
 
 ## Tick 440: look up the strongest encounter_skip_chance among the
