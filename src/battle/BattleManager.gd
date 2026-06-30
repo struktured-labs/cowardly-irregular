@@ -3251,6 +3251,19 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	if _target_dodges_physical(attacker, actual_target):
 		return
 
+	## Tick 463: monsters.json top-level immunities list. null_entity
+	## authors immunities=["physical"] — the W6 abstract boss
+	## ignores physical entirely. Pre-tick the field was decoration;
+	## every Combatant hit (and the physical_reflect/barrier paths)
+	## still landed on physical attacks. Skipped at this point in
+	## the flow so the miss preserves the per-hit log line and AP
+	## (already spent above). Doesn't burn turn-on-hit hooks
+	## (counter, debuff_on_attack) because those expect a real hit.
+	if _monster_immune_to_category(actual_target, "physical"):
+		attack_missed.emit(actual_target)
+		battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's attack passes through nothing![/color]" % [actual_target.combatant_name, attacker.combatant_name])
+		return
+
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
 
 	# Miss check: base 10% miss rate, reduced by attacker speed vs target speed
@@ -3382,6 +3395,30 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	# Counter-on-hit: monsters with counter_abilities defined in monsters.json
 	# fire a free retaliatory ability after taking a real hit.
 	_trigger_monster_counter(actual_target, attacker)
+
+
+## Tick 463: check the target's monster_data.immunities list for
+## a damage-class immunity (e.g. "physical", "magic"). null_entity
+## (W6 abstract boss) authors immunities=["physical"]. Returns
+## false cleanly when EncounterSystem isn't available or the
+## target isn't a monster (player party members never carry this
+## field). Designed generically: passing "magic" or any future
+## category works as long as monsters.json authors it.
+func _monster_immune_to_category(target: Combatant, category: String) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_meta("monster_type"):
+		return false
+	if EncounterSystem == null or not (EncounterSystem.monster_database is Dictionary):
+		return false
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "" or not EncounterSystem.monster_database.has(mtype):
+		return false
+	var mdata: Dictionary = EncounterSystem.monster_database[mtype]
+	var immunities: Variant = mdata.get("immunities", [])
+	if not (immunities is Array):
+		return false
+	return category in immunities
 
 
 ## Tick 461: on-hit status apply driven by equipment special_effects.
@@ -3605,6 +3642,15 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		if not bool(ability.get("ignores_evasion", false)):
 			if _target_dodges_physical(caster, target):
 				continue
+
+		## Tick 463: top-level immunities — same gate as basic
+		## attack. null_entity authors immunities=["physical"] so
+		## every physical ability (Slash, Whirlwind, etc.) should
+		## be a no-op against it.
+		if _monster_immune_to_category(target, "physical"):
+			attack_missed.emit(target)
+			battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's strike passes through nothing![/color]" % [target.combatant_name, caster.combatant_name])
+			continue
 
 		var damage = int(base_damage * multiplier)
 		var is_crit = false
