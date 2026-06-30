@@ -205,6 +205,10 @@ var _custom_skin_color: Color = Color(0.85, 0.70, 0.55)
 var _use_custom_colors: bool = false
 
 
+## Tick 449: periodic autosave timer (autosave.auto_save_interval).
+var _autosave_timer: Timer = null
+
+
 func _ready() -> void:
 	# Register to the "player" group so WanderingNPC, SaveSystem, and other
 	# systems can locate us via get_nodes_in_group("player") regardless of
@@ -218,6 +222,17 @@ func _ready() -> void:
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
+	## Tick 449: autosave passive's meta_effects.auto_save_interval
+	## (passives.json authors 300 seconds, "Automatically save before
+	## boss fights and dangerous encounters" — the interval is the
+	## "dangerous encounters" half of the promise, fired during plain
+	## overworld traversal). Pre-fix the field was decoration. Each
+	## OverworldPlayer instance owns its own timer so it dies with the
+	## scene (no stale ticks during battle/cutscene). Only autostarts
+	## when at least one party member equips autosave; the timer is
+	## still allocated unconditionally so toggling passives mid-run
+	## can refresh it without re-_ready'ing.
+	_init_autosave_timer()
 
 
 func _setup_sprite() -> void:
@@ -1634,6 +1649,70 @@ func _party_movement_speed_bonus() -> float:
 			if b > best:
 				best = b
 	return best
+
+
+## Tick 449: build a Timer child that fires the periodic autosave.
+## Walks the party at start to set the interval from the strongest
+## auto_save_interval meta_effect; defaults to disabled when no
+## party member has the passive equipped.
+func _init_autosave_timer() -> void:
+	_autosave_timer = Timer.new()
+	_autosave_timer.name = "AutosaveTimer"
+	_autosave_timer.one_shot = false
+	_autosave_timer.timeout.connect(_on_autosave_timer_timeout)
+	add_child(_autosave_timer)
+	var interval: float = _party_auto_save_interval()
+	if interval > 0.0:
+		_autosave_timer.wait_time = interval
+		_autosave_timer.start()
+
+
+## Tick 449: read the smallest non-zero auto_save_interval across
+## the party (most-frequent saves win — Speedrunner intent). Returns
+## 0.0 when no passive is equipped so the timer stays idle.
+func _party_auto_save_interval() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 0.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return 0.0
+	var best: float = 0.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			var v: float = float(me.get("auto_save_interval", 0.0))
+			if v > 0.0 and (best == 0.0 or v < best):
+				best = v
+	return best
+
+
+## Tick 449: timer tick. Skip when the game isn't in a safe save
+## state (battle, cutscene) — force_quick_save's _meta_save_bypass
+## would override the gate, but a battle save mid-encounter would
+## clobber the rewind point cover_ally / bp_recovery were just
+## promised. The safer rule: defer the autosave to the next overworld
+## tick by leaving the timer alone — it'll re-fire next interval.
+func _on_autosave_timer_timeout() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm != null and "current_state" in bm:
+		var st: int = int(bm.current_state)
+		if st != 0:  # not INACTIVE (BattleState.INACTIVE = 0)
+			return
+	var ss: Node = get_node_or_null("/root/SaveSystem")
+	if ss != null and ss.has_method("force_quick_save"):
+		ss.force_quick_save()
+		print("[AUTOSAVE] Periodic quicksave fired (autosave passive)")
 
 
 ## Find an interactable (NPC, sign, chest, etc.) near the click position
