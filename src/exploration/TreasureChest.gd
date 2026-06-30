@@ -32,6 +32,12 @@ func _ready() -> void:
 	_setup_name_label()
 	_setup_dialogue_box()
 
+	## Tick 455: register the chest in a "treasure" group so the
+	## content_radar passive can find and count nearby unopened
+	## chests for its HUD readout. Plain group membership avoids
+	## any scene-specific coupling.
+	add_to_group("treasure")
+
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 

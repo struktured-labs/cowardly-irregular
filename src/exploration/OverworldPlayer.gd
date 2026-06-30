@@ -214,6 +214,10 @@ var _speedrun_hud_layer: CanvasLayer = null
 var _speedrun_hud_label: Label = null
 var _speedrun_hud_check_timer: Timer = null
 
+## Tick 455: content_radar HUD label — sits right below the timer
+## label, shows nearby unopened treasure when content_radar is on.
+var _content_radar_label: Label = null
+
 
 func _ready() -> void:
 	# Register to the "player" group so WanderingNPC, SaveSystem, and other
@@ -1758,6 +1762,24 @@ func _init_speedrun_hud() -> void:
 	_speedrun_hud_label.add_theme_constant_override("outline_size", 4)
 	_speedrun_hud_label.text = ""
 	_speedrun_hud_layer.add_child(_speedrun_hud_label)
+	## Tick 455: content_radar label — same anchor as the timer
+	## label but offset 18px down so they stack cleanly. Lighter
+	## green tint distinguishes it from the timer's yellow.
+	_content_radar_label = Label.new()
+	_content_radar_label.name = "RadarLabel"
+	_content_radar_label.anchor_left = 1.0
+	_content_radar_label.anchor_top = 0.0
+	_content_radar_label.anchor_right = 1.0
+	_content_radar_label.anchor_bottom = 0.0
+	_content_radar_label.offset_left = -200.0
+	_content_radar_label.offset_top = 36.0
+	_content_radar_label.offset_right = -12.0
+	_content_radar_label.offset_bottom = 60.0
+	_content_radar_label.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
+	_content_radar_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	_content_radar_label.add_theme_constant_override("outline_size", 4)
+	_content_radar_label.text = ""
+	_speedrun_hud_layer.add_child(_content_radar_label)
 	_speedrun_hud_check_timer = Timer.new()
 	_speedrun_hud_check_timer.name = "SpeedrunHUDTimer"
 	_speedrun_hud_check_timer.one_shot = false
@@ -1770,21 +1792,27 @@ func _init_speedrun_hud() -> void:
 
 ## Tick 450: 1Hz HUD refresh. Reads the visibility gate and
 ## current elapsed playtime each tick.
+## Tick 455: also refreshes the content_radar treasure label.
 func _on_speedrun_hud_tick() -> void:
 	if _speedrun_hud_label == null:
 		return
 	var visible_now: bool = _party_wants_show_timer()
 	_speedrun_hud_label.visible = visible_now
-	if not visible_now:
-		return
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs == null:
-		_speedrun_hud_label.text = ""
-		return
-	if gs.has_method("get_playtime_formatted"):
-		_speedrun_hud_label.text = str(gs.get_playtime_formatted())
-	elif "playtime_seconds" in gs:
-		_speedrun_hud_label.text = "%.1fs" % float(gs.playtime_seconds)
+	if visible_now:
+		var gs_t: Node = get_node_or_null("/root/GameState")
+		if gs_t == null:
+			_speedrun_hud_label.text = ""
+		elif gs_t.has_method("get_playtime_formatted"):
+			_speedrun_hud_label.text = str(gs_t.get_playtime_formatted())
+		elif "playtime_seconds" in gs_t:
+			_speedrun_hud_label.text = "%.1fs" % float(gs_t.playtime_seconds)
+	## Tick 455: content_radar refresh. Independent gate from the
+	## timer so a party can run with one without the other.
+	if _content_radar_label != null:
+		var radar_on: bool = _party_wants_show_treasure()
+		_content_radar_label.visible = radar_on
+		if radar_on:
+			_content_radar_label.text = _build_radar_text()
 
 
 ## Tick 450: gate. Mirrors the autosave_before_boss / movement_
@@ -1813,6 +1841,53 @@ func _party_wants_show_timer() -> bool:
 			if bool(me.get("show_timer", false)):
 				return true
 	return false
+
+
+## Tick 455: gate — content_radar's show_treasure flag. Any-wins
+## across the dict-shaped player_party (mirrors show_timer's
+## helper). Returns false cleanly when autoloads are absent.
+func _party_wants_show_treasure() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("show_treasure", false)):
+				return true
+	return false
+
+
+## Tick 455: count unopened chests in the "treasure" group. Each
+## TreasureChest._ready adds itself to that group; opened chests
+## set _is_opened so we skip them. Returns a short labelled string
+## or "" when no chests are around (no point showing 0).
+func _build_radar_text() -> String:
+	var chests: Array = get_tree().get_nodes_in_group("treasure")
+	if chests.is_empty():
+		return ""
+	var unopened: int = 0
+	for c in chests:
+		if not is_instance_valid(c):
+			continue
+		if "_is_opened" in c and not c._is_opened:
+			unopened += 1
+	if unopened == 0:
+		return ""
+	return "♦ %d treasure" % unopened
 
 
 ## Find an interactable (NPC, sign, chest, etc.) near the click position
