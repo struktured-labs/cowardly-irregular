@@ -1980,10 +1980,67 @@ func _start_execution_phase() -> void:
 	execution_order = pending_actions.duplicate()
 	execution_order.sort_custom(func(a, b): return a["speed"] < b["speed"])
 
+	## Tick 451: time_sense passive — passives.json authors
+	## meta_effects.preview_enemy_actions = true and preview_turns
+	## = 1 with description "Preview enemy actions 1 turn ahead",
+	## but pre-fix nothing read those keys. Players equipped Time
+	## Sense and got no intel. Emit a battle-log preview of the
+	## enemies' queued actions right before execution begins so
+	## the player sees what's coming for THIS round (the AP-cost
+	## CTB collapse means the queue is the next-N-turns equivalent
+	## of the BD preview the description implies). One emit per
+	## execution phase — won't spam.
+	if _party_wants_action_preview():
+		_emit_enemy_action_preview()
+
 	print("\n[color=yellow]>>> Actions executing![/color]")
 	execution_phase_started.emit()
 
 	_execute_next_action()
+
+
+## Tick 451: scan party equipped_passives for preview_enemy_actions.
+## Any-wins. Combatant-shape lookup (party here is Combatant
+## instances during battle, not Dictionaries).
+func _party_wants_action_preview() -> bool:
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in player_party:
+		if not (member is Combatant) or not member.is_alive:
+			continue
+		if member.equipped_passives.is_empty():
+			continue
+		for passive_id in member.equipped_passives:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("preview_enemy_actions", false)):
+				return true
+	return false
+
+
+## Tick 451: emit a single battle-log line summarizing the enemies'
+## queued actions for the upcoming execution phase. Cyan
+## "[Time Sense]" badge keeps the source legible.
+func _emit_enemy_action_preview() -> void:
+	var parts: Array[String] = []
+	for action in execution_order:
+		var c: Variant = action.get("combatant")
+		if not (c is Combatant) or c in player_party or not (c as Combatant).is_alive:
+			continue
+		var atype: String = str(action.get("type", "act"))
+		var label: String = atype
+		if atype == "advance":
+			var sub: Array = action.get("actions", [])
+			label = "advance×%d" % sub.size()
+		parts.append("[color=white]%s[/color]→%s" % [(c as Combatant).combatant_name, label])
+	if parts.is_empty():
+		return
+	battle_log_message.emit("[color=cyan][Time Sense] %s[/color]" % " · ".join(parts))
 
 
 func _save_previous_actions() -> void:
