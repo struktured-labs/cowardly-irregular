@@ -3963,8 +3963,17 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 		var mods: Dictionary = ps.get_passive_mods(attacker)
 		passive_bonus = clampf(float(mods.get("crit_chance", 0.0)), 0.0, 0.50)
 
-	# Check for equipment bonuses (could add this later)
-	var equip_bonus = 0.0
+	## Tick 457: equipment special_effects.critical_bonus —
+	## equipment.json authors this on assassin_blade, lucky_charm,
+	## and similar gear ("+15% crit chance" copy implied by the
+	## kit). Pre-tick the field was decoration — _calculate_crit_
+	## chance held a stubbed `equip_bonus = 0.0` with a "could add
+	## this later" comment. The helper sums across weapon + armor +
+	## accessory slots so a build that stacks two crit-bonus items
+	## scales naturally (max-clamped at 0.50 to dodge a one-shot
+	## crit chain).
+	var equip_bonus: float = _sum_equipment_special_effect(attacker, "critical_bonus")
+	equip_bonus = clampf(equip_bonus, 0.0, 0.50)
 
 	# Check for active crit_rate buffs (e.g. the jailbreak BACKFIRE
 	# "enrage_briefly" consequence stacks a "crit_rate" buff so Mordaine's
@@ -3981,6 +3990,39 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 
 	# Cap at 50% crit chance
 	return min(base_crit + speed_bonus + passive_bonus + equip_bonus + crit_buff, 0.50)
+
+
+## Tick 457: walk the attacker's three equipment slots, look up
+## each piece's special_effects in EquipmentSystem, and sum the
+## requested key. Returns 0.0 cleanly when the attacker has no
+## equipment, the autoload isn't available, or the key isn't
+## authored. Designed generically so the unwired companions
+## (evasion_bonus, poison_chance, sleep_chance, status_resistance,
+## steal_bonus, <elem>_damage_bonus, <elem>_resistance) can reuse
+## the same helper as they get wired in follow-up ticks.
+func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
+	if combatant == null or not is_instance_valid(combatant):
+		return 0.0
+	var es: Node = get_node_or_null("/root/EquipmentSystem")
+	if es == null:
+		return 0.0
+	var total: float = 0.0
+	if "equipped_weapon" in combatant and combatant.equipped_weapon != "":
+		var w: Dictionary = es.get_weapon(str(combatant.equipped_weapon))
+		var w_se: Variant = w.get("special_effects", {})
+		if w_se is Dictionary:
+			total += float(w_se.get(key, 0.0))
+	if "equipped_armor" in combatant and combatant.equipped_armor != "":
+		var a: Dictionary = es.get_armor(str(combatant.equipped_armor))
+		var a_se: Variant = a.get("special_effects", {})
+		if a_se is Dictionary:
+			total += float(a_se.get(key, 0.0))
+	if "equipped_accessory" in combatant and combatant.equipped_accessory != "":
+		var ac: Dictionary = es.get_accessory(str(combatant.equipped_accessory))
+		var ac_se: Variant = ac.get("special_effects", {})
+		if ac_se is Dictionary:
+			total += float(ac_se.get(key, 0.0))
+	return total
 
 
 func _get_crit_multiplier(attacker: Combatant) -> float:
