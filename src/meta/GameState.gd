@@ -490,12 +490,56 @@ func _apply_save_data(save_data: Dictionary) -> void:
 ## Corruption system
 func add_corruption(amount: float) -> void:
 	"""Add corruption to current save"""
+	## Tick 446: save_protection passive — passives.json authors
+	## meta_effects.corruption_resistance = 0.5 with description
+	## "Reduces save corruption from meta abilities by 50%", but
+	## pre-fix the field was decoration. Reduce amount by the
+	## strongest resistance among the party's equipped passives
+	## BEFORE clamping/applying. Max-wins so equipping the
+	## passive on multiple members doesn't stack to immunity.
+	## Negative amounts (rare — would mean corruption clearing)
+	## are passed through unmodified so the resistance doesn't
+	## inadvertently shrink a cleanse.
+	if amount > 0.0:
+		var resist: float = _party_corruption_resistance()
+		if resist > 0.0:
+			amount = amount * (1.0 - clampf(resist, 0.0, 1.0))
 	var old_level = corruption_level
 	corruption_level = clampf(corruption_level + amount, 0.0, 1.0)
 
 	if corruption_level > old_level:
 		save_corrupted.emit(corruption_level)
 		_apply_random_corruption_effect()
+
+
+## Tick 446: party-wide max corruption_resistance lookup. Returns
+## 0.0 when PassiveSystem isn't available (tests / preload) or no
+## member has the passive equipped. Reads the dict-shaped party
+## (saves keep Dictionaries, not Combatant instances).
+func _party_corruption_resistance() -> float:
+	if player_party.is_empty():
+		return 0.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return 0.0
+	var best: float = 0.0
+	for member in player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			var r: float = float(me.get("corruption_resistance", 0.0))
+			if r > best:
+				best = r
+	return best
 
 
 func _apply_corruption_to_save(save_data: Dictionary) -> Dictionary:
