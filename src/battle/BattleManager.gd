@@ -7131,7 +7131,17 @@ func _maybe_apply_elemental_adaptation(target: Combatant, element: String) -> vo
 	var current: int = int(counts.get(element, 0)) + 1
 	counts[element] = current
 	target.set_meta("_learns_element_counts", counts)
-	if current >= _LEARNS_FROM_THRESHOLD:
+	## Tick 465: per-monster adaptation_speed override.
+	## monsters.json authors adaptation_speed=2 on adaptive_slime —
+	## faster than the global default 3. Pre-tick the field was
+	## decoration: the slime's "I adapt quickly" gimmick was no
+	## quicker than any other learns_from monster. When unauthored,
+	## fall back to _LEARNS_FROM_THRESHOLD (3) so the bulk of
+	## bosses keep their current pacing.
+	var threshold: int = _LEARNS_FROM_THRESHOLD
+	if data.has("adaptation_speed"):
+		threshold = max(1, int(data.get("adaptation_speed", _LEARNS_FROM_THRESHOLD)))
+	if current >= threshold:
 		target.set_meta("_learned_adaptation", true)
 		if not (element in target.elemental_resistances):
 			target.elemental_resistances.append(element)
