@@ -396,6 +396,17 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 			battle_log_message.emit("[color=orange]⚠ Danger: %s ⚠[/color]" % danger_source)
 
 	battle_started.emit()
+	## Tick 452: boss_insight passive — passives.json authors
+	## meta_effects.show_boss_hp / show_boss_weakness /
+	## show_boss_intent. Pre-fix all three were decoration. At
+	## battle start (after the danger banner above so the order
+	## of log lines reads naturally), emit a "[Boss Insight]"
+	## line surfacing the requested intel for any boss combatant.
+	## show_boss_intent fires per-execution-phase via the time_
+	## sense path (already wired tick 451) — keeping it here
+	## opens the door to a dedicated intent reveal but for now
+	## the HP/weakness reveal is the high-leverage half.
+	_maybe_emit_boss_insight()
 	_start_new_round()
 
 
@@ -1997,6 +2008,69 @@ func _start_execution_phase() -> void:
 	execution_phase_started.emit()
 
 	_execute_next_action()
+
+
+## Tick 452: scan the party's equipped_passives for the boss_insight
+## flags. Returns the OR-union across members so a member with just
+## show_boss_hp and another with just show_boss_weakness combine
+## cleanly. Empty dict ({}) when no flags are on.
+func _party_boss_insight_flags() -> Dictionary:
+	var result: Dictionary = {}
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return result
+	for member in player_party:
+		if not (member is Combatant) or not member.is_alive:
+			continue
+		if member.equipped_passives.is_empty():
+			continue
+		for passive_id in member.equipped_passives:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			for key in ["show_boss_hp", "show_boss_weakness", "show_boss_intent"]:
+				if bool(me.get(key, false)):
+					result[key] = true
+	return result
+
+
+## Tick 452: emit a single battle-log line summarizing boss HP /
+## weaknesses for any boss combatant in enemy_party. Skipped
+## cleanly when no party member has the relevant flags or no boss
+## is in play (non-boss encounters don't surface anything).
+func _maybe_emit_boss_insight() -> void:
+	var flags: Dictionary = _party_boss_insight_flags()
+	if flags.is_empty():
+		return
+	var lines: Array[String] = []
+	for e in enemy_party:
+		if not is_instance_valid(e) or not e.is_alive:
+			continue
+		var is_boss: bool = false
+		if e.has_meta("is_boss") and e.get_meta("is_boss"):
+			is_boss = true
+		elif e.has_meta("is_miniboss") and e.get_meta("is_miniboss"):
+			is_boss = true
+		if not is_boss:
+			continue
+		var parts: Array[String] = []
+		if bool(flags.get("show_boss_hp", false)):
+			parts.append("HP %d/%d" % [e.current_hp, e.max_hp])
+		if bool(flags.get("show_boss_weakness", false)):
+			var weak: Array = e.elemental_weaknesses
+			if weak.size() > 0:
+				parts.append("weak: %s" % ", ".join(weak))
+			else:
+				parts.append("no elemental weakness")
+		if parts.is_empty():
+			continue
+		lines.append("[color=white]%s[/color] (%s)" % [e.combatant_name, " · ".join(parts)])
+	if lines.is_empty():
+		return
+	battle_log_message.emit("[color=cyan][Boss Insight] %s[/color]" % " | ".join(lines))
 
 
 ## Tick 451: scan party equipped_passives for preview_enemy_actions.
