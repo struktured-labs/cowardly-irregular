@@ -753,6 +753,20 @@ func _start_new_round() -> void:
 			continue
 		_apply_passive_mp_regen(combatant)
 
+	## Tick 456: lingering eidolons. abilities.json authors
+	## summon_duration on the four summoner eidolons (ifrit/shiva/
+	## ramuh/bahamut) and Pyrroth's Royal Summon etc. Pre-tick the
+	## field was unread — the eidolon hit once and vanished, no
+	## "lingers for N turns" payoff. Now each summoner with a live
+	## _summon_followup meta fires a reduced-damage follow-up hit
+	## on all opposing enemies at the start of each new round.
+	## summon_boost.summon_duration_bonus extends remaining_turns
+	## at setup time so the bonus shows up at the next tick.
+	for combatant in all_combatants:
+		if not combatant.is_alive:
+			continue
+		_tick_summon_followup(combatant)
+
 	# Apply corruption effects from enemies that carry them
 	_apply_corruption_effects_on_round_start()
 
@@ -862,6 +876,52 @@ func _apply_passive_mp_regen(combatant: Combatant) -> void:
 	var restored: int = combatant.restore_mp(amount)
 	if restored > 0:
 		healing_done.emit(combatant, restored)
+
+
+## Tick 456: fire the lingering-eidolon follow-up. Reads
+## _summon_followup meta set by _execute_magic_ability for summon-
+## type abilities, applies a reduced-multiplier elemental hit on
+## all opposing combatants, and decrements remaining_turns. Clears
+## the meta when remaining hits 0 so subsequent summons (or none)
+## get a clean slate. summon_boost passive's summon_duration_bonus
+## was already baked into remaining_turns at setup time.
+func _tick_summon_followup(combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
+		return
+	if not combatant.has_meta("_summon_followup"):
+		return
+	var meta_val: Variant = combatant.get_meta("_summon_followup")
+	if not (meta_val is Dictionary):
+		combatant.remove_meta("_summon_followup")
+		return
+	var followup: Dictionary = meta_val
+	var remaining: int = int(followup.get("remaining_turns", 0))
+	if remaining <= 0:
+		combatant.remove_meta("_summon_followup")
+		return
+	var element: String = str(followup.get("element", ""))
+	var multiplier: float = float(followup.get("multiplier", 0.5))
+	var base: int = combatant.get_buffed_stat("magic", combatant.magic)
+	var damage: int = max(1, int(round(base * multiplier)))
+	var opponents: Array[Combatant] = enemy_party if combatant in player_party else player_party
+	var hit_any: bool = false
+	for target in opponents:
+		if target == null or not is_instance_valid(target) or not target.is_alive:
+			continue
+		var dealt: int = 0
+		if element != "":
+			dealt = target.take_elemental_damage(damage, element)
+		else:
+			dealt = target.take_damage(damage, true)
+		var elem_text: String = element if element != "" else "magic"
+		battle_log_message.emit("[color=cyan]Eidolon lingers — %s takes %d %s damage![/color]" % [target.combatant_name, dealt, elem_text])
+		damage_dealt.emit(target, dealt, false, element, 1.0)
+		hit_any = true
+	followup["remaining_turns"] = remaining - 1
+	if followup["remaining_turns"] <= 0:
+		combatant.remove_meta("_summon_followup")
+	else:
+		combatant.set_meta("_summon_followup", followup)
 
 
 func _apply_corruption_effects_on_round_start() -> void:
@@ -3811,6 +3871,26 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		caster.take_damage(recoil, true)
 		damage_dealt.emit(caster, recoil, false, "", 1.0)
 		battle_log_message.emit("[color=magenta]%s takes %d recoil from the overflow![/color]" % [caster.combatant_name, recoil])
+
+	## Tick 456: summon ability lingering eidolon. abilities.json
+	## authors summon_duration on summon_ifrit/shiva/ramuh/bahamut
+	## and the rat king's royal_summon — pre-tick the field was
+	## decoration, the eidolon hit once and vanished. Stamp a
+	## _summon_followup meta on the caster so _start_new_round
+	## fires a reduced follow-up hit. summon_boost passive's
+	## meta_effects.summon_duration_bonus extends remaining_turns
+	## at setup so the bonus applies to THIS cast (not "next
+	## summon"). Also gated on type=="summon" so non-summon
+	## elemental hits don't accidentally linger.
+	var summon_duration: int = int(ability.get("summon_duration", 0))
+	if summon_duration > 0 and str(ability.get("type", "")) == "summon" and caster != null and caster.is_alive:
+		var bonus_turns: int = int(caster._get_passive_meta_effect_sum("summon_duration_bonus"))
+		var followup: Dictionary = {
+			"element": element,
+			"multiplier": float(ability.get("damage_multiplier", 1.0)) * 0.5,
+			"remaining_turns": summon_duration + bonus_turns,
+		}
+		caster.set_meta("_summon_followup", followup)
 
 
 ## Critical hit system
