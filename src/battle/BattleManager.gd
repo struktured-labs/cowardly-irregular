@@ -2261,6 +2261,18 @@ func _execute_next_action() -> void:
 func _execute_defer(combatant: Combatant) -> void:
 	"""Execute defer action"""
 	combatant.execute_defer()
+	## Tick 445: bp_recovery passive — passives.json authors
+	## meta_effects.bp_regen_bonus = 1 with description "Recover 1
+	## extra BP per turn when Defaulting". CTB-with-AP collapses
+	## BP/AP into one resource here, so the bonus grants extra AP
+	## at defer time on top of the natural +1 next-turn gain.
+	## Pre-fix the meta_effect was decoration. Generic — any
+	## future passive authoring bp_regen_bonus stacks via the
+	## sum-across-passives helper.
+	var bp_bonus: int = int(combatant._get_passive_meta_effect_sum("bp_regen_bonus"))
+	if bp_bonus > 0:
+		combatant.gain_ap(bp_bonus)
+		battle_log_message.emit("[color=cyan]%s recovers %d extra AP (BP Recovery)![/color]" % [combatant.combatant_name, bp_bonus])
 	print("%s defers (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
 
 
