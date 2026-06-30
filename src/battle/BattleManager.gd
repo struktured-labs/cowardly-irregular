@@ -702,6 +702,17 @@ func _start_new_round() -> void:
 			combatant.end_turn()
 			combatant.reset_for_new_round()
 
+	## Tick 438: passive MP regen — wires mp_recovery's
+	## meta_effects.mp_regen_percent (5% per round) into the round
+	## start so the passive's "Recover 5% MP at end of each turn"
+	## promise actually fires. Pre-fix the meta_effect was authored
+	## but no code path read it. Sums across multiple mp_regen
+	## passives a future Scriptweaver build might stack.
+	for combatant in all_combatants:
+		if not combatant.is_alive:
+			continue
+		_apply_passive_mp_regen(combatant)
+
 	# Apply corruption effects from enemies that carry them
 	_apply_corruption_effects_on_round_start()
 
@@ -782,6 +793,35 @@ func _apply_strip_buffs_on_round_start() -> void:
 				continue
 			for i in range(m.active_buffs.size()):
 				candidates.append([m, i])
+
+
+## Tick 438: read mp_regen_percent meta_effect across all equipped
+## passives and restore MP. Sums across multiple sources so future
+## stacked passives all contribute. Floors at 1 MP when any regen
+## is active so a tiny percent on a low max_mp doesn't round to 0.
+func _apply_passive_mp_regen(combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if not ("equipped_passives" in combatant) or not (combatant.equipped_passives is Array):
+		return
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null:
+		return
+	var total_pct: float = 0.0
+	for passive_id in combatant.equipped_passives:
+		var passive: Dictionary = ps.get_passive(str(passive_id))
+		if passive.is_empty():
+			continue
+		var me: Variant = passive.get("meta_effects", {})
+		if not (me is Dictionary):
+			continue
+		total_pct += float(me.get("mp_regen_percent", 0.0))
+	if total_pct <= 0.0:
+		return
+	var amount: int = max(1, int(round(combatant.max_mp * total_pct)))
+	var restored: int = combatant.restore_mp(amount)
+	if restored > 0:
+		healing_done.emit(combatant, restored)
 
 
 func _apply_corruption_effects_on_round_start() -> void:
