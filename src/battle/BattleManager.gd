@@ -4095,6 +4095,84 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			print("  → Unhandled support effect: %s" % effect)
 			push_warning("BattleManager._execute_support_ability: unhandled support effect '%s' (ability '%s') applied no mechanical change" % [effect, ability.get("id", "?")])
 
+	## Tick 433: secondary_effect handler. 9 abilities author a
+	## follow-up debuff/status on top of their primary effect (enrage's
+	## attack_up + defense_down tradeoff, web_shot's speed_down +
+	## stun chance, etc.). Pre-fix none were read — every secondary
+	## was silently dropped, so enrage was a free 2.0x attack buff
+	## with no defense penalty, web_shot only slowed without the
+	## stun, howl never frightened any enemies, and so on.
+	_apply_secondary_effect(caster, ability, targets)
+
+
+## Tick 433: secondary_effect dispatcher. Applies the authored
+## secondary effect to either secondary_target (e.g. "all_enemies"
+## on howl) or the original primary targets. Probability-gated by
+## secondary_chance (default 1.0). Maps stat_up/stat_down strings
+## to add_buff/add_debuff; other names (fear, stun, etc.) route
+## through add_status.
+const _SECONDARY_STAT_BUFF_MAP: Dictionary = {
+	"attack_up":  ["attack",  "Secondary Attack Up"],
+	"defense_up": ["defense", "Secondary Defense Up"],
+	"magic_up":   ["magic",   "Secondary Magic Up"],
+	"speed_up":   ["speed",   "Secondary Speed Up"],
+}
+const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
+	"attack_down":  ["attack",  "Secondary Attack Down"],
+	"defense_down": ["defense", "Secondary Defense Down"],
+	"magic_down":   ["magic",   "Secondary Magic Down"],
+	"speed_down":   ["speed",   "Secondary Speed Down"],
+}
+
+
+func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_targets: Array) -> void:
+	var sec_effect: String = str(ability.get("secondary_effect", ""))
+	if sec_effect == "":
+		return
+	var sec_chance: float = clampf(float(ability.get("secondary_chance", 1.0)), 0.0, 1.0)
+	if sec_chance <= 0.0:
+		return
+	# Resolve secondary target group.
+	var sec_target_tag: String = str(ability.get("secondary_target", ""))
+	var sec_targets: Array = []
+	match sec_target_tag:
+		"all_enemies":
+			for e in enemy_party:
+				if e is Combatant and e.is_alive:
+					sec_targets.append(e)
+		"all_allies":
+			for a in player_party:
+				if a is Combatant and a.is_alive:
+					sec_targets.append(a)
+		"self":
+			if caster != null and caster.is_alive:
+				sec_targets.append(caster)
+		_:
+			# Default: re-use the primary target list.
+			for t in primary_targets:
+				if t is Combatant and t.is_alive:
+					sec_targets.append(t)
+	if sec_targets.is_empty():
+		return
+	var sec_modifier: float = float(ability.get("secondary_modifier", 0.7))
+	var sec_duration: int = int(ability.get("duration", 3))
+	for t in sec_targets:
+		if randf() >= sec_chance:
+			continue
+		if _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
+			var bentry: Array = _SECONDARY_STAT_BUFF_MAP[sec_effect]
+			t.add_buff(bentry[1], bentry[0], sec_modifier, sec_duration)
+			battle_log_message.emit("[color=cyan]%s gains secondary %s![/color]" % [t.combatant_name, bentry[0].to_upper()])
+		elif _SECONDARY_STAT_DEBUFF_MAP.has(sec_effect):
+			var dentry: Array = _SECONDARY_STAT_DEBUFF_MAP[sec_effect]
+			t.add_debuff(dentry[1], dentry[0], sec_modifier, sec_duration)
+			battle_log_message.emit("[color=magenta]%s suffers secondary %s![/color]" % [t.combatant_name, dentry[0].to_upper()])
+		else:
+			# Status effect (fear, stun, poison, etc.) — let downstream
+			# consumers gate on the name via has_status.
+			t.add_status(sec_effect, sec_duration)
+			battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [t.combatant_name, StatusNames.display(sec_effect)])
+
 
 func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var meta_effect = ability.get("meta_effect", "")
