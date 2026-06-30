@@ -2827,6 +2827,48 @@ func _retarget_enemy(attacker: Combatant, original_target: Combatant) -> Combata
 	return new_target
 
 
+## Tick 444: Guardian-style auto-cover. If the resolved target is
+## a player whose HP% is below another live party member's
+## auto_cover_threshold (passive meta_effect), redirect the hit
+## to that covering ally. Pre-fix the cover_ally passive's
+## meta_effect was decoration. Bias toward the highest threshold
+## (the most committed protector wins). Self-cover is excluded
+## (a unit can't cover itself). Skipped when attacker is also
+## a party member (friendly fire / mind_swap weirdness).
+func _maybe_cover_ally(attacker: Combatant, target: Combatant) -> Combatant:
+	if attacker == null or target == null:
+		return target
+	if not is_instance_valid(target) or not target.is_alive:
+		return target
+	if attacker in player_party:
+		return target
+	if not (target in player_party):
+		return target
+	if target.max_hp <= 0:
+		return target
+	var target_hp_pct: float = float(target.current_hp) / float(target.max_hp)
+	var best_coverer: Combatant = null
+	var best_threshold: float = 0.0
+	for ally in player_party:
+		if ally == null or not is_instance_valid(ally) or not ally.is_alive:
+			continue
+		if ally == target:
+			continue
+		var threshold: float = ally._get_passive_meta_effect_sum("auto_cover_threshold")
+		if threshold <= 0.0:
+			continue
+		if target_hp_pct >= threshold:
+			continue
+		if threshold > best_threshold:
+			best_threshold = threshold
+			best_coverer = ally
+	if best_coverer == null:
+		return target
+	battle_log_message.emit("[color=cyan]%s covers %s![/color]" % [best_coverer.combatant_name, target.combatant_name])
+	print("[COVER_ALLY] %s intercepts the hit meant for %s" % [best_coverer.combatant_name, target.combatant_name])
+	return best_coverer
+
+
 func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead: bool = false) -> Combatant:
 	"""Find a new ally target if original is invalid"""
 	if original_target and (original_target.is_alive or include_dead):
@@ -2850,6 +2892,13 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	attacker.spend_ap(1)
 	# Auto-retarget if original target is dead/invalid
 	var actual_target = _retarget_enemy(attacker, target)
+	## Tick 444: cover_ally passive — passives.json authors
+	## meta_effects.auto_cover_threshold = 0.25 with description
+	## "Automatically take hits for allies below 25% HP", but
+	## pre-fix the field was decoration. Apply only on basic
+	## attacks (multi-target abilities don't sensibly cover) and
+	## only when an enemy is attacking a player (Guardian role).
+	actual_target = _maybe_cover_ally(attacker, actual_target)
 	# Pacify silences offensive actions (consumer for add_status pacify).
 	if attacker.has_status("pacify"):
 		battle_log_message.emit("[color=cyan]%s is pacified and cannot attack![/color]" % attacker.combatant_name)
