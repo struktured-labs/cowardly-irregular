@@ -432,11 +432,15 @@ func _get_available_jobs() -> Array:
 	for job_id in JobSystem.jobs:
 		if job_id == exclude_id:
 			continue
-		var job_data = JobSystem.get_job(job_id)
-		var job_type = job_data.get("type", 0)
-		# Starter jobs (type 0) always available
-		# Advanced (1) and Meta (2) require debug mode or unlock
-		if job_type > 0 and not debug_mode:
+		## Tick 467: route through JobSystem.is_job_unlocked instead
+		## of the old debug-mode-only gate. The helper reads
+		## jobs.json's unlock_condition field (story chapter / boss
+		## count / completion / achievement) so progressing through
+		## the story actually surfaces advanced + meta jobs at the
+		## right narrative beats. Debug mode still passes the check
+		## (preserves the dev shortcut). debug_mode local kept as a
+		## belt-and-suspenders for callers that toggle mid-frame.
+		if not JobSystem.is_job_unlocked(job_id) and not debug_mode:
 			continue
 		jobs_list.append(job_id)
 
