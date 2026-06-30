@@ -2860,6 +2860,17 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	# Market Sense passive: scaling damage bonus based on volatility band
 	damage = _apply_market_sense(attacker, damage)
 
+	## Tick 435: consume the next_attack_multiplier set by burrow (or
+	## any future stored-multiplier support ability). One-shot — clear
+	## the meta after applying so subsequent attacks don't keep the
+	## bonus. Distinct emerge log line lets the player see the bonus
+	## land.
+	var stored_nam: float = float(attacker.get_meta("_next_attack_multiplier", 0.0))
+	if stored_nam > 0.0:
+		damage = int(damage * stored_nam)
+		attacker.set_meta("_next_attack_multiplier", 0.0)
+		battle_log_message.emit("[color=cyan]%s emerges with a charged strike![/color] (×%.1f)" % [attacker.combatant_name, stored_nam])
+
 	# Tail event check
 	if volatility and volatility.check_tail_event():
 		if randf() < 0.5:
@@ -3295,6 +3306,20 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		damage_dealt.emit(target, actual_damage, false, element, elemental_mod)
 		## Tick 432: accumulate for damage_to_self_pct recoil.
 		total_dealt_for_recoil += actual_damage
+
+		## Tick 435: drain_mp restores caster MP per damaging hit.
+		## data_drain (drain_mp=20) and memory_drain (drain_mp=15)
+		## advertise MP siphon but pre-fix the field was authored and
+		## never read — caster paid 15-16 MP to cast and got nothing
+		## back. Applied per-target so memory_drain (all_enemies)
+		## stacks the restore across the hit count, matching the
+		## "drains memories and MP from all enemies" description.
+		var drain_mp_amount: int = int(ability.get("drain_mp", 0))
+		if drain_mp_amount > 0 and actual_damage > 0 and caster != null and caster.is_alive:
+			var restored: int = caster.restore_mp(drain_mp_amount)
+			if restored > 0:
+				healing_done.emit(caster, restored)
+				battle_log_message.emit("[color=cyan]%s drains %d MP from %s![/color]" % [caster.combatant_name, restored, target.combatant_name])
 
 		## Tick 421: permadeath enforcement for magic ability path —
 		## soul_reap / final_death from the reaper land here.
@@ -4132,6 +4157,14 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 	## with no defense penalty, web_shot only slowed without the
 	## stun, howl never frightened any enemies, and so on.
 	_apply_secondary_effect(caster, ability, targets)
+
+	## Tick 435: next_attack_multiplier stored on caster meta for the
+	## basic-attack path to consume. burrow authors 1.5 — emerge
+	## from underground for 1.5x damage. Pre-fix the field was
+	## authored but no code read it.
+	var nam: float = float(ability.get("next_attack_multiplier", 0.0))
+	if nam > 0.0 and caster != null and is_instance_valid(caster):
+		caster.set_meta("_next_attack_multiplier", nam)
 
 
 ## Tick 433: secondary_effect dispatcher. Applies the authored
