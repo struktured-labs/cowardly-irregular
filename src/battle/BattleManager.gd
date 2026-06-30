@@ -4053,9 +4053,20 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					else:
 						battle_log_message.emit("[color=gray]%s has no ailments to cleanse.[/color]" % target.combatant_name)
 		"regen":
+			## Tick 436: honor authored regen_per_turn override.
+			## regenerate ability authors 40 (flat) but pre-fix the
+			## regen-status tick in Combatant.update_buff_durations
+			## was hardcoded to 5% max_hp. Always set the meta (even
+			## to 0 when no override) so a previous regen with an
+			## override doesn't leak into a subsequent regen without
+			## one. Combatant's tick falls back to the 5% default
+			## when the meta is 0.
+			var per_turn: int = int(ability.get("regen_per_turn", 0))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("regen", duration)
+					if target.has_method("set_meta"):
+						target.set_meta("_regen_per_turn", per_turn)
 					# Tick 238: bonus BBCode (Regen buff).
 					battle_log_message.emit("[color=%s]%s gains Regen![/color] (HP restore for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
 		"attack_down":

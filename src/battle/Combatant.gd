@@ -656,7 +656,14 @@ func update_buff_durations() -> void:
 
 	# Process heal-over-time effects
 	if "regen" in status_effects and is_alive:
-		var regen_heal = max(1, int(max_hp * 0.05))  # 5% max HP per turn
+		## Tick 436: read the authored regen_per_turn override stored
+		## on meta when the regen status was applied (BattleManager
+		## "regen" support arm). Falls back to the 5%-max-hp default
+		## when no override is set — keeps existing regen-applying
+		## abilities (regen as a buff effect from non-regenerate
+		## sources) at their original feel.
+		var override_amount: int = int(get_meta("_regen_per_turn", 0)) if has_method("get_meta") else 0
+		var regen_heal: int = max(1, override_amount) if override_amount > 0 else max(1, int(max_hp * 0.05))
 		var old_hp = current_hp
 		current_hp = min(max_hp, current_hp + regen_heal)
 		var healed = current_hp - old_hp
