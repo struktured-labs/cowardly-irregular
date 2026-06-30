@@ -3662,6 +3662,21 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 	var stat_modifier = ability.get("stat_modifier", 1.0)
 	var success_rate = ability.get("success_rate", 1.0)
 
+	## Tick 441: encore passive — passives.json authors
+	## meta_effects.song_duration_bonus = 1 with description
+	## "Song buffs and debuffs last 1 extra turn", but no code
+	## path read the field. Players equipped encore on a Bard
+	## expecting +1 turn on every song and got base duration.
+	## Apply only when the ability is a song (ability.type == "song")
+	## so non-song supports (defensive_stance, dispel, blink, etc.)
+	## don't pick up free duration. _get_passive_meta_effect_sum
+	## already sums across all equipped passives so a future
+	## stacked-bonus build scales naturally.
+	if caster != null and str(ability.get("type", "")) == "song":
+		var bonus: int = int(caster._get_passive_meta_effect_sum("song_duration_bonus"))
+		if bonus > 0:
+			duration += bonus
+
 	match effect:
 		## Tick 170: 10 support-ability branches lacked
 		## battle_log_message emits — buff/debuff/taunt/doom applied
