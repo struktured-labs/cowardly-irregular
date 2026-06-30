@@ -274,6 +274,20 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 
 	var old_hp = current_hp
 	current_hp = max(0, current_hp - actual_damage)
+
+	## Tick 439: death_resistance passive — meta_effects.death_resist
+	## _chance gives a roll to survive a killing blow at 1 HP.
+	## Pre-fix the passive description claimed "75% chance to survive
+	## a killing blow with 1 HP" but no code path read the meta
+	## effect — the passive was pure decoration. Only applies on the
+	## lethal hit (current_hp went from > 0 to 0) and on a successful
+	## chance roll. The clamp at 1 leaves the combatant alive with a
+	## sliver of HP, matching the description.
+	if current_hp <= 0 and old_hp > 0:
+		var resist_chance: float = _get_passive_meta_effect_sum("death_resist_chance")
+		if resist_chance > 0.0 and randf() < clampf(resist_chance, 0.0, 1.0):
+			current_hp = 1
+			print("[DEATH_RESIST] %s survives a killing blow!" % combatant_name)
 	# Flip is_alive BEFORE emitting hp_changed so any UI listener (e.g.
 	# BattleUIManager.update_character_status) sees the correct state
 	# and grays out the member on the lethal hit. Previously the ordering
@@ -498,6 +512,32 @@ func remove_status(status: String) -> void:
 
 func has_status(status: String) -> bool:
 	return status in status_effects
+
+
+## Tick 439: sum a passive meta_effect across equipped_passives.
+## Used by take_damage's death_resistance check (death_resist_chance
+## meta_effect) but designed generically so future passive
+## meta_effects (encounter_skip_chance, boss_damage_share, etc.) can
+## reuse it. Returns 0.0 when PassiveSystem autoload isn't present
+## (tests, preload context). Sums across all sources so a future
+## stacked-passive build adds them.
+func _get_passive_meta_effect_sum(key: String) -> float:
+	if equipped_passives.is_empty():
+		return 0.0
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps == null or not ps.has_method("get_passive"):
+		return 0.0
+	var total: float = 0.0
+	for passive_id in equipped_passives:
+		var passive: Dictionary = ps.get_passive(str(passive_id))
+		if passive.is_empty():
+			continue
+		var me: Variant = passive.get("meta_effects", {})
+		if not (me is Dictionary):
+			continue
+		total += float(me.get(key, 0.0))
+	return total
 
 
 ## Buffs and Debuffs
