@@ -445,6 +445,28 @@ func end_battle(victory: bool) -> void:
 				if mtype != "":
 					BestiarySystem.mark_defeated(mtype, defeat_loc)
 
+		## Tick 453: record any defeated boss/miniboss so the
+		## pattern_recognition passive's boss_pattern_memory bonus
+		## fires on the NEXT encounter with the same opponent. We
+		## append to GameState.previously_fought_bosses (persisted
+		## via to_dict so it survives quit-and-resume).
+		if GameState and "previously_fought_bosses" in GameState:
+			for enemy in enemy_party:
+				if not is_instance_valid(enemy):
+					continue
+				var is_boss_or_mini: bool = false
+				if enemy.has_meta("is_boss") and enemy.get_meta("is_boss"):
+					is_boss_or_mini = true
+				elif enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss"):
+					is_boss_or_mini = true
+				if not is_boss_or_mini:
+					continue
+				var boss_id: String = str(enemy.get_meta("monster_type", ""))
+				if boss_id == "":
+					continue
+				if not (boss_id in GameState.previously_fought_bosses):
+					GameState.previously_fought_bosses.append(boss_id)
+
 		# Check for one-shot achievement
 		_check_one_shot()
 
@@ -2010,6 +2032,49 @@ func _start_execution_phase() -> void:
 	_execute_next_action()
 
 
+## Tick 453: apply the pattern_recognition bonus when the attacker
+## has boss_pattern_memory equipped AND the target is a recorded
+## boss/miniboss. Returns the unmodified damage on the no-bonus
+## path so it's safe to wrap any damage call. The check is
+## per-Combatant attacker (not party-wide) — the bonus is the
+## attacker's reward for remembering, not a party aura.
+func _apply_pattern_recognition_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+	if attacker == null or target == null or damage <= 0:
+		return damage
+	if attacker.equipped_passives.is_empty():
+		return damage
+	if not target.has_meta("monster_type"):
+		return damage
+	var is_boss_like: bool = false
+	if target.has_meta("is_boss") and target.get_meta("is_boss"):
+		is_boss_like = true
+	elif target.has_meta("is_miniboss") and target.get_meta("is_miniboss"):
+		is_boss_like = true
+	if not is_boss_like:
+		return damage
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return damage
+	var has_memory: bool = false
+	for passive_id in attacker.equipped_passives:
+		var passive: Dictionary = ps.get_passive(str(passive_id))
+		if passive.is_empty():
+			continue
+		var me: Variant = passive.get("meta_effects", {})
+		if me is Dictionary and bool(me.get("boss_pattern_memory", false)):
+			has_memory = true
+			break
+	if not has_memory:
+		return damage
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("previously_fought_bosses" in gs):
+		return damage
+	var boss_id: String = str(target.get_meta("monster_type", ""))
+	if boss_id == "" or not (boss_id in gs.previously_fought_bosses):
+		return damage
+	return int(round(damage * 1.2))
+
+
 ## Tick 452: scan the party's equipped_passives for the boss_insight
 ## flags. Returns the OR-union across members so a member with just
 ## show_boss_hp and another with just show_boss_weakness combine
@@ -3136,6 +3201,16 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage back to %s![/color]" % [actual_target.combatant_name, reflected, attacker.combatant_name])
 		_trigger_monster_counter(actual_target, attacker)
 		return
+
+	## Tick 453: pattern_recognition passive's meta_effects.boss_
+	## pattern_memory. The passive's stat_mods.attack_multiplier =
+	## 1.2 is already a flat baseline boost on the attacker's
+	## attack stat (via PassiveSystem.get_passive_mods, applied at
+	## Combatant init time). The meta_effect is the ADDITIONAL
+	## bonus the description promises ("+20% damage vs previously
+	## fought bosses") — applied per-hit, only when the target's
+	## monster_type lives in GameState.previously_fought_bosses.
+	damage = _apply_pattern_recognition_bonus(attacker, actual_target, damage)
 
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)

@@ -126,6 +126,15 @@ var game_constants: Dictionary = {
 ## its session counter to match.
 var battles_won: int = 0
 
+## Tick 453: persistent record of bosses defeated at least once.
+## Read by BattleManager when the pattern_recognition passive is
+## equipped — repeat encounters with a recorded boss get an extra
+## damage multiplier (Combatant attack stat already gets the flat
+## stat_mods.attack_multiplier from PassiveSystem, this is the
+## additional "learn patterns faster" bonus the meta_effect.boss_
+## pattern_memory authors).
+var previously_fought_bosses: Array[String] = []
+
 ## Meta-save features (unlocked by Time Mage)
 var meta_features: Dictionary = {
 	"autosave_enabled": false,
@@ -262,6 +271,9 @@ func _create_save_data() -> Dictionary:
 		## play. Pre-fix this lived only on GameLoop and reset to 0
 		## every restart.
 		"battles_won": battles_won,
+		## Tick 453: persist the boss-memory list so the pattern_
+		## recognition bonus survives a save+load.
+		"previously_fought_bosses": previously_fought_bosses,
 		## Tick 413: persist save_history so Time Mage rewinds and
 		## tick-412 restore points survive save+quit cycles. Pre-fix
 		## save_history was in-memory only — quit the game and every
@@ -466,6 +478,17 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	## clamp defends against a corrupted save with a negative value.
 	if save_data.has("battles_won"):
 		battles_won = max(0, int(save_data["battles_won"]))
+
+	## Tick 453: restore boss memory. Explicit Array[String] coercion
+	## via str() in a per-entry loop dodges the typed-array silent-
+	## fail trap (CLAUDE.md Common Pitfalls) so the field survives a
+	## roundtrip without being silently reset to [].
+	if save_data.has("previously_fought_bosses"):
+		var raw_bosses: Variant = save_data["previously_fought_bosses"]
+		previously_fought_bosses.clear()
+		if raw_bosses is Array:
+			for b in raw_bosses:
+				previously_fought_bosses.append(str(b))
 
 	## Tick 413: restore save_history from the persisted snapshot.
 	## Type-guarded with explicit typed-Array coercion to dodge the
