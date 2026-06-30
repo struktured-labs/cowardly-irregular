@@ -4054,6 +4054,11 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.has_status("mind_swap"):
 					target.remove_status("mind_swap")
+					## Tick 442: also clear the controller meta set by
+					## boss_control_swap so a future hit on the released
+					## boss doesn't redirect damage to a stale controller.
+					if target.has_meta("_mind_swap_controller"):
+						target.remove_meta("_mind_swap_controller")
 					battle_log_message.emit("[color=cyan]%s breaks the mind swap![/color]" % target.combatant_name)
 		## Tick 384: erase aliases dispel. Pre-fix null_touch
 		## (effect=erase) fell through to the `_:` push_warning default
@@ -4451,6 +4456,13 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("mind_swap", int(ability.get("duration", 5)))
+					## Tick 442: stash the controller so the
+					## shared_damage passive (boss_damage_share
+					## meta_effect) can find them when the boss takes
+					## damage. set_meta is per-instance, lives until
+					## release_binding clears the status or the battle
+					## ends (Combatants are freed by the scene tree).
+					target.set_meta("_mind_swap_controller", caster)
 					battle_log_message.emit("[color=magenta]✦ %s mind-swaps with %s![/color]" % [caster.combatant_name, target.combatant_name])
 			GameState.add_corruption(corruption_risk)
 		"create_restore_point":

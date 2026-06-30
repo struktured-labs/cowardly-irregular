@@ -223,6 +223,35 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	# zero. The max(1, ...) below would still return 1, but the divide
 	# itself emits a Godot error and produces NaN.
 	amount = max(0, amount)
+
+	## Tick 442: shared_damage passive — passives.json authors
+	## meta_effects.boss_damage_share = 0.5 with description "When
+	## controlling a boss, damage is split 50/50 between you and
+	## the boss". Pre-fix the meta_effect was decoration only.
+	## boss_control_swap (Bossbinder Mind Swap) sets a
+	## _mind_swap_controller meta on the target when it adds the
+	## mind_swap status; if that controller has shared_damage
+	## equipped, redirect that share of the incoming damage to
+	## them before the boss's defense reduction. Reentrancy:
+	## controller can't ALSO be mid-redirect (their own mind_swap
+	## status gates it), and the per-call _in_shared_damage_redirect
+	## flag prevents A→B→A infinite recursion if both ever carry
+	## the swap.
+	if amount > 0 and has_status("mind_swap") and has_meta("_mind_swap_controller") \
+			and not (has_meta("_in_shared_damage_redirect") and get_meta("_in_shared_damage_redirect")):
+		var ctrl_v: Variant = get_meta("_mind_swap_controller")
+		if ctrl_v is Combatant and (ctrl_v as Combatant).is_alive:
+			var ctrl: Combatant = ctrl_v as Combatant
+			var share: float = ctrl._get_passive_meta_effect_sum("boss_damage_share")
+			if share > 0.0:
+				var redirect_amount: int = int(round(amount * clampf(share, 0.0, 1.0)))
+				if redirect_amount > 0:
+					set_meta("_in_shared_damage_redirect", true)
+					ctrl.take_damage(redirect_amount, is_magical)
+					set_meta("_in_shared_damage_redirect", false)
+					amount = max(0, amount - redirect_amount)
+					print("[SHARED_DAMAGE] %d redirected to controller %s" % [redirect_amount, ctrl.combatant_name])
+
 	var def_value = get_buffed_stat("defense", defense) if not is_magical else int(get_buffed_stat("defense", defense) * 0.5)
 	var denom = max(1, amount + def_value)
 	var actual_damage = int((amount * amount) / float(denom))
