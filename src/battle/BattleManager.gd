@@ -365,6 +365,20 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Initialize volatility system
 	volatility = VolatilitySystem.new()
 	volatility.reset_battle()
+	## Tick 469: Speculator job's volatility_access. jobs.json
+	## authors speculator with `volatility_access: true` but pre-
+	## tick no code read the field. The Speculator's market_sense
+	## passive scales damage with the volatility band — but with
+	## no way to access higher bands, the Speculator's "embraces
+	## chaos" fantasy never landed. A Speculator party member now
+	## shifts the starting band up one tier (Stable → Shifting,
+	## Shifting → Unstable, etc.) so the market_sense scaling
+	## actually has room to swing. Multiple Speculators don't
+	## compound — one is enough to unlock the next tier per the
+	## "access" framing (you have the keys or you don't).
+	if _party_has_volatility_access():
+		volatility.shift_band(1)
+		battle_log_message.emit("[color=purple]✦ Speculator presence — volatility climbs one tier.[/color]")
 
 	## Tick 420: surface authored-but-unread danger flags. monsters.json
 	## authors `very_dangerous` (script_error) and `extremely_dangerous`
@@ -2181,6 +2195,38 @@ func _format_split(t: float) -> String:
 	if h > 0:
 		return "%d:%02d:%02d" % [h, m, s]
 	return "%d:%02d" % [m, s]
+
+
+## Tick 469: any party member's job (primary OR secondary) authoring
+## volatility_access=true triggers the one-tier band bump in
+## start_battle. Returns false cleanly when JobSystem isn't
+## available. Reads the battle-shape party (Combatant instances)
+## rather than the dict-shape GameState.player_party so we honor
+## any temporary mid-battle job swaps (jobs.json's per-Combatant
+## job field).
+func _party_has_volatility_access() -> bool:
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_job"):
+		return false
+	for member in player_party:
+		if not (member is Combatant):
+			continue
+		var job_ids: Array[String] = []
+		if member.job is Dictionary:
+			var jid: String = str((member.job as Dictionary).get("id", ""))
+			if jid != "":
+				job_ids.append(jid)
+		if "secondary_job_id" in member:
+			var sid: String = str(member.secondary_job_id)
+			if sid != "":
+				job_ids.append(sid)
+		for jid in job_ids:
+			var job_data: Dictionary = js.get_job(jid)
+			if job_data.is_empty():
+				continue
+			if bool(job_data.get("volatility_access", false)):
+				return true
+	return false
 
 
 ## Tick 453: apply the pattern_recognition bonus when the attacker
