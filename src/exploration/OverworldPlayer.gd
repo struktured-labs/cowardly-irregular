@@ -401,6 +401,17 @@ func _physics_process(delta: float) -> void:
 					_is_interior = true
 					break
 		var base_speed = interior_speed if _is_interior else move_speed
+		## Tick 448: speedrun_mode passive — passives.json authors
+		## meta_effects.movement_speed_bonus = 1.5 with description
+		## "+50% movement speed on overworld", but pre-fix the
+		## field was decoration — equipping speedrun_mode did
+		## nothing to player velocity. Max-wins across the party
+		## so duplicate equips don't compound into teleport speed.
+		## Applies on top of terrain_speed (rough terrain still
+		## slows you, just less catastrophically).
+		var move_bonus: float = _party_movement_speed_bonus()
+		if move_bonus > 1.0:
+			base_speed *= move_bonus
 		velocity = input_dir * base_speed * terrain_speed
 		is_moving = true
 
@@ -1591,6 +1602,38 @@ func teleport(new_position: Vector2) -> void:
 func reset_step_count() -> void:
 	step_count = 0
 	distance_walked = 0.0
+
+
+## Tick 448: read the strongest movement_speed_bonus across the
+## party's equipped passives. Returns 1.0 when GameState or
+## PassiveSystem aren't available (tests / preload context) or
+## no member has a speed passive equipped. Max-wins so a triple-
+## speedrun stack doesn't compound to 3.375× — it stays at 1.5.
+func _party_movement_speed_bonus() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 1.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return 1.0
+	var best: float = 1.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			var b: float = float(me.get("movement_speed_bonus", 1.0))
+			if b > best:
+				best = b
+	return best
 
 
 ## Find an interactable (NPC, sign, chest, etc.) near the click position
