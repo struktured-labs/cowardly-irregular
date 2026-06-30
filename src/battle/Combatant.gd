@@ -822,6 +822,19 @@ func take_elemental_damage(base_damage: int, element: String) -> int:
 		return 0
 
 	var elemental_mod = calculate_elemental_modifier(element)
+
+	## Tick 460: equipment.json special_effects.<element>_resistance.
+	## bone_armor (dark_resistance) and dragon_mail (fire_resistance)
+	## author the flag, but pre-tick no code read it — the dragon's
+	## namesake protection was decoration. Walk the three equipment
+	## slots via the BattleManager helper from tick 457 by reaching
+	## through the scene tree (Combatant doesn't carry the helper
+	## directly). Halve the elemental_mod on a hit so the equipment
+	## stacks multiplicatively with the Combatant's existing
+	## elemental_resistances list (a piece + a list entry → 0.25x).
+	if _has_equipment_resistance(element):
+		elemental_mod *= 0.5
+
 	var actual_damage = int(base_damage * elemental_mod)
 
 	if elemental_mod == 0.0:
@@ -833,6 +846,37 @@ func take_elemental_damage(base_damage: int, element: String) -> int:
 		print("%s resists %s" % [combatant_name, element])
 
 	return take_damage(actual_damage, true)
+
+
+## Tick 460: generic check for an <element>_resistance entry on any
+## of the combatant's three equipment slots. Returns false cleanly
+## when EquipmentSystem isn't available (tests, preload). Bool-
+## authored values come through float(true) = 1.0 so the > 0.0
+## comparison catches both bool and numeric authoring.
+func _has_equipment_resistance(element: String) -> bool:
+	if element.is_empty():
+		return false
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var es: Node = tree.root.get_node_or_null("EquipmentSystem") if tree else null
+	if es == null:
+		return false
+	var key: String = element + "_resistance"
+	if equipped_weapon != "" and es.has_method("get_weapon"):
+		var w: Dictionary = es.get_weapon(equipped_weapon)
+		var w_se: Variant = w.get("special_effects", {})
+		if w_se is Dictionary and float(w_se.get(key, 0.0)) > 0.0:
+			return true
+	if equipped_armor != "" and es.has_method("get_armor"):
+		var a: Dictionary = es.get_armor(equipped_armor)
+		var a_se: Variant = a.get("special_effects", {})
+		if a_se is Dictionary and float(a_se.get(key, 0.0)) > 0.0:
+			return true
+	if equipped_accessory != "" and es.has_method("get_accessory"):
+		var ac: Dictionary = es.get_accessory(equipped_accessory)
+		var ac_se: Variant = ac.get("special_effects", {})
+		if ac_se is Dictionary and float(ac_se.get(key, 0.0)) > 0.0:
+			return true
+	return false
 
 
 ## Tick 443: generic elemental absorb gate. <element>_absorb keys
