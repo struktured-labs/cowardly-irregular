@@ -300,7 +300,7 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 	return false
 
 
-func validate_rule(rule: Dictionary) -> Array[String]:
+func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Array[String]:
 	var errors: Array[String] = []
 	if not rule.has("conditions"):
 		errors.append("missing 'conditions' array")
@@ -336,6 +336,56 @@ func validate_rule(rule: Dictionary) -> Array[String]:
 			errors.append("action type 'item' requires 'id'")
 		if a.has("target") and not TARGET_TYPES.has(str(a["target"])):
 			errors.append("unknown target type: '%s'" % a["target"])
+	if errors.is_empty() and deep_check_character_id != "":
+		errors.append_array(_deep_check_rule(rule, deep_check_character_id))
+	return errors
+
+
+## Item 13 fast-follow (cowir-ai convergence, msg 2038): fizzle-correctness
+## deep-check for one rule against one character. Catches what grammar can't:
+## hallucinated ability/item ids, abilities outside the character's level-1
+## kit, and MP-starved rules — all three fizzle-consume a turn at runtime via
+## BM's can_use_ability path. RuleComposer's second-pass lint opts in with
+## validate_rule(rule, character_id). Per-rule scope is deliberately STRICTER
+## than the preset catalog's whole-script lint (no earlier-refill-rule
+## credit): stricter = safer for LLM-composed output.
+func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
+	var errors: Array[String] = []
+	var job_id: String = _resolve_job_for_character(character_id)
+	var job: Dictionary = JobSystem.get_job(job_id)
+	if job.is_empty():
+		errors.append("cannot resolve job for character '%s' — deep check unavailable" % character_id)
+		return errors
+	var kit: Array = (job.get("abilities", []) as Array).duplicate()
+	var free_move: Dictionary = job.get("free_move", {})
+	if free_move.has("ability_id"):
+		kit.append(free_move["ability_id"])
+	var max_mp: int = int(job.get("stat_modifiers", {}).get("max_mp", 1))
+	var mp_cost_sum: int = 0
+	for a in rule.get("actions", []):
+		var atype: String = str(a.get("type", ""))
+		if atype == "ability":
+			var aid: String = str(a.get("id", ""))
+			var ability: Dictionary = JobSystem.get_ability(aid)
+			if ability.is_empty():
+				errors.append("unknown ability '%s'" % aid)
+				continue
+			if not (aid in kit):
+				errors.append("ability '%s' not in %s's level-1 kit" % [aid, job_id])
+			mp_cost_sum += int(ability.get("mp_cost", 0))
+		elif atype == "item":
+			var iid: String = str(a.get("id", ""))
+			if ItemSystem.get_item(iid).is_empty():
+				errors.append("unknown item '%s'" % iid)
+	if mp_cost_sum > 0 and max_mp > 0:
+		var need_pct: int = ceili(float(mp_cost_sum) / float(max_mp) * 100.0)
+		var guarded: bool = false
+		for c in rule.get("conditions", []):
+			if str(c.get("type", "")) == "mp_percent" and str(c.get("op", "")) == ">=" \
+					and int(c.get("value", 0)) >= need_pct:
+				guarded = true
+		if not guarded:
+			errors.append("rule costs %d MP (%d%% of %s's base pool) with no mp_percent >= %d guard — would fizzle-consume the turn" % [mp_cost_sum, need_pct, job_id, need_pct])
 	return errors
 
 
@@ -601,7 +651,7 @@ func _resolve_job_for_character(character_id: String) -> String:
 	then the id itself (covers job-named characters like 'bard')."""
 	if CHARACTER_JOB_IDS.has(character_id):
 		return CHARACTER_JOB_IDS[character_id]
-	var game_state = get_node_or_null("/root/GameState")
+	var game_state = get_node_or_null("/root/GameState") if is_inside_tree() else null
 	if game_state and game_state.has_method("get_character_job_id"):
 		var job_id: String = game_state.get_character_job_id(character_id)
 		if job_id != "":
