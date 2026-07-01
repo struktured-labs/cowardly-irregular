@@ -227,7 +227,11 @@ func _get_tile_order() -> Array:
 func _get_impassable_types() -> Array:
 	return [
 		TileType.BRICK_WALL, TileType.PIPE, TileType.BUILDING_WALL,
-		TileType.WINDOW, TileType.NEON_SIGN, TileType.FENCE, TileType.LAMPPOST
+		TileType.WINDOW, TileType.NEON_SIGN, TileType.FENCE, TileType.LAMPPOST,
+		# WATER_FEATURE (fountain/pond) should block movement — the medieval world's
+		# WATER tile is impassable for the same reason. Prior omission let the
+		# player walk on fountains in Brasston / steampunk overworld.
+		TileType.WATER_FEATURE,
 	]
 
 func _get_debug_atlas_name() -> String:
