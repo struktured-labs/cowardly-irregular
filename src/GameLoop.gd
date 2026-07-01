@@ -242,6 +242,14 @@ var _llm_success_notice_shown: bool = false
 var _autobattle_editor_ever_opened: bool = false
 
 func _ready() -> void:
+	## Boot canary (2026-07-01 gray-void post-mortem): if load-bearing
+	## scene scripts failed to compile (stale class cache after new
+	## class_name merges), the game used to boot into an empty
+	## default-clear viewport with live input and 37 SCRIPT ERRORs
+	## buried in the log. Detect it and put an actionable message on
+	## screen instead.
+	_check_boot_canaries()
+
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
 
@@ -2198,6 +2206,48 @@ func _reconcile_spotlight_locks() -> void:
 		var scene = get_tree().current_scene if get_tree() else null
 		if scene:
 			TutorialHints.show(scene, "spotlight_unlock")
+
+
+## Boot canary (2026-07-01): try-load a handful of load-bearing scene
+## scripts. load() returns null when a script failed to parse — the
+## signature of a stale global class cache (new class_name merged
+## without --import). On any failure: push_error per script + a
+## fullscreen red overlay telling the player exactly how to fix it.
+## Canaries chosen as the cascade roots from the real incident
+## (OverworldScene + SavePoint) plus the battle scene.
+const _BOOT_CANARY_SCRIPTS: Array = [
+	"res://src/exploration/OverworldScene.gd",
+	"res://src/exploration/SavePoint.gd",
+	"res://src/battle/BattleScene.gd",
+]
+
+
+func _check_boot_canaries() -> void:
+	var failed: Array[String] = []
+	for path in _BOOT_CANARY_SCRIPTS:
+		var script: Variant = load(path)
+		if script == null:
+			failed.append(str(path))
+			push_error("[BOOT-CANARY] failed to load %s — stale class cache? Run: godot --headless --import (or ./launch.sh)" % path)
+	if failed.is_empty():
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "BootCanaryOverlay"
+	layer.layer = 128
+	add_child(layer)
+	var bg := ColorRect.new()
+	bg.color = Color(0.08, 0.0, 0.0, 0.96)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(bg)
+	var label := Label.new()
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.85))
+	label.add_theme_font_size_override("font_size", 22)
+	label.text = "ASSETS OUT OF DATE\n\n%d core script(s) failed to compile:\n%s\n\nThis usually means new scripts were merged without reimporting.\nFix: close the game and run  ./launch.sh  (it reimports automatically)\nor:  godot --headless --import" % [failed.size(), "\n".join(failed)]
+	layer.add_child(label)
 
 
 ## Tick 471: enter a solo-duel battle for the Spotlight Duels step
