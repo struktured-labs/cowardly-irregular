@@ -1165,6 +1165,18 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_spotlight_unlocked_rogue", false) and not flags.get("cutscene_flag_spotlight_unlocked_mage", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_spotlight_mage_ch3"
+	# Fighter spotlight — the antechamber skeleton duel (Spotlight Duels
+	# spec msg 1950: skeleton duel is Fighter's; chapter3's prose beat was
+	# stripped to a breadcrumb pointing here). Sequenced after mage so the
+	# three cave duels space across separate cave entries per cowir-story's
+	# pacing directive (rogue → mage → fighter). Fighter is never
+	# autobattle_locked (he's the lead), so the _unlocked_ flag here is
+	# purely the duel-completion gate, not a control unlock. Pre-fix this
+	# cutscene was authored + mapped but NO gate fired it — the exact
+	# authored-but-never-wired class the tick-97/98/99 comments describe.
+	if flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not flags.get("cutscene_flag_spotlight_unlocked_fighter", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_spotlight_fighter_ch2"
 	# Rat king defeat cutscene: plays IN the cave right after victory, before chapter4.
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
 		if _current_map_id == "whispering_cave":

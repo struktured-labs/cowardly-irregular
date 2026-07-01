@@ -105,11 +105,16 @@ func test_all_four_non_fighter_spotlights_now_reachable() -> void:
 			"%s must have a return path — completing the spotlight series ensures every non-Fighter PC can unlock manual control through normal play" % cutscene_id)
 
 
-func test_fighter_spotlight_intentionally_skipped() -> void:
-	# Hero/Fighter is the lead PC — autobattle_locked = false at
-	# _create_party, no spotlight needed. The world1_spotlight_fighter_ch2
-	# cutscene exists but is intentionally NEVER triggered by
-	# _get_pending_story_cutscene because Fighter isn't gated.
+func test_fighter_spotlight_has_gate_per_duel_spec() -> void:
+	# SUPERSEDED design (2026-07-01): the old "fighter spotlight
+	# intentionally skipped" decision was reversed by the Spotlight Duels
+	# spec (cowir-main msg 1928/1950) — the skeleton duel in the
+	# Whispering Cave antechamber IS the Fighter's spotlight now.
+	# Fighter is still never autobattle_locked (lead PC), so the
+	# _unlocked_fighter flag is purely the duel-completion gate, not a
+	# control unlock. The gate sequences after the mage spotlight so
+	# the three cave duels space across separate cave entries per
+	# cowir-story's pacing directive.
 	var body := _pending_cutscene_body()
-	assert_false(body.contains("return \"world1_spotlight_fighter_ch2\""),
-		"Fighter spotlight must NOT be in _get_pending_story_cutscene — Fighter is unlocked at party creation (hero.autobattle_locked = false)")
+	assert_true(body.contains("return \"world1_spotlight_fighter_ch2\""),
+		"Fighter spotlight MUST have a gate in _get_pending_story_cutscene — the skeleton duel is Fighter's spotlight per the Spotlight Duels spec")
