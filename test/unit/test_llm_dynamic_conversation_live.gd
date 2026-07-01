@@ -23,18 +23,22 @@ const FakeBackendScript := preload("res://test/unit/test_llm_fake_backend.gd")
 var _svc: Node
 var _be: FakeBackendScript.FakeBackend
 var _dc: DynamicConversation
+var _stashed_original_svc: Node = null  # real autoload, detached during test, restored in after_each
 
 
 func before_each() -> void:
-	# Tear down any existing /root/LLMService for our local one.
-	# We instead instantiate LLMService and attach it under a unique name so
-	# get_node_or_null("/root/LLMService") in DynamicConversation still resolves
-	# to a real service for this test.
+	# Swap out any existing /root/LLMService for our local one.
+	# FLEET BUG FIX (2026-07-01, cowir-ai diagnosis msg 2036): this used
+	# to queue_free() the REAL LLMService autoload and never restore it,
+	# poisoning every alphabetically-later test file (RuleComposer tests
+	# saw null service → "no_llm"/"fallback" instead of their mock path;
+	# green in isolation, red in full suite). Now we DETACH and stash the
+	# original, and after_each re-attaches it.
 	var root := get_tree().root
 	var existing := root.get_node_or_null("LLMService")
 	if existing != null:
 		root.remove_child(existing)
-		existing.queue_free()
+		_stashed_original_svc = existing
 
 	_svc = preload("res://src/llm/LLMService.gd").new()
 	_svc.name = "LLMService"
@@ -63,13 +67,17 @@ func before_each() -> void:
 
 
 func after_each() -> void:
-	# Tidy up — remove the LLMService we installed so other tests in the suite
-	# do not see a stale autoload.
+	# Tidy up — remove the LLMService we installed, then RESTORE the
+	# original autoload we stashed in before_each so later test files
+	# see the real service (fleet contamination fix, msg 2036/2037).
 	var root := get_tree().root
 	var svc := root.get_node_or_null("LLMService")
 	if svc != null:
 		root.remove_child(svc)
 		svc.queue_free()
+	if _stashed_original_svc != null and is_instance_valid(_stashed_original_svc):
+		root.add_child(_stashed_original_svc)
+		_stashed_original_svc = null
 	_be = null
 	_dc = null
 
