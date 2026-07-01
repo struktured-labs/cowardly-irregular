@@ -89,6 +89,20 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		"domain": domain,
 		"character_id": character_id,
 	}
+
+	var domain_system = get_node_or_null("/root/AutobattleSystem" if domain == DOMAIN_AUTOBATTLE else "/root/AutogrindSystem")
+	var grammar_errors: Array[String] = []
+	if domain_system != null and domain_system.has_method("validate_rule"):
+		for r in v["rules"]:
+			for err in domain_system.validate_rule(r):
+				grammar_errors.append(err)
+	if grammar_errors.size() > 0:
+		var res_bad: Dictionary = _fallback_result(domain, character_id)
+		res_bad["errors"] = grammar_errors
+		composition_failed.emit("grammar_errors", {"errors": grammar_errors})
+		composition_ready.emit(res_bad)
+		return res_bad
+
 	composition_ready.emit(result)
 	return result
 
