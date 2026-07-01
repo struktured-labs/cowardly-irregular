@@ -83,4 +83,7 @@ func to_dict() -> Dictionary:
 		"recent_actions": recent_actions.duplicate(),
 		"available_intents": available_intents.duplicate(),
 		"persona": persona,
+		"player_lead_pc_rules": player_lead_pc_rules.duplicate(),
+		"learned_patterns_counter": learned_patterns_counter,
+		"learned_patterns_sample": learned_patterns_sample.duplicate(),
 	}

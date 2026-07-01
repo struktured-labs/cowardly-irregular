@@ -545,7 +545,7 @@ static func build_boss_intent(
 	var party_block: String = "\n".join(party_lines) if party_lines.size() > 0 else "  (no live party data)"
 	var recent_block: String = "\n".join(recent_lines) if recent_lines.size() > 0 else "  (no recent actions)"
 
-	return (
+	var prompt: String = (
 		"You are the strategic mind of %s, a boss in the meta-aware JRPG 'Cowardly Irregular'.\n" % display_name
 		+ "Stay rigorously in character. Persona:\n"
 		+ "  %s\n" % persona
@@ -554,9 +554,29 @@ static func build_boss_intent(
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
 		+ "Party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
-		+ "\n"
+	)
+	# Task 8: surface the player's own autobattle strategy when captured.
+	var player_rules: Array = ctx.get("player_lead_pc_rules", []) as Array
+	if player_rules.size() > 0:
+		prompt += "\nThe player is running an autobattle strategy. Their lead character's top rules (compact JSON):\n"
+		prompt += JSON.stringify(player_rules) + "\n"
+	# Task 8: surface the region's adaptive-AI counter-strategy read, if any.
+	var counter: String = str(ctx.get("learned_patterns_counter", ""))
+	if counter != "":
+		prompt += "\nRecent battle patterns in this region derive counter_strategy=%s.\n" % counter
+	# Task 8: top-3 pattern-frequency samples backing the counter strategy.
+	var pattern_sample: Dictionary = ctx.get("learned_patterns_sample", {}) as Dictionary
+	if pattern_sample.size() > 0:
+		prompt += "Sample signals:\n" + JSON.stringify(pattern_sample) + "\n"
+	prompt += (
+		"\n"
 		+ "Pick exactly ONE intent for this phase from this list (anything else is a parse error):\n"
 		+ intent_block
+		+ "\n"
+		+ "Widened strategic vocabulary (this boss's list above is the authoritative subset):\n"
+		+ "  aggress, turtle, exploit_pattern,\n"
+		+ "  fire_resist, ice_resist, lightning_resist,\n"
+		+ "  focus_healer, defense_boost, rotate_aggro\n"
 		+ "\n"
 		+ "Rules:\n"
 		+ "- intent_id MUST be one of the listed values, verbatim.\n"
@@ -564,6 +584,7 @@ static func build_boss_intent(
 		+ "- taunt: one in-character line (≤ %d chars) to surface in the combat log. No quote marks.\n" % MAX_BOSS_TAUNT_CHARS
 		+ "- Respond with ONLY valid JSON: {\"intent_id\": \"...\", \"reason\": \"...\", \"taunt\": \"...\"}\n"
 	)
+	return prompt
 
 
 # ── Prompt builder: party combat line ────────────────────────────────────────

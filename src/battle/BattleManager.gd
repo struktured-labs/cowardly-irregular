@@ -6470,7 +6470,40 @@ func _build_boss_intent_context(
 			"damage":     0,
 		})
 
+	# Task 8: lead PC's autobattle rules, sliced for prompt-budget hygiene.
+	if player_party.size() > 0 and player_party[0] != null:
+		var autobattle = get_node_or_null("/root/AutobattleSystem")
+		if autobattle != null:
+			var lead_script: Dictionary = autobattle.get_character_script(_get_character_id(player_party[0]))
+			var rules: Array = lead_script.get("rules", [])
+			ctx.player_lead_pc_rules = rules.slice(0, min(5, rules.size()))
+
+	# Task 8: region's derived counter strategy + top-3 pattern samples.
+	var autogrind = get_node_or_null("/root/AutogrindSystem")
+	if autogrind != null:
+		var region_id: String = autogrind.current_region_id
+		ctx.learned_patterns_counter = autogrind.get_counter_strategy(region_id)
+		var full_patterns: Dictionary = autogrind.get_learned_patterns_for_region(region_id)
+		var sample: Dictionary = {}
+		if full_patterns.has("ability_frequency"):
+			sample["ability_frequency"] = _top_n(full_patterns["ability_frequency"], 3)
+		if full_patterns.has("target_priority"):
+			sample["target_priority"] = _top_n(full_patterns["target_priority"], 3)
+		ctx.learned_patterns_sample = sample
+
 	return ctx
+
+
+## Returns the top-N entries of a numeric-valued Dictionary, highest first.
+func _top_n(source: Dictionary, n: int) -> Dictionary:
+	var pairs: Array = []
+	for k in source.keys():
+		pairs.append([source[k], k])
+	pairs.sort_custom(func(a, b): return a[0] > b[0])
+	var out: Dictionary = {}
+	for i in range(min(n, pairs.size())):
+		out[pairs[i][1]] = pairs[i][0]
+	return out
 
 
 ## Probability multiplier ladder. Returns a Dictionary {ability_id_or_role: float}
