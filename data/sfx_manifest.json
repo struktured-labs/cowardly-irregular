@@ -437,6 +437,30 @@
       "duration_seconds": 5.0,
       "prompt_influence": 0.6
     },
+    "ambient_forge": {
+      "file": "assets/audio/sfx/ambient_forge.ogg",
+      "prompt": "Blacksmith forge room tone — steady coal fire crackle + soft rhythmic bellows huff, no hammering, loop-friendly fades, -22 LUFS. For BlacksmithInterior (tier-2 interiors, 1442e125).",
+      "duration_seconds": 6.0,
+      "prompt_influence": 0.7
+    },
+    "ambient_chapel": {
+      "file": "assets/audio/sfx/ambient_chapel.ogg",
+      "prompt": "Quiet stone chapel air — vast reverberant stillness with faint censer chain clinks, no voices/choir/organ, loop-friendly fades, -24 LUFS. For HarmoniaChapelInterior.",
+      "duration_seconds": 6.0,
+      "prompt_influence": 0.7
+    },
+    "ambient_library": {
+      "file": "assets/audio/sfx/ambient_library.ogg",
+      "prompt": "Hushed library air — near-silence with occasional soft page turn + old wood shelf creak, loop-friendly fades, -24 LUFS. For HarmoniaLibraryInterior.",
+      "duration_seconds": 6.0,
+      "prompt_influence": 0.7
+    },
+    "anvil_strike": {
+      "file": "assets/audio/sfx/anvil_strike.ogg",
+      "prompt": "Blacksmith hammer striking hot metal on an anvil, bright ringing CLANG + quick spark sizzle tail, single strike, -15 LUFS. One-shot for the Master Smith's 4-frame hammer animation (sync to strike frame).",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.7
+    },
     "bicycle_bell": {
       "file": "assets/audio/sfx/bicycle_bell.ogg",
       "prompt": "Classic bicycle bell, two quick bright ding-ding rings, cheerful suburban neighborhood. Cutscene one-shot (world2_chapter1).",
