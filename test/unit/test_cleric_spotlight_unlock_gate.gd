@@ -89,12 +89,14 @@ func test_cleric_cutscene_file_exists_and_embeds_battle() -> void:
 
 func test_cleric_cutscene_in_completion_flag_map() -> void:
 	# Pin: the _CUTSCENE_COMPLETION_FLAGS map must still cover this
-	# cutscene id. Without the map entry, the chapter1_complete flag
-	# is set (by play handler) but spotlight_unlocked_cleric is NOT,
-	# leaving the cutscene to loop.
+	# cutscene id. Post Spotlight Duels spec (cowir-main msg 1950), the
+	# cutscene-finish signal is the _watched_ flag ("player saw the
+	# narration"). The _unlocked_ flag is written separately by battle_
+	# won path in _on_battle_ended (tick 471). Without either half, the
+	# cutscene loops OR the PC never unlocks — both silent-failure paths.
 	var src := _read(GAME_LOOP)
-	assert_true(src.contains("\"world1_spotlight_cleric_ch1\":      \"cutscene_flag_spotlight_unlocked_cleric\""),
-		"_CUTSCENE_COMPLETION_FLAGS map must still associate world1_spotlight_cleric_ch1 with cutscene_flag_spotlight_unlocked_cleric — otherwise cutscene loops")
+	assert_true(src.contains("\"world1_spotlight_cleric_ch1\":      \"cutscene_flag_spotlight_watched_cleric\""),
+		"_CUTSCENE_COMPLETION_FLAGS map must associate world1_spotlight_cleric_ch1 with cutscene_flag_spotlight_watched_cleric per Spotlight Duels spec — otherwise cutscene loops")
 
 
 func test_reconcile_spotlight_locks_handles_cleric() -> void:
