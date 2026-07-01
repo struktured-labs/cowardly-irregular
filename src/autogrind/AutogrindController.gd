@@ -560,6 +560,7 @@ func get_grind_stats() -> Dictionary:
 		"per_character_exp": AutogrindSystem.per_character_exp.duplicate(),
 		"items_consumed": AutogrindSystem.items_consumed.duplicate(),
 		"elapsed_seconds": sys_stats.get("elapsed_seconds", 0.0),
+		"battles_without_heal": AutogrindSystem.battles_without_heal,
 	}
 
 

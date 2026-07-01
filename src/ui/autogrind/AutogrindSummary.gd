@@ -12,6 +12,12 @@ const HEADER_COLOR = Color(1.0, 1.0, 0.4)
 const LABEL_COLOR = Color(0.6, 0.6, 0.7)
 const VALUE_COLOR = Color(0.4, 0.9, 0.4)
 const BAD_COLOR = Color(0.9, 0.3, 0.3)
+const BADGE_NEW_COLOR = Color(1.0, 0.85, 0.2)
+const BADGE_EARNED_COLOR = Color(0.55, 0.55, 0.65)
+const BADGE_BG_NEW = Color(0.15, 0.13, 0.06)
+const BADGE_BG_EARNED = Color(0.08, 0.08, 0.12)
+
+const AutogrindAchievementsScript = preload("res://src/autogrind/AutogrindAchievements.gd")
 
 var _stats: Dictionary = {}
 var _reason: String = ""
@@ -84,10 +90,19 @@ func _build_ui() -> void:
 	if permadead.size() > 0:
 		stats_data.append({"label": "PERMADEAD", "value": ", ".join(permadead), "color": BAD_COLOR})
 
+	# newly earned this run render gold; already-unlocked render dim.
+	var gs := _get_game_state()
+	var split := AutogrindAchievementsScript.check_and_award(_stats, gs)
+	var newly: Array = split[0]
+	var previously: Array = split[1]
+	var all_badges: Array = newly + previously
+
 	# Compute panel height from row count
 	var row_h = 26.0
+	var badge_row_h := 40.0 if all_badges.size() > 0 else 0.0
+	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
 	var panel_w = 520.0
-	var panel_h = 68.0 + stats_data.size() * row_h + 50.0  # header + rows + footer
+	var panel_h = 68.0 + stats_data.size() * row_h + badge_header_h + badge_row_h + 50.0
 	panel_h = min(panel_h, vp_size.y - 40)
 
 	var panel = Control.new()
@@ -141,6 +156,39 @@ func _build_ui() -> void:
 
 		y += row_h
 
+	if all_badges.size() > 0:
+		var badge_header = Label.new()
+		badge_header.text = "ACHIEVEMENTS  (%d new)" % newly.size() if newly.size() > 0 else "ACHIEVEMENTS"
+		badge_header.position = Vector2(20, y)
+		badge_header.add_theme_font_size_override("font_size", 12)
+		badge_header.add_theme_color_override("font_color", BADGE_NEW_COLOR if newly.size() > 0 else LABEL_COLOR)
+		panel.add_child(badge_header)
+		y += badge_header_h
+
+		var badges_x = 20.0
+		var chip_h = 30.0
+		var chip_pad = 8.0
+		for a in all_badges:
+			var is_new := a in newly
+			var chip_w := _measure_badge_width(a)
+			var chip_bg = ColorRect.new()
+			chip_bg.color = BADGE_BG_NEW if is_new else BADGE_BG_EARNED
+			chip_bg.position = Vector2(badges_x, y)
+			chip_bg.size = Vector2(chip_w, chip_h)
+			panel.add_child(chip_bg)
+
+			var chip_lbl = Label.new()
+			chip_lbl.text = "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
+			chip_lbl.position = Vector2(badges_x + 6, y + 6)
+			chip_lbl.add_theme_font_size_override("font_size", 12)
+			chip_lbl.add_theme_color_override("font_color", BADGE_NEW_COLOR if is_new else BADGE_EARNED_COLOR)
+			chip_lbl.tooltip_text = a.get("description", "")
+			panel.add_child(chip_lbl)
+
+			badges_x += chip_w + chip_pad
+			if badges_x > panel_w - 40:
+				break
+
 	var footer_sep = ColorRect.new()
 	footer_sep.color = BORDER_LIGHT
 	footer_sep.position = Vector2(16, panel_h - 40)
@@ -160,6 +208,19 @@ func _build_ui() -> void:
 ## Tick 135: thin wrapper around ItemNameResolver.
 func _resolve_item_display_name(item_id: String) -> String:
 	return ItemNameResolver.resolve(item_id)
+
+
+func _get_game_state() -> Node:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		return tree.root.get_node_or_null("GameState")
+	return null
+
+
+func _measure_badge_width(a: Dictionary) -> float:
+	# ~6.5 px per char at font_size 12; icon + space + name.
+	var text := "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
+	return maxf(72.0, text.length() * 6.5 + 16.0)
 
 
 func _compute_grade() -> Dictionary:
