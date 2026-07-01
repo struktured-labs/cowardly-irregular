@@ -2227,17 +2227,24 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	_pending_spotlight_unlock = job_id
 	_spotlight_duel_active = true
 	## Tick 472: thread the cutscene's win_condition through to
-	## BattleManager. cowir-cutscenes step schema can carry it as
-	## step.win_condition = {"type": ..., "value": ..., "status": ...}
-	## Cleric survive_target uses survive_turns; Bard hostile_courtier
-	## uses status_threshold(swayed). BattleManager._check_victory_
-	## conditions consults it before the standard HP-zero check.
-	## Empty {} = default HP-zero (all other minibosses + all regular
-	## battles).
+	## BattleManager. Empty {} = default HP-zero.
+	## Two-sources hardening (2026-07-01, cowir-story's find msg 2049):
+	## the cutscene step is the OVERRIDE; the enemy's monsters.json
+	## win_condition field is the data-driven DEFAULT. Pre-fix the
+	## monsters.json fields were dead data — a cutscene author who
+	## omitted the inline copy silently got HP-zero, making the Cleric
+	## outlast duel potentially unwinnable. A ratchet test asserts the
+	## two sources AGREE whenever both exist.
 	if BattleManager:
 		var wc: Variant = _opts.get("win_condition", {})
 		if wc is Dictionary and not (wc as Dictionary).is_empty():
 			BattleManager._win_condition = (wc as Dictionary).duplicate()
+		elif EncounterSystem and EncounterSystem.monster_database.has(enemy_id):
+			var mdata: Dictionary = EncounterSystem.monster_database[enemy_id]
+			var monster_wc: Variant = mdata.get("win_condition", {})
+			if monster_wc is Dictionary and not (monster_wc as Dictionary).is_empty():
+				BattleManager._win_condition = (monster_wc as Dictionary).duplicate()
+				print("[SPOTLIGHT] win_condition from monsters.json fallback: %s" % str(monster_wc))
 	await _start_battle_async([enemy_id], false)
 	var result: bool = await spotlight_battle_ended
 	party = _spotlight_saved_party.duplicate()
