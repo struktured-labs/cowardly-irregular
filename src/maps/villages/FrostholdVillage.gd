@@ -144,7 +144,7 @@ func _setup_treasures() -> void:
 	var chest2 = TreasureChestScript.new()
 	chest2.chest_id = "frosthold_chest_2"
 	chest2.contents_type = "equipment"
-	chest2.contents_id = "ice_charm"
+	chest2.contents_id = "resist_ring"
 	chest2.position = Vector2(17 * TILE_SIZE, 2 * TILE_SIZE)
 	treasures.add_child(chest2)
 

@@ -144,7 +144,7 @@ func _setup_treasures() -> void:
 	var chest1 = TreasureChestScript.new()
 	chest1.chest_id = "ironhaven_chest_1"
 	chest1.contents_type = "equipment"
-	chest1.contents_id = "iron_shield"
+	chest1.contents_id = "iron_armor"
 	chest1.position = Vector2(10 * TILE_SIZE, 2 * TILE_SIZE)
 	treasures.add_child(chest1)
 
