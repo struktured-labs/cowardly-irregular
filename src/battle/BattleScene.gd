@@ -295,6 +295,13 @@ func _ready() -> void:
 	BattleManager.execution_phase_started.connect(_on_execution_phase_started)
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
+	# Item 19: user report "bard was briefly stuck for a turn next to
+	# the monsters on the left he presumably recently attacked" —
+	# stray displaced sprite from an interrupted return-home tween.
+	# `_snap_party_sprites_home` existed but only fired after group
+	# attacks. Wire it to round_started too as a universal safety net
+	# so any interrupted tween gets caught at the top of every round.
+	BattleManager.round_started.connect(_on_round_started_snap_home)
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
@@ -376,6 +383,8 @@ func _exit_tree() -> void:
 		BattleManager.action_executed.disconnect(_on_action_executed)
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
+	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
+		BattleManager.round_started.disconnect(_on_round_started_snap_home)
 	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
@@ -2929,6 +2938,26 @@ func _snap_party_sprites_home() -> void:
 		if sprite.has_meta("home_position"):
 			var home = sprite.get_meta("home_position")
 			# Only snap if significantly displaced (>20px from home)
+			if sprite.position.distance_to(home) > 20:
+				var tween = create_tween()
+				tween.tween_property(sprite, "position", home, 0.15).set_trans(Tween.TRANS_CUBIC)
+
+
+## Item 19: round-start universal sprite snap. Extends the existing
+## group-attack safety net to run on EVERY round_started so a stray
+## displaced sprite from an interrupted single-attacker return-home
+## tween (user report: Bard "stuck for a turn next to the monsters
+## on the left") gets caught at the top of the next round instead of
+## rendering wrong for a full turn. Covers party AND enemies since
+## monsters can also step out and get interrupted.
+func _on_round_started_snap_home(_round_num: int) -> void:
+	_snap_party_sprites_home()
+	for i in range(enemy_sprite_nodes.size()):
+		var sprite = enemy_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		if sprite.has_meta("home_position"):
+			var home = sprite.get_meta("home_position")
 			if sprite.position.distance_to(home) > 20:
 				var tween = create_tween()
 				tween.tween_property(sprite, "position", home, 0.15).set_trans(Tween.TRANS_CUBIC)
