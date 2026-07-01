@@ -104,7 +104,7 @@
         "walk"
       ],
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
+      "source": "artist aseprite \u2014 Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -618,7 +618,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
     },
     "slime_suburban": {
       "path": "res://assets/sprites/monsters/slime_suburban.png",
@@ -626,13 +626,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 2 (suburban, sky-blue)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 2 (suburban, sky-blue)"
     },
     "slime_steampunk": {
       "path": "res://assets/sprites/monsters/slime_steampunk.png",
@@ -640,13 +652,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 3 (steampunk, brass)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 3 (steampunk, brass)"
     },
     "slime_industrial": {
       "path": "res://assets/sprites/monsters/slime_industrial.png",
@@ -654,13 +678,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 4 (industrial, rust)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 4 (industrial, rust)"
     },
     "slime_digital": {
       "path": "res://assets/sprites/monsters/slime_digital.png",
@@ -668,13 +704,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 5 (digital, neon magenta)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 5 (digital, neon magenta)"
     },
     "slime_abstract": {
       "path": "res://assets/sprites/monsters/slime_abstract.png",
@@ -682,13 +730,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 6 (abstract, monochrome)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 6 (abstract, monochrome)"
     },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
@@ -714,7 +774,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
     },
     "goblin": {
       "path": "res://assets/sprites/monsters/goblin.png",
@@ -740,7 +800,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags)"
     },
     "wolf": {
       "path": "res://assets/sprites/monsters/wolf.png",
@@ -765,8 +825,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
     },
     "spider": {
       "path": "res://assets/sprites/monsters/spider.png",
@@ -815,8 +875,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
@@ -841,8 +901,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "imp": {
       "path": "res://assets/sprites/monsters/imp.png",
@@ -867,8 +927,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "troll": {
       "path": "res://assets/sprites/monsters/troll.png",
@@ -893,8 +953,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "snake": {
       "path": "res://assets/sprites/monsters/snake.png",
@@ -919,8 +979,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "cave_rat": {
       "path": "res://assets/sprites/monsters/cave_rat.png",
@@ -945,15 +1005,15 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "rat_guard": {
       "path": "res://assets/sprites/monsters/rat_guard.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -971,14 +1031,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "mushroom": {
       "path": "res://assets/sprites/monsters/mushroom.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -996,14 +1057,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "cave_troll": {
       "path": "res://assets/sprites/monsters/cave_troll.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -1021,14 +1083,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "shadow_knight": {
       "path": "res://assets/sprites/monsters/shadow_knight.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -1046,14 +1109,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist main reference (tools/regen_monster_artist_style.py)"
     },
     "fire_dragon": {
       "path": "res://assets/sprites/monsters/fire_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -1071,14 +1135,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
     },
     "ice_dragon": {
       "path": "res://assets/sprites/monsters/ice_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -1096,14 +1161,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
     },
     "lightning_dragon": {
       "path": "res://assets/sprites/monsters/lightning_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -1121,14 +1187,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
     },
     "shadow_dragon": {
       "path": "res://assets/sprites/monsters/shadow_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T1",
+      "tier": "T2",
       "animations": {
         "idle": {
           "start": 0,
@@ -1146,7 +1213,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
     },
     "fungoid": {
       "path": "res://assets/sprites/monsters/fungoid.png",
@@ -1171,8 +1239,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "viper": {
       "path": "res://assets/sprites/monsters/viper.png",
@@ -1197,8 +1265,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "elemental": {
       "path": "res://assets/sprites/monsters/elemental.png",
@@ -1223,8 +1291,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "corrupted_sprite": {
       "path": "res://assets/sprites/monsters/corrupted_sprite.png",
@@ -1249,8 +1317,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "giant_bat": {
       "path": "res://assets/sprites/monsters/giant_bat.png",
@@ -1275,8 +1343,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "diseased_rat": {
       "path": "res://assets/sprites/monsters/diseased_rat.png",
@@ -1301,8 +1369,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
@@ -1327,8 +1395,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "ice_wolf": {
       "path": "res://assets/sprites/monsters/ice_wolf.png",
@@ -1353,8 +1421,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
@@ -1379,8 +1447,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "treasure_mimic": {
       "path": "res://assets/sprites/monsters/treasure_mimic.png",
@@ -1405,8 +1473,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "ironback_beetle": {
       "path": "res://assets/sprites/monsters/ironback_beetle.png",
@@ -1431,8 +1499,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "cursed_armor": {
       "path": "res://assets/sprites/monsters/cursed_armor.png",
@@ -1457,8 +1525,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist main reference (tools/regen_monster_artist_style.py)"
     },
     "blood_wolf_alpha": {
       "path": "res://assets/sprites/monsters/blood_wolf_alpha.png",
@@ -1483,8 +1551,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "crystal_golem": {
       "path": "res://assets/sprites/monsters/crystal_golem.png",
@@ -1509,8 +1577,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "elder_mushroom": {
       "path": "res://assets/sprites/monsters/elder_mushroom.png",
@@ -1535,8 +1603,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "corrupted_guardian": {
       "path": "res://assets/sprites/monsters/corrupted_guardian.png",
@@ -1561,8 +1629,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_warden_medieval": {
       "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
@@ -1587,8 +1655,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_arbiter_medieval": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
@@ -1613,8 +1681,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_tempo_medieval": {
       "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
@@ -1639,8 +1707,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_curator_medieval": {
       "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
@@ -1665,8 +1733,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_warden_suburban": {
       "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
@@ -1691,8 +1759,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_arbiter_suburban": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_suburban.png",
@@ -1717,8 +1785,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_tempo_suburban": {
       "path": "res://assets/sprites/monsters/masterite_tempo_suburban.png",
@@ -1743,8 +1811,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_curator_suburban": {
       "path": "res://assets/sprites/monsters/masterite_curator_suburban.png",
@@ -1769,8 +1837,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_warden_industrial": {
       "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
@@ -1795,8 +1863,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_arbiter_industrial": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
@@ -1821,8 +1889,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_tempo_industrial": {
       "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
@@ -1847,8 +1915,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_curator_industrial": {
       "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
@@ -1873,8 +1941,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_warden_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
@@ -1899,8 +1967,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_arbiter_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
@@ -1925,8 +1993,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_tempo_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
@@ -1951,8 +2019,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_curator_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
@@ -1977,8 +2045,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_warden_abstract": {
       "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
@@ -2003,8 +2071,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_arbiter_abstract": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
@@ -2029,8 +2097,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_tempo_abstract": {
       "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
@@ -2055,8 +2123,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "masterite_curator_abstract": {
       "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
@@ -2081,8 +2149,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "new_age_retro_hippie": {
       "path": "res://assets/sprites/monsters/new_age_retro_hippie.png",
@@ -2107,8 +2175,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "spiteful_crow": {
       "path": "res://assets/sprites/monsters/spiteful_crow.png",
@@ -2133,8 +2201,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "skate_punk": {
       "path": "res://assets/sprites/monsters/skate_punk.png",
@@ -2159,8 +2227,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "unassuming_dog": {
       "path": "res://assets/sprites/monsters/unassuming_dog.png",
@@ -2185,8 +2253,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "cranky_lady": {
       "path": "res://assets/sprites/monsters/cranky_lady.png",
@@ -2211,8 +2279,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "clockwork_sentinel": {
       "path": "res://assets/sprites/monsters/clockwork_sentinel.png",
@@ -2237,8 +2305,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "steam_rat": {
       "path": "res://assets/sprites/monsters/steam_rat.png",
@@ -2263,8 +2331,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "brass_golem": {
       "path": "res://assets/sprites/monsters/brass_golem.png",
@@ -2289,8 +2357,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "cog_swarm": {
       "path": "res://assets/sprites/monsters/cog_swarm.png",
@@ -2315,8 +2383,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "pipe_phantom": {
       "path": "res://assets/sprites/monsters/pipe_phantom.png",
@@ -2341,8 +2409,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "assembly_line_automaton": {
       "path": "res://assets/sprites/monsters/assembly_line_automaton.png",
@@ -2367,8 +2435,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "shift_supervisor": {
       "path": "res://assets/sprites/monsters/shift_supervisor.png",
@@ -2393,8 +2461,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "rust_elemental": {
       "path": "res://assets/sprites/monsters/rust_elemental.png",
@@ -2419,8 +2487,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "toxic_sludge": {
       "path": "res://assets/sprites/monsters/toxic_sludge.png",
@@ -2445,8 +2513,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "conveyor_gremlin": {
       "path": "res://assets/sprites/monsters/conveyor_gremlin.png",
@@ -2471,8 +2539,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "rogue_process": {
       "path": "res://assets/sprites/monsters/rogue_process.png",
@@ -2497,8 +2565,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "memory_leak": {
       "path": "res://assets/sprites/monsters/memory_leak.png",
@@ -2523,8 +2591,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "firewall_sentinel": {
       "path": "res://assets/sprites/monsters/firewall_sentinel.png",
@@ -2549,8 +2617,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "data_wraith": {
       "path": "res://assets/sprites/monsters/data_wraith.png",
@@ -2575,8 +2643,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "recursive_loop": {
       "path": "res://assets/sprites/monsters/recursive_loop.png",
@@ -2601,8 +2669,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "null_entity": {
       "path": "res://assets/sprites/monsters/null_entity.png",
@@ -2627,8 +2695,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "forgotten_variable": {
       "path": "res://assets/sprites/monsters/forgotten_variable.png",
@@ -2653,8 +2721,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "empty_set": {
       "path": "res://assets/sprites/monsters/empty_set.png",
@@ -2679,8 +2747,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "the_absence": {
       "path": "res://assets/sprites/monsters/the_absence.png",
@@ -2705,8 +2773,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "optimization_itself": {
       "path": "res://assets/sprites/monsters/optimization_itself.png",
@@ -2731,8 +2799,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "glitch_entity": {
       "path": "res://assets/sprites/monsters/glitch_entity.png",
@@ -2757,8 +2825,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "adaptive_slime": {
       "path": "res://assets/sprites/monsters/adaptive_slime.png",
@@ -2783,8 +2851,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "meta_knight": {
       "path": "res://assets/sprites/monsters/meta_knight.png",
@@ -2809,8 +2877,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "permadeath_reaper": {
       "path": "res://assets/sprites/monsters/permadeath_reaper.png",
@@ -2835,8 +2903,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     },
     "script_error": {
       "path": "res://assets/sprites/monsters/script_error.png",
@@ -2861,8 +2929,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
     }
   },
   "npc_sheets": {
