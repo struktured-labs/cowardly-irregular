@@ -3989,6 +3989,7 @@ func _stop_autogrind(reason: String) -> void:
 
 	# Play interrupt SFX based on stop reason
 	_play_grind_stop_sfx(reason)
+	_show_grind_stop_notification(reason)
 
 	print("[AUTOGRIND] Session stopped: %s" % reason)
 
@@ -4421,6 +4422,7 @@ func _on_grind_complete(reason: String) -> void:
 
 	# Play interrupt SFX based on stop reason
 	_play_grind_stop_sfx(reason)
+	_show_grind_stop_notification(reason)
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
 	_show_autogrind_summary(final_stats, reason)
@@ -4439,6 +4441,56 @@ func _play_grind_stop_sfx(reason: String) -> void:
 		SoundManager.play_ui("grind_stop_manual")
 	else:
 		SoundManager.play_ui("grind_stop_generic")
+
+
+## Full-screen flash + OS taskbar attention + loud sting so the player notices the grind stop even when tabbed out.
+## Manual stops skip the fanfare — the player already knows.
+func _show_grind_stop_notification(reason: String) -> void:
+	if "manual" in reason.to_lower():
+		return
+	SoundManager.play_ui("autogrind_stop_sting")
+	# No-op on headless / unsupported platforms.
+	if DisplayServer.has_method("window_request_attention"):
+		DisplayServer.window_request_attention()
+
+	var layer := CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+
+	var flash := ColorRect.new()
+	flash.color = Color(1.0, 0.95, 0.35, 0.0)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(flash)
+
+	var banner_bg := ColorRect.new()
+	banner_bg.color = Color(0.0, 0.0, 0.0, 0.6)
+	var vp_size := get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+	banner_bg.position = Vector2(0, vp_size.y * 0.42)
+	banner_bg.size = Vector2(vp_size.x, 56)
+	banner_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(banner_bg)
+
+	var banner_lbl := Label.new()
+	banner_lbl.text = "AUTOGRIND STOPPED — %s" % reason.to_upper()
+	banner_lbl.position = Vector2(0, vp_size.y * 0.42 + 16)
+	banner_lbl.size = Vector2(vp_size.x, 24)
+	banner_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_lbl.add_theme_font_size_override("font_size", 22)
+	banner_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	banner_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(banner_lbl)
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(flash, "color:a", 0.55, 0.12)
+	tween.chain().tween_property(flash, "color:a", 0.0, 0.55)
+	tween.chain().tween_callback(func():
+		if is_instance_valid(layer):
+			layer.queue_free()
+	)
 
 
 func _show_autogrind_summary(stats: Dictionary, reason: String) -> void:
