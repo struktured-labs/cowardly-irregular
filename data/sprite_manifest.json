@@ -2931,6 +2931,136 @@
       },
       "tier": "T2",
       "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+    },
+    "fighter_skeleton_knight": {
+      "path": "res://assets/sprites/monsters/fighter_skeleton_knight.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton \u2014 Fighter spotlight-duel miniboss (msg 1950)"
+    },
+    "cleric_survive_target": {
+      "path": "res://assets/sprites/monsters/cleric_survive_target.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target \u2014 Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
+    },
+    "rogue_lockward": {
+      "path": "res://assets/sprites/monsters/rogue_lockward.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct \u2014 Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
+    },
+    "mage_prismatic_construct": {
+      "path": "res://assets/sprites/monsters/mage_prismatic_construct.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct \u2014 Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
+    },
+    "bard_hostile_courtier": {
+      "path": "res://assets/sprites/monsters/bard_hostile_courtier.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC \u2014 Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
     }
   },
   "npc_sheets": {
