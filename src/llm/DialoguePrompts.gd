@@ -158,6 +158,36 @@ const FALLBACK_PARTY_LINE: Dictionary = {
 const MAX_PARTY_LINE_CHARS: int = 140
 const PARTY_LINE_MOODS: Array[String] = ["anxious", "cocky", "focused", "panicked", "neutral"]
 
+const AUTOBATTLE_GRAMMAR_DESCRIPTION := """Autobattle rules are evaluated top-to-bottom, first match wins.
+Each rule shape:
+  {conditions: [...], actions: [...], enabled: true}
+
+Conditions (AND-chained). type is one of:
+  hp_percent, mp_percent, ap, has_status, enemy_hp_percent, ally_hp_percent,
+  turn, enemy_count, ally_count, item_count, setup_complete,
+  ally_has_status, ally_mp_percent, always
+Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
+has_status / ally_has_status take a 'status' field (e.g. 'poison').
+
+Actions (executed in order, up to 4 per rule). type is one of:
+  attack, ability, item, defer
+ability requires id (e.g. 'cure', 'fire').
+item requires id (e.g. 'potion').
+
+Targets. Values:
+  lowest_hp_enemy, highest_hp_enemy, random_enemy,
+  highest_speed_enemy, highest_atk_enemy, lowest_magic_defense_enemy,
+  lowest_hp_ally, all_allies, self
+
+Canonical example:
+  {\"conditions\":[{\"type\":\"ally_has_status\",\"status\":\"poison\"},
+                   {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":15}],
+   \"actions\":[{\"type\":\"ability\",\"id\":\"esuna\",\"target\":\"lowest_hp_ally\"}],
+   \"enabled\":true}
+
+Prefer specific rules over general ones. Put the fallback (a rule with
+{type:'always'} condition and an attack action) last."""
+
 
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
 

@@ -296,6 +296,45 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 	return false
 
 
+func validate_rule(rule: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	if not rule.has("conditions"):
+		errors.append("missing 'conditions' array")
+	elif typeof(rule["conditions"]) != TYPE_ARRAY:
+		errors.append("'conditions' must be an array")
+	if not rule.has("actions"):
+		errors.append("missing 'actions' array")
+	elif typeof(rule["actions"]) != TYPE_ARRAY:
+		errors.append("'actions' must be an array")
+	if errors.size() > 0:
+		return errors
+	for c in rule["conditions"]:
+		if typeof(c) != TYPE_DICTIONARY:
+			errors.append("condition must be a dictionary: %s" % [c])
+			continue
+		var ctype: String = str(c.get("type", ""))
+		if not CONDITION_TYPES.has(ctype):
+			errors.append("unknown condition type: '%s'" % ctype)
+			continue
+		if c.has("op") and not OPERATORS.has(str(c["op"])):
+			errors.append("unknown operator: '%s'" % c["op"])
+	for a in rule["actions"]:
+		if typeof(a) != TYPE_DICTIONARY:
+			errors.append("action must be a dictionary: %s" % [a])
+			continue
+		var atype: String = str(a.get("type", ""))
+		if not ACTION_TYPES.has(atype):
+			errors.append("unknown action type: '%s'" % atype)
+			continue
+		if atype == "ability" and not a.has("id"):
+			errors.append("action type 'ability' requires 'id'")
+		if atype == "item" and not a.has("id"):
+			errors.append("action type 'item' requires 'id'")
+		if a.has("target") and not TARGET_TYPES.has(str(a["target"])):
+			errors.append("unknown target type: '%s'" % a["target"])
+	return errors
+
+
 func _compare_str(a: float, op: String, b: float) -> bool:
 	"""Compare two values with a string operator"""
 	match op:
