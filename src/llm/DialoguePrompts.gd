@@ -192,12 +192,14 @@ const AUTOGRIND_GRAMMAR_DESCRIPTION := """Autogrind rules control the WHOLE PART
 Rules are evaluated top-to-bottom, first match wins.
 
 Conditions (AND-chained). type is one of:
-  party_hp_min, party_hp_avg, alive_count, member_dead, corruption,
-  inventory_items, always
+  party_hp_min, party_hp_avg, party_mp_avg, alive_count, member_dead,
+  member_injured, corruption, efficiency, battles_done, win_streak,
+  time_elapsed, inventory_items, ability_learned, reached_level,
+  rare_item_found, always
 Numeric conditions take op ∈ {<, <=, ==, >=, >, !=} and value.
 
 Actions. type is one of:
-  stop_grinding, heal_party, switch_profile
+  stop_grinding, heal_party, restore_mp, flee_battle, switch_profile
 switch_profile requires character_id (PC id string) and profile_index (int).
 
 Canonical example:

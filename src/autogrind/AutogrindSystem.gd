@@ -273,11 +273,8 @@ func get_learned_patterns_for_region(region_id: String) -> Dictionary:
 	return learned_patterns[region_id]
 
 
-const _AUTOGRIND_CONDITION_TYPES := ["party_hp_min", "party_hp_avg", "alive_count", "member_dead", "corruption", "inventory_items", "always"]
-const _AUTOGRIND_OPERATORS := ["<", "<=", "==", ">=", ">", "!="]
-const _AUTOGRIND_ACTION_TYPES := ["stop_grinding", "heal_party", "switch_profile"]
-
 func validate_rule(rule: Dictionary) -> Array[String]:
+	## Accepts against PARTY_CONDITION_TYPES / OPERATORS / AUTOGRIND_ACTION_TYPES below, the single source of truth.
 	var errors: Array[String] = []
 	if not rule.has("conditions"):
 		errors.append("missing 'conditions' array")
@@ -294,17 +291,17 @@ func validate_rule(rule: Dictionary) -> Array[String]:
 			errors.append("condition must be a dictionary: %s" % [c])
 			continue
 		var ctype: String = str(c.get("type", ""))
-		if not _AUTOGRIND_CONDITION_TYPES.has(ctype):
+		if not PARTY_CONDITION_TYPES.has(ctype):
 			errors.append("unknown autogrind condition type: '%s'" % ctype)
 			continue
-		if c.has("op") and not _AUTOGRIND_OPERATORS.has(str(c["op"])):
+		if c.has("op") and not OPERATORS.has(str(c["op"])):
 			errors.append("unknown operator: '%s'" % c["op"])
 	for a in rule["actions"]:
 		if typeof(a) != TYPE_DICTIONARY:
 			errors.append("action must be a dictionary: %s" % [a])
 			continue
 		var atype: String = str(a.get("type", ""))
-		if not _AUTOGRIND_ACTION_TYPES.has(atype):
+		if not AUTOGRIND_ACTION_TYPES.has(atype):
 			errors.append("unknown autogrind action type: '%s'" % atype)
 			continue
 		if atype == "switch_profile":
@@ -681,6 +678,14 @@ const PARTY_CONDITION_TYPES = {
 	"battles_done": "Battles Done",
 	"corruption": "Corruption",
 	"efficiency": "Efficiency",
+	"member_dead": "Member Dead",
+	"member_injured": "Member Injured",
+	"win_streak": "Win Streak",
+	"time_elapsed": "Time Elapsed",
+	"inventory_items": "Inventory Items",
+	"ability_learned": "Ability Learned",
+	"reached_level": "Reached Level",
+	"rare_item_found": "Rare Item Found",
 	"always": "Always"
 }
 
@@ -697,7 +702,10 @@ const OPERATORS = {
 ## Autogrind action types
 const AUTOGRIND_ACTION_TYPES = {
 	"switch_profile": "Switch Profile",
-	"stop_grinding": "Stop Grinding"
+	"stop_grinding": "Stop Grinding",
+	"heal_party": "Heal Party",
+	"restore_mp": "Restore MP",
+	"flee_battle": "Flee Battle"
 }
 
 ## Default autogrind profile templates
