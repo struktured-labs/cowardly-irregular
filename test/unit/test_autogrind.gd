@@ -540,3 +540,103 @@ func test_on_battle_victory_ticks_debuff() -> void:
 	_system.post_collapse_debuff_battles = 5
 	_system.on_battle_victory(100)
 	assert_eq(_system.post_collapse_debuff_battles, 4, "on_battle_victory must tick debuff counter")
+
+
+## Smart interrupt rules — _evaluate_party_condition tests for the 4 new types
+## (inventory_items, ability_learned, reached_level, rare_item_found).
+
+func test_smart_interrupt_inventory_items_below_threshold() -> void:
+	# Party carries 1 unique item ("potion" per before_each seed); 5 members.
+	var cond = {"type": "inventory_items", "op": ">=", "value": 5}
+	assert_false(_system._evaluate_party_condition(_party, cond),
+		"1 unique item shouldn't satisfy >=5")
+
+
+func test_smart_interrupt_inventory_items_counts_unique_slots() -> void:
+	# Diversify inventory across the party so the count is deterministic.
+	_party[0].add_item("hi_potion", 1)
+	_party[1].add_item("ether", 1)
+	_party[2].add_item("phoenix_down", 1)
+	# 4 unique item_ids across party (potion + 3 additions), all party members share `potion`
+	var cond = {"type": "inventory_items", "op": ">=", "value": 4}
+	assert_true(_system._evaluate_party_condition(_party, cond),
+		"4 unique item ids should satisfy >=4")
+	var cond_too_high = {"type": "inventory_items", "op": ">=", "value": 10}
+	assert_false(_system._evaluate_party_condition(_party, cond_too_high),
+		"4 unique items should not satisfy >=10")
+
+
+func test_smart_interrupt_ability_learned_default_false() -> void:
+	var cond = {"type": "ability_learned"}
+	assert_false(_system._evaluate_party_condition(_party, cond),
+		"Fresh session (no signal fired) → ability_learned must evaluate false")
+
+
+func test_smart_interrupt_ability_learned_true_after_flag_set() -> void:
+	_system._ability_learned_this_session = true
+	var cond = {"type": "ability_learned"}
+	assert_true(_system._evaluate_party_condition(_party, cond),
+		"After the flag flips, ability_learned must evaluate true")
+
+
+func test_smart_interrupt_reached_level_uses_party_max() -> void:
+	_party[0].job_level = 3
+	_party[1].job_level = 8  # party max
+	_party[2].job_level = 5
+	_party[3].job_level = 4
+	var cond_pass = {"type": "reached_level", "op": ">=", "value": 8}
+	assert_true(_system._evaluate_party_condition(_party, cond_pass),
+		"Party max (8) should satisfy >=8")
+	var cond_fail = {"type": "reached_level", "op": ">=", "value": 9}
+	assert_false(_system._evaluate_party_condition(_party, cond_fail),
+		"Party max (8) should NOT satisfy >=9 — helper reads the highest level, not each member")
+
+
+func test_smart_interrupt_rare_item_found_default_false() -> void:
+	var cond = {"type": "rare_item_found"}
+	assert_false(_system._evaluate_party_condition(_party, cond),
+		"Fresh session (no rare drop yet) → rare_item_found must evaluate false")
+
+
+func test_smart_interrupt_rare_item_found_true_after_flag_set() -> void:
+	_system._rare_drop_this_session = true
+	var cond = {"type": "rare_item_found"}
+	assert_true(_system._evaluate_party_condition(_party, cond),
+		"After the flag flips, rare_item_found must evaluate true")
+
+
+func test_smart_interrupt_signal_handlers_flip_flags() -> void:
+	# The handlers are what the wire_signals path routes signals through.
+	_system._on_smart_interrupt_ability_learned("fireball")
+	_system._on_smart_interrupt_rare_drop("phoenix_down", 0.05)
+	assert_true(_system._ability_learned_this_session,
+		"ability_learned handler must flip the flag")
+	assert_true(_system._rare_drop_this_session,
+		"rare_drop handler must flip the flag")
+
+
+func test_smart_interrupt_unwire_resets_flags_for_next_session() -> void:
+	# Simulate a session flip: flags on, then wire again → they reset to false so a stale
+	# "ability_learned" from a previous grind doesn't immediately fire the interrupt.
+	_system._ability_learned_this_session = true
+	_system._rare_drop_this_session = true
+	_system._wire_smart_interrupt_signals(_party)
+	assert_false(_system._ability_learned_this_session,
+		"_wire_smart_interrupt_signals must reset _ability_learned_this_session")
+	assert_false(_system._rare_drop_this_session,
+		"_wire_smart_interrupt_signals must reset _rare_drop_this_session")
+
+
+func test_autogrind_ui_condition_types_cover_evaluator() -> void:
+	# Guard against future picker/evaluator drift like the one AutogrindGridEditor was in.
+	# Every id in AutogrindUI.CONDITION_TYPES must be a match arm _evaluate_party_condition supports.
+	var picker_ids := []
+	for entry in load("res://src/ui/autogrind/AutogrindUI.gd").CONDITION_TYPES:
+		picker_ids.append(entry["id"])
+	var supported := ["party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count",
+		"battles_done", "corruption", "efficiency", "member_dead", "member_injured",
+		"win_streak", "time_elapsed", "inventory_items", "ability_learned",
+		"reached_level", "rare_item_found", "always"]
+	for id in picker_ids:
+		assert_true(id in supported,
+			"AutogrindUI picker exposes '%s' but _evaluate_party_condition has no arm for it" % id)

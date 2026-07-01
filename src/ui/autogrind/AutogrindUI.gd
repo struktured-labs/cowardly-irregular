@@ -49,6 +49,10 @@ const CONDITION_TYPES = [
 	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
 	{"id": "efficiency", "label": "Efficiency", "has_value": true, "default_op": ">=", "default_value": 5.0},
 	{"id": "time_elapsed", "label": "Minutes", "has_value": true, "default_op": ">=", "default_value": 30},
+	{"id": "inventory_items", "label": "Inv Items", "has_value": true, "default_op": ">=", "default_value": 20},
+	{"id": "ability_learned", "label": "New Ability", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "reached_level", "label": "Reached Lv", "has_value": true, "default_op": ">=", "default_value": 10},
+	{"id": "rare_item_found", "label": "Rare Drop", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "always", "label": "ALWAYS", "has_value": false, "default_op": "==", "default_value": 0},
 ]
 
@@ -1024,6 +1028,14 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Efficiency\n%s %.1f" % [op, value]
 		"member_dead":
 			return "Member\nDead"
+		"inventory_items":
+			return "Inv Items\n%s %d" % [op, value]
+		"ability_learned":
+			return "New\nAbility"
+		"reached_level":
+			return "Level\n%s %d" % [op, value]
+		"rare_item_found":
+			return "Rare\nDrop"
 		"always":
 			return "ALWAYS"
 		_:

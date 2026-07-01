@@ -698,6 +698,14 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Corrupt %s %.1f" % [op, value]
 		"efficiency":
 			return "Effic %s %.1f" % [op, value]
+		"inventory_items":
+			return "Inv Items %s %d" % [op, value]
+		"ability_learned":
+			return "New Ability"
+		"reached_level":
+			return "Level %s %d" % [op, value]
+		"rare_item_found":
+			return "Rare Drop"
 		"always":
 			return "ALWAYS"
 		_:
@@ -1082,13 +1090,14 @@ func _cycle_condition_type() -> void:
 		return
 
 	var cond = conditions[cursor_col]
-	var types = ["party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count", "battles_done", "corruption", "efficiency", "always"]
+	var types = ["party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count", "battles_done", "corruption", "efficiency", "inventory_items", "ability_learned", "reached_level", "rare_item_found", "always"]
 	var current_type = cond.get("type", "always")
 	var idx = types.find(current_type)
 	idx = (idx + 1) % types.size()
 	cond["type"] = types[idx]
 
-	if types[idx] != "always":
+	var value_less_types := ["always", "ability_learned", "rare_item_found"]
+	if not (types[idx] in value_less_types):
 		if not cond.has("op"):
 			cond["op"] = "<"
 		if not cond.has("value"):
@@ -1104,6 +1113,10 @@ func _cycle_condition_type() -> void:
 					cond["value"] = 3.0
 				"efficiency":
 					cond["value"] = 5.0
+				"inventory_items":
+					cond["value"] = 20
+				"reached_level":
+					cond["value"] = 10
 				_:
 					cond["value"] = 50
 
@@ -1141,7 +1154,8 @@ func _adjust_condition_value(delta: int) -> void:
 
 	var cond = conditions[cursor_col]
 	var cond_type = cond.get("type", "always")
-	if cond_type == "always":
+	# ability_learned + rare_item_found are boolean flags — no value to adjust
+	if cond_type == "always" or cond_type == "ability_learned" or cond_type == "rare_item_found":
 		return
 
 	var current_value = cond.get("value", 50)
@@ -1154,6 +1168,10 @@ func _adjust_condition_value(delta: int) -> void:
 			step = 1
 		"battles_done":
 			step = 10
+		"inventory_items":
+			step = 5
+		"reached_level":
+			step = 1
 
 	# Different clamp ranges per type
 	var min_val = 0
@@ -1167,6 +1185,11 @@ func _adjust_condition_value(delta: int) -> void:
 			max_val = 10
 		"battles_done":
 			max_val = 999
+		"inventory_items":
+			max_val = 200
+		"reached_level":
+			min_val = 1
+			max_val = 99
 
 	current_value = clamp(current_value + delta * step, min_val, max_val)
 	cond["value"] = current_value
