@@ -228,7 +228,7 @@ func _generate_map() -> void:
 		# Row 0-9: Northern region (Ice NW, Forest N, Swamp NE)
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 0
 		"~~MMMMMMiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~SSSSSSSSSSdddddddddddd~~~~~~~~~~~~~~~",  # 1
-		"~~MMMMMiiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~SSSSSSSSSdddddddddddddd~~~~~~~~~~~~~~",  # 2
+		"~~MMM.Hiiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~SSSSSSSSSdddddddddddddd~~~~~~~~~~~~~~",  # 2 (H = hidden passage → ice hollow pocket)
 		"~~MMMMiiii.iiiiiii~~FFFFFFFFFFgFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSSddddddddddddddd~~~~~~~~~~~~~~",  # 3
 		"~~MMMiii..1.iiiiii~~FFFFFFFgggggFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSdddddd..ddddddddd~~~~~~~~~~~~~",  # 4
 		"~~MMiiii....iiiiiii~FFFFFFgggggggFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSddddd.....dddddddd~~~~~~~~~~~~~",  # 5
@@ -281,8 +281,8 @@ func _generate_map() -> void:
 		".............................~~~~~~...........~~~~~~.........................................~~~~~~~",  # 48
 		"............................~~~~~~~~.........~~~~~~~~........................................~~~~~~~",  # 49
 		# Row 50-59: Desert and Volcanic regions
-		"ssssssssssssssss............~~~~~~~~~~BBB~~~~~~~~~~............................MMMMMM~~~~MMM~~~~~~~~",  # 50
-		"sssssssssssssssss..........~~~~~~~~~~~...~~~~~~~~~~...........................MMMMMMlllMMMMM~~~~~~~~",  # 51
+		"ssssssssssssssss............~~~~~~~~~~BBB~~~~~~~~~~............................MMHMMM~~~~MMM~~~~~~~~",  # 50 (H = hidden passage → magma vault)
+		"sssssssssssssssss..........~~~~~~~~~~~...~~~~~~~~~~...........................MMM.MMlllMMMMM~~~~~~~~",  # 51 (pocket behind the H above)
 		"ssssssssssssssssss.........~~~~~~~~~~~...~~~~~~~~~~..........................MMMMMlllllMMMMM~~~~~~~~",  # 52
 		"ssssssssss..sssssss........~~~~~~~~~~~...~~~~~~~~~~.........................MMMMlllllll.MMMMM~~~~~~~",  # 53
 		"sssssssss....sssssss.......~~~~~~~~~~~...~~~~~~~~~~........................MMMlllll.llll.MMMM~~~~~~~",  # 54
@@ -387,6 +387,7 @@ func _char_to_tile_type(char: String) -> int:
 		"1", "2", "3", "4": return TileGeneratorScript.TileType.CAVE_ENTRANCE
 		"W", "E", "G", "D", "I": return TileGeneratorScript.TileType.VILLAGE_GATE
 		"P": return TileGeneratorScript.TileType.BRIDGE  # Portal uses bridge tile
+		"H": return TileGeneratorScript.TileType.PATH  # Hidden passage — walkable; HiddenPassage sprite disguises it
 		_: return TileGeneratorScript.TileType.GRASS
 
 
@@ -713,6 +714,9 @@ func _place_treasure_chests() -> void:
 		{"id": "w1_iron_gold", "pos": Vector2(80, 56), "type": "gold", "gold": 500},
 		# Swamp region — hidden reward
 		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
+		# Secret-passage pockets — sealed behind HiddenPassage walls
+		{"id": "w1_secret_ice_hollow", "pos": Vector2(5, 2), "type": "item", "item": "x_potion", "amount": 2},
+		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
 	]
 	for c in chests:
 		var chest = TreasureChestScript.new()
@@ -726,6 +730,23 @@ func _place_treasure_chests() -> void:
 			chest.contents_id = c["item"]
 			chest.contents_amount = c["amount"]
 		add_child(chest)
+
+	_place_hidden_passages()
+
+
+func _place_hidden_passages() -> void:
+	## Disguised wall sections at the H map markers — each seals a
+	## secret pocket carved into the mountain clusters above.
+	var passages = [
+		{"id": "w1_ice_hollow", "pos": Vector2(6, 2), "disguise": "mountain"},
+		{"id": "w1_magma_vault", "pos": Vector2(81, 50), "disguise": "mountain"},
+	]
+	for p in passages:
+		var passage = HiddenPassage.new()
+		passage.passage_id = p["id"]
+		passage.disguise = p["disguise"]
+		passage.position = Vector2(p["pos"].x * TILE_SIZE + TILE_SIZE / 2, p["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		add_child(passage)
 
 
 func _place_ambient_effects() -> void:

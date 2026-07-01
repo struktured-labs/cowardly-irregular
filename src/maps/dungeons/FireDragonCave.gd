@@ -28,8 +28,8 @@ func _init() -> void:
 			"M.....M......M.....M",
 			"M.....M..U...M.....M",
 			"M.....MMM..MMM.....M",
-			"M.......DDDD.......M",
-			"M..................M",
+			"MMMM....DDDD.......M",
+			"MT.H...............M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
