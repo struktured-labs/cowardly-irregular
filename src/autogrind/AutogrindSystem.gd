@@ -20,6 +20,8 @@ signal region_cracked(region_id: String, crack_level: int)
 signal region_advanced(from_region: String, to_region: String, world_num: int)
 ## Fires once per region per session when monster_adaptation_level crosses ROTATION_SUGGEST_THRESHOLD; suggested may be empty if no next region exists.
 signal region_rotation_suggested(current_region_id: String, suggested: Dictionary, adaptation_level: float)
+## Fires once per band per session when meta_corruption crosses WARNING/DANGER/CRITICAL. Band is "warning" | "danger" | "critical".
+signal corruption_threshold_crossed(band: String, level: float)
 signal autobattle_interrupted(reason: String)
 signal autogrind_rules_changed()
 signal fatigue_event(event_type: String, description: String)
@@ -77,6 +79,13 @@ var corruption_threshold: float = 5.0      # When system collapse occurs
 ## Region rotation advisory — fire the suggestion once per region per session
 const ROTATION_SUGGEST_THRESHOLD: float = 3.0
 var _rotation_suggested_regions: Dictionary = {}
+
+## Corruption threshold bands — fired at most once per band per session so a bumpy corruption graph doesn't repeat-spam the same warning.
+const CORRUPTION_BAND_WARNING: float = 3.0
+const CORRUPTION_BAND_DANGER: float = 4.0
+const CORRUPTION_BAND_CRITICAL: float = 4.5
+var _corruption_bands_crossed: Dictionary = {}
+var _save_corruption_baseline: float = 0.0
 
 ## Interrupt conditions
 var interrupt_rules: Dictionary = {
@@ -418,6 +427,9 @@ func get_grind_stats() -> Dictionary:
 		"per_character_exp": per_character_exp.duplicate(),
 		"injuries_this_session": injuries_this_session,
 		"battles_without_heal": battles_without_heal,
+		"corruption_threshold": corruption_threshold,
+		"save_corruption": _get_save_corruption(),
+		"save_corruption_delta": _get_save_corruption() - _save_corruption_baseline,
 	}
 
 
@@ -682,6 +694,8 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	fatigue_events_triggered = 0
 	battles_without_heal = 0
 	_rotation_suggested_regions.clear()
+	_corruption_bands_crossed.clear()
+	_save_corruption_baseline = _get_save_corruption()
 	# Capture injury baseline to detect new injuries
 	_injury_baseline = 0
 	for member in party:
@@ -915,6 +929,7 @@ func _increase_efficiency() -> void:
 	# Increase meta-corruption (danger!)
 	var corruption_gain = 0.02 * efficiency_multiplier
 	meta_corruption_level += corruption_gain
+	_maybe_emit_corruption_band()
 
 	# Increase meta-boss spawn chance
 	meta_boss_spawn_chance = min(meta_corruption_level * 0.05, 0.3)
@@ -1803,6 +1818,28 @@ func _get_autoload_node(name_: String) -> Node:
 	if tree != null and tree.root != null:
 		return tree.root.get_node_or_null(name_)
 	return null
+
+
+func _maybe_emit_corruption_band() -> void:
+	# Fire the signal once per band per session — a bumpy corruption graph shouldn't repeat-spam the same warning.
+	var bands := [
+		["critical", CORRUPTION_BAND_CRITICAL],
+		["danger", CORRUPTION_BAND_DANGER],
+		["warning", CORRUPTION_BAND_WARNING],
+	]
+	for entry in bands:
+		var name: String = entry[0]
+		var threshold: float = entry[1]
+		if meta_corruption_level >= threshold and not _corruption_bands_crossed.get(name, false):
+			_corruption_bands_crossed[name] = true
+			corruption_threshold_crossed.emit(name, meta_corruption_level)
+
+
+func _get_save_corruption() -> float:
+	var gs: Node = _get_autoload_node("GameState")
+	if gs != null and "corruption_level" in gs:
+		return float(gs.corruption_level)
+	return 0.0
 
 
 func _maybe_suggest_region_rotation() -> void:
