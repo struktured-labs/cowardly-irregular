@@ -6,9 +6,16 @@ var player_display_size: float = 120.0  # Scaled down from 160 — less oversize
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0
-var near_scale: float = 0.45  # Higher = less horizontal compression near player feet
-var ground_y: float = 0.48  # Lower = sample from closer to center (less warp at player)
-var curvature: float = 0.01
+## Playtest tuning (2026-07-01, per cowir-overworld msg 2008): the
+## visual/collision mismatch on mountain edges is a fundamental
+## Mode 7 property — log() depth compression means no fixed collision
+## margin matches at all distances. Option-1 fix: raise near_scale +
+## lower default curvature so foreshortening is less aggressive and
+## visual/physics parity is closer. Reversible if playtest wants the
+## old feel back.
+var near_scale: float = 0.55  # was 0.45 — less horizontal compression
+var ground_y: float = 0.48
+var curvature: float = 0.005  # was 0.01 — less warp at player
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
 var sky_top: Color = Color(0.25, 0.35, 0.65, 1.0)
 var sky_bottom: Color = Color(0.55, 0.65, 0.85, 1.0)
@@ -35,7 +42,7 @@ const TINT_NIGHT: Color = Color(0.6, 0.65, 0.9)
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
 const WORLD_PRESETS: Dictionary = {
 	"medieval": {
-		"curvature": 0.01,
+		"curvature": 0.005,  # was 0.01 — mountain-edge parity tuning
 		"fog_color": Color(0.50, 0.60, 0.78),
 		"sky_top": Color(0.25, 0.35, 0.65),
 		"sky_bottom": Color(0.55, 0.65, 0.85),
