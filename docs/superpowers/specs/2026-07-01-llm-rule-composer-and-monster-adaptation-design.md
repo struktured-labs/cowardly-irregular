@@ -129,14 +129,27 @@ class_name RuleComposer
 signal composition_ready(result: Dictionary)  # {name, description, rules: Array, errors: Array[String], source: String}
 signal composition_failed(reason: String)     # "no_llm" | "invalid_json" | "grammar_errors" | "client_timeout"
 
-const DOMAIN_AUTOBATTLE := "autobattle"
-const DOMAIN_AUTOGRIND  := "autogrind"
+const DOMAIN_AUTOBATTLE := "autobattle"   # per-character rule script
+const DOMAIN_AUTOGRIND  := "autogrind"    # party-level rule set
 
-func compose_async(domain: String, prompt_text: String, current_rules: Array = []) -> Dictionary:
+# Scope differs by domain and this MUST be respected end-to-end:
+#   autobattle → per-character (character_id required; call site is the grid
+#     editor for THAT PC's slot). Read via AutobattleSystem.get_character_script(character_id);
+#     write via AutobattleSystem.set_character_script(character_id, rules).
+#     Change signal: character_script_changed(character_id: String).
+#   autogrind  → party-level (character_id ignored / MUST be ""). Read via
+#     AutogrindSystem.get_autogrind_rules(); write via
+#     AutogrindSystem.set_autogrind_rules(rules) which already emits
+#     autogrind_rules_changed().
+
+func compose_async(domain: String, prompt_text: String, character_id: String = "", current_rules: Array = []) -> Dictionary:
     # 1. build prompt from DialoguePrompts.AUTOBATTLE_GRAMMAR_DESCRIPTION (or AUTOGRIND_) + user text
     # 2. LLMService.complete_json(prompt, SCHEMA_RULE_COMPOSITION, FALLBACK_RULE_COMPOSITION)
     # 3. parse rules_json; second-pass hard-validate via <domain>System.validate_rule
     # 4. return {name, description, rules, errors, source}
+    # If domain == DOMAIN_AUTOBATTLE, character_id MUST be a real PC id;
+    # otherwise assert-fail early (silent-failure guard).
+    # If domain == DOMAIN_AUTOGRIND, character_id MUST be "" (assert-fail otherwise).
     ...
 
 func has_llm() -> bool:
@@ -222,10 +235,17 @@ Same pattern for `AutogrindSystem.validate_rule`, keyed on that domain's grammar
 
 ### 3.7 Install flow
 
-- **New profile (default):**
-  - Autogrind: `AutogrindRuleTemplates.install_as_new_profile(dict_out_of_composer, AutogrindSystem)` — the existing template installer already handles this.
-  - Autobattle: mirror the autogrind installer — `AutobattleSystem.install_composition_as_new_profile(composition)`. (Existing profile system supports multiple named profiles.)
-- **Replace current:** `AutobattleSystem.set_character_script(character_id, composition.rules)` / autogrind equivalent. Persists via existing save paths.
+Different for the two domains because their scoping differs:
+
+**Autobattle (per-character; `character_id` mandatory)**
+- **New profile:** `AutobattleSystem.install_composition_as_new_profile(character_id, composition)` — NEW helper mirroring the autogrind installer; picks a fresh profile slot for THAT PC, doesn't overwrite. (The multi-profile system already exists per-character; this adds a "never-overwrite" install path.)
+- **Replace current:** `AutobattleSystem.set_character_script(character_id, composition.rules)` — existing API; emits `character_script_changed(character_id)` which the grid editor connects to for refresh.
+
+**Autogrind (party-level; no `character_id`)**
+- **New profile:** `AutogrindRuleTemplates.install_as_new_profile(dict_out_of_composer, AutogrindSystem)` — existing template installer, never-overwrites, allocates a new named profile.
+- **Replace current:** `AutogrindSystem.set_autogrind_rules(composition.rules)` — existing API; already emits `autogrind_rules_changed()` for editor refresh.
+
+**Editor refresh** is signal-driven end-to-end. Composer never writes and then also pokes UI — the signal contract does that.
 
 ---
 
@@ -258,14 +278,41 @@ Populated by `BattleManager._refine_boss_intent_async` (~BM 6247) from:
 
 | intent_id | maps to counter_strategy | consumer (existing) |
 |---|---|---|
-| `fire_resist` | fire_resist | `_bias_by_intent` scales fire-vulnerability rolls; `_get_counter_action` (BM ~5698) picks resist-buff |
+| `fire_resist` | fire_resist | `_get_counter_action` picks resist-buff (existing branch) |
 | `ice_resist` | ice_resist | same |
 | `lightning_resist` | lightning_resist | same |
-| `focus_healer` | focus_healer | `_bias_by_intent` scales `target_weight[healer]` up; `_get_counter_action` picks healer-target |
-| `defense_boost` | defense_boost | scales `guard_bias` up |
-| `rotate_aggro` | rotate_aggro | scales `target_switch_chance` up |
+| `focus_healer` | focus_healer | `_get_counter_action` picks healer-target (existing branch) |
+| `defense_boost` | defense_boost | `_get_counter_action` picks guard-up (existing branch) |
+| `rotate_aggro` | rotate_aggro | `_get_counter_action` picks target-switch (existing branch) |
 
-These intents already have counter-action recipes in `_get_counter_action` (BM ~5698). The intent tags just give the LLM (and the deterministic path) a named handle. **No new abilities. No new counter-actions.** Only new labels feeding existing multipliers.
+**Exact seam (clarifying per cowir-battle msg 1991).** Two additive tweaks at the existing counter-drafter callsite (`_make_ai_decision` ~BM:1581-1587):
+
+1. **Boost chance the counter path fires.** `_bias_by_intent` for each of the 6 tags returns `{"counter_action_chance": 2.0}` — the same key `exploit_pattern` already uses. Existing line multiplies `counter_chance` by this scalar; no new consumer.
+
+2. **Override the strategy the counter path picks.** One-line guard at the same callsite, BEFORE `_get_counter_action` is called:
+
+   ```gdscript
+   var strategy: String = AutogrindSystem.get_current_counter_strategy(region_id)   # existing helper
+   var intent: String = combatant.get_meta("llm_intent", "")
+   const _COUNTER_INTENT_TAGS := ["fire_resist", "ice_resist", "lightning_resist",
+                                  "focus_healer", "defense_boost", "rotate_aggro"]
+   if intent in _COUNTER_INTENT_TAGS:
+       strategy = intent   # LLM (or scripted-floor) intent overrides deterministic pick
+   # ... existing roll + _get_counter_action(strategy, ...) call unchanged
+   ```
+
+   **1:1 mapping** means intent_id string == counter_strategy string. When the LLM (or scripted picker) chooses one of the 6 widened tags, it wins over `_determine_counter_strategy` for THAT turn's counter roll. When the intent is one of the 3 original tags (`aggress`/`turtle`/`exploit_pattern`) — or the LLM is off entirely — the deterministic strategy stands.
+
+**Why this shape (not the two rejected alternatives cowir-battle listed):**
+- **Rejected (A) chance-only boost.** LLM says "fire_resist" but patterns show `focus_healer` best → boss buffs a healer target. Intent is decorative, not causal.
+- **Rejected (C) ability-weight bias table.** Fragile — requires enumerating ability IDs per intent, which `_get_counter_action`'s dynamic filter (`"resist" in a.get("id","")`) is specifically designed to avoid.
+- **Chosen (B) one-line strategy override + chance boost.** Cheapest, cleanest, respects the dynamic filter, keeps `_get_counter_action` unchanged, no new function seam.
+
+**Files touched.** `_bias_by_intent` at ~BM:6364 gains 6 entries (each `{"counter_action_chance": 2.0}`). `_make_ai_decision` at ~BM:1581 gains the ~5-line strategy override guard + the tag const. That's it — no changes to `_get_counter_action`, no new API surface.
+
+**Not touched.** `generic_counter` (7th strategy string) has no intent tag — intentional. It's the fallback string `_determine_counter_strategy` returns when patterns are ambiguous; making it an LLM-selectable intent would collapse to noise.
+
+These intents already have counter-action recipes in `_get_counter_action` (BM ~5698). **No new abilities. No new counter-actions.**
 
 ### 4.4 Prompt shape
 
@@ -424,16 +471,16 @@ Story-flag guardrail is unchanged: the boss data integrity test already asserts 
 
 ## 8. Cross-huddle interfaces
 
-**cowir-autogrind:**
-- Need read-only `AutogrindSystem.get_current_rules(character_id) → Array` if not present (for the "current rules for reference" prompt context).
-- Install path already there: `AutogrindRuleTemplates.install_as_new_profile(dict, AutogrindSystem)` — Composer output shape is identical.
-- Wanted: a hook to force-refresh `AutogrindGridEditor` after Composer installs a profile (probably `set_autogrind_rules` already emits a signal — verify).
-- No blocker to their queue; this is additive.
+**Autobattle vs autogrind scoping (see §3.2, §3.7).** The composer works in two distinct scopes and the APIs it touches per scope differ:
+- Autobattle rules are **per-character**. Read via `AutobattleSystem.get_character_script(character_id)`; write via `set_character_script(character_id, rules)`; refresh signal `character_script_changed(character_id: String)` (AutobattleSystem.gd:14). Composer must pass a real PC id.
+- Autogrind rules are **party-level**. Read via `AutogrindSystem.get_autogrind_rules()` (AutogrindSystem.gd:1503); write via `set_autogrind_rules(rules)` (AutogrindSystem.gd:1514); refresh signal `autogrind_rules_changed()` (AutogrindSystem.gd:26). Composer MUST NOT pass a character_id in this domain.
+
+**cowir-autogrind** — Zero new work; both hooks already exist and are correctly named for their scope. Composer will `get_autogrind_rules()` for prompt context and `AutogrindRuleTemplates.install_as_new_profile(dict, AutogrindSystem)` (for "new profile") or `set_autogrind_rules(rules)` (for "replace current"). Editor refresh via the existing `autogrind_rules_changed()` signal — no new signal needed. Ack per msg 1990.
 
 **cowir-battle:**
 - `_bias_by_intent(intent_id, masterite_type)` at `BM 6364` gains 6 new intent tags mapped to existing counter_strategy multipliers. Zero new abilities, no changes to `_get_counter_action` (already at `BM 5698`), no changes to the deterministic ladder.
 - `BossIntentContext.gd` gains 3 new fields (`player_lead_pc_rules`, `learned_patterns_counter`, `learned_patterns_sample`). Purely additive.
-- `_refine_boss_intent_async` (~BM 6247) builds the context from `AutobattleSystem.get_character_script(lead_pc_id)` and `AutogrindSystem.learned_patterns[region_id]`. Read-only.
+- `_refine_boss_intent_async` (~BM 6247) builds the context from `AutobattleSystem.get_character_script(lead_pc_id)` (per-character read) and `AutogrindSystem.learned_patterns[region_id]` (party-level). Read-only.
 - Coordinate with cowir-battle on the taunt-voicing for the 6 new intent tags (or fold under cowir-story).
 
 **cowir-cutscenes:**
@@ -481,7 +528,8 @@ Each phase = one commit or a small stack. Feature branch: `feature/cowir-ai-rule
 | `src/llm/RuleComposer.gd` | create | new autoload |
 | `src/llm/BossDialogue.gd` | edit | extend `pick_intent_async` context building |
 | `src/battle/BossIntentContext.gd` | edit | +3 fields |
-| `src/battle/BattleManager.gd` | edit | `_bias_by_intent` widened allowlist (~6364); `_refine_boss_intent_async` context build (~6247) |
+| `src/battle/BattleManager.gd` | edit | `_bias_by_intent` widened allowlist (~6364); `_refine_boss_intent_async` context build (~6247); `_make_ai_decision` strategy-override guard (~1581, ~5 lines per §4.3) |
+| `src/autogrind/AutogrindSystem.gd` | edit | small public helper `get_current_counter_strategy(region_id) -> String` if `_determine_counter_strategy` is not already exposed |
 | `src/llm/DialoguePrompts.gd` | edit | grammar consts, composer prompt, composer schema/fallback, `validate_boss_intent_reply` widened |
 | `src/autobattle/AutobattleSystem.gd` | edit | `validate_rule` helper; `install_composition_as_new_profile` helper |
 | `src/autogrind/AutogrindSystem.gd` | edit | `validate_rule` helper; `get_current_rules(character_id)` helper if missing |
