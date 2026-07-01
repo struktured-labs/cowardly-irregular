@@ -148,10 +148,14 @@ func confirm(replace_current: bool) -> void:
 			autobattle.set_character_script(_character_id, {
 				"character_id": _character_id,
 				"name": str(_last_composition.get("name", "Composed")),
+				"description": str(_last_composition.get("description", "")),
 				"rules": comp_rules
 			})
 		else:
 			idx = autobattle.install_composition_as_new_profile(_character_id, _last_composition)
+			if idx < 0:
+				_show_error(["Profile limit reached (8 max). Delete a profile or check 'Replace current profile'."])
+				return
 	else:
 		var autogrind = get_node_or_null("/root/AutogrindSystem")
 		if autogrind == null:
@@ -161,6 +165,9 @@ func confirm(replace_current: bool) -> void:
 			autogrind.set_autogrind_rules(comp_rules)
 		else:
 			idx = _install_autogrind_new_profile(autogrind, comp_rules)
+			if idx < 0:
+				_show_error(["Profile limit reached (8 max). Delete a profile or check 'Replace current profile'."])
+				return
 	hide()
 	installed.emit(idx)
 
