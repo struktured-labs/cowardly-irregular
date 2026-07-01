@@ -18,6 +18,8 @@ signal meta_boss_spawned(boss_name: String)
 signal system_collapse()
 signal region_cracked(region_id: String, crack_level: int)
 signal region_advanced(from_region: String, to_region: String, world_num: int)
+## Fires once per region per session when monster_adaptation_level crosses ROTATION_SUGGEST_THRESHOLD; suggested may be empty if no next region exists.
+signal region_rotation_suggested(current_region_id: String, suggested: Dictionary, adaptation_level: float)
 signal autobattle_interrupted(reason: String)
 signal autogrind_rules_changed()
 signal fatigue_event(event_type: String, description: String)
@@ -71,6 +73,10 @@ var adaptation_on_crack: bool = true  # Monsters adapt when region cracked
 var monster_adaptation_level: float = 0.0  # Enemies get stronger
 var meta_corruption_level: float = 0.0     # Reality starts breaking
 var corruption_threshold: float = 5.0      # When system collapse occurs
+
+## Region rotation advisory — fire the suggestion once per region per session
+const ROTATION_SUGGEST_THRESHOLD: float = 3.0
+var _rotation_suggested_regions: Dictionary = {}
 
 ## Interrupt conditions
 var interrupt_rules: Dictionary = {
@@ -675,6 +681,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	# the lifetime tally had already crossed the threshold months ago.
 	fatigue_events_triggered = 0
 	battles_without_heal = 0
+	_rotation_suggested_regions.clear()
 	# Capture injury baseline to detect new injuries
 	_injury_baseline = 0
 	for member in party:
@@ -903,6 +910,7 @@ func _increase_efficiency() -> void:
 
 	# Increase monster adaptation
 	monster_adaptation_level += 0.05
+	_maybe_suggest_region_rotation()
 
 	# Increase meta-corruption (danger!)
 	var corruption_gain = 0.02 * efficiency_multiplier
@@ -1795,6 +1803,19 @@ func _get_autoload_node(name_: String) -> Node:
 	if tree != null and tree.root != null:
 		return tree.root.get_node_or_null(name_)
 	return null
+
+
+func _maybe_suggest_region_rotation() -> void:
+	# Once-per-region-per-session advisory — Suggest moving before the region cracks + the danger multiplier kicks in.
+	if current_region_id.is_empty():
+		return
+	if monster_adaptation_level < ROTATION_SUGGEST_THRESHOLD:
+		return
+	if _rotation_suggested_regions.get(current_region_id, false):
+		return
+	_rotation_suggested_regions[current_region_id] = true
+	var suggested: Dictionary = get_next_region()
+	region_rotation_suggested.emit(current_region_id, suggested, monster_adaptation_level)
 
 
 func apply_autogrind_actions(actions: Array) -> void:

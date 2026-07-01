@@ -3907,6 +3907,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	_autogrind_controller.grind_resumed.connect(_on_autogrind_resumed)
 	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
 	_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
+	if not AutogrindSystem.region_rotation_suggested.is_connected(_on_autogrind_region_rotation_suggested):
+		AutogrindSystem.region_rotation_suggested.connect(_on_autogrind_region_rotation_suggested)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
@@ -4549,6 +4551,26 @@ func _on_autogrind_region_advanced(from_region: String, to_region: String, world
 	TutorialHints.show(self, "world_transition")
 
 	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
+
+
+func _on_autogrind_region_rotation_suggested(current_region_id: String, suggested: Dictionary, adaptation_level: float) -> void:
+	# Advisory toast — no auto-move; player decides. Fires at most once per region per session (dedup lives in AutogrindSystem).
+	var world_names := {
+		1: "Medieval", 2: "Suburban", 3: "Steampunk",
+		4: "Industrial", 5: "Futuristic", 6: "Abstract"
+	}
+	var msg: String
+	if suggested.is_empty():
+		msg = "Adaptation %.1f — monsters here have adapted. No new region available." % adaptation_level
+	else:
+		var zone_name: String = str(suggested.get("name", suggested.get("region", "next zone")))
+		msg = "Consider moving to %s — monsters here have adapted (Adapt %.1f)" % [zone_name, adaptation_level]
+	_show_autogrind_toast(msg)
+	_autogrind_battle_summaries.append("[color=#ffaa44]>>> ADAPTATION ADVISORY: %s <<<[/color]" % msg)
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+	SoundManager.play_ui("menu_move")
+	print("[AUTOGRIND] Region rotation suggested: %s -> %s (adaptation %.2f)" % [current_region_id, suggested.get("region", "n/a"), adaptation_level])
 
 
 func _show_region_warp_transition(world_num: int, world_name: String) -> void:
