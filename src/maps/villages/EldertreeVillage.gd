@@ -147,7 +147,7 @@ func _setup_treasures() -> void:
 	var chest2 = TreasureChestScript.new()
 	chest2.chest_id = "eldertree_chest_2"
 	chest2.contents_type = "equipment"
-	chest2.contents_id = "forest_amulet"
+	chest2.contents_id = "elven_cloak"
 	chest2.position = Vector2(22 * TILE_SIZE, 2 * TILE_SIZE)
 	treasures.add_child(chest2)
 
