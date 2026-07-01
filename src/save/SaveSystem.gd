@@ -916,6 +916,9 @@ func save_settings() -> void:
 		# tick 42: LLM-guided rebalance daemon flag (opt-in).
 		if "llm_rebalance_enabled" in GameState:
 			settings["llm_rebalance_enabled"] = GameState.llm_rebalance_enabled
+		# Item 9: dash always-on toggle (testing/accessibility).
+		if "dash_always_on" in GameState:
+			settings["dash_always_on"] = GameState.dash_always_on
 		# BYOK (Bring Your Own Key) — user-provided cloud LLM config.
 		# Gated off in web builds (browser sandbox can't hold secrets
 		# safely). Same gate as llm_enabled. The API key is sensitive;
@@ -1034,6 +1037,8 @@ func load_settings() -> void:
 			GameState.party_llm_dialogue_enabled = bool(settings["party_llm_dialogue_enabled"])
 		if settings.has("llm_rebalance_enabled") and "llm_rebalance_enabled" in GameState:
 			GameState.llm_rebalance_enabled = bool(settings["llm_rebalance_enabled"])
+		if settings.has("dash_always_on") and "dash_always_on" in GameState:
+			GameState.dash_always_on = bool(settings["dash_always_on"])
 		# BYOK load. Web build skips this — the fields stay at their
 		# struct-default empty strings, so even a settings.json
 		# transplanted FROM a desktop save into a web export can't

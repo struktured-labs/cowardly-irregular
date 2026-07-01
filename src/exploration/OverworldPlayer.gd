@@ -12,6 +12,7 @@ signal menu_requested()
 @export var move_speed: float = 240.0  # Overworld Mode 7 speed
 @export var interior_speed: float = 120.0  # Villages/interiors (no Mode 7)
 var _is_interior: bool = false  # Set by scene setup
+const DASH_MULTIPLIER: float = 1.7  # Item 9; single hook point for future rogue-passive boosts
 
 ## Direction enum
 enum Direction { DOWN, UP, LEFT, RIGHT }
@@ -436,7 +437,7 @@ func _physics_process(delta: float) -> void:
 		var move_bonus: float = _party_movement_speed_bonus()
 		if move_bonus > 1.0:
 			base_speed *= move_bonus
-		velocity = input_dir * base_speed * terrain_speed
+		velocity = input_dir * base_speed * terrain_speed * _dash_multiplier()
 		is_moving = true
 
 		if abs(input_dir.x) > abs(input_dir.y):
@@ -1683,6 +1684,16 @@ func _party_movement_speed_bonus() -> float:
 				if jb > best:
 					best = jb
 	return best
+
+
+## Item 9: 1.7× while `dash` held (or Settings "Dash: always on"); composes with terrain + party bonus.
+func _dash_multiplier() -> float:
+	if InputMap.has_action("dash") and Input.is_action_pressed("dash"):
+		return DASH_MULTIPLIER
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and "dash_always_on" in gs and gs.dash_always_on:
+		return DASH_MULTIPLIER
+	return 1.0
 
 
 ## Tick 464: combined deferred setup for the tick 449/450/455 passive

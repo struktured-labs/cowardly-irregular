@@ -48,6 +48,7 @@ var text_size_index: int = 1
 # Tick 226: color-blind friendly palette for damage popups.
 var color_blind_mode: bool = false
 var screen_shake_enabled: bool = true
+var dash_always_on: bool = false  # Item 9: dash without holding the button
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
 var boss_llm_strategy_enabled: bool = false  # Phase 1 boss-AI strategic-intent toggle (opt-in)
 var party_llm_dialogue_enabled: bool = false  # Party LLM combat-line toggle (opt-in)
@@ -127,6 +128,8 @@ func _ready() -> void:
 			color_blind_mode = bool(GameState.color_blind_mode)
 		if "screen_shake_enabled" in GameState:
 			screen_shake_enabled = GameState.screen_shake_enabled
+		if "dash_always_on" in GameState:
+			dash_always_on = GameState.dash_always_on
 		if "llm_enabled" in GameState:
 			llm_enabled = GameState.llm_enabled
 		if "boss_llm_strategy_enabled" in GameState:
@@ -354,6 +357,19 @@ func _build_ui() -> void:
 	_settings_items.append({"control": shake_item, "type": "toggle", "id": "screen_shake"})
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
+
+	# Item 9: dash always-on (testing/accessibility) — hold-to-dash works regardless.
+	var dash_idx: int = _settings_items.size()
+	var dash_item = _create_toggle_setting(
+		"Dash: Always On",
+		"Move at dash speed without holding the dash button (Shift / X)",
+		dash_always_on,
+		dash_idx
+	)
+	vbox.add_child(dash_item)
+	_settings_items.append({"control": dash_item, "type": "toggle", "id": "dash_always_on"})
+	MenuMouseHelper.make_clickable(dash_item, dash_idx, 400, 60,
+		_on_setting_click.bind(dash_idx), _on_setting_hover.bind(dash_idx))
 
 	# Tick 222: text size scale (accessibility). Append with dynamic idx so the LLM section below stays a clean append. Consumers (CutsceneDialogue etc.) multiply base font sizes by GameState.text_size_scale.
 	var text_size_idx: int = _settings_items.size()
@@ -1037,6 +1053,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_screen_shake_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "dash_always_on":
+		dash_always_on = not dash_always_on
+		_update_toggle_display(selected_index, dash_always_on)
+		_save_dash_always_on_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "color_blind_mode":
 		# Tick 226: accessibility palette toggle.
 		color_blind_mode = not color_blind_mode
@@ -1161,6 +1183,15 @@ func _save_screen_shake_setting() -> void:
 		GameState.screen_shake_enabled = screen_shake_enabled
 	settings_changed.emit("screen_shake", screen_shake_enabled)
 	print("[SETTINGS] Screen shake %s" % ("enabled" if screen_shake_enabled else "disabled"))
+	_persist_settings()
+
+
+## Item 9: flip the always-dash flag; OverworldPlayer reads it per-frame.
+func _save_dash_always_on_setting() -> void:
+	if GameState:
+		GameState.dash_always_on = dash_always_on
+	settings_changed.emit("dash_always_on", dash_always_on)
+	print("[SETTINGS] Dash always-on %s" % ("enabled" if dash_always_on else "disabled"))
 	_persist_settings()
 
 
