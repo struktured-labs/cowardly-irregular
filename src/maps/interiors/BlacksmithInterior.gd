@@ -54,6 +54,7 @@ var _smith_frames: Array[ImageTexture] = []
 var _smith_frame: int = 0
 var _smith_timer: float = 0.0
 const SMITH_STRIKE_SPEED: float = 0.16
+var _strike_cycle: int = 0  # anvil_strike rhythm: 3 clangs then 2 silent cycles
 const SMITH_IMPACT_FRAME: int = 2
 
 ## Spark flash synced to the smith's impact frame
@@ -87,6 +88,10 @@ func _get_map_height() -> int:
 ## No smithy-specific music key exists yet, so "village" is the only real fallback SoundManager recognizes.
 func _get_music_track() -> String:
 	return "village"
+
+
+func _get_ambient_key() -> String:
+	return "ambient_forge"
 
 
 func _init_spawn_points() -> void:
@@ -198,6 +203,11 @@ func _animate_smith(delta: float) -> void:
 		_smith_sprite.texture = _smith_frames[_smith_frame]
 	if _spark_sprite and _spark_frames.size() > 1:
 		_spark_sprite.texture = _spark_frames[1] if _smith_frame == SMITH_IMPACT_FRAME else _spark_frames[0]
+	if _smith_frame == SMITH_IMPACT_FRAME:
+		_strike_cycle = (_strike_cycle + 1) % 5
+		# Battle player is idle in exploration — avoids clipping UI sounds; 3-strikes-then-rest work rhythm.
+		if _strike_cycle < 3 and SoundManager:
+			SoundManager.play_battle("anvil_strike")
 
 
 func _animate_apprentice(delta: float) -> void:

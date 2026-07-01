@@ -43,6 +43,21 @@ func _ready() -> void:
 	var music_track := _get_music_track()
 	if music_track != "" and SoundManager:
 		SoundManager.play_area_music(music_track)
+	var ambient_key := _get_ambient_key()
+	if ambient_key != "" and SoundManager and SoundManager.has_method("play_ambient"):
+		SoundManager.play_ambient(ambient_key)
+
+
+func _exit_tree() -> void:
+	# Stop the room loop so it doesn't leak into the next scene.
+	if _get_ambient_key() != "" and SoundManager and SoundManager.has_method("stop_ambient"):
+		SoundManager.stop_ambient()
+
+
+## Virtual: subclass returns an sfx_manifest ambient-loop key (e.g.
+## "ambient_chapel"); "" = no room ambience.
+func _get_ambient_key() -> String:
+	return ""
 
 
 ## Virtual: subclass returns the map_id for this interior (e.g.
