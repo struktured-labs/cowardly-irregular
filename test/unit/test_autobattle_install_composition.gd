@@ -56,20 +56,31 @@ func test_install_normalizes_empty_name() -> void:
 
 
 func test_install_survives_non_string_name() -> void:
-	var comp := {"name": null, "description": "", "rules": []}
+	autobattle._ensure_character_profiles("test_pc")
+	var before: int = autobattle.character_profiles["test_pc"].get("profiles", []).size()
+	var comp := {"name": null, "description": "survives_null_marker", "rules": []}
 	var idx: int = autobattle.install_composition_as_new_profile("test_pc", comp)
 	assert_gt(idx, -1, "non-string name (null) must not crash the helper")
-	var profile: Dictionary = autobattle.character_profiles["test_pc"]["profiles"][idx]
-	var stored_name = profile.get("script", {}).get("name", "")
-	assert_true(str(stored_name).begins_with("Composed "),
-				"null composition.name must fall back to Composed N")
+	var profiles: Array = autobattle.character_profiles["test_pc"]["profiles"]
+	assert_eq(profiles.size(), before + 1,
+			"install must actually append a new profile — got size %d, expected %d" % [profiles.size(), before + 1])
+	var profile: Dictionary = profiles[idx]
+	assert_true(str(profile.get("script", {}).get("name", "")).begins_with("Composed "),
+				"null composition.name must fall back to Composed N; got '%s'" % profile.get("script", {}).get("name", ""))
 
 
 func test_install_survives_non_array_rules() -> void:
-	var comp := {"name": "bad_rules", "description": "", "rules": null}
+	autobattle._ensure_character_profiles("test_pc")
+	var before: int = autobattle.character_profiles["test_pc"].get("profiles", []).size()
+	var comp := {"name": "bad_rules_marker", "description": "", "rules": null}
 	var idx: int = autobattle.install_composition_as_new_profile("test_pc", comp)
 	assert_gt(idx, -1, "non-array rules (null) must not crash the helper")
-	var profile: Dictionary = autobattle.character_profiles["test_pc"]["profiles"][idx]
+	var profiles: Array = autobattle.character_profiles["test_pc"]["profiles"]
+	assert_eq(profiles.size(), before + 1,
+			"install must actually append a new profile — got size %d, expected %d" % [profiles.size(), before + 1])
+	var profile: Dictionary = profiles[idx]
+	assert_eq(str(profile.get("script", {}).get("name", "")), "bad_rules_marker",
+			"installed profile must have caller's name (not the pre-seeded Default)")
 	var stored: Variant = profile.get("script", {}).get("rules", [])
 	assert_true(typeof(stored) == TYPE_ARRAY, "stored rules must be an Array; got typeof=%s" % typeof(stored))
 
