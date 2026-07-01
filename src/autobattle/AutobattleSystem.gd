@@ -727,7 +727,9 @@ func install_composition_as_new_profile(character_id: String, composition: Dicti
 	if profiles.size() >= MAX_PROFILES_PER_CHARACTER:
 		return -1
 
-	var comp_name: String = str(composition.get("name", "Composed Profile"))
+	var comp_name: String = composition.get("name", "")
+	if comp_name.is_empty():
+		comp_name = "Composed %d" % (profiles.size() + 1)
 	var rules: Array = composition.get("rules", [])
 	profiles.append({
 		"name": comp_name,

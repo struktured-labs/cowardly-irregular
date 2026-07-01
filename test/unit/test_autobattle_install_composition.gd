@@ -5,10 +5,15 @@ extends GutTest
 ## overwriting existing profiles.
 
 var autobattle
+const _TEST_IDS := ["test_pc", "test_pc_2", "test_pc_3"]
 
 
 func before_each() -> void:
 	autobattle = get_node_or_null("/root/AutobattleSystem")
+	for cid in _TEST_IDS:
+		if autobattle.character_profiles.has(cid):
+			autobattle.character_profiles.erase(cid)
+	autobattle._save_character_profiles()
 
 
 func test_install_returns_new_profile_index() -> void:
@@ -38,3 +43,10 @@ func test_install_emits_character_script_changed() -> void:
 	var comp := {"name": "signal_check", "description": "", "rules": []}
 	autobattle.install_composition_as_new_profile("test_pc_3", comp)
 	assert_signal_emitted(autobattle, "character_script_changed")
+
+
+func after_each() -> void:
+	for cid in _TEST_IDS:
+		if autobattle.character_profiles.has(cid):
+			autobattle.character_profiles.erase(cid)
+	autobattle._save_character_profiles()
