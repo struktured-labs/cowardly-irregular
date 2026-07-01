@@ -1401,6 +1401,13 @@ func _show_autogrind_view() -> void:
 	vbox.add_child(history_btn)
 	buttons.append(history_btn)
 
+	var templates_btn = Button.new()
+	templates_btn.text = "Load Rule Template..."
+	templates_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	templates_btn.pressed.connect(_open_autogrind_template_picker)
+	vbox.add_child(templates_btn)
+	buttons.append(templates_btn)
+
 	# Current party profiles
 	vbox.add_child(HSeparator.new())
 
@@ -1497,6 +1504,7 @@ func _on_autogrind_editor_closed() -> void:
 
 
 var _autogrind_history_screen: Control = null
+var _autogrind_template_picker: Control = null
 
 
 func _open_autogrind_history() -> void:
@@ -1512,6 +1520,24 @@ func _on_autogrind_history_closed() -> void:
 	if _autogrind_history_screen and is_instance_valid(_autogrind_history_screen):
 		_autogrind_history_screen.queue_free()
 		_autogrind_history_screen = null
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = true
+	_show_autogrind_view()
+
+
+func _open_autogrind_template_picker() -> void:
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = false
+	var PickerClass = load("res://src/ui/autogrind/AutogrindTemplatePicker.gd")
+	_autogrind_template_picker = PickerClass.new()
+	add_child(_autogrind_template_picker)
+	_autogrind_template_picker.closed.connect(_on_autogrind_template_picker_closed)
+
+
+func _on_autogrind_template_picker_closed() -> void:
+	if _autogrind_template_picker and is_instance_valid(_autogrind_template_picker):
+		_autogrind_template_picker.queue_free()
+		_autogrind_template_picker = null
 	if main_menu and is_instance_valid(main_menu):
 		main_menu.visible = true
 	_show_autogrind_view()
