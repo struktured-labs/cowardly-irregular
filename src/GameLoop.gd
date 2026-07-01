@@ -4145,6 +4145,11 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 			"magic": stats.get("magic", 5),
 			"speed": stats.get("speed", 8)
 		})
+		# Live spawns (BattleEnemySpawner) always set this; its absence here silently
+		# no-opped bestiary defeat-credit AND drop lookup for the whole ludicrous path.
+		var mtype: String = str(data.get("id", ""))
+		if mtype != "":
+			enemy.set_meta("monster_type", mtype)
 		enemies.append(enemy)
 
 	var result = resolver.resolve_battle(party, enemies)
@@ -4154,9 +4159,25 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	# gold_multiplier, so we just forward as-is.
 	var gold_gained_headless: int = int(result.get("gold_gained", 0))
 	var rounds = result.get("rounds", 0)
+	var headless_item_drops: Dictionary = result.get("item_drops", {})
+	var headless_rare_drops: Array = result.get("rare_drops", [])
 
 	for e in enemies:
 		e.free()
+
+	# Route resolver-rolled drops the same way BattleManager does live: equipment
+	# → shared pool, consumables → party leader. Rare drops flip the same Glow
+	# flag + interrupt-condition flag the live path fires.
+	if victory:
+		for item_id in headless_item_drops:
+			var qty: int = int(headless_item_drops[item_id])
+			if not BattleManager.route_drop_to_equipment_pool(item_id):
+				if party.size() > 0 and party[0].is_alive:
+					party[0].add_item(item_id, qty)
+		for rd in headless_rare_drops:
+			if PartyChatSystem:
+				PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
+			AutogrindSystem.notify_rare_drop(str(rd.get("item", "")), float(rd.get("chance", 0.0)))
 
 	# Heal party using items (same as visual battle path)
 	if victory:
@@ -4183,7 +4204,10 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	# gold was previously dropped — empty items_gained dict meant the
 	# autogrind player got zero gold despite total_gold display).
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
-		_autogrind_controller.on_battle_ended(victory, exp_gained, {"gold": gold_gained_headless})
+		var items_gained: Dictionary = {"gold": gold_gained_headless}
+		for item_id in headless_item_drops:
+			items_gained[item_id] = int(headless_item_drops[item_id])
+		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
 
 		var stats = _autogrind_controller.get_grind_stats()
 
@@ -4191,6 +4215,11 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		var summary_text: String
 		if victory:
 			summary_text = "[color=#44ff44]#%d Victory[/color] +%d EXP (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), exp_gained, rounds]
+			var drop_count: int = 0
+			for item_id in headless_item_drops:
+				drop_count += int(headless_item_drops[item_id])
+			if drop_count > 0:
+				summary_text += " [color=#ffcc44]+%d item%s[/color]" % [drop_count, "s" if drop_count > 1 else ""]
 		else:
 			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), rounds]
 		_autogrind_battle_summaries.append(summary_text)
