@@ -277,9 +277,13 @@ func _setup_dialogue_box() -> void:
 	dialogue_box.visible = false
 	dialogue_box.z_index = 100
 
+	# Item 14 (2026-07-01 playtest): panel was 200×50 @ y=-70 — bottom at
+	# y=-20 sat 4px above the 32px chest sprite, reading as "on the chest".
+	# Enlarged + lifted so it floats clearly above with visible air. Chest
+	# center → panel bottom is now 46px, plenty of separation.
 	var panel = Panel.new()
-	panel.position = Vector2(-100, -70)
-	panel.size = Vector2(200, 50)
+	panel.position = Vector2(-120, -110)
+	panel.size = Vector2(240, 60)
 
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.1, 0.08, 0.05, 0.95)
@@ -289,10 +293,12 @@ func _setup_dialogue_box() -> void:
 	panel.add_theme_stylebox_override("panel", style)
 	dialogue_box.add_child(panel)
 
+	# Item 14: label geometry follows the enlarged panel — 224×44 inside
+	# the 240×60 panel, 8px inset all around.
 	dialogue_label = Label.new()
-	dialogue_label.position = Vector2(-92, -62)
-	dialogue_label.size = Vector2(184, 34)
-	dialogue_label.add_theme_font_size_override("font_size", 11)
+	dialogue_label.position = Vector2(-112, -102)
+	dialogue_label.size = Vector2(224, 44)
+	dialogue_label.add_theme_font_size_override("font_size", 12)
 	dialogue_label.add_theme_color_override("font_color", Color.WHITE)
 	dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
