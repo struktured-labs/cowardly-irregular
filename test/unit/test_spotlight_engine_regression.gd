@@ -125,6 +125,32 @@ func test_cutscene_completion_flag_map_has_5_spotlight_entries() -> void:
 					"cutscene JSON id must match file basename: %s" % path)
 
 
+func test_every_spotlight_cutscene_has_a_firing_gate() -> void:
+	# Orphan-ratchet shape applied to cutscene GATES: every spotlight
+	# cutscene id must appear as a `return "<id>"` inside
+	# _get_pending_story_cutscene — being authored + mapped is not
+	# enough; without a gate the cutscene never fires. This exact gap
+	# shipped for the fighter spotlight (2026-07-01): fully authored
+	# duel (intro → skeleton battle → aftermath → victory SFX), mapped
+	# in _CUTSCENE_COMPLETION_FLAGS, miniboss in monsters.json — and
+	# zero code paths returning it. chapter3's breadcrumb promised
+	# "the Fighter's duel to answer, when the moment came"; the moment
+	# never came.
+	var text = _read(GAMELOOP_PATH)
+	var fn_idx = text.find("func _get_pending_story_cutscene")
+	assert_true(fn_idx > -1, "_get_pending_story_cutscene must exist")
+	var fn_end = text.find("\n\nfunc ", fn_idx)
+	var body = text.substr(fn_idx, fn_end - fn_idx) if fn_end > -1 else text.substr(fn_idx, 20000)
+	for slug in [
+			"world1_spotlight_cleric_ch1",
+			"world1_spotlight_fighter_ch2",
+			"world1_spotlight_rogue_ch3",
+			"world1_spotlight_mage_ch3",
+			"world1_spotlight_bard_ch7"]:
+		assert_true(body.find("return \"%s\"" % slug) > -1,
+			"_get_pending_story_cutscene must have a gate returning %s — authored+mapped without a gate = cutscene never fires" % slug)
+
+
 func test_battle_won_writes_spotlight_unlocked_flag() -> void:
 	# Post Spotlight Duels spec (cowir-main msg 1950): the _unlocked_<job>
 	# flag — what _reconcile_spotlight_locks reads to flip autobattle_
