@@ -278,6 +278,7 @@ func _create_save_data() -> Dictionary:
 		"party_llm_dialogue_enabled": party_llm_dialogue_enabled,
 		"llm_rebalance_enabled": llm_rebalance_enabled,
 		"dash_always_on": dash_always_on,
+		"activated_crystals": activated_crystals.duplicate(),
 		"event_log": event_log.serialize() if event_log != null else [],
 		"rebalance_daemon": rebalance_daemon.to_dict() if rebalance_daemon != null else {},
 		## Tick 418: persist the canonical battle counter so
@@ -476,6 +477,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		llm_rebalance_enabled = bool(save_data["llm_rebalance_enabled"])
 	if save_data.has("dash_always_on"):
 		dash_always_on = bool(save_data["dash_always_on"])
+	if save_data.has("activated_crystals") and save_data["activated_crystals"] is Dictionary:
+		activated_crystals = save_data["activated_crystals"].duplicate()
 	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
 	# hasn't run yet (defensive — _apply_save_data is normally called via
 	# SaveSystem after autoloads are live). EventLog.restore() handles the
@@ -793,6 +796,21 @@ func spend_gold(amount: int) -> bool:
 func get_gold() -> int:
 	"""Get current party gold"""
 	return party_gold
+
+
+## ── Fast travel — save-crystal activation registry ──
+## Keyed by map_id (one crystal per map in practice). Persists per-save.
+var activated_crystals: Dictionary = {}
+
+
+func activate_crystal(map_id: String) -> void:
+	if map_id == "":
+		return
+	activated_crystals[map_id] = true
+
+
+func is_crystal_activated(map_id: String) -> bool:
+	return activated_crystals.get(map_id, false)
 
 
 ## Party leader methods
