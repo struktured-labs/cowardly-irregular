@@ -4350,6 +4350,9 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var current: int = int(target.get_meta("_swayed_stacks", 0))
 			target.set_meta("_swayed_stacks", current + 1)
 			print("[SWAY] %s absorbs %s — swayed stacks: %d" % [target.combatant_name, ability.get("id", "song"), current + 1])
+			var need: int = int(_win_condition.get("value", 0)) if not _win_condition.is_empty() else 0
+			var progress_suffix: String = " (%d/%d)" % [current + 1, need] if need > 0 else " (%d)" % (current + 1)
+			battle_log_message.emit("[color=magenta]%s is swayed...%s[/color]" % [target.combatant_name, progress_suffix])
 
 	match effect:
 		## Tick 170: 10 support-ability branches lacked
