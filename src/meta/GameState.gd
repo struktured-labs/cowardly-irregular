@@ -64,6 +64,10 @@ var boss_llm_strategy_enabled: bool = false
 ## Party LLM dialogue flag — opt-in; see BattleManager._maybe_fire_party_line.
 var party_llm_dialogue_enabled: bool = false
 
+## Item 9: dash without holding the button — testing/accessibility toggle.
+## Hold-to-dash (the `dash` input action) works regardless of this flag.
+var dash_always_on: bool = false
+
 ## ── BYOK (Bring Your Own Key) — user-provided cloud LLM endpoint ──
 ##
 ## User directive 2026-06-22: power users want to plug in their own
@@ -273,6 +277,7 @@ func _create_save_data() -> Dictionary:
 		"boss_llm_strategy_enabled": boss_llm_strategy_enabled,
 		"party_llm_dialogue_enabled": party_llm_dialogue_enabled,
 		"llm_rebalance_enabled": llm_rebalance_enabled,
+		"dash_always_on": dash_always_on,
 		"event_log": event_log.serialize() if event_log != null else [],
 		"rebalance_daemon": rebalance_daemon.to_dict() if rebalance_daemon != null else {},
 		## Tick 418: persist the canonical battle counter so
@@ -469,6 +474,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		party_llm_dialogue_enabled = bool(save_data["party_llm_dialogue_enabled"])
 	if save_data.has("llm_rebalance_enabled"):
 		llm_rebalance_enabled = bool(save_data["llm_rebalance_enabled"])
+	if save_data.has("dash_always_on"):
+		dash_always_on = bool(save_data["dash_always_on"])
 	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
 	# hasn't run yet (defensive — _apply_save_data is normally called via
 	# SaveSystem after autoloads are live). EventLog.restore() handles the
