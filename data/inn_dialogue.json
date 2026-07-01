@@ -1,5 +1,5 @@
 {
-  "description": "Per-village innkeeper dialogue. 11 villages × 7 lines each. Each village has a distinct voice derived from its world's aesthetic and the novella content. Wire from InnScene.gd via village_id → lookup.",
+  "description": "Per-village innkeeper dialogue. 11 villages × 7 lines each. Each village has a distinct voice derived from its world's aesthetic and the novella content. Wired via InnInterior.gd via village_id → lookup.",
   "schema_version": 1,
   "villages": {
     "harmonia": {
