@@ -158,16 +158,6 @@ const FALLBACK_PARTY_LINE: Dictionary = {
 const MAX_PARTY_LINE_CHARS: int = 140
 const PARTY_LINE_MOODS: Array[String] = ["anxious", "cocky", "focused", "panicked", "neutral"]
 
-## Allowlist of valid boss intent_id tags accepted by validate_boss_intent_reply.
-## Includes the 3 original intents (aggress, turtle, exploit_pattern) plus 6 widened
-## counter-strategy tags (fire_resist, ice_resist, lightning_resist, focus_healer,
-## defense_boost, rotate_aggro). Unknown intent_id values fall back cleanly.
-const _BOSS_INTENT_ALLOWLIST := [
-	"aggress", "turtle", "exploit_pattern",
-	"fire_resist", "ice_resist", "lightning_resist",
-	"focus_healer", "defense_boost", "rotate_aggro",
-]
-
 const AUTOBATTLE_GRAMMAR_DESCRIPTION := """Autobattle rules are evaluated top-to-bottom, first match wins.
 Each rule shape:
   {conditions: [...], actions: [...], enabled: true}
@@ -832,54 +822,6 @@ static func validate_boss_intent(raw: Variant, available_intents: Array) -> Dict
 			allowed = true
 			break
 	if not allowed:
-		return FALLBACK_BOSS_INTENT.duplicate()
-
-	var reason: String = ""
-	var reason_raw: Variant = d.get("reason", "")
-	if reason_raw is String:
-		reason = (reason_raw as String).strip_edges()
-		if reason.length() > MAX_BOSS_REASON_CHARS:
-			reason = reason.left(MAX_BOSS_REASON_CHARS)
-
-	var taunt: String = ""
-	var taunt_raw: Variant = d.get("taunt", "")
-	if taunt_raw is String:
-		taunt = (taunt_raw as String).strip_edges()
-		if taunt.length() > MAX_BOSS_TAUNT_CHARS:
-			taunt = taunt.left(MAX_BOSS_TAUNT_CHARS)
-
-	return {
-		"intent_id": intent_id,
-		"reason":    reason,
-		"taunt":     taunt,
-	}
-
-
-## Validate and sanitise an LLM-returned boss intent reply using the hardcoded
-## _BOSS_INTENT_ALLOWLIST. Simpler than validate_boss_intent — does not require
-## a caller-provided available_intents array, only checks against the global allowlist.
-##
-## Returns a safe Dictionary matching SCHEMA_BOSS_INTENT. On ANY failure — raw
-## isn't a Dictionary, intent_id missing, intent_id not in _BOSS_INTENT_ALLOWLIST,
-## reason/taunt malformed — returns FALLBACK_BOSS_INTENT (intent_id == "") so the
-## caller's deterministic path takes over. Never crashes, never returns an intent
-## not in the allowlist.
-##
-## Clamps reason to MAX_BOSS_REASON_CHARS and taunt to MAX_BOSS_TAUNT_CHARS.
-static func validate_boss_intent_reply(raw: Variant) -> Dictionary:
-	if not (raw is Dictionary):
-		return FALLBACK_BOSS_INTENT.duplicate()
-
-	var d: Dictionary = raw as Dictionary
-	var intent_raw: Variant = d.get("intent_id", null)
-	if not (intent_raw is String):
-		return FALLBACK_BOSS_INTENT.duplicate()
-	var intent_id: String = (intent_raw as String).strip_edges()
-	if intent_id.is_empty():
-		return FALLBACK_BOSS_INTENT.duplicate()
-
-	# Gate: intent_id MUST be in the allowlist.
-	if not (intent_id in _BOSS_INTENT_ALLOWLIST):
 		return FALLBACK_BOSS_INTENT.duplicate()
 
 	var reason: String = ""
