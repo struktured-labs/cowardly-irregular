@@ -1974,8 +1974,25 @@ func _track_item_consumed(item_id: String) -> void:
 	"""Track an item consumed during the grind session."""
 	items_consumed[item_id] = items_consumed.get(item_id, 0) + 1
 	# Iron Vigil streak breaks if any healing item is used, in or between battles.
-	if item_id in ["potion", "hi_potion", "mega_potion", "ether", "hi_ether", "phoenix_down"]:
+	if _is_healing_item(item_id):
 		battles_without_heal = 0
+
+
+const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_percent", "revive"]
+
+
+## Effects-driven so new healing items in items.json break the streak with zero code change.
+func _is_healing_item(item_id: String) -> bool:
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system == null or not item_system.has_method("get_item"):
+		# Fallback for bare-instance tests without autoloads — the original hardcoded set.
+		return item_id in ["potion", "hi_potion", "mega_potion", "ether", "hi_ether", "phoenix_down"]
+	var rec: Dictionary = item_system.get_item(item_id)
+	var effects = rec.get("effects", {})
+	for key in _HEAL_EFFECT_KEYS:
+		if key in effects:
+			return true
+	return false
 
 
 func track_item_consumed(item_id: String) -> void:
