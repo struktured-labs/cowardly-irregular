@@ -70,6 +70,10 @@ func _get_display_name() -> String:
 	return "Chapel"
 
 
+func _get_ambient_key() -> String:
+	return "ambient_chapel"
+
+
 func _get_map_width() -> int:
 	return 18
 

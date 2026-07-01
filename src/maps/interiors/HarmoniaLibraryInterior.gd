@@ -71,6 +71,10 @@ func _get_display_name() -> String:
 	return "Library"
 
 
+func _get_ambient_key() -> String:
+	return "ambient_library"
+
+
 func _get_map_width() -> int:
 	return 20
 
