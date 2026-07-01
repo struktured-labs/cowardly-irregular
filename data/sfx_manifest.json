@@ -1109,8 +1109,10 @@
     },
     "menu_error": {
       "file": "assets/audio/sfx/menu_error.ogg",
-      "prompt": "Short error buzz/denial sound \u2014 pending asset",
-      "duration_ms": 200,
+      "source": "sox_synth",
+      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms) attenuated -12dB. Soft negative feedback for invalid actions \u2014 distinct from menu_cancel (deliberate back-out).",
+      "duration_seconds": 0.085,
+      "prompt_influence": 0.0,
       "fallback_to": "menu_cancel"
     }
   }
