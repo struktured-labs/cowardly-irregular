@@ -100,7 +100,12 @@
       ],
       "on_defeat": "retry",
       "music": "boss_medieval",
-      "background": "prologue_village"
+      "background": "prologue_village",
+      "win_condition": {
+        "type": "status_threshold",
+        "status": "swayed",
+        "value": 3
+      }
     },
     {
       "type": "play_sfx",
