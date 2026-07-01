@@ -228,8 +228,14 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	offset_bottom=460 is pinned by test_battle_4bug_22bd71e_regression to
 	prevent CTB overlap, so the fix has to be on the per-box side."""
 	var party_size: int = BattleManager.player_party.size() if BattleManager.player_party.size() > 0 else _scene.party_members.size()
-	var hp_bar_h: int = 22 if party_size <= 4 else 18
-	var mp_bar_h: int = 18 if party_size <= 4 else 14
+	## Live playtest 2026-07-01: with 5 boxes + portrait header rows the
+	## content exceeded the panel's 420px slot; grow_vertical=BOTH then
+	## expanded the panel ABOVE the screen top, decapitating the Fighter
+	## (first box) header. Scene now grows downward only (grow_vertical=1)
+	## and the 5-party heights below are tightened further so the stack
+	## actually fits the slot instead of relying on overflow.
+	var hp_bar_h: int = 22 if party_size <= 4 else 16
+	var mp_bar_h: int = 18 if party_size <= 4 else 12
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
