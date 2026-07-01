@@ -45,6 +45,35 @@ func test_install_emits_character_script_changed() -> void:
 	assert_signal_emitted(autobattle, "character_script_changed")
 
 
+func test_install_normalizes_empty_name() -> void:
+	var comp := {"name": "", "description": "", "rules": []}
+	var idx: int = autobattle.install_composition_as_new_profile("test_pc", comp)
+	assert_gt(idx, -1)
+	var profile: Dictionary = autobattle.character_profiles["test_pc"]["profiles"][idx]
+	var stored_name = profile.get("script", {}).get("name", "")
+	assert_true(str(stored_name).begins_with("Composed "),
+				"empty composition.name must normalize to 'Composed N'; got '%s'" % stored_name)
+
+
+func test_install_survives_non_string_name() -> void:
+	var comp := {"name": null, "description": "", "rules": []}
+	var idx: int = autobattle.install_composition_as_new_profile("test_pc", comp)
+	assert_gt(idx, -1, "non-string name (null) must not crash the helper")
+	var profile: Dictionary = autobattle.character_profiles["test_pc"]["profiles"][idx]
+	var stored_name = profile.get("script", {}).get("name", "")
+	assert_true(str(stored_name).begins_with("Composed "),
+				"null composition.name must fall back to Composed N")
+
+
+func test_install_survives_non_array_rules() -> void:
+	var comp := {"name": "bad_rules", "description": "", "rules": null}
+	var idx: int = autobattle.install_composition_as_new_profile("test_pc", comp)
+	assert_gt(idx, -1, "non-array rules (null) must not crash the helper")
+	var profile: Dictionary = autobattle.character_profiles["test_pc"]["profiles"][idx]
+	var stored: Variant = profile.get("script", {}).get("rules", [])
+	assert_true(typeof(stored) == TYPE_ARRAY, "stored rules must be an Array; got typeof=%s" % typeof(stored))
+
+
 func after_each() -> void:
 	for cid in _TEST_IDS:
 		if autobattle.character_profiles.has(cid):
