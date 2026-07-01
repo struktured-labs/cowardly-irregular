@@ -50,6 +50,7 @@ var _ability_learned_this_session: bool = false
 var _rare_drop_this_session: bool = false
 var _ability_learned_conns: Array = []
 var _rare_drop_conn: Callable
+var battles_without_heal: int = 0  # Longest un-broken run of victorious battles with no healing consumed
 
 ## Efficiency system
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
@@ -410,6 +411,7 @@ func get_grind_stats() -> Dictionary:
 		"items_consumed": items_consumed.duplicate(),
 		"per_character_exp": per_character_exp.duplicate(),
 		"injuries_this_session": injuries_this_session,
+		"battles_without_heal": battles_without_heal,
 	}
 
 
@@ -483,6 +485,7 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	Updates stats, CSI, efficiency, checks thresholds."""
 	battles_completed += 1
 	consecutive_wins += 1
+	battles_without_heal += 1
 	tick_post_collapse_debuff()
 
 	# Apply yield multiplier from CSI
@@ -671,6 +674,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	# battle 50 of a fresh grind with no new fatigue events, just because
 	# the lifetime tally had already crossed the threshold months ago.
 	fatigue_events_triggered = 0
+	battles_without_heal = 0
 	# Capture injury baseline to detect new injuries
 	_injury_baseline = 0
 	for member in party:
@@ -1856,6 +1860,9 @@ func apply_autogrind_actions(actions: Array) -> void:
 func _track_item_consumed(item_id: String) -> void:
 	"""Track an item consumed during the grind session."""
 	items_consumed[item_id] = items_consumed.get(item_id, 0) + 1
+	# Iron Vigil streak breaks if any healing item is used, in or between battles.
+	if item_id in ["potion", "hi_potion", "mega_potion", "ether", "hi_ether", "phoenix_down"]:
+		battles_without_heal = 0
 
 
 func track_item_consumed(item_id: String) -> void:
