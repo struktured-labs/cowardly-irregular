@@ -10,12 +10,17 @@ class_name VillageShop
 ## here on the overworld Area2D rather than reaching into the
 ## ShopScene that this trigger spawns.
 signal item_purchased(item_id: String, cost: int)
+signal transition_triggered(target_map: String, target_spawn: String)
 
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
 @export var shop_name: String = "Shop"
 @export var shop_type: ShopType = ShopType.ITEM
 @export var keeper_name: String = "Shopkeeper"
+
+## Set to false to keep the legacy outdoor shop menu instead of transitioning
+## to the ShopInterior scene keyed by shop_type.
+@export var use_interior: bool = true
 
 ## Visual
 var sprite: Sprite2D
@@ -65,6 +70,26 @@ func _ready() -> void:
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+	call_deferred("_auto_connect_transition_relay")
+
+
+func _auto_connect_transition_relay() -> void:
+	var node = get_parent()
+	while node:
+		if node.has_method("_on_transition_triggered") and not transition_triggered.is_connected(node._on_transition_triggered):
+			transition_triggered.connect(node._on_transition_triggered)
+			return
+		node = node.get_parent()
+
+
+func _interior_target() -> String:
+	match shop_type:
+		ShopType.ITEM:        return "shop_interior_item"
+		ShopType.BLACK_MAGIC: return "shop_interior_black_magic"
+		ShopType.WHITE_MAGIC: return "shop_interior_white_magic"
+		ShopType.BLACKSMITH:  return "shop_interior_blacksmith"
+		_: return "shop_interior_item"
 
 
 func _generate_sprite() -> void:
@@ -401,6 +426,13 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func interact(player: Node2D) -> void:
+	# Prefer transitioning into the interior scene if configured.
+	if use_interior:
+		if SoundManager:
+			SoundManager.play_ui("menu_open")
+		transition_triggered.emit(_interior_target(), "entrance")
+		return
+	# Legacy outdoor shop UI.
 	if _is_showing_menu:
 		_advance_dialogue()
 	else:
