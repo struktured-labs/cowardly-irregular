@@ -43,6 +43,14 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	if "autobattle_locked" in combatant and combatant.autobattle_locked:
 		var debug_override = GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked
 		if not debug_override:
+			# Item 17 UX polish: user playtest report said "the game defaults
+			# to autobattle for all" — actually spotlight-lock forcing autobattle
+			# on 4/5 non-Fighter PCs is the design (msg 1950). Fire a first-
+			# battle explainer so a new player sees WHY, not just watches turns
+			# auto-resolve. TutorialHints.show dedupes per hint id per session.
+			var scene: Node = get_tree().current_scene if get_tree() else null
+			if scene:
+				TutorialHints.show(scene, "spotlight_locked_intro")
 			push_warning("[CMD-MENU] silent-return: spotlight-locked %s (debug_all_pcs_unlocked=%s)" % [combatant.combatant_name, str(GameState.debug_all_pcs_unlocked if GameState else "no-GS")])
 			return
 

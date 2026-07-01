@@ -81,6 +81,10 @@ const HINTS = {
 		"title": "Spotlight Unlocked",
 		"body": "This party member just stepped out from autopilot — you now have direct control of their turn. Locked members still follow their autobattle rules until their spotlight scene plays.",
 	},
+	"spotlight_locked_intro": {
+		"title": "Why the auto-turns?",
+		"body": "Only the Fighter starts with manual control. Cleric, Mage, Rogue, and Bard follow their autobattle rules until you unlock them by winning their Spotlight Duel — a 1v1 miniboss that showcases what THAT character does best. Look for their spotlight beat in the villages and cave.",
+	},
 }
 
 
