@@ -4351,6 +4351,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+					_maybe_bump_win_condition_status_stacks(caster, ability, target)
 		## Tick 378: magic_defense_down handler. Pre-fix soul_wail
 		## (effect=magic_defense_down, stat_modifier=0.7, duration=2)
 		## fell through to the `_:` push_warning default and silently
@@ -4893,6 +4894,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					## first letter; replace+capitalize gives proper
 					## Title Case across all 11 listed effects.
 					battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [target.combatant_name, effect.replace("_", " ").capitalize()])
+					_maybe_bump_win_condition_status_stacks(caster, ability, target)
 		"evasion_up":
 			# Tick 350: dedicated arm for the "_up" variant used by
 			# Rogue's smoke_bomb (jobs.json line 409) and any other
@@ -5547,6 +5549,43 @@ func _evaluate_custom_win_condition() -> bool:
 			return false
 		_:
 			return false
+
+
+## Spotlight duel companion to tick 472: when a status_threshold
+## win_condition is active and a Bard "song" ability lands on an
+## enemy, bump a _<status>_stacks meta counter on the target. The
+## dispatch at _evaluate_custom_win_condition() reads this meta
+## first (authoritative stack count), so the courtier's swayed
+## progress converges only through song ability lands — voice as
+## the diegetic mechanic, not damage. No-op when the current
+## battle has no custom win_condition, its type is not
+## status_threshold, or the ability type is not "song".
+func _maybe_bump_win_condition_status_stacks(caster: Combatant, ability: Dictionary, target: Combatant) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if _win_condition.is_empty():
+		return
+	if str(_win_condition.get("type", "")) != "status_threshold":
+		return
+	var status_name: String = str(_win_condition.get("status", ""))
+	if status_name == "":
+		return
+	## Only voice-type abilities count. lullaby + discord + any future
+	## Bard song qualify. Non-song abilities that also apply sleep or
+	## defense_down (a monster's sleep_gas, an Arbiter's Armor Break)
+	## do not — the courtier is talked down, not blunt-forced.
+	if str(ability.get("type", "")) != "song":
+		return
+	## Only enemies matter; ally-side songs (battle_hymn, inspiring_
+	## melody) never route through this helper because their targets
+	## are not enemies, but guard defensively regardless.
+	if not (target in enemy_party):
+		return
+	var meta_key: String = "_" + status_name + "_stacks"
+	var current: int = int(target.get_meta(meta_key, 0))
+	target.set_meta(meta_key, current + 1)
+	var need: int = int(_win_condition.get("value", 1))
+	battle_log_message.emit("[color=magenta]%s is swayed... (%d/%d)[/color]" % [target.combatant_name, current + 1, need])
 
 
 ## Signal handlers
