@@ -1393,6 +1393,14 @@ func _show_autogrind_view() -> void:
 	vbox.add_child(edit_btn)
 	buttons.append(edit_btn)
 
+	var history_btn = Button.new()
+	var history_count: int = AutogrindSystem.get_session_history().size() if AutogrindSystem else 0
+	history_btn.text = "View Session History (%d)" % history_count
+	history_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	history_btn.pressed.connect(_open_autogrind_history)
+	vbox.add_child(history_btn)
+	buttons.append(history_btn)
+
 	# Current party profiles
 	vbox.add_child(HSeparator.new())
 
@@ -1485,6 +1493,27 @@ func _on_autogrind_editor_closed() -> void:
 	if main_menu and is_instance_valid(main_menu):
 		main_menu.visible = true
 
+	_show_autogrind_view()
+
+
+var _autogrind_history_screen: Control = null
+
+
+func _open_autogrind_history() -> void:
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = false
+	var HistoryScreenClass = load("res://src/ui/autogrind/AutogrindHistoryScreen.gd")
+	_autogrind_history_screen = HistoryScreenClass.new()
+	add_child(_autogrind_history_screen)
+	_autogrind_history_screen.closed.connect(_on_autogrind_history_closed)
+
+
+func _on_autogrind_history_closed() -> void:
+	if _autogrind_history_screen and is_instance_valid(_autogrind_history_screen):
+		_autogrind_history_screen.queue_free()
+		_autogrind_history_screen = null
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = true
 	_show_autogrind_view()
 
 
