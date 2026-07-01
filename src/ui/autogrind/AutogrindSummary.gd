@@ -58,7 +58,8 @@ func _build_ui() -> void:
 		{"label": "Battles/Min", "value": "%.1f" % bpm, "color": VALUE_COLOR},
 		{"label": "Consecutive Wins", "value": str(_stats.get("consecutive_wins", 0)), "color": VALUE_COLOR},
 		{"label": "Efficiency", "value": "%.1fx" % _stats.get("efficiency", 1.0), "color": VALUE_COLOR},
-		{"label": "Corruption", "value": "%.2f" % _stats.get("corruption", 0.0), "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
+		{"label": "Corruption", "value": "%.2f / %.1f" % [_stats.get("corruption", 0.0), _stats.get("corruption_threshold", 5.0)], "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
+		{"label": "Save Corruption", "value": _format_save_corruption(_stats), "color": _save_corruption_color(_stats)},
 		{"label": "Adaptation", "value": "%.2f" % _stats.get("adaptation", 0.0), "color": LABEL_COLOR},
 		{"label": "Collapses", "value": str(_stats.get("collapse_count", 0)), "color": BAD_COLOR if _stats.get("collapse_count", 0) > 0 else VALUE_COLOR},
 	]
@@ -169,7 +170,7 @@ func _build_ui() -> void:
 		var chip_h = 30.0
 		var chip_pad = 8.0
 		for a in all_badges:
-			var is_new := a in newly
+			var is_new: bool = a in newly
 			var chip_w := _measure_badge_width(a)
 			var chip_bg = ColorRect.new()
 			chip_bg.color = BADGE_BG_NEW if is_new else BADGE_BG_EARNED
@@ -208,6 +209,24 @@ func _build_ui() -> void:
 ## Tick 135: thin wrapper around ItemNameResolver.
 func _resolve_item_display_name(item_id: String) -> String:
 	return ItemNameResolver.resolve(item_id)
+
+
+func _format_save_corruption(stats: Dictionary) -> String:
+	var current: float = float(stats.get("save_corruption", 0.0))
+	var delta: float = float(stats.get("save_corruption_delta", 0.0))
+	if delta > 0.0001:
+		return "%.3f (+%.3f this session)" % [current, delta]
+	return "%.3f" % current
+
+
+func _save_corruption_color(stats: Dictionary) -> Color:
+	var current: float = float(stats.get("save_corruption", 0.0))
+	# GameState.corruption_level is clamped 0.0-1.0; >0.6 is the "save at risk" band.
+	if current > 0.6:
+		return BAD_COLOR
+	if current > 0.3:
+		return Color(1.0, 0.85, 0.2)
+	return VALUE_COLOR
 
 
 func _get_game_state() -> Node:

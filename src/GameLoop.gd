@@ -3969,6 +3969,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
 	if not AutogrindSystem.region_rotation_suggested.is_connected(_on_autogrind_region_rotation_suggested):
 		AutogrindSystem.region_rotation_suggested.connect(_on_autogrind_region_rotation_suggested)
+	if not AutogrindSystem.corruption_threshold_crossed.is_connected(_on_autogrind_corruption_band):
+		AutogrindSystem.corruption_threshold_crossed.connect(_on_autogrind_corruption_band)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
@@ -4663,6 +4665,24 @@ func _on_autogrind_region_advanced(from_region: String, to_region: String, world
 	TutorialHints.show(self, "world_transition")
 
 	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
+
+
+func _on_autogrind_corruption_band(band: String, level: float) -> void:
+	# One toast per band crossed this session — the signal is already deduped per band by AutogrindSystem.
+	var msg: String
+	match band:
+		"warning":
+			msg = "Corruption warning — reality is thinning (%.2f / 5.0)" % level
+		"danger":
+			msg = "Corruption DANGER — meta-boss risk high (%.2f / 5.0)" % level
+		"critical":
+			msg = "Corruption CRITICAL — collapse imminent (%.2f / 5.0)" % level
+		_:
+			msg = "Corruption %s — %.2f / 5.0" % [band, level]
+	_show_autogrind_toast(msg)
+	_autogrind_battle_summaries.append("[color=#ff6688]>>> CORRUPTION %s: %.2f / 5.0 <<<[/color]" % [band.to_upper(), level])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
 
 
 func _on_autogrind_region_rotation_suggested(current_region_id: String, suggested: Dictionary, adaptation_level: float) -> void:

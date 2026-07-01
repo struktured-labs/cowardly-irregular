@@ -561,6 +561,9 @@ func get_grind_stats() -> Dictionary:
 		"items_consumed": AutogrindSystem.items_consumed.duplicate(),
 		"elapsed_seconds": sys_stats.get("elapsed_seconds", 0.0),
 		"battles_without_heal": AutogrindSystem.battles_without_heal,
+		"corruption_threshold": AutogrindSystem.corruption_threshold,
+		"save_corruption": sys_stats.get("save_corruption", 0.0),
+		"save_corruption_delta": sys_stats.get("save_corruption_delta", 0.0),
 	}
 
 
