@@ -4324,6 +4324,33 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		if bonus > 0:
 			duration += bonus
 
+	## Tick 472 follow-up: Bard's swayed-stack counter for the
+	## bard_hostile_courtier duel win_condition (status_threshold:
+	## swayed >= 3). Every song landed on a "sway-listening" target
+	## (opt-in via monster_data.tracks_sway_stacks=true, or the
+	## specific bard_hostile_courtier monster_type) increments the
+	## _swayed_stacks meta counter that _evaluate_custom_win_condition
+	## reads for status_threshold. Voice-as-mechanic per cowir-story
+	## msg 1931 — any song (lullaby / discord / battle_hymn / inspiring
+	## melody) counts as an offered voice, not just the debuff pool.
+	if caster != null and str(ability.get("type", "")) == "song":
+		for target in targets:
+			if target == null or not is_instance_valid(target) or not target.is_alive:
+				continue
+			var m_type: String = ""
+			if target.has_method("get_meta") and target.has_meta("monster_type"):
+				m_type = str(target.get_meta("monster_type", ""))
+			var tracks_sway: bool = m_type == "bard_hostile_courtier"
+			if not tracks_sway and EncounterSystem and EncounterSystem.monster_database.has(m_type):
+				var mdata: Dictionary = EncounterSystem.monster_database[m_type]
+				if bool(mdata.get("tracks_sway_stacks", false)):
+					tracks_sway = true
+			if not tracks_sway:
+				continue
+			var current: int = int(target.get_meta("_swayed_stacks", 0))
+			target.set_meta("_swayed_stacks", current + 1)
+			print("[SWAY] %s absorbs %s — swayed stacks: %d" % [target.combatant_name, ability.get("id", "song"), current + 1])
+
 	match effect:
 		## Tick 170: 10 support-ability branches lacked
 		## battle_log_message emits — buff/debuff/taunt/doom applied
