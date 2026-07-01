@@ -273,6 +273,48 @@ func get_learned_patterns_for_region(region_id: String) -> Dictionary:
 	return learned_patterns[region_id]
 
 
+const _AUTOGRIND_CONDITION_TYPES := ["party_hp_min", "party_hp_avg", "alive_count", "member_dead", "corruption", "inventory_items", "always"]
+const _AUTOGRIND_OPERATORS := ["<", "<=", "==", ">=", ">", "!="]
+const _AUTOGRIND_ACTION_TYPES := ["stop_grinding", "heal_party", "switch_profile"]
+
+func validate_rule(rule: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	if not rule.has("conditions"):
+		errors.append("missing 'conditions' array")
+	elif typeof(rule["conditions"]) != TYPE_ARRAY:
+		errors.append("'conditions' must be an array")
+	if not rule.has("actions"):
+		errors.append("missing 'actions' array")
+	elif typeof(rule["actions"]) != TYPE_ARRAY:
+		errors.append("'actions' must be an array")
+	if errors.size() > 0:
+		return errors
+	for c in rule["conditions"]:
+		if typeof(c) != TYPE_DICTIONARY:
+			errors.append("condition must be a dictionary: %s" % [c])
+			continue
+		var ctype: String = str(c.get("type", ""))
+		if not _AUTOGRIND_CONDITION_TYPES.has(ctype):
+			errors.append("unknown autogrind condition type: '%s'" % ctype)
+			continue
+		if c.has("op") and not _AUTOGRIND_OPERATORS.has(str(c["op"])):
+			errors.append("unknown operator: '%s'" % c["op"])
+	for a in rule["actions"]:
+		if typeof(a) != TYPE_DICTIONARY:
+			errors.append("action must be a dictionary: %s" % [a])
+			continue
+		var atype: String = str(a.get("type", ""))
+		if not _AUTOGRIND_ACTION_TYPES.has(atype):
+			errors.append("unknown autogrind action type: '%s'" % atype)
+			continue
+		if atype == "switch_profile":
+			if not a.has("character_id"):
+				errors.append("action type 'switch_profile' requires 'character_id'")
+			if not a.has("profile_index"):
+				errors.append("action type 'switch_profile' requires 'profile_index'")
+	return errors
+
+
 ## ═══════════════════════════════════════════════════════════════════════
 ## COMBAT SATURATION INDEX (CSI) - Diminishing Returns Per Region
 ## ═══════════════════════════════════════════════════════════════════════

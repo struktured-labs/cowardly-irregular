@@ -188,6 +188,25 @@ Canonical example:
 Prefer specific rules over general ones. Put the fallback (a rule with
 {type:'always'} condition and an attack action) last."""
 
+const AUTOGRIND_GRAMMAR_DESCRIPTION := """Autogrind rules control the WHOLE PARTY's grind session (not per-character).
+Rules are evaluated top-to-bottom, first match wins.
+
+Conditions (AND-chained). type is one of:
+  party_hp_min, party_hp_avg, alive_count, member_dead, corruption,
+  inventory_items, always
+Numeric conditions take op ∈ {<, <=, ==, >=, >, !=} and value.
+
+Actions. type is one of:
+  stop_grinding, heal_party, switch_profile
+switch_profile requires character_id (PC id string) and profile_index (int).
+
+Canonical example:
+  {\"conditions\":[{\"type\":\"party_hp_min\",\"op\":\"<\",\"value\":30}],
+   \"actions\":[{\"type\":\"heal_party\"}],
+   \"enabled\":true}
+
+Put the fallback (a rule with {type:'always'} condition) last, if any."""
+
 
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
 
