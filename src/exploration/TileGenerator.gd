@@ -368,7 +368,9 @@ func _get_tile_order() -> Array:
 
 func _get_impassable_types() -> Array:
 	# Water and mountain are visually impassable so they must block — forest stays walkable for traversal flexibility.
-	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.WATER, TileType.MOUNTAIN]
+	# VILLAGE_HEDGE is a decorative barrier used in HarmoniaVillage's border ("e" tile) — comment in that
+	# layout explicitly calls it "impassable decorative border" but it was missing from this list.
+	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.WATER, TileType.MOUNTAIN, TileType.VILLAGE_HEDGE]
 
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(5, 8)

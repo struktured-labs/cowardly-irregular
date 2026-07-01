@@ -230,7 +230,10 @@ func _get_impassable_types() -> Array:
 	return [
 		TileType.BRICK_WALL, TileType.SMOKESTACK, TileType.CARGO_CONTAINER,
 		TileType.WORKER_HOUSING, TileType.GUARD_POST, TileType.CHEMICAL_BARREL,
-		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE
+		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE,
+		# DRAINAGE_CHANNEL is described as a "green-tinted water channel" — the
+		# analogue of the medieval world's WATER tile and should block movement.
+		TileType.DRAINAGE_CHANNEL,
 	]
 
 func _get_debug_atlas_name() -> String:
