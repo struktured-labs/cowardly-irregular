@@ -32,12 +32,16 @@ var cancel_all_next_turn: bool = false
 ## Max profiles per character (GBA-like limit)
 const MAX_PROFILES_PER_CHARACTER: int = 8
 
-## Default profile names for each job
-const DEFAULT_PROFILE_TEMPLATES: Dictionary = {
-	"hero": ["Aggressive", "Defensive", "Balanced"],
-	"mira": ["Healer", "Support", "Offensive"],
-	"zack": ["Steal First", "DPS", "Cautious"],
-	"vex": ["Nuke", "Conserve MP", "AoE Focus"]
+## character_id → job_id for the named starter party. Item 13: used to seed
+## real Defensive/Aggressive preset profiles from AutobattleRuleTemplates
+## (pre-fix the named profiles existed but held empty attack-only scripts —
+## "Defensive" contained nothing defensive, user playtest complaint).
+const CHARACTER_JOB_IDS: Dictionary = {
+	"hero": "fighter",
+	"mira": "cleric",
+	"zack": "rogue",
+	"vex": "mage",
+	"bard": "bard",
 }
 
 ## Condition types
@@ -570,16 +574,39 @@ func _ensure_character_profiles(character_id: String) -> void:
 
 
 func _create_default_profiles(character_id: String) -> Dictionary:
-	"""Create default profile set for a character"""
-	var profile_names = DEFAULT_PROFILE_TEMPLATES.get(character_id, ["Default", "Custom 1", "Custom 2"])
-	var profiles = []
-
-	for i in range(profile_names.size()):
-		var name = profile_names[i]
-		var script = create_default_character_script(character_id) if i == 0 else _create_empty_script(character_id)
-		profiles.append({"name": name, "script": script})
-
+	"""Create default profile set for a character.
+	Item 13: profile 0 stays the tuned per-job default script; profiles 1-2
+	seed the job's Defensive/Aggressive presets from AutobattleRuleTemplates
+	so their names promise what they contain. Jobs without catalog presets
+	(advanced/meta) fall back to legacy empty custom slots."""
+	var profiles = [
+		{"name": "Default", "script": create_default_character_script(character_id)}
+	]
+	var job_id: String = _resolve_job_for_character(character_id)
+	for template in AutobattleRuleTemplates.find_for_job(job_id):
+		var stance: String = str(template.get("stance", ""))
+		if stance == "balanced":
+			continue  # profile 0's tuned default already covers the balanced stance
+		profiles.append({
+			"name": str(template.get("name", "Preset")),
+			"script": AutobattleRuleTemplates.build_script(template, character_id)
+		})
+	while profiles.size() < 3:
+		profiles.append({"name": "Custom %d" % profiles.size(), "script": _create_empty_script(character_id)})
 	return {"profiles": profiles, "active": 0}
+
+
+func _resolve_job_for_character(character_id: String) -> String:
+	"""character_id → job_id: named starters first, then GameState lookup,
+	then the id itself (covers job-named characters like 'bard')."""
+	if CHARACTER_JOB_IDS.has(character_id):
+		return CHARACTER_JOB_IDS[character_id]
+	var game_state = get_node_or_null("/root/GameState")
+	if game_state and game_state.has_method("get_character_job_id"):
+		var job_id: String = game_state.get_character_job_id(character_id)
+		if job_id != "":
+			return job_id
+	return character_id
 
 
 func _create_empty_script(character_id: String) -> Dictionary:
