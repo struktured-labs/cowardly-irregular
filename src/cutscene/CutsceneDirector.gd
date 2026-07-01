@@ -354,6 +354,8 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_roll_credits(step)
 		"choice":
 			await _step_choice(step)
+		"battle":
+			await _step_battle(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -1393,3 +1395,43 @@ func _load_cutscene_data(cutscene_id: String) -> Dictionary:
 		return {}
 
 	return json.data
+
+
+## Tick 471: cutscene→battle→resume step type for the Spotlight Duels
+## directive. Runs a solo-duel battle inline in the cutscene, retrying
+## on defeat by default. Step schema:
+##   {"type":"battle","combatants":["<pc_job_id>"],"enemies":["<mob_id>"],
+##    "on_defeat":"retry"|"fail_forward"|"skip",
+##    "music":"<track>", "background":"<terrain>"}
+## Delegates to GameLoop.start_solo_battle which benches all but the
+## spotlight PC, awaits BattleManager.battle_ended, and returns
+## "victory" | "defeat". The retry loop lives HERE (not in GameLoop) so
+## the cutscene stays paused across attempts and the intro cutscene
+## never replays (matches cowir-story's UX requirement, msg 1931 #4).
+func _step_battle(step: Dictionary) -> void:
+	var combatants: Array = step.get("combatants", [])
+	var enemies: Array = step.get("enemies", [])
+	var on_defeat: String = str(step.get("on_defeat", "retry"))
+	var opts: Dictionary = {
+		"music": str(step.get("music", "")),
+		"background": str(step.get("background", "")),
+	}
+	if combatants.is_empty() or enemies.is_empty():
+		push_warning("CutsceneDirector: battle step missing combatants or enemies — skipping")
+		return
+	var game_loop: Node = get_node_or_null("/root/GameLoop")
+	if game_loop == null or not game_loop.has_method("start_solo_battle"):
+		push_warning("CutsceneDirector: GameLoop.start_solo_battle unavailable — cutscene battle step skipped")
+		return
+	while true:
+		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
+		if result == "victory":
+			return
+		match on_defeat:
+			"retry":
+				continue
+			"fail_forward", "skip":
+				return
+			_:
+				push_warning("CutsceneDirector: unknown on_defeat '%s' — defaulting to retry" % on_defeat)
+				continue

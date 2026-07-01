@@ -181,6 +181,16 @@ var _current_terrain: String = "plains"  # Current terrain type for battle backg
 var _last_battle_enemies: Array = []  # Enemy IDs from last battle
 var _last_battle_is_encounter: bool = false  # Was it a random encounter?
 
+## Tick 471: Spotlight Duel state. `start_solo_battle` sets these
+## before firing `_start_battle_async`; `_on_battle_ended` reads them
+## to short-circuit its normal exploration-return flow (the cutscene
+## is still driving; we don't fade/scene-swap). Cleared by
+## `start_solo_battle` after `spotlight_battle_ended` is emitted.
+var _spotlight_duel_active: bool = false
+var _pending_spotlight_unlock: String = ""  # PC job id ("fighter", etc.); "" when no unlock target
+var _spotlight_saved_party: Array[Combatant] = []
+signal spotlight_battle_ended(victory: bool)
+
 ## Area transition fade overlay (reused across all area transitions)
 var _area_fade_layer: CanvasLayer = null
 var _area_fade_rect: ColorRect = null
@@ -2167,8 +2177,58 @@ func _reconcile_spotlight_locks() -> void:
 			TutorialHints.show(scene, "spotlight_unlock")
 
 
+## Tick 471: enter a solo-duel battle for the Spotlight Duels step
+## type. Benches all but the spotlight PC (looked up by job id), fires
+## the standard _start_battle_async pipeline, awaits our own
+## spotlight_battle_ended signal (emitted from _on_battle_ended's
+## short-circuit path), restores the party, and returns "victory" |
+## "defeat" so CutsceneDirector._step_battle can drive its retry loop.
+## Cutscene stays paused across attempts — _on_battle_ended skips its
+## normal exploration-return flow while _spotlight_duel_active is on.
+func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {}) -> String:
+	var spotlight_pc: Combatant = null
+	for m in party:
+		if m == null or not is_instance_valid(m):
+			continue
+		var m_job_id: String = ""
+		if m.job is Dictionary:
+			m_job_id = str((m.job as Dictionary).get("id", ""))
+		if m_job_id == job_id:
+			spotlight_pc = m
+			break
+	if spotlight_pc == null:
+		push_warning("GameLoop.start_solo_battle: no party member with job '%s' — cutscene battle skipped" % job_id)
+		return "defeat"
+	_spotlight_saved_party = party.duplicate()
+	party = [spotlight_pc]
+	_pending_spotlight_unlock = job_id
+	_spotlight_duel_active = true
+	await _start_battle_async([enemy_id], false)
+	var result: bool = await spotlight_battle_ended
+	party = _spotlight_saved_party.duplicate()
+	_spotlight_saved_party.clear()
+	_spotlight_duel_active = false
+	_pending_spotlight_unlock = ""
+	return "victory" if result else "defeat"
+
+
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	## Tick 471: spotlight-duel short-circuit. When a cutscene owns the
+	## flow, we do the minimal spotlight bookkeeping (unlock flag on
+	## win) and emit spotlight_battle_ended for start_solo_battle to
+	## resume. Skip healing, exploration return, transitions — the
+	## cutscene is still on screen and will drive the next step (retry
+	## or aftermath). Retry loop's next _start_battle_async will
+	## queue_free the stale battle scene.
+	if _spotlight_duel_active:
+		if victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState:
+			var flag: String = "cutscene_flag_spotlight_unlocked_" + _pending_spotlight_unlock
+			GameState.game_constants[flag] = true
+			print("[SPOTLIGHT] battle won → set %s" % flag)
+			_reconcile_spotlight_locks()
+		spotlight_battle_ended.emit(victory)
+		return
 	if victory:
 		battles_won += 1
 		## Tick 418: sync to GameState's persistent counter so SaveSystem

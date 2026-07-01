@@ -2454,3 +2454,17 @@ func _show_dialogue(text: String) -> void:
 	add_child(dialogue)
 	await get_tree().create_timer(2.0).timeout
 	dialogue.queue_free()
+
+
+## Regressed during the 28×18 expansion (cowir-overworld village-
+## interiors merge). Pinned by test_exploration_pause_contract_
+## regression.gd — every exploration scene must forward pause/resume
+## to controller so the input lock push/pop stays consistent.
+func pause() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("pause_exploration"):
+		controller.pause_exploration()
+
+
+func resume() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("resume_exploration"):
+		controller.resume_exploration()

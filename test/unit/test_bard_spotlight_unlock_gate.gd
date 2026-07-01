@@ -71,14 +71,27 @@ func test_bard_gate_precedes_chapter9_auto_set() -> void:
 		"bard spotlight gate must precede the chapter5-9 auto-set loop in source — keeps the spotlight at the natural narrative beat")
 
 
-func test_bard_cutscene_file_exists_and_sets_correct_flag() -> void:
+func test_bard_cutscene_file_exists_and_embeds_battle() -> void:
+	# Tick 471 architecture: unlock flag now written by
+	# GameLoop._on_battle_ended on battle_won, not by a set_flag
+	# cutscene step. Cutscene must embed a "battle" step against the
+	# bard spotlight miniboss so the engine has something to fight.
 	var path := "res://data/cutscenes/world1_spotlight_bard_ch7.json"
 	assert_true(FileAccess.file_exists(path), "%s must exist on disk" % path)
-	var f := FileAccess.open(path, FileAccess.READ)
-	var text: String = f.get_as_text()
-	f.close()
-	assert_true(text.contains("\"spotlight_unlocked_bard\""),
-		"bard spotlight cutscene must set the spotlight_unlocked_bard flag")
+	var raw: String = FileAccess.get_file_as_string(path)
+	var parsed: Variant = JSON.parse_string(raw)
+	assert_true(parsed is Dictionary)
+	var steps: Variant = (parsed as Dictionary).get("steps", [])
+	assert_true(steps is Array)
+	var found_battle: bool = false
+	for step in steps:
+		if step is Dictionary and str((step as Dictionary).get("type", "")) == "battle":
+			var combatants: Variant = (step as Dictionary).get("combatants", [])
+			if combatants is Array and "bard" in (combatants as Array):
+				found_battle = true
+				break
+	assert_true(found_battle,
+		"bard spotlight cutscene must embed a `type:battle` step with combatants:[\"bard\"] — GameLoop writes the unlock flag on battle_won")
 
 
 func test_all_four_non_fighter_spotlights_now_reachable() -> void:

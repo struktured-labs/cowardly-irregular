@@ -61,18 +61,30 @@ func test_cleric_gate_scoped_to_harmonia_village() -> void:
 		"cleric spotlight must be gated on _current_map_id == 'harmonia_village' — fires at the village well moment")
 
 
-func test_cleric_cutscene_file_exists_and_sets_correct_flag() -> void:
-	# Defensive: the JSON must exist on disk AND set
-	# spotlight_unlocked_cleric on completion via a set_flag step.
-	# Without that step the cleric never actually gets unlocked.
+func test_cleric_cutscene_file_exists_and_embeds_battle() -> void:
+	# Tick 471 architecture shift: spotlight_unlocked_<job> is now
+	# written by GameLoop._on_battle_ended on battle_won, NOT by a
+	# set_flag step in the cutscene. The cutscene must instead embed
+	# a "battle" step against the cleric spotlight miniboss so the
+	# engine has something to fight (and thus something to flag).
 	var path := "res://data/cutscenes/world1_spotlight_cleric_ch1.json"
 	assert_true(FileAccess.file_exists(path),
 		"world1_spotlight_cleric_ch1.json must exist on disk")
-	var f := FileAccess.open(path, FileAccess.READ)
-	var text: String = f.get_as_text()
-	f.close()
-	assert_true(text.contains("\"spotlight_unlocked_cleric\""),
-		"cleric spotlight cutscene must set the spotlight_unlocked_cleric flag — otherwise the unlock doesn't actually fire")
+	var raw: String = FileAccess.get_file_as_string(path)
+	var parsed: Variant = JSON.parse_string(raw)
+	assert_true(parsed is Dictionary,
+		"cleric spotlight cutscene must parse to a Dictionary")
+	var steps: Variant = (parsed as Dictionary).get("steps", [])
+	assert_true(steps is Array)
+	var found_battle: bool = false
+	for step in steps:
+		if step is Dictionary and str((step as Dictionary).get("type", "")) == "battle":
+			var combatants: Variant = (step as Dictionary).get("combatants", [])
+			if combatants is Array and "cleric" in (combatants as Array):
+				found_battle = true
+				break
+	assert_true(found_battle,
+		"cleric spotlight cutscene must embed a `type:battle` step with combatants:[\"cleric\"] — GameLoop writes the unlock flag on battle_won")
 
 
 func test_cleric_cutscene_in_completion_flag_map() -> void:

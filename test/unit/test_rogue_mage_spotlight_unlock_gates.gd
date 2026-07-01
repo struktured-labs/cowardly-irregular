@@ -76,19 +76,32 @@ func test_rogue_gate_precedes_mage_gate_in_source() -> void:
 		"rogue gate must precede mage gate in source — otherwise the mage chain on rogue unlock never resolves correctly")
 
 
-func test_both_cutscene_files_exist_and_set_correct_flags() -> void:
+func test_both_cutscene_files_exist_and_embed_battles() -> void:
+	# Tick 471 architecture: unlock flag now written by
+	# GameLoop._on_battle_ended on battle_won, not by a set_flag
+	# cutscene step. Both cutscenes must embed a "battle" step
+	# targeting their PC so the engine has something to fight.
 	for entry in [
-		["res://data/cutscenes/world1_spotlight_rogue_ch3.json", "spotlight_unlocked_rogue"],
-		["res://data/cutscenes/world1_spotlight_mage_ch3.json",  "spotlight_unlocked_mage"],
+		["res://data/cutscenes/world1_spotlight_rogue_ch3.json", "rogue"],
+		["res://data/cutscenes/world1_spotlight_mage_ch3.json",  "mage"],
 	]:
 		var path: String = entry[0]
-		var flag: String = entry[1]
+		var pc: String = entry[1]
 		assert_true(FileAccess.file_exists(path), "%s must exist" % path)
-		var f := FileAccess.open(path, FileAccess.READ)
-		var text: String = f.get_as_text()
-		f.close()
-		assert_true(text.contains("\"" + flag + "\""),
-			"%s must set the %s flag — otherwise the unlock doesn't actually fire" % [path, flag])
+		var raw: String = FileAccess.get_file_as_string(path)
+		var parsed: Variant = JSON.parse_string(raw)
+		assert_true(parsed is Dictionary)
+		var steps: Variant = (parsed as Dictionary).get("steps", [])
+		assert_true(steps is Array)
+		var found_battle: bool = false
+		for step in steps:
+			if step is Dictionary and str((step as Dictionary).get("type", "")) == "battle":
+				var combatants: Variant = (step as Dictionary).get("combatants", [])
+				if combatants is Array and pc in (combatants as Array):
+					found_battle = true
+					break
+		assert_true(found_battle,
+			"%s must embed a `type:battle` step with combatants:[\"%s\"] — engine writes unlock flag on battle_won" % [path, pc])
 
 
 func test_cleric_gate_still_present() -> void:

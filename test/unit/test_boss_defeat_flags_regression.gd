@@ -107,7 +107,10 @@ func test_gameloop_clears_pending_on_defeat() -> void:
 	# Tick 411 added a meta_auto_rewind_pending consumer block before
 	# the defeat-branch's pending_boss_defeat clear, pushing the
 	# literal past the 2000-char window. Widened.
-	var body = text.substr(idx, 3500)
+	# Tick 471 added a spotlight-duel short-circuit block at the top
+	# of _on_battle_ended, pushing the literal past 3500 too. Widened
+	# to 5000.
+	var body = text.substr(idx, 5000)
 	# Defeat branch: look in the `else` clause for pending clear
 	assert_true(body.find("pending_boss_defeat = {}") != -1,
 		"On battle defeat, pending_boss_defeat must be cleared (prevent false-flag on retry)")
