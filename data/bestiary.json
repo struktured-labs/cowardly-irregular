@@ -350,5 +350,25 @@
   "chancellor_mordaine": {
     "epithet": "Sorceress-Usurper of Harmonia",
     "flavor": "She does not draw a sword. She does not raise her voice. She simply notes that you arrived later than her schedule predicted, and adjusts the schedule. The throne room is exactly the temperature of a server room. She does not so much fight you as audit you \u2014 testing variables, recording responses, allowing some attacks through to confirm the damage formula still holds. Defeat her and you do not feel victorious. You feel like you passed an evaluation that was never explained to you, conducted by an evaluator who is already designing the next one."
+  },
+  "fighter_skeleton_knight": {
+    "epithet": "The Honorable Bone",
+    "flavor": "A skeleton who insists, politely, on the old forms. He will not strike you while you defend. He will bow before the duel. He will nod when you find his tempo. There is no malice in him \u2014 only the memory of a code that outlived the body that upheld it. The Fighter meets him blade to blade because that is what the Skeleton Knight is for: to teach a young resolve that resolve is a rhythm, not a shout."
+  },
+  "cleric_survive_target": {
+    "epithet": "The Grinding Wound",
+    "flavor": "Not a monster in any conventional sense. A wound that will not stop bleeding. A miasma that presses on the villager as if it has all the time in the world \u2014 which it does. The Cleric cannot defeat it. No one can. She can only hold the villager's hand and pray, and pray, and pray, until the pressure lifts of its own accord. Faith, it turns out, is a form of endurance."
+  },
+  "rogue_lockward": {
+    "epithet": "Bronze Protocol",
+    "flavor": "A treasure-guardian construct built to defend the vault by executing exactly one program: DEFEND, COUNTER, REPEAT. Every cycle, for one heartbeat, its rotation exposes a flank. The Rogue watches. She has always watched. When she moves, she moves for the paper no one else notices \u2014 not for the vault's obvious loot. The Lockward, in defeat, does not seem to mind."
+  },
+  "mage_prismatic_construct": {
+    "epithet": "Crystalline Metronome",
+    "flavor": "A crystal automaton whose elemental face rotates in strict sequence \u2014 red, blue, gold. Its taunt is its telegraph: the color it names is the element that undoes it. The Mage does not need to be clever. He needs to READ. And when his first reading is wrong, he needs to say 'then it's the other thing' without flinching. That, the construct notes, is logic."
+  },
+  "bard_hostile_courtier": {
+    "epithet": "The Sneering Velvet",
+    "flavor": "A capital-city functionary who refuses to treat with mercenaries. Blades will not move him \u2014 his court armor is embroidered with heirloom protection charms. Insult him and he escalates. Threaten him and he calls the guard. He can only be talked down, and only by someone who listens first \u2014 who hears the name he thought no one remembered \u2014 and then speaks once, at the exact right moment. The Bard writes what she hears down. She does not read it aloud."
   }
 }
