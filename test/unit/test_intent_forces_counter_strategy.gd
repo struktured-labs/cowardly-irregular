@@ -42,3 +42,19 @@ func test_strategy_falls_back_to_deterministic_for_non_widened_intent() -> void:
 	var expected: String = autogrind_system.get_counter_strategy(region_id)
 	assert_eq(strategy, expected,
 			"non-widened intent must not override deterministic strategy")
+
+func test_intent_forced_counter_chance_nonzero_for_widened_tags() -> void:
+	for tag in _COUNTER_INTENT_TAGS:
+		var bias: Dictionary = battle_manager._bias_by_intent(tag)
+		var chance: float = battle_manager._intent_forced_counter_chance(bias)
+		assert_gt(chance, 0.0,
+				"intent-forced counter_chance for '%s' must be nonzero at adaptation_level 0" % tag)
+
+func test_intent_forced_counter_chance_matches_expected_floor() -> void:
+	var bias: Dictionary = {"counter_action_chance": 2.0}
+	var chance: float = battle_manager._intent_forced_counter_chance(bias)
+	assert_almost_eq(chance, 0.6, 0.01, "0.3 base x 2.0 widened bias must floor to 0.6")
+
+func test_intent_forced_counter_chance_defaults_bias_multiplier_to_one() -> void:
+	var chance: float = battle_manager._intent_forced_counter_chance({})
+	assert_almost_eq(chance, 0.3, 0.01, "missing counter_action_chance key must default multiplier to 1.0")

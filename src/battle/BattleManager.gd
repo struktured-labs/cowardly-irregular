@@ -1586,17 +1586,22 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	var counter_strategy: String = _resolve_counter_strategy(region_id, intent)
 
 	if (adaptation_level > 0 or intent_forces_counter) and not counter_strategy.is_empty():
-		var counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
-		# Tick 116: scale counter_chance by the LLM intent's
-		# counter_action_chance bias. The "exploit_pattern" intent is
-		# specifically about countering the player's patterns — pre-fix
-		# its counter_action_chance bias (1.6x) was set in the bias dict
-		# but NOTHING read it, so picking "exploit_pattern" produced
-		# the same counter rate as no intent at all. Now an LLM that
-		# chooses "exploit_pattern" actually counters more often
-		# (30/60/90% × 1.6 = 48/96/100% clamped).
 		var ci_bias: Dictionary = _bias_by_intent(combatant.get_meta("llm_intent", ""))
-		counter_chance = clampf(counter_chance * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
+		var counter_chance: float
+		if intent_forces_counter:
+			# Fresh region (adaptation_level 0): floor so LLM/scripted intent still fires.
+			counter_chance = _intent_forced_counter_chance(ci_bias)
+		else:
+			counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
+			# Tick 116: scale counter_chance by the LLM intent's
+			# counter_action_chance bias. The "exploit_pattern" intent is
+			# specifically about countering the player's patterns — pre-fix
+			# its counter_action_chance bias (1.6x) was set in the bias dict
+			# but NOTHING read it, so picking "exploit_pattern" produced
+			# the same counter rate as no intent at all. Now an LLM that
+			# chooses "exploit_pattern" actually counters more often
+			# (30/60/90% × 1.6 = 48/96/100% clamped).
+			counter_chance = clampf(counter_chance * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
 		if randf() < counter_chance:
 			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
 			if not counter_action.is_empty():
@@ -6532,6 +6537,11 @@ func _resolve_counter_strategy(region_id: String, intent_id: String) -> String:
 	if autogrind == null:
 		return ""
 	return autogrind.get_counter_strategy(region_id)
+
+
+## counter_chance floor for intent-forced turns: 0.3 base x widened bias (e.g. 2.0 -> 0.6), independent of adaptation_level.
+func _intent_forced_counter_chance(ci_bias: Dictionary) -> float:
+	return clampf(0.3 * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
 
 
 ## Apply a landed jailbreak consequence to the boss combatant. Connected to
