@@ -13,6 +13,7 @@ extends GutTest
 ##   - any consequence shape suspect of mutating story flags (e.g. "flag" key)
 ##   - scripted_intent.id outside the widened 9-tag allowlist (migrated bosses only)
 ##   - learned_patterns_counter condition referencing an invalid counter_strategy string
+##   - any of the 5 W1 opt-in bosses missing one of the 6 widened counter tags
 
 const DATA_PATH: String = "res://data/boss_dialogue.json"
 
@@ -38,8 +39,16 @@ const _ALLOWED_COUNTER_STRATEGY_STRINGS: Array[String] = [
 	"generic_counter", "",
 ]
 
-# Bosses migrated to the shared widened vocab; dragons are Task 15 scope.
+# Fully-migrated bosses only (dragons keep legacy ids; see _OPT_IN_BOSSES for their coverage-only check).
 const _WIDENED_VOCAB_BOSSES: Array[String] = ["chancellor_mordaine"]
+
+# All 5 W1 opt-in bosses (Mordaine + 4 dragons) — coverage-only, not exclusivity (Task 15).
+const _OPT_IN_BOSSES: Array[String] = ["chancellor_mordaine", "pyrroth", "glacius", "voltharion", "umbraxis"]
+
+const _REQUIRED_WIDENED_TAGS: Array[String] = [
+	"fire_resist", "ice_resist", "lightning_resist",
+	"focus_healer", "defense_boost", "rotate_aggro",
+]
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -163,11 +172,26 @@ func test_every_scripted_intent_id_is_in_widened_allowlist() -> void:
 	for boss_id in data.keys():
 		if not _WIDENED_VOCAB_BOSSES.has(str(boss_id)):
 			continue
+		if not (data[boss_id] is Dictionary):
+			continue
 		var boss: Dictionary = data[boss_id]
 		for intent in boss.get("scripted_intents", []):
 			var intent_id: String = str(intent.get("id", ""))
 			assert_true(intent_id in _ALLOWED_INTENT_TAGS,
 				"%s.scripted_intents.id='%s' not in widened allowlist" % [boss_id, intent_id])
+
+
+func test_every_optin_boss_has_all_six_widened_tags() -> void:
+	var data: Dictionary = _load_data()
+	for boss_id in _OPT_IN_BOSSES:
+		assert_true(data.has(boss_id), "boss_dialogue.json missing '%s'" % boss_id)
+		if not data.has(boss_id):
+			continue
+		var ids: Array = []
+		for intent in data[boss_id].get("scripted_intents", []):
+			ids.append(str(intent.get("id", "")))
+		for tag in _REQUIRED_WIDENED_TAGS:
+			assert_true(tag in ids, "%s must include scripted_intent '%s'" % [boss_id, tag])
 
 
 func test_learned_patterns_counter_conditions_reference_valid_strategies() -> void:

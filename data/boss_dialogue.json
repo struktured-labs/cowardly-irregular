@@ -218,6 +218,66 @@
           "Pyrroth: 'I'm reviewing your form in real time. C-plus.'",
           "Pyrroth: 'You're playing now, not running. Finally worth my heat.'"
         ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Kindling reflected",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Pyrroth: 'You throw fire at fire. Bold. Or is that a script that's run out of ideas?'",
+          "Pyrroth: 'I am the sun's kin. Your kindling is homage, not harm.'",
+          "Pyrroth: 'Every flame you spend only feeds mine. Try a colder thought.'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Frost against the sun",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Pyrroth: 'Ice? Against a wyrm of ember? Delightfully naive.'",
+          "Pyrroth: 'Your frost is a whisper against a furnace. Speak louder, or don't bother.'",
+          "Pyrroth: 'I have breathed in winter mornings and exhaled them as steam. You are not one of those mornings.'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Storm-scorched",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Pyrroth: 'Thunder cannot reach a heart that is already burning.'",
+          "Pyrroth: 'Storm the sky all you like. My scales are older than the clouds.'",
+          "Pyrroth: 'Lightning writes a name in the air. Fire burns the air itself.'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Salt the well",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Pyrroth: 'Your priest is a candle. Watch me pinch the wick.'",
+          "Pyrroth: 'The well runs dry. Then, at last, the well runs.'",
+          "Pyrroth: 'Mercy first, embers after. That is the order I prefer.'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Ember-shell",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Pyrroth: 'My hide is molten rock. Yours is a padded shirt with delusions.'",
+          "Pyrroth: 'You script a shield. I compile a furnace.'",
+          "Pyrroth: 'An Ember Wyrm learns nothing new from your caution — only that you are slower to burn.'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "All four burn equally",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Pyrroth: 'You cannot choose a favorite to protect. Neither can I choose a favorite to spare.'",
+          "Pyrroth: 'My flame does not play favorites. It simply spreads.'",
+          "Pyrroth: 'Four scripts, four shields, one fire that does not care which one it finds.'"
+        ]
       }
     ],
     "jailbreak_vulnerabilities": [
@@ -320,6 +380,66 @@
           "Glacius: 'Don't end it quickly. This is the most fun I've had in centuries.'",
           "Glacius: 'Drag it out. Please. The boredom afterward is worse than any wound.'",
           "Glacius: 'Finally, something interesting happens in my memory block.'"
+        ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Sun's grasp anticipated",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Glacius: 'Fire. Again. I catalogued this exact flame three centuries ago.'",
+          "Glacius: 'Warmth is not novelty, little save file. It is the oldest trick in your very short book.'",
+          "Glacius: 'I have outlasted suns brighter than your spell. Bring me something I haven't logged.'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Ice, catalogued already",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Glacius: 'Ice. Against me. I would laugh, if laughing weren't so exhausting.'",
+          "Glacius: 'You have brought a snowflake to a glacier. How thrillingly unoriginal.'",
+          "Glacius: 'I was cold before your grandmother's grandmother learned the word for cold.'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Thunder, filed and forgotten",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Glacius: 'Lightning. Loud. Brief. Forgotten by the time the echo fades.'",
+          "Glacius: 'Your storm is a single frame. I have centuries of frames, and yours repeats.'",
+          "Glacius: 'Strike again, if it entertains you. I filed this pattern away an age ago.'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Frost finds the mender",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Glacius: 'Ah — you cluster around the one who mends. How touchingly predictable.'",
+          "Glacius: 'Freeze the mender first. The rest simply... stop. Almost too easy to be interesting.'",
+          "Glacius: 'Your healer is the only variable left. I do enjoy solving for the last one.'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Glacial patience",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Glacius: 'You harden your shell. I have been hardening mine since before your kingdom had a name.'",
+          "Glacius: 'The cold is patient. It does not need to break your armor today — there is always tomorrow's save file.'",
+          "Glacius: 'You burn yourself out against a river, and call it strategy.'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "Every icicle finds a new mark",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Glacius: 'You shuffle your favorite to the back. How droll. I simply freeze whoever is nearest.'",
+          "Glacius: 'Novelty, at last — I shall not indulge a favorite by ignoring the other three.'",
+          "Glacius: 'A glacier does not choose what it crushes. It spreads, evenly, without preference.'"
         ]
       }
     ],
@@ -424,6 +544,66 @@
           "Voltharion: 'I-can-go-faster! Watch-THIS!'",
           "Voltharion: 'The-thrill! The-RUSH! Don't-make-me-stop!'"
         ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Outpace the burn",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Voltharion: 'Fire's-slow! I'm-already-past-where-it-lands!'",
+          "Voltharion: 'Heat-rises, I'm-ALREADY-up-there! Catch-up!'",
+          "Voltharion: 'Burn-me-if-you-can-keep-the-pace! Most-can't!'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Outrun the freeze",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Voltharion: 'Ice-slows! I-do-not-SLOW! Check-the-patch-notes!'",
+          "Voltharion: 'You-want-me-still? NEVER! Not-even-for-ONE-frame!'",
+          "Voltharion: 'Cold-is-just-a-debuff-I-haven't-bothered-to-read!'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Circuits echo mine",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Voltharion: 'Lightning? AT-me? Your-circuits-echo-MINE, little-storm!'",
+          "Voltharion: 'You-throw-volts-at-a-VOLT-dragon! I-absorb-it-and-go-FASTER!'",
+          "Voltharion: 'Thunder-doesn't-scare-thunder! Try-something-SLOWER-to-dodge!'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Short the supply line",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Voltharion: 'You-all-huddle-round-ONE-battery! Unplug-it-FIRST!'",
+          "Voltharion: 'No-current, no-heals! Simple-circuit, I-learned-it-FAST!'",
+          "Voltharion: 'Your-healer's-the-breaker-switch! FLIP-IT!'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Overvoltage the shell",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Voltharion: 'You-raise-a-shield? I-raise-the-VOLTAGE! Numbers-climb-faster-than-yours!'",
+          "Voltharion: 'Armor's-just-resistance! I'm-CURRENT! I-find-a-way-THROUGH!'",
+          "Voltharion: 'Slow-and-sturdy's-a-turtle-strategy! This-is-NOT-a-turtle-fight!'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "The ground is my ally",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Voltharion: 'The-ground's-MY-ally, and-so-is-EVERY-one-of-you! I-strike-ALL-FOUR!'",
+          "Voltharion: 'Sky-to-ground, ground-to-sky, I-don't-PICK, I-just-ARC!'",
+          "Voltharion: 'Favorites-are-SLOW! I-hit-whoever's-closest-to-the-ground!'"
+        ]
       }
     ],
     "jailbreak_vulnerabilities": [
@@ -527,6 +707,66 @@
           "Umbraxis: 'Do you fear the garbage collector too? You should.'",
           "Umbraxis: 'Every turn brings us closer to the free() that ends all things.'",
           "Umbraxis: 'I will share my dread with you. Misery loves a shared address space.'"
+        ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "The flame, un-named",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Umbraxis: 'Fire casts a shadow. I am the shadow it casts. You feed me without meaning to.'",
+          "Umbraxis: 'Light your torch. Light. Torch. Two words for the same brief flare before the dark resumes its default state.'",
+          "Umbraxis: 'Every flame you raise only proves how much darkness surrounds it. The engine calls this ambient occlusion. I call it home.'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "The cold, forgotten",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Umbraxis: 'Cold is an absence pretending to be a force. I am well acquainted with absence — mine is declared, not inferred.'",
+          "Umbraxis: 'Ice. Ice. Say a word twice and it still melts. I do not melt. I was never assigned that property.'",
+          "Umbraxis: 'Your frost will be garbage-collected by the next scene. I persist across loads.'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "The current, un-cast",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Umbraxis: 'Lightning is light in a hurry, and I have already un-named the light it came from.'",
+          "Umbraxis: 'You counter shadow with light, and light only casts more shadow. Recursion, not victory.'",
+          "Umbraxis: 'A spark, dissolving into the dark it briefly interrupted — a null pointer chasing its own reference.'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "The mender, unmade",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Umbraxis: 'You gather around the one who heals, as if proximity were a shield variable. It is not declared anywhere.'",
+          "Umbraxis: 'Dissolve the mender first. Watch how quickly the others forget the function that hope calls.'",
+          "Umbraxis: 'Your cleric prays to be remembered. I specialize in the opposite allocation.'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "The shell, un-named",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Umbraxis: 'You raise a shape called defense. I do not fight shapes. I un-name them, one field at a time.'",
+          "Umbraxis: 'Armor is a story your HP tells itself. I am editing the story.'",
+          "Umbraxis: 'Even your resistance is a shape I can un-name. Watch it stop meaning anything, mid-frame.'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "No one forgotten equally",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Umbraxis: 'You cannot hide one of you behind the others. In the void, there is no behind — there is only index.'",
+          "Umbraxis: 'I forget none of you equally. That is worse than being remembered by anyone else.'",
+          "Umbraxis: 'Four names, four shadows, one dissolution. I do not skip indices when I un-write a party.'"
         ]
       }
     ],
