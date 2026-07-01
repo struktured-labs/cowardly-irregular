@@ -1845,8 +1845,10 @@ func _on_speedrun_hud_tick() -> void:
 			_speedrun_hud_label.text = "%.1fs" % float(gs_t.playtime_seconds)
 	## Tick 455: content_radar refresh. Independent gate from the
 	## timer so a party can run with one without the other.
+	## show_secrets wire (2026-07-01): either radar flag lights the
+	## label; _build_radar_text gates each segment internally.
 	if _content_radar_label != null:
-		var radar_on: bool = _party_wants_show_treasure()
+		var radar_on: bool = _party_wants_show_treasure() or _party_wants_show_secrets()
 		_content_radar_label.visible = radar_on
 		if radar_on:
 			_content_radar_label.text = _build_radar_text()
@@ -1908,23 +1910,67 @@ func _party_wants_show_treasure() -> bool:
 	return false
 
 
+## show_secrets gate (2026-07-01): clone of _party_wants_show_treasure
+## for content_radar's OTHER meta_effect — unwired since tick 455 for
+## lack of secret entities; cowir-overworld's HiddenPassage (3a5ac00f)
+## made them first-class, mirroring the treasure-group contract.
+func _party_wants_show_secrets() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("show_secrets", false)):
+				return true
+	return false
+
+
 ## Tick 455: count unopened chests in the "treasure" group. Each
 ## TreasureChest._ready adds itself to that group; opened chests
 ## set _is_opened so we skip them. Returns a short labelled string
-## or "" when no chests are around (no point showing 0).
+## or "" when nothing is around (no point showing 0).
+## show_secrets wire (2026-07-01): second segment counts undiscovered
+## HiddenPassages in the "secrets" group (same contract: group
+## registration in _ready, public _is_discovered, story-flag persist).
+## Each segment is gated on ITS passive flag so a future passive that
+## authors only one of the two lights only its own segment.
 func _build_radar_text() -> String:
-	var chests: Array = get_tree().get_nodes_in_group("treasure")
-	if chests.is_empty():
-		return ""
-	var unopened: int = 0
-	for c in chests:
-		if not is_instance_valid(c):
-			continue
-		if "_is_opened" in c and not c._is_opened:
-			unopened += 1
-	if unopened == 0:
-		return ""
-	return "♦ %d treasure" % unopened
+	var parts: Array[String] = []
+	if _party_wants_show_treasure():
+		var chests: Array = get_tree().get_nodes_in_group("treasure")
+		var unopened: int = 0
+		for c in chests:
+			if not is_instance_valid(c):
+				continue
+			if "_is_opened" in c and not c._is_opened:
+				unopened += 1
+		if unopened > 0:
+			parts.append("♦ %d treasure" % unopened)
+	if _party_wants_show_secrets():
+		var secrets: Array = get_tree().get_nodes_in_group("secrets")
+		var undiscovered: int = 0
+		for s in secrets:
+			if not is_instance_valid(s):
+				continue
+			if "_is_discovered" in s and not s._is_discovered:
+				undiscovered += 1
+		if undiscovered > 0:
+			parts.append("◈ %d secrets" % undiscovered)
+	return " · ".join(parts)
 
 
 ## Find an interactable (NPC, sign, chest, etc.) near the click position
