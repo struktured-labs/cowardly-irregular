@@ -806,15 +806,65 @@ func _build_results(victory: bool) -> Dictionary:
 			exp = int(exp * exp_mult)
 			gold = int(gold * gold_mult)
 
+	# Drop parity with BattleManager (~line 596): pre-fix ludicrous mode gave EXP+gold
+	# but ZERO item drops — rare_item_found never fired and inventory_items interrupts
+	# were dead in headless. Same chance * drop_rate_mult * reward_multiplier math.
+	var drops: Dictionary = {"item_drops": {}, "rare_drops": []}
+	if victory:
+		var enemy_types: Array = []
+		for enemy in _enemy_party:
+			if is_instance_valid(enemy) and enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+				var mt: String = str(enemy.get_meta("monster_type", ""))
+				if mt != "":
+					enemy_types.append(mt)
+		var monsters_data: Dictionary = {}
+		var drop_rate_mult: float = 1.0
+		var tree2: SceneTree = Engine.get_main_loop() as SceneTree
+		if tree2 != null and tree2.root != null:
+			var enc: Node = tree2.root.get_node_or_null("EncounterSystem")
+			if enc != null and "monster_database" in enc:
+				monsters_data = enc.monster_database
+			var gs2: Node = tree2.root.get_node_or_null("GameState")
+			if gs2 != null and "game_constants" in gs2:
+				drop_rate_mult = clampf(
+					float(gs2.game_constants.get("drop_rate_multiplier", 1.0)),
+					0.1, 10.0)
+		drops = _roll_drop_tables(enemy_types, monsters_data, drop_rate_mult)
+
 	return {
 		"victory": victory,
 		"rounds": _current_round,
 		"exp_gained": exp,
 		"gold_gained": gold,
+		"item_drops": drops["item_drops"],
+		"rare_drops": drops["rare_drops"],
 		"log": _battle_log.duplicate(),
 		"player_party": _player_party,
 		"enemy_party": _enemy_party,
 	}
+
+
+## Pure drop-roll over monster drop_tables. rand_func injectable for deterministic tests.
+## Returns {"item_drops": {item_id: qty}, "rare_drops": [{item, chance}]} — rare = base chance < 0.10.
+static func _roll_drop_tables(enemy_types: Array, monsters_data: Dictionary, drop_rate_mult: float, rand_func: Callable = Callable()) -> Dictionary:
+	var item_drops: Dictionary = {}
+	var rare_drops: Array = []
+	for mt in enemy_types:
+		if not monsters_data.has(mt):
+			continue
+		var record: Dictionary = monsters_data[mt]
+		var reward_mult: float = float(record.get("reward_multiplier", 1.0))
+		for drop in record.get("drop_table", []):
+			var chance: float = float(drop.get("chance", 0.0))
+			var roll: float = rand_func.call() if rand_func.is_valid() else randf()
+			if roll < chance * drop_rate_mult * reward_mult:
+				var item_id: String = str(drop.get("item", ""))
+				if item_id == "":
+					continue
+				item_drops[item_id] = int(item_drops.get(item_id, 0)) + 1
+				if chance < 0.10:
+					rare_drops.append({"item": item_id, "chance": chance})
+	return {"item_drops": item_drops, "rare_drops": rare_drops}
 
 
 func _log(text: String) -> void:

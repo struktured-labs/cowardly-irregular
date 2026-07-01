@@ -1863,6 +1863,11 @@ func _on_smart_interrupt_rare_drop(_item_id: String, _base_chance: float) -> voi
 	_rare_drop_this_session = true
 
 
+## Public seam for battle paths that bypass BattleManager's rare_drop_found signal (headless).
+func notify_rare_drop(item_id: String, base_chance: float) -> void:
+	_on_smart_interrupt_rare_drop(item_id, base_chance)
+
+
 func _get_autoload_node(name_: String) -> Node:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	if tree != null and tree.root != null:

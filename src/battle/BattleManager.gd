@@ -7139,6 +7139,11 @@ func _on_status_tick_damage_for_party_dialogue(amount: int, source: String, targ
 ## the consumable inventory dict. Pre-fix every monster drop went through
 ## add_item even when the ID resolved to equipment.json (e.g. speed_boots).
 
+## Public seam for battle paths that bypass BattleManager (headless autogrind drop routing).
+func route_drop_to_equipment_pool(item_id: String) -> bool:
+	return _route_drop_to_equipment_pool(item_id)
+
+
 func _route_drop_to_equipment_pool(item_id: String) -> bool:
 	## Returns true when the drop was routed as equipment. False means the
 	## caller should fall back to add_item (consumable).
