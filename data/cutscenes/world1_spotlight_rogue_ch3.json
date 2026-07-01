@@ -6,65 +6,150 @@
   "background": "cave_entrance",
   "description": "Whispering Cave, ch.3. A chest with a Lockward — the guardian moves when the lock is touched. Rogue's solo duel — evade the counter, find the flank.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.3},
-
-    {"type": "narration", "text": "Three chambers in, there was a chest. The lock was the kind that announced itself: brass, oversized, with a keyhole shaped like a question. What did not announce itself was the shape crouched in the alcove behind it — bone and wire and something that had once been a spring."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "branch", "condition": "lead_job", "cases": {
-      "rogue": [
-        {"type": "narration", "text": "The lead saw both things at once. Of course they did. That was the whole thing about the lead."}
-      ],
-      "default": [
-        {"type": "dialogue", "lines": [
-          {"speaker": "Fighter", "text": "We could break it.", "theme": "fighter", "portrait": "fighter"},
-          {"speaker": "Rogue", "text": "You break the chest and the thing in the wall gets up. That's how these are built.", "theme": "rogue", "portrait": "rogue"},
-          {"speaker": "Fighter", "text": "The thing in the wall?", "theme": "fighter", "portrait": "fighter"},
-          {"speaker": "Rogue", "text": "It's already up. You just haven't noticed.", "theme": "rogue", "portrait": "rogue"}
-        ]},
-        {"type": "narration", "text": "The shape unfolded from the alcove with the deliberate awkwardness of something that had been folded for centuries and was proud of the unfolding. Its edges were the wrong number of edges. Its speed was the speed of something that had been told to guard and did not remember why."}
-      ]
-    }},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {"speaker": "Rogue", "text": "Everyone back. This is mine. It only tracks one target at a time — don't give it a second one.", "theme": "rogue", "portrait": "rogue"}
-    ]},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "battle",
-     "combatants": ["rogue"],
-     "enemies": ["rogue_lockward"],
-     "on_defeat": "retry",
-     "music": "boss_medieval",
-     "background": "cave_entrance"
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
     },
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "The Lockward went still where it stood, then folded — the same folding, run backward — and was, again, part of the alcove. It looked like a piece of the wall. Someone had built it to."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "dialogue", "lines": [
-      {"speaker": "Rogue", "text": "Now the lock.", "theme": "rogue", "portrait": "rogue"}
-    ]},
-
-    {"type": "narration", "text": "The Rogue crouched by the lock — thin piece of wire, one hand flat on the lid the way a doctor rests a hand on a patient. Three seconds. Four. The click was not loud. It was, more than anything, *over.*"},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "The party crowded the chest. Coins. A potion. A small dagger, dull. The usual."},
-
-    {"type": "wait", "duration": 0.3},
-
-    {"type": "narration", "text": "While they argued about the split, the Rogue noticed the seam. The chest had a false bottom. It was the kind of thing nobody put a false bottom in unless they expected someone to look. The Rogue lifted it without making the lifting visible, removed the folded paper underneath, and put it in a pocket that already had three other folded papers in it. The chest looked the same as it had before."},
-
-    {"type": "narration", "text": "The Rogue had a way of telling you a thing was done without explaining how the thing got done. The Rogue was, the party would learn, the kind of person who saw the second thing in the room."},
-
-    {"type": "letterbox_out", "duration": 0.4}
+    {
+      "type": "narration",
+      "text": "Three chambers in, there was a chest. The lock was the kind that announced itself: brass, oversized, with a keyhole shaped like a question. What did not announce itself was the shape crouched in the alcove behind it — bone and wire and something that had once been a spring."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "branch",
+      "condition": "lead_job",
+      "cases": {
+        "rogue": [
+          {
+            "type": "narration",
+            "text": "The lead saw both things at once. Of course they did. That was the whole thing about the lead."
+          }
+        ],
+        "default": [
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Fighter",
+                "text": "We could break it.",
+                "theme": "fighter",
+                "portrait": "fighter"
+              },
+              {
+                "speaker": "Rogue",
+                "text": "You break the chest and the thing in the wall gets up. That's how these are built.",
+                "theme": "rogue",
+                "portrait": "rogue"
+              },
+              {
+                "speaker": "Fighter",
+                "text": "The thing in the wall?",
+                "theme": "fighter",
+                "portrait": "fighter"
+              },
+              {
+                "speaker": "Rogue",
+                "text": "It's already up. You just haven't noticed.",
+                "theme": "rogue",
+                "portrait": "rogue"
+              }
+            ]
+          },
+          {
+            "type": "narration",
+            "text": "The shape unfolded from the alcove with the deliberate awkwardness of something that had been folded for centuries and was proud of the unfolding. Its edges were the wrong number of edges. Its speed was the speed of something that had been told to guard and did not remember why."
+          }
+        ]
+      }
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "Everyone back. This is mine. It only tracks one target at a time — don't give it a second one.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "battle",
+      "combatants": [
+        "rogue"
+      ],
+      "enemies": [
+        "rogue_lockward"
+      ],
+      "on_defeat": "retry",
+      "music": "boss_medieval",
+      "background": "cave_entrance"
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "spotlight_rogue_victory"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The Lockward went still where it stood, then folded — the same folding, run backward — and was, again, part of the alcove. It looked like a piece of the wall. Someone had built it to."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "Now the lock.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Rogue crouched by the lock — thin piece of wire, one hand flat on the lid the way a doctor rests a hand on a patient. Three seconds. Four. The click was not loud. It was, more than anything, *over.*"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The party crowded the chest. Coins. A potion. A small dagger, dull. The usual."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "While they argued about the split, the Rogue noticed the seam. The chest had a false bottom. It was the kind of thing nobody put a false bottom in unless they expected someone to look. The Rogue lifted it without making the lifting visible, removed the folded paper underneath, and put it in a pocket that already had three other folded papers in it. The chest looked the same as it had before."
+    },
+    {
+      "type": "narration",
+      "text": "The Rogue had a way of telling you a thing was done without explaining how the thing got done. The Rogue was, the party would learn, the kind of person who saw the second thing in the room."
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }
