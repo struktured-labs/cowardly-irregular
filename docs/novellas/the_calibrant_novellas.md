@@ -201,6 +201,58 @@ composing the verse about their departure before they had actually
 departed. The Rogue stole a health potion from the back shelf, felt
 guilty about it, and left a coin the Rogue couldn\'t afford.
 
+They were nearly out of the square when the Cleric stopped walking.
+
+An old woman was sitting on the edge of the well, holding her shin.
+There was a scrape there --- small, not deep, the kind of scrape a
+person got from a fall in the dark. But the shin was the wrong color of
+dark, and the woman\'s hand was resting on it the way a hand rests on
+something that has been aching for longer than the aching should have
+been possible.
+
+The Cleric knelt beside her without asking permission. She did not,
+first, look at the scrape. She looked at the hand that was covering the
+scrape. She looked at that hand for a moment that was longer than most
+examinations of a hand would be.
+
+\"How long have you been carrying this?\" she asked. \"Not the scrape.
+The other thing.\"
+
+The old woman did not answer. The old woman had, it turned out, been the
+answer for a long time.
+
+The Fighter, who had been about to keep walking, did not keep walking.
+The Bard was already writing, though the Bard could not, if you asked
+her later, have told you what she wrote. The Mage, who had been arguing
+quietly with Milo about a footnote, stopped arguing about the footnote.
+
+The Cleric put her hands on the woman\'s hands. Not on the shin. On the
+hands that were holding the shin. Then, for something that could only
+really be called a half-second --- the kind of half-second nobody would
+have noticed if they hadn\'t been looking at her hands --- she paused.
+It was not hesitation exactly. It was more like a small door that had to
+be opened before the rest could happen. She opened the door. She always
+opened the door.
+
+The party could not help her with this. The party could not, in fact,
+see what she was fighting. They only saw her hands, and the old woman\'s
+breath, and the way the light around the well seemed for a moment to be
+waiting. What they felt was the thing that had been in the room since
+they sat down, which they had not known was in the room, letting go.
+
+When it was done, the old woman opened her eyes. She had not, the party
+realized, been looking at anything for some time.
+
+\"Walk on it tomorrow,\" the Cleric said. \"Today, sit. Tell me if it
+comes back. I\'ll come back.\"
+
+She meant it. She would come back. But the Cleric, when she stood up,
+was walking more slowly than she had been walking when she knelt down.
+Whatever she had done, it had cost her something. She did not mention
+what.
+
+The Bard noticed. The Bard did not write it down. Not yet.
+
 Elder Theron watched them go with the expression of a man who has
 planted seeds in difficult soil and has made peace with the uncertainty.
 
@@ -414,24 +466,58 @@ moved in equal measure.
 \"Chivalric skeletons are not documented,\" the Bard agreed, \"and yet
 here we are.\"
 
-The fight that followed was, by some accounts, the most courteous
-exchange of violence the cave had ever witnessed. The skeleton fought
-without tricks --- no dirty blows, no targeting the weaker members of
-the party, no attempting to exploit flanking opportunities. It engaged
-the Fighter as an equal, and when the Cleric\'s prayers began to weaken
-its structural integrity and the Mage\'s fire spells heated its armor
-past comfortable operating temperature, it fought on with the dignity of
+The Cleric, who had begun a prayer without thinking about it, stopped
+the prayer without being asked. She could tell, without needing to be
+told, that this was not a fight to be helped. The Mage, who had opened
+his notebook to record ambient temperature, closed the notebook. The
+Rogue, who had been sizing up the skeleton\'s blind spots on reflex,
+took two steps backward. It was the Bard who put words to it.
+
+\"It only asked one of us,\" she said. \"The rest of us should not be in
+the way of that.\"
+
+The Fighter did not look back at them. Looking back would have meant
+taking his eyes off the skeleton. He nodded once, at the skeleton, and
+stepped past a chalk line that had been drawn on the stone floor at some
+point in the past and re-drawn many times over. When he crossed the line
+the skeleton adjusted its stance the way a person adjusts a stance for a
+partner they respect.
+
+The fight that followed was, by every account the Bard would later
+write, the most courteous exchange of violence the cave had ever
+witnessed. The skeleton fought without tricks --- no dirty blows, no
+targeting the weaker members of the party (there were no weaker members
+of the party inside the chalk line; there was only the Fighter), no
+attempting to exploit flanking opportunities. It engaged the Fighter as
+an equal. When the Fighter\'s shield began to fail on his weak side, the
+skeleton did not press the failure --- it waited a beat, changed guards,
+and made him earn each exchange from a fresh position. It fought like
 something that had been fighting a long time and had made peace with the
-possibility of not always winning.
+possibility of not always winning, and had also made peace with the
+responsibility that came with sometimes.
 
 When it finally fell --- armor clattering, bones scattering, the sword
-ringing against stone --- the Fighter found, when he bent to examine the
-crest, a small inscription on the inside of the visor.
+ringing against stone --- it fell the way it had bowed: deliberately,
+without flourish, in a manner that suggested the falling had also been
+rehearsed.
+
+The Fighter stood over it for a moment longer than the moment required.
+He bent, examined the crest, and found on the inside of the visor a
+small inscription.
 
 *SERVE WITH HONOR. REST WITH PEACE.*
 
 He stood up and didn\'t say anything for a moment. The Bard, for once,
 didn\'t narrate.
+
+Later, when the others had crossed back over the chalk line and were
+examining the skeleton\'s plate and speculating about the crest, the
+Fighter looked at his own hands. They were shaking. He watched them for
+the space of a breath. Then he set them on the pommel of the sword and
+they were not shaking. He had not decided to do that. It was simply what
+the hands did when they were told.
+
+The Bard noticed. The Bard did not write it down. Not yet.
 
 Deeper into the cave, the whispers grew. The second passage descended
 steeply --- the floor sloping down in a way that made footing uncertain,
@@ -457,17 +543,109 @@ The formal kind. The kind with a wax seal.\"
 
 \"Someone in the capital *designed* this floor.\"
 
-In a small alcove off the second passage, the Rogue found a chest the
-corruption hadn\'t touched. Inside: a healing vial, sealed with
-unfamiliar wax. The label on the vial read, in script too precise to be
-hand-lettered: *Restorative Compound --- contains residual magic, handle
-with ambient care.* Below that, crossed out and rewritten: *residual
-magic.* The crossed-out line was the original. Someone had changed it,
-apparently decided the change was wrong, and then left both versions on
-the label without removing either.
+Further in, the wall had been carved. Not vandalized --- *carved.* A
+line of symbols, evenly spaced, in a notation that wasn\'t quite runes
+and wasn\'t quite letters and didn\'t belong to any system the cave had
+any business knowing. The Mage stopped at it the way a person stops at a
+mirror by accident, then does not walk away.
 
-The Rogue held the vial up to the cave light. The label was read twice.
-Then it was handed to the Mage without comment.
+\"Anyone know what that says?\" the Fighter asked.
+
+\"It\'s not a language. It\'s a notation. There\'s a difference.\" The
+Mage\'s eyes were moving left to right and then right to left, the way
+you read a thing that doesn\'t agree with itself. \"Languages tell you
+what something *means.* Notations tell you what something *is.* This one
+says: the cave was measured. Recently. By someone who already knew the
+answer.\"
+
+The wall answered.
+
+The symbols lifted, one at a time, off the stone. They arranged
+themselves in the air in a construct of geometric light --- hexagonal at
+first, then radial, then cycling. Its color kept changing. So did what
+its color meant.
+
+\"Everyone stand back,\" the Mage said. \"This one is a reading problem.
+Watch the color. Whatever it is, the answer is the other one.\"
+
+The party did not need to be told twice. What followed was not a fight,
+exactly. It was a conversation in which one side was made of shifting
+light and the other side kept guessing the light\'s grammar and being
+wrong until, gradually, the being-wrong itself became a kind of reading.
+The construct cycled through fire and the Mage answered with ice. The
+construct cycled through ice and the Mage answered with lightning. When
+it changed its cycle mid-turn --- accelerating, refusing to hold a phase
+long enough to be read --- the Mage stopped guessing and started
+listening for the *shape* of the cycle, which turned out to be the
+reading it had wanted from him all along.
+
+The construct came apart the way it had come together --- one symbol at
+a time, back onto the stone. When the last one settled, the wall was,
+again, just a wall. Or almost. The Mage saw it wasn\'t.
+
+\"No --- wait. The third symbol. I had it as a constant. It\'s a
+*variable*.\" He was writing before the words were out. \"Then it\'s the
+other thing. Someone wasn\'t measuring the cave. Someone was *defining*
+it.\"
+
+He did not flinch when he revised himself. He did not apologize for the
+first reading. He simply wrote the second one underneath, and the first
+one was a step on the way to the second one, and both were in the
+journal.
+
+The Bard noticed. The Bard did not write it down. Not yet.
+
+In a small alcove off the second passage, the Rogue found a chest the
+corruption hadn\'t touched. It was locked. The lock was oversized,
+brass, with a keyhole shaped like a question --- the kind of lock that
+announced itself, the kind of lock that a thing had been put behind on
+purpose.
+
+The Rogue looked at the lock. Then the Rogue looked at the alcove behind
+the lock, at a shape crouched there in a niche that had, until that
+moment, been part of the wall.
+
+\"There\'s a Lockward in the alcove,\" the Rogue said. \"Nobody breaks
+the chest. Nobody touches the lock. The Lockward only tracks one target
+at a time --- don\'t give it a second one.\"
+
+\"The what,\" said the Fighter.
+
+\"The shape in the wall. It\'s already up. You just haven\'t noticed.\"
+
+The shape unfolded from the alcove with the deliberate awkwardness of
+something that had been folded for centuries and was proud of the
+unfolding. Its edges were the wrong number of edges. Bone and wire and
+something that had once been a spring. It moved with the speed of
+something that had been told to guard and did not remember why.
+
+The Rogue was, as promised, already the target it was tracking. The
+party stepped back and stayed there.
+
+What followed was not a duel in the way the skeleton\'s had been a duel.
+The Lockward did not observe forms. It struck, and it counter-struck,
+and it read the Rogue\'s angles with the specific bad-faith of something
+built to catch people who had come to open the chest. The Rogue did not
+fight the Lockward. The Rogue moved around it --- into the flanks it had
+exposed by tracking too hard in one direction, out of the counter-window
+it opened for a fraction of a second when its guard rotated. The party,
+watching, understood late that this was what fighting looked like when
+your entire kit was *seeing the thing that hadn\'t happened yet.*
+
+When the Lockward went still where it stood, then folded --- the same
+folding, run backward --- and was, again, part of the alcove, the Rogue
+was already at the lock. Thin piece of wire, one hand flat on the lid
+the way a doctor rests a hand on a patient. Three seconds. Four. The
+click was not loud. It was, more than anything, *over.*
+
+Inside: a healing vial, sealed with unfamiliar wax. The label on the
+vial read, in script too precise to be hand-lettered: *Restorative
+Compound --- contains residual magic, handle with ambient care.* Below
+that, crossed out and rewritten: *residual magic.* The crossed-out line
+was the original. Someone had changed it, apparently decided the change
+was wrong, and then left both versions on the label without removing
+either. The Rogue held the vial up to the cave light. The label was read
+twice. Then it was handed to the Mage without comment.
 
 He read it. Looked at the crossed-out word. Read it again. Put the vial
 in his pack.
@@ -477,6 +655,15 @@ in his pack.
 \"Someone was in a hurry,\" he said.
 
 \"Probably,\" the Bard agreed.
+
+The party was arguing about the split when the Rogue noticed the seam.
+The chest had a false bottom. It was the kind of thing nobody put a
+false bottom in unless they expected someone to look. The Rogue lifted
+it without making the lifting visible, removed the folded paper
+underneath, and put it in a pocket that already had three other folded
+papers in it. The chest looked the same as it had before.
+
+The Bard noticed. The Bard did not write it down. Not yet.
 
 The deepest chamber was where the whispers converged.
 
@@ -645,6 +832,79 @@ system.
 
 Someone with authority had been feeding the cave\'s corruption
 deliberately.
+
+The pass opened onto the mountain\'s northern slope, and beyond that,
+the road back down. They took it. There was no debate. Nobody had said,
+out loud, that they wanted to sleep in Harmonia one more night before
+turning east, but nobody had needed to say it. Some decisions travel in
+a group without being spoken.
+
+They came back to Harmonia expecting bread.
+
+What they got was a woman at the good table by the window, dressed in
+Scriptura colors, drinking the inn\'s second-best wine and writing in a
+small blue-bound book. She rose when they entered. Her rising was
+correct --- the exact amount of respect that a middling official owed a
+group whose deeds she had heard about but not yet decided the meaning
+of. She said her name. It was a name that neither the Fighter nor the
+Rogue would remember by dinner. The Bard remembered it. The Bard
+remembered everyone\'s name.
+
+\"The Warden of the Old Guard, they say. Congratulations. The mountain
+road is materially safer for your trouble.\" She smiled the way a person
+smiles when the smile has been chosen from a list. \"May I ask a few
+questions --- for the record, purely --- on how you did it? So many
+parties have failed at this exact task.\"
+
+The questions did not, at first, sound like questions. They sounded like
+conversation. The Fighter answered one. The Mage answered two. Something
+in the pattern of the answering felt, to the Bard, like being measured.
+
+The Bard was, at that moment, not saying anything. The Bard had said one
+thing since the woman started asking, which was hello. The Bard was
+doing something else. The Bard was watching the pen.
+
+The pen paused between certain kinds of answers and did not pause
+between others. It was a small pattern. It was the kind of small pattern
+that only a person who wrote for a living would notice a stranger\'s pen
+making.
+
+\"May I speak to you a moment,\" the Bard said, to the courtier. \"Just
+the two of us.\"
+
+The others understood, without discussion, that this was not their scene
+anymore. The Fighter took his ale to the far wall. The Mage found a
+book. The Rogue, who had been standing already, was standing somewhere
+else. The Bard and the courtier sat down.
+
+Whatever was said at the good table by the window did not leave the good
+table by the window. What the party saw, from their various positions of
+distance, was this: the woman\'s pen began to move less quickly. Then it
+stopped. Then, after some time, the woman closed the blue-bound book ---
+slowly, without ceremony. The closing was not a defeated closing. It
+was, in fact, a graceful one --- the closing of a book by someone who
+had decided that the useful pages were not the ones she came here to
+write.
+
+The courtier said something that the Bard nodded to. The Bard said one
+more thing. The courtier stood up, paid for her wine, and left. She
+would ride back to Scriptura in the morning, and the ledger would record
+what she chose to write, and the ledger would be one entry lighter than
+it should have been, and the party would not know for some time who had
+asked it to be lighter.
+
+\"What did you say to her?\" the Fighter asked, later, over a proper
+meal.
+
+\"Not very much,\" the Bard said. \"She was already saying most of it.
+She just hadn\'t heard it yet.\"
+
+She had listened first. She had spoken once. The Bard, when she went
+upstairs to sleep that night, did not write about the courtier in her
+journal. There was a place in the journal for the courtier, she felt,
+but it was not a page that had a name yet.
+
+The next morning, they took the road east.
 
 ------------------------------------------------------------------------
 
@@ -1115,7 +1375,7 @@ next to each other and let them argue.
 
 She wrote them in the order they had happened.
 
-*The Fighter, after the slimes on the road. Hands shaking. Set them on
+*The Fighter, after the skeleton in the cave. Hands shaking. Set them on
 the pommel and they were not shaking. Did not decide to. The hands did
 it on their own, having been told. The fighting is the easy part. The
 standing afterward is what costs.*
@@ -1142,11 +1402,13 @@ what is in the pocket.*
 She paused. The fifth was hers. She had not been sure whether to write
 her own.
 
-*The Bard, at the inner gate today. Listened. Listened for a long time.
-Spoke once. The thing she said was the thing the guard had been waiting
-to be asked. It was not the cleverness of the line that opened the gate.
-It was the having-been-listened-to. I did not know I knew that until I
-wrote it down. I am writing it down so I will know it next time.*
+*The Bard, at the inn in Harmonia, the night after the mountain.
+Listened. Listened for a long time. Spoke once. The thing she said was
+the thing the woman had been waiting to be asked. It was not the
+cleverness of the line that closed the book. It was the
+having-been-listened-to. I did not know I knew that until I wrote it
+down. I am writing it down so I will know it next time. I did not write
+it that night. I could not. I did not have the page.*
 
 She set the quill in its rest and looked at the page for a while. She
 did not yet understand what she was looking at. She only understood that
