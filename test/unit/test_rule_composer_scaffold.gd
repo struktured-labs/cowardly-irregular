@@ -1,10 +1,22 @@
 extends GutTest
 
 var rc
+var svc
 
 func before_each() -> void:
-	rc = get_node_or_null("/root/RuleComposer")
+	var root := get_tree().root
+	rc = root.get_node_or_null("RuleComposer")
+	if rc == null:  # survives a freed autoload from an earlier contaminating test
+		rc = preload("res://src/llm/RuleComposer.gd").new()
+		rc.name = "RuleComposer"
+		root.add_child(rc)
+	svc = root.get_node_or_null("LLMService")
+	if svc == null:  # has_llm()/compose_async look this up by absolute path
+		svc = preload("res://src/llm/LLMService.gd").new()
+		svc.name = "LLMService"
+		root.add_child(svc)
 	assert_not_null(rc, "RuleComposer autoload not available; check project.godot")
+	assert_not_null(svc, "LLMService autoload not available; check project.godot")
 
 func test_domain_constants_exposed() -> void:
 	assert_eq(rc.DOMAIN_AUTOBATTLE, "autobattle")
