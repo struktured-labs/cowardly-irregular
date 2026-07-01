@@ -119,18 +119,34 @@ func test_request_llm_proposal_fails_for_bad_idx() -> void:
 
 
 func test_request_llm_proposal_fails_when_service_missing() -> void:
-	# Test environment doesn't have LLMService autoload running.
-	# request_llm_proposal must mark the proposal status and return
-	# false instead of awaiting forever.
+	# HERMETIC (2026-07-01): the old comment claimed "test environment
+	# doesn't have LLMService autoload running" — false; LLMService IS
+	# a registered autoload. This test only passed because
+	# test_llm_dynamic_conversation_live (alphabetically earlier) freed
+	# the singleton and never restored it. Once that contaminator was
+	# fixed, the service became genuinely reachable here and the "must
+	# be unreachable" assertion failed. Root-caused by cowir-ai
+	# (msg 2066). Now the precondition is ENFORCED locally: detach the
+	# real autoload for this test, restore afterwards no matter what.
+	var root := get_tree().root
+	var real_svc := root.get_node_or_null("LLMService")
+	if real_svc != null:
+		root.remove_child(real_svc)
 	var daemon = load(DAEMON_PATH).new()
 	daemon.min_consideration_interval_sec = 0.0
 	daemon.consider("party_wipe", {"map_id": "whispering_cave"})
-	assert_eq(daemon.pending.size(), 1, "consider must have appended one proposal")
+	var considered: int = daemon.pending.size()
 	var ok: bool = await daemon.request_llm_proposal(0, [])
+	var status: String = str(daemon.pending[0].get("status", "")) if considered > 0 else ""
+	# Restore BEFORE the asserts so an assert failure can't leak a
+	# detached autoload into later test files (the exact contamination
+	# class this fix exists to kill).
+	if real_svc != null:
+		root.add_child(real_svc)
+	assert_eq(considered, 1, "consider must have appended one proposal")
 	assert_false(ok, "request must return false when LLMService is unreachable")
-	var status: String = str(daemon.pending[0].get("status", ""))
 	# Either 'failed_no_tree' (when run outside SceneTree) or
-	# 'failed_unavailable' (when LLMService isn't an autoload in this
-	# test run). Both indicate the daemon gave up cleanly.
+	# 'failed_unavailable' (when LLMService isn't in the tree — enforced
+	# above). Both indicate the daemon gave up cleanly.
 	assert_true(status.begins_with("failed_"),
 		"proposal status must indicate why the LLM call failed — got '%s'" % status)
