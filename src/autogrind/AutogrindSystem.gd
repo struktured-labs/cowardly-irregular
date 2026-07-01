@@ -46,6 +46,10 @@ var items_consumed: Dictionary = {}  # {item_id: count} — tracks items used du
 var per_character_exp: Dictionary = {}  # {char_name: total_exp_gained} — per-character EXP tracking
 var injuries_this_session: int = 0  # Tracks new injuries sustained during grind
 var _injury_baseline: int = 0  # Total injuries at session start (to detect new ones)
+var _ability_learned_this_session: bool = false
+var _rare_drop_this_session: bool = false
+var _ability_learned_conns: Array = []
+var _rare_drop_conn: Callable
 
 ## Efficiency system
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
@@ -672,6 +676,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	for member in party:
 		if member is Combatant:
 			_injury_baseline += member.permanent_injuries.size()
+	_wire_smart_interrupt_signals(party)
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
 	meta_corruption_level = 0.0
@@ -724,6 +729,7 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 		return
 
 	is_grinding = false
+	_unwire_smart_interrupt_signals()
 
 	# Finalize grind stats elapsed time
 	if _grind_stats["start_time"] > 0.0:
@@ -1658,6 +1664,18 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 				elapsed_min = (Time.get_unix_time_from_system() - _grind_stats["start_time"]) / 60.0
 			return _compare_op(elapsed_min, op, value)
 
+		"inventory_items":
+			return _compare_op(_get_party_unique_item_count(party), op, value)
+
+		"ability_learned":
+			return _ability_learned_this_session
+
+		"reached_level":
+			return _compare_op(_get_party_max_job_level(party), op, value)
+
+		"rare_item_found":
+			return _rare_drop_this_session
+
 		"always":
 			return true
 
@@ -1714,6 +1732,65 @@ func _get_alive_count(party: Array) -> int:
 		if member is Combatant and member.is_alive:
 			count += 1
 	return count
+
+
+func _get_party_unique_item_count(party: Array) -> int:
+	var seen: Dictionary = {}
+	for member in party:
+		if member is Combatant:
+			for item_id in member.inventory:
+				seen[item_id] = true
+	return seen.size()
+
+
+func _get_party_max_job_level(party: Array) -> int:
+	var top: int = 0
+	for member in party:
+		if member is Combatant and member.job_level > top:
+			top = member.job_level
+	return top
+
+
+func _wire_smart_interrupt_signals(party: Array) -> void:
+	_ability_learned_this_session = false
+	_rare_drop_this_session = false
+	_ability_learned_conns.clear()
+	for member in party:
+		if member is Combatant and member.has_signal("ability_learned"):
+			var cb: Callable = Callable(self, "_on_smart_interrupt_ability_learned")
+			member.ability_learned.connect(cb)
+			_ability_learned_conns.append({"combatant": member, "callable": cb})
+	var bm: Node = _get_autoload_node("BattleManager")
+	if bm != null and bm.has_signal("rare_drop_found"):
+		_rare_drop_conn = Callable(self, "_on_smart_interrupt_rare_drop")
+		bm.rare_drop_found.connect(_rare_drop_conn)
+
+
+func _unwire_smart_interrupt_signals() -> void:
+	for entry in _ability_learned_conns:
+		var member = entry.get("combatant")
+		var cb: Callable = entry.get("callable")
+		if member != null and is_instance_valid(member) and member.ability_learned.is_connected(cb):
+			member.ability_learned.disconnect(cb)
+	_ability_learned_conns.clear()
+	var bm: Node = _get_autoload_node("BattleManager")
+	if bm != null and _rare_drop_conn.is_valid() and bm.rare_drop_found.is_connected(_rare_drop_conn):
+		bm.rare_drop_found.disconnect(_rare_drop_conn)
+
+
+func _on_smart_interrupt_ability_learned(_ability_id: String) -> void:
+	_ability_learned_this_session = true
+
+
+func _on_smart_interrupt_rare_drop(_item_id: String, _base_chance: float) -> void:
+	_rare_drop_this_session = true
+
+
+func _get_autoload_node(name_: String) -> Node:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		return tree.root.get_node_or_null(name_)
+	return null
 
 
 func apply_autogrind_actions(actions: Array) -> void:

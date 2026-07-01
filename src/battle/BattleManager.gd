@@ -5,6 +5,8 @@ extends Node
 
 signal battle_started()
 signal battle_ended(victory: bool)
+## Fires next to the "The Glow" flag ratchet (drop with <10% base chance). Signal so autogrind can listen without plumbing drops through GameLoop.
+signal rare_drop_found(item_id: String, base_chance: float)
 signal selection_phase_started()
 signal selection_turn_started(combatant: Combatant)
 signal selection_turn_ended(combatant: Combatant)
@@ -585,8 +587,10 @@ func end_battle(victory: bool) -> void:
 						# Tick 250/254: ratchet "The Glow" via centralized helper
 						# on first sub-10%-base-chance drop. Pre-multiplier so a
 						# boosted-2x roll on a 5% base still counts as rare.
-						if drop.get("chance", 0.0) < 0.10 and PartyChatSystem:
-							PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
+						if drop.get("chance", 0.0) < 0.10:
+							if PartyChatSystem:
+								PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
+							rare_drop_found.emit(item_id, drop.get("chance", 0.0))
 						# Equipment IDs route to GameLoop.equipment_pool so they
 						# end up in the shared equipment inventory (where the
 						# Equipment menu reads from); consumables stay on the
