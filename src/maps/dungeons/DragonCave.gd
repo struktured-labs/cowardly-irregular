@@ -186,6 +186,9 @@ func _generate_map_for_floor(floor_num: int) -> void:
 				spawn_points[key] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 			elif char == "B":
 				spawn_points["boss"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+			elif char == "H":
+				var hkey = "secret_%d" % spawn_points.size()
+				spawn_points[hkey] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
 	var spawn_pos = floor_spawn_points.get(floor_num, {}).get("entrance", Vector2(10, 12))
 	spawn_points["default"] = Vector2(spawn_pos.x * TILE_SIZE, spawn_pos.y * TILE_SIZE)
@@ -213,6 +216,9 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 
 	# Treasure chests at each T marker on the floor (plus boss-floor drop)
 	_place_floor_treasure(floor_num)
+
+	# Hidden passages at each H marker (disguised cave-wall sections)
+	_place_hidden_passages(floor_num)
 
 	# In-dungeon orientation signposts (floor indicator, stair directions)
 	_place_dungeon_signposts(floor_num)
@@ -563,6 +569,20 @@ func _place_floor_treasure(floor_num: int) -> void:
 			GameState.set_story_flag("chest_" + chest_key)
 		)
 		transitions.add_child(chest)
+
+
+func _place_hidden_passages(floor_num: int) -> void:
+	"""One HiddenPassage per H marker — the tile parses as floor, the sprite disguises it as wall."""
+	var idx: int = 0
+	for key in spawn_points:
+		if not key.begins_with("secret_"):
+			continue
+		var passage = HiddenPassage.new()
+		passage.passage_id = "%s_f%d_h%d" % [cave_id, floor_num, idx]
+		passage.disguise = "cave"
+		passage.position = spawn_points[key]
+		transitions.add_child(passage)
+		idx += 1
 
 
 func _place_dungeon_signposts(floor_num: int) -> void:
