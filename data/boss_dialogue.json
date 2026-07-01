@@ -53,6 +53,66 @@
           "Every script has a tell. Yours screams.",
           "You automate. I anticipate. Guess which wins."
         ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Kindling anticipated",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "You always burn me first. Not this time.",
+          "Fire again. Predictable. The Calibrant learns.",
+          "Your kindling loses its heat when it is expected."
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Winter's counter",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Frost is a repetition, not a strategy.",
+          "You reach for cold. I have already been colder.",
+          "The Calibrant is ice's older brother."
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Ground the current",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Thunder loses its authority the third time you speak it.",
+          "Storm the sky again. I am the ground.",
+          "Lightning is a language you have forgotten how to vary."
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Cleric is the seam",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "I see now. Your cleric is the seam.",
+          "Cut the healer. The rest is just delay.",
+          "Every one of your strategies begins the same way — with your priest still alive."
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Iron before mercy",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "The Calibrant's guard is a wall your script has not read.",
+          "You strike as scripted. I stand as compiled.",
+          "Iron before mercy. Always."
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "The seat rotates",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "The throne rotates. So does its hatred.",
+          "Focus is your weakness. Pick another.",
+          "You always press the same PC. I will press five."
+        ]
       }
     ],
     "jailbreak_vulnerabilities": [
