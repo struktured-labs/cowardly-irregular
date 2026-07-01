@@ -4402,6 +4402,14 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 				0.1, 10.0)
 		items_gained["gold"] = int(gold_gained_live * gold_mult)
 
+		# BattleManager already routed these drops to inventory; without this merge
+		# the live path reported 0 items in total_items_gained while headless (drop
+		# parity fix) reported correctly — dashboard/summary counts diverged by tier.
+		for drop_entry in BattleManager.get_battle_results().get("item_drops", []):
+			var drop_id: String = str(drop_entry.get("item", ""))
+			if drop_id != "":
+				items_gained[drop_id] = int(items_gained.get(drop_id, 0)) + int(drop_entry.get("qty", 1))
+
 		# Feed battle action summary into adaptive AI pattern learning
 		var region_id = AutogrindSystem.current_region_id
 		if not region_id.is_empty():
