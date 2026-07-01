@@ -422,11 +422,17 @@ func _input(event: InputEvent) -> void:
 	# here too so the toast doesn't try to flash mid-cutscene).
 	# Added 2026-05-03 per QOL audit.
 	if event is InputEventKey and event.pressed and not event.is_echo():
-		if event.keycode == KEY_F2 and current_state != LoopState.TITLE and not _character_creation_screen:
+		# F2 quick-save is blocked during CUTSCENE state (Spotlight Duels
+		# spec, cowir-main msg 1964): mid-cutscene captures an ambiguous
+		# state because the cutscene now embeds a battle step. SaveSystem.
+		# can_quick_save() also gates on cutscene state (belt + suspenders
+		# so a stray call from anywhere else in the tree hits the same
+		# defense).
+		if event.keycode == KEY_F2 and current_state != LoopState.TITLE and current_state != LoopState.CUTSCENE and not _character_creation_screen:
 			_quick_save_with_toast()
 			get_viewport().set_input_as_handled()
 			return
-		if event.keycode == KEY_F3 and current_state != LoopState.TITLE and not _character_creation_screen:
+		if event.keycode == KEY_F3 and current_state != LoopState.TITLE and current_state != LoopState.CUTSCENE and not _character_creation_screen:
 			_quick_load_with_toast()
 			get_viewport().set_input_as_handled()
 			return
@@ -1429,17 +1435,21 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
 	"world1_mordaine_defeat":           "cutscene_flag_world1_mordaine_defeat_complete",
-	# W1 spotlight cutscenes — each completion flag also unlocks the
-	# matching PC's manual control + autobattle editor tab via
-	# _reconcile_spotlight_locks(). Trigger schedule (per cowir-story
-	# msg 1786): ch.1 cleric (village well), ch.2 fighter (road slime),
-	# ch.3 rogue + mage (Whispering Cave), ch.7 bard (capital gate).
-	# Cutscene JSON IDs match the file basenames in data/cutscenes/.
-	"world1_spotlight_cleric_ch1":      "cutscene_flag_spotlight_unlocked_cleric",
-	"world1_spotlight_fighter_ch2":     "cutscene_flag_spotlight_unlocked_fighter",
-	"world1_spotlight_rogue_ch3":       "cutscene_flag_spotlight_unlocked_rogue",
-	"world1_spotlight_mage_ch3":        "cutscene_flag_spotlight_unlocked_mage",
-	"world1_spotlight_bard_ch7":        "cutscene_flag_spotlight_unlocked_bard",
+	# W1 spotlight cutscenes — dual-signal per Spotlight Duels spec (cowir-
+	# main msg 1950, 2026-06-30). Cutscene finish now writes the _watched_
+	# flag ("player saw the intro/aftermath narration"). The _unlocked_
+	# flag ("PC manual control granted") is written separately by
+	# _on_battle_ended's spotlight-duel short-circuit (GameLoop:2224) on
+	# battle_won — that path also calls _reconcile_spotlight_locks(). The
+	# _get_pending_story_cutscene gates below still key off _unlocked_
+	# because story-progression should require the duel win, not just
+	# watching the beat. Filenames stay as-is (fighter_ch2, bard_ch7
+	# vestigial per option B).
+	"world1_spotlight_cleric_ch1":      "cutscene_flag_spotlight_watched_cleric",
+	"world1_spotlight_fighter_ch2":     "cutscene_flag_spotlight_watched_fighter",
+	"world1_spotlight_rogue_ch3":       "cutscene_flag_spotlight_watched_rogue",
+	"world1_spotlight_mage_ch3":        "cutscene_flag_spotlight_watched_mage",
+	"world1_spotlight_bard_ch7":        "cutscene_flag_spotlight_watched_bard",
 	# World 2 (suburban) — irregular naming mirrored from _get_pending
 	"world2_prologue":                  "cutscene_flag_world2_prologue_complete",
 	"world2_chapter1":                  "cutscene_flag_world2_chapter1_complete",

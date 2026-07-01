@@ -240,6 +240,8 @@ func can_quick_save() -> bool:
 		return false
 	if _is_player_inside_interior():
 		return false
+	if _is_cutscene_active():
+		return false
 	return true
 
 
@@ -253,6 +255,8 @@ func _save_block_reason() -> String:
 		return "Cannot save during battle"
 	if _is_player_inside_interior():
 		return "Cannot save inside this room — leave to a village or overworld first"
+	if _is_cutscene_active():
+		return "Cannot save mid-cutscene — wait for the scene to finish"
 	return ""
 
 
@@ -264,6 +268,29 @@ func _is_player_inside_interior() -> bool:
 	if root != null and root.has_method("is_inside_interior"):
 		return root.is_inside_interior()
 	return false
+
+
+func _is_cutscene_active() -> bool:
+	"""Returns true when GameLoop.current_state == LoopState.CUTSCENE.
+	Introduced with the Spotlight Duels spec (cowir-main msg 1964
+	fallback path): saving mid-cutscene captures an ambiguous state
+	(intro dialogue partially played, battle step not entered, etc.).
+	The Spotlight Duel embeds a battle step inside the cutscene, so
+	mid-cutscene = mid-narration OR mid-duel; neither is a clean save
+	point. Falls back to false when GameLoop isn't reachable (unit
+	tests, boot edge) — keeps the gate permissive in non-game contexts,
+	same shape as _is_player_inside_interior."""
+	var gl := get_tree().root.get_node_or_null("GameLoop")
+	if gl == null:
+		# GameLoop is the main scene root in production, so also try
+		# current_scene for headless tests that load it that way.
+		gl = get_tree().current_scene
+	if gl == null or not "current_state" in gl:
+		return false
+	# LoopState.CUTSCENE == 4 per GameLoop's enum ordering
+	# (TITLE=0, BATTLE=1, EXPLORATION=2, AUTOGRIND=3, CUTSCENE=4).
+	# Comparing by ordinal avoids importing the enum type.
+	return int(gl.current_state) == 4
 
 
 ## Best-effort human-readable name for the currently loaded map, used

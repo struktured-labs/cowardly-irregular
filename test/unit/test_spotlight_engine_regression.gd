@@ -1,14 +1,27 @@
 extends GutTest
 
-## Regression tests for the W1 spotlight unlock pattern (2026-05-25).
+## Regression tests for the W1 spotlight unlock pattern.
 ##
-## Design: 5-PC party from prologue. Non-lead PCs default autobattle_locked
-## so their turn is forced through autobattle eval and their manual command
-## menu + autobattle editor tab are hidden. Each spotlight cutscene flips
-## the matching PC's autobattle_locked flag to false. Debug flag
-## GameState.debug_all_pcs_unlocked overrides every lock at decision time.
+## Design (2026-05-25 baseline): 5-PC party from prologue. Non-lead PCs
+## default autobattle_locked so their turn is forced through autobattle
+## eval and their manual command menu + autobattle editor tab are hidden.
+## Debug flag GameState.debug_all_pcs_unlocked overrides every lock at
+## decision time.
 ##
-## See cowir-story msgs 1751-1768 for the design thread.
+## Spotlight Duels update (2026-06-30, cowir-main msg 1950): the unlock
+## signal moved from "cutscene finished" to "battle won" — every spotlight
+## is now a 1v1 solo-duel miniboss fight that showcases the PC's kit.
+## Dual flags:
+##   - cutscene_flag_spotlight_watched_<job>  → set by cutscene finish
+##     (player saw the intro/aftermath narration). Now the value
+##     _CUTSCENE_COMPLETION_FLAGS maps spotlight cutscene IDs to.
+##   - cutscene_flag_spotlight_unlocked_<job> → set by GameLoop._on_battle_
+##     ended's spotlight-duel branch on battle_won. This flag is what
+##     _reconcile_spotlight_locks reads to flip autobattle_locked=false
+##     and what _get_pending_story_cutscene gates story progression on.
+##
+## See cowir-story msgs 1751-1768 for the original design thread; cowir-
+## main msg 1950 for the Spotlight Duels spec lock.
 
 
 const COMBATANT_PATH := "res://src/battle/Combatant.gd"
@@ -71,8 +84,13 @@ func test_gamestate_has_debug_all_pcs_unlocked() -> void:
 func test_cutscene_completion_flag_map_has_5_spotlight_entries() -> void:
 	# Map keys must match the actual cutscene JSON file IDs in
 	# data/cutscenes/world1_spotlight_<job>_ch<n>.json. Without that, the
-	# cutscene_finished handler won't find a match and the reconcile
-	# fallback only fires on next NG+ / save reload.
+	# cutscene_finished handler won't find a match and the _watched_ flag
+	# never gets set.
+	#
+	# Post Spotlight Duels spec (cowir-main msg 1950): the completion flag
+	# is now the _watched_<job> variant (cutscene-finish signal only). The
+	# _unlocked_<job> flag is written separately by _on_battle_ended on
+	# battle_won — see test_battle_won_writes_spotlight_unlocked_flag.
 	var text = _read(GAMELOOP_PATH)
 	var slugs = {
 		"fighter": "world1_spotlight_fighter_ch2",
@@ -83,16 +101,16 @@ func test_cutscene_completion_flag_map_has_5_spotlight_entries() -> void:
 	}
 	for job_id in slugs:
 		var slug = slugs[job_id]
-		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
+		var watched_flag = "cutscene_flag_spotlight_watched_" + job_id
 		assert_true(text.find("\"" + slug + "\"") > -1,
 			"_CUTSCENE_COMPLETION_FLAGS must map %s (matches the cutscene JSON file ID)" % slug)
-		assert_true(text.find("\"" + flag + "\"") > -1,
-			"_CUTSCENE_COMPLETION_FLAGS must include %s flag" % flag)
+		assert_true(text.find("\"" + watched_flag + "\"") > -1,
+			"_CUTSCENE_COMPLETION_FLAGS must map %s → %s per Spotlight Duels spec (cutscene finish → _watched_ flag)" % [slug, watched_flag])
 
 	# Each spotlight cutscene JSON file must exist on disk and its `id`
-	# field must match the map key. This catches the renaming class of
-	# bug that just bit us during integration (story renamed files mid-
-	# branch, my map drifted).
+	# field must match the map key. Catches the renaming class of bug that
+	# bit us during integration (story renamed files mid-branch, map
+	# drifted).
 	for job_id in slugs:
 		var slug = slugs[job_id]
 		var path = "res://data/cutscenes/%s.json" % slug
@@ -105,6 +123,32 @@ func test_cutscene_completion_flag_map_has_5_spotlight_entries() -> void:
 			if json is Dictionary:
 				assert_eq(json.get("id", ""), slug,
 					"cutscene JSON id must match file basename: %s" % path)
+
+
+func test_battle_won_writes_spotlight_unlocked_flag() -> void:
+	# Post Spotlight Duels spec (cowir-main msg 1950): the _unlocked_<job>
+	# flag — what _reconcile_spotlight_locks reads to flip autobattle_
+	# locked=false and what _get_pending_story_cutscene gates story
+	# progression on — is written by GameLoop._on_battle_ended's
+	# spotlight-duel branch (tick 471), NOT by cutscene finish anymore.
+	# This test pins the source-level wiring so a refactor can't silently
+	# drop it (would regress "duel wins don't unlock the PC" — same class
+	# of silent failure as the Elder Theron cutscene loop bug).
+	var text = _read(GAMELOOP_PATH)
+	assert_true(text.find("_spotlight_duel_active") > -1,
+		"GameLoop must have _spotlight_duel_active state tracking (tick 471)")
+	assert_true(text.find("cutscene_flag_spotlight_unlocked_") > -1,
+		"GameLoop must write cutscene_flag_spotlight_unlocked_<job> on battle_won path")
+	# The write should be gated on victory AND _pending_spotlight_unlock
+	# being set — otherwise every battle would fire it. Verify the guard.
+	var on_ended_idx = text.find("func _on_battle_ended")
+	assert_true(on_ended_idx > -1, "_on_battle_ended must exist")
+	var on_ended_end = text.find("\n\nfunc ", on_ended_idx)
+	var body = text.substr(on_ended_idx, on_ended_end - on_ended_idx) if on_ended_end > -1 else text.substr(on_ended_idx, 3000)
+	assert_true(body.find("_spotlight_duel_active") > -1,
+		"_on_battle_ended must branch on _spotlight_duel_active (short-circuit for duels)")
+	assert_true(body.find("_reconcile_spotlight_locks()") > -1,
+		"Spotlight-duel branch must call _reconcile_spotlight_locks() after writing the _unlocked_ flag so autobattle_locked flips this frame")
 
 
 func test_gameloop_has_reconcile_spotlight_locks() -> void:
