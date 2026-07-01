@@ -122,7 +122,11 @@
       ],
       "on_defeat": "retry",
       "music": "boss_medieval",
-      "background": "prologue_village"
+      "background": "prologue_village",
+      "win_condition": {
+        "type": "survive_turns",
+        "value": 8
+      }
     },
     {
       "type": "play_sfx",
