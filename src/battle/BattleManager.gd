@@ -1579,9 +1579,13 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 
 	# Check for adaptive behavior (enemy AI learns from player patterns)
 	var adaptation_level = _get_current_adaptation_level()
-	var counter_strategy = _get_current_counter_strategy()
+	var region_id: String = AutogrindSystem.current_region_id if AutogrindSystem else ""
+	var intent: String = combatant.get_meta("llm_intent", "")
+	# Task 4: widened tags force the counter path even at adaptation_level 0.
+	var intent_forces_counter: bool = _intent_forces_counter(intent)
+	var counter_strategy: String = _resolve_counter_strategy(region_id, intent)
 
-	if adaptation_level > 0 and not counter_strategy.is_empty():
+	if (adaptation_level > 0 or intent_forces_counter) and not counter_strategy.is_empty():
 		var counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
 		# Tick 116: scale counter_chance by the LLM intent's
 		# counter_action_chance bias. The "exploit_pattern" intent is
@@ -6506,6 +6510,28 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 			return {"counter_action_chance": 2.0}
 		_:
 			return {}
+
+
+## Widened counter-strategy intent tags (Task 3 bias table). A boss whose
+## llm_intent is one of these forces the counter path at _make_ai_decision.
+const _COUNTER_INTENT_TAGS := ["fire_resist", "ice_resist", "lightning_resist",
+								"focus_healer", "defense_boost", "rotate_aggro"]
+
+
+## True when intent_id is one of the widened counter-strategy tags.
+func _intent_forces_counter(intent_id: String) -> bool:
+	return intent_id in _COUNTER_INTENT_TAGS
+
+
+## Strategy to feed _get_counter_action: the intent itself when it forces a
+## counter, else the deterministic AutogrindSystem strategy for region_id.
+func _resolve_counter_strategy(region_id: String, intent_id: String) -> String:
+	if _intent_forces_counter(intent_id):
+		return intent_id
+	var autogrind = get_node_or_null("/root/AutogrindSystem")
+	if autogrind == null:
+		return ""
+	return autogrind.get_counter_strategy(region_id)
 
 
 ## Apply a landed jailbreak consequence to the boss combatant. Connected to
