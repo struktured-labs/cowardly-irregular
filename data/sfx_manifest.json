@@ -437,6 +437,145 @@
       "duration_seconds": 5.0,
       "prompt_influence": 0.6
     },
+    "bicycle_bell": {
+      "file": "assets/audio/sfx/bicycle_bell.ogg",
+      "prompt": "Classic bicycle bell, two quick bright ding-ding rings, cheerful suburban neighborhood. Cutscene one-shot (world2_chapter1).",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.7
+    },
+    "chalk_tap": {
+      "file": "assets/audio/sfx/chalk_tap.ogg",
+      "prompt": "Chalk tapping twice on a slate chalkboard, dry crisp tap-tap, classroom emphasis. Cutscene one-shot (world2_chapter4, world2_arbiter_intro).",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "heartbeat": {
+      "file": "assets/audio/sfx/heartbeat.ogg",
+      "prompt": "Single deep human heartbeat, lub-dub thump, tense and close, muffled low frequency. Cutscene one-shot (world1_chapter9).",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.7
+    },
+    "paper_shuffle": {
+      "file": "assets/audio/sfx/paper_shuffle.ogg",
+      "prompt": "Stack of papers being shuffled and squared on a desk, dry bureaucratic riffle. Cutscene one-shot (world1_mordaine_intro — the Chancellor's paperwork).",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.7
+    },
+    "steam_hiss": {
+      "file": "assets/audio/sfx/steam_hiss.ogg",
+      "prompt": "Steam venting from a brass pipe valve, pressurized hiss decaying to a soft sigh, steampunk machinery. Cutscene one-shot (world3 chapters + warden intro/defeat).",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.7
+    },
+    "throne_room_doors": {
+      "file": "assets/audio/sfx/throne_room_doors.ogg",
+      "prompt": "Massive castle throne room double doors swinging open, deep wood groan + iron hinge creak, grand echoing stone hall. Cutscene one-shot (world1_chapter9).",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.7
+    },
+    "rooftop_drop": {
+      "file": "assets/audio/sfx/rooftop_drop.ogg",
+      "prompt": "A person landing on a rooftop from a jump, cloth rustle + soft boot impact + crouch scuff, agile thief landing. Cutscene one-shot (world1_chapter7).",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.7
+    },
+    "intercom_click": {
+      "file": "assets/audio/sfx/intercom_click.ogg",
+      "prompt": "Industrial PA intercom switching on, sharp electric click + brief speaker static burst, factory announcement system. Cutscene one-shot (world4_chapter2/3). Generated at 0.5s (API minimum), trimmed to 0.4s.",
+      "duration_seconds": 0.4,
+      "prompt_influence": 0.7
+    },
+    "bell_shift": {
+      "file": "assets/audio/sfx/bell_shift.ogg",
+      "source": "sox_synth",
+      "prompt": "Bell tone whose pitch bends downward mid-ring (660->560Hz + octave partial) — time distortion cue for Tempo. Cutscene one-shot (world3_tempo_intro).",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.0
+    },
+    "clock_chime": {
+      "file": "assets/audio/sfx/clock_chime.ogg",
+      "source": "sox_synth",
+      "prompt": "Two solemn clock-tower strikes (E4 bell pair with octave partials). Cutscene one-shot (world2_chapter11).",
+      "duration_seconds": 1.1,
+      "prompt_influence": 0.0
+    },
+    "soft_chime": {
+      "file": "assets/audio/sfx/soft_chime.ogg",
+      "source": "sox_synth",
+      "prompt": "Single gentle A5 sine chime, quiet and unobtrusive (-20 LUFS). Cutscene one-shot (world1_chapter9).",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.0
+    },
+    "respawn_chime": {
+      "file": "assets/audio/sfx/respawn_chime.ogg",
+      "source": "sox_synth",
+      "prompt": "Airy ascending A4-C#5-E5 sine chime + echo, hopeful digital respawn. Cutscene one-shot (world5_chapter2).",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.0
+    },
+    "surprised_chime": {
+      "file": "assets/audio/sfx/surprised_chime.ogg",
+      "source": "sox_synth",
+      "prompt": "Quick upward '!' ping (C5->G5 triangle, fast). Cutscene one-shot (world6_calibrant_defeat).",
+      "duration_seconds": 0.29,
+      "prompt_influence": 0.0
+    },
+    "data_hum": {
+      "file": "assets/audio/sfx/data_hum.ogg",
+      "source": "sox_synth",
+      "prompt": "Low digital drone swell — twin detuned 110/112Hz saws lowpassed 800Hz, slow beat-frequency throb, -22 LUFS ambient. Cutscene one-shot (world4_curator_intro).",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.0
+    },
+    "digital_synthesize": {
+      "file": "assets/audio/sfx/digital_synthesize.ogg",
+      "source": "sox_synth",
+      "prompt": "Rising quantized 6-step square arpeggio (300->1200Hz) + sine settle tail — something materializing digitally. Cutscene one-shot (world4_warden_intro/defeat).",
+      "duration_seconds": 0.94,
+      "prompt_influence": 0.0
+    },
+    "static_burst": {
+      "file": "assets/audio/sfx/static_burst.ogg",
+      "source": "sox_synth",
+      "prompt": "Bandpassed white-noise static burst (2kHz center), quick fade. Cutscene one-shot (world4_chapter2).",
+      "duration_seconds": 0.35,
+      "prompt_influence": 0.0
+    },
+    "sprint_start": {
+      "file": "assets/audio/sfx/sprint_start.ogg",
+      "source": "sox_synth",
+      "prompt": "Quick boot scuff tick + rising pink-noise whoosh — dash takeoff. Cutscene one-shot (world1_chapter7).",
+      "duration_seconds": 0.35,
+      "prompt_influence": 0.0
+    },
+    "acrobatic_leap": {
+      "file": "assets/audio/sfx/acrobatic_leap.ogg",
+      "source": "sox_synth",
+      "prompt": "Upward-sweeping airy whoosh (pitch-shifted pink noise, 500-5000Hz band) — vaulting leap. Cutscene one-shot (world1_chapter7).",
+      "duration_seconds": 0.46,
+      "prompt_influence": 0.0
+    },
+    "magic_surge": {
+      "file": "assets/audio/sfx/magic_surge.ogg",
+      "source": "sox_synth",
+      "prompt": "Shimmering rising sine sweep (400->1200Hz) + sparkle layer (2.4->3.2kHz) + echo — magical power welling up. Cutscene one-shot (world1_mordaine_intro, world6_calibrant_intro/defeat).",
+      "duration_seconds": 0.99,
+      "prompt_influence": 0.0
+    },
+    "boss_spawn": {
+      "file": "assets/audio/sfx/boss_spawn.ogg",
+      "source": "sox_synth",
+      "prompt": "Reverse brown-noise swell into a 65Hz sine boom — ominous materialization, -15 LUFS. Cutscene one-shot (world4_chapter3). Shorter/rawer than boss_intro_stinger.",
+      "duration_seconds": 1.05,
+      "prompt_influence": 0.0
+    },
+    "calibrant_true_name": {
+      "file": "assets/audio/sfx/calibrant_true_name.ogg",
+      "source": "sox_synth",
+      "prompt": "Reality-bending reveal: detuned A-minor chord (220/262/331Hz — fifth 2Hz sharp) under a REVERSED descending shimmer + double echo. The Calibrant's true name spoken. Cutscene one-shot (world6_orrery).",
+      "duration_seconds": 1.82,
+      "prompt_influence": 0.0
+    },
     "weather_rain": {
       "file": "assets/audio/sfx/weather_rain.ogg",
       "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",

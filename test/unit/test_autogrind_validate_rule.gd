@@ -56,3 +56,28 @@ func test_unknown_action_type() -> void:
 	var errors: Array = autogrind_system.validate_rule(rule)
 	assert_gt(errors.size(), 0)
 	assert_true("explode_kingdom" in "|".join(errors))
+
+func test_previously_missing_condition_types_now_accepted() -> void:
+	var previously_missing := ["party_mp_avg", "battles_done", "efficiency", "member_injured",
+		"win_streak", "time_elapsed", "ability_learned", "reached_level", "rare_item_found"]
+	for ctype in previously_missing:
+		var rule := {"conditions": [{"type": ctype}], "actions": [{"type": "stop_grinding"}]}
+		var errors: Array = autogrind_system.validate_rule(rule)
+		assert_eq(errors.size(), 0, "condition type '%s' should be accepted; got: %s" % [ctype, errors])
+
+func test_previously_missing_action_types_now_accepted() -> void:
+	var previously_missing := ["restore_mp", "flee_battle"]
+	for atype in previously_missing:
+		var rule := {"conditions": [{"type": "always"}], "actions": [{"type": atype}]}
+		var errors: Array = autogrind_system.validate_rule(rule)
+		assert_eq(errors.size(), 0, "action type '%s' should be accepted; got: %s" % [atype, errors])
+
+func test_unknown_type_still_rejected_after_grammar_expansion() -> void:
+	var rule := {
+		"conditions": [{"type": "party_hp_max"}],
+		"actions": [{"type": "resurrect_all"}],
+	}
+	var errors: Array = autogrind_system.validate_rule(rule)
+	assert_gt(errors.size(), 0)
+	assert_true("party_hp_max" in "|".join(errors))
+	assert_true("resurrect_all" in "|".join(errors))

@@ -719,6 +719,34 @@ func copy_profile(character_id: String, source_index: int, new_name: String = ""
 	return profiles.size() - 1
 
 
+func install_composition_as_new_profile(character_id: String, composition: Dictionary) -> int:
+	"""Install an LLM-composed script as a brand-new profile; never overwrites, -1 if at max"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+
+	if profiles.size() >= MAX_PROFILES_PER_CHARACTER:
+		return -1
+
+	var comp_name: String = str(composition.get("name", ""))
+	if comp_name.is_empty() or comp_name == "<null>":
+		comp_name = "Composed %d" % (profiles.size() + 1)
+	var raw_rules = composition.get("rules", [])
+	var rules: Array = raw_rules if raw_rules is Array else []
+	profiles.append({
+		"name": comp_name,
+		"script": {
+			"character_id": character_id,
+			"name": comp_name,
+			"description": str(composition.get("description", "")),
+			"rules": rules.duplicate(true)
+		}
+	})
+
+	_save_character_profiles()
+	character_script_changed.emit(character_id)
+	return profiles.size() - 1
+
+
 func create_default_character_script(character_id: String) -> Dictionary:
 	"""Create a default autobattle script for a character based on job class.
 	Routing priority:

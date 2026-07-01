@@ -11,6 +11,9 @@ extends GutTest
 ##   - empty trigger_keywords arrays
 ##   - any consequence.type outside CONSEQUENCE_ALLOWLIST (story-flag safety)
 ##   - any consequence shape suspect of mutating story flags (e.g. "flag" key)
+##   - scripted_intent.id outside the widened 9-tag allowlist (migrated bosses only)
+##   - learned_patterns_counter condition referencing an invalid counter_strategy string
+##   - any of the 5 W1 opt-in bosses missing one of the 6 widened counter tags
 
 const DATA_PATH: String = "res://data/boss_dialogue.json"
 
@@ -20,6 +23,31 @@ const ALLOWLIST: Array[String] = [
 	"enrage_briefly",
 	"taunt_softens",
 	"none",
+]
+
+# 3 original + 6 counter-strategy tags (Task 6/15 plan).
+const _ALLOWED_INTENT_TAGS: Array[String] = [
+	"aggress", "turtle", "exploit_pattern",
+	"fire_resist", "ice_resist", "lightning_resist",
+	"focus_healer", "defense_boost", "rotate_aggro",
+]
+
+# Valid AutogrindSystem.get_counter_strategy() return values, incl. "no counter".
+const _ALLOWED_COUNTER_STRATEGY_STRINGS: Array[String] = [
+	"fire_resist", "ice_resist", "lightning_resist",
+	"focus_healer", "defense_boost", "rotate_aggro",
+	"generic_counter", "",
+]
+
+# Fully-migrated bosses only (dragons keep legacy ids; see _OPT_IN_BOSSES for their coverage-only check).
+const _WIDENED_VOCAB_BOSSES: Array[String] = ["chancellor_mordaine"]
+
+# All 5 W1 opt-in bosses (Mordaine + 4 dragons) — coverage-only, not exclusivity (Task 15).
+const _OPT_IN_BOSSES: Array[String] = ["chancellor_mordaine", "pyrroth", "glacius", "voltharion", "umbraxis"]
+
+const _REQUIRED_WIDENED_TAGS: Array[String] = [
+	"fire_resist", "ice_resist", "lightning_resist",
+	"focus_healer", "defense_boost", "rotate_aggro",
 ]
 
 
@@ -137,3 +165,61 @@ func test_no_consequence_references_story_flags() -> void:
 					"boss '%s' vulnerability '%s' consequence has forbidden key '%s'" % [boss_id, vid, fk])
 				assert_false(params.has(fk),
 					"boss '%s' vulnerability '%s' consequence.params has forbidden key '%s'" % [boss_id, vid, fk])
+
+
+func test_every_scripted_intent_id_is_in_widened_allowlist() -> void:
+	var data: Dictionary = _load_data()
+	for boss_id in data.keys():
+		if not _WIDENED_VOCAB_BOSSES.has(str(boss_id)):
+			continue
+		if not (data[boss_id] is Dictionary):
+			continue
+		var boss: Dictionary = data[boss_id]
+		for intent in boss.get("scripted_intents", []):
+			var intent_id: String = str(intent.get("id", ""))
+			assert_true(intent_id in _ALLOWED_INTENT_TAGS,
+				"%s.scripted_intents.id='%s' not in widened allowlist" % [boss_id, intent_id])
+
+
+func test_every_optin_boss_has_all_six_widened_tags() -> void:
+	var data: Dictionary = _load_data()
+	for boss_id in _OPT_IN_BOSSES:
+		assert_true(data.has(boss_id), "boss_dialogue.json missing '%s'" % boss_id)
+		if not data.has(boss_id):
+			continue
+		var ids: Array = []
+		for intent in data[boss_id].get("scripted_intents", []):
+			ids.append(str(intent.get("id", "")))
+		for tag in _REQUIRED_WIDENED_TAGS:
+			assert_true(tag in ids, "%s must include scripted_intent '%s'" % [boss_id, tag])
+
+
+func test_learned_patterns_counter_conditions_reference_valid_strategies() -> void:
+	# conditions is a Dictionary (schema norm) or an Array of them; normalize both.
+	var data: Dictionary = _load_data()
+	for boss_id in data.keys():
+		if str(boss_id).begins_with("_"):
+			continue
+		var boss: Dictionary = data[boss_id]
+		for intent in boss.get("scripted_intents", []):
+			var raw_cond: Variant = intent.get("conditions", {})
+			var cond_list: Array = raw_cond if raw_cond is Array else [raw_cond]
+			for cond in cond_list:
+				if typeof(cond) != TYPE_DICTIONARY:
+					continue
+				if cond.has("learned_patterns_counter"):
+					var val: String = str(cond["learned_patterns_counter"])
+					assert_true(val in _ALLOWED_COUNTER_STRATEGY_STRINGS,
+						"%s.scripted_intents.conditions.learned_patterns_counter='%s' is not a valid counter_strategy value" % [boss_id, val])
+
+
+func test_mordaine_covers_all_six_widened_tags() -> void:
+	var data: Dictionary = _load_data()
+	var mordaine: Dictionary = data.get("chancellor_mordaine", {})
+	var ids: Array = []
+	for intent in mordaine.get("scripted_intents", []):
+		ids.append(str(intent.get("id", "")))
+	for tag in ["fire_resist", "ice_resist", "lightning_resist",
+			"focus_healer", "defense_boost", "rotate_aggro"]:
+		assert_true(tag in ids,
+			"chancellor_mordaine.scripted_intents must include '%s'" % tag)

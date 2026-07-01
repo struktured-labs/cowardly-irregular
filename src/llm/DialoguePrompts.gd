@@ -85,6 +85,16 @@ const SCHEMA_PARTY_LINE: Dictionary = {
 	"mood": "String",
 }
 
+## Schema for the rule-composition assistant (autobattle/autogrind). Flat
+## shape only — LLMService's _guard_json only validates top-level primitive
+## types, so the nested rule list travels as a JSON string in rules_json
+## and is re-parsed by validate_rule_composition.
+const SCHEMA_RULE_COMPOSITION: Dictionary = {
+	"name":        "String",
+	"description": "String",
+	"rules_json":  "String",
+}
+
 
 # ── Fallback constants ────────────────────────────────────────────────────────
 
@@ -192,12 +202,14 @@ const AUTOGRIND_GRAMMAR_DESCRIPTION := """Autogrind rules control the WHOLE PART
 Rules are evaluated top-to-bottom, first match wins.
 
 Conditions (AND-chained). type is one of:
-  party_hp_min, party_hp_avg, alive_count, member_dead, corruption,
-  inventory_items, always
+  party_hp_min, party_hp_avg, party_mp_avg, alive_count, member_dead,
+  member_injured, corruption, efficiency, battles_done, win_streak,
+  time_elapsed, inventory_items, ability_learned, reached_level,
+  rare_item_found, always
 Numeric conditions take op ∈ {<, <=, ==, >=, >, !=} and value.
 
 Actions. type is one of:
-  stop_grinding, heal_party, switch_profile
+  stop_grinding, heal_party, restore_mp, flee_battle, switch_profile
 switch_profile requires character_id (PC id string) and profile_index (int).
 
 Canonical example:
@@ -206,6 +218,15 @@ Canonical example:
    \"enabled\":true}
 
 Put the fallback (a rule with {type:'always'} condition) last, if any."""
+
+## Fallback rule-composition envelope — used when the LLM is unavailable,
+## disabled, or its response fails validation. rules_json is an empty JSON
+## array so callers can parse it exactly like a live response.
+const FALLBACK_RULE_COMPOSITION: Dictionary = {
+	"name": "Draft — LLM unavailable",
+	"description": "Curated fallback; edit or pick a template.",
+	"rules_json": "[]",
+}
 
 
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
@@ -543,7 +564,7 @@ static func build_boss_intent(
 	var party_block: String = "\n".join(party_lines) if party_lines.size() > 0 else "  (no live party data)"
 	var recent_block: String = "\n".join(recent_lines) if recent_lines.size() > 0 else "  (no recent actions)"
 
-	return (
+	var prompt: String = (
 		"You are the strategic mind of %s, a boss in the meta-aware JRPG 'Cowardly Irregular'.\n" % display_name
 		+ "Stay rigorously in character. Persona:\n"
 		+ "  %s\n" % persona
@@ -552,9 +573,29 @@ static func build_boss_intent(
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
 		+ "Party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
-		+ "\n"
+	)
+	# Task 8: surface the player's own autobattle strategy when captured.
+	var player_rules: Array = ctx.get("player_lead_pc_rules", []) as Array
+	if player_rules.size() > 0:
+		prompt += "\nThe player is running an autobattle strategy. Their lead character's top rules (compact JSON):\n"
+		prompt += JSON.stringify(player_rules) + "\n"
+	# Task 8: surface the region's adaptive-AI counter-strategy read, if any.
+	var counter: String = str(ctx.get("learned_patterns_counter", ""))
+	if counter != "":
+		prompt += "\nRecent battle patterns in this region derive counter_strategy=%s.\n" % counter
+	# Task 8: top-3 pattern-frequency samples backing the counter strategy.
+	var pattern_sample: Dictionary = ctx.get("learned_patterns_sample", {}) as Dictionary
+	if pattern_sample.size() > 0:
+		prompt += "Sample signals:\n" + JSON.stringify(pattern_sample) + "\n"
+	prompt += (
+		"\n"
 		+ "Pick exactly ONE intent for this phase from this list (anything else is a parse error):\n"
 		+ intent_block
+		+ "\n"
+		+ "Widened strategic vocabulary (this boss's list above is the authoritative subset):\n"
+		+ "  aggress, turtle, exploit_pattern,\n"
+		+ "  fire_resist, ice_resist, lightning_resist,\n"
+		+ "  focus_healer, defense_boost, rotate_aggro\n"
 		+ "\n"
 		+ "Rules:\n"
 		+ "- intent_id MUST be one of the listed values, verbatim.\n"
@@ -562,6 +603,7 @@ static func build_boss_intent(
 		+ "- taunt: one in-character line (≤ %d chars) to surface in the combat log. No quote marks.\n" % MAX_BOSS_TAUNT_CHARS
 		+ "- Respond with ONLY valid JSON: {\"intent_id\": \"...\", \"reason\": \"...\", \"taunt\": \"...\"}\n"
 	)
+	return prompt
 
 
 # ── Prompt builder: party combat line ────────────────────────────────────────
@@ -669,6 +711,37 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 			return "The party just won. You speak FIRST — set the tone for the post-battle moment."
 		_:
 			return "Speak a single line that fits the moment, in voice."
+
+
+# ── Prompt builder: rule composition ─────────────────────────────────────────
+
+## Build the prompt asked of the LLM to draft/refine an autobattle or
+## autogrind rule set from freeform player intent.
+##
+## domain selects which grammar description is embedded (RuleComposer.
+## DOMAIN_AUTOBATTLE / DOMAIN_AUTOGRIND) so the LLM only emits verbs the
+## interpreter actually understands. current_rules is the player's existing
+## rule list (may be empty) surfaced as read-only context to refine, not replace.
+##
+## Returns a prompt String ready for LLMService.complete_json().
+static func build_rule_composition(domain: String, prompt_text: String, current_rules: Array) -> String:
+	var grammar: String = AUTOBATTLE_GRAMMAR_DESCRIPTION if domain == "autobattle" else AUTOGRIND_GRAMMAR_DESCRIPTION
+	var current_json: String = JSON.stringify(current_rules) if current_rules.size() > 0 else "[]"
+	return (
+		"You are a rule authoring assistant for a JRPG's autobattle/autogrind system.\n\n"
+		+ grammar
+		+ "\n\nCurrent rules (for reference; may be empty):\n"
+		+ current_json
+		+ "\n\nPlayer intent:\n"
+		+ prompt_text
+		+ "\n\nEmit a JSON object with fields:\n"
+		+ "  name: short (3-6 words), snake-case-friendly, describing the strategy\n"
+		+ "  description: 1 sentence, in-character\n"
+		+ "  rules_json: the FULL rule list, as a JSON string. Each rule is\n"
+		+ "    {conditions: [...], actions: [...], enabled: true}\n"
+		+ "    conditions and actions must use only the verbs listed above.\n\n"
+		+ "Only emit the JSON. No commentary."
+	)
 
 
 # ── Validation helpers ─────────────────────────────────────────────────────────
@@ -865,6 +938,33 @@ static func validate_party_line(raw: Variant) -> Dictionary:
 	return {
 		"line": line,
 		"mood": mood,
+	}
+
+
+## Validate and parse an LLM-returned rule-composition Dictionary.
+##
+## `reply`'s top-level shape is already trusted (guarded by LLMService's
+## complete_json against SCHEMA_RULE_COMPOSITION); this pass parses the
+## nested rules_json string into an Array of rule Dictionaries. parse_ok is
+## false when rules_json fails to parse as a JSON array — callers treat that
+## as an invalid_json failure. Grammar-level hard-validation of individual
+## rules (verb/target allowlists) is a later pass, not this one.
+static func validate_rule_composition(reply: Dictionary, _domain: String) -> Dictionary:
+	var name: String = str(reply.get("name", "")).strip_edges()
+	var desc: String = str(reply.get("description", "")).strip_edges()
+	var rules_json: String = str(reply.get("rules_json", ""))
+	var parsed: Variant = JSON.parse_string(rules_json)
+	var rules: Array = []
+	var parse_ok: bool = typeof(parsed) == TYPE_ARRAY
+	if parse_ok:
+		for r in parsed:
+			if typeof(r) == TYPE_DICTIONARY:
+				rules.append(r)
+	return {
+		"name": name,
+		"description": desc,
+		"rules": rules,
+		"parse_ok": parse_ok,
 	}
 
 

@@ -1579,20 +1579,29 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 
 	# Check for adaptive behavior (enemy AI learns from player patterns)
 	var adaptation_level = _get_current_adaptation_level()
-	var counter_strategy = _get_current_counter_strategy()
+	var region_id: String = AutogrindSystem.current_region_id if AutogrindSystem else ""
+	var intent: String = combatant.get_meta("llm_intent", "")
+	# Task 4: widened tags force the counter path even at adaptation_level 0.
+	var intent_forces_counter: bool = _intent_forces_counter(intent)
+	var counter_strategy: String = _resolve_counter_strategy(region_id, intent)
 
-	if adaptation_level > 0 and not counter_strategy.is_empty():
-		var counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
-		# Tick 116: scale counter_chance by the LLM intent's
-		# counter_action_chance bias. The "exploit_pattern" intent is
-		# specifically about countering the player's patterns — pre-fix
-		# its counter_action_chance bias (1.6x) was set in the bias dict
-		# but NOTHING read it, so picking "exploit_pattern" produced
-		# the same counter rate as no intent at all. Now an LLM that
-		# chooses "exploit_pattern" actually counters more often
-		# (30/60/90% × 1.6 = 48/96/100% clamped).
+	if (adaptation_level > 0 or intent_forces_counter) and not counter_strategy.is_empty():
 		var ci_bias: Dictionary = _bias_by_intent(combatant.get_meta("llm_intent", ""))
-		counter_chance = clampf(counter_chance * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
+		var counter_chance: float
+		if intent_forces_counter:
+			# Fresh region (adaptation_level 0): floor so LLM/scripted intent still fires.
+			counter_chance = _intent_forced_counter_chance(ci_bias)
+		else:
+			counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
+			# Tick 116: scale counter_chance by the LLM intent's
+			# counter_action_chance bias. The "exploit_pattern" intent is
+			# specifically about countering the player's patterns — pre-fix
+			# its counter_action_chance bias (1.6x) was set in the bias dict
+			# but NOTHING read it, so picking "exploit_pattern" produced
+			# the same counter rate as no intent at all. Now an LLM that
+			# chooses "exploit_pattern" actually counters more often
+			# (30/60/90% × 1.6 = 48/96/100% clamped).
+			counter_chance = clampf(counter_chance * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
 		if randf() < counter_chance:
 			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
 			if not counter_action.is_empty():
@@ -4350,6 +4359,9 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var current: int = int(target.get_meta("_swayed_stacks", 0))
 			target.set_meta("_swayed_stacks", current + 1)
 			print("[SWAY] %s absorbs %s — swayed stacks: %d" % [target.combatant_name, ability.get("id", "song"), current + 1])
+			var need: int = int(_win_condition.get("value", 0)) if not _win_condition.is_empty() else 0
+			var progress_suffix: String = " (%d/%d)" % [current + 1, need] if need > 0 else " (%d)" % (current + 1)
+			battle_log_message.emit("[color=magenta]%s is swayed...%s[/color]" % [target.combatant_name, progress_suffix])
 
 	match effect:
 		## Tick 170: 10 support-ability branches lacked
@@ -6461,7 +6473,40 @@ func _build_boss_intent_context(
 			"damage":     0,
 		})
 
+	# Task 8: lead PC's autobattle rules, sliced for prompt-budget hygiene.
+	if player_party.size() > 0 and player_party[0] != null:
+		var autobattle = get_node_or_null("/root/AutobattleSystem")
+		if autobattle != null:
+			var lead_script: Dictionary = autobattle.get_character_script(_get_character_id(player_party[0]))
+			var rules: Array = lead_script.get("rules", [])
+			ctx.player_lead_pc_rules = rules.slice(0, min(5, rules.size()))
+
+	# Task 8: region's derived counter strategy + top-3 pattern samples.
+	var autogrind = get_node_or_null("/root/AutogrindSystem")
+	if autogrind != null:
+		var region_id: String = autogrind.current_region_id
+		ctx.learned_patterns_counter = autogrind.get_counter_strategy(region_id)
+		var full_patterns: Dictionary = autogrind.get_learned_patterns_for_region(region_id)
+		var sample: Dictionary = {}
+		if full_patterns.has("ability_frequency"):
+			sample["ability_frequency"] = _top_n(full_patterns["ability_frequency"], 3)
+		if full_patterns.has("target_priority"):
+			sample["target_priority"] = _top_n(full_patterns["target_priority"], 3)
+		ctx.learned_patterns_sample = sample
+
 	return ctx
+
+
+## Returns the top-N entries of a numeric-valued Dictionary, highest first.
+func _top_n(source: Dictionary, n: int) -> Dictionary:
+	var pairs: Array = []
+	for k in source.keys():
+		pairs.append([source[k], k])
+	pairs.sort_custom(func(a, b): return a[0] > b[0])
+	var out: Dictionary = {}
+	for i in range(min(n, pairs.size())):
+		out[pairs[i][1]] = pairs[i][0]
+	return out
 
 
 ## Probability multiplier ladder. Returns a Dictionary {ability_id_or_role: float}
@@ -6502,8 +6547,37 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 				"counter_action_chance": 1.6,
 				"attack_weight": 0.9,
 			}
+		"fire_resist", "ice_resist", "lightning_resist", "focus_healer", "defense_boost", "rotate_aggro":
+			return {"counter_action_chance": 2.0}
 		_:
 			return {}
+
+
+## Widened counter-strategy intent tags (Task 3 bias table). A boss whose
+## llm_intent is one of these forces the counter path at _make_ai_decision.
+const _COUNTER_INTENT_TAGS := ["fire_resist", "ice_resist", "lightning_resist",
+								"focus_healer", "defense_boost", "rotate_aggro"]
+
+
+## True when intent_id is one of the widened counter-strategy tags.
+func _intent_forces_counter(intent_id: String) -> bool:
+	return intent_id in _COUNTER_INTENT_TAGS
+
+
+## Strategy to feed _get_counter_action: the intent itself when it forces a
+## counter, else the deterministic AutogrindSystem strategy for region_id.
+func _resolve_counter_strategy(region_id: String, intent_id: String) -> String:
+	if _intent_forces_counter(intent_id):
+		return intent_id
+	var autogrind = get_node_or_null("/root/AutogrindSystem")
+	if autogrind == null:
+		return ""
+	return autogrind.get_counter_strategy(region_id)
+
+
+## counter_chance floor for intent-forced turns: 0.3 base x widened bias (e.g. 2.0 -> 0.6), independent of adaptation_level.
+func _intent_forced_counter_chance(ci_bias: Dictionary) -> float:
+	return clampf(0.3 * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
 
 
 ## Apply a landed jailbreak consequence to the boss combatant. Connected to

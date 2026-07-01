@@ -48,6 +48,15 @@ var available_intents: Array = []
 ## DynamicConversation. May be empty for bosses without a persona block.
 var persona: String = ""
 
+## Compact rule summary of the lead PC's autobattle profile (3-5 top entries).
+var player_lead_pc_rules: Array = []
+
+## The region's derived counter_strategy string.
+var learned_patterns_counter: String = ""
+
+## Top-N slice of ability_frequencies + element_usage from learned patterns.
+var learned_patterns_sample: Dictionary = {}
+
 
 ## Hard cap on recent_actions size. Older entries get dropped.
 const RECENT_LIMIT: int = 8
@@ -74,4 +83,7 @@ func to_dict() -> Dictionary:
 		"recent_actions": recent_actions.duplicate(),
 		"available_intents": available_intents.duplicate(),
 		"persona": persona,
+		"player_lead_pc_rules": player_lead_pc_rules.duplicate(),
+		"learned_patterns_counter": learned_patterns_counter,
+		"learned_patterns_sample": learned_patterns_sample.duplicate(),
 	}
