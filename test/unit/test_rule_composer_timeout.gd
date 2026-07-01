@@ -11,12 +11,17 @@ const FakeBackendScript := preload("res://test/unit/test_llm_fake_backend.gd")
 var rc
 var svc
 var fake_backend: FakeBackendScript.FakeBackend
+var _orig_backends: Array = []
+var _orig_active = null
 
 func before_each() -> void:
 	rc = get_node_or_null("/root/RuleComposer")
 	svc = get_node_or_null("/root/LLMService")
 	fake_backend = FakeBackendScript.FakeBackend.new()
 	fake_backend.name = "FakeBE"
+	_orig_backends = svc._backends.duplicate()
+	_orig_active = svc._active_backend
+	svc.add_child(fake_backend)
 	svc._backends.clear()
 	svc._backends.append(fake_backend)
 	fake_backend.request_finished.connect(svc._on_backend_finished)
@@ -24,7 +29,13 @@ func before_each() -> void:
 
 func after_each() -> void:
 	if fake_backend and is_instance_valid(fake_backend):
-		fake_backend.queue_free()
+		fake_backend.request_finished.disconnect(svc._on_backend_finished)
+		svc._backends.clear()
+		for b in _orig_backends:
+			svc._backends.append(b)
+		svc._active_backend = _orig_active
+		svc.remove_child(fake_backend)
+		fake_backend.free()
 
 func test_hang_triggers_client_timeout_fallback() -> void:
 	watch_signals(rc)
