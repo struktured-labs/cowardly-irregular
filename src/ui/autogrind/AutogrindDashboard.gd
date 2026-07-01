@@ -36,6 +36,7 @@ const CORRUPTION_THRESHOLD: float = 5.0        # corruption value considered "ma
 var _exp_sparkline: SparklineChart = null
 var _gold_sparkline: SparklineChart = null
 var _winrate_sparkline: SparklineChart = null
+var _battlesmin_sparkline: SparklineChart = null
 
 ## Stats labels
 var _stat_labels: Dictionary = {}
@@ -65,6 +66,9 @@ var _last_total_exp: int = 0
 var _last_total_gold: int = 0
 var _last_battle_count: int = 0
 var _last_refresh_time: float = 0.0
+
+## Adaptation-event annotation — sentinel -1 skips the spurious first-refresh mark
+var _last_adaptation: float = -1.0
 
 ## Prediction accuracy tracking
 var _predictions: Array[Dictionary] = []
@@ -283,11 +287,20 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 	title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(title)
 
-	var chart_h = (panel_size.y - 24) / 3.0
+	# Legend for the amber adaptation-event ticks drawn on each chart
+	var legend = Label.new()
+	legend.text = "▏ = monsters adapted"
+	legend.position = Vector2(panel_size.x - 132, 2)
+	legend.add_theme_font_size_override("font_size", 9)
+	legend.add_theme_color_override("font_color", Color(1.0, 0.55, 0.15, 0.85))
+	panel.add_child(legend)
+
+	var chart_h = (panel_size.y - 24) / 4.0
 	var chart_w = panel_size.x - 80
 
 	var charts_data = [
 		{"label": "EXP/min", "color": COLOR_GOOD, "field": "exp"},
+		{"label": "Battles/min", "color": Color(0.7, 0.5, 1.0), "field": "battles"},
 		{"label": "Gold/min", "color": Color(1.0, 0.85, 0.2), "field": "gold"},
 		{"label": "Win Rate", "color": Color(0.4, 0.7, 1.0), "field": "winrate"},
 	]
@@ -308,7 +321,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 		spark.size = Vector2(chart_w, chart_h - 6)
 		panel.add_child(spark)
 
-		if i < 2:
+		if i < 3:
 			var sep = ColorRect.new()
 			sep.color = Color(0.15, 0.12, 0.2)
 			sep.position = Vector2(8, y + chart_h - 1)
@@ -317,6 +330,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 
 		match data["field"]:
 			"exp": _exp_sparkline = spark
+			"battles": _battlesmin_sparkline = spark
 			"gold": _gold_sparkline = spark
 			"winrate": _winrate_sparkline = spark
 
@@ -593,12 +607,19 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	var gold_per_min = avg_gold_per_battle * battles_per_min
 	var win_rate = 100.0 * _battles_completed / max(_battles_completed + stats.get("collapse_count", 0), 1)
 
+	# Mark this sample if monster adaptation rose since last refresh (efficiency-drop cue)
+	var adaptation: float = stats.get("adaptation", 0.0)
+	var adapt_event: bool = _last_adaptation >= 0.0 and adaptation > _last_adaptation + 0.001
+	_last_adaptation = adaptation
+
 	if _exp_sparkline:
-		_exp_sparkline.push_value(exp_per_min)
+		_exp_sparkline.push_value(exp_per_min, adapt_event)
+	if _battlesmin_sparkline:
+		_battlesmin_sparkline.push_value(battles_per_min, adapt_event)
 	if _gold_sparkline:
-		_gold_sparkline.push_value(gold_per_min)
+		_gold_sparkline.push_value(gold_per_min, adapt_event)
 	if _winrate_sparkline:
-		_winrate_sparkline.push_value(win_rate)
+		_winrate_sparkline.push_value(win_rate, adapt_event)
 
 	_update_stat("battles", str(_battles_completed))
 	_update_stat("total_exp", str(_total_exp))

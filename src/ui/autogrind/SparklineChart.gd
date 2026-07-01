@@ -2,11 +2,13 @@ extends Control
 class_name SparklineChart
 
 var _values: Array[float] = []
+var _markers: Array[bool] = []  # Parallel to _values; true = adaptation event at that sample
 var _max_values: int = 60
 var line_color: Color = Color(0.4, 0.9, 0.4)
 var fill_color: Color = Color(0.4, 0.9, 0.4, 0.15)
 var line_width: float = 1.5
 var show_fill: bool = true
+var marker_color: Color = Color(1.0, 0.55, 0.15, 0.4)  # Amber vertical tick for adaptation spikes
 
 ## Pulse animation for trending charts
 var _pulse_time: float = 0.0
@@ -21,16 +23,19 @@ func _init(max_vals: int = 60, color: Color = Color(0.4, 0.9, 0.4)) -> void:
 	fill_color = Color(color.r, color.g, color.b, 0.15)
 
 
-func push_value(v: float) -> void:
+func push_value(v: float, marked: bool = false) -> void:
 	_values.append(v)
+	_markers.append(marked)
 	if _values.size() > _max_values:
 		_values.remove_at(0)
+		_markers.remove_at(0)
 	_update_trend()
 	queue_redraw()
 
 
 func clear() -> void:
 	_values.clear()
+	_markers.clear()
 	_is_trending_up = false
 	_is_trending_down = false
 	queue_redraw()
@@ -83,6 +88,12 @@ func _draw() -> void:
 		var x = offset_x + i * step_x
 		var y = h - (((_values[i] - v_min) / v_range) * (h - 4)) - 2
 		points.append(Vector2(x, y))
+
+	# Adaptation-event ticks — full-height vertical lines behind the data
+	for i in range(_markers.size()):
+		if _markers[i]:
+			var mx = offset_x + i * step_x
+			draw_line(Vector2(mx, 0), Vector2(mx, h), marker_color, 1.0)
 
 	# Fill — brighten slightly when trending up
 	if show_fill and points.size() >= 2:
