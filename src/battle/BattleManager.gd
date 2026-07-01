@@ -94,6 +94,14 @@ var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
 var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
+
+## Tick 472: custom win_condition seam for the Spotlight Duels'
+## non-HP minibosses. Set by GameLoop.start_solo_battle before
+## start_battle fires. Empty {} = default "all enemies dead" HP-
+## zero behavior. Shape: {"type": "survive_turns"|"status_
+## threshold"|"flee_target", "value": int, "status": String}.
+## Cleared in end_battle so subsequent normal battles use default.
+var _win_condition: Dictionary = {}
 ## Turbo mode - minimize delays between actions for fastest execution
 var turbo_mode: bool = false
 
@@ -452,6 +460,11 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
+	## Tick 472: clear the custom win_condition BEFORE any downstream
+	## work so a subsequent normal battle starts with default "all
+	## enemies dead" behavior. Set once per battle by GameLoop.
+	## start_solo_battle from the cutscene step's data.
+	_win_condition = {}
 	if victory:
 		current_state = BattleState.VICTORY
 
@@ -5457,11 +5470,83 @@ func _check_victory_conditions() -> bool:
 			PartyChatSystem.fire_event_flag("event_flag_first_party_wipe")
 		end_battle(false)
 		return true
-	elif not enemies_alive:
+
+	## Tick 472: custom win_condition for the Spotlight Duels'
+	## non-HP minibosses (Cleric survive_turns, Bard status_
+	## threshold). Set by GameLoop.start_solo_battle from the
+	## cutscene step's data. Consulted BEFORE the standard
+	## "all enemies dead" check so a Cleric who accidentally KOs
+	## the survive-target still gets the intended survive-turns
+	## victory (edge case; unlikely with a tuned boss but real
+	## for a very early Cleric build). Falls through to standard
+	## on unset / hp_zero.
+	if not _win_condition.is_empty() and _win_condition.get("type", "hp_zero") != "hp_zero":
+		if _evaluate_custom_win_condition():
+			end_battle(true)
+			return true
+
+	if not enemies_alive:
 		end_battle(true)
 		return true
 
 	return false
+
+
+## Tick 472: dispatch on _win_condition.type. Return true when the
+## custom victory condition is met so the caller triggers end_battle.
+## Types supported today:
+##   - "survive_turns" — victory when current_round >= value AND at
+##     least one player still standing (checked already by the caller)
+##   - "status_threshold" — victory when target enemy has >= value
+##     stacks of `status`. Uses stack via has_status count workaround
+##     since Combatant doesn't track stacks per status; falls back to
+##     "status present" check for boolean statuses.
+##   - "flee_target" — victory when the target enemy leaves via any
+##     path (dead or removed). Deferred stub for future authors.
+## Extensible: new types drop into the match block.
+func _evaluate_custom_win_condition() -> bool:
+	var wc_type: String = str(_win_condition.get("type", ""))
+	match wc_type:
+		"survive_turns":
+			var target_round: int = int(_win_condition.get("value", 0))
+			return current_round >= target_round
+		"status_threshold":
+			var status_name: String = str(_win_condition.get("status", ""))
+			var need: int = int(_win_condition.get("value", 1))
+			if status_name == "":
+				return false
+			## Bard's hostile_courtier duel uses status="swayed"; each
+			## lullaby / discord land on the courtier increments a
+			## `_<status>_stacks` meta counter on the target (wired by
+			## the ability handlers). Check the meta counter first —
+			## it's the authoritative stack count. Fall back to
+			## status_effects list count for statuses that DO stack
+			## via multiple add_status calls (rare) but haven't grown
+			## a meta counter.
+			var meta_key: String = "_" + status_name + "_stacks"
+			for e in enemy_party:
+				if e == null or not is_instance_valid(e) or not e.is_alive:
+					continue
+				if e.has_meta(meta_key):
+					if int(e.get_meta(meta_key, 0)) >= need:
+						return true
+					continue
+				if not e.has_status(status_name):
+					continue
+				var stacks: int = 0
+				if "status_effects" in e and e.status_effects is Array:
+					for s in e.status_effects:
+						if str(s) == status_name:
+							stacks += 1
+				if stacks >= need:
+					return true
+			return false
+		"flee_target":
+			# All target enemies dead OR removed. Delegates to the
+			# standard "enemies_alive" check in the caller.
+			return false
+		_:
+			return false
 
 
 ## Signal handlers

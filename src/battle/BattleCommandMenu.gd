@@ -48,9 +48,10 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 			# on 4/5 non-Fighter PCs is the design (msg 1950). Fire a first-
 			# battle explainer so a new player sees WHY, not just watches turns
 			# auto-resolve. TutorialHints.show dedupes per hint id per session.
-			var scene: Node = get_tree().current_scene if get_tree() else null
-			if scene:
-				TutorialHints.show(scene, "spotlight_locked_intro")
+			# BattleCommandMenu extends RefCounted so no get_tree — reach through
+			# _scene (BattleScene) which is the natural hint host anyway.
+			if _scene and is_instance_valid(_scene):
+				TutorialHints.show(_scene, "spotlight_locked_intro")
 			push_warning("[CMD-MENU] silent-return: spotlight-locked %s (debug_all_pcs_unlocked=%s)" % [combatant.combatant_name, str(GameState.debug_all_pcs_unlocked if GameState else "no-GS")])
 			return
 

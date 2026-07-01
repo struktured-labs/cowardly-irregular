@@ -1416,6 +1416,13 @@ func _step_battle(step: Dictionary) -> void:
 		"music": str(step.get("music", "")),
 		"background": str(step.get("background", "")),
 	}
+	## Tick 472: thread the step's custom win_condition (if any)
+	## through GameLoop.start_solo_battle → BattleManager. Shape:
+	## {"type": "survive_turns"|"status_threshold", "value": int,
+	## "status": String}. Cutscene author drops it inline on the
+	## battle step; empty {} = default HP-zero (backwards compat).
+	if step.has("win_condition") and step["win_condition"] is Dictionary:
+		opts["win_condition"] = (step["win_condition"] as Dictionary).duplicate()
 	if combatants.is_empty() or enemies.is_empty():
 		push_warning("CutsceneDirector: battle step missing combatants or enemies — skipping")
 		return

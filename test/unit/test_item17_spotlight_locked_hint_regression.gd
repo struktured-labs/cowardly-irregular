@@ -35,8 +35,10 @@ func test_spotlight_locked_intro_hint_authored() -> void:
 
 func test_command_menu_fires_hint_on_locked_pc() -> void:
 	var src := _read(BATTLE_COMMAND_MENU_PATH)
-	assert_true(src.contains("TutorialHints.show(scene, \"spotlight_locked_intro\")"),
-		"BattleCommandMenu must fire the spotlight_locked_intro hint on the first locked-PC turn")
+	# BattleCommandMenu extends RefCounted (no get_tree), so it fires
+	# the hint through _scene reference (the BattleScene host).
+	assert_true(src.contains("TutorialHints.show(_scene, \"spotlight_locked_intro\")"),
+		"BattleCommandMenu must fire the spotlight_locked_intro hint on the first locked-PC turn via _scene (RefCounted has no get_tree)")
 
 
 func test_hint_only_fires_when_gate_actually_blocks() -> void:
@@ -49,7 +51,7 @@ func test_hint_only_fires_when_gate_actually_blocks() -> void:
 	# The nearest preceding `if not debug_override:` must exist before
 	# the hint call — that's the gate that guarantees the hint only
 	# fires on the real locked path.
-	var window_before: String = src.substr(max(0, idx - 500), 500)
+	var window_before: String = src.substr(max(0, idx - 1500), 1500)
 	assert_true(window_before.contains("if not debug_override:"),
 		"hint must fire inside the `if not debug_override:` block (real locked path only)")
 

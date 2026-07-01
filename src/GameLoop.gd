@@ -2213,6 +2213,18 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	party = [spotlight_pc]
 	_pending_spotlight_unlock = job_id
 	_spotlight_duel_active = true
+	## Tick 472: thread the cutscene's win_condition through to
+	## BattleManager. cowir-cutscenes step schema can carry it as
+	## step.win_condition = {"type": ..., "value": ..., "status": ...}
+	## Cleric survive_target uses survive_turns; Bard hostile_courtier
+	## uses status_threshold(swayed). BattleManager._check_victory_
+	## conditions consults it before the standard HP-zero check.
+	## Empty {} = default HP-zero (all other minibosses + all regular
+	## battles).
+	if BattleManager:
+		var wc: Variant = _opts.get("win_condition", {})
+		if wc is Dictionary and not (wc as Dictionary).is_empty():
+			BattleManager._win_condition = (wc as Dictionary).duplicate()
 	await _start_battle_async([enemy_id], false)
 	var result: bool = await spotlight_battle_ended
 	party = _spotlight_saved_party.duplicate()
