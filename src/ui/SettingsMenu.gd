@@ -961,7 +961,15 @@ func _input(event: InputEvent) -> void:
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
 	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open or _byok_config_open or _rebalance_history_open:
-		return
+		# Failsafe: if any submenu flag is set but NO actual submenu child
+		# exists in the tree, the flag is stale (script load failed, signal
+		# never fired, dialog freed by a different path). Reset all flags
+		# and continue processing input — otherwise ui_cancel gets swallowed
+		# forever and the player is stuck (playtest bug 2026-06-30).
+		if not _has_live_submenu_child():
+			_reset_submenu_flags()
+		else:
+			return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
 	if event.is_action_pressed("ui_up") and not event.is_echo():
@@ -1506,13 +1514,17 @@ func _open_controls_menu() -> void:
 	"""Open the controls remapping submenu"""
 	_controls_submenu_open = true
 	var ControlsMenuScript = load("res://src/ui/ControlsMenu.gd")
-	if ControlsMenuScript:
-		var controls = ControlsMenuScript.new()
-		controls.set_anchors_preset(Control.PRESET_FULL_RECT)
-		controls.closed.connect(_on_controls_closed)
-		add_child(controls)
-		if SoundManager:
-			SoundManager.play_ui("menu_select")
+	if not ControlsMenuScript:
+		# Failed to load — don't leave the flag stuck true (would swallow
+		# ui_cancel forever). Same defensive shape as _open_rebalance_history.
+		_controls_submenu_open = false
+		return
+	var controls = ControlsMenuScript.new()
+	controls.set_anchors_preset(Control.PRESET_FULL_RECT)
+	controls.closed.connect(_on_controls_closed)
+	add_child(controls)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
 
 
 func _on_controls_closed() -> void:
@@ -1524,13 +1536,15 @@ func _open_jukebox_menu() -> void:
 	"""Open the jukebox debug submenu"""
 	_jukebox_submenu_open = true
 	var JukeboxMenuScript = load("res://src/ui/JukeboxMenu.gd")
-	if JukeboxMenuScript:
-		var jukebox = JukeboxMenuScript.new()
-		jukebox.set_anchors_preset(Control.PRESET_FULL_RECT)
-		jukebox.closed.connect(_on_jukebox_closed)
-		add_child(jukebox)
-		if SoundManager:
-			SoundManager.play_ui("menu_select")
+	if not JukeboxMenuScript:
+		_jukebox_submenu_open = false
+		return
+	var jukebox = JukeboxMenuScript.new()
+	jukebox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	jukebox.closed.connect(_on_jukebox_closed)
+	add_child(jukebox)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
 
 
 func _on_jukebox_closed() -> void:
@@ -1542,14 +1556,16 @@ func _open_boss_selector() -> void:
 	"""Open the boss selector debug submenu"""
 	_boss_submenu_open = true
 	var BossSelectorScript = load("res://src/ui/BossSelectorMenu.gd")
-	if BossSelectorScript:
-		var selector = BossSelectorScript.new()
-		selector.set_anchors_preset(Control.PRESET_FULL_RECT)
-		selector.boss_selected.connect(_on_boss_selected)
-		selector.closed.connect(_on_boss_selector_closed)
-		add_child(selector)
-		if SoundManager:
-			SoundManager.play_ui("menu_select")
+	if not BossSelectorScript:
+		_boss_submenu_open = false
+		return
+	var selector = BossSelectorScript.new()
+	selector.set_anchors_preset(Control.PRESET_FULL_RECT)
+	selector.boss_selected.connect(_on_boss_selected)
+	selector.closed.connect(_on_boss_selector_closed)
+	add_child(selector)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
 
 
 func _on_boss_selector_closed() -> void:
@@ -1575,14 +1591,16 @@ func _open_teleport_menu() -> void:
 	"""Open the debug teleport submenu (debug-only)."""
 	_teleport_submenu_open = true
 	var TeleportMenuScript = load("res://src/ui/TeleportMenu.gd")
-	if TeleportMenuScript:
-		var tp = TeleportMenuScript.new()
-		tp.set_anchors_preset(Control.PRESET_FULL_RECT)
-		tp.teleport_requested.connect(_on_teleport_chosen)
-		tp.closed.connect(_on_teleport_closed)
-		add_child(tp)
-		if SoundManager:
-			SoundManager.play_ui("menu_select")
+	if not TeleportMenuScript:
+		_teleport_submenu_open = false
+		return
+	var tp = TeleportMenuScript.new()
+	tp.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tp.teleport_requested.connect(_on_teleport_chosen)
+	tp.closed.connect(_on_teleport_closed)
+	add_child(tp)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
 
 
 func _on_teleport_closed() -> void:
@@ -1614,6 +1632,53 @@ func _close_settings() -> void:
 		SoundManager.play_ui("menu_close")
 	closed.emit()
 	queue_free()
+
+
+## Return true if a real submenu child is currently in the tree. Used by the
+## _input failsafe so a stale `*_open` flag can't block ui_cancel forever.
+## Submenus attach as children of SettingsMenu itself (see _open_controls_menu
+## + siblings — `add_child(<script>.new())`), so a live-child check reliably
+## disambiguates "submenu genuinely modal" from "flag stuck true after a
+## failed load or missed signal".
+func _has_live_submenu_child() -> bool:
+	for child in get_children():
+		if not is_instance_valid(child):
+			continue
+		var script: Script = child.get_script() as Script
+		if script == null:
+			continue
+		var path: String = str(script.resource_path)
+		if path == "":
+			continue
+		# Match the submenu script paths that _open_* funcs instantiate. The
+		# QuitConfirmDialog reuses _controls_submenu_open as its flag so we
+		# check the node name too — it's a Control without a script but
+		# with a distinctive name.
+		if path.ends_with("ControlsMenu.gd") \
+				or path.ends_with("JukeboxMenu.gd") \
+				or path.ends_with("BossSelectorMenu.gd") \
+				or path.ends_with("TeleportMenu.gd") \
+				or path.ends_with("RebalanceHistoryPanel.gd") \
+				or path.ends_with("BYOKConfigPanel.gd") \
+				or path.ends_with("RebalanceReviewPanel.gd"):
+			return true
+	if get_node_or_null("QuitConfirmDialog") != null:
+		return true
+	return false
+
+
+func _reset_submenu_flags() -> void:
+	## Auto-recovery for stuck-flag states. Called by _input when the flag
+	## set says "a submenu is open" but no submenu is actually alive in the
+	## tree. Restores the ability to cancel out of the settings menu.
+	push_warning("SettingsMenu: submenu flag(s) set but no live submenu found — resetting flags (playtest failsafe)")
+	_controls_submenu_open = false
+	_jukebox_submenu_open = false
+	_boss_submenu_open = false
+	_teleport_submenu_open = false
+	_rebalance_review_open = false
+	_byok_config_open = false
+	_rebalance_history_open = false
 
 
 func _show_quit_confirmation() -> void:
