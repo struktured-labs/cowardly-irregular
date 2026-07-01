@@ -85,6 +85,16 @@ const SCHEMA_PARTY_LINE: Dictionary = {
 	"mood": "String",
 }
 
+## Schema for the rule-composition assistant (autobattle/autogrind). Flat
+## shape only — LLMService's _guard_json only validates top-level primitive
+## types, so the nested rule list travels as a JSON string in rules_json
+## and is re-parsed by validate_rule_composition.
+const SCHEMA_RULE_COMPOSITION: Dictionary = {
+	"name":        "String",
+	"description": "String",
+	"rules_json":  "String",
+}
+
 
 # ── Fallback constants ────────────────────────────────────────────────────────
 
@@ -208,6 +218,15 @@ Canonical example:
    \"enabled\":true}
 
 Put the fallback (a rule with {type:'always'} condition) last, if any."""
+
+## Fallback rule-composition envelope — used when the LLM is unavailable,
+## disabled, or its response fails validation. rules_json is an empty JSON
+## array so callers can parse it exactly like a live response.
+const FALLBACK_RULE_COMPOSITION: Dictionary = {
+	"name": "Draft — LLM unavailable",
+	"description": "Curated fallback; edit or pick a template.",
+	"rules_json": "[]",
+}
 
 
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
@@ -694,6 +713,37 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 			return "Speak a single line that fits the moment, in voice."
 
 
+# ── Prompt builder: rule composition ─────────────────────────────────────────
+
+## Build the prompt asked of the LLM to draft/refine an autobattle or
+## autogrind rule set from freeform player intent.
+##
+## domain selects which grammar description is embedded (RuleComposer.
+## DOMAIN_AUTOBATTLE / DOMAIN_AUTOGRIND) so the LLM only emits verbs the
+## interpreter actually understands. current_rules is the player's existing
+## rule list (may be empty) surfaced as read-only context to refine, not replace.
+##
+## Returns a prompt String ready for LLMService.complete_json().
+static func build_rule_composition(domain: String, prompt_text: String, current_rules: Array) -> String:
+	var grammar: String = AUTOBATTLE_GRAMMAR_DESCRIPTION if domain == "autobattle" else AUTOGRIND_GRAMMAR_DESCRIPTION
+	var current_json: String = JSON.stringify(current_rules) if current_rules.size() > 0 else "[]"
+	return (
+		"You are a rule authoring assistant for a JRPG's autobattle/autogrind system.\n\n"
+		+ grammar
+		+ "\n\nCurrent rules (for reference; may be empty):\n"
+		+ current_json
+		+ "\n\nPlayer intent:\n"
+		+ prompt_text
+		+ "\n\nEmit a JSON object with fields:\n"
+		+ "  name: short (3-6 words), snake-case-friendly, describing the strategy\n"
+		+ "  description: 1 sentence, in-character\n"
+		+ "  rules_json: the FULL rule list, as a JSON string. Each rule is\n"
+		+ "    {conditions: [...], actions: [...], enabled: true}\n"
+		+ "    conditions and actions must use only the verbs listed above.\n\n"
+		+ "Only emit the JSON. No commentary."
+	)
+
+
 # ── Validation helpers ─────────────────────────────────────────────────────────
 
 ## Validate and sanitise an LLM-returned NPC opening Dictionary.
@@ -888,6 +938,33 @@ static func validate_party_line(raw: Variant) -> Dictionary:
 	return {
 		"line": line,
 		"mood": mood,
+	}
+
+
+## Validate and parse an LLM-returned rule-composition Dictionary.
+##
+## `reply`'s top-level shape is already trusted (guarded by LLMService's
+## complete_json against SCHEMA_RULE_COMPOSITION); this pass parses the
+## nested rules_json string into an Array of rule Dictionaries. parse_ok is
+## false when rules_json fails to parse as a JSON array — callers treat that
+## as an invalid_json failure. Grammar-level hard-validation of individual
+## rules (verb/target allowlists) is a later pass, not this one.
+static func validate_rule_composition(reply: Dictionary, _domain: String) -> Dictionary:
+	var name: String = str(reply.get("name", "")).strip_edges()
+	var desc: String = str(reply.get("description", "")).strip_edges()
+	var rules_json: String = str(reply.get("rules_json", ""))
+	var parsed: Variant = JSON.parse_string(rules_json)
+	var rules: Array = []
+	var parse_ok: bool = typeof(parsed) == TYPE_ARRAY
+	if parse_ok:
+		for r in parsed:
+			if typeof(r) == TYPE_DICTIONARY:
+				rules.append(r)
+	return {
+		"name": name,
+		"description": desc,
+		"rules": rules,
+		"parse_ok": parse_ok,
 	}
 
 
