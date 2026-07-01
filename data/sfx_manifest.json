@@ -106,6 +106,13 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.5
     },
+    "autogrind_stop_sting": {
+      "file": "assets/audio/sfx/autogrind_stop_sting.ogg",
+      "source": "lmms_freeboy",
+      "prompt": "Attention-grabbing autogrind-halt sting: staccato G4->C5->E5 chiptune build (FreeBoy CH1 hollow square + CH2 harmony) followed by sustained G5 chord hold with C5 pedal underneath. ~0.93s, -12 LUFS TP -1.0, urgent-but-not-alarming — 'come look at your screen', not 'your house is on fire'. For tabbed-out user notification when autogrind interrupts.",
+      "duration_seconds": 0.93,
+      "prompt_influence": 0.0
+    },
     "chest_open": {
       "file": "assets/audio/sfx/chest_open.ogg",
       "prompt": "Satisfying metal latch clicking open on a wooden box, brief pause, then slow wood creak as heavy lid lifts, subtle sparkle shimmer of treasure catching light at the end, physical mechanical feeling, no music",
