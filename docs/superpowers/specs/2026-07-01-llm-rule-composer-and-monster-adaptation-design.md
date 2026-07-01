@@ -267,10 +267,10 @@ var learned_patterns_counter: String = ""  # region's current counter_strategy s
 var learned_patterns_sample: Dictionary = {}  # optional: top-N abilities from ability_frequency
 ```
 
-Populated by `BattleManager._refine_boss_intent_async` (~BM 6247) from:
+Populated by `BattleManager._refine_boss_intent_async` (~BM 6247) from existing public helpers (cowir-autogrind msg 1994):
 - Lead PC autobattle profile: `AutobattleSystem.get_character_script(lead_pc_id)`; **summarize** by keeping the first 3-5 rules (avoid prompt bloat — LLMContext budget is ~2KB per existing convention). Full rules never leave the process.
-- Region patterns: `AutogrindSystem._determine_counter_strategy(learned_patterns[region_id])` — the returned string (`fire_resist`, `focus_healer`, `""`, etc.). Free — the function is already there.
-- Sample: top 3 entries of `ability_frequency` for the region.
+- Region counter (derived): `AutogrindSystem.get_counter_strategy(region_id)` → the counter_strategy string (`fire_resist`, `focus_healer`, `""`, etc.). Free.
+- Region patterns (raw signals for the prompt): `AutogrindSystem.get_learned_patterns_for_region(region_id)` → full dict with `element_usage`, `ability_frequencies`, `monster_stats` + derived `counter_strategy`. Enables the LLM to reason about *why* a particular counter was picked (e.g. "player fires a lot → fire_resist"), which is a cleaner prompt shape than the string alone. Compact-serialize the top-3 entries of `ability_frequencies` and `element_usage` for `learned_patterns_sample` to stay under budget.
 
 ### 4.3 Widened intent allowlist
 
@@ -289,19 +289,26 @@ Populated by `BattleManager._refine_boss_intent_async` (~BM 6247) from:
 
 1. **Boost chance the counter path fires.** `_bias_by_intent` for each of the 6 tags returns `{"counter_action_chance": 2.0}` — the same key `exploit_pattern` already uses. Existing line multiplies `counter_chance` by this scalar; no new consumer.
 
-2. **Override the strategy the counter path picks.** One-line guard at the same callsite, BEFORE `_get_counter_action` is called:
+2. **Override the strategy the counter path picks AND widen the `adaptation_level > 0` gate.** Per cowir-battle msg 1995: without this, an LLM/scripted intent in a fresh region (`adaptation_level == 0`) is silently swallowed — intent set, but the counter branch never fires because the region hasn't accumulated enough battles yet. Fix by widening the existing gate with an `intent_forces_counter` boolean. Full callsite shape:
 
    ```gdscript
-   var strategy: String = AutogrindSystem.get_current_counter_strategy(region_id)   # existing helper
+   var strategy: String = AutogrindSystem.get_counter_strategy(region_id)   # existing helper (:262)
    var intent: String = combatant.get_meta("llm_intent", "")
    const _COUNTER_INTENT_TAGS := ["fire_resist", "ice_resist", "lightning_resist",
                                   "focus_healer", "defense_boost", "rotate_aggro"]
-   if intent in _COUNTER_INTENT_TAGS:
+   var intent_forces_counter: bool = intent in _COUNTER_INTENT_TAGS
+   if intent_forces_counter:
        strategy = intent   # LLM (or scripted-floor) intent overrides deterministic pick
-   # ... existing roll + _get_counter_action(strategy, ...) call unchanged
+   if (adaptation_level > 0 or intent_forces_counter) and not strategy.is_empty():
+       # ... existing counter_chance roll + _get_counter_action(strategy, ...) call unchanged
    ```
 
-   **1:1 mapping** means intent_id string == counter_strategy string. When the LLM (or scripted picker) chooses one of the 6 widened tags, it wins over `_determine_counter_strategy` for THAT turn's counter roll. When the intent is one of the 3 original tags (`aggress`/`turtle`/`exploit_pattern`) — or the LLM is off entirely — the deterministic strategy stands.
+   **1:1 mapping** means intent_id string == counter_strategy string. When the LLM (or scripted picker) chooses one of the 6 widened tags, it wins over `_determine_counter_strategy` for THAT turn's counter roll. When the intent is one of the 3 original tags (`aggress`/`turtle`/`exploit_pattern`) — or the LLM is off entirely — the deterministic strategy stands and the pre-existing `adaptation_level > 0` gate still applies.
+
+   **Why option (a) — widen the gate — not (b) or (c) from cowir-battle msg 1995.**
+   - **Rejected (b) keep the gate strict.** Loses the boss-in-fresh-region case entirely; a Mordaine encounter in a brand-new save shouldn't lose its LLM-derived counter behavior just because `learned_patterns` hasn't ramped yet.
+   - **Rejected (c) separate intent-driven branch.** More surface for no gain; two parallel counter paths to keep in sync.
+   - **Chosen (a) one boolean + widened gate.** Preserves the existing `adaptation_level > 0` gate for the deterministic path, opens a specific bypass only for the 6 widened tags. Zero blast radius.
 
 **Why this shape (not the two rejected alternatives cowir-battle listed):**
 - **Rejected (A) chance-only boost.** LLM says "fire_resist" but patterns show `focus_healer` best → boss buffs a healer target. Intent is decorative, not causal.
@@ -529,7 +536,7 @@ Each phase = one commit or a small stack. Feature branch: `feature/cowir-ai-rule
 | `src/llm/BossDialogue.gd` | edit | extend `pick_intent_async` context building |
 | `src/battle/BossIntentContext.gd` | edit | +3 fields |
 | `src/battle/BattleManager.gd` | edit | `_bias_by_intent` widened allowlist (~6364); `_refine_boss_intent_async` context build (~6247); `_make_ai_decision` strategy-override guard (~1581, ~5 lines per §4.3) |
-| `src/autogrind/AutogrindSystem.gd` | edit | small public helper `get_current_counter_strategy(region_id) -> String` if `_determine_counter_strategy` is not already exposed |
+| `src/autogrind/AutogrindSystem.gd` | none | Existing public helpers already cover the reads: `get_counter_strategy(region_id) -> String` (:262) for the strategy-override guard, and `get_learned_patterns_for_region(region_id) -> Dictionary` (:269) for the richer prompt context in §4.2 (element_usage / ability_frequencies / monster_stats + derived counter_strategy). Per cowir-autogrind msg 1994. |
 | `src/llm/DialoguePrompts.gd` | edit | grammar consts, composer prompt, composer schema/fallback, `validate_boss_intent_reply` widened |
 | `src/autobattle/AutobattleSystem.gd` | edit | `validate_rule` helper; `install_composition_as_new_profile` helper |
 | `src/autogrind/AutogrindSystem.gd` | edit | `validate_rule` helper; `get_current_rules(character_id)` helper if missing |
