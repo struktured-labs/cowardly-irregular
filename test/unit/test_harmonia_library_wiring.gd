@@ -43,13 +43,18 @@ func test_library_payload_is_dragons_foreshadowing() -> void:
 			"Cantor Vell must mention %s by name — concrete foreshadowing, not filler" % boss_name)
 
 
-func test_library_size_smaller_than_chapel() -> void:
-	# Concrete proof of BaseInterior leverage — the library subclass
-	# should be small. Compare to chapel which is already < 150.
+func test_library_does_not_duplicate_base_scaffolding() -> void:
+	# 2026-07-01: the <180-line guard is retired — the fleet enrichment
+	# directive deliberately grew the library to ~1500 lines of procedural
+	# ART (shelves, reading tables, mezzanine, chained tome, NPCs). The
+	# invariant the old line count protected was "no copied scaffolding":
+	# the library must inherit player/camera/controller wiring from
+	# BaseInterior, never re-declare it.
 	var src := _read(LIBRARY)
-	var lines := src.split("\n").size()
-	assert_lt(lines, 180,
-		"library subclass should be < 180 lines (mostly data + a few decoration helpers). Got %d" % lines)
+	for scaffold in ["func _setup_player", "func _setup_camera",
+				"func _setup_controller", "func _setup_tilemap"]:
+		assert_false(src.contains(scaffold),
+			"library must inherit '%s' from BaseInterior, not re-declare it" % scaffold)
 
 
 func test_library_exit_returns_to_harmonia() -> void:
