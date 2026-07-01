@@ -15,6 +15,7 @@ const WhisperingCaveRes = preload("res://src/maps/dungeons/WhisperingCave.tscn")
 const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd")
 const InnInteriorScript = preload("res://src/maps/interiors/InnInterior.gd")
 const ShopInteriorScript = preload("res://src/maps/interiors/ShopInterior.gd")
+const BlacksmithInteriorScript = preload("res://src/maps/interiors/BlacksmithInterior.gd")
 const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
@@ -2637,6 +2638,8 @@ func _start_exploration() -> void:
 			exploration_scene = _create_shop_interior(2)
 		"shop_interior_blacksmith":
 			exploration_scene = _create_shop_interior(3)
+		"blacksmith_interior":
+			exploration_scene = BlacksmithInteriorScript.new()
 		"harmonia_chapel":
 			exploration_scene = HarmoniaChapelInteriorScript.new()
 		"harmonia_library":
@@ -3077,6 +3080,8 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	"inn_interior",
 	"shop_interior_item", "shop_interior_black_magic",
 	"shop_interior_white_magic", "shop_interior_blacksmith",
+	# Dedicated forge-experience scene (atmospheric, not the shop UI).
+	"blacksmith_interior",
 ]
 
 

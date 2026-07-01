@@ -133,6 +133,19 @@ func _setup_transitions() -> void:
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
 
+	# Rear entrance to the working forge behind Ironclad Arms — the
+	# atmospheric BlacksmithInterior scene, not the shop buy-menu.
+	var forge_entrance = AreaTransitionScript.new()
+	forge_entrance.name = "ForgeEntrance"
+	forge_entrance.target_map = "blacksmith_interior"
+	forge_entrance.target_spawn = "entrance"
+	forge_entrance.require_interaction = true
+	forge_entrance.indicator_text = "The Forge (rear entrance)"
+	forge_entrance.position = Vector2(27 * TILE_SIZE, 4 * TILE_SIZE)
+	_setup_transition_collision(forge_entrance, Vector2(TILE_SIZE, TILE_SIZE))
+	forge_entrance.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(forge_entrance)
+
 	# Suburban portal — only spawned after W1 final boss (Mordaine) is defeated.
 	var gs = get_node_or_null("/root/GameState")
 	# Tick 335: dual-namespace check via is_story_flag_set — same rationale

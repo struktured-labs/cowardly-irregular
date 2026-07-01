@@ -77,12 +77,15 @@ func test_chapel_keeps_its_payload_content() -> void:
 		"exit must still target chapel_exit spawn")
 
 
-func test_chapel_shrunk_by_refactor() -> void:
-	# Concrete leverage: post-refactor chapel must be smaller than the
-	# pre-refactor version. tick 34 was ~210 lines; with BaseInterior
-	# providing 90%+ of the scaffolding, the subclass should be well
-	# under 150.
+func test_chapel_does_not_duplicate_base_scaffolding() -> void:
+	# 2026-07-01: the <150-line guard is retired — the fleet enrichment
+	# directive deliberately grew the chapel to ~1500 lines of procedural
+	# ART (altar, pews, stained glass, censer, NPCs). The invariant the
+	# old line count actually protected was "no copied scaffolding", so
+	# pin that directly: the chapel must inherit player/camera/controller
+	# wiring from BaseInterior, never re-declare it.
 	var src := _read(CHAPEL)
-	var lines := src.split("\n").size()
-	assert_lt(lines, 150,
-		"chapel post-refactor should be <150 lines (was ~210). Got %d" % lines)
+	for scaffold in ["func _setup_player", "func _setup_camera",
+				"func _setup_controller", "func _setup_tilemap"]:
+		assert_false(src.contains(scaffold),
+			"chapel must inherit '%s' from BaseInterior, not re-declare it" % scaffold)
