@@ -132,6 +132,13 @@
       "duration_seconds": 0.7,
       "prompt_influence": 0.7
     },
+    "secret_found": {
+      "file": "assets/audio/sfx/secret_found.ogg",
+      "source": "sox_synth",
+      "prompt": "Secret-revealed sting: chromatic 4-note tension run (E5-F5-F#5-G5 triangle) resolving into a bright G-major bloom chord (G5+B5+D6+G6) with sparkle glissando + echo. Zelda-secret energy, our chiptune palette. Fires when a hidden passage's fake wall shimmers away.",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.0
+    },
     "door_open": {
       "file": "assets/audio/sfx/door_open.ogg",
       "prompt": "Heavy wooden door creaking open, old iron hinges groaning, medieval dungeon door swinging with a deep resonant creak",
