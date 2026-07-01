@@ -6502,6 +6502,8 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 				"counter_action_chance": 1.6,
 				"attack_weight": 0.9,
 			}
+		"fire_resist", "ice_resist", "lightning_resist", "focus_healer", "defense_boost", "rotate_aggro":
+			return {"counter_action_chance": 2.0}
 		_:
 			return {}
 
