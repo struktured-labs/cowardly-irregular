@@ -12,6 +12,8 @@ signal dialogue_ended(npc_name: String)
 @export var npc_type: String = "villager"  # villager, elder, shopkeeper, guard
 @export var dialogue_lines: Array = ["Hello, traveler!"]
 @export var facing_direction: int = 0  # 0=down, 1=up, 2=left, 3=right
+## Quest-system identity; "" derives snake_case from npc_name ("Phil the Lost" → phil_the_lost).
+@export var npc_id: String = ""
 ## Sprite archetype override. If empty, auto-derived from npc_type.
 ## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
 @export var sprite_archetype: String = ""
@@ -902,6 +904,33 @@ func _start_dialogue() -> void:
 	if npc_type == "dancer":
 		start_dancing()
 
+	# ── Quest path — quest business outranks dynamic chat + scripted lines
+	# (routing chain settled in huddle msgs 2124/2126: quest > dynamic > static).
+	# notify_talk always fires first: it silently progresses talk objectives
+	# TARGETING this NPC (their own lines still play — e.g. Phil mid-quest),
+	# and returns a quest_id when this talk completed the FINAL step so the
+	# completion beat plays with this NPC as presenter (thirty_seven's
+	# scholar turn-in). Giver business (offer/turn-in/in-progress) replaces
+	# the NPC's normal dialogue entirely for that interaction.
+	var quest_sys = get_node_or_null("/root/QuestSystem")
+	if quest_sys:
+		var qplayer := _get_nearby_player()
+		if qplayer and qplayer.has_method("set_can_move"):
+			qplayer.set_can_move(false)
+		var was_giver: bool = quest_sys.has_giver_business(get_npc_id())
+		if was_giver:
+			await quest_sys.run_giver_dialogue(get_npc_id(), self)
+		else:
+			var done_qid: String = quest_sys.notify_talk(get_npc_id())
+			if done_qid != "":
+				await quest_sys.run_completion_dialogue(done_qid, self)
+				was_giver = true
+		if qplayer and is_instance_valid(qplayer) and qplayer.has_method("set_can_move"):
+			qplayer.set_can_move(true)
+		if was_giver:
+			_end_dialogue()
+			return
+
 	# ── LLM-driven path: use DynamicConversation when LLMService is available
 	# AND this NPC is opt-in for dynamic dialogue. Per design doc :157, only
 	# the showcase W1 NPCs (dynamic = true with authored persona) take this
@@ -961,6 +990,13 @@ func _advance_dialogue() -> void:
 			dialogue_label.text = dialogue_lines[_current_line]
 		if SoundManager:
 			SoundManager.play_ui("menu_select")
+
+
+## Quest identity: explicit npc_id export, else snake_case of npc_name.
+func get_npc_id() -> String:
+	if npc_id != "":
+		return npc_id
+	return npc_name.to_lower().replace(" ", "_").replace("'", "").replace("-", "_")
 
 
 func _get_nearby_player() -> Node:

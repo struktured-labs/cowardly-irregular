@@ -1,0 +1,79 @@
+{
+  "id": "world1_one_chicken_problem",
+  "title": "One Chicken Problem, Actually Seven",
+  "world": 1,
+  "giver": {
+    "npc_id": "farmer_aldwick",
+    "display_name": "Farmer Aldwick",
+    "location": {"map_id": "harmonia_village", "near": "north_fence"},
+    "spawn_flag": ""
+  },
+  "description": "Farmer Aldwick has lost seven chickens. He named them all after famous fighters because he thought it would help them survive. It has not helped.",
+  "playstyle_tags": ["exploration", "completionist"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Farmer Aldwick", "text": "Seven. There were seven. Cluck Norris. Hen Solo. Feather McGregor. Pecky Balboa. Eggdolph Lundgren. Chick Jagger — I'm aware that one doesn't quite work.", "theme": "villager"},
+      {"speaker": "Farmer Aldwick", "text": "And the seventh, which escaped before I could name it. Which I consider a personal failure. Three potions and my deepest gratitude to whoever brings them home.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Farmer Aldwick", "text": "Corner them gently. They're fighters. It's the names. I did this to myself.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Farmer Aldwick", "text": "Seven chickens, out there, alone. With those names. No, no — go on. They'd have wanted it this way.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Farmer Aldwick", "text": "Any sign of them? Pecky can take care of herself, it's Chick Jagger I worry about. No survival instincts. All swagger.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Farmer Aldwick", "text": "That's — one, two, three... seven. SEVEN. All seven!", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Farmer Aldwick", "text": "The unnamed one. The old man by the well was feeding her, you say? Kept coming back to him?", "theme": "villager"},
+      {"speaker": "Farmer Aldwick", "text": "Then she's got a name now. Phil. After the man who took care of her. It's a strange name for a hen. She's a strange hen.", "theme": "villager"},
+      {"speaker": "Farmer Aldwick", "text": "Three potions, as promised. And take this egg. Cluck Norris lays them so rarely I half believe she does it on purpose. Careful with it. It's... spirited.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Farmer Aldwick out about the seven chickens.",
+      "type": "talk",
+      "target_npc": "farmer_aldwick",
+      "flag_on_complete": "quest_world1_one_chicken_problem_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Corner all seven chickens around Harmonia.",
+      "type": "custom",
+      "required_flag": "quest_world1_one_chicken_problem_all_chickens",
+      "flag_on_complete": "quest_world1_one_chicken_problem_all_chickens"
+    },
+    {
+      "step": 3,
+      "description": "Bring the flock home to Aldwick.",
+      "type": "talk",
+      "target_npc": "farmer_aldwick",
+      "required_flag": "quest_world1_one_chicken_problem_all_chickens"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 150,
+    "items": [
+      {"item_id": "potion", "count": 3},
+      {"item_id": "cluck_norris_egg", "count": 1}
+    ],
+    "job_variants": {
+      "rogue": {
+        "description": "Dialogue-only: the Rogue can overhear the chicken near the cave entrance clucking a four-note sequence — the first four notes of the main theme. 'That chicken knows the song. That's a weird song for a chicken to know.' No mechanical effect.",
+        "items": [
+          {"item_id": "potion", "count": 3},
+          {"item_id": "cluck_norris_egg", "count": 1}
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_world1_one_chicken_problem_complete",
+  "cross_world_connection": "W2 Maple Heights has a chicken weathervane the HOA has no record of approving. Rogue (Skater Kid) examine text: 'Phil.' No further explanation.",
+  "_wiring_notes": "Step 2 is a 7-part movement mini-puzzle owned by overworld: chickens placed at (1) cave entrance, (2) Sleepy Slime Inn kitchen, (3) Scriptweaver's Guild lore section, (4-6) village/surrounds free placement, (7) beside Phil the Lost at the well — Phil is feeding her and has a line: 'I just keep finding it here. It keeps coming back. I don't know why it comes back to me. Maybe it knows something.' Each chicken cornered = increment; at 7, emit quest_world1_one_chicken_problem_all_chickens. Second-layer reading (replay): the unnamed chicken returning to Phil mirrors Phil returning to Harmonia — both staying in a place others pass through. Cosmetic 'Chicken Wrangler' title from the design doc is deferred (no title system)."
+}

@@ -673,6 +673,27 @@ func _place_wanderers() -> void:
 		npc.set_patrol(patrol)
 		add_child(npc)
 
+	_place_quest_npcs()
+
+
+func _place_quest_npcs() -> void:
+	## Madame Orrery's wagon — fools_spread giver on the east road out of
+	## Harmonia. Spawn-gated: appears only after the Rat King falls
+	## ("It was not there before the cave.").
+	var gs = get_node_or_null("/root/GameState")
+	var orrery_gate := false
+	if gs and gs.has_method("is_story_flag_set"):
+		orrery_gate = gs.is_story_flag_set("cutscene_flag_rat_king_defeated")
+	if orrery_gate:
+		var OverworldNPCScript = load("res://src/exploration/OverworldNPC.gd")
+		var orrery = OverworldNPCScript.new()
+		orrery.npc_name = "Madame Orrery"
+		orrery.npc_id = "madame_orrery_w1"
+		orrery.npc_type = "mysterious"
+		orrery.dialogue_lines = ["The cards will keep. They have more patience than I do."]
+		orrery.position = Vector2(14 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE + TILE_SIZE / 2)
+		add_child(orrery)
+
 
 func _place_village_markers() -> void:
 	var villages = [

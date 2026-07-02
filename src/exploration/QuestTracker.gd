@@ -7,6 +7,7 @@ class_name QuestTracker
 
 var _canvas: CanvasLayer
 var _label: Label
+var _side_label: Label
 var _bg: ColorRect
 var _current_objective: String = ""
 var _poll_timer: float = 0.0
@@ -81,6 +82,23 @@ func setup(parent: Node) -> void:
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(_label)
 
+	# Side-quest line below the main objective (first active side quest).
+	_side_label = Label.new()
+	_side_label.anchor_left = 0.0
+	_side_label.anchor_right = 0.0
+	_side_label.anchor_top = 0.0
+	_side_label.anchor_bottom = 0.0
+	_side_label.offset_left = 16
+	_side_label.offset_top = 37
+	_side_label.offset_right = 346
+	_side_label.offset_bottom = 57
+	_side_label.add_theme_font_size_override("font_size", 11)
+	_side_label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
+	_side_label.clip_text = false
+	_side_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_side_label.visible = false
+	_canvas.add_child(_side_label)
+
 	_update_objective()
 
 
@@ -101,6 +119,33 @@ func _update_objective() -> void:
 		_bg.offset_right = _label.offset_left + _label.get_theme_font("font").get_string_size(
 			_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
 			_label.get_theme_font_size("font_size")).x + 20 if _label.get_theme_font("font") else 350
+
+	_update_side_quest_line()
+
+
+## First active side quest's current objective, shown under the main line.
+func _update_side_quest_line() -> void:
+	if _side_label == null:
+		return
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs == null:
+		_side_label.visible = false
+		return
+	var active: Array = qs.get_active()
+	if active.is_empty():
+		_side_label.visible = false
+		_bg.offset_bottom = 36
+		return
+	var qid: String = active[0]
+	var q: Dictionary = qs.get_quest(qid)
+	var idx: int = qs.get_objective_index(qid)
+	var objectives: Array = q.get("objectives", [])
+	var desc: String = ""
+	if idx < objectives.size():
+		desc = objectives[idx].get("description", "")
+	_side_label.text = "◇ %s — %s" % [q.get("title", qid), desc]
+	_side_label.visible = true
+	_bg.offset_bottom = 58
 
 
 func _process(delta: float) -> void:
