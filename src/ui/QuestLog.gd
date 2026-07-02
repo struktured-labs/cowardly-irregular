@@ -294,6 +294,41 @@ func _build_quest_lines() -> Array:
 			})
 			lines.append({"text": "", "indent": 0.0, "size": 10, "color": LOCKED_COLOR})
 
+	lines.append_array(_build_side_quest_lines())
+	return lines
+
+
+## Side quests (QuestSystem v1, 2026-07-01): the W1 batch shipped with
+## only the HUD tracker line — this section makes the log page the
+## canonical review spot. Undiscovered quests stay hidden (spoiler-
+## safe: only "active" and "complete" states render).
+func _build_side_quest_lines() -> Array:
+	var lines: Array = []
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs == null:
+		return lines
+	var active: Array = qs.get_by_state("active")
+	var complete: Array = qs.get_by_state("complete")
+	lines.append({"text": "SIDE QUESTS", "indent": 24.0, "size": 15, "color": HEADER_COLOR})
+	if active.is_empty() and complete.is_empty():
+		lines.append({"text": "  ·  None discovered yet.", "indent": 40.0, "size": 13, "color": LOCKED_COLOR})
+		lines.append({"text": "", "indent": 0.0, "size": 10, "color": LOCKED_COLOR})
+		return lines
+	for qid in active:
+		var q: Dictionary = qs.get_quest(qid)
+		var objectives: Array = q.get("objectives", [])
+		var idx: int = qs.get_objective_index(qid)
+		lines.append({"text": "  ►  " + str(q.get("title", qid)), "indent": 32.0, "size": 14, "color": ACTIVE_COLOR})
+		if idx < objectives.size():
+			var desc: String = str(objectives[idx].get("description", ""))
+			lines.append({"text": "      (%d/%d) %s" % [idx + 1, objectives.size(), desc], "indent": 48.0, "size": 13, "color": TEXT_COLOR})
+		var giver_name: String = str(q.get("giver", {}).get("display_name", ""))
+		if giver_name != "":
+			lines.append({"text": "      from " + giver_name, "indent": 48.0, "size": 11, "color": LOCKED_COLOR})
+	for qid in complete:
+		var q: Dictionary = qs.get_quest(qid)
+		lines.append({"text": "  ✓  " + str(q.get("title", qid)), "indent": 32.0, "size": 13, "color": COMPLETE_COLOR})
+	lines.append({"text": "", "indent": 0.0, "size": 10, "color": LOCKED_COLOR})
 	return lines
 
 
