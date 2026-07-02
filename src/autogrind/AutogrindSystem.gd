@@ -54,6 +54,7 @@ var _ability_learned_this_session: bool = false
 var _rare_drop_this_session: bool = false
 var _ability_learned_conns: Array = []
 var _rare_drop_conn: Callable
+var _automation_paused: bool = false
 var battles_without_heal: int = 0  # Longest un-broken run of victorious battles with no healing consumed
 
 ## Efficiency system
@@ -746,6 +747,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	_rotation_suggested_regions.clear()
 	_corruption_bands_crossed.clear()
 	_save_corruption_baseline = _get_save_corruption()
+	_automation_paused = false
 	# Capture injury baseline to detect new injuries
 	_injury_baseline = 0
 	for member in party:
@@ -804,6 +806,7 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 		return
 
 	is_grinding = false
+	_automation_paused = false
 	_unwire_smart_interrupt_signals()
 
 	# Finalize grind stats elapsed time
@@ -1866,6 +1869,19 @@ func _on_smart_interrupt_rare_drop(_item_id: String, _base_chance: float) -> voi
 ## Public seam for battle paths that bypass BattleManager's rare_drop_found signal (headless).
 func notify_rare_drop(item_id: String, base_chance: float) -> void:
 	_on_smart_interrupt_rare_drop(item_id, base_chance)
+
+
+## Controller bridge — set true when the controller actually ENTERS PAUSED (deferred pause included), false on resume.
+func set_automation_paused(paused: bool) -> void:
+	_automation_paused = paused
+
+
+## "Was THIS battle automated?" — the quest manual_only credit gate (kill_n hook) predicate.
+## True only while the controller actively chains. A paused grind is NOT automated: manual
+## encounters fought during pause credit normally. Headless battles only run while chaining,
+## so headless ⇒ automated by construction — refactors must preserve that invariant.
+func is_battle_automated() -> bool:
+	return is_grinding and not _automation_paused
 
 
 func _get_autoload_node(name_: String) -> Node:
