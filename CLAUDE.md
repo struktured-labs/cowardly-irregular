@@ -2,25 +2,29 @@
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Project Status: Advanced Prototype (v3.30-alpha-track, undeployed work ahead)
+## Project Status: Advanced Prototype (v3.32-alpha track, continuous deploys 2026-07-02)
 
 Playable end-to-end through World 1:
 
-- **Battle system**: CTB + AP, 5-party, Advance/Defer mechanics, group attacks, formation specials, per-job Free Move command (Channel/Pray/Riff/Strike), Mode 7 perspective floor
-- **Autobattle**: per-character rule editor with full keyboard/gamepad nav
-- **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable. W2-W6 use visible roaming monsters only (step-based random encounters disabled when MonsterSpawner is active — fix shipped 2026-06-19).
+- **Battle system**: CTB + AP, 5-party, Advance/Defer mechanics (queue unwind surfaced in the hint bar), group attacks, formation specials, per-job Free Move command (Channel/Pray/Riff/Strike), Mode 7 perspective floor, execution stall watchdog (wall-clock, armed start↔end_battle)
+- **Spotlight Duels**: every W1 starter unlock is a solo 1v1 miniboss showcasing that PC's kit (cutscene `battle` step → GameLoop.start_solo_battle → retry-on-defeat with full restore). Custom win conditions: survive_turns (Cleric), status_threshold swayed (Bard), hp_zero (rest). Dual-source win_condition (step overrides monsters.json).
+- **Autobattle**: per-character rule editor with full keyboard/gamepad nav + Defensive/Balanced/Aggressive preset catalog (data/autobattle_rule_templates.json, level-1-safe) + LLM Rule Composer
+- **Side quests (QuestSystem v1)**: data/quests/*.json, GameState.quests dict + flag mirrors, talk/custom/fetch objectives (fetch supports `consume: true`), giver dialogue with accept/decline, "!"/"?" NPC markers (markerless opt-out), reward announcements, Quest Log section + HUD tracker. 6 W1 quests; Milo's thesis quest wired to battle telemetry.
+- **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable incl. Castle Harmonia placed on the overworld (post-Rat-King) and the W2 portal (post-Mordaine). W2-W6 use visible roaming monsters only.
 - **Bosses**: Cave Rat King, 4 elemental dragons (Pyrroth/Glacius/Voltharion/Umbraxis), Chancellor Mordaine (W1 final)
+- **Progression (item 18)**: lean starting kits — Mage fire/blizzard/thunder, Cleric cure/protect; the rest level-gated via `abilities_at_level`, purchasable early at Harmonia's magic shops (full W1 tier-2 shelves; `purchased_abilities` marker protects bought spells). Settings → "Dev: Full Job Kits" grants/strips for testing. Pre-pare saves grandfathered on load.
 - **LLM integration**:
-  - Opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue
+  - Opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue. Interact routing: quest > dynamic > scripted.
   - **Boss Strategic Intent** for all 5 W1 bosses (Settings → LLM Boss Strategy). LLM picks intent/posture per phase, deterministic ladder still owns ability choice.
-  - **Party Combat Dialogue** for all 5 starter jobs (Settings → LLM Party Dialogue). Personas drafted via workflow. Triggers: turn_start, low_hp (cross-25%), big_hit_taken (crit or >30% max HP), used_signature_ability (per-job iconic move), victory. Per-character 8-round cooldown. Scripted `trigger_voices` fallback per job when LLM off.
-  - Ollama / OpenAI-compat backends via HTTPBackend. DialogueChoiceMenu CanvasLayer-anchored top-centre.
-- **Data**: 14 jobs, 286 abilities, 88 monsters (now with artist art for slime, bat, goblin), 117 items, 43 passives, 33 encounter pools, 166 cutscenes, 150+ music tracks
-- **Tests**: 1862 passing / 0 failing in GUT (suite ~18s headless)
-- **Save**: Full JSON save with typed-array roundtrip protection, MRU/pin ability persistence, permanent injuries, corruption effects, story-flag gates
-- **Deployment**: `v3.30.0-alpha` live on itch.io (web/Brave-mobile black-screen-after-battle fix). Many commits since waiting for next user-approved deploy.
+  - **Party Combat Dialogue** for all 5 starter jobs, rendered as speech bubbles anchored to the speaker (suppressed only at ≥4x speed); `voice_<job>_<trigger>` audio-handle convention ready for the voice pack. Scripted `trigger_voices` fallback per job when LLM off.
+  - Rebalance daemon (opt-in), LLM Rule Composer, Learning Monsters. Ollama / OpenAI-compat backends via HTTPBackend; BYOK desktop-only (settings.json) pending field-input UI.
+- **Data**: 14 jobs, 286 abilities, 93 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 150+ items, 33 encounter pools, 170+ cutscenes, 151 music tracks, 210 SFX
+- **Tests**: ~5200 passing / 0 failing in GUT (full suite ~35s headless; hard-gate every commit on the [Failed] count)
+- **Save**: Full JSON save with typed-array roundtrip protection, quests/crystals reset on New Game AND on old-save load (leak fixes 2026-07-02), MRU/pin ability persistence, permanent injuries, corruption effects (menu readout), story-flag gates. Real-save hydration smoke runs against local saves.
+- **Version**: `Version.SEMVER` is the single source; bump at every deploy (tag-aware ratchet test). Title screen shows the git short-hash in dev runs.
+- **Deployment**: continuous per-fix deploys during authorized windows; `v3.32.x-alpha` line live on itch.io. Pipeline: gate → bump SEMVER → tag → export Web → `butler push ... :web --userversion <tag>` → verify `butler status`.
 
-Deployed via butler to itch.io `:web` channel at every milestone tag.
+Deployed via butler to itch.io `:web` channel (NEVER without user approval — 2026-07-02 window was explicitly granted).
 
 ## Core Vision
 
@@ -108,7 +112,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Mordaine's intro plays `world1_mordaine_intro` cutscene before battle (CastleHarmonia extends DragonCave)
 - Defeat sets BOTH `dungeon_flags["world1_mordaine_defeated"]` AND `game_constants["cutscene_flag_world1_mordaine_defeated"]` via the `defeat_cutscene_flags` bridge declared in the subclass
 - Sprite is `shadow_knight` placeholder (tier T1) pending artist sheet
-- Castle Harmonia accessible via TeleportMenu under W1 (overworld portal placement TBD)
+- Castle Harmonia placed on the W1 overworld (revealed post-Rat-King; tick 335 dual-namespace gate) + reachable via TeleportMenu
 
 ## Autobattle System
 
@@ -262,7 +266,7 @@ godot --headless -s test/run_tests.gd          # Run tests
 ```
 
 ### Testing
-- Unit tests in `test/unit/` using GUT framework — currently 1099+ tests, ~12s headless
+- Unit tests in `test/unit/` using GUT framework — ~5200 tests, ~35s headless
 - **Canonical test command** (works reliably, used throughout session):
   ```bash
   godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
@@ -373,7 +377,7 @@ cowardly-irregular/
 │   ├── job_aliases.json    # white_mage→cleric, black_mage→mage, thief→rogue
 │   └── cutscenes/          # 166 cutscene JSON files
 └── test/
-    └── unit/            # GUT tests (1099+, runs ~12s headless)
+    └── unit/            # GUT tests (~5200, runs ~35s headless)
 ```
 
 ## Key Design Principles
