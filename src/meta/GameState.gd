@@ -478,10 +478,18 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		llm_rebalance_enabled = bool(save_data["llm_rebalance_enabled"])
 	if save_data.has("dash_always_on"):
 		dash_always_on = bool(save_data["dash_always_on"])
+	# Old-save compat (2026-07-01): absent key means that playthrough
+	# HAD none — reset instead of keeping the current session's values,
+	# or loading a pre-quest save mid-session leaks quests/crystals
+	# across playthroughs. Loads don't reset_game_state first.
 	if save_data.has("activated_crystals") and save_data["activated_crystals"] is Dictionary:
 		activated_crystals = save_data["activated_crystals"].duplicate()
+	else:
+		activated_crystals = {}
 	if save_data.has("quests") and save_data["quests"] is Dictionary:
 		quests = save_data["quests"].duplicate(true)
+	else:
+		quests = {}
 	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
 	# hasn't run yet (defensive — _apply_save_data is normally called via
 	# SaveSystem after autoloads are live). EventLog.restore() handles the
@@ -866,6 +874,11 @@ func reset_game_state() -> void:
 	current_save_name = ""
 	party_leader_index = 0
 	pending_boss_defeat = {}
+	# QuestSystem v1 + fast travel (2026-07-01): without these clears a
+	# second New Game starts with prior-run quests already complete and
+	# every crystal lit — same leak class as the 2026-04-30 fix above.
+	quests.clear()
+	activated_crystals.clear()
 
 	# Reset game constants
 	game_constants = {
