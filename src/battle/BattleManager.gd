@@ -193,6 +193,7 @@ var _died_callbacks: Dictionary = {}
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
 var _c3_nonbasic_used: bool = false        # Milo's thesis quest: any player ability/item this battle (execution-level, so advance-embedded use counts)
+var _c3_clutch_crit: bool = false          # Milo's thesis quest: a player landed a crit while under 10% HP this battle
 var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
 var _manual_player_turns: int = 0          # Player turns handled manually
 
@@ -377,6 +378,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_autobattle_player_turns = 0
 	_manual_player_turns = 0
 	_c3_nonbasic_used = false
+	_c3_clutch_crit = false
 	_battle_results = {}
 	_ko_this_battle.clear()
 
@@ -544,12 +546,37 @@ func _emit_c3_battle_telemetry(victory: bool, one_hp_survivor: bool) -> void:
 	if victory and _manual_player_turns > 0 and _autobattle_player_turns == 0 and not _c3_nonbasic_used:
 		GameState.set_story_flag("quest_world1_chapter_three_basics_only")
 		qs.notify_flag("quest_world1_chapter_three_basics_only")
-	# Exercise 3 — the gap: v1 emitter is the one-HP victory (same
-	# condition as event_flag_one_hp_victory). Spec allows any subset;
-	# under-leveled and lucky-crit emitters are later polish.
-	if victory and one_hp_survivor:
+	# Exercise 3 — the gap: full spec'd emitter set. One-HP victory,
+	# a crit landed from under 10% HP, or beating enemies ≥3 levels
+	# above the party average ("under-leveled vs a danger-zone enemy").
+	if victory and (one_hp_survivor or _c3_clutch_crit or _c3_underleveled_win()):
 		GameState.set_story_flag("quest_world1_chapter_three_impossible")
 		qs.notify_flag("quest_world1_chapter_three_impossible")
+
+
+## True when the strongest enemy this battle out-leveled the party
+## average by 3+. Enemy levels come from monsters.json via
+## EncounterSystem (enemy Combatants don't reliably carry job_level).
+func _c3_underleveled_win() -> bool:
+	if player_party.is_empty() or EncounterSystem == null:
+		return false
+	var total: int = 0
+	var count: int = 0
+	for pc in player_party:
+		if pc and is_instance_valid(pc):
+			total += int(pc.job_level)
+			count += 1
+	if count == 0:
+		return false
+	var avg_party: float = float(total) / float(count)
+	var max_enemy: int = 0
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var mtype: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+		if mtype != "" and EncounterSystem.monster_database.has(mtype):
+			max_enemy = maxi(max_enemy, int(EncounterSystem.monster_database[mtype].get("level", 0)))
+	return max_enemy > 0 and float(max_enemy) - avg_party >= 3.0
 
 
 func end_battle(victory: bool) -> void:
@@ -3505,6 +3532,8 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		is_crit = true
 		var crit_multiplier = _get_crit_multiplier(attacker)
 		damage = int(damage * crit_multiplier)
+		if attacker in player_party and attacker.max_hp > 0 and attacker.current_hp * 10 < attacker.max_hp:
+			_c3_clutch_crit = true
 
 	# Market Sense passive: scaling damage bonus based on volatility band
 	damage = _apply_market_sense(attacker, damage)
@@ -3873,6 +3902,8 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			damage = int(damage * _get_crit_multiplier(caster))
 			is_crit = true
 			print("Critical hit!")
+			if caster in player_party and caster.max_hp > 0 and caster.current_hp * 10 < caster.max_hp:
+				_c3_clutch_crit = true
 
 		var phys_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(phys_vrange.x, phys_vrange.y))

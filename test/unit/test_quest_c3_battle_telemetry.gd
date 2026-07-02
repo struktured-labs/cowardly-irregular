@@ -19,6 +19,9 @@ var _bm_full_auto: bool
 var _bm_auto_turns: int
 var _bm_manual_turns: int
 var _bm_nonbasic: bool
+var _bm_clutch: bool
+var _saved_pp: Array
+var _saved_ep: Array
 
 
 func before_each() -> void:
@@ -31,6 +34,14 @@ func before_each() -> void:
 	_bm_auto_turns = BattleManager._autobattle_player_turns
 	_bm_manual_turns = BattleManager._manual_player_turns
 	_bm_nonbasic = BattleManager._c3_nonbasic_used
+	_bm_clutch = BattleManager._c3_clutch_crit
+	# Empty parties keep _c3_underleveled_win() inert — these tests
+	# drive the emitters directly, not via real battles.
+	_saved_pp = BattleManager.player_party.duplicate()
+	_saved_ep = BattleManager.enemy_party.duplicate()
+	BattleManager.player_party.clear()
+	BattleManager.enemy_party.clear()
+	BattleManager._c3_clutch_crit = false
 
 
 func after_each() -> void:
@@ -48,6 +59,11 @@ func after_each() -> void:
 	BattleManager._autobattle_player_turns = _bm_auto_turns
 	BattleManager._manual_player_turns = _bm_manual_turns
 	BattleManager._c3_nonbasic_used = _bm_nonbasic
+	BattleManager._c3_clutch_crit = _bm_clutch
+	for c in _saved_pp:
+		BattleManager.player_party.append(c)
+	for c in _saved_ep:
+		BattleManager.enemy_party.append(c)
 
 
 func _activate_quest(objective_index: int) -> void:
@@ -119,6 +135,37 @@ func test_one_hp_victory_completes_exercise_three() -> void:
 	BattleManager._emit_c3_battle_telemetry(true, true)
 	assert_true(GameState.story_flags.get(F_IMPOSSIBLE, false))
 	assert_eq(QuestSystem.get_objective_index(QID), 6)
+
+
+func test_clutch_crit_completes_exercise_three() -> void:
+	_activate_quest(5)
+	_set_battle(false, 0, 3, false)
+	BattleManager._c3_clutch_crit = true
+	BattleManager._emit_c3_battle_telemetry(true, false)
+	BattleManager._c3_clutch_crit = false
+	assert_true(GameState.story_flags.get(F_IMPOSSIBLE, false),
+		"a crit landed from <10% HP must count as doing the impossible")
+
+
+func test_ordinary_win_does_not_complete_exercise_three() -> void:
+	_activate_quest(5)
+	_set_battle(false, 0, 3, false)
+	BattleManager._c3_clutch_crit = false
+	BattleManager._emit_c3_battle_telemetry(true, false)
+	assert_false(GameState.story_flags.get(F_IMPOSSIBLE, false),
+		"an unremarkable victory must not count as impossible")
+
+
+func test_clutch_crit_hooks_exist_at_both_crit_sites() -> void:
+	# Source pins: both the basic-attack and physical-ability crit
+	# paths must mark the clutch crit (players crit through either).
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var hits: int = 0
+	var idx: int = src.find("_c3_clutch_crit = true")
+	while idx != -1:
+		hits += 1
+		idx = src.find("_c3_clutch_crit = true", idx + 1)
+	assert_eq(hits, 2, "expected clutch-crit marking at exactly the attack + ability crit sites")
 
 
 func test_inactive_quest_emits_nothing() -> void:
