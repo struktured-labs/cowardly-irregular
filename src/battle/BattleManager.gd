@@ -35,7 +35,7 @@ signal advance_trash_talk(combatant: Combatant, line: String)
 ## /used_signature_ability/victory) want a quip-bubble surface so they
 ## read as actual character speech, not just battle-log text. Listener
 ## is BattleScene._on_party_combat_line which calls _spawn_quip_bubble.
-signal party_combat_line(combatant: Combatant, line: String)
+signal party_combat_line(combatant: Combatant, line: String, voice_trigger: String)
 ## Wave E — Boss dialogue / jailbreak signals.
 ## boss_taunt: emitted when a boss intent picker produces a phase-transition
 ## taunt or when a jailbreak narration line is generated. BattleScene listens
@@ -6966,19 +6966,19 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	var llm_dialogue_on: bool = gs != null and ("party_llm_dialogue_enabled" in gs) and gs.party_llm_dialogue_enabled
 	if not llm_dialogue_on:
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback)
+			_emit_party_line(combatant, fallback, event_kind)
 		return
 
 	var llm = get_node_or_null("/root/LLMService")
 	if llm == null or not llm.has_method("is_available") or not llm.is_available():
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback)
+			_emit_party_line(combatant, fallback, event_kind)
 		return
 
 	var ctx := _build_party_line_context(combatant, event_kind, event_data)
 	if ctx == null:
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback)
+			_emit_party_line(combatant, fallback, event_kind)
 		return
 	var persona: String = ""
 	var sig: Array = []
@@ -6987,13 +6987,13 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		sig = pp.get_signature_phrases(job_id)
 	if persona.is_empty():
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback)
+			_emit_party_line(combatant, fallback, event_kind)
 		return
 
 	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")
 	if DialoguePromptsScript == null:
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback)
+			_emit_party_line(combatant, fallback, event_kind)
 		return
 
 	var prompt: String = DialoguePromptsScript.build_party_line(persona, sig, ctx.to_dict())
@@ -7019,7 +7019,9 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		line = fallback
 	if line.is_empty():
 		return
-	_emit_party_line(combatant, line)
+	# msg 2105: deterministic trigger_voices lines get voice; LLM lines stay text-only.
+	var vt: String = event_kind if (not fallback.is_empty() and line == fallback) else ""
+	_emit_party_line(combatant, line, vt)
 
 
 func _resolve_party_job_id(combatant: Combatant) -> String:
@@ -7034,7 +7036,7 @@ func _resolve_party_job_id(combatant: Combatant) -> String:
 	return ""
 
 
-func _emit_party_line(combatant: Combatant, line: String) -> void:
+func _emit_party_line(combatant: Combatant, line: String, voice_trigger: String = "") -> void:
 	if combatant == null or not is_instance_valid(combatant):
 		return
 	battle_log_message.emit("[color=#9bbfff]%s: \"%s\"[/color]" % [combatant.combatant_name, line])
@@ -7043,7 +7045,7 @@ func _emit_party_line(combatant: Combatant, line: String) -> void:
 	# (scrolling text) — players might not realize a specific PC said
 	# it. The quip-bubble path auto-suppresses at high speed / turbo
 	# so it doesn't interrupt autogrind.
-	party_combat_line.emit(combatant, line)
+	party_combat_line.emit(combatant, line, voice_trigger)
 
 
 ## Build a snapshot for the LLM party-line prompt.

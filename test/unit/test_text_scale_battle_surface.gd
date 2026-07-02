@@ -50,9 +50,11 @@ func _count_calls(src: String) -> int:
 
 func test_battle_scene_uses_text_scale_at_all_sites() -> void:
 	# Pre-fix BattleScene had 20 font_size sites across 3 theme keys.
-	var src := _read(BATTLE_SCENE)
+	# 2026-07-01: quip bubble extracted to BattleSpeechBubble.gd (msg 2101),
+	# carrying 2 scaled sites with it — count both files as one surface.
+	var src := _read(BATTLE_SCENE) + _read("res://src/battle/BattleSpeechBubble.gd")
 	assert_gte(_count_calls(src), 20,
-		"BattleScene must have ≥20 TextScale.scaled calls (one per pre-fix font_size site)")
+		"BattleScene + BattleSpeechBubble must have ≥20 TextScale.scaled calls (one per pre-fix font_size site)")
 
 
 func test_battle_results_display_uses_text_scale() -> void:

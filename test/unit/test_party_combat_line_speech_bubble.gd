@@ -19,8 +19,8 @@ func _read(p: String) -> String:
 
 func test_party_combat_line_signal_declared() -> void:
 	var src := _read(BATTLE_MANAGER)
-	assert_true(src.contains("signal party_combat_line(combatant: Combatant, line: String)"),
-		"BattleManager must declare party_combat_line signal — symmetric with advance_trash_talk")
+	assert_true(src.contains("signal party_combat_line(combatant: Combatant, line: String, voice_trigger: String)"),
+		"BattleManager must declare party_combat_line with voice_trigger arg (msg 2105 voice convention)")
 
 
 func test_emit_party_line_fires_both_log_and_bubble_signals() -> void:
@@ -34,8 +34,8 @@ func test_emit_party_line_fires_both_log_and_bubble_signals() -> void:
 	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 	assert_true(body.contains("battle_log_message.emit("),
 		"_emit_party_line must still emit battle_log_message — preserves scrollback")
-	assert_true(body.contains("party_combat_line.emit(combatant, line)"),
-		"_emit_party_line must also emit party_combat_line — drives the speech bubble surface")
+	assert_true(body.contains("party_combat_line.emit(combatant, line, voice_trigger)"),
+		"_emit_party_line must also emit party_combat_line with voice_trigger — drives the bubble + voice surface")
 
 
 func test_battle_scene_connects_party_combat_line_signal() -> void:
@@ -99,5 +99,5 @@ func test_bubble_hold_time_2_seconds() -> void:
 	var idx: int = src.find("func _on_party_combat_line")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("_get_job_quip_color(combatant), 2.0)"),
+	assert_true(body.contains("_get_job_quip_color(combatant), 2.0, audio_key)"),
 		"party combat line bubble must hold for 2.0s — longer than the 1.5s default for shorter quips")

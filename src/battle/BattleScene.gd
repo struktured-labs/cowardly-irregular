@@ -3776,12 +3776,19 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 ## both this signal AND a battle_log_message, so the log retains the line
 ## as text scrollback while the bubble plays over the sprite. The
 ## quip-bubble code auto-suppresses at turbo / 4x+ / autogrind console.
-func _on_party_combat_line(combatant: Combatant, line: String) -> void:
+func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: String = "") -> void:
 	if turbo_mode:
 		return
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite and is_instance_valid(sprite):
-		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0)
+		# msg 2105: voice key derived as voice_<job>_<trigger>; manifest-gated
+		# in SoundManager (silent skip when the voice pack isn't authored).
+		var audio_key: String = ""
+		if voice_trigger != "" and combatant.job is Dictionary:
+			var job_id: String = str(combatant.job.get("id", ""))
+			if job_id != "":
+				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
@@ -3886,125 +3893,18 @@ func _show_address_banner(text: String) -> void:
 	tween.tween_callback(panel.queue_free)
 
 
-func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5) -> void:
-	"""Show a speech bubble above a sprite — reused for quips, trash talk, encounter reactions.
-	Suppressed at high speed (4x+), during autogrind, or turbo mode."""
-	if turbo_mode or Engine.time_scale >= 2.0:
+func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "") -> void:
+	"""Speech bubble above a sprite — party lines, boss taunts, quips, trash talk.
+	Delegates to BattleSpeechBubble (playtest brief msg 2101): viewport-clamped
+	out of the top-right party-panel column, suppressed only at 4x+ (pre-fix
+	2x+ silently hid ALL bubbles for anyone playing at 2x battle speed — the
+	"I can't see the text" playtest complaint), hold scaled by time_scale,
+	optional audio_key voice hook for phase-2 voice acting."""
+	if turbo_mode or autogrind_console_mode:
 		return
-	if autogrind_console_mode:
+	if sprite == null or not is_instance_valid(sprite):
 		return
-	# Container for bubble + pointer triangle
-	var container = Control.new()
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.z_index = 120
-
-	var bubble = PanelContainer.new()
-	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.0, 0.0, 0.0, 0.8)
-	style.border_color = border_color
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 3
-	style.content_margin_bottom = 3
-	bubble.add_theme_stylebox_override("panel", style)
-
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 0)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bubble.add_child(vbox)
-
-	# Speaker name header (small, colored)
-	var name_label = Label.new()
-	name_label.text = speaker_name
-	name_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
-	name_label.add_theme_color_override("font_color", border_color)
-	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(name_label)
-
-	# Quote text
-	var label = Label.new()
-	label.text = '"%s"' % line
-	label.add_theme_font_size_override("font_size", TextScale.scaled(13))
-	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
-	label.add_theme_constant_override("outline_size", 1)
-	label.add_theme_color_override("font_outline_color", Color(0.2, 0.15, 0.0))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Tick 125: enable word-wrap with a max bubble width. Pre-fix,
-	# Label was set with no autowrap so long lines (cleric/mage/bard
-	# trigger_voices entries average 80-108 chars after tick 122
-	# wired them into the bubble surface) extended horizontally off-
-	# screen. Now lines wrap at ~260px, keeping the bubble inside
-	# the play viewport regardless of speaker position.
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	label.custom_minimum_size = Vector2(260, 0)
-	vbox.add_child(label)
-
-	container.add_child(bubble)
-
-	# Small triangle pointer below bubble pointing to sprite
-	var pointer = Polygon2D.new()
-	pointer.polygon = PackedVector2Array([Vector2(15, 0), Vector2(25, 0), Vector2(20, 8)])
-	pointer.color = border_color
-	pointer.position = Vector2(0, 0)
-	pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE if pointer.has_method("set") else 0
-	container.add_child(pointer)
-
-	# Tick 127: estimate bubble height from line length so the
-	# initial y offset keeps wrapped multi-line bubbles clear of
-	# the sprite head. Pre-fix, the offset was a flat -90 which
-	# handled narrow single-line bubbles but overlapped the sprite
-	# for wrapped 4-5 line lines (worst-case ~98px tall) after the
-	# tick 125 wrap fix.
-	#
-	# Heuristic: ~20 chars per wrapped line at font-size 13 in a
-	# 260px-wide bubble. Plus ~24px for name label + bubble padding.
-	# Final height = lines * 16 + 24. Y offset positions the
-	# bubble bottom ~28px above the sprite (plus pointer = 36px
-	# above), so wrapped bubbles never crowd the sprite. The
-	# bubble.ready callback below refines x (centering) without
-	# touching y — re-tweening y mid-flight would jump.
-	var est_lines: int = int(ceil(float(line.length()) / 20.0))
-	var est_height: int = est_lines * 16 + 24
-	container.position = sprite.global_position + Vector2(-40, -float(est_height + 28))
-	container.modulate.a = 0.0
-	add_child(container)
-
-	# Tick 126: re-center the container under the sprite once the
-	# bubble's actual layout size is known, and place the pointer
-	# at the bubble's horizontal center. Pre-fix, the pointer's
-	# polygon was fixed at local x≈20 with no recentering, so a wide
-	# wrapped bubble (up to ~260px after tick 125) had its center
-	# offset 110px from the pointer — the speaker looked like they
-	# were standing under the left edge of their own speech bubble.
-	# Captures sprite position locally to avoid touching a freed
-	# Node2D if the sprite was deleted during the same frame.
-	var anchor_x: float = sprite.global_position.x
-	bubble.ready.connect(func():
-		if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(container)):
-			return
-		var bw: float = bubble.size.x
-		container.position.x = anchor_x - bw / 2.0
-		# Polygon's tip sits at local x=20 within itself, so subtract
-		# 20 to align the tip with the bubble's horizontal center.
-		pointer.position.x = bw / 2.0 - 20.0
-		pointer.position.y = bubble.size.y
-	, CONNECT_ONE_SHOT)
-
-	var tween = create_tween()
-	tween.tween_property(container, "modulate:a", 1.0, 0.15)
-	tween.tween_property(container, "position:y", container.position.y - 10, hold_time * 0.5)
-	tween.parallel().tween_property(container, "modulate:a", 0.0, 0.3).set_delay(hold_time)
-	tween.tween_callback(container.queue_free)
-
+	BattleSpeechBubble.spawn(self, sprite.global_position, speaker_name, line, border_color, hold_time, audio_key)
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	"""Display one-shot visual feedback when all enemies are defeated in a single execution phase"""

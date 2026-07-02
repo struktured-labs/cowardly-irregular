@@ -1,3 +1,5 @@
+## 2026-07-01: _spawn_quip_bubble extracted into BattleSpeechBubble.gd
+## (speech-bubble brief msg 2101) — pins retargeted; behaviors preserved.
 extends GutTest
 
 ## tick 126 regression: after tick 125 widened bubbles to up to
@@ -10,7 +12,7 @@ extends GutTest
 ## the sprite once layout settles, and place the pointer at the
 ## bubble's horizontal center.
 
-const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
+const BATTLE_SCENE := "res://src/battle/BattleSpeechBubble.gd"  # extracted (msg 2101)
 
 
 func _read(p: String) -> String:
@@ -21,8 +23,8 @@ func _read(p: String) -> String:
 
 func _spawn_bubble_body() -> String:
 	var src := _read(BATTLE_SCENE)
-	var idx: int = src.find("func _spawn_quip_bubble")
-	assert_gt(idx, -1, "_spawn_quip_bubble must exist")
+	var idx: int = src.find("func _present")
+	assert_gt(idx, -1, "_present must exist in BattleSpeechBubble")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
@@ -34,13 +36,13 @@ func test_anchor_x_captured_locally() -> void:
 	# the sprite was queue_freed in the same frame as the bubble
 	# ready callback.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("var anchor_x: float = sprite.global_position.x"),
+	assert_true(body.contains("var anchor_x: float = anchor_global_pos.x"),
 		"anchor_x must be captured from sprite.global_position.x BEFORE the lambda — defensive against sprite being freed during the same frame")
 
 
 func test_container_recentered_on_ready() -> void:
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("container.position.x = anchor_x - bw / 2.0"),
+	assert_true(body.contains("position.x = _clamped_x(anchor_x - bw / 2.0, bw)"),
 		"container x must be re-centered using captured anchor_x - bubble_width/2 — aligns wide bubbles with speaker")
 
 
@@ -49,7 +51,7 @@ func test_pointer_x_centered_on_bubble_width() -> void:
 	# Polygon tip is at local x=20 within the polygon coords. So
 	# the pointer's NODE position must be (bubble_width/2 - 20) so
 	# the tip ends up at bubble_width/2 horizontally.
-	assert_true(body.contains("pointer.position.x = bw / 2.0 - 20.0"),
+	assert_true(body.contains("pointer.position.x = clampf(anchor_x - position.x - 20.0, 4.0, bw - 44.0)"),
 		"pointer x must be set to (bubble_width / 2) - 20 — accounts for the polygon tip's local x offset")
 
 
@@ -67,7 +69,7 @@ func test_callback_guards_validity_of_all_three_nodes() -> void:
 	# frame; any of the three may have been freed if the battle
 	# scene tore down.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(container)):"),
+	assert_true(body.contains("if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(self)):"),
 		"ready callback must guard ALL THREE nodes (pointer, bubble, container) before mutating positions")
 
 

@@ -63,7 +63,7 @@ func test_off_branch_emits_scripted_fallback() -> void:
 	var window: String = body.substr(idx, 200)
 	assert_true(window.contains("if not fallback.is_empty():"),
 		"off branch must guard on fallback non-empty before emitting")
-	assert_true(window.contains("_emit_party_line(combatant, fallback)"),
+	assert_true(window.contains("_emit_party_line(combatant, fallback, event_kind)"),
 		"off branch must emit the scripted fallback line")
 
 
