@@ -105,25 +105,12 @@ var _win_condition: Dictionary = {}
 ## Turbo mode - minimize delays between actions for fastest execution
 var turbo_mode: bool = false
 
-## Execution stall watchdog (live playtest 2026-07-01): a battle froze
-## permanently at "Round 1 - EXECUTE: Bard" — an execution coroutine
-## died (empty-Advance dead return; any mid-coroutine script error does
-## the same) and nothing ever called _execute_next_action again. The
-## watchdog measures WALL-CLOCK time (Time.get_ticks_msec, immune to
-## Engine.time_scale) since the last execution progress mark and force-
-## kicks the chain when it exceeds the threshold. Threshold widens at
-## slow battle speeds (long legit animations at 0.25x must not trip it).
+# wall-clock (not time_scale'd) so 32x battle speed can't distort the stall threshold
 const _WD_STALL_MS: int = 10000
 var _wd_last_progress_ms: int = 0
-## Armed ONLY between start_battle and end_battle. Unit tests poke
-## current_state directly without start_battle; an unarmed watchdog
-## must never fire there (it end_battle'd empty parties mid-suite and
-## poisoned the long-awaiting LLM tests when first shipped unarmed).
+# armed only inside start_battle..end_battle — tests poke states without the lifecycle
 var _wd_armed: bool = false
-## Hard-off under GUT: suites legitimately freeze/poke battle states
-## (start_battle without end_battle, direct current_state writes), and
-## a recovery firing mid-suite end_battles empty parties while other
-## tests await — cross-test contamination. Live gameplay only.
+# hard-off under gut_cmdln: a mid-suite recovery end_battles empty parties and poisons awaiting tests
 var _wd_env_checked: bool = false
 var _wd_disabled_for_tests: bool = false
 
@@ -518,12 +505,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_start_new_round()
 
 
-## Milo's thesis-quest (world1_chapter_three) battle-telemetry emitters.
-## Spec: data/quests/world1_chapter_three.json _wiring_notes. Tracks
-## only while the quest is ACTIVE (exercises count once Milo assigns
-## them; pre-quest grinding doesn't). notify_flag re-fires on EVERY
-## qualifying occurrence, so a flag earned out of step order still
-## completes its step the next time the feat is performed.
+## Milo's thesis-quest emitters (spec: world1_chapter_three.json _wiring_notes); active-only, notify re-fires per occurrence
 func _emit_c3_battle_telemetry(victory: bool, one_hp_survivor: bool) -> void:
 	var qs = get_node_or_null("/root/QuestSystem")
 	if qs == null or not GameState:

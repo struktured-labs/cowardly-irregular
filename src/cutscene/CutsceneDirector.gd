@@ -11,10 +11,7 @@ signal cutscene_skipped(cutscene_id: String)
 
 ## Current state
 var _active: bool = false
-## Abort ≠ skip: an aborted cutscene emits cutscene_finished (so
-## chained listeners/awaiters unblock) but reports itself via
-## last_finished_was_aborted() so the completion flag is NOT written —
-## the cutscene re-fires next gate check instead of never replaying.
+# abort ≠ skip: finished still emits (awaiters unblock) but the completion flag is withheld so the cutscene replays
 var _aborted: bool = false
 var _last_finished_aborted: bool = false
 var _cutscene_id: String = ""
@@ -1323,10 +1320,7 @@ func _apply_letterbox(show: bool) -> void:
 ## CUTSCENE LIFECYCLE
 ## =====================
 
-## Abort the in-flight cutscene: remaining steps stop, cutscene_finished
-## still emits (chains unblock), but the completion flag is skipped so
-## the cutscene RE-FIRES on the next gate check. For unrunnable states
-## (missing duel PC), not player skips.
+## For unrunnable states (missing duel PC), not player skips — see _aborted var note
 func abort_current(reason: String) -> void:
 	if not _active:
 		return
@@ -1458,19 +1452,12 @@ func _step_battle(step: Dictionary) -> void:
 		if result == "victory":
 			return
 		if result != "defeat":
-			# "unavailable" (missing PC) or any future sentinel: the duel
-			# CANNOT run. Retrying forever was an infinite softlock; a
-			# plain skip was a quieter brick (completion flag set → the
-			# spotlight never replays → PC locked forever). Abort: the
-			# cutscene ends cleanly WITHOUT its completion flag and
-			# re-fires once the party is runnable again.
+			# not retryable and must not complete-flag, or the duel gate never re-fires
 			abort_current("battle step cannot run (result '%s')" % result)
 			return
 		match on_defeat:
 			"retry":
-				# Breathing room before the rematch — instant restart on a
-				# fresh defeat read as a glitch, not a retry. (A story-voiced
-				# retry line can replace the bare beat later.)
+				# instant restart reads as a glitch, not a retry
 				await get_tree().create_timer(0.9).timeout
 				continue
 			"fail_forward", "skip":

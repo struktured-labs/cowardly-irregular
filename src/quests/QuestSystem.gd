@@ -78,10 +78,7 @@ func get_state(quest_id: String) -> String:
 func get_objective_index(quest_id: String) -> int:
 	var entry: Dictionary = GameState.quests.get(quest_id, {})
 	var idx: int = int(entry.get("objective_index", 0))
-	# Out-of-range index (quest data shrank between saves, or corruption
-	# — a SHIPPED mechanic) silently bricked the quest forever: _objective
-	# returned {} and every notify loop skipped it with zero feedback.
-	# Clamp to the final objective and warn — playable beats bricked.
+	# clamp out-of-range (shrunk quest data / save corruption is a shipped mechanic) — playable beats bricked
 	var objectives: Array = get_quest(quest_id).get("objectives", [])
 	if idx >= objectives.size() and not objectives.is_empty() and get_state(quest_id) == "active":
 		push_warning("[QuestSystem] %s objective_index %d out of range (%d objectives) — clamped to final" % [quest_id, idx, objectives.size()])
@@ -295,19 +292,7 @@ func has_giver_business(npc_id: String) -> bool:
 	return _giver_quest_for(npc_id) != ""
 
 
-## Marker affordance for this NPC:
-##   "offer" — has a new quest to give ("!")
-##   "talk"  — an active quest's CURRENT objective is a talk targeting
-##             this NPC — progress or turn-in, go speak to them ("?").
-##             Covers non-giver targets too (Phil, the scholar).
-##   ""      — nothing actionable (a giver whose active quest's current
-##             step is elsewhere would only repeat flavor — no marker)
-## The required_flag gate matches notify_talk's, so a "?" never points
-## at a conversation that can't actually progress yet.
-## Quests may opt out of ALL marker affordances with `"markerless":
-## true` — word_from_capital is "deliberately markerless" per its
-## authoring notes (Rowan only opens up on direct interact; Aldrin is
-## found by asking around). Dialogue routing is unaffected.
+## "offer" (!), "talk" (?), or "" — required_flag-gated like notify_talk so a "?" never lies; markerless quests opt out
 func giver_business_kind(npc_id: String) -> String:
 	for qid in _quests:
 		var q: Dictionary = get_quest(qid)

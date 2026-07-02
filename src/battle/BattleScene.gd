@@ -245,20 +245,11 @@ func _ready() -> void:
 	_command_menu = BattleCommandMenuClass.new(self)
 	_results_display = BattleResultsDisplayClass.new(self)
 
-	# Install our own centered Camera2D and mark it current so the
-	# viewport can't inherit a stale exploration camera (live playtest
-	# 2026-07-02: cave battle rendered offset right because the old
-	# player camera was still the viewport's current camera, positioned
-	# at the player's cave-world coordinates). Placed at (0,0) — battle
-	# content is authored around origin. Zoom reset kept as belt for
-	# any future path that promotes a foreign camera mid-battle.
+	# own camera or the viewport keeps exploration's (player-world position)
 	var _battle_cam := Camera2D.new()
 	_battle_cam.name = "BattleCamera"
 	_battle_cam.position = Vector2.ZERO
-	# FIXED_TOP_LEFT: world (0,0) = screen top-left, i.e. the identity
-	# transform the scene was authored against. The default DRAG_CENTER
-	# put world-origin at screen CENTER, shifting the whole battle
-	# (UI included) down-right by half the viewport — the 19:39 cap.
+	# FIXED_TOP_LEFT at (0,0) = identity transform; DRAG_CENTER shifts everything by half the viewport
 	_battle_cam.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
 	_battle_cam.zoom = Vector2(1.0, 1.0)
 	add_child(_battle_cam)
@@ -4247,7 +4238,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = _get_monster_sprite_frames(monster_type)
 
-	# Summon parity 2026-07-01: this path hardcoded scale 1.0 / no flip, so artist drops (<=128px) popped in 2.5x small facing away — mirror battle-start sizing
+	# summons must mirror battle-start sizing or artist drops (<=128px) pop in 2.5x small, facing away
 	var size_bump: float = 1.0
 	var is_artist_monster := false
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):

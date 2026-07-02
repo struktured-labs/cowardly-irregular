@@ -337,6 +337,31 @@ func _ready() -> void:
 	if DebugLogOverlay:
 		DebugLogOverlay.log("[GAME] Started")
 
+	# Arg-gated render smoke — see _maybe_run_battle_smoke.
+	_maybe_run_battle_smoke()
+
+
+## `xvfb-run godot -- --battle-smoke`: render a real battle, save user://smoke/battle_smoke.png, quit — pixels catch what source pins can't
+func _maybe_run_battle_smoke() -> void:
+	if not ("--battle-smoke" in OS.get_cmdline_user_args()):
+		return
+	await get_tree().create_timer(1.0).timeout
+	print("[SMOKE] battle smoke starting")
+	_close_title_screen()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_create_party()
+	await _start_battle_async(["goblin"], true)
+	await get_tree().create_timer(2.5).timeout
+	var xform := get_viewport().get_canvas_transform()
+	print("[SMOKE] canvas transform origin=%s scale=%s" % [str(xform.origin), str(xform.get_scale())])
+	var img: Image = get_viewport().get_texture().get_image()
+	DirAccess.make_dir_recursive_absolute("user://smoke")
+	var err := img.save_png("user://smoke/battle_smoke.png")
+	print("[SMOKE] battle smoke saved err=%d size=%s" % [err, str(img.get_size())])
+	await get_tree().create_timer(0.2).timeout
+	get_tree().quit(0)
+
 
 func _connect_llm_breadcrumb() -> void:
 	"""R9: safe-connect to LLMService.inference_failed. Guards the singleton
@@ -1531,10 +1556,7 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
 	_cutscene_director.cutscene_finished.connect(func(_id: String):
-		# Aborted runs (unrunnable duel — missing PC) must NOT complete:
-		# the flag would make the spotlight never replay, permanently
-		# locking that PC. Abort ends the cutscene cleanly and re-fires
-		# it on the next gate check once the party is runnable.
+		# completing an aborted run would lock the spotlight PC forever (flag blocks the replay)
 		if _cutscene_director.has_method("last_finished_was_aborted") and _cutscene_director.last_finished_was_aborted():
 			push_warning("[GameLoop] '%s' was ABORTED — completion flag skipped; it will replay when runnable" % cutscene_id)
 			return
@@ -1863,12 +1885,7 @@ func _restore_party_from_save_data() -> bool:
 		if not JobSystem.assign_job(c, job_id):
 			push_warning("[GameLoop] _restore_party_from_save_data: assign_job('%s') failed for %s — falling back to 'fighter'" % [job_id, c.combatant_name])
 			JobSystem.assign_job(c, "fighter")
-		# Grandfather clause (2026-07-02 kit pare): pre-pare saves owned
-		# the FULL stacked kit innately — the level-capped back-fill in
-		# assign_job would strip spells they had (a Lv.4 cleric loses
-		# cura/raise mid-playthrough). Saves WITHOUT purchased_abilities
-		# (the post-pare format marker) get the whole learnset restored.
-		# The pare paces NEW games; it never repossesses owned spells.
+		# pre-pare saves (no purchased_abilities key) owned the full kit innately — never repossess
 		if not entry.has("purchased_abilities"):
 			JobSystem.learn_abilities_for_level(c, 99)
 		var sec_id = entry.get("secondary_job_id", "")
@@ -2285,31 +2302,16 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 			spotlight_pc = m
 			break
 	if spotlight_pc == null:
-		# "unavailable" (not "defeat"): the cutscene retry loop treats
-		# defeat as retry-forever — a missing PC (player job-swapped the
-		# duelist away) became an infinite warn/retry softlock that even
-		# survived reload, since the completion flag never set.
+		# "defeat" would retry forever — "unavailable" tells the cutscene to abort
 		push_warning("GameLoop.start_solo_battle: no party member with job '%s' — cutscene battle skipped" % job_id)
 		return "unavailable"
 	_spotlight_saved_party = party.duplicate()
 	party = [spotlight_pc]
 	_pending_spotlight_unlock = job_id
 	_spotlight_duel_active = true
-	## Retry-proofing (2026-07-02): the spotlight short-circuit in
-	## _on_battle_ended SKIPS all healing, so after a defeat the PC
-	## re-entered the retry at 0 HP — instant re-defeat, infinite
-	## insta-loss loop on the first death in any duel. Every attempt
-	## starts at full fighting shape.
+	# the spotlight short-circuit skips post-battle healing, so a retry would re-enter at 0 HP
 	_restore_duelist(spotlight_pc)
-	## Tick 472: thread the cutscene's win_condition through to
-	## BattleManager. Empty {} = default HP-zero.
-	## Two-sources hardening (2026-07-01, cowir-story's find msg 2049):
-	## the cutscene step is the OVERRIDE; the enemy's monsters.json
-	## win_condition field is the data-driven DEFAULT. Pre-fix the
-	## monsters.json fields were dead data — a cutscene author who
-	## omitted the inline copy silently got HP-zero, making the Cleric
-	## outlast duel potentially unwinnable. A ratchet test asserts the
-	## two sources AGREE whenever both exist.
+	# step win_condition overrides; monsters.json is the data fallback (agreement ratchet-tested)
 	if BattleManager:
 		var wc: Variant = _opts.get("win_condition", {})
 		if wc is Dictionary and not (wc as Dictionary).is_empty():
@@ -2329,9 +2331,7 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	return "victory" if result else "defeat"
 
 
-## Full fighting shape for a duel attempt: alive, full HP/MP, statuses
-## cleared through the API (buff bookkeeping stays consistent).
-## Static: pure Combatant manipulation, testable without the scene.
+## statuses cleared via remove_status (not .clear()) so buff bookkeeping stays consistent
 static func _restore_duelist(pc: Combatant) -> void:
 	if pc == null or not is_instance_valid(pc):
 		return
@@ -3034,9 +3034,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		await BattleTransition.play_battle_transition(enemy_types)
 		print("[GAMELOOP] Battle transition effect complete")
 
-		# Hide exploration scene (screenshot already taken). Centralized
-		# in _hide_exploration_scenes so every battle-entry path uses
-		# the same sweep — see the helper's comment for the bug story.
+		# hide AFTER the transition captured its screenshot of the scene
 		_hide_exploration_scenes()
 
 		# Load battle scene (uses preloaded resource, always available)
@@ -3052,15 +3050,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 
 
 
-## LIVE PLAYTEST BUG 2026-07-02: "first fight entirely broken" cap
-## showed the Whispering Cave rendered UNDER the battle UI — no party
-## sprites, no enemy sprites, no HP bars. Root cause was scenic scope:
-## the hide only touched _exploration_scene, but scenes are also
-## parented via MapSystem (add_child to /root) and dungeon overlays
-## can outlive the tracked reference. Belt-and-suspenders: hide the
-## tracked ref, MapSystem.current_map, and every non-battle Node2D
-## child of GameLoop as a last-resort sweep. Idempotent — every
-## battle-entry path can call this safely.
+## Scenes hide via three routes because they parent three ways: tracked ref, MapSystem (/root), or directly under GameLoop
 func _hide_exploration_scenes() -> void:
 	var hidden_names: Array = []
 	if _exploration_scene and is_instance_valid(_exploration_scene):
@@ -3081,10 +3071,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
 	_remove_party_chat_indicator()
-	# Sweep every non-battle scene now — catches direct entry points
-	# (debug boss battle, spotlight duels, retry, no-transition
-	# fallback) so ANY future battle-start path is protected without
-	# re-adding the sweep at each call site.
+	# every battle-entry path funnels through here — sweep once, not per call site
 	_hide_exploration_scenes()
 
 	# Save battle config for retry
