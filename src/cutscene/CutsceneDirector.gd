@@ -1434,6 +1434,12 @@ func _step_battle(step: Dictionary) -> void:
 		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
 		if result == "victory":
 			return
+		if result != "defeat":
+			# "unavailable" (missing PC) or any future sentinel: the duel
+			# CANNOT run — retrying forever was an infinite softlock that
+			# survived reload. Skip the step loudly instead.
+			push_error("CutsceneDirector: battle step cannot run (result '%s') — skipping step" % result)
+			return
 		match on_defeat:
 			"retry":
 				# Breathing room before the rematch — instant restart on a

@@ -58,6 +58,13 @@ func test_quest_data_integrity() -> void:
 		for entry in q.get("rewards", {}).get("items", []):
 			var iid: String = entry.get("item_id", "")
 			assert_true(items_json.has(iid), "%s reward %s must exist in items.json" % [qid, iid])
+		# Silent-failure audit 2026-07-02: job_variants rewards bypassed
+		# this loop — a variant typo shipped untested and would announce
+		# a pretty-cased phantom item as received.
+		for job_id in q.get("rewards", {}).get("job_variants", {}):
+			for entry in q["rewards"]["job_variants"][job_id].get("items", []):
+				var vid: String = entry.get("item_id", "")
+				assert_true(items_json.has(vid), "%s variant(%s) reward %s must exist in items.json" % [qid, job_id, vid])
 
 
 func test_offerable_respects_prereq_flag() -> void:

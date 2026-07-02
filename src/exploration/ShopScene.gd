@@ -764,6 +764,21 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		description_label.text = "%s already knows %s." % [name_str, pending_spell_data.get("name", "this spell")]
 		return
 
+	# Silent-failure audit 2026-07-02: verify the LIVE mirror is
+	# reachable BEFORE spending — the snapshot-only append gets
+	# clobbered by the next _sync_party_to_game_state (tick 315), so
+	# spend-then-fail-to-mirror was "paid, confirmed, revoked": the
+	# most misleading outcome a shop can produce. No live target →
+	# refuse the sale loudly, gold untouched.
+	var live_party: Array = _resolve_live_party()
+	var live_ok: bool = char_index < live_party.size() and live_party[char_index] != null \
+		and live_party[char_index].has_method("learn_ability")
+	if not live_ok:
+		push_error("ShopScene: no live Combatant for char_index %d — spell sale refused (gold untouched)" % char_index)
+		SoundManager.play_ui("menu_error")
+		description_label.text = "The spell fizzles — try again outside the shop."
+		return
+
 	if game_state.spend_gold(cost):
 		var member = game_state.player_party[char_index]
 		if not member.has("learned_abilities"):
@@ -776,13 +791,11 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		# append was clobbered on the next _sync_party_to_game_state,
 		# silently un-learning the just-purchased spell while keeping
 		# the gold spent.
-		var live_party: Array = _resolve_live_party()
-		if char_index < live_party.size() and live_party[char_index] and live_party[char_index].has_method("learn_ability"):
-			live_party[char_index].learn_ability(pending_spell_id)
-			# Item 18: bought spells are marked so the Dev Full-Kits
-			# toggle's OFF-strip never repossesses gold-paid knowledge.
-			if "purchased_abilities" in live_party[char_index] and pending_spell_id not in live_party[char_index].purchased_abilities:
-				live_party[char_index].purchased_abilities.append(pending_spell_id)
+		live_party[char_index].learn_ability(pending_spell_id)
+		# Item 18: bought spells are marked so the Dev Full-Kits
+		# toggle's OFF-strip never repossesses gold-paid knowledge.
+		if "purchased_abilities" in live_party[char_index] and pending_spell_id not in live_party[char_index].purchased_abilities:
+			live_party[char_index].purchased_abilities.append(pending_spell_id)
 
 		SoundManager.play_ui("menu_select")
 		_update_gold_display()

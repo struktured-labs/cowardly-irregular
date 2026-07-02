@@ -191,16 +191,18 @@ func test_spotlight_cutscenes_use_battle_step_shape() -> void:
 func test_no_matching_job_is_soft_fail() -> void:
 	# GameLoop is the main scene root, not an autoload — so we can't
 	# call start_solo_battle in the headless GUT context. Source-pin
-	# the soft-fail behavior instead: no matching party member →
-	# push_warning + return "defeat". Cutscene's retry loop unblocks
-	# and the author sees the warning.
+	# the soft-fail behavior instead. Silent-failure audit 2026-07-02:
+	# the missing-PC path originally returned "defeat", which the
+	# cutscene retry loop retried FOREVER (softlock that survived
+	# reload). It now returns the "unavailable" sentinel, which the
+	# retry loop treats as skip-step-loudly.
 	var src := _read(GAME_LOOP_PATH)
 	var fn_idx: int = src.find("func start_solo_battle")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 	assert_true(body.contains("if spotlight_pc == null:"),
 		"start_solo_battle must guard against a missing spotlight PC")
-	assert_true(body.contains("return \"defeat\""),
-		"start_solo_battle must return \"defeat\" on the missing-PC path (not crash, not \"victory\")")
+	assert_true(body.contains("return \"unavailable\""),
+		"missing-PC path must return the 'unavailable' sentinel — 'defeat' meant retry-forever")
 	assert_true(body.contains("push_warning("),
 		"missing-PC path must push_warning so the cutscene author sees the mismatch")

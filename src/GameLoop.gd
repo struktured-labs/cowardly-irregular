@@ -2278,8 +2278,12 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 			spotlight_pc = m
 			break
 	if spotlight_pc == null:
+		# "unavailable" (not "defeat"): the cutscene retry loop treats
+		# defeat as retry-forever — a missing PC (player job-swapped the
+		# duelist away) became an infinite warn/retry softlock that even
+		# survived reload, since the completion flag never set.
 		push_warning("GameLoop.start_solo_battle: no party member with job '%s' — cutscene battle skipped" % job_id)
-		return "defeat"
+		return "unavailable"
 	_spotlight_saved_party = party.duplicate()
 	party = [spotlight_pc]
 	_pending_spotlight_unlock = job_id

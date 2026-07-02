@@ -44,10 +44,17 @@ func _load_all() -> void:
 		var path := QUEST_DIR + "/" + fname
 		var text := FileAccess.get_file_as_string(path)
 		if text == "":
+			# Truncated write / export omission — as loud as a parse fail.
+			push_warning("[QuestSystem] %s read EMPTY — skipped" % fname)
 			continue
 		var data = JSON.parse_string(text)
 		if not (data is Dictionary) or not data.has("id"):
 			push_warning("[QuestSystem] %s failed to parse — skipped" % fname)
+			continue
+		if not (data.get("objectives") is Array) or (data["objectives"] as Array).is_empty():
+			# An objective-less quest accepts into a permanently
+			# uncompletable "active" state — reject at load.
+			push_warning("[QuestSystem] %s has no objectives — skipped" % fname)
 			continue
 		_quests[data["id"]] = data
 	print("[QuestSystem] Loaded %d quests" % _quests.size())
@@ -70,7 +77,17 @@ func get_state(quest_id: String) -> String:
 
 func get_objective_index(quest_id: String) -> int:
 	var entry: Dictionary = GameState.quests.get(quest_id, {})
-	return int(entry.get("objective_index", 0))
+	var idx: int = int(entry.get("objective_index", 0))
+	# Out-of-range index (quest data shrank between saves, or corruption
+	# — a SHIPPED mechanic) silently bricked the quest forever: _objective
+	# returned {} and every notify loop skipped it with zero feedback.
+	# Clamp to the final objective and warn — playable beats bricked.
+	var objectives: Array = get_quest(quest_id).get("objectives", [])
+	if idx >= objectives.size() and not objectives.is_empty() and get_state(quest_id) == "active":
+		push_warning("[QuestSystem] %s objective_index %d out of range (%d objectives) — clamped to final" % [quest_id, idx, objectives.size()])
+		idx = objectives.size() - 1
+		GameState.quests[quest_id]["objective_index"] = idx
+	return idx
 
 
 func get_by_state(state: String) -> Array:
@@ -177,9 +194,16 @@ func _grant_rewards(q: Dictionary) -> void:
 		for entry in items:
 			var iid: String = entry.get("item_id", "")
 			var count: int = int(entry.get("count", 1))
-			if iid != "" and game_loop.party[0].has_method("add_item"):
-				game_loop.party[0].add_item(iid, count)
-				summary_parts.append(_item_display_name(iid) + ("" if count <= 1 else " ×%d" % count))
+			if iid == "" or not game_loop.party[0].has_method("add_item"):
+				continue
+			# An unresolvable id would become a phantom inventory entry
+			# AND _item_display_name's pretty-case fallback would announce
+			# the failure as success. Warn loudly; still grant (the id may
+			# be a data-load ordering issue, not a typo).
+			if ItemSystem and ItemSystem.get_item(iid).is_empty():
+				push_warning("[QuestSystem] reward item '%s' does not resolve in items.json" % iid)
+			game_loop.party[0].add_item(iid, count)
+			summary_parts.append(_item_display_name(iid) + ("" if count <= 1 else " ×%d" % count))
 	# Stashed for the completion dialogue to announce — grants happen
 	# BEFORE the dialogue plays, so the summary rides until then.
 	_last_reward_summary = "" if summary_parts.is_empty() else "Received: " + ", ".join(summary_parts) + "."

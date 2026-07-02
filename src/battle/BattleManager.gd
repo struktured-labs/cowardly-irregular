@@ -3364,6 +3364,11 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 				_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
 			"item":
 				_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
+			_:
+				# Shared/imported autobattle scripts are player-editable
+				# JSON — a typo'd sub-action type was silently eaten
+				# ("advances with 3 actions!" but only 2 happen).
+				push_warning("BattleManager: unknown Advance sub-action type '%s' — skipped" % action.get("type", ""))
 
 		# Log player action for adaptive AI pattern detection
 		_log_player_action(combatant, action)

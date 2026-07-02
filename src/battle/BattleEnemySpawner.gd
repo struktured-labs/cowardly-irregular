@@ -423,6 +423,17 @@ func spawn_forced_enemies() -> void:
 		_scene.test_enemies.append(enemy)
 		enemy_names.append(stats["name"])
 
+	# Zero valid ids must NEVER reach start_battle: an empty enemy
+	# party trips "all enemies dead" on the first victory check and the
+	# battle reports an instant WIN — a typo'd boss/duel id would set
+	# defeat flags for a fight that never happened. Mirror the
+	# encounter path's fallback so the battle is real and diagnosable.
+	if _scene.test_enemies.is_empty():
+		push_error("BattleEnemySpawner: forced_enemies %s produced ZERO spawns — falling back to random encounter" % str(_scene.forced_enemies))
+		_scene.forced_enemies.clear()
+		spawn_enemies()
+		return
+
 	# Announcement based on battle type
 	if is_boss_battle:
 		_scene.log_message("")
