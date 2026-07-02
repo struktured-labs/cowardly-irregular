@@ -245,7 +245,19 @@ func _ready() -> void:
 	_command_menu = BattleCommandMenuClass.new(self)
 	_results_display = BattleResultsDisplayClass.new(self)
 
-	# Reset any camera zoom from exploration scenes
+	# Install our own centered Camera2D and mark it current so the
+	# viewport can't inherit a stale exploration camera (live playtest
+	# 2026-07-02: cave battle rendered offset right because the old
+	# player camera was still the viewport's current camera, positioned
+	# at the player's cave-world coordinates). Placed at (0,0) — battle
+	# content is authored around origin. Zoom reset kept as belt for
+	# any future path that promotes a foreign camera mid-battle.
+	var _battle_cam := Camera2D.new()
+	_battle_cam.name = "BattleCamera"
+	_battle_cam.position = Vector2.ZERO
+	_battle_cam.zoom = Vector2(1.0, 1.0)
+	add_child(_battle_cam)
+	_battle_cam.make_current()
 	var viewport = get_viewport()
 	if viewport:
 		var current_camera = viewport.get_camera_2d()

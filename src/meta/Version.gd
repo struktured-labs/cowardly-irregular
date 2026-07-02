@@ -20,7 +20,7 @@ class_name Version
 ## OS.execute at all) so they fall back to the clean semver; deploys are
 ## already tagged via butler --userversion.
 
-const SEMVER := "3.32.14-alpha"
+const SEMVER := "3.32.15-alpha"
 
 static var _dev_hash_cached: bool = false
 static var _dev_hash: String = ""

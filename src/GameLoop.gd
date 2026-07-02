@@ -3062,19 +3062,19 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 ## child of GameLoop as a last-resort sweep. Idempotent — every
 ## battle-entry path can call this safely.
 func _hide_exploration_scenes() -> void:
-	var hidden: int = 0
+	var hidden_names: Array = []
 	if _exploration_scene and is_instance_valid(_exploration_scene):
 		_exploration_scene.visible = false
-		hidden += 1
+		hidden_names.append(_exploration_scene.name)
 	if MapSystem and "current_map" in MapSystem and MapSystem.current_map \
 			and is_instance_valid(MapSystem.current_map):
 		MapSystem.current_map.visible = false
-		hidden += 1
+		hidden_names.append("map:" + str(MapSystem.current_map.name))
 	for child in get_children():
 		if child is Node2D and not child.name.begins_with("BattleScene"):
 			child.visible = false
-			hidden += 1
-	print("[GAMELOOP] Exploration hidden — %d scene(s)" % hidden)
+			hidden_names.append(str(child.name))
+	print("[GAMELOOP] Exploration hidden — %d scene(s): %s" % [hidden_names.size(), str(hidden_names)])
 
 
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
