@@ -20,6 +20,7 @@ signal objective_advanced(quest_id: String, objective_index: int)
 const QUEST_DIR := "res://data/quests"
 
 var _quests: Dictionary = {}  # id → parsed quest JSON
+var _last_reward_summary: String = ""  # set by _grant_rewards, consumed by _announce_rewards
 
 
 func _ready() -> void:
@@ -137,21 +138,50 @@ func _grant_rewards(q: Dictionary) -> void:
 	var lead_job := _leader_job_id()
 	if variants.has(lead_job):
 		items = variants[lead_job].get("items", items)
+	var summary_parts: Array = []
 	var gold: int = int(rewards.get("gold", 0))
 	if gold > 0:
 		GameState.add_gold(gold)
+		summary_parts.append("%d gold" % gold)
 	var exp_total: int = int(rewards.get("exp", 0))
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if exp_total > 0 and game_loop and "party" in game_loop:
 		for member in game_loop.party:
 			if member.has_method("gain_exp"):
 				member.gain_exp(exp_total)
+		summary_parts.append("%d EXP" % exp_total)
 	if game_loop and game_loop.party.size() > 0:
 		for entry in items:
 			var iid: String = entry.get("item_id", "")
 			var count: int = int(entry.get("count", 1))
 			if iid != "" and game_loop.party[0].has_method("add_item"):
 				game_loop.party[0].add_item(iid, count)
+				summary_parts.append(_item_display_name(iid) + ("" if count <= 1 else " ×%d" % count))
+	# Stashed for the completion dialogue to announce — grants happen
+	# BEFORE the dialogue plays, so the summary rides until then.
+	_last_reward_summary = "" if summary_parts.is_empty() else "Received: " + ", ".join(summary_parts) + "."
+
+
+func _item_display_name(item_id: String) -> String:
+	if ItemSystem:
+		var data: Dictionary = ItemSystem.get_item(item_id)
+		var display: String = str(data.get("name", ""))
+		if display != "":
+			return display
+	return item_id.replace("_", " ").capitalize()
+
+
+## Plays the stashed reward summary as a final dialogue line + the
+## item_obtain chime. Rewards previously arrived in total silence —
+## gold/EXP/items landed with no announcement of any kind.
+func _announce_rewards(npc: Node) -> void:
+	if _last_reward_summary == "":
+		return
+	var line: String = _last_reward_summary
+	_last_reward_summary = ""
+	if SoundManager:
+		SoundManager.play_ui("item_obtain")
+	await _play_lines(npc, [{"speaker": "✦", "text": line}])
 
 
 ## ── Objective progression hooks (called by the plumbing) ──
@@ -248,6 +278,7 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 	if completed_qid == qid:
 		await _play_lines(npc, dlg.get("ready_to_turn_in", []))
 		await _play_lines(npc, dlg.get("complete", []))
+		await _announce_rewards(npc)
 		return
 	# Otherwise still mid-quest — flavor line.
 	await _play_lines(npc, dlg.get("in_progress", []))
@@ -260,6 +291,7 @@ func run_completion_dialogue(quest_id: String, npc: Node) -> void:
 	var dlg: Dictionary = q.get("dialogue", {})
 	await _play_lines(npc, dlg.get("ready_to_turn_in", []))
 	await _play_lines(npc, dlg.get("complete", []))
+	await _announce_rewards(npc)
 
 
 func _play_lines(npc: Node, lines: Array) -> void:
